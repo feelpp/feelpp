@@ -41,24 +41,28 @@ class ModelMeasuresIO
 {
 public :
     ModelMeasuresIO( std::string const& pathFile, WorldComm const& worldComm /*= Environment::worldComm()*/ );
-    ModelMeasuresIO( ModelMeasuresIO const& app ) = default;
+    ModelMeasuresIO( ModelMeasuresIO const& ) = default;
     void clear();
-    void start();
+    FEELPP_DEPRECATED void start() {}
     void restart( std::string const& paramKey, double val );
     void exportMeasures();
-    void setParameter(std::string const& key,double val);
+    FEELPP_DEPRECATED void setParameter(std::string const& key,double val);
     void setMeasure(std::string const& key,double val);
     void setMeasureComp( std::string const& key,std::vector<double> const& values );
-    bool hasParameter( std::string const& key ) const { return M_mapParameterData.find( key ) != M_mapParameterData.end() ; }
-    bool hasMeasure( std::string const& key ) const { return M_mapMeasureData.find( key ) != M_mapMeasureData.end() ; }
+    FEELPP_DEPRECATED bool hasParameter( std::string const& key ) const { return this->hasMeasure( key ); }
+    bool hasMeasure( std::string const& key ) const { return M_dataNameToIndex.find( key ) != M_dataNameToIndex.end(); }
 
     std::string const& pathFile() const { return M_pathFile; }
     void setPathFile( std::string const& s ) { M_pathFile = s; }
 private :
-    WorldComm M_worldComm;
+    void writeHeader();
+private :
+    WorldComm const& M_worldComm;
     std::string M_pathFile;
-    std::map<std::string,double> M_mapParameterData;
-    std::map<std::string,double> M_mapMeasureData;
+    std::map<std::string,uint16_type> M_dataNameToIndex;
+    std::vector<std::string> M_dataIndexToName;
+    std::vector<double> M_data;
+    bool M_addNewDataIsLocked;
 };
 
 class ModelMeasuresEvaluatorContext

@@ -146,17 +146,35 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     // discretisation acceleration term
     if (BuildCstPart && !this->isStationary())
     {
-        bilinearForm_PatternDefault +=
-            integrate( _range=elements(mesh),
-                       _expr= M_timeStepNewmark->polyDerivCoefficient()*idv(rho)*inner( idt(u),id(v) ),
-                       _geomap=this->geomap() );
+        if ( !this->useMassMatrixLumped() )
+        {
+            bilinearForm_PatternDefault +=
+                integrate( _range=elements(mesh),
+                           _expr= M_timeStepNewmark->polyDerivCoefficient()*idv(rho)*inner( idt(u),id(v) ),
+                           _geomap=this->geomap() );
+        }
+        else
+        {
+            J->close();
+            double thecoeff = M_timeStepNewmark->polyDerivCoefficient();
+            if ( this->massMatrixLumped()->size1() == J->size1() )
+                J->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
+            else
+            {
+                auto vecAddDiagJ = this->backend()->newVector( J->mapRowPtr() );
+                auto uAddDiagJ = M_XhDisplacement->element( vecAddDiagJ, rowStartInVector );
+                uAddDiagJ = *M_vecDiagMassMatrixLumped;
+                uAddDiagJ.scale( thecoeff );
+                J->addDiagonal( vecAddDiagJ );
+            }
+        }
     }
     //--------------------------------------------------------------------------------------------------//
     // incompressibility terms
     if (M_useDisplacementPressureFormulation && !BuildCstPart)
     {
         // define pressure field
-        size_type blockIndexPressure = rowStartInVector+this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+        size_type blockIndexPressure = rowStartInVector+this->startSubBlockSpaceIndex("pressure");
         auto const p = M_XhPressure->element(X, blockIndexPressure);
         // assemble
         this->updateJacobianIncompressibilityTerms(u,p,J);
@@ -180,6 +198,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         this->updateBCRobinJacobian( J );
     }
     //--------------------------------------------------------------------------------------------------//
+#if 0
     // fsi coupling using a robin boundary condition
     if (this->markerNameFSI().size()>0 && ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
                                             this->couplingFSIcondition() == "nitsche" ) )
@@ -214,6 +233,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 #endif
         }
     }
+#endif
     //--------------------------------------------------------------------------------------------------//
     // strong Dirichlet bc
     if ( this->hasMarkerDirichletBCelimination() && !BuildCstPart && _doBCStrongDirichlet)
@@ -248,7 +268,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
 
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
-    size_type startBlockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+    size_type startBlockIndexPressure = this->startSubBlockSpaceIndex("pressure");
 
     double alpha_f=M_genAlpha_alpha_f;
     double alpha_m=M_genAlpha_alpha_m;

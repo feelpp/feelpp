@@ -98,6 +98,7 @@ public :
     //___________________________________________________________________________________//
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
+    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
     //elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     heat_model_ptrtype const& heatModel() const { return M_heatModel; }
@@ -121,17 +122,22 @@ public :
     // apply assembly and solver
     void solve();
 
-    void updateLinearPreAssemblyJouleLaw( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
-    void updateResidualPreAssemblyJouleLaw( vector_ptrtype const& U, vector_ptrtype& R ) const;
+    void updateLinearPreAssemblyJouleLaw( DataUpdateLinear & data ) const;
+    void updateResidualPreAssemblyJouleLaw( DataUpdateResidual & data ) const;
     void updateGenericPreAssemblyJouleLaw( vector_ptrtype& F, bool applyOnResidual ) const;
 
-    void updateLinearElectricDependingOnTemperature( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+    void updateLinearElectricDependingOnTemperature( DataUpdateLinear & data ) const;
 
     void updateLinearPDE( DataUpdateLinear & data ) const;
 
     void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
     void updateResidual( DataUpdateResidual & data ) const;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const;
+
+    //___________________________________________________________________________________//
+    void updateCurrentDensity();
 
 private :
     heat_model_ptrtype M_heatModel;

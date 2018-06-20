@@ -46,7 +46,7 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
-#include <feel/feelmodels/fluid/densityviscositymodel.hpp>
+#include <feel/feelmodels/fluid/fluidmechanicsmaterialproperties.hpp>
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 #include <feel/feelmodels/modelmesh/meshale.hpp>
@@ -199,8 +199,8 @@ public:
     static const uint16_type nOrderDensityViscosity = BasisDVType::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_densityviscosity_type> > space_densityviscosity_type;
     // viscosity model desc
-    typedef DensityViscosityModel<space_densityviscosity_type> densityviscosity_model_type;
-    typedef boost::shared_ptr<densityviscosity_model_type> densityviscosity_model_ptrtype;
+    typedef FluidMechanicsMaterialProperties<space_densityviscosity_type> material_properties_type;
+    typedef boost::shared_ptr<material_properties_type> material_properties_ptrtype;
 
     typedef bases<Lagrange<nOrderVelocity, Vectorial,Continuous,PointSetFekete> > basis_vectorial_PN_type;
     typedef FunctionSpace<mesh_type, basis_vectorial_PN_type> space_vectorial_PN_type;
@@ -441,7 +441,6 @@ public :
     model_algebraic_factory_ptrtype algebraicFactory() { return M_algebraicFactory; }
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
     virtual size_type nLocalDof() const;
-    std::map<std::string,size_type> const& startBlockIndexFieldsInMatrix() const { return M_startBlockIndexFieldsInMatrix; }
     void buildBlockVector();
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
@@ -503,9 +502,6 @@ public :
 
     bool isStationaryModel() const;
 
-    void setDynamicViscosityLaw( std::string const& type);
-    std::string const& dynamicViscosityLaw() const;
-
     bool startBySolveNewtonian() const { return M_startBySolveNewtonian; }
     void startBySolveNewtonian( bool b ) { M_startBySolveNewtonian=b; }
     bool hasSolveNewtonianAtKickOff() const { return M_hasSolveNewtonianAtKickOff; }
@@ -523,31 +519,6 @@ public :
     void useFSISemiImplicitScheme(bool b) { M_useFSISemiImplicitScheme=b; }
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
-
-    double couplingFSI_Nitsche_gamma() const { return M_couplingFSI_Nitsche_gamma; }
-    void setCouplingFSI_Nitsche_gamma(double d) { M_couplingFSI_Nitsche_gamma=d; }
-    double couplingFSI_Nitsche_gamma0() const { return M_couplingFSI_Nitsche_gamma0; }
-    void setCouplingFSI_Nitsche_gamma0(double d) { M_couplingFSI_Nitsche_gamma0=d; }
-    double couplingFSI_Nitsche_alpha() const { return M_couplingFSI_Nitsche_alpha; }
-    void setCouplingFSI_Nitsche_alpha(double d) { M_couplingFSI_Nitsche_alpha=d; }
-
-    bool couplingFSI_RNG_useInterfaceOperator() const { return M_couplingFSI_RNG_useInterfaceOperator; }
-    void setCouplingFSI_RNG_useInterfaceOperator(bool b) { M_couplingFSI_RNG_useInterfaceOperator=b; }
-    vector_ptrtype const& couplingFSI_RNG_interfaceOperator() const { return M_couplingFSI_RNG_interfaceOperator; }
-    void setCouplingFSI_RNG_interfaceOperator(vector_ptrtype const& op ) { M_couplingFSI_RNG_interfaceOperator=op; }
-    bool couplingFSI_solidIs1dReduced() const { return M_couplingFSI_solidIs1dReduced; }
-    void setCouplingFSI_solidIs1dReduced(bool b) { M_couplingFSI_solidIs1dReduced=b; }
-    double couplingFSI_RNG_coeffForm2() const { return M_couplingFSI_RNG_coeffForm2; }
-    void setCouplingFSI_RNG_coeffForm2(double d) { M_couplingFSI_RNG_coeffForm2=d; }
-    element_meshvelocityonboundary_ptrtype const& couplingFSI_RNG_evalForm1() const { return M_couplingFSI_RNG_evalForm1; }
-    void setCouplingFSI_RNG_evalForm1( element_meshvelocityonboundary_ptrtype const& v) { M_couplingFSI_RNG_evalForm1=v; }
-    boost::shared_ptr<typename space_fluid_velocity_type::element_type> const& couplingFSI_RNG_evalForm1Bis() const { return M_couplingFSI_RNG_evalForm1Bis; }
-    void setCouplingFSI_RNG_evalForm1Bis( boost::shared_ptr<typename space_fluid_velocity_type::element_type> const& v) { M_couplingFSI_RNG_evalForm1Bis=v; }
-    sparse_matrix_ptrtype const& couplingFSI_RNG_matrix() const { return M_couplingFSI_RNG_matrix; }
-    void couplingFSI_RNG_matrix( sparse_matrix_ptrtype const& mat ) { M_couplingFSI_RNG_matrix=mat; }
-    void couplingFSI_RNG_updateForUse();
-    void couplingFSI_RNG_updateLinearPDE( vector_ptrtype& F) const;
-
     //___________________________________________________________________________________//
     // stabilization
     bool stabilizationGLS() const { return M_stabilizationGLS; }
@@ -585,29 +556,32 @@ public :
 
     //___________________________________________________________________________________//
     // physical parameters rho,mu,nu,...
-    densityviscosity_model_ptrtype & densityViscosityModel() { return M_densityViscosityModel; }
-    densityviscosity_model_ptrtype const& densityViscosityModel() const { return M_densityViscosityModel; }
+    material_properties_ptrtype & materialProperties() { return M_materialProperties; }
+    material_properties_ptrtype const& materialProperties() const { return M_materialProperties; }
 
     void updateRho(double rho)
     {
-        this->densityViscosityModel()->setCstDensity(rho);
+        this->materialProperties()->setCstDensity(rho);
     }
     void updateMu(double mu)
     {
-        this->densityViscosityModel()->setCstDynamicViscosity(mu);
+        this->materialProperties()->setCstDynamicViscosity(mu);
         M_pmmNeedUpdate = true;
     }
     template < typename ExprT >
     void updateRho(vf::Expr<ExprT> const& __expr)
     {
-        this->densityViscosityModel()->updateDensity( __expr );
+        this->materialProperties()->updateDensityField( __expr );
     }
     template < typename ExprT >
     void updateMu(vf::Expr<ExprT> const& __expr)
     {
-        this->densityViscosityModel()->updateDynamicViscosity( __expr );
+        this->materialProperties()->updateDynamicViscosityField( __expr );
         M_pmmNeedUpdate = true;
     }
+    //___________________________________________________________________________________//
+    // symbols expression
+    constexpr auto symbolsExpr() const { return this->symbolsExpr( hana::int_<nDim>() ); }
     //___________________________________________________________________________________//
     // boundary conditions + body forces
     void updateParameterValues();
@@ -848,8 +822,8 @@ public :
     void updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianWeakBC( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
     void updateResidualWeakBC( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
-    void updateJacobianStrongDirichletBC(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const;
-    void updateResidualStrongDirichletBC( vector_ptrtype& R ) const;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const;
 
     virtual void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const {}
     virtual void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const {}
@@ -859,7 +833,7 @@ public :
     void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilisationGLS( DataUpdateLinear & data ) const;
-    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
 
     void updatePicard( DataUpdateLinear & data ) const;
     double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
@@ -870,6 +844,24 @@ public :
 
 private :
     void updateBoundaryConditionsForUse();
+
+    constexpr auto symbolsExpr( hana::int_<2> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("fluid_Ux",idv(this->fieldVelocity())(0,0) ),
+                                          symbolExpr("fluid_Uy",idv(this->fieldVelocity())(1,0) ),
+                                          symbolExpr("fluid_P",idv(this->fieldPressure()) ),
+                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity())) )
+                                          );
+        }
+    constexpr auto symbolsExpr( hana::int_<3> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("fluid_Ux",idv(this->fieldVelocity())(0,0) ),
+                                          symbolExpr("fluid_Uy",idv(this->fieldVelocity())(1,0) ),
+                                          symbolExpr("fluid_Uz",idv(this->fieldVelocity())(2,0) ),
+                                          symbolExpr("fluid_P",idv(this->fieldPressure()) ),
+                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity())) )
+                                          );
+            }
 
 protected:
     virtual size_type initStartBlockIndexFieldsInMatrix();
@@ -921,7 +913,7 @@ protected:
 #endif
     //----------------------------------------------------
     // physical properties/parameters and space
-    densityviscosity_model_ptrtype M_densityViscosityModel;
+    material_properties_ptrtype M_materialProperties;
     // boundary conditions + body forces
     map_vector_field<nDim,1,2> M_bcDirichlet;
     std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
@@ -941,16 +933,9 @@ protected:
     std::string M_solverName;
 
     double M_dirichletBCnitscheGamma;
+
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
-    double M_couplingFSI_Nitsche_gamma,M_couplingFSI_Nitsche_gamma0, M_couplingFSI_Nitsche_alpha;
-    bool M_couplingFSI_RNG_useInterfaceOperator;
-    vector_ptrtype M_couplingFSI_RNG_interfaceOperator;
-    bool M_couplingFSI_solidIs1dReduced;
-    double M_couplingFSI_RNG_coeffForm2;
-    element_meshvelocityonboundary_ptrtype M_couplingFSI_RNG_evalForm1;
-    boost::shared_ptr<typename space_fluid_velocity_type::element_type> M_couplingFSI_RNG_evalForm1Bis;
-    sparse_matrix_ptrtype M_couplingFSI_RNG_matrix;
 
     bool M_startBySolveNewtonian, M_hasSolveNewtonianAtKickOff;
     bool M_startBySolveStokesStationary, M_hasSolveStokesStationaryAtKickOff;
@@ -1048,7 +1033,6 @@ protected:
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
-    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
     std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
     //----------------------------------------------------
     // overwrite assembly process : source terms

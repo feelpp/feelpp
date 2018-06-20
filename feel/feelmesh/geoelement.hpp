@@ -40,11 +40,11 @@
 
 namespace Feel
 {
-
+template<int Dim = 1>
 class SubFaceOfNone
 {
 public:
-    static const uint16_type nDim = 1;
+    static const uint16_type nDim = Dim;
     template<typename ET>
     struct Element
     {
@@ -130,9 +130,15 @@ public:
         :
         M_element0( std::move( sf.M_element0 ) ),
         M_element1( std::move( sf.M_element1 ) )
-        {
-        }
-    SubFaceOf( SubFaceOfNone const& /*sf*/ )
+    {
+     }
+    SubFaceOf( SubFaceOfNone<nDim> const& /*sf*/ )
+        :
+        M_element0( 0, invalid_uint16_type_value ),
+        M_element1( 0, invalid_uint16_type_value )
+    {
+    }
+    explicit SubFaceOf( SubFaceOfNone<0> const& /*sf*/ )
         :
         M_element0( 0, invalid_uint16_type_value ),
         M_element1( 0, invalid_uint16_type_value )
@@ -140,17 +146,8 @@ public:
     }
     virtual ~SubFaceOf() {}
 
-    SubFaceOf& operator=( SubFaceOf const& sf )
-    {
-        if ( this != &sf )
-        {
-            M_element0 = sf.M_element0;
-            M_element1 = sf.M_element1;
+    SubFaceOf& operator=( SubFaceOf const& sf ) = default;
 
-        }
-
-        return *this;
-    }
     SubFaceOf& operator=( SubFaceOf && sf )
         {
             M_element0 = std::move(sf.M_element0);
@@ -158,10 +155,7 @@ public:
             ///std::cout << "move assigned SubFaceOf\n";
             return *this;
         }
-    SubFaceOf& operator=( SubFaceOfNone const& /*sf*/ )
-    {
-        return *this;
-    }
+
     entity_type const& element( uint16_type e ) const
     {
         if ( e == 0 )
@@ -364,7 +358,7 @@ public:
         M_elements( sf.M_elements )
         {
         }
-    SubFaceOfMany( SubFaceOfNone const& /*sf*/ )
+    SubFaceOfMany( SubFaceOfNone<nDim> const& /*sf*/ )
         :
         M_elements()
         {
@@ -380,7 +374,7 @@ public:
 
             return *this;
         }
-    SubFaceOfMany& operator=( SubFaceOfNone const& /*sf*/ )
+    SubFaceOfMany& operator=( SubFaceOfNone<nDim> const& /*sf*/ )
     {
         return *this;
     }
@@ -501,8 +495,8 @@ private:
  * Class for Points and Vertices
  */
 template <uint16_type Dim,
-         typename SubFace = SubFaceOfNone,
-         typename T = double>
+          typename SubFace = SubFaceOfNone<Dim>,
+          typename T = double>
 class GeoElement0D
     :
     public Geo0D<Dim,T>,
@@ -542,15 +536,15 @@ public:
     GeoElement0D( size_type id, bool boundary = false )
         :
         super( id, boundary ),
-        super2()
-        //M_facept()
+        super2(),
+        M_facept( nullptr )
     {}
 
     GeoElement0D( size_type id, node_type const& n,  bool boundary = false )
         :
         super( id, n, boundary ),
-        super2()
-        //M_facept()
+        super2(),
+        M_facept( nullptr )
     {}
 
     //! Declares item id and if it is on boundary, and provides coordinate
@@ -558,10 +552,16 @@ public:
     GeoElement0D( size_type id, Real x, Real y, Real z, bool boundary = false )
         :
         super( id, x, y, z, boundary ),
-        super2()
-        //M_facept()
+        super2(),
+        M_facept( nullptr )
     {}
 
+    explicit GeoElement0D( geo0d_type const& p )
+        :
+        super( p ),
+        super2(),
+        M_facept( nullptr )
+        {}
     GeoElement0D( GeoElement0D const & g ) = default;
     GeoElement0D( GeoElement0D && g ) = default;
 
@@ -684,15 +684,16 @@ public:
     /**
      * set the geometrical point associated to the face
      */
-    void setPoint( uint16_type /*i*/, geo0d_type const& e )
+    void setPoint( uint16_type /*i*/, geo0d_type & e )
     {
         //M_facept = e;
-        M_facept= const_cast<geo0d_type *>( &e );
+        //M_facept= const_cast<geo0d_type *>( &e );
+        M_facept= std::addressof( e );
     }
 
     matrix_node_type /*const&*/ G() const
     {
-        return this->G( mpl::bool_<boost::is_same<SubFace,SubFaceOfNone>::value>() );
+        return this->G( mpl::bool_<boost::is_same<SubFace,SubFaceOfNone<Dim>>::value>() );
     }
 
     matrix_node_type /*const&*/ G( mpl::bool_<true> /**/ ) const
@@ -707,7 +708,7 @@ public:
 
     matrix_node_type /*const&*/ vertices() const
     {
-        return this->vertices( mpl::bool_<boost::is_same<SubFace,SubFaceOfNone>::value>() );
+        return this->vertices( mpl::bool_<boost::is_same<SubFace,SubFaceOfNone<Dim>>::value>() );
     }
 
     matrix_node_type /*const&*/ vertices( mpl::bool_<true> /**/ ) const
@@ -752,16 +753,16 @@ const uint16_type GeoElement0D<Dim,SubFace,T>::numLocalVertices;
  */
 template<uint16_type Dim,
          typename GEOSHAPE,
-         typename SubFace = SubFaceOfNone,
+         typename SubFace = SubFaceOfNone<0>,
          typename T = double>
 class GeoElement1D
     :
-public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> >,
+public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone<0>, T> >,
 public SubFace
 {
 public:
 
-    typedef GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> > super;
+    typedef GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone<0>, T> > super;
     typedef SubFace super2;
 
     static const uint16_type nDim = super::nDim;
@@ -779,7 +780,7 @@ public:
                               mpl::identity<GeoElement0D<Dim, SubFaceOf<self_type>, T> >,
                               mpl::identity<GeoElement0D<Dim, SubFaceOfMany<self_type>, T> > >::type::type point_type;
     typedef point_type GeoBElement;
-
+    
     static const uint16_type numLocalVertices = super::numLocalVertices;
     static const uint16_type numLocalEdges = super::numEdges;
     static const uint16_type numLocalFaces = super::numLocalVertices;
@@ -1058,17 +1059,17 @@ const uint16_type GeoElement1D<Dim,GEOSHAPE,SubFace,T>::nRealDim;
  */
 template<uint16_type Dim,
          typename GEOSHAPE,
-         typename SubFace = SubFaceOfNone,
+         typename SubFace = SubFaceOfNone<0>,
          typename T = double>
 class GeoElement2D
     :
-public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> >,
+public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone<0>, T> >,
 public SubFace
 {
 public:
 
 
-    typedef GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> > super;
+    typedef GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone<0>, T> > super;
     typedef SubFace super2;
 
     static const uint16_type nDim = super::nDim;
@@ -1091,7 +1092,7 @@ public:
                               mpl::identity<GeoElement1D<Dim, entity_face_type, SubFaceOf<self_type>, T> >,
                               mpl::identity<GeoElement1D<Dim, entity_face_type, SubFaceOfMany<self_type>, T> > >::type::type edge_type;
     //typedef GeoElement1D<Dim, entity_face_type, SubFaceOf<self_type>, T > edge_type;
-    typedef GeoElement0D<Dim, SubFaceOfNone, T> point_type;
+    typedef GeoElement0D<Dim, SubFaceOfNone<0>, T> point_type;
 #if 0
     BOOST_MPL_ASSERT_MSG( ( boost::is_same<point_type,typename edge_type::point_type>::value ),
                           INCOMPATIBLE_POINT_TYPE,
@@ -1410,15 +1411,15 @@ template<uint16_type Dim,
          typename T = double>
 class GeoElement3D
     :
-public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> >,
-public SubFaceOfNone
+public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone<0>, T> >,
+public SubFaceOfNone<0>
 {
 public:
 
     static const uint16_type nDim = Dim;
 
-    typedef GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> > super;
-    typedef SubFaceOfNone super2;
+    typedef GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone<0>, T> > super;
+    typedef SubFaceOfNone<0> super2;
 
     typedef GEOSHAPE GeoShape;
 
@@ -1428,7 +1429,7 @@ public:
     typedef self_type element_type;
     typedef GeoElement2D<Dim, entity_face_type, SubFaceOf<self_type>, T > face_type;
     typedef GeoElement1D<Dim, typename entity_face_type::topological_face_type, SubFaceOfMany<face_type>, T> edge_type;
-    typedef GeoElement0D<Dim, SubFaceOfNone, T> point_type;
+    typedef GeoElement0D<Dim, SubFaceOfNone<0>, T> point_type;
 
     typedef typename super::node_type node_type;
 

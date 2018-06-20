@@ -132,7 +132,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
                            _geomap=this->geomap() );
 
             auto p = M_XhPressure->element();//*M_fieldPressure;
-            size_type startBlockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+            size_type startBlockIndexPressure = this->startSubBlockSpaceIndex("pressure");
             form2( _test=Xh, _trial=M_XhPressure, _matrix=A,
                    _rowstart=rowStartInMatrix,
                    _colstart=colStartInMatrix+startBlockIndexPressure ) +=
@@ -155,21 +155,61 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
     }
     //---------------------------------------------------------------------------------------//
     // discretisation acceleration term
-    if (!this->isStationary() && BuildNonCstPart_TransientForm2Term)
+    if ( !this->isStationary() )
     {
-        form2( _test=Xh, _trial=Xh, _matrix=A )  +=
-            integrate( _range=elements(mesh),
-                       _expr= this->timeStepNewmark()->polySecondDerivCoefficient()*idv(rho)*inner(idt(u),id(v)),
-                       _geomap=this->geomap() );
-    }
-    //---------------------------------------------------------------------------------------//
-    // discretisation acceleration term
-    if (!this->isStationary() && BuildNonCstPart_TransientForm1Term)
-    {
-        form1( _test=Xh, _vector=F ) +=
-            integrate( _range=elements(mesh),
-                       _expr= idv(rho)*inner(idv(this->timeStepNewmark()->polyDeriv()),id(v)),
-                       _geomap=this->geomap() );
+        if ( BuildNonCstPart_TransientForm2Term )
+        {
+            if ( !this->useMassMatrixLumped() )
+            {
+                form2( _test=Xh, _trial=Xh, _matrix=A )  +=
+                    integrate( _range=elements(mesh),
+                               _expr= this->timeStepNewmark()->polySecondDerivCoefficient()*idv(rho)*inner(idt(u),id(v)),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                A->close();
+                double thecoeff = this->timeStepNewmark()->polyDerivCoefficient();
+                if ( this->massMatrixLumped()->size1() == A->size1() )
+                    A->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
+                else
+                {
+                    auto vecAddDiagA = this->backend()->newVector( A->mapRowPtr() );
+                    auto uAddDiagA = M_XhDisplacement->element( vecAddDiagA, rowStartInVector );
+                    uAddDiagA = *M_vecDiagMassMatrixLumped;
+                    uAddDiagA.scale( thecoeff );
+                    A->addDiagonal( vecAddDiagA );
+                }
+            }
+        }
+        if ( BuildNonCstPart_TransientForm1Term )
+        {
+            auto polySecondDerivDisp = this->timeStepNewmark()->polySecondDeriv();
+            if ( !this->useMassMatrixLumped() )
+            {
+                form1( _test=Xh, _vector=F ) +=
+                    integrate( _range=elements(mesh),
+                               _expr= idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                if ( this->massMatrixLumped()->size1() == F->size() )
+                {
+                    auto myvec = this->backend()->newVector(M_XhDisplacement);
+                    *myvec = polySecondDerivDisp;
+                    F->close();
+                    F->addVector( myvec, this->massMatrixLumped() );
+                }
+                else
+                {
+                    F->close();
+                    auto uAddRhs = M_XhDisplacement->element( F, rowStartInVector );
+                    auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
+                    uAddRhs.add( 1., element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                }
+            }
+        }
     }
     //---------------------------------------------------------------------------------------//
     // source term
@@ -184,7 +224,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
         this->updateBCNeumannLinearPDE( F );
     }
     //---------------------------------------------------------------------------------------//
-
+#if 0
     if (this->markerNameFSI().size()>0)
     {
         // neumann boundary condition with normal stress (fsi boundary condition)
@@ -246,7 +286,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
 
         }
     }
-
+#endif
     //---------------------------------------------------------------------------------------//
 
     // robin condition (used in fsi blood flow as external tissue)

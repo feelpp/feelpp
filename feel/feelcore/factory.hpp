@@ -7,6 +7,7 @@
 
   Copyright (C) 2009 Université de Grenoble 1
   Copyright (C) 2004 EPFL
+  Copyright (C) 2011-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,18 +23,12 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file factory.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2004-10-04
- */
-#ifndef __factory_H
-#define __factory_H 1
+#ifndef FEELPP_FACTORY_HPP
+#define FEELPP_FACTORY_HPP 1
 
 #include <map>
 #include <stdexcept>
 #include <string>
-
 #include <functional>
 
 #include <feel/feelcore/feel.hpp>
@@ -101,13 +96,11 @@ struct FactoryDefaultError
 
   @author Christophe Prud'homme
 */
-template
-<
-class AbstractProduct,
-    typename IdentifierType,
-    typename ProductCreator = std::function<std::unique_ptr<AbstractProduct>()>,
-    template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
-     >
+template<class AbstractProduct,
+         typename IdentifierType,
+         typename ProductCreator = std::function<std::unique_ptr<AbstractProduct>()>,
+         template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
+         >
 class Factory
     :
 public FactoryErrorPolicy<IdentifierType,AbstractProduct>
@@ -121,7 +114,7 @@ public:
     typedef IdentifierType identifier_type;
     typedef AbstractProduct product_type;
     typedef ProductCreator creator_type;
-
+    using result_type=typename creator_type::result_type ;
     typedef FactoryErrorPolicy<identifier_type,product_type> super;
 
     //@}
@@ -171,7 +164,7 @@ public:
      *
      * @return the object associate with \c id
      */
-    std::unique_ptr<product_type> createObject( const identifier_type& id )
+    result_type createObject( const identifier_type& id )
     {
         typename id_to_product_type::const_iterator i = M_associations.find( id );
 
@@ -203,11 +196,10 @@ private:
 
   \author Christophe Prud'homme
 */
-template <
-class AbstractProduct,
-    class ProductCreator = boost::function<std::unique_ptr<AbstractProduct> ( const AbstractProduct* )>,
-      template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
-      >
+template <class AbstractProduct,
+          class ProductCreator = boost::function<std::unique_ptr<AbstractProduct> ( const AbstractProduct* )>,
+          template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
+          >
 class FactoryClone
     :
 public FactoryErrorPolicy<TypeInfo, AbstractProduct>

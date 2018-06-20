@@ -32,7 +32,7 @@
 
 #include <feel/feelpoly/functional.hpp>
 
-#include <feel/feelpoly/quadpoint.hpp>
+#include <feel/feelpoly/pointsetquadrature.hpp>
 #include <feel/feelpoly/im.hpp>
 
 namespace Feel
