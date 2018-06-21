@@ -1005,7 +1005,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
     }
     else if ( M_pdeType=="Hyper-Elasticity" )
     {
-        auto const sigma = Feel::vf::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
+        auto const sigma = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
         if ( !this->useDisplacementPressureFormulation() )
         {
             M_fieldNormalStressFromStruct->on( _range=range,
@@ -1014,7 +1014,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
         else
         {
             auto const& p = this->fieldPressure();
-            auto sigmaWithPressure = Feel::vf::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
+            auto sigmaWithPressure = Feel::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
             M_fieldNormalStressFromStruct->on( _range=range,
                                                _expr=sigmaWithPressure*vf::N() );
         }
@@ -1054,7 +1054,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
     }
     else if ( M_pdeType=="Hyper-Elasticity" )
     {
-        auto sigma = Feel::vf::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
+        auto sigma = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
         if ( !this->useDisplacementPressureFormulation() )
         {
             M_fieldStressTensor->on(_range=elements(this->mesh()),_expr=sigma );
@@ -1062,7 +1062,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
         else
         {
             auto const& p = this->fieldPressure();
-            auto sigmaWithPressure = Feel::vf::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
+            auto sigmaWithPressure = Feel::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
             M_fieldStressTensor->on(_range=elements(this->mesh()),_expr=sigmaWithPressure );
         }
 

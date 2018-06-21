@@ -77,7 +77,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             linearForm_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
                            //_expr= /*idv(*M_P0Rho)**/inner( Feel::vf::FSI::fluidMecConvection(u,*M_P0Rho) + idv(*M_P0Rho)*0.5*divv(u)*idv(u), id(v) ),
-                           _expr=inner( Feel::vf::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
+                           _expr=inner( Feel::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
                            _geomap=this->geomap() );
 
             /*if (this->isMoveDomain()  && !BuildCstPart && !UseJacobianLinearTerms)
@@ -94,7 +94,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 #if 0
             auto convecTerm = val( idv(rho)*trans( gradv(u)*idv(u) ))*id(v);
 #else
-            auto convecTerm = inner( Feel::vf::FeelModels::fluidMecConvection(u,rho),id(v) );
+            auto convecTerm = inner( Feel::FeelModels::fluidMecConvection(u,rho),id(v) );
 #endif
             linearForm_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
@@ -164,7 +164,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             }
             if ( BuildNonCstPart )
             {
-                auto const StressTensorExpr = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,false/*true*/);
+                auto const StressTensorExpr = Feel::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,false/*true*/);
                 // sigma : grad(v) on Omega
                 linearForm_PatternCoupled +=
                     integrate( _range=range,
