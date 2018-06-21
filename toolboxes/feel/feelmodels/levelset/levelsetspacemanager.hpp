@@ -77,7 +77,7 @@ public:
     typedef boost::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
 
     //--------------------------------------------------------------------//
-    // isoPN scalar spaces
+    // PN (iso) spaces
     typedef BasisPnType basis_scalar_PN_type;
     typedef FunctionSpace< mesh_type, bases<basis_scalar_PN_type>, Periodicity<periodicity_type> > space_scalar_PN_type;
     typedef boost::shared_ptr<space_scalar_PN_type> space_scalar_PN_ptrtype;
@@ -91,9 +91,28 @@ public:
     typedef boost::shared_ptr<element_vectorial_PN_type> element_vectorial_PN_ptrtype;
 
     //--------------------------------------------------------------------//
+    // High-order visu spaces
+    typedef Lagrange<1, Scalar, Continuous, PointSetFekete> basis_scalar_hovisu_type;
+    typedef FunctionSpace< mesh_type, bases<basis_scalar_hovisu_type> > space_scalar_hovisu_type;
+    typedef boost::shared_ptr<space_scalar_hovisu_type> space_scalar_hovisu_ptrtype;
+    typedef typename space_scalar_hovisu_type::element_type element_scalar_hovisu_type;
+    typedef boost::shared_ptr<element_scalar_hovisu_type> element_scalar_hovisu_ptrtype;
+
+    typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_hovisu_type>::type basis_vectorial_hovisu_type;
+    typedef FunctionSpace<mesh_type, bases<basis_vectorial_hovisu_type> > space_vectorial_hovisu_type;
+    typedef boost::shared_ptr<space_vectorial_hovisu_type> space_vectorial_hovisu_ptrtype;
+    typedef typename space_vectorial_hovisu_type::element_type element_vectorial_hovisu_type;
+    typedef boost::shared_ptr<element_vectorial_hovisu_type> element_vectorial_hovisu_ptrtype;
+
+    //--------------------------------------------------------------------//
     // Lagrange P1isoPn operators
     typedef OperatorLagrangeP1<space_scalar_PN_type> op_lagrangeP1_type;
     typedef boost::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
+
+    //--------------------------------------------------------------------//
+    // Lagrange P1hovisu operators
+    typedef OperatorLagrangeP1<space_scalar_hovisu_type> op_lagrangeP1_hovisu_type;
+    typedef boost::shared_ptr<op_lagrangeP1_hovisu_type> op_lagrangeP1_hovisu_ptrtype;
 
     //--------------------------------------------------------------------//
     // isoPN interpolation operators
@@ -118,6 +137,20 @@ public:
         space_vectorial_type // to space
         > op_interpolation_vectorial_from_PN_type;
     typedef boost::shared_ptr<op_interpolation_vectorial_from_PN_type> op_interpolation_vectorial_from_PN_ptrtype;
+
+    //--------------------------------------------------------------------//
+    // Hovisu interpolation operators
+    typedef OperatorInterpolation<
+        space_scalar_type, // from space
+        space_scalar_hovisu_type // to space
+        > op_interpolation_scalar_to_hovisu_type;
+    typedef boost::shared_ptr<op_interpolation_scalar_to_hovisu_type> op_interpolation_scalar_to_hovisu_ptrtype;
+
+    typedef OperatorInterpolation<
+        space_vectorial_type, // from space
+        space_vectorial_hovisu_type // to space
+        > op_interpolation_vectorial_to_hovisu_type;
+    typedef boost::shared_ptr<op_interpolation_vectorial_to_hovisu_type> op_interpolation_vectorial_to_hovisu_ptrtype;
 
     //--------------------------------------------------------------------//
     // Space markers P0
@@ -150,16 +183,21 @@ public:
     void createFunctionSpaceDefault();
     // Iso PN minimal function spaces
     void createFunctionSpaceIsoPN();
+
+    // Hovisu function spaces
+    void createFunctionSpaceHovisu();
     
     // Tensor2Symm function space
     void createFunctionSpaceTensor2Symm();
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
     mesh_ptrtype const& meshIsoPN() const { return M_meshIsoPN; }
+    mesh_ptrtype const& meshHovisu() const { return M_meshHovisu; }
 
     range_elements_type const& rangeMeshElements() { return M_rangeMeshElements; }
     range_elements_type const& rangeMeshPNElements() { return M_rangeMeshElements; }
     range_elements_type const& rangeMeshIsoPNElements() { return M_rangeMeshIsoPNElements; }
+    range_elements_type const& rangeMeshHovisu() { return M_rangeMeshHovisuElements; }
 
     space_scalar_ptrtype const& functionSpaceScalar() const { return M_spaceScalar; }
     space_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceVectorial; }
@@ -168,6 +206,8 @@ public:
     space_vectorial_PN_ptrtype const& functionSpaceVectorialPN() const { return M_spaceVectorialPN; }
     space_scalar_ptrtype const& functionSpaceScalarIsoPN() const { return M_spaceScalarIsoPN; }
     space_vectorial_ptrtype const& functionSpaceVectorialIsoPN() const { return M_spaceVectorialIsoPN; }
+    space_scalar_hovisu_ptrtype const& functionSpaceScalarHovisu() const { return M_spaceScalarHovisu; }
+    space_vectorial_hovisu_ptrtype const& functionSpaceVectorialHovisu() const { return M_spaceVectorialHovisu; }
     space_markers_ptrtype const& functionSpaceMarkersIsoPN() const { return M_spaceMarkersIsoPN; }
     space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const { return M_spaceTensor2Symm; }
 
@@ -175,6 +215,8 @@ public:
     op_interpolation_scalar_from_PN_ptrtype const& opInterpolationScalarFromPN() const { return M_opInterpolationScalarFromPN; }
     op_interpolation_vectorial_to_PN_ptrtype const& opInterpolationVectorialToPN() const { return M_opInterpolationVectorialToPN; }
     op_interpolation_vectorial_from_PN_ptrtype const& opInterpolationVectorialFromPN() const { return M_opInterpolationVectorialFromPN; }
+    op_interpolation_scalar_to_hovisu_ptrtype const& opInterpolationScalarToHovisu() const { return M_opInterpolationScalarToHovisu; }
+    op_interpolation_vectorial_to_hovisu_ptrtype const& opInterpolationVectorialToHovisu() const { return M_opInterpolationVectorialToHovisu; }
 
 private:
     std::vector<WorldComm> const& worldsComm() const { return M_worldsComm; }
@@ -184,10 +226,12 @@ private:
     // Meshes
     mesh_ptrtype M_mesh;
     mesh_ptrtype M_meshIsoPN;
+    mesh_ptrtype M_meshHovisu;
 
     // Ranges
     range_elements_type M_rangeMeshElements;
     range_elements_type M_rangeMeshIsoPNElements;
+    range_elements_type M_rangeMeshHovisuElements;
     //--------------------------------------------------------------------//
     // WorldsComm
     std::vector<WorldComm> M_worldsComm;
@@ -204,6 +248,9 @@ private:
     // PN function spaces
     space_scalar_PN_ptrtype M_spaceScalarPN;
     space_vectorial_PN_ptrtype M_spaceVectorialPN;
+    // Hovisu function spaces
+    space_scalar_hovisu_ptrtype M_spaceScalarHovisu;
+    space_vectorial_hovisu_ptrtype M_spaceVectorialHovisu;
     // IsoPN function spaces
     space_scalar_ptrtype M_spaceScalarIsoPN;
     space_vectorial_ptrtype M_spaceVectorialIsoPN;
@@ -211,14 +258,17 @@ private:
     // Tensor2Symm function space
     space_tensor2symm_ptrtype M_spaceTensor2Symm;
     //--------------------------------------------------------------------//
-    // Lagrange P1isoPN operators
+    // Lagrange P1 operators
     op_lagrangeP1_ptrtype M_opLagrangeP1isoPN;
+    op_lagrangeP1_hovisu_ptrtype M_opLagrangeP1Hovisu;
     //--------------------------------------------------------------------//
     // Interpolation operators
     op_interpolation_scalar_to_PN_ptrtype M_opInterpolationScalarToPN;
     op_interpolation_scalar_from_PN_ptrtype M_opInterpolationScalarFromPN;
     op_interpolation_vectorial_to_PN_ptrtype M_opInterpolationVectorialToPN;
     op_interpolation_vectorial_from_PN_ptrtype M_opInterpolationVectorialFromPN;
+    op_interpolation_scalar_to_hovisu_ptrtype M_opInterpolationScalarToHovisu;
+    op_interpolation_vectorial_to_hovisu_ptrtype M_opInterpolationVectorialToHovisu;
 };
 
 #define LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS \
@@ -373,6 +423,56 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
 
     M_functionSpaceCreated = true;
 }
+
+LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceHovisu()
+{
+    CHECK( M_spaceScalar ) << "M_spaceScalar must be built to build Hovisu function spaces\n";
+    CHECK( M_spaceVectorial ) << "M_spaceVectorial must be built to build Hovisu function spaces\n";
+
+    if( !M_meshHovisu )
+    {
+        M_opLagrangeP1Hovisu = lagrangeP1(
+                _space=this->M_spaceScalar,
+                _rebuild=!this->doRestart(),
+                _parallel=false
+                );
+        M_meshHovisu = M_opLagrangeP1Hovisu->mesh();
+        M_rangeMeshHovisuElements = elements( M_meshHovisu );
+    }
+    if( !M_spaceVectorialHovisu )
+    {
+        M_spaceVectorialHovisu = space_vectorial_type::New( 
+                _mesh=this->meshHovisu()
+                _worldscomm=this->worldsComm()
+                );
+    }
+    if( !M_spaceScalarHovisu )
+    {
+        M_spaceScalarHovisu = M_spaceVectorialHovisu->compSpace();
+    }
+
+    if( !M_opInterpolationScalarToHovisu )
+    {
+        M_opInterpolationScalarToHovisu = opInterpolation(
+                _domainSpace = M_spaceScalar,
+                _imageSpace = M_spaceScalarHovisu,
+                _type = InterpolationNonConforme(false, true, false, 15)
+                );
+    }
+    if( !M_opInterpolationVectorialToHovisu )
+    {
+        M_opInterpolationVectorialToHovisu = opInterpolation(
+                _domainSpace = M_spaceVectorial,
+                _imageSpace = M_spaceVectorialHovisu,
+                _type = InterpolationNonConforme(false, true, false, 15)
+                );
+    }
+
+    M_functionSpaceCreated = true;
+}
+
 
 LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
