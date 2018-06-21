@@ -12,7 +12,7 @@ namespace Feel
 namespace FeelModels
 {
 
-
+#if 0
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const
@@ -47,7 +47,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpdateLinear & da
         stabGLSParam->updateTau(uconv, kappa, rangeStabUsed);
         auto tau = idv(stabGLSParam->fieldTau());
 #elif 1
-        auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *this->stabilizationGLSParameter(),uconv, kappa );
+        auto tau = Feel::FeelModels::stabilizationGLSParameterExpr( *this->stabilizationGLSParameter(),uconv, kappa );
 #else
         static const uint16_type nStabGlsOrderPoly = (nOrderTemperature>1)? nOrderTemperature : 2;
         typedef StabilizationGLSParameter<mesh_type, nStabGlsOrderPoly> stab_gls_parameter_impl_type;
@@ -128,7 +128,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpdateLinear & da
         //}
 
 }
-
+#endif
 
 
 
@@ -272,6 +272,14 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
             }
         }
 
+
+        // update stabilization gls
+        if ( M_stabilizationGLS && buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
+        {
+            CHECK( !thermalConductivity.isMatrix() && thermalConductivity.isConstant() && rhoHeatCapacity.isConstant() ) << "NotImplemented";
+            this->updateLinearPDEStabilizationGLS(  cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(this->fieldVelocityConvection()),range,data );
+        }
+
     }
 
 #if 0
@@ -310,12 +318,6 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 #endif
 
     //--------------------------------------------------------------------------------------------------//
-
-    // update stabilization gls
-    if ( M_stabilizationGLS )
-    {
-        this->updateLinearPDEStabilizationGLS( data );
-    }
 
     // update source term
     this->updateLinearPDESourceTerm( F, buildCstPart );
@@ -483,6 +485,14 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                 }
             }
         }
+
+        // update stabilization gls
+        if ( M_stabilizationGLS && buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
+        {
+            CHECK( !thermalConductivity.isMatrix() && thermalConductivity.isConstant() && rhoHeatCapacity.isConstant() ) << "NotImplemented";
+            this->updateJacobianStabilizationGLS(  cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(this->fieldVelocityConvection()),range,data );
+        }
+
     }
 
     this->updateJacobianRobinBC( J,buildCstPart );
@@ -619,6 +629,14 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                 }
             }
         }
+
+        // update stabilization gls
+        if ( M_stabilizationGLS && buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
+        {
+            CHECK( !thermalConductivity.isMatrix() && thermalConductivity.isConstant() && rhoHeatCapacity.isConstant() ) << "NotImplemented";
+            this->updateResidualStabilizationGLS(  cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(this->fieldVelocityConvection()),range,data );
+        }
+
     }
 
 

@@ -613,15 +613,12 @@ HEAT_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::se
         hasFieldToExport = true;
     }
 
-    if ( fields.find( "velocity-convection" ) != fields.end() )
+    if ( fields.find( "velocity-convection" ) != fields.end() && this->fieldVelocityConvectionIsOperational() )
     {
-        if ( ( M_doExportVelocityConvection || M_doExportAll ) && this->fieldVelocityConvectionIsOperational() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
-                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-convection")),
-                                         this->fieldVelocityConvection() );
-            hasFieldToExport = true;
-        }
+        exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
+                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-convection")),
+                                     this->fieldVelocityConvection() );
+        hasFieldToExport = true;
     }
     if ( fields.find( "thermal-conductivity" ) != fields.end() )
     {
