@@ -170,7 +170,11 @@ public:
     typedef boost::shared_ptr<element_tensor2symm_type> element_tensor2symm_ptrtype;
 
 public:
-    LevelSetSpaceManager( mesh_ptrtype const& mesh );
+    LevelSetSpaceManager( 
+            mesh_ptrtype const& mesh,
+            std::string const& prefix = "",
+            std::string const& rootRepository = soption( _name="exporter.directory" )
+            );
 
     // Extended doftable
     bool buildExtendedDofTable() const { return M_buildExtendedDofTable; }
@@ -222,6 +226,8 @@ private:
     std::vector<WorldComm> const& worldsComm() const { return M_worldsComm; }
 
 private:
+    std::string M_prefix;
+    std::string M_rootRepository;
     //--------------------------------------------------------------------//
     // Meshes
     mesh_ptrtype M_mesh;
@@ -279,11 +285,17 @@ private:
         /**/
 
 LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::LevelSetSpaceManager( mesh_ptrtype const& mesh )
-    : M_mesh( mesh ),
-      M_worldsComm( std::vector<WorldComm>(1,mesh->worldComm()) ),
-      M_buildExtendedDofTable( false ),
-      M_functionSpaceCreated( false )
+LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::LevelSetSpaceManager( 
+        mesh_ptrtype const& mesh,
+        std::string const& prefix,
+        std::string const& rootRepository
+        ) :
+    M_mesh( mesh ),
+    M_prefix( prefix ),
+    M_rootRepository( rootRepository ),
+    M_worldsComm( std::vector<WorldComm>(1,mesh->worldComm()) ),
+    M_buildExtendedDofTable( false ),
+    M_functionSpaceCreated( false )
 {
     M_rangeMeshElements = elements( M_mesh );
 }
@@ -435,6 +447,8 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceHovisu()
     {
         M_opLagrangeP1Hovisu = lagrangeP1(
                 _space=this->M_spaceScalar,
+                _path=this->M_rootRepository,
+                _prefix=prefixvm( this->M_prefix, "hovisu" ),
                 _rebuild=!this->doRestart(),
                 _parallel=false
                 );
