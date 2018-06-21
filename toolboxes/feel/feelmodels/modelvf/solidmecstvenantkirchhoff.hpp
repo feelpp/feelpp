@@ -31,8 +31,6 @@
 
 namespace Feel
 {
-namespace vf
-{
 namespace FeelModels
 {
 /// \cond detail
@@ -782,6 +780,5 @@ stressStVenantKirchhoffJacobian( ElementType const& v, ElementLameCoeffType cons
 
 
 } // namespace FeelModels
-} // namespace vf
 } // namespace Feel
 #endif /* __SOLIDMECSTVENANTKIRCHHOFF_H */
