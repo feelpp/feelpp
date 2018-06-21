@@ -313,16 +313,6 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceDefault()
 {
-    if( !M_spaceScalar )
-    {
-        std::vector<bool> extendedDT( 1, M_buildExtendedDofTable );
-        M_spaceScalar = space_scalar_type::New( 
-                _mesh=this->mesh(), 
-                _worldscomm=this->worldsComm(),
-                _extended_doftable=extendedDT,
-                _periodicity=this->periodicity()
-                );
-    }
     if( !M_spaceVectorial )
     {
         M_spaceVectorial = space_vectorial_type::New( 
@@ -330,6 +320,23 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceDefault()
                 _worldscomm=this->worldsComm(),
                 _periodicity=this->periodicity()
                 );
+    }
+    if( !M_spaceScalar )
+    {
+        if( M_buildExtendedDofTable )
+        {
+            std::vector<bool> extendedDT( 1, M_buildExtendedDofTable );
+            M_spaceScalar = space_scalar_type::New( 
+                    _mesh=this->mesh(), 
+                    _worldscomm=this->worldsComm(),
+                    _extended_doftable=extendedDT,
+                    _periodicity=this->periodicity()
+                    );
+        }
+        else
+        {
+            M_spaceScalar = M_spaceVectorial->compSpace();
+        }
     }
     if( !M_spaceMarkers )
     {
@@ -352,16 +359,16 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
     {
         M_spaceScalarPN = space_scalar_PN_type::New( 
                 _mesh=this->mesh()
-                //_worldscomm=this->worldsComm(),
-                //_periodicity=this->periodicity()
+                _worldscomm=this->worldsComm(),
+                _periodicity=this->periodicity()
                 );
     }
     if( !M_spaceVectorialPN )
     {
         M_spaceVectorialPN = space_vectorial_PN_type::New( 
                 _mesh=this->mesh() 
-                //_worldscomm=this->worldsComm(),
-                //_periodicity=this->periodicity()
+                _worldscomm=this->worldsComm(),
+                _periodicity=this->periodicity()
                 );
     }
     if( !M_meshIsoPN )
@@ -377,26 +384,26 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
         std::vector<bool> extendedDT( 1, M_buildExtendedDofTable );
         M_spaceScalarIsoPN = space_scalar_type::New(
                 _mesh=this->meshIsoPN()
-                //_worldscomm=this->worldsComm(),
-                //_extended_doftable=extendedDT,
-                //_periodicity=this->periodicity()
+                _worldscomm=this->worldsComm(),
+                _extended_doftable=extendedDT,
+                _periodicity=this->periodicity()
                 );
     }
     if( !M_spaceVectorialIsoPN )
     {
         M_spaceVectorialIsoPN = space_vectorial_type::New( 
                 _mesh=this->meshIsoPN()
-                //_worldscomm=this->worldsComm(),
-                //_periodicity=this->periodicity()
+                _worldscomm=this->worldsComm(),
+                _periodicity=this->periodicity()
                 );
     }
     if( !M_spaceMarkersIsoPN )
     {
         M_spaceMarkersIsoPN = space_markers_type::New( 
                 _mesh=this->meshIsoPN()
-                //_worldscomm=this->worldsComm(),
-                //_periodicity=this->periodicity(),
-                //_extended_doftable=std::vector<bool>(1, true)
+                _worldscomm=this->worldsComm(),
+                _periodicity=this->periodicity(),
+                _extended_doftable=std::vector<bool>(1, true)
                 );
     }
 
