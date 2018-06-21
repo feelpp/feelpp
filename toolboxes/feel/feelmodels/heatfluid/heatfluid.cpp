@@ -522,6 +522,17 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
                 integrate( _range=range,
                            _expr= rhoValue*(beta*T0)*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
+
+            if ( M_heatModel->stabilizationGLS() )
+            {
+                auto const& thermalConductivity = M_heatModel->thermalProperties()->thermalConductivity( matName );
+                if ( thermalConductivity.isMatrix() )
+                    CHECK( false ) << "TODO";
+                else if ( thermalConductivity.isConstant() )
+                    M_heatModel->updateLinearPDEStabilizationGLS( cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(uConvection),range,data );
+                else
+                    CHECK( false ) << "TODO";
+            }
         }
 
     }
@@ -601,6 +612,17 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                            _expr= rhoValue*beta*idt(t)*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
 
+            if ( M_heatModel->stabilizationGLS() )
+            {
+                auto const& thermalConductivity = M_heatModel->thermalProperties()->thermalConductivity( matName );
+                if ( thermalConductivity.isMatrix() )
+                    CHECK( false ) << "TODO";
+                else if ( thermalConductivity.isConstant() )
+                    M_heatModel->updateJacobianStabilizationGLS( cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(u),range,data );
+                else
+                    CHECK( false ) << "TODO";
+            }
+
         }
     }
 
@@ -671,6 +693,19 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                 integrate( _range=range,
                            _expr= rhoValue*(beta*(idv(t)-T0))*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
+
+
+            if ( M_heatModel->stabilizationGLS() )
+            {
+                auto const& thermalConductivity = M_heatModel->thermalProperties()->thermalConductivity( matName );
+                if ( thermalConductivity.isMatrix() )
+                    CHECK( false ) << "TODO";
+                else if ( thermalConductivity.isConstant() )
+                    M_heatModel->updateResidualStabilizationGLS( cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(u),range,data );
+                else
+                    CHECK( false ) << "TODO";
+            }
+
         }
 
     }
