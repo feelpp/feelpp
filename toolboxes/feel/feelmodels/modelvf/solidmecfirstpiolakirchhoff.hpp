@@ -34,8 +34,6 @@
 
 namespace Feel
 {
-namespace vf
-{
 namespace FeelModels
 {
 
@@ -2460,6 +2458,5 @@ solidMecFirstPiolaKirchhoffTensorJacobian( ElementDisplacementType const& u,
 
 
 } // namespace FeelModels
-} // namespace vf
 } // namespace Feel
 #endif /* __SOLIDMEC_FIRSTPIOLAKIRCHHOFF_H */
