@@ -216,21 +216,30 @@ class Heat : public ModelNumerical,
         /*virtual*/ void solve();
 
         void updateLinearPDE( DataUpdateLinear & data ) const;
-        void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
+        //void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
         void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
         void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
         void updateLinearPDESourceTerm( vector_ptrtype& F, bool buildCstPart) const;
+        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
+        void updateLinearPDEStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
+                                              Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateLinear & data ) const;
 
         // non linear (newton)
         void updateNewtonInitialGuess( vector_ptrtype& U ) const;
         void updateJacobian( DataUpdateJacobian & data ) const;
         void updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool buildCstPart ) const;
         void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
+        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
+        void updateJacobianStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
+                                             Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateJacobian & data ) const;
         void updateResidual( DataUpdateResidual & data ) const;
         void updateResidualSourceTerm( vector_ptrtype& R, bool buildCstPart ) const;
         void updateResidualNeumannBC( vector_ptrtype& R, bool buildCstPart ) const;
         void updateResidualRobinBC( element_temperature_external_storage_type const& u, vector_ptrtype& R, bool buildCstPart ) const;
         void updateResidualDofElimination( DataUpdateResidual & data ) const;
+        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
+        void updateResidualStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
+                                             Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateResidual & data ) const;
 
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
@@ -302,5 +311,7 @@ class Heat : public ModelNumerical,
 
 } // namespace FeelModels
 } // namespace Feel
+
+#include <feel/feelmodels/heat/heatupdatestabilizationgls.hpp>
 
 #endif /* FEELPP_TOOLBOXES_HEAT_HPP */
