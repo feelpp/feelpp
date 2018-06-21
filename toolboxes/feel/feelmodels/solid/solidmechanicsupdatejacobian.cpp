@@ -85,7 +85,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         {
             if (!BuildCstPart)
             {
-                auto const dFS_neohookean = Feel::vf::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobian<3*(nOrderDisplacement-1)>(u,*this->mechanicalProperties());
+                auto const dFS_neohookean = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobian<3*(nOrderDisplacement-1)>(u,*this->mechanicalProperties());
                 bilinearForm_PatternCoupled +=
                     integrate (_range=elements(mesh),
                                //_expr= trace( (dF*val(Sv) + val(Fv)*dS)*trans(grad(v)) ),
@@ -98,7 +98,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         {
             if ( !BuildCstPart )
             {
-                auto const dFS_neohookean = Feel::vf::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobian<2*nOrderDisplacement>(u,*this->mechanicalProperties());
+                auto const dFS_neohookean = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobian<2*nOrderDisplacement>(u,*this->mechanicalProperties());
                 bilinearForm_PatternCoupled +=
                     integrate (_range=elements(mesh),
                                //_expr= trace(idv(coeffLame2)*dF*trans(grad(v)) ),
@@ -283,7 +283,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
 
     if (M_pdeType=="Hyper-Elasticity")
     {
-        auto pFmtNLa = Feel::vf::FeelModels::solidMecPressureFormulationMultiplierJacobianTrialPressure(u,p,*this->mechanicalProperties());
+        auto pFmtNLa = Feel::FeelModels::solidMecPressureFormulationMultiplierJacobianTrialPressure(u,p,*this->mechanicalProperties());
         form2( _test=M_XhDisplacement, _trial=M_XhPressure, _matrix=J,
                _rowstart=rowStartInMatrix,
                _colstart=colStartInMatrix+startBlockIndexPressure ) +=
@@ -292,7 +292,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
                         _geomap=this->geomap() );
 
         // -dF*idv(p) or -d(F*C^{-1})*idv(p)
-        auto pFmtNLb = /*-idv(p)**/Feel::vf::FeelModels::solidMecPressureFormulationMultiplierJacobianTrialDisp(u,p,*this->mechanicalProperties());
+        auto pFmtNLb = /*-idv(p)**/Feel::FeelModels::solidMecPressureFormulationMultiplierJacobianTrialDisp(u,p,*this->mechanicalProperties());
         form2( _test=M_XhDisplacement, _trial=M_XhDisplacement, _matrix=J,
                _rowstart=rowStartInMatrix,
                _colstart=colStartInMatrix ) +=
@@ -313,7 +313,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
 
     //--------------------------------------------------------------------------------------------//
 
-    auto detJm1 = Feel::vf::FeelModels::solidMecPressureFormulationConstraintJacobian(u,/*p,*/  *this->mechanicalProperties());
+    auto detJm1 = Feel::FeelModels::solidMecPressureFormulationConstraintJacobian(u,/*p,*/  *this->mechanicalProperties());
 
     form2( _test=M_XhPressure, _trial=M_XhDisplacement, _matrix=J,
            _rowstart=rowStartInMatrix+startBlockIndexPressure,
@@ -486,21 +486,21 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureJacobian( element_di
     {
         bilinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)) ,
-                       _expr= -expression(d)*inner(Feel::vf::FeelModels::solidMecGeomapEulerianJacobian(u)*N(),id(u) ),
+                       _expr= -expression(d)*inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*N(),id(u) ),
                        _geomap=this->geomap() );
     }
     for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
     {
         bilinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)) ,
-                       _expr= -inner(Feel::vf::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d),id(u) ),
+                       _expr= -inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d),id(u) ),
                        _geomap=this->geomap() );
     }
     for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
     {
         bilinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)) ,
-                       _expr= -inner(Feel::vf::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d)*N(),id(u) ),
+                       _expr= -inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d)*N(),id(u) ),
                        _geomap=this->geomap() );
     }
 }

@@ -172,7 +172,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
     auto uconv = idv(rho)*idv(betaU);
 #if 0
 #if 1
-    auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameter(), uconv, myViscosity );
+    auto tau = Feel::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameter(), uconv, myViscosity );
 #else
     static const uint16_type nStabGlsOrderPoly = (FluidMechanicsType::nOrderVelocity>1)? FluidMechanicsType::nOrderVelocity : 2;
     typedef StabilizationGLSParameter<typename FluidMechanicsType::mesh_type, nStabGlsOrderPoly> stab_gls_parameter_impl_type;
@@ -192,7 +192,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
         hasUpdatedTauForConvectionDiffusion = true;
         auto tau = idv(stabGLSParamConvectionDiffusion->fieldTau());
 #else
-        auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterConvectionDiffusion(), uconv, myViscosity );
+        auto tau = Feel::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterConvectionDiffusion(), uconv, myViscosity );
 #endif
         auto stab_test = stabGLStestLinearExpr_u( idv(rho),myViscosity,idv(betaU),u, mpl::int_<StabGLSType>() );
         if (!fluidmec.isStationaryModel())
@@ -245,7 +245,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
             stabGLSParamPressure->updateTau(uconv, myViscosity, rangeEltPressure);
         auto tau = idv(stabGLSParamPressure->fieldTau());
 #else
-        auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterPressure(), uconv, myViscosity );
+        auto tau = Feel::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterPressure(), uconv, myViscosity );
 #endif
 
         auto stab_test = -idv(rho)*trans(grad(p));
@@ -328,7 +328,7 @@ updateLinearPDEStabilizationGLSStokes( FluidMechanicsType const& fluidmec, Model
     stabGLSParamPressure->template updateTau<false>(uconv, mu, rangeEltPressure);
     auto tau = idv(stabGLSParamPressure->fieldTau());
 #else
-    auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr<false>( *fluidmec.stabilizationGLSParameterPressure(), uconv, mu );
+    auto tau = Feel::FeelModels::stabilizationGLSParameterExpr<false>( *fluidmec.stabilizationGLSParameterPressure(), uconv, mu );
 #endif
 
     auto stab_test = -rho*trans(grad(p));
@@ -421,7 +421,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         hasUpdatedTauForConvectionDiffusion = true;
         auto tau = idv(stabGLSParamConvectionDiffusion->fieldTau());
 #else
-        auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterConvectionDiffusion(), uconv, myViscosity );
+        auto tau = Feel::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterConvectionDiffusion(), uconv, myViscosity );
 #endif
         //auto stab_test = grad(u)*uconv - myViscosity*laplacian(u);
         auto stab_test = stabGLStestLinearExpr_u( idv(rho),myViscosity,idv(u),u, mpl::int_<StabGLSType>() );
@@ -466,7 +466,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
             stabGLSParamPressure->updateTau(uconv, myViscosity, rangeEltPressure);
         auto tau = idv(stabGLSParamPressure->fieldTau());
 #else
-        auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterPressure(), uconv, myViscosity );
+        auto tau = Feel::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterPressure(), uconv, myViscosity );
 #endif
 
         auto stab_test = -idv(rho)*trans(grad(p));
@@ -543,7 +543,7 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         hasUpdatedTauForConvectionDiffusion = true;
         auto tau = idv(stabGLSParamConvectionDiffusion->fieldTau());
 #else
-        auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterConvectionDiffusion(), uconv, myViscosity );
+        auto tau = Feel::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterConvectionDiffusion(), uconv, myViscosity );
 #endif
         auto stab_test = stabGLStestLinearExpr_u( idv(rho),myViscosity,idv(u),u, mpl::int_<StabGLSType>() );
         if (!fluidmec.isStationaryModel())
@@ -579,7 +579,7 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
             stabGLSParamPressure->updateTau(uconv, myViscosity, rangeEltPressure);
         auto tau = idv(stabGLSParamPressure->fieldTau());
 #else
-        auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterPressure(), uconv, myViscosity );
+        auto tau = Feel::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterPressure(), uconv, myViscosity );
 #endif
         auto stab_test = -idv(rho)*trans(grad(p));
         if ( !fluidmec.isStationaryModel() )
