@@ -58,7 +58,7 @@ public :
     template<bool HasConvectionExpr=true, bool HasCoeffDiffusionExpr=true, typename ExprConvectiontype, typename ExprCoeffDiffusionType, typename RangeType>
     void updateTau( ExprConvectiontype const& exprConvection, ExprCoeffDiffusionType const& exprCoeffDiffusion, RangeType const& RangeStab )
         {
-            auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr<HasConvectionExpr,HasCoeffDiffusionExpr>( *this, exprConvection, exprCoeffDiffusion );
+            auto tau = Feel::FeelModels::stabilizationGLSParameterExpr<HasConvectionExpr,HasCoeffDiffusionExpr>( *this, exprConvection, exprCoeffDiffusion );
             M_fieldTau->on(_range=RangeStab,_expr=tau);
         }
 
