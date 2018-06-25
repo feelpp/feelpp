@@ -164,6 +164,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     // stabilisation options
     M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
     M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
+    M_stabilizationGLSDoAssembly = true;
 
     M_applyCIPStabOnlyOnBoundaryFaces=false;
     M_doCIPStabConvection = boption(_name="stabilisation-cip-convection",_prefix=this->prefix());
