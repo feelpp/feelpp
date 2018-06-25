@@ -194,7 +194,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const
 {
-    this->updateResidualStabilisationGLS( data, U );
+    if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
+    {
+        auto rho = idv(this->materialProperties()->fieldRho());
+        //auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+        auto mu = idv(this->materialProperties()->fieldMu());
+
+        this->updateResidualStabilisationGLS( data, U, rho, mu, M_rangeMeshElements );
+    }
 
     using namespace Feel::vf;
 
@@ -374,7 +381,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
 {
     using namespace Feel::vf;
 
-    this->updateJacobianStabilisationGLS( data, U );
+    if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
+    {
+        auto rho = idv(this->materialProperties()->fieldRho());
+        //auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+        auto mu = idv(this->materialProperties()->fieldMu());
+
+        this->updateJacobianStabilisationGLS( data, U, rho, mu, M_rangeMeshElements );
+    }
 
     this->log("FluidMechanics","updateJacobianStabilisation", "start" );
     boost::mpi::timer thetimer;

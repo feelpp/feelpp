@@ -527,6 +527,7 @@ public :
     stab_gls_parameter_ptrtype const& stabilizationGLSParameterPressure() const { return M_stabilizationGLSParameterPressure; }
     range_elements_type const& stabilizationGLSEltRangeConvectionDiffusion() const { return M_stabilizationGLSEltRangeConvectionDiffusion; }
     range_elements_type const& stabilizationGLSEltRangePressure() const { return M_stabilizationGLSEltRangePressure; }
+    void setStabilizationGLSDoAssembly( bool b) { M_stabilizationGLSDoAssembly = b; }
 
     bool applyCIPStabOnlyOnBoundaryFaces() const { return M_applyCIPStabOnlyOnBoundaryFaces; }
     void applyCIPStabOnlyOnBoundaryFaces(bool b) { M_applyCIPStabOnlyOnBoundaryFaces=b; }
@@ -820,8 +821,14 @@ public :
 
     void updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianStabilisation( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
-    void updateResidualStabilisationGLS( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
-    void updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
+    template<typename DensityExprType, typename ViscosityExprType, typename... ExprT>
+    void updateResidualStabilisationGLS( DataUpdateResidual & data, element_fluid_external_storage_type const& U,
+                                         Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
+                                         range_elements_type const& range, const ExprT&... exprs ) const;
+    template<typename DensityExprType, typename ViscosityExprType, typename... ExprT>
+    void updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U,
+                                         Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
+                                         range_elements_type const& range, const ExprT&... exprs ) const;
     void updateJacobianWeakBC( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
     void updateResidualWeakBC( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
@@ -943,7 +950,7 @@ protected:
     bool M_startBySolveStokesStationary, M_hasSolveStokesStationaryAtKickOff;
     //----------------------------------------------------
     // stabilization
-    bool M_stabilizationGLS;
+    bool M_stabilizationGLS, M_stabilizationGLSDoAssembly;
     std::string M_stabilizationGLSType;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameterConvectionDiffusion;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameterPressure;
@@ -1245,6 +1252,7 @@ FLUIDMECHANICS_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMeshSlic
 } // namespace FeelModels
 } // namespace Feel
 
+#include <feel/feelmodels/fluid/fluidmechanicsupdatestabilisationgls.hpp>
 
 #endif /* FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP */
 
