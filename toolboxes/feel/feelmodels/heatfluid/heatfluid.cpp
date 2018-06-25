@@ -142,6 +142,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
     BlocksStencilPattern patCoupling2(M_fluidModel->functionSpace()->nSpaces,1,size_type(Pattern::ZERO));
     patCoupling2(0,0) = size_type(Pattern::COUPLED);
+    if ( M_fluidModel->stabilizationGLS() )
+        patCoupling2(1,0) = size_type(Pattern::COUPLED);
     myblockGraph(startIndexBlockFluid,startIndexBlockHeat) = stencil(_test=M_fluidModel->functionSpace(),
                                                                      _trial=M_heatModel->spaceTemperature(),
                                                                      _pattern_block=patCoupling2,
@@ -194,6 +196,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
     else
     {
+        M_fluidModel->setStabilizationGLSDoAssembly( false );
         if ( M_useSemiImplicitTimeScheme )
             M_fluidModel->setSolverName("Oseen");
     }
@@ -578,6 +581,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
         auto t = XhT->element(XVec, M_heatModel->rowStartInVector() );
         auto const& thermalProperties = M_heatModel->thermalProperties();
 
+        auto bfVPT = form2( _test=XhVP,_trial=XhT,_matrix=J,
+                            _rowstart=M_fluidModel->rowStartInMatrix(),
+                            _colstart=M_heatModel->colStartInMatrix() );
+
         for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
         {
             std::string const& matName = rangeData.first;
@@ -605,9 +612,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                            _expr= rhoHeatCapacityValue*(gradv(t)*idt(u))*id(t),
                            _geomap=this->geomap() );
 
-            form2( _test=XhVP,_trial=XhT,_matrix=J,
-                   _rowstart=M_fluidModel->rowStartInMatrix(),
-                   _colstart=M_heatModel->colStartInMatrix() ) +=
+            bfVPT +=
                 integrate( _range=range,
                            _expr= rhoValue*beta*idt(t)*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
@@ -621,6 +626,15 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                     M_heatModel->updateJacobianStabilizationGLS( cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(u),range,data );
                 else
                     CHECK( false ) << "TODO";
+            }
+
+            if ( M_fluidModel->stabilizationGLS() )
+            {
+                auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
+                //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+                auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
+                auto exprAddedInGLSResidual = rhoValue*beta*idt(t)*M_gravityForce;
+                M_fluidModel->updateJacobianStabilisationGLS( data, U, rhoF, mu, range, std::make_pair(bfVPT, exprAddedInGLSResidual) );
             }
 
         }
@@ -704,6 +718,15 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                     M_heatModel->updateResidualStabilizationGLS( cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(u),range,data );
                 else
                     CHECK( false ) << "TODO";
+            }
+
+            if ( M_fluidModel->stabilizationGLS() )
+            {
+                auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
+                //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+                auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
+                auto expraddedInGLSResidual = rhoValue*(beta*(idv(t)-T0))*M_gravityForce;
+                M_fluidModel->updateResidualStabilisationGLS( data, U, rhoF, mu, range, expraddedInGLSResidual );
             }
 
         }
