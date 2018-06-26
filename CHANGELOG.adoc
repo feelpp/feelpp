@@ -7,9 +7,9 @@
 :uri-issue: https://github.com/feelpp/feelpp/issues
 :uri-pull: https://github.com/feelpp/feelpp/pull
 
-[[v0.105.0-2018-06-xx]]
-== v0.105.0 (rc.1)
-// https://github.com/feelpp/feelpp/tree/v0.105.0[v0.105.0] (2018-06-07)
+[[v0.105.0-2018-06-20]]
+== v0.105.0
+https://github.com/feelpp/feelpp/tree/v0.105.0[v0.105.0] (2018-06-20)
 
 https://github.com/feelpp/feelpp/compare/v0.104.0...v0.105.0[Full Changelog]
 

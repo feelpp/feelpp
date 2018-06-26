@@ -742,6 +742,11 @@ macro ( feelpp_add_fmu )
 
     add_custom_command(TARGET feelpp_add_fmu_${OMWRAPPER_NAME}
       COMMAND ${CMAKE_COMMAND} -DOMC_COMPILER=${OMC_COMPILER} -DFMU_SCRIPT_NAME=${FMU_SCRIPT_NAME} -DOMWRAPPER_LIBDIR=${OMWRAPPER_LIBDIR} -DOMWRAPPER_NAME=${OMWRAPPER_NAME} -P "${OMWRAPPER_MACRO_DIR}/feelpp.macros.om.cmake" )
+
+    if ( OM_MODEL_CATEGORY )
+      install( DIRECTORY ${OMWRAPPER_LIBDIR}
+        DESTINATION share/feelpp/testcases/${OM_MODEL_CATEGORY} )
+    endif()
   endif()
 endmacro( feelpp_add_fmu )
 
