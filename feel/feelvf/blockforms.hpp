@@ -58,6 +58,16 @@ BlockBilinearForm<PS>
 blockform2( PS const& ps, solve::strategy s, BackendT&& b,
             size_type pattern = Pattern::COUPLED );
 
+template<typename PS, typename BackendT>
+BlockBilinearForm<PS>
+blockform2( PS&& ps, solve::strategy s, BackendT&& b,
+          std::vector<size_type> const& patterns  );
+
+template<typename PS, typename BackendT>
+BlockBilinearForm<PS>
+blockform2( PS const& ps, solve::strategy s, BackendT&& b,
+           std::vector<size_type> const& patterns );
+
 template<typename PS,typename T>
 BlockBilinearForm<PS>
 blockform2( PS&& ps, condensed_matrix_ptr_t<T> & m );
@@ -393,9 +403,9 @@ public :
 
             auto sc = M_matrix->sc();
 
-            auto S = form2( _test=e3.functionSpace(), _trial=e3.functionSpace(), _pattern=size_type(Pattern::HDG)  );
+            auto S = form2( _test=e1.functionSpace(), _trial=e1.functionSpace(), _pattern=size_type(Pattern::HDG)  );
             //MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
-            auto V = form1( _test=e3.functionSpace() );
+            auto V = form1( _test=e1.functionSpace() );
 
             tic();
             this->syncLocalMatrix();
@@ -507,7 +517,7 @@ public :
 
             auto sc = M_matrix->sc();
 
-            auto Th = product2( M_ps[3_c], ps[2_c], M_ps[4_c] );
+            auto Th = product2( M_ps[3_c], M_ps[2_c], M_ps[4_c] );
             std::vector<size_type> patterns = {Pattern::HDG,Pattern::HDG,Pattern::COUPLED,
                                                Pattern::HDG,Pattern::HDG,Pattern::ZERO,
                                                Pattern::COUPLED,Pattern::ZERO,Pattern::COUPLED};
@@ -532,8 +542,10 @@ public :
 
             solution(2_c)=U(0_c);
             for( int i = 0; i < Th[1_c]->numberOfSpaces(); ++i )
-                solution(3_c,i)=U(1_c,i);
-            solution(4_c) = U(4_c);
+                solution(3_c,i) = U(1_c,i);
+			// solution(4_c) = U(2_c);
+			for (int i = 0; i < Th[2_c]->numberOfSpaces(); ++i )
+            	solution(4_c,i) = U(2_c,i);
 #if 0
             S.matrixPtr()->printMatlab("S.m");
             V.vectorPtr()->printMatlab("g.m");
@@ -584,6 +596,13 @@ BlockBilinearForm<PS>
 blockform2( PS const& ps, solve::strategy s, BackendT&& b, size_type pattern )
 {
     return BlockBilinearForm<PS>( ps, s, std::forward<BackendT>(b), pattern );
+}
+
+template<typename PS, typename BackendT>
+BlockBilinearForm<PS>
+blockform2( PS const& ps, solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns )
+{
+    return BlockBilinearForm<PS>( ps, s, std::forward<BackendT>(b), patterns );
 }
 
 template<typename PS,typename T>
