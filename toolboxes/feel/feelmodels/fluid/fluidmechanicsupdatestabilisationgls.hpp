@@ -15,18 +15,42 @@ namespace FeelModels
 {
 namespace FluidMechanicsDetail
 {
-
+#if 0
 template<typename T1>
 auto
-addExpr( T1 const& t1 )
+addExpr( T1 const& t1, hana::tuple<> const& /**/ )
 {
     return t1;
 }
-template<typename T1,typename T2>
+template<typename T1,typename T2,typename... TOther>
 auto
-addExpr( T1 const& t1, T2 const& t2 )
+addExpr( T1 const& t1, hana::tuple<T2,TOther...> const& t2 )
 {
-    return t1+t2;
+    //return t1+t2;
+    return hana::at_c<0>( t2 ) + addExpr( t1, hana::remove_at_c<0>( t2 ) );
+}
+#endif
+
+enum FModel { Stokes=0, NavierStokes=1 };
+
+template<typename... Dummy>
+auto
+addExpr( hana::tuple<> const& /**/ )
+{
+    CHECK( false ) << "not allow";
+    return 0*one();
+}
+template<typename T1>
+auto
+addExpr( hana::tuple<T1> const& t )
+{
+    return hana::at_c<0>( t );
+}
+template<typename T1,typename T2,typename... TOther>
+auto
+addExpr( hana::tuple<T1,T2,TOther...> const& t )
+{
+    return hana::at_c<0>( t ) + addExpr( hana::remove_at_c<0>( t ) );
 }
 
 template<typename RhoExprType, typename ViscosityExprType, typename VelocityConvectionExprType, typename VelocityFieldType, typename FluidMechanicsType >
@@ -134,6 +158,197 @@ stabGLStestLinearExpr_u( RhoExprType const& rho, ViscosityExprType const& mu, Ve
                          VelocityFieldType const& u, mpl::int_<1> )
 {
     return rho*grad(u)*beta_u - mu*laplacian(u);
+}
+
+
+
+template< int FModelType, int StabGLSType,typename FluidMechanicsType, typename DensityExprType, typename ViscosityExprType, typename ConvectionExprType,
+          typename AdditionalRhsType, typename AdditionalMatType >
+void
+updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebraic::DataUpdateLinear & data,
+                                 Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu, Expr<ConvectionExprType> const& uconv,
+                                 typename FluidMechanicsType::range_elements_type const& range,
+                                 AdditionalRhsType const& addRhsTuple, AdditionalMatType const& addMatTuple )
+{
+    static const int StabResidualType = ( FluidMechanicsType::nOrderVelocity>1 )? 1 : 0;
+
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool buildCstPart = data.buildCstPart();
+    if ( buildCstPart )
+        return;
+    fluidmec.log("FluidMechanics","updateLinearPDEStabilizationGLS", "start" );
+
+    static const bool hasConvection = (FModelType == FModel::NavierStokes);
+
+    auto mesh = fluidmec.mesh();
+    auto Xh = fluidmec.functionSpace();
+    auto const& U = fluidmec.fieldVelocityPressure();
+    auto u = U.template element<0>();
+    auto v = U.template element<0>();
+    auto p = U.template element<1>();
+    auto q = U.template element<1>();
+
+    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
+                                              _pattern=size_type(Pattern::COUPLED),
+                                              _rowstart=fluidmec.rowStartInMatrix(),
+                                              _colstart=fluidmec.colStartInMatrix() );
+    auto myLinearForm = form1( _test=Xh, _vector=F,
+                               _rowstart=fluidmec.rowStartInVector() );
+
+    //auto uconv = rho*idv(betaU);
+    auto rhouconv = rho*uconv;
+
+    //AdditionalMatType addMatExprTuple = addMatTuple;
+    //auto addMatExprTuple = hana::make_tuple(addMatExpr...);
+
+    bool hasUpdatedTauForConvectionDiffusion = false;
+    if ( fluidmec.stabilizationGLSType() != "pspg" )
+    {
+        auto rangeEltConvectionDiffusion = fluidmec.stabilizationGLSEltRangeConvectionDiffusion();
+#if 0
+        typedef StabilizationGLSParameter<typename FluidMechanicsType::mesh_type, FluidMechanicsType::nOrderVelocity> stab_gls_parameter_impl_type;
+        auto stabGLSParamConvectionDiffusion =  std::dynamic_pointer_cast<stab_gls_parameter_impl_type>( fluidmec.stabilizationGLSParameterConvectionDiffusion() );
+        stabGLSParamConvectionDiffusion->updateTau(rhouconv, mu, rangeEltConvectionDiffusion);
+        hasUpdatedTauForConvectionDiffusion = true;
+        auto tau = idv(stabGLSParamConvectionDiffusion->fieldTau());
+#else
+        auto tauExpr = Feel::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterConvectionDiffusion(), rhouconv, mu, hasConvection );
+        auto tauFieldPtr = fluidmec.stabilizationGLSParameterConvectionDiffusion()->fieldTauPtr();
+        tauFieldPtr->on(_range=rangeEltConvectionDiffusion,_expr=tauExpr);
+        auto tau = idv(tauFieldPtr);
+#endif
+        auto stab_test = stabGLStestLinearExpr_u( rho,mu,uconv,u, mpl::int_<StabGLSType>() );
+        if (!fluidmec.isStationaryModel())
+        {
+            auto stab_residual_bilinear_u = residualTransientLinearExpr_u( rho,mu,uconv,u,fluidmec, mpl::int_<StabResidualType>() );
+            bilinearForm_PatternCoupled +=
+                integrate( _range=rangeEltConvectionDiffusion,
+                           _expr=tau*inner(stab_residual_bilinear_u,stab_test ),
+                           _geomap=fluidmec.geomap() );
+            auto rhsTimeDerivativeVP = fluidmec.timeStepBDF()->polyDeriv();
+            auto rhsTimeDerivative = rhsTimeDerivativeVP.template element<0>();
+            auto stab_residual_linear = rho*idv(rhsTimeDerivative);
+            myLinearForm +=
+                integrate( _range=rangeEltConvectionDiffusion,
+                           _expr= tau*inner(stab_residual_linear,stab_test ),
+                           _geomap=fluidmec.geomap() );
+        }
+        else
+        {
+            auto stab_residual_bilinear_u = residualStationaryLinearExpr_u( rho,mu,uconv,u,fluidmec, mpl::int_<StabResidualType>() );
+            bilinearForm_PatternCoupled +=
+                integrate( _range=rangeEltConvectionDiffusion,
+                           _expr=tau*inner(stab_residual_bilinear_u,stab_test ),
+                           _geomap=fluidmec.geomap() );
+        }
+        auto stab_residual_bilinear_p = trans(gradt(p));
+        bilinearForm_PatternCoupled +=
+            integrate( _range=rangeEltConvectionDiffusion,
+                       _expr=tau*inner(stab_residual_bilinear_p,stab_test ),
+                       _geomap=fluidmec.geomap() );
+
+        if ( hana::length( addRhsTuple ).value > 0 )
+        {
+            auto stab_residual_linear = addExpr( addRhsTuple );
+            myLinearForm +=
+                integrate( _range=rangeEltConvectionDiffusion,
+                           _expr= tau*inner(stab_residual_linear,stab_test ),
+                           _geomap=fluidmec.geomap() );
+        }
+        hana::for_each( addMatTuple, [&rangeEltConvectionDiffusion,&tau,&stab_test,&fluidmec]( auto e )
+                        {
+                            e.first +=
+                                integrate( _range=rangeEltConvectionDiffusion,
+                                           _expr=tau*inner(e.second,stab_test ),
+                                           _geomap=fluidmec.geomap() );
+                        });
+
+        // bodyforces
+        for( auto const& d : fluidmec.bodyForces() )
+        {
+            auto rangeBodyForceUsed = ( marker(d).empty() )? rangeEltConvectionDiffusion : intersect(markedelements(mesh,marker(d)),rangeEltConvectionDiffusion);
+            myLinearForm +=
+                integrate( _range=rangeBodyForceUsed,
+                           _expr=tau*inner(expression(d),stab_test),
+                           _geomap=fluidmec.geomap() );
+        }
+    }
+
+    if ( fluidmec.stabilizationGLSType() == "pspg" || fluidmec.stabilizationGLSType() == "supg-pspg" || fluidmec.stabilizationGLSType() == "gls" )
+    {
+        auto rangeEltPressure = fluidmec.stabilizationGLSEltRangePressure();
+
+#if 0
+        typedef StabilizationGLSParameter<typename FluidMechanicsType::mesh_type, FluidMechanicsType::nOrderPressure> stab_gls_parameter_impl_type;
+        auto stabGLSParamPressure =  std::dynamic_pointer_cast<stab_gls_parameter_impl_type>( fluidmec.stabilizationGLSParameterPressure() );
+        if ( ( FluidMechanicsType::nOrderPressure != FluidMechanicsType::nOrderVelocity ) || !hasUpdatedTauForConvectionDiffusion )
+            stabGLSParamPressure->updateTau(rhouconv, mu, rangeEltPressure);
+        auto tau = idv(stabGLSParamPressure->fieldTau());
+#else
+        auto tauExpr = Feel::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterPressure(), rhouconv, mu, hasConvection );
+        auto tauFieldPtr = fluidmec.stabilizationGLSParameterPressure()->fieldTauPtr();
+        tauFieldPtr->on(_range=rangeEltPressure,_expr=tauExpr);
+        auto tau = idv(tauFieldPtr);
+#endif
+
+        auto stab_test = -rho*trans(grad(p));
+        if ( !fluidmec.isStationaryModel() )
+        {
+            auto stab_residual_bilinear_u = residualTransientLinearExpr_u( rho,mu,uconv,u,fluidmec, mpl::int_<StabResidualType>() );
+            bilinearForm_PatternCoupled +=
+                integrate( _range=rangeEltPressure,
+                           _expr=tau*inner(stab_residual_bilinear_u,stab_test ),
+                           _geomap=fluidmec.geomap() );
+            auto rhsTimeDerivativeVP = fluidmec.timeStepBDF()->polyDeriv();
+            auto rhsTimeDerivative = rhsTimeDerivativeVP.template element<0>();
+            auto stab_residual_linear = rho*idv(rhsTimeDerivative);
+            myLinearForm +=
+                integrate( _range=rangeEltPressure,
+                           _expr= tau*inner(stab_residual_linear,stab_test ),
+                           _geomap=fluidmec.geomap() );
+        }
+        else
+        {
+            auto stab_residual_bilinear_u = residualStationaryLinearExpr_u( rho,mu,uconv,u,fluidmec, mpl::int_<StabResidualType>() );
+            bilinearForm_PatternCoupled +=
+                integrate( _range=rangeEltPressure,
+                           _expr=tau*inner(stab_residual_bilinear_u,stab_test ),
+                           _geomap=fluidmec.geomap() );
+        }
+        auto stab_residual_bilinear_p = trans(gradt(p));
+        bilinearForm_PatternCoupled +=
+            integrate( _range=rangeEltPressure,
+                       _expr=tau*inner(stab_residual_bilinear_p,stab_test ),
+                       _geomap=fluidmec.geomap() );
+
+        if ( hana::length( addRhsTuple ).value > 0 )
+        {
+            auto stab_residual_linear = addExpr( addRhsTuple );
+            myLinearForm +=
+                integrate( _range=rangeEltPressure,
+                           _expr= tau*inner(stab_residual_linear,stab_test ),
+                           _geomap=fluidmec.geomap() );
+        }
+        hana::for_each( addMatTuple, [&rangeEltPressure,&tau,&stab_test,&fluidmec]( auto e )
+                        {
+                            e.first +=
+                                integrate( _range=rangeEltPressure,
+                                           _expr=tau*inner(e.second,stab_test ),
+                                           _geomap=fluidmec.geomap() );
+                        });
+
+        // bodyforces
+        for( auto const& d : fluidmec.bodyForces() )
+        {
+            auto rangeBodyForceUsed = ( marker(d).empty() )? rangeEltPressure : intersect(markedelements(mesh,marker(d)),rangeEltPressure);
+            myLinearForm +=
+                integrate( _range=rangeBodyForceUsed,
+                           _expr=tau*inner(expression(d),stab_test),
+                           _geomap=fluidmec.geomap() );
+        }
+    }
+    fluidmec.log("FluidMechanics","updateLinearPDEStabilizationGLS", "finish" );
 }
 
 
@@ -312,7 +527,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
             auto const& rhsTimeDerivativeVP = fluidmec.timeStepBDF()->polyDeriv();
             auto rhsTimeDerivative = rhsTimeDerivativeVP.template element<0>();
             auto dudt = idv(u)*fluidmec.timeStepBDF()->polyDerivCoefficient(0) - idv(rhsTimeDerivative);
-            auto stab_residual_u = addExpr( residualTransientResidualExpr_u( rho,mu,idv(u),dudt,u,p,fluidmec, mpl::int_<StabResidualType>() ), exprs... );
+            auto stab_residual_u = addExpr( hana::make_tuple( residualTransientResidualExpr_u( rho,mu,idv(u),dudt,u,p,fluidmec, mpl::int_<StabResidualType>() ), exprs... ) );
             myLinearForm +=
                 integrate( _range=rangeEltConvectionDiffusion,
                            _expr=tau*inner(stab_residual_u,stab_test ),
@@ -320,7 +535,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         }
         else
         {
-            auto stab_residual_u = addExpr( residualStationaryResidualExpr_u( rho,mu,idv(u),u,p,fluidmec, mpl::int_<StabResidualType>() ), exprs... );
+            auto stab_residual_u = addExpr( hana::make_tuple( residualStationaryResidualExpr_u( rho,mu,idv(u),u,p,fluidmec, mpl::int_<StabResidualType>() ), exprs... ) );
             myLinearForm +=
                 integrate( _range=rangeEltConvectionDiffusion,
                            _expr=tau*inner(stab_residual_u,stab_test ),
@@ -360,7 +575,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
             auto const& rhsTimeDerivativeVP = fluidmec.timeStepBDF()->polyDeriv();
             auto rhsTimeDerivative = rhsTimeDerivativeVP.template element<0>();
             auto dudt = idv(u)*fluidmec.timeStepBDF()->polyDerivCoefficient(0) - idv(rhsTimeDerivative);
-            auto stab_residual_u = addExpr( residualTransientResidualExpr_u( rho,mu,idv(u),dudt,u,p,fluidmec, mpl::int_<StabResidualType>() ), exprs... );
+            auto stab_residual_u = addExpr( hana::make_tuple( residualTransientResidualExpr_u( rho,mu,idv(u),dudt,u,p,fluidmec, mpl::int_<StabResidualType>() ), exprs... ) );
             myLinearForm +=
                 integrate( _range=rangeEltPressure,
                            _expr=tau*inner(stab_residual_u,stab_test ),
@@ -368,7 +583,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         }
         else
         {
-            auto stab_residual_u = addExpr( residualStationaryResidualExpr_u( rho,mu,idv(u),u,p,fluidmec, mpl::int_<StabResidualType>() ), exprs... );
+            auto stab_residual_u = addExpr( hana::make_tuple( residualStationaryResidualExpr_u( rho,mu,idv(u),u,p,fluidmec, mpl::int_<StabResidualType>() ), exprs... ) );
             myLinearForm +=
                 integrate( _range=rangeEltPressure,
                            _expr=tau*inner(stab_residual_u,stab_test ),
@@ -389,6 +604,51 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
 }
 
 } // namespace FluidMechanicsDetail
+
+
+
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType>
+template<typename DensityExprType, typename ViscosityExprType, typename AdditionalRhsType, typename AdditionalMatType>
+void
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::updateLinearPDEStabilisationGLS( DataUpdateLinear & data,
+                                                                                                             Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
+                                                                                                             range_elements_type const& range,
+                                                                                                             AdditionalRhsType const& addRhsTuple, AdditionalMatType const& addMatTuple ) const
+{
+    if ( this->modelName() == "Navier-Stokes")
+    {
+
+        element_fluid_ptrtype fielCurrentPicardSolution;
+        if ( this->solverName() == "Picard" )
+        {
+            auto Xh = this->functionSpace();
+            const vector_ptrtype& vecCurrentPicardSolution = data.currentSolution();
+            fielCurrentPicardSolution = Xh->elementPtr();
+            *fielCurrentPicardSolution = *Xh->elementPtr(*vecCurrentPicardSolution, this->rowStartInVector() );
+        }
+        auto const& BetaU = ( this->solverName() == "Oseen" )? this->timeStepBDF()->poly() : *fielCurrentPicardSolution;
+        auto betaU = BetaU.template element<0>();
+        auto uconv = idv( betaU );
+
+        if ( ( this->stabilizationGLSType() == "supg" || this->stabilizationGLSType() == "supg-pspg" || this->stabilizationGLSType() == "pspg" ) ||
+             ( nOrderVelocity<=1 && ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" ) ) )
+        {
+            FluidMechanicsDetail::updateLinearPDEStabilizationGLS<FluidMechanicsDetail::FModel::NavierStokes,0>( *this, data, rho, mu, uconv, range, addRhsTuple, addMatTuple );
+        }
+        else if ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" )
+        {
+            FluidMechanicsDetail::updateLinearPDEStabilizationGLS<FluidMechanicsDetail::FModel::NavierStokes,1>( *this, data, rho, mu, uconv, range, addRhsTuple, addMatTuple );
+        }
+    }
+    else if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
+    {
+        auto uconv = zero<nRealDim,1>();
+        if ( this->stabilizationGLSType() == "pspg" || ( nOrderVelocity<=1 && ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" ) ) )
+            FluidMechanicsDetail::updateLinearPDEStabilizationGLS<FluidMechanicsDetail::FModel::Stokes,0>( *this, data, rho, mu, uconv, range, addRhsTuple, addMatTuple );
+        else if ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" )
+            FluidMechanicsDetail::updateLinearPDEStabilizationGLS<FluidMechanicsDetail::FModel::Stokes,1>( *this, data, rho, mu, uconv, range, addRhsTuple, addMatTuple );
+    }
+}
 
 
 

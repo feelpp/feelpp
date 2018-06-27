@@ -841,7 +841,9 @@ public :
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
-    void updateLinearPDEStabilisationGLS( DataUpdateLinear & data ) const;
+    template<typename DensityExprType, typename ViscosityExprType, typename AdditionalRhsType = hana::tuple<>, typename AdditionalMatType = hana::tuple<> >
+    void updateLinearPDEStabilisationGLS( DataUpdateLinear & data, Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu, range_elements_type const& range,
+                                          AdditionalRhsType const& addRhsTuple = hana::make_tuple(), AdditionalMatType const& addMatTuple = hana::make_tuple() ) const;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
 
     void updatePicard( DataUpdateLinear & data ) const;
