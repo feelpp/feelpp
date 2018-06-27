@@ -618,7 +618,7 @@ CRBSaddlePoint<TruthModelType>::correctionTerms(parameter_type const& mu, std::v
         boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = this->M_model->computeBetaQm( mu/* ,time*/);
     else
     {
-         if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
+         if ( this->M_useRbSpaceContextEim && this->M_hasRbSpaceContextEim )
              boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = this->M_model->computeBetaQm( uN[0], mu/*, N*/ );
          else
             boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
