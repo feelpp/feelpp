@@ -18,7 +18,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLinear & data ) const
 {
-    this->updateLinearPDEStabilisationGLS( data );
+    if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
+    {
+        auto rho = idv(this->materialProperties()->fieldRho());
+        //auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+        auto mu = idv(this->materialProperties()->fieldMu());
+
+        this->updateLinearPDEStabilisationGLS( data, rho, mu, M_rangeMeshElements );
+    }
 
     //using namespace Feel::vf;
     sparse_matrix_ptrtype& A = data.matrix();
