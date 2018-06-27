@@ -39,6 +39,8 @@ public :
                                                                       fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
                                                                       >::type >::type >::type index_vector_type;
 
+    static const bool is_composite = functionspace_type::is_composite;
+
     CvgStudy()
     {
         crb_model = boost::make_shared<crb_model_type>(crb::stage::offline);
@@ -61,6 +63,14 @@ public :
         auto mesh = crb_model->model()->functionSpace()->mesh();
         std::vector<std::vector<double>> output_error( size );
         std::vector<std::vector<double>> l2_error( size );
+        std::vector<std::vector<std::vector<double>>> l2_composite;
+
+        if ( is_composite )
+        {
+            l2_composite.resize( nb_spaces );
+            for ( int i=0; i<nb_spaces; i++ )
+                l2_composite[i].resize( size );
+        }
 
         sampling_ptrtype sampling( new sampling_type( crb_model->parameterSpace() ) );
         sampling->clear();
@@ -77,13 +87,23 @@ public :
             auto u_fem = crb_model->model()->solve( mu );
             double output_fem = crb_model->output( crb->outputIndex(), mu, u_fem );
             double u_l2 = l2Norm(u_fem);
+            vectorN_type l2_c;
+            if ( is_composite )
+            {
+                l2_c = l2Composite(u_fem);
+            }
             toc("FEM Solve");
 
             cout << std::setw(5) << "N"
                  << std::setw(25) << "outputFem"
                  << std::setw(25) << "outputRB"
                  << std::setw(25) << "outputError"
-                 << std::setw(25) << "l2Error\n";
+                 << std::setw(25) << "l2Error";
+            if ( is_composite )
+                for ( int k=0; k<nb_spaces; k++ )
+                    cout << std::setw(25) << "l2Error_"<<k;
+            cout << std::endl;
+
 
             for ( int n=1; n<=N; n++ )
             {
@@ -99,11 +119,23 @@ public :
                 auto u_diff = u_fem-u_rb;
                 l2_error[i].push_back( l2Norm(u_diff)/u_l2 );
 
+                vectorN_type diff_composite;
+                if ( is_composite )
+                {
+                    diff_composite = l2Composite(u_diff);
+                    for ( int k=0; k<nb_spaces; k++ )
+                        l2_composite[k][i].push_back( diff_composite(k)/l2_c(k) );
+                }
+
                 cout << std::setw(5) << n
                      << std::setw(25) << output_fem
                      << std::setw(25) << output_rb
                      << std::setw(25) << output_error[i][n-1]
-                     << std::setw(25) << l2_error[i][n-1] <<std::endl;
+                     << std::setw(25) << l2_error[i][n-1];
+                if ( is_composite )
+                    for ( int k=0; k<nb_spaces; k++ )
+                        cout << std::setw(25) << l2_composite[k][i][n-1];
+                cout<<std::endl;
             }
             cout << "==================================================\n";
             i++;
@@ -111,6 +143,9 @@ public :
 
         this->writeOnFile( l2_error, "l2");
         this->writeOnFile( output_error, "output");
+        if ( is_composite )
+            for ( int k=0; k<nb_spaces; k++ )
+                this->writeOnFile( l2_composite[k], "l2_"+std::to_string(k) );
     }
 
 
@@ -158,7 +193,6 @@ private :
 
     double l2Norm( element_type const& u )
         {
-            static const bool is_composite = functionspace_type::is_composite;
             return l2Norm( u, mpl::bool_< is_composite >() );
         }
     double l2Norm( element_type const& u, mpl::bool_<false> )
@@ -171,6 +205,14 @@ private :
             index_vector_type index_vector;
             fusion::for_each( index_vector, compute_normL2_in_composite_case );
             return compute_normL2_in_composite_case.norm();
+        }
+
+    vectorN_type l2Composite( element_type const& u )
+        {
+            ComputeNormL2InCompositeCase compute_normL2_in_composite_case( u );
+            index_vector_type index_vector;
+            fusion::for_each( index_vector, compute_normL2_in_composite_case );
+            return compute_normL2_in_composite_case.norms();
         }
 
     struct ComputeNormL2InCompositeCase
@@ -196,9 +238,10 @@ private :
             }
 
         double norm()
-            {
-                return M_vec.sum();
-            }
+            { return M_vec.sum(); }
+
+        vectorN_type const& norms()
+            { return M_vec; }
 
         mutable vectorN_type M_vec;
         element_type M_composite_u;
