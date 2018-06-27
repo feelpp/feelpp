@@ -536,6 +536,16 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
                 else
                     CHECK( false ) << "TODO";
             }
+            if ( M_fluidModel->stabilizationGLS() )
+            {
+                auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
+                //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+                auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
+                auto expraddedInGLSResidualLF = rhoValue*beta*T0*M_gravityForce;
+                auto exprAddedInGLSResidualBF = rhoValue*beta*idt(t)*M_gravityForce;
+                M_fluidModel->updateLinearPDEStabilisationGLS( data, rhoF, mu, range, hana::make_tuple(expraddedInGLSResidualLF),hana::make_tuple(std::make_pair(mybfVPT, exprAddedInGLSResidualBF)) );
+            }
+
         }
 
     }
