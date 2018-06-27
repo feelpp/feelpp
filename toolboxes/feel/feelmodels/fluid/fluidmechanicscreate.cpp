@@ -1006,13 +1006,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         if ( Environment::vm().count( prefixvm(this->prefix(),"stabilization-gls.convection-diffusion.location.expressions" ) ) )
         {
             std::string locationExpression = soption(_prefix=this->prefix(),_name="stabilization-gls.convection-diffusion.location.expressions");
-            M_stabilizationGLSEltRangeConvectionDiffusion = elements(this->mesh(),expr(locationExpression));
+            auto rangeStab = elements(this->mesh(),expr(locationExpression));
+            for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
+                M_stabilizationGLSEltRangeConvectionDiffusion[rangeData.first] = intersect( rangeStab, rangeData.second );
         }
         else
         {
-            M_stabilizationGLSEltRangeConvectionDiffusion = elements(this->mesh());
+            for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
+                M_stabilizationGLSEltRangeConvectionDiffusion[rangeData.first] = rangeData.second;
         }
-        M_stabilizationGLSEltRangePressure = elements(this->mesh());
+        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
+            M_stabilizationGLSEltRangePressure[rangeData.first] = rangeData.second;
     }
     //-------------------------------------------------//
     // init function defined in json
