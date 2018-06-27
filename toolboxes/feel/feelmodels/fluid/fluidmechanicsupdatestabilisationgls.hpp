@@ -152,8 +152,7 @@ template< int FModelType, int StabGLSType,typename FluidMechanicsType, typename 
 void
 updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebraic::DataUpdateLinear & data,
                                  Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu, Expr<ConvectionExprType> const& uconv,
-                                 typename FluidMechanicsType::range_elements_type const& range,
-                                 AdditionalRhsType const& addRhsTuple, AdditionalMatType const& addMatTuple )
+                                 std::string const& matName, AdditionalRhsType const& addRhsTuple, AdditionalMatType const& addMatTuple )
 {
     static const int StabResidualType = ( FluidMechanicsType::nOrderVelocity>1 )? 1 : 0;
 
@@ -186,7 +185,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
     bool hasUpdatedTauForConvectionDiffusion = false;
     if ( fluidmec.stabilizationGLSType() != "pspg" )
     {
-        auto rangeEltConvectionDiffusion = fluidmec.stabilizationGLSEltRangeConvectionDiffusion();
+        auto rangeEltConvectionDiffusion = fluidmec.stabilizationGLSEltRangeConvectionDiffusion( matName );
 #if 0
         typedef StabilizationGLSParameter<typename FluidMechanicsType::mesh_type, FluidMechanicsType::nOrderVelocity> stab_gls_parameter_impl_type;
         auto stabGLSParamConvectionDiffusion =  std::dynamic_pointer_cast<stab_gls_parameter_impl_type>( fluidmec.stabilizationGLSParameterConvectionDiffusion() );
@@ -258,8 +257,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
 
     if ( fluidmec.stabilizationGLSType() == "pspg" || fluidmec.stabilizationGLSType() == "supg-pspg" || fluidmec.stabilizationGLSType() == "gls" )
     {
-        auto rangeEltPressure = fluidmec.stabilizationGLSEltRangePressure();
-
+        auto rangeEltPressure = fluidmec.stabilizationGLSEltRangePressure( matName );
 #if 0
         typedef StabilizationGLSParameter<typename FluidMechanicsType::mesh_type, FluidMechanicsType::nOrderPressure> stab_gls_parameter_impl_type;
         auto stabGLSParamPressure =  std::dynamic_pointer_cast<stab_gls_parameter_impl_type>( fluidmec.stabilizationGLSParameterPressure() );
@@ -338,7 +336,7 @@ void
 updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebraic::DataUpdateJacobian & data,
                                 typename FluidMechanicsType::element_fluid_external_storage_type const& U,
                                 Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
-                                typename FluidMechanicsType::range_elements_type const& range, const ExprT&... exprs )
+                                std::string const& matName, const ExprT&... exprs )
 {
     static const int StabResidualType = ( FluidMechanicsType::nOrderVelocity>1 )? 1 : 0;
 
@@ -364,8 +362,7 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
     bool hasUpdatedTauForConvectionDiffusion = false;
     if ( fluidmec.stabilizationGLSType() != "pspg" )
     {
-        auto rangeEltConvectionDiffusion = fluidmec.stabilizationGLSEltRangeConvectionDiffusion();
-
+        auto rangeEltConvectionDiffusion = fluidmec.stabilizationGLSEltRangeConvectionDiffusion( matName );
 #if 0
         typedef StabilizationGLSParameter<typename FluidMechanicsType::mesh_type, FluidMechanicsType::nOrderVelocity> stab_gls_parameter_impl_type;
         auto stabGLSParamConvectionDiffusion =  std::dynamic_pointer_cast<stab_gls_parameter_impl_type>( fluidmec.stabilizationGLSParameterConvectionDiffusion() );
@@ -412,7 +409,7 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
 
     if ( fluidmec.stabilizationGLSType() == "pspg" || fluidmec.stabilizationGLSType() == "supg-pspg" || fluidmec.stabilizationGLSType() == "gls" )
     {
-        auto rangeEltPressure = fluidmec.stabilizationGLSEltRangePressure();
+        auto rangeEltPressure = fluidmec.stabilizationGLSEltRangePressure( matName );
 #if 0
         typedef StabilizationGLSParameter<typename FluidMechanicsType::mesh_type, FluidMechanicsType::nOrderPressure> stab_gls_parameter_impl_type;
         auto stabGLSParamPressure =  std::dynamic_pointer_cast<stab_gls_parameter_impl_type>( fluidmec.stabilizationGLSParameterPressure() );
@@ -467,7 +464,7 @@ void
 updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebraic::DataUpdateResidual & data,
                                 typename FluidMechanicsType::element_fluid_external_storage_type const& U,
                                 Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
-                                typename FluidMechanicsType::range_elements_type const& range, const ExprT&... exprs )
+                                std::string const& matName, const ExprT&... exprs )
 {
     fluidmec.log("FluidMechanics","updateResidualStabilizationGLS", "start" );
     static const int StabResidualType = ( FluidMechanicsType::nOrderVelocity>1 )? 1 : 0;
@@ -488,7 +485,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
     bool hasUpdatedTauForConvectionDiffusion = false;
     if ( fluidmec.stabilizationGLSType() != "pspg" )
     {
-        auto rangeEltConvectionDiffusion = fluidmec.stabilizationGLSEltRangeConvectionDiffusion();
+        auto rangeEltConvectionDiffusion = fluidmec.stabilizationGLSEltRangeConvectionDiffusion( matName );
 #if 0
         typedef StabilizationGLSParameter<typename FluidMechanicsType::mesh_type, FluidMechanicsType::nOrderVelocity> stab_gls_parameter_impl_type;
         auto stabGLSParamConvectionDiffusion =  std::dynamic_pointer_cast<stab_gls_parameter_impl_type>( fluidmec.stabilizationGLSParameterConvectionDiffusion() );
@@ -535,8 +532,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
 
     if ( fluidmec.stabilizationGLSType() == "pspg" || fluidmec.stabilizationGLSType() == "supg-pspg" || fluidmec.stabilizationGLSType() == "gls" )
     {
-        auto rangeEltPressure = fluidmec.stabilizationGLSEltRangePressure();
-
+        auto rangeEltPressure = fluidmec.stabilizationGLSEltRangePressure( matName );
 #if 0
         typedef StabilizationGLSParameter<typename FluidMechanicsType::mesh_type, FluidMechanicsType::nOrderPressure> stab_gls_parameter_impl_type;
         auto stabGLSParamPressure =  std::dynamic_pointer_cast<stab_gls_parameter_impl_type>( fluidmec.stabilizationGLSParameterPressure() );
@@ -593,7 +589,7 @@ template<typename DensityExprType, typename ViscosityExprType, typename Addition
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::updateLinearPDEStabilisationGLS( DataUpdateLinear & data,
                                                                                                              Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
-                                                                                                             range_elements_type const& range,
+                                                                                                             std::string const& matName,
                                                                                                              AdditionalRhsType const& addRhsTuple, AdditionalMatType const& addMatTuple ) const
 {
     if ( this->modelName() == "Navier-Stokes")
@@ -614,20 +610,20 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::upda
         if ( ( this->stabilizationGLSType() == "supg" || this->stabilizationGLSType() == "supg-pspg" || this->stabilizationGLSType() == "pspg" ) ||
              ( nOrderVelocity<=1 && ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" ) ) )
         {
-            FluidMechanicsDetail::updateLinearPDEStabilizationGLS<FluidMechanicsDetail::FModel::NavierStokes,0>( *this, data, rho, mu, uconv, range, addRhsTuple, addMatTuple );
+            FluidMechanicsDetail::updateLinearPDEStabilizationGLS<FluidMechanicsDetail::FModel::NavierStokes,0>( *this, data, rho, mu, uconv, matName, addRhsTuple, addMatTuple );
         }
         else if ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" )
         {
-            FluidMechanicsDetail::updateLinearPDEStabilizationGLS<FluidMechanicsDetail::FModel::NavierStokes,1>( *this, data, rho, mu, uconv, range, addRhsTuple, addMatTuple );
+            FluidMechanicsDetail::updateLinearPDEStabilizationGLS<FluidMechanicsDetail::FModel::NavierStokes,1>( *this, data, rho, mu, uconv, matName, addRhsTuple, addMatTuple );
         }
     }
     else if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
     {
         auto uconv = zero<nRealDim,1>();
         if ( this->stabilizationGLSType() == "pspg" || ( nOrderVelocity<=1 && ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" ) ) )
-            FluidMechanicsDetail::updateLinearPDEStabilizationGLS<FluidMechanicsDetail::FModel::Stokes,0>( *this, data, rho, mu, uconv, range, addRhsTuple, addMatTuple );
+            FluidMechanicsDetail::updateLinearPDEStabilizationGLS<FluidMechanicsDetail::FModel::Stokes,0>( *this, data, rho, mu, uconv, matName, addRhsTuple, addMatTuple );
         else if ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" )
-            FluidMechanicsDetail::updateLinearPDEStabilizationGLS<FluidMechanicsDetail::FModel::Stokes,1>( *this, data, rho, mu, uconv, range, addRhsTuple, addMatTuple );
+            FluidMechanicsDetail::updateLinearPDEStabilizationGLS<FluidMechanicsDetail::FModel::Stokes,1>( *this, data, rho, mu, uconv, matName, addRhsTuple, addMatTuple );
     }
 }
 
@@ -638,18 +634,18 @@ template<typename DensityExprType, typename ViscosityExprType, typename... ExprT
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U,
                                                                                                             Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
-                                                                                                            range_elements_type const& range, const ExprT&... exprs ) const
+                                                                                                            std::string const& matName, const ExprT&... exprs ) const
 {
     CHECK( this->modelName() == "Navier-Stokes") << "only implemented for Navier-Stokes";
 
     if ( ( this->stabilizationGLSType() == "supg" || this->stabilizationGLSType() == "supg-pspg" || this->stabilizationGLSType() == "pspg" ) ||
          ( nOrderVelocity<=1 && ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" ) ) )
     {
-        FluidMechanicsDetail::updateJacobianStabilizationGLS<0>( *this, data, U, rho, mu, range, exprs... );
+        FluidMechanicsDetail::updateJacobianStabilizationGLS<0>( *this, data, U, rho, mu, matName, exprs... );
     }
     else if ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" )
     {
-        FluidMechanicsDetail::updateJacobianStabilizationGLS<1>( *this, data, U, rho, mu, range, exprs... );
+        FluidMechanicsDetail::updateJacobianStabilizationGLS<1>( *this, data, U, rho, mu, matName, exprs... );
     }
 }
 
@@ -659,18 +655,18 @@ template<typename DensityExprType, typename ViscosityExprType, typename... ExprT
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::updateResidualStabilisationGLS( DataUpdateResidual & data, element_fluid_external_storage_type const& U,
                                                                                                             Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
-                                                                                                            range_elements_type const& range, const ExprT&... exprs ) const
+                                                                                                            std::string const& matName, const ExprT&... exprs ) const
 {
     CHECK( this->modelName() == "Navier-Stokes") << "only implemented for Navier-Stokes";
 
     if ( ( this->stabilizationGLSType() == "supg" || this->stabilizationGLSType() == "supg-pspg" || this->stabilizationGLSType() == "pspg" ) ||
          ( nOrderVelocity<=1 && ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" ) ) )
     {
-        FluidMechanicsDetail::updateResidualStabilizationGLS<0>( *this, data, U, rho, mu, range, exprs... );
+        FluidMechanicsDetail::updateResidualStabilizationGLS<0>( *this, data, U, rho, mu, matName, exprs... );
     }
     else if ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" )
     {
-        FluidMechanicsDetail::updateResidualStabilizationGLS<1>( *this, data, U, rho, mu, range, exprs... );
+        FluidMechanicsDetail::updateResidualStabilizationGLS<1>( *this, data, U, rho, mu, matName, exprs... );
     }
 }
 

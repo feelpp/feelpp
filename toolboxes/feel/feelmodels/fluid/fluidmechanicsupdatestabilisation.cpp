@@ -24,7 +24,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
         //auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
         auto mu = idv(this->materialProperties()->fieldMu());
 
-        this->updateLinearPDEStabilisationGLS( data, rho, mu, M_rangeMeshElements );
+        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
+            this->updateLinearPDEStabilisationGLS( data, rho, mu, rangeData.first );
     }
 
     //using namespace Feel::vf;
@@ -207,7 +208,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
         //auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
         auto mu = idv(this->materialProperties()->fieldMu());
 
-        this->updateResidualStabilisationGLS( data, U, rho, mu, M_rangeMeshElements );
+        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
+            this->updateResidualStabilisationGLS( data, U, rho, mu, rangeData.first );
     }
 
     using namespace Feel::vf;
@@ -393,8 +395,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
         auto rho = idv(this->materialProperties()->fieldRho());
         //auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
         auto mu = idv(this->materialProperties()->fieldMu());
-
-        this->updateJacobianStabilisationGLS( data, U, rho, mu, M_rangeMeshElements );
+        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
+            this->updateJacobianStabilisationGLS( data, U, rho, mu, rangeData.first );
     }
 
     this->log("FluidMechanics","updateJacobianStabilisation", "start" );

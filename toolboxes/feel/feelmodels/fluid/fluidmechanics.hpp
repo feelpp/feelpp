@@ -525,8 +525,18 @@ public :
     std::string const& stabilizationGLSType() const { return M_stabilizationGLSType; }
     stab_gls_parameter_ptrtype const& stabilizationGLSParameterConvectionDiffusion() const { return M_stabilizationGLSParameterConvectionDiffusion; }
     stab_gls_parameter_ptrtype const& stabilizationGLSParameterPressure() const { return M_stabilizationGLSParameterPressure; }
-    range_elements_type const& stabilizationGLSEltRangeConvectionDiffusion() const { return M_stabilizationGLSEltRangeConvectionDiffusion; }
-    range_elements_type const& stabilizationGLSEltRangePressure() const { return M_stabilizationGLSEltRangePressure; }
+    range_elements_type const& stabilizationGLSEltRangeConvectionDiffusion( std::string const& matName ) const
+        {
+            auto itFind = M_stabilizationGLSEltRangeConvectionDiffusion.find( matName );
+            CHECK( itFind != M_stabilizationGLSEltRangeConvectionDiffusion.end() ) << "not found with material matName";
+            return itFind->second;
+        }
+    range_elements_type const& stabilizationGLSEltRangePressure( std::string const& matName ) const
+        {
+            auto itFind = M_stabilizationGLSEltRangePressure.find( matName );
+            CHECK( itFind != M_stabilizationGLSEltRangePressure.end() ) << "not found with material matName";
+            return itFind->second;
+        }
     void setStabilizationGLSDoAssembly( bool b) { M_stabilizationGLSDoAssembly = b; }
 
     bool applyCIPStabOnlyOnBoundaryFaces() const { return M_applyCIPStabOnlyOnBoundaryFaces; }
@@ -824,11 +834,11 @@ public :
     template<typename DensityExprType, typename ViscosityExprType, typename... ExprT>
     void updateResidualStabilisationGLS( DataUpdateResidual & data, element_fluid_external_storage_type const& U,
                                          Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
-                                         range_elements_type const& range, const ExprT&... exprs ) const;
+                                         std::string const& matName, const ExprT&... exprs ) const;
     template<typename DensityExprType, typename ViscosityExprType, typename... ExprT>
     void updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U,
                                          Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
-                                         range_elements_type const& range, const ExprT&... exprs ) const;
+                                         std::string const& matName, const ExprT&... exprs ) const;
     void updateJacobianWeakBC( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
     void updateResidualWeakBC( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
@@ -842,7 +852,7 @@ public :
     void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
     template<typename DensityExprType, typename ViscosityExprType, typename AdditionalRhsType = hana::tuple<>, typename AdditionalMatType = hana::tuple<> >
-    void updateLinearPDEStabilisationGLS( DataUpdateLinear & data, Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu, range_elements_type const& range,
+    void updateLinearPDEStabilisationGLS( DataUpdateLinear & data, Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu, std::string const& matName,
                                           AdditionalRhsType const& addRhsTuple = hana::make_tuple(), AdditionalMatType const& addMatTuple = hana::make_tuple() ) const;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
 
@@ -956,8 +966,8 @@ protected:
     std::string M_stabilizationGLSType;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameterConvectionDiffusion;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameterPressure;
-    range_elements_type M_stabilizationGLSEltRangeConvectionDiffusion;
-    range_elements_type M_stabilizationGLSEltRangePressure;
+    std::map<std::string,range_elements_type> M_stabilizationGLSEltRangeConvectionDiffusion;
+    std::map<std::string,range_elements_type> M_stabilizationGLSEltRangePressure;
 
     bool M_applyCIPStabOnlyOnBoundaryFaces;
     // stabilisation available
