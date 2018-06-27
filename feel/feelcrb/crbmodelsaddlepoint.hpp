@@ -76,6 +76,8 @@ public :
         return false;
     }
 
+    int QTri() { return 0; }
+
     element_type supremizer( parameter_type const& mu, element_type const& U, int n_space ) override
     {
         auto Us = this->functionSpace()->element();
