@@ -593,7 +593,7 @@ csrGraphBlocks( PS&& ps,
     int nstatic = hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(hana::back(ps))>>{},
                             [s] (auto&& x ) { return s-hana::back(std::forward<decltype(x)>(x))->numberOfSpaces()+1; },
                             [s] (auto&& x ) { return s; } )( ps );
-    hana::for_each( cp, [&]( auto const& e )
+    hana::for_each( cp, [&]( auto const& e )           
                     {
                         int r = n/nstatic;
                         int c = n%nstatic;

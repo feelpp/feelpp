@@ -379,6 +379,133 @@ public:
     using element_ptrtype = boost::shared_ptr<element_type>;
 };
 
+template<typename T1, typename T2, typename... SpaceList>
+class ProductSpaces3 : public  hana::tuple<SpaceList...,boost::shared_ptr<ProductSpace<T1,true>>,boost::shared_ptr<ProductSpace<T2,true>>>, ProductSpacesBase
+{
+public:
+
+    using super = typename mpl::if_<mpl::is_void_<T1>,
+                                    mpl::identity<hana::tuple<SpaceList...>>,
+                                    mpl::identity<hana::tuple<SpaceList...,boost::shared_ptr<ProductSpace<T1,true>>,boost::shared_ptr<ProductSpace<T2,true>>>>
+                                    >::type::type ;//hana::if_(is_void(T),,>);
+
+    //using value_type = typename decay_type<decltype(super[0_c])>::value_type;
+    using value_type = double;
+    using functionspace_type = ProductSpaces3<T1,T2,SpaceList...>;
+    using mesh_type = typename decay_type<T1>::mesh_type;
+    using mesh_ptrtype = typename decay_type<T1>::mesh_ptrtype;
+
+    ProductSpaces3() = default;
+    ProductSpaces3( ProductSpaces3 const& ) = default;
+    ProductSpaces3( ProductSpaces3 && ) = default;
+    ProductSpaces3& operator=( ProductSpaces3 const& ) = default;
+    ProductSpaces3& operator=( ProductSpaces3 && ) = default;
+    ProductSpaces3( boost::shared_ptr<ProductSpace<T1,true>> const& p1,
+                    boost::shared_ptr<ProductSpace<T2,true>> const& p2, SpaceList... l ) : super( l..., p1, p2) {}
+    
+    int numberOfSpaces() const
+        {
+            return int(hana::size( *this ))+2*hana::back(*this)->numberOfSpaces()-2;
+        }
+
+    //! \return the total number of degrees of freedom
+    //size_type nDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nDof(); } ); }
+    //! \return the number of degrees of freedom owned by the process
+    //size_type nLocalDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nLocalDof(); } ); }
+
+    class Element : public BlocksBaseVector<double>, FunctionSpaceBase::ElementBase
+    {
+    public:
+        using super = BlocksBaseVector<double>;
+        static const int nspaces = sizeof...(SpaceList)+1;
+
+        Element() = default;
+        Element( Element const& ) = default;
+        Element( Element && ) = default;
+
+        Element& operator=( Element const& ) = default;
+        Element& operator=( Element && ) = default;
+
+        Element( functionspace_type& X ): super(X),  M_fspace(X) {}
+
+        template<typename N>
+        decltype(auto)
+            operator[]( N const& n1 ) const
+            {
+                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*((*this)(n1,0)));
+            }
+        template<typename N>
+        decltype(auto)
+            operator[]( N const& n1 )
+            {
+                return dynamic_cast<decltype(M_fspace[n1]->element()) &>(*((*this)(n1,0)));
+            }
+#if 0
+        template<typename N>
+        //decltype(auto)
+        auto const &
+            operator()( N const& n1, int i = 0 ) const
+            {
+                return hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(M_fspace[n1])>>{},
+                                 [&] (auto&& x, auto& s) {
+                                     return dynamic_cast<decltype((*s)[i]->element()) const&>(x);
+                                 },
+                                 [&] (auto&& x, auto& s){
+                                     return dynamic_cast<decltype(s->element()) const&>(x);
+                                 })(*(super::operator()(int(n1)+i,0)), M_fspace[n1] );
+
+            }
+#endif
+        template<typename N>
+        decltype(auto)
+            operator()( N const& n1, int i )
+            {
+                return dynamic_cast<decltype((*M_fspace[n1])[i]->element())&>(*super::operator()(int(n1)+i,0));
+            }
+        //!
+        //! \return the n-th element
+        //!
+        template<typename N>
+        decltype(auto)
+            operator()( N const& n1 )
+            {
+                return dynamic_cast<decltype(M_fspace[n1]->element())&>(*super::operator()(int(n1),0));
+            }
+        //!
+        //! \return the i-th element of the n-th dynamic function space product of the product space
+        //!
+        template<typename N>
+        decltype(auto)
+            operator()( N const& n1, int i ) const
+            {
+                return dynamic_cast<decltype((*M_fspace[n1])[i]->element()) const&>(*super::operator()(int(n1)+i,0));
+            }
+        //!
+        //! \return the n-th element
+        //!
+        template<typename N>
+        decltype(auto)
+            operator()( N const& n1 ) const
+            {
+                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*super::operator()(int(n1),0));
+            }
+        
+        functionspace_type& functionSpace() { return M_fspace; }
+        functionspace_type const& functionSpace() const { return M_fspace; }
+        template<typename N>
+        decltype(auto)  functionSpace( N const& n ) { return M_fspace[n]; }
+        template<typename N>
+        decltype(auto) functionSpace( N const& n ) const { return M_fspace[n]; }
+        //void zero() { super::zero(); }
+        functionspace_type& M_fspace;
+    };
+
+    Element element() { Element u( *this ); return u; }
+    boost::shared_ptr<Element> elementPtr() { return boost::make_shared<Element>( *this );  }
+    using element_type = Element;
+    using element_ptrtype = boost::shared_ptr<element_type>;
+};
+
 template<typename PS>
 constexpr auto is_product_spaces( PS&& ps )
 {
@@ -402,6 +529,13 @@ ProductSpaces2<T,SpaceList...>
 product2( boost::shared_ptr<ProductSpace<T,true>> const& ps, SpaceList... spaces )
 {
     return ProductSpaces2<T,SpaceList...>( ps, spaces... );
+}
+
+template<typename T1, typename T2, typename... SpaceList>
+ProductSpaces3<T1,T2,SpaceList...>
+product3( boost::shared_ptr<ProductSpace<T1,true>> const& ps1, boost::shared_ptr<ProductSpace<T2,true>> const& ps2, SpaceList... spaces )
+{
+    return ProductSpaces3<T1,T2,SpaceList...>( ps1, ps2, spaces... );
 }
 
 

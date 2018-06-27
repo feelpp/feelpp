@@ -144,6 +144,14 @@ public:
     void condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
                    std::enable_if_t<std::decay_t<E>::nspaces >= 4>* = nullptr );
 
+    template<typename DK, typename E, typename M_ptrtype, typename V_ptrtype>
+    void condense2( DK const& dK, boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
+                    std::enable_if_t<std::decay_t<E>::nspaces == 4>* = nullptr );
+
+    template<typename DK, typename E, typename M_ptrtype, typename V_ptrtype>
+    void condense2( DK const& dK, boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
+                    std::enable_if_t<std::decay_t<E>::nspaces == 5>* = nullptr );
+
     template<typename E>
     void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
                      std::enable_if_t<std::decay_t<E>::nspaces == 1>* = nullptr );
@@ -1475,39 +1483,8 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
             //V.vectorPtr()->printMatlab("g1.m");
             V(1_c,dK.spaceIndex()).addVector( dofs2.data(), dofs2.size(), DKF2.data(), invalid_size_type_value, invalid_size_type_value );
 
-#if 0
-            if ( std::decay_t<E>:nspaces == 5 )
-            {
-                auto const& A34 = M_local_matrices[std::make_pair(3,4)];
-                auto const& A43 = M_local_matrices[std::make_pair(4,3)];
-                auto const& A44 = M_local_matrices[std::make_pair(4,4)];
-                
-                auto const& V4 = rhs->M_local_vectors[4];
-
-                int n2 = 0;
-                std::for_each( dK.faces2().begin(), dK.faces2().end(), [&]( auto dKi )
-                               {
-                                   //std::cout << "face2 key.first=" << key.first << " dKi=" << dKi << std::endl;
-                                   auto key2 = std::make_pair(dKi, dKi);
-                                   
-                               });
-                auto dofs1 = e(3_c,dK.spaceIndex()).dofs(dK.faces2(),S.matrixPtr()->mapRow(),1);
-                auto dofs2 = e(4_c).dofs(dK.faces1(),S.matrixPtr()->mapRow(),0);
-                
-                
-                decltype(dofs1) dofs( dofs1.size()+dofs2.size() );
-                std::copy(dofs1.begin(), dofs1.end(), dofs.begin() );
-                std::copy(dofs2.begin(), dofs2.end(), dofs.begin()+dofs1.size() );
-                
-                S(3_c,4_c).addMatrix( dofs1.data(), dofs1.size(), dofs1.data(), dofs1.size(), A34.at(key).data(), invalid_size_type_value, invalid_size_type_value );
-                S(4_c,4_c).addMatrix( dofs1.data(), dofs1.size(), dofs1.data(), dofs1.size(), A44.at(key).data(), invalid_size_type_value, invalid_size_type_value );
-                S(4_c,3_c).addMatrix( dofs1.data(), dofs1.size(), dofs1.data(), dofs1.size(), A43.at(key).data(), invalid_size_type_value, invalid_size_type_value );
-
-                V(2_c,dK.spaceIndex()).addVector( dofs2.data(), dofs2.size(), V4.at(key).data(), invalid_size_type_value, invalid_size_type_value );
-                
-            }
-#endif
-            //V.vectorPtr()->printMatlab("g2.m");
+            condense2( dK, rhs, e, S, V );
+           //V.vectorPtr()->printMatlab("g2.m");
             toc("sc.condense.globalassembly", FLAGS_v>0);
 
         }
@@ -1515,6 +1492,77 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
     }
     M_nnz = S.nnz();
 }
+template<typename T>
+template<typename DK, typename E, typename M_ptrtype, typename V_ptrtype>
+void
+StaticCondensation<T>::condense2( DK const& dK, boost::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
+                                  std::enable_if_t<std::decay_t<E>::nspaces == 4>* ) 
+{
+
+}
+template<typename T>
+template<typename DK, typename E, typename M_ptrtype, typename V_ptrtype>
+void
+StaticCondensation<T>::condense2( DK const& dK, boost::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
+                                  std::enable_if_t<std::decay_t<E>::nspaces == 5>* ) 
+{
+    auto const& A34K = M_local_matrices[std::make_pair(3,4)];
+    auto const& A43K = M_local_matrices[std::make_pair(4,3)];
+    auto const& A44K = M_local_matrices[std::make_pair(4,4)];
+    
+    auto const& V4K = rhs->M_local_vectors[4];
+#if 0
+    A33 = local_matrix_t::Zero(N5,N5);
+    A32 = local_matrix_t::Zero(N5,N4);
+    A23 = local_matrix_t::Zero(N4,N5);
+    F3 = local_vector_t::Zero(N5);
+    
+    int n2 = 0;
+    std::for_each( dK.faces2().begin(), dK.faces2().end(), [&]( auto dKi )
+                   {
+                       std::cout << "face2 key.first=" << key.first << " dKi=" << dKi << std::endl;
+                       auto key2 = std::make_pair(dKi, dKi);
+                       if ( A34K.count(key2) )
+                           A34.block(N0,n*N2+n2*N42, N1, N42 ) = A13K.at(key2);
+                       //std::cout << "g BK=" << BK3 << std::endl;
+                       if ( A31K.count(key3) )
+                           CK.block(n*N2+n2*N42, N0, N42, N1 ) = A31K.at(key3);
+                       //std::cout << "f CK=" << CK << std::endl;
+                       if ( A33K.count(key4) )
+                           A22.block(n*N2+n2*N42, n*N2, N42, N42 ) = A33K.at(key4);
+                       
+                       if ( F3K.count(dKi) )
+                       {
+                           F2.segment(n*N2+n2*N42,N42)=F3K.at(dKi);
+                       }
+                       ++n2;
+                   });
+#endif
+    auto dofs1 = e(3_c,dK.spaceIndex()).dofs(dK.faces2(),S.matrixPtr()->mapRow(),1);
+    for (const auto& i: dofs1)
+        Feel::cout << i << ' ';
+    Feel::cout << "\n";
+    auto dofs2 = e(4_c,dK.spaceIndex()).dofs(dK.faces2(),S.matrixPtr()->mapRow(),0);
+    for (const auto& i: dofs2)
+        Feel::cout << i << ' ';
+    Feel::cout << "\n";
+    std::for_each( dK.faces2().begin(), dK.faces2().end(), [&]( auto dKi )
+                   {
+                       Feel::cout << "face2 dKi=" << dKi << std::endl;
+                       auto key = std::make_pair(dKi, dKi);
+                       Feel::cout << "A34(" << key.first << "):" << A34K.at(key) << "\n";
+                       Feel::cout << "A43(" << key.first << "):" << A43K.at(key) << "\n";
+                       Feel::cout << "A44(" << key.first << "):" << A44K.at(key) << "\n";
+                       Feel::cout << "V4(" << key.first << "):" << V4K.at(key) << "\n";
+                       
+                       S(1_c,2_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs1.data(), dofs1.size(), dofs2.data(), dofs2.size(), A34K.at(key).data(), invalid_size_type_value, invalid_size_type_value );
+                       S(2_c,2_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs2.data(), dofs2.size(), dofs2.data(), dofs2.size(), A44K.at(key).data(), invalid_size_type_value, invalid_size_type_value );
+                       S(2_c,1_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs2.data(), dofs2.size(), dofs1.data(), dofs1.size(), A43K.at(key).data(), invalid_size_type_value, invalid_size_type_value );
+
+                       V(2_c,dK.spaceIndex()).addVector( dofs2.data(), dofs2.size(), V4K.at(key).data(), invalid_size_type_value, invalid_size_type_value );
+                   });
+}
+
 template<typename E, typename T=double>
 struct LocalSolver
 {
