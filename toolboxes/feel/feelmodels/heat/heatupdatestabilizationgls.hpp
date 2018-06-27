@@ -5,8 +5,9 @@
 
 #include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
-#include <feel/feeldiscr/pchv.hpp>
-#include <feel/feeldiscr/pdh.hpp>
+//#include <feel/feeldiscr/pchv.hpp>
+//#include <feel/feeldiscr/pdh.hpp>
+#include <feel/feelmesh/intersect.hpp>
 
 namespace Feel
 {
@@ -75,7 +76,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( Expr<Rho
         }
         for( auto const& d : this->bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? M_rangeMeshElements : markedelements(mesh,marker(d));
+            auto rangeBodyForceUsed = ( marker(d).empty() )? range : intersect( markedelements(mesh,marker(d)),range );
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=tau*expression(d)*stab_test,
@@ -111,7 +112,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( Expr<Rho
         }
         for( auto const& d : this->bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? M_rangeMeshElements : markedelements(mesh,marker(d));
+            auto rangeBodyForceUsed = ( marker(d).empty() )? range : intersect( markedelements(mesh,marker(d)), range );
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=tau*expression(d)*stab_test,
@@ -254,7 +255,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( Expr<RhoC
         }
         for( auto const& d : this->bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? M_rangeMeshElements : markedelements(mesh,marker(d));
+            auto rangeBodyForceUsed = ( marker(d).empty() )? range : intersect( markedelements(mesh,marker(d)), range );
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=-tau*expression(d)*stab_test,
@@ -284,7 +285,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( Expr<RhoC
         }
         for( auto const& d : this->bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? M_rangeMeshElements : markedelements(mesh,marker(d));
+            auto rangeBodyForceUsed = ( marker(d).empty() )? range : intersect( markedelements(mesh,marker(d)), range );
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=-tau*expression(d)*stab_test,
