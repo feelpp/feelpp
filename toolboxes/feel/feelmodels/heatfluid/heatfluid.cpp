@@ -543,7 +543,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
                 auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
                 auto expraddedInGLSResidualLF = rhoValue*beta*T0*M_gravityForce;
                 auto exprAddedInGLSResidualBF = rhoValue*beta*idt(t)*M_gravityForce;
-                M_fluidModel->updateLinearPDEStabilisationGLS( data, rhoF, mu, range, hana::make_tuple(expraddedInGLSResidualLF),hana::make_tuple(std::make_pair(mybfVPT, exprAddedInGLSResidualBF)) );
+                M_fluidModel->updateLinearPDEStabilisationGLS( data, rhoF, mu, matName, hana::make_tuple(expraddedInGLSResidualLF),hana::make_tuple(std::make_pair(mybfVPT, exprAddedInGLSResidualBF)) );
             }
 
         }
@@ -644,7 +644,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                 //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
                 auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
                 auto exprAddedInGLSResidual = rhoValue*beta*idt(t)*M_gravityForce;
-                M_fluidModel->updateJacobianStabilisationGLS( data, U, rhoF, mu, range, std::make_pair(bfVPT, exprAddedInGLSResidual) );
+                M_fluidModel->updateJacobianStabilisationGLS( data, U, rhoF, mu, matName, std::make_pair(bfVPT, exprAddedInGLSResidual) );
             }
 
         }
@@ -736,7 +736,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                 //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
                 auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
                 auto expraddedInGLSResidual = rhoValue*(beta*(idv(t)-T0))*M_gravityForce;
-                M_fluidModel->updateResidualStabilisationGLS( data, U, rhoF, mu, range, expraddedInGLSResidual );
+                M_fluidModel->updateResidualStabilisationGLS( data, U, rhoF, mu, matName, expraddedInGLSResidual );
             }
 
         }
