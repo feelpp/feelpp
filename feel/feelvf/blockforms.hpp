@@ -55,8 +55,18 @@ blockform2( PS&& ps, solve::strategy s, BackendT&& b,
 
 template<typename PS, typename BackendT>
 BlockBilinearForm<PS>
+blockform2( PS&& ps, solve::strategy s, BackendT&& b,
+            std::vector<size_type> const& patterns );
+
+template<typename PS, typename BackendT>
+BlockBilinearForm<PS>
 blockform2( PS const& ps, solve::strategy s, BackendT&& b,
             size_type pattern = Pattern::COUPLED );
+
+template<typename PS, typename BackendT>
+BlockBilinearForm<PS>
+blockform2( PS const& ps, solve::strategy s, BackendT&& b,
+            std::vector<size_type> const& patterns );
 
 template<typename PS,typename T>
 BlockBilinearForm<PS>
@@ -387,15 +397,17 @@ public :
                        bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,3>,
                        std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
         {
+#if 0
             auto& e3 = solution(2_c);
             auto& e2 = solution(1_c);
             auto& e1 = solution(0_c);
 
             auto sc = M_matrix->sc();
 
-            auto S = form2( _test=e3.functionSpace(), _trial=e3.functionSpace(), _pattern=size_type(Pattern::HDG)  );
+            auto psS = product( e3.functionSpace() );
+            auto S = blockform2( psS, solve::strategy::monolithic, backend(), Pattern::HDG  );
             //MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
-            auto V = form1( _test=e3.functionSpace() );
+            auto V = blockform1( psS, solve::strategy::monolithic, backend() );
 
             tic();
             this->syncLocalMatrix();
@@ -428,7 +440,11 @@ public :
             e2.printMatlab("p1.m");
 #endif
 
+
             return r;
+#else
+            return {};
+#endif
         }
 
     //!
@@ -507,10 +523,10 @@ public :
 
             auto sc = M_matrix->sc();
 
-            auto Th = product2( M_ps[3_c], ps[2_c], M_ps[4_c] );
-            std::vector<size_type> patterns = {Pattern::HDG,Pattern::HDG,Pattern::COUPLED,
-                                               Pattern::HDG,Pattern::HDG,Pattern::ZERO,
-                                               Pattern::COUPLED,Pattern::ZERO,Pattern::COUPLED};
+            auto Th = product3( M_ps[3_c], M_ps[4_c], ps[2_c] );
+            std::vector<size_type> patterns = {Pattern::HDG,Pattern::HDG,Pattern::ZERO,
+                                               Pattern::HDG,Pattern::HDG,Pattern::COUPLED,
+                                               Pattern::ZERO,Pattern::COUPLED,Pattern::COUPLED};
             auto S = blockform2(Th, solve::strategy::monolithic, backend(), patterns);
             auto V = blockform1(Th, solve::strategy::monolithic, backend() );
             //MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
@@ -533,7 +549,8 @@ public :
             solution(2_c)=U(0_c);
             for( int i = 0; i < Th[1_c]->numberOfSpaces(); ++i )
                 solution(3_c,i)=U(1_c,i);
-            solution(4_c) = U(4_c);
+            for( int i = 0; i < Th[2_c]->numberOfSpaces(); ++i )
+                solution(4_c,i) = U(2_c,i);
 #if 0
             S.matrixPtr()->printMatlab("S.m");
             V.vectorPtr()->printMatlab("g.m");
@@ -581,9 +598,23 @@ blockform2( PS && ps, solve::strategy s, BackendT&& b, size_type pattern )
 
 template<typename PS, typename BackendT>
 BlockBilinearForm<PS>
+blockform2( PS && ps, solve::strategy s, BackendT&& b, std::vector<size_type>  const& patterns )
+{
+    return BlockBilinearForm<PS>( std::forward<PS>( ps ), s, std::forward<BackendT>(b), patterns );
+}
+
+template<typename PS, typename BackendT>
+BlockBilinearForm<PS>
 blockform2( PS const& ps, solve::strategy s, BackendT&& b, size_type pattern )
 {
     return BlockBilinearForm<PS>( ps, s, std::forward<BackendT>(b), pattern );
+}
+
+template<typename PS, typename BackendT>
+BlockBilinearForm<PS>
+blockform2( PS const& ps, solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns )
+{
+    return BlockBilinearForm<PS>( ps, s, std::forward<BackendT>(b), patterns );
 }
 
 template<typename PS,typename T>
