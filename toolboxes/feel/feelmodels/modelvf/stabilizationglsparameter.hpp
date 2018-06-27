@@ -63,11 +63,13 @@ private :
                 value_type norm_u_square = 0.;
                 for (uint16_type c=0;c<tensor_convection_type::shape::M;++c)
                     norm_u_square += math::pow(M_tensorConvection.evalq( c,0,q),2);
+#if 0
                 if ( norm_u_square < 1e-12 )
                 {
                     M_localMatrixInGeoContext[q](0,0) = 0.;
                     continue;
                 }
+#endif
 
                 value_type norm_u = math::sqrt( norm_u_square );
                 value_type evalCoeffDiffusion = M_tensorCoeffDiffusion.evalq(0,0,q);
