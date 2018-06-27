@@ -15,21 +15,6 @@ namespace FeelModels
 {
 namespace FluidMechanicsDetail
 {
-#if 0
-template<typename T1>
-auto
-addExpr( T1 const& t1, hana::tuple<> const& /**/ )
-{
-    return t1;
-}
-template<typename T1,typename T2,typename... TOther>
-auto
-addExpr( T1 const& t1, hana::tuple<T2,TOther...> const& t2 )
-{
-    //return t1+t2;
-    return hana::at_c<0>( t2 ) + addExpr( t1, hana::remove_at_c<0>( t2 ) );
-}
-#endif
 
 enum FModel { Stokes=0, NavierStokes=1 };
 
@@ -196,11 +181,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
     auto myLinearForm = form1( _test=Xh, _vector=F,
                                _rowstart=fluidmec.rowStartInVector() );
 
-    //auto uconv = rho*idv(betaU);
     auto rhouconv = rho*uconv;
-
-    //AdditionalMatType addMatExprTuple = addMatTuple;
-    //auto addMatExprTuple = hana::make_tuple(addMatExpr...);
 
     bool hasUpdatedTauForConvectionDiffusion = false;
     if ( fluidmec.stabilizationGLSType() != "pspg" )
