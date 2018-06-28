@@ -285,6 +285,9 @@ DEIMModel<ModelType,TensorType>::DEIMModel( model_ptrtype model, sampling_ptrtyp
     M_model( model ),
     M_tag( tag )
 {
+    this->M_online_model = model_ptrtype( new model_type() );
+    this->M_online_model->setModelOnlineDeim( prefixvm(this->M_prefix,"deim-online") );
+
     if ( !this->M_rebuild )
     {
         if ( this->loadDB() )
@@ -297,10 +300,6 @@ DEIMModel<ModelType,TensorType>::DEIMModel( model_ptrtype model, sampling_ptrtyp
     }
     else
         cout << "DEIM : option deim.rebuild-database=true : start greedy algorithm from beginning\n";
-
-    this->M_online_model = model_ptrtype( new model_type() );
-    this->M_online_model->setModelOnlineDeim( prefixvm(this->M_prefix,"deim-online") );
-
     if ( Rh )
         M_online_model->setFunctionSpaces( Rh );
     this->M_online_model->initOnlineModel();
