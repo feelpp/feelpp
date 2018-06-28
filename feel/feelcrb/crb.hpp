@@ -935,7 +935,7 @@ public:
      */
     void computeProjectionInitialGuess( const parameter_type & mu, int N , vectorN_type& initial_guess ) const ;
 
-    element_type& offlineSolve( parameter_type& mu );
+    element_type offlineSolve( parameter_type& mu );
 
     virtual void offlineSolve( element_type& u, element_type& udu, parameter_type& mu, element_ptrtype & dual_initial_field );
 
@@ -2142,7 +2142,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 }//offline fixed point
 
 template<typename TruthModelType>
-typename CRB<TruthModelType>::element_type&
+typename CRB<TruthModelType>::element_type
 CRB<TruthModelType>::offlineSolve( parameter_type& mu )
 {
     auto u = M_model->functionSpace()->element();
