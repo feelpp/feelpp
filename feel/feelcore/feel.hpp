@@ -172,6 +172,9 @@ using boost::format;
 
 using boost::unwrap_ref;
 
+bool filename_is_dot( fs::path const& p );
+bool filename_is_dot_dot( fs::path const& p );
+
 //! @cond
 namespace detail
 {
