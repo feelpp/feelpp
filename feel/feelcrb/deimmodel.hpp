@@ -285,6 +285,19 @@ DEIMModel<ModelType,TensorType>::DEIMModel( model_ptrtype model, sampling_ptrtyp
     M_model( model ),
     M_tag( tag )
 {
+    if ( !this->M_rebuild )
+    {
+        if ( this->loadDB() )
+            cout<<"DEIM : Database loaded with " << this->M_M << " basis functions\n";
+        else
+        {
+            cout <<"DEIM : No Database loaded : start greedy algorithm from beginning\n";
+            this->M_rebuild=true;
+        }
+    }
+    else
+        cout << "DEIM : option deim.rebuild-database=true : start greedy algorithm from beginning\n";
+
     this->M_online_model = model_ptrtype( new model_type() );
     this->M_online_model->setModelOnlineDeim( prefixvm(this->M_prefix,"deim-online") );
 

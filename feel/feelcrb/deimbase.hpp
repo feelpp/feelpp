@@ -503,18 +503,6 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, 
             this->setDBDirectory( dbfilenamePath.parent_path().string() );
     }
 
-    if ( !M_rebuild )
-    {
-        if ( this->loadDB() )
-            cout<<"DEIM : Database loaded with " << M_M << " basis functions\n";
-        else
-        {
-            cout <<"DEIM : No Database loaded : start greedy algorithm from beginning\n";
-            M_rebuild=true;
-        }
-    }
-    else
-        cout << "DEIM : option deim.rebuild-database=true : start greedy algorithm from beginning\n";
 
     LOG(INFO) <<"DEIMBase constructor end\n";
 } // DEIMBase Constructor
