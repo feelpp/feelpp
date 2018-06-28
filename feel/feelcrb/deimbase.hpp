@@ -815,7 +815,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::vectorMaxAbs( sparse_matrix_p
 
     std::pair<int,int> index (i_row,i_col);
     double max_eval=math::abs(evaluate(M,index));
-    DCHECK( max_eval==max ) << "evaluation of M(i,j)=" <<max_eval<<", maximum="<<max <<std::endl;
+    DCHECK( std::abs(max_eval-max)<1e-10 ) << "evaluation of M(i,j)=" <<max_eval<<", maximum="<<max <<std::endl;
 
     return boost::make_tuple( max, index );
 } // vectorMaxAbs for matrices
