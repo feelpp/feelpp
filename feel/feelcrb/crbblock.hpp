@@ -134,7 +134,10 @@ public:
             if ( M_subN[n_space].size()<N+1 )
             {
                 M_subN[n_space].resize(N+1);
-                M_subN[n_space][N]=0;
+                if ( N==0 )
+                    M_subN[n_space][N]=0;
+                else
+                    M_subN[n_space][N]=M_subN[n_space][N-1];
             }
             M_subN[n_space][N] += inc;
         }
