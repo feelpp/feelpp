@@ -1498,8 +1498,9 @@ void
 StaticCondensation<T>::condense2( DK const& dK, boost::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
                                   std::enable_if_t<std::decay_t<E>::nspaces == 4>* ) 
 {
-
+	Feel::cout << __LINE__ << std::endl;
 }
+
 template<typename T>
 template<typename DK, typename E, typename M_ptrtype, typename V_ptrtype>
 void

@@ -204,13 +204,13 @@ public:
     MixedElasticity( std::string const& prefix = "mixedelasticity",                   
                     WorldComm const& _worldComm = Environment::worldComm(),
                     std::string const& subPrefix = "",
-                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
-    
+					ModelBaseRepository const& modelRep = ModelBaseRepository() );   
+ 
     MixedElasticity( self_type const& ME ) = default;
     static self_ptrtype New( std::string const& prefix = "mixedelasticity",
                              WorldComm const& worldComm = Environment::worldComm(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() ); 
+							 ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
@@ -299,8 +299,8 @@ template<int Dim, int Order, int G_Order, int E_Order>
 MixedElasticity<Dim, Order, G_Order, E_Order>::MixedElasticity( std::string const& prefix,
         WorldComm const& worldComm,
         std::string const& subPrefix,
-        std::string const& rootRepository )
-: super_type( prefix, worldComm, subPrefix, rootRepository ) 
+        ModelBaseRepository const& modelRep )
+: super_type( prefix, worldComm, subPrefix, modelRep ) 
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedElasticity","constructor", "start",
             this->worldComm(),this->verboseAllProc());
@@ -452,9 +452,9 @@ template<int Dim, int Order, int G_Order, int E_Order>
 typename MixedElasticity<Dim,Order, G_Order, E_Order>::self_ptrtype
 MixedElasticity<Dim,Order,G_Order,E_Order>::New( std::string const& prefix,
                                          WorldComm const& worldComm, std::string const& subPrefix,
-                                         std::string const& rootRepository )
+                                         ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type> ( prefix,worldComm,subPrefix,rootRepository );
+    return boost::make_shared<self_type> ( prefix, worldComm, subPrefix, modelRep );
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -785,7 +785,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assemble()
     tic();
 	solve::strategy s = boption(prefixvm(prefix(), "use-sc"))?solve::strategy::static_condensation:solve::strategy::monolithic;
 
-    boost::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(M_backend,hdgNullSpace(M_Wh,mpl::int_<FEELPP_DIM>())) );
+    boost::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(M_backend,hdgNullSpace(M_Wh,mpl::int_<Dim>())) );
     M_backend->attachNearNullSpace( myNullSpace );
     if ( boption(_name=prefixvm( prefix(), "nullspace").c_str()) )
 	    M_backend->attachNearNullSpace( myNullSpace );
@@ -1228,269 +1228,255 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
          M_exporter->step( time )->setMesh( M_mesh );
     }
     
-     // Export computed solutions
-     auto postProcess = M_modelProperties->postProcess();
-     auto itField = postProcess.find( "Fields");
-     
-	 if ( itField != postProcess.end() )
-     {
-         for ( auto const& field : (*itField).second )
-         {
-            if ( field == "stress" )
-            {
-                LOG(INFO) << "exporting stress at time " << time;
+    // Export computed solutions 
+	for ( auto const& field : modelProperties()->postProcess().exports().fields() ) 
+	{ 
+    	if ( field == "stress" )
+        {
+       		LOG(INFO) << "exporting stress at time " << time;
 		
-                // Exporting the stress component by component
-                auto Sh = Pch<Order> (M_mesh);
-                auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
+           	// Exporting the stress component by component
+           	auto Sh = Pch<Order> (M_mesh);
+           	auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
 
-                auto SXX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::X, Component::X)) );
-                M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXX"), SXX );
+           	auto SXX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::X, Component::X)) );
+           	M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXX"), SXX );
 
-                if (Dim > 1)
-                {
-                    auto SYY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::Y, Component::Y)) );
-                    auto SXY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::X, Component::Y)) );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYY"), SYY );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXY"), SXY );
-                }
-                if (Dim > 2)
-                {            
-                    auto SZZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::Z, Component::Z)) );
-                    auto SYZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::Y, Component::Z)) );
-                    auto SXZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::X, Component::Z)) );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaZZ"), SZZ );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYZ"), SYZ );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXZ"), SXZ );
-                }
+           	if (Dim > 1)
+           	{
+            	auto SYY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::Y, Component::Y)) );
+               	auto SXY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::X, Component::Y)) );
+               	M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYY"), SYY );
+               	M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXY"), SXY );
+           	}
+           	if (Dim > 2)
+           	{            
+            	auto SZZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::Z, Component::Z)) );
+               	auto SYZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::Y, Component::Z)) );
+               	auto SXZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::X, Component::Z)) );
+               	M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaZZ"), SZZ );
+               	M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYZ"), SYZ );
+               	M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXZ"), SXZ );
+           	}
 
-         		// M_exporter->step(time)->add(prefixvm(M_prefix, "stress"), Idhv?(*Idhv)( M_up):M_up );
+           	// M_exporter->step(time)->add(prefixvm(M_prefix, "stress"), Idhv?(*Idhv)( M_up):M_up );
          
-               if (M_integralCondition)
+           	if (M_integralCondition)
+           	{
+		   		for( auto exAtMarker : this->M_IBCList)
                 {
-
-                    for( auto exAtMarker : this->M_IBCList)
-                    {
-                        std::vector<double> force_integral(Dim);
-                        auto marker = exAtMarker.marker();
-                        LOG(INFO) << "exporting integral flux at time "
-                                  << time << " on marker " << marker;
-                        auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                            _expr=trans(idv(M_up))*N());
-                    
-                        Feel::cout << "Force computed: " << std::endl;
-                        for( auto i=0;i < Dim;i++ )
-                        {
-                            std::string stringForce_help = (boost::format("integralForce_%1%")%i).str();
-                            force_integral[i] = j_integral.evaluate()(i,0);
-                            Feel::cout << force_integral[i] << std::endl;
-                            M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
-                        }
-                    }
-
-                }
-
-            }
-            else if ( M_mesh->hasFaceMarker(field) )
-            { 
-                auto marker = field;
-            	LOG(INFO) << "exporting computed force on " << marker << " at time " << time;
-                std::vector<double> force_integral(Dim);
-
-                auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                            _expr=trans(idv(M_up))*N());
-                    
-                Feel::cout << "Force computed: " << std::endl;
-                for( auto i=0;i < Dim;i++ )
-                {
-                    std::string stringForce_help = (boost::format("integralForce_%1%")%i).str();
-                    force_integral[i] = j_integral.evaluate()(i,0);
-                    Feel::cout << force_integral[i] << std::endl;
-                    M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
-                }
-            }
-            else if ( field == "scaled_displacement" )
-            {
-                auto scaled_displ = M_Wh->element("scaled_displacement");
-                for( auto const& pairMat : modelProperties()->materials() )
-                {
-                    auto marker = pairMat.first;
-                    auto material = pairMat.second;
-                    auto kk = material.getScalar( "scale_displacement" );
-
-                    scaled_displ.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_pp));
-                }
-
-                M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"),Idh?(*Idh)( scaled_displ):scaled_displ ) ;    	
-
-
-
-            }
-            else if ( field == "scaled_stress" )
-            {
-                auto scaled_stress = M_Vh->element("scaled_stress");
-                for( auto const& pairMat : modelProperties()->materials() )
-                {
-                    auto marker = pairMat.first;
-                    auto material = pairMat.second;
-                    auto kk = material.getScalar( "scale_stress" );
-
-                    scaled_stress.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_up));
-                }
+                    std::vector<double> force_integral(Dim);
+                    auto marker = exAtMarker.marker();
+                    LOG(INFO) << "exporting integral flux at time "
+                              << time << " on marker " << marker;
+                    auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+                                        _expr=trans(idv(M_up))*N());
                 
-                // Exporting the scaled stress component by component
-                auto Sh = Pch<Order> (M_mesh);
-                auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
-
-                auto SXX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::X, Component::X)) );
-                M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaXX"), SXX );
-
-                if (Dim > 1)
-                {
-                    auto SYY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::Y, Component::Y)) );
-                    auto SXY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::X, Component::Y)) );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaYY"), SYY );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaXY"), SXY );
-                }
-                if (Dim > 2)
-                {            
-                    auto SZZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::Z, Component::Z)) );
-                    auto SYZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::Y, Component::Z)) );
-                    auto SXZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::X, Component::Z)) );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaZZ"), SZZ );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaYZ"), SYZ );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaXZ"), SXZ );
-                }
-               
-                // Exporting scaled stress integral
-                if (M_integralCondition)
-                {
-                    for( auto exAtMarker : this->M_IBCList)
+                    Feel::cout << "Force computed: " << std::endl;
+                    for( auto i=0;i < Dim;i++ )
                     {
-                        std::vector<double> force_integral(Dim);
-                        auto marker = exAtMarker.marker();
-                        LOG(INFO) << "exporting scaled integral flux at time "
-                                  << time << " on marker " << marker;
-                        auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr=trans(idv(scaled_stress))*N());
-                    
-                        Feel::cout << "Force computed: " << std::endl;
-                        for( auto i=0;i < Dim;i++ )
-                        {
-                            std::string stringForce_help = (boost::format("scaled_integralForce_%1%")%i).str();
-                            force_integral[i] = j_integral.evaluate()(i,0);
-                            Feel::cout << force_integral[i] << std::endl;
-                            M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
-                        }
+                        std::string stringForce_help = (boost::format("integralForce_%1%")%i).str();
+                        force_integral[i] = j_integral.evaluate()(i,0);
+                        Feel::cout << force_integral[i] << std::endl;
+                        M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
                     }
-
                 }
+			}
 
+		}
+        else if ( M_mesh->hasFaceMarker(field) )
+        { 
+        	auto marker = field;
+        	LOG(INFO) << "exporting computed force on " << marker << " at time " << time;
+            std::vector<double> force_integral(Dim);
 
+            auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+                                        _expr=trans(idv(M_up))*N());
+                
+            Feel::cout << "Force computed: " << std::endl;
+            for( auto i=0;i < Dim;i++ )
+            {
+                std::string stringForce_help = (boost::format("integralForce_%1%")%i).str();
+                force_integral[i] = j_integral.evaluate()(i,0);
+                Feel::cout << force_integral[i] << std::endl;
+                M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
             }
-            else if ( field == "displacement" )
-        	{
-            	LOG(INFO) << "exporting displacement at time " << time;
-                M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"),Idh?(*Idh)( M_pp):M_pp ) ;    	
-                // Projecting on L2 space for continuity.
-                auto Sh = Pch<Order> (M_mesh);
-                auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
+        }
+        else if ( field == "scaled_displacement" )
+        {
+            auto scaled_displ = M_Wh->element("scaled_displacement");
+            for( auto const& pairMat : modelProperties()->materials() )
+            {
+                auto marker = pairMat.first;
+                auto material = pairMat.second;
+                auto kk = material.getScalar( "scale_displacement" );
 
-                auto UX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::X]) );     
-                M_exporter->step(time)->add(prefixvm(M_prefix, "UX"),UX ) ;  
-  	
-                if (Dim > 1)
+                scaled_displ.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_pp));
+            }
+
+            M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"),Idh?(*Idh)( scaled_displ):scaled_displ ) ;    	
+        }
+        else if ( field == "scaled_stress" )
+        {
+            auto scaled_stress = M_Vh->element("scaled_stress");
+            for( auto const& pairMat : modelProperties()->materials() )
+            {
+                auto marker = pairMat.first;
+                auto material = pairMat.second;
+                auto kk = material.getScalar( "scale_stress" );
+
+                scaled_stress.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_up));
+            }
+            
+            // Exporting the scaled stress component by component
+            auto Sh = Pch<Order> (M_mesh);
+            auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
+
+            auto SXX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::X, Component::X)) );
+            M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaXX"), SXX );
+
+            if (Dim > 1)
+            {
+                auto SYY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::Y, Component::Y)) );
+                auto SXY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::X, Component::Y)) );
+                M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaYY"), SYY );
+                M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaXY"), SXY );
+            }
+            if (Dim > 2)
+            {            
+                auto SZZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::Z, Component::Z)) );
+                auto SYZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::Y, Component::Z)) );
+                auto SXZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::X, Component::Z)) );
+                M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaZZ"), SZZ );
+                M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaYZ"), SYZ );
+                M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaXZ"), SXZ );
+            }
+           
+            // Exporting scaled stress integral
+            if (M_integralCondition)
+            {
+                for( auto exAtMarker : this->M_IBCList)
                 {
-                    auto UY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::Y]) );
-                    M_exporter->step(time)->add(prefixvm(M_prefix, "UY"),UY ) ;    	
+                    std::vector<double> force_integral(Dim);
+                    auto marker = exAtMarker.marker();
+                    LOG(INFO) << "exporting scaled integral flux at time "
+                              << time << " on marker " << marker;
+                    auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr=trans(idv(scaled_stress))*N());
+                
+                    Feel::cout << "Force computed: " << std::endl;
+                    for( auto i=0;i < Dim;i++ )
+                    {
+                        std::string stringForce_help = (boost::format("scaled_integralForce_%1%")%i).str();
+                        force_integral[i] = j_integral.evaluate()(i,0);
+                        Feel::cout << force_integral[i] << std::endl;
+                        M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
+                    }
                 }
-                if (Dim > 2)
-                {   
-                    auto UZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::Z]) );
-                    M_exporter->step(time)->add(prefixvm(M_prefix, "UZ"),UZ ) ;    	
-	            }
+            }
+        }
+        else if ( field == "displacement" )
+        {
+        	LOG(INFO) << "exporting displacement at time " << time;
+            M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"),Idh?(*Idh)( M_pp):M_pp ) ;    	
+            // Projecting on L2 space for continuity.
+            auto Sh = Pch<Order> (M_mesh);
+            auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
 
-				auto itField = M_modelProperties->boundaryConditions().find("ExactSolution");
- 				if ( itField != M_modelProperties->boundaryConditions().end() )
- 				{
- 		    		auto mapField = (*itField).second;
- 		    		auto itType = mapField.find( "u_exact" );
- 				    if (itType != mapField.end() )
- 				    {
- 						for (auto const& exAtMarker : (*itType).second )
- 						{
-    		    			if (exAtMarker.isExpression() )
- 			    			{		
-								auto u_exact = expr<Dim,1,expr_order> (exAtMarker.expression());
-								if ( !this->isStationary() )
-								    u_exact.setParameterValues( { {"t", time } } );
+            auto UX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::X]) );     
+            M_exporter->step(time)->add(prefixvm(M_prefix, "UX"),UX ) ;  
+  	
+            if (Dim > 1)
+            {
+                auto UY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::Y]) );
+                M_exporter->step(time)->add(prefixvm(M_prefix, "UY"),UY ) ;    	
+            }
+            if (Dim > 2)
+            {   
+                auto UZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::Z]) );
+                M_exporter->step(time)->add(prefixvm(M_prefix, "UZ"),UZ ) ;    	
+	        }
 
-								auto export_uEX = project(_quad=_Q<expr_order>(), _space=M_Wh, _range=elements( M_mesh ), _expr=u_exact);
-								M_exporter->step(time)->add(prefixvm(M_prefix, "u_exact"), Idh?(*Idh)( export_uEX): export_uEX );		
+			auto itField = M_modelProperties->boundaryConditions().find("ExactSolution");
+ 			if ( itField != M_modelProperties->boundaryConditions().end() )
+ 			{
+ 				auto mapField = (*itField).second;
+ 				auto itType = mapField.find( "u_exact" );
+ 			    if (itType != mapField.end() )
+ 			    {
+ 					for (auto const& exAtMarker : (*itType).second )
+ 					{
+    	    			if (exAtMarker.isExpression() )
+ 		    			{		
+							auto u_exact = expr<Dim,1,expr_order> (exAtMarker.expression());
+							if ( !this->isStationary() )
+							    u_exact.setParameterValues( { {"t", time } } );
+
+							auto export_uEX = project(_quad=_Q<expr_order>(), _space=M_Wh, _range=elements( M_mesh ), _expr=u_exact);
+							M_exporter->step(time)->add(prefixvm(M_prefix, "u_exact"), Idh?(*Idh)( export_uEX): export_uEX );		
+                            
+							auto l2err_u = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=u_exact - idv(M_pp) );
+						
+                            auto l2norm_uex = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=u_exact );
+							if (l2norm_uex < 1)
+								l2norm_uex = 1.0;	
+                            
+							cout << "----- Computed Errors -----" << std::endl;
+							// cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
+							cout << "||u-u_ex||_L2=\t" << l2err_u << std::endl;
+							// Export the errors
+							M_exporter -> step( time )->add(prefixvm(M_prefix, "u_error_L2"), l2err_u/l2norm_uex );
+						    //------ Sigma 	------//
+							auto gradu_exact = grad(u_exact);
+							auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
+							for( auto const& pairMat : M_modelProperties->materials() )
+							{
+								auto material = pairMat.second;
+								auto lambda = material.getScalar("lambda");
+								auto mu = material.getScalar("mu");
+								auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
+
+								// EXPORT SIGMA EXACT
+                                auto export_sigmaEX = project(_quad=_Q<expr_order>(), _space=M_Vh, _range=elements(M_mesh), _expr=sigma_exact); 
+			
+                                auto Sh = Pch<Order> (M_mesh);
+                                auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
                                 
-								auto l2err_u = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=u_exact - idv(M_pp) );
-							
-                                auto l2norm_uex = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=u_exact );
-								if (l2norm_uex < 1)
-									l2norm_uex = 1.0;	
+                                auto SXX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::X, Component::X)) );
+                                M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXX"), SXX );
                                 
-								cout << "----- Computed Errors -----" << std::endl;
-								// cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
-								cout << "||u-u_ex||_L2=\t" << l2err_u << std::endl;
+                                if (Dim > 1)
+                                {
+                                    auto SYY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::Y, Component::Y)) );
+                                    auto SXY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::X, Component::Y)) );
+                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactYY"), SYY );
+                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXY"), SXY );
+                                }
+                                if (Dim > 2)
+                                {
+                                    auto SYZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::Y, Component::Z)) );
+                                    auto SXZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::X, Component::Z)) );
+                                    auto SZZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::Z, Component::Z)) );
+                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactZZ"), SZZ );
+                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactYZ"), SYZ );
+                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXZ"), SXZ );
+                                }
+
+            					// M_exporter->add(prefixvm(M_prefix, "sigma_exact"), Idhv?(*Idhv)( export_sigmaEX): export_sigmaEX );
+
+								auto l2err_sigma = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=sigma_exact - idv(M_up) );
+								auto l2norm_sigmaex = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=sigma_exact );
+								if (l2norm_sigmaex < 1)
+									l2norm_sigmaex = 1.0;		
+								cout << "||sigma-sigma_ex||_L2=\t" << l2err_sigma/l2norm_sigmaex << std::endl;
+								cout << "---------------------------" << std::endl;
 								// Export the errors
-								M_exporter -> step( time )->add(prefixvm(M_prefix, "u_error_L2"), l2err_u/l2norm_uex );
-							    //------ Sigma 	------//
-								auto gradu_exact = grad(u_exact);
-								auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
-								for( auto const& pairMat : M_modelProperties->materials() )
-								{
-									auto material = pairMat.second;
-									auto lambda = material.getScalar("lambda");
-									auto mu = material.getScalar("mu");
-									auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
-
-									// EXPORT SIGMA EXACT
-                                    auto export_sigmaEX = project(_quad=_Q<expr_order>(), _space=M_Vh, _range=elements(M_mesh), _expr=sigma_exact); 
-				
-                                    auto Sh = Pch<Order> (M_mesh);
-                                    auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
-                                    
-                                    auto SXX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::X, Component::X)) );
-                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXX"), SXX );
-                                    
-                                    if (Dim > 1)
-                                    {
-                                        auto SYY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::Y, Component::Y)) );
-                                        auto SXY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::X, Component::Y)) );
-                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactYY"), SYY );
-                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXY"), SXY );
-                                    }
-                                    if (Dim > 2)
-                                    {
-                                        auto SYZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::Y, Component::Z)) );
-                                        auto SXZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::X, Component::Z)) );
-                                        auto SZZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::Z, Component::Z)) );
-                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactZZ"), SZZ );
-                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactYZ"), SYZ );
-                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXZ"), SXZ );
-                                    }
-
-                					// M_exporter->add(prefixvm(M_prefix, "sigma_exact"), Idhv?(*Idhv)( export_sigmaEX): export_sigmaEX );
-
-									auto l2err_sigma = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=sigma_exact - idv(M_up) );
-									auto l2norm_sigmaex = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=sigma_exact );
-									if (l2norm_sigmaex < 1)
-										l2norm_sigmaex = 1.0;		
-									cout << "||sigma-sigma_ex||_L2=\t" << l2err_sigma/l2norm_sigmaex << std::endl;
-									cout << "---------------------------" << std::endl;
-									// Export the errors
-									M_exporter -> step( time )->add(prefixvm(M_prefix, "sigma_error_L2"), l2err_sigma/l2norm_sigmaex );
-								} 
- 							}
- 		    			}
+								M_exporter -> step( time )->add(prefixvm(M_prefix, "sigma_error_L2"), l2err_sigma/l2norm_sigmaex );
+							} 
+ 						}
  					}
-				}
-             }
-         }
+ 				}
+			}
+		}
      }
 
      this->timerTool("PostProcessing").stop("exportResults");
@@ -1502,6 +1488,8 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
      }
      this->log("MixedElasticity","exportResults", "finish");
 }
+
+
 
 template <int Dim, int Order, int G_Order, int E_Order>
 void
