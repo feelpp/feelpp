@@ -58,7 +58,7 @@ public :
     void run( int const& size )
     {
         using Feel::cout;
-        int N = crb->dimension();
+        int N = crb->WNmuSize();
         int i=0;
         auto mesh = crb_model->model()->functionSpace()->mesh();
         std::vector<std::vector<double>> output_error( size );
