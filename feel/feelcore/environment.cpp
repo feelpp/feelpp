@@ -1276,7 +1276,7 @@ Environment::doOptions( int argc, char** argv,
             fs::path fscaseDir( caseDir );
             CHECK( fs::is_directory( fscaseDir ) ) << "case must be a directory";
             std::string dirName = fscaseDir.filename().string();
-            if ( fscaseDir.filename().filename_is_dot() )
+            if ( Feel::filename_is_dot( fscaseDir.filename() ) )
                 dirName = fscaseDir.parent_path().filename().string();
             std::string caseConfigFile = dirName + ".cfg";
             if ( S_vm.count( "case.config-file" ) )
