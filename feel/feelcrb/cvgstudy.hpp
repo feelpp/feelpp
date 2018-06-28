@@ -84,7 +84,7 @@ public :
             cout << "mu="<<mu.toString() <<std::endl;
 
             tic();
-            auto u_fem = crb_model->model()->solve( mu );
+            auto u_fem = crb->offlineSolve(mu);//crb_model->model()->solve( mu );
             double output_fem = crb_model->output( crb->outputIndex(), mu, u_fem );
             double u_l2 = l2Norm(u_fem);
             vectorN_type l2_c;
