@@ -404,7 +404,7 @@ RemoteData::URL::download( std::string const& _dir, std::string const& _filename
     if ( filename.empty() )
     {
         fs::path p = fs::path( M_path );
-        if ( p.has_filename() && !p.filename_is_dot() && !p.filename_is_dot_dot() )
+        if ( p.has_filename() && !Feel::filename_is_dot( p )  && !Feel::filename_is_dot_dot( p ) )
             filename = p.filename().string();
         else
             filename = "download";
