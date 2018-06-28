@@ -30,8 +30,9 @@ int main( int argc, char** argv )
 
 	po::options_description rdoptions( "Remote data options" );
 	rdoptions.add_options()
-        ( "upload", po::value<std::string>(), "mesh dimension" )
-        ( "data", po::value<std::string>(), "mesh dimension" )
+        ( "upload", po::value<std::string>(), "upload desc" )
+        ( "download", po::value<std::string>(), "download desc" )
+        ( "data", po::value<std::string>(), "specify the datas to upload or the download directory" )
 		;
 
     Environment env( _argc=argc, _argv=argv,
@@ -39,13 +40,16 @@ int main( int argc, char** argv )
                      _about=about( _name="remotedata" ,
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" ),
-                     _directory=".",_subdir=false );
+                     _subdir=false );
 
     if ( Environment::vm().count("upload") )
     {
         RemoteData rd( soption(_name="upload") );
         if ( !rd.canUpload() )
+        {
+            Feel::cout << "invalid upload\n";
             return 0;
+        }
         if ( !Environment::vm().count("data") )
         {
             Feel::cout << "no data to upload\n";
@@ -53,6 +57,20 @@ int main( int argc, char** argv )
         }
         std::string data = soption(_name="data");
         rd.upload( data );
+    }
+    else if ( Environment::vm().count("download") )
+    {
+        RemoteData rd( soption(_name="download") );
+        if ( !rd.canDownload() )
+        {
+            Feel::cout << "invalid download\n";
+            return 0;
+        }
+        std::string dir = Environment::downloadsRepository();
+        if ( Environment::vm().count("data") )
+            dir = soption(_name="data");
+        Feel::cout << "download data in : " << dir << "\n";
+        rd.download( dir );
     }
 
     return 0;
