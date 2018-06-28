@@ -116,6 +116,9 @@ public:
     int subN( int const& n_space, int const& N ) const
         {
             CHECK( n_space<n_block ) <<"Invalid space number\n";
+            CHECK( N>=0 )<<"Invalid size N="<<N<<std::endl;
+            CHECK( N<M_subN[n_space].size() )<<"Invalid size N="<<N
+                                             <<", size="<<M_subN[n_space].size()<<std::endl;
             return M_subN[n_space][N];
         }
     void setSubN( int const& n_space, int const& N, int const& size )
@@ -128,7 +131,7 @@ public:
     void incrementSubN( int const& n_space, int const& N, int const& inc=1 )
         {
             CHECK( n_space<n_block ) <<"Invalid space number\n";
-            if ( M_subN[n_space].size()<N )
+            if ( M_subN[n_space].size()<N+1 )
             {
                 M_subN[n_space].resize(N+1);
                 M_subN[n_space][N]=0;
@@ -145,7 +148,7 @@ public:
             int dim = 0;
             for ( int n=0; n<n_block; n++ )
                 dim += subN(n,N);
-            return N;
+            return dim;
         }
 
 
@@ -480,7 +483,7 @@ struct BuildRbMatrixByRow
                 int n_upr = Nr - m_crb->subN(R::value,N-1);
                 int n_upc = Nc - m_crb->subN(C::value,N-1);
 
-                if( ioption(_name="ser.rb-frequency")!=0 && !m_crb->rebuild() )
+                if( N==1 || (ioption(_name="ser.rb-frequency")!=0 && !m_crb->rebuild()) )
                 {
                     n_upr = Nr;
                     n_upc = Nc;
