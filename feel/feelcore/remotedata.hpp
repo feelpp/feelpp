@@ -149,7 +149,8 @@ struct RemoteData
         createFolder( std::string const& folderPath, std::string const& parentId = "" ) const;
 
     private :
-        std::string downloadFile( std::string const& fileId, std::string const& dir ) const;
+        std::string downloadFile( std::string const& fileId, std::string const& dir, std::string const& token ) const;
+        std::string downloadFolder( std::string const& folderId, std::string const& dir, std::string const& token ) const;
         void uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const;
         void uploadFile( std::string const& filePath, std::string const& parentId, std::string const& token ) const;
         std::string createFolderImpl( std::string const& folderName, std::string const& parentId, std::string const& token ) const;
