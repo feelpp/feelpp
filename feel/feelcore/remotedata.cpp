@@ -774,7 +774,7 @@ RemoteData::Girder::isInit() const
 bool
 RemoteData::Girder::canDownload() const
 {
-    return this->isInit() && !M_fileIds.empty();
+    return this->isInit() && (!M_fileIds.empty() || !M_folderIds.empty());
 }
 bool
 RemoteData::Girder::canUpload() const
@@ -788,27 +788,44 @@ RemoteData::Girder::download( std::string const& dir ) const
     std::vector<std::string> downloadedFileOrFolder;
     if ( M_worldComm.isMasterRank() )
     {
+        if ( !fs::exists( dir ) )
+            fs::create_directories( dir );
+        // use token if given else create token if api key given
+        std::string token = M_token;
+        if ( M_token.empty() && !M_apiKey.empty() )
+            token = this->createToken();
+        // download girder files
         for ( std::string const& fileId : M_fileIds )
         {
-            std::string file = this->downloadFile( fileId, dir );
+            std::string file = this->downloadFile( fileId, dir, token );
             if ( !file.empty() )
                 downloadedFileOrFolder.push_back( file );
         }
+        // download girder folders
+        for ( std::string const& folderId : M_folderIds )
+        {
+            std::string file = this->downloadFolder( folderId, dir, token );
+            if ( !file.empty() )
+                downloadedFileOrFolder.push_back( file );
+        }
+        // delete token if created
+        if ( M_token.empty() && !M_apiKey.empty() )
+            this->removeToken( token );
     }
     mpi::broadcast( M_worldComm.globalComm(), downloadedFileOrFolder, M_worldComm.masterRank() );
     return downloadedFileOrFolder;
 }
 
 std::string
-RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& dir ) const
+RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& dir, std::string const& token ) const
 {
     std::string downloadedFile;
     // get metadata info
     std::string urlFileInfo = M_url+"/api/v1/file/" + fileId;
     std::vector<std::string> headersFileInfo;
     headersFileInfo.push_back("Accept: application/json");
-    if ( !M_token.empty() )
-        headersFileInfo.push_back( "Girder-Token: "+M_token );
+    if ( !token.empty() )
+        headersFileInfo.push_back( "Girder-Token: "+token );
     std::ostringstream omemfile;
     requestHTTPGET( urlFileInfo, headersFileInfo, omemfile );
     // convert to property tree
@@ -822,16 +839,13 @@ RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& 
     std::string filename = *itFileName;
     auto itMimeType = pt.get_optional<std::string>("mimeType");
 
-    if ( !fs::exists( dir ) )
-        fs::create_directories( dir );
-
     // download the file
     std::string urlFileDownload = M_url+"/api/v1/file/" + fileId + "/download";
     std::vector<std::string> headersFileDownload;
     if ( itMimeType )
         headersFileDownload.push_back( "Accept: " + *itMimeType );
-    if ( !M_token.empty() )
-        headersFileDownload.push_back( "Girder-Token: "+M_token );
+    if ( !token.empty() )
+        headersFileDownload.push_back( "Girder-Token: "+token );
     std::string filepath = (fs::path(dir)/filename).string();
     std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
     requestHTTPGET( urlFileDownload,headersFileDownload,ofile );
@@ -844,6 +858,47 @@ RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& 
 
     downloadedFile = filepath;
     return downloadedFile;
+}
+
+std::string
+RemoteData::Girder::downloadFolder( std::string const& folderId, std::string const& dir, std::string const& token ) const
+{
+    std::string downloadedFolder;
+    // get metadata info
+    std::string urlFolderInfo = M_url+"/api/v1/folder/" + folderId;
+    std::vector<std::string> headersFolderInfo;
+    headersFolderInfo.push_back("Accept: application/json");
+    if ( !token.empty() )
+        headersFolderInfo.push_back( "Girder-Token: "+token );
+    std::ostringstream omemfile;
+    requestHTTPGET( urlFolderInfo, headersFolderInfo, omemfile );
+    // convert to property tree
+    std::istringstream istr( omemfile.str() );
+    pt::ptree pt;
+    pt::read_json(istr, pt);
+
+    // extract info of ptree
+    auto itFolderName = pt.get_optional<std::string>("name");
+    CHECK( itFolderName ) << "invalid id : not a folder or not exists";
+    std::string foldername = *itFolderName;
+
+    // download the folder
+    std::string urlFolderDownload = M_url+"/api/v1/folder/" + folderId + "/download";
+    std::vector<std::string> headersFolderDownload;
+    if ( !token.empty() )
+        headersFolderDownload.push_back( "Girder-Token: "+token );
+    std::string filepath = (fs::path(dir)/(foldername+".zip")).string();
+    std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
+    requestHTTPGET( urlFolderDownload,headersFolderDownload,ofile );
+    ofile.close();
+    // save metadata
+    std::string metadatapath = (fs::path(dir)/(foldername+".metadata.json")).string();
+    std::ofstream ofileMetadata( metadatapath, std::ios::out);
+    ofileMetadata << omemfile.str();
+    ofileMetadata.close();
+
+    downloadedFolder = filepath;
+    return downloadedFolder;
 }
 
 void
@@ -862,7 +917,7 @@ RemoteData::Girder::upload( std::string const& dataPath, std::string const& pare
             token = this->createToken();
 
         fs::path dataFsPath( dataPath );
-        if( fs::is_directory( dataFsPath ) && dataFsPath.filename().filename_is_dot() )
+        if( fs::is_directory( dataFsPath ) && Feel::filename_is_dot( dataFsPath.filename() ) )
         {
             fs::directory_iterator end_itr;
             for ( fs::directory_iterator itr( dataFsPath ); itr != end_itr; ++itr )
@@ -896,7 +951,7 @@ RemoteData::Girder::createFolder( std::string const& folderPath, std::string con
         fs::path folderFsPath( folderPath );
         for ( auto const& subdir : folderFsPath )
         {
-            if ( !subdir.filename_is_dot() )
+            if ( !Feel::filename_is_dot( subdir ) )
             {
                 currentParentId = this->createFolderImpl( subdir.string(), currentParentId, token );
                 foldersInfo.push_back( boost::make_tuple( subdir.string(), currentParentId ) );
