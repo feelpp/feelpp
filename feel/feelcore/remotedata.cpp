@@ -272,81 +272,116 @@ StatusRequestHTTP requestHTTPPOST( std::string const& url, std::vector<std::stri
 #endif
 }
 
-void requestHTTPPOST( std::string const& url, std::vector<std::string> const& headers, std::istream & ifile, long fsize, std::ostream & ofile )
+StatusRequestHTTP requestHTTPPOST( std::string const& url, std::vector<std::string> const& headers, std::istream & ifile, long fsize, std::ostream & ofile )
 {
 #if defined(FEELPP_HAS_LIBCURL)
-    curl_global_init(CURL_GLOBAL_ALL);
-    CURL *curl_handle;
-    curl_handle = curl_easy_init();
+    CURLcode res;
+    res = curl_global_init(CURL_GLOBAL_ALL);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
-    curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
+    // init
+    CURL *curl_handle = curl_easy_init();
+    if ( !curl_handle ) return StatusRequestHTTP( false, "fail to run curl_easy_init" );
 
+    // url
+    res = curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+
+    // post file
 #if 1
     char * postthis = new char [fsize];
     ifile.read( postthis,fsize );
-    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, postthis);
+    res = curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, postthis);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 #else
     // very slow (need to understand)
-    curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
-    curl_easy_setopt(curl_handle, CURLOPT_READDATA, &ifile);
-    curl_easy_setopt(curl_handle, CURLOPT_READFUNCTION, read_data);
+    res = curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
+    res = curl_easy_setopt(curl_handle, CURLOPT_READDATA, &ifile);
+    res = curl_easy_setopt(curl_handle, CURLOPT_READFUNCTION, read_data);
 #endif
-    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, fsize);
+    res = curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, fsize);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
+    // headers
     struct curl_slist *list = NULL;
     for ( std::string const& header : headers )
         list = curl_slist_append(list, header.c_str() );
-    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+    res = curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
     /* send all data to this function  */
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
     /* write the page body to this file handle */
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
-
+    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
     /* get it! */
-    curl_easy_perform(curl_handle);
+    res = curl_easy_perform(curl_handle);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+
+    // get http code status
+    long http_code = 0;
+    res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
     /* cleanup curl stuff */
     curl_easy_cleanup(curl_handle);
-
     curl_global_cleanup();
 
     delete [] postthis;
+    return StatusRequestHTTP( true, http_code, "" );
 #else
     CHECK( false ) << "LIBCURL is not detected";
+    return StatusRequestHTTP( false );
 #endif
 }
 
-void requestHTTPDELETE( std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
+StatusRequestHTTP requestHTTPDELETE( std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
 {
 #if defined(FEELPP_HAS_LIBCURL)
-    curl_global_init(CURL_GLOBAL_ALL);
-    CURL *curl_handle;
-    curl_handle = curl_easy_init();
-
-    curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
-
-    curl_easy_setopt(curl_handle, CURLOPT_CUSTOMREQUEST, "DELETE");
-
+    CURLcode res;
+    res = curl_global_init(CURL_GLOBAL_ALL);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    // init
+    CURL *curl_handle = curl_easy_init();
+    if ( !curl_handle ) return StatusRequestHTTP( false, "fail to run curl_easy_init" );
+    // url
+    res = curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    // request type
+    res = curl_easy_setopt(curl_handle, CURLOPT_CUSTOMREQUEST, "DELETE");
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    // headers
     struct curl_slist *list = NULL;
     for ( std::string const& header : headers )
         list = curl_slist_append(list, header.c_str() );
-    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+    res = curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
     /* send all data to this function  */
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
     /* write the page body to this file handle */
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
+    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
     /* get it! */
-    curl_easy_perform(curl_handle);
+    res = curl_easy_perform(curl_handle);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+
+    // get http code status
+    long http_code = 0;
+    res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
     /* cleanup curl stuff */
     curl_easy_cleanup(curl_handle);
-
     curl_global_cleanup();
+
+    return StatusRequestHTTP( true, http_code, "" );
 #else
     CHECK( false ) << "LIBCURL is not detected";
+    return StatusRequestHTTP( false );
 #endif
 }
 
@@ -878,6 +913,30 @@ RemoteData::Girder::download( std::string const& dir ) const
 }
 
 std::string
+RemoteData::Girder::errorMessage( pt::ptree const& ptree, std::string const& defaultMsg, uint16_type statusCode )
+{
+    std::string errMsg = defaultMsg;
+    if ( auto itMsg = ptree.get_optional<std::string>("message") )
+        errMsg = *itMsg;
+    std::string errType;
+    if ( auto itType = ptree.get_optional<std::string>("type") )
+        errType = *itType;
+    std::string errMsgInfo;
+    if ( statusCode != invalid_uint16_type_value )
+        errMsgInfo += (boost::format("code %1%")%statusCode).str();
+    if ( !errMsgInfo.empty() )
+        errMsgInfo += ",";
+    if ( !errType.empty() )
+        errMsgInfo += (boost::format("type %1%")%errType).str();
+    std::string res = "Girder error";
+    if ( !errMsgInfo.empty() )
+        res += " ("+errMsgInfo+")";
+    if ( !errMsg.empty() )
+        res += " : " + errMsg;
+    return res;
+}
+
+std::string
 RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& dir, std::string const& token ) const
 {
     std::string downloadedFile;
@@ -891,23 +950,19 @@ RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& 
     StatusRequestHTTP status = requestHTTPGET( urlFileInfo, headersFileInfo, omemfile );
     if ( !status.success() )
     {
-        std::cout << "requestHTTPGET error : " << status.msg() << "\n";
-        return {};
-    }
-    if ( status.code() != 200 )
-    {
-        if ( status.code() == 400 )
-            std::cout << "invalid file id : " << fileId << "\n";
-        else if ( status.code() == 403 )
-            std::cout << "Read access was denied on the file\n";
-        else
-            std::cout << "Error with getting metadata (before download)\n";
+        std::cout << "Girder error in requestHTTPGET : " << status.msg() << "\n";
         return {};
     }
     // convert to property tree
     std::istringstream istr( omemfile.str() );
     pt::ptree pt;
     pt::read_json(istr, pt);
+
+    if ( status.code() != 200 )
+    {
+        std::cout << Girder::errorMessage( pt,"getting metadata (before download) fails", status.code() ) << "\n";
+        return {};
+    }
 
     // extract info of ptree
     auto itFileName = pt.get_optional<std::string>("name");
@@ -947,17 +1002,12 @@ RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& 
         ofile.close();
         if ( !status.success() )
         {
-            std::cout << "requestHTTPGET error : " << status.msg() << "\n";
+            std::cout << "Girder error in requestHTTPGET : " << status.msg() << "\n";
             return {};
         }
         if ( status.code() != 200 )
         {
-            if ( status.code() == 400 )
-                std::cout << "invalid file id : " << fileId << "\n";
-            else if ( status.code() == 403 )
-                std::cout << "Read access was denied on the file\n";
-            else
-                std::cout << "Error with downloading\n";
+            std::cout << Girder::errorMessage( pt,"downloading file fails", status.code() ) << "\n";
             return {};
         }
         // save metadata
@@ -1177,15 +1227,7 @@ RemoteData::Girder::createToken( int duration ) const
     StatusRequestHTTP status = requestHTTPPOST( urlCreateToken, headers, omemfile );
     if ( !status.success() )
     {
-        std::cout << "requestHTTPGET error : " << status.msg() << "\n";
-        return {};
-    }
-    if ( status.code() != 200 )
-    {
-        if ( status.code() == 400 )
-            std::cout << "invalid api key\n";
-        else
-            std::cout << "Error with token creation\n";
+        std::cout << "Girder error in requestHTTPGET : " << status.msg() << "\n";
         return {};
     }
 
@@ -1193,6 +1235,12 @@ RemoteData::Girder::createToken( int duration ) const
     std::istringstream istr( omemfile.str() );
     pt::ptree pt;
     pt::read_json(istr, pt);
+
+    if ( status.code() != 200 )
+    {
+        std::cout << Girder::errorMessage( pt,"create token fails", status.code() ) << "\n";
+        return {};
+    }
 
     std::string tokenCreated;
     if ( auto it = pt.get_child_optional( "authToken" ) )
@@ -1213,7 +1261,22 @@ RemoteData::Girder::removeToken( std::string const& token ) const
     headers.push_back( "Girder-Token: "+token );
 
     std::ostringstream omemfile;
-    requestHTTPDELETE( urlRemoveToken, headers, omemfile );
+    StatusRequestHTTP status = requestHTTPDELETE( urlRemoveToken, headers, omemfile );
+    if ( !status.success() )
+    {
+        std::cout << "Girder error in requestHTTPGET : " << status.msg() << "\n";
+        return;
+    }
+    if ( status.code() != 200 )
+    {
+        // convert to property tree
+        std::istringstream istr( omemfile.str() );
+        pt::ptree pt;
+        pt::read_json(istr, pt);
+
+        std::cout << Girder::errorMessage( pt,"remove token fails", status.code() ) << "\n";
+        return;
+    }
 }
 
 

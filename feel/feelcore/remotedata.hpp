@@ -157,6 +157,7 @@ struct RemoteData
         std::string createToken( int duration = 1 ) const;
         void removeToken( std::string const& token ) const;
 
+        static std::string errorMessage( pt::ptree const& ptree, std::string const& defaultMsg = "", uint16_type statusCode = invalid_uint16_type_value );
     private :
         WorldComm const& M_worldComm;
         std::string M_url, M_apiKey, M_token;
