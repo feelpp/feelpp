@@ -838,23 +838,42 @@ RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& 
     CHECK( itFileName ) << "invalid id : not a file or not exists";
     std::string filename = *itFileName;
     auto itMimeType = pt.get_optional<std::string>("mimeType");
+    std::string sha512;
+    if ( auto itSha512 = pt.get_optional<std::string>("sha512") )
+        sha512 = *itSha512;
 
-    // download the file
-    std::string urlFileDownload = M_url+"/api/v1/file/" + fileId + "/download";
-    std::vector<std::string> headersFileDownload;
-    if ( itMimeType )
-        headersFileDownload.push_back( "Accept: " + *itMimeType );
-    if ( !token.empty() )
-        headersFileDownload.push_back( "Girder-Token: "+token );
     std::string filepath = (fs::path(dir)/filename).string();
-    std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
-    requestHTTPGET( urlFileDownload,headersFileDownload,ofile );
-    ofile.close();
-    // save metadata
     std::string metadatapath = (fs::path(dir)/(filename+".metadata.json")).string();
-    std::ofstream ofileMetadata( metadatapath, std::ios::out);
-    ofileMetadata << omemfile.str();
-    ofileMetadata.close();
+
+    // download can be ignored if file exists and have same sha512
+    bool doDownload = true;
+    if ( !sha512.empty() && fs::exists( filepath ) && fs::is_regular_file( filepath ) && fs::exists( metadatapath ) )
+    {
+        pt::ptree ptmdExisting;
+        pt::read_json( metadatapath, ptmdExisting );
+        if ( auto itSha512 = ptmdExisting.get_optional<std::string>("sha512") )
+        {
+            if ( sha512 == *itSha512 )
+                doDownload = false;
+        }
+    }
+    // download the file
+    if ( doDownload )
+    {
+        std::string urlFileDownload = M_url+"/api/v1/file/" + fileId + "/download";
+        std::vector<std::string> headersFileDownload;
+        if ( itMimeType )
+            headersFileDownload.push_back( "Accept: " + *itMimeType );
+        if ( !token.empty() )
+            headersFileDownload.push_back( "Girder-Token: "+token );
+        std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
+        requestHTTPGET( urlFileDownload,headersFileDownload,ofile );
+        ofile.close();
+        // save metadata
+        std::ofstream ofileMetadata( metadatapath, std::ios::out);
+        ofileMetadata << omemfile.str();
+        ofileMetadata.close();
+    }
 
     downloadedFile = filepath;
     return downloadedFile;
