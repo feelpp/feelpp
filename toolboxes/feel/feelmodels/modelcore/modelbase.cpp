@@ -37,7 +37,7 @@ namespace ToolboxesDetail
 {
 void removeTrailingSlash( std::string & s )
 {
-    if ( fs::path( s ).filename().filename_is_dot() )
+    if ( Feel::filename_is_dot( fs::path( s ).filename() ) )
         s = fs::path( s ).parent_path().string();
 }
 }
