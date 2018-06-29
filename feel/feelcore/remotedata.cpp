@@ -142,72 +142,133 @@ static size_t read_data(char/*void*/ *ptr, size_t size, size_t nmemb, void *stre
 
 }
 
-void requestHTTPGET( std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
+class StatusRequestHTTP : public std::tuple<bool,uint16_type,std::string>
+{
+    typedef std::tuple<bool,uint16_type,std::string> super_type;
+public :
+    StatusRequestHTTP( bool s, std::string const& m = "" )
+        :
+        super_type( s, invalid_uint16_type_value, m )
+        {}
+    StatusRequestHTTP( bool s, uint16_type c, std::string const& m = "" )
+        :
+        super_type( s, c, m )
+        {}
+    StatusRequestHTTP( StatusRequestHTTP const& ) = default;
+    StatusRequestHTTP( StatusRequestHTTP && ) = default;
+    StatusRequestHTTP& operator=( StatusRequestHTTP const& ) = default;
+
+    bool success() const { return std::get<0>( *this ); }
+    uint16_type code() const { return std::get<1>( *this ); }
+    std::string const& msg() const { return std::get<2>( *this ); }
+};
+
+StatusRequestHTTP requestHTTPGET( std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
 {
 #if defined(FEELPP_HAS_LIBCURL)
-    curl_global_init(CURL_GLOBAL_ALL);
-    CURL *curl_handle;
-    curl_handle = curl_easy_init();
-    curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
-    curl_easy_setopt(curl_handle, CURLOPT_HTTPGET, 1L);
+    CURLcode res;
+    res = curl_global_init(CURL_GLOBAL_ALL);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
+    // init
+    CURL *curl_handle = curl_easy_init();
+    if ( !curl_handle ) return StatusRequestHTTP( false, "fail to run curl_easy_init" );
+
+    // url
+    res = curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    // request GET type
+    res = curl_easy_setopt(curl_handle, CURLOPT_HTTPGET, 1L);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    // headers
     struct curl_slist *list = NULL;
     for ( std::string const& header : headers )
         list = curl_slist_append(list, header.c_str() );
-    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+    res = curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
     /* send all data to this function  */
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
     /* write the page body to this file handle */
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
+    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
     /* get it! */
-    curl_easy_perform(curl_handle);
+    res = curl_easy_perform(curl_handle);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+
+    // get http code status
+    long http_code = 0;
+    res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
     /* cleanup curl stuff */
     curl_easy_cleanup(curl_handle);
-
     curl_global_cleanup();
+
+    return StatusRequestHTTP( true, http_code, "" );
 #else
     CHECK( false ) << "LIBCURL is not detected";
+    return StatusRequestHTTP( false );
 #endif
 }
 
-void requestHTTPPOST( std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
+StatusRequestHTTP requestHTTPPOST( std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
 {
 #if defined(FEELPP_HAS_LIBCURL)
-    curl_global_init(CURL_GLOBAL_ALL);
-    CURL *curl_handle;
-    curl_handle = curl_easy_init();
+    CURLcode res;
+    res = curl_global_init(CURL_GLOBAL_ALL);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
-    curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
-    curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
-
+    // init
+    CURL *curl_handle = curl_easy_init();
+    if ( !curl_handle ) return StatusRequestHTTP( false, "fail to run curl_easy_init" );
+    //url
+    res = curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    // request POST type
+    res = curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    // headers
     struct curl_slist *list = NULL;
     for ( std::string const& header : headers )
         list = curl_slist_append(list, header.c_str() );
-    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+    res = curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
+    // post an empty file
     long fsize = 0;
     char * postthis = nullptr;
-    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, postthis);
-    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, fsize);
+    res = curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, postthis);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    res = curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, fsize);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
     /* send all data to this function  */
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
     /* write the page body to this file handle */
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
-
+    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
     /* get it! */
-    curl_easy_perform(curl_handle);
+    res = curl_easy_perform(curl_handle);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+
+    // get http code status
+    long http_code = 0;
+    res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
 
     /* cleanup curl stuff */
     curl_easy_cleanup(curl_handle);
-
     curl_global_cleanup();
+
+    return StatusRequestHTTP( true, http_code, "" );
 #else
     CHECK( false ) << "LIBCURL is not detected";
+    return StatusRequestHTTP( false );
 #endif
 }
 
@@ -809,7 +870,7 @@ RemoteData::Girder::download( std::string const& dir ) const
                 downloadedFileOrFolder.push_back( file );
         }
         // delete token if created
-        if ( M_token.empty() && !M_apiKey.empty() )
+        if ( M_token.empty() && !M_apiKey.empty() && !token.empty() )
             this->removeToken( token );
     }
     mpi::broadcast( M_worldComm.globalComm(), downloadedFileOrFolder, M_worldComm.masterRank() );
@@ -827,7 +888,22 @@ RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& 
     if ( !token.empty() )
         headersFileInfo.push_back( "Girder-Token: "+token );
     std::ostringstream omemfile;
-    requestHTTPGET( urlFileInfo, headersFileInfo, omemfile );
+    StatusRequestHTTP status = requestHTTPGET( urlFileInfo, headersFileInfo, omemfile );
+    if ( !status.success() )
+    {
+        std::cout << "requestHTTPGET error : " << status.msg() << "\n";
+        return {};
+    }
+    if ( status.code() != 200 )
+    {
+        if ( status.code() == 400 )
+            std::cout << "invalid file id : " << fileId << "\n";
+        else if ( status.code() == 403 )
+            std::cout << "Read access was denied on the file\n";
+        else
+            std::cout << "Error with getting metadata (before download)\n";
+        return {};
+    }
     // convert to property tree
     std::istringstream istr( omemfile.str() );
     pt::ptree pt;
@@ -867,8 +943,23 @@ RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& 
         if ( !token.empty() )
             headersFileDownload.push_back( "Girder-Token: "+token );
         std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
-        requestHTTPGET( urlFileDownload,headersFileDownload,ofile );
+        status = requestHTTPGET( urlFileDownload,headersFileDownload,ofile );
         ofile.close();
+        if ( !status.success() )
+        {
+            std::cout << "requestHTTPGET error : " << status.msg() << "\n";
+            return {};
+        }
+        if ( status.code() != 200 )
+        {
+            if ( status.code() == 400 )
+                std::cout << "invalid file id : " << fileId << "\n";
+            else if ( status.code() == 403 )
+                std::cout << "Read access was denied on the file\n";
+            else
+                std::cout << "Error with downloading\n";
+            return {};
+        }
         // save metadata
         std::ofstream ofileMetadata( metadatapath, std::ios::out);
         ofileMetadata << omemfile.str();
@@ -1083,7 +1174,20 @@ RemoteData::Girder::createToken( int duration ) const
     headers.push_back("Content-Type: application/json");
 
     std::ostringstream omemfile;
-    requestHTTPPOST( urlCreateToken, headers, omemfile );
+    StatusRequestHTTP status = requestHTTPPOST( urlCreateToken, headers, omemfile );
+    if ( !status.success() )
+    {
+        std::cout << "requestHTTPGET error : " << status.msg() << "\n";
+        return {};
+    }
+    if ( status.code() != 200 )
+    {
+        if ( status.code() == 400 )
+            std::cout << "invalid api key\n";
+        else
+            std::cout << "Error with token creation\n";
+        return {};
+    }
 
     // convert to property tree
     std::istringstream istr( omemfile.str() );
