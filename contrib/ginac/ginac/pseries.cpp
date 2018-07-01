@@ -903,7 +903,7 @@ ex mul::series(const relational & r, int order, unsigned options) const
 		bool flag_redo = false;
 		try {
 			real_ldegree = buf.expand().ldegree(sym-r.rhs());
-		} catch (std::runtime_error) {}
+		} catch (std::runtime_error const&) {}
 
 		if (real_ldegree == 0) {
 			if ( factor < 0 ) {
@@ -1093,14 +1093,14 @@ ex power::series(const relational & r, int order, unsigned options) const
 	bool must_expand_basis = false;
 	try {
 		basis.subs(r, subs_options::no_pattern);
-	} catch (pole_error) {
+	} catch (pole_error const&) {
 		must_expand_basis = true;
 	}
 
 	bool exponent_is_regular = true;
 	try {
 		exponent.subs(r, subs_options::no_pattern);
-	} catch (pole_error) {
+	} catch (pole_error const&) {
 		exponent_is_regular = false;
 	}
 
@@ -1169,7 +1169,7 @@ ex power::series(const relational & r, int order, unsigned options) const
 	ex result;
 	try {
 		result = ex_to<pseries>(e).power_const(numexp, order);
-	} catch (pole_error) {
+	} catch (pole_error const&) {
 		epvector ser { expair(Order(_ex1), order) };
 		result = pseries(r, std::move(ser));
 	}
