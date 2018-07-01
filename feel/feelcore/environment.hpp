@@ -927,7 +927,7 @@ BOOST_PARAMETER_FUNCTION(
         opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<bool>();
     }
 
-    catch ( boost::bad_any_cast bac )
+    catch ( boost::bad_any_cast const& bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not a boolean" <<std::endl;
     }
