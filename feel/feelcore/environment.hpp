@@ -901,7 +901,7 @@ BOOST_PARAMETER_FUNCTION(
         opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<double>();
     }
 
-    catch ( boost::bad_any_cast bac )
+    catch ( boost::bad_any_cast const& bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not a double" <<std::endl;
     }
@@ -953,7 +953,7 @@ BOOST_PARAMETER_FUNCTION(
         opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<int>();
     }
 
-    catch ( boost::bad_any_cast bac )
+    catch ( boost::bad_any_cast const& bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not an integer" <<std::endl;
     }
@@ -980,7 +980,7 @@ BOOST_PARAMETER_FUNCTION(
         opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::string>();
     }
 
-    catch ( boost::bad_any_cast bac )
+    catch ( boost::bad_any_cast const& bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not a string" <<std::endl;
     }
@@ -1006,7 +1006,7 @@ BOOST_PARAMETER_FUNCTION(
         opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::vector<std::string>>();
     }
 
-    catch ( boost::bad_any_cast bac )
+    catch ( boost::bad_any_cast const& bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not a string" <<std::endl;
     }
@@ -1032,7 +1032,7 @@ BOOST_PARAMETER_FUNCTION(
         opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::vector<double>>();
     }
 
-    catch ( boost::bad_any_cast bac )
+    catch ( boost::bad_any_cast const& bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not a string" <<std::endl;
     }
@@ -1075,7 +1075,7 @@ BOOST_PARAMETER_FUNCTION(
         opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<typename Feel::detail::option<Args>::type>();
     }
 
-    catch ( boost::bad_any_cast bac )
+    catch ( boost::bad_any_cast const& bac )
     {
         CHECK( false ) <<"problem in conversion type of argument "<< name << " : check the option type"<<std::endl;
     }
