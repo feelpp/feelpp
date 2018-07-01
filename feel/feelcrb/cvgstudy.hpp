@@ -87,58 +87,68 @@ public :
             auto u_fem = crb->offlineSolve(mu);//crb_model->model()->solve( mu );
             double output_fem = crb_model->output( crb->outputIndex(), mu, u_fem );
             double u_l2 = l2Norm(u_fem);
-            vectorN_type l2_c;
-            if ( is_composite )
+            if ( u_l2!=0 )
             {
-                l2_c = l2Composite(u_fem);
-            }
-            toc("FEM Solve");
-
-            cout << std::setw(5) << "N"
-                 << std::setw(25) << "outputFem"
-                 << std::setw(25) << "outputRB"
-                 << std::setw(25) << "outputError"
-                 << std::setw(25) << "l2Error";
-            if ( is_composite )
-                for ( int k=0; k<nb_spaces; k++ )
-                    cout << std::setw(25) << "l2Error_"<<k;
-            cout << std::endl;
-
-
-            for ( int n=1; n<=N; n++ )
-            {
-                std::vector<vectorN_type> Un, Undu, Unold, Unduold;
-                auto o = crb->lb( n, mu, Un, Undu, Unold, Unduold );
-
-                auto output_vector=o.template get<0>();
-                double output_rb = output_vector[0];
-                output_error[i].push_back( math::abs((output_fem-output_rb)/output_fem) );
-
-                vectorN_type u = Un[0];
-                auto u_rb = crb->expansion( u, n );
-                auto u_diff = u_fem-u_rb;
-                l2_error[i].push_back( l2Norm(u_diff)/u_l2 );
-
-                vectorN_type diff_composite;
+                vectorN_type l2_c;
                 if ( is_composite )
                 {
-                    diff_composite = l2Composite(u_diff);
-                    for ( int k=0; k<nb_spaces; k++ )
-                        l2_composite[k][i].push_back( diff_composite(k)/l2_c(k) );
+                    l2_c = l2Composite(u_fem);
                 }
+                toc("FEM Solve");
 
-                cout << std::setw(5) << n
-                     << std::setw(25) << output_fem
-                     << std::setw(25) << output_rb
-                     << std::setw(25) << output_error[i][n-1]
-                     << std::setw(25) << l2_error[i][n-1];
+                cout << std::setw(5) << "N"
+                     << std::setw(25) << "outputFem"
+                     << std::setw(25) << "outputRB"
+                     << std::setw(25) << "outputError"
+                     << std::setw(25) << "l2Error";
                 if ( is_composite )
                     for ( int k=0; k<nb_spaces; k++ )
-                        cout << std::setw(25) << l2_composite[k][i][n-1];
-                cout<<std::endl;
+                        cout << std::setw(25) << "l2Error_"<<k;
+                cout << std::endl;
+
+                for ( int n=1; n<=N; n++ )
+                {
+                    std::vector<vectorN_type> Un, Undu, Unold, Unduold;
+                    auto o = crb->lb( n, mu, Un, Undu, Unold, Unduold );
+
+                    auto output_vector=o.template get<0>();
+                    double output_rb = output_vector[0];
+                    output_error[i].push_back( math::abs((output_fem-output_rb)/output_fem) );
+
+                    vectorN_type u = Un[0];
+                    auto u_rb = crb->expansion( u, n );
+                    auto u_diff = u_fem-u_rb;
+                    l2_error[i].push_back( l2Norm(u_diff)/u_l2 );
+
+                    vectorN_type diff_composite;
+                    if ( is_composite )
+                    {
+                        diff_composite = l2Composite(u_diff);
+                        for ( int k=0; k<nb_spaces; k++ )
+                            l2_composite[k][i].push_back( diff_composite(k)/l2_c(k) );
+                    }
+
+                    cout << std::setw(5) << n
+                         << std::setw(25) << output_fem
+                         << std::setw(25) << output_rb
+                         << std::setw(25) << output_error[i][n-1]
+                         << std::setw(25) << l2_error[i][n-1];
+                    if ( is_composite )
+                        for ( int k=0; k<nb_spaces; k++ )
+                            cout << std::setw(25) << l2_composite[k][i][n-1];
+                    cout<<std::endl;
+                }
+                cout << "==================================================\n";
+                i++;
             }
-            cout << "==================================================\n";
-            i++;
+            else
+            {
+                l2_error.pop_back();
+                output_error.pop_back();
+                if ( is_composite )
+                    for ( int k=0; k<nb_spaces; k++ )
+                        l2_composite[k].pop_back();
+            }
         }
 
         this->writeOnFile( l2_error, "l2");
@@ -152,7 +162,7 @@ public :
 private :
     void writeOnFile( std::vector<std::vector<double>> const& data, std::string const& name )
     {
-        int N = crb->dimension();
+        int N = crb->WNmuSize();
         int size = data.size();
 
         if ( Environment::isMasterRank() )
