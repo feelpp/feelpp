@@ -3660,7 +3660,14 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
             }
             else
             {
-                backend( _name="backend-primal")->solve( _matrix=A , _solution=u, _rhs=F[0] );
+                auto ret = M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] );
+                if  ( !ret.template get<0>() )
+                {
+                    LOG(INFO)<<"[CRB] WARNING : we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
+                    Feel::cout << "Rebuild backend primal\n";
+                    M_backend_primal = backend(_name="backend-primal", _rebuild=true );
+                    M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] );
+                }
             }
         }
         else
