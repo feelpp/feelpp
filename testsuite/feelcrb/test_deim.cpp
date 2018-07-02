@@ -270,7 +270,11 @@ public :
     }
     void initOnlineModel()
     {}
-
+    typename space_type::mesh_support_vector_type
+        functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
+    {
+        return typename space_type::mesh_support_vector_type();
+    }
  private :
     void initDeim( sampling_ptrtype Pset )
     {
