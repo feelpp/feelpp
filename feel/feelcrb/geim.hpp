@@ -4,9 +4,9 @@
 
 
 
-
 #include <feel/feeldiscr/fsfunctionallinear.hpp>
 #include <vector>
+#include <feel/feelvf/vf.hpp>
 
 namespace Feel
 {
@@ -28,22 +28,25 @@ public:
 
     typedef typename super_type::value_type value_type;
 
-    typedef typename super_type:backend_type;
-    typedef typename super_type:backend_ptrtype;
+    typedef typename super_type::backend_type backend_type;
+    typedef typename super_type::backend_ptrtype backend_ptrtype;
 
-    typedef typename super_type:vector_type;
-    typedef typename super_type:vector_ptrtype;
+    typedef typename super_type::vector_type vector_type;
+    typedef typename super_type::vector_ptrtype vector_ptrtype;
 
-    GeimFunctionalModel( space_ptrtype space, std::vector<double> const& center = std::vector<double>(), double radius =0. ):
+    GeimFunctionalModel( space_ptrtype space,
+                         std::vector<double> center = std::vector<double>(),
+                         double radius = 0. ):
         super_type(space),
         M_center(center),
-        M_radius(radius)
+        M_radius(radius),
+        M_space(space)
     {
     }
 
     virtual ~GeimFunctionalModel(){}
 
-    void setCenter( std::vector<doule> const center )
+    void setCenter( std::vector<double> const center )
     {
         M_center=center;
     }
@@ -53,31 +56,45 @@ public:
         M_radius=radius;
     }
 
-    std::vector<double> center const()
+    std::vector<double> center() const
     {
         return M_center;
     }
 
-    double radius const ()
+    double radius() const
     {
         return M_radius;
     }
 
     void defineForm()
-    {   auto v=M_space->element();
-        auto expr=integrate(_range=elements(M_space->mesh()),_expr=id(v)*exp((Px()-M_center)*(Px()-M_center)/2*M_radius*M_radius));
-        this->operator=(expr);
+    {
+        auto v=M_space->element();
+        auto phi= this->phiExpr( mpl::int_< space_type::nDim >() );
+        auto expr=integrate(_range=elements(M_space->mesh()), _expr=id(v)*phi);
+        super_type::operator=( expr );
         this->close();
     }
 
 private:
-
+    auto phiExpr( mpl::int_<1> /**/ )
+    {
+         return exp( pow(Px()-M_center[0],2)/(2*std::pow(M_radius,2)));
+    }
+    auto phiExpr( mpl::int_<2> /**/ )
+    {
+         return exp(( pow(Px()-M_center[0],2)+pow(Py()-M_center[1],2))/(2*std::pow(M_radius,2)));
+    }
+    auto phiExpr( mpl::int_<3> /**/ )
+    {
+         return exp(( pow(Px()-M_center[0],2)+pow(Py()-M_center[1],2)+pow(Pz()-M_center[2],2))/(2*std::pow(M_radius,2)));
+    }
     std::vector<double> M_center;
     double M_radius;
+    space_ptrtype M_space;
 
-};//class CAPTEUR
+};//class GeimFunctionalModel
 
-template<Space>
+template<typename Space>
 class DictionnaryGeim : public std::vector<GeimFunctionalModel<Space>>
 {
 public:
@@ -90,7 +107,10 @@ public:
 
     typedef boost::shared_ptr<space_type> space_ptrtype;
 
-    DictionnaryGeim( space_type space, std::vector<std::vector<double>> Centers, std::vector<double> Radiuss, int size):
+    DictionnaryGeim(  space_ptrtype space,
+                     std::vector<std::vector<double>> Centers = std::vector<std::vector<double>>(),
+                     std::vector<double> Radiuss = std::vector<double>(),
+                     int size = 0):
         M_Centers(Centers),
         M_Radiuss(Radiuss),
         M_size(size)
@@ -99,6 +119,18 @@ public:
 
     virtual ~DictionnaryGeim() {}
 
+    int size() const
+    {
+        return M_size;
+    }
+    std::vector< std::vector<double> > centers() const
+    {
+        return M_Centers;
+    }
+    std::vector<double> radiuss() const
+    {
+        return M_Radiuss;
+    }
     void run()
     {
         this->resize( M_size, super_type( M_space ) );
@@ -108,17 +140,16 @@ public:
             this->operator[](i).setRadius( M_Radiuss[i] );
             this->operator[](i).defineForm();
         }
-        this->close();
     }
 
-    void addElement( space_type space, std::vector<double> center, double radius )
+    void addElement(  space_ptrtype space, std::vector<double> center, double radius )
     {
         M_size++;
         super_type newElement( space, center, radius );
         this->push_back( newElement );
         M_Centers.push_back( center );
         M_Radiuss.push_back( radius );
-        this->close();
+        this->operator[](M_size-1).defineForm();
     }
 
 private:
@@ -128,7 +159,7 @@ private:
   std::vector<double> M_Radiuss;
   boost::shared_ptr<Space> M_space;
 
-};//class DICTIONNARY_GEIM
+};//class DictionnaryGeim
 
 }//Feel
 

@@ -43,7 +43,14 @@ int main(int argc, char**argv)
     // *** DictionnaryGeim ***
     DictionnaryGeim< Pch_type<MeshType,2> > dico( Xh );
     dico.addElement(Xh,sigma.center(),sigma.radius());
+    std::vector<double> v1(2,0);
+    dico.addElement(Xh,v1,0.5);
+    std::cout << "size:"<<dico.size() << '\n';
 
+    for ( int i = 0; i < dico.size(); i++)
+    {
+        std::cout << "form:"<< i <<"\n"<< dico[i].container() << '\n';
+    }
 
     return 0;
 }
