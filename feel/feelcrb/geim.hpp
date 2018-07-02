@@ -4,9 +4,9 @@
 
 
 
+
 #include <feel/feeldiscr/fsfunctionallinear.hpp>
 #include <vector>
-#include <feel/feelvf/vf.hpp>
 
 namespace Feel
 {
@@ -28,23 +28,22 @@ public:
 
     typedef typename super_type::value_type value_type;
 
-    typedef typename super_type::backend_type backend_type;
-    typedef typename super_type::backend_ptrtype backend_ptrtype;
+    typedef typename super_type:backend_type;
+    typedef typename super_type:backend_ptrtype;
 
-    typedef typename super_type::vector_type vector_type;
-    typedef typename super_type::vector_ptrtype vector_ptrtype;
+    typedef typename super_type:vector_type;
+    typedef typename super_type:vector_ptrtype;
 
     GeimFunctionalModel( space_ptrtype space, std::vector<double> const& center = std::vector<double>(), double radius =0. ):
         super_type(space),
         M_center(center),
-        M_radius(radius),
-        M_space(space)
+        M_radius(radius)
     {
     }
 
     virtual ~GeimFunctionalModel(){}
 
-    void setCenter( std::vector<double> const center )
+    void setCenter( std::vector<doule> const center )
     {
         M_center=center;
     }
@@ -54,45 +53,31 @@ public:
         M_radius=radius;
     }
 
-    std::vector<double> center() const
+    std::vector<double> center const()
     {
         return M_center;
     }
 
-    double radius() const
+    double radius const ()
     {
         return M_radius;
     }
 
     void defineForm()
     {   auto v=M_space->element();
-        //auto phi=exp((Px()-M_center)*(Px()-M_center[0])/(2*M_radius*M_radius));
-        auto phi= this->phiExpr( mpl::int_< space_type::nDim >() );
-        auto expr=integrate(_range=elements(M_space->mesh()), _expr=id(v)*phi);
-        //this->operator=( expr );
+        auto expr=integrate(_range=elements(M_space->mesh()),_expr=id(v)*exp((Px()-M_center)*(Px()-M_center)/2*M_radius*M_radius));
+        this->operator=(expr);
         this->close();
     }
 
 private:
-    auto phiExpr( mpl::int_<1> /**/ )
-    {
-         return exp( pow(Px()-M_center[0],2)/(2*std::pow(M_radius,2)));
-    }
-    auto phiExpr( mpl::int_<2> /**/ )
-    {
-         return exp(( pow(Px()-M_center[0],2)+pow(Py()-M_center[1],2))/(2*std::pow(M_radius,2)));
-    }
-    auto phiExpr( mpl::int_<3> /**/ )
-    {
-         return exp(( pow(Px()-M_center[0],2)+pow(Py()-M_center[1],2)+pow(Pz()-M_center[2],2))/(2*std::pow(M_radius,2)));
-    }
+
     std::vector<double> M_center;
     double M_radius;
-    space_ptrtype M_space;
 
-};//class GeimFunctionalModel
+};//class CAPTEUR
 
-template<typename Space>
+template<Space>
 class DictionnaryGeim : public std::vector<GeimFunctionalModel<Space>>
 {
 public:
@@ -133,7 +118,6 @@ public:
         this->push_back( newElement );
         M_Centers.push_back( center );
         M_Radiuss.push_back( radius );
-        this->operator[](M_size-1).defineForm();
         this->close();
     }
 
@@ -144,7 +128,7 @@ private:
   std::vector<double> M_Radiuss;
   boost::shared_ptr<Space> M_space;
 
-};//class DictionnaryGeim
+};//class DICTIONNARY_GEIM
 
 }//Feel
 
