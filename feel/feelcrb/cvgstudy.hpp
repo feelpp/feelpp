@@ -207,7 +207,7 @@ private :
         }
     double l2Norm( element_type const& u, mpl::bool_<false> )
         {
-            return norml2( u.functionSpace()->template rangeElements<0>(), idv(u) );
+            return normL2( _range=u.functionSpace()->template rangeElements<0>(), _expr=idv(u) );
         }
     double l2Norm( element_type const& u, mpl::bool_<true>)
         {
@@ -218,6 +218,15 @@ private :
         }
 
     vectorN_type l2Composite( element_type const& u )
+        {
+            return l2Composite( u, mpl::bool_< is_composite >() );
+        }
+    vectorN_type l2Composite( element_type const& u, mpl::bool_<false> )
+        {
+            vectorN_type dummy;
+            return dummy;
+        }
+    vectorN_type l2Composite( element_type const& u, mpl::bool_<true>)
         {
             ComputeNormL2InCompositeCase compute_normL2_in_composite_case( u );
             index_vector_type index_vector;
