@@ -102,8 +102,10 @@ struct RemoteData
         //! @return : vector of path of the downloaded file or the path of downloaded folder
         std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository() ) const;
     private :
-        void downloadFolderRecursively( pt::ptree const& ptree, std::string const& dir ) const;
+        std::vector<std::string> downloadImpl( std::string const& dir ) const;
+        std::tuple<bool,std::string> downloadFolderRecursively( pt::ptree const& ptree, std::string const& dir ) const;
 
+        static std::string errorMessage( pt::ptree const& ptree, std::string const& defaultMsg = "", uint16_type statusCode = invalid_uint16_type_value );
     private :
         WorldComm const& M_worldComm;
         std::string M_owner, M_repo, M_branch, M_path, M_token;
