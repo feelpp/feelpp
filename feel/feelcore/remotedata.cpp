@@ -573,7 +573,7 @@ RemoteData::URL::download( std::string const& _dir, std::string const& _filename
 }
 
 
-pt::ptree
+std::pair<bool,pt::ptree>
 convertDescToPropertyTree( std::string const& desc )
 {
     // split the desc with respect to special characters
@@ -620,8 +620,14 @@ convertDescToPropertyTree( std::string const& desc )
     // create the property tree
     pt::ptree pt;
     std::istringstream istr( newDesc );
-    pt::read_json( istr, pt );
-    return pt;
+    try {
+        pt::read_json( istr, pt );
+    }
+    catch ( pt::ptree_error const& e )
+    {
+        return std::make_pair( false, pt );
+    }
+    return std::make_pair( true, pt );
 }
 
 
@@ -654,7 +660,14 @@ RemoteData::Github::Github( std::string const& desc, WorldComm const& worldComm 
         else if ( keyvalueSplitted[0] == "token" ) M_token = keyvalueSplitted[1];
     }
 #else
-    pt::ptree pt = convertDescToPropertyTree( exprtosplit );
+    auto resConvertion = convertDescToPropertyTree( exprtosplit );
+    if ( !resConvertion.first )
+    {
+        if ( M_worldComm.isMasterRank() )
+            std::cout << "Github desc has a syntax error : " << desc << "\n";
+        return;
+    }
+    pt::ptree pt = resConvertion.second;
     if ( auto it = pt.get_optional<std::string>("owner") )
         M_owner = *it;
     if ( auto it = pt.get_optional<std::string>("repo") )
@@ -662,7 +675,12 @@ RemoteData::Github::Github( std::string const& desc, WorldComm const& worldComm 
     if ( auto it = pt.get_optional<std::string>("branch") )
         M_branch = *it;
     if ( auto it = pt.get_optional<std::string>("path") )
-        M_path = fs::path(*it).remove_trailing_separator().remove_trailing_separator().string();
+    {
+        if ( Feel::filename_is_dot( fs::path( *it ).filename() ) )
+            M_path = fs::path( *it ).parent_path().string();
+        else
+            M_path = *it;
+    }
     if ( auto it = pt.get_optional<std::string>("token") )
         M_token = *it;
     // if token is empty, try looking for it in environment variable FEELPP_GITHUB_TOKEN
@@ -700,49 +718,87 @@ RemoteData::Github::download( std::string const& dir ) const
     std::vector<std::string> downloadFileOrFolder;
     if ( M_worldComm.isMasterRank() )
     {
-        std::string url = "https://api.github.com/repos/" + M_owner + "/" + M_repo +"/contents/" + M_path;
-        if ( !M_branch.empty() )
-            url += "?ref=" + M_branch;
-        std::vector<std::string> headers;
-        headers.push_back("Accept: application/vnd.github.v3.json");
-        headers.push_back("User-Agent: feelpp-agent");
-        if ( !M_token.empty() )
-            headers.push_back( "Authorization: token "+M_token );
-
-        std::ostringstream omemfile;
-        requestHTTPGET( url,headers, omemfile );
-        std::istringstream istr( omemfile.str() );
-        pt::ptree ptree;
-        pt::read_json(istr, ptree);
-
-        if ( !fs::exists( dir ) )
-            fs::create_directories( dir );
-
-        if ( auto testFile = ptree.get_optional<std::string>("path") )
-        {
-            std::string filename = ptree.get<std::string>("name");
-            headers[0] = "Accept: application/vnd.github.v3.raw";
-            std::string filepath = (fs::path(dir)/filename).string();
-            std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
-            requestHTTPGET( url,headers,ofile );
-            ofile.close();
-            downloadFileOrFolder.push_back( filepath );
-        }
-        else
-        {
-            std::string subdir = (M_path.empty())? M_repo : fs::path(M_path).filename().string();
-            std::string newdir = (fs::path(dir)/subdir).string();
-            fs::create_directories( newdir );
-
-            this->downloadFolderRecursively( ptree, newdir );
-            downloadFileOrFolder.push_back( newdir );
-        }
+        downloadFileOrFolder = this->downloadImpl( dir );
     }
     mpi::broadcast( M_worldComm.globalComm(), downloadFileOrFolder, M_worldComm.masterRank() );
     return downloadFileOrFolder;
 }
 
-void
+std::vector<std::string>
+RemoteData::Github::downloadImpl( std::string const& dir ) const
+{
+    std::vector<std::string> downloadFileOrFolder;
+
+    std::string url = "https://api.github.com/repos/" + M_owner + "/" + M_repo +"/contents/" + M_path;
+    if ( !M_branch.empty() )
+        url += "?ref=" + M_branch;
+    std::vector<std::string> headers;
+    headers.push_back("Accept: application/vnd.github.v3.json");
+    headers.push_back("User-Agent: feelpp-agent");
+    if ( !M_token.empty() )
+        headers.push_back( "Authorization: token "+M_token );
+
+    std::ostringstream omemfile;
+    StatusRequestHTTP status = requestHTTPGET( url,headers, omemfile );
+    if ( !status.success() )
+    {
+        std::cout << "Github error in requestHTTPGET : " << status.msg() << "\n";
+        return {};
+    }
+
+    std::istringstream istr( omemfile.str() );
+    pt::ptree ptree;
+    pt::read_json(istr, ptree);
+
+    if ( status.code() != 200 )
+    {
+        std::cout << Github::errorMessage( ptree,"get metadata fails", status.code() ) << "\n";
+        return {};
+    }
+
+    if ( !fs::exists( dir ) )
+        fs::create_directories( dir );
+
+    if ( auto testFile = ptree.get_optional<std::string>("path") )
+    {
+        std::string filename = ptree.get<std::string>("name");
+        headers[0] = "Accept: application/vnd.github.v3.raw";
+        std::string filepath = (fs::path(dir)/filename).string();
+        std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
+        status = requestHTTPGET( url,headers,ofile );
+        ofile.close();
+        if ( !status.success() )
+        {
+            std::cout << "Github error in requestHTTPGET : " << status.msg() << "\n";
+            return {};
+        }
+        if ( status.code() != 200 )
+        {
+            std::cout << Github::errorMessage( pt::ptree{}, "download file fails", status.code() ) << "\n";
+            return {};
+        }
+
+        downloadFileOrFolder.push_back( filepath );
+    }
+    else
+    {
+        std::string subdir = (M_path.empty())? M_repo : fs::path(M_path).filename().string();
+        std::string newdir = (fs::path(dir)/subdir).string();
+        fs::create_directories( newdir );
+
+        auto resFolder = this->downloadFolderRecursively( ptree, newdir );
+        if ( !std::get<0>( resFolder ) )
+        {
+            std::cout << std::get<1>( resFolder ) << "\n";
+            return {};
+        }
+        downloadFileOrFolder.push_back( newdir );
+    }
+
+    return downloadFileOrFolder;
+}
+
+std::tuple<bool,std::string>
 RemoteData::Github::downloadFolderRecursively( pt::ptree const& ptree, std::string const& dir ) const
 {
     std::vector<std::string> headers;
@@ -766,25 +822,58 @@ RemoteData::Github::downloadFolderRecursively( pt::ptree const& ptree, std::stri
             headers[0] = "Accept: application/vnd.github.v3.raw";
             std::string filepath = (fs::path(dir)/name).string();
             std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
-            requestHTTPGET( url,headers,ofile );
+            StatusRequestHTTP status = requestHTTPGET( url,headers,ofile );
             ofile.close();
+            if ( !status.success() )
+                return std::make_tuple( false, "Github error in requestHTTPGET : " + status.msg() );
+            if ( status.code() != 200 )
+                return std::make_tuple( false, Github::errorMessage( pt::ptree{},"download file fails", status.code() ) );
         }
         else if ( type == "dir" )
         {
             // get ptree subdir
             headers[0] = "Accept: application/vnd.github.v3.json";
             std::ostringstream omemfile;
-            requestHTTPGET( url,headers,omemfile );
+            StatusRequestHTTP status = requestHTTPGET( url,headers,omemfile );
+            if ( !status.success() )
+                return std::make_tuple( false, "Github error in requestHTTPGET : " + status.msg() );
             std::istringstream istr( omemfile.str() );
             pt::ptree ptreeSubdir;
             pt::read_json( istr,ptreeSubdir );
+            if ( status.code() != 200 )
+                return std::make_tuple( false, Github::errorMessage( ptreeSubdir, "get metadata fails", status.code() ) );
             // create subdir
             std::string newdir = (fs::path(dir)/name).string();
             fs::create_directories( newdir );
             // recursive call
-            this->downloadFolderRecursively( ptreeSubdir, newdir );
+            auto resRecur = this->downloadFolderRecursively( ptreeSubdir, newdir );
+            if ( !std::get<0>( resRecur ) )
+                return std::make_tuple( false, std::get<1>( resRecur ) );
         }
     }
+    return std::make_tuple( true, "" );
+}
+
+std::string
+RemoteData::Github::errorMessage( pt::ptree const& ptree, std::string const& defaultMsg, uint16_type statusCode )
+{
+    std::string errMsg = defaultMsg;
+    if ( auto itMsg = ptree.get_optional<std::string>("message") )
+        errMsg = *itMsg;
+    std::string docUrl;
+    if ( auto itDoc = ptree.get_optional<std::string>("documentation_url") )
+        docUrl = *itDoc;
+    std::string errMsgInfo;
+    if ( statusCode != invalid_uint16_type_value )
+        errMsgInfo += (boost::format("code %1%")%statusCode).str();
+    std::string res = "Girder error";
+    if ( !errMsgInfo.empty() )
+        res += " ("+errMsgInfo+")";
+    if ( !errMsg.empty() )
+        res += " : " + errMsg;
+    if ( !docUrl.empty() )
+        res += (boost::format(" [ doc_url: %1% ]")%docUrl).str();
+    return res;
 }
 
 
@@ -801,7 +890,14 @@ RemoteData::Girder::Girder( std::string const& desc, WorldComm const& worldComm 
     std::vector<std::string> keysvalues;
     std::string exprtosplit = std::string(what[5].first, what[5].second);
 
-    pt::ptree pt = convertDescToPropertyTree( exprtosplit );
+    auto resConvertion = convertDescToPropertyTree( exprtosplit );
+    if ( !resConvertion.first )
+    {
+        if ( M_worldComm.isMasterRank() )
+            std::cout << "Girder desc has a syntax error : " << desc << "\n";
+        return;
+    }
+    pt::ptree pt = resConvertion.second;
 
     if ( auto it = pt.get_optional<std::string>("url") )
         M_url = *it;
@@ -1007,7 +1103,7 @@ RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& 
         }
         if ( status.code() != 200 )
         {
-            std::cout << Girder::errorMessage( pt,"downloading file fails", status.code() ) << "\n";
+            std::cout << Girder::errorMessage( pt::ptree{}, "downloading file fails", status.code() ) << "\n";
             return {};
         }
         // save metadata
