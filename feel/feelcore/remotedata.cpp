@@ -1031,11 +1031,23 @@ RemoteData::Girder::downloadFolder( std::string const& folderId, std::string con
     if ( !token.empty() )
         headersFolderInfo.push_back( "Girder-Token: "+token );
     std::ostringstream omemfile;
-    requestHTTPGET( urlFolderInfo, headersFolderInfo, omemfile );
+    StatusRequestHTTP status = requestHTTPGET( urlFolderInfo, headersFolderInfo, omemfile );
+    if ( !status.success() )
+    {
+        std::cout << "Girder error in requestHTTPGET : " << status.msg() << "\n";
+        return {};
+    }
+
     // convert to property tree
     std::istringstream istr( omemfile.str() );
     pt::ptree pt;
     pt::read_json(istr, pt);
+
+    if ( status.code() != 200 )
+    {
+        std::cout << Girder::errorMessage( pt,"getting metadata (before download) fails", status.code() ) << "\n";
+        return {};
+    }
 
     // extract info of ptree
     auto itFolderName = pt.get_optional<std::string>("name");
@@ -1049,8 +1061,18 @@ RemoteData::Girder::downloadFolder( std::string const& folderId, std::string con
         headersFolderDownload.push_back( "Girder-Token: "+token );
     std::string filepath = (fs::path(dir)/(foldername+".zip")).string();
     std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
-    requestHTTPGET( urlFolderDownload,headersFolderDownload,ofile );
+    status = requestHTTPGET( urlFolderDownload,headersFolderDownload,ofile );
     ofile.close();
+    if ( !status.success() )
+    {
+        std::cout << "Girder error in requestHTTPGET : " << status.msg() << "\n";
+        return {};
+    }
+    if ( status.code() != 200 )
+    {
+        std::cout << Girder::errorMessage( pt,"downloading file fails", status.code() ) << "\n";
+        return {};
+    }
     // save metadata
     std::string metadatapath = (fs::path(dir)/(foldername+".metadata.json")).string();
     std::ofstream ofileMetadata( metadatapath, std::ios::out);
@@ -1183,7 +1205,23 @@ RemoteData::Girder::uploadFile( std::string const& filepath, std::string const& 
     headersFileInfo.push_back( "Girder-Token: "+token );
 
     std::ostringstream omemfile;
-    requestHTTPPOST( urlFileUpload, headersFileInfo, imemfile, fsize, omemfile );
+    StatusRequestHTTP status = requestHTTPPOST( urlFileUpload, headersFileInfo, imemfile, fsize, omemfile );
+    if ( !status.success() )
+    {
+        std::cout << "Girder error in requestHTTPPOST : " << status.msg() << "\n";
+        return;
+    }
+    if ( status.code() != 200 )
+    {
+        // convert to property tree
+        std::istringstream istr( omemfile.str() );
+        pt::ptree pt;
+        pt::read_json(istr, pt);
+
+        std::cout << Girder::errorMessage( pt,"upload file fails", status.code() ) << "\n";
+        return;
+    }
+
 }
 
 std::string
@@ -1200,11 +1238,22 @@ RemoteData::Girder::createFolderImpl( std::string const& folderName, std::string
     headers.push_back( "Girder-Token: "+token );
 
     std::ostringstream omemfile;
-    requestHTTPPOST( urlCreateFolder, headers, omemfile );
+    StatusRequestHTTP status = requestHTTPPOST( urlCreateFolder, headers, omemfile );
+    if ( !status.success() )
+    {
+        std::cout << "Girder error in requestHTTPPOST : " << status.msg() << "\n";
+        return {};
+    }
+
     // convert to property tree
     std::istringstream istr( omemfile.str() );
     pt::ptree pt;
     pt::read_json(istr, pt);
+    if ( status.code() != 200 )
+    {
+        std::cout << Girder::errorMessage( pt,"upload file fails", status.code() ) << "\n";
+        return {};
+    }
 
     std::string folderIdCreated;
     if ( auto it = pt.get_optional<std::string>("_id") )
@@ -1227,7 +1276,7 @@ RemoteData::Girder::createToken( int duration ) const
     StatusRequestHTTP status = requestHTTPPOST( urlCreateToken, headers, omemfile );
     if ( !status.success() )
     {
-        std::cout << "Girder error in requestHTTPGET : " << status.msg() << "\n";
+        std::cout << "Girder error in requestHTTPPOST : " << status.msg() << "\n";
         return {};
     }
 
@@ -1264,7 +1313,7 @@ RemoteData::Girder::removeToken( std::string const& token ) const
     StatusRequestHTTP status = requestHTTPDELETE( urlRemoveToken, headers, omemfile );
     if ( !status.success() )
     {
-        std::cout << "Girder error in requestHTTPGET : " << status.msg() << "\n";
+        std::cout << "Girder error in requestHTTPDELETE : " << status.msg() << "\n";
         return;
     }
     if ( status.code() != 200 )
