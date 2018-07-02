@@ -216,6 +216,13 @@ ModelMeasuresIO::setMeasureComp( std::string const& key,std::vector<double> cons
         this->setMeasure( key+"_z",values[2] );
 }
 
+double
+ModelMeasuresIO::measure( std::string const& key ) const
+{
+    CHECK( this->hasMeasure( key ) ) << "no measure with key " << key;
+    uint16_type k = M_dataNameToIndex.find( key )->second;
+    return M_data[k];
+}
 
 void
 ModelMeasuresEvaluatorContext::add( std::string const& field, int ctxId, std::string const& name )
