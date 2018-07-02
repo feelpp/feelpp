@@ -45,7 +45,7 @@ class LevelSetSpaceManager
 
 public:
     static const uint16_type Order = BasisType::nOrder;
-    typedef double value_type;
+    typedef typename BasisType::value_type value_type;
 
     //--------------------------------------------------------------------//
     // Mesh
