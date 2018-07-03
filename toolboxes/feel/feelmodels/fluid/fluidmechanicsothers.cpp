@@ -1720,8 +1720,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMeshArea( std::list<std::string> cons
 
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-Eigen::Matrix<typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::super_type::value_type,
-              FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nDim,1>
+typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::force_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName) const
 {
     using namespace Feel::vf;

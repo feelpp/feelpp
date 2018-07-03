@@ -1713,7 +1713,7 @@ public:
 
     static constexpr uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents1 );
     static constexpr uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents2 );
-    static constexpr bool is_product = ( is_composite? invalid_uint16_type_value : basis_0_type::is_product );
+    static constexpr bool is_product = ( is_composite? false : basis_0_type::is_product );
     typedef typename  basis_0_type::continuity_type continuity_type;
 
     typedef typename mpl::if_<mpl::bool_<is_composite>,
