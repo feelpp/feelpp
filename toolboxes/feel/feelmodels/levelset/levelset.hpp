@@ -63,15 +63,8 @@ namespace Feel {
     BOOST_PARAMETER_NAME(space_markers_extended_doftable)
 
     BOOST_PARAMETER_NAME(space_manager)
-    BOOST_PARAMETER_NAME(space_vectorial)
-    BOOST_PARAMETER_NAME(space_markers)
-    BOOST_PARAMETER_NAME(space_tensor2symm)
+    BOOST_PARAMETER_NAME(tool_manager)
     BOOST_PARAMETER_NAME(reinitializer)
-    BOOST_PARAMETER_NAME(projectorL2)
-    BOOST_PARAMETER_NAME(projectorL2_vectorial)
-    BOOST_PARAMETER_NAME(projectorL2_tensor2symm)
-    BOOST_PARAMETER_NAME(smoother)
-    BOOST_PARAMETER_NAME(smoother_vectorial)
 
 namespace FeelModels {
 
@@ -182,6 +175,10 @@ public:
     typedef element_levelset_ptrtype element_stretch_ptrtype;
 
     //--------------------------------------------------------------------//
+    // Tool manager
+    typedef LevelSetToolManager<ConvexType, BasisType, PeriodicityType, BasisPnType> levelset_tool_manager_type;
+    typedef boost::shared_ptr<levelset_tool_manager_type> levelset_tool_manager_ptrtype;
+    //--------------------------------------------------------------------//
     // Projectors
     typedef Projector<space_levelset_type, space_levelset_type> projector_levelset_type;
     typedef boost::shared_ptr<projector_levelset_type> projector_levelset_ptrtype;
@@ -286,21 +283,23 @@ public:
               ( space_manager, (levelset_space_manager_ptrtype) )
             )
             ( optional
+              ( tool_manager, (levelset_tool_manager_ptrtype), levelset_tool_manager_ptrtype() )
               ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ), reinitializer_ptrtype() )
-              ( projectorL2, (projector_levelset_ptrtype), projector_levelset_ptrtype() )
-              ( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), projector_levelset_vectorial_ptrtype() )
-              ( projectorL2_tensor2symm, (projector_tensor2symm_ptrtype), projector_tensor2symm_ptrtype() )
-              ( smoother, (projector_levelset_ptrtype), projector_levelset_ptrtype() )
-              ( smoother_vectorial, (projector_levelset_vectorial_ptrtype), projector_levelset_vectorial_ptrtype() )
             )
             )
     {
+        // Space manager
         if( !space_manager )
         {
             return this->build();
         }
-        
         M_spaceManager = space_manager;
+
+        // Tool manager
+        if( !tool_manager )
+            M_toolManager = boost::make_shared<levelset_tool_manager_type>( M_spaceManager, this->prefix() );
+        else
+            M_toolManager = tool_manager;
 
         // Function spaces
         this->createFunctionSpaces();
@@ -316,124 +315,12 @@ public:
         }
         this->createReinitialization();
 
-        // createOthers
-        if( projectorL2 )
-            M_projectorL2 = projectorL2;
-        else
-            M_projectorL2 = Feel::projector(
-                    this->functionSpace(), this->functionSpace(), 
-                    backend(_name=prefixvm(this->prefix(),"projector-l2"))
-                    );
-
-        if( projectorL2_vectorial )
-            M_projectorL2Vec = projectorL2_vectorial;
-        else
-            M_projectorL2Vec = Feel::projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(),"projector-l2-vec")));
-
-        if( M_useCauchyAugmented )
-        {
-            if( projectorL2_tensor2symm )
-                M_projectorL2Tensor2Symm = projectorL2_tensor2symm;
-            else
-                M_projectorL2Tensor2Symm = Feel::projector(
-                        this->functionSpaceTensor2Symm(), this->functionSpaceTensor2Symm(), 
-                        backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
-                        );
-        }
-
-        if( M_useSpaceIsoPN )
-        {
-            M_projectorL2PN = projector( 
-                    this->functionSpaceManager()->functionSpaceScalarPN(), this->functionSpaceManager()->functionSpaceScalarPN(),
-                    backend(_name=prefixvm(this->prefix(),"projector-l2-pn"), _worldcomm=this->worldComm())
-                    );
-            M_projectorL2PNVec = projector( 
-                    this->functionSpaceManager()->functionSpaceVectorialPN(), this->functionSpaceManager()->functionSpaceVectorialPN(),
-                    backend(_name=prefixvm(this->prefix(),"projector-l2-pn-vec"), _worldcomm=this->worldComm())
-                    );
-            //M_projectorL2P1PN = projector( 
-            //this->functionSpace(), this->functionSpaceManager()->functionSpaceScalarPN(),
-            //backend(_name=prefixvm(this->prefix(),"projector-l2-pn-vec"), _worldcomm=this->worldComm())
-            //);
-        }
-
-        if( smoother )
-            M_smoother = smoother;
-        else
-            M_smoother = Feel::projector(
-                    this->functionSpace(), this->functionSpace(), 
-                    backend(_name=prefixvm(this->prefix(),"smoother")), 
-                    DIFF, this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30
-                    );
-
-        if( smoother_vectorial )
-            M_smootherVectorial = smoother_vectorial;
-        else 
-            M_smootherVectorial = Feel::projector(
-                    this->functionSpaceVectorial(), this->functionSpaceVectorial(), 
-                    backend(_name=prefixvm(this->prefix(),"smoother-vec")), 
-                    DIFF, this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30
-                    );
+        // createTools
+        this->createTools();
 
         // Create exporters
         this->createExporters();
     }
-
-    //BOOST_PARAMETER_MEMBER_FUNCTION( 
-            //(void), build, tag,
-            //( required
-              //( space, (space_levelset_ptrtype) )
-            //)
-            //( optional
-              //( space_vectorial, (space_vectorial_ptrtype), space_vectorial_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
-              //( space_markers, (space_markers_ptrtype), space_markers_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
-              //( space_tensor2symm, (space_tensor2symm_ptrtype), space_tensor2symm_ptrtype() )
-              //( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ), reinitializer_ptrtype() )
-              //( projectorL2, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"projector-l2"))) )
-              //( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"projector-l2-vec"))) )
-              //( projectorL2_tensor2symm, (projector_tensor2symm_ptrtype), projector_tensor2symm_ptrtype() )
-              //( smoother, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"smoother")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
-              //( smoother_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"smoother-vec")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
-            //)
-            //)
-    //{
-        //M_advectionToolbox->build( space );
-        //M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
-        //// createFunctionSpaces
-        //M_spaceVectorial = space_vectorial;
-        //M_spaceMarkers = space_markers;
-        //if( M_useCauchyAugmented )
-        //{
-            //if( !space_tensor2symm )
-                //space_tensor2symm = self_type::space_tensor2symm_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
-            //M_spaceTensor2Symm = space_tensor2symm;
-        //}
-        //// createInterfaceQuantities
-        //this->createInterfaceQuantities();
-        //// createReinitialization
-        //if( reinitializer )
-        //{
-            //M_reinitializer = reinitializer;
-        //}
-        //this->createReinitialization();
-        //// createOthers
-        //M_projectorL2 = projectorL2;
-        //M_projectorL2Vec = projectorL2_vectorial;
-        //if( M_useCauchyAugmented )
-        //{
-            //if( !projectorL2_tensor2symm )
-                //projectorL2_tensor2symm = Feel::projector(
-                        //this->functionSpaceTensor2Symm(), this->functionSpaceTensor2Symm(), 
-                        //backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
-                        //);
-            //M_projectorL2Tensor2Symm = projectorL2_tensor2symm;
-        //}
-        //M_smoother = smoother;
-        //M_smootherVectorial = smoother_vectorial;
-
-        //// Create exporters
-        //this->createExporters();
-    //}
 
     //--------------------------------------------------------------------//
     // Initialization
@@ -498,10 +385,16 @@ public:
     element_levelset_ptrtype const& curvature() const;
     element_levelset_ptrtype const& K() const { return this->curvature(); }
 
+    void updateInterfaceQuantities();
+
     double thicknessInterface() const { return M_thicknessInterface; }
     void setThicknessInterface( double value ) { M_thicknessInterface = value; }
 
     int iterSinceReinit() const { return M_iterSinceReinit; }
+
+    //--------------------------------------------------------------------//
+    // Tools
+    levelset_tool_manager_ptrtype const& toolManager() const { return M_toolManager; }
 
     projector_levelset_ptrtype const& projectorL2() const { return M_projectorL2; }
     projector_levelset_vectorial_ptrtype const& projectorL2Vectorial() const { return M_projectorL2Vec; }
@@ -511,8 +404,6 @@ public:
     projector_levelset_vectorial_ptrtype const& smootherVectorial() const;
     projector_levelset_ptrtype const& smootherInterface() const;
     projector_levelset_vectorial_ptrtype const& smootherInterfaceVectorial() const;
-
-    void updateInterfaceQuantities();
 
     //--------------------------------------------------------------------//
     // Cauchy-Green tensor related quantities
@@ -650,7 +541,7 @@ private:
     void createFunctionSpaces();
     void createInterfaceQuantities();
     void createReinitialization();
-    void createOthers();
+    void createTools();
     void createExporters();
 
     //--------------------------------------------------------------------//
@@ -734,14 +625,12 @@ private:
     mutable element_markers_ptrtype M_markerInterface;
     bool M_doUpdateMarkers;
     //--------------------------------------------------------------------//
-    // Projectors
+    // Tools (projectors)
+    levelset_tool_manager_ptrtype M_toolManager;
+
     projector_levelset_ptrtype M_projectorL2;
     projector_levelset_vectorial_ptrtype M_projectorL2Vec;
     projector_tensor2symm_ptrtype M_projectorL2Tensor2Symm;
-    boost::shared_ptr<Projector<space_levelset_PN_type, space_levelset_PN_type>> M_projectorL2PN;
-    boost::shared_ptr<Projector<space_levelset_type, space_levelset_PN_type>> M_projectorL2P1PN;
-    typedef typename levelset_space_manager_type::space_vectorial_PN_type space_vectorial_PN_type;
-    boost::shared_ptr<Projector<space_vectorial_PN_type, space_vectorial_PN_type>> M_projectorL2PNVec;
 
     mutable projector_levelset_ptrtype M_smoother;
     mutable projector_levelset_vectorial_ptrtype M_smootherVectorial;
