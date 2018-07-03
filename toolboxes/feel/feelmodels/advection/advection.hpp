@@ -36,25 +36,26 @@ namespace Feel {
 namespace FeelModels {
 
 template< 
-    typename ConvexType, typename BasisAdvectionType, 
-    typename PeriodicityType = NoPeriodicity,
-    typename BasisDiffusionCoeffType = typename detail::ChangeBasisPolySet<Scalar, BasisAdvectionType>::type,
-    typename BasisReactionCoeffType = typename detail::ChangeBasisPolySet<Scalar, BasisAdvectionType>::type
+    typename FunctionSpaceType,
+    typename BasisDiffusionCoeffType = Lagrange<FunctionSpaceType::basis_type::nOrder, Scalar, Continuous, PointSetFekete>,
+    typename BasisReactionCoeffType = Lagrange<FunctionSpaceType::basis_type::nOrder, Scalar, Continuous, PointSetFekete>
         >
 class Advection
-    : public AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType>
-    , public boost::enable_shared_from_this< Advection<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType> >
+    : public AdvectionBase<FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType>
+    , public boost::enable_shared_from_this< Advection<FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType> >
 {
 public:
-    typedef AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType> super_type;
+    typedef AdvectionBase<FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType> super_type;
 
-    typedef Advection<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType> self_type;
+    typedef Advection<FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     typedef typename super_type::space_advection_type space_advection_type;
     typedef typename super_type::space_advection_ptrtype space_advection_ptrtype;
     typedef typename super_type::element_advection_type element_advection_type;
     typedef typename super_type::element_advection_ptrtype element_advection_ptrtype;
+
+    typedef typename super_type::periodicity_type periodicity_type;
 
     static const uint16_type nDim = super_type::nDim;
     static constexpr bool is_vectorial = super_type::is_vectorial;

@@ -94,10 +94,9 @@ namespace ADRTypes {
 };
 
 template< 
-    typename ConvexType, typename BasisAdvectionType, 
-    typename PeriodicityType = NoPeriodicity,
-    typename BasisDiffusionCoeffType = typename detail::ChangeBasisPolySet<Scalar, BasisAdvectionType>::type,
-    typename BasisReactionCoeffType = typename detail::ChangeBasisPolySet<Scalar, BasisAdvectionType>::type
+    typename FunctionSpaceType,
+    typename BasisDiffusionCoeffType = Lagrange<FunctionSpaceType::basis_type::nOrder, Scalar, Continuous, PointSetFekete>,
+    typename BasisReactionCoeffType = Lagrange<FunctionSpaceType::basis_type::nOrder, Scalar, Continuous, PointSetFekete>
         >
 class AdvectionBase : 
     public ModelNumerical,
@@ -108,8 +107,7 @@ class AdvectionBase :
 public :
     typedef ModelNumerical super_type;
 
-    typedef AdvectionBase< ConvexType, BasisAdvectionType, PeriodicityType, 
-            BasisDiffusionCoeffType, BasisReactionCoeffType > self_type;
+    typedef AdvectionBase< FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType > self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     // ADR types
@@ -125,22 +123,25 @@ public :
 
     //--------------------------------------------------------------------//
     // Mesh
-    typedef ConvexType convex_type;
+    typedef typename FunctionSpaceType::mesh_type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef typename mesh_type::shape_type convex_type;
     static const uint16_type nDim = convex_type::nDim;
     static const uint16_type nOrderGeo = convex_type::nOrder;
     static const uint16_type nRealDim = convex_type::nRealDim;
-    typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     //--------------------------------------------------------------------//
     // Space advection
-    typedef BasisAdvectionType basis_advection_type;
+    typedef FunctionSpaceType space_advection_type;
+    //typedef FunctionSpace< mesh_type, bases<basis_advection_type>, Periodicity<periodicity_type> > space_advection_type;
+    typedef boost::shared_ptr<space_advection_type> space_advection_ptrtype;
+
+    typedef typename space_advection_type::basis_type basis_advection_type;
     static const uint16_type nOrder = basis_advection_type::nOrder;
 
-    typedef PeriodicityType periodicity_type;
-    
-    typedef FunctionSpace< mesh_type, bases<basis_advection_type>, Periodicity<periodicity_type> > space_advection_type;
-    typedef boost::shared_ptr<space_advection_type> space_advection_ptrtype;
+    typedef typename boost::remove_reference<
+        typename fusion::result_of::at_c<typename space_advection_type::periodicity_type, 0>::type
+        >::type periodicity_type;
     
     typedef typename space_advection_type::element_type element_advection_type;
     typedef boost::shared_ptr<element_advection_type> element_advection_ptrtype;
@@ -468,14 +469,13 @@ protected:
 //----------------------------------------------------------------------------//
 // Advection velocity update
 template< 
-    typename ConvexType, typename BasisAdvectionType, 
-    typename PeriodicityType,
+    typename FunctionSpaceType,
     typename BasisDiffusionCoeffType,
     typename BasisReactionCoeffType
         >
 template<typename ExprT>
 void
-AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateAdvectionVelocity(
+AdvectionBase<FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateAdvectionVelocity(
         vf::Expr<ExprT> const& v_expr)
 {
     M_exprAdvectionVelocity.reset(); // remove symbolic expr
@@ -485,14 +485,13 @@ AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoe
 //----------------------------------------------------------------------------//
 // Source update
 template< 
-    typename ConvexType, typename BasisAdvectionType, 
-    typename PeriodicityType,
+    typename FunctionSpaceType,
     typename BasisDiffusionCoeffType,
     typename BasisReactionCoeffType
         >
 template<typename ExprT>
 void 
-AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateSourceAdded(
+AdvectionBase<FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateSourceAdded(
         vf::Expr<ExprT> const& f_expr)
 {
     if (!M_fieldSource)

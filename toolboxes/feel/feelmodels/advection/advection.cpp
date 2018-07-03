@@ -295,7 +295,7 @@ ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTION_CLASS_TEMPLATE_TYPE::loadPeriodicityFromOptionsVm()
 {
-    detail::loadPeriodicityFromOptionsVm( *this, mpl::bool_<PeriodicityType::is_periodic>() );
+    detail::loadPeriodicityFromOptionsVm( *this, mpl::bool_<self_type::periodicity_type::is_periodic>() );
 }
 
 } // namespace FeelModels
