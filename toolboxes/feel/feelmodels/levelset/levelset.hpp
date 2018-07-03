@@ -37,6 +37,7 @@
 #include <feel/feelmodels/advection/advection.hpp>
 
 #include <feel/feelmodels/levelset/levelsetspacemanager.hpp>
+#include <feel/feelmodels/levelset/levelsettoolmanager.hpp>
 #include <feel/feelmodels/levelset/reinitializer.hpp>
 #include <feel/feelmodels/levelset/reinitializer_fm.hpp>
 #include <feel/feelmodels/levelset/reinitializer_hj.hpp>

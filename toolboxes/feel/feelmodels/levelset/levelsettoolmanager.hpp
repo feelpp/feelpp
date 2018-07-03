@@ -41,11 +41,12 @@ class LevelSetToolManager
     typedef LevelSetToolManager<ConvexType, BasisType, PeriodicityType, BasisPnType> self_type;
 
 public:
-    typedef typename BasisType::value_type value_type;
     //--------------------------------------------------------------------//
     // Function space manager
     typedef LevelSetSpaceManager<ConvexType, BasisType, PeriodicityType, BasisPnType> levelset_space_manager_type;
     typedef boost::shared_ptr<levelset_space_manager_type> levelset_space_manager_ptrtype;
+
+    typedef typename levelset_space_manager_type::value_type value_type;
     // Default scalar and vectorial spaces
     typedef typename levelset_space_manager_type::space_scalar_type space_scalar_type;
     typedef typename levelset_space_manager_type::space_scalar_ptrtype space_scalar_ptrtype;
@@ -76,7 +77,7 @@ public:
             );
 
     void createProjectorL2Default();
-    void createProjectorSMDefault( double smoothCoeff, bool rebuild = false );
+    void createProjectorSMDefault();
     void createProjectorL2Tensor2Symm();
 
     levelset_space_manager_ptrtype const& functionSpaceManager() const { return M_spaceManager; }
@@ -106,6 +107,8 @@ private:
     projector_vectorial_ptrtype M_projectorL2Vectorial;
     projector_tensor2symm_ptrtype M_projectorL2Tensor2Symm;
     // Projectors SMOOTH
+    double M_projectorSMScalarCoeff;
+    double M_projectorSMVectorialCoeff;
     projector_scalar_ptrtype M_projectorSMScalar;
     projector_vectorial_ptrtype M_projectorSMVectorial;
 
@@ -120,12 +123,16 @@ private:
 
 LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
 LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::LevelSetToolManager( 
-        levelset_space_manager_ptrtype const& spaceManager
+        levelset_space_manager_ptrtype const& spaceManager,
         std::string const& prefix
         ) :
     M_spaceManager( spaceManager ),
     M_prefix( prefix )
 {
+    double h = M_spaceManager->mesh()->hAverage();
+    double O = BasisType::nOrder;
+    M_projectorSMScalarCoeff = h / O * doption( _name="smooth-coeff", _prefix=prefixvm(M_prefix,"smoother") );
+    M_projectorSMVectorialCoeff = h / O * doption( _name="smooth-coeff", _prefix=prefixvm(M_prefix,"smoother") );
 }
 
 LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
@@ -164,9 +171,9 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorL2Default()
 
 LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMDefault( double smoothCoeff, bool rebuild )
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMDefault()
 {
-    if( !M_projectorSMScalar || rebuild )
+    if( !M_projectorSMScalar )
     {
         auto backendName = prefixvm( this->M_prefix, "smoother-scalar" );
         M_backendProjectorSMScalar = backend_type::build(
@@ -178,10 +185,10 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMDefault( double smooth
                 this->functionSpaceManager()->functionSpaceScalar(),
                 this->functionSpaceManager()->functionSpaceScalar(),
                 this->M_backendProjectorSMScalar,
-                DIFF, smoothCoeff, 30
+                DIFF, M_projectorSMScalarCoeff, 30
                 );
     }
-    if( !M_projectorSMVectorial || rebuild )
+    if( !M_projectorSMVectorial )
     {
         auto backendName = prefixvm( this->M_prefix, "smoother-vectorial" );
         M_backendProjectorSMVectorial = backend_type::build(
@@ -193,7 +200,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMDefault( double smooth
                 this->functionSpaceManager()->functionSpaceVectorial(),
                 this->functionSpaceManager()->functionSpaceVectorial(),
                 this->M_backendProjectorL2Vectorial,
-                DIFF, smoothCoeff, 30
+                DIFF, M_projectorSMVectorialCoeff, 30
                 );
     }
 }

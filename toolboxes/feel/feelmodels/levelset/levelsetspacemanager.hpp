@@ -45,7 +45,6 @@ class LevelSetSpaceManager
 
 public:
     static const uint16_type Order = BasisType::nOrder;
-    typedef typename BasisType::value_type value_type;
 
     //--------------------------------------------------------------------//
     // Mesh
@@ -65,16 +64,23 @@ public:
     //--------------------------------------------------------------------//
     // Default scalar and vectorial spaces
     typedef BasisType basis_scalar_type;
-    typedef FunctionSpace< mesh_type, bases<basis_scalar_type>, Periodicity<periodicity_type> > space_scalar_type;
-    typedef boost::shared_ptr<space_scalar_type> space_scalar_ptrtype;
-    typedef typename space_scalar_type::element_type element_scalar_type;
-    typedef boost::shared_ptr<element_scalar_type> element_scalar_ptrtype;
+    //typedef FunctionSpace< mesh_type, bases<basis_scalar_type>, Periodicity<periodicity_type> > space_scalar_type;
+    //typedef boost::shared_ptr<space_scalar_type> space_scalar_ptrtype;
+    //typedef typename space_scalar_type::element_type element_scalar_type;
+    //typedef boost::shared_ptr<element_scalar_type> element_scalar_ptrtype;
 
     typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_type>::type basis_vectorial_type;
     typedef FunctionSpace<mesh_type, bases<basis_vectorial_type>, Periodicity<periodicity_type> > space_vectorial_type;
     typedef boost::shared_ptr<space_vectorial_type> space_vectorial_ptrtype;
     typedef typename space_vectorial_type::element_type element_vectorial_type;
     typedef boost::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
+
+    typedef typename space_vectorial_type::component_functionspace_type space_scalar_type;
+    typedef boost::shared_ptr<space_scalar_type> space_scalar_ptrtype;
+    typedef typename space_scalar_type::element_type element_scalar_type;
+    typedef boost::shared_ptr<element_scalar_type> element_scalar_ptrtype;
+
+    typedef typename space_scalar_type::value_type value_type;
 
     //--------------------------------------------------------------------//
     // PN (iso) spaces
@@ -290,9 +296,9 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::LevelSetSpaceManager(
         std::string const& prefix,
         std::string const& rootRepository
         ) :
-    M_mesh( mesh ),
     M_prefix( prefix ),
     M_rootRepository( rootRepository ),
+    M_mesh( mesh ),
     M_worldsComm( std::vector<WorldComm>(1,mesh->worldComm()) ),
     M_buildExtendedDofTable( false ),
     M_functionSpaceCreated( false )
@@ -358,7 +364,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
     if( !M_spaceScalarPN )
     {
         M_spaceScalarPN = space_scalar_PN_type::New( 
-                _mesh=this->mesh()
+                _mesh=this->mesh(),
                 _worldscomm=this->worldsComm(),
                 _periodicity=this->periodicity()
                 );
@@ -366,7 +372,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
     if( !M_spaceVectorialPN )
     {
         M_spaceVectorialPN = space_vectorial_PN_type::New( 
-                _mesh=this->mesh() 
+                _mesh=this->mesh(),
                 _worldscomm=this->worldsComm(),
                 _periodicity=this->periodicity()
                 );
@@ -379,28 +385,35 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
         M_meshIsoPN = M_opLagrangeP1isoPN->mesh();
         M_rangeMeshIsoPNElements = elements( M_meshIsoPN );
     }
-    if( !M_spaceScalarIsoPN )
-    {
-        std::vector<bool> extendedDT( 1, M_buildExtendedDofTable );
-        M_spaceScalarIsoPN = space_scalar_type::New(
-                _mesh=this->meshIsoPN()
-                _worldscomm=this->worldsComm(),
-                _extended_doftable=extendedDT,
-                _periodicity=this->periodicity()
-                );
-    }
     if( !M_spaceVectorialIsoPN )
     {
         M_spaceVectorialIsoPN = space_vectorial_type::New( 
-                _mesh=this->meshIsoPN()
+                _mesh=this->meshIsoPN(),
                 _worldscomm=this->worldsComm(),
                 _periodicity=this->periodicity()
                 );
+    }
+    if( !M_spaceScalarIsoPN )
+    {
+        if( M_buildExtendedDofTable )
+        {
+            std::vector<bool> extendedDT( 1, M_buildExtendedDofTable );
+            M_spaceScalarIsoPN = space_scalar_type::New(
+                    _mesh=this->meshIsoPN(),
+                    _worldscomm=this->worldsComm(),
+                    _extended_doftable=extendedDT,
+                    _periodicity=this->periodicity()
+                    );
+        }
+        else
+        {
+            M_spaceScalarIsoPN = M_spaceVectorialIsoPN->compSpace();
+        }
     }
     if( !M_spaceMarkersIsoPN )
     {
         M_spaceMarkersIsoPN = space_markers_type::New( 
-                _mesh=this->meshIsoPN()
+                _mesh=this->meshIsoPN(),
                 _worldscomm=this->worldsComm(),
                 _periodicity=this->periodicity(),
                 _extended_doftable=std::vector<bool>(1, true)
@@ -465,7 +478,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceHovisu()
     if( !M_spaceVectorialHovisu )
     {
         M_spaceVectorialHovisu = space_vectorial_type::New( 
-                _mesh=this->meshHovisu()
+                _mesh=this->meshHovisu(),
                 _worldscomm=this->worldsComm()
                 );
     }
