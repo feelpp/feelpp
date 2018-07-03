@@ -2498,59 +2498,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Curvature")),
                                    *this->curvature() );
 
-    if( M_useSpaceIsoPN )
-    {
-        auto phiPN = this->phiPN();
-        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"PhiPN"),
-                prefixvm(this->prefix(),prefixvm(this->subPrefix(),"PhiPN")),
-                phiPN );
-        auto normalPN = vf::project(
-                _space=this->functionSpaceManager()->functionSpaceVectorialPN(),
-                _range=this->functionSpaceManager()->rangeMeshPNElements(),
-                _expr=trans(gradv(phiPN)) / sqrt(gradv(phiPN)*trans(gradv(phiPN)))
-                );
-        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"NormalPN"),
-                prefixvm(this->prefix(),prefixvm(this->subPrefix(),"NormalPN")),
-                normalPN );
-
-        auto curvaturePN = this->functionSpaceManager()->opInterpolationScalarToPN()->operator()( *this->curvature() );
-        //auto curvaturePN = vf::project(
-                //_space=this->functionSpaceManager()->functionSpaceScalarPN(),
-                //_range=this->functionSpaceManager()->rangeMeshPNElements(),
-                //_expr=divv(normalPN)
-                //);
-        //auto gradKPN = vf::project(
-                //_space=this->functionSpaceManager()->functionSpaceVectorialPN(),
-                //_range=this->functionSpaceManager()->rangeMeshPNElements(),
-                //_expr=trans(gradv(curvaturePN))
-                //);
-        auto gradKPN = M_projectorL2PNVec->project(
-                _expr=trans(gradv(curvaturePN))
-                );
-        auto gradK_tmp = this->functionSpaceManager()->opInterpolationVectorialFromPN()->operator()( gradKPN );
-        auto gradK = vf::project(
-                _space=this->functionSpaceVectorial(),
-                _range=elements(this->mesh()),
-                _expr=idv(gradK_tmp)*idv(this->interfaceRectangularFunction())
-                );
-        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"gradKPN"),
-                prefixvm(this->prefix(),prefixvm(this->subPrefix(),"gradKPN")),
-                gradK );
-    }
-    else
-    {
-        //auto gradK = this->projectorL2Vectorial()->project( _expr=trans(gradv(this->curvature()))*idv(this->interfaceRectangularFunction()) );
-        auto gradK_tmp = this->projectorL2Vectorial()->derivate( idv(this->curvature()) );
-        auto gradK = vf::project(
-                _space=this->functionSpaceVectorial(),
-                _range=elements(this->mesh()),
-                _expr=idv(gradK_tmp)*idv(this->interfaceRectangularFunction())
-                );
-        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"gradK"),
-                prefixvm(this->prefix(),prefixvm(this->subPrefix(),"gradK")),
-                gradK );
-    }
-
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::GradPhi ) )
     {
         this->M_exporter->step( time )->add( prefixvm(this->prefix(),"GradPhi"),
