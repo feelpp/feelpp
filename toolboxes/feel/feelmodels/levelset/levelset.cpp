@@ -145,7 +145,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::buildImpl()
     // Tools
     this->createInterfaceQuantities();
     this->createReinitialization();
-    this->createOthers();
+    this->createTools();
     this->createExporters();
 }
 
@@ -628,18 +628,21 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
+LEVELSET_CLASS_TEMPLATE_TYPE::createTools()
 {
-    M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "projector-l2"), _worldcomm=this->worldComm()) );
-    M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "projector-l2-vec"), _worldcomm=this->worldComm()) );
+    this->toolManager()->createProjectorL2Default();
+    M_projectorL2 = this->toolManager()->projectorL2Scalar();
+    M_projectorL2Vec = this->toolManager()->projectorL2Vectorial();
+
+    this->toolManager()->createProjectorSMDefault();
+    M_smoother = this->toolManager()->projectorSMScalar();
+    M_smootherVectorial = this->toolManager()->projectorSMVectorial();
+
     if( M_useCauchyAugmented )
     {
-        M_projectorL2Tensor2Symm = projector( 
-                this->functionSpaceTensor2Symm() , this->functionSpaceTensor2Symm(), 
-                backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
-                );
+        this->toolManager()->createProjectorL2Tensor2Symm();
+        M_projectorL2Tensor2Symm = this->toolManager()->projectorL2Tensor2Symm();
     }
-
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
