@@ -222,6 +222,8 @@ ModelPostprocessNorm::setup( std::string const& name )
 void
 ModelPostprocessNorm::setParameterValues( std::map<std::string,double> const& mp )
 {
+    M_expr.setParameterValues( mp );
+    M_gradExpr.setParameterValues( mp );
     M_solution.setParameterValues( mp );
     M_gradSolution.setParameterValues( mp );
 }
