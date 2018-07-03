@@ -1276,7 +1276,7 @@ Environment::doOptions( int argc, char** argv,
             fs::path fscaseDir( caseDir );
             CHECK( fs::is_directory( fscaseDir ) ) << "case must be a directory";
             std::string dirName = fscaseDir.filename().string();
-            if ( fscaseDir.filename().filename_is_dot() )
+            if ( Feel::filename_is_dot( fscaseDir.filename() ) )
                 dirName = fscaseDir.parent_path().filename().string();
             std::string caseConfigFile = dirName + ".cfg";
             if ( S_vm.count( "case.config-file" ) )
@@ -1404,7 +1404,8 @@ Environment::doOptions( int argc, char** argv,
 
     catch ( pt::ptree_error & e )
     {
-        LOG(ERROR) << "Error parsing json config in case option " << e.what() << std::endl;
+        LOG(ERROR) << "Error parsing the JSON file. Please check the JSON for syntax errors, missing commas..." << std::endl;
+        LOG(ERROR) << "We suggest using 'yamllint' or 'jsonlint' available in docker or singularity images to check json files." << std::endl;
         throw;
     }
 

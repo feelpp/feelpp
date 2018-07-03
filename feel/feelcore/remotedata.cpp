@@ -169,7 +169,7 @@ RemoteData::URL::download( std::string const& _dir, std::string const& _filename
     if ( filename.empty() )
     {
         fs::path p = fs::path( M_path );
-        if ( p.has_filename() && !p.filename_is_dot() && !p.filename_is_dot_dot() )
+        if ( p.has_filename() && !Feel::filename_is_dot( p )  && !Feel::filename_is_dot_dot( p ) )
             filename = p.filename().string();
         else
             filename = "download";
@@ -331,7 +331,7 @@ RemoteData::Github::Github( std::string const& desc, WorldComm const& worldComm 
     if ( auto it = pt.get_optional<std::string>("branch") )
         M_branch = *it;
     if ( auto it = pt.get_optional<std::string>("path") )
-        M_path = *it;
+        M_path = fs::path(*it).remove_trailing_separator().remove_trailing_separator().string();
     if ( auto it = pt.get_optional<std::string>("token") )
         M_token = *it;
     // if token is empty, try looking for it in environment variable FEELPP_GITHUB_TOKEN

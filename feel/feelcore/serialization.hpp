@@ -29,8 +29,10 @@
 #include <boost/serialization/split_free.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
+#include <feel/feelcore/disablewarnings.hpp>
 #include <Eigen/Core>
 #include <Eigen/CXX11/Tensor>
+#include <feel/feelcore/reenablewarnings.hpp>
 
 namespace boost
 {

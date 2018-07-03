@@ -51,7 +51,8 @@ public :
     void setMeasureComp( std::string const& key,std::vector<double> const& values );
     FEELPP_DEPRECATED bool hasParameter( std::string const& key ) const { return this->hasMeasure( key ); }
     bool hasMeasure( std::string const& key ) const { return M_dataNameToIndex.find( key ) != M_dataNameToIndex.end(); }
-
+    //! return measure from a key
+    double measure( std::string const& key ) const;
     std::string const& pathFile() const { return M_pathFile; }
     void setPathFile( std::string const& s ) { M_pathFile = s; }
 private :

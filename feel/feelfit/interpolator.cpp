@@ -36,7 +36,8 @@ std::map<std::string, InterpolationType> InterpolationTypeMap = {
     {"Akima", InterpolationType::Akima }
 };
 
-std::unique_ptr<Interpolator> Interpolator::New( InterpolationType type, std::vector<pair_type> const& data )
+std::unique_ptr<Interpolator>
+Interpolator::New( InterpolationType type, std::vector<pair_type> const& data )
 {
     switch ( type )
     {
@@ -65,6 +66,7 @@ std::unique_ptr<Interpolator> Interpolator::New( InterpolationType type, std::ve
         break;
     }
     }
+    return {};
 }
 
 std::unique_ptr<Interpolator> Interpolator::New( InterpolationType type, std::string const& dataFile, WorldComm const& worldComm )

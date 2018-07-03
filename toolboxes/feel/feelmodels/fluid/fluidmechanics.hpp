@@ -335,7 +335,7 @@ public:
     typedef typename space_fluid_pressure_type::Context context_pressure_type;
     typedef boost::shared_ptr<context_pressure_type> context_pressure_ptrtype;
 
-
+    using force_type = Eigen::Matrix<typename super_type::value_type, nDim, 1, Eigen::ColMajor>;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -751,7 +751,7 @@ public :
     double computeMeshArea( std::list<std::string> const& markers ) const;
 
     // compute measures : drag,lift,flow rate, mean pressure, mean div, norm div
-    Eigen::Matrix<typename super_type::value_type,nDim,1> computeForce( std::string const& markerName ) const;
+    force_type computeForce( std::string const& markerName ) const;
     double computeFlowRate( std::string const& marker, bool useExteriorNormal=true ) const;
     double computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal=true ) const;
     double computePressureSum() const;
