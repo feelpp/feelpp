@@ -4,7 +4,7 @@
 namespace Feel
 {
 
-template <uint16_type OrderLevelset>
+template <uint16_type OrderLevelset, uint16_type OrderLevelsetPN = LEVELSET_PN_ORDER >
 void
 runLevelsetApplication()
 {
@@ -12,7 +12,9 @@ runLevelsetApplication()
 
     typedef FeelModels::LevelSet< 
         Simplex<FEELPP_DIM,1>,
-        Lagrange<OrderLevelset, Scalar, Continuous, PointSetFekete>
+        Lagrange<OrderLevelset, Scalar, Continuous, PointSetFekete>,
+        NoPeriodicity,
+        Lagrange<OrderLevelsetPN, Scalar, Continuous, PointSetFekete>
         > model_type;
     
     auto LS = model_type::New("levelset");

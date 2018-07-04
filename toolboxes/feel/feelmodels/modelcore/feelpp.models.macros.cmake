@@ -709,9 +709,11 @@ macro( genLibLevelset )
         # configure libmodelbase
         set(CODEGEN_FILES_TO_COPY
             ${FEELPP_MODELS_SOURCE_DIR}/levelset/levelset_inst.cpp
+            ${FEELPP_MODELS_SOURCE_DIR}/levelset/levelsetadvection_inst.cpp
             ${FEELPP_MODELS_SOURCE_DIR}/levelset/parameter_map.cpp )
         set(CODEGEN_SOURCES
             ${LIBBASE_DIR}/levelset_inst.cpp
+            ${LIBBASE_DIR}/levelsetadvection_inst.cpp
             ${LIBBASE_DIR}/parameter_map.cpp )
         #set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
