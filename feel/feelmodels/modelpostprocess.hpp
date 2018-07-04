@@ -261,6 +261,57 @@ private:
     uint16_type M_quadOrder, M_quad1Order;
 };
 
+//! store informations require by the postprocessing Statistics
+class FEELPP_EXPORT ModelPostprocessStatistics
+{
+public :
+    ModelPostprocessStatistics( WorldComm const& world = Environment::worldComm() )
+        :
+        M_worldComm( world ),
+        M_quadOrder( 5 ),
+        M_quad1Order( 5 )
+        {}
+    ModelPostprocessStatistics( ModelPostprocessStatistics const& ) = default;
+    ModelPostprocessStatistics( ModelPostprocessStatistics&& ) = default;
+    ModelPostprocessStatistics& operator=( ModelPostprocessStatistics const& ) = default;
+    ModelPostprocessStatistics& operator=( ModelPostprocessStatistics && ) = default;
+
+    //! name given to a Statistics postprocessing
+    std::string const& name() const { return M_name; }
+    //! set of Statistics types (min,max,...) that the postprocessing compute
+    std::set<std::string> const& types() const { return M_types; }
+    //! name of fe field for which Statistics is computed (not require if expr is given)
+    std::string const& field() const { return M_field; }
+    //! mesh markers where Statistics is computed
+    std::set<std::string> const& markers() const { return M_markers; }
+    //! an expression for which Statistics is computed (not require if field is given)
+    ModelExpression const& expr() const { return M_expr; }
+    //! quad order used in Statistics computations (not use if the quadrature can be exact)
+    uint16_type quadOrder() const { return M_quadOrder; }
+    //! quad1 order used with ho geometry and the optimized geomap
+    uint16_type quad1Order() const { return M_quad1Order; }
+
+    //! return true if an expression has been given
+    bool hasExpr() const { return M_expr.hasAtLeastOneExpr(); }
+    //! return true if a field has been given
+    bool hasField() const { return !M_field.empty(); }
+
+    void setPTree( pt::ptree const& _p, std::string const& name ) { M_p = _p; this->setup( name ); }
+    void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+    void setParameterValues( std::map<std::string,double> const& mp );
+
+private:
+    void setup( std::string const& name );
+private:
+    WorldComm const& M_worldComm;
+    pt::ptree M_p;
+    std::string M_directoryLibExpr;
+    std::string M_name, M_field;
+    std::set<std::string> M_types, M_markers;
+    ModelExpression M_expr;
+    uint16_type M_quadOrder, M_quad1Order;
+};
+
 class FEELPP_EXPORT ModelPostprocess
 {
 public:
@@ -275,14 +326,17 @@ public:
     std::map<std::string,ModelPostprocessExports> allExports() const { return M_exports; }
     std::map<std::string,std::vector<ModelPostprocessPointPosition> > const& allMeasuresPoint() const { return M_measuresPoint; }
     std::map<std::string,std::vector<ModelPostprocessNorm> > const& allMeasuresNorm() const { return M_measuresNorm; }
+    std::map<std::string,std::vector<ModelPostprocessStatistics> > const& allMeasuresStatistics() const { return M_measuresStatistics; }
     bool hasExports( std::string const& name = "" ) const;
     bool hasMeasuresPoint( std::string const& name = "" ) const;
     bool hasMeasuresExtremum( std::string const& name = "" ) const;
     bool hasMeasuresNorm( std::string const& name = "" ) const;
+    bool hasMeasuresStatistics( std::string const& name = "" ) const;
     ModelPostprocessExports const& exports( std::string const& name = "" ) const;
     std::vector<ModelPostprocessPointPosition> const& measuresPoint( std::string const& name = "" ) const;
     std::vector<ModelPostprocessExtremum> const& measuresExtremum( std::string const& name = "" ) const;
     std::vector<ModelPostprocessNorm> const& measuresNorm( std::string const& name = "" ) const;
+    std::vector<ModelPostprocessStatistics> const& measuresStatistics( std::string const& name = "" ) const;
 
     void setPTree( pt::ptree const& _p );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
@@ -310,10 +364,12 @@ private:
     std::map<std::string,std::vector< ModelPostprocessPointPosition > > M_measuresPoint;
     std::map<std::string,std::vector< ModelPostprocessExtremum > > M_measuresExtremum;
     std::map<std::string,std::vector< ModelPostprocessNorm > > M_measuresNorm;
+    std::map<std::string,std::vector< ModelPostprocessStatistics > > M_measuresStatistics;
     ModelPostprocessExports M_emptyExports;
     std::vector< ModelPostprocessPointPosition > M_emptyMeasuresPoint;
     std::vector< ModelPostprocessExtremum > M_emptyMeasuresExtremum;
     std::vector< ModelPostprocessNorm > M_emptyMeasuresNorm;
+    std::vector< ModelPostprocessStatistics > M_emptyMeasuresStatistics;
     std::string M_directoryLibExpr;
 };
 
