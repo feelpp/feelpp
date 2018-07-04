@@ -72,19 +72,11 @@ public:
     // Hamilton-Jacobi advection
     template<typename SpaceType>
     class AdvectionHJ
-        : public Feel::FeelModels::AdvectionBase<
-            typename SpaceType::mesh_type::shape_type, 
-            typename SpaceType::template Basis<0>::type,
-            typename SpaceType::periodicity_0_type
-          >
+        : public Feel::FeelModels::AdvectionBase<SpaceType>
         , public boost::enable_shared_from_this< AdvectionHJ<SpaceType> >
     {
     public:
-        typedef Feel::FeelModels::AdvectionBase<
-            typename SpaceType::mesh_type::shape_type, 
-            typename SpaceType::template Basis<0>::type,
-            typename SpaceType::periodicity_0_type
-          > super_type;
+        typedef Feel::FeelModels::AdvectionBase<SpaceType> super_type;
 
         typedef AdvectionHJ<SpaceType> self_type;
         typedef boost::shared_ptr<self_type> self_ptrtype;

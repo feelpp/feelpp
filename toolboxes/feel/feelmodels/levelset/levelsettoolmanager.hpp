@@ -126,8 +126,8 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::LevelSetToolManager(
         levelset_space_manager_ptrtype const& spaceManager,
         std::string const& prefix
         ) :
-    M_spaceManager( spaceManager ),
-    M_prefix( prefix )
+    M_prefix( prefix ),
+    M_spaceManager( spaceManager )
 {
     double h = M_spaceManager->mesh()->hAverage();
     double O = BasisType::nOrder;
