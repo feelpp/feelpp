@@ -128,18 +128,18 @@ measureNormEvaluationField( RangeType const& range, FieldType const& field, std:
 }
 
 
-template<typename RangeType, typename SymbolsExpr, typename... Args >
+template<typename RangeType, typename SymbolsExpr, typename FieldTupleType >
 void
 measureNormEvaluation( RangeType const& range,
                        ModelPostprocessNorm const& ppNorm,  std::map<std::string,double> & res,
-                       SymbolsExpr const& symbolsExpr, Args... args )
+                       SymbolsExpr const& symbolsExpr, FieldTupleType const& fieldTuple )
 {
     typedef typename RangeTraits<RangeType>::element_type element_type;
     static const uint16_type nRealDim = element_type::nRealDim;
 
     if ( ppNorm.hasField() )
     {
-        hana::for_each( hana::make_tuple(args...), [&]( auto const& e )
+        hana::for_each( fieldTuple, [&]( auto const& e )
                         {
                             if ( ppNorm.field() == e.first )
                             {
@@ -196,22 +196,22 @@ measureNormEvaluation( RangeType const& range,
 }
 
 
-template<typename MeshType, typename RangeType, typename SymbolsExpr, typename... Args >
+template<typename MeshType, typename RangeType, typename SymbolsExpr, typename FieldTupleType>
 void
 measureNormEvaluation( boost::shared_ptr<MeshType> const& mesh, RangeType const& defaultRange,
                        ModelPostprocessNorm const& ppNorm,  std::map<std::string,double> & res,
-                       SymbolsExpr const& symbolsExpr, Args... args )
+                       SymbolsExpr const& symbolsExpr, FieldTupleType const& fieldTuple )
 {
     auto meshMarkers = ppNorm.markers();
     if ( meshMarkers.empty() )
-        measureNormEvaluation( defaultRange,ppNorm,res,symbolsExpr,args... );
+        measureNormEvaluation( defaultRange,ppNorm,res,symbolsExpr,fieldTuple );
     else
     {
         std::string firstMarker = *meshMarkers.begin();
         if ( mesh->hasElementMarker( firstMarker ) )
-            measureNormEvaluation(  markedelements( mesh,ppNorm.markers() ),ppNorm,res,symbolsExpr,args... );
+            measureNormEvaluation(  markedelements( mesh,ppNorm.markers() ),ppNorm,res,symbolsExpr,fieldTuple );
         else if ( mesh->hasFaceMarker( firstMarker ) )
-            measureNormEvaluation(  markedfaces( mesh,ppNorm.markers() ),ppNorm,res,symbolsExpr,args... );
+            measureNormEvaluation(  markedfaces( mesh,ppNorm.markers() ),ppNorm,res,symbolsExpr,fieldTuple );
         else if ( mesh->hasEdgeMarker( firstMarker ) || mesh->hasPointMarker( firstMarker ) )
             CHECK( false ) << "not implemented for edges/points";
         else if ( !mesh->hasMarker( firstMarker ) )
