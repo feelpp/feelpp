@@ -38,6 +38,7 @@
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
+#include <feel/feelmodels/modelcore/utils.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelmodels/advection/diffusionreactionmodel.hpp>
 
@@ -45,42 +46,6 @@
 
 namespace Feel {
 namespace FeelModels {
-
-namespace detail {
-
-template<uint16_type, typename T> struct ChangeBasisOrder;
-
-template<
-    uint16_type NewOrder,
-    template<uint16_type, template<uint16_type> class, typename, template<class, uint16_type, class> class, uint16_type > class BasisType,
-    uint16_type Order,
-    template<uint16_type> class PolySetType,
-    typename ContinuityType,
-    template<class, uint16_type, class> class Pts,
-    uint16_type Tag
-        >
-struct ChangeBasisOrder<NewOrder, BasisType<Order, PolySetType, ContinuityType, Pts, Tag>>
-{
-    typedef BasisType<NewOrder, PolySetType, ContinuityType, Pts, Tag> type;
-};
-
-template<template<uint16_type> class, typename T> struct ChangeBasisPolySet;
-
-template<
-    template<uint16_type> class NewPolySetType,
-    template<uint16_type, template<uint16_type> class, typename, template<class, uint16_type, class> class, uint16_type > class BasisType,
-    uint16_type Order,
-    template<uint16_type> class PolySetType,
-    typename ContinuityType,
-    template<class, uint16_type, class> class Pts,
-    uint16_type Tag
-    >
-struct ChangeBasisPolySet<NewPolySetType, BasisType<Order, PolySetType, ContinuityType, Pts, Tag>>
-{
-    typedef BasisType<Order, NewPolySetType, ContinuityType, Pts, Tag> type;
-};
-
-} // namespace detail
 
 enum class AdvectionStabMethod { NONE=0, GALS, CIP, SUPG, SGS };
 
