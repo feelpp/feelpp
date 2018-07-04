@@ -696,10 +696,11 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         }
     }
 
+    auto fieldTuple = hana::make_tuple( std::make_pair( "temperature",this->fieldTemperature() ) );
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
     {
         std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), std::make_pair( "temperature",this->fieldTemperature() ) );
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
@@ -707,7 +708,6 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         }
     }
 
-    auto fieldTuple = hana::make_tuple( std::make_pair( "temperature",this->fieldTemperature() ) );
     for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( modelName ) )
     {
         std::map<std::string,double> resPpStats;

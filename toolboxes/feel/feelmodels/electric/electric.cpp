@@ -37,6 +37,7 @@
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
 
 namespace Feel
 {
@@ -420,16 +421,28 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
+    auto fieldTuple = hana::make_tuple( std::make_pair( "electric-potential",this->fieldElectricPotential() ) );
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
     {
         std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), std::make_pair( "electric-potential",this->fieldElectricPotential() ) );
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
             hasMeasure = true;
         }
     }
+    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( modelName ) )
+    {
+        std::map<std::string,double> resPpStats;
+        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
+        for ( auto const& resPpStat : resPpStats )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
+            hasMeasure = true;
+        }
+    }
+
 
     if ( hasMeasure )
     {
