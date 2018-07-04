@@ -6,42 +6,21 @@
 #include <feel/feelvf/norml2.hpp>
 #include <feel/feelvf/normh1.hpp>
 #include <feel/feelvf/normsemih1.hpp>
+#include <feel/feelmodels/modelcore/traits.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
 
-template<typename RangeType>
-struct NormEvalRange
-{
-    typedef typename boost::tuples::template element<1, RangeType>::type element_iterator;
-    typedef typename boost::unwrap_reference<typename element_iterator::value_type>::type range_elt_type;
-    typedef typename boost::remove_reference<range_elt_type>::type const_t;
-    typedef typename boost::remove_const<const_t>::type the_face_element_type;
-    typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type element_type;
-};
-template<typename RangeType, typename ExprType>
-struct NormEvalExpr
-{
-    typedef typename NormEvalRange<RangeType>::element_type element_type;
-
-    typedef typename element_type::gm_type gm_type;
-    typedef typename gm_type::template Context<ExprType::context|vm::JACOBIAN, element_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-    typedef fusion::map<fusion::pair<Feel::vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-    typedef typename ExprType::template tensor<map_gmc_type> eval_expr_type;
-    typedef typename eval_expr_type::shape shape;
-};
-
 template<typename RangeType, typename ExprType, typename GradExprType, typename SymbolsExpr>
 void
 measureNormEvaluationH1( RangeType const& range, ExprType const& idExpr, GradExprType const& gradExpr, std::string const& normType,
                          ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, std::map<std::string,double> & res, bool useQuadOrder = true,
-                         typename std::enable_if< NormEvalExpr<RangeType,ExprType>::shape::is_scalar>::type* = nullptr )
+                         typename std::enable_if< ExprTraits<RangeType,ExprType>::shape::is_scalar>::type* = nullptr )
 {
-    typedef typename NormEvalExpr<RangeType,ExprType>::shape shape_type;
-    typedef typename NormEvalExpr<RangeType,ExprType>::element_type element_type;
+    typedef typename ExprTraits<RangeType,ExprType>::shape shape_type;
+    typedef typename ExprTraits<RangeType,ExprType>::element_type element_type;
     uint16_type quadOrder = (useQuadOrder)? ppNorm.quadOrder() : quad_order_from_expression;
     uint16_type quadOrderError = ppNorm.quadOrder();
     uint16_type quad1Order = (useQuadOrder)? ppNorm.quad1Order() : quad_order_from_expression;
@@ -69,10 +48,10 @@ template<typename RangeType, typename ExprType, typename GradExprType, typename 
 void
 measureNormEvaluationH1( RangeType const& range, ExprType const& idExpr, GradExprType const& gradExpr, std::string const& normType,
                          ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, std::map<std::string,double> & res, bool useQuadOrder = true,
-                         typename std::enable_if< NormEvalExpr<RangeType,ExprType>::shape::is_vectorial>::type* = nullptr )
+                         typename std::enable_if< ExprTraits<RangeType,ExprType>::shape::is_vectorial>::type* = nullptr )
 {
-    typedef typename NormEvalExpr<RangeType,ExprType>::shape shape_type;
-    typedef typename NormEvalExpr<RangeType,ExprType>::element_type element_type;
+    typedef typename ExprTraits<RangeType,ExprType>::shape shape_type;
+    typedef typename ExprTraits<RangeType,ExprType>::element_type element_type;
     uint16_type quadOrder = (useQuadOrder)? ppNorm.quadOrder() : quad_order_from_expression;
     uint16_type quadOrderError = ppNorm.quadOrder();
     uint16_type quad1Order = (useQuadOrder)? ppNorm.quad1Order() : quad_order_from_expression;
@@ -101,8 +80,8 @@ void
 measureNormEvaluationL2( RangeType const& range, ExprType const& idExpr, std::string const& normType,
                          ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, std::map<std::string,double> & res, bool useQuadOrder = true )
 {
-    typedef typename NormEvalExpr<RangeType,ExprType>::shape shape_type;
-    typedef typename NormEvalExpr<RangeType,ExprType>::element_type element_type;
+    typedef typename ExprTraits<RangeType,ExprType>::shape shape_type;
+    typedef typename ExprTraits<RangeType,ExprType>::element_type element_type;
     uint16_type quadOrder = (useQuadOrder)? ppNorm.quadOrder() : quad_order_from_expression;
     uint16_type quadOrderError = ppNorm.quadOrder();
     uint16_type quad1Order = (useQuadOrder)? ppNorm.quad1Order() : quad_order_from_expression;
@@ -155,7 +134,7 @@ measureNormEvaluation( RangeType const& range,
                        ModelPostprocessNorm const& ppNorm,  std::map<std::string,double> & res,
                        SymbolsExpr const& symbolsExpr, Args... args )
 {
-    typedef typename NormEvalRange<RangeType>::element_type element_type;
+    typedef typename RangeTraits<RangeType>::element_type element_type;
     static const uint16_type nRealDim = element_type::nRealDim;
 
     if ( ppNorm.hasField() )
