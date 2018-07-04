@@ -114,6 +114,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::build()
     this->createMesh();
     // Space manager
     M_spaceManager = boost::make_shared<levelset_space_manager_type>( M_mesh );
+    // Tool manager
+    M_toolManager = boost::make_shared<levelset_tool_manager_type>( M_spaceManager, this->prefix() );
     // Build
     this->buildImpl();
 
@@ -127,6 +129,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh )
     this->log("LevelSet", "build (from mesh)", "start");
     // Space manager
     M_spaceManager = boost::make_shared<levelset_space_manager_type>( mesh );
+    // Tool manager
+    M_toolManager = boost::make_shared<levelset_tool_manager_type>( M_spaceManager, this->prefix() );
     // Build
     this->buildImpl();
 

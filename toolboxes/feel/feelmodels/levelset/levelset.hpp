@@ -117,11 +117,6 @@ public:
     // Periodicity
     typedef PeriodicityType periodicity_type;
     //--------------------------------------------------------------------//
-    // Advection toolbox
-    typedef Advection< ConvexType, BasisType, PeriodicityType > advection_toolbox_type;
-    typedef boost::shared_ptr<advection_toolbox_type> advection_toolbox_ptrtype;
-    static_assert( advection_toolbox_type::is_scalar, "LevelSet function basis must be scalar" );
-    //--------------------------------------------------------------------//
     // Function space manager
     typedef LevelSetSpaceManager<ConvexType, BasisType, PeriodicityType, BasisPnType> levelset_space_manager_type;
     typedef boost::shared_ptr<levelset_space_manager_type> levelset_space_manager_ptrtype;
@@ -162,6 +157,11 @@ public:
     typedef MeshAdaptation<Dim, Order, 1, periodicity_type > mesh_adaptation_type;
     typedef boost::shared_ptr< mesh_adaptation_type > mesh_adaptation_ptrtype;
 #endif
+    //--------------------------------------------------------------------//
+    // Advection toolbox
+    typedef Advection< space_levelset_type > advection_toolbox_type;
+    typedef boost::shared_ptr<advection_toolbox_type> advection_toolbox_ptrtype;
+    static_assert( advection_toolbox_type::is_scalar, "LevelSet function basis must be scalar" );
 
     //--------------------------------------------------------------------//
     // Range types
@@ -231,17 +231,17 @@ public:
     //--------------------------------------------------------------------//
     // ModGradPhi advection
     typedef basis_levelset_type basis_modgradphi_advection_type;
-    typedef Advection<ConvexType, basis_modgradphi_advection_type, PeriodicityType> modgradphi_advection_type;
+    typedef Advection< space_levelset_type > modgradphi_advection_type;
     typedef boost::shared_ptr<modgradphi_advection_type> modgradphi_advection_ptrtype;
     // Stretch advection
     typedef basis_levelset_type basis_stretch_advection_type;
-    typedef Advection<ConvexType, basis_stretch_advection_type, PeriodicityType> stretch_advection_type;
+    typedef Advection< space_levelset_type > stretch_advection_type;
     typedef boost::shared_ptr<stretch_advection_type> stretch_advection_ptrtype;
 
     //--------------------------------------------------------------------//
     // Backward characteristics advection
     typedef basis_vectorial_type basis_backwardcharacteristics_advection_type;
-    typedef Advection<ConvexType, basis_backwardcharacteristics_advection_type, PeriodicityType> backwardcharacteristics_advection_type;
+    typedef Advection< space_vectorial_type > backwardcharacteristics_advection_type;
     typedef boost::shared_ptr<backwardcharacteristics_advection_type> backwardcharacteristics_advection_ptrtype;
     typedef typename backwardcharacteristics_advection_type::element_advection_type element_backwardcharacteristics_type;
     typedef boost::shared_ptr<element_backwardcharacteristics_type> element_backwardcharacteristics_ptrtype;

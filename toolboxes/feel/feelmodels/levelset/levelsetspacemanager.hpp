@@ -31,6 +31,7 @@
 
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
+#include <feel/feelmodels/modelcore/utils.hpp>
 
 namespace Feel {
 namespace FeelModels {
