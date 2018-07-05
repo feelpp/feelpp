@@ -131,8 +131,8 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::LevelSetToolManager(
 {
     double h = M_spaceManager->mesh()->hAverage();
     double O = BasisType::nOrder;
-    M_projectorSMScalarCoeff = h / O * doption( _name="smooth-coeff", _prefix=prefixvm(M_prefix,"smoother") );
-    M_projectorSMVectorialCoeff = h / O * doption( _name="smooth-coeff", _prefix=prefixvm(M_prefix,"smoother") );
+    M_projectorSMScalarCoeff = h / O * doption( _name="smooth-coeff", _prefix=prefixvm(M_prefix,"projector-sm-scalar") );
+    M_projectorSMVectorialCoeff = h / O * doption( _name="smooth-coeff", _prefix=prefixvm(M_prefix,"projector-sm-vectorial") );
 }
 
 LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
@@ -175,7 +175,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMDefault()
 {
     if( !M_projectorSMScalar )
     {
-        auto backendName = prefixvm( this->M_prefix, "smoother-scalar" );
+        auto backendName = prefixvm( this->M_prefix, "projector-sm-scalar" );
         M_backendProjectorSMScalar = backend_type::build(
                 soption( _prefix=backendName, _name="backend" ),
                 backendName,
@@ -190,7 +190,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMDefault()
     }
     if( !M_projectorSMVectorial )
     {
-        auto backendName = prefixvm( this->M_prefix, "smoother-vectorial" );
+        auto backendName = prefixvm( this->M_prefix, "projector-sm-vectorial" );
         M_backendProjectorSMVectorial = backend_type::build(
                 soption( _prefix=backendName, _name="backend" ),
                 backendName,
