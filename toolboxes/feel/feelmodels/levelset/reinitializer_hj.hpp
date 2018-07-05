@@ -172,7 +172,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::ReinitializerHJ(
 
     M_functionSpaceP1Vec = functionspace_P1v_type::New( space->mesh() );
     M_projectorL2Vec = projector(M_functionSpaceP1Vec, M_functionSpaceP1Vec, 
-            backend(_name=prefixvm("levelset", "projector-l2-vec")) );
+            backend(_name=prefixvm("levelset", "projector-l2-vectorial")) );
     
     //if( this->M_useVolumeConstraint )
         M_functionSpaceP0 = functionspace_P0_type::New( space->mesh() );

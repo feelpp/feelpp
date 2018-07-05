@@ -221,11 +221,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     // Init post-process
     this->initPostProcess();
 
-    // Build smoothers
-    if ( M_doSmoothGradient )
-        auto smootherbuild = this->smootherVectorial();
-    auto smootherbuild = this->smoother();
-
     this->log("LevelSet", "init", "finish");
 }
 
@@ -639,8 +634,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createTools()
     M_projectorL2Vec = this->toolManager()->projectorL2Vectorial();
 
     this->toolManager()->createProjectorSMDefault();
-    M_smoother = this->toolManager()->projectorSMScalar();
-    M_smootherVectorial = this->toolManager()->projectorSMVectorial();
+    M_projectorSMScalar = this->toolManager()->projectorSMScalar();
+    M_projectorSMVectorial = this->toolManager()->projectorSMVectorial();
 
     if( M_useCauchyAugmented )
     {
@@ -1329,36 +1324,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_levelset_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::smoother() const
-{
-    if( !M_smoother )
-    {
-        M_smoother = projector( 
-                this->functionSpace() , this->functionSpace(), 
-                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldComm()), 
-                DIFF, 
-                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother"))/Order,
-                30);
-    }
-    return M_smoother; 
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_levelset_vectorial_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::smootherVectorial() const
-{
-    if( !M_smootherVectorial )
-        M_smootherVectorial = projector( 
-                this->functionSpaceVectorial() , this->functionSpaceVectorial(), 
-                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldComm()), 
-                DIFF, 
-                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother-vec"))/Order,
-                30);
-    return M_smootherVectorial; 
-}
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_levelset_ptrtype const&
@@ -2282,7 +2247,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
         reinitMethod = "Hamilton-Jacobi";
 
     std::string scalarSmootherParameters;
-    if ( M_smoother )
+    if ( M_projectorSMScalar )
     {
         double scalarSmootherCoeff = this->smoother()->epsilon() * Order / this->mesh()->hAverage();
         scalarSmootherParameters = "coeff (h*c/order) = " 
@@ -2292,7 +2257,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
     }
     std::string vectorialSmootherParameters;
 
-    if ( M_smootherVectorial )
+    if ( M_projectorSMVectorial )
     {
         double vectorialSmootherCoeff = this->smootherVectorial()->epsilon() * Order / this->mesh()->hAverage();
         vectorialSmootherParameters = "coeff (h*c/order) = " 
@@ -2341,11 +2306,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
     if( this->M_useGradientAugmented )
     *_ostr << "\n     -- reinitialize stretch augmented  : " << std::boolalpha << this->M_reinitStretchAugmented;
 
-    if( M_smoother || M_smootherVectorial )
+    if( M_projectorSMScalar || M_projectorSMVectorial )
     *_ostr << "\n   Smoothers Parameters";
-    if( M_smoother )
+    if( M_projectorSMScalar )
     *_ostr << "\n     -- scalar smoother    : " << scalarSmootherParameters;
-    if( M_smootherVectorial )
+    if( M_projectorSMVectorial )
     *_ostr << "\n     -- vectorial smoother : " << vectorialSmootherParameters;
 
     *_ostr << "\n   Space Discretization";

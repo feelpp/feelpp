@@ -397,12 +397,12 @@ public:
     // Tools
     levelset_tool_manager_ptrtype const& toolManager() const { return M_toolManager; }
 
-    projector_levelset_ptrtype const& projectorL2() const { return M_projectorL2; }
-    projector_levelset_vectorial_ptrtype const& projectorL2Vectorial() const { return M_projectorL2Vec; }
+    projector_levelset_ptrtype const& projectorL2() const { return M_projectorL2Scalar; }
+    projector_levelset_vectorial_ptrtype const& projectorL2Vectorial() const { return M_projectorL2Vectorial; }
     projector_tensor2symm_ptrtype const& projectorL2Tensor2Symm() const { return M_projectorL2Tensor2Symm; }
 
-    projector_levelset_ptrtype const& smoother() const;
-    projector_levelset_vectorial_ptrtype const& smootherVectorial() const;
+    projector_levelset_ptrtype const& smoother() const { return M_projectorSMScalar; }
+    projector_levelset_vectorial_ptrtype const& smootherVectorial() const { return M_projectorSMVectorial; }
     projector_levelset_ptrtype const& smootherInterface() const;
     projector_levelset_vectorial_ptrtype const& smootherInterfaceVectorial() const;
 
@@ -629,12 +629,12 @@ private:
     // Tools (projectors)
     levelset_tool_manager_ptrtype M_toolManager;
 
-    projector_levelset_ptrtype M_projectorL2;
-    projector_levelset_vectorial_ptrtype M_projectorL2Vec;
+    projector_levelset_ptrtype M_projectorL2Scalar;
+    projector_levelset_vectorial_ptrtype M_projectorL2Vectorial;
     projector_tensor2symm_ptrtype M_projectorL2Tensor2Symm;
 
-    mutable projector_levelset_ptrtype M_smoother;
-    mutable projector_levelset_vectorial_ptrtype M_smootherVectorial;
+    projector_levelset_ptrtype M_projectorSMScalar;
+    projector_levelset_vectorial_ptrtype M_projectorSMVectorial;
     mutable projector_levelset_ptrtype M_smootherInterface;
     mutable projector_levelset_vectorial_ptrtype M_smootherInterfaceVectorial;
     //--------------------------------------------------------------------//
