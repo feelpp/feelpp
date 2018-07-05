@@ -161,6 +161,19 @@ private:
 
 };//class DictionnaryGeim
 
+template <typename ModelType,typename DicoType>
+class Geim
+{
+
+
+
+
+
+
+
+
+};//Geim
+
 }//Feel
 
 #endif
