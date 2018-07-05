@@ -88,12 +88,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
                 );
         M_levelsets[i]->build(
                 _space_manager=M_globalLevelset->functionSpaceManager(),
-                _reinitializer=M_globalLevelset->reinitializer(),
-                _projectorL2=M_globalLevelset->projectorL2(),
-                _projectorL2_vectorial=M_globalLevelset->projectorL2Vectorial(),
-                _projectorL2_tensor2symm=M_globalLevelset->projectorL2Tensor2Symm(),
-                _smoother=M_globalLevelset->smoother(),
-                _smoother_vectorial=M_globalLevelset->smootherVectorial()
+                _tool_manager=M_globalLevelset->toolManager(),
+                _reinitializer=M_globalLevelset->reinitializer()
                 );
         // Set global options if unspecified otherwise
         if( !Environment::vm().count( prefixvm(levelset_prefix,"thickness-interface").c_str() ) )
