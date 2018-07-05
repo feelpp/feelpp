@@ -271,7 +271,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
         auto tau = idv(tauFieldPtr);
 #endif
 
-        auto stab_test = -rho*trans(grad(p));
+        auto stab_test = -trans(grad(p));
         if ( !fluidmec.isStationaryModel() )
         {
             auto stab_residual_bilinear_u = residualTransientLinearExpr_u( rho,mu,uconv,u,fluidmec, mpl::int_<StabResidualType>() );
@@ -422,7 +422,7 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         tauFieldPtr->on(_range=rangeEltPressure,_expr=tauExpr);
         auto tau = idv(tauFieldPtr);
 #endif
-        auto stab_test = -rho*trans(grad(p));
+        auto stab_test = -trans(grad(p));
         if ( !fluidmec.isStationaryModel() )
         {
             auto stab_residual_bilinear_u = residualTransientJacobianExpr_u( rho,mu,u,fluidmec, mpl::int_<StabResidualType>() );
@@ -546,7 +546,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         auto tau = idv(tauFieldPtr);
 #endif
 
-        auto stab_test = -rho*trans(grad(p));
+        auto stab_test = -trans(grad(p));
         if ( !fluidmec.isStationaryModel() )
         {
             auto const& rhsTimeDerivativeVP = fluidmec.timeStepBDF()->polyDeriv();
