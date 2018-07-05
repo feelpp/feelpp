@@ -630,8 +630,8 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::createTools()
 {
     this->toolManager()->createProjectorL2Default();
-    M_projectorL2 = this->toolManager()->projectorL2Scalar();
-    M_projectorL2Vec = this->toolManager()->projectorL2Vectorial();
+    M_projectorL2Scalar = this->toolManager()->projectorL2Scalar();
+    M_projectorL2Vectorial = this->toolManager()->projectorL2Vectorial();
 
     this->toolManager()->createProjectorSMDefault();
     M_projectorSMScalar = this->toolManager()->projectorSMScalar();
@@ -1162,7 +1162,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
             *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
                    Feel::FeelModels::levelsetDelta(psi, eps0) );
         else
-            *M_dirac = M_projectorL2->project( Feel::FeelModels::levelsetDelta(psi, eps0) );
+            *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps0) );
     }
     else
     {
@@ -1178,7 +1178,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
             *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
                    Feel::FeelModels::levelsetDelta(psi, eps0) );
         else
-            *M_dirac = M_projectorL2->project( Feel::FeelModels::levelsetDelta(psi, eps0) );
+            *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps0) );
     }
 
     M_doUpdateDirac = false;
@@ -1209,7 +1209,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         if (M_useHeavisideDiracNodalProj)
             *M_heaviside = vf::project(this->functionSpace(), elements(this->mesh()), H_expr);
         else
-            *M_heaviside = M_projectorL2->project(H_expr);
+            *M_heaviside = M_projectorL2Scalar->project(H_expr);
     }
     else
     {
@@ -1224,7 +1224,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         if (M_useHeavisideDiracNodalProj)
             *M_heaviside = vf::project(this->functionSpace(), elements(this->mesh()), H_expr);
         else
-            *M_heaviside = M_projectorL2->project(H_expr);
+            *M_heaviside = M_projectorL2Scalar->project(H_expr);
     }
 
     M_doUpdateHeaviside = false;
@@ -1260,7 +1260,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateNormal()
     this->timerTool("UpdateInterfaceData").start();
 
     auto phi = this->phi();
-    //*M_levelsetNormal = M_projectorL2Vec->project( _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) );
+    //*M_levelsetNormal = M_projectorL2Vectorial->project( _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) );
     auto gradPhi = this->gradPhi();
     *M_levelsetNormal = vf::project( 
             _space=this->functionSpaceVectorial(),
