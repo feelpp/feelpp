@@ -871,7 +871,7 @@ private :
             return Feel::vf::symbolsExpr( symbolExpr("fluid_Ux",idv(this->fieldVelocity())(0,0) ),
                                           symbolExpr("fluid_Uy",idv(this->fieldVelocity())(1,0) ),
                                           symbolExpr("fluid_P",idv(this->fieldPressure()) ),
-                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity())) )
+                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity()),mpl::int_<InnerProperties::SQRT>()) )
                                           );
         }
     constexpr auto symbolsExpr( hana::int_<3> /**/ ) const
@@ -880,7 +880,7 @@ private :
                                           symbolExpr("fluid_Uy",idv(this->fieldVelocity())(1,0) ),
                                           symbolExpr("fluid_Uz",idv(this->fieldVelocity())(2,0) ),
                                           symbolExpr("fluid_P",idv(this->fieldPressure()) ),
-                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity())) )
+                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity()),mpl::int_<InnerProperties::SQRT>()) )
                                           );
             }
 
