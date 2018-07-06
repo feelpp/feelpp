@@ -653,7 +653,7 @@ inner( ExprL l )
 
 template<typename ExprL, int Props>
 inline
-Expr< Product<ExprL, ExprL,1,Props> >
+Expr< Product<ExprL, ExprL,1,InnerProperties::IS_SAME|Props> >
 inner( ExprL l, mpl::int_<Props> )
 {
     typedef Product<ExprL, ExprL,1,InnerProperties::IS_SAME|Props> product_t;
