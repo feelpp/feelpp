@@ -451,8 +451,8 @@ public :
     element_displacement_ptrtype const& fieldDisplacementPtr() const { return M_fieldDisplacement; }
     element_pressure_type & fieldPressure() { CHECK( M_fieldPressure ) << "field pressure not define"; return *M_fieldPressure; }
     element_pressure_type const& fieldPressure() const { CHECK( M_fieldPressure ) << "field pressure not define"; return *M_fieldPressure; }
-    element_pressure_ptrtype & fieldPressurePtr() { CHECK( M_fieldPressure ) << "field pressure not define"; return M_fieldPressure; }
-    element_pressure_ptrtype const& fieldPressurePtr() const { CHECK( M_fieldPressure ) << "field pressure not define"; return M_fieldPressure; }
+    element_pressure_ptrtype & fieldPressurePtr() { return M_fieldPressure; }
+    element_pressure_ptrtype const& fieldPressurePtr() const { return M_fieldPressure; }
 
     newmark_displacement_ptrtype & timeStepNewmark() { return M_timeStepNewmark; }
     newmark_displacement_ptrtype const& timeStepNewmark() const { return M_timeStepNewmark; }
@@ -465,6 +465,7 @@ public :
 
     element_displacement_type & fieldAcceleration() { return M_timeStepNewmark->currentAcceleration(); }
     element_displacement_type const& fieldAcceleration() const { return M_timeStepNewmark->currentAcceleration(); }
+    element_displacement_ptrtype const& fieldAccelerationPtr() const { return M_timeStepNewmark->currentAccelerationPtr(); }
 
     element_normal_stress_ptrtype & fieldNormalStressFromFluidPtr() { return M_fieldNormalStressFromFluid; }
     element_normal_stress_ptrtype const& fieldNormalStressFromFluidPtr() const { return M_fieldNormalStressFromFluid; }
