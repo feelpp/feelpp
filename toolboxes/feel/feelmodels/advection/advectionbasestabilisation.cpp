@@ -167,7 +167,13 @@ updateLinearPDEStabilizationGLS( AdvectionType const& adv, ModelAlgebraic::DataU
     auto coeff  = val( 1/( 2*uNorm*AdvectionType::nOrder/h() + std::abs(sigma) ));
 #else
     //auto coeff/*tau*/ = M_stabilizationGLSParameter->tau( uconv, kappa, mpl::int_<0/*StabParamType*/>() );
-    auto coeff = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *(adv.stabilizationGLSParameter()), u, D, true, adv.hasDiffusion() );
+    auto coeff_expr = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *(adv.stabilizationGLSParameter()), u, D, true, adv.hasDiffusion() );
+    auto coeffP0d = vf::project(
+            _space=adv.functionSpaceP0d(),
+            _range=elements(mesh),
+            _expr=coeff_expr
+            );
+    auto coeff = idv(coeffP0d);
 #endif
 
     if( adv.isStationary() )
@@ -259,7 +265,13 @@ updateLinearPDEStabilizationSUPG( AdvectionType const& adv, ModelAlgebraic::Data
     auto coeff = val(vf::h() / (2 * uNorm + 0.001));
 #else
     //auto coeff/*tau*/ = M_stabilizationGLSParameter->tau( uconv, kappa, mpl::int_<0/*StabParamType*/>() );
-    auto coeff = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *(adv.stabilizationGLSParameter()), u, D, true, adv.hasDiffusion() );
+    auto coeff_expr = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *(adv.stabilizationGLSParameter()), u, D, true, adv.hasDiffusion() );
+    auto coeffP0d = vf::project(
+            _space=adv.functionSpaceP0d(),
+            _range=elements(mesh),
+            _expr=coeff_expr
+            );
+    auto coeff = idv(coeffP0d);
 #endif
 
     if( adv.isStationary() )

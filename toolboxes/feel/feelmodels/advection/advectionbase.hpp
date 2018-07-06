@@ -135,6 +135,18 @@ public :
     typedef boost::shared_ptr<element_advection_velocity_type> element_advection_velocity_ptrtype;
 
     //--------------------------------------------------------------------//
+    // Space P0d
+    typedef Lagrange<0, Scalar, Discontinuous, PointSetFekete> basis_P0d_type;
+    typedef FunctionSpace< 
+        mesh_type, 
+        bases<basis_P0d_type>, 
+        value_type, 
+        periodicity_advection_type > space_P0d_type;
+    typedef boost::shared_ptr<space_P0d_type> space_P0d_ptrtype;
+    typedef typename space_P0d_type::element_type element_P0d_type;
+    typedef boost::shared_ptr<element_P0d_type> element_P0d_ptrtype;
+
+    //--------------------------------------------------------------------//
     // Diffusion-reaction model
     typedef BasisDiffusionCoeffType basis_diffusioncoeff_type;
     typedef BasisReactionCoeffType basis_reactioncoeff_type;
@@ -234,6 +246,7 @@ public :
 
     space_advection_ptrtype const& functionSpace() const { return M_Xh; }
     space_advection_velocity_ptrtype const& functionSpaceAdvectionVelocity() const { return M_XhAdvectionVelocity; }
+    space_P0d_ptrtype const& functionSpaceP0d() const { return M_spaceP0d; }
     space_diffusioncoeff_ptrtype const& functionSpaceDiffusionCoeff() const { return this->diffusionReactionModel()->functionSpaceDiffusion(); }
     space_reactioncoeff_ptrtype const& functionSpaceReactionCoeff() const { return this->diffusionReactionModel()->functionSpaceReaction(); }
     
@@ -378,6 +391,8 @@ protected:
     periodicity_type M_periodicity;
     // Advection space
     space_advection_ptrtype M_Xh;
+    // P0d space
+    space_P0d_ptrtype M_spaceP0d;
     // Time discretization
     bdf_ptrtype M_bdf;
     //--------------------------------------------------------------------//
