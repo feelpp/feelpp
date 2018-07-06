@@ -730,25 +730,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     }
 
 
-    // extremum evaluation
-    for ( auto const& measureExtremum : this->modelProperties().postProcess().measuresExtremum( modelName ) )
-    {
-        auto const& fields = measureExtremum.fields();
-        std::string const& name = measureExtremum.extremum().name();
-        std::string const& type = measureExtremum.extremum().type();
-        auto const& meshMarkers = measureExtremum.extremum().meshMarkers();
-        for ( std::string const& field : fields )
-        {
-            double val = this->computeExtremumValue( field, meshMarkers, type );
-            if ( field == "displacement" || field == "velocity" || field == "acceleration" )
-            {
-                std::string nameExport = (boost::format("%1%_magnitude_%2%_%3%")%field %type %name).str();
-                this->postProcessMeasuresIO().setMeasure( nameExport,val );
-                hasMeasure = true;
-            }
-        }
-    }
-
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
     {
         std::map<std::string,double> resPpNorms;
