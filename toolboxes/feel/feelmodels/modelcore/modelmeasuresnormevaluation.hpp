@@ -145,7 +145,7 @@ measureNormEvaluation( RangeType const& range,
                             {
                                 auto const& fieldFunc = e.second;
                                 for ( std::string const& normType : ppNorm.types() )
-                                    measureNormEvaluationField( range, fieldFunc, normType, ppNorm, symbolsExpr, res );
+                                    measureNormEvaluationField( range, unwrap_ptr(fieldFunc), normType, ppNorm, symbolsExpr, res );
                             }
                         });
     }
