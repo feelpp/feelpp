@@ -645,16 +645,16 @@ private :
     constexpr auto symbolsExpr( hana::int_<2> /**/ ) const
         {
             return Feel::vf::symbolsExpr( symbolExpr("solid_Dx",idv(this->fieldDisplacement())(0,0) ),
-                                          symbolExpr("fluid_Dy",idv(this->fieldDisplacement())(1,0) ),
-                                          symbolExpr("fluid_D_magnitude",inner(idv(this->fieldDisplacement())) )
+                                          symbolExpr("solid_Dy",idv(this->fieldDisplacement())(1,0) ),
+                                          symbolExpr("solid_D_magnitude",inner(idv(this->fieldDisplacement()),mpl::int_<InnerProperties::SQRT>()) )
                                           );
         }
     constexpr auto symbolsExpr( hana::int_<3> /**/ ) const
         {
             return Feel::vf::symbolsExpr( symbolExpr("solid_Dx",idv(this->fieldDisplacement())(0,0) ),
-                                          symbolExpr("fluid_Dy",idv(this->fieldDisplacement())(1,0) ),
-                                          symbolExpr("fluid_Dz",idv(this->fieldDisplacement())(2,0) ),
-                                          symbolExpr("fluid_D_magnitude",inner(idv(this->fieldDisplacement())) )
+                                          symbolExpr("solid_Dy",idv(this->fieldDisplacement())(1,0) ),
+                                          symbolExpr("solid_Dz",idv(this->fieldDisplacement())(2,0) ),
+                                          symbolExpr("solid_D_magnitude",inner(idv(this->fieldDisplacement()),mpl::int_<InnerProperties::SQRT>()) )
                                           );
         }
 
