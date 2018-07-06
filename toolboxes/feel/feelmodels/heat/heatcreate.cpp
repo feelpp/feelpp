@@ -696,7 +696,7 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         }
     }
 
-    auto fieldTuple = hana::make_tuple( std::make_pair( "temperature",this->fieldTemperature() ) );
+    auto fieldTuple = hana::make_tuple( std::make_pair( "temperature",this->fieldTemperaturePtr() ) );
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
     {
         std::map<std::string,double> resPpNorms;

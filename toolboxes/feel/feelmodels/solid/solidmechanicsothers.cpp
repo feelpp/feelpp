@@ -730,25 +730,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     }
 
 
+    auto fieldTuple = hana::make_tuple( std::make_pair( "displacement",this->fieldDisplacementPtr() ),
+                                        std::make_pair( "velocity",this->fieldVelocityPtr() ),
+                                        std::make_pair( "acceleration",this->fieldAccelerationPtr() ),
+                                        std::make_pair( (M_useDisplacementPressureFormulation)?"pressure":"",this->fieldPressurePtr() ) );
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
     {
         std::map<std::string,double> resPpNorms;
-        if ( !M_useDisplacementPressureFormulation )
-        {
-            auto fieldTuple = hana::make_tuple( std::make_pair( "displacement",this->fieldDisplacement() ),
-                                                std::make_pair( "velocity",this->fieldVelocity() ),
-                                                std::make_pair( "acceleration",this->fieldAcceleration() ) );
-            measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
-        }
-        else
-        {
-            auto fieldTuple = hana::make_tuple( std::make_pair( "displacement",this->fieldDisplacement() ),
-                                                std::make_pair( "velocity",this->fieldVelocity() ),
-                                                std::make_pair( "acceleration",this->fieldAcceleration() ),
-                                                std::make_pair( "pressure",this->fieldPressure() ) );
-            measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
-        }
-
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
@@ -758,21 +747,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( modelName ) )
     {
         std::map<std::string,double> resPpStats;
-        if ( !M_useDisplacementPressureFormulation )
-        {
-            auto fieldTuple = hana::make_tuple( std::make_pair( "displacement",this->fieldDisplacement() ),
-                                                std::make_pair( "velocity",this->fieldVelocity() ),
-                                                std::make_pair( "acceleration",this->fieldAcceleration() ) );
-            measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
-        }
-        else
-        {
-            auto fieldTuple = hana::make_tuple( std::make_pair( "displacement",this->fieldDisplacement() ),
-                                                std::make_pair( "velocity",this->fieldVelocity() ),
-                                                std::make_pair( "acceleration",this->fieldAcceleration() ),
-                                                std::make_pair( "pressure",this->fieldPressure() ) );
-            measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
-        }
+        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
         for ( auto const& resPpStat : resPpStats )
         {
             this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
