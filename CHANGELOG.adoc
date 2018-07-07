@@ -16,7 +16,7 @@ https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
 
 === Features
 
-* [**toolbox**] refactoring of gls stabilization in fluid and heat : now heatfluid with natural convection can be applied with the gls stab.
+* [**toolbox**] refactoring of gls stabilization in the `fluid` and `heat` toolboxes : now the `heatfluid` toolbox with natural convection can use Galerkin Least Square stabilization(gls).
 * [**toolbox**] implement Statistics post-process  {uri-toolbox-issue}/85[#85]
 * [**toolbox**] add pre/post solve interface with Linear/Picard solver
 
