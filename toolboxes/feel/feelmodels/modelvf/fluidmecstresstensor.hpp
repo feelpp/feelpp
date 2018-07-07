@@ -35,8 +35,6 @@
 
 namespace Feel
 {
-namespace vf
-{
 namespace FeelModels
 {
 
@@ -1409,9 +1407,9 @@ public:
         typedef typename element_velocity_type::value_type value_type;
 
         // geomap context
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, Feel::vf::detail::gmc<0> >,
+                                  mpl::identity<Feel::vf::detail::gmc<0> >,
+                                  mpl::identity<Feel::vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gmc_type::gm_type gm_type;
@@ -1591,8 +1589,6 @@ fluidMecViscosity( ElementVelocityType const& u, ElementPressureType const& p,
 }
 
 
-
 } // namespace FeelModels
-} // namespace vf
 } // namespace Feel
 #endif /* FEELPP_MODELS_VF_FLUIDMEC_STRESSTENSOR_H */

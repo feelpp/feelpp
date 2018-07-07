@@ -12,6 +12,7 @@
 //#include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 
 #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
 
 namespace Feel
 {
@@ -613,15 +614,12 @@ HEAT_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::se
         hasFieldToExport = true;
     }
 
-    if ( fields.find( "velocity-convection" ) != fields.end() )
+    if ( fields.find( "velocity-convection" ) != fields.end() && this->fieldVelocityConvectionIsOperational() )
     {
-        if ( ( M_doExportVelocityConvection || M_doExportAll ) && this->fieldVelocityConvectionIsOperational() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
-                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-convection")),
-                                         this->fieldVelocityConvection() );
-            hasFieldToExport = true;
-        }
+        exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
+                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-convection")),
+                                     this->fieldVelocityConvection() );
+        hasFieldToExport = true;
     }
     if ( fields.find( "thermal-conductivity" ) != fields.end() )
     {
@@ -698,13 +696,25 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         }
     }
 
+    auto fieldTuple = hana::make_tuple( std::make_pair( "temperature",this->fieldTemperaturePtr() ) );
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
     {
         std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), std::make_pair( "temperature",this->fieldTemperature() ) );
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
+            hasMeasure = true;
+        }
+    }
+
+    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( modelName ) )
+    {
+        std::map<std::string,double> resPpStats;
+        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
+        for ( auto const& resPpStat : resPpStats )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
             hasMeasure = true;
         }
     }
