@@ -6,6 +6,24 @@
 :toclevels: 2
 :uri-issue: https://github.com/feelpp/feelpp/issues
 :uri-pull: https://github.com/feelpp/feelpp/pull
+:uri-toolbox-issue: https://github.com/feelpp/toolbox/issues
+
+[[v0.106.0-2018-07-20]]
+== v0.106.0
+https://github.com/feelpp/feelpp/tree/v0.106.0[v0.106.0] (2018-07-28)
+
+https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
+
+=== Features
+
+* [**toolbox**] refactoring of gls stabilization in fluid and heat : now heatfluid with natural convection can be applied with the gls stab.
+* [**toolbox**] implement Statistics post-process  {uri-toolbox-issue}/85[#85]
+* [**toolbox**] add pre/post solve interface with Linear/Picard solver
+
+=== Fixes
+* [**feel/**] Fix support of filename_is_dot and filename_is_dot_dot in boost filesystem with boost 1.61 and 1.62 see {uri-issue}/[#1191]
+* [**toolbox**] remove rho scaling in fluid incompressibilty equation (cherry pick from feature/ls)
+
 
 [[v0.105.0-2018-06-20]]
 == v0.105.0
@@ -44,7 +62,6 @@ https://github.com/feelpp/feelpp/compare/v0.104.0...v0.105.0[Full Changelog]
 * [**feel/**] Fix partitioner crash in Gmsh with number of partitions is set to 1
 * [**feel/**] Trailing slashes in remote data path make app crash {uri-issue}/1183[#1183]
 * [**feel/**] Fixes docker build of feelpp projects due to git-lfs {uri-issue}/1183[#1186]
-* [**feel/**] Fix support of filename_is_dot and filename_is_dot_dot in boost filesystem with boost 1.61 and 1.62 see {uri-issue}/[#1191]
 
 [[v0.104.1-2018-05-xx]]
 == v0.104.1 (unreleased)
