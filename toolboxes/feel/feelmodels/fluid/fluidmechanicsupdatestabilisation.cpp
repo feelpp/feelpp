@@ -18,7 +18,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLinear & data ) const
 {
-    this->updateLinearPDEStabilisationGLS( data );
+    if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
+    {
+        auto rho = idv(this->materialProperties()->fieldRho());
+        //auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+        auto mu = idv(this->materialProperties()->fieldMu());
+
+        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
+            this->updateLinearPDEStabilisationGLS( data, rho, mu, rangeData.first );
+    }
 
     //using namespace Feel::vf;
     sparse_matrix_ptrtype& A = data.matrix();
@@ -194,7 +202,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const
 {
-    this->updateResidualStabilisationGLS( data, U );
+    if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
+    {
+        auto rho = idv(this->materialProperties()->fieldRho());
+        //auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+        auto mu = idv(this->materialProperties()->fieldMu());
+
+        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
+            this->updateResidualStabilisationGLS( data, U, rho, mu, rangeData.first );
+    }
 
     using namespace Feel::vf;
 
@@ -374,7 +390,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
 {
     using namespace Feel::vf;
 
-    this->updateJacobianStabilisationGLS( data, U );
+    if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
+    {
+        auto rho = idv(this->materialProperties()->fieldRho());
+        //auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+        auto mu = idv(this->materialProperties()->fieldMu());
+        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
+            this->updateJacobianStabilisationGLS( data, U, rho, mu, rangeData.first );
+    }
 
     this->log("FluidMechanics","updateJacobianStabilisation", "start" );
     boost::mpi::timer thetimer;

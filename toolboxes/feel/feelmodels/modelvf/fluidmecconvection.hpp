@@ -25,8 +25,8 @@
 #define __FEELPP_FSI_VF_FLUIDMECCONVECTION_H 1
 
 namespace Feel {
-namespace vf {
 namespace FeelModels {
+
 /**
  * \class FluidMecConvectionImpl
  * \brief convection term in jac/res
@@ -166,9 +166,9 @@ public:
         typedef typename element_type::value_type value_type;
 
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, Feel::vf::detail::gmc<0> >,
+                                  mpl::identity<Feel::vf::detail::gmc<0> >,
+                                  mpl::identity<Feel::vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gmc_type::gm_type gm_type;
@@ -189,13 +189,13 @@ public:
         // fe context for test and trial function
         typedef Basis_i_t map_basis_fec_test_type;
         typedef Basis_j_t map_basis_fec_trial_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<map_basis_fec_test_type,vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type basis_fec_test_key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<map_basis_fec_test_type,Feel::vf::detail::gmc<0> >,
+                                  mpl::identity<Feel::vf::detail::gmc<0> >,
+                                  mpl::identity<Feel::vf::detail::gmc<1> > >::type::type basis_fec_test_key_type;
 
         typedef typename mpl::if_<fusion::result_of::has_key<map_basis_fec_trial_type,vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type basis_fec_trial_key_type;
+                                  mpl::identity<Feel::vf::detail::gmc<0> >,
+                                  mpl::identity<Feel::vf::detail::gmc<1> > >::type::type basis_fec_trial_key_type;
 
         typedef typename fusion::result_of::value_at_key<map_basis_fec_test_type, basis_fec_test_key_type>::type::element_type  basis_fec_test_type;
         typedef typename fusion::result_of::value_at_key<map_basis_fec_test_type, basis_fec_test_key_type>::type::element_type* basis_fec_test_ptrtype;
@@ -686,6 +686,5 @@ fluidMecConvectionJacobianWithEnergyStab( ElementVelocityType const& v, ElementM
 
 
 } // namespace FeelModels
-} // namespace vf
 } // namespace Feel
 #endif /* __FLUIDMECCONVECTION_H */

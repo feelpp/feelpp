@@ -451,8 +451,8 @@ public :
     element_displacement_ptrtype const& fieldDisplacementPtr() const { return M_fieldDisplacement; }
     element_pressure_type & fieldPressure() { CHECK( M_fieldPressure ) << "field pressure not define"; return *M_fieldPressure; }
     element_pressure_type const& fieldPressure() const { CHECK( M_fieldPressure ) << "field pressure not define"; return *M_fieldPressure; }
-    element_pressure_ptrtype & fieldPressurePtr() { CHECK( M_fieldPressure ) << "field pressure not define"; return M_fieldPressure; }
-    element_pressure_ptrtype const& fieldPressurePtr() const { CHECK( M_fieldPressure ) << "field pressure not define"; return M_fieldPressure; }
+    element_pressure_ptrtype & fieldPressurePtr() { return M_fieldPressure; }
+    element_pressure_ptrtype const& fieldPressurePtr() const { return M_fieldPressure; }
 
     newmark_displacement_ptrtype & timeStepNewmark() { return M_timeStepNewmark; }
     newmark_displacement_ptrtype const& timeStepNewmark() const { return M_timeStepNewmark; }
@@ -465,6 +465,7 @@ public :
 
     element_displacement_type & fieldAcceleration() { return M_timeStepNewmark->currentAcceleration(); }
     element_displacement_type const& fieldAcceleration() const { return M_timeStepNewmark->currentAcceleration(); }
+    element_displacement_ptrtype const& fieldAccelerationPtr() const { return M_timeStepNewmark->currentAccelerationPtr(); }
 
     element_normal_stress_ptrtype & fieldNormalStressFromFluidPtr() { return M_fieldNormalStressFromFluid; }
     element_normal_stress_ptrtype const& fieldNormalStressFromFluidPtr() const { return M_fieldNormalStressFromFluid; }
@@ -645,16 +646,16 @@ private :
     constexpr auto symbolsExpr( hana::int_<2> /**/ ) const
         {
             return Feel::vf::symbolsExpr( symbolExpr("solid_Dx",idv(this->fieldDisplacement())(0,0) ),
-                                          symbolExpr("fluid_Dy",idv(this->fieldDisplacement())(1,0) ),
-                                          symbolExpr("fluid_D_magnitude",inner(idv(this->fieldDisplacement())) )
+                                          symbolExpr("solid_Dy",idv(this->fieldDisplacement())(1,0) ),
+                                          symbolExpr("solid_D_magnitude",inner(idv(this->fieldDisplacement()),mpl::int_<InnerProperties::SQRT>()) )
                                           );
         }
     constexpr auto symbolsExpr( hana::int_<3> /**/ ) const
         {
             return Feel::vf::symbolsExpr( symbolExpr("solid_Dx",idv(this->fieldDisplacement())(0,0) ),
-                                          symbolExpr("fluid_Dy",idv(this->fieldDisplacement())(1,0) ),
-                                          symbolExpr("fluid_Dz",idv(this->fieldDisplacement())(2,0) ),
-                                          symbolExpr("fluid_D_magnitude",inner(idv(this->fieldDisplacement())) )
+                                          symbolExpr("solid_Dy",idv(this->fieldDisplacement())(1,0) ),
+                                          symbolExpr("solid_Dz",idv(this->fieldDisplacement())(2,0) ),
+                                          symbolExpr("solid_D_magnitude",inner(idv(this->fieldDisplacement()),mpl::int_<InnerProperties::SQRT>()) )
                                           );
         }
 

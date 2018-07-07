@@ -134,7 +134,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
             {
                 auto BetaU = ( this->solverName() == "Oseen" )? M_bdf_fluid->poly() : *fielCurrentPicardSolution;
                 auto betaU = BetaU.template element<0>();
-                auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(betaU,p,*this->materialProperties(),matName);
+                auto myViscosity = Feel::FeelModels::fluidMecViscosity<2*nOrderVelocity>(betaU,p,*this->materialProperties(),matName);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
                                _expr= 2*myViscosity*inner(deft,grad(v)),
@@ -154,7 +154,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     {
         bilinearForm_PatternCoupled +=
             integrate( _range=M_rangeMeshElements,
-                       _expr= -idv(rho)*divt(u)*id(q),
+                       _expr= -divt(u)*id(q),
                        _geomap=this->geomap() );
     }
 

@@ -34,8 +34,6 @@
 
 namespace Feel
 {
-namespace vf
-{
 namespace FeelModels
 {
 
@@ -1416,6 +1414,5 @@ solidMecPressureFormulationConstraintJacobian( ElementDispType const& v,
 }
 
 } // namespace FeelModels
-} // namespace vf
 } // namespace Feel
 #endif /* __SOLIDMECINCOMPRESSIBILITY_H */

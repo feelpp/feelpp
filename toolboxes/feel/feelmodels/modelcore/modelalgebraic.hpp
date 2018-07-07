@@ -257,6 +257,8 @@ public :
     virtual void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     virtual void preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     virtual void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const {}
+    virtual void preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const {}
+    virtual void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     //----------------------------------------------------------------------------------//
 
 private :
