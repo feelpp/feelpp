@@ -76,10 +76,14 @@ struct ModelBaseUpload
 
     std::string relativePath( std::string const& s ) const;
 
+    void print() const;
+private :
+    void uploadPreProcess( std::string const& dataPath, std::vector<std::tuple<std::string,std::time_t,std::string>> & res ) const;
+
 private :
     std::shared_ptr<RemoteData> M_remoteData;
     std::string M_basePath;
-    mutable std::map<std::string,std::pair<std::string,std::vector<std::string>>> M_treeDataStructure;
+    mutable std::map<std::string,std::pair<std::string,std::map<std::string,std::time_t>>> M_treeDataStructure;
 };
 
 class ModelBase
