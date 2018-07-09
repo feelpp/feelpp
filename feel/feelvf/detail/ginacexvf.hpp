@@ -55,7 +55,7 @@ public:
             template <typename T1,typename T2>
             constexpr auto operator()( T1 const& res,T2 const& e ) const
                 {
-                    return hana::integral_constant<size_type, T1::value | T2::second_type::context >{};
+                    return hana::integral_constant<size_type, T1::value | T2::value_type::second_type::context >{};
                 }
         };
         template<typename Funct>
@@ -64,7 +64,7 @@ public:
             template <typename T1,typename T2>
             constexpr auto operator()( T1 const& res,T2 const& e ) const
                 {
-                    return hana::integral_constant<bool, T1::value || T2::second_type::template HasTestFunction<Funct>::result >{};
+                    return hana::integral_constant<bool, T1::value || T2::value_type::second_type::template HasTestFunction<Funct>::result >{};
                 }
         };
         template<typename Funct>
@@ -73,7 +73,7 @@ public:
             template <typename T1,typename T2>
             constexpr auto operator()( T1 const& res,T2 const& e ) const
                 {
-                    return hana::integral_constant<bool, T1::value || T2::second_type::template HasTrialFunction<Funct>::result >{};
+                    return hana::integral_constant<bool, T1::value || T2::value_type::second_type::template HasTrialFunction<Funct>::result >{};
                 }
         };
     };
@@ -269,9 +269,10 @@ public:
     const std::vector<uint16_type> indices2() const
     {
         std::vector<uint16_type> indices_vec;
-        hana::for_each( M_expr2, [&]( auto const& e )
+        hana::for_each( M_expr2, [&]( auto const& evec )
                         {
-                            indices_vec.push_back( this->index( e.first ) );
+                            for ( auto const& e : evec )
+                                indices_vec.push_back( this->index( e.first ) );
                             //std::cout << "ana::for_each " << e.first << "\n";
                         });
         return indices_vec;
@@ -293,28 +294,44 @@ public:
         {
             template <typename T>
             struct apply {
-                using type = typename T::second_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
+                using type = typename T::value_type::second_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
             };
 
             template <typename T>
             constexpr auto operator()(T const& t) const
                 {
-                    return typename TransformExprToTensor::template apply<T>::type( t.second,Geo_t{} );
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    std::vector<_tensor_type> res;
+                    for ( auto const& sub : t )
+                        res.push_back( _tensor_type( sub.second,Geo_t{} ) );
+                    return res;
                 }
             template <typename T>
             constexpr auto operator()(T const& t, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) const
                 {
-                    return typename TransformExprToTensor::template apply<T>::type( t.second,geom,fev,feu );
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    std::vector<_tensor_type> res;
+                    for ( auto const& sub : t )
+                        res.push_back( _tensor_type( sub.second,geom,fev,feu ) );
+                    return res;
                 }
             template <typename T>
             constexpr auto operator()(T const& t, Geo_t const& geom, Basis_i_t const& fev ) const
                 {
-                    return typename TransformExprToTensor::template apply<T>::type( t.second,geom,fev );
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    std::vector<_tensor_type> res;
+                    for ( auto const& sub : t )
+                        res.push_back( _tensor_type( sub.second,geom,fev ) );
+                    return res;
                 }
             template <typename T>
             constexpr auto operator()(T const& t, Geo_t const& geom ) const
                 {
-                    return typename TransformExprToTensor::template apply<T>::type( t.second,geom );
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    std::vector<_tensor_type> res;
+                    for ( auto const& sub : t )
+                        res.push_back( _tensor_type( sub.second,geom ) );
+                    return res;
                 }
         };
 
@@ -426,12 +443,15 @@ public:
                             M_x[M_t_expr_index[i]] = M_t_expr[i].evalq( 0, 0, q );
                     }
                     uint16_type k=0;
-                    hana::for_each( M_t_expr2, [&k,&q,this]( auto const& e )
+                    hana::for_each( M_t_expr2, [&k,&q,this]( auto const& evec )
                                     {
-                                        uint16_type idx = M_t_expr2_index[k];
-                                        if ( idx != invalid_uint16_type_value )
-                                            M_x[idx] = e.evalq( 0, 0, q );
-                                        ++k;
+                                        for ( auto const& e : evec )
+                                        {
+                                            uint16_type idx = M_t_expr2_index[k];
+                                            if ( idx != invalid_uint16_type_value )
+                                                M_x[idx] = e.evalq( 0, 0, q );
+                                            ++k;
+                                        }
                                     });
                     M_fun(&ni,M_x.data(),&no,&M_y[q]);
                 }
@@ -444,11 +464,14 @@ public:
                 if ( M_t_expr_index[i] != -1 )
                     M_t_expr[i].update( geom, fev, feu );
             uint16_type k=0;
-            hana::for_each( M_t_expr2, [&k,&geom,&fev,feu,this]( auto & e )
+            hana::for_each( M_t_expr2, [&k,&geom,&fev,feu,this]( auto & evec )
                             {
-                                if ( M_t_expr2_index[k] != invalid_uint16_type_value )
-                                    e.update( geom,fev,feu );
-                                ++k;
+                                for ( auto & e : evec )
+                                {
+                                    if ( M_t_expr2_index[k] != invalid_uint16_type_value )
+                                        e.update( geom,fev,feu );
+                                    ++k;
+                                }
                             });
             updateFun( geom );
 
@@ -461,11 +484,14 @@ public:
                     if ( M_t_expr_index[i] != -1 )
                         M_t_expr[i].update( geom, fev );
                 uint16_type k=0;
-                hana::for_each( M_t_expr2, [&k,&geom,&fev,this]( auto & e )
+                hana::for_each( M_t_expr2, [&k,&geom,&fev,this]( auto & evec )
                                 {
-                                    if ( M_t_expr2_index[k] != invalid_uint16_type_value )
-                                        e.update( geom,fev );
-                                    ++k;
+                                    for ( auto & e : evec )
+                                    {
+                                        if ( M_t_expr2_index[k] != invalid_uint16_type_value )
+                                            e.update( geom,fev );
+                                        ++k;
+                                    }
                                 });
                 updateFun( geom );
             }
@@ -477,11 +503,14 @@ public:
                     if ( M_t_expr_index[i] != -1 )
                         M_t_expr[i].update( geom );
                 uint16_type k=0;
-                hana::for_each( M_t_expr2, [&k,&geom,this]( auto & e )
+                hana::for_each( M_t_expr2, [&k,&geom,this]( auto & evec )
                                 {
-                                    if ( M_t_expr2_index[k] != invalid_uint16_type_value )
-                                        e.update( geom );
-                                    ++k;
+                                    for ( auto & e : evec )
+                                    {
+                                        if ( M_t_expr2_index[k] != invalid_uint16_type_value )
+                                            e.update( geom );
+                                        ++k;
+                                    }
                                 });
                 updateFun( geom );
             }
@@ -494,11 +523,14 @@ public:
                     if ( M_t_expr_index[i] != -1 )
                         M_t_expr[i].update( geom, face );
                 uint16_type k=0;
-                hana::for_each( M_t_expr2, [&k,&geom,&face,this]( auto & e )
+                hana::for_each( M_t_expr2, [&k,&geom,&face,this]( auto & evec )
                                 {
-                                    if ( M_t_expr2_index[k] != invalid_uint16_type_value )
-                                        e.update( geom, face );
-                                    ++k;
+                                    for ( auto & e : evec )
+                                    {
+                                        if ( M_t_expr2_index[k] != invalid_uint16_type_value )
+                                            e.update( geom, face );
+                                        ++k;
+                                    }
                                 });
                 updateFun( geom );
             }
