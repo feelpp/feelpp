@@ -441,6 +441,7 @@ void runTest3()
     auto Vh2 = Pch<2>( mesh );
     auto Vh3 = Pch<3>( mesh );
     auto u1 = Vh1->element(Px());
+    auto u1b = Vh1->element(Py());
     auto u2 = Vh2->element(Py());
     auto u3 = Vh3->element(Px()*Px()*Py());
 
@@ -448,6 +449,7 @@ void runTest3()
     auto exprA = expr("2*x*y+x*x*y:x:y");
     auto exprB = expr("2*u*y+x*x*y:u:x:y");
     auto exprBvf = expr(exprB, symbolExpr("u",idv(u1)) );
+
     auto exprC = expr("2*u*v+x*x*y:u:v:x:y");
     auto exprCvf = expr(exprC,symbolExpr("u",idv(u1)), symbolExpr("v",idv(u2)) );
     auto exprD = expr("2*u*v+w:u:v:w");
@@ -455,16 +457,23 @@ void runTest3()
     auto exprE = expr("2*u*v+w:u:v:w");
     auto exprEvf = expr(exprE, symbolsExpr( symbolExpr("u",idv(u1)), symbolExpr("v",idv(u2) ), symbolExpr("w",idv(u1)*idv(u1)*idv(u2) ) ) );
 
+    auto exprF = expr("2*u*v+x*u*v:u:v:x:y");
+    //auto exprFvf = expr(exprC,symbolExpr( { { "u",idv(u1) }, { "v",idv(u1b) } }) );
+    //auto exprFvf = expr(exprC,symbolExpr( { std::make_pair("u",idv(u1)) , std::make_pair("v",idv(u1b)) }) );
+    auto exprFvf = expr(exprC,symbolExpr( { std::make_pair( std::string("u"),idv(u1)) , std::make_pair( std::string("v"),idv(u1b)) }) );
+
     double intA = integrate(_range=elements(mesh),_expr=exprA,_quad=5).evaluate()(0,0);
     double intB = integrate(_range=elements(mesh),_expr=exprBvf,_quad=5).evaluate()(0,0);
     double intC = integrate(_range=elements(mesh),_expr=exprCvf,_quad=5).evaluate()(0,0);
     double intD = integrate(_range=elements(mesh),_expr=exprDvf,_quad=5).evaluate()(0,0);
     double intE = integrate(_range=elements(mesh),_expr=exprEvf,_quad=5).evaluate()(0,0);
+    double intF = integrate(_range=elements(mesh),_expr=exprFvf,_quad=5).evaluate()(0,0);
 
     BOOST_CHECK_CLOSE( intA, intB, 1e-8 );
     BOOST_CHECK_CLOSE( intA, intC, 1e-8 );
     BOOST_CHECK_CLOSE( intA, intD, 1e-8 );
     BOOST_CHECK_CLOSE( intA, intE, 1e-8 );
+    BOOST_CHECK_CLOSE( intA, intF, 1e-8 );
 
     // vectorial expressions
     auto exprVecA = expr<2,1>("{2*x*y+x*x*y,4*x-y}:x:y");
