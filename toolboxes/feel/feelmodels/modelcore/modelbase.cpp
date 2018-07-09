@@ -82,24 +82,51 @@ ModelBaseUpload::isOperational() const
     return M_remoteData->canUpload();
 }
 
+
+
 void
-ModelBaseUpload::upload( std::string const& dataPath ) const
+ModelBaseUpload::uploadPreProcess( std::string const& dataPath, std::vector<std::tuple<std::string,std::time_t,std::string>> & res ) const
 {
-    if ( !this->isOperational() )
+    fs::path dataFsPath( dataPath );
+    // if dir, loop on all files/dir inside
+    if ( fs::is_directory( dataFsPath ) )
+    {
+        fs::recursive_directory_iterator end_itr;
+        for (fs::recursive_directory_iterator itr( dataFsPath ); itr != end_itr; ++itr)
+        {
+            fs::path fileFsPath = itr->path();
+            if ( !fs::is_regular_file( fileFsPath ) )
+                continue;
+            if ( fs::is_symlink( fileFsPath ) ) // ignore symlink
+                continue;
+            uploadPreProcess( fileFsPath.string(), res );
+        }
         return;
+    }
 
     std::string relDataPath = this->relativePath( dataPath );
     CHECK( !relDataPath.empty() ) << "not relative path";
 
     fs::path folder = fs::path( relDataPath ).parent_path();
 
+    std::time_t dataLWT = fs::last_write_time( dataFsPath );
+
     std::string parentId;
     auto itFindFolder = M_treeDataStructure.find( folder.string() );
     if ( itFindFolder != M_treeDataStructure.end() )
+    {
         parentId = itFindFolder->second.first;
+        auto const& filesInFolder = itFindFolder->second.second;
+        auto itFindFile = filesInFolder.find( dataFsPath.filename().string() );
+        if ( itFindFile != filesInFolder.end() )
+        {
+            if ( itFindFile->second == fs::last_write_time( dataFsPath ) )
+                return;
+        }
+    }
     else
     {
-        auto newFolders = M_remoteData->createFolder( folder.string() );
+        auto newFolders = M_remoteData->createFolder( folder.string(), "", false );
         std::string curFolderInTree;
         for ( int k=0;k<newFolders.size();++k )
         {
@@ -109,24 +136,78 @@ ModelBaseUpload::upload( std::string const& dataPath ) const
             curFolderInTree = (k==0)? curFolderName : (fs::path(curFolderInTree)/curFolderName).string();
             auto itFindFolder2 = M_treeDataStructure.find( curFolderInTree );
             if ( itFindFolder2 == M_treeDataStructure.end() )
-                M_treeDataStructure[ curFolderInTree ] = std::make_pair( curFolderId,std::vector<std::string>() );
+                M_treeDataStructure[ curFolderInTree ] = std::make_pair( curFolderId,std::map<std::string,std::time_t>() );//,std::vector<std::string>() );
         }
     }
 
-    M_treeDataStructure[folder.string()].second.push_back( fs::path( relDataPath ).filename().string() );
-    M_remoteData->upload( dataPath, parentId );
+    res.push_back( std::make_tuple(dataPath, dataLWT, folder.string()/*parentId*/) );
+}
+
+void
+ModelBaseUpload::upload( std::string const& dataPath ) const
+{
+    if ( !this->isOperational() )
+        return;
+
+    if ( M_remoteData->worldComm().isMasterRank() )
+    {
+        std::vector<std::tuple<std::string,std::time_t,std::string>> dataPreProcess;
+        this->uploadPreProcess( dataPath, dataPreProcess );
+
+        if ( dataPreProcess.empty() )
+            return;
+        std::vector<std::pair<std::string,std::string> > dataToUpload( dataPreProcess.size() );
+        for ( int k=0;k<dataPreProcess.size();++k )
+        {
+            std::string const& folder = std::get<2>( dataPreProcess[k] );
+            auto itFindFolder = M_treeDataStructure.find( folder );
+            CHECK( itFindFolder != M_treeDataStructure.end() ) << "folder not found";
+            std::string const& parentId = itFindFolder->second.first;
+            dataToUpload[k] = std::make_pair( std::get<0>( dataPreProcess[k] ), parentId );
+            std::cout << "dataToUpload["<<k<<"] " << std::get<0>( dataPreProcess[k] )<<"\n";
+        }
+
+        auto resUpload = M_remoteData->upload( dataToUpload, false );
+        CHECK( resUpload.size() == dataToUpload.size() ) << "failure in upload";
+
+        for ( int k=0;k<dataPreProcess.size();++k )
+        {
+            std::string const& dataPathUploaded = std::get<0>( dataPreProcess[k] );
+            std::string relDataPathUploaded = this->relativePath( dataPathUploaded );
+            CHECK( !relDataPathUploaded.empty() ) << "not relative path";
+            std::time_t lwt = std::get<1>( dataPreProcess[k] );
+            std::string const& folder = std::get<2>( dataPreProcess[k] );
+            M_treeDataStructure[folder].second[fs::path( relDataPathUploaded ).filename().string()] = lwt;
+        }
+
+        this->print();
+    }
 }
 void
 ModelBaseUpload::createFolder( std::string const& folderPath, std::string const& parentId ) const
 {
     if ( this->isOperational() )
-        M_remoteData->createFolder( folderPath, parentId );
+        M_remoteData->createFolder( folderPath, parentId, false );
 }
 std::string
 ModelBaseUpload::relativePath( std::string const& s ) const
 {
     fs::path relPath = fs::relative( s,M_basePath );
     return relPath.string();
+}
+
+void
+ModelBaseUpload::print() const
+{
+    std::cout << "ModelBaseUpload::print\n";
+    for ( auto const& folder : M_treeDataStructure )
+    {
+        auto const& folderData = folder.second;
+        std::cout << folder.first << " [id=" << folderData.first << "]\n";
+        auto const& files = folderData.second;
+        for ( auto const& fileData : files )
+            std::cout << "  -- " << fileData.first << " ["<< fileData.second << "]\n";
+    }
 }
 
 
