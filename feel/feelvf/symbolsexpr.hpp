@@ -34,19 +34,26 @@ struct SymbolExprTag {};
 //! attach a symbol (string) with a feel++ expression
 //! ex : auto se = SymbolExpr( "u", cst(3.)*idv(u) );
 template <typename ExprT>
-struct SymbolExpr : public std::pair<std::string,ExprT>
+struct SymbolExpr : public std::vector<std::pair<std::string,ExprT>>
 {
+    using super_type = std::vector<std::pair<std::string,ExprT>>;
     using feelpp_tag = SymbolExprTag;
     SymbolExpr() = default;
     SymbolExpr( SymbolExpr const& ) = default;
     SymbolExpr( SymbolExpr && ) = default;
-    SymbolExpr( std::pair<std::string,ExprT> const& e ) : std::pair<std::string,ExprT>( e ) {}
-    SymbolExpr( std::pair<std::string,ExprT> && e ) : std::pair<std::string,ExprT>( e ) {}
+    SymbolExpr( std::pair<std::string,ExprT> const& e ) : super_type( 1,e ) {}
+    SymbolExpr( std::pair<std::string,ExprT> && e ) : super_type( 1,e ) {}
+    SymbolExpr( std::initializer_list<std::pair<std::string,ExprT>> const& e ) : super_type( e ) {}
 };
 //! build a SymbolExpr object
 template <typename T>
 SymbolExpr<Expr<T>>
 symbolExpr( std::string const& s,Expr<T> const& e ) { return SymbolExpr<Expr<T>>( std::make_pair(s,e) ); }
+
+template <typename T>
+SymbolExpr<Expr<T>>
+symbolExpr( std::initializer_list<std::pair<std::string,Expr<T>>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
+
 
 struct SymbolsExprTag {};
 
