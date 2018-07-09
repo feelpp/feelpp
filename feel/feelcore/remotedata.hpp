@@ -40,6 +40,9 @@ struct RemoteData
     RemoteData( RemoteData const& ) = default;
     RemoteData( RemoteData && ) = default;
 
+    //! return world comm
+    WorldComm const& worldComm() const { return M_worldComm; }
+
     //! return true if enough information are available for download a file
     bool canDownload() const;
 
@@ -55,14 +58,25 @@ struct RemoteData
     //! upload data on a remote storage
     //! @param dataPath : a path of a file or a folder
     //! @param parentId : id where folder are created, empty say to use folder id in the desc
-    void upload( std::string const& dataPath, std::string const& parentId = "" ) const;
+    //! @param sync : apply a mpi synchronization with returned infos (else only master rank have these infos)
+    //! @return : vector of path of the downloaded file or the path of downloaded folder
+    std::vector<std::string>
+    upload( std::string const& dataPath, std::string const& parentId = "", bool sync = true ) const;
+
+    //! upload data on Girder
+    //! @param dataToUpload : vector of (paths of a file or a folder, ids where folder are created, empty say to use folder id in the desc)
+    //! @param sync : apply a mpi synchronization with returned infos (else only master rank have these infos)
+    //! @return : vector of vector of file id uploaded
+    std::vector<std::vector<std::string>>
+    upload( std::vector<std::pair<std::string,std::string> > const& dataToUpload, bool sync = true ) const;
 
     //! create folders hierarchy on remote storage
     //! @param folderPath : the folder hierarchy
     //! @param parentId : id where folder are created, empty say to use folder id in the desc
+    //! @param sync : apply a mpi synchronization with returned infos (else only master rank have these infos)
     //! @return : vector of (subdir name, subdir id)
     std::vector<std::pair<std::string,std::string>>
-    createFolder( std::string const& folderPath, std::string const& parentId = "" ) const;
+    createFolder( std::string const& folderPath, std::string const& parentId = "", bool sync = true ) const;
 
     class URL
     {
@@ -141,20 +155,31 @@ struct RemoteData
         //! upload data on Girder
         //! @param dataPath : a path of a file or a folder
         //! @param parentId : id where folder are created, empty say to use folder id in the desc
-        void upload( std::string const& dataPath, std::string const& parentId = "" ) const;
+        //! @param sync : apply a mpi synchronization with returned infos (else only master rank have these infos)
+        //! @return : vector of file id uploaded
+        std::vector<std::string>
+        upload( std::string const& dataPath, std::string const& parentId = "", bool sync = true ) const;
+
+        //! upload data on Girder
+        //! @param dataToUpload : vector of (paths of a file or a folder, ids where folder are created, empty say to use folder id in the desc)
+        //! @param sync : apply a mpi synchronization with returned infos (else only master rank have these infos)
+        //! @return : vector of vector of file id uploaded
+        std::vector<std::vector<std::string>>
+        upload( std::vector<std::pair<std::string,std::string> > const& dataToUpload, bool sync = true ) const;
 
         //! create folders hierarchy on Girder
         //! @param folderPath : the folder hierarchy
         //! @param parentId : id where folder are created, empty say to use folder id in the desc
+        //! @param sync : apply a mpi synchronization with returned infos (else only master rank have these infos)
         //! @return : vector of (subdir name, subdir id)
         std::vector<std::pair<std::string,std::string>>
-        createFolder( std::string const& folderPath, std::string const& parentId = "" ) const;
+        createFolder( std::string const& folderPath, std::string const& parentId = "", bool sync = true ) const;
 
     private :
         std::string downloadFile( std::string const& fileId, std::string const& dir, std::string const& token ) const;
         std::string downloadFolder( std::string const& folderId, std::string const& dir, std::string const& token ) const;
-        void uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const;
-        void uploadFile( std::string const& filePath, std::string const& parentId, std::string const& token ) const;
+        std::vector<std::string> uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const;
+        std::string uploadFile( std::string const& filePath, std::string const& parentId, std::string const& token ) const;
         std::string createFolderImpl( std::string const& folderName, std::string const& parentId, std::string const& token ) const;
         std::string createToken( int duration = 1 ) const;
         void removeToken( std::string const& token ) const;
@@ -167,6 +192,7 @@ struct RemoteData
     };
 
 private :
+    WorldComm const& M_worldComm;
     boost::optional<URL> M_url;
     boost::optional<Github> M_github;
     boost::optional<Girder> M_girder;
