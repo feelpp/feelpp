@@ -2331,11 +2331,11 @@ updateEntitiesCoDimensionTwoGhostCell_step1( ElementType const& theelt, resultgh
 
 template<typename MeshType>
 void
-updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type & theelt, resultghost_edge_type const& idEdgesWithBaryRecv, mpl::false_ /**/ )
+updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type & theelt, resultghost_edge_type const& idEdgesWithBaryRecv, double vertexCompareTol, mpl::false_ /**/ )
 {}
 template<typename MeshType>
 void
-updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type & theelt, resultghost_edge_type const& idEdgesWithBaryRecv, mpl::true_ /**/ )
+updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type & theelt, resultghost_edge_type const& idEdgesWithBaryRecv, double vertexCompareTol, mpl::true_ /**/ )
 {
     typedef typename MeshType::element_type ElementType;
     typedef typename MeshType::edge_type edge_type;
@@ -2369,7 +2369,7 @@ updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType:
             // compare barycenter
             bool find2=true;
             for (uint16_type d=0;d<MeshType::nRealDim;++d)
-                find2 = find2 && ( std::abs( baryEdge[d]-baryEdgeRecv[d] )<1e-9 );
+                find2 = find2 && ( std::abs( baryEdge[d]-baryEdgeRecv[d] )<vertexCompareTol );
             if (find2) { hasFind=true;jBis=j2; }
         }
         CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost edge cells are not available\n";
@@ -2672,7 +2672,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
             auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k].template get<2>();
             DCHECK( k < memoryMsgToSend[idProc].size() ) << "invalid data index : " << k << " must be less than " << memoryMsgToSend[idProc].size();
             auto & theelt = *memoryMsgToSend.at(idProc).at(k);
-            
+            double vertexCompareTol = std::max(1e-15,theelt.hMin()*1e-5);
+
             //update faces data
             if ( !idFacesWithBaryRecv.empty() )
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
@@ -2711,7 +2712,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
                         {
-                            find2 = find2 && ( std::abs( baryFace[d]-baryFaceRecv[d] )<1e-9 );
+                            find2 = find2 && ( std::abs( baryFace[d]-baryFaceRecv[d] )<vertexCompareTol );
                         }
                     if (find2) { hasFind=true;jBis=j2; }
 
@@ -2734,7 +2735,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
 
             // edges
             if ( !idEdgesWithBaryRecv.empty() )
-            Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step2( *this, theelt, idEdgesWithBaryRecv, mpl::bool_<element_type::nDim == 3>() );
+                Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step2( *this, theelt, idEdgesWithBaryRecv, vertexCompareTol, mpl::bool_<element_type::nDim == 3>() );
 
             // vertices
             if ( !idPointsWithNodeRecv.empty() )
@@ -2748,11 +2749,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
                 for ( uint16_type j2 = 0; j2 < element_type::numLocalVertices && !hasFind; j2++ )
                 {
                     auto const& thepointj2 = theelt.point( j2 );
-                    // compare barycenters
+                    // compare barycentersOA
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
                         {
-                            find2 = find2 && ( std::abs( thepointj2(d)-nodePointRecv[d] )<1e-9 );
+                            find2 = find2 && ( std::abs( thepointj2(d)-nodePointRecv[d] )<vertexCompareTol );
                         }
                     if (find2) { hasFind=true;jBis=j2; }
                 }
