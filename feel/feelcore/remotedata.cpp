@@ -388,6 +388,8 @@ StatusRequestHTTP requestHTTPDELETE( std::string const& url, std::vector<std::st
 
 
 RemoteData::RemoteData( std::string const& desc, WorldComm const& worldComm )
+    :
+    M_worldComm( worldComm )
 {
     RemoteData::URL urlTool( desc,worldComm );
     if ( urlTool.isValid() )
@@ -442,18 +444,27 @@ RemoteData::download( std::string const& dir, std::string const& filename ) cons
     return downloadedData;
 }
 
-void
-RemoteData::upload( std::string const& dataPath, std::string const& parentId ) const
+std::vector<std::string>
+RemoteData::upload( std::string const& dataPath, std::string const& parentId, bool sync ) const
 {
     if ( M_girder && M_girder->canUpload() )
-        M_girder->upload( dataPath, parentId );
+        return M_girder->upload( dataPath, parentId, sync );
+    return {};
+}
+
+std::vector<std::vector<std::string>>
+RemoteData::upload( std::vector<std::pair<std::string,std::string> > const& dataToUpload, bool sync ) const
+{
+    if ( M_girder && M_girder->canUpload() )
+        return M_girder->upload( dataToUpload, sync );
+    return {};
 }
 
 std::vector<std::pair<std::string,std::string>>
-RemoteData::createFolder( std::string const& folderPath, std::string const& parentId ) const
+RemoteData::createFolder( std::string const& folderPath, std::string const& parentId, bool sync ) const
 {
     if ( M_girder && M_girder->canUpload() )
-        return M_girder->createFolder( folderPath, parentId );
+        return M_girder->createFolder( folderPath, parentId, sync );
     return {};
 }
 
@@ -1179,14 +1190,20 @@ RemoteData::Girder::downloadFolder( std::string const& folderId, std::string con
     return downloadedFolder;
 }
 
-void
-RemoteData::Girder::upload( std::string const& dataPath, std::string const& parentId ) const
+std::vector<std::string>
+RemoteData::Girder::upload( std::string const& dataPath, std::string const& parentId, bool sync ) const
+{
+    auto res = this->upload( std::vector<std::pair<std::string,std::string>>(1, std::make_pair(dataPath,parentId) ), sync );
+    CHECK( res.size() == 1 ) << "wrong size "<< res.size() << " : must be 1";
+    return res[0];
+}
+
+std::vector<std::vector<std::string>>
+RemoteData::Girder::upload( std::vector<std::pair<std::string,std::string> > const& dataToUpload, bool sync ) const
 {
     CHECK( !M_token.empty() || !M_apiKey.empty() ) << "authentication unavailable";
-    std::string currentParentId = parentId;
-    if ( parentId.empty() && !M_folderIds.empty() )
-        currentParentId = *M_folderIds.begin();
-    CHECK( !currentParentId.empty() ) << "a parentId is required";
+
+    std::vector<std::vector<std::string>> res( dataToUpload.size() );
 
     if ( M_worldComm.isMasterRank() )
     {
@@ -1194,24 +1211,38 @@ RemoteData::Girder::upload( std::string const& dataPath, std::string const& pare
         if ( M_token.empty() )
             token = this->createToken();
 
-        fs::path dataFsPath( dataPath );
-        if( fs::is_directory( dataFsPath ) && Feel::filename_is_dot( dataFsPath.filename() ) )
+        for ( int k=0;k<dataToUpload.size();++k )
         {
-            fs::directory_iterator end_itr;
-            for ( fs::directory_iterator itr( dataFsPath ); itr != end_itr; ++itr )
-                this->uploadRecursively( itr->path().string(), currentParentId, token );
+            std::string dataPath = dataToUpload[k].first;
+            std::string parentId = dataToUpload[k].second;
+            std::string currentParentId = parentId;
+            if ( parentId.empty() && !M_folderIds.empty() )
+                currentParentId = *M_folderIds.begin();
+            CHECK( !currentParentId.empty() ) << "a parentId is required";
+
+            fs::path dataFsPath( dataPath );
+            if( fs::is_directory( dataFsPath ) && Feel::filename_is_dot( dataFsPath.filename() ) )
+            {
+                fs::directory_iterator end_itr;
+                for ( fs::directory_iterator itr( dataFsPath ); itr != end_itr; ++itr )
+                    res[k] = this->uploadRecursively( itr->path().string(), currentParentId, token );
+            }
+            else
+                res[k] = this->uploadRecursively( dataPath, currentParentId, token );
         }
-        else
-            this->uploadRecursively( dataPath, currentParentId, token );
 
         if ( M_token.empty() && !token.empty() )
             this->removeToken( token );
     }
-    M_worldComm.barrier();
+
+    if ( sync )
+        mpi::broadcast( M_worldComm.globalComm(), res, M_worldComm.masterRank() );
+
+    return res;
 }
 
 std::vector<std::pair<std::string,std::string> >
-RemoteData::Girder::createFolder( std::string const& folderPath, std::string const& parentId ) const
+RemoteData::Girder::createFolder( std::string const& folderPath, std::string const& parentId, bool sync ) const
 {
     CHECK( !M_token.empty() || !M_apiKey.empty() ) << "authentication unavailable";
     std::string currentParentId = parentId;
@@ -1239,7 +1270,8 @@ RemoteData::Girder::createFolder( std::string const& folderPath, std::string con
         if ( M_token.empty() && !token.empty() )
             this->removeToken( token );
     }
-    mpi::broadcast( M_worldComm.globalComm(), foldersInfo, M_worldComm.masterRank() );
+    if ( sync )
+        mpi::broadcast( M_worldComm.globalComm(), foldersInfo, M_worldComm.masterRank() );
     std::vector<std::pair<std::string,std::string> > res;
     for ( auto const& folderInfo : foldersInfo )
         res.push_back( std::make_pair( boost::get<0>( folderInfo ), boost::get<1>( folderInfo ) ) );
@@ -1247,9 +1279,10 @@ RemoteData::Girder::createFolder( std::string const& folderPath, std::string con
 }
 
 
-void
+std::vector<std::string>
 RemoteData::Girder::uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const
 {
+    std::vector<std::string> res;
     fs::path dataFsPath( dataPath );
     if( fs::is_directory( dataFsPath ) )
     {
@@ -1258,15 +1291,23 @@ RemoteData::Girder::uploadRecursively( std::string const& dataPath, std::string 
 
         fs::directory_iterator end_itr;
         for ( fs::directory_iterator itr( dataFsPath ); itr != end_itr; ++itr )
-            this->uploadRecursively( itr->path().string(), newParentId, token );
+        {
+            auto filesUploaded = this->uploadRecursively( itr->path().string(), newParentId, token );
+            for ( std::string const& fileUploaded : filesUploaded )
+                if ( !fileUploaded.empty() )
+                    res.push_back( fileUploaded );
+        }
     }
     else if ( fs::is_regular_file( dataFsPath ) )
     {
-        this->uploadFile( dataPath, parentId, token );
+        std::string fileUploaded = this->uploadFile( dataPath, parentId, token );
+        if ( !fileUploaded.empty() )
+            res.push_back( fileUploaded );
     }
+    return res;
 }
 
-void
+std::string
 RemoteData::Girder::uploadFile( std::string const& filepath, std::string const& parentId, std::string const& token ) const
 {
     std::string filename = fs::path(filepath).filename().string();
@@ -1305,19 +1346,21 @@ RemoteData::Girder::uploadFile( std::string const& filepath, std::string const& 
     if ( !status.success() )
     {
         std::cout << "Girder error in requestHTTPPOST : " << status.msg() << "\n";
-        return;
+        return {};
     }
+    // convert to property tree
+    std::istringstream istr( omemfile.str() );
+    pt::ptree pt;
+    pt::read_json(istr, pt);
     if ( status.code() != 200 )
     {
-        // convert to property tree
-        std::istringstream istr( omemfile.str() );
-        pt::ptree pt;
-        pt::read_json(istr, pt);
-
         std::cout << Girder::errorMessage( pt,"upload file fails", status.code() ) << "\n";
-        return;
+        return {};
     }
-
+    std::string fileIdCreated;
+    if ( auto it = pt.get_optional<std::string>("_id") )
+        fileIdCreated = *it;
+    return fileIdCreated;
 }
 
 std::string
