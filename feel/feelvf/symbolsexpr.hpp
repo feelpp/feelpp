@@ -44,6 +44,7 @@ struct SymbolExpr : public std::vector<std::pair<std::string,ExprT>>
     SymbolExpr( std::pair<std::string,ExprT> const& e ) : super_type( 1,e ) {}
     SymbolExpr( std::pair<std::string,ExprT> && e ) : super_type( 1,e ) {}
     SymbolExpr( std::initializer_list<std::pair<std::string,ExprT>> const& e ) : super_type( e ) {}
+    SymbolExpr( super_type const& e ) : super_type( e ) {}
 };
 //! build a SymbolExpr object
 template <typename T>
@@ -53,6 +54,10 @@ symbolExpr( std::string const& s,Expr<T> const& e ) { return SymbolExpr<Expr<T>>
 template <typename T>
 SymbolExpr<Expr<T>>
 symbolExpr( std::initializer_list<std::pair<std::string,Expr<T>>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
+
+template <typename T>
+SymbolExpr<Expr<T>>
+symbolExpr( std::vector<std::pair<std::string,Expr<T>>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
 
 
 struct SymbolsExprTag {};
