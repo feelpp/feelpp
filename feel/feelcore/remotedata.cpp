@@ -336,7 +336,7 @@ StatusRequestHTTP requestHTTPPOST( std::string const& url, std::vector<std::stri
 #endif
 }
 
-StatusRequestHTTP requestHTTPDELETE( std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
+StatusRequestHTTP requestHTTPCUSTOM( std::string const& customRequest, std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
 {
 #if defined(FEELPP_HAS_LIBCURL)
     CURLcode res;
@@ -349,7 +349,7 @@ StatusRequestHTTP requestHTTPDELETE( std::string const& url, std::vector<std::st
     res = curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
     if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
     // request type
-    res = curl_easy_setopt(curl_handle, CURLOPT_CUSTOMREQUEST, "DELETE");
+    res = curl_easy_setopt(curl_handle, CURLOPT_CUSTOMREQUEST, customRequest.c_str()/*"DELETE"*/);
     if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
     // headers
     struct curl_slist *list = NULL;
@@ -458,6 +458,13 @@ RemoteData::upload( std::vector<std::pair<std::string,std::string> > const& data
     if ( M_girder && M_girder->canUpload() )
         return M_girder->upload( dataToUpload, sync );
     return {};
+}
+
+void
+RemoteData::replaceFile( std::string const& filePath, std::string const& fileId ) const
+{
+    if ( M_girder && M_girder->canUpload() )
+        return M_girder->replaceFile( filePath, fileId );
 }
 
 std::vector<std::pair<std::string,std::string>>
@@ -1207,6 +1214,7 @@ RemoteData::Girder::upload( std::vector<std::pair<std::string,std::string> > con
 
     if ( M_worldComm.isMasterRank() )
     {
+        // use token if given else create token if api key given
         std::string token = M_token;
         if ( M_token.empty() )
             token = this->createToken();
@@ -1215,20 +1223,36 @@ RemoteData::Girder::upload( std::vector<std::pair<std::string,std::string> > con
         {
             std::string dataPath = dataToUpload[k].first;
             std::string parentId = dataToUpload[k].second;
-            std::string currentParentId = parentId;
-            if ( parentId.empty() && !M_folderIds.empty() )
-                currentParentId = *M_folderIds.begin();
-            CHECK( !currentParentId.empty() ) << "a parentId is required";
-
-            fs::path dataFsPath( dataPath );
-            if( fs::is_directory( dataFsPath ) && Feel::filename_is_dot( dataFsPath.filename() ) )
+            std::string parentFolderId = parentId;
+            std::string parentFileId;
+            if ( parentId.empty() )
             {
-                fs::directory_iterator end_itr;
-                for ( fs::directory_iterator itr( dataFsPath ); itr != end_itr; ++itr )
-                    res[k] = this->uploadRecursively( itr->path().string(), currentParentId, token );
+                if ( !M_folderIds.empty() )
+                    parentFolderId = *M_folderIds.begin();
+                else if ( !M_fileIds.empty() )
+                    parentFileId = *M_fileIds.begin();
+            }
+            fs::path dataFsPath( dataPath );
+            if ( !parentFolderId.empty() ) // upload into a folder
+            {
+                if( fs::is_directory( dataFsPath ) && Feel::filename_is_dot( dataFsPath.filename() ) )
+                {
+                    fs::directory_iterator end_itr;
+                    for ( fs::directory_iterator itr( dataFsPath ); itr != end_itr; ++itr )
+                        res[k] = this->uploadRecursively( itr->path().string(), parentFolderId, token );
+                }
+                else
+                    res[k] = this->uploadRecursively( dataPath, parentFolderId, token );
+            }
+            else if ( !parentFileId.empty() ) // replace file
+            {
+                CHECK( fs::is_regular_file( dataFsPath ) ) << "must be a file";
+                this->replaceFileImpl( dataPath, parentFileId, token );
+                res[k].resize(1);
+                res[k][0] = parentFileId;
             }
             else
-                res[k] = this->uploadRecursively( dataPath, currentParentId, token );
+                CHECK( false ) << "a parentId is required";
         }
 
         if ( M_token.empty() && !token.empty() )
@@ -1240,6 +1264,13 @@ RemoteData::Girder::upload( std::vector<std::pair<std::string,std::string> > con
 
     return res;
 }
+
+void
+RemoteData::Girder::replaceFile( std::string const& filePath, std::string const& fileId ) const
+{
+
+}
+
 
 std::vector<std::pair<std::string,std::string> >
 RemoteData::Girder::createFolder( std::string const& folderPath, std::string const& parentId, bool sync ) const
@@ -1363,6 +1394,78 @@ RemoteData::Girder::uploadFile( std::string const& filepath, std::string const& 
     return fileIdCreated;
 }
 
+void
+RemoteData::Girder::replaceFileImpl( std::string const& filePath, std::string const& fileId, std::string const& token ) const
+{
+    CHECK( !token.empty() ) << "a token is required for upload";
+
+    std::ifstream imemfile( filePath, std::ios::binary );
+    // get length of file
+    imemfile.seekg( 0, imemfile.end );
+    long fsize = imemfile.tellg();
+    imemfile.seekg( 0, imemfile.beg );
+
+    // request http PUT : contents
+    std::string urlFileContents = M_url+"/api/v1/file/"+fileId+"/contents";
+    urlFileContents += "?size="+(boost::format("%1%")%fsize).str();
+    std::vector<std::string> headersFileContents;
+    headersFileContents.push_back("Accept: application/json");
+    headersFileContents.push_back("Content-Type: application/json");
+    headersFileContents.push_back("Content-Length: 0");
+    headersFileContents.push_back( "Girder-Token: "+token );
+
+    std::ostringstream omemfileFileContents;
+    StatusRequestHTTP status = requestHTTPCUSTOM( "PUT",urlFileContents, headersFileContents, omemfileFileContents );
+    if ( !status.success() )
+    {
+        std::cout << "Girder error in requestHTTPCUSTOM (PUT) : " << status.msg() << "\n";
+        return;
+    }
+    // convert to property tree
+    std::istringstream istrFileContents( omemfileFileContents.str() );
+    pt::ptree ptFileContents;
+    pt::read_json(istrFileContents, ptFileContents);
+    if ( status.code() != 200 )
+    {
+        std::cout << Girder::errorMessage( ptFileContents,"replace file (contents) fails", status.code() ) << "\n";
+        return;
+    }
+
+    std::string uploadId;
+    if ( auto it = ptFileContents.get_optional<std::string>("_id") )
+        uploadId = *it;
+    CHECK( !uploadId.empty() ) << "no _id in metada returned";
+
+
+    // request http POST : chunk
+    std::string urlFileChunk = M_url+"/api/v1/file/chunk";
+    urlFileChunk += "?uploadId="+uploadId;
+    urlFileChunk += "&offset=0";
+    std::vector<std::string> headersFileChunk;
+    headersFileChunk.push_back("Accept: application/json");
+    headersFileChunk.push_back("Content-Type: application/form-data");
+    headersFileChunk.push_back( "Girder-Token: "+token );
+
+    std::ostringstream omemfile;
+    status = requestHTTPPOST( urlFileChunk, headersFileChunk, imemfile, fsize, omemfile );
+    if ( !status.success() )
+    {
+        std::cout << "Girder error in requestHTTPPOST : " << status.msg() << "\n";
+        return;
+    }
+    if ( status.code() != 200 )
+    {
+        // convert to property tree
+        std::istringstream istr( omemfile.str() );
+        pt::ptree pt;
+        pt::read_json(istr, pt);
+
+        std::cout << Girder::errorMessage( pt,"upload file (chunk) fails", status.code() ) << "\n";
+        return;
+    }
+
+}
+
 std::string
 RemoteData::Girder::createFolderImpl( std::string const& folderName, std::string const& parentId, std::string const& token ) const
 {
@@ -1449,10 +1552,10 @@ RemoteData::Girder::removeToken( std::string const& token ) const
     headers.push_back( "Girder-Token: "+token );
 
     std::ostringstream omemfile;
-    StatusRequestHTTP status = requestHTTPDELETE( urlRemoveToken, headers, omemfile );
+    StatusRequestHTTP status = requestHTTPCUSTOM( "DELETE",urlRemoveToken, headers, omemfile );
     if ( !status.success() )
     {
-        std::cout << "Girder error in requestHTTPDELETE : " << status.msg() << "\n";
+        std::cout << "Girder error in requestHTTPCUSTOM (DELETE) : " << status.msg() << "\n";
         return;
     }
     if ( status.code() != 200 )
