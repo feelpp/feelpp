@@ -291,7 +291,7 @@ struct FEELPP_EXPORT ModelMaterial
     /**
      *
      */
-    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
+    template<typename ExprT> auto/*Expr<GinacExVF<ExprT> >*/ getScalar( std::string const& key,
                                                                 std::string const& sym, ExprT e ) const {
         try { return expr( M_p.get<std::string>( key ), sym, e ); }
         catch( pt::ptree_error const& e ) {
@@ -303,7 +303,7 @@ struct FEELPP_EXPORT ModelMaterial
     /**
      *
      */
-    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
+    template<typename ExprT> auto/*Expr<GinacExVF<ExprT> >*/ getScalar( std::string const& key,
                                                                 std::initializer_list<std::string> const& sym,
                                                                 std::initializer_list<ExprT> e ) const {
         try { return expr( M_p.get<std::string>( key ), sym, e ); }
@@ -316,7 +316,7 @@ struct FEELPP_EXPORT ModelMaterial
     /**
      *
      */
-    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
+    template<typename ExprT> auto/*Expr<GinacExVF<ExprT> >*/ getScalar( std::string const& key,
                                                                 std::vector<std::string> const& sym,
                                                                 std::vector<ExprT> e ) const {
         try { return expr( M_p.get<std::string>( key ), sym, e ); }
@@ -329,7 +329,7 @@ struct FEELPP_EXPORT ModelMaterial
     /**
      *
      */
-    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
+    template<typename ExprT> auto/*Expr<GinacExVF<ExprT> >*/ getScalar( std::string const& key,
                                                                 std::initializer_list<std::string> const& sym,
                                                                 std::initializer_list<ExprT> e,
                                                                 std::map<std::string, double> params ) const {
