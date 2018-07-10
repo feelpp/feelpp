@@ -70,6 +70,11 @@ struct RemoteData
     std::vector<std::vector<std::string>>
     upload( std::vector<std::pair<std::string,std::string> > const& dataToUpload, bool sync = true ) const;
 
+    //! replace contents of a file
+    //! @param filePath : path of new file
+    //! @param filedId : id of the file to replace
+    void replaceFile( std::string const& filePath, std::string const& fileId ) const;
+
     //! create folders hierarchy on remote storage
     //! @param folderPath : the folder hierarchy
     //! @param parentId : id where folder are created, empty say to use folder id in the desc
@@ -167,6 +172,11 @@ struct RemoteData
         std::vector<std::vector<std::string>>
         upload( std::vector<std::pair<std::string,std::string> > const& dataToUpload, bool sync = true ) const;
 
+        //! replace contents of a file
+        //! @param filePath : path of new file
+        //! @param filedId : id of the file to replace
+        void replaceFile( std::string const& filePath, std::string const& fileId ) const;
+
         //! create folders hierarchy on Girder
         //! @param folderPath : the folder hierarchy
         //! @param parentId : id where folder are created, empty say to use folder id in the desc
@@ -180,6 +190,7 @@ struct RemoteData
         std::string downloadFolder( std::string const& folderId, std::string const& dir, std::string const& token ) const;
         std::vector<std::string> uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const;
         std::string uploadFile( std::string const& filePath, std::string const& parentId, std::string const& token ) const;
+        void replaceFileImpl( std::string const& filePath, std::string const& fileId, std::string const& token ) const;
         std::string createFolderImpl( std::string const& folderName, std::string const& parentId, std::string const& token ) const;
         std::string createToken( int duration = 1 ) const;
         void removeToken( std::string const& token ) const;
