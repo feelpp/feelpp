@@ -467,6 +467,13 @@ RemoteData::replaceFile( std::string const& filePath, std::string const& fileId 
         return M_girder->replaceFile( filePath, fileId );
 }
 
+void
+RemoteData::replaceFile( std::vector<std::pair<std::string,std::string> > const& filesToReplace ) const
+{
+    if ( M_girder && M_girder->canUpload() )
+        return M_girder->replaceFile( filesToReplace );
+}
+
 std::vector<std::pair<std::string,std::string>>
 RemoteData::createFolder( std::string const& folderPath, std::string const& parentId, bool sync ) const
 {
@@ -1208,6 +1215,9 @@ RemoteData::Girder::upload( std::string const& dataPath, std::string const& pare
 std::vector<std::vector<std::string>>
 RemoteData::Girder::upload( std::vector<std::pair<std::string,std::string> > const& dataToUpload, bool sync ) const
 {
+    if ( dataToUpload.empty() )
+        return {};
+
     CHECK( !M_token.empty() || !M_apiKey.empty() ) << "authentication unavailable";
 
     std::vector<std::vector<std::string>> res( dataToUpload.size() );
@@ -1246,7 +1256,6 @@ RemoteData::Girder::upload( std::vector<std::pair<std::string,std::string> > con
             }
             else if ( !parentFileId.empty() ) // replace file
             {
-                CHECK( fs::is_regular_file( dataFsPath ) ) << "must be a file";
                 this->replaceFileImpl( dataPath, parentFileId, token );
                 res[k].resize(1);
                 res[k][0] = parentFileId;
@@ -1255,6 +1264,7 @@ RemoteData::Girder::upload( std::vector<std::pair<std::string,std::string> > con
                 CHECK( false ) << "a parentId is required";
         }
 
+        // delete token if created
         if ( M_token.empty() && !token.empty() )
             this->removeToken( token );
     }
@@ -1268,9 +1278,35 @@ RemoteData::Girder::upload( std::vector<std::pair<std::string,std::string> > con
 void
 RemoteData::Girder::replaceFile( std::string const& filePath, std::string const& fileId ) const
 {
-
+    this->replaceFile( std::vector<std::pair<std::string,std::string>>(1, std::make_pair(filePath,fileId) ) );
 }
 
+void
+RemoteData::Girder::replaceFile( std::vector<std::pair<std::string,std::string> > const& filesToReplace ) const
+{
+    if ( filesToReplace.empty() )
+        return;
+
+    CHECK( !M_token.empty() || !M_apiKey.empty() ) << "authentication unavailable";
+
+    if ( M_worldComm.isMasterRank() )
+    {
+        // use token if given else create token if api key given
+        std::string token = M_token;
+        if ( M_token.empty() )
+            token = this->createToken();
+        // call replace file request for each file
+        for ( int k=0;k<filesToReplace.size();++k )
+        {
+            std::string filePath = filesToReplace[k].first;
+            std::string fileId = filesToReplace[k].second;
+            this->replaceFileImpl( filePath, fileId, token );
+        }
+        // delete token if created
+        if ( M_token.empty() && !token.empty() )
+            this->removeToken( token );
+    }
+}
 
 std::vector<std::pair<std::string,std::string> >
 RemoteData::Girder::createFolder( std::string const& folderPath, std::string const& parentId, bool sync ) const
@@ -1398,6 +1434,7 @@ void
 RemoteData::Girder::replaceFileImpl( std::string const& filePath, std::string const& fileId, std::string const& token ) const
 {
     CHECK( !token.empty() ) << "a token is required for upload";
+    CHECK( fs::is_regular_file( filePath ) ) << "must be a file";
 
     std::ifstream imemfile( filePath, std::ios::binary );
     // get length of file
