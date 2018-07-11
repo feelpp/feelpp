@@ -24,10 +24,17 @@
 #ifndef FEELPP_DETAIL_GINACEX_HPP
 #define FEELPP_DETAIL_GINACEX_HPP 1
 
+#include <feel/feelvf/detail/ginacexvf.hpp>
+
 namespace Feel
 {
 namespace vf
 {
+
+template<int Order = 2>
+using GinacEx = GinacExVF<Order>;
+
+#if 0
 /// \cond detail
 /**
  * @brief allow runtime ginac in expression
@@ -345,6 +352,7 @@ private:
     std::string M_filename;
     std::string M_exprDesc;
 };
+
 template<int Order>
 FEELPP_EXPORT std::ostream&
 operator<<( std::ostream& os, GinacEx<Order> const& e )
@@ -365,7 +373,7 @@ str( GinacEx<Order> const& e )
 {
     return str( e.expression() );
 }
-
+#endif
 } // vf
 } // feel
 

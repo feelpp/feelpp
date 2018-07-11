@@ -26,7 +26,7 @@
 
 namespace Feel{
 namespace vf{
-///\cond detail
+
 /**
  * \class Ginac
  * \brief allow runtime ginac in expression
@@ -149,12 +149,14 @@ public:
     /** @name Constructors, destructor
      */
     //@{
+    GinacExVF() : super(){}
 
     explicit GinacExVF( ginac_expression_type const & fun,
                         std::vector<GiNaC::symbol> const& syms,
                         std::string const& exprDesc,
                         std::string filename="",
                         WorldComm const& world=Environment::worldComm(),
+                        std::string const& dirLibExpr=Environment::exprRepository(),
                         symbols_expression_type const& expr = symbols_expression_type() )
         :
         super( syms ),
@@ -175,7 +177,7 @@ public:
             // get filename if not given
             if ( M_filename.empty() && !M_exprDesc.empty() )
             {
-                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc );
+                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc, dirLibExpr );
             }
 
             // build ginac lib and link if necessary
@@ -221,6 +223,15 @@ public:
     /** @name Accessors
      */
     //@{
+    ginac_expression_type const& expression() const
+    {
+        return M_fun;
+    }
+
+    const GiNaC::FUNCP_CUBA& fun() const
+    {
+        return *M_cfun;
+    }
 
     //@}
 
@@ -235,10 +246,6 @@ public:
      */
     //@{
 
-    const GiNaC::FUNCP_CUBA& fun() const
-        {
-            return *M_cfun;
-        }
 
     uint16_type index( std::string const& sname ) const
     {
@@ -264,6 +271,7 @@ public:
     bool isZero() const { return M_fun.is_zero(); }
     std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
 
+    std::string const& exprDesc() const { return M_exprDesc; }
 
     symbols_expression_type const& symbolsExpression() const { return M_expr; }
     //@}
@@ -546,6 +554,16 @@ public:
         return res;
     }
 
+    value_type
+    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
+    {
+        int no = 1;
+        int ni = M_syms.size();
+        value_type res;
+        (*M_cfun)(&ni,M_params.data(),&no,&res);
+        return res;
+    }
+
 private:
     mutable ginac_expression_type  M_fun;
     boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
@@ -554,7 +572,28 @@ private:
     symbols_expression_type M_expr;
 };
 
-///\endcond detail
+template<int Order,typename SymbolsExprType>
+FEELPP_EXPORT std::ostream&
+operator<<( std::ostream& os, GinacExVF<Order,SymbolsExprType> const& e )
+{
+    os << e.expression();
+    return os;
+}
+
+template<int Order,typename SymbolsExprType>
+FEELPP_EXPORT std::string
+str( GinacExVF<Order,SymbolsExprType> && e )
+{
+    return str( std::forward<GinacExVF<Order,SymbolsExprType>>(e).expression() );
+}
+template<int Order,typename SymbolsExprType>
+FEELPP_EXPORT std::string
+str( GinacExVF<Order,SymbolsExprType> const& e )
+{
+    return str( e.expression() );
+}
+
+
 }} // feel::vf
 
 #endif
