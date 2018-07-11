@@ -85,7 +85,9 @@ ModelBaseUpload::isOperational() const
 
 
 void
-ModelBaseUpload::uploadPreProcess( std::string const& dataPath, std::vector<std::tuple<std::string,std::time_t,std::string>> & res ) const
+ModelBaseUpload::uploadPreProcess( std::string const& dataPath,
+                                   std::vector<std::tuple<std::string,std::time_t,std::string>> & resNewFile,
+                                   std::vector<std::tuple<std::string,std::time_t,std::string,std::string>> & resReplaceFile ) const
 {
     fs::path dataFsPath( dataPath );
     // if dir, loop on all files/dir inside
@@ -99,7 +101,7 @@ ModelBaseUpload::uploadPreProcess( std::string const& dataPath, std::vector<std:
                 continue;
             if ( fs::is_symlink( fileFsPath ) ) // ignore symlink
                 continue;
-            uploadPreProcess( fileFsPath.string(), res );
+            uploadPreProcess( fileFsPath.string(), resNewFile, resReplaceFile );
         }
         return;
     }
@@ -120,8 +122,15 @@ ModelBaseUpload::uploadPreProcess( std::string const& dataPath, std::vector<std:
         auto itFindFile = filesInFolder.find( dataFsPath.filename().string() );
         if ( itFindFile != filesInFolder.end() )
         {
-            if ( itFindFile->second == fs::last_write_time( dataFsPath ) )
+            auto const& fileInfo = itFindFile->second;
+            if ( fileInfo.second == fs::last_write_time( dataFsPath ) )
                 return;
+            else
+                resReplaceFile.push_back( std::make_tuple(dataPath, dataLWT, folder.string(), fileInfo.first) );
+        }
+        else
+        {
+            resNewFile.push_back( std::make_tuple(dataPath, dataLWT, folder.string()) );
         }
     }
     else
@@ -136,11 +145,12 @@ ModelBaseUpload::uploadPreProcess( std::string const& dataPath, std::vector<std:
             curFolderInTree = (k==0)? curFolderName : (fs::path(curFolderInTree)/curFolderName).string();
             auto itFindFolder2 = M_treeDataStructure.find( curFolderInTree );
             if ( itFindFolder2 == M_treeDataStructure.end() )
-                M_treeDataStructure[ curFolderInTree ] = std::make_pair( curFolderId,std::map<std::string,std::time_t>() );//,std::vector<std::string>() );
+                M_treeDataStructure[ curFolderInTree ] = std::make_pair( curFolderId,std::map<std::string,std::pair<std::string,std::time_t>>() );
         }
+        resNewFile.push_back( std::make_tuple(dataPath, dataLWT, folder.string()/*parentId*/) );
     }
 
-    res.push_back( std::make_tuple(dataPath, dataLWT, folder.string()/*parentId*/) );
+
 }
 
 void
@@ -151,36 +161,63 @@ ModelBaseUpload::upload( std::string const& dataPath ) const
 
     if ( M_remoteData->worldComm().isMasterRank() )
     {
-        std::vector<std::tuple<std::string,std::time_t,std::string>> dataPreProcess;
-        this->uploadPreProcess( dataPath, dataPreProcess );
+        // prepare datas to upload and create folders on remote server
+        std::vector<std::tuple<std::string,std::time_t,std::string>> dataPreProcessNewFile;
+        std::vector<std::tuple<std::string,std::time_t,std::string,std::string>> dataPreProcessReplaceFile;
+        this->uploadPreProcess( dataPath, dataPreProcessNewFile, dataPreProcessReplaceFile );
 
-        if ( dataPreProcess.empty() )
+        if ( dataPreProcessNewFile.empty() && dataPreProcessReplaceFile.empty() )
             return;
-        std::vector<std::pair<std::string,std::string> > dataToUpload( dataPreProcess.size() );
-        for ( int k=0;k<dataPreProcess.size();++k )
+        // generate data to upload container
+        std::vector<std::pair<std::string,std::string> > dataToUpload( dataPreProcessNewFile.size() );
+        for ( int k=0;k<dataPreProcessNewFile.size();++k )
         {
-            std::string const& folder = std::get<2>( dataPreProcess[k] );
+            std::string const& folder = std::get<2>( dataPreProcessNewFile[k] );
             auto itFindFolder = M_treeDataStructure.find( folder );
             CHECK( itFindFolder != M_treeDataStructure.end() ) << "folder not found";
             std::string const& parentId = itFindFolder->second.first;
-            dataToUpload[k] = std::make_pair( std::get<0>( dataPreProcess[k] ), parentId );
-            std::cout << "dataToUpload["<<k<<"] " << std::get<0>( dataPreProcess[k] )<<"\n";
+            dataToUpload[k] = std::make_pair( std::get<0>( dataPreProcessNewFile[k] ), parentId );
         }
-
+        // generate files to replace container
+        std::vector<std::pair<std::string,std::string> > filesToReplace( dataPreProcessReplaceFile.size() );
+        for ( int k=0;k<dataPreProcessReplaceFile.size();++k )
+        {
+            std::string const& filePath = std::get<0>( dataPreProcessReplaceFile[k] );
+            std::string const& fileId = std::get<3>( dataPreProcessReplaceFile[k] );
+            filesToReplace[k] = std::make_pair( filePath,fileId );
+        }
+        // apply data upload on remote server
         auto resUpload = M_remoteData->upload( dataToUpload, false );
         CHECK( resUpload.size() == dataToUpload.size() ) << "failure in upload";
-
-        for ( int k=0;k<dataPreProcess.size();++k )
+        // update tree data structure
+        for ( int k=0;k<dataPreProcessNewFile.size();++k )
         {
-            std::string const& dataPathUploaded = std::get<0>( dataPreProcess[k] );
+            CHECK( resUpload[k].size() == 1 ) << "must be 1";
+            std::string const& fileIdUploaded = resUpload[k][0];
+            std::string const& dataPathUploaded = std::get<0>( dataPreProcessNewFile[k] );
+            std::time_t lwt = std::get<1>( dataPreProcessNewFile[k] );
+            std::string const& folder = std::get<2>( dataPreProcessNewFile[k] );
+
             std::string relDataPathUploaded = this->relativePath( dataPathUploaded );
             CHECK( !relDataPathUploaded.empty() ) << "not relative path";
-            std::time_t lwt = std::get<1>( dataPreProcess[k] );
-            std::string const& folder = std::get<2>( dataPreProcess[k] );
-            M_treeDataStructure[folder].second[fs::path( relDataPathUploaded ).filename().string()] = lwt;
+            M_treeDataStructure[folder].second[fs::path( relDataPathUploaded ).filename().string()] = std::make_pair(fileIdUploaded,lwt);
         }
 
-        this->print();
+        // apply replace files remote server
+        M_remoteData->replaceFile( filesToReplace );
+        // update tree data structure
+        for ( int k=0;k<dataPreProcessReplaceFile.size();++k )
+        {
+            std::string const& dataPathUploaded = std::get<0>( dataPreProcessReplaceFile[k] );
+            std::time_t lwt = std::get<1>( dataPreProcessReplaceFile[k] );
+            std::string const& folder = std::get<2>( dataPreProcessReplaceFile[k] );
+
+            std::string relDataPathUploaded = this->relativePath( dataPathUploaded );
+            CHECK( !relDataPathUploaded.empty() ) << "not relative path";
+            M_treeDataStructure[folder].second[fs::path( relDataPathUploaded ).filename().string()].second = lwt;
+        }
+
+        //this->print();
     }
 }
 void
