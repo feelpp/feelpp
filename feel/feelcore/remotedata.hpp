@@ -75,6 +75,10 @@ struct RemoteData
     //! @param filedId : id of the file to replace
     void replaceFile( std::string const& filePath, std::string const& fileId ) const;
 
+    //! replace contents of a file
+    //! @param filesToReplace : vector of (path of new file, file id to replace)
+    void replaceFile( std::vector<std::pair<std::string,std::string> > const& filesToReplace ) const;
+
     //! create folders hierarchy on remote storage
     //! @param folderPath : the folder hierarchy
     //! @param parentId : id where folder are created, empty say to use folder id in the desc
@@ -176,6 +180,10 @@ struct RemoteData
         //! @param filePath : path of new file
         //! @param filedId : id of the file to replace
         void replaceFile( std::string const& filePath, std::string const& fileId ) const;
+
+        //! replace contents of a file
+        //! @param filesToReplace : vector of (path of new file, file id to replace)
+        void replaceFile( std::vector<std::pair<std::string,std::string> > const& filesToReplace ) const;
 
         //! create folders hierarchy on Girder
         //! @param folderPath : the folder hierarchy
