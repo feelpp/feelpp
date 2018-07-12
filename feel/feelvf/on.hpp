@@ -150,8 +150,8 @@ public:
     static const size_type context = OnExpr::context|vm::POINT;
     static const size_type is_terminal = false;
 
-    static const uint16_type imorder = OnExpr::imorder;
-    static const bool imIsPoly = OnExpr::imIsPoly;
+    //static const uint16_type imorder = OnExpr::imorder;
+    //static const bool imIsPoly = OnExpr::imIsPoly;
 
     using on_type =  typename boost::tuples::template element<0, ElementRange>::type;
     using element_iterator =  typename boost::tuples::template element<1, ElementRange>::type;

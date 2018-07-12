@@ -73,9 +73,6 @@ public:
     static const size_type context = vm::JACOBIAN;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = 0;
-    static const bool imIsPoly = true;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -110,6 +107,12 @@ public:
     Rand( Rand && c ) = default;
     Rand( Rand const& c ) = default;
     Rand& operator=( Rand const& c ) = default;
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return 0; }
+
+    //! expression is polynomial?
+    constexpr bool isPolynomial() const { return true; }
 
     value_type low() const { return M_low; }
     value_type high() const { return M_high; }

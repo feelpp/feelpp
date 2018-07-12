@@ -99,8 +99,6 @@ public:
     static const size_type context =  std::decay_t<decltype( hana::fold( symbols_expression_type{}, hana::integral_constant<size_type,vm::POINT|vm::JACOBIAN|vm::KB|vm::NORMAL>{}, typename FunctorsVariadicExpr::Context{} ) )>::value;
 
     static const bool is_terminal = false;
-    static const uint16_type imorder = /*exression_type::imorder+*/Order;
-    static const bool imIsPoly = false;
 
     template<typename Funct>
     struct HasTestFunction
@@ -223,6 +221,13 @@ public:
     /** @name Accessors
      */
     //@{
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return Order; }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return false; }
+
     ginac_expression_type const& expression() const
     {
         return M_fun;

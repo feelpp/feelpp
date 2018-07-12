@@ -69,10 +69,6 @@ public:
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
 
-
-    static const uint16_type imorder = functionspace_type::basis_type::nOrder;
-    static const bool imIsPoly = true;
-
     typedef IteratorRange range_iterator;
     typedef typename mpl::if_< boost::is_std_list<range_iterator>,
                                mpl::identity<range_iterator>,
@@ -152,6 +148,11 @@ public:
     /** @name  Methods
      */
     //@{
+    //! polynomial order
+    constexpr uint16_type polynomialOrder() const { return functionspace_type::basis_type::nOrder; }
+
+    //! expression is polynomial?
+    constexpr bool isPolynomial() const { return true; }
 
     //@}
 
