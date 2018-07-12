@@ -118,8 +118,17 @@ public :
         typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
         static const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
 
-        typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
-        typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
+        using expr_order_t = ExpressionOrder<_range_type,_expr_type>;
+        using im_default_type = im_t<typename expr_order_t::the_element_type, typename _expr_type::value_type>;
+        typedef typename vf::detail::clean2_type<Args,tag::quad, im_default_type>::type __quad_type;
+        typedef typename vf::detail::clean2_type<Args,tag::quad1, im_default_type >::type __quad1_type;
+        using _im_type = vf::detail::integrate_im_type<_range_type,_expr_type,__quad_type,__quad1_type>;
+        using _quad_type = typename _im_type::_quad_type;
+        using _quad1_type = typename _im_type::_quad1_type;
+
+        
+        //typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
+        //typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
     };
 
     //@}
@@ -260,10 +269,9 @@ public :
                                      )
                                      ( optional
                                        ( range,   *, self_type::rangeElements(this->domainSpace(), this->dualImageSpace())  )
-                                       ( quad,   *, ( typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad_type() ) )
-                                       ( quad1,   *, ( typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad1_type() ) )
-                                       ( geomap, *, (integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::geoOrder > 1 )?
-                                         GeomapStrategyType::GEOMAP_OPT:GeomapStrategyType::GEOMAP_HO )
+                                       ( quad,   *, quad_order_from_expression )
+                                       ( quad1,   *, quad_order_from_expression )
+                                       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
                                        (grad_expr, *, ( vf::zero<domain_space_type::nComponents,domain_space_type::nDim>() ))
                                        (div_expr, *, cst(0.) )
                                        (curl_expr, *,  ( vf::zero<  mpl::if_<mpl::equal_to<mpl::int_<domain_space_type::nComponents>, mpl::int_<1> >,
@@ -273,8 +281,13 @@ public :
     {
         using namespace vf;
 
-        typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad)>::type >::type thequad_type;
-        typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad1)>::type >::type thequad1_type;
+
+        auto the_ims = integrate_type<Args,range_elements_type>::_im_type::im( quad,quad1,expr );
+        auto const& the_im = the_ims.first;
+        auto const& the_im1 = the_ims.second;
+
+        //typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad)>::type >::type thequad_type;
+        //typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad1)>::type >::type thequad1_type;
         typedef typename boost::remove_reference<typename boost::remove_const< decltype(range)>::type >::type therange_type;
         typedef typename boost::tuples::template element<1, therange_type>::type element_iterator;
         static const uint16_type geoOrder = boost::unwrap_reference<typename element_iterator::value_type>::type::nOrder;
@@ -289,7 +302,7 @@ public :
         this->setRHSAndBC<domain_element_type>( 
                 sol, 
                 expr, range, 
-                quad, quad1, 
+                the_im,the_im1,//quad, quad1, 
                 geomap,
                 grad_expr, div_expr, curl_expr
                 );
@@ -484,10 +497,10 @@ private :
         typedef typename boost::tuples::template element<1, therange_type>::type element_iterator;
         static const uint16_type geoOrder = boost::unwrap_reference<typename element_iterator::value_type>::type::nOrder;
         static const uint16_type nOrderImageSpace = dual_image_space_type::basis_type::nOrder;
-        static const uint16_type quadOrder = thequad_type::CompileTimeOrder;
-        static const uint16_type quadOrderId = nOrderImageSpace*geoOrder;
-        static const uint16_type quad1Order = thequad1_type::CompileTimeOrder;
-        static const uint16_type quad1OrderId = nOrderImageSpace;
+        const quad_order_type quadOrder = quad.order();//thequad_type::CompileTimeOrder;
+        static const quad_order_type quadOrderId = nOrderImageSpace*geoOrder;
+        const quad_order_type quad1Order = quad1.order();//thequad1_type::CompileTimeOrder;
+        static const quad_order_type quad1OrderId = nOrderImageSpace;
 
         //auto uImage = this->dualImageSpace()->element();
         auto uDomain = this->domainSpace()->element();
@@ -495,8 +508,8 @@ private :
 
         form1( _test=this->dualImageSpace(), _vector=M_ie ) += integrate( 
             _range=range, _expr=inner(expr,id( uDomain ) ),
-                _quad=_Q<quadOrder+quadOrderId>(),
-                _quad1=_Q<quad1Order+quad1OrderId>(),
+                _quad=quadOrder+quadOrderId,
+                _quad1=quad1Order+quad1OrderId,
                 _geomap=geomap 
                 );
     }
@@ -519,12 +532,12 @@ private :
         typedef typename boost::tuples::template element<1, therange_type>::type element_iterator;
         static const uint16_type geoOrder = boost::unwrap_reference<typename element_iterator::value_type>::type::nOrder;
         static const uint16_type nOrderImageSpace = dual_image_space_type::basis_type::nOrder;
-        static const uint16_type quadOrder = thequad_type::CompileTimeOrder;
-        static const uint16_type quadOrderId = nOrderImageSpace*geoOrder;
-        static const uint16_type quadOrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1)*geoOrder:0;
-        static const uint16_type quad1Order = thequad1_type::CompileTimeOrder;
-        static const uint16_type quad1OrderId = nOrderImageSpace;
-        static const uint16_type quad1OrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1):0;
+        const quad_order_type quadOrder = quad.order();//thequad_type::CompileTimeOrder;
+        static const quad_order_type quadOrderId = nOrderImageSpace*geoOrder;
+        static const quad_order_type quadOrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1)*geoOrder:0;
+        const quad_order_type quad1Order = quad1.order();//thequad1_type::CompileTimeOrder;
+        static const quad_order_type quad1OrderId = nOrderImageSpace;
+        static const quad_order_type quad1OrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1):0;
 
         auto uImage = this->dualImageSpace()->element();
         auto uDomain = this->domainSpace()->element();
@@ -536,8 +549,8 @@ private :
             form1( _test=this->domainSpace(), _vector=M_ie ) +=
                 integrate( _range=range, _expr=inner(expr,id( uDomain ) ),
                            //integrate( _range=range, _expr=trans(expr)*id( uImage ),
-                           _quad=_Q<quadOrder+quadOrderId>(),
-                           _quad1=_Q<quad1Order+quad1OrderId>(),
+                           _quad=quadOrder+quadOrderId,
+                           _quad1=quad1Order+quad1OrderId,
                            _geomap=geomap );
 
             switch( M_proj_type )
@@ -545,22 +558,22 @@ private :
             case H1:
                 form1( _test=this->domainSpace(), _vector=M_ie ) +=
                     integrate( _range=range, _expr=trace(grad_expr*trans(grad( uDomain )) ),
-                               _quad=_Q<quadOrder+quadOrderGrad>(),
-                               _quad1=_Q<quad1Order+quad1OrderGrad>(),
+                               _quad=quadOrder+quadOrderGrad,
+                               _quad1=quad1Order+quad1OrderGrad,
                                _geomap=geomap );
                 break;
             case HDIV:
                 form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
                     integrate( _range=range, _expr=div_expr*div( uDomain ),
-                               _quad=_Q<quadOrder+quadOrderGrad>(),//quad,
-                               _quad1=_Q<quad1Order+quad1OrderGrad>(),//quad1,
+                               _quad=quadOrder+quadOrderGrad,//quad,
+                               _quad1=quad1Order+quad1OrderGrad,//quad1,
                                _geomap=geomap );
                 break;
             case HCURL:
                 form1( _test=this->domainSpace(), _vector=M_ie ) +=
                     integrate( _range=range, _expr=trans(curl_expr)*curl( uDomain ),
-                               _quad=_Q<quadOrder+quadOrderGrad>(),
-                               _quad1=_Q<quad1Order+quad1OrderGrad>(),
+                               _quad=quadOrder+quadOrderGrad,
+                               _quad1=quad1Order+quad1OrderGrad,
                                _geomap=geomap );
                 break;
             case L2:
@@ -575,8 +588,8 @@ private :
                 integrate( _range=range,
                            _expr=inner( expr, -grad( uImage )*vf::N() +
                                         M_gamma / vf::hFace() *id( uImage ) ),
-                           _quad=_Q<quadOrder+quadOrderId>(),
-                           _quad1=_Q<quad1Order+quad1OrderId>(),
+                           _quad=quadOrder+quadOrderId,
+                           _quad1=quad1Order+quad1OrderId,
                            _geomap=geomap );
         }
 
@@ -587,8 +600,8 @@ private :
                 integrate( _range=this->M_rangeBoundaryFaces,
                            _expr=inner( expr, M_epsilon*( -grad( uImage )*vf::N() ) +
                                                           M_gamma / vf::hFace() *id( uImage ) ),
-                           _quad=_Q<quadOrder+quadOrderId>(),
-                           _quad1=_Q<quad1Order+quad1OrderId>(),
+                           _quad=quadOrder+quadOrderId,
+                           _quad1=quad1Order+quad1OrderId,
                            _geomap=geomap );
         }
 
@@ -606,8 +619,8 @@ private :
                                -inner( id( uDomain ), gradt( sol )*vf::N() )
                                -inner( idt( sol ), grad( uDomain )*vf::N() )
                                + M_gamma * inner( idt( sol ), id( uDomain ) ) / vf::hFace(),
-                               _quad=_Q<quadOrder+quadOrderId>(),
-                               _quad1=_Q<quad1Order+quad1OrderId>(),
+                               _quad=quadOrder+quadOrderId,
+                               _quad1=quad1Order+quad1OrderId,
                                _geomap=geomap );
             }
             else if ( M_dir == STRONG )
