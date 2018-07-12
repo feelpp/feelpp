@@ -178,9 +178,6 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         static const size_type context = ExprT1::context;               \
         static const bool is_terminal = false;                          \
                                                                         \
-        static const uint16_type imorder = VF_FUNC_IS_POLYNOMIAL(O)*ExprT1::imorder;             \
-        static const bool imIsPoly = (VF_IM_IS_POLY(O) || (ExprT1::imorder==0)); \
-                                                                        \
         template<typename Func>                                         \
             struct HasTestFunction                                      \
         {                                                               \
@@ -227,6 +224,10 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
                 }                                                       \
                                                                         \
         bool isSymetric() const { return false; }                       \
+                                                                        \
+        uint16_type polynomialOrder() const { return VF_FUNC_IS_POLYNOMIAL(O)*M_expr_1.polynomialOrder(); } \
+                                                                        \
+        bool isPolynomial() const { return  (VF_IM_IS_POLY(O) || (M_expr_1.polynomialOrder()==0)); } \
                                                                         \
         void eval( int nx, value_type const* x, value_type* f ) const   \
         {                                                               \
@@ -374,9 +375,6 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         static const size_type context = ExprT1::context|ExprT2::context; \
         static const bool is_terminal = false;                          \
                                                                         \
-        static const uint16_type imorder = VF_FUNC_IS_POLYNOMIAL(O)*(ExprT1::imorder+ExprT2::imorder); \
-        static const bool imIsPoly = (VF_IM_IS_POLY(O) || (ExprT1::imorder==0 && ExprT2::imorder==0)); \
-                                                                        \
         template<typename Func>                                         \
             struct HasTestFunction                                      \
         {                                                               \
@@ -425,6 +423,10 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
                 }                                                       \
                                                                         \
         bool isSymetric() const { return false; }                       \
+                                                                        \
+        uint16_type polynomialOrder() const { return VF_FUNC_IS_POLYNOMIAL(O)*(M_expr_1.polynomialOrder()+M_expr_2.polynomialOrder()); } \
+                                                                        \
+        bool isPolynomial() const { return  (VF_IM_IS_POLY(O) || (M_expr_1.polynomialOrder()==0 && M_expr_2.polynomialOrder()==0)); } \
                                                                         \
         void eval( int nx, value_1_type const* x, value_2_type const* y, value_type* f ) const   \
         {                                                               \

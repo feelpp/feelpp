@@ -95,9 +95,6 @@ public:
     static const size_type context = ExprT1::context;
     static const bool is_terminal = ExprT1::is_terminal;
 
-    static const uint16_type imorder = ExprT1::imorder;
-    static const bool imIsPoly = ExprT1::imIsPoly;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -147,6 +144,12 @@ public:
     {
         return false;
     }
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_expr_1.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_expr_1.isPolynomial(); }
 
     void eval( int nx, value_type const* x, value_type* f ) const
     {

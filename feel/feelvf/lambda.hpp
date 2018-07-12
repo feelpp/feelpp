@@ -51,9 +51,6 @@ public:
     static const size_type context = 0;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = 0;
-    static const bool imIsPoly = false;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -84,6 +81,12 @@ public:
                                                     mpl::identity<TheExpr3>>::type>::type::type _type;
         typedef typename _type::expression_type type;
     };
+
+    //! polynomial order
+    constexpr uint16_type polynomialOrder() const { return 0; }
+
+    //! expression is polynomial?
+    constexpr bool isPolynomial() const { return false; }
 
     template<typename ExprT>
     typename Lambda<ExprT>::type

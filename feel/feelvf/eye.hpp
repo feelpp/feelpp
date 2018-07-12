@@ -56,9 +56,6 @@ public:
     //@{
     static const size_type context = 0;
 
-    static const uint16_type imorder =  0;
-    static const bool imIsPoly = true;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -122,6 +119,12 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //! polynomial order
+    constexpr uint16_type polynomialOrder() const { return 0; }
+
+    //! expression is polynomial?
+    constexpr bool isPolynomial() const { return true; }
 
     blitz::Array<value_type,2> eye() const
     {
