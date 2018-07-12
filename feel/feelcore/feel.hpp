@@ -395,6 +395,9 @@ typedef size_type dof_id_type;
 //! type for mpi rank ids
 typedef uint16_type rank_type;
 
+//! quadrature order type
+typedef uint16_type quad_order_type;
+
 #if defined( __APPLE__ )
 typedef unsigned int uint;
 #endif // __APPLE__
@@ -445,7 +448,7 @@ const size_type invalid_size_type_value = size_type( -1 );
 /**
  * Quadrature order deduced from the expression to integrate
  */
-const uint16_type quad_order_from_expression = invalid_uint16_type_value;
+const quad_order_type quad_order_from_expression = invalid_uint16_type_value;
 
 //@}
 
