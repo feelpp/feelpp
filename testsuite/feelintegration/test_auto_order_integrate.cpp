@@ -166,49 +166,49 @@ Test_AOI::run()
 
     //-----------------------------------------------------------------------------------//
 
-    BOOST_CHECK( cst( 1.0 ).imorder == 0 );
-    BOOST_CHECK( cos( cst( M_PI ) ).imorder == 0 );
+    BOOST_CHECK( cst( 1.0 ).polynomialOrder() == 0 );
+    BOOST_CHECK( cos( cst( M_PI ) ).polynomialOrder() == 0 );
 
     //-----------------------------------------------------------------------------------//
 
     const uint16_type us_order = element_scalar_type::functionspace_type::basis_type::nOrder;
-    BOOST_CHECK( id( us ).imorder == us_order );
-    BOOST_CHECK( grad( us ).imorder == us_order-1 );
-    BOOST_CHECK( hess( us ).imorder == us_order-2 );
-    BOOST_CHECK( ( id( us )+id( us ) ).imorder == us_order );
-    BOOST_CHECK( ( id( us )*id( us ) ).imorder == 2*us_order );
+    BOOST_CHECK( id( us ).polynomialOrder() == us_order );
+    BOOST_CHECK( grad( us ).polynomialOrder() == us_order-1 );
+    BOOST_CHECK( hess( us ).polynomialOrder() == us_order-2 );
+    BOOST_CHECK( ( id( us )+id( us ) ).polynomialOrder() == us_order );
+    BOOST_CHECK( ( id( us )*id( us ) ).polynomialOrder() == 2*us_order );
 
     //-----------------------------------------------------------------------------------//
 
     const uint16_type u_mixed_order = element_mixed_0_type::functionspace_type::basis_type::nOrder;
-    BOOST_CHECK( idt( u_mixed ).imorder == u_mixed_order );
-    BOOST_CHECK( gradt( u_mixed ).imorder == u_mixed_order-1 );
-    BOOST_CHECK( hesst( u_mixed ).imorder == u_mixed_order-2 );
-    BOOST_CHECK( ( idt( u_mixed )+idt( u_mixed ) ).imorder == u_mixed_order );
-    BOOST_CHECK( ( idt( u_mixed )*idt( u_mixed ) ).imorder == 2*u_mixed_order );
+    BOOST_CHECK( idt( u_mixed ).polynomialOrder() == u_mixed_order );
+    BOOST_CHECK( gradt( u_mixed ).polynomialOrder() == u_mixed_order-1 );
+    BOOST_CHECK( hesst( u_mixed ).polynomialOrder() == u_mixed_order-2 );
+    BOOST_CHECK( ( idt( u_mixed )+idt( u_mixed ) ).polynomialOrder() == u_mixed_order );
+    BOOST_CHECK( ( idt( u_mixed )*idt( u_mixed ) ).polynomialOrder() == 2*u_mixed_order );
 
     const uint16_type p_mixed_order = element_mixed_1_type::functionspace_type::basis_type::nOrder;
-    BOOST_CHECK( idt( p_mixed ).imorder == p_mixed_order );
-    BOOST_CHECK( gradt( p_mixed ).imorder == p_mixed_order-1 );
-    BOOST_CHECK( hesst( p_mixed ).imorder == p_mixed_order-2 );
-    BOOST_CHECK( ( idt( p_mixed )+idt( p_mixed ) ).imorder == p_mixed_order );
-    BOOST_CHECK( ( idt( p_mixed )*idt( p_mixed ) ).imorder == 2*p_mixed_order );
+    BOOST_CHECK( idt( p_mixed ).polynomialOrder() == p_mixed_order );
+    BOOST_CHECK( gradt( p_mixed ).polynomialOrder() == p_mixed_order-1 );
+    BOOST_CHECK( hesst( p_mixed ).polynomialOrder() == p_mixed_order-2 );
+    BOOST_CHECK( ( idt( p_mixed )+idt( p_mixed ) ).polynomialOrder() == p_mixed_order );
+    BOOST_CHECK( ( idt( p_mixed )*idt( p_mixed ) ).polynomialOrder() == 2*p_mixed_order );
 
     //-----------------------------------------------------------------------------------//
 
-    BOOST_CHECK( ( idt( us )+idt( p_mixed ) ).imorder == std::max( us_order,p_mixed_order ) );
-    BOOST_CHECK( ( idt( us )*idt( p_mixed ) ).imorder == us_order+p_mixed_order );
+    BOOST_CHECK( ( idt( us )+idt( p_mixed ) ).polynomialOrder() == std::max( us_order,p_mixed_order ) );
+    BOOST_CHECK( ( idt( us )*idt( p_mixed ) ).polynomialOrder() == us_order+p_mixed_order );
 
     //-----------------------------------------------------------------------------------//
 
-    BOOST_CHECK( vec( idv( us ),idv( p_mixed ) ).imorder == std::max( us_order,p_mixed_order ) );
+    BOOST_CHECK( vec( idv( us ),idv( p_mixed ) ).polynomialOrder() == std::max( us_order,p_mixed_order ) );
 
-    BOOST_CHECK( ( mat<2,2>( idv( us ),cst( 1 ),idv( us ),idv( p_mixed ) ) ).imorder == std::max( us_order,p_mixed_order ) );
+    BOOST_CHECK( ( mat<2,2>( idv( us ),cst( 1 ),idv( us ),idv( p_mixed ) ) ).polynomialOrder() == std::max( us_order,p_mixed_order ) );
 
     //-----------------------------------------------------------------------------------//
 
-    BOOST_CHECK( exp( Px() ).imorder == 2 );
-    BOOST_CHECK( chi( Px()>0.5 ).imorder == 0 );
+    BOOST_CHECK( exp( Px() ).polynomialOrder() == 2 );
+    BOOST_CHECK( chi( Px()>0.5 ).polynomialOrder() == 0 );
 
     //-----------------------------------------------------------------------------------//
 
