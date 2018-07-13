@@ -1305,13 +1305,6 @@ public:
     static const uint16_type imorderAuto = mpl::if_<boost::is_same<SpecificExprType,mpl::int_<FMSTExprApplyType::FM_ST_EVAL> >,
                                                 typename mpl::max< mpl::int_<ordervelocity-1>, mpl::int_<orderpressure> >::type,
                                                 mpl::int_<ordervelocity-1> >::type::value;
-    static const uint16_type imorder = (QuadOrder>=0)?QuadOrder:imorderAuto;
-
-    /*static const uint16_type imorder = mpl::if_<boost::is_same<SpecificExprType,mpl::int_<FMSTExprApplyType::FM_ST_EVAL> >,
-                                                typename mpl::max< mpl::int_<ordervelocity-1>, mpl::int_<orderpressure> >::type,
-                                                mpl::int_<ordervelocity-1> >::type::value*2;*/
-    static const bool imIsPoly = true;
-
 
 
     template<typename Func>
@@ -1389,6 +1382,12 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return (QuadOrder>=0)?QuadOrder:imorderAuto; }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return true; }
 
     element_velocity_type const& velocity() const { return M_velocity; }
     element_pressure_type const& pressure() const { return M_pressure; }

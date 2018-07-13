@@ -20,11 +20,6 @@ public:
     static const size_type context = expr_levelsetphi_type::context;
     static const bool is_terminal = false;
 
-    //static const uint16_type imorder = expr_levelsetphi_type::imorder;
-    //static const bool imIsPoly = expr_levelsetphi_type::imIsPoly;
-    static const uint16_type imorder = expr_levelsetphi_type::imorder;
-    static const bool imIsPoly = false;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -53,6 +48,12 @@ public:
         : M_levelsetPhiExpr( c.M_levelsetPhiExpr )
         , M_thicknessDelta( c.M_thicknessDelta )
     {}
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_levelsetPhiExpr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return false; }
 
     //--------------------------------------------------------------------//
     // Accessors

@@ -649,8 +649,6 @@ public:
     static const uint16_type orderdisplacement = functionspace_disp_type::basis_type::nOrder;
     static const uint16_type orderpressure = functionspace_pressure_type::basis_type::nOrder;
     static const uint16_type nDim = functionspace_disp_type::nDim;
-    static const uint16_type imorder = (orderdisplacement-1)*(nDim-1)+orderpressure;
-    static const bool imIsPoly = true;
     //------------------------------------------------------------------------------//
 
     template<typename Func>
@@ -685,6 +683,12 @@ public:
 
     ~SolidMecPressureFormulationMultiplier()
     {}
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return (orderdisplacement-1)*(nDim-1)+orderpressure; }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return true; }
 
     element_disp_type const& disp() const { return M_disp; }
     element_pressure_type const& pressure() const { return M_pressure; }
@@ -1204,8 +1208,6 @@ public:
 
     static const uint16_type orderdisplacement = functionspace_disp_type::basis_type::nOrder;
     static const uint16_type nDim = functionspace_disp_type::nDim;
-    static const uint16_type imorder = (orderdisplacement-1)*nDim;
-    static const bool imIsPoly = true;
     //------------------------------------------------------------------------------//
 
     template<typename Func>
@@ -1237,6 +1239,12 @@ public:
 
     ~SolidMecPressureFormulationConstraint()
     {}
+
+        //! polynomial order
+    uint16_type polynomialOrder() const { return (orderdisplacement-1)*nDim; }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return true; }
 
     element_disp_type const& disp() const { return M_disp; }
     mechprop_type const& mechanicalPropertiesDesc() const { return M_mechProp; }

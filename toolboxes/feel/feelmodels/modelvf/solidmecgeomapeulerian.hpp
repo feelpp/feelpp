@@ -36,8 +36,6 @@ public:
 
     static const uint16_type orderdisplacement = functionspace_disp_type::basis_type::nOrder;
     static const uint16_type nDim = functionspace_disp_type::nDim;
-    static const uint16_type imorder = (orderdisplacement-1)*(nDim-1);
-    static const bool imIsPoly = true;
 
     template<typename Func>
     struct HasTestFunction
@@ -63,6 +61,12 @@ public:
 
     ~SolidMecGeomapEulerian()
     {}
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return (orderdisplacement-1)*(nDim-1); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return true; }
 
     element_disp_type const& disp() const { return M_disp; }
 

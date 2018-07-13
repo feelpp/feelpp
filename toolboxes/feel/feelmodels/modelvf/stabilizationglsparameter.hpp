@@ -253,11 +253,6 @@ public:
 
     static const size_type context = ExprConvectionType::context|ExprCoeffDiffusionType::context;
     static const bool is_terminal = true;
-    static const uint16_type imorderDefaultConvectionDiffusion = ( ExprConvectionType::imorder > ExprCoeffDiffusionType::imorder )?ExprConvectionType::imorder:ExprCoeffDiffusionType::imorder;
-    static const uint16_type imorderDefault = (has_convection_expr && has_coeffdiffusion_expr)? imorderDefaultConvectionDiffusion :
-        ( ( has_convection_expr )?ExprConvectionType::imorder : ExprCoeffDiffusionType::imorder );
-    static const uint16_type imorder = (QuadOrder>=0)?QuadOrder:imorderDefault;
-    static const bool imIsPoly = false;
     typedef double value_type;
     typedef value_type evaluate_type;
 
@@ -292,6 +287,22 @@ public:
     expression_coeffdiffusion_type const& exprCoeffDiffusion() const { return M_exprCoeffDiffusion; }
     bool hasConvection() const { return M_hasConvection; }
     bool hasCoeffDiffusion() const { return M_hasCoeffDiffusion; }
+
+    //! polynomial order
+    uint16_type polynomialOrder() const
+    {
+        if ( QuadOrder>=0 )
+            return QuadOrder;
+        if ( M_hasConvection && M_hasCoeffDiffusion )
+            return std::max( M_exprConvection.polynomialOrder(),M_exprCoeffDiffusion.polynomialOrder() );
+        else if ( M_hasConvection )
+            return M_exprConvection.polynomialOrder();
+        else
+            M_exprCoeffDiffusion.polynomialOrder();
+    }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return false; }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
