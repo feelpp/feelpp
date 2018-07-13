@@ -423,7 +423,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportFields( double time )
 {
     bool hasFieldToExport = this->updateExportedFields( M_exporter, M_postProcessFieldExported, time );
     if ( hasFieldToExport )
+    {
         M_exporter->save();
+        this->upload( M_exporter->path() );
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -851,6 +854,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         if ( !this->isStationary() )
             this->postProcessMeasuresIO().setMeasure( "time", time );
         this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
     }
 }
 
