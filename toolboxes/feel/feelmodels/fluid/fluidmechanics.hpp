@@ -335,7 +335,7 @@ public:
     typedef typename space_fluid_pressure_type::Context context_pressure_type;
     typedef boost::shared_ptr<context_pressure_type> context_pressure_ptrtype;
 
-
+    using force_type = Eigen::Matrix<typename super_type::value_type, nDim, 1, Eigen::ColMajor>;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -525,8 +525,19 @@ public :
     std::string const& stabilizationGLSType() const { return M_stabilizationGLSType; }
     stab_gls_parameter_ptrtype const& stabilizationGLSParameterConvectionDiffusion() const { return M_stabilizationGLSParameterConvectionDiffusion; }
     stab_gls_parameter_ptrtype const& stabilizationGLSParameterPressure() const { return M_stabilizationGLSParameterPressure; }
-    range_elements_type const& stabilizationGLSEltRangeConvectionDiffusion() const { return M_stabilizationGLSEltRangeConvectionDiffusion; }
-    range_elements_type const& stabilizationGLSEltRangePressure() const { return M_stabilizationGLSEltRangePressure; }
+    range_elements_type const& stabilizationGLSEltRangeConvectionDiffusion( std::string const& matName ) const
+        {
+            auto itFind = M_stabilizationGLSEltRangeConvectionDiffusion.find( matName );
+            CHECK( itFind != M_stabilizationGLSEltRangeConvectionDiffusion.end() ) << "not found with material matName";
+            return itFind->second;
+        }
+    range_elements_type const& stabilizationGLSEltRangePressure( std::string const& matName ) const
+        {
+            auto itFind = M_stabilizationGLSEltRangePressure.find( matName );
+            CHECK( itFind != M_stabilizationGLSEltRangePressure.end() ) << "not found with material matName";
+            return itFind->second;
+        }
+    void setStabilizationGLSDoAssembly( bool b) { M_stabilizationGLSDoAssembly = b; }
 
     bool applyCIPStabOnlyOnBoundaryFaces() const { return M_applyCIPStabOnlyOnBoundaryFaces; }
     void applyCIPStabOnlyOnBoundaryFaces(bool b) { M_applyCIPStabOnlyOnBoundaryFaces=b; }
@@ -740,7 +751,7 @@ public :
     double computeMeshArea( std::list<std::string> const& markers ) const;
 
     // compute measures : drag,lift,flow rate, mean pressure, mean div, norm div
-    Eigen::Matrix<typename super_type::value_type,nDim,1> computeForce( std::string const& markerName ) const;
+    force_type computeForce( std::string const& markerName ) const;
     double computeFlowRate( std::string const& marker, bool useExteriorNormal=true ) const;
     double computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal=true ) const;
     double computePressureSum() const;
@@ -802,6 +813,8 @@ public :
     void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
     void preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
     void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const;
     //___________________________________________________________________________________//
 
     void initInHousePreconditioner();
@@ -818,8 +831,14 @@ public :
 
     void updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianStabilisation( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
-    void updateResidualStabilisationGLS( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
-    void updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
+    template<typename DensityExprType, typename ViscosityExprType, typename... ExprT>
+    void updateResidualStabilisationGLS( DataUpdateResidual & data, element_fluid_external_storage_type const& U,
+                                         Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
+                                         std::string const& matName, const ExprT&... exprs ) const;
+    template<typename DensityExprType, typename ViscosityExprType, typename... ExprT>
+    void updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U,
+                                         Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
+                                         std::string const& matName, const ExprT&... exprs ) const;
     void updateJacobianWeakBC( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
     void updateResidualWeakBC( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
@@ -832,7 +851,9 @@ public :
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
-    void updateLinearPDEStabilisationGLS( DataUpdateLinear & data ) const;
+    template<typename DensityExprType, typename ViscosityExprType, typename AdditionalRhsType = hana::tuple<>, typename AdditionalMatType = hana::tuple<> >
+    void updateLinearPDEStabilisationGLS( DataUpdateLinear & data, Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu, std::string const& matName,
+                                          AdditionalRhsType const& addRhsTuple = hana::make_tuple(), AdditionalMatType const& addMatTuple = hana::make_tuple() ) const;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
 
     void updatePicard( DataUpdateLinear & data ) const;
@@ -850,7 +871,7 @@ private :
             return Feel::vf::symbolsExpr( symbolExpr("fluid_Ux",idv(this->fieldVelocity())(0,0) ),
                                           symbolExpr("fluid_Uy",idv(this->fieldVelocity())(1,0) ),
                                           symbolExpr("fluid_P",idv(this->fieldPressure()) ),
-                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity())) )
+                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity()),mpl::int_<InnerProperties::SQRT>()) )
                                           );
         }
     constexpr auto symbolsExpr( hana::int_<3> /**/ ) const
@@ -859,7 +880,7 @@ private :
                                           symbolExpr("fluid_Uy",idv(this->fieldVelocity())(1,0) ),
                                           symbolExpr("fluid_Uz",idv(this->fieldVelocity())(2,0) ),
                                           symbolExpr("fluid_P",idv(this->fieldPressure()) ),
-                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity())) )
+                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity()),mpl::int_<InnerProperties::SQRT>()) )
                                           );
             }
 
@@ -941,12 +962,12 @@ protected:
     bool M_startBySolveStokesStationary, M_hasSolveStokesStationaryAtKickOff;
     //----------------------------------------------------
     // stabilization
-    bool M_stabilizationGLS;
+    bool M_stabilizationGLS, M_stabilizationGLSDoAssembly;
     std::string M_stabilizationGLSType;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameterConvectionDiffusion;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameterPressure;
-    range_elements_type M_stabilizationGLSEltRangeConvectionDiffusion;
-    range_elements_type M_stabilizationGLSEltRangePressure;
+    std::map<std::string,range_elements_type> M_stabilizationGLSEltRangeConvectionDiffusion;
+    std::map<std::string,range_elements_type> M_stabilizationGLSEltRangePressure;
 
     bool M_applyCIPStabOnlyOnBoundaryFaces;
     // stabilisation available
@@ -1243,6 +1264,7 @@ FLUIDMECHANICS_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMeshSlic
 } // namespace FeelModels
 } // namespace Feel
 
+#include <feel/feelmodels/fluid/fluidmechanicsupdatestabilisationgls.hpp>
 
 #endif /* FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP */
 

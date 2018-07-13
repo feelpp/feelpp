@@ -366,6 +366,7 @@ heatFluid_options(std::string const& prefix)
         (prefixvm(prefix,"use-natural-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use natural convection")
         (prefixvm(prefix,"Boussinesq.ref-temperature").c_str(), Feel::po::value<double>()->default_value( 300. ), "Boussinesq ref-temperature T0")
         (prefixvm(prefix,"gravity-force").c_str(), Feel::po::value<std::string>(), "gravity-force : (default is {0,-9.80665} or {0,0,-9.80665}")
+        (prefixvm(prefix,"use-semi-implicit-time-scheme").c_str(), Feel::po::value<bool>()->default_value( false ), "use-semi-implicit-time-scheme")
     ;
     heatFluidOptions.add( heat_options( prefixvm(prefix,"heat") ) );
     heatFluidOptions.add( fluidMechanics_options( prefixvm(prefix,"fluid") ) );

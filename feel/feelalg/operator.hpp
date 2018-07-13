@@ -457,12 +457,12 @@ public:
 
     bool hasInverse() const
     {
-        return M_F->hasInverse() * M_G->hasInverse();
+        return M_F->hasInverse() && M_G->hasInverse();
     }
 
     bool hasApply() const
     {
-        return M_F->hasApply() * M_G->hasApply();
+        return M_F->hasApply() && M_G->hasApply();
     }
 
     int apply( const vector_type & X, vector_type & Y ) const

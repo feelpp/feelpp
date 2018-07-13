@@ -195,7 +195,7 @@ struct FEELPP_EXPORT ModelMaterial
      */
     pt::ptree getNode( std::string const& key ) const {
         try { return M_p.get_child( key ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -206,7 +206,7 @@ struct FEELPP_EXPORT ModelMaterial
      */
     std::string getString( std::string const& key ) const {
         try { return M_p.get<std::string>( key ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -217,7 +217,7 @@ struct FEELPP_EXPORT ModelMaterial
      */
     int getInt( std::string const& key ) const {
         try { return M_p.get<int>( key ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -228,7 +228,7 @@ struct FEELPP_EXPORT ModelMaterial
      */
     double getDouble( std::string const& key ) const {
         try { return M_p.get<double>( key ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -244,7 +244,7 @@ struct FEELPP_EXPORT ModelMaterial
                 res.push_back(item.second.template get_value<std::string>());
             return res;
         }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -260,7 +260,7 @@ struct FEELPP_EXPORT ModelMaterial
                 res.push_back(item.second.template get_value<double>());
             return res;
         }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -271,7 +271,7 @@ struct FEELPP_EXPORT ModelMaterial
      */
     Expr<GinacEx<2> > getScalar( std::string const& key ) const {
         try { return expr( M_p.get<std::string>( key ) ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -282,7 +282,7 @@ struct FEELPP_EXPORT ModelMaterial
      */
     Expr<GinacEx<2> > getScalar( std::string const& key, std::map<std::string,double> const& params ) const {
         try { return expr( M_p.get<std::string>( key ), params ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -294,7 +294,7 @@ struct FEELPP_EXPORT ModelMaterial
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
                                                                 std::string const& sym, ExprT e ) const {
         try { return expr( M_p.get<std::string>( key ), sym, e ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -307,7 +307,7 @@ struct FEELPP_EXPORT ModelMaterial
                                                                 std::initializer_list<std::string> const& sym,
                                                                 std::initializer_list<ExprT> e ) const {
         try { return expr( M_p.get<std::string>( key ), sym, e ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -320,7 +320,7 @@ struct FEELPP_EXPORT ModelMaterial
                                                                 std::vector<std::string> const& sym,
                                                                 std::vector<ExprT> e ) const {
         try { return expr( M_p.get<std::string>( key ), sym, e ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -338,14 +338,14 @@ struct FEELPP_EXPORT ModelMaterial
             ex.setParameterValues( params );
             return ex;
         }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
     }
     template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key ) const {
         try { return expr<T,1>( M_p.get<std::string>( key ) ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -353,7 +353,7 @@ struct FEELPP_EXPORT ModelMaterial
     template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key,
                                                          std::pair<std::string,double> const& params ) const {
         try { return expr<T,1>( M_p.get<std::string>( key ), params ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -361,7 +361,7 @@ struct FEELPP_EXPORT ModelMaterial
     template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key,
                                                          std::map<std::string,double> const& params ) const {
         try { return expr<T,1>( M_p.get<std::string>( key ), params ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -371,7 +371,7 @@ struct FEELPP_EXPORT ModelMaterial
     // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e );
     template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key ) const {
         try { return expr<T1,T2>( M_p.get<std::string>( key ) ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -379,7 +379,7 @@ struct FEELPP_EXPORT ModelMaterial
     template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key,
                                                                        std::pair<std::string,double> const& params ) const {
         try { return expr<T1,T2>( M_p.get<std::string>( key ), params ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
@@ -387,7 +387,7 @@ struct FEELPP_EXPORT ModelMaterial
     template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key,
                                                                        std::map<std::string,double> const& params ) const {
         try { return expr<T1,T2>( M_p.get<std::string>( key ), params ); }
-        catch( pt::ptree_error e ) {
+        catch( pt::ptree_error const& e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }

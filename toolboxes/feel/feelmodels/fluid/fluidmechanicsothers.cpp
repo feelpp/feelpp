@@ -23,6 +23,7 @@
 
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
 
 namespace Feel
 {
@@ -499,7 +500,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
             std::string const& matName = rangeData.first;
             auto const& range = rangeData.second;
             //auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
-            auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(uCur,pCur,*this->materialProperties(),matName);
+            auto myViscosity = Feel::FeelModels::fluidMecViscosity<2*nOrderVelocity>(uCur,pCur,*this->materialProperties(),matName);
             viscosityField.on( _range=range,_expr=myViscosity );
         }
         exporter->step( time )->add( prefixvm(this->prefix(),"viscosity"),
@@ -823,14 +824,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         }
     }
 
+    auto fieldTuple = hana::make_tuple( std::make_pair( "velocity",this->fieldVelocity() ), std::make_pair( "pressure",this->fieldPressure() ) );
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
     {
         std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(),
-                               std::make_pair( "velocity",this->fieldVelocity() ), std::make_pair( "pressure",this->fieldPressure() ) );
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
+            hasMeasure = true;
+        }
+    }
+    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( modelName ) )
+    {
+        std::map<std::string,double> resPpStats;
+        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
+        for ( auto const& resPpStat : resPpStats )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
             hasMeasure = true;
         }
     }
@@ -1011,7 +1022,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::preSolvePicard( vector_ptrtype rhs, vector_p
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
+{
+    this->postSolveNewton( rhs,sol );
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const
 {}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const
+{
+    this->postSolveNewton( rhs,sol );
+}
 
 //---------------------------------------------------------------------------------------------------------//
 
@@ -1097,7 +1122,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         auto p = U.template element<1>();
         CHECK( this->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
         std::string matName = this->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-        auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(u,p,*this->materialProperties(),matName);
+        auto myViscosity = Feel::FeelModels::fluidMecViscosity<2*nOrderVelocity>(u,p,*this->materialProperties(),matName);
         if (this->isMoveDomain() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -1706,8 +1731,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMeshArea( std::list<std::string> cons
 
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-Eigen::Matrix<typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::super_type::value_type,
-              FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nDim,1>
+typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::force_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName) const
 {
     using namespace Feel::vf;
@@ -1725,7 +1749,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName) 
 #endif
     CHECK( this->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
     std::string matName = this->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-    auto sigmav = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,true);
+    auto sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,true);
 
     return integrate(_range=markedfaces(M_mesh,markerName),
                      _expr= sigmav*N(),

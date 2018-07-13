@@ -1,6 +1,7 @@
 #ifndef FEELPP_MODELS_STABILIZATIONGLSPARAMETERBASE_HPP
 #define FEELPP_MODELS_STABILIZATIONGLSPARAMETERBASE_HPP 1
 
+#include <feel/feeldiscr/pdh.hpp>
 
 namespace Feel {
 
@@ -14,6 +15,11 @@ class StabilizationGLSParameterBase
 public :
     using mesh_t = MeshType;
     using mesh_ptr_t = boost::shared_ptr<mesh_t>;
+
+    using space_tau_t = Pdh_type<mesh_t,0>;
+    using space_tau_ptr_t = boost::shared_ptr<space_tau_t>;
+    using element_tau_t = typename space_tau_t::element_type;
+    using element_tau_ptr_t = typename space_tau_t::element_ptrtype;
 
     StabilizationGLSParameterBase( mesh_ptr_t const& mesh, std::string const& prefix )
         :
@@ -57,6 +63,9 @@ public :
     double penalLambdaK() const { return M_penalLambdaK; }
     void setPenalLambdaK( double val ) { M_penalLambdaK = val; }
 
+    element_tau_ptr_t const& fieldTauPtr() const { return M_fieldTau; }
+    element_tau_t const& fieldTau() const { return *M_fieldTau; }
+
 protected :
     mesh_ptr_t M_mesh;
     std::unordered_map<size_type,double> M_hSizeValues, M_lambdaKValues, M_sqrtLambdaKValues, M_mKValues;
@@ -64,6 +73,9 @@ protected :
     std::string M_hSizeMethod;
     double M_penalLambdaK;
 
+    space_tau_ptr_t M_spaceTau;
+    element_tau_ptr_t M_fieldTau;
+    //element_tau_ptr_t M_fieldDelta;
 };
 
 }  // namespace FeelModels

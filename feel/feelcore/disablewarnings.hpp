@@ -28,6 +28,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #pragma GCC diagnostic ignored "-Wcomment"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 
 #if defined(__clang__)

@@ -1713,7 +1713,7 @@ public:
 
     static constexpr uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents1 );
     static constexpr uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents2 );
-    static constexpr bool is_product = ( is_composite? invalid_uint16_type_value : basis_0_type::is_product );
+    static constexpr bool is_product = ( is_composite? false : basis_0_type::is_product );
     typedef typename  basis_0_type::continuity_type continuity_type;
 
     typedef typename mpl::if_<mpl::bool_<is_composite>,
@@ -1951,7 +1951,7 @@ public:
                 auto const& ptRegister = M_t[ptIdInCtx];
                 bool ptsAreIdentical = true;
                 for (uint16_type d=0;d<mesh_type::nRealDim;++d)
-                    ptsAreIdentical = ptsAreIdentical && (std::abs( ptRegister[d]-t[d] )<1e-9);
+                    ptsAreIdentical = ptsAreIdentical && (std::abs( ptRegister[d]-t[d] )<1e-14);
                 // if pt are identical, do nothing and keep the context
                 auto itFindCtx = this->find( ptIdInCtx );
                 if ( ptsAreIdentical )

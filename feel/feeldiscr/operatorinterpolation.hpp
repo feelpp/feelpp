@@ -961,6 +961,7 @@ domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindo
 
     gmcDomain->update( domaindof->mesh()->element(domainEltId) );
 
+    double dofPtCompareTol = std::max(1e-15,imageElt.hMin()*1e-5);
     auto const& imageGlobDofPt = imagedof->dofPoint( imageGlobDof ).template get<0>();
     bool find=false;
     size_type thelocDofToFind = invalid_size_type_value;
@@ -970,7 +971,7 @@ domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindo
         bool find2=true;
         for (uint16_type d=0;d< DomainDofType::nRealDim;++d)
         {
-            find2 = find2 && (std::abs( imageGlobDofPt[d]-domainGlobDofPt[d] )<1e-9);
+            find2 = find2 && (std::abs( imageGlobDofPt[d]-domainGlobDofPt[d] )<dofPtCompareTol);
         }
         if (find2) { thelocDofToFind=jloc;find=true;break; }
     }

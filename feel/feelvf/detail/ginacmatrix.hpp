@@ -300,22 +300,22 @@ public:
             template <typename T>
             constexpr auto operator()(T const& t) const
                 {
-                    return typename TransformExprToTensor::apply<T>::type( t.second,Geo_t{} );
+                    return typename TransformExprToTensor::template apply<T>::type( t.second,Geo_t{} );
                 }
             template <typename T>
             constexpr auto operator()(T const& t, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) const
                 {
-                    return typename TransformExprToTensor::apply<T>::type( t.second,geom,fev,feu );
+                    return typename TransformExprToTensor::template apply<T>::type( t.second,geom,fev,feu );
                 }
             template <typename T>
             constexpr auto operator()(T const& t, Geo_t const& geom, Basis_i_t const& fev ) const
                 {
-                    return typename TransformExprToTensor::apply<T>::type( t.second,geom,fev );
+                    return typename TransformExprToTensor::template apply<T>::type( t.second,geom,fev );
                 }
             template <typename T>
             constexpr auto operator()(T const& t, Geo_t const& geom ) const
                 {
-                    return typename TransformExprToTensor::apply<T>::type( t.second,geom );
+                    return typename TransformExprToTensor::template apply<T>::type( t.second,geom );
                 }
         };
 

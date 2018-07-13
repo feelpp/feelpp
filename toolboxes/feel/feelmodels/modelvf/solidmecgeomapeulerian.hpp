@@ -7,8 +7,6 @@
 
 namespace Feel
 {
-namespace vf
-{
 namespace FeelModels
 {
 
@@ -381,6 +379,5 @@ solidMecGeomapEulerianJacobian( ElementDispType const& v )
 
 
 } // namespace FeelModels
-} // namespace vf
 } // namespace Feel
 #endif /* __SOLIDMECGEOMAPEULERIAN_H */

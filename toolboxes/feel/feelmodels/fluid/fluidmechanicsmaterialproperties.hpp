@@ -403,7 +403,11 @@ public :
         }
 
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
-
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements( std::string const& matName ) const
+        {
+            CHECK( this->hasMaterial( matName ) ) << "no material " << matName;
+            return M_rangeMeshElementsByMaterial.find( matName )->second;
+        }
     bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
 
     space_ptrtype const& dynamicViscositySpace() const { return M_space; }
