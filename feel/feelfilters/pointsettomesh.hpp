@@ -41,11 +41,11 @@
 #if defined(__GNUC__) && !(defined(__clang__))
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #endif
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-W#warnings"
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #endif
 
 #include <vtkVersion.h>

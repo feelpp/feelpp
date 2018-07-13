@@ -334,6 +334,11 @@ public:
     typedef boost::tuple<size_type /*element id*/, uint16_type /*lid*/, uint16_type /*c*/, size_type /*gDof*/, uint16_type /*type*/> periodic_dof_type;
     typedef std::multimap<size_type /*gid*/, periodic_dof_type> periodic_dof_map_type;
 
+    //typedef typename std::vector<localglobal_indices_type,Eigen::aligned_allocator<localglobal_indices_type> > vector_indices_type;
+    using vector_indices_type = std::unordered_map<size_type,localglobal_indices_type,
+                                        std::hash<size_type>,std::equal_to<size_type>,
+                                        Eigen::aligned_allocator<std::pair<const size_type,localglobal_indices_type > > >;
+    
     DofTable( WorldComm const& _worldComm )
         :
         super( _worldComm )
@@ -1549,13 +1554,7 @@ private:
 
     /// a view of the dof container
     //dof_container_type M_dof_view;
-
-    //typedef typename std::vector<localglobal_indices_type,Eigen::aligned_allocator<localglobal_indices_type> > vector_indices_type;
-    typedef typename std::unordered_map<size_type,localglobal_indices_type,
-                                        std::hash<size_type>,std::equal_to<size_type>,
-                                        Eigen::aligned_allocator<std::pair<const size_type,localglobal_indices_type > > > vector_indices_type;
-
-
+    
     vector_indices_type M_locglob_indices;
     vector_indices_type M_locglob_signs;
     localglobal_indices_type M_locglob_nosigns;

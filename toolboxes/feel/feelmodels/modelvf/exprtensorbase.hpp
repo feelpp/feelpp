@@ -31,8 +31,6 @@
 
 namespace Feel
 {
-namespace vf
-{
 namespace FeelModels
 {
     enum ExprApplyType { EVAL=0,JACOBIAN=1 };
@@ -43,9 +41,9 @@ namespace FeelModels
     public :
         typedef ValueType value_type;
         typedef ShapeType shape_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, Feel::vf::detail::gmc<0> >,
+                                  mpl::identity<Feel::vf::detail::gmc<0> >,
+                                  mpl::identity<Feel::vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gmc_type::gm_type gm_type;
@@ -55,13 +53,13 @@ namespace FeelModels
         //typedef typename mpl::if_<fusion::result_of::has_key<map_basis_fec_test_type,vf::detail::gmc<0> >,
         //                        mpl::identity<vf::detail::gmc<0> >,
         //                         mpl::identity<vf::detail::gmc<1> > >::type::type key_fec_test_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<map_basis_fec_test_type,vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type basis_fec_test_key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<map_basis_fec_test_type,Feel::vf::detail::gmc<0> >,
+                                  mpl::identity<Feel::vf::detail::gmc<0> >,
+                                  mpl::identity<Feel::vf::detail::gmc<1> > >::type::type basis_fec_test_key_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<map_basis_fec_trial_type,vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type basis_fec_trial_key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<map_basis_fec_trial_type,Feel::vf::detail::gmc<0> >,
+                                  mpl::identity<Feel::vf::detail::gmc<0> >,
+                                  mpl::identity<Feel::vf::detail::gmc<1> > >::type::type basis_fec_trial_key_type;
 
         typedef typename fusion::result_of::value_at_key<map_basis_fec_test_type, basis_fec_test_key_type>::type::element_type  basis_fec_test_type;
         typedef typename fusion::result_of::value_at_key<map_basis_fec_test_type, basis_fec_test_key_type>::type::element_type* basis_fec_test_ptrtype;
@@ -218,7 +216,6 @@ namespace FeelModels
     };
 
 } // namespace FeelModels
-} // namespace vf
 } // namespace Feel
 
 #endif /* __FEELPP_MODELS_VF_TENSORBASE_H */

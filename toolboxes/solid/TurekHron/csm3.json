@@ -61,12 +61,13 @@
                     "fields":["displacement","velocity"]
                 }
             },
-            "Maximum":
+            "Statistics":
             {
-                "free-wall":
+                "disp":
                 {
                     "markers":"free-wall",
-                    "fields":["displacement","velocity"]
+                    "type":"max",
+                    "expr":"solid_D_magnitude:solid_D_magnitude"
                 }
             }
         }

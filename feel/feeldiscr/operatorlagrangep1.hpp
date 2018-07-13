@@ -224,6 +224,7 @@ public:
         node_type ptRealMesh( domain_fe_type::nRealDim );
         ptRealMesh = M_gmc->xReal( localIdPtSet );
 
+        double dofPtCompareTol = std::max(1e-15,elt.hMin()*1e-5);
         uint16_type localptid_dof = invalid_uint16_type_value;
         bool findPtRelation=false;
         for ( uint16_type i = 0; i < domain_fe_type::nLocalDof && !findPtRelation ; ++i )
@@ -233,7 +234,7 @@ public:
 
             bool isSamePoints=true;
             for ( uint16_type d=0;d<domain_fe_type::nRealDim && isSamePoints;++d )
-                isSamePoints = isSamePoints && (std::abs( ptDof[d]-ptRealMesh[d] )<1e-9);
+                isSamePoints = isSamePoints && (std::abs( ptDof[d]-ptRealMesh[d] )<dofPtCompareTol);
 
             if ( isSamePoints )
             {

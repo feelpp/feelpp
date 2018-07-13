@@ -5,6 +5,7 @@
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
 #include <feel/feelmodels/modelvf/solidmecincompressibility.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
 
 namespace Feel
 {
@@ -729,47 +730,27 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     }
 
 
-    // extremum evaluation
-    for ( auto const& measureExtremum : this->modelProperties().postProcess().measuresExtremum( modelName ) )
-    {
-        auto const& fields = measureExtremum.fields();
-        std::string const& name = measureExtremum.extremum().name();
-        std::string const& type = measureExtremum.extremum().type();
-        auto const& meshMarkers = measureExtremum.extremum().meshMarkers();
-        for ( std::string const& field : fields )
-        {
-            double val = this->computeExtremumValue( field, meshMarkers, type );
-            if ( field == "displacement" || field == "velocity" || field == "acceleration" )
-            {
-                std::string nameExport = (boost::format("%1%_magnitude_%2%_%3%")%field %type %name).str();
-                this->postProcessMeasuresIO().setMeasure( nameExport,val );
-                hasMeasure = true;
-            }
-        }
-    }
-
+    auto fieldTuple = hana::make_tuple( std::make_pair( "displacement",this->fieldDisplacementPtr() ),
+                                        std::make_pair( "velocity",this->fieldVelocityPtr() ),
+                                        std::make_pair( "acceleration",this->fieldAccelerationPtr() ),
+                                        std::make_pair( (M_useDisplacementPressureFormulation)?"pressure":"",this->fieldPressurePtr() ) );
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
     {
         std::map<std::string,double> resPpNorms;
-        if ( !M_useDisplacementPressureFormulation )
-        {
-            measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(),
-                                   std::make_pair( "displacement",this->fieldDisplacement() ),
-                                   std::make_pair( "velocity",this->fieldVelocity() ),
-                                   std::make_pair( "acceleration",this->fieldAcceleration() ) );
-        }
-        else
-        {
-            measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(),
-                                   std::make_pair( "displacement",this->fieldDisplacement() ),
-                                   std::make_pair( "velocity",this->fieldVelocity() ),
-                                   std::make_pair( "acceleration",this->fieldAcceleration() ),
-                                   std::make_pair( "pressure",this->fieldPressure() ) );
-        }
-
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
+            hasMeasure = true;
+        }
+    }
+    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( modelName ) )
+    {
+        std::map<std::string,double> resPpStats;
+        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
+        for ( auto const& resPpStat : resPpStats )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
             hasMeasure = true;
         }
     }
@@ -1005,7 +986,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
     }
     else if ( M_pdeType=="Hyper-Elasticity" )
     {
-        auto const sigma = Feel::vf::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
+        auto const sigma = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
         if ( !this->useDisplacementPressureFormulation() )
         {
             M_fieldNormalStressFromStruct->on( _range=range,
@@ -1014,7 +995,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
         else
         {
             auto const& p = this->fieldPressure();
-            auto sigmaWithPressure = Feel::vf::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
+            auto sigmaWithPressure = Feel::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
             M_fieldNormalStressFromStruct->on( _range=range,
                                                _expr=sigmaWithPressure*vf::N() );
         }
@@ -1054,7 +1035,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
     }
     else if ( M_pdeType=="Hyper-Elasticity" )
     {
-        auto sigma = Feel::vf::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
+        auto sigma = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
         if ( !this->useDisplacementPressureFormulation() )
         {
             M_fieldStressTensor->on(_range=elements(this->mesh()),_expr=sigma );
@@ -1062,7 +1043,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
         else
         {
             auto const& p = this->fieldPressure();
-            auto sigmaWithPressure = Feel::vf::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
+            auto sigmaWithPressure = Feel::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
             M_fieldStressTensor->on(_range=elements(this->mesh()),_expr=sigmaWithPressure );
         }
 

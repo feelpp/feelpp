@@ -303,7 +303,6 @@ macro(genLibFluidMechanics)
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdateresidual_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdateresidualbc_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatestabilisation_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatestabilisationgls_inst.cpp
       )
     set(FLUIDMECHANICS_CODEGEN_SOURCES
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicscreate_inst.cpp
@@ -315,7 +314,6 @@ macro(genLibFluidMechanics)
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdateresidual_inst.cpp
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdateresidualbc_inst.cpp
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatestabilisation_inst.cpp
-      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatestabilisationgls_inst.cpp
       )
     set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
     if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )

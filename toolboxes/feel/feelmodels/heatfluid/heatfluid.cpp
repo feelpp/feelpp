@@ -85,6 +85,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     else if (nDim == 3 )
         gravityStr = "{0,0,-9.80665}";
     M_gravityForce = expr<nDim,1,2>( gravityStr,"",this->worldComm(),this->repository().expr() );
+
+    M_useSemiImplicitTimeScheme = boption(_name="use-semi-implicit-time-scheme",_prefix=this->prefix());
 }
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -140,6 +142,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
     BlocksStencilPattern patCoupling2(M_fluidModel->functionSpace()->nSpaces,1,size_type(Pattern::ZERO));
     patCoupling2(0,0) = size_type(Pattern::COUPLED);
+    if ( M_fluidModel->stabilizationGLS() )
+        patCoupling2(1,0) = size_type(Pattern::COUPLED);
     myblockGraph(startIndexBlockFluid,startIndexBlockHeat) = stencil(_test=M_fluidModel->functionSpace(),
                                                                      _trial=M_heatModel->spaceTemperature(),
                                                                      _pattern_block=patCoupling2,
@@ -182,11 +186,19 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->updateTime( this->timeStepBase()->time() );
         this->setTimeInitial( this->timeStepBase()->timeInitial() );
     }
+    else
+        M_useSemiImplicitTimeScheme = false;
 
     if ( !M_useNaturalConvection )
     {
         M_heatModel->initAlgebraicFactory();
         M_fluidModel->initAlgebraicFactory();
+    }
+    else
+    {
+        M_fluidModel->setStabilizationGLSDoAssembly( false );
+        if ( M_useSemiImplicitTimeScheme )
+            M_fluidModel->setSolverName("Oseen");
     }
 
     for ( auto const& rangeData : M_fluidModel->materialProperties()->rangeMeshElementsByMaterial() )
@@ -337,16 +349,16 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    if ( !M_exporter ) return;
-    if ( !M_exporter->doExport() ) return;
-
     this->log("HeatFluid","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    bool hasFieldToExportHeat = M_heatModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeatt,time );
-    bool hasFieldToExportFluid = M_fluidModel->updateExportedFields( M_exporter,M_postProcessFieldExportedFluid,time );
-    if ( hasFieldToExportHeat || hasFieldToExportFluid )
-        M_exporter->save();
+    if ( M_exporter && M_exporter->doExport() )
+    {
+        bool hasFieldToExportHeat = M_heatModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeatt,time );
+        bool hasFieldToExportFluid = M_fluidModel->updateExportedFields( M_exporter,M_postProcessFieldExportedFluid,time );
+        if ( hasFieldToExportHeat || hasFieldToExportFluid )
+            M_exporter->save();
+    }
 
     M_heatModel->exportResults( time );
     M_fluidModel->exportResults( time );
@@ -396,7 +408,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
         M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
 
         M_blockVectorSolution.updateVectorFromSubVectors();
-        M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
+
+        if ( M_useSemiImplicitTimeScheme )
+            M_algebraicFactory->solve( "Linear", M_blockVectorSolution.vectorMonolithic() );
+        else
+            M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
+
         M_blockVectorSolution.localize();
     }
 
@@ -419,12 +436,122 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_ptrty
     M_heatModel->postSolveNewton( rhs, sol );
     M_fluidModel->postSolveNewton( rhs, sol );
 }
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
+{
+    M_heatModel->postSolvePicard( rhs, sol );
+    M_fluidModel->postSolvePicard( rhs, sol );
+}
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const
+{
+    M_heatModel->postSolveLinear( rhs, sol );
+    M_fluidModel->postSolveLinear( rhs, sol );
+}
 
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
+    const vector_ptrtype& vecCurrentPicardSolution = data.currentSolution();
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
+
+    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
+    this->log("HeatFluid","updateLinearPDE", "start"+sc);
+
+    M_heatModel->updateLinearPDE( data );
+    M_fluidModel->updateLinearPDE( data );
+
+    if ( buildNonCstPart )
+    {
+        auto XhVP = M_fluidModel->spaceVelocityPressure();
+        auto const& U = M_fluidModel->fieldVelocityPressure();
+        auto u = U.template element<0>();
+        auto XhT = M_heatModel->spaceTemperature();
+        auto const& t = M_heatModel->fieldTemperature();
+
+        auto mylfVP = form1( _test=XhVP, _vector=F,
+                             _rowstart=M_fluidModel->rowStartInVector()+0 );
+
+        auto mybfTT = form2( _test=XhT,_trial=XhT,_matrix=A,
+                             _rowstart=M_heatModel->rowStartInMatrix(),
+                             _colstart=M_heatModel->colStartInMatrix() );
+        auto mybfVPT = form2( _test=XhVP,_trial=XhT,_matrix=A,
+                             _rowstart=M_fluidModel->rowStartInMatrix(),
+                             _colstart=M_heatModel->colStartInMatrix() );
+
+        auto UConvection = M_fluidModel->timeStepBDF()->poly();
+        auto uConvection = UConvection.template element<0>();
+
+        for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+        {
+            std::string const& matName = rangeData.first;
+            auto const& range = rangeData.second;
+            auto const& rhoHeatCapacity = M_heatModel->thermalProperties()->rhoHeatCapacity( matName );
+
+            if ( rhoHeatCapacity.isConstant() )
+            {
+                double rhoHeatCapacityValue = rhoHeatCapacity.value();
+                mybfTT +=
+                    integrate( _range=range,
+                               _expr= rhoHeatCapacityValue*(gradt(t)*idv(uConvection))*id(t),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
+                mybfTT +=
+                    integrate( _range=range,
+                               _expr= rhoHeatCapacityExpr*(gradt(t)*idv(uConvection))*id(t),
+                               _geomap=this->geomap() );
+            }
+            auto const& rho = M_heatModel->thermalProperties()->rho( matName );
+            auto const& thermalExpansion = M_heatModel->thermalProperties()->thermalExpansion( matName );
+            CHECK( rhoHeatCapacity.isConstant() && thermalExpansion.isConstant() ) << "TODO";
+            double rhoValue = rho.value();
+            double beta = thermalExpansion.value();
+            double T0 = M_BoussinesqRefTemperature;
+            mybfVPT +=
+                integrate( _range=range,
+                           _expr= rhoValue*(beta*idt(t))*inner(M_gravityForce,id(u)),
+                           _geomap=this->geomap() );
+            mylfVP +=
+                integrate( _range=range,
+                           _expr= rhoValue*(beta*T0)*inner(M_gravityForce,id(u)),
+                           _geomap=this->geomap() );
+
+            if ( M_heatModel->stabilizationGLS() )
+            {
+                auto const& thermalConductivity = M_heatModel->thermalProperties()->thermalConductivity( matName );
+                if ( thermalConductivity.isMatrix() )
+                    CHECK( false ) << "TODO";
+                else if ( thermalConductivity.isConstant() )
+                    M_heatModel->updateLinearPDEStabilizationGLS( cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(uConvection),range,data );
+                else
+                    CHECK( false ) << "TODO";
+            }
+            if ( M_fluidModel->stabilizationGLS() )
+            {
+                auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
+                //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+                auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
+                auto expraddedInGLSResidualLF = rhoValue*beta*T0*M_gravityForce;
+                auto exprAddedInGLSResidualBF = rhoValue*beta*idt(t)*M_gravityForce;
+                M_fluidModel->updateLinearPDEStabilisationGLS( data, rhoF, mu, matName, hana::make_tuple(expraddedInGLSResidualLF),hana::make_tuple(std::make_pair(mybfVPT, exprAddedInGLSResidualBF)) );
+            }
+
+        }
+
+    }
+
+    this->log("HeatFluid","updateLinearPDE", "finish");
+
 }
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -464,6 +591,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
         auto t = XhT->element(XVec, M_heatModel->rowStartInVector() );
         auto const& thermalProperties = M_heatModel->thermalProperties();
 
+        auto bfVPT = form2( _test=XhVP,_trial=XhT,_matrix=J,
+                            _rowstart=M_fluidModel->rowStartInMatrix(),
+                            _colstart=M_heatModel->colStartInMatrix() );
+
         for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
         {
             std::string const& matName = rangeData.first;
@@ -491,12 +622,30 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                            _expr= rhoHeatCapacityValue*(gradv(t)*idt(u))*id(t),
                            _geomap=this->geomap() );
 
-            form2( _test=XhVP,_trial=XhT,_matrix=J,
-                   _rowstart=M_fluidModel->rowStartInMatrix(),
-                   _colstart=M_heatModel->colStartInMatrix() ) +=
+            bfVPT +=
                 integrate( _range=range,
                            _expr= rhoValue*beta*idt(t)*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
+
+            if ( M_heatModel->stabilizationGLS() )
+            {
+                auto const& thermalConductivity = M_heatModel->thermalProperties()->thermalConductivity( matName );
+                if ( thermalConductivity.isMatrix() )
+                    CHECK( false ) << "TODO";
+                else if ( thermalConductivity.isConstant() )
+                    M_heatModel->updateJacobianStabilizationGLS( cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(u),range,data );
+                else
+                    CHECK( false ) << "TODO";
+            }
+
+            if ( M_fluidModel->stabilizationGLS() )
+            {
+                auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
+                //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+                auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
+                auto exprAddedInGLSResidual = rhoValue*beta*idt(t)*M_gravityForce;
+                M_fluidModel->updateJacobianStabilisationGLS( data, U, rhoF, mu, matName, std::make_pair(bfVPT, exprAddedInGLSResidual) );
+            }
 
         }
     }
@@ -568,11 +717,42 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                 integrate( _range=range,
                            _expr= rhoValue*(beta*(idv(t)-T0))*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
+
+
+            if ( M_heatModel->stabilizationGLS() )
+            {
+                auto const& thermalConductivity = M_heatModel->thermalProperties()->thermalConductivity( matName );
+                if ( thermalConductivity.isMatrix() )
+                    CHECK( false ) << "TODO";
+                else if ( thermalConductivity.isConstant() )
+                    M_heatModel->updateResidualStabilizationGLS( cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(u),range,data );
+                else
+                    CHECK( false ) << "TODO";
+            }
+
+            if ( M_fluidModel->stabilizationGLS() )
+            {
+                auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
+                //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+                auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
+                auto expraddedInGLSResidual = rhoValue*(beta*(idv(t)-T0))*M_gravityForce;
+                M_fluidModel->updateResidualStabilisationGLS( data, U, rhoF, mu, matName, expraddedInGLSResidual );
+            }
+
         }
 
     }
 
     this->log("HeatFluid","updateResidual", "finish"+sc);
+}
+
+
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
+{
+    M_heatModel->updateLinearPDEDofElimination( data );
+    M_fluidModel->updateLinearPDEDofElimination( data );
 }
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
