@@ -428,7 +428,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportFieldsImpl( double time )
 
         //M_exporter->step( time )->add( "prestress", *U_displ_struct_prestress);
         if ( hasFieldToExport )
+        {
             M_exporter->save();
+            this->upload( M_exporter->path() );
+        }
     }
     else
     {
@@ -760,6 +763,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         if ( !this->isStationary() )
             this->postProcessMeasuresIO().setMeasure( "time", time );
         this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
     }
 
 }

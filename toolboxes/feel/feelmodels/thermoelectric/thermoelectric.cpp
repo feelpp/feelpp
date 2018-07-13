@@ -62,7 +62,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::ThermoElectric( std::string const& prefix,
     this->addTimerTool("PostProcessing",nameFilePostProcessing);
     this->addTimerTool("TimeStepping",nameFileTimeStepping);
 
-    this->setFilenameSaveInfo( prefixvm(this->prefix(),"ThermoElectric.info") );
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
@@ -378,7 +377,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     bool hasFieldToExportHeat = M_heatModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeat,time );
     bool hasFieldToExportElectric = M_electricModel->updateExportedFields( M_exporter,M_postProcessFieldExportedElectric,time );
     if ( hasFieldToExportHeat || hasFieldToExportElectric )
+    {
         M_exporter->save();
+        this->upload( M_exporter->path() );
+    }
 
     M_heatModel->exportResults( time );
     M_electricModel->exportResults( time );
