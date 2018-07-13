@@ -78,12 +78,6 @@ public:
 
     static const uint16_type ordervelocity = functionspace_type::basis_type::nOrder;
 
-    static const uint16_type imorder = mpl::if_<mpl::or_< boost::is_same<SpecificExprType,mpl::int_<0> >,
-                                                          boost::is_same<SpecificExprType,mpl::int_<1> > >,
-                                                mpl::int_<2*ordervelocity-1>,
-                                                mpl::int_<3*ordervelocity-1> >::type::value;
-    static const bool imIsPoly = true;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -154,6 +148,11 @@ public:
     /** @name  Methods
      */
     //@{
+    //! polynomial order
+    uint16_type polynomialOrder() const { return (SpecificExprType::value == 0 || SpecificExprType::value == 1)? (2*ordervelocity-1) : (3*ordervelocity-1); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return true; }
 
     element_type const& velocity() const { return M_v; }
     element_muP0_type const& muP0() const { return M_muP0; }
