@@ -482,6 +482,14 @@ RemoteData::createFolder( std::string const& folderPath, std::string const& pare
     return {};
 }
 
+std::tuple<std::vector<std::shared_ptr<RemoteData::FolderInfo>>,std::vector<std::shared_ptr<RemoteData::ItemInfo>>,std::vector<std::shared_ptr<RemoteData::FileInfo>>>
+RemoteData::contents() const
+{
+    if ( M_girder && M_girder->isInit() )
+        return M_girder->contents();
+    return std::make_tuple(std::vector<std::shared_ptr<FolderInfo>>(),std::vector<std::shared_ptr<ItemInfo>>(),std::vector<std::shared_ptr<FileInfo>>());
+}
+
 RemoteData::URL::URL( std::string const& url, WorldComm const& worldComm )
     :
     M_worldComm( worldComm )
@@ -944,6 +952,13 @@ RemoteData::Girder::Girder( std::string const& desc, WorldComm const& worldComm 
         if ( M_folderIds.empty() )
             M_folderIds.insert( pt.get<std::string>("folder") );
     }
+    if ( auto it = pt.get_child_optional("item") )
+    {
+        for( auto const& item : pt.get_child("item") )
+            M_itemIds.insert( item.second.get_value<std::string>() );
+        if ( M_itemIds.empty() )
+            M_itemIds.insert( pt.get<std::string>("item") );
+    }
 
     if ( M_url.empty() )
         M_url = "https://girder.math.unistra.fr";
@@ -1367,7 +1382,7 @@ RemoteData::Girder::uploadRecursively( std::string const& dataPath, std::string 
     }
     else if ( fs::is_regular_file( dataFsPath ) )
     {
-        std::string fileUploaded = this->uploadFile( dataPath, parentId, token );
+        std::string fileUploaded = this->uploadFileImpl( dataPath, parentId, token );
         if ( !fileUploaded.empty() )
             res.push_back( fileUploaded );
     }
@@ -1375,7 +1390,7 @@ RemoteData::Girder::uploadRecursively( std::string const& dataPath, std::string 
 }
 
 std::string
-RemoteData::Girder::uploadFile( std::string const& filepath, std::string const& parentId, std::string const& token ) const
+RemoteData::Girder::uploadFileImpl( std::string const& filepath, std::string const& parentId, std::string const& token ) const
 {
     std::string filename = fs::path(filepath).filename().string();
     std::string fileExtension = fs::path(filepath).extension().string();
@@ -1607,5 +1622,385 @@ RemoteData::Girder::removeToken( std::string const& token ) const
     }
 }
 
+
+std::tuple<std::vector<std::shared_ptr<RemoteData::FolderInfo>>,std::vector<std::shared_ptr<RemoteData::ItemInfo>>,std::vector<std::shared_ptr<RemoteData::FileInfo>>>
+RemoteData::Girder::contents() const
+{
+    auto res = std::make_tuple( std::vector<std::shared_ptr<FolderInfo>>(),
+                                std::vector<std::shared_ptr<ItemInfo>>(),
+                                std::vector<std::shared_ptr<FileInfo>>() );
+    if ( M_worldComm.isMasterRank() )
+    {
+        // use token if given else create token if api key given
+        std::string token = M_token;
+        if ( M_token.empty() && !M_apiKey.empty() )
+            token = this->createToken();
+
+        for ( std::string const& folderId : M_folderIds )
+        {
+            auto resFolder = folderContentsImpl( folderId, token );
+            if ( resFolder )
+                std::get<0>( res ).push_back( resFolder );
+        }
+        for ( std::string const& itemId : M_itemIds )
+        {
+            auto resItem = itemInfoImpl( itemId, token );
+            this->updateFilesImpl( resItem, token );
+            if ( resItem )
+                std::get<1>( res ).push_back( resItem );
+        }
+        for ( std::string const& fileId : M_fileIds )
+        {
+            auto resFile = fileInfoImpl( fileId, token );
+            if ( resFile )
+                std::get<2>( res ).push_back( resFile );
+        }
+
+        // delete token if created
+        if ( M_token.empty() && !M_apiKey.empty() && !token.empty() )
+            this->removeToken( token );
+    }
+    //if ( sync )
+
+    return res;
+}
+
+std::shared_ptr<RemoteData::FileInfo>
+RemoteData::Girder::fileInfoImpl( std::string const& fileId, std::string const& token ) const
+{
+    std::shared_ptr<FileInfo> res;
+
+    std::string url = M_url+"/api/v1/file/" + fileId;
+
+    std::vector<std::string> headers;
+    headers.push_back("Accept: application/json");
+    if ( !token.empty() )
+        headers.push_back( "Girder-Token: "+token );
+
+    std::ostringstream omemfile;
+    StatusRequestHTTP status = requestHTTPGET( url, headers, omemfile );
+    if ( !status.success() )
+    {
+        std::cout << "Girder error in requestHTTPGET : " << status.msg() << "\n";
+        return res;
+    }
+
+    // convert to property tree
+    std::istringstream istr( omemfile.str() );
+    pt::ptree pt;
+    pt::read_json(istr, pt);
+    if ( status.code() != 200 )
+    {
+        std::cout << Girder::errorMessage( pt,"file info fails", status.code() ) << "\n";
+        return res;
+    }
+
+    std::string name, id, mimeType, sha512;
+    size_type size = invalid_size_type_value;
+    if ( auto it = pt.get_optional<std::string>("_id") )
+        id = *it;
+    if ( auto it = pt.get_optional<std::string>("name") )
+        name = *it;
+    if ( auto it = pt.get_optional<size_type>("size") )
+        size = *it;
+    if ( auto it = pt.get_optional<std::string>("mimeType") )
+        mimeType = *it;
+    if ( auto it = pt.get_optional<std::string>("sha512") )
+        sha512 = *it;
+    res = std::make_shared<FileInfo>( name, id, size );
+    res->setMimeType( mimeType );
+    if ( !sha512.empty() )
+        res->setChecksum("sha512",sha512 );
+    return res;
+}
+std::shared_ptr<RemoteData::FolderInfo>
+RemoteData::Girder::folderInfoImpl( std::string const& folderId, std::string const& token ) const
+{
+    std::shared_ptr<FolderInfo> res;
+
+    std::string url = M_url+"/api/v1/folder/" + folderId;
+
+    std::vector<std::string> headers;
+    headers.push_back("Accept: application/json");
+    if ( !token.empty() )
+        headers.push_back( "Girder-Token: "+token );
+
+    std::ostringstream omemfile;
+    StatusRequestHTTP status = requestHTTPGET( url, headers, omemfile );
+    if ( !status.success() )
+    {
+        std::cout << "Girder error in requestHTTPGET : " << status.msg() << "\n";
+        return res;
+    }
+
+    // convert to property tree
+    std::istringstream istr( omemfile.str() );
+    pt::ptree pt;
+    pt::read_json(istr, pt);
+    if ( status.code() != 200 )
+    {
+        std::cout << Girder::errorMessage( pt,"folder info fails", status.code() ) << "\n";
+        return res;
+    }
+
+    std::string name, id;
+    size_type size = invalid_size_type_value;
+    if ( auto it = pt.get_optional<std::string>("_id") )
+        id = *it;
+    if ( auto it = pt.get_optional<std::string>("name") )
+        name = *it;
+    if ( auto it = pt.get_optional<size_type>("size") )
+        size = *it;
+    res = std::make_shared<FolderInfo>( name, id, size );
+    return res;
+}
+
+std::shared_ptr<RemoteData::ItemInfo>
+RemoteData::Girder::itemInfoImpl( std::string const& itemId, std::string const& token ) const
+{
+    std::shared_ptr<ItemInfo> res;
+
+    std::string url = M_url+"/api/v1/item/" + itemId;
+
+    std::vector<std::string> headers;
+    headers.push_back("Accept: application/json");
+    if ( !token.empty() )
+        headers.push_back( "Girder-Token: "+token );
+
+    std::ostringstream omemfile;
+    StatusRequestHTTP status = requestHTTPGET( url, headers, omemfile );
+    if ( !status.success() )
+    {
+        std::cout << "Girder error in requestHTTPGET : " << status.msg() << "\n";
+        return res;
+    }
+
+    // convert to property tree
+    std::istringstream istr( omemfile.str() );
+    pt::ptree pt;
+    pt::read_json(istr, pt);
+    if ( status.code() != 200 )
+    {
+        std::cout << Girder::errorMessage( pt,"item info fails", status.code() ) << "\n";
+        return res;
+    }
+
+    std::string name, id;
+    size_type size = invalid_size_type_value;
+    if ( auto it = pt.get_optional<std::string>("_id") )
+        id = *it;
+    if ( auto it = pt.get_optional<std::string>("name") )
+        name = *it;
+    if ( auto it = pt.get_optional<size_type>("size") )
+        size = *it;
+    res = std::make_shared<ItemInfo>( name, id, size );
+    return res;
+}
+
+std::shared_ptr<RemoteData::FolderInfo>
+RemoteData::Girder::folderContentsImpl( std::string const& folderId, std::string const& token ) const
+{
+    auto res = folderInfoImpl( folderId, token );
+    if ( !res )
+        return res;
+
+    std::string urlFolder = M_url+"/api/v1/folder?parentType=folder";
+    urlFolder += "&parentId=" + folderId;;
+    urlFolder += "&sort=lowerName&sortdir=1";
+
+    std::vector<std::string> headers;
+    headers.push_back("Accept: application/json");
+    if ( !token.empty() )
+        headers.push_back( "Girder-Token: "+token );
+
+    std::ostringstream omemfileFolder;
+    StatusRequestHTTP status = requestHTTPGET( urlFolder, headers, omemfileFolder );
+    if ( !status.success() )
+    {
+        std::cout << "Girder error in requestHTTPGET : " << status.msg() << "\n";
+        return res;
+    }
+
+    // convert to property tree
+    std::istringstream istrFolder( omemfileFolder.str() );
+    pt::ptree ptFolder;
+    pt::read_json(istrFolder, ptFolder);
+    if ( status.code() != 200 )
+    {
+        std::cout << Girder::errorMessage( ptFolder,"folder contents (folder) fails", status.code() ) << "\n";
+        return res;
+    }
+
+    for (auto const& item : ptFolder )
+    {
+        std::string name, id;
+        size_type size = invalid_size_type_value;
+        if ( auto it = item.second.get_optional<std::string>("_id") )
+            id = *it;
+        if ( auto it = item.second.get_optional<std::string>("name") )
+            name = *it;
+        if ( auto it = item.second.get_optional<size_type>("size") )
+            size = *it;
+        res->addFolder( std::make_shared<FolderInfo>( name,id,size ) );
+    }
+
+
+    std::string urlItem = M_url+"/api/v1/item";
+    urlItem += "?folderId=" + folderId;
+    urlItem += "&limit=0&sort=lowerName&sortdir=1";
+
+    std::ostringstream omemfileItem;
+    status = requestHTTPGET( urlItem, headers, omemfileItem );
+    if ( !status.success() )
+    {
+        std::cout << "Girder error in requestHTTPGET : " << status.msg() << "\n";
+        return res;
+    }
+
+    // convert to property tree
+    std::istringstream istrItem( omemfileItem.str() );
+    pt::ptree ptItem;
+    pt::read_json(istrItem, ptItem);
+    if ( status.code() != 200 )
+    {
+        std::cout << Girder::errorMessage( ptItem,"folder contents (item) fails", status.code() ) << "\n";
+        return res;
+    }
+
+    for (auto const& item : ptItem )
+    {
+        std::string name, id;
+        size_type size = invalid_size_type_value;
+        if ( auto it = item.second.get_optional<std::string>("_id") )
+            id = *it;
+        if ( auto it = item.second.get_optional<std::string>("name") )
+            name = *it;
+        if ( auto it = item.second.get_optional<size_type>("size") )
+            size = *it;
+        auto itemInfo = std::make_shared<ItemInfo>( name,id,size );
+        this->updateFilesImpl( itemInfo, token );
+        res->addItem( itemInfo );
+    }
+
+    return res;
+}
+
+void
+RemoteData::Girder::updateFilesImpl( std::shared_ptr<RemoteData::ItemInfo> itemInfo, std::string const& token ) const
+{
+    if ( !itemInfo )
+        return;
+    std::string itemId = itemInfo->id();
+    if ( itemId.empty() )
+        return;
+
+    std::string url = M_url+"/api/v1/item/" + itemId + "/files?limit=0&sort=name&sortdir=1";
+
+    std::vector<std::string> headers;
+    headers.push_back("Accept: application/json");
+    if ( !token.empty() )
+        headers.push_back( "Girder-Token: "+token );
+
+    std::ostringstream omemfile;
+    StatusRequestHTTP status = requestHTTPGET( url, headers, omemfile );
+    if ( !status.success() )
+    {
+        std::cout << "Girder error in requestHTTPGET : " << status.msg() << "\n";
+        return;
+    }
+
+    // convert to property tree
+    std::istringstream istr( omemfile.str() );
+    pt::ptree pt;
+    pt::read_json(istr, pt);
+    if ( status.code() != 200 )
+    {
+        std::cout << Girder::errorMessage( pt,"fileInItem fails", status.code() ) << "\n";
+        return;
+    }
+
+    for (auto const& ptFile : pt )
+    {
+        std::string name, id, mimeType, sha512;
+        size_type size = invalid_size_type_value;
+        if ( auto it = ptFile.second.get_optional<std::string>("_id") )
+            id = *it;
+        if ( auto it = ptFile.second.get_optional<std::string>("name") )
+            name = *it;
+        if ( auto it = ptFile.second.get_optional<size_type>("size") )
+            size = *it;
+        if ( auto it = ptFile.second.get_optional<std::string>("mimeType") )
+            mimeType = *it;
+        if ( auto it = ptFile.second.get_optional<std::string>("sha512") )
+            sha512 = *it;
+        auto fileInfo = std::make_shared<FileInfo>( name, id, size );
+        fileInfo->setMimeType( mimeType );
+        if ( !sha512.empty() )
+            fileInfo->setChecksum("sha512",sha512 );
+        itemInfo->add( fileInfo );
+    }
+}
+
+std::ostringstream
+RemoteData::FolderInfo::print( size_t nTab ) const
+{
+    std::ostringstream ostr;
+    std::string tab;
+    for (int k=0;k<nTab;++k )
+        tab += "|   ";
+    ostr << tab << "|-- "<< this->name() << "  [type:folder";
+    if ( !this->id().empty() )
+        ostr << ", id:" << this->id();
+    if ( this->size() != invalid_size_type_value )
+        ostr << ", size:" << this->size();
+    ostr << "]\n";
+
+    for ( auto const& folderInfo : M_folders )
+        ostr << folderInfo->print( nTab+1 ).str();
+    for ( auto const& itemInfo : M_items )
+        ostr << itemInfo->print( nTab+1 ).str();
+    for ( auto const& fileInfo : M_files )
+        ostr << fileInfo->print( nTab+1 ).str();
+    return ostr;
+}
+
+std::ostringstream
+RemoteData::ItemInfo::print( size_t nTab ) const
+{
+    std::ostringstream ostr;
+    std::string tab;
+    for (int k=0;k<nTab;++k )
+        tab += "|   ";
+    ostr << tab << "|-- "<< this->name() << "  [type:item";
+    if ( !this->id().empty() )
+        ostr << ", id:" << this->id();
+    if ( this->size() != invalid_size_type_value )
+        ostr << ", size:" << this->size();
+    ostr << "]\n";
+
+    for ( auto const& fileInfo : M_files )
+        ostr << fileInfo->print( nTab+1, true ).str();
+    return ostr;
+}
+std::ostringstream
+RemoteData::FileInfo::print( size_t nTab, bool isFileInItem ) const
+{
+    std::ostringstream ostr;
+    std::string tab;
+    for (int k=0;k<nTab;++k )
+        tab += "|   ";
+    ostr << tab;
+    if ( !isFileInItem )
+        ostr << "|-- ";
+    else
+        ostr << "* ";
+    ostr << this->name() << "  [type:file";
+    if ( !this->id().empty() )
+        ostr << ", id:" << this->id();
+    if ( this->size() != invalid_size_type_value )
+        ostr << ", size:" << this->size();
+    ostr << "]\n";
+    return ostr;
+}
 
 } // namespace Feel
