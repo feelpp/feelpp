@@ -33,6 +33,7 @@ int main( int argc, char** argv )
         ( "upload", po::value<std::string>(), "upload desc" )
         ( "download", po::value<std::string>(), "download desc" )
         ( "data", po::value<std::string>(), "specify the datas to upload or the download directory" )
+        ( "contents", po::value<std::string>(), "contents desc" )
 		;
 
     Environment env( _argc=argc, _argv=argv,
@@ -72,6 +73,19 @@ int main( int argc, char** argv )
         Feel::cout << "download data in : " << dir << "\n";
         rd.download( dir );
     }
-
+    else if ( Environment::vm().count("contents") )
+    {
+        RemoteData rd( soption(_name="contents") );
+        auto res = rd.contents();
+        for ( auto const& folderInfo : std::get<0>( res ) )
+            std::cout << "-------------------------------------------------------\n"
+                      << folderInfo->print().str() << "\n";
+        for ( auto const& itemInfo : std::get<1>( res ) )
+            std::cout << "-------------------------------------------------------\n"
+                      << itemInfo->print().str() << "\n";
+        for ( auto const& fileInfo : std::get<2>( res ) )
+            std::cout << "-------------------------------------------------------\n"
+                      << fileInfo->print().str() << "\n";
+    }
     return 0;
 }
