@@ -86,6 +86,10 @@ matrix substitute(matrix const& f, symbol const& l, ex const & g );
 //ex parse( std::string const& str, std::vector<symbol> const& syms );
 ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>());
 
+//! return total degree of a polynomial
+//! expr : a polynom expression
+//! symbolsDegree : vector of (symbol, unit degree for the symbol) which impact the total degree of polynomial
+int totalDegree( ex const& expr, std::vector<std::pair<symbol,int>> const& symbolsDegree );
 } // GiNaC
 
 namespace Feel
