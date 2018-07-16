@@ -296,7 +296,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 return (imorder_test<0)?0:imorder_test; \
             }                                                           \
                                                                         \
-            bool isPolynomial() const { return false; }                 \
+            bool isPolynomial() const { return true; }                  \
                                                                         \
             element_type const& e() const { return M_v; }              \
             bool useInterpWithConfLoc() const { return M_useInterpWithConfLoc; } \
