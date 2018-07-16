@@ -369,16 +369,16 @@ THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    if ( !M_exporter ) return;
-    if ( !M_exporter->doExport() ) return;
-
     this->log("ThermoElectric","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    bool hasFieldToExportHeat = M_heatModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeat,time );
-    bool hasFieldToExportElectric = M_electricModel->updateExportedFields( M_exporter,M_postProcessFieldExportedElectric,time );
-    if ( hasFieldToExportHeat || hasFieldToExportElectric )
-        M_exporter->save();
+    if ( M_exporter && M_exporter->doExport() )
+    {
+        bool hasFieldToExportHeat = M_heatModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeat,time );
+        bool hasFieldToExportElectric = M_electricModel->updateExportedFields( M_exporter,M_postProcessFieldExportedElectric,time );
+        if ( hasFieldToExportHeat || hasFieldToExportElectric )
+            M_exporter->save();
+    }
 
     M_heatModel->exportResults( time );
     M_electricModel->exportResults( time );
