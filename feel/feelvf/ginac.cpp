@@ -511,4 +511,25 @@ matrix substitute(matrix const &f, symbol const& s, ex const& g )
     return ff;
 }
 
+int totalDegree( GiNaC::ex const& expr, std::vector<std::pair<GiNaC::symbol,int>> const& symbolsDegree )
+{
+    int res = 0;
+    for ( int sd=0;sd<symbolsDegree.size();++sd )
+    {
+        GiNaC::symbol symbDegree = symbolsDegree[sd].first;
+        int unitDegree = symbolsDegree[sd].second;
+        int mydegree = expr.degree( symbDegree )*unitDegree;
+        std::vector<std::pair<GiNaC::symbol,int>> newSymbolsDegree;
+        for (int k=0;k<symbolsDegree.size();++k)
+        {
+            if ( sd == k ) continue;
+            newSymbolsDegree.push_back( symbolsDegree[k] );
+        }
+        int coeffDegree = totalDegree( expr.lcoeff( symbDegree ), newSymbolsDegree );
+        res = std::max( res, mydegree + coeffDegree );
+    }
+    return res;
+}
+
+
 }
