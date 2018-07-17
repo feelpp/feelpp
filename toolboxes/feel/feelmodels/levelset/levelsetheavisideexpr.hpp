@@ -5,7 +5,7 @@ namespace Feel {
 namespace FeelModels {
 //namespace vf {
 
-template<typename LSExprType, typename EpsExprType>
+template<typename LSExprType, typename EpsExprType, uint16_type IMOrder = 2*LSExprType::imorder>
 class LevelsetHeavisideExpr
 {
 public:
@@ -22,8 +22,7 @@ public:
     static const bool is_terminal = false;
 
     //static const uint16_type imorder = expr_levelsetphi_type::imorder;
-    //static const bool imIsPoly = expr_levelsetphi_type::imIsPoly;
-    static const uint16_type imorder = expr_levelsetphi_type::imorder;
+    static const uint16_type imorder = IMOrder;
     static const bool imIsPoly = false;
 
     template<typename Func>
@@ -190,12 +189,12 @@ private:
     expr_epsilon_type M_thicknessHeaviside;
 };
 
-template<typename LSExprT, typename EpsExprT>
+template<typename LSExprT, typename EpsExprT, uint16_type IMOrder = 2*LSExprT::imorder>
 inline
-Expr< LevelsetHeavisideExpr<LSExprT, EpsExprT> >
+Expr< LevelsetHeavisideExpr<LSExprT, EpsExprT, IMOrder> >
 levelsetHeaviside( LSExprT phi, EpsExprT eps )
 {
-    typedef LevelsetHeavisideExpr<LSExprT, EpsExprT> lsheaviside_t;
+    typedef LevelsetHeavisideExpr<LSExprT, EpsExprT, IMOrder> lsheaviside_t;
     return Expr< lsheaviside_t >(  lsheaviside_t( phi, eps ) );
 }
 
