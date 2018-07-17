@@ -27,12 +27,8 @@
    \date 2013-04-04
 */
 
-#define USE_BOOST_TEST 1
-//#undef USE_BOOST_TEST
-#if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_ginac
 #include <testsuite.hpp>
-#endif
 
 #include <iostream>
 #include <string>
@@ -499,6 +495,47 @@ void runTest3()
     BOOST_CHECK_CLOSE( intVecA, intVecE, 1e-8 );
 }
 
+void runTest4()
+{
+    std::map<std::string,double> params;
+    params["a"]=2;
+    params["b"]=4.5;
+
+    auto exprA = expr("2*a*b:a:b");
+    exprA.setParameterValues( params );
+    BOOST_CHECK( exprA.expression().isConstant() );
+    BOOST_CHECK_CLOSE( exprA.evaluate(), 2*2*4.5, 1e-12 );
+
+    auto exprB = expr("2*a*b+x^2*y+(x+y)^4:a:b:x:y");
+    exprB.setParameterValues( params );
+    BOOST_CHECK( !exprB.expression().isConstant() );
+    BOOST_CHECK( exprB.isPolynomial() );
+    BOOST_CHECK( exprB.polynomialOrder() == 4 );
+
+    auto exprC = expr<3>("2*a+x^2*y+(x+y)^4+cos(y):a:x:y");
+    exprC.setParameterValues( params );
+    BOOST_CHECK( !exprC.expression().isConstant() );
+    BOOST_CHECK( !exprC.isPolynomial() );
+    BOOST_CHECK( exprC.polynomialOrder() == 3 );
+
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2,1>>);
+    auto Vh = Pch<3>( mesh );
+    auto u = Vh->element();
+
+    auto exprDtmp = expr("2*a+x^2*y+u*(x+y)^4:a:x:y:u");
+    auto exprD = expr( exprDtmp,symbolsExpr( symbolExpr( "u",idv(u) ) ) );
+    BOOST_CHECK( !exprD.expression().isConstant() );
+    BOOST_CHECK( exprD.isPolynomial() );
+    BOOST_CHECK( exprD.polynomialOrder() == 7 );
+
+    auto exprEtmp = expr<3>("2*a+x^2*y+u*(x+y)^4:a:x:y:u");
+    auto exprE = expr( exprEtmp,symbolsExpr( symbolExpr( "u",cos(Px()) ) ) );
+    BOOST_CHECK( !exprE.expression().isConstant() );
+    BOOST_CHECK( !exprE.isPolynomial() );
+    BOOST_CHECK( exprE.polynomialOrder() == 3 );
+
+}
+
 #if defined(USE_BOOST_TEST)
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
@@ -519,6 +556,10 @@ BOOST_AUTO_TEST_CASE( test_3 )
 {
     runTest3();
 }
+BOOST_AUTO_TEST_CASE( test_4 )
+{
+    runTest4();
+}
 BOOST_AUTO_TEST_SUITE_END()
 
 #else
@@ -532,5 +573,7 @@ int main( int argc, char* argv[] )
     runTest0();
     runTest1();
     runTest2();
+    runTest3();
+    runTest4();
 }
 #endif
