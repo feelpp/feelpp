@@ -385,6 +385,55 @@ StatusRequestHTTP requestHTTPCUSTOM( std::string const& customRequest, std::stri
 #endif
 }
 
+StatusRequestHTTP requestDownloadURL( std::string const& url, std::ostream & ofile)
+{
+#if defined(FEELPP_HAS_LIBCURL)
+    CURLcode res;
+    res = curl_global_init(CURL_GLOBAL_ALL);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+
+    /* init the curl session */
+    CURL *curl_handle = curl_easy_init();
+    if ( !curl_handle ) return StatusRequestHTTP( false, "fail to run curl_easy_init" );
+
+    /* set URL to get here */
+    res = curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+#if 0
+    /* Switch on full protocol/debug output while testing */
+    res = curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    /* disable progress meter, set to 0L to enable and disable debug output */
+    res = curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+#endif
+
+    /* send all data to this function  */
+    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+
+    /* write the page body to this file handle */
+    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+
+    /* get it! */
+    res = curl_easy_perform(curl_handle);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+
+    long http_code = 0;
+    res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
+
+    /* cleanup curl stuff */
+    curl_easy_cleanup(curl_handle);
+    curl_global_cleanup();
+
+    return StatusRequestHTTP( true, http_code, "" );
+#else
+    CHECK( false ) << "LIBCURL is not detected";
+    return StatusRequestHTTP( false );
+#endif
+
+}
 
 
 RemoteData::RemoteData( std::string const& desc, WorldComm const& worldComm )
@@ -549,58 +598,29 @@ RemoteData::URL::download( std::string const& _dir, std::string const& _filename
     }
     std::string thefilename = (dir/filename).string();
 
-    if ( !M_worldComm.isMasterRank() )
-    {
-        M_worldComm.barrier();
-        return thefilename;
-    }
     std::string url = M_url;
-#if defined(FEELPP_HAS_LIBCURL)
-    CURL *curl_handle;
 
-    if ( !fs::exists( dir ) )
-        fs::create_directories( dir );
+    if ( M_worldComm.isMasterRank() )
+    {
+        if ( !fs::exists( dir ) )
+            fs::create_directories( dir );
 
-    curl_global_init(CURL_GLOBAL_ALL);
+        std::ofstream ofile( thefilename, std::ios::out|std::ios::binary);
+        /* open the file */
+        if( ofile )
+        {
+            StatusRequestHTTP status = requestDownloadURL( url, ofile );
+            if ( !status.success() )
+                std::cout << "Download error : " << status.msg() << "\n";
+            if ( status.code() != 200 ) // is it really true for all type http,ftp,... ???
+                std::cout << "Download error : returned code " << status.code() << "\n";
 
-    /* init the curl session */
-    curl_handle = curl_easy_init();
-
-    /* set URL to get here */
-    curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
-#if 0
-    /* Switch on full protocol/debug output while testing */
-    curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
-
-    /* disable progress meter, set to 0L to enable and disable debug output */
-    curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
-#endif
-
-    /* send all data to this function  */
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
-
-    /* open the file */
-    std::ofstream pagefile/*ofs*/ ( thefilename, std::ios::out|std::ios::binary);
-    if(pagefile) {
-
-        /* write the page body to this file handle */
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &pagefile);
-
-        /* get it! */
-        curl_easy_perform(curl_handle);
-
-        /* close the file */
-        pagefile.close();
+            ofile.close();
+        }
+        else
+            std::cout << "Download error : failure when create file  " << thefilename << "\n";
     }
 
-    /* cleanup curl stuff */
-    curl_easy_cleanup(curl_handle);
-
-    curl_global_cleanup();
-
-#else
-    CHECK( false ) << "LIBCURL is not detected";
-#endif
     M_worldComm.barrier();
     return thefilename;
 }
