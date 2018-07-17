@@ -308,7 +308,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
 
             //auto modGradPhiReinit = vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit)));
             auto modGradPhiReinit = vf::sqrt( trans(idv(gradPhiReinit))*idv(gradPhiReinit) );
-            auto Delta = Feel::FeelModels::levelsetDelta( idv(phi_reinit), M_thicknessHeaviside );
+            auto Delta = Feel::FeelModels::levelsetDelta( idv(phi_reinit), cst(M_thicknessHeaviside) );
             auto spaceP0 = this->functionSpaceP0();
             auto LambdaNum = integrate(
                     _range=elements(mesh),

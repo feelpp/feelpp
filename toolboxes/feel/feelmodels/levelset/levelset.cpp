@@ -5,6 +5,7 @@
 
 #include <feel/feelmodels/levelset/cauchygreeninvariantsexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetdeltaexpr.hpp>
+#include <feel/feelmodels/levelset/levelsetheavisideexpr.hpp>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/list_inserter.hpp>
@@ -1106,9 +1107,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
     this->log("LevelSet", "updateDirac", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    // derivative of Heaviside function
     auto eps0 = this->thicknessInterface();
-    auto eps_elt = this->functionSpace()->element();
 
     if( M_useAdaptiveThicknessInterface )
     {
@@ -1130,6 +1129,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
                 _expr=idv(gradPhi->comp(Component::Z))
                 );
 #endif
+        auto eps_elt = this->functionSpace()->element();
         eps_elt = vf::project(
                 _space=this->functionSpace(),
                 _range=elements(this->mesh()),
@@ -1139,46 +1139,54 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
 #endif
                     )*cst(eps0)/idv(this->modGradPhi())
                 );
+
+        auto eps = idv(eps_elt);
+        if (M_useRegularPhi)
+        {
+            //auto psi = idv(this->phi()) / sqrt( gradv(this->phi()) * trans(gradv(this->phi())) );
+            auto psi = idv(this->phi()) / idv(this->modGradPhi());
+
+            if ( M_useHeavisideDiracNodalProj )
+                *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
+                        Feel::FeelModels::levelsetDelta(psi, eps) );
+            else
+                *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps) );
+        }
+        else
+        {
+            auto psi = idv(this->phi());
+
+            if ( M_useHeavisideDiracNodalProj )
+                *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
+                        Feel::FeelModels::levelsetDelta(psi, eps) );
+            else
+                *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps) );
+        }
     }
     else
     {
-        eps_elt.setConstant(eps0); 
-    }
+        auto eps = cst(eps0);
+        if (M_useRegularPhi)
+        {
+            //auto psi = idv(this->phi()) / sqrt( gradv(this->phi()) * trans(gradv(this->phi())) );
+            auto psi = idv(this->phi()) / idv(this->modGradPhi());
 
-    auto eps = idv(eps_elt);
-
-    if (M_useRegularPhi)
-    {
-        //auto psi = idv(this->phi()) / sqrt( gradv(this->phi()) * trans(gradv(this->phi())) );
-        auto psi = idv(this->phi()) / idv(this->modGradPhi());
-        //auto D_expr = vf::chi( psi<-eps )*vf::constant(0.0)
-            //+
-            //vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
-            //1/(2*eps) *( 1 + cos(M_PI*psi/eps) )
-            //+
-            //vf::chi(psi>eps)*vf::constant(0.0);
-
-        if ( M_useHeavisideDiracNodalProj )
-            *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
-                   Feel::FeelModels::levelsetDelta(psi, eps0) );
+            if ( M_useHeavisideDiracNodalProj )
+                *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
+                        Feel::FeelModels::levelsetDelta(psi, eps) );
+            else
+                *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps) );
+        }
         else
-            *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps0) );
-    }
-    else
-    {
-        auto psi = idv(this->phi()) ;
-        //auto D_expr = vf::chi( psi<-eps )*vf::constant(0.0)
-            //+
-            //vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
-            //1/(2*eps) *( 1 + cos(M_PI*psi/eps) )
-            //+
-            //vf::chi(psi>eps)*vf::constant(0.0);
+        {
+            auto psi = idv(this->phi());
 
-        if ( M_useHeavisideDiracNodalProj )
-            *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
-                   Feel::FeelModels::levelsetDelta(psi, eps0) );
-        else
-            *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps0) );
+            if ( M_useHeavisideDiracNodalProj )
+                *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
+                        Feel::FeelModels::levelsetDelta(psi, eps) );
+            else
+                *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps) );
+        }
     }
 
     M_doUpdateDirac = false;
@@ -1199,32 +1207,22 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
     if (M_useRegularPhi)
     {
         auto psi = idv(this->phi()) / idv(this->modGradPhi());
-        auto H_expr = vf::chi( psi<-eps )*vf::constant(0.0)
-            +
-            vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
-            0.5*(1 + psi/eps + 1/M_PI*vf::sin( M_PI*psi/eps ) )
-            +
-            vf::chi(psi>eps)*vf::constant(1.0);
 
-        if (M_useHeavisideDiracNodalProj)
-            *M_heaviside = vf::project(this->functionSpace(), elements(this->mesh()), H_expr);
+        if ( M_useHeavisideDiracNodalProj )
+            *M_heaviside = vf::project( this->functionSpace(), elements(this->mesh()),
+                   Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
         else
-            *M_heaviside = M_projectorL2Scalar->project(H_expr);
+            *M_heaviside = M_projectorL2Scalar->project( Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
     }
     else
     {
         auto psi = idv(this->phi());
-        auto H_expr = vf::chi( psi<-eps )*vf::constant(0.0)
-            +
-            vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
-            0.5*(1 + psi/eps + 1/M_PI*vf::sin( M_PI*psi/eps ) )
-            +
-            vf::chi(psi>eps)*vf::constant(1.0);
 
-        if (M_useHeavisideDiracNodalProj)
-            *M_heaviside = vf::project(this->functionSpace(), elements(this->mesh()), H_expr);
+        if ( M_useHeavisideDiracNodalProj )
+            *M_heaviside = vf::project( this->functionSpace(), elements(this->mesh()),
+                   Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
         else
-            *M_heaviside = M_projectorL2Scalar->project(H_expr);
+            *M_heaviside = M_projectorL2Scalar->project( Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
     }
 
     M_doUpdateHeaviside = false;
