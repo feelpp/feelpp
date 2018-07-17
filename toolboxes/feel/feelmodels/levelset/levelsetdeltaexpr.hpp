@@ -5,11 +5,11 @@ namespace Feel {
 namespace FeelModels {
 //namespace vf {
 
-template<typename LSExprType, typename EpsExprType>
+template<typename LSExprType, typename EpsExprType, uint16_type IMOrder = 2*LSExprType::imorder>
 class LevelsetDeltaExpr
 {
 public:
-    typedef LevelsetDeltaExpr<LSExprType, EpsExprType> this_type;
+    typedef LevelsetDeltaExpr<LSExprType, EpsExprType, IMOrder> this_type;
     typedef LSExprType expr_levelsetphi_type;
     typedef EpsExprType expr_epsilon_type;
     typedef typename expr_levelsetphi_type::value_type value_type;
@@ -22,8 +22,7 @@ public:
     static const bool is_terminal = false;
 
     //static const uint16_type imorder = expr_levelsetphi_type::imorder;
-    //static const bool imIsPoly = expr_levelsetphi_type::imIsPoly;
-    static const uint16_type imorder = expr_levelsetphi_type::imorder;
+    static const uint16_type imorder = IMOrder;
     static const bool imIsPoly = false;
 
     template<typename Func>
@@ -188,12 +187,12 @@ private:
     expr_epsilon_type M_thicknessDelta;
 };
 
-template<typename LSExprT, typename EpsExprT>
+template<typename LSExprT, typename EpsExprT, uint16_type IMOrder = 2*LSExprT::imorder>
 inline
-Expr< LevelsetDeltaExpr<LSExprT, EpsExprT> >
+Expr< LevelsetDeltaExpr<LSExprT, EpsExprT, IMOrder> >
 levelsetDelta( LSExprT phi, EpsExprT eps )
 {
-    typedef LevelsetDeltaExpr<LSExprT, EpsExprT> lsdelta_t;
+    typedef LevelsetDeltaExpr<LSExprT, EpsExprT, IMOrder> lsdelta_t;
     return Expr< lsdelta_t >( lsdelta_t( phi, eps ) );
 }
 
