@@ -5,12 +5,13 @@ namespace Feel {
 namespace FeelModels {
 //namespace vf {
 
-template<typename LSExprType>
+template<typename LSExprType, typename EpsExprType>
 class LevelsetDeltaExpr
 {
 public:
-    typedef LevelsetDeltaExpr<LSExprType> this_type;
+    typedef LevelsetDeltaExpr<LSExprType, EpsExprType> this_type;
     typedef LSExprType expr_levelsetphi_type;
+    typedef EpsExprType expr_epsilon_type;
     typedef typename expr_levelsetphi_type::value_type value_type;
     typedef value_type evaluate_type;
 
@@ -44,7 +45,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Constructors
-    LevelsetDeltaExpr( expr_levelsetphi_type const& ex, double eps )
+    LevelsetDeltaExpr( expr_levelsetphi_type const& ex, expr_epsilon_type const& eps )
         : M_levelsetPhiExpr( ex )
         , M_thicknessDelta( eps )
     {}
@@ -57,7 +58,7 @@ public:
     //--------------------------------------------------------------------//
     // Accessors
     expr_levelsetphi_type const& levelsetPhiExpr() const { return M_levelsetPhiExpr; }
-    double thickness() const { return M_thicknessDelta; }
+    expr_epsilon_type const& thickness() const { return M_thicknessDelta; }
 
     //--------------------------------------------------------------------//
     // Expr tensor
@@ -65,6 +66,7 @@ public:
     struct tensor
     {
         typedef typename expr_levelsetphi_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
+        typedef typename expr_epsilon_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_epsilon_type;
         typedef typename tensor_expr_type::value_type value_type;
 
         typedef typename tensor_expr_type::shape tensor_expr_shape;
@@ -80,7 +82,7 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             : M_phiExpr( expr.levelsetPhiExpr(), geom, fev, feu )
-            , M_epsilon( expr.thickness() )
+            , M_epsilon( expr.thickness(), geom, fev, feu )
             , M_locRes( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
         {
         }
@@ -88,14 +90,14 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             : M_phiExpr( expr.levelsetPhiExpr(), geom, fev )
-            , M_epsilon( expr.thickness() )
+            , M_epsilon( expr.thickness(), geom, fev )
             , M_locRes( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
         {
         }
 
         tensor( this_type const& expr, Geo_t const& geom )
             : M_phiExpr( expr.levelsetPhiExpr(), geom )
-            , M_epsilon( expr.thickness() )
+            , M_epsilon( expr.thickness(), geom )
             , M_locRes( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
         {
         }
@@ -104,6 +106,7 @@ public:
         void init( IM const& im )
         {
             M_phiExpr.init( im );
+            M_epsilon.init( im );
         }
 
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
@@ -117,11 +120,13 @@ public:
         void update( Geo_t const& geom )
         {
             M_phiExpr.update( geom );
+            M_epsilon.update( geom );
             computeDelta();
         }
         void update( Geo_t const& geom, uint16_type face )
         {
             M_phiExpr.update( geom, face );
+            M_epsilon.update( geom, face );
             computeDelta();
         }
 
@@ -163,32 +168,33 @@ public:
             for( uint16_type q = 0; q < M_locRes.size(); ++q )
             {
                 double phi = M_phiExpr.evalq( 0, 0, q );
-                if( (phi < -M_epsilon) || (phi > M_epsilon) )
+                double eps = M_epsilon.evalq( 0, 0, q );
+                if( (phi < -eps) || (phi > eps) )
                     M_locRes[q](0,0) = 0.;
                 else
-                    M_locRes[q](0,0) = 0.5 / M_epsilon * ( 1 + math::cos(M_PI*phi/M_epsilon) );
+                    M_locRes[q](0,0) = 0.5 / eps * ( 1 + math::cos(M_PI*phi/eps) );
             }
         }
 
     private:
         tensor_expr_type M_phiExpr;
-        double M_epsilon;
+        tensor_expr_epsilon_type M_epsilon;
         std::vector<matrix_shape_type> M_locRes;
     };
 
 
 private:
     expr_levelsetphi_type M_levelsetPhiExpr;
-    double M_thicknessDelta;
+    expr_epsilon_type M_thicknessDelta;
 };
 
-template<typename LSExprT>
+template<typename LSExprT, typename EpsExprT>
 inline
-Expr< LevelsetDeltaExpr<LSExprT> >
-levelsetDelta( LSExprT phi, double eps )
+Expr< LevelsetDeltaExpr<LSExprT, EpsExprT> >
+levelsetDelta( LSExprT phi, EpsExprT eps )
 {
-    typedef LevelsetDeltaExpr<LSExprT> lsdelta_t;
-    return Expr< lsdelta_t >(  lsdelta_t( phi, eps ) );
+    typedef LevelsetDeltaExpr<LSExprT, EpsExprT> lsdelta_t;
+    return Expr< lsdelta_t >( lsdelta_t( phi, eps ) );
 }
 
 //}
