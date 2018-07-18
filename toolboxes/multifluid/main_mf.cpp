@@ -37,17 +37,17 @@ runApplicationMultiFluid()
                                > space_velocity_surfdiv_type;
     boost::shared_ptr<space_velocity_surfdiv_type> spaceSurfDivU;
     boost::shared_ptr<Exporter<typename model_multifluid_type::mesh_type>> surfDivUExporter;
-    if( exportVelocitySurfaceDivergence )
-    {
-        spaceSurfDivU = space_velocity_surfdiv_type::New(
-                _mesh=MFModel->mesh()
-                );
-        surfDivUExporter = exporter(
-                _mesh=MFModel->mesh(),
-                _name="SDivU",
-                _path=MFModel->exporterPath()
-                );
-    }
+    //if( exportVelocitySurfaceDivergence )
+    //{
+        //spaceSurfDivU = space_velocity_surfdiv_type::New(
+                //_mesh=MFModel->mesh()
+                //);
+        //surfDivUExporter = exporter(
+                //_mesh=MFModel->mesh(),
+                //_name="SDivU",
+                //_path=MFModel->exporterPath()
+                //);
+    //}
 
     for( ; !MFModel->timeStepBase()->isFinished(); MFModel->updateTimeStep() )
     {
@@ -58,32 +58,32 @@ runApplicationMultiFluid()
             MFModel->solve();
             MFModel->exportResults();
 
-            if( exportVelocitySurfaceDivergence )
-            {
-                auto Id = vf::Id<FEELPP_DIM, FEELPP_DIM>();
-                auto N = idv(MFModel->globalLevelset()->N());
-                auto NxN = N * trans(N);
-                auto SurfDivU = vf::project(
-                        _space=spaceSurfDivU,
-                        _range=elements(MFModel->mesh()),
-                        _expr=trace( (Id-NxN)*trans(gradv(MFModel->fluidModel()->fieldVelocity())) )
-                        );
+            //if( exportVelocitySurfaceDivergence )
+            //{
+                //auto Id = vf::Id<FEELPP_DIM, FEELPP_DIM>();
+                //auto N = idv(MFModel->globalLevelset()->N());
+                //auto NxN = N * trans(N);
+                //auto SurfDivU = vf::project(
+                        //_space=spaceSurfDivU,
+                        //_range=elements(MFModel->mesh()),
+                        //_expr=trace( (Id-NxN)*trans(gradv(MFModel->fluidModel()->fieldVelocity())) )
+                        //);
 
-                MFModel->mesh()->updateMarker2( *(MFModel->levelsetModel(0)->markerDirac()) );
-                double area = integrate(
-                        _range=marked2elements(MFModel->mesh(), 1),
-                        _expr=cst(1.)
-                        ).evaluate()(0,0);
-                double meanSurfDivU = integrate(
-                        _range=marked2elements(MFModel->mesh(), 1),
-                        _expr=trace( (Id-NxN)*trans(gradv(MFModel->fluidModel()->fieldVelocity())) )
-                        ).evaluate()(0,0) / area;
+                //MFModel->mesh()->updateMarker2( *(MFModel->levelsetModel(0)->markerDirac()) );
+                //double area = integrate(
+                        //_range=marked2elements(MFModel->mesh(), 1),
+                        //_expr=cst(1.)
+                        //).evaluate()(0,0);
+                //double meanSurfDivU = integrate(
+                        //_range=marked2elements(MFModel->mesh(), 1),
+                        //_expr=trace( (Id-NxN)*trans(gradv(MFModel->fluidModel()->fieldVelocity())) )
+                        //).evaluate()(0,0) / area;
 
-                surfDivUExporter->step(MFModel->currentTime())->add("SDivU", SurfDivU);
-                surfDivUExporter->save();
+                //surfDivUExporter->step(MFModel->currentTime())->add("SDivU", SurfDivU);
+                //surfDivUExporter->save();
 
-                Feel::cout << "Mean velocity surface divergence: " << meanSurfDivU << std::endl;
-            }
+                //Feel::cout << "Mean velocity surface divergence: " << meanSurfDivU << std::endl;
+            //}
     }
 }
 
