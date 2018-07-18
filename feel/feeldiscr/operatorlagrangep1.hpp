@@ -1148,7 +1148,7 @@ BOOST_PARAMETER_FUNCTION(
 #if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
 #endif
-    return opLagrangeP1_impl(space,backend,path,prefix,rebuild,parallel);
+    return opLagrangeP1_impl(space,backend,path,prefix,rebuild,parallel,update);
 }
 
 
