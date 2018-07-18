@@ -65,6 +65,7 @@ namespace Feel {
 
     BOOST_PARAMETER_NAME(space_manager)
     BOOST_PARAMETER_NAME(tool_manager)
+    BOOST_PARAMETER_NAME(exporter_manager)
     BOOST_PARAMETER_NAME(reinitializer)
 
 namespace FeelModels {
@@ -253,6 +254,7 @@ public:
     // Exporter
     typedef Exporter<mymesh_type, nOrderGeo> exporter_type;
     typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
+    typedef exporter_ptrtype exporter_manager_ptrtype;
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -285,6 +287,7 @@ public:
             )
             ( optional
               ( tool_manager, (levelset_tool_manager_ptrtype), levelset_tool_manager_ptrtype() )
+              ( exporter_manager, (exporter_manager_ptrtype), exporter_manager_ptrtype() )
               ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ), reinitializer_ptrtype() )
             )
             )
@@ -320,7 +323,10 @@ public:
         this->createTools();
 
         // Create exporters
-        this->createExporters();
+        if( exporter_manager )
+            M_exporter = exporter_manager;
+        else
+            this->createExporters();
     }
 
     //--------------------------------------------------------------------//
@@ -490,8 +496,8 @@ public:
 
     //--------------------------------------------------------------------//
     // Export results
-    void exportResults() { this->exportResults( this->currentTime() ); }
-    void exportResults( double time );
+    void exportResults( bool save = true ) { this->exportResults( this->currentTime(), save ); }
+    void exportResults( double time, bool save = true );
     bool hasPostProcessMeasureExported( LevelSetMeasuresExported const& measure) const;
     bool hasPostProcessFieldExported( LevelSetFieldsExported const& field) const;
     exporter_ptrtype & getExporter() { return M_exporter; }
@@ -559,8 +565,8 @@ private:
     element_levelset_type interfaceRectangularFunction( element_levelset_ptrtype const& p ) const;
     //--------------------------------------------------------------------//
     // Export
-    void exportResultsImpl( double time );
-    void exportMeasuresImpl( double time );
+    void exportResultsImpl( double time, bool save );
+    void exportMeasuresImpl( double time, bool save );
     // Save
     void saveCurrent() const;
 

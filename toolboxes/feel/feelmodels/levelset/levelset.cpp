@@ -2428,15 +2428,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::submeshInner( double cut ) const
 // Export results
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
+LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time, bool save )
 {
-    this->exportResultsImpl( time );
-    this->exportMeasuresImpl( time );
+    this->exportResultsImpl( time, save );
+    this->exportMeasuresImpl( time, save );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
+LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time, bool save )
 {
     this->log("LevelSet","exportResults", "start");
     this->timerTool("PostProcessing").start();
@@ -2515,7 +2515,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                        *this->cauchyGreenInvariant2() );
     }
 
-    this->M_exporter->save();
+    if( save )
+        this->M_exporter->save();
 
     double tElapsed = this->timerTool("PostProcessing").stop("exportResults");
     this->log("LevelSet","exportResults", (boost::format("finish in %1% s")%tElapsed).str() );
@@ -2523,7 +2524,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
+LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time, bool save )
 {
     bool hasMeasureToExport = false;
 
@@ -2556,7 +2557,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
         hasMeasureToExport = true;
     }
 
-    if( hasMeasureToExport )
+    if( save && hasMeasureToExport )
     {
         this->postProcessMeasuresIO().setParameter( "time", time );
         this->postProcessMeasuresIO().exportMeasures();
