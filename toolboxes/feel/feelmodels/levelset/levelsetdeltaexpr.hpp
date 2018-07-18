@@ -5,7 +5,7 @@ namespace Feel {
 namespace FeelModels {
 //namespace vf {
 
-template<typename LSExprType, typename EpsExprType, uint16_type IMOrder = 2*LSExprType::imorder>
+template<typename LSExprType, typename EpsExprType, int IMOrder>
 class LevelsetDeltaExpr
 {
 public:
@@ -22,7 +22,8 @@ public:
     static const bool is_terminal = false;
 
     //static const uint16_type imorder = expr_levelsetphi_type::imorder;
-    static const uint16_type imorder = IMOrder;
+    static const uint16_type imorderDefault = 2*expr_levelsetphi_type::imorder;
+    static const uint16_type imorder = (IMOrder>=0) ? IMOrder: imorderDefault;
     static const bool imIsPoly = false;
 
     template<typename Func>
@@ -187,7 +188,7 @@ private:
     expr_epsilon_type M_thicknessDelta;
 };
 
-template<typename LSExprT, typename EpsExprT, uint16_type IMOrder = 2*LSExprT::imorder>
+template<int IMOrder = -1, typename LSExprT, typename EpsExprT>
 inline
 Expr< LevelsetDeltaExpr<LSExprT, EpsExprT, IMOrder> >
 levelsetDelta( LSExprT phi, EpsExprT eps )
