@@ -27,6 +27,15 @@ public:
     typedef boost::shared_ptr<levelset_type> levelset_ptrtype;
 
     //--------------------------------------------------------------------//
+    // Mesh
+    typedef typename fluid_type::convex_type convex_type;
+    static const uint16_type nDim = convex_type::nDim;
+    static const uint16_type nOrderGeo = convex_type::nOrder;
+    static const uint16_type nRealDim = convex_type::nRealDim;
+    typedef Mesh<convex_type> mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    //--------------------------------------------------------------------//
     // Function spaces
     typedef typename levelset_type::space_levelset_ptrtype space_levelset_ptrtype;
     typedef typename levelset_type::space_vectorial_ptrtype space_levelset_vectorial_ptrtype;
@@ -38,19 +47,18 @@ public:
     typedef typename levelset_type::element_vectorial_type element_levelset_vectorial_type;
     typedef typename levelset_type::element_vectorial_ptrtype element_levelset_vectorial_ptrtype; 
 
+    // Levelset function space manager
+    typedef typename levelset_type::levelset_space_manager_type levelset_space_manager_type;
+    typedef typename levelset_type::levelset_space_manager_ptrtype levelset_space_manager_ptrtype;
+    // Levelset tool manager
+    typedef typename levelset_type::levelset_tool_manager_type levelset_tool_manager_type;
+    typedef typename levelset_type::levelset_tool_manager_ptrtype levelset_tool_manager_ptrtype;
+
     //--------------------------------------------------------------------//
     typedef typename super_type::DataUpdateJacobian DataUpdateJacobian;
     typedef typename super_type::DataUpdateResidual DataUpdateResidual;
     typedef typename super_type::DataUpdateLinear DataUpdateLinear;
     
-    //--------------------------------------------------------------------//
-    // Mesh
-    typedef typename fluid_type::convex_type convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
-    typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     //--------------------------------------------------------------------//
     // Lagrange P1 iso-Pn
     typedef OperatorLagrangeP1<component_space_fluid_velocity_type> op_lagrangeP1_type;
@@ -71,11 +79,15 @@ public:
     typedef typename super_type::basis_fluid_p_type basis_fluid_p_type;
     typedef FunctionSpace< mesh_type, bases<basis_fluid_p_type> > space_inextensibilitylm_type;
     typedef boost::shared_ptr<space_inextensibilitylm_type> space_inextensibilitylm_ptrtype;
+    //--------------------------------------------------------------------//
+    // Exporter
+    typedef Exporter<mesh_type, nOrderGeo> exporter_type;
+    typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
-
+public:
     //--------------------------------------------------------------------//
     // Constructor
     MultiFluid(
@@ -104,6 +116,7 @@ public:
 
     std::string const& prefix() const { return M_prefix; }
     std::string const& fluidPrefix() const { return super_type::prefix(); }
+    std::string globalLevelsetPrefix() const { return prefixvm( this->prefix(), "levelset"); }
 
     boost::shared_ptr<std::ostringstream> getInfo() const override;
 
@@ -113,9 +126,8 @@ public:
 
     //--------------------------------------------------------------------//
     // Function spaces
-    space_levelset_ptrtype const& functionSpaceLevelset() const { return M_globalLevelset->functionSpace(); }
-    space_levelset_vectorial_ptrtype const& functionSpaceLevelsetVectorial() const { return M_globalLevelset->functionSpaceVectorial(); }
-    space_levelset_markers_ptrtype const& functionSpaceLevelsetMarkers() const { return M_globalLevelset->functionSpaceMarkers(); }
+    space_levelset_ptrtype const& functionSpaceLevelset() const { return M_levelsetSpaceManager->functionSpaceScalar(); }
+    space_levelset_vectorial_ptrtype const& functionSpaceLevelsetVectorial() const { return M_levelsetSpaceManager->functionSpaceVectorial(); }
     space_inextensibilitylm_ptrtype const& functionSpaceInextensibilityLM() const;
     //--------------------------------------------------------------------//
     // Mesh
@@ -127,8 +139,11 @@ public:
     levelset_ptrtype const& levelsetModel(uint16_type n) const { return M_levelsets.at(n); }
     uint16_type nLevelsets() const { return M_levelsets.size(); }
 
-    levelset_ptrtype const& globalLevelset() const { return M_globalLevelset; }
+    // Global levelset
+    auto globalLevelsetExpr() const;
+    element_levelset_ptrtype const& globalLevelsetElt() const;
 
+    // Fluid density-viscosity model
     densityviscosity_model_ptrtype const& fluidDensityViscosityModel( uint16_type n = 0 ) const;
 
     //--------------------------------------------------------------------//
@@ -137,6 +152,8 @@ public:
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     size_type nLocalDof() const override;
 
+    //--------------------------------------------------------------------//
+    double globalLevelsetThicknessInterface() const { return M_globalLevelsetThicknessInterface; }
     //--------------------------------------------------------------------//
     bool hasInextensibility( uint16_type n = 0 ) const { return M_hasInextensibility.at(n); }
     std::string const& inextensibilityMethod( uint16_type n = 0 ) const { return M_inextensibilityMethod.at(n); }
@@ -168,8 +185,6 @@ protected:
     size_type initStartBlockIndexFieldsInMatrix() override;
     int initBlockVector() override;
 
-    void updateGlobalLevelset();
-
     void updateFluidDensityViscosity();
     void updateInterfaceForces();
     void solveFluid();
@@ -198,8 +213,12 @@ private:
     op_lagrangeP1_ptrtype M_opLagrangeP1iso;
     //--------------------------------------------------------------------//
     //mesh_ptrtype M_mesh;
-    levelset_ptrtype M_globalLevelset;
+    levelset_space_manager_ptrtype M_levelsetSpaceManager;
+    levelset_tool_manager_ptrtype M_levelsetToolManager;
     std::vector<levelset_ptrtype> M_levelsets;
+    mutable element_levelset_ptrtype M_globalLevelsetElt;
+    mutable bool M_doUpdateGlobalLevelset;
+    exporter_ptrtype M_globalLevelsetExporter;
 
     //--------------------------------------------------------------------//
     // Solve
@@ -212,6 +231,9 @@ private:
     std::vector<densityviscosity_model_ptrtype> M_levelsetDensityViscosityModels;
     std::vector<std::map<std::string, interfaceforces_model_ptrtype>> M_levelsetInterfaceForcesModels;
     std::map<std::string, interfaceforces_model_ptrtype> M_additionalInterfaceForcesModel;
+    //--------------------------------------------------------------------//
+    // Global levelset parameters
+    double M_globalLevelsetThicknessInterface;
     //--------------------------------------------------------------------//
     // Forces
     bool M_hasInterfaceForcesModel;

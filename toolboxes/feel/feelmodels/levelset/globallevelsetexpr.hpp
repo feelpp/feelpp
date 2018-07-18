@@ -150,7 +150,7 @@ public:
                 std::fill( locLevelset.data(), locLevelset.data()+locLevelset.num_elements(), this->M_zeroLocScalar );
                 this->expr().levelsets(i)->id( *M_ctxLevelset, locLevelset );
             }
-            // Compute results
+            // Compute results: min( phi_i )
             auto const& gmc = fusion::at_key<key_type>( geom );
             std::fill( M_locRes.data(), M_locRes.data()+M_locRes.num_elements(), matrix_shape_type::Zero() );
             for( uint16_type q = 0; q < gmc->nPoints(); ++q )

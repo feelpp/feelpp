@@ -3,6 +3,9 @@
 
 #include <feel/feelmodels/multifluid/multifluid.hpp>
 
+#include <feel/feelmodels/levelset/globallevelsetexpr.hpp>
+#include <feel/feelmodels/levelset/levelsetheavisideexpr.hpp>
+
 #include <feel/feelfilters/loadmesh.hpp>
 
 namespace Feel {
@@ -16,6 +19,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
         std::string const& rootRepository )
 : super_type( prefixvm(prefix,"fluid"), false, wc, subPrefix, self_type::expandStringFromSpec( rootRepository ) )
 , M_prefix( prefix )
+, M_doUpdateGlobalLevelset( true )
 , M_doRebuildSpaceInextensibilityLM( true )
 {
     //-----------------------------------------------------------------------------//
@@ -62,23 +66,39 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
     // Build inherited FluidMechanics
     this->loadMesh( this->createMesh() );
 
-    // Build global levelset
-    M_globalLevelset.reset(
-            new levelset_type( prefixvm(this->prefix(),"levelset"), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
-            );
-
+    // Get levelset mesh
+    mesh_ptrtype mesh;
     if( this->M_useLagrangeP1iso )
     {
-        // Build Lagrange P1 iso-U mesh and build M_globalLevelset with it
+        // Build Lagrange P1 iso-U mesh and build levelsets with it
         M_opLagrangeP1iso = lagrangeP1( this->functionSpaceVelocity()->compSpace() );
-        M_globalLevelset->build( this->M_opLagrangeP1iso->mesh() );
+        mesh = this->M_opLagrangeP1iso->mesh(); 
     }
     else
     {
         // Else build from common mesh
-        M_globalLevelset->build( this->mesh() );
+        mesh = this->mesh();
     }
+    // Build levelsets space manager
+    M_levelsetSpaceManager = boost::make_shared<levelset_space_manager_type>( mesh, this->globalLevelsetPrefix() );
+    // Temporary hack: ensures the defaults levelset spaces are built for interfaceForces
+    M_levelsetSpaceManager->createFunctionSpaceDefault();
+    // Build levelsets tool manager
+    M_levelsetToolManager = boost::make_shared<levelset_tool_manager_type>( M_levelsetSpaceManager, this->globalLevelsetPrefix() );
+    // Update global levelset thickness interface
+    if( Environment::vm().count( prefixvm(this->globalLevelsetPrefix(),"thickness-interface").c_str() ) )
+        M_globalLevelsetThicknessInterface = doption( _name="thickness-interface", _prefix=this->globalLevelsetPrefix() );
+    else
+        M_globalLevelsetThicknessInterface = 1.5 * M_levelsetSpaceManager->mesh()->hAverage();
 
+    // Build levelsets exporter
+    //M_globalLevelsetExporter = exporter(
+            //_mesh=M_levelsetSpaceManager->mesh(),
+            //_name="ExportLS",
+            //_geo="static",
+            //_path=this->exporterPath()
+            //);
+    // Build levelsets
     M_levelsets.resize( nLevelSets );
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
@@ -87,13 +107,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
                 new levelset_type( levelset_prefix, this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
                 );
         M_levelsets[i]->build(
-                _space_manager=M_globalLevelset->functionSpaceManager(),
-                _tool_manager=M_globalLevelset->toolManager(),
-                _reinitializer=M_globalLevelset->reinitializer()
+                _space_manager=M_levelsetSpaceManager,
+                _tool_manager=M_levelsetToolManager
+                //_exporter_manager=M_globalLevelsetExporter
+                //_reinitializer=M_globalLevelset->reinitializer()
                 );
         // Set global options if unspecified otherwise
         if( !Environment::vm().count( prefixvm(levelset_prefix,"thickness-interface").c_str() ) )
-            M_levelsets[i]->setThicknessInterface( M_globalLevelset->thicknessInterface() );
+            M_levelsets[i]->setThicknessInterface( this->globalLevelsetThicknessInterface() );
     }
 
     // "Deep" copy FluidMechanics densityViscosityModel
@@ -236,14 +257,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
     this->log("MultiFluid", "init", "start");
 
     // Initialize LevelSets
-    if( (M_nFluids - 1) < 2 )
-        M_globalLevelset->getExporter()->setDoExport( false );
-    M_globalLevelset->init();
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
         M_levelsets[i]->init();
     }
-    this->updateGlobalLevelset();
     // Init inherited FluidMechanics (to build spaces, algebraic data, ...)
     super_type::init();
     // Init FluidMechanics densityViscosityModel
@@ -275,6 +292,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     M_useLagrangeP1iso = boption( _name="use-ls-P1iso-mesh", _prefix=this->prefix() );
 
+    // Global levelset parameters
+    // TODO
 
     uint16_type nLevelSets = M_nFluids - 1;
 
@@ -388,6 +407,34 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::functionSpaceInextensibilityLM() const
         this->log("MultiFluid","buildFunctionSpaceInextensibilityLM", "finish" );
     }
     return M_spaceInextensibilityLM;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+auto
+MULTIFLUID_CLASS_TEMPLATE_TYPE::globalLevelsetExpr() const
+{
+    std::vector< element_levelset_ptrtype > levelsets;
+    std::transform( M_levelsets.begin(), M_levelsets.end(), std::back_inserter(levelsets),
+            [](levelset_ptrtype const& l) { return l->phi(); }
+            );
+    return Feel::vf::FeelModels::globalLevelsetExpr( levelsets );
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+typename MULTIFLUID_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
+MULTIFLUID_CLASS_TEMPLATE_TYPE::globalLevelsetElt() const
+{
+    if( !M_globalLevelsetElt )
+        M_globalLevelsetElt.reset( new element_levelset_type(this->functionSpaceLevelset(), "GlobalLevelset") );
+    if( M_doUpdateGlobalLevelset )
+    {
+        M_globalLevelsetElt->on( 
+                _range=elements( M_globalLevelsetElt->mesh() ),
+                _expr=this->globalLevelsetExpr()
+                );
+        M_doUpdateGlobalLevelset = false;
+    }
+    return M_globalLevelsetElt;
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -560,7 +607,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveImpl()
     }
 
     // Update global levelset
-    this->updateGlobalLevelset();
+    M_doUpdateGlobalLevelset = true;
 
     if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
     {
@@ -622,9 +669,25 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     }
     // Export fluid
     super_type::exportResults(time);
-    // Export levelsets
+    // Export global levelsets
     if( this->nLevelsets() > 1 )
-        M_globalLevelset->exportResults(time);
+    {
+        if( !M_globalLevelsetExporter )
+        {
+            M_globalLevelsetExporter = exporter(
+                    _mesh=M_levelsetSpaceManager->mesh(),
+                    _name="ExportLS",
+                    _geo="static",
+                    _path=this->exporterPath()
+                    );
+        }
+        M_globalLevelsetExporter->step( time )->add( 
+                prefixvm(this->prefix(),"GlobalLevelset.Phi"),
+                prefixvm(this->prefix(),prefixvm(this->subPrefix(),"GlobalLevelset.Phi")),
+                *this->globalLevelsetElt()
+                );
+        M_globalLevelsetExporter->save();
+    }
     for( uint16_type i = 0; i < M_levelsets.size(); ++i)
     {
         M_levelsets[i]->exportResults(time);
@@ -664,59 +727,43 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initBlockVector()
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::updateGlobalLevelset()
-{
-    this->log("MultiFluid", "updateGlobalLevelset", "start");
-
-    auto minPhi = M_globalLevelset->phi();
-
-    *minPhi = *(M_levelsets[0]->phi());
-    for( uint16_type i = 1; i < M_levelsets.size(); ++i )
-    {
-        *minPhi = vf::project( 
-                M_globalLevelset->functionSpace(), 
-                elements(M_globalLevelset->mesh()),
-                vf::min( idv(minPhi), idv(M_levelsets[i]->phi()) )
-                );
-    }
-
-    M_globalLevelset->updateInterfaceQuantities();
-
-    this->log("MultiFluid", "updateGlobalLevelset", "finish");
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
 {
     this->log("MultiFluid", "updateFluidDensityViscosity", "start");
     this->timerTool("Solve").start();
 
-    auto globalH = M_globalLevelset->H();
+    auto globalH = Feel::FeelModels::levelsetHeaviside( 
+            this->globalLevelsetExpr(),
+            cst( this->globalLevelsetThicknessInterface() )
+            );
 
     auto rho = vf::project( 
             this->densityViscosityModel()->dynamicViscositySpace(),
             elements(this->mesh()),
-            idv(M_fluidDensityViscosityModel->fieldRho())*idv(globalH)
+            idv(M_fluidDensityViscosityModel->fieldRho())*globalH
             );
 
     auto mu = vf::project( 
             this->densityViscosityModel()->dynamicViscositySpace(),
             elements(this->mesh()),
-            idv(M_fluidDensityViscosityModel->fieldMu())*idv(globalH)
+            idv(M_fluidDensityViscosityModel->fieldMu())*globalH
             );
 
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
+        auto Hi = Feel::FeelModels::levelsetHeaviside( 
+                idv( M_levelsets[i]->phi() ),
+                cst( this->globalLevelsetThicknessInterface() )
+                );
         rho += vf::project( 
                 this->densityViscosityModel()->dynamicViscositySpace(),
                 elements(this->mesh()),
-                idv(M_levelsetDensityViscosityModels[i]->fieldRho())*(1. - idv(M_levelsets[i]->H()))
+                idv(M_levelsetDensityViscosityModels[i]->fieldRho())*(1. - Hi)
                 );
         mu += vf::project( 
                 this->densityViscosityModel()->dynamicViscositySpace(),
                 elements(this->mesh()),
-                idv(M_levelsetDensityViscosityModels[i]->fieldMu())*(1. - idv(M_levelsets[i]->H()))
+                idv(M_levelsetDensityViscosityModels[i]->fieldMu())*(1. - Hi)
                 );
     }
 
