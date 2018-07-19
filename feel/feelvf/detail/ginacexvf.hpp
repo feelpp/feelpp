@@ -212,19 +212,8 @@ public:
      */
     //@{
 
-    this_type& operator=( this_type const& t )
-    {
-        if ( this == &t )
-            return *this;
-        M_fun = t.M_fun;
-        M_cfun = t.M_cfun;
-        M_exprDesc = t.M_exprDesc;
-        M_expr = t.M_expr;
-        M_isPolynomial = t.M_isPolynomial;
-        M_polynomialOrder = t.M_polynomialOrder;
-        return *this;
-    }
-    //this_type& operator=( this_type && ) = default;
+    this_type& operator=( this_type const& ) = default;
+    this_type& operator=( this_type && ) = default;
 
     //@}
 
@@ -372,11 +361,9 @@ public:
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
-            M_x( expr.parameterValue() )
-            {
-                if ( M_is_constant )
-                    M_y.setConstant( expr.evaluate() );
-            }
+            M_x( expr.parameterValue() ),
+            M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type(0) )
+            {}
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
@@ -390,11 +377,9 @@ public:
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
-            M_x(  expr.parameterValue() )
-            {
-                if ( M_is_constant )
-                    M_y.setConstant( expr.evaluate() );
-            }
+            M_x(  expr.parameterValue() ),
+            M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type(0) )
+            {}
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
@@ -407,11 +392,10 @@ public:
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
-            M_x( expr.parameterValue() )
-            {
-                if ( M_is_constant )
-                    M_y.setConstant( expr.evaluate() );
-            }
+            M_x( expr.parameterValue() ),
+            M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type(0) )
+            {}
+
         template<typename IM>
         void init( IM const& im )
         {
@@ -539,25 +523,22 @@ public:
                 return 0;
             }
 
-
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
             {
-                return M_y[q];
+                return evalq( c1,c2,q );
             }
-
-
 
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
             {
-                return M_y[q];
+                return evalq( c1,c2,q );
             }
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
             {
-                return M_y[q];
+                return ( M_is_constant )? M_yConstant : M_y[q];
             }
 
         this_type const& M_expr;
@@ -571,17 +552,17 @@ public:
         int M_nsyms;
         vec_type M_y;
         vec_type M_x;
-
+        const evaluate_type M_yConstant;
     };
 
-    value_type
+    evaluate_type
     evaluate( std::map<std::string,value_type> const& mp  )
     {
         this->setParameterValues( mp );
         return this->evaluateImpl();
     }
 
-    value_type
+    evaluate_type
     evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
     {
         return this->evaluateImpl();
@@ -625,7 +606,7 @@ private :
             M_polynomialOrder = Order;
     }
 
-    value_type
+    evaluate_type
     evaluateImpl() const
     {
         int no = 1;
@@ -642,7 +623,7 @@ private:
     std::string M_exprDesc;
     symbols_expression_type M_expr;
     bool M_isPolynomial;
-    int M_polynomialOrder;
+    uint16_type M_polynomialOrder;
 };
 
 template<int Order,typename SymbolsExprType>
@@ -665,6 +646,9 @@ str( GinacExVF<Order,SymbolsExprType> const& e )
 {
     return str( e.expression() );
 }
+
+template<int Order = 2>
+using GinacEx = GinacExVF<Order>;
 
 
 }} // feel::vf

@@ -26,15 +26,14 @@
 
 #include <feel/feelvf/detail/ginacexvf.hpp>
 
+#if 0
+
 namespace Feel
 {
 namespace vf
 {
 
-template<int Order = 2>
-using GinacEx = GinacExVF<Order>;
 
-#if 0
 /// \cond detail
 /**
  * @brief allow runtime ginac in expression
@@ -373,8 +372,10 @@ str( GinacEx<Order> const& e )
 {
     return str( e.expression() );
 }
-#endif
+
 } // vf
 } // feel
+
+#endif
 
 #endif /* FEELPP_DETAIL_GINACEX_HPP */

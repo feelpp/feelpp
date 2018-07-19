@@ -72,6 +72,25 @@ public:
                     return hana::integral_constant<bool, T1::value || T2::value_type::second_type::template HasTrialFunction<Funct>::result >{};
                 }
         };
+        template<typename Funct>
+        struct HasTestBasis
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value || T2::value_type::second_type::template has_test_basis<Funct>::result >{};
+                }
+        };
+        template<typename Funct>
+        struct HasTrialBasis
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value || T2::value_type::second_type::template has_trial_basis<Funct>::result >{};
+                }
+        };
+
     };
 
     static const size_type context =  std::decay_t<decltype( hana::fold( symbols_expression_type{}, hana::integral_constant<size_type,vm::POINT|vm::JACOBIAN|vm::KB|vm::NORMAL>{}, typename FunctorsVariadicExpr::Context{} ) )>::value;
@@ -92,18 +111,30 @@ public:
                                                                        typename FunctorsVariadicExpr::template HasTrialFunction<Funct>{} ) )>::value;
     };
 
-    template<typename Func>
-    static const bool has_test_basis = false;
-    template<typename Func>
-    static const bool has_trial_basis = false;
-    using test_basis = std::nullptr_t;
-    using trial_basis = std::nullptr_t;
+    template<typename Funct>
+    static const bool has_test_basis = std::decay_t<decltype( hana::fold( symbols_expression_type{},
+                                                                          hana::integral_constant<bool,false>{},
+                                                                          typename FunctorsVariadicExpr::template HasTestBasis<Funct>{} ) )>::value;
+    template<typename Funct>
+    static const bool has_trial_basis = std::decay_t<decltype( hana::fold( symbols_expression_type{},
+                                                                           hana::integral_constant<bool,false>{},
+                                                                           typename FunctorsVariadicExpr::template HasTrialBasis<Funct>{} ) )>::value;
+    using test_basis = std::nullptr_t; // TODO
+    using trial_basis = std::nullptr_t; // TODO
 
     typedef GiNaC::ex expression_type;
     typedef GinacMatrix<M,N,Order,SymbolsExprType> this_type;
     typedef double value_type;
 
-    typedef Eigen::MatrixXd evaluate_type;
+    //typedef Eigen::MatrixXd evaluate_type;
+    // be careful that the matrix passed to ginac must be Row Major,
+    // however if the number of columns is 1 then eigen3 fails with
+    // an assertion, so we have a special when N=1 and have the
+    // matrix column major which is ok in this case
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<N>, mpl::int_<1>>,
+                              mpl::identity<Eigen::Matrix<value_type,M,1>>,
+                              mpl::identity<Eigen::Matrix<value_type,M,N,Eigen::RowMajor>>>::type::type evaluate_type;
+
 
 
     typedef Eigen::Matrix<double,Eigen::Dynamic,1> vec_type;
@@ -131,7 +162,9 @@ public:
         M_fun( fun.evalm() ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
         M_filename(),
-        M_exprDesc( exprDesc )
+        M_exprDesc( exprDesc ),
+        M_isPolynomial( false ),
+        M_polynomialOrder( Order )
         {
             std::string filenameExpanded = Environment::expand( filename );
             M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::path(Environment::exprRepository())/filenameExpanded).string();
@@ -151,6 +184,8 @@ public:
 
             // build ginac lib and link if necessary
             Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
+
+            this->updateForUse();
         }
     explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc,
                           std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr=Environment::exprRepository() )
@@ -159,7 +194,9 @@ public:
         M_fun(fun.evalm()),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
         M_filename(),
-        M_exprDesc( exprDesc )
+        M_exprDesc( exprDesc ),
+        M_isPolynomial( false ),
+        M_polynomialOrder( Order )
         {
             std::string filenameExpanded = Environment::expand( filename );
             M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::path(Environment::exprRepository())/filenameExpanded).string();
@@ -179,6 +216,8 @@ public:
 
             // build ginac lib and link if necessary
             Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
+
+            this->updateForUse();
         }
 
     explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms,
@@ -188,8 +227,12 @@ public:
         M_fun(fun.evalm()),
         M_cfun( new GiNaC::FUNCP_CUBA( cfun ) ),
         M_exprDesc( exprDesc ),
-        M_expr( expr )
-        {}
+        M_expr( expr ),
+        M_isPolynomial( false ),
+        M_polynomialOrder( Order )
+        {
+            this->updateForUse();
+        }
 
     GinacMatrix( GinacMatrix && fun ) = default;
     GinacMatrix( GinacMatrix const & fun ) = default;
@@ -210,10 +253,10 @@ public:
     //@{
 
     //! polynomial order
-    uint16_type polynomialOrder() const { return Order; }
+    uint16_type polynomialOrder() const { return M_polynomialOrder; }
 
     //! expression is polynomial?
-    bool isPolynomial() const { return false; }
+    bool isPolynomial() const { return M_isPolynomial; }
 
     symbols_expression_type const& symbolsExpression() const { return M_expr; }
 
@@ -272,21 +315,13 @@ public:
     evaluate( std::map<std::string,value_type> const& mp  )
     {
         this->setParameterValues( mp );
-        int no = 1;
-        int ni = M_syms.size();//gmc_type::nDim;
-        Eigen::MatrixXd res(M,N);
-        (*M_cfun)(&ni,M_params.data(),&no,res.data());
-        return res;
+        return this->evaluateImpl();
     }
 
     Eigen::MatrixXd
     evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
     {
-        int no = M*N;
-        int ni = M_syms.size();
-        Eigen::MatrixXd res(M,N);
-        (*M_cfun)(&ni,M_params.data(),&no,res.data());
-        return res;
+        return this->evaluateImpl();
     }
 
     //@}
@@ -350,15 +385,8 @@ public:
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
         typedef typename mn_to_shape<gmc_type::nDim,M,N>::type shape;
-        // be careful that the matrix passed to ginac must be Row Major,
-        // however if the number of columns is 1 then eigen3 fails with
-        // an assertion, so we have a special when N=1 and have the
-        // matrix column major which is ok in this case
-        typedef typename mpl::if_<mpl::equal_to<mpl::int_<shape::N>, mpl::int_<1>>,
-                                  mpl::identity<Eigen::Matrix<value_type,shape::M,1>>,
-                                  mpl::identity<Eigen::Matrix<value_type,shape::M,shape::N,Eigen::RowMajor>>>::type::type mat_type;
-        typedef std::vector<mat_type> loc_type;
-        typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
+        typedef std::vector<evaluate_type> loc_type;
+        //typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
         struct is_zero
         {
             static const bool value = false;
@@ -369,10 +397,12 @@ public:
             :
             M_expr( expr ),
             M_fun( expr.fun() ),
+            M_is_constant( expr.isConstant() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
-            M_y( M_gmc->nPoints(), mat_type::Zero() ),
+            M_y( M_gmc->nPoints(), evaluate_type::Zero() ),
             M_x( expr.parameterValue() ),
+            M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type::Zero() ),
             M_t_expr( hana::transform( expr.symbolsExpression(), [&geom,&fev,&feu](auto const& t) { return TransformExprToTensor{}(t,geom,fev,feu); } ) ),
             M_t_expr_index( expr.indices() )
             {}
@@ -382,10 +412,12 @@ public:
             :
             M_expr( expr ),
             M_fun( expr.fun() ),
+            M_is_constant( expr.isConstant() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
-            M_y( M_gmc->nPoints(), mat_type::Zero() ),
+            M_y( M_gmc->nPoints(), evaluate_type::Zero() ),
             M_x( expr.parameterValue() ),
+            M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type::Zero() ),
             M_t_expr( hana::transform( expr.symbolsExpression(), [&geom,&fev](auto const& t) { return TransformExprToTensor{}(t,geom,fev); } ) ),
             M_t_expr_index( expr.indices() )
             {}
@@ -394,41 +426,32 @@ public:
             :
             M_expr( expr ),
             M_fun( expr.fun() ),
+            M_is_constant( expr.isConstant() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
-            M_y( M_gmc->nPoints(), mat_type::Zero() ),
+            M_y( M_gmc->nPoints(), evaluate_type::Zero() ),
             M_x( expr.parameterValue() ),
+            M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type::Zero() ),
             M_t_expr( hana::transform( expr.symbolsExpression(), [&geom](auto const& t) { return TransformExprToTensor{}(t,geom); } ) ),
             M_t_expr_index( expr.indices() )
-            {
-            }
+            {}
 
         template<typename IM>
         void init( IM const& im )
             {
-
-            }
-        void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
-            {
-                update( geom );
-            }
-        void update( Geo_t const& geom, Basis_i_t const& /*fev*/ )
-            {
-                update( geom );
-            }
-        void update( Geo_t const& geom )
-            {
                 uint16_type k=0;
-                hana::for_each( M_t_expr, [&k,&geom,this]( auto & evec )
+                hana::for_each( M_t_expr, [&k,&im,this]( auto & evec )
                                 {
                                     for ( auto & e : evec )
                                     {
                                         if ( M_t_expr_index[k] != invalid_uint16_type_value )
-                                            e.update( geom );
+                                            e.init( im );
                                         ++k;
                                     }
                                 });
-
+            }
+        FEELPP_DONT_INLINE void updateFun( Geo_t const& geom )
+            {
                 M_gmc =  fusion::at_key<key_type>( geom ).get();
 
                 int no = M*N;
@@ -453,11 +476,64 @@ public:
                                     });
                     M_fun(&ni,M_x.data(),&no,M_y[q].data());
                 }
+            }
 
+        void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+            {
+                if ( M_is_constant ) return;
+
+                uint16_type k=0;
+                hana::for_each( M_t_expr, [&k,&geom,&fev,feu,this]( auto & evec )
+                                {
+                                    for ( auto & e : evec )
+                                    {
+                                        if ( M_t_expr_index[k] != invalid_uint16_type_value )
+                                            e.update( geom, fev, feu );
+                                        ++k;
+                                    }
+                                });
+
+                updateFun( geom );
+            }
+        void update( Geo_t const& geom, Basis_i_t const& fev )
+            {
+                if ( M_is_constant ) return;
+
+                uint16_type k=0;
+                hana::for_each( M_t_expr, [&k,&geom,&fev,this]( auto & evec )
+                                {
+                                    for ( auto & e : evec )
+                                    {
+                                        if ( M_t_expr_index[k] != invalid_uint16_type_value )
+                                            e.update( geom, fev );
+                                        ++k;
+                                    }
+                                });
+
+                updateFun( geom );
+            }
+        void update( Geo_t const& geom )
+            {
+                if ( M_is_constant ) return;
+
+                uint16_type k=0;
+                hana::for_each( M_t_expr, [&k,&geom,this]( auto & evec )
+                                {
+                                    for ( auto & e : evec )
+                                    {
+                                        if ( M_t_expr_index[k] != invalid_uint16_type_value )
+                                            e.update( geom );
+                                        ++k;
+                                    }
+                                });
+
+                updateFun( geom );
             }
 
         void update( Geo_t const& geom, uint16_type face )
             {
+                if ( M_is_constant ) return;
+
                 uint16_type k=0;
                 hana::for_each( M_t_expr, [&k,&geom,&face,this]( auto & evec )
                                 {
@@ -468,30 +544,7 @@ public:
                                         ++k;
                                     }
                                 });
-
-                M_gmc =  fusion::at_key<key_type>( geom ).get();
-
-                int no = M*N;
-                int ni = M_nsyms;//gmc_type::nDim;
-                for(int q = 0; q < M_gmc->nPoints();++q )
-                {
-                    for ( auto const& comp : M_expr.indexSymbolXYZ() )
-                        M_x[comp.second] = M_gmc->xReal( q )[comp.first];
-                    for ( auto const& comp : M_expr.indexSymbolN() )
-                        M_x[comp.second] = M_gmc->unitNormal( q )[comp.first-3];
-                    uint16_type k=0;
-                    hana::for_each( M_t_expr, [&k,&q,this]( auto const& evec )
-                                    {
-                                        for ( auto & e : evec )
-                                        {
-                                            uint16_type idx = M_t_expr_index[k];
-                                            if ( idx != invalid_uint16_type_value )
-                                                M_x[idx] = e.evalq( 0, 0, q );
-                                            ++k;
-                                        }
-                                    });
-                    M_fun(&ni,M_x.data(),&no,M_y[q].data());
-                }
+                updateFun( geom );
             }
 
         template<typename ... CTX>
@@ -507,34 +560,94 @@ public:
                 return 0;
             }
 
-
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
             {
-                return M_y[q](c1,c2);
+                return evalq( c1,c2,q );
             }
 
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
             {
-                return M_y[q](c1,c2);
+                return evalq( c1,c2,q );
             }
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
             {
-                return M_y[q](c1,c2);
+                return ( M_is_constant )? M_yConstant(c1,c2) : M_y[q](c1,c2);
             }
 
         this_type const& M_expr;
         GiNaC::FUNCP_CUBA M_fun;
+        const bool M_is_constant;
         gmc_ptrtype M_gmc;
         int M_nsyms;
         loc_type M_y;
         vec_type M_x;
+        const evaluate_type M_yConstant;
         tuple_tensor_expr_type M_t_expr;
         const std::vector<uint16_type> M_t_expr_index;
     };
+
+private :
+    void updateForUse()
+    {
+        std::vector<std::pair<GiNaC::symbol,int>> symbTotalDegree;
+        for ( auto const& thesymbxyz : this->indexSymbolXYZ() )
+            symbTotalDegree.push_back( std::make_pair( M_syms[thesymbxyz.second], 1 ) );
+        bool symbExprArePolynomials = true;
+        hana::for_each( M_expr, [&]( auto const& evec )
+                        {
+                            for ( auto const& e : evec )
+                            {
+                                uint16_type idx = this->index( e.first );
+                                if ( idx == invalid_uint16_type_value )
+                                    continue;
+                                auto const& theexpr = e.second;
+                                if ( theexpr.isPolynomial() )
+                                    symbTotalDegree.push_back( std::make_pair( M_syms[idx], theexpr.polynomialOrder() ) );
+                                else
+                                    symbExprArePolynomials = false;
+                            }
+                        });
+
+        int no = M_fun.nops();
+        CHECK( no == M*N )  << "invalid size " << no << " vs " << M*N << "\n" ;
+        if ( symbExprArePolynomials )
+        {
+            GiNaC::lst symlIsPoly;
+            for ( auto const& thesymb : symbTotalDegree )
+                symlIsPoly.append( thesymb.first );
+
+            std::vector<bool> compExprIsPoly( no );
+            for( int i = 0; i < no; ++i )
+                compExprIsPoly[i] = M_fun.op(i).is_polynomial( symlIsPoly );
+            M_isPolynomial = std::accumulate( compExprIsPoly.begin(), compExprIsPoly.end(), true, std::logical_and<bool>() );
+        }
+        else
+            M_isPolynomial = false;
+
+        if ( M_isPolynomial )
+        {
+            std::vector<uint16_type>  compExprPolyOrder( no );
+            for( int i = 0; i < no; ++i )
+                compExprPolyOrder[i] = totalDegree( M_fun.op(i), symbTotalDegree );
+            M_polynomialOrder = *std::max_element( compExprPolyOrder.begin(), compExprPolyOrder.end() );
+        }
+        else
+            M_polynomialOrder = Order;
+    }
+
+    evaluate_type
+    evaluateImpl() const
+    {
+        int no = M*N;
+        int ni = M_syms.size();
+        evaluate_type res = evaluate_type::Zero();
+        (*M_cfun)(&ni,M_params.data(),&no,res.data());
+        return res;
+    }
 
 private:
     mutable expression_type  M_fun;
@@ -542,6 +655,9 @@ private:
     std::string M_filename;
     std::string M_exprDesc;
     symbols_expression_type M_expr;
+    bool M_isPolynomial;
+    uint16_type M_polynomialOrder;
+
 }; // GinacMatrix
 
 template<int M,int N,int Order>
