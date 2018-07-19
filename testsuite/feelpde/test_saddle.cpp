@@ -1,7 +1,14 @@
-#include <feel/feel.hpp>
+#define BOOST_TEST_MODULE test_saddle
+#include <testsuite.hpp>
+
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelpde/preconditionerblockms.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
+#include <feel/feelvf/vf.hpp>
 
 #define curl_op curl
 #define curlt_op curlt
@@ -23,24 +30,10 @@ makeOptions()
         ;
 }
 
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "saddle" ,
-                     "saddle" ,
-                     "0.1",
-                     "test saddle",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2015 Feel++ Consortium" );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAboutDefault("test_saddle"), makeOptions() )
 
-    about.addAuthor( "Vincent HUBER", "developer", "vincent.huber@cemosis.fr", "" );
-
-    return about;
-}
-    
-
-int main( int argc, char** argv )
+BOOST_AUTO_TEST_SUITE( test_saddle )
+BOOST_AUTO_TEST_CASE( test_0 )
 {
     typedef double value_type;
 typedef Simplex<3> convex_type;
@@ -60,15 +53,8 @@ typedef typename lag_space_type::element_type lag_element_type;
 typedef FunctionSpace<mesh_type, Feel::detail::bases<curl_basis_type,lag_basis_type>, value_type,Feel::Periodicity<Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar>> comp_space_type;
 typedef boost::shared_ptr<comp_space_type> comp_space_ptrtype;
 typedef typename comp_space_type::element_type comp_element_type;
-  // Initialize Feel++ Environment
-  Environment env( _argc=argc, _argv=argv,
-      _desc=makeOptions(),
-      _about=makeAbout()
-      );
 
-  /// Todo : add option regul & backend;
-
-  auto mesh = loadMesh(_mesh = new Mesh<Simplex<3>> );
+  auto mesh = loadMesh(_mesh = new Mesh<Simplex<FEELPP_DIM>> );
 
   auto Xh   = comp_space_type::New( mesh );
 
@@ -124,17 +110,18 @@ typedef typename comp_space_type::element_type comp_element_type;
       );
   }
 
+  auto prec = preconditioner(_backend=backend(_name="ms"),_pc=pcTypeConvertStrToEnum(soption("ms.pc-type")), _prefix="ms",_matrix=a.matrixPtr());
   if(soption("ms.pc-type") == "blockms" )
   {
-    auto prec = boost::make_shared<PreconditionerBlockMS<comp_space_type>>(
+    auto precBMS = boost::make_shared<PreconditionerBlockMS<comp_space_type>>(
         U.functionSpace(),
         model,
         "ms",
         a.matrixPtr(), 1.);
-    
-    preconditioner(_backend=backend(_name="ms"), _pc=FEELPP_BLOCKMS_PRECOND, _prefix="ms")->attachInHousePreconditioners("blockms",prec);
+    prec->attachInHousePreconditioners("blockms",precBMS);
+    //preconditioner(_backend=backend(_name="ms"), _pc=FEELPP_BLOCKMS_PRECOND, _prefix="ms")->attachInHousePreconditioners("blockms",prec);
   }
-  a.solveb(_rhs=l, _solution=U, _backend=backend(_name="ms"));
+  a.solveb(_rhs=l, _solution=U, _backend=backend(_name="ms"),_prec=prec);
   if(boption("exporter.export"))
   {
     auto ue = vf::project(_space=Xh->functionSpace<0>(),_range=elements(mesh), _expr=expr<3,1>(soption("functions.u")));
@@ -147,3 +134,4 @@ typedef typename comp_space_type::element_type comp_element_type;
 
 
 }
+BOOST_AUTO_TEST_SUITE_END()
