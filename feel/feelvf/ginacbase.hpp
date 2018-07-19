@@ -98,6 +98,8 @@ public:
     vec_type const& parameterValue() const { return M_params; }
     value_type parameterValue( int p ) const { return M_params[p]; }
 
+    std::map<std::string,value_type> const& symbolNameToValue() const { return M_symbolNameToValue; }
+
     std::set<std::pair<uint16_type,uint16_type> > const& indexSymbolXYZ() const { return M_indexSymbolXYZ; }
     std::set<std::pair<uint16_type,uint16_type> > const& indexSymbolN() const { return M_indexSymbolN; }
 
