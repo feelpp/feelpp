@@ -282,6 +282,11 @@ void runTest1()
     auto XhScalar = Pch<3>( mesh );
     auto XhVectorial = Pchv<3>( mesh );
 
+    double a=2, b=4.5;
+    std::map<std::string,double> params;
+    params["a"]=a;
+    params["b"]=b;
+
     // id scalar
     auto exprScalarFeel = Px()*Px()*cos(M_PI*Py()) + 2*Py()*sin(Px())*exp(Px()*Px());
     auto exprScalarGinac = expr( "x*x*cos(pi*y)+2*y*sin(x)*exp(x*x):x:y"/*, "scalarExpr"*/ );
@@ -497,14 +502,32 @@ void runTest3()
 
 void runTest4()
 {
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2,1>>);
+    auto Vh = Pch<3>( mesh );
+    auto u = Vh->element( Px()*Px()*Py() );
+
     std::map<std::string,double> params;
     params["a"]=2;
     params["b"]=4.5;
 
+    // scalar
     auto exprA = expr("2*a*b:a:b");
     exprA.setParameterValues( params );
     BOOST_CHECK( exprA.expression().isConstant() );
+    BOOST_CHECK( exprA.isPolynomial() );
+    BOOST_CHECK( exprA.polynomialOrder() == 0 );
     BOOST_CHECK_CLOSE( exprA.evaluate(), 2*2*4.5, 1e-12 );
+    double intA1 = integrate(_range=elements(mesh),_expr=cst(2*2*4.5)).evaluate()(0,0);
+    double intA2 = integrate(_range=elements(mesh),_expr=exprA).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( intA1, intA2, 1e-12 );
+
+    auto exprAu = expr(exprA, symbolsExpr( symbolExpr( "u",idv(u) ) ) );
+    BOOST_CHECK( exprAu.expression().isConstant() );
+    BOOST_CHECK( exprAu.isPolynomial() );
+    BOOST_CHECK( exprAu.polynomialOrder() == 0 );
+    BOOST_CHECK_CLOSE( exprAu.evaluate(), 2*2*4.5, 1e-12 );
+    double intAu2 = integrate(_range=elements(mesh),_expr=exprAu).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( intA1, intAu2, 1e-12 );
 
     auto exprB = expr("2*a*b+x^2*y+(x+y)^4:a:b:x:y");
     exprB.setParameterValues( params );
@@ -518,12 +541,10 @@ void runTest4()
     BOOST_CHECK( !exprC.isPolynomial() );
     BOOST_CHECK( exprC.polynomialOrder() == 3 );
 
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2,1>>);
-    auto Vh = Pch<3>( mesh );
-    auto u = Vh->element();
 
     auto exprDtmp = expr("2*a+x^2*y+u*(x+y)^4:a:x:y:u");
     auto exprD = expr( exprDtmp,symbolsExpr( symbolExpr( "u",idv(u) ) ) );
+    exprD.setParameterValues( params );
     BOOST_CHECK( !exprD.expression().isConstant() );
     BOOST_CHECK( exprD.isPolynomial() );
     BOOST_CHECK( exprD.polynomialOrder() == 7 );
@@ -533,6 +554,63 @@ void runTest4()
     BOOST_CHECK( !exprE.expression().isConstant() );
     BOOST_CHECK( !exprE.isPolynomial() );
     BOOST_CHECK( exprE.polynomialOrder() == 3 );
+
+    // vectorial
+    auto exprVA = expr<2,1>("{2*a*b,a+b}:a:b");
+    exprVA.setParameterValues( params );
+    BOOST_CHECK( exprVA.expression().isConstant() );
+    BOOST_CHECK( exprVA.isPolynomial() );
+    BOOST_CHECK( exprVA.polynomialOrder() == 0 );
+    auto evalVA = exprVA.evaluate();
+    BOOST_CHECK_CLOSE( evalVA(0,0), 2*2*4.5, 1e-12 );
+    BOOST_CHECK_CLOSE( evalVA(1,0), 2+4.5, 1e-12 );
+    auto intVA1 = integrate(_range=elements(mesh),_expr=vec(cst(2*2*4.5),cst(2+4.5))).evaluate();
+    auto intVA2 = integrate(_range=elements(mesh),_expr=exprVA).evaluate();
+    BOOST_CHECK_CLOSE( intVA1(0,0), intVA2(0,0), 1e-12 );
+    BOOST_CHECK_CLOSE( intVA1(1,0), intVA2(1,0), 1e-12 );
+
+    auto exprVB = expr<2,1>("{2*a*b+x^2*y,(x+y)^4}:a:b:x:y");
+    exprVB.setParameterValues( params );
+    BOOST_CHECK( !exprVB.expression().isConstant() );
+    BOOST_CHECK( exprVB.isPolynomial() );
+    BOOST_CHECK( exprVB.polynomialOrder() == 4 );
+
+    auto exprVC = expr<2,1,3>("{2*a*b+x^2*cos(y),(x+y)^4}:a:b:x:y");
+    exprVC.setParameterValues( params );
+    BOOST_CHECK( !exprVC.expression().isConstant() );
+    BOOST_CHECK( !exprVC.isPolynomial() );
+    BOOST_CHECK( exprVC.polynomialOrder() == 3 );
+
+    auto exprVDtmp = expr<2,1>("{2*a*b+x^2*y*u,(x+y)^4}:a:b:x:y:u");
+    auto exprVD = expr( exprVDtmp,symbolsExpr( symbolExpr( "u",idv(u) ) ) );
+    exprVD.setParameterValues( params );
+    BOOST_CHECK( !exprVD.expression().isConstant() );
+    BOOST_CHECK( exprVD.isPolynomial() );
+    BOOST_CHECK( exprVD.polynomialOrder() == 6 );
+
+    auto exprVEtmp = expr<2,1,3>("{2*a*b+x^2*y*u,(x+y)^4}:a:b:x:y:u");
+    auto exprVE = expr( exprVEtmp,symbolsExpr( symbolExpr( "u",cos(Px()) ) ) );
+    exprVE.setParameterValues( params );
+    BOOST_CHECK( !exprVE.expression().isConstant() );
+    BOOST_CHECK( !exprVE.isPolynomial() );
+    BOOST_CHECK( exprVE.polynomialOrder() == 3 );
+
+    // tensor2
+    auto exprMA = expr<2,2>("{2*a*b,a+b,a-b,a/b}:a:b");
+    exprMA.setParameterValues( params );
+    BOOST_CHECK( exprMA.expression().isConstant() );
+    BOOST_CHECK( exprMA.isPolynomial() );
+    BOOST_CHECK( exprMA.polynomialOrder() == 0 );
+    auto evalMA = exprMA.evaluate();
+    BOOST_CHECK_CLOSE( evalMA(0,0), 2*2*4.5, 1e-12 );
+    BOOST_CHECK_CLOSE( evalMA(0,1), 2+4.5, 1e-12 );
+    BOOST_CHECK_CLOSE( evalMA(1,0), 2-4.5, 1e-12 );
+    BOOST_CHECK_CLOSE( evalMA(1,1), 2/4.5, 1e-12 );
+    auto intMA1 = integrate(_range=elements(mesh),_expr=mat<2,2>(cst(2*2*4.5),cst(2+4.5),cst(2-4.5),cst(2/4.5))).evaluate();
+    auto intMA2 = integrate(_range=elements(mesh),_expr=exprMA).evaluate();
+    for ( int i=0;i<2;++i )
+        for ( int j=0;j<2;++j )
+            BOOST_CHECK_CLOSE( intMA1(i,j), intMA2(i,j), 1e-12 );
 
 }
 
