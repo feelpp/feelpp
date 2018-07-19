@@ -494,7 +494,7 @@ expr( Expr<GinacEx<Order>> const& s, const ExprT&... expr )
 {
     auto const& symbexpr = s.expression();
     auto res = Expr< GinacExVF<Order,SymbolsExpr<ExprT...> > >(  GinacExVF<Order,SymbolsExpr<ExprT...>>( symbexpr.expression(), symbexpr.symbols(), symbexpr.fun(), symbexpr.exprDesc(), symbolsExpr(expr...) ) );
-    res.expression().setParameterValues( symbexpr.parameterValue() );
+    res.expression().setParameterValues( symbexpr.symbolNameToValue() );
     return res;
 }
 
@@ -505,7 +505,7 @@ expr( Expr<GinacMatrix<M,N,Order>> const& s, const ExprT&... expr )
 {
     auto const& symbexpr = s.expression();
     auto res = Expr< GinacMatrix<M,N,Order,SymbolsExpr<ExprT...> > >( GinacMatrix<M,N,Order,SymbolsExpr<ExprT...>>( symbexpr.expression(), symbexpr.symbols(), symbexpr.fun(), symbexpr.exprDesc(), symbolsExpr(expr...) ) );
-    res.expression().setParameterValues( symbexpr.parameterValue() );
+    res.expression().setParameterValues( symbexpr.symbolNameToValue() );
     return res;
 }
 
@@ -612,10 +612,32 @@ expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string co
 template<int M,int Order=2>
 inline
 Expr<GinacMatrix<1,M,Order> >
+grad( Expr<GinacEx<Order>> const& s, std::vector<std::string> const& gradSymbols, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
+{
+    CHECK( M == gradSymbols.size() ) << "must be the same size : " << M  << " vs "<< gradSymbols.size() << "\n";
+    std::string exprDesc = (boost::format("grad(%1%)")% s.expression().exprDesc() ).str();
+    auto const& exprSymb = s.expression().symbols();
+    std::vector<GiNaC::symbol> gradSymbolsGinac;
+    for ( std::string const& ds : gradSymbols )
+    {
+        auto it = std::find_if( exprSymb.begin(), exprSymb.end(),
+                                [&ds]( GiNaC::symbol const& gs ) { return gs.get_name() == ds; } );
+        if ( it != exprSymb.end() )
+            gradSymbolsGinac.push_back( *it );
+        else
+            gradSymbolsGinac.push_back( GiNaC::symbol( ds ) );
+    }
+    //return expr<1,M,Order>( GiNaC::grad(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
+    return expr<1,M,Order>( GiNaC::grad(s.expression().expression(),gradSymbolsGinac), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
+}
+template<int M,int Order=2>
+inline
+Expr<GinacMatrix<1,M,Order> >
 grad( Expr<GinacEx<Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
-    std::string exprDesc = (boost::format("grad(%1%)")% s.expression().exprDesc() ).str();
-    return expr<1,M,Order>( GiNaC::grad(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
+    std::vector<std::string> gradSymbols = { "x", "y", "z" };
+    gradSymbols.resize( M );
+    return grad<M,Order>( s, gradSymbols, filename, world, dirLibExpr );
 }
 
 template<int M,int Order=2>
