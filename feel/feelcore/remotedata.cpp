@@ -1422,7 +1422,7 @@ RemoteData::Girder::uploadFileImpl( std::string const& filepath, std::string con
     imemfile.seekg( 0, imemfile.beg );
 
     std::string urlFileUpload = M_url+"/api/v1/file?parentType=folder&parentId=" + parentId;
-    urlFileUpload += "&name="+filename;
+    urlFileUpload += "&name="+boost::replace_all_copy(filename," ","+");
     urlFileUpload += "&size="+(boost::format("%1%")%fsize).str();
     std::string mimeType;
     auto itFindMimeType = mimeTypes.find( fileExtension );
