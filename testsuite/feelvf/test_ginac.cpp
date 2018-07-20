@@ -366,7 +366,6 @@ void runTest1()
                     {
                         std::string testTag = t.first;
                         auto const& exprVectorialGinac = t.second;
-
                         // id vectorial
                         auto exprVectorialFeel = vec( a*Px()*Px()*cos(M_PI*Py()),
                                                       b*2*Py()*sin(Px())*exp(Px()*Px()) );
@@ -393,6 +392,17 @@ void runTest1()
                         auto uVectorialFeelLaplacian = XhVectorial->element( exprVectorialFeelLaplacian );
                         auto uVectorialGinacLaplacian = XhVectorial->element( exprVectorialGinacLaplacian );
                         checkEqualElements( testTag+" laplacian", uVectorialFeelLaplacian, uVectorialGinacLaplacian, 1e-8 );
+                        // diff vectorial
+                        auto exprVectorialFeelDiffA = vec(Px()*Px()*cos(M_PI*Py()),cst(0.) );
+                        auto exprVectorialFeelDiffB = vec(cst(0.),2*Py()*sin(Px())*exp(Px()*Px()) );
+                        auto exprVectorialGinacDiffA = diff( exprVectorialGinac, "a" );
+                        auto exprVectorialGinacDiffB = diff( exprVectorialGinac, "b" );
+                        auto uVectorialFeelDiffA = XhVectorial->element( exprVectorialFeelDiffA );
+                        auto uVectorialGinacDiffA = XhVectorial->element( exprVectorialGinacDiffA );
+                        auto uVectorialFeelDiffB = XhVectorial->element( exprVectorialFeelDiffB );
+                        auto uVectorialGinacDiffB = XhVectorial->element( exprVectorialGinacDiffB );
+                        checkEqualElements( testTag+" diff a", uVectorialFeelDiffA, uVectorialGinacDiffA, 1e-8 );
+                        checkEqualElements( testTag+" diff b", uVectorialFeelDiffB, uVectorialGinacDiffB, 1e-8 );
                     });
 
     // id vf
