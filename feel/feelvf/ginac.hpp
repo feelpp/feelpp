@@ -816,7 +816,20 @@ diff( Expr<GinacExVF<Order,SymbolsExprType>> const& s, std::string const& diffVa
     res.setParameterValues( s.expression().symbolNameToValue() );
     return res;
 }
-
+template<int M,int N,int Order,typename SymbolsExprType>
+inline
+Expr<GinacMatrix<M,N,Order,SymbolsExprType> >
+diff( Expr<GinacMatrix<M,N,Order,SymbolsExprType>> const& s, std::string const& diffVariable, int diffOrder = 1, std::string filename="",
+      WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
+{
+    std::string exprDesc = (boost::format("diff(%1%)_%2%_o%3%")% s.expression().exprDesc() %diffVariable %diffOrder ).str();
+    GiNaC::symbol diffSymb = symbols( std::vector<std::string>( { diffVariable } ), s.expression().symbols() )[0];
+    typedef GinacMatrix<M,N,Order,SymbolsExprType> _expr_type;
+    auto res = Expr< _expr_type >( _expr_type( GiNaC::diff( s.expression().expression(), diffSymb, diffOrder),
+                                               s.expression().symbols(), exprDesc, filename, world, dirLibExpr, s.expression().symbolsExpression() ) );
+    res.setParameterValues( s.expression().symbolNameToValue() );
+    return res;
+}
 
 template<int Order,int Order1,int Order2>
 inline

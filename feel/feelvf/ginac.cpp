@@ -461,9 +461,20 @@ laplacian( std::string const& s, std::vector<symbol> const& l, std::vector<symbo
 }
 matrix diff(ex const& f, symbol const& l, const int n)
 {
-    matrix ret(1,1);
-    ret(0,0)=f.diff( l,n );
-    return ret;
+    if ( is_a<lst>(f) )
+    {
+        std::vector<ex> g(f.nops());
+        for( int i = 0; i < f.nops(); ++i )
+            g[i] = f.op(i).diff( l, n );
+        matrix ret(f.nops(),1,g);
+        return ret;
+    }
+    else
+    {
+        matrix ret(1,1);
+        ret(0,0)=f.diff( l,n );
+        return ret;
+    }
 }
 
 
