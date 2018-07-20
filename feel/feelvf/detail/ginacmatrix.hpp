@@ -156,13 +156,15 @@ public:
 
     GinacMatrix() : super() {}
     explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc,
-                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr=Environment::exprRepository() )
+                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr=Environment::exprRepository(),
+                          symbols_expression_type const& expr = symbols_expression_type() )
         :
         super( syms ),
         M_fun( fun.evalm() ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
         M_filename(),
         M_exprDesc( exprDesc ),
+        M_expr( expr ),
         M_isPolynomial( false ),
         M_polynomialOrder( Order )
         {
@@ -188,13 +190,15 @@ public:
             this->updateForUse();
         }
     explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc,
-                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr=Environment::exprRepository() )
+                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr=Environment::exprRepository(),
+                          symbols_expression_type const& expr = symbols_expression_type() )
         :
         super(syms),
         M_fun(fun.evalm()),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
         M_filename(),
         M_exprDesc( exprDesc ),
+        M_expr( expr ),
         M_isPolynomial( false ),
         M_polynomialOrder( Order )
         {
