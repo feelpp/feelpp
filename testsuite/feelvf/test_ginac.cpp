@@ -280,7 +280,7 @@ void runTest0()
 template <typename ElementType>
 void checkEqualElements( std::string const& info, ElementType const& u1, ElementType const& u2, double tol = 1e-10  )
 {
-    BOOST_TEST_MESSAGE( "checkEqualElements start : "<< info );
+    BOOST_TEST_MESSAGE( "checkEqualElements start  : "<< info );
     auto Xh = u1.functionSpace();
     for ( size_type k=0;k<Xh->nLocalDof();++k )
     {
@@ -309,9 +309,9 @@ void runTest1()
     exprScalarGinacV2.setParameterValues( paramsV2 );
     auto exprScalarGinacV3 = expr( exprScalarGinacV1, symbolExpr("a",cst(a)), symbolExpr("b",cst(b)) );
 
-    auto testExprScalar = hana::make_tuple( std::make_pair("V1",exprScalarGinacV1),
-                                            std::make_pair("V2",exprScalarGinacV2),
-                                            std::make_pair("V3",exprScalarGinacV3) );
+    auto testExprScalar = hana::make_tuple( std::make_pair("V1 scalar",exprScalarGinacV1),
+                                            std::make_pair("V2 scalar",exprScalarGinacV2),
+                                            std::make_pair("V3 scalar",exprScalarGinacV3) );
     hana::for_each( testExprScalar, [&](auto const& t )
                     {
                         std::string testTag = t.first;
@@ -320,64 +320,80 @@ void runTest1()
                         auto exprScalarFeel = a*Px()*Px()*cos(M_PI*Py()) + b*2*Py()*sin(Px())*exp(Px()*Px());
                         auto uFeel = XhScalar->element( exprScalarFeel );
                         auto uGinac = XhScalar->element( exprScalarGinac );
-                        checkEqualElements( testTag + " id scalar", uFeel, uGinac );
+                        checkEqualElements( testTag + " id", uFeel, uGinac );
                         // grad scalar
                         auto exprScalarFeelGrad = vec( 2*a*Px()*cos(M_PI*Py()) + 4*b*Px()*Py()*exp(Px()*Px())*sin(Px()) + 2*b*Py()*exp(Px()*Px())*cos(Px()),
                                                        -M_PI*a*Px()*Px()*sin(M_PI*Py()) + 2*b*exp(Px()*Px())*sin(Px()) );
                         auto exprScalarGinacGrad = trans( grad<2>( exprScalarGinac/*, "scalarExprGrad"*/ ) );
                         auto uFeelGrad = XhVectorial->element( exprScalarFeelGrad );
                         auto uGinacGrad = XhVectorial->element( exprScalarGinacGrad );
-                        checkEqualElements( testTag + " grad scalar", uFeelGrad, uGinacGrad );
+                        checkEqualElements( testTag + " grad", uFeelGrad, uGinacGrad );
                         // laplacian scalar
                         auto exprScalarFeelLaplacian = 2*(a*cos(M_PI*Py())+4*b*Px()*Px()*Py()*exp(Px()*Px())*sin(Px()) + 4*b*Px()*Py()*exp(Px()*Px())*cos(Px()) + b*Py()*exp(Px()*Px())*sin(Px()))  - M_PI*M_PI*a*Px()*Px()*cos(M_PI*Py());
                         auto exprScalarGinacLaplacian = laplacian( exprScalarGinac/*, "scalarExprLaplacian"*/ );
                         auto uFeelLaplacian = XhScalar->element( exprScalarFeelLaplacian );
                         auto uGinacLaplacian = XhScalar->element( exprScalarGinacLaplacian );
-                        checkEqualElements( testTag + " laplacian scalar", uFeelLaplacian, uGinacLaplacian );
+                        checkEqualElements( testTag + " laplacian", uFeelLaplacian, uGinacLaplacian );
                         // diff scalar
                         auto exprScalarFeelDiff = vec( Px()*Px()*cos(M_PI*Py()), 2*Py()*exp(Px()*Px())*sin(Px()) );
                         auto exprScalarGinacDiffA = diff( exprScalarGinac, "a" );
                         auto exprScalarGinacDiffB = diff( exprScalarGinac, "b" );
                         auto uFeelDiff = XhVectorial->element( exprScalarFeelDiff );
                         auto uGinacDiff = XhVectorial->element( vec( exprScalarGinacDiffA, exprScalarGinacDiffB ) );
-                        checkEqualElements( testTag + " diff scalar", uFeelDiff, uGinacDiff );
+                        checkEqualElements( testTag + " diff", uFeelDiff, uGinacDiff );
                         auto exprScalarGinacDiffX = diff( exprScalarGinac, "x" );
                         auto exprScalarGinacDiffY = diff( exprScalarGinac, "y" );
                         auto uGinacDiffX_Y = XhVectorial->element( vec( exprScalarGinacDiffX, exprScalarGinacDiffY ) );
-                        checkEqualElements( testTag + " diff scalar (grad)", uFeelGrad, uGinacDiffX_Y );
+                        checkEqualElements( testTag + " diff (grad)", uFeelGrad, uGinacDiffX_Y );
                         auto exprScalarGinacDiffXX = diff( exprScalarGinac, "x", 2 );
                         auto exprScalarGinacDiffYY = diff( exprScalarGinac, "y", 2 );
                         auto uGinacDiffXX_YY = XhScalar->element( exprScalarGinacDiffXX + exprScalarGinacDiffYY );
-                        checkEqualElements( testTag + " diff scalar (laplacian)", uFeelLaplacian, uGinacDiffXX_YY );
+                        checkEqualElements( testTag + " diff (laplacian)", uFeelLaplacian, uGinacDiffXX_YY );
                     });
-    // id vectorial
-    auto exprVectorialFeel = vec( a*Px()*Px()*cos(M_PI*Py()),
-                                  b*2*Py()*sin(Px())*exp(Px()*Px()) );
-    auto exprVectorialGinac = expr<2,1>( "{a*x*x*cos(pi*y),b*2*y*sin(x)*exp(x*x)}:x:y:a:b"/*, "vectorialExpr"*/ );
-    exprVectorialGinac.setParameterValues( params );
-    auto uVectorialFeel = XhVectorial->element( exprVectorialFeel );
-    auto uVectorialGinac = XhVectorial->element( exprVectorialGinac );
-    checkEqualElements( "id vectorial", uVectorialFeel, uVectorialGinac );
-    // div vectorial
-    auto exprVectorialFeelDiv = 2*a*Px()*cos(M_PI*Py()) + 2*b*sin(Px())*exp(Px()*Px());
-    auto exprVectorialGinacDiv = div/*<2>*/( exprVectorialGinac/*, "vectorialExprDiv"*/ );
-    auto uVectorialFeelDiv = XhScalar->element( exprVectorialFeelDiv );
-    auto uVectorialGinacDiv = XhScalar->element( exprVectorialGinacDiv );
-    checkEqualElements( "div vectorial", uVectorialFeelDiv, uVectorialGinacDiv );
-    // grad vectorial
-    auto exprVectorialFeelGrad = mat<2,2>( 2*a*Px()*cos(M_PI*Py()), -M_PI*a*Px()*Px()*sin(M_PI*Py()),
-                                           4*b*Px()*Py()*exp(Px()*Px())*sin(Px()) + 2*b*Py()*exp(Px()*Px())*cos(Px()), 2*b*sin(Px())*exp(Px()*Px()) );
-    auto exprVectorialGinacGrad = grad/*<2>*/( exprVectorialGinac );
-    auto uVectorialFeelGrad = XhTensor2->element( exprVectorialFeelGrad );
-    auto uVectorialGinacGrad = XhTensor2->element( exprVectorialGinacGrad );
-    checkEqualElements( "grad vectorial", uVectorialFeelGrad, uVectorialGinacGrad );
-    // laplacian vectorial
-    auto exprVectorialFeelLaplacian = vec( -M_PI*M_PI*a*Px()*Px()*cos(M_PI*Py()) + 2*a*cos(M_PI*Py()),
-                                           2*b*Py()*(4*Px()*Px()*sin(Px())+4*Px()*cos(Px())+sin(Px()))*exp(Px()*Px()) );
-    auto exprVectorialGinacLaplacian = laplacian( exprVectorialGinac/*, "toto"*/ );
-    auto uVectorialFeelLaplacian = XhVectorial->element( exprVectorialFeelLaplacian );
-    auto uVectorialGinacLaplacian = XhVectorial->element( exprVectorialGinacLaplacian );
-    checkEqualElements( "laplacian vectorial", uVectorialFeelLaplacian, uVectorialGinacLaplacian, 1e-8 );
+
+
+
+    auto exprVectorialGinacV1 = expr<2,1>( "{a*x*x*cos(pi*y),b*2*y*sin(x)*exp(x*x)}:x:y:a:b"/*, "vectorialExpr"*/ );
+    exprVectorialGinacV1.setParameterValues( params );
+    auto exprVectorialGinacV2 = expr( exprVectorialGinacV1, symbolExpr("b",cst(b)) );
+    exprVectorialGinacV2.setParameterValues( paramsV2 );
+    auto exprVectorialGinacV3 = expr( exprVectorialGinacV1, symbolExpr("a",cst(a)), symbolExpr("b",cst(b)) );
+
+    auto testExprVectorial = hana::make_tuple( std::make_pair("V1 vectorial",exprVectorialGinacV1),
+                                               std::make_pair("V2 vectorial",exprVectorialGinacV2),
+                                               std::make_pair("V3 vectorial",exprVectorialGinacV3) );
+    hana::for_each( testExprVectorial, [&](auto const& t )
+                    {
+                        std::string testTag = t.first;
+                        auto const& exprVectorialGinac = t.second;
+
+                        // id vectorial
+                        auto exprVectorialFeel = vec( a*Px()*Px()*cos(M_PI*Py()),
+                                                      b*2*Py()*sin(Px())*exp(Px()*Px()) );
+                        auto uVectorialFeel = XhVectorial->element( exprVectorialFeel );
+                        auto uVectorialGinac = XhVectorial->element( exprVectorialGinac );
+                        checkEqualElements( testTag+" id", uVectorialFeel, uVectorialGinac );
+                        // div vectorial
+                        auto exprVectorialFeelDiv = 2*a*Px()*cos(M_PI*Py()) + 2*b*sin(Px())*exp(Px()*Px());
+                        auto exprVectorialGinacDiv = div/*<2>*/( exprVectorialGinac/*, "vectorialExprDiv"*/ );
+                        auto uVectorialFeelDiv = XhScalar->element( exprVectorialFeelDiv );
+                        auto uVectorialGinacDiv = XhScalar->element( exprVectorialGinacDiv );
+                        checkEqualElements( testTag+" div", uVectorialFeelDiv, uVectorialGinacDiv );
+                        // grad vectorial
+                        auto exprVectorialFeelGrad = mat<2,2>( 2*a*Px()*cos(M_PI*Py()), -M_PI*a*Px()*Px()*sin(M_PI*Py()),
+                                                               4*b*Px()*Py()*exp(Px()*Px())*sin(Px()) + 2*b*Py()*exp(Px()*Px())*cos(Px()), 2*b*sin(Px())*exp(Px()*Px()) );
+                        auto exprVectorialGinacGrad = grad/*<2>*/( exprVectorialGinac );
+                        auto uVectorialFeelGrad = XhTensor2->element( exprVectorialFeelGrad );
+                        auto uVectorialGinacGrad = XhTensor2->element( exprVectorialGinacGrad );
+                        checkEqualElements( testTag+" grad", uVectorialFeelGrad, uVectorialGinacGrad );
+                        // laplacian vectorial
+                        auto exprVectorialFeelLaplacian = vec( -M_PI*M_PI*a*Px()*Px()*cos(M_PI*Py()) + 2*a*cos(M_PI*Py()),
+                                                               2*b*Py()*(4*Px()*Px()*sin(Px())+4*Px()*cos(Px())+sin(Px()))*exp(Px()*Px()) );
+                        auto exprVectorialGinacLaplacian = laplacian( exprVectorialGinac/*, "toto"*/ );
+                        auto uVectorialFeelLaplacian = XhVectorial->element( exprVectorialFeelLaplacian );
+                        auto uVectorialGinacLaplacian = XhVectorial->element( exprVectorialGinacLaplacian );
+                        checkEqualElements( testTag+" laplacian", uVectorialFeelLaplacian, uVectorialGinacLaplacian, 1e-8 );
+                    });
 
     // id vf
     auto exprScalarField = Px()*Px()*cos(M_PI*Py()) + 2*Py()*sin(Px())*exp(Px()*Px());
