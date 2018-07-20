@@ -48,6 +48,8 @@ public:
     levelset_ptrtype const& levelset() const { return M_levelset; }
     fluidmechanics_ptrtype const& fluid() const { return M_fluidmechanics; }
     //--------------------------------------------------------------------//
+    template<typename InterfaceForceEltPtrType>
+    void updateInterfaceForces( InterfaceForceEltPtrType & F, bool overwrite = false) const;
     void updateInterfaceForces( element_ptrtype & F, bool overwrite = false) const;
     //--------------------------------------------------------------------//
     virtual void updateFluidInterfaceForcesLinearPDE( DataUpdateLinear & data ) const;
@@ -90,6 +92,26 @@ InterfaceForcesModel<LevelSetType, FluidMechanicsType>::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     return _ostr;
+}
+
+template<typename LevelSetType, typename FluidMechanicsType>
+template<typename InterfaceForceEltPtrType>
+void
+InterfaceForcesModel<LevelSetType, FluidMechanicsType>::updateInterfaceForces( InterfaceForceEltPtrType & F, bool overwrite ) const
+{
+    this->updateInterfaceForcesImpl( M_interfaceForce );
+    if( overwrite )
+    {
+        F->on( _range=elements(F->mesh()), _expr=idv(M_interfaceForce) );
+    }
+    else
+    {
+        *F += vf::project(
+                _space=F->functionSpace(),
+                _range=elements(F->mesh()),
+                _expr=idv(M_interfaceForce)
+                );
+    }
 }
 
 template<typename LevelSetType, typename FluidMechanicsType>
