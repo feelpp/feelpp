@@ -342,6 +342,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createOthers()
     // Advection velocity 
     M_XhAdvectionVelocity = space_advection_velocity_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
     M_fieldAdvectionVelocity.reset( new element_advection_velocity_type(M_XhAdvectionVelocity, "AdvectionVelocity") );
+    // P0d
+    M_spaceP0d = space_P0d_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
     
     // Load the field velocity convection from a math expr
     if ( Environment::vm().count(prefixvm(this->prefix(),"advection-velocity").c_str()) )

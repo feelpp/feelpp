@@ -163,7 +163,9 @@ public:
                         std::string pathMeshLagP1=".",
                         std::string prefix="",
                         bool rebuild=true,
-                        bool parallelBuild=true );
+                        bool parallelBuild=true,
+                        size_type meshUpdate=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK
+            );
 
     /**
      * destructor. nothing really to be done here
@@ -294,7 +296,7 @@ private:
     OperatorLagrangeP1( OperatorLagrangeP1 const & );
 
     void buildReferenceMesh( bool rebuild, std::string pathMeshLagP1, std::string prefix );
-    void buildLagrangeP1Mesh( bool parallelBuild );
+    void buildLagrangeP1Mesh( bool parallelBuild, size_type meshUpdate );
     void buildOperator();
 
 private:
@@ -321,7 +323,9 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                                                     std::string pathMeshLagP1,
                                                     std::string prefix,
                                                     bool rebuild,
-                                                    bool parallelBuild )
+                                                    bool parallelBuild,
+                                                    size_type meshUpdate
+        )
     :
     super( space,
            dual_image_space_ptrtype( dual_image_space_type::New( _mesh=image_mesh_ptrtype( new image_mesh_type ) ) ),
@@ -338,7 +342,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
 
     this->buildReferenceMesh( rebuild, pathMeshLagP1, prefix );
 
-    this->buildLagrangeP1Mesh( parallelBuild );
+    this->buildLagrangeP1Mesh( parallelBuild, meshUpdate );
 
     // not work at this time!
     if (false)
@@ -483,7 +487,7 @@ OperatorLagrangeP1<space_type>::buildReferenceMesh( bool rebuild, std::string pa
 
 template<typename space_type>
 void
-OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
+OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_type meshUpdate )
 {
     typedef typename image_mesh_type::point_type point_type;
     typedef typename image_mesh_type::element_type element_type;
@@ -973,7 +977,8 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
 
     M_mesh->setNumVertices( M_mesh->numPoints() );
     M_mesh->components().reset();
-    M_mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    //M_mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    M_mesh->components().set ( meshUpdate );
     M_mesh->updateForUse();
 }
 
@@ -1107,10 +1112,11 @@ opLagrangeP1_impl( boost::shared_ptr<space_type> const& Xh,
                    std::string pathMeshLagP1,
                    std::string prefix,
                    bool rebuild,
-                   bool parallel
+                   bool parallel,
+                   size_type meshUpdate
                    )
 {
-    return boost::shared_ptr<OperatorLagrangeP1<space_type> >( new OperatorLagrangeP1<space_type>( Xh,backend,pathMeshLagP1,prefix,rebuild,parallel ) );
+    return boost::shared_ptr<OperatorLagrangeP1<space_type> >( new OperatorLagrangeP1<space_type>( Xh,backend,pathMeshLagP1,prefix,rebuild,parallel,meshUpdate ) );
 }
 
 
@@ -1135,13 +1141,14 @@ BOOST_PARAMETER_FUNCTION(
       ( prefix,     *( boost::is_convertible<mpl::_,std::string> ), std::string("") )
       ( rebuild,    *( boost::is_integral<mpl::_> ), 1 )
       ( parallel,   *( boost::is_integral<mpl::_> ), 1 )
+      ( update,     *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
     ) // optionnal
 )
 {
 #if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
 #endif
-    return opLagrangeP1_impl(space,backend,path,prefix,rebuild,parallel);
+    return opLagrangeP1_impl(space,backend,path,prefix,rebuild,parallel,update);
 }
 
 
