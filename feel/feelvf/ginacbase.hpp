@@ -90,11 +90,6 @@ public:
             return false;
         }
 
-    bool isConstant() const
-        {
-            return ( M_indexSymbolXYZ.empty() && M_indexSymbolN.empty() && (M_syms.size() == M_symbolNameToValue.size()) );
-        }
-
     vec_type const& parameterValue() const { return M_params; }
     value_type parameterValue( int p ) const { return M_params[p]; }
 
