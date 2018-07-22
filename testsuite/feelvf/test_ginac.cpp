@@ -593,6 +593,21 @@ void runTest4()
     BOOST_CHECK( !exprE.isPolynomial() );
     BOOST_CHECK( exprE.polynomialOrder() == 3 );
 
+    auto exprF = expr("4*sin(3*Pi/2)*exp(3):x:a:u");
+    BOOST_CHECK( exprF.expression().isConstant() );
+    BOOST_CHECK( exprF.isPolynomial() );
+    BOOST_CHECK( exprF.polynomialOrder() == 0 );
+    double evalFvalue = 4*std::sin(3*M_PI/2.)*std::exp(3.);
+    BOOST_CHECK_CLOSE( exprF.evaluate(), evalFvalue, 1e-12 );
+    double intF1 = integrate(_range=elements(mesh),_expr=cst(evalFvalue)).evaluate()(0,0);
+    double intF2 = integrate(_range=elements(mesh),_expr=exprF).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( intF1, intF2, 1e-12 );
+    auto exprFu = expr( exprF,symbolExpr( "u",idv(u) ) );
+    BOOST_CHECK( exprFu.expression().isConstant() );
+    BOOST_CHECK( exprFu.isPolynomial() );
+    BOOST_CHECK( exprFu.polynomialOrder() == 0 );
+    BOOST_CHECK_CLOSE( exprFu.evaluate(), evalFvalue, 1e-12 );
+
     // vectorial
     auto exprVA = expr<2,1>("{2*a*b,a+b}:a:b");
     exprVA.setParameterValues( params );
@@ -650,6 +665,23 @@ void runTest4()
         for ( int j=0;j<2;++j )
             BOOST_CHECK_CLOSE( intMA1(i,j), intMA2(i,j), 1e-12 );
 
+
+    auto exprMB = expr<2,2>("{cos(Pi/3),exp(2),sin(2),4*16}:a:x");
+    BOOST_CHECK( exprMB.expression().isConstant() );
+    BOOST_CHECK( exprMB.isPolynomial() );
+    BOOST_CHECK( exprMB.polynomialOrder() == 0 );
+    auto evalMB = exprMB.evaluate();
+    BOOST_CHECK_CLOSE( evalMB(0,0), std::cos(M_PI/3.), 1e-12 );
+    BOOST_CHECK_CLOSE( evalMB(0,1), std::exp(2.), 1e-12 );
+    BOOST_CHECK_CLOSE( evalMB(1,0), std::sin(2.), 1e-12 );
+    BOOST_CHECK_CLOSE( evalMB(1,1), 4*16, 1e-12 );
+    auto evalMBvalue = mat<2,2>( cst(std::cos(M_PI/3.)), cst(std::exp(2.)),
+                                 cst(std::sin(2.)), cst(4.*16) );
+    auto intMB1 = integrate(_range=elements(mesh),_expr=evalMBvalue).evaluate();
+    auto intMB2 = integrate(_range=elements(mesh),_expr=exprMB).evaluate();
+    for ( int i=0;i<2;++i )
+        for ( int j=0;j<2;++j )
+            BOOST_CHECK_CLOSE( intMB1(i,j), intMB2(i,j), 1e-12 );
 }
 
 #if defined(USE_BOOST_TEST)
