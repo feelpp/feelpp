@@ -56,41 +56,29 @@ BOOST_AUTO_TEST_SUITE( continuitysuite )
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( HDivRT0, T, dim_types )
 {
-    BOOST_TEST_MESSAGE( "check continuity for HDivRT in  " << T::first::value << "D P" << T::second::value << "\n" );
-    Feel::Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%D/P%3%/" )
-                                         % Feel::Environment::about().appName()
-                                         % T::first::value % T::second::value );
+    constexpr uint16_type nDim = T::first::value;
+    constexpr uint16_type nOrder = T::second::value;
 
+    BOOST_TEST_MESSAGE( "check continuity for HDivRT in  " << nDim << "D P" << nOrder << "\n" );
 
-    typedef Mesh<Simplex<T::first::value,1> > mesh_type;
+    typedef Mesh<Simplex<nDim,1> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type );
 
-    auto Xh = Dh<T::second::value>( mesh );
+    auto Xh = Dh<nOrder>( mesh );
     auto u = Xh->element();
     auto a1 = form1( _test=Xh );
-    a1  = integrate( internalfaces( mesh ), (leftface(trans(id(u))*N())+rightface(-trans(id(u))*N())) );
-    u.on(  _range=elements(mesh), _expr=expr<T::first::value,1>("{x*y,x+y}:x:y") );
+    a1  = integrate( _range=internalfaces( mesh ), _expr=(leftface(trans(id(u))*N())+rightface(-trans(id(u))*N())) );
+    std::string exprstr = (nDim==2)? "{x*y,x+y}:x:y" : "{x*y,x+z,-z*y}:x:y:z";
+    u.on(  _range=elements(mesh), _expr=expr<nDim,1>(exprstr) );
     //a1.vector().printMatlab("HDivRT.m");
     BOOST_CHECK_SMALL( a1( u ), 1e-10 );
     //u.printMatlab("uRT0.m");
 
     BOOST_TEST_MESSAGE( "HDivRT, a1(u)=" << a1(u)  );
-    BOOST_TEST_MESSAGE( "check continuity for HDivRT in  " << T::first::value << "D P" << T::second::value << " done\n" );
+    BOOST_TEST_MESSAGE( "check continuity for HDivRT in  " << nDim << "D P" << nOrder << " done\n" );
 }
 
 
 BOOST_AUTO_TEST_SUITE_END()
-
-#if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}
-
-#endif
