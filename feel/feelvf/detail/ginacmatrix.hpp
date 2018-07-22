@@ -166,26 +166,33 @@ public:
         M_exprDesc( exprDesc ),
         M_expr( expr ),
         M_isPolynomial( false ),
-        M_polynomialOrder( Order )
+        M_polynomialOrder( Order ),
+        M_isNumericExpression( false ),
+        M_numericValue( evaluate_type::Zero() )
         {
-            std::string filenameExpanded = Environment::expand( filename );
-            M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::path(Environment::exprRepository())/filenameExpanded).string();
+            this->updateNumericExpression();
 
-            DVLOG(2) << "Ginac matrix matrix constructor with expression_type \n";
-            GiNaC::lst exprs;
-            for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
-
-            GiNaC::lst syml;
-            std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-
-            // get filename if not given
-            if ( M_filename.empty() && !M_exprDesc.empty() )
+            if ( !M_isNumericExpression )
             {
-                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc, dirLibExpr );
-            }
+                std::string filenameExpanded = Environment::expand( filename );
+                M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::path(Environment::exprRepository())/filenameExpanded).string();
 
-            // build ginac lib and link if necessary
-            Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
+                DVLOG(2) << "Ginac matrix matrix constructor with expression_type \n";
+                GiNaC::lst exprs;
+                for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
+
+                GiNaC::lst syml;
+                std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
+
+                // get filename if not given
+                if ( M_filename.empty() && !M_exprDesc.empty() )
+                {
+                    M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc, dirLibExpr );
+                }
+
+                // build ginac lib and link if necessary
+                Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
+            }
 
             this->updateForUse();
         }
@@ -200,26 +207,33 @@ public:
         M_exprDesc( exprDesc ),
         M_expr( expr ),
         M_isPolynomial( false ),
-        M_polynomialOrder( Order )
+        M_polynomialOrder( Order ),
+        M_isNumericExpression( false ),
+        M_numericValue( evaluate_type::Zero() )
         {
-            std::string filenameExpanded = Environment::expand( filename );
-            M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::path(Environment::exprRepository())/filenameExpanded).string();
+            this->updateNumericExpression();
 
-            DVLOG(2) << "Ginac matrix ex constructor with expression_type \n";
-            GiNaC::lst exprs;
-            for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
-
-            GiNaC::lst syml;
-            std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-
-            // get filename if not given
-            if ( M_filename.empty() && !M_exprDesc.empty() )
+            if ( !M_isNumericExpression )
             {
-                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc, dirLibExpr );
-            }
+                std::string filenameExpanded = Environment::expand( filename );
+                M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::path(Environment::exprRepository())/filenameExpanded).string();
 
-            // build ginac lib and link if necessary
-            Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
+                DVLOG(2) << "Ginac matrix ex constructor with expression_type \n";
+                GiNaC::lst exprs;
+                for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
+
+                GiNaC::lst syml;
+                std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
+
+                // get filename if not given
+                if ( M_filename.empty() && !M_exprDesc.empty() )
+                {
+                    M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc, dirLibExpr );
+                }
+
+                // build ginac lib and link if necessary
+                Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
+            }
 
             this->updateForUse();
         }
@@ -233,8 +247,11 @@ public:
         M_exprDesc( exprDesc ),
         M_expr( expr ),
         M_isPolynomial( false ),
-        M_polynomialOrder( Order )
+        M_polynomialOrder( Order ),
+        M_isNumericExpression( false ),
+        M_numericValue( evaluate_type::Zero() )
         {
+            this->updateNumericExpression();
             this->updateForUse();
         }
 
@@ -292,6 +309,11 @@ public:
     std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
 
     std::string const& exprDesc() const { return M_exprDesc; }
+
+    bool isConstant() const
+    {
+        return M_isNumericExpression || ( M_indexSymbolXYZ.empty() && M_indexSymbolN.empty() && (M_syms.size() == M_symbolNameToValue.size()) );
+    }
 
     uint16_type index( std::string const& sname ) const
     {
@@ -595,6 +617,35 @@ public:
     };
 
 private :
+
+    void updateNumericExpression()
+    {
+        int no = M_fun.nops();
+        CHECK( no == M*N )  << "invalid size " << no << " vs " << M*N << "\n" ;
+        std::vector<bool> isNumeric( no,false );
+        std::vector<value_type> numericVal( no,value_type(0) );
+        for( int i = 0; i < no; ++i )
+        {
+            GiNaC::ex funEvalf = M_fun.op(i).evalf();
+            if ( GiNaC::is_a<GiNaC::numeric>(funEvalf) )
+            {
+                GiNaC::numeric funNumeric = GiNaC::ex_to<GiNaC::numeric>(funEvalf);
+                if ( funNumeric.is_real() )
+                {
+                    isNumeric[i] = true;
+                    numericVal[i] = funNumeric.to_double();
+                }
+            }
+        }
+        M_isNumericExpression = std::accumulate( isNumeric.begin(), isNumeric.end(), true, std::logical_and<bool>() );
+        if ( M_isNumericExpression )
+        {
+            for( int i = 0; i < M; ++i )
+                for( int j = 0; j < N; ++j )
+                    M_numericValue(i,j) = numericVal[i*N+j];
+        }
+    }
+
     void updateForUse()
     {
         std::vector<std::pair<GiNaC::symbol,int>> symbTotalDegree;
@@ -646,6 +697,8 @@ private :
     evaluate_type
     evaluateImpl() const
     {
+        if ( M_isNumericExpression )
+            return M_numericValue;
         int no = M*N;
         int ni = M_syms.size();
         evaluate_type res = evaluate_type::Zero();
@@ -661,6 +714,8 @@ private:
     symbols_expression_type M_expr;
     bool M_isPolynomial;
     uint16_type M_polynomialOrder;
+    bool M_isNumericExpression;
+    evaluate_type M_numericValue;
 
 }; // GinacMatrix
 
