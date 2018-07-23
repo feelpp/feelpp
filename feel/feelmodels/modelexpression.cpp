@@ -33,7 +33,7 @@ ModelExpression::setExpr( std::string const& key, pt::ptree const& p, WorldComm 
     {
         double val = *itvald;
         VLOG(1) << "expr at key " << key << " is constant : " << val;
-        this->setValue( val );
+        this->setExprScalar( Feel::vf::expr<expr_order>( (boost::format("%1%")%val).str(),"",worldComm,directoryLibExpr ) );
     }
     else if( boost::optional<std::string> itvals = p.get_optional<std::string>( key ) )
     {
@@ -47,35 +47,17 @@ ModelExpression::setExpr( std::string const& key, pt::ptree const& p, WorldComm 
         if ( isLst )
             nComp = ginacEvalm.nops();
 
-        if ( nComp == 1 && ( exprSymbols.empty() /*|| ( exprSymbols.size() == 1 && exprSymbols[0].get_name() == "0" )*/ ) )
-        {
-            std::string stringCstExpr = ( isLst )? str( ginacEvalm.op(0) ) :str( ginacEvalm );
-            double val = 0;
-            try
-            {
-                val = std::stod( stringCstExpr );
-            }
-            catch (std::invalid_argument& err)
-            {
-                CHECK( false ) << "cast fail from expr to double\n";
-            }
-            VLOG(1) << "expr at key " << key <<" is const from expr=" << val;
-            this->setValue( val );
-        }
-        else
-        {
-            VLOG(1) << "expr at key " << key << " build symbolic expr with nComp=" << nComp;
-            if ( nComp == 1 )
-                this->setExprScalar( Feel::vf::expr<expr_order>( feelExprString,"",worldComm,directoryLibExpr ) );
-            else if ( nComp == 2 )
-                this->setExprVectorial2( Feel::vf::expr<2,1,expr_order>( feelExprString,"",worldComm,directoryLibExpr ) );
-            else if ( nComp == 3 )
-                this->setExprVectorial3( Feel::vf::expr<3,1,expr_order>( feelExprString,"",worldComm,directoryLibExpr ) );
-            else if ( nComp == 4 )
-                this->setExprMatrix22( Feel::vf::expr<2,2,expr_order>( feelExprString,"",worldComm,directoryLibExpr ) );
-            else if ( nComp == 9 )
-                this->setExprMatrix33( Feel::vf::expr<3,3,expr_order>( feelExprString,"",worldComm,directoryLibExpr ) );
-        }
+        VLOG(1) << "expr at key " << key << " build symbolic expr with nComp=" << nComp;
+        if ( nComp == 1 )
+            this->setExprScalar( Feel::vf::expr<expr_order>( feelExprString,"",worldComm,directoryLibExpr ) );
+        else if ( nComp == 2 )
+            this->setExprVectorial2( Feel::vf::expr<2,1,expr_order>( feelExprString,"",worldComm,directoryLibExpr ) );
+        else if ( nComp == 3 )
+            this->setExprVectorial3( Feel::vf::expr<3,1,expr_order>( feelExprString,"",worldComm,directoryLibExpr ) );
+        else if ( nComp == 4 )
+            this->setExprMatrix22( Feel::vf::expr<2,2,expr_order>( feelExprString,"",worldComm,directoryLibExpr ) );
+        else if ( nComp == 9 )
+            this->setExprMatrix33( Feel::vf::expr<3,3,expr_order>( feelExprString,"",worldComm,directoryLibExpr ) );
     }
 }
 

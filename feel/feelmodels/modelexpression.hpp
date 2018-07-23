@@ -46,7 +46,6 @@ public :
     ModelExpression& operator=( ModelExpression const& ) = default;
     ModelExpression& operator=( ModelExpression && ) = default;
 
-    bool hasValue(int c=0) const { return M_values.find(c) != M_values.end(); }
     bool hasExprScalar() const { return (M_exprScalar)? true : false; }
     bool hasExprVectorial2() const { return (M_exprVectorial2)? true : false; }
     bool hasExprVectorial3() const { return (M_exprVectorial3)? true : false; }
@@ -70,21 +69,21 @@ public :
         else return false;
     }
 
-    bool hasAtLeastOneExpr() const { return !M_values.empty() || this->hasExprScalar() || this->hasExprVectorial2() || this->hasExprVectorial3() || this->hasExprMatrix22() || this->hasExprMatrix33(); }
+    bool hasAtLeastOneExpr() const { return  this->hasExprScalar() || this->hasExprVectorial2() || this->hasExprVectorial3() || this->hasExprMatrix22() || this->hasExprMatrix33(); }
 
-    bool isConstant() const { return this->isScalar() && this->hasValue() && !this->hasExprScalar(); }
-    bool isScalar() const { return hasExprScalar() || (this->hasValue() && M_values.size() == 1); }
+    bool isScalar() const { return hasExprScalar(); }
     bool isVector() const { return hasExprVectorial2() || hasExprVectorial3(); }
     bool isMatrix() const { return hasExprMatrix22() || hasExprMatrix33(); }
 
-    double value( int c=0 ) const { CHECK( this->hasValue(c) ) << "invalid comp"; return M_values.find(c)->second; }
+    // TODO : not necessary specific to scalar expression
+    bool isConstant() const { return this->hasExprScalar() && this->exprScalar().expression().isConstant(); }
+    double value() const { CHECK( this->isConstant() ) << "expression is not constant";return this->exprScalar().evaluate(); }
+
     expr_scalar_type const& exprScalar() const { CHECK( this->hasExprScalar() ) << "no Scalar expression"; return *M_exprScalar; }
     expr_vectorial2_type const& exprVectorial2() const { CHECK( this->hasExprVectorial2() ) << "no Vectorial2 expression"; return *M_exprVectorial2; }
     expr_vectorial3_type const& exprVectorial3() const { CHECK( this->hasExprVectorial3() ) << "no Vectorial3 expression"; return *M_exprVectorial3; }
     expr_matrix22_type const& exprMatrix22() const { CHECK( this->hasExprMatrix22() ) << "no Matrix22 expression"; return *M_exprMatrix22; }
     expr_matrix33_type const& exprMatrix33() const { CHECK( this->hasExprMatrix33() ) << "no Matrix33 expression"; return *M_exprMatrix33; }
-
-    //expr_scalar_type const& expr() const { return this->exprScalar(); }
 
     template <int M=1,int N=1>
         expr_scalar_type const& expr( typename std::enable_if< M==1 && N == 1>::type* = nullptr ) const { return this->exprScalar(); }
@@ -102,7 +101,6 @@ public :
     template <int M,int N>
         expr_matrix33_type const& exprMatrix( typename std::enable_if< M==3 && N == 3>::type* = nullptr ) const { return this->exprMatrix33(); }
 
-    void setValue( double val, int c = 0 ) { M_values[c] = val; }
     void setExprScalar( expr_scalar_type const& expr ) { M_exprScalar = boost::optional<expr_scalar_type>( expr ); }
     void setExprVectorial2( expr_vectorial2_type const& expr ) { M_exprVectorial2 = boost::optional<expr_vectorial2_type>( expr ); }
     void setExprVectorial3( expr_vectorial3_type const& expr ) { M_exprVectorial3 = boost::optional<expr_vectorial3_type>( expr ); }
@@ -134,7 +132,6 @@ public :
     }
 
 private :
-    std::map<int,double> M_values;
     boost::optional<expr_scalar_type> M_exprScalar;
     boost::optional<expr_vectorial2_type> M_exprVectorial2;
     boost::optional<expr_vectorial3_type> M_exprVectorial3;
@@ -158,8 +155,8 @@ public :
     bool isConstant() const { return super_type::isConstant(); }
     double value() const { return super_type::value(); }
     expr_scalar_type const& expr() const { return this->exprScalar(); }
+    bool hasExpr() const { return this->hasExprScalar(); }
 
-    void setValue( double d ) { super_type::setValue( d ); }
     void setExpr( expr_scalar_type const& expr ) { this->setExprScalar( expr ); }
 
     void setParameterValues( std::map<std::string,double> const& mp ) { super_type::setParameterValues( mp ); }
