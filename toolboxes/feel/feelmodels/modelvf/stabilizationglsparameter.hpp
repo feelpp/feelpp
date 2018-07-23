@@ -298,7 +298,7 @@ public:
         else if ( M_hasConvection )
             return M_exprConvection.polynomialOrder();
         else
-            M_exprCoeffDiffusion.polynomialOrder();
+            return M_exprCoeffDiffusion.polynomialOrder();
     }
 
     //! expression is polynomial?
