@@ -86,92 +86,58 @@ public :
                 auto range = markedelements( mesh,matmarkers );
                 M_rangeMeshElementsByMaterial[matName] = range;
 
+                M_thermalConductivityByMaterial[matName];
                 if ( mat.hasProperty("k") )
                 {
                     M_thermalConductivityByMaterial[matName] = mat.property( "k");
                     auto & prop = M_thermalConductivityByMaterial[matName];
                     if ( prop.template hasExprMatrix<nDim,nDim>() )
                     {
-                        //M_thermalConductivityByMaterial[matName].setValue( 0 );//TODO
                         //M_fieldThermalConductivity->on(_range=range,_expr=expr);
                     }
                     else if ( prop.hasExprScalar() )
                     {
                         auto const& expr = prop.expr();
-                        prop.setValue( 0 );//TODO
                         M_fieldThermalConductivity->on(_range=range,_expr=expr);
                     }
-                    else if ( prop.hasValue() )
-                    {
-                        double value = prop.value();
-                        M_fieldThermalConductivity->on(_range=range,_expr=cst(value));
-                    }
                 }
-#if 0
-                if ( mat.hasPropertyExprMatrix<nDim,nDim>("k") )
-                {
-                    auto const& expr = mat.propertyExprMatrix<nDim,nDim>("k");
-                    M_thermalConductivityMatrixByMaterial[matName].setExpr( expr );
-                    //M_thermalConductivityByMaterial[matName].setValue( 0 );//TODO
-                    //M_fieldThermalConductivity->on(_range=range,_expr=expr);
-                }
-                else if ( mat.hasPropertyExprScalar("k") )
-                {
-                    auto const& expr = mat.propertyExprScalar("k");
-                    M_thermalConductivityByMaterial[matName].setExpr( expr );
-                    M_thermalConductivityByMaterial[matName].setValue( 0 );//TODO
-                    M_fieldThermalConductivity->on(_range=range,_expr=expr);
-                }
-                else
-                {
-                    double value = mat.propertyConstant("k11");
-                    M_thermalConductivityByMaterial[matName].setValue( value );
-                    M_fieldThermalConductivity->on(_range=range,_expr=cst(value));
-                }
-#endif
+
+                M_rhoByMaterial[matName];
                 if ( mat.hasPropertyExprScalar("rho") )
                 {
                     auto const& expr = mat.propertyExprScalar("rho");
                     M_rhoByMaterial[matName].setExpr( expr );
-                    M_rhoByMaterial[matName].setValue( 0 );//TODO
                     M_fieldRho->on(_range=range,_expr=expr);
                 }
-                else
-                {
-                    double value = mat.propertyConstant("rho");
-                    M_rhoByMaterial[matName].setValue( value );
-                    M_fieldRho->on(_range=range,_expr=cst(value));
-                }
+                else M_rhoByMaterial[matName].setExpr( expr("0") );
 
+                M_heatCapacityByMaterial[matName];
                 if ( mat.hasPropertyExprScalar("Cp") )
                 {
                     auto const& expr = mat.propertyExprScalar("Cp");
                     M_heatCapacityByMaterial[matName].setExpr( expr );
-                    M_heatCapacityByMaterial[matName].setValue( 0 );//TODO
                     M_fieldHeatCapacity->on(_range=range,_expr=expr);
                 }
-                else
-                {
-                    double value = mat.propertyConstant("Cp");
-                    M_heatCapacityByMaterial[matName].setValue( value );
-                    M_fieldHeatCapacity->on(_range=range,_expr=cst(value));
-                }
+                else M_heatCapacityByMaterial[matName].setExpr( expr("0") );
 
+                M_thermalExpansionByMaterial[matName];
                 if ( mat.hasPropertyExprScalar("beta") )
                 {
                     auto const& expr = mat.propertyExprScalar("beta");
                     M_thermalExpansionByMaterial[matName].setExpr( expr );
-                    M_thermalExpansionByMaterial[matName].setValue( 0 );//TODO
                     M_fieldThermalExpansion->on(_range=range,_expr=expr);
                 }
-                else
-                {
-                    double value = mat.propertyConstant("beta");
-                    M_thermalExpansionByMaterial[matName].setValue( value );
-                    M_fieldThermalExpansion->on(_range=range,_expr=cst(value));
-                }
+                else M_thermalExpansionByMaterial[matName].setExpr( expr("0") );
 
                 // rho * Cp
+                M_rhoHeatCapacityByMaterial[matName];
+                if ( this->rho( matName ).hasExpr()  && this->heatCapacity( matName ).hasExpr() )
+                {
+                    auto rhoExpr = M_rhoByMaterial[matName].expr();
+                    auto expr = expr_mult<2>( rhoExpr,M_heatCapacityByMaterial[matName].expr(),"",mesh->worldComm(),M_exprRepository );
+                    M_rhoHeatCapacityByMaterial[matName].setExpr( expr );
+                }
+#if 0
                 if ( M_rhoByMaterial[matName].isConstant() )
                 {
                     double rhoValue = M_rhoByMaterial[matName].value();
@@ -197,6 +163,7 @@ public :
                         M_rhoHeatCapacityByMaterial[matName].setExpr( expr );
                     }
                 }
+#endif
             }
         }
 
@@ -327,29 +294,41 @@ public :
             for ( auto const& matRange : M_rangeMeshElementsByMaterial)
             {
                 std::string const& matName = matRange.first;
-                *ostr << "\n     -- [" << matName << "] rho : ";
-                if ( this->rho(matName).isConstant() )
-                    *ostr << this->rho(matName).value();
-                else
-                    *ostr << str( this->rho(matName).expr().expression() );
-                *ostr << "\n     -- [" << matName << "] thermal conductivity : ";
-                auto const& thermalConductivity = this->thermalConductivity(matName);
-                if ( thermalConductivity.isMatrix() )
-                    *ostr << str( thermalConductivity.template exprMatrix<nDim,nDim>().expression() );
-                else if ( thermalConductivity.isConstant() )
-                    *ostr << thermalConductivity.value();
-                else
-                    *ostr << str( thermalConductivity.expr().expression() );
-                *ostr << "\n     -- [" << matName << "] heat capacity : ";
-                if ( this->heatCapacity(matName).isConstant() )
-                    *ostr << this->heatCapacity(matName).value();
-                else
-                    *ostr << str( this->heatCapacity(matName).expr().expression() );
-                *ostr << "\n     -- [" << matName << "] thermal expansion : ";
-                if ( this->thermalExpansion(matName).isConstant() )
-                    *ostr << this->thermalExpansion(matName).value();
-                else
-                    *ostr << str( this->thermalExpansion(matName).expr().expression() );
+                if ( this->rho( matName ).hasExpr() )
+                {
+                    *ostr << "\n     -- [" << matName << "] rho : ";
+                    if ( this->rho(matName).isConstant() )
+                        *ostr << this->rho(matName).value();
+                    else
+                        *ostr << str( this->rho(matName).expr().expression() );
+                }
+                if ( this->thermalConductivity( matName ).hasExprScalar() || this->thermalConductivity( matName ).template hasExpr<nDim,nDim>() )
+                {
+                    *ostr << "\n     -- [" << matName << "] thermal conductivity : ";
+                    auto const& thermalConductivity = this->thermalConductivity(matName);
+                    if ( thermalConductivity.isMatrix() )
+                        *ostr << str( thermalConductivity.template exprMatrix<nDim,nDim>().expression() );
+                    else if ( thermalConductivity.isConstant() )
+                        *ostr << thermalConductivity.value();
+                    else
+                        *ostr << str( thermalConductivity.expr().expression() );
+                }
+                if ( this->heatCapacity( matName ).hasExpr() )
+                {
+                    *ostr << "\n     -- [" << matName << "] heat capacity : ";
+                    if ( this->heatCapacity(matName).isConstant() )
+                        *ostr << this->heatCapacity(matName).value();
+                    else
+                        *ostr << str( this->heatCapacity(matName).expr().expression() );
+                }
+                if ( this->thermalExpansion( matName ).hasExpr() )
+                {
+                    *ostr << "\n     -- [" << matName << "] thermal expansion : ";
+                    if ( this->thermalExpansion(matName).isConstant() )
+                        *ostr << this->thermalExpansion(matName).value();
+                    else
+                        *ostr << str( this->thermalExpansion(matName).expr().expression() );
+                }
             }
             return ostr;
         }
