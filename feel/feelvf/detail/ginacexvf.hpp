@@ -586,16 +586,11 @@ private :
 
     void updateNumericExpression()
     {
-        GiNaC::ex funEvalf = M_fun.evalf();
-        if ( GiNaC::is_a<GiNaC::numeric>(funEvalf) )
-        {
-            GiNaC::numeric funNumeric = GiNaC::ex_to<GiNaC::numeric>(funEvalf);
-            if ( funNumeric.is_real() )
-            {
-                M_isNumericExpression = true;
-                M_numericValue = funNumeric.to_double();
-            }
-        }
+        auto resToNum = toNumericValues( M_fun );
+        CHECK( resToNum.size() == 1 )  << "invalid size " << resToNum.size() << " : must be 1";
+        M_isNumericExpression = resToNum[0].first;
+        if ( M_isNumericExpression )
+            M_numericValue = resToNum[0].second;
     }
     void updateForUse()
     {

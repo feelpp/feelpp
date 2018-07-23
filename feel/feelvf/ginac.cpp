@@ -542,5 +542,58 @@ int totalDegree( GiNaC::ex const& expr, std::vector<std::pair<GiNaC::symbol,int>
     return res;
 }
 
+std::vector<std::pair< bool,double> >
+toNumericValues( ex const& expr )
+{
+    std::vector<std::pair< bool,double> > res;
+    if ( is_a<matrix>(expr) )
+    {
+        matrix m( ex_to<matrix>(expr) );
+        int ni = m.rows();
+        int nj = m.cols();
+        res.resize( ni*nj, std::make_pair( false, double(0.) ) );
+        for( int i = 0; i < ni; ++i )
+        {
+            for( int j = 0; j < nj; ++j )
+            {
+                GiNaC::ex funEvalf = m(i,j).evalf();
+                if ( GiNaC::is_a<GiNaC::numeric>(funEvalf) )
+                {
+                    GiNaC::numeric funNumeric = GiNaC::ex_to<GiNaC::numeric>(funEvalf);
+                    if ( funNumeric.is_real() )
+                        res[i*nj+j] = std::make_pair( true, funNumeric.to_double() );
+                }
+            }
+        }
+    }
+    else if ( is_a<lst>(expr) )
+    {
+        int no = expr.nops();
+        res.resize( no, std::make_pair( false, double(0.) ) );
+        for( int i = 0; i < no; ++i )
+        {
+            GiNaC::ex funEvalf = expr.op(i).evalf();
+            if ( GiNaC::is_a<GiNaC::numeric>(funEvalf) )
+            {
+                GiNaC::numeric funNumeric = GiNaC::ex_to<GiNaC::numeric>(funEvalf);
+                if ( funNumeric.is_real() )
+                    res[i] = std::make_pair( true, funNumeric.to_double() );
+            }
+        }
+    }
+    else
+    {
+        res.resize( 1, std::make_pair( false, double(0.) ) );
+        GiNaC::ex funEvalf = expr.evalf();
+        if ( GiNaC::is_a<GiNaC::numeric>(funEvalf) )
+        {
+            GiNaC::numeric funNumeric = GiNaC::ex_to<GiNaC::numeric>(funEvalf);
+            if ( funNumeric.is_real() )
+                res[0] = std::make_pair( true, funNumeric.to_double() );
+        }
+    }
+    return res;
+}
+
 
 }
