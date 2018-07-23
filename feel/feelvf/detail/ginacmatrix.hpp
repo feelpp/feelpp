@@ -620,29 +620,22 @@ private :
 
     void updateNumericExpression()
     {
-        int no = M_fun.nops();
-        CHECK( no == M*N )  << "invalid size " << no << " vs " << M*N << "\n" ;
-        std::vector<bool> isNumeric( no,false );
-        std::vector<value_type> numericVal( no,value_type(0) );
-        for( int i = 0; i < no; ++i )
+        auto resToNum = toNumericValues( M_fun );
+        CHECK( resToNum.size() == M*N )  << "invalid size " << resToNum.size() << " vs " << M*N;
+        M_isNumericExpression = true;
+        for ( auto const& bd : resToNum )
         {
-            GiNaC::ex funEvalf = M_fun.op(i).evalf();
-            if ( GiNaC::is_a<GiNaC::numeric>(funEvalf) )
+            if ( !bd.first )
             {
-                GiNaC::numeric funNumeric = GiNaC::ex_to<GiNaC::numeric>(funEvalf);
-                if ( funNumeric.is_real() )
-                {
-                    isNumeric[i] = true;
-                    numericVal[i] = funNumeric.to_double();
-                }
+                M_isNumericExpression = false;
+                break;
             }
         }
-        M_isNumericExpression = std::accumulate( isNumeric.begin(), isNumeric.end(), true, std::logical_and<bool>() );
         if ( M_isNumericExpression )
         {
             for( int i = 0; i < M; ++i )
                 for( int j = 0; j < N; ++j )
-                    M_numericValue(i,j) = numericVal[i*N+j];
+                    M_numericValue(i,j) = resToNum[i*N+j].second;
         }
     }
 
