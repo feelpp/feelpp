@@ -104,7 +104,7 @@ ModelMaterial::hasPropertyConstant( std::string const& prop ) const
     if ( itFindProp == M_materialProperties.end() )
         return false;
     auto const& matProp = itFindProp->second;
-    return matProp.hasValue();
+    return matProp.isConstant();//hasValue();
 }
 bool
 ModelMaterial::hasPropertyExprScalar( std::string const& prop ) const
@@ -164,13 +164,6 @@ ModelMaterial::propertyExprVectorial3( std::string const& prop ) const
 {
     CHECK( this->hasPropertyExprVectorial3( prop ) ) << "no vectorial3 expr";
     return M_materialProperties.find( prop )->second.exprVectorial3();
-}
-
-void
-ModelMaterial::setProperty( std::string const& property, double val )
-{
-    M_materialProperties[property] = mat_property_expr_type();
-    M_materialProperties[property].setValue( val );
 }
 
 void
