@@ -85,10 +85,6 @@ public:
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
 
-
-    static const uint16_type imorder = 1;
-    static const bool imIsPoly = true;
-
     typedef typename boost::tuples::template element<0, IteratorRange>::type idim_type;
     typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_type;
     typedef typename boost::unwrap_reference<typename iterator_type::value_type>::type mesh_element_fromiterator_type;
@@ -175,6 +171,11 @@ public:
     /** @name  Methods
      */
     //@{
+    //! polynomial order
+    constexpr uint16_type polynomialOrder() const { return 1; }
+
+    //! expression is polynomial?
+    constexpr bool isPolynomial() const { return true; }
 
     //@}
 

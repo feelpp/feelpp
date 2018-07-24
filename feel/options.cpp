@@ -125,10 +125,10 @@ po::options_description
 functions_options( std::string const& prefix )
 {
     po::options_description _options( "Functions " + prefix + " options" );
-    _options.add_options()
+    /*_options.add_options()
         ( prefixvm( prefix,"x" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "x coordinate value " )
         ( prefixvm( prefix,"y" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "y coordinate value " )
-        ( prefixvm( prefix,"z" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "z coordinate value " );
+     ( prefixvm( prefix,"z" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "z coordinate value " );*/
     std::vector<std::string> alphabet { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa", "lambda", "mu", "nu", "xi", "omicron", "pi", "rho", "sigma", "tau", "upsilon", "phi", "chi", "psi", "omega" };
     for(std::string& name : alphabet) {
         _options.add_options() ( prefixvm( prefix,"functions." + name ).c_str(), Feel::po::value<std::string>()->default_value( name.size() == 1 ? "0" : "1" ), name.c_str() );

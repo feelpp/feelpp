@@ -113,8 +113,8 @@ public:
     static const size_type context = Expr::context;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = 0;
-    static const bool imIsPoly = true;
+    //static const uint16_type imorder = 0;
+    //static const bool imIsPoly = true;
 
     template<typename Func>
     struct HasTestFunction
@@ -357,8 +357,16 @@ public:
             //typedef _Q< ExpressionOrder<Elements,e_type>::value > quad_type;
             //typedef _Q< ExpressionOrder<Elements,e_type>::value_1 > quad1_type;
             typedef boost::shared_ptr<QuadPtLocalization<Elements,quad_type,expr_type > > quadptloc_ptrtype;
-            quad_type quad( expr_order_t::value );
-            quad1_type quad1( expr_order_t::value_1 );
+            quad_type quad( expr_order_t::value(new_expr) );
+            quad1_type quad1( expr_order_t::value_1(new_expr) );
+
+#if 0
+            auto the_ims = vf::detail::integrate_im_type<Elements,expr_type>::im( quad,quad1,expr );
+            auto const& the_im = the_ims.first;
+            auto const& the_im1 = the_ims.second;
+#endif
+
+            
             //BOOST_STATIC_ASSERT( ( boost::is_same<expr_type,e_type> ) );
             auto i = Integrator<Elements, quad_type, expr_type, quad1_type>( M_elts, quad, new_expr, M_gt, quad1, M_use_tbb, M_use_harts, M_grainsize, M_partitioner, quadptloc_ptrtype() );
             DLOG(INFO) << " -- M_elts size=" << M_elts.size() << "\n";
@@ -6437,14 +6445,6 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      return p0;
  }
  /// \endcond
- //Macro which get the good integration order
-# define VF_VALUE_OF_IM(O)                                              \
- boost::mpl::if_< boost::mpl::bool_< O::imIsPoly > ,                    \
-                  typename boost::mpl::if_< boost::mpl::greater< boost::mpl::int_<O::imorder>, boost::mpl::int_<19> > , \
-                                            boost::mpl::int_<19>,       \
-                                            boost::mpl::int_<O::imorder> >::type >::type , \
-     boost::mpl::int_<10> >::type::value                                \
-     /**/
 
  /**
   * integrate an expression \c expr over a set of convexes \c elts
@@ -6478,31 +6478,12 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
  /// \cond DETAIL
  namespace detail
  {
- template<typename Args>
- struct integrate_type
+ template<typename _range_type, typename _expr_type, typename __quad_type, typename __quad1_type>
+ struct integrate_im_type
  {
-     typedef typename clean2_type<Args,tag::expr,Expr<Cst<double> > >::type _expr_type;
-     typedef typename Feel::detail::quadptlocrangetype<typename clean_type<Args,tag::range>::type>::type _range_type;
-     typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
-     static const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
-     using _element_type = typename boost::unwrap_reference<typename _element_iterator::value_type>::type;
-     
-     //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
-     static const uint16_type exprOrder = ExpressionOrder<_range_type,_expr_type>::value;
-     static const uint16_type exprOrder_1 = ExpressionOrder<_range_type,_expr_type>::value_1;
-     /**
-      * @return expression order
-      */
-     static constexpr uint16_type expressionOrder() { return exprOrder ; }
-     /**
-      * @return expression order in the context of an order 1 geometry
-      */
-     static constexpr uint16_type expressionOrderG1() { return exprOrder_1 ; }
      using expr_order_t = ExpressionOrder<_range_type,_expr_type>;
-     using _value_type = typename _expr_type::value_type;
+     //using _value_type = typename _expr_type::value_type;
      using im_type = im_t<typename expr_order_t::the_element_type, typename _expr_type::value_type>;
-     typedef typename clean2_type<Args,tag::quad, im_type>::type __quad_type;
-     typedef typename clean2_type<Args,tag::quad1, im_type >::type __quad1_type;
      using _quad_type = typename mpl::if_<mpl::or_<std::is_integral<__quad_type>,
                                                    std::is_base_of<_QBase,__quad_type>>,
                                           mpl::identity<im_type>,
@@ -6510,15 +6491,14 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      using _quad1_type = typename mpl::if_<mpl::or_<std::is_integral<__quad1_type>,
                                                     std::is_base_of<_QBase,__quad1_type>>,
                                            mpl::identity<im_type>, mpl::identity<std::remove_const_t<__quad1_type>> >::type::type;
-     typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
-
-     typedef boost::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
 
      template <typename QuadType,typename Quad1Type>
      static
      std::pair<_quad_type,_quad1_type>
      im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< std::is_integral<QuadType>::value && std::is_integral<Quad1Type>::value >* = nullptr )
          {
+             quad_order_type exprOrder = expr_order_t::value( expr );
+             quad_order_type exprOrder_1 = expr_order_t::value_1( expr );
              if ( thequad == quad_order_from_expression && thequad1 == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( exprOrder ), Feel::im<_quad1_type>( exprOrder_1 ) );
              else if ( thequad == quad_order_from_expression )
@@ -6533,6 +6513,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      std::pair<_quad_type,_quad1_type>
      im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< std::is_integral<QuadType>::value && !std::is_integral<Quad1Type>::value >* = nullptr )
          {
+             quad_order_type exprOrder = expr_order_t::value( expr );
              if ( thequad == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( exprOrder ), Feel::im<_quad1_type>( thequad1 ) );
              else
@@ -6556,6 +6537,43 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
          {
              return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
          }
+ };
+
+ template<typename Args>
+ struct integrate_type
+ {
+     typedef typename clean2_type<Args,tag::expr,Expr<Cst<double> > >::type _expr_type;
+     typedef typename Feel::detail::quadptlocrangetype<typename clean_type<Args,tag::range>::type>::type _range_type;
+     typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
+     static const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
+     using _element_type = typename boost::unwrap_reference<typename _element_iterator::value_type>::type;
+#if 0
+     //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
+     static const uint16_type exprOrder = ExpressionOrder<_range_type,_expr_type>::value;
+     static const uint16_type exprOrder_1 = ExpressionOrder<_range_type,_expr_type>::value_1;
+     /**
+      * @return expression order
+      */
+     static constexpr uint16_type expressionOrder() { return exprOrder ; }
+     /**
+      * @return expression order in the context of an order 1 geometry
+      */
+     static constexpr uint16_type expressionOrderG1() { return exprOrder_1 ; }
+#endif
+     using expr_order_t = ExpressionOrder<_range_type,_expr_type>;
+     //using _value_type = typename _expr_type::value_type;
+     using im_default_type = im_t<typename expr_order_t::the_element_type, typename _expr_type::value_type>;
+
+     typedef typename clean2_type<Args,tag::quad, im_default_type>::type __quad_type;
+     typedef typename clean2_type<Args,tag::quad1, im_default_type >::type __quad1_type;
+     using _im_type = integrate_im_type<_range_type,_expr_type,__quad_type,__quad1_type>;
+     using _quad_type = typename _im_type::_quad_type;
+     using _quad1_type = typename _im_type::_quad1_type;
+
+     typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
+
+     typedef boost::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
+
  };
  } // detail
 

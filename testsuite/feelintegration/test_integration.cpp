@@ -64,8 +64,9 @@ struct f_Px
     typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 1;
-    static const bool imIsPoly = true;
+    uint16_type polynomialOrder() const { return 0; }
+    bool isPolynomial() const { return true; }
+
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
     {
         return x[0];
@@ -78,8 +79,8 @@ struct f_Nx
     typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 1;
-    static const bool imIsPoly = true;
+    uint16_type polynomialOrder() const { return 1; }
+    bool isPolynomial() const { return true; }
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, ublas::vector<double> const& n ) const
     {
         return n[0];
@@ -92,8 +93,8 @@ struct f_Ny
     typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 1;
-    static const bool imIsPoly = true;
+    uint16_type polynomialOrder() const { return 1; }
+    bool isPolynomial() const { return true; }
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, ublas::vector<double> const& n ) const
     {
         return n[1];
@@ -106,8 +107,8 @@ struct f_sinPx
     typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 2;
-    static const bool imIsPoly = false;
+    uint16_type polynomialOrder() const { return 2; }
+    bool isPolynomial() const { return false; }
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
     {
         return math::sin( x[0] );
@@ -122,8 +123,8 @@ struct f_matheval
     typedef double value_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 2;
-    static const bool imIsPoly = false;
+    uint16_type polynomialOrder() const { return 2; }
+    bool isPolynomial() const { return false; }
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
     {
         /* introduce matheval function */

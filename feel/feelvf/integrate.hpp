@@ -62,7 +62,7 @@ BOOST_PARAMETER_FUNCTION(
     if ( vf::detail::integrate_type<Args>::geoOrder == 1 ) // force ho_geomap with geoOrder==1
         thegeomap = GeomapStrategyType::GEOMAP_HO;
 
-    auto the_ims = vf::detail::integrate_type<Args>::im( quad,quad1,expr );
+    auto the_ims = vf::detail::integrate_type<Args>::_im_type::im( quad,quad1,expr );
     auto const& the_im = the_ims.first;
     auto const& the_im1 = the_ims.second;
 
