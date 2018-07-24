@@ -57,7 +57,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::HeatFluid( std::string const& prefix,
     this->addTimerTool("PostProcessing",nameFilePostProcessing);
     this->addTimerTool("TimeStepping",nameFileTimeStepping);
 
-    this->setFilenameSaveInfo( prefixvm(this->prefix(),"HeatFluid.info") );
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
@@ -357,7 +356,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
         bool hasFieldToExportHeat = M_heatModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeatt,time );
         bool hasFieldToExportFluid = M_fluidModel->updateExportedFields( M_exporter,M_postProcessFieldExportedFluid,time );
         if ( hasFieldToExportHeat || hasFieldToExportFluid )
+        {
+            this->upload( M_exporter->path() );
             M_exporter->save();
+        }
     }
 
     M_heatModel->exportResults( time );

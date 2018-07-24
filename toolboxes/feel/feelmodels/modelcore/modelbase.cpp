@@ -33,6 +33,15 @@ namespace Feel {
 
 namespace FeelModels {
 
+namespace ToolboxesDetail
+{
+void removeTrailingSlash( std::string & s )
+{
+    if ( Feel::filename_is_dot( fs::path( s ).filename() ) )
+        s = fs::path( s ).parent_path().string();
+}
+}
+
 ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumProc )
 {
     if ( rootDirWithoutNumProc.empty() )
@@ -51,7 +60,193 @@ ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumPr
         M_exprRepository = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( "exprs" ) ).string();
     }
 
+    ToolboxesDetail::removeTrailingSlash( M_rootRepositoryWithoutNumProc );
+    ToolboxesDetail::removeTrailingSlash( M_rootRepositoryWithNumProc );
+    ToolboxesDetail::removeTrailingSlash( M_exprRepository );
 }
+
+ModelBaseUpload::ModelBaseUpload( std::string const& desc, std::string const& basePath, WorldComm const& worldComm )
+    :
+    M_basePath( basePath )
+{
+    if ( desc.empty() )
+        return;
+    M_remoteData.reset( new RemoteData( desc,worldComm ) );
+}
+
+bool
+ModelBaseUpload::isOperational() const
+{
+    if ( !M_remoteData )
+        return false;
+    return M_remoteData->canUpload();
+}
+
+
+
+void
+ModelBaseUpload::uploadPreProcess( std::string const& dataPath,
+                                   std::vector<std::tuple<std::string,std::time_t,std::string>> & resNewFile,
+                                   std::vector<std::tuple<std::string,std::time_t,std::string,std::string>> & resReplaceFile ) const
+{
+    fs::path dataFsPath( dataPath );
+    // if dir, loop on all files/dir inside
+    if ( fs::is_directory( dataFsPath ) )
+    {
+        fs::recursive_directory_iterator end_itr;
+        for (fs::recursive_directory_iterator itr( dataFsPath ); itr != end_itr; ++itr)
+        {
+            fs::path fileFsPath = itr->path();
+            if ( !fs::is_regular_file( fileFsPath ) )
+                continue;
+            if ( fs::is_symlink( fileFsPath ) ) // ignore symlink
+                continue;
+            uploadPreProcess( fileFsPath.string(), resNewFile, resReplaceFile );
+        }
+        return;
+    }
+
+    std::string relDataPath = this->relativePath( dataPath );
+    CHECK( !relDataPath.empty() ) << "not relative path";
+
+    fs::path folder = fs::path( relDataPath ).parent_path();
+
+    std::time_t dataLWT = fs::last_write_time( dataFsPath );
+
+    std::string parentId;
+    auto itFindFolder = M_treeDataStructure.find( folder.string() );
+    if ( itFindFolder != M_treeDataStructure.end() )
+    {
+        parentId = itFindFolder->second.first;
+        auto const& filesInFolder = itFindFolder->second.second;
+        auto itFindFile = filesInFolder.find( dataFsPath.filename().string() );
+        if ( itFindFile != filesInFolder.end() )
+        {
+            auto const& fileInfo = itFindFile->second;
+            if ( fileInfo.second == fs::last_write_time( dataFsPath ) )
+                return;
+            else
+                resReplaceFile.push_back( std::make_tuple(dataPath, dataLWT, folder.string(), fileInfo.first) );
+        }
+        else
+        {
+            resNewFile.push_back( std::make_tuple(dataPath, dataLWT, folder.string()) );
+        }
+    }
+    else
+    {
+        auto newFolders = M_remoteData->createFolder( folder.string(), "", false );
+        std::string curFolderInTree;
+        for ( int k=0;k<newFolders.size();++k )
+        {
+            std::string curFolderName = newFolders[k].first;
+            std::string curFolderId = newFolders[k].second;
+            parentId = curFolderId;
+            curFolderInTree = (k==0)? curFolderName : (fs::path(curFolderInTree)/curFolderName).string();
+            auto itFindFolder2 = M_treeDataStructure.find( curFolderInTree );
+            if ( itFindFolder2 == M_treeDataStructure.end() )
+                M_treeDataStructure[ curFolderInTree ] = std::make_pair( curFolderId,std::map<std::string,std::pair<std::string,std::time_t>>() );
+        }
+        resNewFile.push_back( std::make_tuple(dataPath, dataLWT, folder.string()/*parentId*/) );
+    }
+
+
+}
+
+void
+ModelBaseUpload::upload( std::string const& dataPath ) const
+{
+    if ( !this->isOperational() )
+        return;
+
+    if ( M_remoteData->worldComm().isMasterRank() )
+    {
+        // prepare datas to upload and create folders on remote server
+        std::vector<std::tuple<std::string,std::time_t,std::string>> dataPreProcessNewFile;
+        std::vector<std::tuple<std::string,std::time_t,std::string,std::string>> dataPreProcessReplaceFile;
+        this->uploadPreProcess( dataPath, dataPreProcessNewFile, dataPreProcessReplaceFile );
+
+        if ( dataPreProcessNewFile.empty() && dataPreProcessReplaceFile.empty() )
+            return;
+        // generate data to upload container
+        std::vector<std::pair<std::string,std::string> > dataToUpload( dataPreProcessNewFile.size() );
+        for ( int k=0;k<dataPreProcessNewFile.size();++k )
+        {
+            std::string const& folder = std::get<2>( dataPreProcessNewFile[k] );
+            auto itFindFolder = M_treeDataStructure.find( folder );
+            CHECK( itFindFolder != M_treeDataStructure.end() ) << "folder not found";
+            std::string const& parentId = itFindFolder->second.first;
+            dataToUpload[k] = std::make_pair( std::get<0>( dataPreProcessNewFile[k] ), parentId );
+        }
+        // generate files to replace container
+        std::vector<std::pair<std::string,std::string> > filesToReplace( dataPreProcessReplaceFile.size() );
+        for ( int k=0;k<dataPreProcessReplaceFile.size();++k )
+        {
+            std::string const& filePath = std::get<0>( dataPreProcessReplaceFile[k] );
+            std::string const& fileId = std::get<3>( dataPreProcessReplaceFile[k] );
+            filesToReplace[k] = std::make_pair( filePath,fileId );
+        }
+        // apply data upload on remote server
+        auto resUpload = M_remoteData->upload( dataToUpload, false );
+        CHECK( resUpload.size() == dataToUpload.size() ) << "failure in upload";
+        // update tree data structure
+        for ( int k=0;k<dataPreProcessNewFile.size();++k )
+        {
+            CHECK( resUpload[k].size() == 1 ) << "must be 1";
+            std::string const& fileIdUploaded = resUpload[k][0];
+            std::string const& dataPathUploaded = std::get<0>( dataPreProcessNewFile[k] );
+            std::time_t lwt = std::get<1>( dataPreProcessNewFile[k] );
+            std::string const& folder = std::get<2>( dataPreProcessNewFile[k] );
+
+            std::string relDataPathUploaded = this->relativePath( dataPathUploaded );
+            CHECK( !relDataPathUploaded.empty() ) << "not relative path";
+            M_treeDataStructure[folder].second[fs::path( relDataPathUploaded ).filename().string()] = std::make_pair(fileIdUploaded,lwt);
+        }
+
+        // apply replace files remote server
+        M_remoteData->replaceFile( filesToReplace );
+        // update tree data structure
+        for ( int k=0;k<dataPreProcessReplaceFile.size();++k )
+        {
+            std::string const& dataPathUploaded = std::get<0>( dataPreProcessReplaceFile[k] );
+            std::time_t lwt = std::get<1>( dataPreProcessReplaceFile[k] );
+            std::string const& folder = std::get<2>( dataPreProcessReplaceFile[k] );
+
+            std::string relDataPathUploaded = this->relativePath( dataPathUploaded );
+            CHECK( !relDataPathUploaded.empty() ) << "not relative path";
+            M_treeDataStructure[folder].second[fs::path( relDataPathUploaded ).filename().string()].second = lwt;
+        }
+
+        //this->print();
+    }
+}
+void
+ModelBaseUpload::createFolder( std::string const& folderPath, std::string const& parentId ) const
+{
+    if ( this->isOperational() )
+        M_remoteData->createFolder( folderPath, parentId, false );
+}
+std::string
+ModelBaseUpload::relativePath( std::string const& s ) const
+{
+    fs::path relPath = fs::relative( s,M_basePath );
+    return relPath.string();
+}
+
+void
+ModelBaseUpload::print() const
+{
+    std::cout << "ModelBaseUpload::print\n";
+    for ( auto const& folder : M_treeDataStructure )
+    {
+        auto const& folderData = folder.second;
+        std::cout << folder.first << " [id=" << folderData.first << "]\n";
+        auto const& files = folderData.second;
+        for ( auto const& fileData : files )
+            std::cout << "  -- " << fileData.first << " ["<< fileData.second << "]\n";
+    }
+}
+
 
 ModelBase::ModelBase( std::string const& prefix,
                       WorldComm const& worldComm,
@@ -66,7 +261,7 @@ ModelBase::ModelBase( std::string const& prefix,
     M_modelRepository( modelRep ),
     M_verbose( boption(_name="verbose",_prefix=this->prefix()) ),
     M_verboseAllProc( boption(_name="verbose_allproc",_prefix=this->prefix()) ),
-    M_filenameSaveInfo( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"appli.info")) ),
+    M_filenameSaveInfo( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"toolbox-info.txt")) ),
     M_timersActivated( boption(_name="timers.activated",_prefix=this->prefix()) ),
     M_timersSaveFileMasterRank( boption(_name="timers.save-master-rank",_prefix=this->prefix()) ),
     M_timersSaveFileMax( boption(_name="timers.save-max",_prefix=this->prefix()) ),
@@ -74,7 +269,8 @@ ModelBase::ModelBase( std::string const& prefix,
     M_timersSaveFileMean( boption(_name="timers.save-mean",_prefix=this->prefix()) ),
     M_timersSaveFileAll( boption(_name="timers.save-all",_prefix=this->prefix()) ),
     M_scalabilitySave( boption(_name="scalability-save",_prefix=this->prefix()) ),
-    M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix()) )
+    M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix()) ),
+    M_upload( soption(_name="upload",_prefix=this->prefix()), this->repository().rootWithoutNumProc(), M_worldComm )
 {
     if (Environment::vm().count(prefixvm(this->prefix(),"scalability-path")))
         M_scalabilityPath = Environment::vm()[prefixvm(this->prefix(),"scalability-path")].as< std::string >();
@@ -85,6 +281,14 @@ ModelBase::ModelBase( std::string const& prefix,
         M_scalabilityFilename = Environment::vm()[prefixvm(this->prefix(),"scalability-filename")].as< std::string >();
     else
         M_scalabilityFilename = this->prefix()+".scalibility";
+
+    if ( M_upload.isOperational() )
+    {
+        fs::path dirRelative = fs::relative( this->repository().rootWithNumProc(),
+                                             this->repository().rootWithoutNumProc() );
+        M_upload.createFolder( dirRelative.string() );
+    }
+
 }
 ModelBase::~ModelBase()
 {}
@@ -150,13 +354,15 @@ ModelBase::printInfo() const
 void
 ModelBase::saveInfo() const
 {
+    fs::path thepath = fs::path(this->rootRepository())/fs::path(this->filenameSaveInfo());
     if (this->worldComm().isMasterRank() )
     {
-        fs::path thepath = fs::path(this->rootRepository())/fs::path(this->filenameSaveInfo());
         std::ofstream file( thepath.string().c_str(), std::ios::out);
         file << this->getInfo()->str();
         file.close();
     }
+
+    this->upload( thepath.string() );
 }
 void
 ModelBase::printAndSaveInfo() const
@@ -215,6 +421,14 @@ std::string
 ModelBase::scalabilityFilename() const { return M_scalabilityFilename; }
 void
 ModelBase::setScalabilityFilename( std::string const& s )  { M_scalabilityFilename=s; }
+
+void
+ModelBase::upload( std::string const& dataPath ) const
+{
+    if ( M_upload.isOperational() )
+        M_upload.upload( dataPath );
+}
+
 
 
 } // namespace FeelModels
