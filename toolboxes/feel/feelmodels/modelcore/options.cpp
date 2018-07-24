@@ -44,6 +44,7 @@ Feel::po::options_description modelbase_options(std::string const& prefix)
         (prefixvm(prefix,"scalability-reinit-savefile").c_str(), Feel::po::value<bool>()->default_value( false ), "reinit-savefile")
         (prefixvm(prefix,"scalability-path").c_str(), Feel::po::value< std::string >(), "scalability-path")
         (prefixvm(prefix,"scalability-filename").c_str(), Feel::po::value< std::string >(), "scalability-filename")
+        (prefixvm(prefix,"upload").c_str(), Feel::po::value< std::string >()->default_value(""), "upload decription")
         ;
     return appliBaseOptions;
 }
