@@ -451,8 +451,8 @@ public :
     element_displacement_ptrtype const& fieldDisplacementPtr() const { return M_fieldDisplacement; }
     element_pressure_type & fieldPressure() { CHECK( M_fieldPressure ) << "field pressure not define"; return *M_fieldPressure; }
     element_pressure_type const& fieldPressure() const { CHECK( M_fieldPressure ) << "field pressure not define"; return *M_fieldPressure; }
-    element_pressure_ptrtype & fieldPressurePtr() { CHECK( M_fieldPressure ) << "field pressure not define"; return M_fieldPressure; }
-    element_pressure_ptrtype const& fieldPressurePtr() const { CHECK( M_fieldPressure ) << "field pressure not define"; return M_fieldPressure; }
+    element_pressure_ptrtype & fieldPressurePtr() { return M_fieldPressure; }
+    element_pressure_ptrtype const& fieldPressurePtr() const { return M_fieldPressure; }
 
     newmark_displacement_ptrtype & timeStepNewmark() { return M_timeStepNewmark; }
     newmark_displacement_ptrtype const& timeStepNewmark() const { return M_timeStepNewmark; }
@@ -465,6 +465,7 @@ public :
 
     element_displacement_type & fieldAcceleration() { return M_timeStepNewmark->currentAcceleration(); }
     element_displacement_type const& fieldAcceleration() const { return M_timeStepNewmark->currentAcceleration(); }
+    element_displacement_ptrtype const& fieldAccelerationPtr() const { return M_timeStepNewmark->currentAccelerationPtr(); }
 
     element_normal_stress_ptrtype & fieldNormalStressFromFluidPtr() { return M_fieldNormalStressFromFluid; }
     element_normal_stress_ptrtype const& fieldNormalStressFromFluidPtr() const { return M_fieldNormalStressFromFluid; }
@@ -500,6 +501,8 @@ public :
     element_displacement_scalar_type const& fieldUserScalar( std::string const& key ) const { return *this->fieldUserScalarPtr( key ); }
     element_displacement_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
 
+    // symbols expression
+    constexpr auto symbolsExpr() const { return this->symbolsExpr( hana::int_<nDim>() ); }
     //----------------------------------//
     //backend_ptrtype backend() { return M_backend; }
     backend_ptrtype const& backendStandard() const { return M_backend; }
@@ -507,13 +510,18 @@ public :
     BlocksBaseGraphCSR buildBlockMatrixGraph() const;
     graph_ptrtype buildMatrixGraph() const;
     int nBlockMatrixGraph() const;
-    std::map<std::string,size_type> const& startBlockIndexFieldsInMatrix() const { return M_startBlockIndexFieldsInMatrix; }
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
     void updateBlockVectorSolution();
 
     model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
+
+    void updateMassMatrixLumped();
+    bool useMassMatrixLumped() const { return M_useMassMatrixLumped; }
+    void setUseMassMatrixLumped( bool b ) { M_useMassMatrixLumped = b; }
+    sparse_matrix_ptrtype const& massMatrixLumped() const { return M_massMatrixLumped; }
+    vector_ptrtype const& vecDiagMassMatrixLumped() const { return M_vecDiagMassMatrixLumped; }
 
     //-----------------------------------------------------------------------------------//
     // 1d reduced model
@@ -571,11 +579,6 @@ public :
     void updateSubMeshDispFSIFromPrevious();
 
     std::list<std::string> const& markerNameFSI() const { return this->markerFluidStructureInterfaceBC(); }
-    double gammaNitschFSI() const { return M_gammaNitschFSI; }
-    void gammaNitschFSI(double d) { M_gammaNitschFSI=d; }
-    double muFluidFSI() const { return M_muFluidFSI; }
-    void muFluidFSI(double d) { M_muFluidFSI=d; }
-
 
     void updateNormalStressFromStruct();
     void updateStressCriterions();
@@ -640,6 +643,22 @@ public :
 private :
     void updateBoundaryConditionsForUse();
 
+    constexpr auto symbolsExpr( hana::int_<2> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("solid_Dx",idv(this->fieldDisplacement())(0,0) ),
+                                          symbolExpr("solid_Dy",idv(this->fieldDisplacement())(1,0) ),
+                                          symbolExpr("solid_D_magnitude",inner(idv(this->fieldDisplacement()),mpl::int_<InnerProperties::SQRT>()) )
+                                          );
+        }
+    constexpr auto symbolsExpr( hana::int_<3> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("solid_Dx",idv(this->fieldDisplacement())(0,0) ),
+                                          symbolExpr("solid_Dy",idv(this->fieldDisplacement())(1,0) ),
+                                          symbolExpr("solid_Dz",idv(this->fieldDisplacement())(2,0) ),
+                                          symbolExpr("solid_D_magnitude",inner(idv(this->fieldDisplacement()),mpl::int_<InnerProperties::SQRT>()) )
+                                          );
+        }
+
 protected:
 
     // model
@@ -703,8 +722,11 @@ protected:
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
-    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
     std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
+
+    bool M_useMassMatrixLumped;
+    sparse_matrix_ptrtype M_massMatrixLumped;
+    vector_ptrtype M_vecDiagMassMatrixLumped;
 
     // trace mesh
     space_tracemesh_disp_ptrtype M_XhSubMeshDispFSI;
@@ -780,8 +802,6 @@ protected:
     // fsi
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
-    double M_gammaNitschFSI;
-    double M_muFluidFSI;
     boost::shared_ptr<typename mesh_type::trace_mesh_type> M_fsiSubmesh;
 
     // fields defined in json

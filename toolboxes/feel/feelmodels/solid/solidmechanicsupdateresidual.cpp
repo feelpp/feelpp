@@ -88,12 +88,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         {
             if (!BuildCstPart)
             {
-                auto const FSv_neohookean = Feel::vf::FeelModels::solidMecFirstPiolaKirchhoffTensor<3*(nOrderDisplacement-1)>(u,*this->mechanicalProperties());
+                auto const FSv_neohookean = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<3*(nOrderDisplacement-1)>(u,*this->mechanicalProperties());
                 linearFormDisplacement +=
                     integrate( _range=elements(mesh),
                                //_expr= trace(val(Fv*Sv)*trans(grad(v))),
-                               //_expr=trace(Feel::vf::FeelModels::stressStVenantKirchhoff(u,coeffLame1,coeffLame2)*trans(grad(v))),
-                               //_expr=Feel::vf::FeelModels::stressStVenantKirchhoffResidual(u,coeffLame1,coeffLame2),// le dernier 
+                               //_expr=trace(Feel::FeelModels::stressStVenantKirchhoff(u,coeffLame1,coeffLame2)*trans(grad(v))),
+                               //_expr=Feel::FeelModels::stressStVenantKirchhoffResidual(u,coeffLame1,coeffLame2),// le dernier 
                                _expr= inner(FSv_neohookean,grad(v)),
                                _geomap=this->geomap() );
             }
@@ -102,7 +102,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         {
             if (!BuildCstPart)
             {
-                auto const FSv_neohookean = Feel::vf::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
+                auto const FSv_neohookean = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
                 linearFormDisplacement +=
                     integrate( _range=elements(mesh),
                                //_expr= trace(val(FSv_neohookean)*trans(grad(v))),
@@ -137,7 +137,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     if ( this->useDisplacementPressureFormulation() && !BuildCstPart)
     {
         // define pressure field
-        size_type blockIndexPressure = rowStartInVector+this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+        size_type blockIndexPressure = rowStartInVector+this->startSubBlockSpaceIndex("pressure");
         auto const p = M_XhPressure->element(X, blockIndexPressure);
         // assemble
         this->updateResidualIncompressibilityTerms(u,p,R);
@@ -160,18 +160,57 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     {
         if (!BuildCstPart && !UseJacobianLinearTerms)
         {
-            linearFormDisplacement +=
-                integrate( _range=elements(mesh),
-                           _expr= M_timeStepNewmark->polySecondDerivCoefficient()*idv(rho)*inner(idv(u),id(v)),
-                           _geomap=this->geomap() );
+            if ( !this->useMassMatrixLumped() )
+            {
+                linearFormDisplacement +=
+                    integrate( _range=elements(mesh),
+                               _expr= M_timeStepNewmark->polySecondDerivCoefficient()*idv(rho)*inner(idv(u),id(v)),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                if ( this->massMatrixLumped()->size1() == R->size() )
+                {
+                    auto myvec = this->backend()->newVector(M_XhDisplacement);
+                    *myvec = u;
+                    myvec->scale(M_timeStepNewmark->polySecondDerivCoefficient());
+                    R->close();
+                    R->addVector( myvec, this->massMatrixLumped() );
+                }
+                else
+                {
+                    CHECK( false ) << "TODO";
+                }
+            }
         }
         if (BuildCstPart)
         {
             auto polySecondDerivDisp = M_timeStepNewmark->polySecondDeriv();
-            linearFormDisplacement +=
-                integrate( _range=elements(mesh),
-                           _expr= -idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
-                           _geomap=this->geomap() );
+            if ( !this->useMassMatrixLumped() )
+            {
+                linearFormDisplacement +=
+                    integrate( _range=elements(mesh),
+                               _expr= -idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                if ( this->massMatrixLumped()->size1() == R->size() )
+                {
+                    auto myvec = this->backend()->newVector(M_XhDisplacement);
+                    *myvec = polySecondDerivDisp;
+                    myvec->scale(-1.0);
+                    R->close();
+                    R->addVector( myvec, this->massMatrixLumped() );
+                }
+                else
+                {
+                    R->close();
+                    auto uAddResidual = M_XhDisplacement->element( R, rowStartInVector );
+                    auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
+                    uAddResidual.add(-1.0, element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                }
+            }
         }
     }
     //--------------------------------------------------------------------------------------------------//
@@ -187,6 +226,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     }
 
     //--------------------------------------------------------------------------------------------------//
+#if 0
     // fsi bc
     if (this->markerNameFSI().size()>0)
     {
@@ -253,6 +293,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         } // robin-robin fsi
 
     }
+#endif
 
     //--------------------------------------------------------------------------------------------------//
     // robin boundary condition (used in wavePressure3d as external tissue for arterial wall)
@@ -307,7 +348,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( elemen
      double beta=0.25*(1+alpha_m-alpha_f)*(1+alpha_m-alpha_f);*/
 
     size_type rowStartInVector = this->rowStartInVector();
-    size_type blockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+    size_type blockIndexPressure = this->startSubBlockSpaceIndex("pressure");
     auto linearFormDisplacement = form1( _test=M_XhDisplacement, _vector=R,
                                          _rowstart=rowStartInVector );
     auto linearFormPressure = form1( _test=M_XhPressure, _vector=R,
@@ -318,8 +359,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( elemen
         linearFormDisplacement +=
             integrate( _range=elements(mesh),
                        //_expr= trace(val(-idv(p)*trans(InvFv))*trans(grad(v))),
-                       //_expr=inner( -idv(p)*Feel::vf::FeelModels::solidMecIncompressibilityPressure(u,p,*this->mechanicalProperties()),grad(v) ),
-                       _expr=inner( /*-idv(p)**/Feel::vf::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()),grad(v) ),
+                       //_expr=inner( -idv(p)*Feel::FeelModels::solidMecIncompressibilityPressure(u,p,*this->mechanicalProperties()),grad(v) ),
+                       _expr=inner( /*-idv(p)**/Feel::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()),grad(v) ),
                        _geomap=this->geomap() );
     }
     else if (M_pdeType=="Elasticity-Large-Deformation" || M_pdeType=="Elasticity")
@@ -337,7 +378,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( elemen
         integrate( _range=elements(mesh),
                    //_expr=val(Fav22+Fav11+Fav11*Fav22-Fav21*Fav12)*id(q),
                    //_expr= detFvM1*id(q),
-                   _expr= Feel::vf::FeelModels::solidMecPressureFormulationConstraint(u,*this->mechanicalProperties())*id(q),
+                   _expr= Feel::FeelModels::solidMecPressureFormulationConstraint(u,*this->mechanicalProperties())*id(q),
                    _geomap=this->geomap() );
 
 
@@ -568,21 +609,21 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureResidual( element_di
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)),
-                       _expr= -expression(d)*inner( Feel::vf::FeelModels::solidMecGeomapEulerian(u)*N(),id(u) ),
+                       _expr= -expression(d)*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*N(),id(u) ),
                        _geomap=this->geomap() );
     }
     for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)),
-                       _expr= -inner( Feel::vf::FeelModels::solidMecGeomapEulerian(u)*expression(d),id(u) ),
+                       _expr= -inner( Feel::FeelModels::solidMecGeomapEulerian(u)*expression(d),id(u) ),
                        _geomap=this->geomap() );
     }
     for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)),
-                       _expr= -inner( Feel::vf::FeelModels::solidMecGeomapEulerian(u)*expression(d)*N(),id(u) ),
+                       _expr= -inner( Feel::FeelModels::solidMecGeomapEulerian(u)*expression(d)*N(),id(u) ),
                        _geomap=this->geomap() );
     }
 }

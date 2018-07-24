@@ -1312,6 +1312,21 @@ if( FEELPP_ENABLE_FMILIB )
   include( feelpp.module.fmilib )
 endif()
 
+option( FEELPP_ENABLE_LIBCURL "Enable libcurl in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if ( FEELPP_ENABLE_LIBCURL )
+  find_package( CURL )
+  #message( "CURL_FOUND=${CURL_FOUND}" )
+  #message( "CURL_INCLUDE_DIRS=${CURL_INCLUDE_DIRS}" )
+  #message( "CURL_LIBRARIES=${CURL_LIBRARIES}" )
+  #message( "CURL_VERSION_STRING=${CURL_VERSION_STRING}" )
+  if( CURL_FOUND )
+    include_directories( ${CURL_INCLUDE_DIRS} )
+    set( FEELPP_HAS_LIBCURL 1 )
+    set( FEELPP_LIBRARIES ${CURL_LIBRARIES} ${FEELPP_LIBRARIES} )
+    set( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} libcurl/${CURL_VERSION_STRING}" )
+  endif()
+endif()
+
 
 LINK_DIRECTORIES(
   ${VTK_LIBRARY_DIRS}

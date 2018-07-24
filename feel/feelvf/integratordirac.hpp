@@ -58,9 +58,6 @@ public:
     //@{
     static const size_type context = DiracExpr::context;
 
-    static const uint16_type imorder = DiracExpr::imorder;
-    static const bool imIsPoly = DiracExpr::imIsPoly;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -174,6 +171,12 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_expr.isPolynomial(); }
 
     /**
      * assembly routine for Dirichlet condition

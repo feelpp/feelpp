@@ -43,9 +43,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
     // identity Matrix
     auto const Id = eye<nDim,nDim>();
     // density
-    auto const& rho = this->densityViscosityModel()->fieldRho();
+    auto const& rho = this->materialProperties()->fieldRho();
     // dynamic viscosity
-    auto const& mu = this->densityViscosityModel()->fieldMu();
+    auto const& mu = this->materialProperties()->fieldMu();
 
     //--------------------------------------------------------------------------------------------------//
     // Dirichlet bc by using Nitsche formulation
@@ -68,9 +68,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
     {
         if ( BuildCstPart )
         {
-            CHECK( this->startBlockIndexFieldsInMatrix().find("dirichletlm") != this->startBlockIndexFieldsInMatrix().end() )
-                << " start dof index for dirichletlm is not present\n";
-            size_type startBlockIndexDirichletLM = this->startBlockIndexFieldsInMatrix().find("dirichletlm")->second;
+            CHECK( this->hasStartSubBlockSpaceIndex("dirichletlm") ) << " start dof index for dirichletlm is not present\n";
+            size_type startBlockIndexDirichletLM = this->startSubBlockSpaceIndex("dirichletlm");
 
             auto lambdaBC = this->XhDirichletLM()->element();
             form2( _test=Xh,_trial=this->XhDirichletLM(),_matrix=J,_pattern=size_type(Pattern::COUPLED),
@@ -90,10 +89,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
     // pressure bc
     if ( this->hasMarkerPressureBC() )
     {
-        CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm1") != this->startBlockIndexFieldsInMatrix().end() )
-            << " start dof index for pressurelm1 is not present\n";
-
-        size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+        CHECK( this->hasStartSubBlockSpaceIndex("pressurelm1") ) << " start dof index for pressurelm1 is not present\n";
+        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
         if (BuildCstPart)
         {
             if ( nDim==2 )
@@ -129,9 +126,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                                _expr=-trans(cross(idt(u),N()))(0,2)*id(M_fieldLagrangeMultiplierPressureBC1)*alpha,
                                _geomap=this->geomap() );
 
-                CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm2") != this->startBlockIndexFieldsInMatrix().end() )
-                    << " start dof index for pressurelm2 is not present\n";
-                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+                CHECK( this->hasStartSubBlockSpaceIndex("pressurelm2") ) << " start dof index for pressurelm2 is not present\n";
+                size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
 
                 form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
@@ -155,9 +151,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
     // windkessel implicit
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
-        CHECK( this->startBlockIndexFieldsInMatrix().find("windkessel") != this->startBlockIndexFieldsInMatrix().end() )
-            << " start dof index for windkessel is not present\n";
-        size_type startBlockIndexWindkessel = this->startBlockIndexFieldsInMatrix().find("windkessel")->second;
+        CHECK( this->hasStartSubBlockSpaceIndex("windkessel") ) << " start dof index for windkessel is not present\n";
+        size_type startBlockIndexWindkessel = this->startSubBlockSpaceIndex("windkessel");
 
         if (BuildCstPart)
         {
@@ -264,7 +259,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
     }
     //--------------------------------------------------------------------------------------------------//
     // fsi bc
-#if defined( FEELPP_MODELS_HAS_MESHALE )
+#if 0 // defined( FEELPP_MODELS_HAS_MESHALE )
     if ( this->isMoveDomain() && ( this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "robin-neumann-genuine" ||
                                    this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
                                    this->couplingFSIcondition() == "robin-neumann-generalized" || this->couplingFSIcondition() == "nitsche" ) )
@@ -347,22 +342,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStrongDirichletBC( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
 {
-    if ( !this->hasDirichletBC() ) return;
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateJacobianStrongDirichletBC", "start",
-                                               this->worldComm(),this->verboseAllProc());
-    using namespace Feel::vf;
+    if ( !this->hasStrongDirichletBC() ) return;
+    this->log("FluidMechanics","updateJacobianDofElimination", "start" );
 
-    boost::timer btimeStrongCL;
+    this->timerTool("Solve").start();
 
+    sparse_matrix_ptrtype& J = data.jacobian();
+    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
     auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=J,
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=this->colStartInMatrix() );
     auto const& u = this->fieldVelocity();
-    //auto RBis = this->backend()->newVector( J->mapRowPtr() );
 
     for( auto const& d : this->M_bcDirichlet )
     {
@@ -415,9 +409,49 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStrongDirichletBC( sparse_matr
         }
     }
 
-    std::ostringstream ostr3;ostr3<<btimeStrongCL.elapsed()<<"s";
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateJacobianStrongDirichletBC", "finish in "+ostr3.str(),
-                                               this->worldComm(),this->verboseAllProc());
+
+    std::list<std::string> markerDirichletEliminationOthers;
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+    if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
+    {
+        for (std::string const& marker : this->markersNameMovingBoundary() )
+            markerDirichletEliminationOthers.push_back( marker );
+    }
+#endif
+    for ( auto const& inletbc : M_fluidInletDesc )
+    {
+        std::string const& marker = std::get<0>( inletbc );
+        markerDirichletEliminationOthers.push_back( marker );
+    }
+
+    if ( !markerDirichletEliminationOthers.empty() )
+        bilinearForm +=
+            on( _range=markedfaces(mesh, markerDirichletEliminationOthers ),
+                _element=u,_rhs=RBis,
+                _expr= vf::zero<nDim,1>() );
+
+
+    if ( this->hasMarkerPressureBC() )
+    {
+        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
+        form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,
+               _rowstart=this->rowStartInMatrix()+startBlockIndexPressureLM1,
+               _colstart=this->rowStartInMatrix()+startBlockIndexPressureLM1 ) +=
+            on( _range=boundaryfaces(M_meshLagrangeMultiplierPressureBC), _rhs=RBis,
+                _element=*M_fieldLagrangeMultiplierPressureBC1, _expr=cst(0.));
+        if ( nDim == 3 )
+        {
+            size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
+            form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,
+                   _rowstart=this->rowStartInMatrix()+startBlockIndexPressureLM2,
+                   _colstart=this->rowStartInMatrix()+startBlockIndexPressureLM2 ) +=
+                on( _range=boundaryfaces(M_meshLagrangeMultiplierPressureBC), _rhs=RBis,
+                    _element=*M_fieldLagrangeMultiplierPressureBC2, _expr=cst(0.));
+        }
+    }
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("FluidMechanics","updateJacobianDofElimination","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 

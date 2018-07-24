@@ -867,6 +867,36 @@ gausslobattojacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
 
 namespace dyna
 {
+template<typename T, typename VectorW,  typename VectorN>
+void
+gaussjacobi( int N, VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
+{
+    typedef T value_type;
+
+    Feel::dyna::Jacobi<T> p( N, a, b );
+
+    roots( p, xr );
+
+    const value_type two = 2.0;
+    const value_type power = a+b+1.0;
+    value_type a1 = math::pow( two,power );
+    value_type a2 = fact( a+value_type( N ) );//gamma(a + m + 1);
+    value_type a3 = fact( b+value_type( N ) );//gamma(b + m + 1);
+    value_type a4 = fact( a+b+value_type( N ) );//gamma(a + b + m + 1);
+    value_type a5 = fact( value_type( N ) );
+    value_type a6 = a1 * a2 * a3;// / a4 / a5;
+
+    for ( int k = 0; k < N; ++k )
+    {
+        value_type fp = p.derivate( xr[k] );
+        value_type dn = fp*fp*( 1.0  - xr[k]*xr[k] )*a4*a5;
+
+        wr[k] =a6 / dn;
+        //wr[k] = a6 / ( 1.0  - xr[k]*xr[k]) /  ( fp*fp );
+    }
+}
+
+
 /**
  * \brief Gauss-Lobatto-Jacobi-Bouzitat Quadrature
  *

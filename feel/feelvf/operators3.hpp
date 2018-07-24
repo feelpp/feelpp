@@ -44,9 +44,6 @@ public:
 
     static const size_type context = LeftExprType::context|RightExprType::context;
 
-    static const uint16_type imorder = LeftExprType::imorder + RightExprType::imorder;
-    static const bool imIsPoly = LeftExprType::imIsPoly && RightExprType::imIsPoly;
-
     typedef LeftExprType left_expression_type;
     typedef RightExprType right_expression_type;
     typedef OpDot<LeftExprType, RightExprType> this_type;
@@ -73,6 +70,12 @@ public:
         DVLOG(2) << "[" BOOST_PP_STRINGIZE( OpDot ) "] copy constructor\n";
 
     }
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_left.polynomialOrder() + M_right.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_left.isPolynomial() && M_right.isPolynomial(); }
 
     left_expression_type const& left() const
     {

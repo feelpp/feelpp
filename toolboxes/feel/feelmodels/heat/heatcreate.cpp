@@ -11,6 +11,9 @@
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 //#include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 
+#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -37,7 +40,6 @@ HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
     this->addTimerTool("PostProcessing",nameFilePostProcessing);
     this->addTimerTool("TimeStepping",nameFileTimeStepping);
 
-    this->setFilenameSaveInfo( prefixvm(this->prefix(),"Heat.info") );
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
@@ -336,8 +338,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
             M_exporter->restart(this->timeInitial());
     }
 
-    bool hasMeasure = false;
-
     pt::ptree ptree = this->modelProperties().postProcess().pTree( modelName );
     //  heat flux measures
     std::string ppTypeMeasures = "Measures";
@@ -374,8 +374,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
                     //std::cout << "add ppHeatFlux with name " << marker<<"\n";
                     std::string name = myPpForces.name();
                     M_postProcessMeasuresForces.push_back( myPpForces );
-                    this->postProcessMeasuresIO().setMeasure("NormalHeatFlux_"+name,0.);
-                    hasMeasure = true;
                 }
             }
         }
@@ -400,22 +398,17 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
                 M_postProcessMeasuresContextTemperature->add( ptCoord );
                 std::string ptNameExport = (boost::format("temperature_%1%")%ptPos.name()).str();
                 this->postProcessMeasuresEvaluatorContext().add("temperature", ctxId, ptNameExport );
-                this->postProcessMeasuresIO().setMeasure( ptNameExport, 0. );
-                hasMeasure = true;
             }
         }
     }
 
 
-    if ( hasMeasure )
+    if ( !this->isStationary() )
     {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setParameter( "time", this->timeInitial() );
-        // start or restart measure file
-        if (!this->doRestart())
-            this->postProcessMeasuresIO().start();
-        else if ( !this->isStationary() )
+        if ( this->doRestart() )
             this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+        else
+            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
     }
 
     double tElpased = this->timerTool("Constructor").stop("initPostProcess");
@@ -597,7 +590,10 @@ HEAT_CLASS_TEMPLATE_TYPE::exportFields( double time )
 {
     bool hasFieldToExport = this->updateExportedFields( M_exporter, M_postProcessFieldExported, time );
     if ( hasFieldToExport )
+    {
         M_exporter->save();
+        this->upload( M_exporter->path() );
+    }
 }
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 bool
@@ -620,15 +616,12 @@ HEAT_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::se
         hasFieldToExport = true;
     }
 
-    if ( fields.find( "velocity-convection" ) != fields.end() )
+    if ( fields.find( "velocity-convection" ) != fields.end() && this->fieldVelocityConvectionIsOperational() )
     {
-        if ( ( M_doExportVelocityConvection || M_doExportAll ) && this->fieldVelocityConvectionIsOperational() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
-                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-convection")),
-                                         this->fieldVelocityConvection() );
-            hasFieldToExport = true;
-        }
+        exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
+                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-convection")),
+                                     this->fieldVelocityConvection() );
+        hasFieldToExport = true;
     }
     if ( fields.find( "thermal-conductivity" ) != fields.end() )
     {
@@ -705,12 +698,35 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         }
     }
 
+    auto fieldTuple = hana::make_tuple( std::make_pair( "temperature",this->fieldTemperaturePtr() ) );
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
+    {
+        std::map<std::string,double> resPpNorms;
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
+        for ( auto const& resPpNorm : resPpNorms )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
+            hasMeasure = true;
+        }
+    }
+
+    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( modelName ) )
+    {
+        std::map<std::string,double> resPpStats;
+        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
+        for ( auto const& resPpStat : resPpStats )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
+            hasMeasure = true;
+        }
+    }
 
     if ( hasMeasure )
     {
         if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setParameter( "time", time );
+            this->postProcessMeasuresIO().setMeasure( "time", time );
         this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
     }
 }
 
@@ -751,8 +767,6 @@ HEAT_CLASS_TEMPLATE_TYPE::updateBdf()
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
     this->log("Heat","updateBdf", "finish");
 }
-
-
 
 } // end namespace FeelModels
 } // end namespace Feel

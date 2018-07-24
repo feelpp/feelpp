@@ -34,8 +34,6 @@
 
 namespace Feel
 {
-namespace vf
-{
 namespace FeelModels
 {
 
@@ -2203,8 +2201,6 @@ public:
     static const uint16_type imorderAuto = mpl::if_<boost::is_same<SpecificExprType,mpl::int_<ExprApplyType::EVAL> >,
                                                     mpl::int_<2*orderdisplacement>,
                                                     mpl::int_<2*orderdisplacement> >::type::value;
-    static const uint16_type imorder = (QuadOrder>=0)?QuadOrder:imorderAuto;
-    static const bool imIsPoly = true;
 
     typedef Shape<nDim, Tensor2, false, false> shape_type;
     //typedef Eigen::Matrix<value_type,shape_type::M,shape_type::N> matrix_shape_type;
@@ -2240,6 +2236,12 @@ public:
         M_mechanicalPropertiesDesc( op.M_mechanicalPropertiesDesc )
     {}
     ~SolidMecStressTensorImpl() {}
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return (QuadOrder>=0)?QuadOrder:imorderAuto; }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return true; }
 
     element_displacement_type const& displacement() const { return M_displacement; }
     mechanical_properties_desc_type const& mechanicalPropertiesDesc() const { return M_mechanicalPropertiesDesc; }
@@ -2460,6 +2462,5 @@ solidMecFirstPiolaKirchhoffTensorJacobian( ElementDisplacementType const& u,
 
 
 } // namespace FeelModels
-} // namespace vf
 } // namespace Feel
 #endif /* __SOLIDMEC_FIRSTPIOLAKIRCHHOFF_H */

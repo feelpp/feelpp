@@ -201,7 +201,7 @@ namespace FeelModels
         template < typename ExprT >
         void setCoeffPoisson( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "", bool updateOthersFields = true )
             {
-                this->updateYoungModulus( vfexpr,marker,updateOthersFields );
+                this->updateCoeffPoisson( vfexpr,marker,updateOthersFields );
                 if ( M_fieldCoeffPoisson )
                     this->setCstCoeffPoisson( M_fieldCoeffPoisson->min(), marker, false, false );
             }

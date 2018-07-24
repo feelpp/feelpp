@@ -117,12 +117,17 @@ public :
     void solve();
 
     void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const;
 
     void updateLinearPDE( DataUpdateLinear & data ) const;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
 
     void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
     void updateResidual( DataUpdateResidual & data ) const;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const;
 
 private :
 
@@ -143,6 +148,7 @@ private :
 
     // solver
     //std::string M_solverName;
+    bool M_useSemiImplicitTimeScheme;
 
     // algebraic data/tools
     backend_ptrtype M_backend;

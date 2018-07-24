@@ -22,5 +22,6 @@
 #
 #
 
+add_subdirectory(remotedata)
 add_subdirectory(scripts)
 install(DIRECTORY lsan DESTINATION share/feelpp)

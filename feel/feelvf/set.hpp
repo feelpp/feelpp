@@ -58,9 +58,6 @@ public:
     static const size_type context = OnExpr::context|vm::POINT;
     static const size_type is_terminal = false;
 
-    static const uint16_type imorder = OnExpr::imorder;
-    static const bool imIsPoly = OnExpr::imIsPoly;
-
     typedef typename boost::tuples::template element<1, ElementRange>::type element_iterator;
 
     typedef Elem element_type;
@@ -140,6 +137,13 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_expr.isPolynomial(); }
+
     void apply();
     //@}
 

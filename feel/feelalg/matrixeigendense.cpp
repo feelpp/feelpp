@@ -188,7 +188,7 @@ MatrixEigenDense<T>::energy( Vector<value_type> const& __v,
 
 template<typename T>
 void
-MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _m )
+MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _m, Feel::MatrixStructure matStruc )
 {
     MatrixEigenDense<value_type> const* m = dynamic_cast<MatrixEigenDense<value_type> const*>( &_m );
     FEELPP_ASSERT( m != 0 ).error( "invalid sparse matrix type, should be MatrixEigenDense" );

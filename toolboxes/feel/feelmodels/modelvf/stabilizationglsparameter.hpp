@@ -5,8 +5,6 @@
 
 namespace Feel
 {
-namespace vf
-{
 namespace FeelModels
 {
 
@@ -59,23 +57,27 @@ private :
             size_type eltId = this->gmc()->id();
             value_type hSize = M_expr.stabGLSParameter().hSize( eltId );
             value_type mK = M_expr.stabGLSParameter().mK( eltId );
+
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
                 value_type norm_u_square = 0.;
                 for (uint16_type c=0;c<tensor_convection_type::shape::M;++c)
                     norm_u_square += math::pow(M_tensorConvection.evalq( c,0,q),2);
+#if 0
+                if ( norm_u_square < 1e-12 )
+                {
+                    M_localMatrixInGeoContext[q](0,0) = 0.;
+                    continue;
+                }
+#endif
+
                 value_type norm_u = math::sqrt( norm_u_square );
                 value_type evalCoeffDiffusion = M_tensorCoeffDiffusion.evalq(0,0,q);
                 value_type Re = mK*norm_u*hSize/(2*evalCoeffDiffusion);
-#if 0
-                value_type xi_Re = std::min( 1., Re );
-                M_localMatrixInGeoContext[q](0,0) = hSize*xi_Re/( std::max( 1e-10, 2*norm_u) );
-#else
                 if ( Re < 1. )
                     M_localMatrixInGeoContext[q](0,0) = math::pow(hSize,2)*mK/(4*evalCoeffDiffusion);
                 else
                     M_localMatrixInGeoContext[q](0,0) = hSize/(2*norm_u);
-#endif
             }
         }
     void update( Geo_t const& geom, mpl::false_, mpl::true_ )
@@ -251,11 +253,6 @@ public:
 
     static const size_type context = ExprConvectionType::context|ExprCoeffDiffusionType::context;
     static const bool is_terminal = true;
-    static const uint16_type imorderDefaultConvectionDiffusion = ( ExprConvectionType::imorder > ExprCoeffDiffusionType::imorder )?ExprConvectionType::imorder:ExprCoeffDiffusionType::imorder;
-    static const uint16_type imorderDefault = (has_convection_expr && has_coeffdiffusion_expr)? imorderDefaultConvectionDiffusion :
-        ( ( has_convection_expr )?ExprConvectionType::imorder : ExprCoeffDiffusionType::imorder );
-    static const uint16_type imorder = (QuadOrder>=0)?QuadOrder:imorderDefault;
-    static const bool imIsPoly = false;
     typedef double value_type;
     typedef value_type evaluate_type;
 
@@ -291,13 +288,29 @@ public:
     bool hasConvection() const { return M_hasConvection; }
     bool hasCoeffDiffusion() const { return M_hasCoeffDiffusion; }
 
+    //! polynomial order
+    uint16_type polynomialOrder() const
+    {
+        if ( QuadOrder>=0 )
+            return QuadOrder;
+        if ( M_hasConvection && M_hasCoeffDiffusion )
+            return std::max( M_exprConvection.polynomialOrder(),M_exprCoeffDiffusion.polynomialOrder() );
+        else if ( M_hasConvection )
+            return M_exprConvection.polynomialOrder();
+        else
+            return M_exprCoeffDiffusion.polynomialOrder();
+    }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return false; }
+
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {
         typedef tensor<Geo_t,Basis_i_t,Basis_j_t> self_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >, \
-                                  mpl::identity<vf::detail::gmc<0> >,                         \
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type key_type;  \
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,Feel::vf::detail::gmc<0> >, \
+                                  mpl::identity<Feel::vf::detail::gmc<0> >, \
+                                  mpl::identity<Feel::vf::detail::gmc<1> > >::type::type key_type; \
         //typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef typename gmc_type::value_type value_type;
@@ -431,7 +444,6 @@ stabilizationGLSParameterExpr( StabilizationGLSParameterType const& stabilizatio
 
 
 } // namespace FeelModels
-} // namespace vf
 } // namespace Feel
 
 #endif // FEELPP_MODELS_VF_STABILIZATION_GLS_PARMATER_EXPR_H

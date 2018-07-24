@@ -244,8 +244,11 @@ public :
 
     virtual void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     virtual void updateJacobian( DataUpdateJacobian & data ) const;
+    virtual void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
     virtual void updateResidual( DataUpdateResidual & data ) const;
+    virtual void updateResidualDofElimination( DataUpdateResidual & data ) const;
     virtual void updateLinearPDE( DataUpdateLinear & data ) const;
+    virtual void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
     virtual void updatePicard( DataUpdateLinear & data ) const;
     virtual double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
 
@@ -254,6 +257,8 @@ public :
     virtual void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     virtual void preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     virtual void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const {}
+    virtual void preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const {}
+    virtual void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     //----------------------------------------------------------------------------------//
 
 private :

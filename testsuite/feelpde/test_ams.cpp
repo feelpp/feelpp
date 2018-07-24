@@ -1,6 +1,15 @@
-#include <feel/feel.hpp>
+#define BOOST_TEST_MODULE test_ams
+#include <testsuite.hpp>
+
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
+#include <feel/feelvf/vf.hpp>
 
 #define curl_op curl
 #define curlt_op curlt
@@ -21,32 +30,13 @@ makeOptions()
         .add(Feel::backend_options("ms"));
 }
 
-inline
-AboutData
-makeAbout()
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAboutDefault("test_ams"), makeOptions() )
+
+BOOST_AUTO_TEST_SUITE( test_ams )
+BOOST_AUTO_TEST_CASE( test_0 )
 {
-    AboutData about( "ams" ,
-                     "ams" ,
-                     "0.1",
-                     "test ams",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2015 Feel++ Consortium" );
-    about.addAuthor( "Vincent HUBER", "developer", "vincent.huber@cemosis.fr", "" );
 
-    return about;
-}
-
-int main( int argc, char** argv )
-{
-  // Initialize Feel++ Environment
-  Environment env( _argc=argc, _argv=argv,
-      _desc=makeOptions(),
-      _about=makeAbout()
-      );
-
-  /// Todo : add option regul & backend;
-
-  auto mesh = loadMesh(_mesh = new Mesh<Simplex<3>> );
+  auto mesh = loadMesh(_mesh = new Mesh<Simplex<FEELPP_DIM>> );
 
   auto Xh = Ned1h<0>( mesh );
   auto XhL = Pch<1>( mesh );
@@ -137,3 +127,4 @@ int main( int argc, char** argv )
   }
 
 }
+BOOST_AUTO_TEST_SUITE_END()

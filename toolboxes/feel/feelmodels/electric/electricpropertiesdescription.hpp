@@ -79,18 +79,12 @@ public :
                 auto range = markedelements( mesh,matmarkers );
                 M_rangeMeshElementsByMaterial[matName] = range;
 
+                M_electricConductivityByMaterial[matName];
                 if ( mat.hasPropertyExprScalar("sigma") )
                 {
                     auto const& expr = mat.propertyExprScalar("sigma");
                     M_electricConductivityByMaterial[matName].setExpr( expr );
-                    M_electricConductivityByMaterial[matName].setValue( 0 );//TODO
                     M_fieldElectricConductivity->on(_range=range,_expr=expr);
-                }
-                else
-                {
-                    double value = mat.propertyConstant("sigma");
-                    M_electricConductivityByMaterial[matName].setValue( value );
-                    M_fieldElectricConductivity->on(_range=range,_expr=cst(value));
                 }
             }
         }
@@ -144,11 +138,14 @@ public :
             *ostr << "\n     -- number of materials : " << matNames.size();
             for ( std::string const& matName : matNames)
             {
-                *ostr << "\n     -- [" << matName << "] electric conductivity : ";
-                if ( this->electricConductivity(matName).isConstant() )
-                    *ostr << this->electricConductivity(matName).value();
-                else
-                    *ostr << str( this->electricConductivity(matName).expr().expression() );
+                if ( this->electricConductivity( matName ).hasExpr() )
+                {
+                    *ostr << "\n     -- [" << matName << "] electric conductivity : ";
+                    if ( this->electricConductivity(matName).isConstant() )
+                        *ostr << this->electricConductivity(matName).value();
+                    else
+                        *ostr << str( this->electricConductivity(matName).expr().expression() );
+                }
             }
             return ostr;
         }

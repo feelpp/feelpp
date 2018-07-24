@@ -116,7 +116,14 @@ public:
     //boost::tuple<mesh_ptrtype,value_type> apply( mesh_ptrtype const& imesh, DisplType const& u );
     void apply( mesh_ptrtype& imesh, DisplType const& u );
 
+private:
+    void applyGhostElements( mesh_ptrtype& imesh,
+                             std::map<rank_type,std::vector< boost::tuple<size_type,std::vector< ublas::vector<value_type> > > > > const& dataToSend,
+                             std::unordered_set<size_type> & points_done );
+
+    void updateForUse( mesh_ptrtype& imesh );
     //@}
+
 private:
     mesh_ptrtype M_mesh;
     bool M_updateMeshMeasures;
@@ -153,35 +160,27 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     typedef typename DisplType::functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
 
+    std::map<rank_type,std::vector< boost::tuple<size_type,std::vector< ublas::vector<value_type> > > > > dataToSend;
+    std::unordered_set<size_type> points_done;
 
-    gm_ptrtype gm( new gm_type );
-    fe_type fe;
-
-    //
-    // Precompute some data in the reference element for
-    // geometric mapping and reference finite element
-    //
-    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm, gm->points() ) );
-
-    //const uint16_type ndofv = fe_type::nDof;
-    //mesh_ptrtype omesh( new mesh_type );
-    //*omesh = *imesh;
-
-    bool addExtendedMPIElt =  (imesh->worldComm().localSize() > 1) && u.functionSpace()->dof()->buildDofTableMPIExtended();
-    EntityProcessType entityProcess = (addExtendedMPIElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-    auto rangeElt = elements( imesh, entityProcess );
+    auto rangeElt = elements( imesh );
     auto it_elt = rangeElt.template get<1>();
     auto en_elt = rangeElt.template get<2>();
     if ( std::distance(it_elt,en_elt)==0 )
     {
-        // call updateMeasures in parallel here because this function is called ( at the end of this function)
-        // by others proc which have elements and need collective comm
-        if ( M_updateMeshMeasures && imesh->worldComm().localSize() > 1 ) {
-            //imesh->updateForUse();
-            imesh->updateMeasures();
-        }
+        if ( imesh->worldComm().localSize() > 1 )
+            this->applyGhostElements( imesh, dataToSend, points_done );
+
+        this->updateForUse( imesh );
         return;
     }
+
+    //gm_ptrtype gm( new gm_type );
+    gm_ptrtype gm = imesh->gm();
+
+    // Precompute some data in the reference element for
+    // geometric mapping and reference finite element
+    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm, gm->points() ) );
 
     typedef typename DisplType::pc_type pc_type;
     typedef boost::shared_ptr<pc_type> pc_ptrtype;
@@ -201,15 +200,10 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m.constant(0.) );
     u.id( *__ctx, uvalues );
 
-    //const uint16_type ndofv = fe_type::nDof;
-
-
-    std::unordered_set<size_type> points_done;
-
 
     uint16_type nptsperelem = gm->points().size2();
     ublas::vector<value_type> val( fe_type::nComponents );
-
+    std::vector< ublas::vector<value_type> > dataEltToSend( nptsperelem, ublas::vector<value_type>( fe_type::nComponents ) );
     for ( ; it_elt != en_elt; ++it_elt )
     {
         element_type const& curElt = *it_elt;
@@ -219,6 +213,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
         std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m.constant(0.) );
         u.id( *__ctx, uvalues );
 
+        bool isGhostInOtherPart = !curElt.idInOthersPartitions().empty();
         for ( uint16_type l =0; l < nptsperelem; ++l )
         {
             for ( uint16_type comp = 0; comp < fe_type::nComponents; ++comp )
@@ -234,9 +229,66 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
                 points_done.insert( ptId );
                 //std::cout << "Pt: " << thedof << " Moved Elem " << curElt.id() << " G=" << curElt.G() << "\n";
             }
+            if ( isGhostInOtherPart )
+                dataEltToSend[l] = val;
         }
+        if ( isGhostInOtherPart )
+            for ( auto const& idOtherPart : curElt.idInOthersPartitions() )
+                dataToSend[idOtherPart.first].push_back( boost::make_tuple( idOtherPart.second, dataEltToSend ) );
     }
 
+    if ( imesh->worldComm().localSize() > 1 )
+        this->applyGhostElements( imesh, dataToSend, points_done );
+
+    this->updateForUse( imesh );
+}
+
+template<typename MeshType>
+void
+MeshMover<MeshType>::applyGhostElements( mesh_ptrtype& imesh,
+                                         std::map<rank_type,std::vector< boost::tuple<size_type,std::vector< ublas::vector<value_type> > > > > const& dataToSend,
+                                         std::unordered_set<size_type> & points_done )
+{
+    // mpi comm
+    int neighborSubdomains = imesh->neighborSubdomains().size();
+    int nbRequest = 2*neighborSubdomains;
+    mpi::request * reqs = new mpi::request[nbRequest];
+    int cptRequest=0;
+    std::map<rank_type,std::vector< boost::tuple<size_type,std::vector< ublas::vector<value_type> > > > > dataToRecv;
+    for ( rank_type neighborRank : imesh->neighborSubdomains() )
+    {
+        CHECK( dataToSend.find( neighborRank ) != dataToSend.end() ) << "something wrong in parallel datastructure of mesh";
+        reqs[cptRequest++] = imesh->worldComm().localComm().isend( neighborRank , 0, dataToSend.find( neighborRank )->second );
+        reqs[cptRequest++] = imesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank] );
+    }
+    mpi::wait_all(reqs, reqs + nbRequest);
+    delete [] reqs;
+
+    // move points in ghost elements
+    for ( auto const& dataRecvByProc : dataToRecv )
+    {
+        for ( auto const& dataRecvByElt : dataRecvByProc.second )
+        {
+            size_type eltId = boost::get<0>( dataRecvByElt );
+            auto const& pointsData =  boost::get<1>( dataRecvByElt );
+            auto & eltModified = imesh->elementIterator( eltId )->second;
+            for ( uint16_type p=0;p<mesh_type::element_type::numPoints;++p )
+            {
+                size_type ptId = eltModified.point( p ).id();
+                if ( points_done.find( ptId ) == points_done.end() )
+                {
+                    eltModified.applyDisplacement( p, pointsData[p] );
+                    points_done.insert( ptId );
+                }
+            }
+        }
+    }
+}
+
+template<typename MeshType>
+void
+MeshMover<MeshType>::updateForUse( mesh_ptrtype& imesh )
+{
     // reset geomap cache
     if ( imesh->gm()->isCached() )
     {
@@ -258,6 +310,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     imesh->meshChanged(MESH_CHANGES_POINTS_COORDINATES );
 #endif
 }
+
 
 template<typename MeshType, typename DisplType>
 boost::shared_ptr<MeshType>

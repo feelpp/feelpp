@@ -103,7 +103,7 @@ BOOST_PARAMETER_FUNCTION(
     {
         filename_with_path = gmsh.refine( filename_with_path, refine );
     }
-    else if ( rebuild_partitions )
+    else if ( rebuild_partitions && partitions > 1 )
     {
         gmsh.rebuildPartitionMsh(filename_with_path,rebuild_partitions_filename);
         filename_with_path=rebuild_partitions_filename;
