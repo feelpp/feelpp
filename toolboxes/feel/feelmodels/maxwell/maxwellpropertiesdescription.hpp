@@ -77,18 +77,12 @@ public :
                 auto range = markedelements( mesh,matmarkers );
                 M_rangeMeshElementsByMaterial[matName] = range;
 
+                M_magneticPermeabilityByMaterial[matName];
                 if ( mat.hasPropertyExprScalar("mu") )
                 {
                     auto const& expr = mat.propertyExprScalar("mu");
                     M_magneticPermeabilityByMaterial[matName].setExpr( expr );
-                    M_magneticPermeabilityByMaterial[matName].setValue( 0 );//TODO
                     M_fieldMagneticPermeability->on(_range=range,_expr=expr);
-                }
-                else
-                {
-                    double value = mat.propertyConstant("mu");
-                    M_magneticPermeabilityByMaterial[matName].setValue( value );
-                    M_fieldMagneticPermeability->on(_range=range,_expr=cst(value));
                 }
             }
         }

@@ -412,6 +412,7 @@ PreconditionerBlockMS<space_type>::initAMS( void )
                                    _prefix=M_prefix_11,
                                    _matrix=M_11
                                   );
+        backend(_name=M_prefix_11)->attachPreconditioner( prec );
         prec->setMatrix(M_11);
         prec->attachAuxiliarySparseMatrix("G",M_grad.matPtr());
         if(boption(M_prefix_11+".useEdge"))

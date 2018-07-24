@@ -65,10 +65,6 @@ public:
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
 
-
-    static const uint16_type imorder = 1;
-    static const bool imIsPoly = true;
-
     typedef CTX context_type;
     typedef CTX2 context2_type;
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> element_type;
@@ -166,6 +162,12 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return 1; }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return true; }
 
     //@}
 

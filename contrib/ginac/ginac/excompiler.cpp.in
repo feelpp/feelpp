@@ -171,7 +171,7 @@ public:
 			*****/
 			ofs << "#include <ginac-extern-math.h> " << std::endl;
 			ofs << "#if !defined( pi )\n"
-			    << "#define pi " << M_PI << std::endl
+			    << "#define pi " << std::setprecision(std::numeric_limits<long double>::digits10 + 1) << M_PI << std::endl
 			    << "#endif // pi\n";
 			ofs << "#if !defined( Pi )\n"
 			    << "#define Pi " << M_PI << std::endl

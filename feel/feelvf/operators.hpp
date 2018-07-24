@@ -243,10 +243,6 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             static const uint16_type nComponents2 = fe_type::nComponents2; \
             static const bool is_terminal = VF_OPERATOR_TERMINAL(O);    \
                                                                         \
-            static const uint16_type imorder_test=element_type::functionspace_type::basis_type::nOrder + VF_OPERATOR_DIFFORDERIM(O); \
-            static const uint16_type imorder = (imorder_test==invalid_uint16_type_value)?0:imorder_test; \
-            static const bool imIsPoly = true;                          \
-                                                                        \
             template<typename Func>                                     \
                 struct HasTestFunction                                  \
             {                                                           \
@@ -294,6 +290,13 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             template<typename... TheExpr>                               \
                 typename Lambda<TheExpr...>::type                       \
                 operator()( TheExpr... e) { return *this; }             \
+                                                                        \
+            uint16_type polynomialOrder() const {                       \
+                int imorder_test = element_type::functionspace_type::basis_type::nOrder + VF_OPERATOR_DIFFORDERIM(O); \
+                return (imorder_test<0)?0:imorder_test; \
+            }                                                           \
+                                                                        \
+            bool isPolynomial() const { return true; }                  \
                                                                         \
             element_type const& e() const { return M_v; }              \
             bool useInterpWithConfLoc() const { return M_useInterpWithConfLoc; } \

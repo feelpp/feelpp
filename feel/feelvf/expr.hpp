@@ -74,11 +74,6 @@ public:
 
     static const size_type context = ExprT::context;
     static const bool is_terminal = false;
-    //integration order
-    static const uint16_type imorder = ExprT::imorder;
-    //the expression is a polynomial type?
-    static const bool imIsPoly = ExprT::imIsPoly;
-
 
     template<typename Func>
     struct HasTestFunction
@@ -131,6 +126,12 @@ public:
     {}
 
     //@}
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_expr.isPolynomial(); }
 
     expression_type const& expression() const
     {
@@ -267,13 +268,6 @@ public:
 
     static const size_type context = ExprT::context;
     static const bool is_terminal = ExprT::is_terminal;
-
-    //integration order
-    static const uint16_type imorder = ExprT::imorder;
-    //the expression is a polynomial type?
-    static const bool imIsPoly = ExprT::imIsPoly;
-
-
 
     template<typename Func>
     struct HasTestFunction
@@ -599,6 +593,12 @@ public:
         return M_expr;
     }
 
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_expr.isPolynomial(); }
+
     //@}
 
     /** @name  Mutators
@@ -739,7 +739,7 @@ struct ExpressionOrder
     typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
 
     static const uint16_type nOrderGeo = the_element_type::nOrder;
-
+#if 0
     static const bool is_polynomial = ExprT::imIsPoly;
 #if 0
     static const int value = boost::mpl::if_< boost::mpl::bool_< ExprT::imIsPoly > ,
@@ -753,7 +753,11 @@ struct ExpressionOrder
     static const uint16_type value = ( ExprT::imorder )?( ExprT::imorder*nOrderGeo ):( nOrderGeo );
     static const uint16_type value_1 = ExprT::imorder+(the_element_type::is_hypercube?nOrderGeo:0);
 #endif
-
+#else
+    static bool isPolynomial( ExprT const& expr ) { return expr.isPolynomial(); }
+    static quad_order_type value( ExprT const& expr ) { return ( expr.polynomialOrder() )?( expr.polynomialOrder()*nOrderGeo ):( nOrderGeo ); }
+    static quad_order_type value_1( ExprT const& expr ) { return expr.polynomialOrder()+(the_element_type::is_hypercube?nOrderGeo:0); }
+#endif
     ExpressionOrder() = default;
 };
 
@@ -777,8 +781,6 @@ public:
     static const size_type context = ExprT::context;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = ExprT::imorder;
-    static const bool imIsPoly = ExprT::imIsPoly;
     /** @name Typedefs
      */
     //@{
@@ -801,6 +803,12 @@ public:
     {}
 
     //@}
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_expr.isPolynomial(); }
 
     /** @name Operator overloads
      */
@@ -950,9 +958,6 @@ public:
     static const uint16_type nComponents2 = fe_type::nComponents2;
     typedef std::map<size_type,std::vector<element_ptrtype> > basis_type;
 
-    static const uint16_type imorder = element_type::functionspace_type::basis_type::nOrder;
-    static const bool imIsPoly = true;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -988,6 +993,12 @@ public:
     {
         return M_basis;
     }
+
+    //! polynomial order
+    constexpr uint16_type polynomialOrder() const { return element_type::functionspace_type::basis_type::nOrder; }
+
+    //! expression is polynomial?
+    constexpr bool isPolynomial() const { return true; }
 
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>

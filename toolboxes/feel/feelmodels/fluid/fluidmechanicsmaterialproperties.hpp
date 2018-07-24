@@ -235,12 +235,6 @@ public :
             {
                 auto const& expr = mat.propertyExprScalar("mu");
                 M_newtonian.setExpr( expr );
-                //M_newtonian.setValue( 0 );//TODO
-            }
-            else
-            {
-                double value = mat.propertyConstant("mu");
-                M_newtonian.setValue( value );
             }
 
             pt::ptree const& pt = mat.pTree();
@@ -607,20 +601,14 @@ public :
                 M_fieldDynamicViscosity->on(_range=range,_expr=expr);
             }
 
+            M_densityByMaterial[matName];
             if ( mat.hasPropertyExprScalar("rho") )
             {
                 auto const& expr = mat.propertyExprScalar("rho");
                 M_densityByMaterial[matName].setExpr( expr );
-                //M_densityByMaterial[matName].setValue( 0 );//TODO
                 M_fieldDensity->on(_range=range,_expr=expr);
             }
-            else
-            {
-                double value = mat.propertyConstant("rho");
-                M_densityByMaterial[matName].setValue( value );
-                M_fieldDensity->on(_range=range,_expr=cst(value));
-            }
-
+            else M_densityByMaterial[matName].setExpr( expr("0") );
         }
     }
 

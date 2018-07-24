@@ -76,8 +76,6 @@ public:
 
     static const int Options = _Options;
 
-    static const uint16_type imorder = 0;
-    static const bool imIsPoly = true;
     static const bool is_terminal = true;
 
     typedef Feel::MultiScaleImage<T,Options> msi_type;
@@ -154,6 +152,12 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return 0; }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return true; }
 
     //blitz::Array<value_type,2> ones() const { return M_values; }
 
