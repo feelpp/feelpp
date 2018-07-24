@@ -48,8 +48,8 @@ public:
 
     //--------------------------------------------------------------------//
     // Density/viscosity
-    typedef typename fluid_type::densityviscosity_model_type densityviscosity_model_type;
-    typedef typename fluid_type::densityviscosity_model_ptrtype densityviscosity_model_ptrtype;
+    typedef typename fluid_type::material_properties_type densityviscosity_model_type;
+    typedef typename fluid_type::material_properties_ptrtype densityviscosity_model_ptrtype;
     //--------------------------------------------------------------------//
     // Interface forces model
     typedef InterfaceForcesModel<levelset_type> interfaceforces_model_type;

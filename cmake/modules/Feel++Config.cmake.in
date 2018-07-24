@@ -184,6 +184,7 @@ endif()
 
 
 foreach( _FEELPP_COMPONENTS ${Feel++_FIND_COMPONENTS})
+  # CRB
   if ( ${_FEELPP_COMPONENTS} MATCHES CRB )
     if ( EXISTS ${FEELPP_INSTALL_DIR}/share/feelpp/crb/cmake/Feel++-CRBConfig.cmake )
       include( ${FEELPP_INSTALL_DIR}/share/feelpp/crb/cmake/Feel++-CRBConfig.cmake )
@@ -192,9 +193,16 @@ foreach( _FEELPP_COMPONENTS ${Feel++_FIND_COMPONENTS})
       message(WARNING "[Feel++] component CRB does not found")
     endif()
   endif()
+  # Toolboxes
   if ( ${_FEELPP_COMPONENTS} MATCHES Toolboxes )
-    if ( EXISTS ${FEELPP_INSTALL_DIR}/share/feelpp/toolboxes/cmake/Feel++-ToolboxesConfig.cmake )
-      include( ${FEELPP_INSTALL_DIR}/share/feelpp/toolboxes/cmake/Feel++-ToolboxesConfig.cmake )
+    find_file( _FEELPP_TOOLBOXES_CONFIG_FILE Feel++-ToolboxesConfig.cmake
+      PATHS
+      ${FEELPP_INSTALL_DIR}/share/feelpp/toolboxes/cmake
+      ${FEELPP_TOOLBOXES_DIR}/share/feelpp/toolboxes/cmake
+      $ENV{FEELPP_TOOLBOXES_DIR}/share/feelpp/toolboxes/cmake
+      )
+    if ( _FEELPP_TOOLBOXES_CONFIG_FILE )
+      include( ${_FEELPP_TOOLBOXES_CONFIG_FILE} )
       message(STATUS "[Feel++] found component Toolboxes")
     else()
       message(WARNING "[Feel++] component Toolboxes does not found")

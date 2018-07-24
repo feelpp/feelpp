@@ -104,7 +104,7 @@ ModelMaterial::hasPropertyConstant( std::string const& prop ) const
     if ( itFindProp == M_materialProperties.end() )
         return false;
     auto const& matProp = itFindProp->second;
-    return matProp.hasValue();
+    return matProp.isConstant();//hasValue();
 }
 bool
 ModelMaterial::hasPropertyExprScalar( std::string const& prop ) const
@@ -167,66 +167,10 @@ ModelMaterial::propertyExprVectorial3( std::string const& prop ) const
 }
 
 void
-ModelMaterial::setProperty( std::string const& property, double val )
-{
-    M_materialProperties[property] = mat_property_expr_type();
-    M_materialProperties[property].setValue( val );
-}
-
-void
 ModelMaterial::setProperty( std::string const& property, pt::ptree const& p )
 {
-    if( boost::optional<double> itvald = p.get_optional<double>( property ) )
-    {
-        double val = *itvald;
-        VLOG(1) << "set property " << property << " is constant : " << val;
-        M_materialProperties[property] = mat_property_expr_type();
-        M_materialProperties[property].setValue( val );
-    }
-    else if( boost::optional<std::string> itvals = p.get_optional<std::string>( property ) )
-    {
-        std::string feelExprString = *itvals;
-        auto parseExpr = GiNaC::parse( feelExprString );
-        auto const& exprSymbols = parseExpr.second;
-        auto ginacEvalm = parseExpr.first.evalm();
-
-        bool isLst = GiNaC::is_a<GiNaC::lst>( ginacEvalm );
-        int nComp = 1;
-        if ( isLst )
-            nComp = ginacEvalm.nops();
-
-        if ( nComp == 1 && ( exprSymbols.empty() || ( exprSymbols.size() == 1 && exprSymbols[0].get_name() == "0" ) ) )
-        {
-            std::string stringCstExpr = ( isLst )? str( ginacEvalm.op(0) ) :str( ginacEvalm );
-            double val = 0;
-            try
-            {
-                val = std::stod( stringCstExpr );
-            }
-            catch (std::invalid_argument& err)
-            {
-                CHECK( false ) << "cast fail from expr to double\n";
-            }
-            VLOG(1) << "set property " << property <<" is const from expr=" << val;
-            M_materialProperties[property] = mat_property_expr_type();
-            M_materialProperties[property].setValue( val );
-        }
-        else
-        {
-            VLOG(1) << "set property " << property << " build symbolic expr with nComp=" << nComp;
-            M_materialProperties[property] = mat_property_expr_type();
-            if ( nComp == 1 )
-                M_materialProperties[property].setExprScalar( expr<expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
-            else if ( nComp == 2 )
-                M_materialProperties[property].setExprVectorial2( expr<2,1,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
-            else if ( nComp == 3 )
-                M_materialProperties[property].setExprVectorial3( expr<3,1,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
-            else if ( nComp == 4 )
-                M_materialProperties[property].setExprMatrix22( expr<2,2,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
-            else if ( nComp == 9 )
-                M_materialProperties[property].setExprMatrix33( expr<3,3,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
-        }
-    }
+    M_materialProperties[property] = mat_property_expr_type();
+    M_materialProperties[property].setExpr( property,p,*M_worldComm,M_directoryLibExpr );
 }
 
 void

@@ -41,13 +41,6 @@ public:
     static const size_type context = ExprT1::context|ExprT2::context;
     static const bool is_terminal = false;
 
-    /**
-     * \warning the Pow order computation is wrong here, we actually need the
-     * ExprT2 value (and not imorder) to multiply by ExprT1::imorder.
-     */
-    static const uint16_type imorder = ExprT1::imorder;
-    static const bool imIsPoly = ExprT1::imIsPoly && ExprT2::imIsPoly;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -98,6 +91,16 @@ public:
     {
         return false;
     }
+
+    /**
+     * \warning the Pow order computation is wrong here, we actually need the
+     * ExprT2 value (and not imorder) to multiply by ExprT1::imorder.
+     */
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_expr_1.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_expr_1.isPolynomial() && M_expr_2.isPolynomial(); }
 
     expression_1_type const& left() const
     {

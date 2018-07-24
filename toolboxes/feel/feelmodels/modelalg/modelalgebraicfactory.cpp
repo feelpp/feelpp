@@ -205,6 +205,48 @@ namespace FeelModels
         M_PrecondManage->attachNearNullSpace( k, myNearNullSpace );
     }
 
+    void
+    ModelAlgebraicFactory::addFunctionLinearAssembly( function_assembly_linear_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionLinearAssembly.size()).str() : key;
+        M_addFunctionLinearAssembly[ keyUsed ] = func;
+    }
+    void
+    ModelAlgebraicFactory::addFunctionLinearPostAssembly( function_assembly_linear_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionLinearPostAssembly.size()).str() : key;
+        M_addFunctionLinearPostAssembly[ keyUsed ] = func;
+    }
+    void
+    ModelAlgebraicFactory::addFunctionNewtonInitialGuess( function_newton_initial_guess_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionNewtonInitialGuess.size()).str() : key;
+        M_addFunctionNewtonInitialGuess[ keyUsed ] = func;
+    }
+    void
+    ModelAlgebraicFactory::addFunctionJacobianAssembly( function_assembly_jacobian_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionJacobianAssembly.size()).str() : key;
+        M_addFunctionJacobianAssembly[ keyUsed ] = func;
+    }
+    void
+    ModelAlgebraicFactory::addFunctionResidualAssembly( function_assembly_residual_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionResidualAssembly.size()).str() : key;
+        M_addFunctionResidualAssembly[ keyUsed ] = func;
+    }
+    void
+    ModelAlgebraicFactory::addFunctionJacobianPostAssembly( function_assembly_jacobian_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionJacobianPostAssembly.size()).str() : key;
+        M_addFunctionJacobianPostAssembly[ keyUsed ] = func;
+    }
+    void
+    ModelAlgebraicFactory::addFunctionResidualPostAssembly( function_assembly_residual_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionResidualPostAssembly.size()).str() : key;
+        M_addFunctionResidualPostAssembly[ keyUsed ] = func;
+    }
 
     //---------------------------------------------------------------------------------------------------------------//
     //---------------------------------------------------------------------------------------------------------------//
@@ -260,7 +302,7 @@ namespace FeelModels
     void
     ModelAlgebraicFactory::solve( std::string const& type,vector_ptrtype& sol )
     {
-        if ( type == "LinearSystem" )
+        if ( type == "Linear" || type == "LinearSystem" )
         {
             this->solveLinear( sol );
         }
@@ -283,6 +325,7 @@ namespace FeelModels
     void
     ModelAlgebraicFactory::solveLinear( vector_ptrtype& U )
     {
+        auto model = this->model();
         if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".ModelAlgebraicFactory","linearSolver", "start",
                                                             this->model()->worldComm(),this->model()->verboseAllProc());
 
@@ -296,6 +339,8 @@ namespace FeelModels
             //this->model()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
             this->model()->updateLinearPDE( dataLinearCst );
+            for ( auto const& func : M_addFunctionLinearAssembly )
+                func.second( dataLinearCst );
             M_hasBuildLinearSystemCst = true;
         }
         else if ( this->model()->rebuildCstPartInLinearSystem() || this->model()->needToRebuildCstPart() ||
@@ -306,6 +351,8 @@ namespace FeelModels
             //this->model()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
             this->model()->updateLinearPDE( dataLinearCst );
+            for ( auto const& func : M_addFunctionLinearAssembly )
+                func.second( dataLinearCst );
         }
         this->model()->setNeedToRebuildCstPart(false);
 
@@ -325,18 +372,19 @@ namespace FeelModels
         if (this->model()->hasExtendedPattern() && this->model()->buildMatrixPrecond() )
             M_Extended->zero();
 
-        // pre-assembly (optional)
-        if ( this->addFunctionLinearPreAssemblyNonCst != NULL )
-            this->addFunctionLinearPreAssemblyNonCst( M_J,M_R );
-
         // assembling non cst part
-        //this->model()->updateLinearPDE(U,M_J,M_R,false,M_Extended,true);
         ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
+        // apply before addFunctionLinearAssembly because due to Strong dirichlet
+        for ( auto const& func : M_addFunctionLinearAssembly )
+            func.second( dataLinearNonCst );
         this->model()->updateLinearPDE( dataLinearNonCst );
 
-        // post-assembly (optional)
-        if ( this->addFunctionLinearPostAssembly != NULL )
-            this->addFunctionLinearPostAssembly(M_J,M_R);
+        // dof elimination
+        this->model()->updateLinearPDEDofElimination( dataLinearNonCst );
+
+        // post-assembly
+        for ( auto const& func : M_addFunctionLinearPostAssembly )
+            func.second( dataLinearNonCst );
 
         // assembling matrix used for preconditioner
         this->model()->updatePreconditioner(U,M_J,M_Extended,M_Prec);
@@ -360,11 +408,16 @@ namespace FeelModels
 
         this->model()->updateInHousePreconditioner( M_J, U );
 
+        pre_solve_type pre_solve = std::bind(&model_type::preSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
+        post_solve_type post_solve = std::bind(&model_type::postSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
+
         // solve linear system
         auto const solveStat = M_backend->solve( _matrix=M_J,
                                                  _solution=U,
                                                  _rhs=M_R,
-                                                 _prec=M_PrecondManage );
+                                                 _prec=M_PrecondManage,
+                                                 _pre=pre_solve,
+                                                 _post=post_solve );
 
         if ( this->model()->errorIfSolverNotConverged() )
             CHECK( solveStat.isConverged() ) << "the linear solver has not converged in "
@@ -406,9 +459,6 @@ namespace FeelModels
 
         J->zero();
 
-        if ( this->addFunctionJacobianPreAssembly != NULL )
-            this->addFunctionJacobianPreAssembly( X, J );
-
         if ( model->useCstMatrix())
         {
             J->addMatrix(1.0, M_CstJ );
@@ -417,10 +467,21 @@ namespace FeelModels
         {
             ModelAlgebraic::DataUpdateJacobian dataJacobianCst(X, J, R, true, M_Extended,false);
             model->updateJacobian( dataJacobianCst );
+            for ( auto const& func : M_addFunctionJacobianAssembly )
+                func.second( dataJacobianCst );
         }
 
         ModelAlgebraic::DataUpdateJacobian dataJacobianNonCst(X,J,R,false, M_Extended,false);
+        // apply before addFunctionJacobianAssembly because due to Strong dirichlet
+        for ( auto const& func : M_addFunctionJacobianAssembly )
+            func.second( dataJacobianNonCst );
         model->updateJacobian( dataJacobianNonCst );
+
+        // dof elimination
+        model->updateJacobianDofElimination( dataJacobianNonCst );
+
+        for ( auto const& func : M_addFunctionJacobianPostAssembly )
+            func.second( dataJacobianNonCst );
 
         model->updateInHousePreconditioner( J, X );
 
@@ -437,9 +498,6 @@ namespace FeelModels
 
         R->zero();
 
-        if ( this->addFunctionResidualPreAssembly != NULL )
-            this->addFunctionResidualPreAssembly( X, R );
-
         if ( model->useCstVector())
         {
             R->add(1.0, M_CstR );
@@ -448,6 +506,8 @@ namespace FeelModels
         {
             ModelAlgebraic::DataUpdateResidual dataResidualCst( X, R, true, true );
             model->updateResidual( dataResidualCst );
+            for ( auto const& func : M_addFunctionResidualAssembly )
+                func.second( dataResidualCst );
         }
 
         bool doOptimization = this->model()->useLinearJacobianInResidual() && this->model()->useCstMatrix();
@@ -456,7 +516,17 @@ namespace FeelModels
             R->addVector(*X, *M_CstJ );
 
         ModelAlgebraic::DataUpdateResidual dataResidualNonCst( X, R, false, doOptimization );
+        // apply before addFunctionResidualAssembly because due to Strong dirichlet
+        for ( auto const& func : M_addFunctionResidualAssembly )
+            func.second( dataResidualNonCst );
         model->updateResidual( dataResidualNonCst );
+
+        // dof elimination
+        R->close();
+        model->updateResidualDofElimination( dataResidualNonCst );
+
+        for ( auto const& func : M_addFunctionResidualPostAssembly )
+            func.second( dataResidualNonCst );
 
         double tElapsed = model->timerTool("Solve").stop();
         model->timerTool("Solve").addDataValue("algebraic-residual",tElapsed);
@@ -479,6 +549,8 @@ namespace FeelModels
         //---------------------------------------------------------------------//
         model->timerTool("Solve").start();
         model->updateNewtonInitialGuess(U);
+        for ( auto const& func : M_addFunctionNewtonInitialGuess )
+            func.second( U );
         //U->close();
         model->timerTool("Solve").elapsed("algebraic-newton-bc");
         model->timerTool("Solve").restart();
@@ -490,6 +562,8 @@ namespace FeelModels
                 M_CstJ->zero();
                 ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
                 model->updateJacobian( dataJacobianCst );
+                for ( auto const& func : M_addFunctionJacobianAssembly )
+                    func.second( dataJacobianCst );
                 M_CstJ->close();
                 M_hasBuildLinearJacobian = true;
             }
@@ -498,6 +572,8 @@ namespace FeelModels
                 M_CstJ->zero();
                 ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
                 model->updateJacobian( dataJacobianCst );
+                for ( auto const& func : M_addFunctionJacobianAssembly )
+                    func.second( dataJacobianCst );
                 M_CstJ->close();
             }
         }
@@ -514,6 +590,8 @@ namespace FeelModels
                 // Warning : the second true is very important in order to build M_CstR!!!!!!
                 ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
                 model->updateResidual( dataResidualCst );
+                for ( auto const& func : M_addFunctionResidualAssembly )
+                    func.second( dataResidualCst );
                 M_CstR->close();
                 M_hasBuildResidualCst = true;
             }
@@ -523,6 +601,8 @@ namespace FeelModels
                 // Warning : the second true is very important in order to build M_CstR!!!!!!
                 ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
                 model->updateResidual( dataResidualCst );
+                for ( auto const& func : M_addFunctionResidualAssembly )
+                    func.second( dataResidualCst );
                 M_CstR->close();
             }
         }
@@ -577,6 +657,8 @@ namespace FeelModels
         M_CstJ->zero();
         ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
         this->model()->updateJacobian( dataJacobianCst );
+        for ( auto const& func : M_addFunctionJacobianAssembly )
+            func.second( dataJacobianCst );
         M_CstJ->close();
     }
 
@@ -588,6 +670,8 @@ namespace FeelModels
         M_CstR->zero();
         ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
         this->model()->updateLinearPDE(dataLinearCst);
+        for ( auto const& func : M_addFunctionLinearAssembly )
+            func.second( dataLinearCst );
         M_CstJ->close();
         M_CstR->close();
     }
@@ -672,17 +756,16 @@ namespace FeelModels
                 this->model()->updateLinearPDE( dataLinearCst );
             }
 
-            // pre-assembly (optional)
-            if ( this->addFunctionLinearPreAssemblyNonCst != NULL )
-                this->addFunctionLinearPreAssemblyNonCst( M_J,M_R );
-
             // assembling non cst part
             ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
             this->model()->updateLinearPDE( dataLinearNonCst );
 
-            // post-assembly (optional)
-            if ( this->addFunctionLinearPostAssembly != NULL )
-                this->addFunctionLinearPostAssembly(M_J,M_R);
+            // dof elimination
+            this->model()->updateLinearPDEDofElimination( dataLinearNonCst );
+
+            // post-assembly
+            for ( auto const& func : M_addFunctionLinearPostAssembly )
+                func.second( dataLinearNonCst );
 
             double tAssemblyElapsed = this->model()->timerTool("Solve").elapsed();
             this->model()->timerTool("Solve").addDataValue("algebraic-assembly",tAssemblyElapsed);

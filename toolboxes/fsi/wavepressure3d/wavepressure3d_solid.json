@@ -57,12 +57,13 @@
         },
         "Measures":
         {
-            "Maximum":
+            "Statistics":
             {
-                "fsiWall":
+                "disp":
                 {
                     "markers":"fsiWall",
-                    "fields":["displacement"]
+                    "type":"max",
+                    "expr":"solid_D_magnitude:solid_D_magnitude"
                 }
             }
         }

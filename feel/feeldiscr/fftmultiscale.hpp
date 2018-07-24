@@ -94,10 +94,10 @@ holo3_image<float> FFTtoHbf (fftw_complex* const& imfft, int nLi, int nCo )
 }
 
 // exchange left and right part of an complex array
-void fftshift(fftw_complex* data)
+void fftshift(fftw_complex* data, int s)
 {
     int k = 0;
-    int count = sizeof(data)/sizeof(data[0]);
+    int count = s;//sizeof(data)/sizeof(data[0]);
     int c = (int) math::floor((float)count/2);
     fftw_complex tmp;
     if (count % 2 == 0)

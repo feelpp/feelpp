@@ -1,0 +1,66 @@
+// -*- mode: javascript -*-
+{
+    "Name":"testMaxwell",
+    "ShortName":"testMaxwell",
+    "Materials":
+    {
+        "omega":
+        {
+            "mu":"1"
+        }
+    },
+    "Functions":
+    {
+        "A_exact":
+        {
+            "expr": "{(1-y^2),(1-x^2)}:x:y"
+        },
+        "B_exact":
+        {
+            "expr": "-2*x+2*y:x:y"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "magnetic-potential":
+        {
+            "VolumicForces":
+            {
+                "omega":
+                {
+                    "expr":"{2,2}:x:y"
+                }
+            },
+            "Dirichlet":
+            {
+                "side1":
+                {
+                    "expr":"0"
+                },
+                "side2":
+                {
+                    "expr":"0"
+                },
+                "side3":
+                {
+                    "expr":"0"
+                },
+                "side4":
+                {
+                    "expr":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "maxwell":
+        {
+            "Exports":
+            {
+                "fields":["magnetic-potential","magnetic-field","pid"]
+            }
+        }
+    }
+}

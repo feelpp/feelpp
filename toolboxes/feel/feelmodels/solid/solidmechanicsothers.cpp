@@ -4,7 +4,8 @@
 #include <feel/feelmodels/solid/solidmechanics.hpp>
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
 #include <feel/feelmodels/modelvf/solidmecincompressibility.hpp>
-
+#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
 
 namespace Feel
 {
@@ -292,7 +293,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
 
         if ( M_useDisplacementPressureFormulation )
         {
-            size_type blockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+            size_type blockIndexPressure = this->startSubBlockSpaceIndex("pressure");
             M_blockVectorSolution.setVector( *M_blockVectorSolution.vectorMonolithic(), this->fieldPressure(), blockIndexPressure );
         }
         //M_blockVectorSolution.vectorMonolithic()->close();
@@ -427,7 +428,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportFieldsImpl( double time )
 
         //M_exporter->step( time )->add( "prestress", *U_displ_struct_prestress);
         if ( hasFieldToExport )
+        {
             M_exporter->save();
+            this->upload( M_exporter->path() );
+        }
     }
     else
     {
@@ -729,30 +733,37 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     }
 
 
-    // extremum evaluation
-    for ( auto const& measureExtremum : this->modelProperties().postProcess().measuresExtremum( modelName ) )
+    auto fieldTuple = hana::make_tuple( std::make_pair( "displacement",this->fieldDisplacementPtr() ),
+                                        std::make_pair( "velocity",this->fieldVelocityPtr() ),
+                                        std::make_pair( "acceleration",this->fieldAccelerationPtr() ),
+                                        std::make_pair( (M_useDisplacementPressureFormulation)?"pressure":"",this->fieldPressurePtr() ) );
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
     {
-        auto const& fields = measureExtremum.fields();
-        std::string const& name = measureExtremum.extremum().name();
-        std::string const& type = measureExtremum.extremum().type();
-        auto const& meshMarkers = measureExtremum.extremum().meshMarkers();
-        for ( std::string const& field : fields )
+        std::map<std::string,double> resPpNorms;
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
+        for ( auto const& resPpNorm : resPpNorms )
         {
-            double val = this->computeExtremumValue( field, meshMarkers, type );
-            if ( field == "displacement" || field == "velocity" || field == "acceleration" )
-            {
-                std::string nameExport = (boost::format("%1%_magnitude_%2%_%3%")%field %type %name).str();
-                this->postProcessMeasuresIO().setMeasure( nameExport,val );
-                hasMeasure = true;
-            }
+            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
+            hasMeasure = true;
+        }
+    }
+    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( modelName ) )
+    {
+        std::map<std::string,double> resPpStats;
+        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
+        for ( auto const& resPpStat : resPpStats )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
+            hasMeasure = true;
         }
     }
 
-
     if ( hasMeasure )
     {
-        this->postProcessMeasuresIO().setParameter( "time", time );
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
         this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
     }
 
 }
@@ -950,6 +961,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
         this->createAdditionalFunctionSpacesNormalStress();
 
     auto const& u = this->fieldDisplacement();
+    auto range = boundaryfaces(this->mesh());
+
     if ( M_pdeType=="Elasticity" )
     {
         auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
@@ -960,14 +973,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
         if ( !this->useDisplacementPressureFormulation() )
         {
             auto sigma = idv(coeffLame1)*trace(eps)*Id + 2*idv(coeffLame2)*eps;
-            M_fieldNormalStressFromStruct->on( _range=boundaryfaces(this->mesh()),
+            M_fieldNormalStressFromStruct->on( _range=range,
                                                _expr=sigma*vf::N() );
         }
         else
         {
             auto const& p = this->fieldPressure();
             auto sigma = idv(p)*Id + 2*idv(coeffLame2)*eps;
-            M_fieldNormalStressFromStruct->on( _range=boundaryfaces(this->mesh()),
+            M_fieldNormalStressFromStruct->on( _range=range,
                                                _expr=sigma*vf::N() );
         }
     }
@@ -977,17 +990,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
     }
     else if ( M_pdeType=="Hyper-Elasticity" )
     {
-        auto const sigma = Feel::vf::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
+        auto const sigma = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
         if ( !this->useDisplacementPressureFormulation() )
         {
-            M_fieldNormalStressFromStruct->on( _range=boundaryfaces(this->mesh()),
+            M_fieldNormalStressFromStruct->on( _range=range,
                                                _expr=sigma*vf::N() );
         }
         else
         {
             auto const& p = this->fieldPressure();
-            auto sigmaWithPressure = Feel::vf::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
-            M_fieldNormalStressFromStruct->on( _range=boundaryfaces(this->mesh()),
+            auto sigmaWithPressure = Feel::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
+            M_fieldNormalStressFromStruct->on( _range=range,
                                                _expr=sigmaWithPressure*vf::N() );
         }
     }
@@ -1026,7 +1039,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
     }
     else if ( M_pdeType=="Hyper-Elasticity" )
     {
-        auto sigma = Feel::vf::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
+        auto sigma = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
         if ( !this->useDisplacementPressureFormulation() )
         {
             M_fieldStressTensor->on(_range=elements(this->mesh()),_expr=sigma );
@@ -1034,7 +1047,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
         else
         {
             auto const& p = this->fieldPressure();
-            auto sigmaWithPressure = Feel::vf::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
+            auto sigmaWithPressure = Feel::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
             M_fieldStressTensor->on(_range=elements(this->mesh()),_expr=sigmaWithPressure );
         }
 
@@ -1477,6 +1490,55 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
 
     
 
+}
+
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateMassMatrixLumped()
+{
+    CHECK ( this->isStandardModel() ) << "only compute when isStandardModel";
+    auto Vh = this->functionSpaceDisplacement();
+    auto const& u = this->fieldDisplacement();
+    auto const& rho = this->mechanicalProperties()->fieldRho();
+    auto mesh = Vh->mesh();
+    // mass matrix of Vh
+    auto massMatrix = this->backend()->newMatrix(_test=Vh,_trial=Vh);
+    form2( _trial=Vh, _test=Vh,_matrix=massMatrix) =
+        integrate(_range=elements(mesh),
+                  _expr=idv(rho)*inner(idt(u),id(u)) );
+    massMatrix->close();
+
+    // mass matrix lumped
+    auto graph = boost::make_shared<graph_type>( Vh->dof(),Vh->dof() );
+    graph->addMissingZeroEntriesDiagonal();
+    graph->close();
+    M_massMatrixLumped = this->backend()->newMatrix( 0,0,0,0,graph );
+    //M_massMatrixLumped = this->backend()->newMatrix(_test=Vh,_trial=Vh);
+    if ( Vh->fe()->nOrder==1)
+    {
+        M_vecDiagMassMatrixLumped = this->backend()->newVector(Vh);
+        auto unityVec = this->backend()->newVector(Vh);
+        unityVec->setConstant(1);
+        massMatrix->multVector( unityVec,M_vecDiagMassMatrixLumped );
+        M_massMatrixLumped->setDiagonal( M_vecDiagMassMatrixLumped );
+    }
+    else
+    {
+        // ref for high order :
+        // - https://www.sharcnet.ca/Software/Ansys/17.2/en-us/help/ans_thry/thy_et2.html
+        // - https://scicomp.stackexchange.com/questions/19704/how-to-formulate-lumped-mass-matrix-in-fem
+        // - section 16.2.4 of : Zhu, J., Z. R. L. Taylor, and O. C. Zienkiewicz. "The finite element method: its basis and fundamentals." (2005): 54-102.
+        auto sumRow = this->backend()->newVector(Vh);
+        auto unityVec = this->backend()->newVector(Vh);
+        unityVec->setConstant(1);
+        massMatrix->multVector( unityVec,sumRow );
+        double sumMatrix = sumRow->sum();
+        M_vecDiagMassMatrixLumped = massMatrix->diagonal();
+        double sumDiag = M_vecDiagMassMatrixLumped->sum();
+        M_vecDiagMassMatrixLumped->scale( sumMatrix/sumDiag );
+        M_massMatrixLumped->setDiagonal( M_vecDiagMassMatrixLumped );
+    }
 }
 
 } // FeelModels

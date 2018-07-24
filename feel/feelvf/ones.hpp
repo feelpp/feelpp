@@ -64,8 +64,6 @@ public:
     //@{
     static const size_type context = 0;
 
-    static const uint16_type imorder = 0;
-    static const bool imIsPoly = true;
     static const bool is_terminal = true;
 
     template<typename Func>
@@ -138,6 +136,12 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //! polynomial order
+    constexpr uint16_type polynomialOrder() const { return 0; }
+
+    //! expression is polynomial?
+    constexpr bool isPolynomial() const { return true; }
 
     //blitz::Array<value_type,2> ones() const { return M_values; }
     Eigen::Matrix<double,M,N> const& ones() const

@@ -50,8 +50,6 @@ public:
     static const bool is_terminal = false;
     static const int product_type = Type;
 
-    static const uint16_type imorder = ExprL::imorder+ExprR::imorder;
-    static const bool imIsPoly = ExprL::imIsPoly && ExprR::imIsPoly;
     static const int IsSame = Props & InnerProperties::IS_SAME;
     static const int ApplySqrt = Props & InnerProperties::SQRT;
 
@@ -148,6 +146,12 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_left_expr.polynomialOrder() + M_right_expr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_left_expr.isPolynomial() && M_right_expr.isPolynomial(); }
 
     left_expression_type const& left() const
     {
@@ -653,7 +657,7 @@ inner( ExprL l )
 
 template<typename ExprL, int Props>
 inline
-Expr< Product<ExprL, ExprL,1,Props> >
+Expr< Product<ExprL, ExprL,1,InnerProperties::IS_SAME|Props> >
 inner( ExprL l, mpl::int_<Props> )
 {
     typedef Product<ExprL, ExprL,1,InnerProperties::IS_SAME|Props> product_t;

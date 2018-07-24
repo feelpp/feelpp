@@ -385,7 +385,11 @@ macro(feelpp_add_test)
       endif()
       unset( FEELPP_TEST_CFG_CLI )
       if ( FEELPP_TEST_CFG )
-        set( FEELPP_TEST_CFG_CLI --config-file=${CMAKE_CURRENT_BINARY_DIR}/${FEELPP_TEST_CFG} )
+        set( FEELPP_TEST_CFG_CLI --config-files)
+        foreach(  cfg ${FEELPP_APP_CFG} )
+          set( FEELPP_TEST_CFG_CLI ${FEELPP_TEST_CFG_CLI} ${CMAKE_CURRENT_BINARY_DIR}/${cfg})
+        endforeach()
+        #set( FEELPP_TEST_CFG_CLI --config-file=${CMAKE_CURRENT_BINARY_DIR}/${FEELPP_TEST_CFG} )
       endif()
       IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
         if ( FEELPP_TEST_SKIP_TEST OR FEELPP_TEST_SKIP_MPI_TEST )
@@ -742,6 +746,11 @@ macro ( feelpp_add_fmu )
 
     add_custom_command(TARGET feelpp_add_fmu_${OMWRAPPER_NAME}
       COMMAND ${CMAKE_COMMAND} -DOMC_COMPILER=${OMC_COMPILER} -DFMU_SCRIPT_NAME=${FMU_SCRIPT_NAME} -DOMWRAPPER_LIBDIR=${OMWRAPPER_LIBDIR} -DOMWRAPPER_NAME=${OMWRAPPER_NAME} -P "${OMWRAPPER_MACRO_DIR}/feelpp.macros.om.cmake" )
+
+    if ( OM_MODEL_CATEGORY )
+      install( DIRECTORY ${OMWRAPPER_LIBDIR}
+        DESTINATION share/feelpp/testcases/${OM_MODEL_CATEGORY} )
+    endif()
   endif()
 endmacro( feelpp_add_fmu )
 

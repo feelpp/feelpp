@@ -359,7 +359,7 @@ class MatrixBlockBase : public MatrixSparse<T>
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix( const value_type, MatrixSparse<value_type> const& ) override;
+    void addMatrix( const value_type, MatrixSparse<value_type> const&, Feel::MatrixStructure matStruc = Feel::SAME_NONZERO_PATTERN ) override;
 
     void scale( const value_type ) override;
 

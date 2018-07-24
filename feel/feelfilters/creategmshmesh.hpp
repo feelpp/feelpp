@@ -126,7 +126,7 @@ BOOST_PARAMETER_FUNCTION(
             fname = desc->refine( fname, refine, parametricnodes );
         }
 
-        if ( rebuild_partitions )
+        if ( rebuild_partitions && partitions > 1 )
         {
             VLOG(1) << "Rebuild partitions\n";
             desc->rebuildPartitionMsh(fname,rebuild_partitions_filename);

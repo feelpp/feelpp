@@ -172,6 +172,22 @@ class Heat : public ModelNumerical,
         void initBoundaryConditions();
         void initTimeStep();
         void initPostProcess();
+
+        constexpr auto symbolsExpr( hana::int_<2> /**/ ) const
+            {
+                return Feel::vf::symbolsExpr( symbolExpr("heat_T",idv(this->fieldTemperature()) ),
+                                              symbolExpr("heat_dxT",dxv(this->fieldTemperature()) ),
+                                              symbolExpr("heat_dyT",dyv(this->fieldTemperature()) )
+                                              );
+            }
+        constexpr auto symbolsExpr( hana::int_<3> /**/ ) const
+            {
+                return Feel::vf::symbolsExpr( symbolExpr("heat_T",idv(this->fieldTemperature()) ),
+                                              symbolExpr("heat_dxT",dxv(this->fieldTemperature()) ),
+                                              symbolExpr("heat_dyT",dyv(this->fieldTemperature()) ),
+                                              symbolExpr("heat_dzT",dzv(this->fieldTemperature()) )
+                                              );
+            }
     public :
         void initAlgebraicFactory();
 
@@ -193,28 +209,37 @@ class Heat : public ModelNumerical,
         void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
 
         void updateParameterValues();
-
+        constexpr auto symbolsExpr() const { return this->symbolsExpr( hana::int_<nDim>() ); }
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
         // apply assembly and solver
         /*virtual*/ void solve();
 
         void updateLinearPDE( DataUpdateLinear & data ) const;
-        void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
+        //void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
         void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
-        void updateLinearPDEStrongDirichletBC( sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
+        void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
         void updateLinearPDESourceTerm( vector_ptrtype& F, bool buildCstPart) const;
+        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
+        void updateLinearPDEStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
+                                              Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateLinear & data ) const;
 
         // non linear (newton)
         void updateNewtonInitialGuess( vector_ptrtype& U ) const;
         void updateJacobian( DataUpdateJacobian & data ) const;
         void updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool buildCstPart ) const;
-        void updateJacobianStrongDirichletBC( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
+        void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
+        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
+        void updateJacobianStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
+                                             Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateJacobian & data ) const;
         void updateResidual( DataUpdateResidual & data ) const;
         void updateResidualSourceTerm( vector_ptrtype& R, bool buildCstPart ) const;
         void updateResidualNeumannBC( vector_ptrtype& R, bool buildCstPart ) const;
         void updateResidualRobinBC( element_temperature_external_storage_type const& u, vector_ptrtype& R, bool buildCstPart ) const;
-        void updateResidualStrongDirichletBC( vector_ptrtype& R ) const;
+        void updateResidualDofElimination( DataUpdateResidual & data ) const;
+        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
+        void updateResidualStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
+                                             Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateResidual & data ) const;
 
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
@@ -223,10 +248,15 @@ class Heat : public ModelNumerical,
         template < typename ExprT >
         void updateFieldVelocityConvection( vf::Expr<ExprT> const& expr )
         {
+            this->updateFieldVelocityConvection( elements(this->mesh()), expr );
+        }
+        template < typename ExprT >
+        void updateFieldVelocityConvection( elements_reference_wrapper_t<mesh_type> const& range, vf::Expr<ExprT> const& expr )
+        {
             if ( !M_fieldVelocityConvection )
                 this->updateForUseFunctionSpacesVelocityConvection();
             M_exprVelocityConvection.reset();// symbolic expression is remove
-            M_fieldVelocityConvection->on(_range=elements(this->mesh()), _expr=expr );
+            M_fieldVelocityConvection->on(_range=range, _expr=expr );
         }
 
     protected :
@@ -281,5 +311,7 @@ class Heat : public ModelNumerical,
 
 } // namespace FeelModels
 } // namespace Feel
+
+#include <feel/feelmodels/heat/heatupdatestabilizationgls.hpp>
 
 #endif /* FEELPP_TOOLBOXES_HEAT_HPP */

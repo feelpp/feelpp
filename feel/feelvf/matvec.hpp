@@ -88,6 +88,46 @@ struct GetContext
         return lhs | rhs;
     }
 };
+
+struct GetPolynomialOrder
+{
+    template<typename Sig>
+    struct result;
+
+    template<typename ExprT,typename V>
+    struct result<GetPolynomialOrder( V,ExprT )>
+        :
+        boost::remove_reference<V>
+        {};
+
+    template <typename ExprT>
+    uint16_type
+    operator()( uint16_type const& res, ExprT const& expr ) const
+        {
+            return std::max( res, expr.polynomialOrder() );
+        }
+};
+
+struct GetIsPolynomial
+{
+    template<typename Sig>
+    struct result;
+
+    template<typename ExprT,typename V>
+    struct result<GetIsPolynomial( V,ExprT )>
+        :
+        boost::remove_reference<V>
+    {};
+
+    template <typename ExprT>
+    bool
+    operator()( bool const& res, ExprT const& expr ) const
+        {
+            return res && expr.isPolynomial();
+        }
+};
+
+#if 0
 struct GetImOrder
 {
     template<typename Sig>
@@ -154,6 +194,7 @@ struct GetImIsPoly
     {
     }
 };
+#endif
 template<typename Func>
 struct ExprHasTestFunction
 {
@@ -672,8 +713,6 @@ public:
     static const size_type context = fusion::result_of::accumulate<VectorExpr,mpl::size_t<0>,GetContext>::type::value;
     //static const size_type context = fusion::accumulate( VectorExpr(),size_type(0),GetContext() );
     static const bool is_terminal = false;
-    static const uint16_type imorder = fusion::result_of::accumulate<VectorExpr,mpl::size_t<0>,GetImOrder>::type::value;
-    static const bool imIsPoly = fusion::result_of::accumulate<VectorExpr,mpl::bool_<true>,GetImIsPoly>::type::value;
 
     template<typename Func>
     struct HasTestFunction
@@ -774,6 +813,12 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return fusion::accumulate( M_expr, uint16_type( 0 ), GetPolynomialOrder{} ); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return fusion::accumulate( M_expr, true, GetIsPolynomial{} ); }
 
 
     //@}
@@ -957,8 +1002,6 @@ public:
     static const size_type context = fusion::result_of::accumulate<MatrixExpr,mpl::size_t<0>,GetContext>::type::value;
     //static const size_type context = fusion::accumulate( MatrixExpr(),size_type(0),GetContext() );
     static const bool is_terminal = false;
-    static const uint16_type imorder = fusion::result_of::accumulate<MatrixExpr,mpl::size_t<0>,GetImOrder>::type::value;
-    static const bool imIsPoly = fusion::result_of::accumulate<MatrixExpr,mpl::bool_<true>,GetImIsPoly>::type::value;
 
     template<typename Func>
     struct HasTestFunction
@@ -1071,6 +1114,11 @@ public:
      */
     //@{
 
+    //! polynomial order
+    uint16_type polynomialOrder() const { return fusion::accumulate( M_expr, uint16_type( 0 ), GetPolynomialOrder{} ); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return fusion::accumulate( M_expr, true, GetIsPolynomial{} ); }
 
     //@}
 

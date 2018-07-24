@@ -299,16 +299,7 @@
               BOOST_PP_IDENTITY(VF_TYPE_TYPE(R)>),                 \
               BOOST_PP_EMPTY)()                                    \
     /**/
-#
-# define VF_IM_ORDER(O,L,R)                                             \
-    BOOST_PP_IF( BOOST_PP_EQUAL( VF_OP_IMORDER(O) , 0) ,                \
-                 0 ,                                                    \
-                 BOOST_PP_IF(  BOOST_PP_EQUAL( VF_OP_IMORDER(O) , 1)  , \
-                               (VF_TYPE_TYPE(L)::imorder < VF_TYPE_TYPE(R)::imorder)*VF_TYPE_TYPE(R)::imorder \
-                               + (VF_TYPE_TYPE(L)::imorder >= VF_TYPE_TYPE(R)::imorder)*VF_TYPE_TYPE(L)::imorder , \
-                               VF_TYPE_TYPE(L)::imorder + VF_TYPE_TYPE(R)::imorder ) \
-                 )                                                      \
-    /**/
+
 #
 #
 # /* List of expression types. */
@@ -363,8 +354,6 @@
                                                                         \
         static const size_type context = L_type::context | R_type::context; \
                                                                         \
-        static const uint16_type imorder = VF_IM_ORDER(O,L,R) ;         \
-        static const bool imIsPoly = L_type::imIsPoly && R_type::imIsPoly; \
         static const bool is_terminal = false;                           \
                                                                         \
         template<typename Func>                                         \
@@ -413,6 +402,14 @@
             typename Lambda<TheExpr...>::type                              \
             operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_left(e...), M_right(e...) ); } \
                                                                         \
+        uint16_type polynomialOrder() const {                           \
+            uint8_type t = VF_OP_IMORDER(O);                            \
+            if ( t == 0 ) return 0;                                     \
+            else if ( t == 1 ) return std::max( M_left.polynomialOrder(), M_right.polynomialOrder() ); \
+            else return M_left.polynomialOrder() + M_right.polynomialOrder(); \
+        }                                                               \
+        bool isPolynomial() const { return M_left.isPolynomial() && M_right.isPolynomial(); } \
+                                                                       \
         L_type VF_TYPE_CV(L) left() const { return M_left; }           \
         R_type VF_TYPE_CV(R) right() const { return M_right; }         \
                                                                         \

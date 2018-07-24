@@ -85,18 +85,14 @@ public:
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
 
-
-    static const uint16_type imorder = 1;
-    static const bool imIsPoly = true;
-
     typedef typename boost::tuples::template element<0, IteratorRange>::type idim_type;
     typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_type;
     typedef typename boost::unwrap_reference<typename iterator_type::value_type>::type mesh_element_fromiterator_type;
     typedef typename boost::remove_const< typename boost::remove_reference< mesh_element_fromiterator_type >::type >::type mesh_element_type;
     typedef IteratorRange range_iterator;
     typedef typename mpl::if_<mpl::bool_<mesh_element_type::is_simplex>,
-                              mpl::identity<typename Pset::template apply<mesh_element_type::nRealDim, value_type, Simplex>::type >,
-                              mpl::identity<typename Pset::template apply<mesh_element_type::nRealDim, value_type, Hypercube>::type >
+                              mpl::identity<typename Pset::template Apply<mesh_element_type::nRealDim, value_type, Simplex>::type >,
+                              mpl::identity<typename Pset::template Apply<mesh_element_type::nRealDim, value_type, Hypercube>::type >
                               >::type::type pointset_type;
     typedef Eigen::Tensor<value_type,4> element_type;
     using node_type = Eigen::Tensor<value_type,3>;
@@ -115,7 +111,8 @@ public:
                GeomapStrategyType geomap_strategy )
         :
         M_range( r ),
-        M_pset(),
+        //M_pset( pset.template get<value_type>( typename mesh_element_type::convex_type{} ) ),
+        M_pset( pset.template getGeoEntity<value_type,mesh_element_type>() ),
         M_expr( __expr ),
         M_geomap_strategy( geomap_strategy )
     {
@@ -174,6 +171,11 @@ public:
     /** @name  Methods
      */
     //@{
+    //! polynomial order
+    constexpr uint16_type polynomialOrder() const { return 1; }
+
+    //! expression is polynomial?
+    constexpr bool isPolynomial() const { return true; }
 
     //@}
 

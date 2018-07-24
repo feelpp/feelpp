@@ -42,9 +42,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // 4. one required parameter, and
 
     ( optional
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
+      ( quad,   *, quad_order_from_expression )
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
+      ( quad1,   *, quad_order_from_expression )
       ( use_tbb,   ( bool ), false )
       ( use_harts,   ( bool ), false )
       ( grainsize,   ( int ), 100 )
@@ -82,9 +82,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // 4. one required parameter, and
 
     ( optional
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
+      ( quad,   *, quad_order_from_expression )
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
+      ( quad1,   *, quad_order_from_expression )
       ( use_tbb,   ( bool ), false )
       ( use_harts,   ( bool ), false )
       ( grainsize,   ( int ), 100 )

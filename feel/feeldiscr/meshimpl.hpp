@@ -115,6 +115,33 @@ initGm1( typename MeshType::gm_ptrtype gm, mpl::false_ /**/ )
 }
 }
 
+template<typename MeshT>
+void print( MeshT * m )
+{
+    std::cout << "Mesh: npoints: " << m->numPoints() << std::endl;
+    std::for_each( m->beginPoint(), m->endPoint(),
+                   []( auto const& p )
+                   {
+                       std::cout << p.first << " " << p.second.id() << " ";
+                       std::for_each( p.second.begin(), p.second.end(),
+                                      []( auto const& c )
+                                      { std::cout << c << " "; } );
+                       std::cout << std::endl;
+                   } );
+    std::cout << "Mesh nElements: " << m->numElements()<< std::endl;
+    std::for_each( m->beginElement(), m->endElement(),
+                   []( auto const& ep )
+                   {
+                       auto const & e = ep.second;
+                       std::cout << e.id() << " ";
+                       std::for_each( e.beginPoint(), e.endPoint(),
+                                      []( auto const& c )
+                                      { std::cout << c->id() << " "; } );
+                                      //{ std::cout << c->id() << " " << c->hasMarker() << " "; } );
+                       std::cout << std::endl;
+                   } );
+}
+
 // Constructor.
 template<typename Shape, typename T, int Tag>
 Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm,
@@ -263,30 +290,29 @@ Mesh<Shape, T, Tag>::updateForUse()
 
         if ( true )
         {
+            VLOG(2) << "Adding element information to marked points";
             tic();
             boost::tie( iv, en ) = this->elementsRange();
             for ( ; iv != en; ++iv )
             {
                 auto & eltModified = iv->second;
+                VLOG(3) << "looking into element " << eltModified.id();
+
+                DCHECK( eltModified.isValid() ) << "Element " << eltModified << " with invalid point";
                 // first look if the element has a point with a marker
                 // if not we skip this element
                 if ( eltModified.hasPointWithMarker() && !eltModified.isGhostCell())
                 {
-                    size_type eltId = eltModified.id();
-                    for ( uint16_type i = 0; i < eltModified.numPoints; ++i )
-                    {
-                        if ( eltModified.point( i ).hasMarker() )
-                        {
-                            eltModified.point( i ).addElement( eltId, i );
-#if 0
-                            LOG(INFO) << "added to point " << eltModified.point(i).id() << " marker " << eltModified.point(i).marker()
-                                      << " element " << e.id() << " pt id in element " << i
-                                      << " pt(std::set) " << boost::prior( eltModified.point(i).elements().end())->first
-                                      << ", " << boost::prior( eltModified.point(i).elements().end())->second;
-#endif
-                        }
-                    }
-
+                    int index_pt = 0;
+                    std::for_each( std::begin(eltModified.points()), std::end(eltModified.points()),
+                                   [&eltModified,&index_pt]( auto* p )
+                                   {
+                                       if ( p->hasMarker() )
+                                       {
+                                           p->addElement( eltModified.id(), index_pt );
+                                       }
+                                       ++index_pt;
+                                   } );
                 }
             }
 #if 0
@@ -406,8 +432,8 @@ Mesh<Shape, T, Tag>::updateMeasures()
 
     typedef typename element_type::quad_meas_type quad_meas_type;
     typedef typename element_type::quad_meas1_type quad_meas1_type;
-    quad_meas_type thequad;
-    quad_meas1_type thequad1;
+    quad_meas_type thequad = element_type::imMeasure();
+    quad_meas1_type thequad1 = element_type::imMeasureOrder1();
     typename gm_type::precompute_ptrtype pc;
     typename gm_type::faces_precompute_type pcf;
     typename gm1_type::precompute_ptrtype pc1;
@@ -2313,11 +2339,11 @@ updateEntitiesCoDimensionTwoGhostCell_step1( ElementType const& theelt, resultgh
 
 template<typename MeshType>
 void
-updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type & theelt, resultghost_edge_type const& idEdgesWithBaryRecv, mpl::false_ /**/ )
+updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type & theelt, resultghost_edge_type const& idEdgesWithBaryRecv, double vertexCompareTol, mpl::false_ /**/ )
 {}
 template<typename MeshType>
 void
-updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type & theelt, resultghost_edge_type const& idEdgesWithBaryRecv, mpl::true_ /**/ )
+updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type & theelt, resultghost_edge_type const& idEdgesWithBaryRecv, double vertexCompareTol, mpl::true_ /**/ )
 {
     typedef typename MeshType::element_type ElementType;
     typedef typename MeshType::edge_type edge_type;
@@ -2351,7 +2377,7 @@ updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType:
             // compare barycenter
             bool find2=true;
             for (uint16_type d=0;d<MeshType::nRealDim;++d)
-                find2 = find2 && ( std::abs( baryEdge[d]-baryEdgeRecv[d] )<1e-9 );
+                find2 = find2 && ( std::abs( baryEdge[d]-baryEdgeRecv[d] )<vertexCompareTol );
             if (find2) { hasFind=true;jBis=j2; }
         }
         CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost edge cells are not available\n";
@@ -2654,7 +2680,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
             auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k].template get<2>();
             DCHECK( k < memoryMsgToSend[idProc].size() ) << "invalid data index : " << k << " must be less than " << memoryMsgToSend[idProc].size();
             auto & theelt = *memoryMsgToSend.at(idProc).at(k);
-            
+            double vertexCompareTol = std::max(1e-15,theelt.hMin()*1e-5);
+
             //update faces data
             if ( !idFacesWithBaryRecv.empty() )
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
@@ -2693,7 +2720,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
                         {
-                            find2 = find2 && ( std::abs( baryFace[d]-baryFaceRecv[d] )<1e-9 );
+                            find2 = find2 && ( std::abs( baryFace[d]-baryFaceRecv[d] )<vertexCompareTol );
                         }
                     if (find2) { hasFind=true;jBis=j2; }
 
@@ -2716,7 +2743,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
 
             // edges
             if ( !idEdgesWithBaryRecv.empty() )
-            Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step2( *this, theelt, idEdgesWithBaryRecv, mpl::bool_<element_type::nDim == 3>() );
+                Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step2( *this, theelt, idEdgesWithBaryRecv, vertexCompareTol, mpl::bool_<element_type::nDim == 3>() );
 
             // vertices
             if ( !idPointsWithNodeRecv.empty() )
@@ -2730,11 +2757,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
                 for ( uint16_type j2 = 0; j2 < element_type::numLocalVertices && !hasFind; j2++ )
                 {
                     auto const& thepointj2 = theelt.point( j2 );
-                    // compare barycenters
+                    // compare barycentersOA
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
                         {
-                            find2 = find2 && ( std::abs( thepointj2(d)-nodePointRecv[d] )<1e-9 );
+                            find2 = find2 && ( std::abs( thepointj2(d)-nodePointRecv[d] )<vertexCompareTol );
                         }
                     if (find2) { hasFind=true;jBis=j2; }
                 }
@@ -2781,9 +2808,13 @@ Mesh<Shape, T, Tag>::check() const
         {
              for ( size_type j = 0; j < this->numLocalFaces(); j++ )
              {
-                 FEELPP_ASSERT( elt.facePtr( j ) )( j )( elt.id() ).error( "invalid element face check" );
+                 //FEELPP_ASSERT( elt.facePtr( j ) )( j )( elt.id() ).error( "invalid element face check" );
                  VLOG(2) << "------------------------------------------------------------\n";
-                 VLOG(2) << "Element : " << elt.id() << " face lid: " << j << " face gid:  " << elt.face( j ).id() << "\n";
+                 if ( elt.hasFace( j ) )
+                     VLOG(2) << "Element : " << elt.id() << " face lid: " << j << " face gid:  "
+                             << elt.face( j ).id();
+                 else
+                     VLOG(2) << "Element : " << elt.id() << " face lid: " << j;
              }
         }
 
@@ -2800,7 +2831,7 @@ Mesh<Shape, T, Tag>::check() const
             VLOG(2) << "[Mesh::check] element " << elt.id() << " number of neighbors: " << counter << "\n";
             if ( elt.nNeighbors() > 0 )
             {
-                FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( elt.id() )( elt.nNeighbors() )( counter ).warn( "invalid neighboring data" );
+                //FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( elt.id() )( elt.nNeighbors() )( counter ).warn( "invalid neighboring data" );
             }
         }
 

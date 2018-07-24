@@ -54,7 +54,11 @@
 #include <feel/feelpoly/context.hpp>
 #include <feel/feelpoly/expansiontypes.hpp>
 #include <feel/feelpoly/fekete.hpp>
+
+#include <feel/feelmesh/marker.hpp>
+#include <feel/feelmesh/traits.hpp>
 #include <feel/feelpoly/lagrange.hpp>
+
 
 namespace Feel
 {
@@ -3069,6 +3073,19 @@ struct GT_QK
         }                                                                                                       \
     };                                                                                                          \
 /**/
+
+template<typename Convex,typename T>
+typename mpl::if_<Feel::is_simplex<Convex>,
+                  mpl::identity<boost::shared_ptr<GT_Lagrange<Convex::nDim,1,Convex::nDim,Simplex,T>>>,
+                  mpl::identity<boost::shared_ptr<GT_Lagrange<Convex::nDim,1,Convex::nDim,Hypercube,T>>> >::type::type
+makeGeometricTransformation()
+{
+    using gmt = typename mpl::if_<is_simplex<Convex>,
+                                  mpl::identity<GT_Lagrange<Convex::nDim,1,Convex::nDim,Simplex,T>>,
+                                  mpl::identity<GT_Lagrange<Convex::nDim,1,Convex::nDim,Hypercube,T>> >::type::type;
+    return boost::make_shared<gmt>();
+}
+
 #if 0
 #define FEELPP_GT_FACTORY( GEOM, LDIM, LORDER, LREALDIM, ENTITY ) \
     FEELPP_GT_FACTORY_BIS(GEOM,LDIM,LORDER,LREALDIM,ENTITY)),             \
