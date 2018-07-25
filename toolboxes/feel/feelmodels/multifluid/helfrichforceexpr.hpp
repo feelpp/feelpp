@@ -323,7 +323,7 @@ protected:
             loc_scalar_type tensorNdotGradModGradPhiK_modGradPhi = N.contract( gradModGradPhiK_modGradPhi, dot_contraction );
             value_type const NdotGradModGradPhiK_modGradPhi = tensorNdotGradModGradPhiK_modGradPhi(0);
 
-            loc_vectorial_type res = (NdotGradModGradPhiK_modGradPhi - K2_2)*N + gradModGradPhiK_modGradPhi.shuffle(transpose_shuffle);
+            loc_vectorial_type res = -(NdotGradModGradPhiK_modGradPhi + K2_2)*N + gradModGradPhiK_modGradPhi.shuffle(transpose_shuffle);
             this->locRes(q) = Eigen::Map<const matrix_shape_type>( res.data(), shape_type::M, shape_type::N );
         }
     }
