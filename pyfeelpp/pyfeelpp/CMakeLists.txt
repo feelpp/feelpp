@@ -55,6 +55,10 @@ pybind11_add_module(mesh  mesh.cpp)
 target_include_directories(mesh PRIVATE ${PYTHON_INCLUDE_DIRS})
 target_link_libraries( mesh PRIVATE ${FEELPP_LIBRARIES} )
 
+pybind11_add_module(discr  discr.cpp)
+target_include_directories(discr PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_link_libraries( discr PRIVATE ${FEELPP_LIBRARIES} )
+
 pybind11_add_module(fluid  fluid.cpp)
 target_include_directories(fluid PRIVATE ${PYTHON_INCLUDE_DIRS})
 target_link_libraries( fluid PRIVATE feelpp_toolbox_fluid_lib_2dP2P1G1 ${FEELPP_LIBRARIES} )
