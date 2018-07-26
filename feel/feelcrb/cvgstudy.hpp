@@ -18,24 +18,24 @@ class CvgStudy
 public :
     using model_type = ModelType;
     using crb_model_type = RmModel<model_type>;
-    using crb_model_ptrtype = boost::shared_ptr<crb_model_type>;
+    using crb_model_ptrtype = std::shared_ptr<crb_model_type>;
     using crb_type = RM<crb_model_type>;
-    using crb_ptrtype = boost::shared_ptr<crb_type>;
+    using crb_ptrtype = std::shared_ptr<crb_type>;
     using mesh_type = typename model_type::mesh_type;
-    using mesh_ptrtype = boost::shared_ptr<mesh_type>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
     using sampling_type = typename crb_type::sampling_type;
-    using sampling_ptrtype = boost::shared_ptr<sampling_type>;
+    using sampling_ptrtype = std::shared_ptr<sampling_type>;
     using ser_type = SER<crb_type>;
-    using ser_ptrtype = boost::shared_ptr<ser_type>;
+    using ser_ptrtype = std::shared_ptr<ser_type>;
 
     CvgStudy()
     {
-        crb_model = boost::make_shared<crb_model_type>(crb::stage::offline);
+        crb_model = std::make_shared<crb_model_type>(crb::stage::offline);
         crb = crb_type::New( crb_model->model()->modelName(),
                              crb_model, crb::stage::offline);
         if( crb_model->hasEim() && crb_model->useSER() )
         {
-            ser = boost::make_shared<ser_type>( crb, crb_model );
+            ser = std::make_shared<ser_type>( crb, crb_model );
             ser->run();
         }
         else

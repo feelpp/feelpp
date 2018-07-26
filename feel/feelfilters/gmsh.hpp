@@ -140,8 +140,8 @@ public:
      */
     Gmsh& operator=( Gmsh const& __g );
 
-    static boost::shared_ptr<Gmsh> New( po::variables_map const& vm );
-    static boost::shared_ptr<Gmsh> New( std::string const& shape, uint16_type d = 2,
+    static std::shared_ptr<Gmsh> New( po::variables_map const& vm );
+    static std::shared_ptr<Gmsh> New( std::string const& shape, uint16_type d = 2,
                                         uint16_type o = 1, std::string const& ct = "simplex",
                                         WorldComm const& worldComm = Environment::worldComm() );
 
@@ -349,7 +349,7 @@ public:
      * @brief get the Gmsh GModel data structure
      * @return the Gmsh GModel data structure
      */
-    boost::shared_ptr<GModel> gModel() const { return boost::make_shared<GModel>(); }
+    std::shared_ptr<GModel> gModel() const { return std::make_shared<GModel>(); }
 #endif
 
 
@@ -786,14 +786,14 @@ protected:
     mutable std::pair<std::string,std::string> M_geo;
 
 #if defined( FEELPP_HAS_GMSH_H )
-    mutable boost::shared_ptr<GModel>  M_gmodel;
+    mutable std::shared_ptr<GModel>  M_gmodel;
 #endif
 };
 
 ///! \typedef gmsh_type Gmsh
 typedef Gmsh gmsh_type;
 ///! \typedef gmsh_ptrtype boost:shared_ptr<gmsh_type>
-typedef boost::shared_ptr<gmsh_type> gmsh_ptrtype;
+typedef std::shared_ptr<gmsh_type> gmsh_ptrtype;
 
 } // Feel
 

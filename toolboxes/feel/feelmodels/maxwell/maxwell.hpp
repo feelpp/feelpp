@@ -56,29 +56,29 @@ class Maxwell : public ModelNumerical,
                 public MarkerManagementDirichletBC,
                 public MarkerManagementNeumannBC,
                 public MarkerManagementRobinBC,
-                public boost::enable_shared_from_this< Maxwell<ConvexType>>//,BasisPotentialType> >
+                public std::enable_shared_from_this< Maxwell<ConvexType>>//,BasisPotentialType> >
 {
 
 public:
     typedef ModelNumerical super_type;
     typedef Maxwell<ConvexType>/*,BasisPotentialType>*/ self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     // mesh
     typedef ConvexType convex_type;
     static const uint16_type nDim = convex_type::nDim;
     static const uint16_type nOrderGeo = convex_type::nOrder;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     // function space magnetic-potential
     // typedef BasisPotentialType basis_magneticpotential_type;
     using basis_magneticpotential_type = Nedelec<0, NedelecKind::NED1>;
     static const uint16_type nOrderPolyMagneticPotential = basis_magneticpotential_type::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_magneticpotential_type> > space_magneticpotential_type;
-    typedef boost::shared_ptr<space_magneticpotential_type> space_magneticpotential_ptrtype;
+    typedef std::shared_ptr<space_magneticpotential_type> space_magneticpotential_ptrtype;
     typedef typename space_magneticpotential_type::element_type element_magneticpotential_type;
-    typedef boost::shared_ptr<element_magneticpotential_type> element_magneticpotential_ptrtype;
+    typedef std::shared_ptr<element_magneticpotential_type> element_magneticpotential_ptrtype;
     typedef typename space_magneticpotential_type::element_external_storage_type element_magneticpotential_external_storage_type;
 
     // function space magnetic-field
@@ -92,28 +92,28 @@ public:
 //     using basis_magneticfield_type = Lagrange<0, Scalar, Discontinuous>;
 // #endif
     typedef FunctionSpace<mesh_type, bases<basis_magneticfield_type> > space_magneticfield_type;
-    typedef boost::shared_ptr<space_magneticfield_type> space_magneticfield_ptrtype;
+    typedef std::shared_ptr<space_magneticfield_type> space_magneticfield_ptrtype;
     typedef typename space_magneticfield_type::element_type element_magneticfield_type;
-    typedef boost::shared_ptr<element_magneticfield_type> element_magneticfield_ptrtype;
+    typedef std::shared_ptr<element_magneticfield_type> element_magneticfield_ptrtype;
 
     // mechanical properties desc
     typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_type;
     typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
-    typedef boost::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
+    typedef std::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
     typedef MaxwellPropertiesDescription<space_scalar_P0_type> maxwellproperties_type;
-    typedef boost::shared_ptr<maxwellproperties_type> maxwellproperties_ptrtype;
+    typedef std::shared_ptr<maxwellproperties_type> maxwellproperties_ptrtype;
 
     // exporter
     typedef Exporter<mesh_type,nOrderGeo> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     // algebraic solver
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
     // context for evaluation
     typedef typename space_magneticpotential_type::Context context_magneticpotential_type;
-    typedef boost::shared_ptr<context_magneticpotential_type> context_magneticpotential_ptrtype;
+    typedef std::shared_ptr<context_magneticpotential_type> context_magneticpotential_ptrtype;
 
     using map_dirichlet_field = typename mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
                                                    map_vector_field<nDim>,
@@ -128,7 +128,7 @@ public:
              std::string const& subPrefix = "",
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"MaxwellMesh.path"); }
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const;
 private :
     void loadParameterFromOptionsVm();
     void createMesh();

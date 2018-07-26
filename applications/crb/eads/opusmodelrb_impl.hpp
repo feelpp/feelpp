@@ -139,7 +139,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     double e_AIR_ref = 5e-2; // m
 #if 0
     typedef Gmsh gmsh_type;
-    typedef boost::shared_ptr<gmsh_type> gmsh_ptrtype;
+    typedef std::shared_ptr<gmsh_type> gmsh_ptrtype;
 
     std::string mesh_name, mesh_desc;
     gmsh_type gmsh;

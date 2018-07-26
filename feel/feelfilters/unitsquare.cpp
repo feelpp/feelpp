@@ -43,7 +43,7 @@ namespace Feel {
 
 extern template class Mesh<Simplex<2>>;
 
-boost::shared_ptr<Mesh<Simplex<2> > >
+std::shared_ptr<Mesh<Simplex<2> > >
 unitSquare( double h, PeriodicEntities pe )
 {
     return createGMSHMesh(_mesh=new Mesh<Simplex<2> >,

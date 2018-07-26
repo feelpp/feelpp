@@ -51,7 +51,7 @@ class Exporterhdf5
 public: 
     typedef MeshType mesh_type;
     typedef typename mesh_type::value_type value_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;    
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;    
     typedef typename super::timeset_type timeset_type;
     typedef typename super::timeset_ptrtype timeset_ptrtype;
     typedef typename super::timeset_iterator timeset_iterator;

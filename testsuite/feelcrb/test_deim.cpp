@@ -39,7 +39,7 @@ makeAbout()
 
 template <int POrder,bool IsVectorial=false,bool IsMatricial=false>
 class DeimTest :
-    public boost::enable_shared_from_this<DeimTest<POrder,IsVectorial,IsMatricial>>
+    public std::enable_shared_from_this<DeimTest<POrder,IsVectorial,IsMatricial>>
 {
 public :
     typedef DeimTest<POrder,IsVectorial,IsMatricial> self_type;
@@ -49,34 +49,34 @@ public :
 
     typedef double value_type;
     typedef Mesh<Simplex<2> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef Pch_type<mesh_type,POrder> scalarspace_type;
     typedef Pchv_type<mesh_type,POrder> vectorialspace_type;
     typedef typename mpl::if_< mpl::bool_<is_vect>,
                                vectorialspace_type,
                                scalarspace_type>::type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef backend_type::vector_type vector_type;
     typedef backend_type::vector_ptrtype vector_ptrtype;
     typedef backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename mpl::if_<mpl::bool_<is_mat>,
                               sparse_matrix_type,
                               vector_type >::type tensor_type;
-    typedef boost::shared_ptr<tensor_type> tensor_ptrtype;
+    typedef std::shared_ptr<tensor_type> tensor_ptrtype;
 
     typedef ParameterSpace<2> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename parameterspace_type::sampling_type sampling_type;
-    typedef boost::shared_ptr<sampling_type> sampling_ptrtype;
+    typedef std::shared_ptr<sampling_type> sampling_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
 
     typedef DEIMBase<parameterspace_type,space_type,tensor_type> deim_type;
-    typedef boost::shared_ptr<deim_type> deim_ptrtype;
+    typedef std::shared_ptr<deim_type> deim_ptrtype;
 
 
     DeimTest() :
@@ -321,25 +321,25 @@ BOOST_AUTO_TEST_SUITE( deim_suite )
 
 BOOST_AUTO_TEST_CASE( test_3 )
 {
-    boost::shared_ptr<DeimTest<3>> m( new DeimTest<3> );
+    std::shared_ptr<DeimTest<3>> m( new DeimTest<3> );
     m->run();
 }
 
 BOOST_AUTO_TEST_CASE( test_2v )
 {
-    boost::shared_ptr<DeimTest<2,true>> m( new DeimTest<2,true> );
+    std::shared_ptr<DeimTest<2,true>> m( new DeimTest<2,true> );
     m->run();
 }
 
 BOOST_AUTO_TEST_CASE( test_m1 )
 {
-    boost::shared_ptr<DeimTest<1,false,true>> m( new DeimTest<1,false,true> );
+    std::shared_ptr<DeimTest<1,false,true>> m( new DeimTest<1,false,true> );
     m->run();
 }
 
 BOOST_AUTO_TEST_CASE( test_m1v )
 {
-    boost::shared_ptr<DeimTest<1,true,true>> m( new DeimTest<1,true,true> );
+    std::shared_ptr<DeimTest<1,true,true>> m( new DeimTest<1,true,true> );
     m->run();
 }
 

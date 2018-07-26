@@ -45,9 +45,9 @@ BiotSavartAlphaElectricCRB<te_rb_model_type>::BiotSavartAlphaElectricCRB(crb::st
 {
     // if( stage == crb::stage::online )
     // {
-    //     M_teCrbModel = boost::make_shared<te_rb_model_type>();
-    //     M_crbModel = boost::make_shared<crb_model_type>(M_teCrbModel, stage);
-    //     M_crb = boost::make_shared<crb_type>("biotsavartalphaelectro_crb", M_crbModel);
+    //     M_teCrbModel = std::make_shared<te_rb_model_type>();
+    //     M_crbModel = std::make_shared<crb_model_type>(M_teCrbModel, stage);
+    //     M_crb = std::make_shared<crb_type>("biotsavartalphaelectro_crb", M_crbModel);
     //     M_crb->loadDBLast(crb::last::modified, crb::load::all);
     //     M_XhCond = M_teCrbModel->functionSpace();
     // }
@@ -56,7 +56,7 @@ BiotSavartAlphaElectricCRB<te_rb_model_type>::BiotSavartAlphaElectricCRB(crb::st
 template<typename te_rb_model_type>
 void BiotSavartAlphaElectricCRB<te_rb_model_type>::initModel()
 {
-    M_modelProps = boost::make_shared<prop_type>(M_propertyPath);
+    M_modelProps = std::make_shared<prop_type>(M_propertyPath);
     M_materials = M_modelProps->materials().materialWithPhysic("magnetic");
 
     std::string mshFileName = Environment::expand(soption("gmsh.filename"));
@@ -67,8 +67,8 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::initModel()
                             _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
 
     tic();
-    M_teCrbModel = boost::make_shared<te_rb_model_type>(M_mesh);
-    M_crbModel = boost::make_shared<crb_model_type>(M_teCrbModel, crb::stage::offline);
+    M_teCrbModel = std::make_shared<te_rb_model_type>(M_mesh);
+    M_crbModel = std::make_shared<crb_model_type>(M_teCrbModel, crb::stage::offline);
     M_crb = crb_type::New("biotsavartalphaelectro_crb", M_crbModel, crb::stage::offline);
     toc("constructor + eim");
 

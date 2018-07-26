@@ -65,7 +65,7 @@ public:
     typedef Feel::node<double>::type node_type;
 
     typedef OpusData opusdata_type;
-    typedef boost::shared_ptr<opusdata_type> opusdata_ptrtype;
+    typedef std::shared_ptr<opusdata_type> opusdata_ptrtype;
 
     //@}
 

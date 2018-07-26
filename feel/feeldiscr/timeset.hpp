@@ -107,7 +107,7 @@ public:
      */
     //@{
     typedef MeshType mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
 
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
@@ -118,14 +118,14 @@ public:
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2Symm> > > tensor2symm_p1_space_type;
-    typedef boost::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
-    typedef boost::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
-    typedef boost::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
-    typedef boost::shared_ptr<tensor2symm_p0_space_type> tensor2symm_p0_space_ptrtype;
-    typedef boost::shared_ptr<scalar_p1_space_type> scalar_p1_space_ptrtype;
-    typedef boost::shared_ptr<vector_p1_space_type> vector_p1_space_ptrtype;
-    typedef boost::shared_ptr<tensor2_p1_space_type> tensor2_p1_space_ptrtype;
-    typedef boost::shared_ptr<tensor2symm_p1_space_type> tensor2symm_p1_space_ptrtype;
+    typedef std::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
+    typedef std::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
+    typedef std::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
+    typedef std::shared_ptr<tensor2symm_p0_space_type> tensor2symm_p0_space_ptrtype;
+    typedef std::shared_ptr<scalar_p1_space_type> scalar_p1_space_ptrtype;
+    typedef std::shared_ptr<vector_p1_space_type> vector_p1_space_ptrtype;
+    typedef std::shared_ptr<tensor2_p1_space_type> tensor2_p1_space_ptrtype;
+    typedef std::shared_ptr<tensor2symm_p1_space_type> tensor2symm_p1_space_ptrtype;
 
 
     typedef typename scalar_p0_space_type::element_type element_scalar_type;
@@ -153,7 +153,7 @@ public:
         //@{
         typedef Step step_type;
         typedef MeshType mesh_type;
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
 
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
@@ -164,14 +164,14 @@ public:
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2Symm> > > tensor2symm_p1_space_type;
-        typedef boost::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
-        typedef boost::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
-        typedef boost::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
-        typedef boost::shared_ptr<tensor2symm_p0_space_type> tensor2symm_p0_space_ptrtype;
-        typedef boost::shared_ptr<scalar_p1_space_type> scalar_p1_space_ptrtype;
-        typedef boost::shared_ptr<vector_p1_space_type> vector_p1_space_ptrtype;
-        typedef boost::shared_ptr<tensor2_p1_space_type> tensor2_p1_space_ptrtype;
-        typedef boost::shared_ptr<tensor2symm_p1_space_type> tensor2symm_p1_space_ptrtype;
+        typedef std::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
+        typedef std::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
+        typedef std::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
+        typedef std::shared_ptr<tensor2symm_p0_space_type> tensor2symm_p0_space_ptrtype;
+        typedef std::shared_ptr<scalar_p1_space_type> scalar_p1_space_ptrtype;
+        typedef std::shared_ptr<vector_p1_space_type> vector_p1_space_ptrtype;
+        typedef std::shared_ptr<tensor2_p1_space_type> tensor2_p1_space_ptrtype;
+        typedef std::shared_ptr<tensor2symm_p1_space_type> tensor2symm_p1_space_ptrtype;
 
 
         typedef typename scalar_p0_space_type::element_type element_scalar_type;
@@ -674,7 +674,7 @@ public:
                 {
                     if ( M_ts->M_vector_p1 && M_ts->M_vector_p1->hasCompSpace() )
                     {
-                        M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type>();
+                        M_ts->M_scalar_p1 = std::make_shared<scalar_p1_space_type>();
                         M_ts->M_scalar_p1->shallowCopy( M_ts->M_vector_p1->compSpace() );
                     }
                     else
@@ -1738,8 +1738,8 @@ public:
 
     struct ltstep
     {
-        bool operator()( boost::shared_ptr<Step> const& s1,
-                         boost::shared_ptr<Step> const& s2 ) const
+        bool operator()( std::shared_ptr<Step> const& s1,
+                         std::shared_ptr<Step> const& s2 ) const
         {
             return *s1 < *s2;
         }
@@ -1750,7 +1750,7 @@ public:
     //@{
 
     typedef Step step_type;
-    typedef boost::shared_ptr<Step> step_ptrtype;
+    typedef std::shared_ptr<Step> step_ptrtype;
     typedef std::set<step_ptrtype,ltstep> step_set_type;
     typedef typename step_set_type::iterator step_iterator;
     typedef typename step_set_type::const_iterator step_const_iterator;
@@ -2208,8 +2208,8 @@ inline FEELPP_EXPORT  bool operator<( TimeSet<MeshType, N> const& __ts1, TimeSet
 }
 
 template<typename MeshType, int N>
-inline FEELPP_EXPORT bool operator<( boost::shared_ptr<TimeSet<MeshType, N> > const& __ts1,
-                                     boost::shared_ptr<TimeSet<MeshType, N> > const& __ts2 )
+inline FEELPP_EXPORT bool operator<( std::shared_ptr<TimeSet<MeshType, N> > const& __ts1,
+                                     std::shared_ptr<TimeSet<MeshType, N> > const& __ts2 )
 {
     return __ts1->index() < __ts2->index();
 }

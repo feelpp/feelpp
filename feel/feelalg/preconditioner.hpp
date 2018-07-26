@@ -44,7 +44,7 @@ namespace Feel
 class BackendBase;
 template<typename T> class Backend;
 typedef Backend<double> backend_type;
-typedef boost::shared_ptr<Backend<double> > backend_ptrtype;
+typedef std::shared_ptr<Backend<double> > backend_ptrtype;
 
 template<typename T> class OperatorPCDBase;
 
@@ -82,12 +82,12 @@ public:
     //@{
     typedef T value_type;
     typedef Preconditioner<T> preconditioner_type;
-    typedef boost::shared_ptr<preconditioner_type > preconditioner_ptrtype;
+    typedef std::shared_ptr<preconditioner_type > preconditioner_ptrtype;
 
-    typedef boost::shared_ptr<MatrixSparse<T> > sparse_matrix_ptrtype;
-    typedef boost::shared_ptr<Vector<T> > vector_ptrtype;
+    typedef std::shared_ptr<MatrixSparse<T> > sparse_matrix_ptrtype;
+    typedef std::shared_ptr<Vector<T> > vector_ptrtype;
 
-    typedef boost::shared_ptr<OperatorPCDBase<T> > operator_pcdbase_ptrtype;
+    typedef std::shared_ptr<OperatorPCDBase<T> > operator_pcdbase_ptrtype;
     
     //@}
 
@@ -226,7 +226,7 @@ public:
     Side side() const { return M_side; }
 
     bool hasNearNullSpace( std::set<int> const& splitIds ) const { return M_nearNullSpace.find(splitIds) != M_nearNullSpace.end(); }
-    boost::shared_ptr<NullSpace<value_type> > const& nearNullSpace( std::set<int> const& splitIds ) const
+    std::shared_ptr<NullSpace<value_type> > const& nearNullSpace( std::set<int> const& splitIds ) const
     {
         CHECK( this->hasNearNullSpace( splitIds ) ) << " near null space not given for index split ";
         return M_nearNullSpace.find(splitIds)->second;
@@ -298,12 +298,12 @@ public:
      */
     void setSide( Side s ) { M_side = s; }
 
-    void attachNearNullSpace( int k, boost::shared_ptr<NullSpace<value_type> > const& nearNullSpace )
+    void attachNearNullSpace( int k, std::shared_ptr<NullSpace<value_type> > const& nearNullSpace )
     {
         std::set<int> splitIds; splitIds.insert( k );
         this->attachNearNullSpace( splitIds, nearNullSpace );
     }
-    void attachNearNullSpace( std::set<int> const& splitIds, boost::shared_ptr<NullSpace<value_type> > const& nearNullSpace )
+    void attachNearNullSpace( std::set<int> const& splitIds, std::shared_ptr<NullSpace<value_type> > const& nearNullSpace )
     {
         M_nearNullSpace[splitIds] = nearNullSpace;
     }
@@ -384,7 +384,7 @@ protected:
     /**
      *  Near Null Space for Field Split
      */
-    std::map<std::set<int>,boost::shared_ptr<NullSpace<value_type> > >  M_nearNullSpace;
+    std::map<std::set<int>,std::shared_ptr<NullSpace<value_type> > >  M_nearNullSpace;
 
     std::map<std::string,sparse_matrix_ptrtype> M_auxiliarySparseMatrix;
     std::map<std::string,vector_ptrtype> M_auxiliaryVector;
@@ -395,7 +395,7 @@ protected:
 };
 
 typedef Preconditioner<double> preconditioner_type;
-typedef boost::shared_ptr<Preconditioner<double> > preconditioner_ptrtype;
+typedef std::shared_ptr<Preconditioner<double> > preconditioner_ptrtype;
 
 
 template <typename T>
@@ -428,22 +428,22 @@ Preconditioner<T>::~Preconditioner ()
 }
 
 typedef Preconditioner<double> preconditioner_type;
-typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
 
 template<typename Args>
 struct compute_prec_return
 {
     typedef typename parameter::value_type<Args, tag::backend>::type::element_type::value_type value_type;
-    typedef boost::shared_ptr<Preconditioner<value_type>> type;
+    typedef std::shared_ptr<Preconditioner<value_type>> type;
 };
 
-BOOST_PARAMETER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
+BOOST_PARAMETER_FUNCTION( ( std::shared_ptr<Preconditioner<double> > ),
                           preconditioner,
                           tag,
                           ( required
                             ( pc,( PreconditionerType ) )
-                            ( backend, *(boost::is_convertible<mpl::_, boost::shared_ptr<BackendBase>>) ) )
+                            ( backend, *(boost::is_convertible<mpl::_, std::shared_ptr<BackendBase>>) ) )
                           ( optional
                             ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
                             ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )

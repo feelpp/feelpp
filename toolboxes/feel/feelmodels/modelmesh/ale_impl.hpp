@@ -74,7 +74,7 @@ public :
     static const uint16_type Order_low = convex_type::nOrder;
 
     typedef Mesh< convex_type > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     static const bool isEqualOrderAndOrderLow = boost::is_same<mpl::int_<Order>,mpl::int_<Order_low> >::type::value;
 
@@ -95,23 +95,23 @@ public :
 
     // Backend typedefs
     typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
     typedef Preconditioner<double> preconditioner_type;
-    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+    typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
 
 #if defined( FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION )
     typedef HarmonicExtension<mesh_type,Order_low> harmonicextension_type;
-    typedef boost::shared_ptr<harmonicextension_type> harmonicextension_ptrtype;
+    typedef std::shared_ptr<harmonicextension_type> harmonicextension_ptrtype;
 #endif
 #if defined( FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW )
     typedef Winslow<mesh_type,Order_low/*+1*/ > winslow_type;
-    typedef boost::shared_ptr<winslow_type> winslow_ptrtype;
+    typedef std::shared_ptr<winslow_type> winslow_ptrtype;
 #endif
     /**
      * constructor
@@ -132,7 +132,7 @@ public :
 
     void init();
 
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const;
 
     /**
      * verbose

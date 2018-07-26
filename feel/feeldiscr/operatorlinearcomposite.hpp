@@ -41,7 +41,7 @@ class OperatorLinearComposite : public OperatorLinear<DomainSpace, DualImageSpac
 {
 
     typedef OperatorLinear<DomainSpace,DualImageSpace> super;
-    typedef boost::shared_ptr<super> super_ptrtype;
+    typedef std::shared_ptr<super> super_ptrtype;
 
 public :
 
@@ -54,7 +54,7 @@ public :
     typedef typename super::backend_ptrtype backend_ptrtype;
 
     typedef typename super::matrix_type matrix_type;
-    typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
+    typedef std::shared_ptr<matrix_type> matrix_ptrtype;
 
     typedef FsFunctionalLinear<DualImageSpace> image_element_type;
     typedef typename super::domain_element_type domain_element_type;
@@ -66,7 +66,7 @@ public :
     typedef typename super::dual_image_element_slice_type dual_image_element_slice_type;
 
     typedef OperatorLinearComposite<DomainSpace, DualImageSpace> this_type;
-    typedef boost::shared_ptr<this_type> this_ptrtype;
+    typedef std::shared_ptr<this_type> this_ptrtype;
 
     OperatorLinearComposite (domain_space_ptrtype     domainSpace,
                              dual_image_space_ptrtype dualImageSpace,
@@ -624,7 +624,7 @@ struct compute_opLinearComposite_return
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::imageSpace>::type>::type::element_type image_space_type;
 
     typedef OperatorLinearComposite<domain_space_type, image_space_type> type;
-    typedef boost::shared_ptr<OperatorLinearComposite<domain_space_type, image_space_type> > ptrtype;
+    typedef std::shared_ptr<OperatorLinearComposite<domain_space_type, image_space_type> > ptrtype;
 };
 }
 
@@ -633,8 +633,8 @@ BOOST_PARAMETER_FUNCTION(
     opLinearComposite,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
       //( backend,        *, Backend<typename Feel::detail::compute_opLinearComposite_return<Args>::domain_space_type::value_type>::build() )

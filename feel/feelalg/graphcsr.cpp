@@ -107,8 +107,8 @@ GraphCSR::GraphCSR( size_type n,
 }
 
 
-GraphCSR::GraphCSR( boost::shared_ptr<DataMap> const& mapRow,
-                    boost::shared_ptr<DataMap> const& mapCol )
+GraphCSR::GraphCSR( std::shared_ptr<DataMap> const& mapRow,
+                    std::shared_ptr<DataMap> const& mapCol )
     :
     M_is_closed( false ),
     M_worldComm( mapRow->worldComm() ),
@@ -278,7 +278,7 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
     }
     else
     {
-        std::vector<boost::shared_ptr<DataMap> > listofdmRow, listofdmCol;
+        std::vector<std::shared_ptr<DataMap> > listofdmRow, listofdmCol;
         for ( uint i=0; i<nRow; ++i )
             listofdmRow.push_back( blockSet(i,0)->mapRowPtr() );
         for ( uint i=0; i<nCol; ++i )
@@ -1243,8 +1243,8 @@ BlocksBaseGraphCSR::close()
 {
     if ( this->isClosed() ) return;
 
-    std::vector<boost::shared_ptr<DataMap> > dataMapRowRef(this->nRow());
-    std::vector<boost::shared_ptr<DataMap> > dataMapColRef(this->nCol());
+    std::vector<std::shared_ptr<DataMap> > dataMapRowRef(this->nRow());
+    std::vector<std::shared_ptr<DataMap> > dataMapColRef(this->nCol());
 
     // search a reference row datamap foreach row
     for ( index_type i=0 ; i<this->nRow() ;++i)

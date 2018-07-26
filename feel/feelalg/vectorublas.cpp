@@ -107,19 +107,19 @@ struct fake<ublas::vector_range<ublas::vector<double> > >: public ublas::vector_
     }
     fake( size_type /*nDof*/, value_type* /*arrayDof*/ )
         :
-        ublas::vector_range<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() )
+        ublas::vector_range<ublas::vector<double> >( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() )
     {
         CHECK( false ) << "not allowed";
     }
     fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::range const& /*r*/ )
         :
-        ublas::vector_range<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() )
+        ublas::vector_range<ublas::vector<double> >( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() )
     {
         CHECK( false ) << "not allowed";
     }
     fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::slice const& /*r*/ )
         :
-        ublas::vector_range<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() )
+        ublas::vector_range<ublas::vector<double> >( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() )
     {
         CHECK( false ) << "not allowed";
     }
@@ -141,19 +141,19 @@ struct fake<ublas::vector_slice<ublas::vector<double> > >: public ublas::vector_
     }
     fake( size_type /*nDof*/, value_type* /*arrayDof*/ )
         :
-        ublas::vector_slice<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::slice() )
+        ublas::vector_slice<ublas::vector<double> >( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::slice() )
     {
         CHECK( false ) << "not allowed";
     }
     fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::range const& /*r*/ )
         :
-        ublas::vector_slice<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::slice() )
+        ublas::vector_slice<ublas::vector<double> >( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::slice() )
     {
         CHECK( false ) << "not allowed";
     }
     fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::slice const& /*r*/ )
         :
-        ublas::vector_slice<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::slice() )
+        ublas::vector_slice<ublas::vector<double> >( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::slice() )
     {
         CHECK( false ) << "not allowed";
     }
@@ -207,27 +207,27 @@ struct fake<ublas::vector_range<ublas::vector<double, Feel::detail::shallow_arra
 
     fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::slice const& /*r*/ )
         :
-        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::range() )
+        super_type( *std::shared_ptr<vector_type>( new vector_type(0) ), ublas::range() )
     {
         CHECK( false ) << "not allowed";
     }
 
     fake( ublas::vector<double>& /*v*/, ublas::range const& /*r*/ )
         :
-        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::range() )
+        super_type( *std::shared_ptr<vector_type>( new vector_type(0) ), ublas::range() )
     {
          CHECK( false ) << "not allowed";
     }
     fake( ublas::vector<double>& /*v*/, ublas::slice const& /*r*/ )
         :
-        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::range() )
+        super_type( *std::shared_ptr<vector_type>( new vector_type(0) ), ublas::range() )
     {
          CHECK( false ) << "not allowed";
     }
 
     fake( size_type /*nDof*/, value_type* /*arrayDof*/ )
         :
-        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::range() )
+        super_type( *std::shared_ptr<vector_type>( new vector_type(0) ), ublas::range() )
     {
         CHECK( false ) << "not allowed";
     }
@@ -251,20 +251,20 @@ struct fake<ublas::vector_slice<ublas::vector<double, Feel::detail::shallow_arra
 
     fake( ublas::vector<double>& /*v*/, ublas::range const& /*r*/ )
         :
-        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::slice() )
+        super_type( *std::shared_ptr<vector_type>( new vector_type(0) ), ublas::slice() )
     {
          CHECK( false ) << "not allowed";
     }
     fake( ublas::vector<double>& /*v*/, ublas::slice const& /*r*/ )
         :
-        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::slice() )
+        super_type( *std::shared_ptr<vector_type>( new vector_type(0) ), ublas::slice() )
     {
          CHECK( false ) << "not allowed";
     }
 
     fake( size_type /*nDof*/, value_type* /*arrayDof*/ )
         :
-        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::slice() )
+        super_type( *std::shared_ptr<vector_type>( new vector_type(0) ), ublas::slice() )
     {
         CHECK( false ) << "not allowed";
     }
@@ -353,8 +353,8 @@ template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas()
     :
     super1(),
-    M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
+    M_vec( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
 {
 }
 
@@ -362,8 +362,8 @@ template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( size_type __s )
     :
     super1( __s, Environment::worldCommSeq() ),
-    M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
+    M_vec( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
 {
     this->init( __s, __s, false );
 }
@@ -372,8 +372,8 @@ template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( datamap_ptrtype const& dm )
     :
     super1( dm ),
-    M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
+    M_vec( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
 {
     //this->init( dm.nGlobalElements(), dm.nMyElements(), false );
     this->init( dm->nDof(), dm->nLocalDofWithGhost(), false );
@@ -384,7 +384,7 @@ VectorUblas<T,Storage>::VectorUblas( size_type __s, size_type __n_local )
     :
     super1( __s, __n_local, Environment::worldCommSeq() ),
     M_vec( detail::fake<Storage>( *new ublas::vector<value_type>(), ublas::range() ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
 {
     this->init( this->size(), this->localSize(), false );
 }

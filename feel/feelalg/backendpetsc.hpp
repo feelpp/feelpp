@@ -67,9 +67,9 @@ public:
     typedef typename super::sparse_matrix_type sparse_matrix_type;
     typedef typename super::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef MatrixPetsc<value_type> petsc_sparse_matrix_type;
-    typedef boost::shared_ptr<sparse_matrix_type> petsc_sparse_matrix_ptrtype;
+    typedef std::shared_ptr<sparse_matrix_type> petsc_sparse_matrix_ptrtype;
     typedef MatrixPetscMPI<value_type> petscMPI_sparse_matrix_type;
-    //typedef boost::shared_ptr<sparse_matrix_type> petscMPI_sparse_matrix_ptrtype;
+    //typedef std::shared_ptr<sparse_matrix_type> petscMPI_sparse_matrix_ptrtype;
 
     typedef typename sparse_matrix_type::graph_type graph_type;
     typedef typename sparse_matrix_type::graph_ptrtype graph_ptrtype;
@@ -78,9 +78,9 @@ public:
     typedef typename super::vector_type vector_type;
     typedef typename super::vector_ptrtype vector_ptrtype;
     typedef VectorPetsc<value_type> petsc_vector_type;
-    typedef boost::shared_ptr<vector_type> petsc_vector_ptrtype;
+    typedef std::shared_ptr<vector_type> petsc_vector_ptrtype;
     typedef VectorPetscMPI<value_type> petscMPI_vector_type;
-    typedef boost::shared_ptr<petscMPI_vector_type> petscMPI_vector_ptrtype;
+    typedef std::shared_ptr<petscMPI_vector_type> petscMPI_vector_ptrtype;
 
     typedef typename super::solve_return_type solve_return_type;
     typedef typename super::nl_solve_return_type nl_solve_return_type;

@@ -162,11 +162,11 @@ straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mp
    \arg mesh mesh data structure
 */
 template<typename MeshType>
-boost::shared_ptr<MeshType>
-straightenMesh( boost::shared_ptr<MeshType> mesh, WorldComm const& worldcomm, bool refine, bool save )
+std::shared_ptr<MeshType>
+straightenMesh( std::shared_ptr<MeshType> mesh, WorldComm const& worldcomm, bool refine, bool save )
 {
     typedef MeshType _mesh_type;
-    typedef boost::shared_ptr<MeshType> _mesh_ptrtype;
+    typedef std::shared_ptr<MeshType> _mesh_ptrtype;
 
     VLOG(1) << "straighten mesh of order " <<  _mesh_type::nOrder << " start";
 
@@ -209,7 +209,7 @@ straightenMesh( boost::shared_ptr<MeshType> mesh, WorldComm const& worldcomm, bo
                   << "\n";
 
 #if 0
-    boost::shared_ptr<Exporter<_mesh_type,_mesh_type::nOrder> > exporter;
+    std::shared_ptr<Exporter<_mesh_type,_mesh_type::nOrder> > exporter;
 
     if ( save )
     {

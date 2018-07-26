@@ -220,7 +220,7 @@ MatrixEigenSparse<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _
 }
 template<typename T>
 void
-MatrixEigenSparse<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m,
+MatrixEigenSparse<T>::updateBlockMat( std::shared_ptr<MatrixSparse<value_type> > const& m,
                                       std::vector<size_type> const& start_i,
                                       std::vector<size_type> const& start_j )
 {

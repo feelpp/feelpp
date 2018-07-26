@@ -59,7 +59,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, bool buildMe
                                          WorldComm const& worldComm, std::string const& subPrefix,
                                          ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
+    return std::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
 
 }
 
@@ -621,7 +621,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
 // #endif
         //auto Xh_create_ho = space_create_ho_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
 
-        boost::shared_ptr<mesh_visu_ho_type> meshVisuHO;
+        std::shared_ptr<mesh_visu_ho_type> meshVisuHO;
         std::string hovisuSpaceUsed = soption(_name="hovisu.space-used",_prefix=this->prefix());
         bool doLagP1parallel=false;
         if ( hovisuSpaceUsed == "velocity" )
@@ -1837,8 +1837,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         //CHECK( this->algebraicFactory()->preconditionerTool()->matrix() ) << "no matrix define in preconditionerTool";
 
         // build pcd operator
-        boost::shared_ptr<OperatorPCD<space_fluid_type>> opPCD;
-        opPCD = boost::make_shared<OperatorPCD<space_fluid_type>>( this->functionSpace(),this->backend(),bcPrecPCD,"velocity",false,true);
+        std::shared_ptr<OperatorPCD<space_fluid_type>> opPCD;
+        opPCD = std::make_shared<OperatorPCD<space_fluid_type>>( this->functionSpace(),this->backend(),bcPrecPCD,"velocity",false,true);
         this->algebraicFactory()->preconditionerTool()->attachOperatorPCD("pcd",opPCD);
     }
 

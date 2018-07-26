@@ -113,9 +113,9 @@ class Bdf : public TSBase
     typedef TSBase super;
 public:
     typedef Bdf<SpaceType> bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
     typedef SpaceType space_type;
-    typedef boost::shared_ptr<space_type>  space_ptrtype;
+    typedef std::shared_ptr<space_type>  space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef typename space_type::element_ptrtype element_ptrtype;
     typedef typename space_type::return_type return_type;
@@ -842,7 +842,7 @@ Bdf<SpaceType>::shiftRight( typename space_type::template Element<value_type, co
     // u(t^{n}) coefficient is in M_unknowns[0]
     *M_unknowns[0] = __new_unk;
     int i = 0;
-    BOOST_FOREACH( boost::shared_ptr<element_type>& t, M_unknowns  )
+    BOOST_FOREACH( std::shared_ptr<element_type>& t, M_unknowns  )
     {
         DVLOG(2) << "[Bdf::shiftright] id: " << i << " l2norm = " << t->l2Norm() << "\n";
         ++i;
@@ -889,10 +889,10 @@ Bdf<SpaceType>::computePolyAndPolyDeriv()
 
 
 BOOST_PARAMETER_FUNCTION(
-    ( boost::shared_ptr<Bdf<typename meta::remove_all<typename parameter::binding<Args, tag::space>::type>::type::element_type> > ),
+    ( std::shared_ptr<Bdf<typename meta::remove_all<typename parameter::binding<Args, tag::space>::type>::type::element_type> > ),
     bdf, tag,
     ( required
-      ( space,*( boost::is_convertible<mpl::_,boost::shared_ptr<Feel::FunctionSpaceBase> > ) ) )
+      ( space,*( boost::is_convertible<mpl::_,std::shared_ptr<Feel::FunctionSpaceBase> > ) ) )
     ( optional
       ( prefix,*,"" )
       ( name,*,"bdf" )
@@ -913,7 +913,7 @@ BOOST_PARAMETER_FUNCTION(
     ) )
 {
     typedef typename meta::remove_all<space_type>::type::element_type _space_type;
-    auto thebdf = boost::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>( space,name,prefix ) );
+    auto thebdf = std::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>( space,name,prefix ) );
     thebdf->setTimeInitial( initial_time );
     thebdf->setTimeFinal( final_time );
     thebdf->setTimeStep( time_step );

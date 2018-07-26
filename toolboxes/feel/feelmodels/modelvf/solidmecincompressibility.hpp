@@ -56,17 +56,17 @@ struct tensorSolidMecPressureFormulationMultiplierBase : public tensorBase<Geo_t
     typedef typename super_type::shape_type shape;
     // fe disp context
     typedef typename expr_type::fe_disp_type::PreCompute pc_disp_type;
-    typedef boost::shared_ptr<pc_disp_type> pc_disp_ptrtype;
+    typedef std::shared_ptr<pc_disp_type> pc_disp_ptrtype;
     typedef typename expr_type::fe_disp_type::template Context<expr_type::context_disp, typename expr_type::fe_disp_type,
                                                                gm_type,geoelement_type,gmc_type::context> ctx_disp_type;
-    typedef boost::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
+    typedef std::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
 
     // fe pressure context
     typedef typename expr_type::fe_pressure_type::PreCompute pc_pressure_type;
-    typedef boost::shared_ptr<pc_pressure_type> pc_pressure_ptrtype;
+    typedef std::shared_ptr<pc_pressure_type> pc_pressure_ptrtype;
     typedef typename expr_type::fe_pressure_type::template Context<expr_type::context_pressure, typename expr_type::fe_pressure_type,
                                                                    gm_type,geoelement_type,gmc_type::context> ctx_pressure_type;
-    typedef boost::shared_ptr<ctx_pressure_type> ctx_pressure_ptrtype;
+    typedef std::shared_ptr<ctx_pressure_type> ctx_pressure_ptrtype;
 
     tensorSolidMecPressureFormulationMultiplierBase( expr_type const& expr,
                                                      Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -701,7 +701,7 @@ public:
     {
         //typedef tensorBase<Geo_t,Basis_i_t,Basis_j_t,my_shape_type,value_type > tensorbase_type;
         typedef tensorSolidMecPressureFormulationMultiplierBase<Geo_t,Basis_i_t,Basis_j_t,self_type > tensorbase_type;
-        typedef boost::shared_ptr<tensorbase_type> tensorbase_ptrtype;
+        typedef std::shared_ptr<tensorbase_type> tensorbase_ptrtype;
 
         typedef typename tensorbase_type::value_type value_type;
         typedef typename tensorbase_type::shape_type shape;
@@ -819,10 +819,10 @@ struct tensorSolidMecPressureFormulationConstraintBase : public tensorBase<Geo_t
     typedef typename super_type::shape_type shape;
     // fe disp context
     typedef typename expr_type::fe_disp_type::PreCompute pc_disp_type;
-    typedef boost::shared_ptr<pc_disp_type> pc_disp_ptrtype;
+    typedef std::shared_ptr<pc_disp_type> pc_disp_ptrtype;
     typedef typename expr_type::fe_disp_type::template Context<expr_type::context_disp, typename expr_type::fe_disp_type,
                                                                gm_type,geoelement_type,gmc_type::context> ctx_disp_type;
-    typedef boost::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
+    typedef std::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
 
     tensorSolidMecPressureFormulationConstraintBase( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         :
@@ -1256,7 +1256,7 @@ public:
     struct tensor
     {
         typedef tensorSolidMecPressureFormulationConstraintBase<Geo_t,Basis_i_t,Basis_j_t,self_type > tensorbase_type;
-        typedef boost::shared_ptr<tensorbase_type> tensorbase_ptrtype;
+        typedef std::shared_ptr<tensorbase_type> tensorbase_ptrtype;
 
         typedef typename tensorbase_type::value_type value_type;
         typedef typename tensorbase_type::shape_type shape;

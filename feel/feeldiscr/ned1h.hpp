@@ -43,7 +43,7 @@ struct Ned1h
                           double,
                           Periodicity <NoPeriodicity>,
                           mortars<NoMortar>> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 } // meta
@@ -61,7 +61,7 @@ using Ned1h_ptrtype = typename meta::Ned1h<MeshType,Order>::ptrtype;
 template<int Order,typename MeshType>
 inline
 typename meta::Ned1h<MeshType,Order>::ptrtype
-Ned1h( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+Ned1h( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     typedef typename meta::Ned1h<MeshType,Order>::type space_type;
     return space_type::New( _mesh=mesh,

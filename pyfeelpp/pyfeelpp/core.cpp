@@ -26,7 +26,6 @@
 #include <feel/feel.hpp>
 #include <mpi4py/mpi4py.h>
 
-#include <boost/shared_ptr.hpp>
 #include <boost/parameter/keyword.hpp>
 #include <boost/parameter/preprocessor.hpp>
 #include <boost/parameter/binding.hpp>
@@ -71,8 +70,11 @@ PYBIND11_MODULE(core, m )
         .def_static("version",&Feel::Info::versionString,"Feel++ version string",py::return_value_policy::copy)
 
         ;
-    py::class_<WorldComm>(m,"WorldComm")
-        .def(py::init<>());
+    py::class_<WorldComm,std::shared_ptr<WorldComm>>(m,"WorldComm")
+        .def(py::init<>())
+        .def("localRank", &Feel::WorldComm::localRank,"returns the rank of the local worldcomm")
+        .def("globalRank", &Feel::WorldComm::localRank,"returns the rank of the global worldcomm")
+        ;
     
     py::class_<po::options_description>(m,"OptionsDescription");
 }

@@ -38,14 +38,14 @@ template<int Order,typename MeshType>
 using dh_type = FunctionSpace<MeshType,bases<RaviartThomas<Order>>,Periodicity <NoPeriodicity>>;
 
 template<int Order,typename MeshType>
-using dh_ptrtype = boost::shared_ptr<dh_type<Order,MeshType>>;
+using dh_ptrtype = std::shared_ptr<dh_type<Order,MeshType>>;
 
 
 template<typename MeshType, int Order>
 using Dh_type = FunctionSpace<MeshType,bases<RaviartThomas<Order>>,Periodicity <NoPeriodicity>>;
 
 template<typename MeshType, int Order>
-using Dh_ptrtype = boost::shared_ptr<dh_type<Order,MeshType>>;
+using Dh_ptrtype = std::shared_ptr<dh_type<Order,MeshType>>;
 
 /**
  * \fn Dh<k,MeshType>
@@ -56,7 +56,7 @@ using Dh_ptrtype = boost::shared_ptr<dh_type<Order,MeshType>>;
 template<int Order,typename MeshType>
 inline
 dh_ptrtype<Order,MeshType>
-Dh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+Dh( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return dh_type<Order,MeshType>::New( _mesh=mesh,
                                          _worldscomm=worldsComm( mesh->worldComm() ),

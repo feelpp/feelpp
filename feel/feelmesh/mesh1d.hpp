@@ -124,7 +124,7 @@ class Mesh1D
 
     typedef Mesh1D<Shape,T> self_type;
 
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     typedef typename element_type::vertex_permutation_type vertex_permutation_type;
     typedef typename element_type::edge_permutation_type edge_permutation_type;

@@ -133,7 +133,7 @@ class Mesh3D
     typedef typename std::pair<size_type, size_type> edge_pair_type;
 
     typedef Mesh3D<Shape,T> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     static const size_type SHAPE = Shape::Shape;
 

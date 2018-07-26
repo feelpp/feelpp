@@ -712,7 +712,7 @@ public:
      * This function creates a vector which is defined
      * by the row indices given in the "rows" entries.
      */
-    boost::shared_ptr<Vector<T> >
+    std::shared_ptr<Vector<T> >
     createSubVector( std::vector<size_type> const& rows,
                      bool checkAndFixRange=true ) const override;
 
@@ -721,7 +721,7 @@ public:
      * into row indices given in the "rows" entries.
      */
     void
-    updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
+    updateSubVector( std::shared_ptr<Vector<T> > & subvector,
                      std::vector<size_type> const& rows,
                      bool init=true ) override;
 

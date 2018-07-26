@@ -169,7 +169,7 @@ measureStatisticsEvaluation( RangeType const& range,
 
 template<typename MeshType, typename RangeType, typename SymbolsExpr, typename FieldTupleType >
 void
-measureStatisticsEvaluation( boost::shared_ptr<MeshType> const& mesh, RangeType const& defaultRange,
+measureStatisticsEvaluation( std::shared_ptr<MeshType> const& mesh, RangeType const& defaultRange,
                              ModelPostprocessStatistics const& ppStat,  std::map<std::string,double> & res,
                              SymbolsExpr const& symbolsExpr, FieldTupleType const& fieldTuple )
 {

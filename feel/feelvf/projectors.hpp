@@ -63,7 +63,7 @@ public:
     static const size_type context = ExprT::context|vm::POINT;
 
     typedef FunctionSpaceType functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
     typedef typename functionspace_type::basis_type basis_type;
     typedef ExprT expression_type;
@@ -250,7 +250,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
  */
 template<typename FunctionSpaceType, typename IteratorRange, typename ExprT>
 typename FunctionSpaceType::element_type
-project( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
+project( std::shared_ptr<FunctionSpaceType> const& __functionspace,
          IteratorRange const& range_it,
          Expr<ExprT> const& __expr,
          GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
@@ -262,7 +262,7 @@ project( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
 
 template<typename FunctionSpaceType, typename IteratorRange, typename ExprT>
 typename FunctionSpaceType::element_type
-project_impl( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
+project_impl( std::shared_ptr<FunctionSpaceType> const& __functionspace,
               IteratorRange const& range_it,
               Expr<ExprT> const& __expr,
               GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
@@ -278,7 +278,7 @@ project_impl( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
  */
 template<typename FunctionSpaceType, typename ExprT>
 typename FunctionSpaceType::element_type
-project( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr,
+project( std::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr,
          GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
     return project( __functionspace, elements( __functionspace->mesh() ), __expr, geomap );
@@ -291,7 +291,7 @@ project( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT
  */
 template<typename FunctionSpaceType, typename IteratorRange, typename ExprT>
 typename FunctionSpaceType::element_type
-sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
+sum( std::shared_ptr<FunctionSpaceType> const& __functionspace,
      IteratorRange const& range_it,
      Expr<ExprT> const& __expr,
      GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_OPT,
@@ -311,7 +311,7 @@ sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
  */
 template<typename FunctionSpaceType, typename ExprT>
 typename FunctionSpaceType::element_type
-sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr,
+sum( std::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr,
      GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_OPT,
      bool parallelSync = true )
 {
@@ -374,7 +374,7 @@ struct project
                               mpl::identity<space_ptr<the_space_type> >,
                               mpl::identity<space_value<the_space_type> > >::type::type space_type;
     typedef typename space_type::type _space_type;
-    typedef boost::shared_ptr<_space_type> _space_ptrtype;
+    typedef std::shared_ptr<_space_type> _space_ptrtype;
     typedef typename _space_type::element_type element_type;
     //typedef typename clean_type<Args,tag::expr>::type _expr_type;
     //typedef typename clean_type<Args,tag::range>::type _range_type;
@@ -399,7 +399,7 @@ BOOST_PARAMETER_FUNCTION(
     tag,           // 3. namespace of tag types
 
     ( required
-      ( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<Feel::FunctionSpaceBase> > ) )
+      ( space, *( boost::is_convertible<mpl::_,std::shared_ptr<Feel::FunctionSpaceBase> > ) )
       ( expr, * )
     ) // 4. one required parameter, and
 

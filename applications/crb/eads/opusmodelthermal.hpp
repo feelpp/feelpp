@@ -83,7 +83,7 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -92,7 +92,7 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     typedef SpaceType functionspace_type;
-    typedef boost::shared_ptr<SpaceType> functionspace_ptrtype;
+    typedef std::shared_ptr<SpaceType> functionspace_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
 
@@ -125,7 +125,7 @@ public:
 
 
     void solve( element_type& T );
-    void solve( boost::shared_ptr<element_type>& T )
+    void solve( std::shared_ptr<element_type>& T )
     {
         solve( *T );
     }

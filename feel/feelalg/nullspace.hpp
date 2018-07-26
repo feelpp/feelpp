@@ -43,9 +43,9 @@ class FEELPP_EXPORT NullSpace
 public :
     typedef T value_type;
     typedef Vector<value_type> vector_type;
-    typedef boost::shared_ptr<vector_type> vector_ptrtype;
+    typedef std::shared_ptr<vector_type> vector_ptrtype;
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     NullSpace() {}
 
@@ -67,7 +67,7 @@ public :
 
     NullSpace( std::vector<vector_ptrtype> const& vecBasis, backend_ptrtype const& mybackend );
 
-    NullSpace( backend_ptrtype const& mybackend, boost::shared_ptr<NullSpace> const& ns, bool redoOrthonormalization = false )
+    NullSpace( backend_ptrtype const& mybackend, std::shared_ptr<NullSpace> const& ns, bool redoOrthonormalization = false )
         :
         NullSpace( mybackend, *ns, redoOrthonormalization )
         {
@@ -146,7 +146,7 @@ private :
 };
 
 template<typename SpaceType, typename ExprType>
-void nullspace( NullSpace<double>& K, boost::shared_ptr<SpaceType> Xh, ExprType&& e )
+void nullspace( NullSpace<double>& K, std::shared_ptr<SpaceType> Xh, ExprType&& e )
 {
     auto u = Xh->elementPtr(e);
     K.push_back( u );
@@ -154,7 +154,7 @@ void nullspace( NullSpace<double>& K, boost::shared_ptr<SpaceType> Xh, ExprType&
 }
 
 template<typename SpaceType, typename ExprType, typename... Args>
-void nullspace( NullSpace<double>& K, boost::shared_ptr<SpaceType> Xh, ExprType&& e, Args... args )
+void nullspace( NullSpace<double>& K, std::shared_ptr<SpaceType> Xh, ExprType&& e, Args... args )
 {
     auto u = Xh->elementPtr(e);
     K.push_back( u );
@@ -162,7 +162,7 @@ void nullspace( NullSpace<double>& K, boost::shared_ptr<SpaceType> Xh, ExprType&
 }
 
 template<typename SpaceType, typename ExprType, typename... Args>
-NullSpace<double> nullspace( boost::shared_ptr<SpaceType> Xh, ExprType&& e,  Args... args )
+NullSpace<double> nullspace( std::shared_ptr<SpaceType> Xh, ExprType&& e,  Args... args )
 {
     NullSpace<double> K;
     nullspace( K, Xh, e, args...);
@@ -170,17 +170,17 @@ NullSpace<double> nullspace( boost::shared_ptr<SpaceType> Xh, ExprType&& e,  Arg
 }
 
 template<typename SpaceType, typename ExprType, typename... Args>
-boost::shared_ptr<NullSpace<double>>  nullspace_ptr( boost::shared_ptr<SpaceType> Xh, ExprType&& e, Args... args )
+std::shared_ptr<NullSpace<double>>  nullspace_ptr( std::shared_ptr<SpaceType> Xh, ExprType&& e, Args... args )
 {
-    boost::shared_ptr<NullSpace<double>> K( boost::make_shared<NullSpace<double>>() );
+    std::shared_ptr<NullSpace<double>> K( std::make_shared<NullSpace<double>>() );
     nullspace( *K, Xh, e, args...);
     return K;
 }
 
-inline boost::shared_ptr<NullSpace<double>>
-toBackend( boost::shared_ptr<Backend<double>> const& b, boost::shared_ptr<NullSpace<double>> const& Kspace, bool redoOrtho = false )
+inline std::shared_ptr<NullSpace<double>>
+toBackend( std::shared_ptr<Backend<double>> const& b, std::shared_ptr<NullSpace<double>> const& Kspace, bool redoOrtho = false )
 {
-    return boost::make_shared<NullSpace<double>>( b, Kspace, redoOrtho );
+    return std::make_shared<NullSpace<double>>( b, Kspace, redoOrtho );
 }
 
 } // namespace Feel

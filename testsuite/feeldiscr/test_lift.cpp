@@ -90,7 +90,7 @@ public:
     static const uint16_type Order = 2;
     typedef double value_type;
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef Simplex<Dim,1,Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef bases<Lagrange<Order,Scalar> > basis_type;

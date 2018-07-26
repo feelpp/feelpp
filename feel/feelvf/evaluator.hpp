@@ -204,11 +204,11 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
     typedef typename gm1_type::template Context<context, mesh_element_type> gm1_context_type;
 
 
-    typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
-    typedef boost::shared_ptr<gm1_context_type> gm1_context_ptrtype;
+    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
+    typedef std::shared_ptr<gm1_context_type> gm1_context_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm1_context_ptrtype> > map_gmc1_type;
-    //typedef typename expression_type::template tensor<map_gmc_type,fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<fecontext_type> > > > t_expr_type;
+    //typedef typename expression_type::template tensor<map_gmc_type,fusion::map<fusion::pair<vf::detail::gmc<0>,std::shared_ptr<fecontext_type> > > > t_expr_type;
     //typedef decltype( basis_type::isomorphism( M_expr ) ) the_expression_type;
     typedef expression_type the_expression_type;
     typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
@@ -388,15 +388,15 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
 
     // geometric mapping context
     typedef typename geoelement_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef std::shared_ptr<gm_type> gm_ptrtype;
     typedef typename geoelement_type::gm1_type gm1_type;
-    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+    typedef std::shared_ptr<gm1_type> gm1_ptrtype;
 
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
     typedef typename gm1_type::template Context<context, geoelement_type> gmc1_type;
-    typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
+    typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
 
     // expression

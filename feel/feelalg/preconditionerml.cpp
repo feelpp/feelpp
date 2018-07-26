@@ -65,7 +65,7 @@ PreconditionerML::buildPreconditioner( sparse_matrix_ptrtype& A )
 {
     epetra_sparse_matrix_type* A_ptr = dynamic_cast<epetra_sparse_matrix_type*>( A.get() );
 
-    M_Prec = boost::shared_ptr<prec_type>( new prec_type( A_ptr->mat(),
+    M_Prec = std::shared_ptr<prec_type>( new prec_type( A_ptr->mat(),
                                            M_List,
                                            true ) );
 

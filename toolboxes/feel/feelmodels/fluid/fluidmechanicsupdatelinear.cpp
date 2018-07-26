@@ -79,7 +79,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                               _rowstart=rowStartInVector );
 
 
-    //boost::shared_ptr<element_fluid_external_storage_type> fielCurrentPicardSolution;
+    //std::shared_ptr<element_fluid_external_storage_type> fielCurrentPicardSolution;
     element_fluid_ptrtype fielCurrentPicardSolution;
     if ( this->solverName() == "Picard" )
     {

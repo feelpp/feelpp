@@ -92,7 +92,7 @@ public:
     using element_ptrtype = super_type::element_ptrtype;
 
     using prop_type = ModelProperties;
-    using prop_ptrtype = boost::shared_ptr<prop_type>;
+    using prop_ptrtype = std::shared_ptr<prop_type>;
 
     using parameter_type = super_type::parameter_type;
     using vectorN_type = super_type::vectorN_type;

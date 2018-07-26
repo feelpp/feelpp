@@ -57,16 +57,16 @@ namespace ALE_IMPL
 namespace detailALE
 {
 template < typename SpaceLowType,typename SpaceHighType >
-boost::shared_ptr<SpaceHighType>
-buildSpaceHigh(boost::shared_ptr<SpaceLowType> spaceLow, bool moveGhostEltFromExtendedStencil, mpl::bool_<false> /**/ )
+std::shared_ptr<SpaceHighType>
+buildSpaceHigh(std::shared_ptr<SpaceLowType> spaceLow, bool moveGhostEltFromExtendedStencil, mpl::bool_<false> /**/ )
 {
     return SpaceHighType::New( _mesh=spaceLow->mesh(),_worldscomm=spaceLow->worldsComm(),
                                _extended_doftable=std::vector<bool>(1,moveGhostEltFromExtendedStencil) );
 }
 
 template < typename SpaceLowType,typename SpaceHighType >
-boost::shared_ptr<SpaceHighType>
-buildSpaceHigh(boost::shared_ptr<SpaceLowType> spaceLow, bool moveGhostEltFromExtendedStencil, mpl::bool_<true> /**/ )
+std::shared_ptr<SpaceHighType>
+buildSpaceHigh(std::shared_ptr<SpaceLowType> spaceLow, bool moveGhostEltFromExtendedStencil, mpl::bool_<true> /**/ )
 {
     return spaceLow;
 }
@@ -159,10 +159,10 @@ ALE<Convex,Order>::~ALE() {}
 //-------------------------------------------------------------------------------------------//
 
 template < class Convex, int Order >
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 ALE<Convex,Order>::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n   Physical Markers";
     if ( this->flagSet().find("fixed") != this->flagSet().end() )
     {

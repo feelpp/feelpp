@@ -86,17 +86,17 @@ SYMMETRIC = 1 << 3
 namespace detail
 {
 template<typename T>
-FEELPP_EXPORT boost::shared_ptr<DataMap> datamap( T const& t, mpl::true_ )
+FEELPP_EXPORT std::shared_ptr<DataMap> datamap( T const& t, mpl::true_ )
 {
     return t->mapPtr();
 }
 template<typename T>
-FEELPP_EXPORT boost::shared_ptr<DataMap> datamap( T const& t, mpl::false_ )
+FEELPP_EXPORT std::shared_ptr<DataMap> datamap( T const& t, mpl::false_ )
 {
     return t.mapPtr();
 }
 template<typename T>
-FEELPP_EXPORT boost::shared_ptr<DataMap> datamap( T const& t )
+FEELPP_EXPORT std::shared_ptr<DataMap> datamap( T const& t )
 {
     return datamap( t, Feel::detail::is_shared_ptr<T>() );
 }
@@ -152,7 +152,7 @@ class BackendBase{};
 template<typename T>
 class FEELPP_EXPORT Backend:
         public BackendBase,
-        public boost::enable_shared_from_this<Backend<T> >
+        public std::enable_shared_from_this<Backend<T> >
 {
 public:
 
@@ -164,28 +164,28 @@ public:
     typedef typename type_traits<T>::real_type real_type;
 
     typedef Vector<value_type> vector_type;
-    typedef boost::shared_ptr<vector_type> vector_ptrtype;
+    typedef std::shared_ptr<vector_type> vector_ptrtype;
     typedef MatrixSparse<value_type> sparse_matrix_type;
-    typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
+    typedef std::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
 
     typedef MatrixShell<value_type> shell_matrix_type;
-    typedef boost::shared_ptr<shell_matrix_type> shell_matrix_ptrtype;
+    typedef std::shared_ptr<shell_matrix_type> shell_matrix_ptrtype;
 
     typedef typename sparse_matrix_type::graph_type graph_type;
     typedef typename sparse_matrix_type::graph_ptrtype graph_ptrtype;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef backend_ptrtype ptrtype;
 
     typedef SolverNonLinear<value_type> solvernonlinear_type;
-    typedef boost::shared_ptr<solvernonlinear_type> solvernonlinear_ptrtype;
+    typedef std::shared_ptr<solvernonlinear_type> solvernonlinear_ptrtype;
 
     typedef typename SolverLinear<real_type>::solve_return_type solve_return_type;
     typedef typename solvernonlinear_type::solve_return_type nl_solve_return_type;
 
     typedef DataMap datamap_type;
-    typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
+    typedef std::shared_ptr<datamap_type> datamap_ptrtype;
 
     typedef typename datamap_type::indexsplit_type indexsplit_type;
     typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
@@ -261,9 +261,9 @@ public:
      * apply a dynamic_pointer_cast is necessary for shared<VectorUblas>
      */
     template<typename VecType>
-    vector_ptrtype toBackendVectorPtr( boost::shared_ptr<VecType> const& v  )
+    vector_ptrtype toBackendVectorPtr( std::shared_ptr<VecType> const& v  )
     {
-        vector_ptrtype vcast = boost::dynamic_pointer_cast< vector_type >( v );
+        vector_ptrtype vcast = std::dynamic_pointer_cast< vector_type >( v );
         return this->toBackendVectorPtr( vcast );
     }
 
@@ -359,8 +359,8 @@ public:
                                      newMatrix,
                                      tag,
                                      ( required
-                                       ( trial,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) ) )
+                                       ( trial,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
+                                       ( test,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) ) )
                                      ( optional
                                        ( pattern,( size_type ),Pattern::COUPLED )
                                        ( properties,( size_type ),NON_HERMITIAN )
@@ -458,7 +458,7 @@ public:
                                               bool diag_is_nonzero=true )
     {
         typedef MatrixBlockBase<value_type> matrix_block_type;
-        typedef boost::shared_ptr<matrix_block_type> matrix_block_ptrtype;
+        typedef std::shared_ptr<matrix_block_type> matrix_block_ptrtype;
 
         matrix_block_ptrtype mb;
         if ( b.isClosed() )
@@ -482,7 +482,7 @@ public:
                                               bool diag_is_nonzero=true )
     {
         typedef MatrixBlockBase<value_type> matrix_block_type;
-        typedef boost::shared_ptr<matrix_block_type> matrix_block_ptrtype;
+        typedef std::shared_ptr<matrix_block_type> matrix_block_ptrtype;
 
         matrix_block_ptrtype mb;
         if ( b.isClosed() )
@@ -524,7 +524,7 @@ public:
                                        bool copy_values=true )
     {
         using vector_block_type = VectorBlockBase<typename decay_type<BlockType>::value_type>;
-        return boost::make_shared<vector_block_type>( b, *this, copy_values );
+        return std::make_shared<vector_block_type>( b, *this, copy_values );
     }
 
     /**
@@ -552,8 +552,8 @@ public:
                                      newZeroMatrix,
                                      tag,
                                      ( required
-                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
-                                       ( trial,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
+                                       ( test,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> >) )
+                                       ( trial,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> >) )
                                      )
                                    )
     {
@@ -577,7 +577,7 @@ public:
                                      newVector,
                                      tag,
                                      ( required
-                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
+                                       ( test,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> >) )
                                      )
                                    )
     {
@@ -1084,8 +1084,8 @@ public:
             this->attachPreconditioner( prec );
 
         // attach null space (or near null space for multigrid) in backend
-        auto mynullspace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
-        auto myNearNullSpace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),near_null_space);
+        auto mynullspace = std::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
+        auto myNearNullSpace = std::make_shared<NullSpace<value_type>>(this->shared_from_this(),near_null_space);
         if ( mynullspace->size() > 0 )
         {
             this->attachNullSpace( mynullspace );
@@ -1291,8 +1291,8 @@ public:
             this->nlSolver()->attachPreconditioner( M_preconditioner );
 
         // attach null space (or near null space for multigrid) in backend
-        auto mynullspace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
-        auto myNearNullSpace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),near_null_space);
+        auto mynullspace = std::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
+        auto myNearNullSpace = std::make_shared<NullSpace<value_type>>(this->shared_from_this(),near_null_space);
         if ( mynullspace->size() > 0 )
         {
             this->attachNullSpace( mynullspace );
@@ -1385,11 +1385,11 @@ public:
     }
 
 
-    void attachNullSpace( boost::shared_ptr<NullSpace<value_type> > nullSpace )
+    void attachNullSpace( std::shared_ptr<NullSpace<value_type> > nullSpace )
     {
         M_nullSpace = nullSpace;
     }
-    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type> > nearNullSpace )
+    void attachNearNullSpace( std::shared_ptr<NullSpace<value_type> > nearNullSpace )
     {
         M_nearNullSpace = nearNullSpace;
     }
@@ -1409,7 +1409,7 @@ public:
      */
     template<typename Observer>
     void
-    addDeleteObserver( boost::shared_ptr<Observer> const& obs )
+    addDeleteObserver( std::shared_ptr<Observer> const& obs )
         {
             M_deleteObservers.connect(boost::bind(&Observer::operator(), obs));
         }
@@ -1448,7 +1448,7 @@ public:
 
 protected:
     preconditioner_ptrtype M_preconditioner;
-    boost::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
+    std::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
 private:
 
     void start();
@@ -1513,13 +1513,13 @@ private:
 
 
 typedef Backend<double> backend_type;
-typedef boost::shared_ptr<backend_type> backend_ptrtype;
+typedef std::shared_ptr<backend_type> backend_ptrtype;
 
 typedef Backend<std::complex<double>> c_backend_type;
-typedef boost::shared_ptr<c_backend_type> c_backend_ptrtype;
+typedef std::shared_ptr<c_backend_type> c_backend_ptrtype;
 
 template<typename T = double>
-using backend_ptr_t = boost::shared_ptr<Backend<T>>;
+using backend_ptr_t = std::shared_ptr<Backend<T>>;
 
 namespace detail
 {
@@ -1627,7 +1627,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 template<typename T>
-bool isMatrixInverseSymmetric ( boost::shared_ptr<MatrixSparse<T> >& A, boost::shared_ptr<MatrixSparse<T> >& At, bool print=false  )
+bool isMatrixInverseSymmetric ( std::shared_ptr<MatrixSparse<T> >& A, std::shared_ptr<MatrixSparse<T> >& At, bool print=false  )
 {
 #if FEELPP_HAS_PETSC
     auto u = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());

@@ -111,7 +111,7 @@ public:
     typedef PointSet<convex_type, value_type> pointset_type;
 
     typedef Mesh<mesh_convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename matrix_node<value_type>::type points_type;
 

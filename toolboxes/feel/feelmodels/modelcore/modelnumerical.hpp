@@ -78,8 +78,8 @@ class ModelNumerical : public ModelAlgebraic
 
         virtual ~ModelNumerical() {};
 
-        //boost::shared_ptr<PsLogger> psLogger()  { return M_PsLogger; }
-        //boost::shared_ptr<PsLogger> const& psLogger() const { return M_PsLogger; }
+        //std::shared_ptr<PsLogger> psLogger()  { return M_PsLogger; }
+        //std::shared_ptr<PsLogger> const& psLogger() const { return M_PsLogger; }
 
         bool isStationary() const { return M_isStationary; }
         void setStationary(bool b);
@@ -177,7 +177,7 @@ class ModelNumerical : public ModelAlgebraic
         ModelMeasuresIO M_postProcessMeasuresIO;
         ModelMeasuresEvaluatorContext M_postProcessMeasuresEvaluatorContext;
 
-        //boost::shared_ptr<PsLogger> M_PsLogger;
+        //std::shared_ptr<PsLogger> M_PsLogger;
 
         GeomapStrategyType M_geomap;
 

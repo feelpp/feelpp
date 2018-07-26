@@ -37,7 +37,7 @@ ADVECTION_CLASS_TEMPLATE_TYPE::New(
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type>( prefix, worldComm, subPrefix, modelRep );
+    return std::make_shared<self_type>( prefix, worldComm, subPrefix, modelRep );
 }
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS

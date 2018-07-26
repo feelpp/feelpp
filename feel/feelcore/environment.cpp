@@ -452,9 +452,9 @@ Environment::Environment( int argc, char** argv,
     cerr.attachWorldComm( S_worldcomm );
     clog.attachWorldComm( S_worldcomm );
 
-    S_desc_app = boost::make_shared<po::options_description>( desc );
-    S_desc_lib = boost::make_shared<po::options_description>( desc_lib );
-    S_desc = boost::make_shared<po::options_description>();
+    S_desc_app = std::make_shared<po::options_description>( desc );
+    S_desc_lib = std::make_shared<po::options_description>( desc_lib );
+    S_desc = std::make_shared<po::options_description>();
     S_desc->add( *S_desc_app );
 
     // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
@@ -1174,11 +1174,11 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 {
     VLOG( 2 ) << " parsing options...\n";
 
-    boost::shared_ptr<po::parsed_options> parsed;
+    std::shared_ptr<po::parsed_options> parsed;
 
     if ( extra_parser )
     {
-        parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
+        parsed = std::shared_ptr<po::parsed_options>( new po::parsed_options( parser
                  .options( *S_desc )
                  .extra_parser( at_option_parser_2 )
                  .allow_unregistered()
@@ -1188,7 +1188,7 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 
     else
     {
-        parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
+        parsed = std::shared_ptr<po::parsed_options>( new po::parsed_options( parser
                  .options( *S_desc )
                  .allow_unregistered()
                  .run() ) );
@@ -1253,7 +1253,7 @@ Environment::doOptions( int argc, char** argv,
     //std::locale::global(std::locale(""));
     try
     {
-        S_commandLineParser = boost::shared_ptr<po::command_line_parser>( new po::command_line_parser( argc, argv ) );
+        S_commandLineParser = std::shared_ptr<po::command_line_parser>( new po::command_line_parser( argc, argv ) );
         parseAndStoreOptions( po::command_line_parser( argc, argv ), true );
         processGenericOptions();
 
@@ -2314,18 +2314,18 @@ char** Environment::S_argv = 0;
 
 AboutData Environment::S_about;
 pt::ptree Environment::S_summary;
-boost::shared_ptr<po::command_line_parser> Environment::S_commandLineParser;
+std::shared_ptr<po::command_line_parser> Environment::S_commandLineParser;
 std::vector<std::tuple<std::string,std::istringstream> > Environment::S_configFiles;
 po::variables_map Environment::S_vm;
-boost::shared_ptr<po::options_description> Environment::S_desc;
-boost::shared_ptr<po::options_description> Environment::S_desc_app;
-boost::shared_ptr<po::options_description> Environment::S_desc_lib;
+std::shared_ptr<po::options_description> Environment::S_desc;
+std::shared_ptr<po::options_description> Environment::S_desc_app;
+std::shared_ptr<po::options_description> Environment::S_desc_lib;
 std::vector<std::string> Environment::S_to_pass_further;
 
 boost::signals2::signal<void()> Environment::S_deleteObservers;
 
-boost::shared_ptr<WorldComm> Environment::S_worldcomm;
-boost::shared_ptr<WorldComm> Environment::S_worldcommSeq;
+std::shared_ptr<WorldComm> Environment::S_worldcomm;
+std::shared_ptr<WorldComm> Environment::S_worldcommSeq;
 boost::uuids::random_generator Environment::S_generator;
 
 std::vector<fs::path> Environment::S_paths = { fs::current_path(),

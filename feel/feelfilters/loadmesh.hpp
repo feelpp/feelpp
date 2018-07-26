@@ -66,7 +66,7 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( prefix,(std::string), "" )
       ( filename, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.filename") )
-      ( desc, *,boost::shared_ptr<gmsh_type>() )  // geo() can't be used here as default !!
+      ( desc, *,std::shared_ptr<gmsh_type>() )  // geo() can't be used here as default !!
 
       ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
       ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.scale") )
@@ -282,7 +282,7 @@ BOOST_PARAMETER_FUNCTION(
     return m;
 #else
     LOG(WARNING) << "Gmsh support not available. No mesh file provided, return an empty mesh.";
-    return boost::make_shared<_mesh_type>();
+    return std::make_shared<_mesh_type>();
 #endif
 #if defined(__clang__)
 #pragma clang diagnostic pop

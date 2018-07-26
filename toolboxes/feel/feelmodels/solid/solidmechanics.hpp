@@ -61,7 +61,7 @@ enum class SolidMechanicsPostProcessFieldExported
 
 template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechProp=false >
 class SolidMechanics : public ModelNumerical,
-                       public boost::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp> >,
+                       public std::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp> >,
                        public MarkerManagementDirichletBC,
                        public MarkerManagementNeumannBC,
                        public MarkerManagementNeumannEulerianFrameBC,
@@ -72,7 +72,7 @@ public:
     typedef ModelNumerical super_type;
 
     typedef SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -86,7 +86,7 @@ public:
     static const uint16_type nDim = convex_type::nDim;
     static const uint16_type nOrderGeo = convex_type::nOrder;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     //___________________________________________________________________________________//
     // basis
     static const uint16_type nOrder = BasisDisplacementType::nOrder;
@@ -100,63 +100,63 @@ public:
     //___________________________________________________________________________________//
     // displacement space
     typedef FunctionSpace<mesh_type, bases<basis_u_type>/*,double,NoPeriodicity*/> space_displacement_type;
-    typedef boost::shared_ptr<space_displacement_type> space_displacement_ptrtype;
+    typedef std::shared_ptr<space_displacement_type> space_displacement_ptrtype;
     typedef typename space_displacement_type::element_type element_displacement_type;
-    typedef boost::shared_ptr<element_displacement_type> element_displacement_ptrtype;
+    typedef std::shared_ptr<element_displacement_type> element_displacement_ptrtype;
     typedef typename space_displacement_type::element_external_storage_type element_displacement_external_storage_type;
     typedef typename space_displacement_type::element_type element_vectorial_type;
-    typedef boost::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
+    typedef std::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
     typedef typename space_displacement_type::component_functionspace_type space_displacement_scalar_type;
     typedef typename space_displacement_scalar_type::element_type element_displacement_scalar_type;
-    typedef boost::shared_ptr<element_displacement_scalar_type> element_displacement_scalar_ptrtype;
+    typedef std::shared_ptr<element_displacement_scalar_type> element_displacement_scalar_ptrtype;
     //___________________________________________________________________________________//
     // pressure space
     typedef FunctionSpace<mesh_type, bases<basis_l_type> > space_pressure_type;
-    typedef boost::shared_ptr<space_pressure_type> space_pressure_ptrtype;
+    typedef std::shared_ptr<space_pressure_type> space_pressure_ptrtype;
     typedef typename space_pressure_type::element_type element_pressure_type;
-    typedef boost::shared_ptr<element_pressure_type> element_pressure_ptrtype;
+    typedef std::shared_ptr<element_pressure_type> element_pressure_ptrtype;
     typedef typename space_pressure_type::element_external_storage_type element_pressure_external_storage_type;
     //___________________________________________________________________________________//
     // vectorial constraint space
     typedef FunctionSpace<mesh_type, bases<basis_constraint_vec_type> > space_constraint_vec_type;
-    typedef boost::shared_ptr<space_constraint_vec_type> space_constraint_vec_ptrtype;
+    typedef std::shared_ptr<space_constraint_vec_type> space_constraint_vec_ptrtype;
     typedef typename space_constraint_vec_type::element_type element_constraint_vec_type;
-    typedef boost::shared_ptr<element_constraint_vec_type> element_constraint_vec_ptrtype;
+    typedef std::shared_ptr<element_constraint_vec_type> element_constraint_vec_ptrtype;
     //___________________________________________________________________________________//
     // scalar stress space
 #if 0
     typedef Lagrange<nOrder, Scalar,Continuous,PointSetFekete> basis_stress_scal_type;
     typedef FunctionSpace<mesh_type, bases<basis_stress_scal_type>/*, double, NoPeriodicity*/> space_stress_scal_type;
-    typedef boost::shared_ptr<space_stress_scal_type> space_stress_scal_ptrtype;
+    typedef std::shared_ptr<space_stress_scal_type> space_stress_scal_ptrtype;
     typedef typename space_stress_scal_type::element_type element_stress_scal_type;
-    typedef boost::shared_ptr<element_stress_scal_type> element_stress_scal_ptrtype;
+    typedef std::shared_ptr<element_stress_scal_type> element_stress_scal_ptrtype;
 #endif
     // normal stress space
     typedef FunctionSpace<mesh_type, bases<basis_stress_type>/*, double, NoPeriodicity*/> space_normal_stress_type;
-    typedef boost::shared_ptr<space_normal_stress_type> space_normal_stress_ptrtype;
+    typedef std::shared_ptr<space_normal_stress_type> space_normal_stress_ptrtype;
     typedef typename space_normal_stress_type::element_type element_normal_stress_type;
-    typedef boost::shared_ptr<element_normal_stress_type> element_normal_stress_ptrtype;
+    typedef std::shared_ptr<element_normal_stress_type> element_normal_stress_ptrtype;
     // stress tensor
     typedef FunctionSpace<mesh_type, bases<basis_stress_tensor_type> > space_stress_tensor_type;
-    typedef boost::shared_ptr<space_stress_tensor_type> space_stress_tensor_ptrtype;
+    typedef std::shared_ptr<space_stress_tensor_type> space_stress_tensor_ptrtype;
     typedef typename space_stress_tensor_type::element_type element_stress_tensor_type;
-    typedef boost::shared_ptr<element_stress_tensor_type> element_stress_tensor_ptrtype;
+    typedef std::shared_ptr<element_stress_tensor_type> element_stress_tensor_ptrtype;
     // scalar stress space
     typedef typename space_stress_tensor_type::component_functionspace_type space_stress_scal_type;
     typedef typename space_stress_scal_type::element_type element_stress_scal_type;
-    typedef boost::shared_ptr<element_stress_scal_type> element_stress_scal_ptrtype;
+    typedef std::shared_ptr<element_stress_scal_type> element_stress_scal_ptrtype;
     //___________________________________________________________________________________//
     // methodsnum tool
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
     typedef typename model_algebraic_factory_type::graph_type graph_type;
     typedef typename model_algebraic_factory_type::graph_ptrtype graph_ptrtype;
     //___________________________________________________________________________________//
     // newmark or savets(bdf) class
     typedef Newmark<space_displacement_type> newmark_displacement_type;
-    typedef boost::shared_ptr<newmark_displacement_type> newmark_displacement_ptrtype;
+    typedef std::shared_ptr<newmark_displacement_type> newmark_displacement_ptrtype;
     typedef Bdf<space_pressure_type>  savets_pressure_type;
-    typedef boost::shared_ptr<savets_pressure_type> savets_pressure_ptrtype;
+    typedef std::shared_ptr<savets_pressure_type> savets_pressure_ptrtype;
     //___________________________________________________________________________________//
     // functionspace for rho,coefflame1,coefflame2
     typedef bases<Lagrange<0, Scalar,Continuous> > basis_scalar_P0_continuous_type;
@@ -167,27 +167,27 @@ public:
                                basis_scalar_P0_discontinuous_type >::type basis_scalar_P0_type;
 
     typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
-    typedef boost::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
+    typedef std::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
     typedef typename space_scalar_P0_type::element_type element_scalar_P0_type;
-    typedef boost::shared_ptr<element_scalar_P0_type> element_scalar_P0_ptrtype;
+    typedef std::shared_ptr<element_scalar_P0_type> element_scalar_P0_ptrtype;
     // mechanical properties desc
     typedef MechanicalPropertiesDescription<space_scalar_P0_type> mechanicalproperties_type;
-    typedef boost::shared_ptr<mechanicalproperties_type> mechanicalproperties_ptrtype;
+    typedef std::shared_ptr<mechanicalproperties_type> mechanicalproperties_ptrtype;
     //___________________________________________________________________________________//
     // trace mesh
     typedef typename mesh_type::trace_mesh_type trace_mesh_type;
-    typedef boost::shared_ptr<trace_mesh_type> trace_mesh_ptrtype;
+    typedef std::shared_ptr<trace_mesh_type> trace_mesh_ptrtype;
     typedef Lagrange<nOrderGeo, Vectorial,Continuous> basis_tracemesh_disp_type;
     typedef FunctionSpace<trace_mesh_type, bases<basis_tracemesh_disp_type> > space_tracemesh_disp_type;
-    typedef boost::shared_ptr<space_tracemesh_disp_type> space_tracemesh_disp_ptrtype;
+    typedef std::shared_ptr<space_tracemesh_disp_type> space_tracemesh_disp_ptrtype;
     typedef typename space_tracemesh_disp_type::element_type element_tracemesh_disp_type;
-    typedef boost::shared_ptr<element_tracemesh_disp_type> element_tracemesh_disp_ptrtype;
+    typedef std::shared_ptr<element_tracemesh_disp_type> element_tracemesh_disp_ptrtype;
     //___________________________________________________________________________________//
     // exporter
     typedef Exporter<mesh_type,nOrderGeo> exporter_type;
-    typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
+    typedef std::shared_ptr<exporter_type> exporter_ptrtype;
     //typedef Exporter<mesh_type,nOrderGeo> gmsh_export_type;
-    //typedef boost::shared_ptr<gmsh_export_type> gmsh_export_ptrtype;
+    //typedef std::shared_ptr<gmsh_export_type> gmsh_export_ptrtype;
 #if 1 //defined(FEELPP_HAS_VTK)
     //fais comme ca car bug dans opeartorlagrangeP1 pour les champs vectorielles
     typedef FunctionSpace<mesh_type,bases<Lagrange<nOrder,Scalar,Continuous,PointSetFekete> > > space_create_ho_type;
@@ -195,9 +195,9 @@ public:
     typedef Mesh<Simplex<nDim,1,nDim> > mesh_visu_ho_type;
 
     typedef FunctionSpace<mesh_visu_ho_type,bases<Lagrange<1,Vectorial,Continuous,PointSetFekete> > > space_vectorial_visu_ho_type;
-    typedef boost::shared_ptr<space_vectorial_visu_ho_type> space_vectorial_visu_ho_ptrtype;
+    typedef std::shared_ptr<space_vectorial_visu_ho_type> space_vectorial_visu_ho_ptrtype;
     typedef typename space_vectorial_visu_ho_type::element_type element_vectorial_visu_ho_type;
-    typedef boost::shared_ptr<element_vectorial_visu_ho_type> element_vectorial_visu_ho_ptrtype;
+    typedef std::shared_ptr<element_vectorial_visu_ho_type> element_vectorial_visu_ho_ptrtype;
 
 
     typedef elements_reference_wrapper_t<mesh_visu_ho_type> range_visu_ho_type;
@@ -206,34 +206,34 @@ public:
     typedef OperatorInterpolation<space_displacement_type,
                                   space_vectorial_visu_ho_type,
                                   range_visu_ho_type> op_interpolation_visu_ho_disp_type;
-    typedef boost::shared_ptr<op_interpolation_visu_ho_disp_type> op_interpolation_visu_ho_disp_ptrtype;
+    typedef std::shared_ptr<op_interpolation_visu_ho_disp_type> op_interpolation_visu_ho_disp_ptrtype;
 
     typedef OperatorInterpolation<space_normal_stress_type,
                                   space_vectorial_visu_ho_type,
                                   range_visu_boundaryfaces_ho_type/*range_visu_ho_type*/> op_interpolation_visu_ho_normalstress_type;
-    typedef boost::shared_ptr<op_interpolation_visu_ho_normalstress_type> op_interpolation_visu_ho_normalstress_ptrtype;
+    typedef std::shared_ptr<op_interpolation_visu_ho_normalstress_type> op_interpolation_visu_ho_normalstress_ptrtype;
 
     //typedef FunctionSpace<mesh_visu_ho_type,bases<Lagrange<1,Scalar,Continuous,PointSetFekete> > > space_scalar_visu_ho_type;
     typedef typename space_vectorial_visu_ho_type::component_functionspace_type space_scalar_visu_ho_type;
-    typedef boost::shared_ptr<space_scalar_visu_ho_type> space_scalar_visu_ho_ptrtype;
+    typedef std::shared_ptr<space_scalar_visu_ho_type> space_scalar_visu_ho_ptrtype;
     typedef typename space_scalar_visu_ho_type::element_type element_scalar_visu_ho_type;
-    typedef boost::shared_ptr<element_scalar_visu_ho_type> element_scalar_visu_ho_ptrtype;
+    typedef std::shared_ptr<element_scalar_visu_ho_type> element_scalar_visu_ho_ptrtype;
 
     typedef OperatorInterpolation<space_pressure_type,
                                   space_scalar_visu_ho_type,
                                   range_visu_ho_type> op_interpolation_visu_ho_pressure_type;
-    typedef boost::shared_ptr<op_interpolation_visu_ho_pressure_type> op_interpolation_visu_ho_pressure_ptrtype;
+    typedef std::shared_ptr<op_interpolation_visu_ho_pressure_type> op_interpolation_visu_ho_pressure_ptrtype;
 
     typedef Exporter<mesh_visu_ho_type> export_ho_type;
-    typedef boost::shared_ptr<export_ho_type> export_ho_ptrtype;
+    typedef std::shared_ptr<export_ho_type> export_ho_ptrtype;
 #endif
     // context for evaluation
     typedef typename space_displacement_type::Context context_displacement_type;
-    typedef boost::shared_ptr<context_displacement_type> context_displacement_ptrtype;
+    typedef std::shared_ptr<context_displacement_type> context_displacement_ptrtype;
     typedef typename space_pressure_type::Context context_pressure_type;
-    typedef boost::shared_ptr<context_pressure_type> context_pressure_ptrtype;
+    typedef std::shared_ptr<context_pressure_type> context_pressure_ptrtype;
     typedef typename space_stress_scal_type::Context context_stress_scal_type;
-    typedef boost::shared_ptr<context_stress_scal_type> context_stress_scal_ptrtype;
+    typedef std::shared_ptr<context_stress_scal_type> context_stress_scal_ptrtype;
 
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -245,7 +245,7 @@ public:
     // mesh
     typedef Simplex<1,1/*nOrderGeo*/,nDim> convex_1dreduced_type;
     typedef Mesh<convex_1dreduced_type> mesh_1dreduced_type;
-    typedef boost::shared_ptr<mesh_1dreduced_type> mesh_1dreduced_ptrtype;
+    typedef std::shared_ptr<mesh_1dreduced_type> mesh_1dreduced_ptrtype;
     //___________________________________________________________________________________//
     // basis
     //typedef bases<Lagrange<nOrder, Scalar,Continuous,PointSetFekete> > basis_1dreduced_type;
@@ -254,32 +254,32 @@ public:
     //___________________________________________________________________________________//
     // function space
     typedef FunctionSpace<mesh_1dreduced_type, basis_vect_1dreduced_type> space_vect_1dreduced_type;
-    typedef boost::shared_ptr<space_vect_1dreduced_type> space_vect_1dreduced_ptrtype;
+    typedef std::shared_ptr<space_vect_1dreduced_type> space_vect_1dreduced_ptrtype;
     typedef typename space_vect_1dreduced_type::element_type element_vect_1dreduced_type;
-    typedef boost::shared_ptr<element_vect_1dreduced_type> element_vect_1dreduced_ptrtype;
+    typedef std::shared_ptr<element_vect_1dreduced_type> element_vect_1dreduced_ptrtype;
 
     typedef typename space_vect_1dreduced_type::component_functionspace_type space_1dreduced_type;
     typedef typename space_vect_1dreduced_type::component_functionspace_ptrtype space_1dreduced_ptrtype;
     typedef typename space_1dreduced_type::element_type element_1dreduced_type;
-    typedef boost::shared_ptr<element_1dreduced_type> element_1dreduced_ptrtype;
+    typedef std::shared_ptr<element_1dreduced_type> element_1dreduced_ptrtype;
 
     typedef FunctionSpace<mesh_1dreduced_type, basis_stress_vect_1dreduced_type> space_stress_vect_1dreduced_type;
-    typedef boost::shared_ptr<space_stress_vect_1dreduced_type> space_stress_vect_1dreduced_ptrtype;
+    typedef std::shared_ptr<space_stress_vect_1dreduced_type> space_stress_vect_1dreduced_ptrtype;
     typedef typename space_stress_vect_1dreduced_type::element_type element_stress_vect_1dreduced_type;
-    typedef boost::shared_ptr<element_stress_vect_1dreduced_type> element_stress_vect_1dreduced_ptrtype;
+    typedef std::shared_ptr<element_stress_vect_1dreduced_type> element_stress_vect_1dreduced_ptrtype;
 
     typedef typename space_stress_vect_1dreduced_type::component_functionspace_type space_stress_scal_1dreduced_type;
     typedef typename space_stress_vect_1dreduced_type::component_functionspace_ptrtype space_stress_scal_1dreduced_ptrtype;
     typedef typename space_stress_scal_1dreduced_type::element_type element_stress_scal_1dreduced_type;
-    typedef boost::shared_ptr<element_stress_scal_1dreduced_type> element_stress_scal_1dreduced_ptrtype;
+    typedef std::shared_ptr<element_stress_scal_1dreduced_type> element_stress_scal_1dreduced_ptrtype;
     //___________________________________________________________________________________//
     // time step newmark
     typedef Newmark<space_1dreduced_type>  newmark_1dreduced_type;
-    typedef boost::shared_ptr<newmark_1dreduced_type> newmark_1dreduced_ptrtype;
+    typedef std::shared_ptr<newmark_1dreduced_type> newmark_1dreduced_ptrtype;
     //___________________________________________________________________________________//
     // exporter
     typedef Exporter<mesh_1dreduced_type,mesh_1dreduced_type::nOrder> exporter_1dreduced_type;
-    typedef boost::shared_ptr<exporter_1dreduced_type> exporter_1dreduced_ptrtype;
+    typedef std::shared_ptr<exporter_1dreduced_type> exporter_1dreduced_ptrtype;
     //___________________________________________________________________________________//
 
     //___________________________________________________________________________________//
@@ -290,11 +290,11 @@ public:
 
     typedef faces_reference_wrapper_t<mesh_type> range_face_type;
     typedef OperatorInterpolation<space_vect_1dreduced_type, space_displacement_type, range_face_type> op_interpolation1dTo2d_disp_type;
-    typedef boost::shared_ptr<op_interpolation1dTo2d_disp_type> op_interpolation1dTo2d_disp_ptrtype;
+    typedef std::shared_ptr<op_interpolation1dTo2d_disp_type> op_interpolation1dTo2d_disp_ptrtype;
 
     typedef elements_reference_wrapper_t<mesh_1dreduced_type> range_elt1d_reduced_type;
     typedef OperatorInterpolation<space_stress_scal_type, space_1dreduced_type ,range_elt1d_reduced_type> op_interpolation2dTo1d_normalstress_type;
-    typedef boost::shared_ptr<op_interpolation2dTo1d_normalstress_type> op_interpolation2dTo1d_normalstress_ptrtype;
+    typedef std::shared_ptr<op_interpolation2dTo1d_normalstress_type> op_interpolation2dTo1d_normalstress_ptrtype;
 
     //___________________________________________________________________________________//
 
@@ -360,7 +360,7 @@ public :
     void init( bool buildAlgebraicFactory = true );
     void solve( bool upVelAcc=true );
 
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const;
 
     void pdeType(std::string __type);
     void pdeSolver(std::string __type);
@@ -389,14 +389,14 @@ public :
                      !M_bcDirichletComponents.find(Component::Z)->second.empty() );
         }
 
-    boost::shared_ptr<TSBase> timeStepBase()
+    std::shared_ptr<TSBase> timeStepBase()
     {
         if (this->isStandardModel())
             return this->timeStepNewmark();
         else// if (this->is1dReducedModel())
             return this->timeStepNewmark1dReduced();
     }
-    boost::shared_ptr<TSBase> timeStepBase() const
+    std::shared_ptr<TSBase> timeStepBase() const
     {
         if (this->isStandardModel())
             return this->timeStepNewmark();
@@ -802,7 +802,7 @@ protected:
     // fsi
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
-    boost::shared_ptr<typename mesh_type::trace_mesh_type> M_fsiSubmesh;
+    std::shared_ptr<typename mesh_type::trace_mesh_type> M_fsiSubmesh;
 
     // fields defined in json
     std::map<std::string,element_displacement_scalar_ptrtype> M_fieldsUserScalar;

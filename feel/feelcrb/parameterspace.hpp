@@ -61,7 +61,7 @@ namespace Feel
  * @see
  */
 template<uint16_type P = invalid_uint16_type_value >
-class ParameterSpace: public boost::enable_shared_from_this<ParameterSpace<P> >
+class ParameterSpace: public std::enable_shared_from_this<ParameterSpace<P> >
 {
 public:
 
@@ -80,7 +80,7 @@ public:
     //@{
 
     typedef ParameterSpace<Dimension> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
 
     //@}
 
@@ -93,7 +93,7 @@ public:
         using super = Eigen::VectorXd;
     public:
         typedef ParameterSpace<Dimension> parameterspace_type;
-        typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+        typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
         //typedef typename Eigen::internal::ref_selector<Element>::type Nested;
         typedef typename Eigen::internal::remove_all<Eigen::VectorXd>::type NestedExpression;
 
@@ -283,7 +283,7 @@ public:
     };
 
     typedef Element element_type;
-    typedef boost::shared_ptr<Element> element_ptrtype;
+    typedef std::shared_ptr<Element> element_ptrtype;
     element_type element( bool broadcast = true, bool apply_log = false )
     {
 #if 0
@@ -330,17 +330,17 @@ public:
     public:
 
         typedef Sampling sampling_type;
-        typedef boost::shared_ptr<sampling_type> sampling_ptrtype;
+        typedef std::shared_ptr<sampling_type> sampling_ptrtype;
 
         typedef ParameterSpace<Dimension> parameterspace_type;
-        typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+        typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
 
         typedef typename parameterspace_type::Element element_type;
-        typedef boost::shared_ptr<element_type> element_ptrtype;
+        typedef std::shared_ptr<element_type> element_ptrtype;
 
 #if defined(FEELPP_HAS_ANN_H)
         typedef ANNkd_tree kdtree_type;
-        typedef boost::shared_ptr<kdtree_type> kdtree_ptrtype;
+        typedef std::shared_ptr<kdtree_type> kdtree_ptrtype;
 #endif /* FEELPP_HAS_ANN_H */
 
     public:
@@ -1370,7 +1370,7 @@ public:
     };
 
     typedef Sampling sampling_type;
-    typedef boost::shared_ptr<sampling_type> sampling_ptrtype;
+    typedef std::shared_ptr<sampling_type> sampling_ptrtype;
 
     sampling_ptrtype sampling() { return sampling_ptrtype( new sampling_type( this->shared_from_this() ) ); }
 
@@ -1978,7 +1978,7 @@ using ParameterSpaceX = ParameterSpace<>;
 
 template<uint16_type P>
 //typename ParameterSpace<P>::sampling_ptrtype
-boost::shared_ptr<typename ParameterSpace<P>::Sampling>
+std::shared_ptr<typename ParameterSpace<P>::Sampling>
 ParameterSpace<P>::Sampling::complement() const
 {
     //std::cout << "[ParameterSpace::Sampling::complement] start\n";
@@ -2042,7 +2042,7 @@ ParameterSpace<P>::Sampling::complement() const
 
 }
 template<uint16_type P>
-boost::shared_ptr<typename ParameterSpace<P>::Sampling>
+std::shared_ptr<typename ParameterSpace<P>::Sampling>
 ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
                                                      size_type _M ,
                                                      std::vector<int>& index_vector)

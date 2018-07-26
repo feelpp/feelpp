@@ -71,7 +71,7 @@ class Heat1dFemApp   : public Application
 public:
 
     typedef CRBModel<Heat1D> crbmodel_type;
-    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
+    typedef std::shared_ptr<crbmodel_type> crbmodel_ptrtype;
 
     Heat1dFemApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :

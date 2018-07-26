@@ -41,13 +41,13 @@ template <typename T>
 class Backend;
 
 template <typename T = double>
-class BlocksBaseSparseMatrix : public vf::BlocksBase<boost::shared_ptr<MatrixSparse<T>>>
+class BlocksBaseSparseMatrix : public vf::BlocksBase<std::shared_ptr<MatrixSparse<T>>>
 {
   public:
-    typedef vf::BlocksBase<boost::shared_ptr<MatrixSparse<T>>> super_type;
+    typedef vf::BlocksBase<std::shared_ptr<MatrixSparse<T>>> super_type;
     typedef typename super_type::index_type index_type;
     typedef BlocksBaseSparseMatrix<T> self_type;
-    typedef boost::shared_ptr<MatrixSparse<T>> matrix_sparse_ptrtype;
+    typedef std::shared_ptr<MatrixSparse<T>> matrix_sparse_ptrtype;
 
     BlocksBaseSparseMatrix( index_type nr = 0, index_type nc = 0 )
         : super_type( nr, nc ),
@@ -127,10 +127,10 @@ class MatrixBlockBase : public MatrixSparse<T>
     typedef typename super::real_type real_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     typedef super matrix_type;
-    typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
+    typedef std::shared_ptr<matrix_type> matrix_ptrtype;
 
     typedef std::vector<matrix_ptrtype> vector_matrix_ptrtype;
 
@@ -504,7 +504,7 @@ class MatrixBlockBase : public MatrixSparse<T>
      */
     void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal ) override;
 
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type>> const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j ) override;
+    void updateBlockMat( std::shared_ptr<MatrixSparse<value_type>> const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j ) override;
 
     //@}o
 
@@ -512,7 +512,7 @@ class MatrixBlockBase : public MatrixSparse<T>
   private:
     backend_ptrtype M_backend;
 
-    boost::shared_ptr<MatrixSparse<value_type>> M_mat;
+    std::shared_ptr<MatrixSparse<value_type>> M_mat;
 };
 
 template <int NR, int NC, typename T>

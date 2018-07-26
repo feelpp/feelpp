@@ -105,13 +105,13 @@ template <uint16_type Dim,
                     template <class, uint16_type, class> class Pts, uint16_type> class PP = Lagrange>
 class GeoMap
     : public PP<Order, Scalar, Continuous, PointSetEquiSpaced, 0>::template apply<Dim, RealDim /*Dim*/, T, Entity<Dim, Order, /*RealDim*/ Dim>>::result_type //,
-                                                                                                                                                             //public boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
+                                                                                                                                                             //public std::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
 //public PP<Order,Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
 {
     //typedef typename PP<Order, Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
     typedef typename PP<Order, Scalar, Continuous, PointSetEquiSpaced, 0>::template apply<Dim, RealDim /*Dim*/, T, Entity<Dim, Order, /*RealDim*/ Dim>>::result_type super;
 
-    //typedef boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > > super_enable_this;
+    //typedef std::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > > super_enable_this;
 
     static const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<RealDim>>,
                                                         mpl::int_<RealDim>,
@@ -142,21 +142,21 @@ class GeoMap
     typedef typename super::value_type value_type;
 
     typedef typename super::PreCompute precompute_type;
-    typedef boost::shared_ptr<precompute_type> precompute_ptrtype;
+    typedef std::shared_ptr<precompute_type> precompute_ptrtype;
 
     typedef typename super::convex_type convex_type;
     typedef Reference<convex_type, nDim, Order, nDim /*nRealDim*/> reference_convex_type;
 
     typedef GeoMap<Dim, Order, RealDim, T, Entity, PP> self_type;
     typedef self_type geometric_mapping_type;
-    typedef boost::shared_ptr<geometric_mapping_type> geometric_mapping_ptrtype;
+    typedef std::shared_ptr<geometric_mapping_type> geometric_mapping_ptrtype;
 
     typedef typename mpl::at<geomap_elements_t, mpl::int_<nDim>>::type element_gm_type;
-    typedef boost::shared_ptr<element_gm_type> element_gm_ptrtype;
+    typedef std::shared_ptr<element_gm_type> element_gm_ptrtype;
     typedef element_gm_ptrtype gm_ptrtype;
 
     typedef typename mpl::at<geomap_faces_t, mpl::int_<nDim>>::type face_gm_type;
-    typedef boost::shared_ptr<face_gm_type> face_gm_ptrtype;
+    typedef std::shared_ptr<face_gm_type> face_gm_ptrtype;
 
     template <int N>
     struct face_gm
@@ -165,7 +165,7 @@ class GeoMap
     };
 
     typedef typename mpl::at<geomap_edges_t, mpl::int_<nDim>>::type edge_gm_type;
-    typedef boost::shared_ptr<edge_gm_type> edge_gm_ptrtype;
+    typedef std::shared_ptr<edge_gm_type> edge_gm_ptrtype;
 
     template <int N>
     struct edge_gm
@@ -649,14 +649,14 @@ class GeoMap
                                                                       // mpl::identity<typename GeoMap<Dim, Order, T, Entity, PP >::template face_gm<NDim>::type>,
                                                                       mpl::identity<typename GeoMap<NDim, Order, NDim, T, Entity, PP>::edge_gm_type>,
                                                                       mpl::identity<boost::none_t>>::type>::type>::type::type gm_type;
-        typedef boost::shared_ptr<gm_type> gm_ptrtype;
+        typedef std::shared_ptr<gm_type> gm_ptrtype;
 
         typedef typename gm_type::value_type value_type;
 
         typedef typename gm_type::precompute_ptrtype precompute_ptrtype;
 
         typedef Context<contextv, ElementType> gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
         typedef node_t_type normal_type;
         typedef ublas::vector<normal_type> normals_type;
@@ -907,7 +907,7 @@ class GeoMap
      */
         void update( element_type const& __e, uint16_type __f )
         {
-            //M_element_c = boost::shared_ptr<element_type const>(&__e);
+            //M_element_c = std::shared_ptr<element_type const>(&__e);
             M_element = boost::addressof( __e );
             M_face_id = __f;
 
@@ -970,7 +970,7 @@ class GeoMap
 
         void update( element_type const& __e, uint16_type __f, permutation_type __perm, bool __updateJacobianCtx = true )
         {
-            //M_element_c = boost::shared_ptr<element_type const>(&__e);
+            //M_element_c = std::shared_ptr<element_type const>(&__e);
             M_element = boost::addressof( __e );
             M_face_id = __f;
 
@@ -1072,7 +1072,7 @@ class GeoMap
             M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
             //M_G = __e.G();
             M_g.resize( M_G.size2(), PDim );
-            //M_element_c = boost::shared_ptr<element_type const>(&__e);
+            //M_element_c = std::shared_ptr<element_type const>(&__e);
             M_element = boost::addressof( __e );
             M_id = __e.id();
             M_e_markers = __e.markers();
@@ -1773,7 +1773,7 @@ class GeoMap
      * false otherwise.
      */
         template <typename EltType, typename NeighborGeoType>
-        bool updateFromNeighborMatchingFace( EltType const& elt, uint16_type face_in_elt, boost::shared_ptr<NeighborGeoType> const& gmc )
+        bool updateFromNeighborMatchingFace( EltType const& elt, uint16_type face_in_elt, std::shared_ptr<NeighborGeoType> const& gmc )
         {
             auto gmcptr = gmc.get();
             bool found_permutation = false;
@@ -2140,7 +2140,7 @@ class GeoMap
         gm_ptrtype M_gm;
 
         element_type const* M_element;
-        //boost::shared_ptr<element_type const> M_element_c;
+        //std::shared_ptr<element_type const> M_element_c;
         //element_type M_element_c;
 
         precompute_ptrtype M_pc;
@@ -2202,49 +2202,49 @@ class GeoMap
     }; // Context
 
     template <size_type context_v, typename ElementType>
-    boost::shared_ptr<Context<context_v, ElementType>>
+    std::shared_ptr<Context<context_v, ElementType>>
     context( geometric_mapping_ptrtype gm, ElementType const& e, precompute_ptrtype const& pc )
     {
-        return boost::shared_ptr<Context<context_v, ElementType>>(
+        return std::shared_ptr<Context<context_v, ElementType>>(
             new Context<context_v, ElementType>( gm,
                                                  e,
                                                  pc ) );
     }
 
     template <size_type context_v, typename ElementType>
-    boost::shared_ptr<Context<context_v, ElementType>>
+    std::shared_ptr<Context<context_v, ElementType>>
     context( ElementType const& e, precompute_ptrtype const& pc )
     {
-        return boost::make_shared<Context<context_v, ElementType>>(
+        return std::make_shared<Context<context_v, ElementType>>(
             //super_enable_this::shared_from_this(),
-            boost::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP>>( this->shared_from_this() ),
+            std::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP>>( this->shared_from_this() ),
             e,
             pc );
     }
 
     template <size_type context_v, typename ElementType>
-    boost::shared_ptr<Context<context_v, ElementType>>
+    std::shared_ptr<Context<context_v, ElementType>>
     context( geometric_mapping_ptrtype gm,
              ElementType const& e,
              std::vector<std::map<typename ElementType::permutation_type, precompute_ptrtype>>& pc,
              uint16_type f )
     {
-        return boost::shared_ptr<Context<context_v, ElementType>>(
+        return std::shared_ptr<Context<context_v, ElementType>>(
             new Context<context_v, ElementType>( gm,
                                                  e,
                                                  pc,
                                                  f ) );
     }
     template <size_type context_v, typename ElementType>
-    boost::shared_ptr<Context<context_v, ElementType>>
+    std::shared_ptr<Context<context_v, ElementType>>
     context( ElementType const& e,
              std::vector<std::map<typename ElementType::permutation_type, precompute_ptrtype>>& pc,
              uint16_type f )
     {
-        return boost::shared_ptr<Context<context_v, ElementType>>(
+        return std::shared_ptr<Context<context_v, ElementType>>(
             new Context<context_v, ElementType>(
                 //super_enable_this::shared_from_this(),
-                boost::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP>>( this->shared_from_this() ),
+                std::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP>>( this->shared_from_this() ),
                 e,
                 pc,
                 f ) );
@@ -2257,7 +2257,7 @@ class GeoMap
     {
       public:
         typedef GeoMap geometric_mapping_type;
-        typedef boost::shared_ptr<geometric_mapping_type> geometric_mapping_ptrtype;
+        typedef std::shared_ptr<geometric_mapping_type> geometric_mapping_ptrtype;
 
         static const fem::transformation_type trans = geometric_mapping_type::trans;
 
@@ -2923,9 +2923,9 @@ class GeoMap
         matrix_type M_CS;
         matrix_type M_g;
 
-        boost::shared_ptr<SolverNonLinear<double>> M_nlsolver;
-        boost::shared_ptr<dense_matrix_type> M_J;
-        boost::shared_ptr<dense_vector_type> M_R;
+        std::shared_ptr<SolverNonLinear<double>> M_nlsolver;
+        std::shared_ptr<dense_matrix_type> M_J;
+        std::shared_ptr<dense_vector_type> M_R;
 
     }; // Inverse
 
@@ -3068,7 +3068,7 @@ struct GT_QK
                                                                                                                 \
         BOOST_PP_CAT( GT_, GEOM )                                                                               \
         ()                                                                                                      \
-            : super( boost::make_shared<element_gm_type>(), boost::make_shared<face_gm_type>() )                \
+            : super( std::make_shared<element_gm_type>(), std::make_shared<face_gm_type>() )                \
         {                                                                                                       \
         }                                                                                                       \
     };                                                                                                          \
@@ -3076,14 +3076,14 @@ struct GT_QK
 
 template<typename Convex,typename T>
 typename mpl::if_<Feel::is_simplex<Convex>,
-                  mpl::identity<boost::shared_ptr<GT_Lagrange<Convex::nDim,1,Convex::nDim,Simplex,T>>>,
-                  mpl::identity<boost::shared_ptr<GT_Lagrange<Convex::nDim,1,Convex::nDim,Hypercube,T>>> >::type::type
+                  mpl::identity<std::shared_ptr<GT_Lagrange<Convex::nDim,1,Convex::nDim,Simplex,T>>>,
+                  mpl::identity<std::shared_ptr<GT_Lagrange<Convex::nDim,1,Convex::nDim,Hypercube,T>>> >::type::type
 makeGeometricTransformation()
 {
     using gmt = typename mpl::if_<is_simplex<Convex>,
                                   mpl::identity<GT_Lagrange<Convex::nDim,1,Convex::nDim,Simplex,T>>,
                                   mpl::identity<GT_Lagrange<Convex::nDim,1,Convex::nDim,Hypercube,T>> >::type::type;
-    return boost::make_shared<gmt>();
+    return std::make_shared<gmt>();
 }
 
 #if 0
@@ -3111,7 +3111,7 @@ class RealToReference
     typedef T value_type;
     typedef typename matrix_node<T>::type points_type;
     typedef GT_Lagrange<nDim, 1, nRealDim, Entity, value_type> gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef std::shared_ptr<gm_type> gm_ptrtype;
     typedef typename gm_type::Inverse inverse_gm_type;
 
     RealToReference( Elem const& elem )

@@ -48,8 +48,8 @@ ConvectionCrb::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 
 
 /**
- * returns the scalar product of the boost::shared_ptr vector x and
- * boost::shared_ptr vector y
+ * returns the scalar product of the std::shared_ptr vector x and
+ * std::shared_ptr vector y
  */
 double
 ConvectionCrb::scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y )
@@ -57,8 +57,8 @@ ConvectionCrb::scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y )
     return M->energy( x, y );
 }
 /**
- * returns the scalar product of the boost::shared_ptr vector x and
- * boost::shared_ptr vector y
+ * returns the scalar product of the std::shared_ptr vector x and
+ * std::shared_ptr vector y
  */
 double
 ConvectionCrb::scalarProduct( vector_type const& x, vector_type const& y )

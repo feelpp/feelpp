@@ -158,7 +158,7 @@ class Mesh
                                                             mpl::identity<Mesh2D<GeoShape,T> >,
                                                             mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type,
         public boost::addable<Mesh<GeoShape,T,Tag> >,
-        public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >
+        public std::enable_shared_from_this< Mesh<GeoShape,T,Tag> >
 {
     using super = typename mpl::if_<is_0d<GeoShape>,
                                     mpl::identity<Mesh0D<GeoShape,T> >,
@@ -185,7 +185,7 @@ public:
      //!
     //! @{
     typedef Mesh<GeoShape,T,Tag> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 
     typedef T value_type;
     typedef GeoShape shape_type;
@@ -212,16 +212,16 @@ public:
     typedef typename super::point_const_iterator point_const_iterator;
 
     typedef typename element_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef std::shared_ptr<gm_type> gm_ptrtype;
 
     typedef typename element_type::gm1_type gm1_type;
-    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+    typedef std::shared_ptr<gm1_type> gm1_ptrtype;
 
     template<size_type ContextID>
     struct gmc
     {
         typedef typename gm_type::template Context<ContextID, element_type> type;
-        typedef boost::shared_ptr<type> ptrtype;
+        typedef std::shared_ptr<type> ptrtype;
     };
 
     template<size_type ContextID>
@@ -231,13 +231,13 @@ public:
 
     typedef Mesh<shape_type, T, Tag> self_type;
     typedef self_type mesh_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
     typedef self_ptrtype mesh_ptrtype;
 
     typedef typename element_type::template reference_convex<T>::type reference_convex_type;
 
     //! typedef Partitioner<self_type> partitioner_type;
-    //! typedef boost::shared_ptr<partitioner_type> partitioner_ptrtype;
+    //! typedef std::shared_ptr<partitioner_type> partitioner_ptrtype;
 
     typedef typename super::face_processor_type face_processor_type;
     typedef typename super::face_processor_type element_edge_type;
@@ -247,7 +247,7 @@ public:
                                            mpl::identity< Mesh< Simplex< GeoShape::nDim,1,GeoShape::nRealDim>, value_type, Tag > >,
                                            mpl::identity< Mesh< Hypercube<GeoShape::nDim,1,GeoShape::nRealDim>,value_type, Tag > > >::type::type ;
 
-    typedef boost::shared_ptr<P1_mesh_type> P1_mesh_ptrtype;
+    typedef std::shared_ptr<P1_mesh_type> P1_mesh_ptrtype;
 
     template<int TheTag>
     struct parent_mesh
@@ -256,8 +256,8 @@ public:
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
                                   mpl::identity< Mesh< Simplex< d,nOrder,GeoShape::nRealDim>, value_type, TheTag > >,
                                   mpl::identity< Mesh< Hypercube<d,nOrder,GeoShape::nRealDim>,value_type, TheTag > > >::type::type type;
-        typedef boost::shared_ptr<type> ptrtype;
-        typedef boost::shared_ptr<const type> const_ptrtype;
+        typedef std::shared_ptr<type> ptrtype;
+        typedef std::shared_ptr<const type> const_ptrtype;
     };
     using parent_mesh_type = typename parent_mesh<Tag>::type;
     using parent_mesh_ptrtype = typename parent_mesh<Tag>::ptrtype;
@@ -269,8 +269,8 @@ public:
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
                                   mpl::identity< Mesh< Simplex< d,nOrder,GeoShape::nRealDim>, value_type, TheTag > >,
                                   mpl::identity< Mesh< Hypercube<d,nOrder,GeoShape::nRealDim>,value_type, TheTag > > >::type::type type;
-        typedef boost::shared_ptr<type> ptrtype;
-        typedef boost::shared_ptr<const type> const_ptrtype;
+        typedef std::shared_ptr<type> ptrtype;
+        typedef std::shared_ptr<const type> const_ptrtype;
     };
     typedef typename trace_mesh<Tag>::type trace_mesh_type;
     typedef typename trace_mesh<Tag>::ptrtype trace_mesh_ptrtype;
@@ -284,8 +284,8 @@ public:
                                   mpl::identity< Mesh< Simplex<nDim,nOrder,GeoShape::nRealDim>, value_type, TheTag > >,
                                   mpl::identity< Mesh< Hypercube<nDim,nOrder,GeoShape::nRealDim>,value_type, TheTag > > >::type::type type;
 
-        typedef boost::shared_ptr<type> ptrtype;
-        typedef boost::shared_ptr<const type> const_ptrtype;
+        typedef std::shared_ptr<type> ptrtype;
+        typedef std::shared_ptr<const type> const_ptrtype;
     };
     typedef typename trace_trace_mesh<Tag>::type trace_trace_mesh_type;
     typedef typename trace_trace_mesh<Tag>::ptrtype trace_trace_mesh_ptrtype;
@@ -880,7 +880,7 @@ public:
     //!
      //!  @return a localization tool
      //!
-    boost::shared_ptr<Localization<self_type>> tool_localization()
+    std::shared_ptr<Localization<self_type>> tool_localization()
     {
         return M_tool_localization;
     }
@@ -1445,7 +1445,7 @@ public:
                 mpl::identity<GeoMapInverse<nDim,1,nRealDim,T,Hypercube> > >::type::type super1;
         typedef typename super1::gic_type gic1_type;
 
-        Inverse( boost::shared_ptr<self_type> const& m )
+        Inverse( std::shared_ptr<self_type> const& m )
             :
             super(),
             M_mesh ( m )
@@ -1492,7 +1492,7 @@ public:
 
 
     private:
-        boost::shared_ptr<self_type> M_mesh;
+        std::shared_ptr<self_type> M_mesh;
         boost::unordered_map<size_type, boost::unordered_map<size_type,uint16_type > > M_pts_cvx;
         typedef typename std::map<size_type, uint16_type >::const_iterator map_iterator;
         //! typedef typename node<value_type>::type node_type;
@@ -1683,7 +1683,7 @@ private:
     //!
      //!  tool for localize point in the mesh
      //!
-    boost::shared_ptr<Localization<self_type>> M_tool_localization;
+    std::shared_ptr<Localization<self_type>> M_tool_localization;
 
 };
 
@@ -1897,7 +1897,7 @@ template<typename Shape, typename T, int Tag>
 typename Mesh<Shape, T, Tag>::P1_mesh_ptrtype
 Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpdate ) const
 {
-    boost::shared_ptr<SubMeshData> smd;
+    std::shared_ptr<SubMeshData> smd;
     Context c( ctxExtraction );
     bool keepMeshRelation = c.test( EXTRACTION_KEEP_MESH_RELATION );
     if ( keepMeshRelation )
@@ -2622,7 +2622,7 @@ int MeshPoints<T>::translateElementIds(std::vector<int32_t> & elids)
 //! @return the topogical dimension of the mesh \p m
 //!
 template<typename MeshType>
-constexpr int topodim( boost::shared_ptr<MeshType> m,
+constexpr int topodim( std::shared_ptr<MeshType> m,
                        std::enable_if_t<is_mesh_v<MeshType>>* = nullptr )
 {
     return MeshType::nDim;
@@ -2631,7 +2631,7 @@ constexpr int topodim( boost::shared_ptr<MeshType> m,
 //! @return the real dimension in which the mesh is defined
 //!
 template<typename MeshType>
-constexpr int realdim( boost::shared_ptr<MeshType> m,
+constexpr int realdim( std::shared_ptr<MeshType> m,
                        std::enable_if<is_mesh_v<MeshType>>* = nullptr )
 {
     return MeshType::nRealDim;

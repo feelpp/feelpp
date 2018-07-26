@@ -117,17 +117,17 @@ BackendPetsc<T>::toBackendVectorPtr( vector_type const& v  )
         petscMPIRange_vector_type * vecPetscMPIRange = const_cast<petscMPIRange_vector_type *>( dynamic_cast<petscMPIRange_vector_type const*>( &v ) );
         if ( vecPetscMPIRange )
         {
-            vector_ptrtype _newvec( boost::make_shared<petscMPIRange_vector_type>( vecPetscMPIRange->vec(), vecPetscMPIRange->vecGhost(),
+            vector_ptrtype _newvec( std::make_shared<petscMPIRange_vector_type>( vecPetscMPIRange->vec(), vecPetscMPIRange->vecGhost(),
                                                                                    vecPetscMPIRange->vecScatterGhost(), vecPetsc->mapPtr() ) );
             return _newvec;
         }
         petscMPI_vector_type * vecPetscMPI = const_cast<petscMPI_vector_type *>( dynamic_cast<petscMPI_vector_type const*>( &v ) );
         if ( vecPetscMPI )
         {
-            vector_ptrtype _newvec( boost::make_shared<petscMPI_vector_type>( vecPetsc->vec(), vecPetsc->mapPtr() ) );
+            vector_ptrtype _newvec( std::make_shared<petscMPI_vector_type>( vecPetsc->vec(), vecPetsc->mapPtr() ) );
             return _newvec;
         }
-        vector_ptrtype _newvecPetsc( boost::make_shared<petsc_vector_type>( vecPetsc->vec(), vecPetsc->mapPtr() ) );
+        vector_ptrtype _newvecPetsc( std::make_shared<petsc_vector_type>( vecPetsc->vec(), vecPetsc->mapPtr() ) );
         return _newvecPetsc;
     }
 
@@ -195,7 +195,7 @@ BackendPetsc<T>::toBackendVectorPtr( vector_ptrtype const& v )
 {
     if ( this->comm().globalSize()>1 )
     {
-        petscMPI_vector_ptrtype vecPetsc = boost::dynamic_pointer_cast< petscMPI_vector_type >( v );
+        petscMPI_vector_ptrtype vecPetsc = std::dynamic_pointer_cast< petscMPI_vector_type >( v );
         //if ( vecPetsc ) std::cout << "Convert PetscMPI vector\n";
         if ( vecPetsc )
             return v;
@@ -203,7 +203,7 @@ BackendPetsc<T>::toBackendVectorPtr( vector_ptrtype const& v )
     }
     else
     {
-        petsc_vector_ptrtype vecPetsc = boost::dynamic_pointer_cast< petsc_vector_type >( v );
+        petsc_vector_ptrtype vecPetsc = std::dynamic_pointer_cast< petsc_vector_type >( v );
         //if ( vecPetsc ) std::cout << "Convert Petsc vector\n";
         if ( vecPetsc )
             return v;
@@ -215,14 +215,14 @@ BackendPetsc<T>::toBackendVectorPtr( vector_ptrtype const& v )
     typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_saa_type;
     typedef typename vector_ublas_saa_type::range::type vector_ublas_saa_range_type;
     typedef typename vector_ublas_saa_type::slice::type vector_ublas_saa_slice_type;
-    boost::shared_ptr<vector_ublas_type> vecUblas = boost::dynamic_pointer_cast< vector_ublas_type >( v );
+    std::shared_ptr<vector_ublas_type> vecUblas = std::dynamic_pointer_cast< vector_ublas_type >( v );
     if ( vecUblas )
     {
         //std::cout << "Convert Ublas vector\n";
         vector_ptrtype _newvec( toPETScPtr( *vecUblas ) );
         return _newvec;
     }
-    boost::shared_ptr<vector_ublas_range_type> vecUblasRange = boost::dynamic_pointer_cast< vector_ublas_range_type >( v );
+    std::shared_ptr<vector_ublas_range_type> vecUblasRange = std::dynamic_pointer_cast< vector_ublas_range_type >( v );
     if ( vecUblasRange )
     {
         //std::cout << "Convert Ublas range vector\n";
@@ -230,7 +230,7 @@ BackendPetsc<T>::toBackendVectorPtr( vector_ptrtype const& v )
         return _newvec;
     }
 #if 0
-    boost::shared_ptr<vector_ublas_slice_type> vecUblasSlice = boost::dynamic_pointer_cast< vector_ublas_slice_type >( v );
+    std::shared_ptr<vector_ublas_slice_type> vecUblasSlice = std::dynamic_pointer_cast< vector_ublas_slice_type >( v );
     if ( vecUblasSlice )
     {
         //std::cout << "Convert Ublas slice vector\n";
@@ -238,20 +238,20 @@ BackendPetsc<T>::toBackendVectorPtr( vector_ptrtype const& v )
         return _newvec;
     }
 #endif
-    boost::shared_ptr<vector_ublas_saa_type> vecUblasSAA = boost::dynamic_pointer_cast< vector_ublas_saa_type >( v );
+    std::shared_ptr<vector_ublas_saa_type> vecUblasSAA = std::dynamic_pointer_cast< vector_ublas_saa_type >( v );
     if ( vecUblasSAA )
     {
         vector_ptrtype _newvec( toPETScPtr( *vecUblasSAA ) );
         return _newvec;
     }
-    boost::shared_ptr<vector_ublas_saa_range_type> vecUblasSAARange = boost::dynamic_pointer_cast< vector_ublas_saa_range_type >( v );
+    std::shared_ptr<vector_ublas_saa_range_type> vecUblasSAARange = std::dynamic_pointer_cast< vector_ublas_saa_range_type >( v );
     if ( vecUblasSAARange )
     {
         vector_ptrtype _newvec( toPETScPtr( *vecUblasSAARange ) );
         return _newvec;
     }
 #if 0
-    boost::shared_ptr<vector_ublas_saa_slice_type> vecUblasSAASlice = boost::dynamic_pointer_cast< vector_ublas_saa_slice_type >( v );
+    std::shared_ptr<vector_ublas_saa_slice_type> vecUblasSAASlice = std::dynamic_pointer_cast< vector_ublas_saa_slice_type >( v );
     if ( vecUblasSAASlice )
     {
         vector_ptrtype _newvec( toPETScPtr( *vecUblasSAASlice ) );
@@ -259,7 +259,7 @@ BackendPetsc<T>::toBackendVectorPtr( vector_ptrtype const& v )
     }
 #endif
 
-    boost::shared_ptr<VectorBlockBase<T> > vecBlock = boost::dynamic_pointer_cast< VectorBlockBase<T> >( v );
+    std::shared_ptr<VectorBlockBase<T> > vecBlock = std::dynamic_pointer_cast< VectorBlockBase<T> >( v );
     if ( vecBlock )
         return this->toBackendVectorPtr( vecBlock->getVector() );
 

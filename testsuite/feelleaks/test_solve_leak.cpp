@@ -46,7 +46,7 @@ int main(int argc, char**argv )
     HeapLeakChecker checkere("checker");
 #endif /* FEELPP_HAS_GPERFTOOLS */
 
-    boost::shared_ptr < MatrixSparse<double> > ptr_m;
+    std::shared_ptr < MatrixSparse<double> > ptr_m;
     {
         for(int i = 0; i < 2; ++i )
         {

@@ -44,7 +44,7 @@ namespace Feel {
  */
 template<typename MeshType>
 std::unique_ptr<MeshPartitionSet<MeshType>>
-partitionMesh( boost::shared_ptr<MeshType> mesh,
+partitionMesh( std::shared_ptr<MeshType> mesh,
                rank_type nGlobalParts,
                std::vector<elements_reference_wrapper_t<MeshType>> partitionByRange = std::vector<elements_reference_wrapper_t<MeshType>>() )
 {

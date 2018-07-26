@@ -43,7 +43,7 @@ void cleanup()
     stencilManagerGarbageCollect();
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis, template<uint16_type> class TypeBis, typename std::enable_if<!std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis == MAX_ORDER && std::is_same<Type<Dim>, Scalar<Dim>>::value>::type* = nullptr>
-static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double* vec) {
+static inline void assemble(std::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double* vec) {
     boost::timer time;
     auto Vh = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh);
     vec[2] = time.elapsed();
@@ -73,7 +73,7 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     cleanup();
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis, template<uint16_type> class TypeBis, typename std::enable_if<std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis == MAX_ORDER && std::is_same<TypeBis<Dim>, Scalar<Dim>>::value>::type* = nullptr>
-static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double* vec) {
+static inline void assemble(std::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double* vec) {
     boost::timer time;
     //HeapProfilerStart("FunctionSpace");
     auto Vh = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh);
@@ -110,7 +110,7 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     cleanup();
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis, template<uint16_type> class TypeBis, typename std::enable_if<std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis != MAX_ORDER && std::is_same<TypeBis<Dim>, Scalar<Dim>>::value>::type* = nullptr>
-static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double* vec) {
+static inline void assemble(std::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double* vec) {
     boost::timer time;
     auto Vh = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>, Lagrange<OrderBis, TypeBis>>>::New(_mesh = mesh,
                                                                                    _worldscomm = std::vector<WorldComm>(2, mesh->worldComm()),
@@ -168,7 +168,7 @@ Assembly<Dim, Order, Type, OrderBis, TypeBis>::run()
     std::vector<double> stats(nfields * level, std::numeric_limits<double>::quiet_NaN());
     for(int i = 0; i < level; ++i) {
         if((OrderBis == MAX_ORDER && (hSize / std::pow(2.0, i) > 0.005 || !std::is_same<Type<Dim>, Vectorial<Dim>>::value)) || hSize / std::pow(2.0, i) > 0.001) {
-            boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
+            std::shared_ptr<Mesh<Simplex<Dim>>> mesh;
             mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>,
                                   _update = MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                   _desc = domain(_name = "hypercube_" + std::to_string(Dim) + "_" + std::to_string(i + 1), _shape = "hypercube", _h = hSize / std::pow(2.0, i),

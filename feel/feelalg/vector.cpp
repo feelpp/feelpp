@@ -170,8 +170,8 @@ Vector<T>::addVector ( const Vector<T>& V_in,
 
 template<typename T>
 void
-Vector<T>::addVector ( const boost::shared_ptr<Vector<T> >& V_in,
-                       const boost::shared_ptr<MatrixShell<T> >& A_in )
+Vector<T>::addVector ( const std::shared_ptr<Vector<T> >& V_in,
+                       const std::shared_ptr<MatrixShell<T> >& A_in )
 {
     A_in->multVector( *V_in, *this );
 }

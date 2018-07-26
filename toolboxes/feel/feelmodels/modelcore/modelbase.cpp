@@ -337,10 +337,10 @@ ModelBase::setFilenameSaveInfo( std::string const& s )
 {
     M_filenameSaveInfo = s;
 }
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 ModelBase::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     return _ostr;
 }
 void

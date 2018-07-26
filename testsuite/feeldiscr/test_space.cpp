@@ -76,7 +76,7 @@ public:
         BOOST_STATIC_ASSERT( vectorial_space_type::nDim == Dim );
         BOOST_STATIC_ASSERT( vectorial_space_type::N_COMPONENTS == Dim );
 
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        typedef std::shared_ptr<mesh_type> mesh_ptrtype;
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                             _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
                                                     _usenames=true,
@@ -84,10 +84,10 @@ public:
                                                     _dim=Dim,
                                                     _h=0.2 ) );
 
-        boost::shared_ptr<scalar_space_type> Xh( new scalar_space_type( mesh ) );
+        std::shared_ptr<scalar_space_type> Xh( new scalar_space_type( mesh ) );
         auto u = Xh->element( "u" );
 
-        boost::shared_ptr<vectorial_space_type> Xhv( new vectorial_space_type( mesh ) );
+        std::shared_ptr<vectorial_space_type> Xhv( new vectorial_space_type( mesh ) );
         auto U = Xhv->element( "U" );
 
 
@@ -128,7 +128,7 @@ public:
     {
         using namespace Feel;
 
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        typedef std::shared_ptr<mesh_type> mesh_ptrtype;
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                             _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
                                                     _usenames=true,
@@ -137,7 +137,7 @@ public:
                                                     _h=0.2 ) );
 
 
-        boost::shared_ptr<space_type> Xh( space_type::New( mesh ) );
+        std::shared_ptr<space_type> Xh( space_type::New( mesh ) );
         auto U = Xh->element( "U" );
 
 #if !defined( USE_BOOST_TEST )
@@ -245,7 +245,7 @@ public:
     {
         using namespace Feel;
 
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        typedef std::shared_ptr<mesh_type> mesh_ptrtype;
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                             _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
                                                     _usenames=true,
@@ -255,7 +255,7 @@ public:
 
 
 
-        boost::shared_ptr<space_type> Xh( space_type::New( mesh ) );
+        std::shared_ptr<space_type> Xh( space_type::New( mesh ) );
         typename space_type::element_type U( Xh, "U" );
 
 #if !defined( USE_BOOST_TEST )
@@ -301,7 +301,7 @@ public:
         //	BOOST_STATIC_ASSERT( vectorial_space_type::nDim == Dim );
         //        BOOST_STATIC_ASSERT( vectorial_space_type::N_COMPONENTS == Dim );
 
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
         std::string fname;
 #if 1
@@ -320,7 +320,7 @@ public:
 
         std::cout << "Construct Space ...\n";
 
-        boost::shared_ptr<scalar_space_type> Xh( new scalar_space_type( mesh ) );
+        std::shared_ptr<scalar_space_type> Xh( new scalar_space_type( mesh ) );
         auto u = Xh->element( "u" );
 
         Xh.get()->dof().get()->showMe();

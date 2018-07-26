@@ -13,7 +13,7 @@ runApplicationThermoElectric()
     typedef FeelModels::Electric< Simplex<nDim,1>,
                                   Lagrange<OrderT, Scalar,Continuous,PointSetFekete> > model_electric_type;
     typedef FeelModels::ThermoElectric< model_heat_type,model_electric_type> model_type;
-    boost::shared_ptr<model_type> thermoElectric( new model_type("thermo-electric") );
+    std::shared_ptr<model_type> thermoElectric( new model_type("thermo-electric") );
     thermoElectric->init();
     thermoElectric->printAndSaveInfo();
 

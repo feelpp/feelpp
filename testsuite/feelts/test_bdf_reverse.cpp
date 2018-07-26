@@ -58,7 +58,7 @@ class Test
 {
 public :
     using mesh_type = Mesh<Simplex<Dim,1>>;
-    using mesh_ptrtype = boost::shared_ptr<mesh_type>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
     Test():
         M_mesh( createGMSHMesh( _mesh=new mesh_type,

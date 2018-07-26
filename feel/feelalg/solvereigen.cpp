@@ -94,7 +94,7 @@ SolverEigen<T>::~SolverEigen()
     this->clear ();
 }
 template <typename T>
-boost::shared_ptr<SolverEigen<T> >
+std::shared_ptr<SolverEigen<T> >
 SolverEigen<T>::build( const SolverPackage solver_package )
 {
     // Build the appropriate solver
@@ -125,7 +125,7 @@ SolverEigen<T>::build( const SolverPackage solver_package )
 }
 
 template <typename T>
-boost::shared_ptr<SolverEigen<T> >
+std::shared_ptr<SolverEigen<T> >
 SolverEigen<T>::build( po::variables_map const& vm, std::string const& prefix )
 {
     SolverPackage solver_package = SOLVERS_SLEPC;

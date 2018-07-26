@@ -69,7 +69,7 @@ public:
     using mesh_type = super_type::mesh_type;
     using mesh_ptrtype = super_type::mesh_ptrtype;
     using prop_type = ModelProperties;
-    using prop_ptrtype = boost::shared_ptr<prop_type>;
+    using prop_ptrtype = std::shared_ptr<prop_type>;
 
 private:
     mesh_ptrtype M_mesh;

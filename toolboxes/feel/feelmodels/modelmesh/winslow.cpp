@@ -175,10 +175,10 @@ Winslow<MeshType,Order>::init()
 }
 
 template< typename MeshType, int Order >
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 Winslow<MeshType,Order>::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
 
     *_ostr << "\n   Winslow "
            << "\n     -- solver type : " << M_solverType

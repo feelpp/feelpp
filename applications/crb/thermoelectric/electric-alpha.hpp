@@ -139,7 +139,7 @@ public:
     using current_element_type = typename current_space_type::element_type;
 
     using prop_type = ModelProperties;
-    using prop_ptrtype = boost::shared_ptr<prop_type>;
+    using prop_ptrtype = std::shared_ptr<prop_type>;
     using mat_type = ModelMaterial;
     using map_mat_type = std::map<std::string,mat_type>;
 
@@ -152,9 +152,9 @@ public:
     using sparse_matrix_ptrtype = typename super_type::sparse_matrix_ptrtype;
 
     using mdeim_type = MDEIM<self_type>;
-    using mdeim_ptrtype = boost::shared_ptr<mdeim_type>;
+    using mdeim_ptrtype = std::shared_ptr<mdeim_type>;
     using deim_type = DEIM<self_type>;
-    using deim_ptrtype = boost::shared_ptr<deim_type>;
+    using deim_ptrtype = std::shared_ptr<deim_type>;
 
 private:
     mesh_ptrtype M_mesh;

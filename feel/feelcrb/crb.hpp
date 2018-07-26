@@ -195,7 +195,7 @@ public:
 
     typedef TruthModelType truth_model_type;
     typedef truth_model_type model_type;
-    typedef boost::shared_ptr<truth_model_type> truth_model_ptrtype;
+    typedef std::shared_ptr<truth_model_type> truth_model_ptrtype;
 
     typedef double value_type;
     typedef boost::tuple<double,double> bounds_type;
@@ -219,19 +219,19 @@ public:
     typedef typename convergence_type::value_type convergence;
 
     typedef CRB self_type;
-    using self_ptrtype = boost::shared_ptr<self_type>;
+    using self_ptrtype = std::shared_ptr<self_type>;
 
     //! scm
     typedef CRBSCM<truth_model_type> scm_type;
-    typedef boost::shared_ptr<scm_type> scm_ptrtype;
+    typedef std::shared_ptr<scm_type> scm_ptrtype;
 
     //! elements database
     typedef CRBElementsDB<truth_model_type> crb_elements_db_type;
-    typedef boost::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
+    typedef std::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
 
     //! POD
     typedef POD<truth_model_type> pod_type;
-    typedef boost::shared_ptr<pod_type> pod_ptrtype;
+    typedef std::shared_ptr<pod_type> pod_ptrtype;
     typedef typename pod_type::mode_set_type mode_set_type;
 
     //! function space type
@@ -244,7 +244,7 @@ public:
     typedef typename model_type::element_ptrtype element_ptrtype;
 
     typedef typename model_type::backend_type backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename model_type::vector_ptrtype vector_ptrtype;
     typedef typename model_type::beta_vector_type beta_vector_type;
@@ -258,7 +258,7 @@ public:
     typedef boost::tuple< std::vector<wn_type> , std::vector<std::string> > export_vector_wn_type;
 
     typedef std::vector<double> vector_double_type;
-    typedef boost::shared_ptr<vector_double_type> vector_double_ptrtype;
+    typedef std::shared_ptr<vector_double_type> vector_double_ptrtype;
 
     using vectorN_type = Feel::vectorN_type;
     using matrixN_type = Feel::matrixN_type;
@@ -276,22 +276,22 @@ public:
 
     //! mesh type
     typedef typename model_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! space type
     typedef typename model_type::space_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     //! time discretization
     typedef Bdf<space_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     // ! export
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     typedef Preconditioner<double> preconditioner_type;
-    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+    typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
     //here a fusion vector containing sequence 0 ... nb_spaces
     //useful to acces to a component of a composite space in ComputeIntegrals
@@ -314,12 +314,12 @@ public:
 
     static self_ptrtype New( crb::stage stage = crb::stage::online )
         {
-            return New( "noname", boost::make_shared<truth_model_type>(stage), stage );
+            return New( "noname", std::make_shared<truth_model_type>(stage), stage );
         }
 
     static self_ptrtype New( std::string const& name, crb::stage stage = crb::stage::online )
         {
-            return New( name, boost::make_shared<truth_model_type>(stage), stage );
+            return New( name, std::make_shared<truth_model_type>(stage), stage );
         }
 
     static self_ptrtype New( std::string const& name,
@@ -327,7 +327,7 @@ public:
                              crb::stage stage = crb::stage::online,
                              std::string const& prefixExt = "" )
         {
-            auto crb = boost::shared_ptr<self_type>( new self_type( name, model, stage, prefixExt ) );
+            auto crb = std::shared_ptr<self_type>( new self_type( name, model, stage, prefixExt ) );
             if ( stage == crb::stage::offline )
                 crb->init();
             return crb;
@@ -636,11 +636,11 @@ public:
             M_model = model;
             this->setDBDirectory( M_model->uuid() );
             M_Dmu = M_model->parameterSpace();
-            M_Xi = boost::make_shared<sampling_type>( M_Dmu );
-            M_WNmu = boost::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
+            M_Xi = std::make_shared<sampling_type>( M_Dmu );
+            M_WNmu = std::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
             //M_WNmu_complement(),
-            M_primal_apee_mu = boost::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
-            M_dual_apee_mu = boost::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
+            M_primal_apee_mu = std::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
+            M_dual_apee_mu = std::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
 
             M_elements_database.setModel( model );
 #if 0
@@ -1466,7 +1466,7 @@ protected:
 
     crb_elements_db_type M_elements_database;
 
-    boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
+    std::shared_ptr<SolverNonLinear<double> > M_nlsolver;
 
     truth_model_ptrtype M_model;
 

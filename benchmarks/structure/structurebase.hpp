@@ -56,7 +56,7 @@ public:
     typedef Feel::node<double>::type node_type;
 
     typedef StructureBase structure_type;
-    typedef boost::shared_ptr<structure_type> structure_ptrtype;
+    typedef std::shared_ptr<structure_type> structure_ptrtype;
 
 
     //@}

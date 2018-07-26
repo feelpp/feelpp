@@ -16,11 +16,11 @@ namespace FeelModels
         typedef MechanicalPropertiesDescription<SpaceType> self_type;
     public :
         typedef SpaceType space_type;
-        typedef boost::shared_ptr<SpaceType> space_ptrtype;
+        typedef std::shared_ptr<SpaceType> space_ptrtype;
         typedef typename SpaceType::element_type element_type;
-        typedef boost::shared_ptr<element_type> element_ptrtype;
+        typedef std::shared_ptr<element_type> element_ptrtype;
         typedef typename space_type::mesh_type mesh_type;
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        typedef std::shared_ptr<mesh_type> mesh_ptrtype;
         static std::string defaultMaterialName() { return std::string("FEELPP_DEFAULT_MATERIAL_NAME"); }
 
         MechanicalPropertiesDescription( std::string const& prefix )
@@ -287,10 +287,10 @@ namespace FeelModels
             }
         }
 
-        boost::shared_ptr<std::ostringstream>
+        std::shared_ptr<std::ostringstream>
         getInfoMaterialParameters() const
         {
-            boost::shared_ptr<std::ostringstream> ostr( new std::ostringstream() );
+            std::shared_ptr<std::ostringstream> ostr( new std::ostringstream() );
             *ostr << "\n   Materials parameters";
             std::set<std::string> matmarkerset = this->markers();
             if (  matmarkerset.empty() ) matmarkerset.insert(std::string(""));

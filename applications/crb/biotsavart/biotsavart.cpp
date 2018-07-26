@@ -57,8 +57,8 @@ BiotSavartCRB<te_rb_model_type>::BiotSavartCRB()
     M_meshMgn = createSubmesh(mesh, markedelements(mesh, mgnList));
 
     tic();
-    M_teCrbModel = boost::make_shared<te_rb_model_type>(M_meshCond);
-    M_crbModel = boost::make_shared<crb_model_type>(M_teCrbModel, crb::stage::offline);
+    M_teCrbModel = std::make_shared<te_rb_model_type>(M_meshCond);
+    M_crbModel = std::make_shared<crb_model_type>(M_teCrbModel, crb::stage::offline);
     M_crb = crb_type::New("biotsavart_crb", M_crbModel);
     toc("constructor + eim");
 

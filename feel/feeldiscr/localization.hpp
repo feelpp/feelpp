@@ -33,13 +33,13 @@ class Localization
 {
 public:    
     typedef Localization localization_type;
-    typedef boost::shared_ptr<localization_type> localization_ptrtype;
+    typedef std::shared_ptr<localization_type> localization_ptrtype;
 
     
         
 
     using mesh_type = MeshType;
-    typedef boost::weak_ptr<mesh_type> mesh_ptrtype;
+    typedef std::weak_ptr<mesh_type> mesh_ptrtype;
 
     using node_type = typename MeshType::node_type;
     typedef typename matrix_node<typename node_type::value_type>::type matrix_node_type;
@@ -49,7 +49,7 @@ public:
     static const uint16_type nOrder = mesh_type::nOrder;
     using value_type = typename mesh_type::value_type;
     typedef KDTree kdtree_type;
-    typedef typename boost::shared_ptr<KDTree> kdtree_ptrtype;
+    typedef typename std::shared_ptr<KDTree> kdtree_ptrtype;
 
     //!  a node x => a list of id elt which contain the node x
     typedef boost::tuple<node_type, std::list<size_type> > node_elem_type;
@@ -98,7 +98,7 @@ public:
             DVLOG(2) << "[Mesh::Localization] create Localization tool done\n";
         }
     
-    Localization( boost::shared_ptr<mesh_type> m, bool init_b = true ) :
+    Localization( std::shared_ptr<mesh_type> m, bool init_b = true ) :
             M_mesh ( m ),
             M_isInit( init_b ),
             M_isInitBoundaryFaces( false ),
@@ -133,7 +133,7 @@ public:
          //!  Define the mesh whith or not init
          //!
         void
-        setMesh( boost::shared_ptr<mesh_type> m,bool b=true )
+        setMesh( std::shared_ptr<mesh_type> m,bool b=true )
         {
             M_mesh=m;
 
@@ -360,8 +360,8 @@ public:
 
         ref_convex_type M_refelem;
         ref_convex1_type M_refelem1;
-        mutable boost::shared_ptr<gmc_inverse_type> M_gic;
-        mutable boost::shared_ptr<gmc1_inverse_type> M_gic1;
+        mutable std::shared_ptr<gmc_inverse_type> M_gic;
+        mutable std::shared_ptr<gmc1_inverse_type> M_gic1;
 
         node_type M_barycenter;
         boost::optional<std::vector<boost::tuple<bool,node_type> > > M_barycentersWorld;

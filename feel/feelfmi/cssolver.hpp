@@ -11,7 +11,7 @@ class CSSolver :
 public :
     typedef SolverBase super_type;
     typedef FmuModelBase fmumodel_type;
-    typedef boost::shared_ptr<fmumodel_type> fmumodel_ptrtype;
+    typedef std::shared_ptr<fmumodel_type> fmumodel_ptrtype;
 
     CSSolver() :
         super_type()

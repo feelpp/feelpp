@@ -175,19 +175,19 @@ public:
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gmc_type::gm_type gm_type;
 
         // fe context
         typedef typename fe_type::PreCompute pc_type;
-        typedef boost::shared_ptr<pc_type> pc_ptrtype;
+        typedef std::shared_ptr<pc_type> pc_ptrtype;
         typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type;
-        typedef boost::shared_ptr<ctx_type> ctx_ptrtype;
+        typedef std::shared_ptr<ctx_type> ctx_ptrtype;
         // fe lamecoeff context
         typedef typename fe_lamecoeff_type::PreCompute pc_lamecoeff_type;
-        typedef boost::shared_ptr<pc_lamecoeff_type> pc_lamecoeff_ptrtype;
+        typedef std::shared_ptr<pc_lamecoeff_type> pc_lamecoeff_ptrtype;
         typedef typename fe_lamecoeff_type::template Context<context_lamecoeff, fe_lamecoeff_type, gm_type,geoelement_type,gmc_type::context> ctx_lamecoeff_type;
-        typedef boost::shared_ptr<ctx_lamecoeff_type> ctx_lamecoeff_ptrtype;
+        typedef std::shared_ptr<ctx_lamecoeff_type> ctx_lamecoeff_ptrtype;
 
 
         //----------------------------------------------------------------------------------------------------//
@@ -764,7 +764,7 @@ stressStVenantKirchhoffResidual( ElementType const& v, ElementLameCoeffType cons
 template<class ElementType, class ElementLameCoeffType>
 inline
 Expr< StressStVenantKirchhoff<ElementType,ElementLameCoeffType,mpl::int_<1> > >
-stressStVenantKirchhoffResidual( boost::shared_ptr<ElementType> const& v, ElementLameCoeffType const& lambda, ElementLameCoeffType const& mu )
+stressStVenantKirchhoffResidual( std::shared_ptr<ElementType> const& v, ElementLameCoeffType const& lambda, ElementLameCoeffType const& mu )
 {
     typedef StressStVenantKirchhoff<ElementType,ElementLameCoeffType, mpl::int_<1> > stressStVenantKirchhoff_t;
     return Expr< stressStVenantKirchhoff_t >(  stressStVenantKirchhoff_t( *v, lambda, mu ) );

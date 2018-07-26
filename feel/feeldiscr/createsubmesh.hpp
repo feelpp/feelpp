@@ -58,22 +58,22 @@ public :
     typedef MeshType mesh_type;
     typedef typename mesh_type::value_type value_type;
 
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
                               mpl::identity< Mesh< Simplex< mesh_type::nDim,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > >,
                               mpl::identity< Mesh< Hypercube<mesh_type::nDim,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > > >::type::type mesh_elements_type;
-    typedef boost::shared_ptr<mesh_elements_type> mesh_elements_ptrtype;
+    typedef std::shared_ptr<mesh_elements_type> mesh_elements_ptrtype;
 
     typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
                               mpl::identity< Mesh< Simplex< mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > >,
                               mpl::identity< Mesh< Hypercube<mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > > >::type::type mesh_faces_type;
-    typedef boost::shared_ptr<mesh_faces_type> mesh_faces_ptrtype;
+    typedef std::shared_ptr<mesh_faces_type> mesh_faces_ptrtype;
 
     typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
                               mpl::identity< Mesh< Simplex< (mesh_type::nDim==3)?mesh_type::nDim-2:mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > >,
                               mpl::identity< Mesh< Hypercube<(mesh_type::nDim==3)?mesh_type::nDim-2:mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > > >::type::type mesh_edges_type;
-    typedef boost::shared_ptr<mesh_edges_type> mesh_edges_ptrtype;
+    typedef std::shared_ptr<mesh_edges_type> mesh_edges_ptrtype;
 
     typedef typename mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_ELEMENTS> >,
                                mpl::identity<mesh_elements_type>,
@@ -81,14 +81,14 @@ public :
                                                   mpl::identity<mesh_faces_type>,
                                                   mpl::identity<mesh_edges_type> >::type>::type::type mesh_build_type;
 
-    typedef boost::shared_ptr<mesh_build_type> mesh_build_ptrtype;
+    typedef std::shared_ptr<mesh_build_type> mesh_build_ptrtype;
     typedef SubMeshData smd_type;
-    typedef boost::shared_ptr<smd_type> smd_ptrtype;
+    typedef std::shared_ptr<smd_type> smd_ptrtype;
 
     CreateSubmeshTool( CreateSubmeshTool const& t ) = default;
     CreateSubmeshTool( CreateSubmeshTool     && t ) = default;
 
-    CreateSubmeshTool( boost::shared_ptr<MeshType> inputMesh,
+    CreateSubmeshTool( std::shared_ptr<MeshType> inputMesh,
                        IteratorRange const& range,
                        WorldComm const& wc,
                        size_type updateComponentsMesh  )
@@ -103,7 +103,7 @@ public :
             M_listRange.push_back( range );
         }
 
-    CreateSubmeshTool( boost::shared_ptr<MeshType> inputMesh,
+    CreateSubmeshTool( std::shared_ptr<MeshType> inputMesh,
                        std::list<IteratorRange> const& range,
                        WorldComm const& wc,
                        size_type updateComponentsMesh  )
@@ -170,7 +170,7 @@ private:
                                    std::map<size_type, rank_type> & faceIdsInRangeToBeGhost );
 
     template <int RangeType,typename SubMeshType>
-    void updateParallelSubMesh( boost::shared_ptr<SubMeshType> & newMesh,
+    void updateParallelSubMesh( std::shared_ptr<SubMeshType> & newMesh,
                                 std::map<size_type,size_type> & new_node_numbers,
                                 std::map<size_type,size_type> const& new_element_id,
                                 std::map<rank_type,std::set<boost::tuple<size_type,size_type> > > const& ghostCellsFind,
@@ -195,15 +195,15 @@ namespace detail
 
 template<typename MeshType,typename SubMeshType>
 void
-addMarkedEdgesInSubMesh( boost::shared_ptr<MeshType> const& mesh, typename MeshType::element_type const& oldElt,
+addMarkedEdgesInSubMesh( std::shared_ptr<MeshType> const& mesh, typename MeshType::element_type const& oldElt,
                          std::map<size_type,size_type> const& new_node_numbers, size_type & n_new_edges,
-                         boost::shared_ptr<SubMeshType> & submesh,std::set<size_type> & oldEdgeIdsDone, mpl::false_ /**/ )
+                         std::shared_ptr<SubMeshType> & submesh,std::set<size_type> & oldEdgeIdsDone, mpl::false_ /**/ )
 {}
 template<typename MeshType,typename SubMeshType>
 void
-addMarkedEdgesInSubMesh( boost::shared_ptr<MeshType> const& mesh, typename MeshType::element_type const& oldElt,
+addMarkedEdgesInSubMesh( std::shared_ptr<MeshType> const& mesh, typename MeshType::element_type const& oldElt,
                          std::map<size_type,size_type> const& new_node_numbers, size_type & n_new_edges,
-                         boost::shared_ptr<SubMeshType> & newMesh, std::set<size_type> & oldEdgeIdsDone, mpl::true_ /**/ )
+                         std::shared_ptr<SubMeshType> & newMesh, std::set<size_type> & oldEdgeIdsDone, mpl::true_ /**/ )
 {
     typedef typename MeshType::edge_type edge_type;
     const int proc_id = newMesh->worldComm().localRank();
@@ -238,15 +238,15 @@ addMarkedEdgesInSubMesh( boost::shared_ptr<MeshType> const& mesh, typename MeshT
 
 template<typename MeshType,typename SubMeshType>
 void
-addMarkedEdgesInSubMesh( boost::shared_ptr<MeshType> const& mesh, typename MeshType::face_type const& oldFace,
+addMarkedEdgesInSubMesh( std::shared_ptr<MeshType> const& mesh, typename MeshType::face_type const& oldFace,
                          std::map<size_type,size_type> const& new_node_numbers, size_type & n_new_faces,
-                         boost::shared_ptr<SubMeshType> & newMesh, std::set<size_type> & oldEdgeIdsDone, mpl::false_ /**/ )
+                         std::shared_ptr<SubMeshType> & newMesh, std::set<size_type> & oldEdgeIdsDone, mpl::false_ /**/ )
 {}
 template<typename MeshType,typename SubMeshType>
 void
-addMarkedEdgesInSubMesh( boost::shared_ptr<MeshType> const& mesh, typename MeshType::face_type const& oldFace,
+addMarkedEdgesInSubMesh( std::shared_ptr<MeshType> const& mesh, typename MeshType::face_type const& oldFace,
                          std::map<size_type,size_type> const& new_node_numbers, size_type & n_new_faces,
-                         boost::shared_ptr<SubMeshType> & newMesh, std::set<size_type> & oldEdgeIdsDone, mpl::true_ /**/ )
+                         std::shared_ptr<SubMeshType> & newMesh, std::set<size_type> & oldEdgeIdsDone, mpl::true_ /**/ )
 {
     typedef typename SubMeshType::face_type new_face_type;
     const int proc_id = newMesh->worldComm().localRank();
@@ -979,7 +979,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelInputRange( mesh
 template <typename MeshType,typename IteratorRange,int TheTag>
 template <int RangeType,typename SubMeshType>
 void
-CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::shared_ptr<SubMeshType> & newMesh,
+CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::shared_ptr<SubMeshType> & newMesh,
                                                                          std::map<size_type,size_type> & new_node_numbers,
                                                                          std::map<size_type,size_type> const& new_element_id,
                                                                          std::map<rank_type,std::set<boost::tuple<size_type,size_type> > > const& ghostCellsFind,
@@ -1253,7 +1253,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::
  */
 template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
 CreateSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag>
-createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,
+createSubmeshTool( std::shared_ptr<MeshType> inputMesh,
                    IteratorRange const& range,
                    WorldComm const& wc,
                    size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
@@ -1274,7 +1274,7 @@ createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,
  */
 template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
 typename CreateSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag>::mesh_build_ptrtype
-createSubmesh( boost::shared_ptr<MeshType> inputMesh,
+createSubmesh( std::shared_ptr<MeshType> inputMesh,
                IteratorRange const& range,
                size_type ctx = EXTRACTION_KEEP_MESH_RELATION,
                size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
@@ -1294,7 +1294,7 @@ createSubmesh( boost::shared_ptr<MeshType> inputMesh,
  */
 template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
 typename CreateSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag>::mesh_build_ptrtype
-createSubmesh( boost::shared_ptr<MeshType> inputMesh,
+createSubmesh( std::shared_ptr<MeshType> inputMesh,
                IteratorRange const& range,
                WorldComm const& wc,
                size_type ctx = EXTRACTION_KEEP_MESH_RELATION,

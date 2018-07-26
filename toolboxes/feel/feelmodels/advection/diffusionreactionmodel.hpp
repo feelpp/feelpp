@@ -42,17 +42,17 @@ class DiffusionReactionModel
     typedef DiffusionReactionModel<DiffusionSpaceType, ReactionSpaceType> self_type;
 public :
     typedef DiffusionSpaceType space_diffusion_type;
-    typedef boost::shared_ptr<space_diffusion_type> space_diffusion_ptrtype;
+    typedef std::shared_ptr<space_diffusion_type> space_diffusion_ptrtype;
     typedef typename space_diffusion_type::element_type element_diffusion_type;
-    typedef boost::shared_ptr<element_diffusion_type> element_diffusion_ptrtype;
+    typedef std::shared_ptr<element_diffusion_type> element_diffusion_ptrtype;
 
     typedef ReactionSpaceType space_reaction_type;
-    typedef boost::shared_ptr<space_reaction_type> space_reaction_ptrtype;
+    typedef std::shared_ptr<space_reaction_type> space_reaction_ptrtype;
     typedef typename space_reaction_type::element_type element_reaction_type;
-    typedef boost::shared_ptr<element_reaction_type> element_reaction_ptrtype;
+    typedef std::shared_ptr<element_reaction_type> element_reaction_ptrtype;
 
     typedef typename space_diffusion_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     
     static std::string defaultMaterialName() { return std::string("FEELPP_DEFAULT_MATERIAL_NAME"); }
 
