@@ -35,7 +35,7 @@ public:
     TimerTool( std::string fileName = "timers.data", WorldComm const& worldComm = Environment::worldComm() );
     TimerTool( TimerTool const& e ) = default;
     //TimerTool( TimerTool && e ) = default;
-
+    virtual ~TimerTool() = default;
     bool isActive() { return true; }
 
     void setReinitSaveFile( bool b );
@@ -84,7 +84,7 @@ private :
 class TimerToolNull : public TimerToolBase
 {
 public:
-
+    virtual ~TimerToolNull() = default;
     bool isActive() { return false; }
 
     void start() {};
