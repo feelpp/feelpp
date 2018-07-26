@@ -327,7 +327,27 @@ LEVELSET_CLASS_TEMPLATE_TYPE::addShape(
 
         case ShapeType::ELLIPSE:
         {
-            // TODO
+            auto X = Px() - shapeParams.dget("xc");
+            auto Y = Py() - shapeParams.dget("yc");
+            auto Z = Pz() - shapeParams.dget("zc");
+            double A = shapeParams.dget("a");
+            double B = shapeParams.dget("b");
+            double C = shapeParams.dget("c");
+            double psi = shapeParams.dget("psi");
+            double theta = shapeParams.dget("theta");
+            // Apply inverse ZYX TaitBryan rotation
+            double cosPsi = std::cos(psi); double sinPsi = std::sin(psi);
+            double cosTheta = std::cos(theta); double sinTheta = std::sin(theta);
+            auto Xp = cosTheta*(cosPsi*X+sinPsi*Y) + sinTheta*Z;
+            auto Yp = -sinPsi*X + cosPsi*Y;
+            auto Zp = -sinTheta*(cosPsi*X+sinPsi*Y) + cosTheta*Z;
+            // Project
+            phi = vf::project(
+                    _space=this->functionSpace(),
+                    _range=elements(this->mesh()),
+                    _expr=vf::min( idv(phi), sqrt(Xp*Xp+Yp*Yp*(A*A)/(B*B)+Zp*Zp*(A*A)/(C*C))-A ),
+                    _geomap=this->geomap()
+                    );
         }
         break;
     }
@@ -795,7 +815,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
                     shapeParameterMap["id"] = icShape;
                     shapeParameterMap["xc"] = xcRead.second;
                     shapeParameterMap["yc"] = ycRead.second;
-                    shapeParameterMap["zc"] = zcRead.second;
+                    shapeParameterMap["zc"] = zcRead.first ? zcRead.second : 0.;
                     shapeParameterMap["radius"] = radiusRead.second;
                 }
                 break;
@@ -808,15 +828,26 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
                     CHECK(ycRead.first) << icShape << " yc not provided\n";
                     auto zcRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "zc" );
                     CHECK(zcRead.first || nDim < 3) << icShape << " zc not provided\n";
-                    auto radiusRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "radius" );
-                    CHECK(radiusRead.first) << icShape << " radius not provided\n";
+                    auto aRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "a" );
+                    CHECK(aRead.first) << icShape << " a not provided\n";
+                    auto bRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "b" );
+                    CHECK(bRead.first) << icShape << " b not provided\n";
+                    auto cRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "c" );
+                    CHECK(cRead.first || nDim < 3) << icShape << " c not provided\n";
+                    auto psiRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "psi" );
+                    CHECK(psiRead.first) << icShape << " psi not provided\n";
+                    auto thetaRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "theta" );
+                    CHECK(thetaRead.first || nDim < 3) << icShape << " theta not provided\n";
 
                     shapeParameterMap["id"] = icShape;
                     shapeParameterMap["xc"] = xcRead.second;
                     shapeParameterMap["yc"] = ycRead.second;
-                    shapeParameterMap["zc"] = zcRead.second;
-                    shapeParameterMap["radius"] = radiusRead.second;
-                    // TODO
+                    shapeParameterMap["zc"] = zcRead.first ? zcRead.second : 0.;
+                    shapeParameterMap["a"] = aRead.second;
+                    shapeParameterMap["b"] = bRead.second;
+                    shapeParameterMap["c"] = cRead.first ? cRead.second : 1.;
+                    shapeParameterMap["psi"] = psiRead.second;
+                    shapeParameterMap["theta"] = thetaRead.first ? thetaRead.second : 0.;
                 }
                 break;
             }
