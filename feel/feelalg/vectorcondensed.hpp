@@ -45,8 +45,8 @@ public:
     using backend_type = typename super::backend_type;
     using backend_ptrtype = typename super::backend_ptrtype;
     using sc_type = StaticCondensation<value_type>;
-    using sc_ptrtype = boost::shared_ptr<sc_type>;
-    using this_vector_ptrtype = boost::shared_ptr<VectorCondensed<value_type>>;
+    using sc_ptrtype = std::shared_ptr<sc_type>;
+    using this_vector_ptrtype = std::shared_ptr<VectorCondensed<value_type>>;
 
     VectorCondensed()
         :
@@ -172,12 +172,12 @@ private:
 template<typename T>
 using condensed_vector_t = VectorCondensed<T>;
 template<typename T>
-using condensed_vector_ptr_t = boost::shared_ptr<condensed_vector_t<T>>;
+using condensed_vector_ptr_t = std::shared_ptr<condensed_vector_t<T>>;
 
 //!
 //! Create a shared pointer \p VectorCondensed<T> from \p Args
 //! @code
-//! // create a VectorCondensed boost::shared_ptr
+//! // create a VectorCondensed std::shared_ptr
 //! auto mc = makeSharedVectorCondensed<double>();
 //! @endcode
 //!
@@ -185,7 +185,7 @@ template< class T, class... Args >
 condensed_vector_ptr_t<T>
 makeSharedVectorCondensed( Args&&... args )
 {
-    return boost::make_shared<VectorCondensed<T>>( args... );
+    return std::make_shared<VectorCondensed<T>>( args... );
 }
 
 #if !defined(FEELPP_VECTORCONDENSED_NOEXTERN)

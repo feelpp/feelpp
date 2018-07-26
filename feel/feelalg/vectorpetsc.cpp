@@ -779,7 +779,7 @@ VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
 }
 
 template <typename T>
-boost::shared_ptr<Vector<T> >
+std::shared_ptr<Vector<T> >
 VectorPetsc<T>::createSubVector( std::vector<size_type> const& _rows,
                                  bool checkAndFixRange ) const
 {
@@ -795,7 +795,7 @@ VectorPetsc<T>::createSubVector( std::vector<size_type> const& _rows,
     this->getSubVectorPetsc( rows, subVecPetsc );
 
     // build vectorsparse object
-    boost::shared_ptr<Vector<T> > subVec;
+    std::shared_ptr<Vector<T> > subVec;
     if ( this->comm().size()>1 )
         subVec.reset( new VectorPetscMPI<T>( subVecPetsc,subMapRow,true ) );
     else
@@ -806,12 +806,12 @@ VectorPetsc<T>::createSubVector( std::vector<size_type> const& _rows,
 
 template <typename T>
 void
-VectorPetsc<T>::updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
+VectorPetsc<T>::updateSubVector( std::shared_ptr<Vector<T> > & subvector,
                                  std::vector<size_type> const& rows,
                                  bool init )
 {
     CHECK( subvector ) << "subvector is not init";
-    boost::shared_ptr<VectorPetsc<T> > subvectorPetsc = boost::dynamic_pointer_cast<VectorPetsc<T> >( subvector );
+    std::shared_ptr<VectorPetsc<T> > subvectorPetsc = std::dynamic_pointer_cast<VectorPetsc<T> >( subvector );
     this->getSubVectorPetsc( rows, subvectorPetsc->vec(), init );
 }
 
@@ -2607,9 +2607,9 @@ vector_ptrtype
 vec( Vec v, datamap_ptrtype datamap )
 {
     if ( datamap->worldComm().localSize() > 1 )
-        return boost::make_shared<Feel::VectorPetscMPI<double>>( v, datamap );
+        return std::make_shared<Feel::VectorPetscMPI<double>>( v, datamap );
     else
-        return boost::make_shared<Feel::VectorPetsc<double>>( v, datamap );
+        return std::make_shared<Feel::VectorPetsc<double>>( v, datamap );
 }
 #else
 vector_uptrtype
@@ -2619,7 +2619,7 @@ vec( Vec v, datamap_ptrtype datamap )
         return std::make_unique<Feel::VectorPetscMPI<double>>( v, datamap );
     else
         return std::make_unique<Feel::VectorPetsc<double>>( v, datamap );
-    // using vector_ptrtype = boost::shared_ptr<Feel::Vector<double> >;
+    // using vector_ptrtype = std::shared_ptr<Feel::Vector<double> >;
 }
 #endif
 

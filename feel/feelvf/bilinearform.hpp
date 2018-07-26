@@ -86,7 +86,7 @@ struct BFAssign2
         M_test_index( 0 )
     {}
     template<typename SpaceType>
-    void operator()( boost::shared_ptr<SpaceType> const& X ) const
+    void operator()( std::shared_ptr<SpaceType> const& X ) const
     {
         DVLOG(2) << "[BFAssign2::operator()] start loop on trial spaces against test space index: " << M_test_index << "\n";
 
@@ -126,7 +126,7 @@ struct BFAssign1
     {}
     BFAssign1( BFType& lf,
                ExprType const& expr,
-               boost::shared_ptr<TestSpaceType> const& Testh,
+               std::shared_ptr<TestSpaceType> const& Testh,
                size_type test_index )
         :
         M_bf( lf ),
@@ -136,11 +136,11 @@ struct BFAssign1
         M_test_index( test_index )
     {}
     template<typename SpaceType>
-    void operator()( boost::shared_ptr<SpaceType> const& trial ) const;
+    void operator()( std::shared_ptr<SpaceType> const& trial ) const;
 
 private:
     BFType& M_bf;
-    boost::shared_ptr<TestSpaceType> M_test;
+    std::shared_ptr<TestSpaceType> M_test;
     ExprType const& M_expr;
     mutable size_type M_trial_index;
     size_type M_test_index;
@@ -149,7 +149,7 @@ template<typename BFType, typename ExprType, typename TestSpaceType>
 BFAssign1<BFType,ExprType,TestSpaceType>
 make_bfassign1( BFType& lf,
                 ExprType const& expr,
-                boost::shared_ptr<TestSpaceType> const& test_space,
+                std::shared_ptr<TestSpaceType> const& test_space,
                 size_type test_index )
 {
     return BFAssign1<BFType,ExprType,TestSpaceType>( lf, expr, test_space, test_index );
@@ -170,7 +170,7 @@ struct BFAssign3
     {}
     BFAssign3( BFType& lf,
                ExprType const& expr,
-               boost::shared_ptr<TrialSpaceType> const& Trialh,
+               std::shared_ptr<TrialSpaceType> const& Trialh,
                size_type trial_index )
         :
         M_bf( lf ),
@@ -180,11 +180,11 @@ struct BFAssign3
         M_test_index( 0 )
     {}
     template<typename SpaceType>
-    void operator()( boost::shared_ptr<SpaceType> const& test ) const;
+    void operator()( std::shared_ptr<SpaceType> const& test ) const;
 
 private:
     BFType& M_bf;
-    boost::shared_ptr<TrialSpaceType> M_trial;
+    std::shared_ptr<TrialSpaceType> M_trial;
     ExprType const& M_expr;
     size_type M_trial_index;
     mutable size_type M_test_index;
@@ -193,7 +193,7 @@ template<typename BFType, typename ExprType, typename TrialSpaceType>
 BFAssign3<BFType,ExprType,TrialSpaceType>
 make_bfassign3( BFType& lf,
                 ExprType const& expr,
-                boost::shared_ptr<TrialSpaceType> const& trial_space,
+                std::shared_ptr<TrialSpaceType> const& trial_space,
                 size_type trial_index )
 {
     return BFAssign3<BFType,ExprType,TrialSpaceType>( lf, expr, trial_space, trial_index );
@@ -221,14 +221,14 @@ public:
     enum { nDim = FE1::nDim };
 
     using space_1_type = functionspace_type<FE1>;
-    typedef boost::shared_ptr<space_1_type> space_1_ptrtype;
+    typedef std::shared_ptr<space_1_type> space_1_ptrtype;
     typedef space_1_type test_space_type;
-    typedef boost::shared_ptr<space_1_type> test_space_ptrtype;
+    typedef std::shared_ptr<space_1_type> test_space_ptrtype;
 
     using space_2_type = functionspace_type<FE2>;
-    typedef boost::shared_ptr<space_2_type> space_2_ptrtype;
+    typedef std::shared_ptr<space_2_type> space_2_ptrtype;
     typedef space_2_type trial_space_type;
-    typedef boost::shared_ptr<space_2_type> trial_space_ptrtype;
+    typedef std::shared_ptr<space_2_type> trial_space_ptrtype;
 
     typedef typename space_1_type::value_type value_type;
     typedef typename space_1_type::template Element<value_type,ElemContType> element_1_type;
@@ -271,7 +271,7 @@ public:
 
     //typedef ublas::compressed_matrix<value_type, ublas::row_major> csr_matrix_type;
     typedef MatrixSparse<value_type> matrix_type;
-    typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
+    typedef std::shared_ptr<matrix_type> matrix_ptrtype;
     static const bool is_row_major = true;//matrix_type::is_row_major;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::bool_<is_row_major>, mpl::bool_<true> >,
@@ -284,7 +284,7 @@ public:
         typedef  typename mpl::if_<mpl::bool_<UseMortar&&SpaceType::is_mortar>,
                                    mpl::identity<typename SpaceType::mortar_fe_type>,
                                    mpl::identity<typename SpaceType::fe_type> >::type::type type;
-        typedef boost::shared_ptr<type> ptrtype;
+        typedef std::shared_ptr<type> ptrtype;
     };
 
     template<int _N = 0, bool UseMortar = false>
@@ -292,7 +292,7 @@ public:
     {
         //typedef typename space_1_type::basis_0_type::template precompute<_N>::type type;
         typedef typename finite_element<space_1_type,UseMortar>::type::PreCompute type;
-        typedef boost::shared_ptr<type> ptrtype;
+        typedef std::shared_ptr<type> ptrtype;
     };
     template<int _N = 0, bool UseMortar = false>
     struct trial_precompute
@@ -300,7 +300,7 @@ public:
         //typedef typename space_2_type::basis_0_type::template precompute<_N>::type type;
         //typedef typename space_2_type::basis_0_type::PreCompute type;
         typedef typename finite_element<space_2_type,UseMortar>::type::PreCompute type;
-        typedef boost::shared_ptr<type> ptrtype;
+        typedef std::shared_ptr<type> ptrtype;
     };
 
 
@@ -309,14 +309,14 @@ public:
     typename finite_element<space_1_type,UseMortar>::ptrtype
     testFiniteElement() const
         {
-            return boost::make_shared<typename finite_element<space_1_type,UseMortar>::type>();
+            return std::make_shared<typename finite_element<space_1_type,UseMortar>::type>();
         }
     // return trial finite element
     template<bool UseMortar=false>
     typename finite_element<space_2_type,UseMortar>::ptrtype
     trialFiniteElement() const
         {
-            return boost::make_shared<typename finite_element<space_2_type,UseMortar>::type>();
+            return std::make_shared<typename finite_element<space_2_type,UseMortar>::type>();
         }
     //@}
 
@@ -408,12 +408,12 @@ public:
         typedef typename mpl::if_<mpl::bool_<UseMortar&&space_2_type::is_mortar>,
                                   mpl::identity<typename space_2_type::mortar_fe_type>,
                                   mpl::identity<typename space_2_type::fe_type> >::type::type trial_fe_type;
-        typedef boost::shared_ptr<trial_fe_type> trial_fe_ptrtype;
+        typedef std::shared_ptr<trial_fe_type> trial_fe_ptrtype;
         typedef typename trial_fe_type::template Context< trial_geometric_mapping_context_type::context,
                 trial_fe_type,
                 trial_geometric_mapping_type,
                 mesh_element_2_type> trial_fecontext_type;
-        typedef boost::shared_ptr<trial_fecontext_type> trial_fecontext_ptrtype;
+        typedef std::shared_ptr<trial_fecontext_type> trial_fecontext_ptrtype;
         typedef typename mpl::if_<mpl::equal_to<trial_map_size, mpl::int_<1> >,
                 mpl::identity<fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype> > >,
                 mpl::identity<fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype>,
@@ -425,12 +425,12 @@ public:
         typedef typename mpl::if_<mpl::bool_<UseMortar&&space_1_type::is_mortar>,
                                   mpl::identity<typename space_1_type::mortar_fe_type>,
                                   mpl::identity<typename space_1_type::fe_type> >::type::type test_fe_type;
-        typedef boost::shared_ptr<test_fe_type> test_fe_ptrtype;
+        typedef std::shared_ptr<test_fe_type> test_fe_ptrtype;
         typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
                 test_fe_type,
                 test_geometric_mapping_type,
                 mesh_element_1_type> test_fecontext_type;
-        typedef boost::shared_ptr<test_fecontext_type> test_fecontext_ptrtype;
+        typedef std::shared_ptr<test_fecontext_type> test_fecontext_ptrtype;
         typedef typename mpl::if_<mpl::equal_to<test_map_size, mpl::int_<1> >,
                 mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > >,
                 mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype>,
@@ -445,22 +445,22 @@ public:
         typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type,
                 map_left_test_fecontext_type,
                 map_left_trial_fecontext_type> eval00_expr_type;
-        typedef boost::shared_ptr<eval00_expr_type> eval00_expr_ptrtype;
+        typedef std::shared_ptr<eval00_expr_type> eval00_expr_ptrtype;
 
         typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type,
                 map_left_test_fecontext_type,
                 map_right_trial_fecontext_type> eval01_expr_type;
-        typedef boost::shared_ptr<eval01_expr_type> eval01_expr_ptrtype;
+        typedef std::shared_ptr<eval01_expr_type> eval01_expr_ptrtype;
 
         typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type,
                 map_right_test_fecontext_type,
                 map_left_trial_fecontext_type> eval10_expr_type;
-        typedef boost::shared_ptr<eval10_expr_type> eval10_expr_ptrtype;
+        typedef std::shared_ptr<eval10_expr_type> eval10_expr_ptrtype;
 
         typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type,
                 map_right_test_fecontext_type,
                 map_right_trial_fecontext_type> eval11_expr_type;
-        typedef boost::shared_ptr<eval11_expr_type> eval11_expr_ptrtype;
+        typedef std::shared_ptr<eval11_expr_type> eval11_expr_ptrtype;
 
 
         static const int rep_shape = 4;//2+(eval_expr_type::shape::M-1>0)+(eval_expr_type::shape::N-1>0);
@@ -1798,7 +1798,7 @@ BilinearForm<FE1,FE2,ElemContType>::zeroRows( std::vector<int> const& __dofs,
 
 template<typename BFType, typename ExprType, typename TestSpaceType>
 template<typename SpaceType>
-void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<SpaceType> const& trial ) const
+void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( std::shared_ptr<SpaceType> const& trial ) const
 {
     if ( M_bf.testSpace()->worldsComm()[M_test_index].isActive() )
     {
@@ -1872,7 +1872,7 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
 
 template<typename BFType, typename ExprType, typename TrialSpaceType>
 template<typename SpaceType>
-void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<SpaceType> const& test ) const
+void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( std::shared_ptr<SpaceType> const& test ) const
 {
     if ( M_bf.testSpace()->worldsComm()[M_test_index].isActive() )
     {

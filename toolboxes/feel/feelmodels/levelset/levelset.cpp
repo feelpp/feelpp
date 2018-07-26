@@ -514,7 +514,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
             {
                 thickness_heaviside =  doption( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj") );
             }
-            boost::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( thickness_heaviside );
+            std::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( thickness_heaviside );
         }
         break;
     }
@@ -1433,7 +1433,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
 
     typedef boost::reference_wrapper<typename MeshTraits<mymesh_type>::element_type const> element_ref_type;
     typedef std::vector<element_ref_type> cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    std::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
     // Retrieve the elements touching the marked faces
     auto mfaces = markedfaces( this->mesh(), marker );
@@ -1480,7 +1480,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
 
     typedef boost::reference_wrapper<typename MeshTraits<mymesh_type>::element_type const> element_ref_type;
     typedef std::vector<element_ref_type> cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    std::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
     // Retrieve the elements touching the marked faces
     //auto mfaces_list = markedfaces( this->mesh(), marker );
@@ -1955,7 +1955,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
         } // switch M_fastMarchingInitializationMethod
 
         // Fast Marching Method
-        boost::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
+        std::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
                 M_useMarkerDiracAsMarkerDoneFM 
                 );
 
@@ -2076,7 +2076,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_type const& phiv,
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::string advectionStabilization = soption( _name="stabilization.method", _prefix=this->prefix() );
@@ -2127,7 +2127,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
     if ( this->M_useStretchAugmented )
         exportedFields = (exportedFields.empty())? "Stretch": exportedFields+" - Stretch";
 
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
            << "\n||---------------Info : LevelSet----------------||"
            << "\n||==============================================||"

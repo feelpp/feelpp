@@ -50,7 +50,7 @@ class DataMap;
 class FEELPP_EXPORT IndexSplit : public std::vector<std::vector<size_type> >
 {
     typedef IndexSplit self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
     typedef std::vector<std::vector<size_type> > super_type;
     typedef super_type container_type;
     typedef std::vector<size_type> subcontainer_type;
@@ -148,7 +148,7 @@ class FEELPP_EXPORT DataMap
 
 public:
     typedef IndexSplit indexsplit_type;
-    typedef boost::shared_ptr<indexsplit_type> indexsplit_ptrtype;
+    typedef std::shared_ptr<indexsplit_type> indexsplit_ptrtype;
 
     typedef Eigen::Matrix<int, Eigen::Dynamic, 1>  localglobal_indices_type;
     typedef std::vector<localglobal_indices_type,Eigen::aligned_allocator<localglobal_indices_type> > vector_indices_type;
@@ -182,7 +182,7 @@ public:
     /**
      *
      */
-    DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, WorldComm const& _worldComm );
+    DataMap( std::vector<std::shared_ptr<DataMap> > const& listofdm, WorldComm const& _worldComm );
 
     DataMap( DataMap const & dm ) = default;
     DataMap( DataMap&& dm ) = default;
@@ -651,7 +651,7 @@ public:
 
 
     // build sub data map from an index set
-    boost::shared_ptr<DataMap> createSubDataMap( std::vector<size_type> const& idExtract,
+    std::shared_ptr<DataMap> createSubDataMap( std::vector<size_type> const& idExtract,
                                                  bool _checkAndFixInputRange=true ) const;
 
     //@}
@@ -751,7 +751,7 @@ private:
 
 using datamap_t = DataMap;
 
-using datamap_ptrtype = boost::shared_ptr<datamap_t>;
+using datamap_ptrtype = std::shared_ptr<datamap_t>;
 using datamap_ptr_t = datamap_ptrtype;
 
 } // Feel

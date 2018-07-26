@@ -20,13 +20,13 @@ class TwoSpacesMap
 {
 public :
     typedef SpaceType space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     template <int T>
     using subspace_type = typename space_type::template sub_functionspace<T>::type;
     template <int T>
-    using subspace_ptrtype = boost::shared_ptr<subspace_type<T>>;
+    using subspace_ptrtype = std::shared_ptr<subspace_type<T>>;
     template<int T>
     using subelement_type = typename subspace_type<T>::element_type;
 

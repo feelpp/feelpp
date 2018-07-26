@@ -118,8 +118,8 @@ public :
             tmp+=2./gridsize ;
         }
 
-        boost::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<1, 1>, 1, 1>(), gm, face_qr );
 
@@ -153,8 +153,8 @@ public :
 #endif
 
 
-        boost::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<1, 1>, 1, 1>(), gm, face_qr );
 
@@ -216,8 +216,8 @@ public :
             tmpy-=2./gridsize;
         }
         std::cout << "quadrature points:" << this->M_points << std::endl; 
-        boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type());
+        std::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type());
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );
 
@@ -257,8 +257,8 @@ public :
         VLOG(1) << "[gauss<SP<2,1>] p = " << this->M_points << "\n";
         VLOG(1) << "[gauss<SP<2,1>] w = " << this->M_w << "\n";
 #endif
-        boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type);
+        std::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type);
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );
 

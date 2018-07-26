@@ -30,7 +30,7 @@
 
 #include <eadsmfemapp.hpp>
 
-static boost::shared_ptr<Feel::EadsMFemApp> app;
+static std::shared_ptr<Feel::EadsMFemApp> app;
 
 DEFUN_DLD ( opuseadsmfem, args, nargout, "Opus EADS Test Case" )
 {
@@ -53,7 +53,7 @@ DEFUN_DLD ( opuseadsmfem, args, nargout, "Opus EADS Test Case" )
 
             if ( !is_init )
             {
-                app = boost::shared_ptr<Feel::EadsMFemApp>( new Feel::EadsMFemApp( Feel::makeEadsAbout( "eadsmfem" ),
+                app = std::shared_ptr<Feel::EadsMFemApp>( new Feel::EadsMFemApp( Feel::makeEadsAbout( "eadsmfem" ),
                         Feel::OpusData::makeOptions() ) );
                 is_init = true;
             }

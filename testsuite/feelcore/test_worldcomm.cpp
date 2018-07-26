@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
         //w.showMe();
 
         using mesh_type = Mesh< Simplex<2> >;
-        boost::shared_ptr<mesh_type> mesh;
+        std::shared_ptr<mesh_type> mesh;
         // generate the mesh only by one group (color 0)
         if ( color == 0 )
         {

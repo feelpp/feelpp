@@ -44,9 +44,9 @@ class ExporterQuick
 {
 public:
     typedef MeshType mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef Exporter<mesh_type,1> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
     typedef typename export_type::timeset_type timeset_type;
     typedef typename export_type::timeset_ptrtype timeset_ptrtype;
 

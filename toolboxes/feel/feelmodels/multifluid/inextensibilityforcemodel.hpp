@@ -21,7 +21,7 @@ public:
     typedef typename super_type::mesh_type mesh_type;
 
     typedef typename levelset_type::space_levelset_vectorial_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     typedef typename space_type::element_type element_type;
     typedef typename space_type::element_ptrtype element_ptrtype;
@@ -38,7 +38,7 @@ public:
 
     void build( std::string const& prefix, levelset_ptrtype const& ls ) override;
 
-    boost::shared_ptr<std::ostringstream> getInfo() const override;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
 
     void loadParametersFromOptionsVm();
 
@@ -58,7 +58,7 @@ private:
     double M_inextensibilityForceEpsilon;
 
 #ifdef DEBUG_INEXTENSIBILITYFORCEMODEL
-    typedef boost::shared_ptr<Exporter<mesh_type, 1>> exporter_ptrtype;
+    typedef std::shared_ptr<Exporter<mesh_type, 1>> exporter_ptrtype;
     exporter_ptrtype M_exporter;
     bool M_exporterInitDone;
 #endif
@@ -75,10 +75,10 @@ InextensibilityForceModel<LevelSetType>::build( std::string const& prefix, level
 }
 
 template<typename LevelSetType>
-boost::shared_ptr<std::ostringstream> 
+std::shared_ptr<std::ostringstream> 
 InextensibilityForceModel<LevelSetType>::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "Inextensibility force ("
            << "coeff = " << this->M_inextensibilityForceCoefficient
            << ")";

@@ -45,7 +45,7 @@ using namespace Feel;
 using namespace Feel::vf;
 
 typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
+typedef std::shared_ptr<Application_type> Application_ptrtype;
 
 
 namespace test_form_interpolation

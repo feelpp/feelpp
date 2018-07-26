@@ -42,7 +42,7 @@ namespace test_matrixfield
 {
 
 typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
+typedef std::shared_ptr<Application_type> Application_ptrtype;
 
 /*_________________________________________________*
  * Options
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE( interp_matrixfield )
                               );
 
     typedef Mesh<Simplex<2,1,2> > mesh_type;
-    typedef boost::shared_ptr<  mesh_type > mesh_ptrtype;
+    typedef std::shared_ptr<  mesh_type > mesh_ptrtype;
 
     double meshSize = test_app->vm()["hsize"].as<double>();
 
@@ -124,7 +124,7 @@ int main(int argc, char** argv )
                                   _email="christophe.prudhomme@feelpp.org") );
 
     typedef Mesh<Simplex<2,1,2> > mesh_type;
-    typedef boost::shared_ptr<  mesh_type > mesh_ptrtype;
+    typedef std::shared_ptr<  mesh_type > mesh_ptrtype;
 
     double meshSize = doption("gmsh.hsize");
 

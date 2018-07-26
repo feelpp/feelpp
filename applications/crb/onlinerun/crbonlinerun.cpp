@@ -40,9 +40,9 @@
 #include <bsoncxx/builder/basic/array.hpp>
 #endif
 
-bool runCrbOnline( std::vector<boost::shared_ptr<Feel::CRBPluginAPI>> plugin );
+bool runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin );
 
-boost::shared_ptr<Feel::CRBPluginAPI>
+std::shared_ptr<Feel::CRBPluginAPI>
 loadPlugin( std::string const& name, std::string const& id )
 {
     using namespace Feel;
@@ -158,7 +158,7 @@ void runCrbOnlineCompare()
     std::cout << "document " << bsoncxx::to_json(document.view()) << std::endl;
     auto cursor = collection.find(document.extract());
 
-    std::vector<boost::shared_ptr<Feel::CRBPluginAPI>> plugins;
+    std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugins;
     
     for (auto&& doc : cursor) {
         //std::cout << bsoncxx::to_json(doc) << std::endl;
@@ -195,7 +195,7 @@ loadModelName( std::string const& filename )
     return modelName;
 }
 bool
-runCrbOnline( std::vector<boost::shared_ptr<Feel::CRBPluginAPI>> plugin )
+runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
 {
     using namespace Feel;
 
@@ -274,7 +274,7 @@ runCrbOnline( std::vector<boost::shared_ptr<Feel::CRBPluginAPI>> plugin )
 
 }
 
-boost::shared_ptr<Feel::CRBPluginAPI>
+std::shared_ptr<Feel::CRBPluginAPI>
 loadPlugin()
 {
     using namespace Feel;

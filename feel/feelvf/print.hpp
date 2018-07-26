@@ -260,8 +260,8 @@ public:
     //@{
 
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __u,
-                   boost::shared_ptr<Elem2> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __u,
+                   std::shared_ptr<Elem2> const& __v,
                    FormType& __f ) const
     {
         DVLOG(2) << "calling assemble(u,v)\n";
@@ -270,7 +270,7 @@ public:
     }
 
     template<typename Elem1, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __v,
                    FormType& __f ) const
     {
         DVLOG(2) << "calling assemble(v)\n";

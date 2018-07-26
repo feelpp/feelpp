@@ -394,7 +394,7 @@ public:
 
     // matrix graph
     typedef GraphCSR graph_type;
-    typedef boost::shared_ptr<graph_type> graph_ptrtype;
+    typedef std::shared_ptr<graph_type> graph_ptrtype;
 
     // node type
     typedef typename matrix_node<typename image_mesh_type::value_type>::type matrix_node_type;
@@ -673,8 +673,8 @@ namespace detail
 template <typename DomainSpaceType, typename ImageSpaceType, typename ExprType>
 struct PrecomputeDomainBasisFunction
 {
-    typedef boost::shared_ptr<DomainSpaceType> domain_space_ptrtype;
-    typedef boost::shared_ptr<ImageSpaceType> image_space_ptrtype;
+    typedef std::shared_ptr<DomainSpaceType> domain_space_ptrtype;
+    typedef std::shared_ptr<ImageSpaceType> image_space_ptrtype;
     //typedef GeoElementType geoelement_type;
     typedef typename DomainSpaceType::mesh_type::element_type geoelement_type;
     typedef typename DomainSpaceType::basis_type fe_type;
@@ -691,12 +691,12 @@ struct PrecomputeDomainBasisFunction
         expression_type::context;
     static const size_type context = ( DomainSpaceType::nDim == ImageSpaceType::nDim )? context2 : context2|vm::POINT;
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
     // fe context
     typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type,gmc_type::context> fecontext_type;
-    typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
+    typedef std::shared_ptr<fecontext_type> fecontext_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_fec_type;
 
     // tensor expression
@@ -804,19 +804,19 @@ private :
 
 
 template <typename DomainSpaceType, typename ImageSpaceType, typename ExprType>
-boost::shared_ptr<PrecomputeDomainBasisFunction<DomainSpaceType,ImageSpaceType,ExprType>>
-precomputeDomainBasisFunction( boost::shared_ptr<DomainSpaceType> const& domainSpace , boost::shared_ptr<ImageSpaceType> const& imageSpace,
+std::shared_ptr<PrecomputeDomainBasisFunction<DomainSpaceType,ImageSpaceType,ExprType>>
+precomputeDomainBasisFunction( std::shared_ptr<DomainSpaceType> const& domainSpace , std::shared_ptr<ImageSpaceType> const& imageSpace,
                                ExprType const& expr )
 {
     typedef PrecomputeDomainBasisFunction<DomainSpaceType,ImageSpaceType,ExprType> res_type;
-    return boost::make_shared<res_type>( domainSpace, imageSpace, expr );
+    return std::make_shared<res_type>( domainSpace, imageSpace, expr );
 }
 
 //--------------------------------------------------------------------------------------------------//
 
 template <typename DomainMeshType, typename ImageMeshType>
 std::set<size_type>
-domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, boost::shared_ptr<ImageMeshType> const& imageMesh, size_type imageEltId, mpl::int_<0> /**/ )
+domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, size_type imageEltId, mpl::int_<0> /**/ )
 {
     const bool image_related_to_domain = imageMesh->isSubMeshFrom( domainMesh );
     const bool domain_related_to_image = domainMesh->isSubMeshFrom( imageMesh );
@@ -849,7 +849,7 @@ domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, 
 
 template <typename DomainMeshType, typename ImageMeshType>
 std::set<size_type>
-domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, boost::shared_ptr<ImageMeshType> const& imageMesh, size_type imageEltId, mpl::int_<1> /**/ )
+domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, size_type imageEltId, mpl::int_<1> /**/ )
 {
     const bool image_related_to_domain = imageMesh->isSubMeshFrom( domainMesh );
     const bool domain_related_to_image = domainMesh->isSubMeshFrom( imageMesh );
@@ -921,7 +921,7 @@ domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, 
 
 template <typename DomainMeshType, typename ImageMeshType>
 std::set<size_type>
-domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, boost::shared_ptr<ImageMeshType> const& imageMesh, size_type imageEltId, mpl::int_<2> /**/ )
+domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, size_type imageEltId, mpl::int_<2> /**/ )
 {
     CHECK(false) << "not implemented\n";
     std::set<size_type> idsFind;
@@ -930,7 +930,7 @@ domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, 
 
 template <typename DomainMeshType, typename ImageMeshType>
 std::set<size_type>
-domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, boost::shared_ptr<ImageMeshType> const& imageMesh, size_type imageEltId )
+domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, size_type imageEltId )
 {
     static const uint16_type nDimDomain = DomainMeshType::nDim;
     static const uint16_type nDimImage = ImageMeshType::nDim;
@@ -942,18 +942,18 @@ domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, 
 
 template <typename DomainDofType,typename ImageDofType, typename ImageEltType, typename DomainGmcType>
 uint16_type
-domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof,
+domainLocalDofFromImageLocalDof(std::shared_ptr<DomainDofType> const& domaindof,std::shared_ptr<ImageDofType> const& imagedof,
                                 ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp, size_type domainEltId,
-                                boost::shared_ptr<DomainGmcType> & /*gmcDomain*/, mpl::bool_<true> /**/ )
+                                std::shared_ptr<DomainGmcType> & /*gmcDomain*/, mpl::bool_<true> /**/ )
 {
     return imagedof->localDofInElement( imageElt, imageLocDof, comp );
 }
 
 template <typename DomainDofType,typename ImageDofType, typename ImageEltType, typename DomainGmcType>
 uint16_type
-domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof,
+domainLocalDofFromImageLocalDof(std::shared_ptr<DomainDofType> const& domaindof,std::shared_ptr<ImageDofType> const& imagedof,
                                 ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp, size_type domainEltId,
-                                boost::shared_ptr<DomainGmcType> & gmcDomain,mpl::bool_<false> /**/ )
+                                std::shared_ptr<DomainGmcType> & gmcDomain,mpl::bool_<false> /**/ )
 {
     typedef typename ImageDofType::fe_type ImageBasisType;
     typedef typename DomainDofType::fe_type DomainBasisType;
@@ -981,9 +981,9 @@ domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindo
 
 template <typename DomainDofType,typename ImageDofType, typename ImageEltType, typename DomainGmcType>
 uint16_type
-domainLocalDofFromImageLocalDof( boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof,
+domainLocalDofFromImageLocalDof( std::shared_ptr<DomainDofType> const& domaindof,std::shared_ptr<ImageDofType> const& imagedof,
                                  ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof,uint16_type comp, size_type domainEltId,
-                                 boost::shared_ptr<DomainGmcType> & gmcDomain )
+                                 std::shared_ptr<DomainGmcType> & gmcDomain )
 {
     return domainLocalDofFromImageLocalDof( domaindof,imagedof,imageElt,imageLocDof,imageGlobDof,comp,domainEltId,gmcDomain,
                                             mpl::bool_< DomainDofType::nDim == ImageDofType::nDim >() );
@@ -1154,7 +1154,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     auto const& imagedof = this->dualImageSpace()->dof();
     auto const& domaindof = this->domainSpace()->dof();
 
-    auto sparsity_graph = boost::make_shared<graph_type>( this->dualImageSpace()->dof(), this->domainSpace()->dof() );
+    auto sparsity_graph = std::make_shared<graph_type>( this->dualImageSpace()->dof(), this->domainSpace()->dof() );
 
     // Local assembly: compute matrix by evaluating
     // the domain space basis function at the dual image space
@@ -1914,7 +1914,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // build data map for the columns
     //this->domainSpace()->mapOnOff().showMeMapGlobalProcessToGlobalCluster();
     //this->dualImageSpace()->worldComm().showMe();
-    boost::shared_ptr<DataMap> mapColInterp( new DataMap(this->dualImageSpace()->worldComm()));// this->domainSpace()->mapOnOff().worldComm());
+    std::shared_ptr<DataMap> mapColInterp( new DataMap(this->dualImageSpace()->worldComm()));// this->domainSpace()->mapOnOff().worldComm());
     mapColInterp->setNDof(this->domainSpace()->mapOnOff().nDof());
 
     mapColInterp->setNLocalDofWithoutGhost( proc_id, new_nLocalDofWithoutGhost );//  this->domainSpace()->mapOnOff().nLocalDofWithoutGhost() );
@@ -3290,7 +3290,7 @@ template<typename DomainSpaceType,
          typename ImageSpaceType,
          typename IteratorRange= elements_pid_t<typename ImageSpaceType::mesh_type>,
          typename InterpType =InterpolationNonConforming>
-using I_ptr_t = boost::shared_ptr<I_t<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>>;
+using I_ptr_t = std::shared_ptr<I_t<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>>;
     
 
 template<typename DomainSpaceType,
@@ -3307,7 +3307,7 @@ template<typename DomainSpaceType,
          typename ImageSpaceType,
          typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
          typename InterpType = InterpolationGradient<nonconforming_t>>
-using Grad_ptr_t = boost::shared_ptr<Grad_t<DomainSpaceType,
+using Grad_ptr_t = std::shared_ptr<Grad_t<DomainSpaceType,
                                             ImageSpaceType,
                                             IteratorRange,
                                             InterpType>>;
@@ -3326,7 +3326,7 @@ template<typename DomainSpaceType,
          typename ImageSpaceType,
          typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
          typename InterpType = InterpolationCurl<nonconforming_t>>
-using Curl_ptr_t = boost::shared_ptr<Curl_t<DomainSpaceType,
+using Curl_ptr_t = std::shared_ptr<Curl_t<DomainSpaceType,
                                             ImageSpaceType,
                                             IteratorRange,
                                             InterpType>>;
@@ -3345,15 +3345,15 @@ template<typename DomainSpaceType,
          typename ImageSpaceType,
          typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
          typename InterpType = InterpolationDiv<nonconforming_t>>
-using Div_ptr_t = boost::shared_ptr<Div_t<DomainSpaceType,
+using Div_ptr_t = std::shared_ptr<Div_t<DomainSpaceType,
                                           ImageSpaceType,
                                           IteratorRange,
                                           InterpType>>;
 
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
 decltype(auto)
-opInterp( boost::shared_ptr<DomainSpaceType> const& domainspace,
-          boost::shared_ptr<ImageSpaceType> const& imagespace,
+opInterp( std::shared_ptr<DomainSpaceType> const& domainspace,
+          std::shared_ptr<ImageSpaceType> const& imagespace,
           IteratorRange const& r,
           typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,typename Feel::detail::opinterprangetype<IteratorRange>::type,InterpType>::backend_ptrtype const& backend,
           InterpType const& interptype,
@@ -3375,8 +3375,8 @@ opInterp( boost::shared_ptr<DomainSpaceType> const& domainspace,
 
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
 decltype(auto)
-opInterpPtr( boost::shared_ptr<DomainSpaceType> const& domainspace,
-             boost::shared_ptr<ImageSpaceType> const& imagespace,
+opInterpPtr( std::shared_ptr<DomainSpaceType> const& domainspace,
+             std::shared_ptr<ImageSpaceType> const& imagespace,
              IteratorRange const& r,
              typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,typename Feel::detail::opinterprangetype<IteratorRange>::type,InterpType>::backend_ptrtype const& backend,
              InterpType const& interptype,
@@ -3387,7 +3387,7 @@ opInterpPtr( boost::shared_ptr<DomainSpaceType> const& domainspace,
                                   typename Feel::detail::opinterprangetype<IteratorRange>::type,
                                   InterpType> operatorinterpolation_type;
 
-    auto opI = boost::make_shared<operatorinterpolation_type>( domainspace,
+    auto opI = std::make_shared<operatorinterpolation_type>( domainspace,
                                                                imagespace,
                                                                r,
                                                                backend,
@@ -3420,7 +3420,7 @@ struct compute_opInterpolation_return
     
 
     typedef OperatorInterpolation<domain_space_type, image_space_type,iterator_range_type,std::remove_const_t<interpolation_type>> type;
-    typedef boost::shared_ptr<OperatorInterpolation<domain_space_type, image_space_type,iterator_range_type,std::remove_const_t<interpolation_type>> > ptrtype;
+    typedef std::shared_ptr<OperatorInterpolation<domain_space_type, image_space_type,iterator_range_type,std::remove_const_t<interpolation_type>> > ptrtype;
 };
 
 BOOST_PARAMETER_FUNCTION(
@@ -3428,8 +3428,8 @@ BOOST_PARAMETER_FUNCTION(
     opInterpolation,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
       ( range,          *, elements( imageSpace->mesh() )  )
@@ -3452,8 +3452,8 @@ BOOST_PARAMETER_FUNCTION(
     I,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
       ( range,          *, elements( imageSpace->mesh() )  )
@@ -3478,8 +3478,8 @@ BOOST_PARAMETER_FUNCTION(
     IPtr,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
       ( range,          *, elements( imageSpace->mesh() )  )
@@ -3503,8 +3503,8 @@ BOOST_PARAMETER_FUNCTION(
     Grad,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
       ( range,          *, elements( imageSpace->mesh() )  )
@@ -3528,8 +3528,8 @@ BOOST_PARAMETER_FUNCTION(
     Curl,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
       ( range,          *, elements( imageSpace->mesh() )  )
@@ -3553,8 +3553,8 @@ BOOST_PARAMETER_FUNCTION(
     Div,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
       ( range,          *, elements( imageSpace->mesh() )  )

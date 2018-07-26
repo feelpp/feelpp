@@ -205,7 +205,7 @@ MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _m
 
 template<typename T>
 void
-MatrixEigenDense<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m,
+MatrixEigenDense<T>::updateBlockMat( std::shared_ptr<MatrixSparse<value_type> > const& m,
                                      std::vector<size_type> const& start_i,
                                      std::vector<size_type> const& start_j )
 {

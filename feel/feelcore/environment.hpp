@@ -193,7 +193,7 @@ public:
      */
     //@{
     typedef WorldComm worldcomm_type;
-    typedef boost::shared_ptr<WorldComm> worldcomm_ptrtype;
+    typedef std::shared_ptr<WorldComm> worldcomm_ptrtype;
 
     //@}
 
@@ -321,7 +321,7 @@ public:
     /**
      * @return the shared_ptr WorldComm
      */
-    static boost::shared_ptr<WorldComm> worldCommPtr()
+    static std::shared_ptr<WorldComm> worldCommPtr()
         {
             return S_worldcomm;
         }
@@ -742,7 +742,7 @@ public:
     }
     template<typename Observer>
     static void
-    addDeleteObserver( boost::shared_ptr<Observer> const& obs )
+    addDeleteObserver( std::shared_ptr<Observer> const& obs )
     {
         S_deleteObservers.connect( boost::bind( &Observer::operator(), obs ) );
     }
@@ -832,12 +832,12 @@ private:
     static fs::path S_cfgdir;
     static AboutData S_about;
     static pt::ptree S_summary;
-    static boost::shared_ptr<po::command_line_parser> S_commandLineParser;
+    static std::shared_ptr<po::command_line_parser> S_commandLineParser;
     static std::vector<std::tuple<std::string,std::istringstream> > S_configFiles;
     static po::variables_map S_vm;
-    static boost::shared_ptr<po::options_description> S_desc;
-    static boost::shared_ptr<po::options_description> S_desc_app;
-    static boost::shared_ptr<po::options_description> S_desc_lib;
+    static std::shared_ptr<po::options_description> S_desc;
+    static std::shared_ptr<po::options_description> S_desc_app;
+    static std::shared_ptr<po::options_description> S_desc_lib;
     static std::vector<std::string> S_to_pass_further;
 
     
@@ -855,8 +855,8 @@ private:
 
     static boost::signals2::signal<void()> S_deleteObservers;
 
-    static boost::shared_ptr<WorldComm> S_worldcomm;
-    static boost::shared_ptr<WorldComm> S_worldcommSeq;
+    static std::shared_ptr<WorldComm> S_worldcomm;
+    static std::shared_ptr<WorldComm> S_worldcommSeq;
 
 #if defined(FEELPP_HAS_HARTS)
     static hwloc_topology_t S_hwlocTopology;

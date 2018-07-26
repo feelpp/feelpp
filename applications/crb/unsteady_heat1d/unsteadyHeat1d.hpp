@@ -169,12 +169,12 @@ public:
     typedef double value_type;
 
     typedef typename FunctionSpaceDefinition::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename FunctionSpaceDefinition::basis_type basis_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -182,17 +182,17 @@ public:
 
     /*space*/
     typedef typename FunctionSpaceDefinition::space_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef space_type::element_type element_type;
 
     /* parameter space */
     using parameterspace_type = ParameterSpaceX;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
 
     /* time discretization */
     typedef Bdf<space_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     //@}
 

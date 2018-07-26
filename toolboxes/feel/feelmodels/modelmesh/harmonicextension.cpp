@@ -201,10 +201,10 @@ HarmonicExtension<MeshType,Order>::init()
 }
 
 template< typename MeshType, int Order >
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 HarmonicExtension<MeshType,Order>::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
 
     *_ostr << "\n   Harmonic Extension "
            << "\n     -- type : " << ((M_useAdaptPenal)?"yes":"no")

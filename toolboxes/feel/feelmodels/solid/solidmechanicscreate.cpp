@@ -62,7 +62,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix,
                                          std::string const& subPrefix,
                                          ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
+    return std::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
 }
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -770,7 +770,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
     else
     {
 #if 1 //defined(FEELPP_HAS_VTK)
-        boost::shared_ptr<mesh_visu_ho_type> meshVisuHO;
+        std::shared_ptr<mesh_visu_ho_type> meshVisuHO;
         std::string hovisuSpaceUsed = soption(_name="hovisu.space-used",_prefix=this->prefix());
         bool doLagP1parallel=false;
         if ( hovisuSpaceUsed == "displacement" )
@@ -893,8 +893,8 @@ NullSpace<double> getNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
 }
 template< typename TheBackendType >
 NullSpace<double> extendNullSpace( NullSpace<double> const& ns,
-                                   boost::shared_ptr<TheBackendType> const& mybackend,
-                                   boost::shared_ptr<DataMap> const& dm )
+                                   std::shared_ptr<TheBackendType> const& mybackend,
+                                   std::shared_ptr<DataMap> const& dm )
 {
     std::vector< typename NullSpace<double>::vector_ptrtype > myvecbasis(ns.size());
     for ( int k=0;k< ns.size();++k )

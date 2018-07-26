@@ -43,7 +43,7 @@ public:
     typedef typename super_type::parameter_type parameter_type;
     typedef typename super_type::space_type space_type;
     typedef Bdf<space_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     using super_type::computeBetaQm;
 

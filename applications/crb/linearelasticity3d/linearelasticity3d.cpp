@@ -184,7 +184,7 @@ LinearElasticity3d::initModel()
     auto mode5 = Xh->element( vec(-Pz(),cst(0.),Px()) );
     auto mode6 = Xh->element( vec(cst(0.),Pz(),-Py()) );
     NullSpace<double> userNullSpace( { mode1,mode2,mode3,mode4,mode5,mode6 } );
-    boost::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(backend( _name="backend-primal"),userNullSpace) );
+    std::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(backend( _name="backend-primal"),userNullSpace) );
 #else
     auto userNullSpace = nullspace_ptr( Xh, oneX(),oneY(),oneZ(),vec(Py(),-Px(),cst(0.)),vec(-Pz(),cst(0.),Px()),vec(cst(0.),Pz(),-Py()) );
 #endif

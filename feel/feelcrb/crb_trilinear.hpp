@@ -102,7 +102,7 @@ public:
     //@{
     typedef TruthModelType truth_model_type;
     typedef truth_model_type model_type;
-    typedef boost::shared_ptr<truth_model_type> truth_model_ptrtype;
+    typedef std::shared_ptr<truth_model_type> truth_model_ptrtype;
 
     typedef typename TruthModelType::parameterspace_type parameterspace_type;
     typedef typename TruthModelType::parameterspace_ptrtype parameterspace_ptrtype;
@@ -126,7 +126,7 @@ public:
     typedef typename model_type::element_ptrtype element_ptrtype;
 
     typedef typename model_type::backend_type backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename model_type::vector_ptrtype vector_ptrtype;
     typedef typename model_type::beta_vector_type beta_vector_type;
@@ -139,11 +139,11 @@ public:
 
     //! mesh type
     typedef typename model_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! space type
     typedef typename model_type::space_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
@@ -154,27 +154,27 @@ public:
 
     // ! export
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     typedef CRBTrilinear self_type;
-    using self_ptrtype = boost::shared_ptr<self_type>;
+    using self_ptrtype = std::shared_ptr<self_type>;
 
     //! scm
     typedef CRBSCM<truth_model_type> scm_type;
-    typedef boost::shared_ptr<scm_type> scm_ptrtype;
+    typedef std::shared_ptr<scm_type> scm_ptrtype;
 
     //! elements database
     typedef CRBElementsDB<truth_model_type> crb_elements_db_type;
-    typedef boost::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
+    typedef std::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
 
     static self_ptrtype New( crb::stage stage = crb::stage::online )
         {
-            return New( "noname", boost::make_shared<truth_model_type>(stage), stage );
+            return New( "noname", std::make_shared<truth_model_type>(stage), stage );
         }
 
     static self_ptrtype New( std::string const& name, crb::stage stage = crb::stage::online )
         {
-            return New( name, boost::make_shared<truth_model_type>(stage), stage );
+            return New( name, std::make_shared<truth_model_type>(stage), stage );
         }
 
     static self_ptrtype New( std::string const& name,
@@ -182,7 +182,7 @@ public:
                              crb::stage stage = crb::stage::online,
                              std::string const& prefixElt = "" )
         {
-            auto crb = boost::shared_ptr<self_type>( new self_type(name, model, stage, prefixElt ));
+            auto crb = std::shared_ptr<self_type>( new self_type(name, model, stage, prefixElt ));
             crb->init();
             return crb;
         }
@@ -199,7 +199,7 @@ protected:
         {}
     CRBTrilinear( std::string const& name, crb::stage stage = crb::stage::online )
         :
-        super_crb( name, boost::make_shared<truth_model_type>(stage), stage )
+        super_crb( name, std::make_shared<truth_model_type>(stage), stage )
         {
 
         }
@@ -339,7 +339,7 @@ private:
     std::vector < std::vector < matrixN_type> >  M_Aqm_tril_pr;
     mutable matrixN_type M_bilinear_terms;
     mutable vectorN_type M_linear_terms;
-    //boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
+    //std::shared_ptr<SolverNonLinear<double> > M_nlsolver;
 
 
     friend class boost::serialization::access;

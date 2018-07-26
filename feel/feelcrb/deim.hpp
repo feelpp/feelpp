@@ -44,7 +44,7 @@ class DEIM :
 
 public :
     typedef ModelType model_type;
-    typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef std::shared_ptr<model_type> model_ptrtype;
     typedef typename super_type::parameter_type parameter_type;
     typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename super_type::sampling_ptrtype sampling_ptrtype;
@@ -132,7 +132,7 @@ struct compute_deim_return
     typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
 
     typedef DEIM<model_type> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 }
@@ -154,7 +154,7 @@ BOOST_PARAMETER_FUNCTION(
                          )
 {
     typedef typename Feel::detail::compute_deim_return<Args>::type deim_type;
-    return boost::make_shared<deim_type>( model, sampling, prefix, filename, directory, tag );
+    return std::make_shared<deim_type>( model, sampling, prefix, filename, directory, tag );
 }
 
 

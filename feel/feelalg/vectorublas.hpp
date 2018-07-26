@@ -110,7 +110,7 @@ public:
     typedef ublas::basic_range<size_type, difference_type> range_type;
     typedef ublas::basic_slice<size_type, difference_type> slice_type;
     typedef Vector<value_type> clone_type;
-    typedef boost::shared_ptr<clone_type> clone_ptrtype;
+    typedef std::shared_ptr<clone_type> clone_ptrtype;
     typedef VectorUblas<value_type, Storage> this_type;
 
     typedef typename vector_type::iterator iterator;
@@ -1284,8 +1284,8 @@ element_product( VectorUblas<T,Storage1> const& v1, VectorUblas<T,Storage2> cons
  */
 template <typename T, typename Storage1, typename Storage2>
 VectorUblas<T>
-element_product( boost::shared_ptr<VectorUblas<T,Storage1> > const& v1,
-                 boost::shared_ptr<VectorUblas<T,Storage2> > const& v2 )
+element_product( std::shared_ptr<VectorUblas<T,Storage1> > const& v1,
+                 std::shared_ptr<VectorUblas<T,Storage2> > const& v2 )
 {
     return element_product( *v1, *v2 );
 }
@@ -1352,18 +1352,18 @@ toPETSc( VectorUblas<T,Storage> & v )
  * data access.
  */
 template<typename T,typename Storage>
-inline boost::shared_ptr<VectorPetsc<T>>
+inline std::shared_ptr<VectorPetsc<T>>
 toPETScPtr( VectorUblas<T,Storage> const& v )
 {
     if ( v.comm().size() > 1 )
     {
         if ( VectorUblas<T,Storage>::is_range_vector || VectorUblas<T,Storage>::is_extarray_vector )
-            return boost::make_shared<VectorPetscMPIRange<T>>( v );
+            return std::make_shared<VectorPetscMPIRange<T>>( v );
         else
-            return boost::make_shared<VectorPetscMPI<T>>( v );
+            return std::make_shared<VectorPetscMPI<T>>( v );
     }
     else
-        return boost::make_shared<VectorPetsc<T>>( v );
+        return std::make_shared<VectorPetsc<T>>( v );
 }
 
 /**
@@ -1381,18 +1381,18 @@ toPETScPtr( VectorUblas<T,Storage> const& v )
  * data access.
  */
 template<typename T,typename Storage>
-inline boost::shared_ptr<VectorPetsc<T>>
-toPETSc( boost::shared_ptr<VectorUblas<T,Storage>> & v )
+inline std::shared_ptr<VectorPetsc<T>>
+toPETSc( std::shared_ptr<VectorUblas<T,Storage>> & v )
 {
     if ( v->comm().size() > 1 )
     {
         if ( VectorUblas<T,Storage>::is_range_vector || VectorUblas<T,Storage>::is_extarray_vector )
-            return boost::make_shared<VectorPetscMPIRange<T>>( *v );
+            return std::make_shared<VectorPetscMPIRange<T>>( *v );
         else
-            return boost::make_shared<VectorPetscMPI<T>>( *v );
+            return std::make_shared<VectorPetscMPI<T>>( *v );
     }
     else
-        return boost::make_shared<VectorPetsc<T>>( *v );
+        return std::make_shared<VectorPetsc<T>>( *v );
 }
 
 

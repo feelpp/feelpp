@@ -377,8 +377,8 @@ public:
         //std::cout << "this->M_points=" << this->M_points << "\n"
         //<< "  w=" << this->M_w << "\n";
 
-        boost::shared_ptr<GT_Lagrange<Dim,1,Simplex,T> > gm( new GT_Lagrange<Dim, 1, Simplex, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<Dim,1,Simplex,T> > gm( new GT_Lagrange<Dim, 1, Simplex, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Simplex<Dim, 1>, Dim, 1>(), gm, face_qr );
     }

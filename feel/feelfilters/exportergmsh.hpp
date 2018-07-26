@@ -63,7 +63,7 @@ public:
     //@{
 
     typedef MeshType mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename mesh_type::point_const_iterator point_const_iterator;
 
     typedef Exporter<MeshType,N> super;

@@ -432,7 +432,7 @@ public:
      */
     void sqrt( MatrixSparse<value_type>& _m ) const;
 
-    boost::shared_ptr<MatrixEigenDense<T>> sqrt() const;
+    std::shared_ptr<MatrixEigenDense<T>> sqrt() const;
 
     /**
      * Compute the eigenvalues of the current Sparse matrix,
@@ -466,7 +466,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
+    void updateBlockMat( std::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
 
 
     //@}

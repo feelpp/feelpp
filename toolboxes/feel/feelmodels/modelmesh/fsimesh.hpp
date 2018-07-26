@@ -45,7 +45,7 @@ class FSIMesh
 public :
 
     typedef Mesh<ConvexType> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type mesh_fluid_type;
     typedef mesh_type mesh_solid_type;
     typedef typename mesh_fluid_type::shape_type shape_fluid_type;

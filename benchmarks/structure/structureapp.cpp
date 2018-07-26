@@ -63,7 +63,7 @@ class StructureApp   : public Application
 public:
 
     typedef StructureBase structure_type;
-    typedef boost::shared_ptr<structure_type> structure_ptrtype;
+    typedef std::shared_ptr<structure_type> structure_ptrtype;
 
     StructureApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :

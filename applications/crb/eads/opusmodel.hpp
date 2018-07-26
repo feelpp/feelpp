@@ -84,15 +84,15 @@ public:
     /*mesh*/
     typedef Simplex<Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef Simplex<1,1,2> entity12_type;
     typedef Mesh<entity12_type> mesh12_type;
-    typedef boost::shared_ptr<mesh12_type> mesh12_ptrtype;
+    typedef std::shared_ptr<mesh12_type> mesh12_ptrtype;
 
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -115,51 +115,51 @@ public:
 
 
     typedef FunctionSpace<mesh_type, temp_basis_type, Periodicity<Periodic<> > > temp_functionspace_type;
-    typedef boost::shared_ptr<temp_functionspace_type> temp_functionspace_ptrtype;
+    typedef std::shared_ptr<temp_functionspace_type> temp_functionspace_ptrtype;
     typedef typename temp_functionspace_type::element_type temp_element_type;
-    typedef boost::shared_ptr<temp_element_type> temp_element_ptrtype;
+    typedef std::shared_ptr<temp_element_type> temp_element_ptrtype;
 
     typedef FunctionSpace<mesh_type, grad_temp_basis_type> grad_temp_functionspace_type;
-    typedef boost::shared_ptr<grad_temp_functionspace_type> grad_temp_functionspace_ptrtype;
+    typedef std::shared_ptr<grad_temp_functionspace_type> grad_temp_functionspace_ptrtype;
     typedef typename grad_temp_functionspace_type::element_type grad_temp_element_type;
-    typedef boost::shared_ptr<grad_temp_element_type> grad_temp_element_ptrtype;
+    typedef std::shared_ptr<grad_temp_element_type> grad_temp_element_ptrtype;
 
     /* 1D profil */
     typedef bases<Lagrange<1, Scalar> > p1_basis_type;
     typedef FunctionSpace<mesh12_type, p1_basis_type, value_type> p1_functionspace_type;
-    typedef boost::shared_ptr<p1_functionspace_type> p1_functionspace_ptrtype;
+    typedef std::shared_ptr<p1_functionspace_type> p1_functionspace_ptrtype;
     typedef typename p1_functionspace_type::element_type p1_element_type;
-    typedef boost::shared_ptr<p1_element_type> p1_element_ptrtype;
+    typedef std::shared_ptr<p1_element_type> p1_element_ptrtype;
 
     /* P0 */
     typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar, Discontinuous> > > p0_space_type;
-    typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
+    typedef std::shared_ptr<p0_space_type> p0_space_ptrtype;
     typedef typename p0_space_type::element_type p0_element_type;
-    typedef boost::shared_ptr<p0_element_type> p0_element_ptrtype;
+    typedef std::shared_ptr<p0_element_type> p0_element_ptrtype;
 
     typedef Feel::OpusModelThermal<temp_functionspace_type> thermal_operator_type;
-    typedef boost::shared_ptr<thermal_operator_type> thermal_operator_ptrtype;
+    typedef std::shared_ptr<thermal_operator_type> thermal_operator_ptrtype;
 
     /* velocity */
     typedef bases<Lagrange<OrderU, Vectorial> > velocity_basis_type;
     typedef FunctionSpace<mesh_type, velocity_basis_type, value_type> velocity_functionspace_type;
-    typedef boost::shared_ptr<velocity_functionspace_type> velocity_functionspace_ptrtype;
+    typedef std::shared_ptr<velocity_functionspace_type> velocity_functionspace_ptrtype;
     typedef typename velocity_functionspace_type::element_type velocity_element_type;
-    typedef boost::shared_ptr<velocity_element_type> velocity_element_ptrtype;
+    typedef std::shared_ptr<velocity_element_type> velocity_element_ptrtype;
 
     /* pressure */
     typedef bases<Lagrange<OrderP, Scalar> > pressure_basis_type;
     typedef FunctionSpace<mesh_type, pressure_basis_type, value_type> pressure_functionspace_type;
-    typedef boost::shared_ptr<pressure_functionspace_type> pressure_functionspace_ptrtype;
+    typedef std::shared_ptr<pressure_functionspace_type> pressure_functionspace_ptrtype;
     typedef typename pressure_functionspace_type::element_type pressure_element_type;
-    typedef boost::shared_ptr<pressure_element_type> pressure_element_ptrtype;
+    typedef std::shared_ptr<pressure_element_type> pressure_element_ptrtype;
     /* fluid */
     typedef bases<Lagrange<OrderU, Vectorial>,Lagrange<OrderP, Scalar> > fluid_basis_type;
 
     typedef FunctionSpace<mesh_type, fluid_basis_type> fluid_functionspace_type;
-    typedef boost::shared_ptr<fluid_functionspace_type> fluid_functionspace_ptrtype;
+    typedef std::shared_ptr<fluid_functionspace_type> fluid_functionspace_ptrtype;
     typedef typename fluid_functionspace_type::element_type fluid_element_type;
-    typedef boost::shared_ptr<fluid_element_type> fluid_element_ptrtype;
+    typedef std::shared_ptr<fluid_element_type> fluid_element_ptrtype;
     typedef typename fluid_element_type::template sub_element<0>::type fluid_element_0_type;
     typedef typename fluid_element_type::template sub_element<1>::type fluid_element_1_type;
 
@@ -168,13 +168,13 @@ public:
 #else
     typedef Feel::OpusModelFluidOseen<fluid_functionspace_type> fluid_operator_type;
 #endif
-    typedef boost::shared_ptr<fluid_operator_type> fluid_operator_ptrtype;
+    typedef std::shared_ptr<fluid_operator_type> fluid_operator_ptrtype;
 
     /* time */
     typedef Bdf<temp_functionspace_type>  temp_bdf_type;
-    typedef boost::shared_ptr<temp_bdf_type> temp_bdf_ptrtype;
+    typedef std::shared_ptr<temp_bdf_type> temp_bdf_ptrtype;
     typedef Bdf<fluid_functionspace_type>  fluid_bdf_type;
-    typedef boost::shared_ptr<fluid_bdf_type> fluid_bdf_ptrtype;
+    typedef std::shared_ptr<fluid_bdf_type> fluid_bdf_ptrtype;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -269,7 +269,7 @@ private:
     fluid_functionspace_ptrtype M_Xh;
     fluid_operator_ptrtype M_fluid;
 
-    boost::shared_ptr<export_type> M_exporter,M_exporter_fluid;
+    std::shared_ptr<export_type> M_exporter,M_exporter_fluid;
 };
 
 /** \\@} */

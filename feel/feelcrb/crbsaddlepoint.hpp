@@ -53,15 +53,15 @@ class CRBSaddlePoint :
 public:
     //@{ // Truth Model
     typedef TruthModelType model_type;
-    typedef boost::shared_ptr<model_type> truth_model_ptrtype;
+    typedef std::shared_ptr<model_type> truth_model_ptrtype;
     typedef typename model_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //@}
 
     //@{ /// Parameter Space
     typedef typename model_type::parameterspace_type parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
     typedef typename parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef typename parameterspace_type::sampling_type sampling_type;
@@ -73,11 +73,11 @@ public:
     typedef typename convergence_type::value_type convergence;
 
     using self_type = CRBSaddlePoint;
-    using self_ptrtype = boost::shared_ptr<self_type>;
+    using self_ptrtype = std::shared_ptr<self_type>;
 
     //@{ /// Function Space and Elements
     typedef typename model_type::space_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename model_type::functionspace_type functionspace_type;
     typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
     typedef typename model_type::element_type element_type;
@@ -86,7 +86,7 @@ public:
 
     //@{ Backend and Matrix
     typedef typename model_type::backend_type backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename model_type::vector_ptrtype vector_ptrtype;
     typedef typename model_type::beta_vector_type beta_vector_type;
@@ -109,12 +109,12 @@ public:
 
     //@{ /// Exporter
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
     //@}
 
     //@{ /// Database
     typedef CRBElementsDB<model_type> crb_elements_db_type;
-    typedef boost::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
+    typedef std::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
     //@}
 
     typedef std::vector< std::vector< std::vector< std::vector< matrixN_type >>>> blockmatrixN_type;
@@ -125,7 +125,7 @@ public:
     static self_ptrtype New( std::string const& name = "defaultname_crb",
                              crb::stage stage = crb::stage::online )
         {
-            return New( name, boost::make_shared<model_type>(stage), stage );
+            return New( name, std::make_shared<model_type>(stage), stage );
         }
 
     static self_ptrtype New( std::string const& name,
@@ -133,7 +133,7 @@ public:
                              crb::stage stage = crb::stage::online,
                              std::string const& prefixElt = "")
         {
-            auto crb = boost::shared_ptr<self_type>( new self_type(name, model, stage, prefixElt ));
+            auto crb = std::shared_ptr<self_type>( new self_type(name, model, stage, prefixElt ));
             crb->init();
             return crb;
         }
@@ -143,7 +143,7 @@ protected:
     CRBSaddlePoint( std::string const& name = "defaultname_crb",
                     crb::stage stage = crb::stage::online,
                     WorldComm const& worldComm = Environment::worldComm() ) :
-        CRBSaddlePoint( name, boost::make_shared<model_type>(stage), stage )
+        CRBSaddlePoint( name, std::make_shared<model_type>(stage), stage )
         {}
 
     //! constructor from command line options

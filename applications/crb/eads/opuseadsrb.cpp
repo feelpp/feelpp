@@ -21,7 +21,7 @@ class OpusApp   : public Application
 public:
 
     typedef OpusModelBase opus_type;
-    typedef boost::shared_ptr<opus_type> opus_ptrtype;
+    typedef std::shared_ptr<opus_type> opus_ptrtype;
 
     OpusApp( AboutData const& ad )
         :
@@ -29,7 +29,7 @@ public:
     {
         using namespace Feel;
         typedef OpusModelBase opus_type;
-        typedef boost::shared_ptr<opus_type> opus_ptrtype;
+        typedef std::shared_ptr<opus_type> opus_ptrtype;
         this->changeRepository( boost::format( "%1%" )
                                 % this->about().appName()
                               );

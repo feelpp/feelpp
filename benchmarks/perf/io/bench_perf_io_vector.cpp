@@ -29,7 +29,7 @@ int main(int argc, char**argv )
     //std::cout<< "nLocalDofWithoutGhost=" << nLocalDofWithoutGhost << "\n";
     //std::cout<< "nDofNotDistributed=" << nDofNotDistributed << "\n";
 
-    boost::shared_ptr<DataMap> map( new DataMap( comm ) );
+    std::shared_ptr<DataMap> map( new DataMap( comm ) );
     map->setNDof( nDof );
     for ( rank_type p=0;p<nProc;++p )
         map->setNLocalDofWithoutGhost( p, nLocalDofWithoutGhost );

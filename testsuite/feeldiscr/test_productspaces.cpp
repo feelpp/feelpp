@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE( test4 )
     auto Xh = Pch<1>(mesh);
     auto Zh = Pch<1>(mesh);
     auto Yh = Pchv<3>(mesh);
-    auto ps = boost::make_shared<ProductSpace<decltype(Pch<2>(mesh)), true>>( n, mesh );
+    auto ps = std::make_shared<ProductSpace<decltype(Pch<2>(mesh)), true>>( n, mesh );
     auto p = product2( ps, Xh, Yh, Zh );
 
     BOOST_CHECK_EQUAL( p.numberOfSpaces(), n+3 );

@@ -58,7 +58,7 @@ public:
     //@{
 
     typedef SpaceType functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     using space_type = functionspace_type;
     using space_ptrtype = functionspace_ptrtype;
     typedef typename SpaceType::basis_type basis_type;
@@ -70,7 +70,7 @@ public:
     //@{
 
     //! default constructor
-    BasisFunctions(boost::shared_ptr<space_type> const& X )
+    BasisFunctions(std::shared_ptr<space_type> const& X )
         :
         M_space( X )
         {}
@@ -99,14 +99,14 @@ protected:
 template<typename SpaceType> using Test = BasisFunctions<SpaceType,0>;
 
 template<typename SpaceType>
-Test<SpaceType> test( boost::shared_ptr<SpaceType> const& X )
+Test<SpaceType> test( std::shared_ptr<SpaceType> const& X )
 {
     return Test<SpaceType>( X );
 }
 
 template<typename SpaceType> using Trial = BasisFunctions<SpaceType,1>;
 template<typename SpaceType>
-Trial<SpaceType> trial( boost::shared_ptr<SpaceType> const& X )
+Trial<SpaceType> trial( std::shared_ptr<SpaceType> const& X )
 {
     return Trial<SpaceType>( X );
 }

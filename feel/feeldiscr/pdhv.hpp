@@ -47,7 +47,7 @@ struct Pdhv
                           double,
                           Periodicity <NoPeriodicity>,
                           mortars<NoMortar>> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 } // meta
@@ -74,7 +74,7 @@ template<int Order,
          int Tag = 0>
 inline
 Pdhv_ptrtype<MeshType,Order,Pts,Tag>
-Pdhv( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
+Pdhv( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
 {
     return Pdhv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
                                                    _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
@@ -91,7 +91,7 @@ template<int Order,
          int Tag = 0>
 inline
 Pdhv_ptrtype<MeshType,Order,Pts,Tag>
-Pdhv( boost::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, bool buildExtendedDofTable=false  )
+Pdhv( std::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, bool buildExtendedDofTable=false  )
 {
     return Pdhv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
                                                    _range=rangeElt,

@@ -143,8 +143,8 @@ extern "C"
         }
         else
         {
-            boost::shared_ptr<VectorPetsc<double> > x_vec;
-            boost::shared_ptr<VectorPetsc<double> > y_vec;
+            std::shared_ptr<VectorPetsc<double> > x_vec;
+            std::shared_ptr<VectorPetsc<double> > y_vec;
             if ( preconditioner->worldComm().localSize() > 1 )
             {
                 CHECK ( preconditioner->matrix() ) << "matrix is not defined";

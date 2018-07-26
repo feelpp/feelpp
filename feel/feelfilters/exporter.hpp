@@ -56,7 +56,7 @@ namespace Feel
  * \code
  * #include <feel/feelfilters/exporter.hpp>
  * typedef Exporter<mesh_type> export_type;
- * typedef boost::shared_ptr<export_type> export_ptrtype;
+ * typedef std::shared_ptr<export_type> export_ptrtype;
  * // vm is a po::variables_map to get the command lines options
  * export_ptrtype exporter( export_type::New( vm );
  * // U is an element of a function space which we want to visualise
@@ -84,11 +84,11 @@ public:
     typedef Visitor<MeshType> super2;
 
     typedef Exporter<MeshType,N> etype;
-    typedef boost::shared_ptr<etype> ptrtype;
+    typedef std::shared_ptr<etype> ptrtype;
     typedef Feel::detail::TimeSet<MeshType,N> timeset_type;
     typedef typename timeset_type::mesh_type mesh_type;
     typedef typename timeset_type::mesh_ptrtype mesh_ptrtype;
-    typedef boost::shared_ptr<timeset_type> timeset_ptrtype;
+    typedef std::shared_ptr<timeset_type> timeset_ptrtype;
     typedef std::vector<timeset_ptrtype> timeset_set_type;
     typedef typename timeset_set_type::iterator timeset_iterator;
     typedef typename timeset_set_type::const_iterator timeset_const_iterator;
@@ -154,7 +154,7 @@ public:
      * of the \p exportername and using \p prefix for the prefix of the data
      * files.
      */
-    static boost::shared_ptr<Exporter<MeshType,N> > New( std::string const& exportername,
+    static std::shared_ptr<Exporter<MeshType,N> > New( std::string const& exportername,
                                                          std::string prefix,
                                                          WorldComm const& worldComm = Environment::worldComm() );
 
@@ -163,14 +163,14 @@ public:
      * of the variables_map \p vm and using \p prefix for the prefix of the data
      * files.
      */
-    static boost::shared_ptr<Exporter<MeshType,N> > New( po::variables_map const& vm = Environment::vm(),
+    static std::shared_ptr<Exporter<MeshType,N> > New( po::variables_map const& vm = Environment::vm(),
                                                          std::string prefix = Environment::about().appName(),
                                                          WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
     /**
      * Static function instantiating from the Exporter Factory an exporter using
      * \p prefix for the prefix of the data files.
      */
-    static boost::shared_ptr<Exporter<MeshType,N> > New( std::string prefix,
+    static std::shared_ptr<Exporter<MeshType,N> > New( std::string prefix,
                                                          WorldComm const& worldComm = Environment::worldComm() );
 
     //@}
@@ -543,10 +543,10 @@ struct compute_exporter_return
         >::type::element_type mesh_type;
     //typename Feel::vf::detail::clean_type<Args, tag::mesh>::type::element_type mesh_type;
     //typedef typename parameter::value_type<Args, tag::order>::type order_type;
-    //typedef boost::shared_ptr<Exporter<mesh_type,order_type::value> > type;
+    //typedef std::shared_ptr<Exporter<mesh_type,order_type::value> > type;
     typedef Exporter<mesh_type,mesh_type::nOrder> type;
-    typedef boost::shared_ptr<type> ptrtype;
-    //typedef boost::shared_ptr<Exporter<Mesh<Simplex<2> >,1> > type;
+    typedef std::shared_ptr<type> ptrtype;
+    //typedef std::shared_ptr<Exporter<Mesh<Simplex<2> >,1> > type;
 
 };
 }
@@ -588,7 +588,7 @@ template<typename MeshType, int N = 1>
 struct Exporter
 {
     typedef Feel::Exporter<MeshType,N> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 }

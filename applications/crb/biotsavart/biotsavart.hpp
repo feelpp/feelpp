@@ -99,11 +99,11 @@ class FEELPP_EXPORT BiotSavartCRB
                                     NonLinear,
                                     typename te_rb_model_type::eim_definition_type >;
 
-    using te_rb_model_ptrtype = boost::shared_ptr<te_rb_model_type>;
+    using te_rb_model_ptrtype = std::shared_ptr<te_rb_model_type>;
     using crb_model_type = CRBModel<te_rb_model_type>;
-    using crb_model_ptrtype = boost::shared_ptr<crb_model_type>;
+    using crb_model_ptrtype = std::shared_ptr<crb_model_type>;
     using crb_type = CRB<crb_model_type>;
-    using crb_ptrtype = boost::shared_ptr<crb_type>;
+    using crb_ptrtype = std::shared_ptr<crb_type>;
 
     using value_type = typename te_rb_model_type::value_type;
     using param_space_type = typename te_rb_model_type::parameterspace_type;
@@ -113,36 +113,36 @@ class FEELPP_EXPORT BiotSavartCRB
     using beta_vector_type = typename te_rb_model_type::beta_vector_type;
 
     using mesh_type = typename te_rb_model_type::mesh_type;
-    using mesh_ptrtype = boost::shared_ptr<mesh_type>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
     using exporter_type = Exporter<mesh_type>;
-    using exporter_ptrtype = boost::shared_ptr<exporter_type>;
+    using exporter_ptrtype = std::shared_ptr<exporter_type>;
 
     using space_type = typename te_rb_model_type::space_type;
-    using space_ptrtype = boost::shared_ptr<space_type>;
+    using space_ptrtype = std::shared_ptr<space_type>;
     using element_type = typename space_type::element_type;
-    using element_ptrtype = boost::shared_ptr<element_type>;
+    using element_ptrtype = std::shared_ptr<element_type>;
     using V_space_type = typename space_type::template sub_functionspace<0>::type;
-    using V_space_ptrtype = boost::shared_ptr<V_space_type>;
+    using V_space_ptrtype = std::shared_ptr<V_space_type>;
     using V_element_type = typename V_space_type::element_type;
-    using V_element_ptrtype = boost::shared_ptr<V_element_type>;
+    using V_element_ptrtype = std::shared_ptr<V_element_type>;
     using T_space_type = typename space_type::template sub_functionspace<1>::type;
-    using T_space_ptrtype = boost::shared_ptr<T_space_type>;
+    using T_space_ptrtype = std::shared_ptr<T_space_type>;
     using T_element_type = typename T_space_type::element_type;
-    using T_element_ptrtype = boost::shared_ptr<T_element_type>;
+    using T_element_ptrtype = std::shared_ptr<T_element_type>;
 
     using vec_fct_type = Lagrange<1, Vectorial>;
     using vec_basis_type = bases<vec_fct_type>;
     using vec_space_type = FunctionSpace<mesh_type, vec_basis_type>;
-    using vec_space_ptrtype = boost::shared_ptr<vec_space_type>;
+    using vec_space_ptrtype = std::shared_ptr<vec_space_type>;
     using vec_element_type = typename vec_space_type::element_type;
-    using vec_element_ptrtype = boost::shared_ptr<vec_element_type>;
+    using vec_element_ptrtype = std::shared_ptr<vec_element_type>;
 
     // using disc_vec_fct_type = Lagrange<0, Vectorial, Discontinuous>;
     // using disc_vec_basis_type = bases<disc_vec_fct_type>;
     // using disc_vec_space_type = FunctionSpace<mesh_type, disc_vec_basis_type>;
-    // using disc_vec_space_ptrtype = boost::shared_ptr<disc_vec_space_type>;
+    // using disc_vec_space_ptrtype = std::shared_ptr<disc_vec_space_type>;
     // using disc_vec_element_type = typename disc_vec_space_type::element_type;
-    // using disc_vec_element_ptrtype = boost::shared_ptr<disc_vec_element_type>;
+    // using disc_vec_element_ptrtype = std::shared_ptr<disc_vec_element_type>;
     using current_element_type = typename te_rb_model_type::current_element_type;
     using current_space_type = typename te_rb_model_type::current_space_type;
 

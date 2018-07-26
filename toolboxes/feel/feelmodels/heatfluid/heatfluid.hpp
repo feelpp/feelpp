@@ -36,33 +36,33 @@ namespace FeelModels
 
 template< typename HeatType, typename FluidType>
 class HeatFluid : public ModelNumerical,
-                  public boost::enable_shared_from_this< HeatFluid<HeatType,FluidType> >
+                  public std::enable_shared_from_this< HeatFluid<HeatType,FluidType> >
 {
 
 public:
     typedef ModelNumerical super_type;
     typedef HeatFluid<HeatType,FluidType> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     typedef HeatType heat_model_type;
-    typedef boost::shared_ptr<heat_model_type> heat_model_ptrtype;
+    typedef std::shared_ptr<heat_model_type> heat_model_ptrtype;
 
     typedef FluidType fluid_model_type;
-    typedef boost::shared_ptr<fluid_model_type> fluid_model_ptrtype;
+    typedef std::shared_ptr<fluid_model_type> fluid_model_ptrtype;
 
     // mesh
     typedef typename heat_model_type::mesh_type mesh_heat_type;
     typedef typename fluid_model_type::mesh_type mesh_fluid_type;
     typedef mesh_fluid_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     static const uint16_type nDim = mesh_type::nDim;
     // exporter
     typedef Exporter<mesh_type,mesh_type::nOrder> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     // algebraic solver
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
     //___________________________________________________________________________________//
     // constructor
@@ -72,7 +72,7 @@ public:
                std::string const& subPrefix = "",
                ModelBaseRepository const& modelRep = ModelBaseRepository() );
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"HeatFluidMesh.path"); }
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const;
 
 private :
     void loadParameterFromOptionsVm();
@@ -108,8 +108,8 @@ public :
 
     //___________________________________________________________________________________//
 
-    boost::shared_ptr<TSBase> timeStepBase() { return this->heatModel()->timeStepBase(); }
-    boost::shared_ptr<TSBase> timeStepBase() const { return this->heatModel()->timeStepBase(); }
+    std::shared_ptr<TSBase> timeStepBase() { return this->heatModel()->timeStepBase(); }
+    std::shared_ptr<TSBase> timeStepBase() const { return this->heatModel()->timeStepBase(); }
     void updateTimeStep();
 
     //___________________________________________________________________________________//

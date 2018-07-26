@@ -97,7 +97,7 @@ public:
 
 
     typedef SubMeshData smd_type;
-    typedef boost::shared_ptr<smd_type> smd_ptrtype;
+    typedef std::shared_ptr<smd_type> smd_ptrtype;
 
     //@}
 
@@ -347,7 +347,7 @@ public:
             return res;
         }
     //! \return true if the mesh is related to the mesh \p m
-    bool isSubMeshFrom( boost::shared_ptr<MeshBase> m ) const
+    bool isSubMeshFrom( std::shared_ptr<MeshBase> m ) const
         {
             return isSubMeshFrom( m.get() );
         }
@@ -361,7 +361,7 @@ public:
             return res;
         }
     //! \return true if the mesh is related to the mesh \p m
-    bool isParentMeshOf( boost::shared_ptr<MeshBase> m ) const
+    bool isParentMeshOf( std::shared_ptr<MeshBase> m ) const
         {
             DVLOG(4) << "isParentMeshOf<mesh_ptrtype> called\n";
             bool res = m->isSubMeshFrom( this );
@@ -379,7 +379,7 @@ public:
             return res;
         }
     //! \return true if the mesh is related to the mesh \p m
-    bool isSiblingOf( boost::shared_ptr<MeshBase> m ) const
+    bool isSiblingOf( std::shared_ptr<MeshBase> m ) const
         {
             DVLOG(4) << "isSibling<mesh_ptrtype> called\n";
             if ( !M_smd || !m->hasSubMeshData() ) return false;
@@ -390,7 +390,7 @@ public:
         }
 #if 0
     template<typename M>
-    bool isSubMeshFrom( boost::shared_ptr<M> m ) const
+    bool isSubMeshFrom( std::shared_ptr<M> m ) const
         {
             DVLOG(4) << "isSubMeshFrom<M> called\n";
             return false;
@@ -404,7 +404,7 @@ public:
         }
 
     template<typename M>
-    bool isSameMesh( boost::shared_ptr<M> m ) const
+    bool isSameMesh( std::shared_ptr<M> m ) const
         {
             bool same_mesh = ( dynamic_cast<void const*>( this ) == dynamic_cast<void*>( m.get() ) );
             return same_mesh;
@@ -424,7 +424,7 @@ public:
             //return same_mesh || is_submesh_from || is_parentmesh_of;
         }
     template<typename M>
-    bool isRelatedTo( boost::shared_ptr<M> m ) const
+    bool isRelatedTo( std::shared_ptr<M> m ) const
         {
             bool same_mesh = isSameMesh(m);
             DVLOG(4) << "same_mesh: " << same_mesh << "\n";
@@ -477,7 +477,7 @@ public:
         }
 
     //! \return id in parent mesh given the id in the sub mesh
-    size_type subMeshToMesh( boost::shared_ptr<MeshBase> m, size_type id ) const
+    size_type subMeshToMesh( std::shared_ptr<MeshBase> m, size_type id ) const
         {
             if ( this == m.get() )
                 return id;
@@ -499,7 +499,7 @@ public:
         }
 
     //! \return id in sub mesh given the id in the parent mesh
-    size_type meshToSubMesh( boost::shared_ptr<MeshBase> m, size_type id ) const
+    size_type meshToSubMesh( std::shared_ptr<MeshBase> m, size_type id ) const
         {
             if ( this == m.get() )
                 return id;

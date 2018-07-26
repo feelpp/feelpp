@@ -78,7 +78,7 @@ public:
     typedef typename mpl::if_<mpl::bool_<IsDense>,
                               mpl::identity<MatrixEigenDense<value_type> >,
                               mpl::identity<MatrixEigenSparse<value_type> > >::type::type eigen_sparse_matrix_type;
-    typedef boost::shared_ptr<eigen_sparse_matrix_type> eigen_sparse_matrix_ptrtype;
+    typedef std::shared_ptr<eigen_sparse_matrix_type> eigen_sparse_matrix_ptrtype;
 
     typedef typename sparse_matrix_type::graph_type graph_type;
     typedef typename sparse_matrix_type::graph_ptrtype graph_ptrtype;
@@ -87,7 +87,7 @@ public:
     typedef typename super::vector_type vector_type;
     typedef typename super::vector_ptrtype vector_ptrtype;
     typedef VectorEigen<value_type> eigen_vector_type;
-    typedef boost::shared_ptr<vector_type> eigen_vector_ptrtype;
+    typedef std::shared_ptr<vector_type> eigen_vector_ptrtype;
 
     typedef typename super::solve_return_type solve_return_type;
     typedef typename super::nl_solve_return_type nl_solve_return_type;
@@ -105,12 +105,12 @@ public:
     sparse_matrix_ptrtype
     newMatrix()
     {
-        auto A= boost::make_shared<eigen_sparse_matrix_type>(0,0,this->comm());
+        auto A= std::make_shared<eigen_sparse_matrix_type>(0,0,this->comm());
         return A;
     }
     template<typename DomainSpace, typename DualImageSpace>
-    static sparse_matrix_ptrtype newMatrix( boost::shared_ptr<DomainSpace> const& space1,
-                                            boost::shared_ptr<DualImageSpace> const& space2,
+    static sparse_matrix_ptrtype newMatrix( std::shared_ptr<DomainSpace> const& space1,
+                                            std::shared_ptr<DualImageSpace> const& space2,
                                             size_type matrix_properties = NON_HERMITIAN )
     {
         Context ctx( matrix_properties );
@@ -118,7 +118,7 @@ public:
         {
             //auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof() ) );
             //auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof(), this->comm() ) );
-            auto A= boost::make_shared<eigen_sparse_matrix_type>( space2->dof(), space1->dof() );
+            auto A= std::make_shared<eigen_sparse_matrix_type>( space2->dof(), space1->dof() );
             A->setMatrixProperties( matrix_properties );
             return A;
         }
@@ -182,7 +182,7 @@ public:
     }
 
     template<typename SpaceT>
-    static vector_ptrtype newVector( boost::shared_ptr<SpaceT> const& space )
+    static vector_ptrtype newVector( std::shared_ptr<SpaceT> const& space )
     {
         //return vector_ptrtype( new eigen_vector_type( space->nDof() ) );
         return vector_ptrtype( new eigen_vector_type( space->nDof(), space->map()->comm() ) );

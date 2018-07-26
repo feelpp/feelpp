@@ -119,7 +119,7 @@ public:
     typedef typename super_points::point_type point_type;
 
     typedef Mesh0D<Shape,T> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     using face_type = point_type;
     using face_iterator = element_iterator;

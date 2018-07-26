@@ -63,7 +63,7 @@ public:
     //@{
 
     typedef OpusModelBase opusmodel_type;
-    typedef boost::shared_ptr<opusmodel_type> opusmodel_ptrtype;
+    typedef std::shared_ptr<opusmodel_type> opusmodel_ptrtype;
 
     //@}
 

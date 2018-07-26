@@ -262,7 +262,7 @@ class IntegratorBase {};
   @see
 */
 template<typename ExprT>
-class Expr : public ExprBase //: public boost::enable_shared_from_this<Expr<ExprT> >
+class Expr : public ExprBase //: public std::enable_shared_from_this<Expr<ExprT> >
 {
 public:
 
@@ -295,7 +295,7 @@ public:
     typedef typename expression_type::value_type value_type;
     typedef typename expression_type::evaluate_type evaluate_type;
     typedef Expr<ExprT> this_type;
-    typedef boost::shared_ptr<this_type> this_ptrtype;
+    typedef std::shared_ptr<this_type> this_ptrtype;
     //@}
 
     /** @name Constructors, destructor
@@ -415,7 +415,7 @@ public:
         {
         }
 
-    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,boost::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
+    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,std::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,std::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
 
@@ -612,8 +612,8 @@ public:
     //@{
 
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __u,
-                   boost::shared_ptr<Elem2> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __u,
+                   std::shared_ptr<Elem2> const& __v,
                    FormType& __f ) const
     {
         DVLOG(2) << "calling assemble(u,v)\n";
@@ -622,7 +622,7 @@ public:
     }
 
     template<typename Elem1, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __v,
                    FormType& __f ) const
     {
         DVLOG(2) << "calling assemble(v)\n";
@@ -632,7 +632,7 @@ public:
 
     template<typename P0hType>
     typename P0hType::element_type
-    broken( boost::shared_ptr<P0hType>& P0h ) const
+    broken( std::shared_ptr<P0hType>& P0h ) const
     {
         return M_expr.broken( P0h );
     }
@@ -689,10 +689,10 @@ expr( ExprT const& exprt )
 }
 
 template <typename ExprT>
-boost::shared_ptr<Expr<ExprT> >
+std::shared_ptr<Expr<ExprT> >
 exprPtr( ExprT const& exprt )
 {
-    return boost::shared_ptr<Expr<ExprT> >( new Expr<ExprT>( exprt ) );
+    return std::shared_ptr<Expr<ExprT> >( new Expr<ExprT>( exprt ) );
 }
 
 template <typename ExprT>
@@ -943,7 +943,7 @@ public:
     static const bool is_terminal = false;
 
     typedef Element element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
     typedef GElem<element_type, Type> this_type;
     typedef this_type self_type;
 
@@ -1017,9 +1017,9 @@ using key_type = key_t<Geo_t>;
                 mpl::identity<Shape<gmc_type::NDim, Vectorial, false> >,
                 mpl::identity<Shape<gmc_type::NDim, Tensor2, false> > >::type>::type::type shape;
         typedef typename fe_type::PreCompute pc_type;
-        typedef boost::shared_ptr<pc_type> pc_ptrtype;
+        typedef std::shared_ptr<pc_type> pc_ptrtype;
         typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type;
-        typedef boost::shared_ptr<ctx_type> ctx_ptrtype;
+        typedef std::shared_ptr<ctx_type> ctx_ptrtype;
 
         typedef typename expression_type::value_type value_type;
 
@@ -1136,7 +1136,7 @@ private:
 template<typename Elem>
 inline
 Expr< GElem<Elem,1> >
-basist( std::map<size_type,std::vector<boost::shared_ptr<Elem> > > const& v )
+basist( std::map<size_type,std::vector<std::shared_ptr<Elem> > > const& v )
 {
     typedef GElem<Elem,1> expr_t;
     return Expr< expr_t >(  expr_t( v ) );
@@ -1144,7 +1144,7 @@ basist( std::map<size_type,std::vector<boost::shared_ptr<Elem> > > const& v )
 template<typename Elem>
 inline
 Expr< GElem<Elem,0> >
-basis( std::map<size_type,std::vector<boost::shared_ptr<Elem> > > const& v )
+basis( std::map<size_type,std::vector<std::shared_ptr<Elem> > > const& v )
 {
     typedef GElem<Elem,0> expr_t;
     return Expr< expr_t >(  expr_t( v ) );

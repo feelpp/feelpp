@@ -49,12 +49,12 @@ class SolverLinear
 public:
 
     typedef SolverLinear<T> self_type;
-    typedef boost::shared_ptr<SolverLinear<T> >  self_ptrtype;
+    typedef std::shared_ptr<SolverLinear<T> >  self_ptrtype;
 
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
 
-    typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
+    typedef std::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
 
     class SolveData : public boost::tuple<bool,size_type,value_type>
     {
@@ -248,11 +248,11 @@ public:
         M_preconditioner = preconditioner;
     }
 
-    void attachNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    void attachNullSpace( std::shared_ptr<NullSpace<value_type> > const& ns )
     {
         M_nullSpace = ns;
     }
-    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    void attachNearNullSpace( std::shared_ptr<NullSpace<value_type> > const& ns )
     {
         M_nearNullSpace = ns;
     }
@@ -420,7 +420,7 @@ protected:
     /**
      * Near Null Space
      */
-    boost::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
+    std::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
 
     FieldSplitType M_fieldSplit_type;
 

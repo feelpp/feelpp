@@ -16,7 +16,7 @@ void BenchmarkGreplLinearElliptic<Order>::setupSpecificityModel( boost::property
 
     M_mu = this->Dmu->element();
 
-    boost::shared_ptr<space_type> Xh;
+    std::shared_ptr<space_type> Xh;
     if ( !pT )
         pT.reset( new element_type );
 

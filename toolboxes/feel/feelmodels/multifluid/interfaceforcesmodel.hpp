@@ -12,13 +12,13 @@ template<class LevelSetType>
 class InterfaceForcesModel
 {
     typedef InterfaceForcesModel<LevelSetType> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 public:
     typedef LevelSetType levelset_type;
-    typedef boost::shared_ptr<levelset_type> levelset_ptrtype;
+    typedef std::shared_ptr<levelset_type> levelset_ptrtype;
 
     typedef typename levelset_type::space_levelset_vectorial_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     typedef typename space_type::mesh_type mesh_type;
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
@@ -34,7 +34,7 @@ public:
 
     virtual void build( std::string const& prefix, levelset_ptrtype const& ls );
 
-    virtual boost::shared_ptr<std::ostringstream> getInfo() const;
+    virtual std::shared_ptr<std::ostringstream> getInfo() const;
 
     //--------------------------------------------------------------------//
     std::string const& prefix() const { return M_prefix; }
@@ -70,10 +70,10 @@ InterfaceForcesModel<LevelSetType>::build(
 }
 
 template<typename LevelSetType>
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 InterfaceForcesModel<LevelSetType>::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     return _ostr;
 }
 

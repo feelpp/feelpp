@@ -35,7 +35,7 @@
 #include <opusmodelrb.hpp>
 #include <feel/feelcrb/pfemapp.hpp>
 
-static boost::shared_ptr<Feel::PFemApp<Feel::OpusModelRB<2,1,2> > > app;
+static std::shared_ptr<Feel::PFemApp<Feel::OpusModelRB<2,1,2> > > app;
 
 DEFUN_DLD ( opuseadspfem, args, nargout, "Opus EADS Test Case (pfem)" )
 {
@@ -58,7 +58,7 @@ DEFUN_DLD ( opuseadspfem, args, nargout, "Opus EADS Test Case (pfem)" )
 
             if ( !is_init )
             {
-                app = boost::shared_ptr<Feel::PFemApp<Feel::OpusModelRB<2,1,2> > >( new Feel::PFemApp<Feel::OpusModelRB<2,1,2> >( Feel::makeEadsAbout( "eadspfem" ),
+                app = std::shared_ptr<Feel::PFemApp<Feel::OpusModelRB<2,1,2> > >( new Feel::PFemApp<Feel::OpusModelRB<2,1,2> >( Feel::makeEadsAbout( "eadspfem" ),
                         Feel::OpusData::makeOptions() ) );
                 is_init = true;
             }

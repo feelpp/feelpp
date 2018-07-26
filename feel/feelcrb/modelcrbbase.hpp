@@ -112,7 +112,7 @@ template <typename ParameterDefinition=ParameterDefinitionBase,
           >
 class ModelCrbBase :
         public ModelCrbBaseBase,
-        public boost::enable_shared_from_this< ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,_Options,EimDefinition> >
+        public std::enable_shared_from_this< ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,_Options,EimDefinition> >
 {
 
 public :
@@ -122,54 +122,54 @@ public :
     typedef typename EimDefinition::fund_type fund_type;
 
     typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
 
     typedef typename mpl::if_<is_shared_ptr<FunctionSpaceDefinition>,
                               mpl::identity<typename FunctionSpaceDefinition::element_type>,
                               mpl::identity<FunctionSpaceDefinition>>::type::type::space_type space_type;
     typedef space_type functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef functionspace_ptrtype space_ptrtype;
 
     typedef typename functionspace_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename functionspace_type::basis_type basis_type;
     typedef typename functionspace_type::value_type value_type;
 
     typedef typename space_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
 
     /*reduced basis space*/
     typedef ReducedBasisSpace<space_type> rbfunctionspace_type;
-    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
+    typedef std::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
     typedef typename rbfunctionspace_type::ctxrbset_type rbfunctionspace_context_type;
     typedef typename rbfunctionspace_type::ctxrbset_ptrtype rbfunctionspace_context_ptrtype;
 
     /*backend*/
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
 
-    typedef boost::shared_ptr<fun_type> fun_ptrtype;
+    typedef std::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
-    typedef boost::shared_ptr<fund_type> fund_ptrtype;
+    typedef std::shared_ptr<fund_type> fund_ptrtype;
     typedef std::vector<fund_ptrtype> funsd_type;
 
     typedef Eigen::VectorXd vectorN_type;
 
     typedef OperatorLinear< space_type , space_type > operator_type;
-    typedef boost::shared_ptr<operator_type> operator_ptrtype;
+    typedef std::shared_ptr<operator_type> operator_ptrtype;
 
     typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
-    typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
+    typedef std::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
 
     typedef FsFunctionalLinearComposite< space_type > functionalcomposite_type;
-    typedef boost::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
+    typedef std::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
 
     typedef FsFunctionalLinear< space_type > functional_type;
-    typedef boost::shared_ptr<functional_type> functional_ptrtype;
+    typedef std::shared_ptr<functional_type> functional_ptrtype;
 
 
     typedef typename backend_type::vector_type vector_type;
@@ -179,9 +179,9 @@ public :
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
 
     typedef DEIMBase<parameterspace_type,space_type,vector_type> deim_type;
-    typedef boost::shared_ptr<deim_type> deim_ptrtype;
+    typedef std::shared_ptr<deim_type> deim_ptrtype;
     typedef DEIMBase<parameterspace_type,space_type,sparse_matrix_type> mdeim_type;
-    typedef boost::shared_ptr<mdeim_type> mdeim_ptrtype;
+    typedef std::shared_ptr<mdeim_type> mdeim_ptrtype;
 
     typedef std::vector<deim_ptrtype> deim_vector_type;
     typedef std::vector<mdeim_ptrtype> mdeim_vector_type;
@@ -194,9 +194,9 @@ public :
     typedef vf::detail::LinearForm<functionspace_type,vector_type,vector_type> form1_type;
 
     typedef Pchv_type<mesh_type,1> displacement_space_type;
-    typedef boost::shared_ptr<displacement_space_type> displacement_space_ptrtype;
+    typedef std::shared_ptr<displacement_space_type> displacement_space_ptrtype;
     typedef typename displacement_space_type::element_type displacement_field_type;
-    typedef typename boost::shared_ptr<displacement_field_type> displacement_field_ptrtype;
+    typedef typename std::shared_ptr<displacement_field_type> displacement_field_ptrtype;
 
 #if 0
     static const bool is_time_dependent = FunctionSpaceDefinition::is_time_dependent;
@@ -281,14 +281,14 @@ public :
                                >::type betaq_type;
 
     typedef std::vector< boost::tuple< sparse_matrix_ptrtype , std::string > > lhs_light_type;
-    typedef boost::shared_ptr<lhs_light_type> lhs_light_ptrtype;
+    typedef std::shared_ptr<lhs_light_type> lhs_light_ptrtype;
     typedef std::vector< boost::tuple<  vector_ptrtype , std::string > > rhs_light_type;
-    typedef boost::shared_ptr<rhs_light_type> rhs_light_ptrtype ;
+    typedef std::shared_ptr<rhs_light_type> rhs_light_ptrtype ;
     typedef std::vector< boost::tuple<  std::vector< vector_ptrtype > , std::string > > outputs_light_type;
-    typedef boost::shared_ptr<outputs_light_type> outputs_light_ptrtype ;
+    typedef std::shared_ptr<outputs_light_type> outputs_light_ptrtype ;
 
     typedef Bdf<space_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     ModelCrbBase() = delete;
     ModelCrbBase( std::string const& name,  WorldComm const& worldComm = Environment::worldComm() )

@@ -131,7 +131,7 @@ public:
     //@{
 
     typedef MeshType mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef Exporter<MeshType,N> super;
     typedef typename mesh_type::value_type value_type;

@@ -110,7 +110,7 @@ public :
 
     typedef AdvectionBase< ConvexType, BasisAdvectionType, PeriodicityType, 
             BasisDiffusionCoeffType, BasisReactionCoeffType > self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     // ADR types
     enum ADREnum: uint16_type {
@@ -130,7 +130,7 @@ public :
     static const uint16_type nOrderGeo = convex_type::nOrder;
     static const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //--------------------------------------------------------------------//
     // Space advection
@@ -140,10 +140,10 @@ public :
     typedef PeriodicityType periodicity_type;
     
     typedef FunctionSpace< mesh_type, bases<basis_advection_type>, Periodicity<periodicity_type> > space_advection_type;
-    typedef boost::shared_ptr<space_advection_type> space_advection_ptrtype;
+    typedef std::shared_ptr<space_advection_type> space_advection_ptrtype;
     
     typedef typename space_advection_type::element_type element_advection_type;
-    typedef boost::shared_ptr<element_advection_type> element_advection_ptrtype;
+    typedef std::shared_ptr<element_advection_type> element_advection_ptrtype;
 
     typedef typename space_advection_type::value_type value_type;
     typedef typename space_advection_type::periodicity_type periodicity_advection_type;
@@ -164,9 +164,9 @@ public :
         basis_advection_velocity_type, 
         value_type, 
         periodicity_advection_type > space_advection_velocity_type;
-    typedef boost::shared_ptr<space_advection_velocity_type> space_advection_velocity_ptrtype;
+    typedef std::shared_ptr<space_advection_velocity_type> space_advection_velocity_ptrtype;
     typedef typename space_advection_velocity_type::element_type element_advection_velocity_type;
-    typedef boost::shared_ptr<element_advection_velocity_type> element_advection_velocity_ptrtype;
+    typedef std::shared_ptr<element_advection_velocity_type> element_advection_velocity_ptrtype;
 
     //--------------------------------------------------------------------//
     // Diffusion-reaction model
@@ -175,24 +175,24 @@ public :
     static const uint16_type nOrderDiffusionCoeff = BasisDiffusionCoeffType::nOrder;
     static const uint16_type nOrderReactionCoeff = BasisReactionCoeffType::nOrder;
     typedef FunctionSpace< mesh_type, bases<basis_diffusioncoeff_type> > space_diffusioncoeff_type;
-    typedef boost::shared_ptr<space_diffusioncoeff_type> space_diffusioncoeff_ptrtype;
+    typedef std::shared_ptr<space_diffusioncoeff_type> space_diffusioncoeff_ptrtype;
     typedef FunctionSpace< mesh_type, bases<basis_reactioncoeff_type> > space_reactioncoeff_type;
-    typedef boost::shared_ptr<space_reactioncoeff_type> space_reactioncoeff_ptrtype;
+    typedef std::shared_ptr<space_reactioncoeff_type> space_reactioncoeff_ptrtype;
 
     typedef DiffusionReactionModel<space_diffusioncoeff_type, space_reactioncoeff_type> diffusionreaction_model_type;
-    typedef boost::shared_ptr<diffusionreaction_model_type> diffusionreaction_model_ptrtype;
+    typedef std::shared_ptr<diffusionreaction_model_type> diffusionreaction_model_ptrtype;
 
     //--------------------------------------------------------------------//
     // Backend
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     //--------------------------------------------------------------------//
     // Algebraic tools
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
     typedef typename model_algebraic_factory_type::graph_type graph_type;
     typedef typename model_algebraic_factory_type::graph_ptrtype graph_ptrtype;
     typedef typename model_algebraic_factory_type::indexsplit_type indexsplit_type;
@@ -201,12 +201,12 @@ public :
     //--------------------------------------------------------------------//
     // Time
     typedef Bdf<space_advection_type> bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     //--------------------------------------------------------------------//
     // Exporter
     typedef Exporter<mesh_type, nOrderGeo> exporter_type;
-    typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
+    typedef std::shared_ptr<exporter_type> exporter_ptrtype;
 
     //--------------------------------------------------------------------//
     typedef map_scalar_field<2> map_scalar_field_type;
@@ -299,8 +299,8 @@ public :
     // Time scheme
     bdf_ptrtype timeStepBDF() { return M_bdf; }
     bdf_ptrtype const& timeStepBDF() const { return M_bdf; }
-    boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
-    boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
+    std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
+    std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
     virtual void updateTimeStepBDF();
     void updateTimeStep() { this->updateTimeStepBDF(); }
     void initTimeStep();

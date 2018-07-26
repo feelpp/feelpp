@@ -56,7 +56,7 @@ namespace Feel
 //! WorldComm worldColored( mapColorWorld );
 //! @endcode
 //!
-class FEELPP_EXPORT WorldComm : public boost::mpi::communicator, public boost::enable_shared_from_this<WorldComm>
+class FEELPP_EXPORT WorldComm : public boost::mpi::communicator, public std::enable_shared_from_this<WorldComm>
 {
 
     typedef boost::mpi::communicator super;
@@ -65,8 +65,8 @@ public:
 
     //! self type
     typedef WorldComm self_type;
-    //! `boost::shared_ptr` type
-    typedef boost::shared_ptr<WorldComm> self_ptrtype;
+    //! `std::shared_ptr` type
+    typedef std::shared_ptr<WorldComm> self_ptrtype;
     //! underlying MPI communicator type
     typedef boost::mpi::communicator communicator_type;
 
@@ -280,7 +280,7 @@ private :
 
     communicator_type M_localComm;
     communicator_type M_godComm;
-    boost::shared_ptr<WorldComm> M_subWorldCommSeq;
+    std::shared_ptr<WorldComm> M_subWorldCommSeq;
 
     std::vector<int> M_mapColorWorld;
     std::vector<rank_type> M_mapLocalRankToGlobalRank;

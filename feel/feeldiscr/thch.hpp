@@ -42,7 +42,7 @@ struct THch
                           double,
                           Periodicity <NoPeriodicity,NoPeriodicity>,
                           mortars<NoMortar,NoMortar> > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 } //meta
@@ -66,7 +66,7 @@ using THch_type = FunctionSpace<MeshType,
  * \endcode
  */
 template<int Order,typename MeshType>
-using THch_ptrtype = boost::shared_ptr<FunctionSpace<MeshType,
+using THch_ptrtype = std::shared_ptr<FunctionSpace<MeshType,
                                                      bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
                                                      double,
                                                      Periodicity <NoPeriodicity,NoPeriodicity>,
@@ -86,7 +86,7 @@ using THch_ptrtype = boost::shared_ptr<FunctionSpace<MeshType,
 template<int Order,typename MeshType>
 inline
 THch_ptrtype<Order,MeshType>
-THch( boost::shared_ptr<MeshType> mesh,
+THch( std::shared_ptr<MeshType> mesh,
       std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2,false ) )
 {
     CHECK( buildExtendedDofTable.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << buildExtendedDofTable.size() << "\n";

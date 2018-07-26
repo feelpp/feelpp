@@ -95,11 +95,11 @@ public:
     //@{ /// Mesh Setting
     typedef Simplex<CONVECTION_DIM> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype; //@}
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype; //@}
 
     //@{ /// Backend and Matrix
     typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     typedef backend_type::sparse_matrix_type sparse_matrix_type;
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -108,15 +108,15 @@ public:
     typedef backend_type::vector_ptrtype vector_ptrtype;
     typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix_type;
     typedef eigen_matrix_type ematrix_type;
-    typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;//@}
+    typedef std::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;//@}
 
     typedef typename FunctionSpaceDefinition::space_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef space_type functionspace_type;
     typedef space_ptrtype functionspace_ptrtype;
 
     typedef typename space_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
     typedef typename element_type:: sub_element<0>::type element_u_type;
     typedef typename element_type:: sub_element<1>::type element_p_type;
     typedef typename element_type:: sub_element<2>::type element_l_type;
@@ -125,14 +125,14 @@ public:
 
     //@{ /// Parameters space
     typedef ParameterSpace<> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
     typedef parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef std::vector< std::vector< double > > beta_vector_type;
     typedef parameterspace_type::sampling_type sampling_type;
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype; //@}
 
-    typedef boost::shared_ptr< Exporter<mesh_type> > exporter_ptrtype;
+    typedef std::shared_ptr< Exporter<mesh_type> > exporter_ptrtype;
 
     typedef boost::tuple<
         std::vector< std::vector<sparse_matrix_ptrtype> >,

@@ -434,15 +434,16 @@ if ( FEELPP_HAS_QUICKSTART )
   add_subdirectory(quickstart)
 endif()
 
-include(feelpp.module.pyfeelpp)
-if ( FEELPP_HAS_PYFEELPP )
-  add_subdirectory(pyfeelpp)
-endif()
 
 include(feelpp.module.toolboxes)
 if ( FEELPP_HAS_TOOLBOXES )
   add_custom_target(toolboxes)
   add_subdirectory(toolboxes)
+endif()
+
+include(feelpp.module.pyfeelpp)
+if ( FEELPP_HAS_PYFEELPP )
+  add_subdirectory(pyfeelpp)
 endif()
 
 add_subdirectory(tools)

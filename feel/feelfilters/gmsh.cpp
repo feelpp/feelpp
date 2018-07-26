@@ -205,16 +205,16 @@ Gmsh::operator=( Gmsh const& __g )
     return *this;
 }
 
-boost::shared_ptr<Gmsh>
+std::shared_ptr<Gmsh>
 Gmsh::New( po::variables_map const& vm )
 {
     std::ostringstream ostr;
     ostr << vm["convex"].as<std::string>() << "(" << vm["dim"].as<int>() << "," << vm["order"].as<int>() << ")";
-    boost::shared_ptr<Gmsh> gmsh_ptr( Gmsh::Factory::type::instance().createObject( ostr.str() ) );
+    std::shared_ptr<Gmsh> gmsh_ptr( Gmsh::Factory::type::instance().createObject( ostr.str() ) );
     return gmsh_ptr;
 }
 
-boost::shared_ptr<Gmsh>
+std::shared_ptr<Gmsh>
 Gmsh::New( std::string const& shape, uint16_type d, uint16_type o, std::string const& ct, WorldComm const& wc )
 {
     std::ostringstream ostr;
@@ -225,7 +225,7 @@ Gmsh::New( std::string const& shape, uint16_type d, uint16_type o, std::string c
     else
         ostr << shape << "(" << d << "," << o << "," << boost::to_lower_copy( ct ) << ")";
 
-    boost::shared_ptr<Gmsh> gmsh_ptr( Gmsh::Factory::type::instance().createObject( ostr.str() ) );
+    std::shared_ptr<Gmsh> gmsh_ptr( Gmsh::Factory::type::instance().createObject( ostr.str() ) );
     gmsh_ptr->setWorldComm( wc );
     return gmsh_ptr;
 }
@@ -650,7 +650,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
 
         CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
 
-        M_gmodel = boost::make_shared<GModel>();
+        M_gmodel = std::make_shared<GModel>();
         M_gmodel->setName( _name );
         // M_gmodel->setFileName( _name );
         if ( M_in_memory )
@@ -716,7 +716,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
         CTX _backup = *(CTX::instance());
 
-        M_gmodel=boost::make_shared<GModel>();
+        M_gmodel=std::make_shared<GModel>();
         M_gmodel->readMSH( nameMshInput );
 
         meshPartitionOptions newPartionOption;

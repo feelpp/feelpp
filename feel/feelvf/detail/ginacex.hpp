@@ -347,7 +347,7 @@ public:
 
 private:
     mutable expression_type  M_fun;
-    boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
+    std::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
     std::string M_filename;
     std::string M_exprDesc;
 };

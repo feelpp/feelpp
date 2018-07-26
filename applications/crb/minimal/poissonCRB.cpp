@@ -52,7 +52,7 @@ int Poisson::Ql( int l)
 
 void Poisson::initModel()
 {
-    M_modelProps = boost::make_shared<prop_type>(Environment::expand( soption("poisson.filename")));
+    M_modelProps = std::make_shared<prop_type>(Environment::expand( soption("poisson.filename")));
     auto parameters = M_modelProps->parameters();
     Dmu->setDimension(parameters.size());
     auto mu_min = Dmu->element();

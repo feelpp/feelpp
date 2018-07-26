@@ -78,7 +78,7 @@ class TestUpMarker2Faces
 {
 public: 
     using mesh_type = Mesh< Simplex<DIM,G_ORDER> >;
-    using mesh_ptrtype = boost::shared_ptr< mesh_type >;
+    using mesh_ptrtype = std::shared_ptr< mesh_type >;
     using face_type=typename mesh_type::face_type;
     using cont_range_type=std::vector< typename mesh_type::face_type >;
 
@@ -126,7 +126,7 @@ public:
         auto it=begin(range);
         auto en=end(range);
 
-        boost::shared_ptr<cont_range_type> myfaces( new cont_range_type );
+        std::shared_ptr<cont_range_type> myfaces( new cont_range_type );
 
         // Create faces range: Iterate on selected elements, select only
         // boundary faces, add them in a vector.

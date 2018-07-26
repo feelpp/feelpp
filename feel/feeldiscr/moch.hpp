@@ -41,11 +41,11 @@ template<int Order,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
          typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,
+std::shared_ptr<FunctionSpace<MeshType,
                                 bases<Lagrange<Order,Scalar,Continuous,Pts>>,
                                 Periodicity <NoPeriodicity>,
                                 mortars<Mortar>>>
-Moch( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+Moch( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return FunctionSpace<MeshType,
                          bases<Lagrange<Order,Scalar,Continuous,Pts>>,

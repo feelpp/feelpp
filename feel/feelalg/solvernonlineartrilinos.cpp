@@ -56,8 +56,8 @@ public:
                    NOX::Epetra::Interface::Required::FillType ft )
     {
         //printf("Entering computeF...\n");
-        boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>( &x ) );
-        boost::shared_ptr<Vector<double> > F( new VectorEpetra<double>( &x ) );
+        std::shared_ptr<Vector<double> > X( new VectorEpetra<double>( &x ) );
+        std::shared_ptr<Vector<double> > F( new VectorEpetra<double>( &x ) );
 
         if ( solver->residual != NULL ) solver->residual ( X, F );
 
@@ -70,9 +70,9 @@ public:
                           Epetra_Operator & Jac )
     {
         //printf("Entering computeJacobian...\n");
-        boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>( &x ) );
-        //boost::shared_ptr<MatrixEpetra> M_Jac;
-        boost::shared_ptr<MatrixSparse<double> > M_Jac;
+        std::shared_ptr<Vector<double> > X( new VectorEpetra<double>( &x ) );
+        //std::shared_ptr<MatrixEpetra> M_Jac;
+        std::shared_ptr<MatrixSparse<double> > M_Jac;
 
         if ( solver->jacobian != NULL ) solver->jacobian ( X, M_Jac );
 
@@ -179,12 +179,12 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
     // -> A : Jacobian for the first iteration
     // -> InitialGuess : first value x0
     //printf("convert vectors...\n");
-    boost::shared_ptr<Epetra_Vector> InitialGuess = x->epetraVector();
+    std::shared_ptr<Epetra_Vector> InitialGuess = x->epetraVector();
 
     // has_ownership=false in order to let the matrix jac be destroyed by boost
     // and not by Teuchos::RCP
     Teuchos::RCP<Epetra_CrsMatrix> A =
-        Teuchos::rcp( ( ( boost::shared_ptr<Epetra_CrsMatrix> )( jac->matrix() ) ).get(),false );
+        Teuchos::rcp( ( ( std::shared_ptr<Epetra_CrsMatrix> )( jac->matrix() ) ).get(),false );
 
     //std::cout << "A.has_ownership()=" << A.has_ownership() << std::endl;
 
@@ -244,7 +244,7 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
 
     //cout << "Computed solution : " << endl;
     //cout << finalSolution;
-    x_in = boost::shared_ptr<VectorEpetra<T> > ( new VectorEpetra<T>( &finalSolution ) );
+    x_in = std::shared_ptr<VectorEpetra<T> > ( new VectorEpetra<T>( &finalSolution ) );
 
     //std::cout << "InitialGuess.use_count()=" << InitialGuess.use_count() << std::endl;
     //std::cout << "jac.use_count()=" << jac->matrix().use_count() << std::endl;

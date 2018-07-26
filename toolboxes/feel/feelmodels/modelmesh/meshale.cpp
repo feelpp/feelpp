@@ -227,10 +227,10 @@ MeshALE<Convex>::init()
 }
 
 template< class Convex >
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 MeshALE<Convex>::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
 
     *_ostr << "\n||==============================================||"
            << "\n||----------------Info : MeshALE----------------||"

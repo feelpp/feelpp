@@ -67,21 +67,21 @@ public:
     //@{
 
     typedef GraphCSR self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     typedef std::vector<size_type> nz_type;
-    typedef boost::shared_ptr<nz_type> nz_ptrtype;
+    typedef std::shared_ptr<nz_type> nz_ptrtype;
 
     //typedef boost::tuple<size_type, size_type, std::vector<size_type> > row_type;
     typedef boost::tuple<size_type, size_type, std::set<size_type> > row_type;
     typedef std::map<size_type, row_type > storage_type;
-    typedef boost::shared_ptr<storage_type> storage_ptrtype;
+    typedef std::shared_ptr<storage_type> storage_ptrtype;
 
     typedef storage_type::iterator iterator;
     typedef storage_type::const_iterator const_iterator;
 
     typedef DataMap datamap_type;
-    typedef boost::shared_ptr<DataMap> datamap_ptrtype;
+    typedef std::shared_ptr<DataMap> datamap_ptrtype;
     //@}
 
     /** @name Constructors, destructor
@@ -447,8 +447,8 @@ private :
         ar & BOOST_SERIALIZATION_NVP(M_ja);
         ar & BOOST_SERIALIZATION_NVP(M_a);
 
-        M_mapRow = boost::make_shared<Feel::DataMap>( map_row );
-        M_mapCol = boost::make_shared<Feel::DataMap>( map_col );
+        M_mapRow = std::make_shared<Feel::DataMap>( map_row );
+        M_mapCol = std::make_shared<Feel::DataMap>( map_col );
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -478,13 +478,13 @@ private:
 };
 
 
-class BlocksBaseGraphCSR : public vf::BlocksBase<boost::shared_ptr<GraphCSR> >
+class BlocksBaseGraphCSR : public vf::BlocksBase<std::shared_ptr<GraphCSR> >
 {
 public :
-    typedef vf::BlocksBase<boost::shared_ptr<GraphCSR> > super_type;
+    typedef vf::BlocksBase<std::shared_ptr<GraphCSR> > super_type;
     typedef super_type::index_type index_type;
     typedef BlocksBaseGraphCSR self_type;
-    typedef boost::shared_ptr<GraphCSR> graph_ptrtype;
+    typedef std::shared_ptr<GraphCSR> graph_ptrtype;
 
     BlocksBaseGraphCSR( index_type nr=0,index_type nc=0 )
         :

@@ -20,7 +20,7 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::setupSpecificityModel( boost::p
 {
     M_mu = this->Dmu->element();
 
-    boost::shared_ptr<space_type_eimg> Xh_eimg;
+    std::shared_ptr<space_type_eimg> Xh_eimg;
     if ( !pT )
         pT.reset( new element_type );
 

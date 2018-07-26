@@ -807,8 +807,8 @@ element_product( VectorEigen<T> const& v1, VectorEigen<T> const& v2 )
  */
 template <typename T>
 VectorEigen<T>
-element_product( boost::shared_ptr<VectorEigen<T> > const& v1,
-                 boost::shared_ptr<VectorEigen<T> > const& v2 )
+element_product( std::shared_ptr<VectorEigen<T> > const& v1,
+                 std::shared_ptr<VectorEigen<T> > const& v2 )
 {
     return v1->vec().array()*v2->vec().array();
 }

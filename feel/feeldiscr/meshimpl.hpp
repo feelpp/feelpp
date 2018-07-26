@@ -154,7 +154,7 @@ Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm )
     M_measbdy( 0 ),
     M_substructuring( false ),
     //M_part(),
-    M_tool_localization( boost::make_shared<Localization<self_type>>() )
+    M_tool_localization( std::make_shared<Localization<self_type>>() )
 {
     VLOG(2) << "[Mesh] constructor called\n";
 }
@@ -452,10 +452,10 @@ Mesh<Shape, T, Tag>::updateMeasures()
     if ( iv != en )
     {
         auto const& eltInit = iv->second;
-        boost::shared_ptr<typename gm_type::template Context<vm::JACOBIAN,element_type>> ctx;
-        boost::shared_ptr<typename gm_type::template Context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN,element_type>> ctxf;
-        boost::shared_ptr<typename gm1_type::template Context<vm::JACOBIAN,element_type>> ctx1;
-        boost::shared_ptr<typename gm1_type::template Context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN,element_type>> ctxf1;
+        std::shared_ptr<typename gm_type::template Context<vm::JACOBIAN,element_type>> ctx;
+        std::shared_ptr<typename gm_type::template Context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN,element_type>> ctxf;
+        std::shared_ptr<typename gm1_type::template Context<vm::JACOBIAN,element_type>> ctx1;
+        std::shared_ptr<typename gm1_type::template Context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN,element_type>> ctxf1;
         if ( pc )
             ctx = M_gm->template context<vm::JACOBIAN>( eltInit, pc );
         if ( !pcf.empty() )
@@ -709,7 +709,7 @@ template<typename TheShape>
 void
 Mesh<Shape, T, Tag>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim==1>* )
 {
-    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
+    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
         iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
@@ -722,8 +722,8 @@ template<typename TheShape>
 void
 Mesh<Shape, T, Tag>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim==2>* )
 {
-    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
-    auto geondFaceCommon = boost::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
+    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
+    auto geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
         iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
@@ -736,9 +736,9 @@ template<typename TheShape>
 void
 Mesh<Shape, T, Tag>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim==3>* )
 {
-    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
-    auto geondFaceCommon = boost::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
-    auto geondEdgeCommon = boost::make_shared<GeoNDCommon<typename edge_type::super>>( this/*,this->gm(), this->gm1()*/ );
+    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
+    auto geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
+    auto geondEdgeCommon = std::make_shared<GeoNDCommon<typename edge_type::super>>( this/*,this->gm(), this->gm1()*/ );
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
         iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
@@ -3288,11 +3288,11 @@ Mesh<Shape, T, Tag>::decode()
 }
 
 template<typename Shape, typename T, int Tag1, int Tag2=Tag1, int TheTag=Tag1>
-boost::shared_ptr<Mesh<Shape, T, TheTag> >
-merge( boost::shared_ptr<Mesh<Shape, T, Tag1> > m1,
-       boost::shared_ptr<Mesh<Shape, T, Tag2> > m2 )
+std::shared_ptr<Mesh<Shape, T, TheTag> >
+merge( std::shared_ptr<Mesh<Shape, T, Tag1> > m1,
+       std::shared_ptr<Mesh<Shape, T, Tag2> > m2 )
 {
-    boost::shared_ptr<Mesh<Shape, T, TheTag> > m( new Mesh<Shape, T, TheTag> );
+    std::shared_ptr<Mesh<Shape, T, TheTag> > m( new Mesh<Shape, T, TheTag> );
 
     // add the points
 
@@ -3313,7 +3313,7 @@ merge( boost::shared_ptr<Mesh<Shape, T, Tag1> > m1,
     typedef typename Mesh<Shape, T, TheTag>::face_type face_type;
     typedef typename Mesh<Shape, T, TheTag>::element_type element_type;
 
-    auto addface = [&]( boost::shared_ptr<Mesh<Shape, T, TheTag> > m, face_iterator it, size_type shift )
+    auto addface = [&]( std::shared_ptr<Mesh<Shape, T, TheTag> > m, face_iterator it, size_type shift )
         {
             face_type pf = *it;
             pf.disconnect();
@@ -3339,7 +3339,7 @@ merge( boost::shared_ptr<Mesh<Shape, T, Tag1> > m1,
         addface( m, it, shift_p );
     }
     // add the elements
-    auto addelement = [&]( boost::shared_ptr<Mesh<Shape, T, TheTag> > m, element_iterator it, size_type shift_f, size_type shift_p )
+    auto addelement = [&]( std::shared_ptr<Mesh<Shape, T, TheTag> > m, element_iterator it, size_type shift_f, size_type shift_p )
         {
             element_type pf = *it;
 
@@ -3383,7 +3383,7 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 
     typedef typename self_type::element_type element_type;
     typedef typename gm_type::template Context<vm::JACOBIAN|vm::KB|vm::POINT, element_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     BoundingBox<> bb;
 
     typename gm_type::reference_convex_type refelem;

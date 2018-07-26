@@ -87,7 +87,7 @@ makeAbout()
  */
 class linear:
     public Simget,
-    public boost::enable_shared_from_this<linear>
+    public std::enable_shared_from_this<linear>
 {
 public:
 
@@ -165,14 +165,14 @@ public:
     void run( const double*, long unsigned int, double*, long unsigned int ) {}
 private:
 
-    boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
+    std::shared_ptr<SolverNonLinear<double> > M_nlsolver;
 };
 
 
 
 class NL22:
     public Simget,
-    public boost::enable_shared_from_this<NL22>
+    public std::enable_shared_from_this<NL22>
 {
 public:
 
@@ -243,7 +243,7 @@ public:
     void run( const double*, long unsigned int, double*, long unsigned int ) {}
 private:
 
-    boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
+    std::shared_ptr<SolverNonLinear<double> > M_nlsolver;
     vectorN_type M_initial_guess;
     vectorN_type M_exact_solution;
 };

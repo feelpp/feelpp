@@ -86,14 +86,14 @@ public:
 
     using space_type = functionspace_type<SpaceType>;
     enum { nDim = space_type::nDim };
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef space_type test_space_type;
     typedef space_type trial_space_type;
 
     typedef typename space_type::value_type value_type;
     typedef typename space_type::real_type real_type;
     typedef VectorType vector_type;
-    typedef boost::shared_ptr<VectorType> vector_ptrtype;
+    typedef std::shared_ptr<VectorType> vector_ptrtype;
     //typedef typename space_type::template Element<value_type, ElemContType> element_type;
     typedef typename space_type::template Element<value_type> element_type;
     template<typename Storage>
@@ -120,13 +120,13 @@ public:
         typedef  typename mpl::if_<mpl::bool_<UseMortar&&TheSpaceType::is_mortar>,
                                    mpl::identity<typename TheSpaceType::mortar_fe_type>,
                                    mpl::identity<typename TheSpaceType::fe_type> >::type::type type;
-        typedef boost::shared_ptr<type> ptrtype;
+        typedef std::shared_ptr<type> ptrtype;
     };
     template<int _N = 0, bool UseMortar = false>
     struct test_precompute
     {
         typedef typename finite_element<space_type,UseMortar>::type::PreCompute type;
-        typedef boost::shared_ptr<type> ptrtype;
+        typedef std::shared_ptr<type> ptrtype;
     };
 
     // return test finite element
@@ -134,7 +134,7 @@ public:
     typename finite_element<space_type,UseMortar>::ptrtype
     testFiniteElement() const
     {
-        return boost::make_shared<typename finite_element<space_type,UseMortar>::type>();
+        return std::make_shared<typename finite_element<space_type,UseMortar>::type>();
     }
 
     //@}
@@ -207,7 +207,7 @@ public:
                                   mpl::identity<typename space_type::mortar_fe_type>,
                                   mpl::identity<typename space_type::fe_type> >::type::type test_fe_type;
         typedef test_fe_type trial_fe_type;
-        typedef boost::shared_ptr<test_fe_type> test_fe_ptrtype;
+        typedef std::shared_ptr<test_fe_type> test_fe_ptrtype;
         typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
                 test_fe_type,
                 test_geometric_mapping_type,
@@ -220,7 +220,7 @@ public:
         typedef typename super::map_size map_size;
 #endif
 
-        typedef boost::shared_ptr<test_fecontext_type> test_fecontext_ptrtype;
+        typedef std::shared_ptr<test_fecontext_type> test_fecontext_ptrtype;
 
 #if 0
         typedef typename mpl::if_<mpl::equal_to<map_size,mpl::int_<2> >,
@@ -259,10 +259,10 @@ public:
         typedef typename super::map_geometric_mapping_expr_context_type map_geometric_mapping_expr_context_type;
 
         typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type, map_left_test_fecontext_type> eval0_expr_type;
-        typedef boost::shared_ptr<eval0_expr_type> eval0_expr_ptrtype;
+        typedef std::shared_ptr<eval0_expr_type> eval0_expr_ptrtype;
 
         typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type, map_right_test_fecontext_type> eval1_expr_type;
-        typedef boost::shared_ptr<eval1_expr_type> eval1_expr_ptrtype;
+        typedef std::shared_ptr<eval1_expr_type> eval1_expr_ptrtype;
         //typedef typename ExprT::template tensor<map_right_gmc_type, map_test_fecontext_type> eval1_expr_type;
 
         //deprecate
@@ -1018,7 +1018,7 @@ struct LFAssign
         M_init( init )
     {}
     template<typename SpaceType>
-    void operator()( boost::shared_ptr<SpaceType> const& X ) const
+    void operator()( std::shared_ptr<SpaceType> const& X ) const
     {
         if ( M_lf.testSpace()->worldsComm()[M_index].isActive() )
         {

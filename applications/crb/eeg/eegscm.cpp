@@ -77,9 +77,9 @@ class OpusSCMApp   : public Application
 public:
 
     typedef CRBModel<EEG> opusmodel_type;
-    typedef boost::shared_ptr<opusmodel_type> opusmodel_ptrtype;
+    typedef std::shared_ptr<opusmodel_type> opusmodel_ptrtype;
     typedef CRBSCM<opusmodel_type> scm_type;
-    typedef boost::shared_ptr<scm_type> scm_ptrtype;
+    typedef std::shared_ptr<scm_type> scm_ptrtype;
 
     OpusSCMApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :

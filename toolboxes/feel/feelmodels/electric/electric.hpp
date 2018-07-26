@@ -44,55 +44,55 @@ class Electric : public ModelNumerical,
                        public MarkerManagementDirichletBC,
                        public MarkerManagementNeumannBC,
                        public MarkerManagementRobinBC,
-                       public boost::enable_shared_from_this< Electric<ConvexType,BasisPotentialType> >
+                       public std::enable_shared_from_this< Electric<ConvexType,BasisPotentialType> >
 {
 
 public:
     typedef ModelNumerical super_type;
     typedef Electric<ConvexType,BasisPotentialType> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     // mesh
     typedef ConvexType convex_type;
     static const uint16_type nDim = convex_type::nDim;
     static const uint16_type nOrderGeo = convex_type::nOrder;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type mesh_electric_type;
 
     // function space electric-potential
     typedef BasisPotentialType basis_electricpotential_type;
     static const uint16_type nOrderPolyElectricPotential = basis_electricpotential_type::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_electricpotential_type> > space_electricpotential_type;
-    typedef boost::shared_ptr<space_electricpotential_type> space_electricpotential_ptrtype;
+    typedef std::shared_ptr<space_electricpotential_type> space_electricpotential_ptrtype;
     typedef typename space_electricpotential_type::element_type element_electricpotential_type;
-    typedef boost::shared_ptr<element_electricpotential_type> element_electricpotential_ptrtype;
+    typedef std::shared_ptr<element_electricpotential_type> element_electricpotential_ptrtype;
     typedef typename space_electricpotential_type::element_external_storage_type element_electricpotential_external_storage_type;
     // function space electric-field
     typedef Lagrange<nOrderPolyElectricPotential, Vectorial,Discontinuous/*Continuous*/,PointSetFekete> basis_electricfield_type;
     typedef FunctionSpace<mesh_electric_type, bases<basis_electricfield_type> > space_electricfield_type;
-    typedef boost::shared_ptr<space_electricfield_type> space_electricfield_ptrtype;
+    typedef std::shared_ptr<space_electricfield_type> space_electricfield_ptrtype;
     typedef typename space_electricfield_type::element_type element_electricfield_type;
-    typedef boost::shared_ptr<element_electricfield_type> element_electricfield_ptrtype;
+    typedef std::shared_ptr<element_electricfield_type> element_electricfield_ptrtype;
 
     // mechanical properties desc
     typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_type;
     typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
-    typedef boost::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
+    typedef std::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
     typedef ElectricPropertiesDescription<space_scalar_P0_type> electricproperties_type;
-    typedef boost::shared_ptr<electricproperties_type> electricproperties_ptrtype;
+    typedef std::shared_ptr<electricproperties_type> electricproperties_ptrtype;
 
     // exporter
     typedef Exporter<mesh_type,nOrderGeo> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     // algebraic solver
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
     // context for evaluation
     typedef typename space_electricpotential_type::Context context_electricpotential_type;
-    typedef boost::shared_ptr<context_electricpotential_type> context_electricpotential_ptrtype;
+    typedef std::shared_ptr<context_electricpotential_type> context_electricpotential_ptrtype;
 
 
     //___________________________________________________________________________________//
@@ -103,7 +103,7 @@ public:
               std::string const& subPrefix = "",
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ElectricMesh.path"); }
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const;
 
 private :
     void loadParameterFromOptionsVm();

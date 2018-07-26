@@ -55,7 +55,7 @@ template <typename T> class MatrixShell;
  * @author Christophe Prud'homme 2005
  */
 template <typename T>
-class FEELPP_EXPORT Vector : public boost::enable_shared_from_this<Vector<T> >
+class FEELPP_EXPORT Vector : public std::enable_shared_from_this<Vector<T> >
 {
 public:
 
@@ -63,12 +63,12 @@ public:
     typedef typename type_traits<T>::real_type real_type;
 
     typedef Vector<T> self_type;
-    typedef boost::shared_ptr<Vector<T> > self_ptrtype;
-    typedef boost::shared_ptr<Vector<T> > clone_ptrtype;
+    typedef std::shared_ptr<Vector<T> > self_ptrtype;
+    typedef std::shared_ptr<Vector<T> > clone_ptrtype;
 
     typedef DataMap datamap_type;
-    typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
-    using vector_ptrtype = boost::shared_ptr<Vector<T>>;
+    typedef std::shared_ptr<datamap_type> datamap_ptrtype;
+    using vector_ptrtype = std::shared_ptr<Vector<T>>;
 
     /**
      *  Dummy-Constructor. Dimension=0
@@ -451,7 +451,7 @@ public:
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add ( const value_type& a, const boost::shared_ptr<Vector<value_type> >& v )
+    void add ( const value_type& a, const std::shared_ptr<Vector<value_type> >& v )
     {
         add( a, *v );
     }
@@ -483,8 +483,8 @@ public:
      * \f$U+=A*V\f$, add the product of a \p SparseMatrix \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    void addVector ( const boost::shared_ptr<Vector<T> >& V_in,
-                     const boost::shared_ptr<MatrixSparse<T> >& A_in )
+    void addVector ( const std::shared_ptr<Vector<T> >& V_in,
+                     const std::shared_ptr<MatrixSparse<T> >& A_in )
     {
         addVector( *V_in, *A_in );
     }
@@ -500,8 +500,8 @@ public:
      * \f$U+=A*V\f$, add the product of a \p MatrixShell \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    void addVector ( const boost::shared_ptr<Vector<T> >& V_in,
-                     const boost::shared_ptr<MatrixShell<T> >& A_in );
+    void addVector ( const std::shared_ptr<Vector<T> >& V_in,
+                     const std::shared_ptr<MatrixShell<T> >& A_in );
 
 #if 0
     /**
@@ -515,7 +515,7 @@ public:
 #endif
 
     virtual value_type dot( Vector<T> const& v ) const = 0;
-    virtual value_type dot( boost::shared_ptr<Vector<T> > const& v ) const { return dot( *v ); }
+    virtual value_type dot( std::shared_ptr<Vector<T> > const& v ) const { return dot( *v ); }
 
     /**
      * \f$ U=v \f$ where v is a DenseVector<T>
@@ -602,7 +602,7 @@ public:
      */
     virtual
     void
-    updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
+    updateSubVector( std::shared_ptr<Vector<T> > & subvector,
                      std::vector<size_type> const& rows,
                      bool init=true )
         {
@@ -616,12 +616,12 @@ public:
      * PetscVectors.
      */
     virtual
-    boost::shared_ptr<Vector<T> >
+    std::shared_ptr<Vector<T> >
     createSubVector( std::vector<size_type> const& rows,
                      bool checkAndFixRange=true ) const
         {
             CHECK( false ) << "invalid call : Not Implemented in base class";
-            boost::shared_ptr<Vector<T> > res;
+            std::shared_ptr<Vector<T> > res;
             return res;
         }
 
@@ -652,7 +652,7 @@ protected:
 };
 
 typedef Vector<double> vector_type;
-typedef boost::shared_ptr<vector_type> vector_ptrtype;
+typedef std::shared_ptr<vector_type> vector_ptrtype;
 typedef std::unique_ptr<vector_type> vector_uptrtype;
 
 /*----------------------- Inline functions ----------------------------------*/
@@ -684,16 +684,16 @@ inner_product( Vector<T> const& v1, Vector<T> const& v2 )
  */
 template <typename T>
 FEELPP_EXPORT typename type_traits<T>::real_type
-inner_product( boost::shared_ptr<Vector<T> > const& v1,
-               boost::shared_ptr<Vector<T> > const& v2 )
+inner_product( std::shared_ptr<Vector<T> > const& v1,
+               std::shared_ptr<Vector<T> > const& v2 )
 {
     return inner_product( *v1, *v2 );
 }
 
 template <typename T>
 FEELPP_EXPORT typename type_traits<T>::real_type
-dot( boost::shared_ptr<Vector<T> > const& v1,
-     boost::shared_ptr<Vector<T> > const& v2 )
+dot( std::shared_ptr<Vector<T> > const& v1,
+     std::shared_ptr<Vector<T> > const& v2 )
 {
     return inner_product( *v1, *v2 );
 }
@@ -712,7 +712,7 @@ template <class VectorType>
 struct is_vector_ptr : mpl::false_ {};
 
 template <class VectorType>
-struct is_vector_ptr<boost::shared_ptr<VectorType> >
+struct is_vector_ptr<std::shared_ptr<VectorType> >
         :
         boost::is_base_of<Vector<typename VectorType::value_type>,
         VectorType>
@@ -771,7 +771,7 @@ namespace boost {
     {
         Feel::DataMap map;
         ar & BOOST_SERIALIZATION_NVP(map);
-        auto mapPtr = boost::make_shared<Feel::DataMap>(map);
+        auto mapPtr = std::make_shared<Feel::DataMap>(map);
         v.init(mapPtr);
     }
     template<typename T, class Archive>

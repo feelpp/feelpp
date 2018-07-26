@@ -82,7 +82,7 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -91,10 +91,10 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     typedef typename SpaceType::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef SpaceType fluid_functionspace_type;
-    typedef boost::shared_ptr<SpaceType> fluid_functionspace_ptrtype;
+    typedef std::shared_ptr<SpaceType> fluid_functionspace_ptrtype;
 
     typedef typename fluid_functionspace_type::element_type fluid_element_type;
     typedef typename fluid_element_type::template sub_element<0>::type fluid_element_0_type;
@@ -108,13 +108,13 @@ public:
 
     /* Operators */
     typedef OperatorLinear<fluid_functionspace_type, fluid_functionspace_type> oplin_type;
-    typedef boost::shared_ptr<oplin_type> oplin_ptrtype;
+    typedef std::shared_ptr<oplin_type> oplin_ptrtype;
     typedef OperatorLinear<velocity_functionspace_type, velocity_functionspace_type> op_vector_type;
-    typedef boost::shared_ptr<op_vector_type> op_vector_ptrtype;
+    typedef std::shared_ptr<op_vector_type> op_vector_ptrtype;
     typedef OperatorLinear<pressure_functionspace_type, pressure_functionspace_type> op_scalar_type;
-    typedef boost::shared_ptr<op_scalar_type> op_scalar_ptrtype;
+    typedef std::shared_ptr<op_scalar_type> op_scalar_ptrtype;
     typedef FsFunctionalLinear<fluid_functionspace_type> funlin_type;
-    typedef boost::shared_ptr<funlin_type> funlin_ptrtype;
+    typedef std::shared_ptr<funlin_type> funlin_ptrtype;
 
 
     /**

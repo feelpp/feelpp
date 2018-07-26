@@ -151,7 +151,7 @@ void Electric::initModel()
 {
     Feel::cout << "initModel" << std::endl;
     std::string propertyPath = Environment::expand( soption("thermoelectric.filename"));
-    M_modelProps = boost::make_shared<prop_type>(propertyPath);
+    M_modelProps = std::make_shared<prop_type>(propertyPath);
     this->addModelFile("property-file", propertyPath);
 
     auto parameters = M_modelProps->parameters();
@@ -208,7 +208,7 @@ void Electric::setupSpecificityModel( boost::property_tree::ptree const& ptree, 
     else
         Feel::cerr << "Warning!! the database does not contain the property file! Expect bugs!"
                    << std::endl;
-    M_modelProps = boost::make_shared<prop_type>(propertyPath);
+    M_modelProps = std::make_shared<prop_type>(propertyPath);
 
     auto parameters = M_modelProps->parameters();
     int nbCrbParameters = count_if(parameters.begin(), parameters.end(), [] (auto const& p)

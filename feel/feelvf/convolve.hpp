@@ -48,7 +48,7 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( range, *  )
       ( expr,   * )
-      ( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( space, *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     ) // 4. one required parameter, and
 
     ( optional

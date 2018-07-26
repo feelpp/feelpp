@@ -26,7 +26,7 @@ using namespace Feel;
 using namespace Feel::vf;
 
 typedef Mesh<Simplex<CHECKH5_DIM>> mesh_type;
-typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
 void checkMarker(mesh_ptrtype mesh)
 {
@@ -82,7 +82,7 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::about(Feel::_name="test_markerHDF5", //st
 BOOST_AUTO_TEST_SUITE( markerhdf5 )
 
 typedef Feel::Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
+typedef std::shared_ptr<Application_type> Application_ptrtype;
 
 BOOST_AUTO_TEST_CASE( markerhdf5 )
 {

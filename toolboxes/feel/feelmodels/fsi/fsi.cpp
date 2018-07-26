@@ -202,7 +202,7 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
         submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
 
     typedef SubMeshData smd_type;
-    typedef boost::shared_ptr<smd_type> smd_ptrtype;
+    typedef std::shared_ptr<smd_type> smd_ptrtype;
     smd_ptrtype smd( new smd_type(FM->mesh()) );
     for ( auto const& ew : elements(submeshStruct) )
     {
@@ -513,7 +513,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         for ( int k=1;k<nBlock;++k )
         {
             auto mapPtr = this->fluidModel()->blockVectorSolution()(k)->mapPtr();
-            graph_ptrtype zeroGraph = boost::make_shared<graph_type>( mapPtr,mapPtr );
+            graph_ptrtype zeroGraph = std::make_shared<graph_type>( mapPtr,mapPtr );
             zeroGraph->zero();
             myblockGraphTimeDerivative(k,k) = zeroGraph;
         }
@@ -539,7 +539,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         for ( int k=1;k<nBlock;++k )
         {
             auto mapPtr = this->fluidModel()->blockVectorSolution()(k)->mapPtr();
-            graph_ptrtype zeroGraph = boost::make_shared<graph_type>( mapPtr,dofStress );
+            graph_ptrtype zeroGraph = std::make_shared<graph_type>( mapPtr,dofStress );
             zeroGraph->zero();
             myblockGraph(k,0) = zeroGraph;
         }
@@ -1005,10 +1005,10 @@ FSI<FluidType,SolidType>::updateTimeStep()
 //---------------------------------------------------------------------------------------------------------//
 
 template< class FluidType, class SolidType >
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 FSI<FluidType,SolidType>::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << this->fluidModel()->getInfo()->str()
            << this->solidModel()->getInfo()->str();
     *_ostr << "\n||==============================================||"

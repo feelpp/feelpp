@@ -45,7 +45,7 @@ MAXWELL_CLASS_TEMPLATE_TYPE::Maxwell( std::string const& prefix,
                                       ModelBaseRepository const& modelRep )
     :
     super_type( prefix, worldComm, subPrefix, modelRep ),
-    M_maxwellProperties( boost::make_shared<maxwellproperties_type>( prefix ) ),
+    M_maxwellProperties( std::make_shared<maxwellproperties_type>( prefix ) ),
     M_epsilon( doption(_name="regularization-epsilon", _prefix=prefix) )
 {
     this->log("Maxwell","constructor", "start" );
@@ -282,10 +282,10 @@ MAXWELL_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 }
 
 MAXWELL_CLASS_TEMPLATE_DECLARATIONS
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 MAXWELL_CLASS_TEMPLATE_TYPE::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"

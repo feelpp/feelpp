@@ -143,7 +143,7 @@ public:
     typedef typename FunctionSpaceDefinition<Order>::space_type space_type;
 
     typedef Bdf<space_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     using super_type::computeBetaQm;
 

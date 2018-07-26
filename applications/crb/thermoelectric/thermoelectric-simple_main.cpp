@@ -45,13 +45,13 @@ int main( int argc, char** argv)
                      .add(bdf_options("ThermoElectricCRB")) );
 
     using rb_model_type = ThermoElectric;
-    using rb_model_ptrtype = boost::shared_ptr<rb_model_type>;
+    using rb_model_ptrtype = std::shared_ptr<rb_model_type>;
     using crb_model_type = CRBModelSaddlePoint<rb_model_type>;
     // using crb_model_type = CRBModel<rb_model_type>;
-    using crb_model_ptrtype = boost::shared_ptr<crb_model_type>;
+    using crb_model_ptrtype = std::shared_ptr<crb_model_type>;
     using crb_type = CRBSaddlePoint<crb_model_type>;
     // using crb_type = CRB<crb_model_type>;
-    using crb_ptrtype = boost::shared_ptr<crb_type>;
+    using crb_ptrtype = std::shared_ptr<crb_type>;
     using wn_type = typename crb_type::wn_type;
     using vectorN_type = Eigen::VectorXd;
     using export_vector_wn_type = typename crb_type::export_vector_wn_type;
@@ -62,8 +62,8 @@ int main( int argc, char** argv)
                           _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
 
     // init
-    rb_model_ptrtype model = boost::make_shared<rb_model_type>(mesh);
-    crb_model_ptrtype crbModel = boost::make_shared<crb_model_type>(model, crb::stage::offline);
+    rb_model_ptrtype model = std::make_shared<rb_model_type>(mesh);
+    crb_model_ptrtype crbModel = std::make_shared<crb_model_type>(model, crb::stage::offline);
     crb_ptrtype crb = crb_type::New("thermoelectric", crbModel, crb::stage::offline);
 
     // offline

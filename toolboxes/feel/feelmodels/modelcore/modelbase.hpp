@@ -120,7 +120,7 @@ public :
     // info
     std::string filenameSaveInfo() const;
     void setFilenameSaveInfo(std::string const& s);
-    virtual boost::shared_ptr<std::ostringstream> getInfo() const;
+    virtual std::shared_ptr<std::ostringstream> getInfo() const;
     virtual void printInfo() const;
     virtual void saveInfo() const;
     virtual void printAndSaveInfo() const;

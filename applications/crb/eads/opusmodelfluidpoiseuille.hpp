@@ -80,7 +80,7 @@ public:
     typedef double value_type;
 
     typedef SpaceType functionspace_type;
-    typedef boost::shared_ptr<SpaceType> functionspace_ptrtype;
+    typedef std::shared_ptr<SpaceType> functionspace_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
     typedef typename element_type::template sub_element<0>::type element_0_type;
