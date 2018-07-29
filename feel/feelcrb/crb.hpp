@@ -161,7 +161,7 @@ public :
     virtual element_type expansion( vectorN_type const& u , int N = -1, bool dual=false ) const=0;
     virtual int dimension() const=0;
     virtual std::pair<int,double> online_iterations()=0;
-
+    virtual int WNmuSize() const=0;
     virtual element_type solveFemModelUsingAffineDecomposition( parameter_type const& mu ) const=0;
 
 };
@@ -562,7 +562,7 @@ public:
 
     //! \return the current size of WNmu:
     //! may differ from the dimension of XN for multiphysic problems
-    int WNmuSize() const
+    int WNmuSize() const override
         {
             return M_N;
         }
@@ -935,7 +935,7 @@ public:
      */
     void computeProjectionInitialGuess( const parameter_type & mu, int N , vectorN_type& initial_guess ) const ;
 
-    element_type offlineSolve( parameter_type& mu );
+    element_type femSolve( parameter_type& mu );
 
     virtual void offlineSolve( element_type& u, element_type& udu, parameter_type& mu, element_ptrtype & dual_initial_field );
 
@@ -1466,6 +1466,12 @@ public:
     double computeOnlineDualApee( int N , parameter_type const& mu , vectorN_type const & uNdu, vectorN_type const & uNduold=vectorN_type(), double dt=1e30, double time=1e30 ) const ;
     //@}
 
+
+    virtual void updateRbInDeim()
+        {
+            M_model->updateRbInDeim();
+        }
+
 protected:
     /**
      * generate the super sampling M_Xi depending of the options
@@ -1477,6 +1483,8 @@ protected:
     virtual void buildRbMatrix( int number_of_added_elements, parameter_type& mu, element_ptrtype dual_initial_field );
     virtual void buildRbMatrixTrilinear( int number_of_added_elements, parameter_type& mu )
         {}
+
+    virtual void addSupremizers( parameter_type const& mu ){}
     virtual void saveRB();
 
     crb_elements_db_type M_elements_database;
@@ -2143,12 +2151,16 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
-CRB<TruthModelType>::offlineSolve( parameter_type& mu )
+CRB<TruthModelType>::femSolve( parameter_type& mu )
 {
+    if ( M_model->hasEim() )
+        return M_model->solve(mu);
+
     auto u = M_model->functionSpace()->element();
     auto udu = M_model->functionSpace()->element();
     element_ptrtype dual_initial_field( new element_type( M_model->functionSpace() ) );
     this->offlineSolve( u, udu, mu, dual_initial_field );
+
     return u;
 }
 
@@ -2159,7 +2171,11 @@ CRB<TruthModelType>::offlineSolve( element_type& u, element_type& udu, parameter
 {
     if ( M_model->isSteady()  )
     {
-        if( ! M_use_newton )
+        if ( M_model->hasEim() && boption("crb.solve-fem-monolithic") )
+        {
+            u = M_model->solve(mu);
+        }
+        else if( ! M_use_newton )
         {
             tic();
             u = offlineFixedPointPrimal( mu );//, A  );
@@ -2870,6 +2886,8 @@ CRB<TruthModelType>::offline()
 
         this->orthonormalizeBasis( number_of_added_elements );
 
+        if ( ioption("crb.gram-schmidt.selection.version")==1 )
+            this->addSupremizers(mu);
 
         this->buildRbMatrix( number_of_added_elements, mu, dual_initial_field );
 
@@ -2900,8 +2918,7 @@ CRB<TruthModelType>::offline()
             M_model->updateRbSpaceContextEim();
             M_hasRbSpaceContextEim = true;
         }
-        M_model->updateRbInDeim();
-
+        this->updateRbInDeim();
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
@@ -10893,9 +10910,9 @@ CRB<TruthModelType>::generateSuperSampling()
     {
         std::string supersamplingname =(boost::format("Dmu-%1%-generated-by-master-proc") %sampling_size ).str();
         if( sampling_mode == "random" )
-            this->M_Xi->randomize( sampling_size , all_proc_same_sampling, "", false );
+            this->M_Xi->randomize( sampling_size , all_proc_same_sampling, supersamplingname, false );
         else if( sampling_mode == "log-random" )
-            this->M_Xi->randomize( sampling_size , all_proc_same_sampling , supersamplingname );
+            this->M_Xi->randomize( sampling_size , all_proc_same_sampling , supersamplingname, true );
         else if( sampling_mode == "log-equidistribute" )
             this->M_Xi->logEquidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
         else if( sampling_mode == "equidistribute" )
