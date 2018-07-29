@@ -63,8 +63,10 @@ public :
         auto mesh = crb_model->model()->functionSpace()->mesh();
         std::vector<std::vector<double>> output_error( size );
         std::vector<std::vector<double>> l2_error( size );
+        std::vector<std::vector<double>> timers( size );
         std::vector<std::vector<std::vector<double>>> l2_composite;
 
+        boost::mpi::timer timer;
         if ( is_composite )
         {
             l2_composite.resize( nb_spaces );
@@ -84,7 +86,7 @@ public :
             cout << "mu="<<mu.toString() <<std::endl;
 
             tic();
-            auto u_fem = crb->offlineSolve(mu);//crb_model->model()->solve( mu );
+            auto u_fem = crb->femSolve(mu);//crb_model->model()->solve( mu );
             double output_fem = crb_model->output( crb->outputIndex(), mu, u_fem );
             double u_l2 = l2Norm(u_fem);
             if ( u_l2!=0 )
@@ -109,7 +111,10 @@ public :
                 for ( int n=1; n<=N; n++ )
                 {
                     std::vector<vectorN_type> Un, Undu, Unold, Unduold;
+                    timer.restart();
                     auto o = crb->lb( n, mu, Un, Undu, Unold, Unduold );
+                    double time = timer.elapsed();
+                    timers[i].push_back( time );
 
                     auto output_vector=o.template get<0>();
                     double output_rb = output_vector[0];
@@ -153,6 +158,7 @@ public :
 
         this->writeOnFile( l2_error, "l2");
         this->writeOnFile( output_error, "output");
+        this->writeOnFile( timers, "timers_rb");
         if ( is_composite )
             for ( int k=0; k<nb_spaces; k++ )
                 this->writeOnFile( l2_composite[k], "l2_"+std::to_string(k) );
@@ -257,7 +263,7 @@ private :
             }
 
         double norm()
-            { return M_vec.sum(); }
+            { return std::sqrt(M_vec.sum()); }
 
         vectorN_type const& norms()
             { return M_vec; }
