@@ -59,7 +59,7 @@ public:
         }
 
     void initBlockMatrix();
-    void clearBlockMatix();
+    void clearBlockMatrix();
 
     std::vector< std::vector< sparse_matrix_ptrtype >>
     AqmBlock( uint16_type n_space1, uint16_type n_space2 )
@@ -228,7 +228,7 @@ CRBModelBlock<ModelType>::initBlockMatrix()
 
 template <typename ModelType>
 void
-CRBModelBlock<ModelType>::clearBlockMatix()
+CRBModelBlock<ModelType>::clearBlockMatrix()
 {
     M_Aqm_block.clear();
     M_Fqm_block.clear();
