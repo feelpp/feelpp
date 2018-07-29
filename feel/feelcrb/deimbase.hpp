@@ -224,7 +224,7 @@ public :
      * Update the RB stored in DEIM. This RB is projected on the interpolation mesh
      * \p XN the reduced basis space containing the RB
      */
-    virtual void updateRb( rbspace_ptrtype const& XN )=0;
+    virtual void updateRb( rbspace_ptrtype const& XN, std::vector<std::vector<int>> subN )=0;
 
     //! Set the value of M_offline_step. Used with SER
     void setOfflineStep( bool b ) { M_offline_step = b; }
@@ -267,7 +267,7 @@ protected :
      * \p online =true if the assembly is made on the online model
      * \return the tensor \f$ T(\mu) \f$ as vector_ptrtype
      */
-    virtual tensor_ptrtype assemble( parameter_type const& mu, bool online=false )=0;
+    virtual tensor_ptrtype assemble( parameter_type const& mu, bool online=false, bool force_fem=false )=0;
     virtual tensor_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false )=0;
 
     /**
@@ -330,7 +330,7 @@ protected :
      * \f$ M\f$.
      * \return a shared pointer on the Residual.
      */
-    tensor_ptrtype residual( parameter_type const& mu );
+    tensor_ptrtype residual( parameter_type const& mu, bool force_fem=false );
 
 
     //! \return the beta coefficient for parameter \p mu
@@ -425,7 +425,7 @@ protected :
 
     solutionsmap_type M_solutions;
 
-    bool M_rebuild, M_nl_assembly, M_store_tensors, M_write_nl_solutions;
+    bool M_rebuild, M_nl_assembly, M_store_tensors, M_write_nl_solutions, M_last_solve_is_ok;
     std::string M_write_nl_directory;
 
     crb_ptrtype M_crb;
@@ -462,6 +462,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, 
     M_nl_assembly(false),
     M_store_tensors( false ),
     M_write_nl_solutions( boption( prefixvm( M_prefix, "deim.elements.write") ) ),
+    M_last_solve_is_ok( true ),
     M_write_nl_directory( soption(prefixvm( M_prefix, "deim.elements.directory") ) ),
     M_crb_built( false ),
     M_offline_step( true ),
@@ -564,12 +565,12 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
         }
         cout << "DEIM sampling created\n";
     }
-    cout << "DEIM Offline sampling size = "<< M_trainset->size()<<std::endl;
+    cout << name() + " Offline sampling size = "<< M_trainset->size()<<std::endl;
 
     int sampling_size = M_trainset->size();
     if ( M_user_max>sampling_size )
     {
-        cout << "DEIM : Sampling size (="<< sampling_size
+        cout << name()+" : Sampling size (="<< sampling_size
              << ") smaller than deim.dimension-max (=" << M_user_max
              << "), dimension max is now " << sampling_size << std::endl;
         M_user_max = sampling_size;
@@ -684,7 +685,8 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::addNewVector( parameter_type 
 {
     tic();
     LOG(INFO) << this->name() + " : addNewVector() start with "<<mu.toString();
-    tensor_ptrtype Phi = residual( mu );
+    bool forced_fem = !boption( "ser.use-rb-in-eim-basis-build" );
+    tensor_ptrtype Phi = residual( mu, forced_fem );
 
     auto vec_max = vectorMaxAbs( Phi );
     auto i = vec_max.template get<1>();
@@ -741,21 +743,63 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::evaluate( sparse_matrix_ptrty
 {
     int i = idx.first;
     int j =idx.second;
+    double value=0;
 
     if ( seq )
         return M->operator() ( i,j );
-
     M->close();
-    double value=0;
-    int proc_number = M->mapRow().procOnGlobalCluster(i);
+
+    /*int proc_number = M->mapRow().procOnGlobalCluster(i);
 
     if ( !M->closed() )
         M->close();
     if ( Environment::worldComm().globalRank()==proc_number )
-        value = M->operator() ( i - M->mapRow().firstDofGlobalCluster(),
-                                j - M->mapCol().firstDofGlobalCluster());
+    {
+        // value = M->operator() ( i - M->mapRow().firstDofGlobalCluster(),
+        //                         j - M->mapCol().firstDofGlobalCluster());
+        auto searchGpDof = M->mapRow().searchGlobalProcessDof( i );
+        CHECK( boost::get<0>( searchGpDof ) ) << "Did not find p_dof "<< i <<" when it should be here\n";
+        auto ipdof = boost::get<1>( searchGpDof );
 
+        searchGpDof = M->mapCol().searchGlobalProcessDof( j );
+        CHECK( boost::get<0>( searchGpDof ) ) << "Did not find p_dof "<< j <<" when it should be here\n";
+        auto jpdof = boost::get<1>( searchGpDof );
+
+        value = M->operator()( ipdof, jpdof );
+    }
+
+     boost::mpi::broadcast( Environment::worldComm(), value, proc_number );*/
+    int ncols=0;
+    int ierr=0;
+    const PetscScalar *petsc_row;
+    const PetscInt    *petsc_cols;
+
+    PetscInt m, n;
+    ierr = MatGetOwnershipRange(toPETSc(M)->mat(),&m,&n);CHKERRABORT( M->comm(),ierr );
+    int proc_number = M->mapRow().procOnGlobalCluster(i);
+
+    if ( m<=i && i<n )
+    {
+        ierr = MatGetRow( toPETSc(M)->mat(), i, &ncols, &petsc_cols, &petsc_row );
+        CHKERRABORT( M->comm(),ierr );
+
+        for ( int k=0; k<ncols; k++ )
+        {
+            if ( petsc_cols[k]==j )
+                value = static_cast<double>( petsc_row[k] );
+        }
+        if ( value!=0 && Environment::worldComm().globalRank()!=proc_number )
+        {
+            Feel::cout << "Entry found on proc "<< Environment::worldComm().globalRank()
+                       <<", proc_number is = " << proc_number << ", (i,j)=("<< i<<","<<j<< ")\n";
+        }
+
+        ierr  = MatRestoreRow( toPETSc(M)->mat(), i, &ncols, &petsc_cols, &petsc_row );
+        CHKERRABORT( M->comm(),ierr );
+    }
     boost::mpi::broadcast( Environment::worldComm(), value, proc_number );
+
+
     return value;
 } // evaluate for matrices
 
@@ -796,14 +840,22 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::vectorMaxAbs( sparse_matrix_p
     VecMax(toPETSc(V)->vec(), &i_row, &val);
     double max = static_cast<Real>( val );
 
+
     int proc_number = V->map().procOnGlobalCluster(i_row);
     if ( Environment::worldComm().globalRank()==proc_number )
-        i_col = idx[i_row - V->map().firstDofGlobalCluster()];
+    {
+        auto searchGpDof = V->map().searchGlobalProcessDof( i_row );
+        CHECK( boost::get<0>( searchGpDof ) ) << "Did not find p_dof "<< i_row <<" when it should be here\n";
+        auto gpdof = boost::get<1>( searchGpDof );
+        i_col = idx[gpdof];
+        //i_col = idx[i_row - V->map().firstDofGlobalCluster()];
+
+    }
     boost::mpi::broadcast( Environment::worldComm(), i_col, proc_number );
 
     std::pair<int,int> index (i_row,i_col);
     double max_eval=math::abs(evaluate(M,index));
-    DCHECK( std::abs(max_eval-max)<1e-10 ) << "evaluation of M(i,j)=" <<max_eval<<", maximum="<<max <<std::endl;
+    CHECK( std::abs(max_eval-max)<1e-10 ) << "evaluation of M(i,j)=" <<max_eval<<", maximum="<<max <<std::endl;
 
     return boost::make_tuple( max, index );
 } // vectorMaxAbs for matrices
@@ -817,17 +869,30 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::computeBestFit()
     LOG(INFO) << this->name() + " : computeBestFit() start";
     double max=0;
     auto mu_max = M_trainset->max().template get<0>();
+    std::vector<parameter_type> to_remove;
     for ( auto const& mu : *M_trainset )
     {
         tensor_ptrtype T = residual( mu );
-        auto vec_max = vectorMaxAbs(T);
-        auto norm = vec_max.template get<0>();
-
-        if ( norm>max )
+        if ( M_last_solve_is_ok )
         {
-            max = norm;
-            mu_max = mu;
+            auto vec_max = vectorMaxAbs(T);
+            auto norm = vec_max.template get<0>();
+
+            if ( norm>max )
+            {
+                max = norm;
+                mu_max = mu;
+            }
         }
+        else
+            to_remove.push_back( mu );
+    }
+    for ( auto const& mu : to_remove )
+    {
+        Feel::cout << this->name() + " : solver did not converge for mu="<<mu.toString()<<", parameter removed from the sampling\n";
+        auto it = std::find( M_trainset->begin(), M_trainset->end(), mu  );
+        if ( it!=M_trainset->end() )
+            M_trainset->erase( it );
     }
     LOG(INFO) << this->name() + " : computeBestFit() end";
     toc(this->name() + " : compute best fit");
@@ -838,16 +903,16 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::computeBestFit()
 
 template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
 typename DEIMBase<ParameterSpaceType,SpaceType,TensorType>::tensor_ptrtype
-DEIMBase<ParameterSpaceType,SpaceType,TensorType>::residual( parameter_type const& mu )
+DEIMBase<ParameterSpaceType,SpaceType,TensorType>::residual( parameter_type const& mu, bool force_fem )
 {
     LOG(INFO) << this->name() + " : residual() start with "<< mu.toString();
     tensor_ptrtype T;
 
     if( !M_store_tensors || M_use_ser || !M_solutions[mu.key()] )
     {
-        T = this->assemble( mu );
+        T = this->assemble( mu, false, force_fem );
         T->close();
-        if( M_store_tensors && !M_use_ser )
+        if( M_store_tensors && M_last_solve_is_ok && !M_use_ser )
         {
             LOG(INFO)<< this->name() + " : tensor stored in memory for mu="
                      << mu.toString()<<" / "<<mu.key();
