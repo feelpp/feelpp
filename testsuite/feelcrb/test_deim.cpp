@@ -260,9 +260,10 @@ public :
     {
         return Xh;
     }
-    element_type solve( parameter_type const& mu )
+    virtual std::pair<element_type,bool> safeSolve( parameter_type const& mu )
     {
-        return Xh->element();
+        auto u = Xh->element();
+        return std::make_pair( u, true );
     }
     std::string modelName()
     {
