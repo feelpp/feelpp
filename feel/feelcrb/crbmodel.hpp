@@ -1241,15 +1241,15 @@ public:
     {
         return M_model->mdeimVector();
     }
-    void updateRbInDeim()
+    void updateRbInDeim( std::vector<std::vector<int>> subN={} )
     {
         auto deim_vector = this->deimVector();
         auto mdeim_vector = this->mdeimVector();
 
         for ( auto deim : deim_vector )
-            deim->updateRb( rBFunctionSpace() );
+            deim->updateRb( rBFunctionSpace(), subN );
         for ( auto mdeim : mdeim_vector )
-            mdeim->updateRb( rBFunctionSpace() );
+            mdeim->updateRb( rBFunctionSpace(), subN );
     }
 
     struct ComputeNormL2InCompositeCase
