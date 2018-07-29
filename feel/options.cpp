@@ -609,6 +609,9 @@ crbOptions( std::string const& prefix )
         ( "crb.check.rb"   , Feel::po::value<int>()->default_value( 0 ),       "check reduced basis" )
         ( "crb.orthonormality-tol" , Feel::po::value<double>()->default_value( 1e-13 ),"tolerance of orthonormalisation : i.e. norm of matrix A(i,j)=scalarProduct( Wn[j], Wn[i] )" )
         ( "crb.orthonormality-max-iter" , Feel::po::value<int>()->default_value( 10 ),"while the tolerance is not reached, the orthonormalization step is done or until max-iter is reached" )
+        ( "crb.gram-schmidt.selection" , Feel::po::value<bool>()->default_value( false ),"Use selection in Gram-Schmidt orthonormalizatin to erase useless basis vectors" )
+        ( "crb.gram-schmidt.selection.tol" , Feel::po::value<double>()->default_value( 1e-8 ),"Selective Gram-Schmidt alogrithm tolerance" )
+        ( "crb.gram-schmidt.selection.version" , Feel::po::value<int>()->default_value( 1 ),"" )
 
         ( "crb.check.residual"   , Feel::po::value<bool>()->default_value( false ),  "check residual" )
         ( "crb.reuse-prec"   , Feel::po::value<bool>()->default_value( 0 ),       "reuse or not the preconditioner" )
@@ -686,6 +689,8 @@ crbOptions( std::string const& prefix )
 
         ( "crb.use-fast-eim",Feel::po::value<bool>()->default_value( true ), "use fast eim algo (with rbspace context)")
 
+
+
         ;
 
     crboptions
@@ -705,6 +710,9 @@ crbBlockOptions( int const& n_block )
             ;
         crboptions.add( backend_options("backend-Xh"+std::to_string(i)) );
     }
+
+    crboptions.add_options()
+        ( "crb.block.check-infsup",Feel::po::value<bool>()->default_value( false ), "");
 
     return crboptions;
 }
