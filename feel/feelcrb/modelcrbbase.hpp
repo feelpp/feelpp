@@ -1598,6 +1598,11 @@ public :
      * but non-linear : yes
      * and also those using CRBTrilinear
      */
+    virtual std::pair<element_type,bool> safeSolve( parameter_type const& mu )
+        {
+            element_type u = solve( mu );
+            return std::make_pair( u, true );
+        }
     virtual element_type solve( parameter_type const& mu )
     {
         element_type solution;
