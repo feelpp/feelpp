@@ -4,6 +4,7 @@
 #include <feel/feelcrb/crbblock.hpp>
 #define POUT std::cout << "[" << Environment::worldComm().globalRank()<<"] "
 
+#define VERBOSE false
 
 namespace Feel
 {
@@ -74,7 +75,12 @@ public:
     //! Init function, specific to crb aero
     void init();
     void offlineSolve( element_type& u, element_type& udu, parameter_type& mu, element_ptrtype & dual_initial_field )override
-        { u = this->M_model->offlineSolveAD(mu); }
+        {
+            if ( this->M_model->hasEim() && boption("crb.solve-fem-monolithic") )
+                u = this->M_model->solve(mu);
+            else
+                u = this->M_model->offlineSolveAD(mu);
+        }
 
     element_type solve( parameter_type const& mu )
     {
@@ -96,6 +102,80 @@ public:
             output_upper_bound.resize(1);
             output_upper_bound[0]=-1;
             return boost::make_tuple( output_upper_bound ,primal_residual_coeffs,dual_residual_coeffs,delta_pr,delta_du );
+        }
+
+    void addSupremizers( parameter_type const& mu ) override
+        {
+
+            if ( this->model()->addSupremizerInSpace(0) )
+            {
+                int N = this->WNmuSize();
+                int N1 = this->subN(1,N);
+                int n_added1 = N1 - this->subN(1,N-1);
+
+                auto U = this->model()->functionSpace()->element();
+                auto p = U.template element<1>();
+
+                auto XN0 = this->model()->rBFunctionSpace()->template rbFunctionSpace<0>();
+                bool added = false;
+
+                for ( int i = N1-n_added1; i<N1; i++ )
+                {
+                    tic();
+                    p = this->model()->rBFunctionSpace()->template rbFunctionSpace<1>()->primalBasisElement(i);
+                    auto Us = this->model()->supremizer( mu, U, 0 );
+
+                    auto us = Us.template elementPtr<0>();
+                    XN0->addPrimalBasisElement( us );
+                    XN0->addDualBasisElement( us );
+                    this->incrementSubN( 0, N );
+                    added=true;
+                    toc("Add supremizer in space 0");
+                }
+
+                if ( this->orthonormalizeSpace(0) && added )
+                {
+                    tic();
+                    auto wn = XN0->primalRB();
+
+                    double tol = doption(_name="crb.orthonormality-tol");
+                    int maxit = ioption(_name="crb.orthonormality-max-iter");
+                    double norm = tol+1;
+                    int iter=0;
+                    double old = 0;
+                    int Nwn = wn.size();
+
+                    while( norm >=tol && iter < maxit )
+                    {
+                        Feel::cout << "  -- orthonormalization (Gram-Schmidt)\n";
+
+                        auto & wni = unwrap_ptr( wn.back() );
+                        for ( size_type j = 0; j < wn.size()-1; ++j )
+                        {
+                            auto & wnj = unwrap_ptr( wn[j] );
+                            double __rij_pr = this->model()->scalarProduct(  wni, wnj, 0 );
+                            wni.add( -__rij_pr, wnj );
+                        }
+                        double __rii_pr = math::sqrt( this->model()->scalarProduct(  wni, wni, 0 ) );
+                        wni.scale( 1./__rii_pr );
+
+                        matrixN_type A, I;
+                        A.setZero( Nwn, Nwn );
+                        I.setIdentity( Nwn, Nwn );
+                        for ( int i = 0; i < Nwn; ++i )
+                            for ( int j = 0; j < Nwn; ++j )
+                                A( i, j ) = this->model()->scalarProduct(  wn[i], wn[j], 0 );
+                        A -= I;
+                        norm = A.norm();
+                        iter++;
+                    }
+                    XN0->updatePrimalBasisForUse();
+                    Feel::cout <<"Orthonoralzation end with "<<this->subN(0,N)
+                               << " basis vector, actual size of the basis is "<< XN0->primalRB().size()<<std::endl;
+                    toc( "RB Space Orthonormalization#0"  );
+                }
+
+            }
         }
 
 private:
@@ -134,6 +214,9 @@ private:
     using super::blockFqm;
     using super::blockLqm;
     using super::blockTriqm;
+    using super::notEmptyAqm;
+    using super::notEmptyFqm;
+    using super::notEmptyLqm;
 }; // class crbaero
 
 
@@ -254,7 +337,7 @@ CRBAero<TruthModelType>::buildRbMatrixTrilinear( int number_of_added_elements, p
 
         for ( int k=0; k<N2; k++ )
         {
-            ut = XN0->primalBasisElement(k);
+            //ut = XN0->primalBasisElement(k);
             Tt = XN2->primalBasisElement(k);
             this->blockTriqm(2,0)[q][k]. conservativeResize( N2, N0 );
             auto trilinear_operator = model->assembleTrilinearOperator( Ut, q );
@@ -285,6 +368,7 @@ CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, st
     int N0 = this->subN(0,N);
     int N1 = this->subN(1,N);
     int N2 = this->subN(2,N);
+    Feel::cout << "CRBAero Online solve with N="<<N<<", N0="<<N0<<", N1="<<N1<<", N2="<<N2<<std::endl;
     int sumN = N0+N1+N2;
 
     M_Jbil.resize( sumN, sumN );
@@ -310,34 +394,51 @@ CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, st
     beta_vector_type betaJqm;
     std::vector<beta_vector_type> betaRqm;
     boost::tie( boost::tuples::ignore, betaJqm, betaRqm ) = model->computeBetaQm( map_UN, mu );
+    tic();
     for ( int q=0; q<model->sizeOfBilinearJ(); q++ )
     {
         for ( int m=0; m<model->mMaxA(q); m++ )
         {
             // first row
-            M_Jbil.block( 0,     0, N0, N0) += betaJqm[q][m]*blockAqm(0,0)[q][m].block(0,0,N0,N0);
-            M_Jbil.block( 0,    N0, N0, N1) += betaJqm[q][m]*blockAqm(0,1)[q][m].block(0,0,N0,N1);
-            M_Jbil.block( 0, N0+N1, N0, N2) += betaJqm[q][m]*blockAqm(0,2)[q][m].block(0,0,N0,N2);
+            if ( this->notEmptyAqm(0,0,q,m) )
+                M_Jbil.block( 0,     0, N0, N0) += betaJqm[q][m]*blockAqm(0,0)[q][m].block(0,0,N0,N0);
+            if ( this->notEmptyAqm(0,1,q,m) )
+                M_Jbil.block( 0,    N0, N0, N1) += betaJqm[q][m]*blockAqm(0,1)[q][m].block(0,0,N0,N1);
+            if ( this->notEmptyAqm(0,2,q,m) )
+                M_Jbil.block( 0, N0+N1, N0, N2) += betaJqm[q][m]*blockAqm(0,2)[q][m].block(0,0,N0,N2);
+
             // second row
-            M_Jbil.block( N0,     0, N1, N0) += betaJqm[q][m]*blockAqm(1,0)[q][m].block(0,0,N1,N0);
-            M_Jbil.block( N0,    N0, N1, N1) += betaJqm[q][m]*blockAqm(1,1)[q][m].block(0,0,N1,N1);
-            M_Jbil.block( N0, N0+N1, N1, N2) += betaJqm[q][m]*blockAqm(1,2)[q][m].block(0,0,N1,N2);
+            if ( this->notEmptyAqm(1,0,q,m) )
+                M_Jbil.block( N0,     0, N1, N0) += betaJqm[q][m]*blockAqm(1,0)[q][m].block(0,0,N1,N0);
+            if ( this->notEmptyAqm(1,1,q,m) )
+                M_Jbil.block( N0,    N0, N1, N1) += betaJqm[q][m]*blockAqm(1,1)[q][m].block(0,0,N1,N1);
+            if ( this->notEmptyAqm(1,2,q,m) )
+                M_Jbil.block( N0, N0+N1, N1, N2) += betaJqm[q][m]*blockAqm(1,2)[q][m].block(0,0,N1,N2);
+
             // third row
-            M_Jbil.block( N0+N1,     0, N2, N0) += betaJqm[q][m]*blockAqm(2,0)[q][m].block(0,0,N2,N0);
-            M_Jbil.block( N0+N1,    N0, N2, N1) += betaJqm[q][m]*blockAqm(2,1)[q][m].block(0,0,N2,N1);
-            M_Jbil.block( N0+N1, N0+N1, N2, N2) += betaJqm[q][m]*blockAqm(2,2)[q][m].block(0,0,N2,N2);
+            if ( this->notEmptyAqm(2,0,q,m) )
+                M_Jbil.block( N0+N1,     0, N2, N0) += betaJqm[q][m]*blockAqm(2,0)[q][m].block(0,0,N2,N0);
+            if ( this->notEmptyAqm(2,1,q,m) )
+                M_Jbil.block( N0+N1,    N0, N2, N1) += betaJqm[q][m]*blockAqm(2,1)[q][m].block(0,0,N2,N1);
+            if ( this->notEmptyAqm(2,2,q,m) )
+                M_Jbil.block( N0+N1, N0+N1, N2, N2) += betaJqm[q][m]*blockAqm(2,2)[q][m].block(0,0,N2,N2);
         }
     }
-
+    toc("Preassemble Bilinear terms", VERBOSE );
+    tic();
     for ( int q=0; q<model->sizeOfLinearR(); q++ )
     {
         for ( int m=0; m<model->mMaxF(0,q); m++ )
         {
-            M_Rli.segment(    0,N0) += betaRqm[0][q][m]*blockFqm(0)[q][m].head(N0);
-            M_Rli.segment(   N0,N1) += betaRqm[0][q][m]*blockFqm(1)[q][m].head(N1);
-            M_Rli.segment(N0+N1,N2) += betaRqm[0][q][m]*blockFqm(2)[q][m].head(N2);
+            if ( this->notEmptyFqm(0,q,m) )
+                M_Rli.segment(    0,N0) += betaRqm[0][q][m]*blockFqm(0)[q][m].head(N0);
+            if ( this->notEmptyFqm(1,q,m) )
+                M_Rli.segment(   N0,N1) += betaRqm[0][q][m]*blockFqm(1)[q][m].head(N1);
+            if ( this->notEmptyFqm(2,q,m) )
+                M_Rli.segment(N0+N1,N2) += betaRqm[0][q][m]*blockFqm(2)[q][m].head(N2);
         }
     }
+    toc("Preassemble Linear terms", VERBOSE);
 
     this->M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobianOnline, boost::ref( *this ), _1, _2  , mu , N );
     this->M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidualOnline, boost::ref( *this ), _1, _2  , mu , N );
@@ -357,14 +458,17 @@ CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, st
         {
             for ( size_type m=0; m<model->mMaxF(out_index,q); m++ )
             {
-                L.segment( 0,N0) += betaFqm[out_index][q][m]*blockLqm(0)[q][m].head(N0);
-                L.segment(N0,N1) += betaFqm[out_index][q][m]*blockLqm(1)[q][m].head(N1);
-                L.segment(N0+N1,N2) += betaFqm[out_index][q][m]*blockLqm(2)[q][m].head(N2);
+                if ( this->notEmptyLqm(0,q,m) )
+                    L.segment( 0,N0) += betaFqm[out_index][q][m]*blockLqm(0)[q][m].head(N0);
+                if ( this->notEmptyLqm(1,q,m) )
+                    L.segment(N0,N1) += betaFqm[out_index][q][m]*blockLqm(1)[q][m].head(N1);
+                if ( this->notEmptyLqm(2,q,m) )
+                    L.segment(N0+N1,N2) += betaFqm[out_index][q][m]*blockLqm(2)[q][m].head(N2);
             }
         }
         output_vector[0] = L.dot( uN[0] );
     }
-    toc("CRBAERO onlineSolve", false);
+    toc("CRBAERO onlineSolve",VERBOSE);
 
     return boost::make_tuple(conditioning,determinant);
 }
@@ -385,24 +489,37 @@ CRBAero<TruthModelType>::updateJacobianOnline( const map_dense_vector_type& X, m
     boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = this->M_model->computeBetaQm( X, mu );
     J += M_Jbil;
 
+    tic();
     for ( int q=model->sizeOfBilinearJ(); q< model->Qa(); q++ )
     {
         for ( int m=0; m<model->mMaxA(q); m++ )
         {
             // first row
-            J.block( 0,     0, N0, N0) += betaJqm[q][m]*blockAqm(0,0)[q][m].block(0,0,N0,N0);
-            J.block( 0,    N0, N0, N1) += betaJqm[q][m]*blockAqm(0,1)[q][m].block(0,0,N0,N1);
-            J.block( 0, N0+N1, N0, N2) += betaJqm[q][m]*blockAqm(0,2)[q][m].block(0,0,N0,N2);
+            if ( this->notEmptyAqm(0,0,q,m) )
+                J.block( 0,     0, N0, N0) += betaJqm[q][m]*blockAqm(0,0)[q][m].block(0,0,N0,N0);
+            if ( this->notEmptyAqm(0,1,q,m) )
+                J.block( 0,    N0, N0, N1) += betaJqm[q][m]*blockAqm(0,1)[q][m].block(0,0,N0,N1);
+            if ( this->notEmptyAqm(0,2,q,m) )
+                J.block( 0, N0+N1, N0, N2) += betaJqm[q][m]*blockAqm(0,2)[q][m].block(0,0,N0,N2);
+
             // second row
-            J.block( N0,     0, N1, N0) += betaJqm[q][m]*blockAqm(1,0)[q][m].block(0,0,N1,N0);
-            J.block( N0,    N0, N1, N1) += betaJqm[q][m]*blockAqm(1,1)[q][m].block(0,0,N1,N1);
-            J.block( N0, N0+N1, N1, N2) += betaJqm[q][m]*blockAqm(1,2)[q][m].block(0,0,N1,N2);
+            if ( this->notEmptyAqm(1,0,q,m) )
+                J.block( N0,     0, N1, N0) += betaJqm[q][m]*blockAqm(1,0)[q][m].block(0,0,N1,N0);
+            if ( this->notEmptyAqm(1,1,q,m) )
+                J.block( N0,    N0, N1, N1) += betaJqm[q][m]*blockAqm(1,1)[q][m].block(0,0,N1,N1);
+            if ( this->notEmptyAqm(1,2,q,m) )
+                J.block( N0, N0+N1, N1, N2) += betaJqm[q][m]*blockAqm(1,2)[q][m].block(0,0,N1,N2);
+
             // third row
-            J.block( N0+N1,     0, N2, N0) += betaJqm[q][m]*blockAqm(2,0)[q][m].block(0,0,N2,N0);
-            J.block( N0+N1,    N0, N2, N1) += betaJqm[q][m]*blockAqm(2,1)[q][m].block(0,0,N2,N1);
-            J.block( N0+N1, N0+N1, N2, N2) += betaJqm[q][m]*blockAqm(2,2)[q][m].block(0,0,N2,N2);
+            if ( this->notEmptyAqm(2,0,q,m) )
+                J.block( N0+N1,     0, N2, N0) += betaJqm[q][m]*blockAqm(2,0)[q][m].block(0,0,N2,N0);
+            if ( this->notEmptyAqm(2,1,q,m) )
+                J.block( N0+N1,    N0, N2, N1) += betaJqm[q][m]*blockAqm(2,1)[q][m].block(0,0,N2,N1);
+            if ( this->notEmptyAqm(2,2,q,m) )
+                J.block( N0+N1, N0+N1, N2, N2) += betaJqm[q][m]*blockAqm(2,2)[q][m].block(0,0,N2,N2);
         }
     }
+    toc("UpdateJ NL terms",VERBOSE);
 
     tic();
     auto betaTri = this->M_model->computeBetaTri( mu );
@@ -429,8 +546,9 @@ CRBAero<TruthModelType>::updateJacobianOnline( const map_dense_vector_type& X, m
             }
         }
     }
-    toc("updateR trilinear", false);
-    toc("CRBAERO updateJonline", false);
+    toc("updateJ trilinear", VERBOSE);
+
+    toc("CRBAERO updateJonline", VERBOSE);
 }
 
 template <typename TruthModelType>
@@ -449,19 +567,26 @@ CRBAero<TruthModelType>::updateResidualOnline( const map_dense_vector_type& X, m
     std::vector<beta_vector_type> betaRqm;
     boost::tie( boost::tuples::ignore, betaJqm, betaRqm ) = model->computeBetaQm( X, mu );
 
+    tic();
     R.setZero();
     R += M_Rli;
     R += M_Jbil*X;
+    toc("UpdateR some",VERBOSE);
 
+    tic();
     for ( int q=model->sizeOfLinearR(); q<model->Ql(0); q++ )
     {
         for ( int m=0; m<model->mMaxF(0,q); m++ )
         {
-            R.segment(    0,N0) += betaRqm[0][q][m]*blockFqm(0)[q][m].head(N0);
-            R.segment(   N0,N1) += betaRqm[0][q][m]*blockFqm(1)[q][m].head(N1);
-            R.segment(N0+N1,N2) += betaRqm[0][q][m]*blockFqm(2)[q][m].head(N2);
+            if ( this->notEmptyFqm(0,q,m) )
+                R.segment(    0,N0) += betaRqm[0][q][m]*blockFqm(0)[q][m].head(N0);
+            if ( this->notEmptyFqm(1,q,m) )
+                R.segment(   N0,N1) += betaRqm[0][q][m]*blockFqm(1)[q][m].head(N1);
+            if ( this->notEmptyFqm(2,q,m) )
+                R.segment(N0+N1,N2) += betaRqm[0][q][m]*blockFqm(2)[q][m].head(N2);
         }
     }
+    toc("UpdateR NL terms",VERBOSE);
 
     tic();
     temp.setZero();
@@ -476,8 +601,8 @@ CRBAero<TruthModelType>::updateResidualOnline( const map_dense_vector_type& X, m
                 temp(N0+N1+k,N0+N1+i) = (blockTriqm(2,0)[q][k].row(i)).dot(X.segment(0,N0));
         R += betaTri[q]*temp*X;
     }
-    toc("updateR trilinear", false);
-    toc("CRBAERO updateRonline", false);
+    toc("updateR trilinear", VERBOSE);
+    toc("CRBAERO updateRonline", VERBOSE);
 }
 
 

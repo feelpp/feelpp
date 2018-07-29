@@ -127,7 +127,7 @@ protected:
 public:
     void init()
         {
-        using Feel::cout;
+            using Feel::cout;
         if ( !this->M_rebuild && this->loadDB() )
         {
             cout << "Database CRB SP " << this->lookForDB() << " available and loaded with M_N0="
@@ -197,7 +197,73 @@ public:
         return boost::make_tuple( output_upper_bound ,primal_residual_coeffs,dual_residual_coeffs,delta_pr,delta_du );
     }
 
+    void addSupremizers( parameter_type const& mu ) override
+        {
+            tic();
+            int N = this->WNmuSize();
+            int N1 = this->subN(1,N);
+            int n_added1 = N1 - this->subN(1,N-1);
 
+            auto U = this->functionSpace()->element();
+            auto p = U.template element<1>();
+
+            auto XN0 = m_crb->model()->rBFunctionSpace()->template rbFunctionSpace<0>();
+            bool added = false;
+
+            for ( int i = N1-n_added1; i<N1; i++ )
+            {
+                auto p = this->model()->rBFunctionSpace()->template rbFunctionSpace<1>()->primalBasisElement(i);
+                auto Us = this->model()->supremizer( mu, U, 0 );
+
+                us = Us.template elementPtr<0>();
+                XN0->addDualBasisElement( us );
+                this->incrementSubN( 0, N );
+                added=true;
+            }
+            toc("Add supremizer in space 0");
+
+            if ( this->orthonormalizeSpace(0) && added )
+            {
+                tic();
+                auto wn0 = XN0->primalRB();
+
+                double tol = doption(_name="crb.orthonormality-tol");
+                int maxit = ioption(_name="crb.orthonormality-max-iter");
+                double norm = tol+1;
+                int iter=0;
+                double old = 0;
+                int Nwn = wn.size();
+
+                while( norm >=tol && iter < maxit )
+                {
+                    Feel::cout << "  -- orthonormalization (Gram-Schmidt)\n";
+
+                    auto & wni = unwrap_ptr( wn.back() );
+                    for ( size_type j = 0; j < wn.size()-1; ++j )
+                    {
+                        auto & wnj = unwrap_ptr( wn[j] );
+                        double __rij_pr = this->model()->scalarProduct(  wni, wnj, 0 );
+                        wni.add( -__rij_pr, wnj );
+                    }
+                    double __rii_pr = math::sqrt( this->model()->scalarProduct(  wni, wni, 0 ) );
+                    wni.scale( 1./__rii_pr );
+
+                    typename CRBType::matrixN_type A, I;
+                    A.setZero( Nwn, Nwn );
+                    I.setIdentity( Nwn, Nwn );
+                    for ( int i = 0; i < Nwn; ++i )
+                        for ( int j = 0; j < Nwn; ++j )
+                            A( i, j ) = this->model()->scalarProduct(  wn[i], wn[j], 0 );
+                    A -= I;
+                    norm = A.norm();
+                    iter++;
+                }
+                XN0->updatePrimalBasisForUse();
+                Feel::cout <<"Orthonoralzation end with "<<this->subN(0,N)
+                           << " basis vector, actual size of the basis is "<< XN0->primalRB().size();
+                toc( "RB Space Orthonormalization#0"  );
+            }
+        }
 
 private :
     void initRezMatrix() override;
@@ -240,6 +306,9 @@ private :
     using super::M_blockFqm_du;
     using super::M_blockLqm_pr;
     using super::M_blockLqm_du;
+    using super::notEmptyAqm;
+    using super::notEmptyFqm;
+    using super::notEmptyLqm;
 }; // class CRBSaddlePoint
 
 
@@ -373,10 +442,14 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
         {
             for ( size_type m=0; m<mMaxA[q]; m++ )
             {
-                A.block( 0,  0, N0, N0) += betaAqm[q][m]*M_blockAqm_pr[0][0][q][m].block(0,0,N0,N0);
-                A.block( 0, N0, N0, N1) += betaAqm[q][m]*M_blockAqm_pr[0][1][q][m].block(0,0,N0,N1);
-                A.block(N0,  0, N1, N0) += betaAqm[q][m]*M_blockAqm_pr[1][0][q][m].block(0,0,N1,N0);
-                A.block(N0, N0, N1, N1) += betaAqm[q][m]*M_blockAqm_pr[1][1][q][m].block(0,0,N1,N1);
+                if ( this->notEmptyAqm(0,0,q,m) )
+                    A.block( 0,  0, N0, N0) += betaAqm[q][m]*M_blockAqm_pr[0][0][q][m].block(0,0,N0,N0);
+                if ( this->notEmptyAqm(0,1,q,m) )
+                    A.block( 0, N0, N0, N1) += betaAqm[q][m]*M_blockAqm_pr[0][1][q][m].block(0,0,N0,N1);
+                if ( this->notEmptyAqm(1,0,q,m) )
+                    A.block(N0,  0, N1, N0) += betaAqm[q][m]*M_blockAqm_pr[1][0][q][m].block(0,0,N1,N0);
+                if ( this->notEmptyAqm(1,1,q,m) )
+                    A.block(N0, N0, N1, N1) += betaAqm[q][m]*M_blockAqm_pr[1][1][q][m].block(0,0,N1,N1);
             }
         }
 
@@ -385,8 +458,10 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
         {
             for ( size_type m=0; m<mMaxF[q]; m++ )
             {
-                F.head(N0) += betaFqm[0][q][m]*M_blockFqm_pr[0][q][m].head(N0);
-                F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
+                if ( this->notEmptyFqm(0,q,m) )
+                    F.head(N0) += betaFqm[0][q][m]*M_blockFqm_pr[0][q][m].head(N0);
+                if ( this->notEmptyFqm(1,q,m) )
+                    F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
             }
         }
 
@@ -412,10 +487,14 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
             {
                 for ( size_type m=0; m<mMaxA[q]; m++ )
                 {
-                    A.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_pr[0][0][q][m].block(0,0,N0,N0);
-                    A.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_pr[0][1][q][m].block(0,0,N0,N1);
-                    A.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_pr[1][0][q][m].block(0,0,N1,N0);
-                    A.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_pr[1][1][q][m].block(0,0,N1,N1);
+                    if ( this->notEmptyAqm(0,0,q,m) )
+                        A.block( 0,  0, N0, N0) += betaAqm[q][m]*M_blockAqm_pr[0][0][q][m].block(0,0,N0,N0);
+                    if ( this->notEmptyAqm(0,1,q,m) )
+                        A.block( 0, N0, N0, N1) += betaAqm[q][m]*M_blockAqm_pr[0][1][q][m].block(0,0,N0,N1);
+                    if ( this->notEmptyAqm(1,0,q,m) )
+                        A.block(N0,  0, N1, N0) += betaAqm[q][m]*M_blockAqm_pr[1][0][q][m].block(0,0,N1,N0);
+                    if ( this->notEmptyAqm(1,1,q,m) )
+                        A.block(N0, N0, N1, N1) += betaAqm[q][m]*M_blockAqm_pr[1][1][q][m].block(0,0,N1,N1);
                 }
             }
 
@@ -424,8 +503,10 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
             {
                 for ( size_type m=0; m<mMaxF[q]; m++ )
                 {
-                    F.head(N0) += betaFqm[0][q][m]*M_blockFqm_pr[0][q][m].head(N0);
-                    F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
+                    if ( this->notEmptyFqm(0,q,m) )
+                        F.head(N0) += betaFqm[0][q][m]*M_blockFqm_pr[0][q][m].head(N0);
+                    if ( this->notEmptyFqm(1,q,m) )
+                        F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
                 }
             }
             uN[0] = A.fullPivLu().solve( F );
@@ -455,8 +536,10 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
         {
             for ( size_type m=0; m<mMaxL[q]; m++ )
             {
-                L.head(N0) += betaFqm[this->M_output_index][q][m]*M_blockLqm_pr[0][q][m].head(N0);
-                L.tail(N1) += betaFqm[this->M_output_index][q][m]*M_blockLqm_pr[1][q][m].head(N1);
+                if ( this->notEmptyLqm(0,q,m) )
+                    L.head(N0) += betaFqm[this->M_output_index][q][m]*M_blockLqm_pr[0][q][m].head(N0);
+                if ( this->notEmptyLqm(1,q,m) )
+                    L.tail(N1) += betaFqm[this->M_output_index][q][m]*M_blockLqm_pr[1][q][m].head(N1);
             }
         }
         output = L.dot( uN[0] );
@@ -521,10 +604,14 @@ CRBSaddlePoint<TruthModelType>::fixedPointDual(  size_type N, parameter_type con
         {
             for ( size_type m=0; m<mMaxA[q]; m++ )
             {
-                Adu.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_du[0][0][q][m].block(0,0,N0,N0);
-                Adu.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_du[0][1][q][m].block(0,0,N0,N1);
-                Adu.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_du[1][0][q][m].block(0,0,N1,N0);
-                Adu.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_du[1][1][q][m].block(0,0,N1,N1);
+                if ( this->notEmptyAqm(0,0,q,m) )
+                    Adu.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_du[0][0][q][m].block(0,0,N0,N0);
+                if ( this->notEmptyAqm(0,1,q,m) )
+                    Adu.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_du[0][1][q][m].block(0,0,N0,N1);
+                if ( this->notEmptyAqm(1,0,q,m) )
+                    Adu.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_du[1][0][q][m].block(0,0,N1,N0);
+                if ( this->notEmptyAqm(1,1,q,m) )
+                    Adu.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_du[1][1][q][m].block(0,0,N1,N1);
             }
         }
         Fdu.setZero( N0+N1 );
@@ -532,8 +619,10 @@ CRBSaddlePoint<TruthModelType>::fixedPointDual(  size_type N, parameter_type con
             {
                 for(int m=0; m < mMaxF[q]; m++)
                 {
-                    Fdu.head(N0) -= betaFqm[this->M_output_index][q][m]*M_blockLqm_du[0][q][m].head( N0 );
-                    Fdu.tail(N1) -= betaFqm[this->M_output_index][q][m]*M_blockLqm_du[1][q][m].head( N1 );
+                    if ( this->notEmptyFqm(0,q,m) )
+                        Fdu.head(N0) -= betaFqm[this->M_output_index][q][m]*M_blockLqm_du[0][q][m].head( N0 );
+                    if ( this->notEmptyFqm(1,q,m) )
+                        Fdu.tail(N1) -= betaFqm[this->M_output_index][q][m]*M_blockLqm_du[1][q][m].head( N1 );
                 }
             }
             uNdu[0] = Adu.fullPivLu().solve( Fdu );
@@ -560,10 +649,14 @@ CRBSaddlePoint<TruthModelType>::fixedPointDual(  size_type N, parameter_type con
             {
                 for ( size_type m=0; m<mMaxA[q]; m++ )
                 {
-                    Adu.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_du[0][0][q][m].block(0,0,N0,N0);
-                    Adu.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_du[0][1][q][m].block(0,0,N0,N1);
-                    Adu.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_du[1][0][q][m].block(0,0,N1,N0);
-                    Adu.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_du[1][1][q][m].block(0,0,N1,N1);
+                    if ( this->notEmptyAqm(0,0,q,m) )
+                        Adu.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_du[0][0][q][m].block(0,0,N0,N0);
+                    if ( this->notEmptyAqm(0,1,q,m) )
+                        Adu.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_du[0][1][q][m].block(0,0,N0,N1);
+                    if ( this->notEmptyAqm(1,0,q,m) )
+                        Adu.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_du[1][0][q][m].block(0,0,N1,N0);
+                    if ( this->notEmptyAqm(1,1,q,m) )
+                        Adu.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_du[1][1][q][m].block(0,0,N1,N1);
                 }
             }
 
@@ -572,8 +665,10 @@ CRBSaddlePoint<TruthModelType>::fixedPointDual(  size_type N, parameter_type con
             {
                 for ( size_type m=0; m<mMaxF[q]; m++ )
                 {
-                    Fdu.head(N0) += betaFqm[0][q][m]*M_blockFqm_du[0][q][m].head(N0);
-                    Fdu.tail(N1) += betaFqm[0][q][m]*M_blockFqm_du[1][q][m].head(N1);
+                    if ( this->notEmptyFqm(0,q,m) )
+                        Fdu.head(N0) += betaFqm[0][q][m]*M_blockFqm_du[0][q][m].head(N0);
+                    if ( this->notEmptyFqm(1,q,m) )
+                        Fdu.tail(N1) += betaFqm[0][q][m]*M_blockFqm_du[1][q][m].head(N1);
                 }
             }
             uNdu[0] = Adu.fullPivLu().solve( Fdu );
@@ -628,18 +723,24 @@ CRBSaddlePoint<TruthModelType>::correctionTerms(parameter_type const& mu, std::v
     {
         for(int m=0; m < this->M_model->mMaxF(0,q); m++)
         {
-            Fdu.head(N0) += betaFqm[0][q][m]*M_blockFqm_du[0][q][m].head(N0);
-            Fdu.tail(N1) += betaFqm[0][q][m]*M_blockFqm_du[1][q][m].head(N1);
+            if ( this->notEmptyFqm(0,q,m) )
+                Fdu.head(N0) += betaFqm[0][q][m]*M_blockFqm_du[0][q][m].head(N0);
+            if ( this->notEmptyFqm(1,q,m) )
+                Fdu.tail(N1) += betaFqm[0][q][m]*M_blockFqm_du[1][q][m].head(N1);
         }
     }
     for(size_type q = 0;q < this->M_model->Qa(); ++q)
     {
         for(int m=0; m < this->M_model->mMaxA(q); m++)
         {
-            Aprdu.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_pr_du[0][0][q][m].block(0,0,N0,N0);
-            Aprdu.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_pr_du[0][1][q][m].block(0,0,N0,N1);
-            Aprdu.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_pr_du[1][0][q][m].block(0,0,N1,N0);
-            Aprdu.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_pr_du[1][1][q][m].block(0,0,N1,N1);
+            if ( this->notEmptyAqm(0,0,q,m) )
+                Aprdu.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_pr_du[0][0][q][m].block(0,0,N0,N0);
+            if ( this->notEmptyAqm(0,1,q,m) )
+                Aprdu.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_pr_du[0][1][q][m].block(0,0,N0,N1);
+            if ( this->notEmptyAqm(1,0,q,m) )
+                Aprdu.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_pr_du[1][0][q][m].block(0,0,N1,N0);
+            if ( this->notEmptyAqm(1,1,q,m) )
+                Aprdu.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_pr_du[1][1][q][m].block(0,0,N1,N1);
         }
     }
 

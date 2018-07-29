@@ -177,6 +177,15 @@ public:
     std::vector< std::vector< matrixN_type >> blockTriqm( int const& row, int const& col ) const
         {return M_blockTriqm_pr[row][col]; }
 
+    void updateRbInDeim() override
+        { this->M_model->updateRbInDeim( M_subN ); }
+
+    bool notEmptyAqm( int const& r, int const& c, int const& q, int const& m ) const
+        { return M_notemptyAqm[r][c][q][m]; }
+    bool notEmptyFqm( int const& r, int const& q, int const& m ) const
+        { return M_notemptyFqm[r][q][m]; }
+    bool notEmptyLqm( int const& r, int const& q, int const& m ) const
+        { return M_notemptyLqm[r][q][m]; }
 
     //! save the CRB SP database
     void saveDB() override;
@@ -209,6 +218,9 @@ protected:
     blockmatrixN_type M_blockTriqm_pr;
     blockmatrixN_type M_blockAqm_pr, M_blockAqm_du, M_blockAqm_pr_du;
     blockvectorN_type M_blockFqm_pr, M_blockFqm_du, M_blockLqm_pr, M_blockLqm_du;
+
+    std::vector< std::vector< std::vector< std::vector< bool >>>> M_notemptyAqm;
+    std::vector< std::vector< std::vector< bool >>> M_notemptyFqm, M_notemptyLqm;
 }; //class CRBBlock
 
 
@@ -240,7 +252,7 @@ struct AddBasisByBlock
             m_crb->incrementSubN( T::value, m_crb->WNmuSize()+1 );
             toc("Add Basis Function in space "+std::to_string(T::value) );
 
-            if ( m_crb->model()->addSupremizerInSpace(T::value) )
+            if ( m_crb->model()->addSupremizerInSpace(T::value) && ioption("crb.gram-schmidt.selection.version")==2 )
             {
                 tic();
                 auto Us = model->supremizer( m_mu, m_U, T::value );
@@ -251,7 +263,7 @@ struct AddBasisByBlock
                 XN->addDualBasisElement( us );
                 m_crb->incrementSubN( T::value, m_crb->WNmuSize()+1 );
                 toc("Add supremizer in space "+std::to_string(T::value) );
-            }
+             }
         }
 
 private :
@@ -275,8 +287,7 @@ CRBBlock<TruthModelType>::addBasis( element_type& U, element_type& Udu, paramete
 template <typename CRBType>
 struct OrthonormalizeBasisByBlock
 {
-    OrthonormalizeBasisByBlock( int& Nm, CRBType* crb ) :
-        m_Nm( Nm ),
+    OrthonormalizeBasisByBlock( CRBType* crb ) :
         m_crb( crb )
         {}
 
@@ -286,13 +297,14 @@ struct OrthonormalizeBasisByBlock
             if ( m_crb->orthonormalizeSpace(T::value) )
             {
                 tic();
-                int n_added = m_Nm;
                 auto XN = m_crb->model()->rBFunctionSpace()->template rbFunctionSpace<T::value>();
                 auto wn = XN->primalRB();
-                int N = wn.size();
 
-                if ( m_crb->model()->addSupremizerInSpace(T::value) )
-                    n_added *= 2;
+                int Nmu = m_crb->WNmuSize();
+                int N = m_crb->subN(T::value,Nmu);
+                int n_added = N - m_crb->subN(T::value,Nmu-1);
+
+                CHECK( N==wn.size() )<<"Wrong wn size="<<wn.size()<<" with N="<<N<<std::endl;
                 LOG(INFO) <<"CRBBlock orthonomalization begin for space "<<T::value <<", with "<< N
                           <<" basis vectors and "<< n_added <<" new vectors\n";
 
@@ -301,6 +313,8 @@ struct OrthonormalizeBasisByBlock
                 double norm = tol+1;
                 int iter=0;
                 double old = 0;
+                std::vector<int> to_remove;
+                std::vector<double> norms(N,0.);
 
                 while( norm >=tol && iter < maxit )
                 {
@@ -308,6 +322,8 @@ struct OrthonormalizeBasisByBlock
                     for ( size_type i =N-n_added; i < N; ++i )
                     {
                         auto & wni = unwrap_ptr( wn[i] );
+                        norms[i] = math::sqrt( m_crb->model()->scalarProduct(  wni, wni, T::value ) );
+
                         for ( size_type j = 0; j < i; ++j )
                         {
                             auto & wnj = unwrap_ptr( wn[j] );
@@ -321,7 +337,24 @@ struct OrthonormalizeBasisByBlock
                     {
                         auto & wni = unwrap_ptr( wn[i] );
                         double __rii_pr = math::sqrt( m_crb->model()->scalarProduct(  wni, wni, T::value ) );
-                        wni.scale( 1./__rii_pr );
+
+                        if ( boption("crb.gram-schmidt.selection")
+                             && (__rii_pr/norms[i])<doption("crb.gram-schmidt.selection.tol") )
+                        {
+                            to_remove.push_back( i );
+                            Feel::cout << "Selective Gram-Schmidt: exclude basis vector "<< i <<" in space #"
+                                       << T::value<<" norm of the orthogonal comp="<< __rii_pr
+                                       <<" with a tolerance="<<doption("crb.gram-schmidt.selection.tol")<< std::endl;
+
+                            XN->primalRB().erase( XN->primalRB().begin()+i );
+                            wn.erase( wn.begin()+i );
+                            norms.erase(norms.begin()+i);
+                            m_crb->incrementSubN( T::value, Nmu, -1 );
+                            n_added --;
+                            N--;
+                        }
+                        else
+                            wni.scale( 1./__rii_pr );
                     }
 
                     norm = this->checkOrthonormality( wn, T::value );
@@ -334,6 +367,7 @@ struct OrthonormalizeBasisByBlock
                 }
                 XN->updatePrimalBasisForUse();
                 LOG(INFO) <<"CRBBlock orthonomalization end\n";
+                Feel::cout <<"Orthonoralzation end with "<<m_crb->subN(T::value,Nmu) << " basis vector, actual size of the basis is "<< XN->primalRB().size()<<std::endl;
                 toc( "RB Space Orthonormalization#" + std::to_string(T::value) );
             }
         }
@@ -360,19 +394,36 @@ struct OrthonormalizeBasisByBlock
 
 
 public:
-    int m_Nm;
     CRBType* m_crb;
 }; // OrthonormalizeBasisByBlock
 
-template<typename TruthModelType>
+template <typename TruthModelType>
 void
 CRBBlock<TruthModelType>::orthonormalizeBasis( int number_of_added_elements )
 {
     LOG(INFO) << "CRBBlock orthonormalize basis begin\n";
 
-    Feel::OrthonormalizeBasisByBlock<self_type> b( number_of_added_elements, this );
+    Feel::OrthonormalizeBasisByBlock<self_type> b( this );
     rangespace_type range;
     boost::fusion::for_each( range, b );
+
+    if ( boption("crb.block.check-infsup") )
+    {
+        int Nmu = this->WNmuSize();
+        auto XN0 = this->model()->rBFunctionSpace()->template rbFunctionSpace<0>();
+        auto XN1 = this->model()->rBFunctionSpace()->template rbFunctionSpace<1>();
+
+        int N0 = this->subN(0,Nmu);
+        int N1 = this->subN(1,Nmu);
+        int n0 = N0 - this->subN(0,Nmu-1);
+        int n1 = N1 - this->subN(1,Nmu-1);
+
+        if ( n0<2 && n1==1 )
+        {
+            XN1->primalRB().pop_back();
+            this->incrementSubN(1,Nmu,-1);
+        }
+    }
 
     LOG(INFO) << "CRBBlock orthonormalize basis end\n";
 }
@@ -498,51 +549,54 @@ struct BuildRbMatrixByRow
                     // resize the block RC
                     for ( size_type m=0; m<model->mMaxA(q); m++ )
                     {
-                        m_crb->blockAqm( R::value, C::value, false )[q][m].conservativeResize( Nr, Nc );
-                        m_crb->blockAqm( R::value, C::value, true )[q][m].conservativeResize( Nr, Nc );
-                        m_crb->blockAqmPrDu( R::value, C::value )[q][m].conservativeResize( Nr, Nc );
-
-                        // update last rows of block RC
-                        for ( size_type i= Nr-n_upr; i<Nr; i++ )
+                        if ( m_crb->notEmptyAqm(R::value,C::value,q,m) )
                         {
-                            for ( size_type j=0; j<Nc; j++ )
-                            {
-                                Ur.zero();
-                                ur = XNr->primalBasisElement(i);
-                                Uc.zero();
-                                uc = XNc->primalBasisElement(j);
-                                m_crb->blockAqm( R::value, C::value, false )[q][m](i,j)
-                                    = model->Aqm( q, m, Uc, Ur );
-                                ur = XNr->dualBasisElement(i);
-                                uc = XNc->dualBasisElement(j);
-                                m_crb->blockAqm( R::value, C::value, true )[q][m](i,j)
-                                    = model->Aqm( q, m, Uc, Ur, true );
-                                ur = XNr->dualBasisElement(i);
-                                uc = XNc->primalBasisElement(j);
-                                m_crb->blockAqmPrDu( R::value, C::value )[q][m](i,j)
-                                    = model->Aqm( q, m, Uc, Ur );
-                            } // loop on j
-                        } // loop on i
+                            m_crb->blockAqm( R::value, C::value, false )[q][m].conservativeResize( Nr, Nc );
+                            m_crb->blockAqm( R::value, C::value, true )[q][m].conservativeResize( Nr, Nc );
+                            m_crb->blockAqmPrDu( R::value, C::value )[q][m].conservativeResize( Nr, Nc );
 
-                        // update last col of block RC
-                        for ( size_type i=0; i<Nr; i++ )
-                        {
-                            for ( size_type j=Nc-n_upc; j<Nc; j++ )
+                            // update last rows of block RC
+                            for ( size_type i= Nr-n_upr; i<Nr; i++ )
                             {
-                                ur = XNr->primalBasisElement(i);
-                                uc = XNc->primalBasisElement(j);
-                                m_crb->blockAqm( R::value, C::value, false )[q][m](i,j)
-                                    = model->Aqm( q, m, Uc, Ur );
-                                ur = XNr->dualBasisElement(i);
-                                uc = XNc->dualBasisElement(j);
-                                m_crb->blockAqm( R::value, C::value, true )[q][m](i,j)
-                                    = model->Aqm( q, m, Uc, Ur, true );
-                                ur = XNr->dualBasisElement(i);
-                                uc = XNc->primalBasisElement(j);
-                                m_crb->blockAqmPrDu( R::value, C::value )[q][m](i,j)
-                                    = model->Aqm( q, m, Uc, Ur );
-                            } // loop on j
-                        } // loop on i
+                                for ( size_type j=0; j<Nc; j++ )
+                                {
+                                    Ur.zero();
+                                    ur = XNr->primalBasisElement(i);
+                                    Uc.zero();
+                                    uc = XNc->primalBasisElement(j);
+                                    m_crb->blockAqm( R::value, C::value, false )[q][m](i,j)
+                                        = model->Aqm( q, m, Uc, Ur );
+                                    ur = XNr->dualBasisElement(i);
+                                    uc = XNc->dualBasisElement(j);
+                                    m_crb->blockAqm( R::value, C::value, true )[q][m](i,j)
+                                        = model->Aqm( q, m, Uc, Ur, true );
+                                    ur = XNr->dualBasisElement(i);
+                                    uc = XNc->primalBasisElement(j);
+                                    m_crb->blockAqmPrDu( R::value, C::value )[q][m](i,j)
+                                        = model->Aqm( q, m, Uc, Ur );
+                                } // loop on j
+                            } // loop on i
+
+                            // update last col of block RC
+                            for ( size_type i=0; i<Nr; i++ )
+                            {
+                                for ( size_type j=Nc-n_upc; j<Nc; j++ )
+                                {
+                                    ur = XNr->primalBasisElement(i);
+                                    uc = XNc->primalBasisElement(j);
+                                    m_crb->blockAqm( R::value, C::value, false )[q][m](i,j)
+                                        = model->Aqm( q, m, Uc, Ur );
+                                    ur = XNr->dualBasisElement(i);
+                                    uc = XNc->dualBasisElement(j);
+                                    m_crb->blockAqm( R::value, C::value, true )[q][m](i,j)
+                                        = model->Aqm( q, m, Uc, Ur, true );
+                                    ur = XNr->dualBasisElement(i);
+                                    uc = XNc->primalBasisElement(j);
+                                    m_crb->blockAqmPrDu( R::value, C::value )[q][m](i,j)
+                                        = model->Aqm( q, m, Uc, Ur );
+                                } // loop on j
+                            } // loop on i
+                        } // if block not empty
                     } // loop on m
                 } //loop on q
 
@@ -553,17 +607,20 @@ struct BuildRbMatrixByRow
                     {
                         for ( size_type m=0; m<model->mMaxF(0, q); m++ )
                         {
-                            m_crb->blockFqm( R::value, false )[q][m].conservativeResize(Nr);
-                            m_crb->blockFqm( R::value, true )[q][m].conservativeResize(Nr);
-
-                            for ( size_type l=Nr-n_upr; l<Nr; l++ )
+                            if ( m_crb->notEmptyFqm(R::value,q,m) )
                             {
-                                Ur.zero();
-                                ur=XNr->primalBasisElement(l);
-                                m_crb->blockFqm( R::value, false )[q][m](l) = model->Fqm( 0, q, m, Ur );
-                                ur=XNr->dualBasisElement(l);
-                                m_crb->blockFqm( R::value, true )[q][m](l) = model->Fqm( 0, q, m, Ur );
-                            } // loop on l
+                                m_crb->blockFqm( R::value, false )[q][m].conservativeResize(Nr);
+                                m_crb->blockFqm( R::value, true )[q][m].conservativeResize(Nr);
+
+                                for ( size_type l=Nr-n_upr; l<Nr; l++ )
+                                {
+                                    Ur.zero();
+                                    ur=XNr->primalBasisElement(l);
+                                    m_crb->blockFqm( R::value, false )[q][m](l) = model->Fqm( 0, q, m, Ur );
+                                    ur=XNr->dualBasisElement(l);
+                                    m_crb->blockFqm( R::value, true )[q][m](l) = model->Fqm( 0, q, m, Ur );
+                                } // loop on l
+                            } // if not empty
                         } // loop on m
                     } //loop on q
 
@@ -572,17 +629,20 @@ struct BuildRbMatrixByRow
                     {
                         for ( size_type m=0; m<model->mMaxF(oi, q); m++ )
                         {
-                            m_crb->blockLqm( R::value, false )[q][m].conservativeResize(Nr);
-                            m_crb->blockLqm( R::value, true )[q][m].conservativeResize(Nr);
-
-                            for ( size_type l=Nr-n_upr; l<Nr; l++ )
+                            if ( m_crb->notEmptyLqm(R::value,q,m))
                             {
-                                Ur.zero();
-                                ur=XNr->primalBasisElement(l);
-                                m_crb->blockLqm( R::value, false )[q][m](l) = model->Fqm( oi, q, m, Ur );
-                                ur=XNr->dualBasisElement(l);
-                                m_crb->blockLqm( R::value, true )[q][m](l) = model->Fqm( oi, q, m, Ur );
-                            } // loop on l
+                                m_crb->blockLqm( R::value, false )[q][m].conservativeResize(Nr);
+                                m_crb->blockLqm( R::value, true )[q][m].conservativeResize(Nr);
+
+                                for ( size_type l=Nr-n_upr; l<Nr; l++ )
+                                {
+                                    Ur.zero();
+                                    ur=XNr->primalBasisElement(l);
+                                    m_crb->blockLqm( R::value, false )[q][m](l) = model->Fqm( oi, q, m, Ur );
+                                    ur=XNr->dualBasisElement(l);
+                                    m_crb->blockLqm( R::value, true )[q][m](l) = model->Fqm( oi, q, m, Ur );
+                                } // loop on l
+                            } // if not empty
                         } // looop on m
                     } //loop on q
                 } // if c==0
@@ -625,11 +685,13 @@ CRBBlock<TruthModelType>::initBlockMatrix()
     M_blockAqm_pr.resize(n_block);
     M_blockAqm_du.resize(n_block);
     M_blockAqm_pr_du.resize(n_block);
+    M_notemptyAqm.resize( n_block );
     for( int i = 0; i < n_block; i++ )
     {
         M_blockAqm_pr[i].resize(n_block);
         M_blockAqm_du[i].resize(n_block);
         M_blockAqm_pr_du[i].resize(n_block);
+        M_notemptyAqm[i].resize( n_block );
     }
 
     M_blockFqm_pr.resize(n_block);
@@ -637,6 +699,8 @@ CRBBlock<TruthModelType>::initBlockMatrix()
     M_blockFqm_du.resize(n_block);
     M_blockLqm_du.resize(n_block);
 
+    M_notemptyFqm.resize(n_block);
+    M_notemptyLqm.resize(n_block);
 }
 
 template<typename TruthModelType>
@@ -646,9 +710,7 @@ CRBBlock<TruthModelType>::updateAffineDecompositionSize()
     if( this->M_rebuild || this->M_N == 0 )
         initBlockMatrix();
     int output_index = this->M_output_index;
-
-    //    for ( int n=0; n<n_block; n++ )
-    //    subN(n) = this->M_model->addSupremizerInSpace(n) ? 2*this->M_N:this->M_N;
+    this->model()->initBlockMatrix();
 
     for (int r=0; r<n_block; r++ )
     {
@@ -657,31 +719,68 @@ CRBBlock<TruthModelType>::updateAffineDecompositionSize()
             M_blockAqm_pr[r][c].resize( this->M_model->Qa() );
             M_blockAqm_du[r][c].resize( this->M_model->Qa() );
             M_blockAqm_pr_du[r][c].resize( this->M_model->Qa() );
+            M_notemptyAqm[r][c].resize( this->M_model->Qa() );
+            auto AqmBlock = this->model()->AqmBlock( r, c );
+
             for ( int q=0; q<M_blockAqm_pr[r][c].size(); q++ )
             {
                 M_blockAqm_pr[r][c][q].resize( this->M_model->mMaxA(q) );
                 M_blockAqm_du[r][c][q].resize( this->M_model->mMaxA(q) );
                 M_blockAqm_pr_du[r][c][q].resize( this->M_model->mMaxA(q) );
+                M_notemptyAqm[r][c][q].resize( this->M_model->mMaxA(q) );
+                for ( int m=0; m<this->M_model->mMaxA(q); m++ )
+                {
+                    bool is_empty = AqmBlock[q][m]->linftyNorm()<1e-12;
+                    M_notemptyAqm[r][c][q][m] = !is_empty;
+                    if ( is_empty )
+                        Feel::cout << "CRBBlock empty block in AD Aqm r="<<r<<", c="<<c
+                                   << ", q="<<q<<", m="<<m<<std::endl;
+                }
             }
         }
 
         M_blockFqm_pr[r].resize( this->M_model->Ql(0) );
         M_blockFqm_du[r].resize( this->M_model->Ql(0) );
+        M_notemptyFqm[r].resize( this->M_model->Ql(0) );
+        auto FqmBlock = this->model()->FqmBlock(0,r);
+
         for ( int q=0; q<M_blockFqm_pr[r].size(); q++ )
         {
             M_blockFqm_pr[r][q].resize( this->M_model->mMaxF( 0, q) );
             M_blockFqm_du[r][q].resize( this->M_model->mMaxF( 0, q) );
+            M_notemptyFqm[r][q].resize( this->M_model->mMaxF( 0, q) );
+            for ( int m=0; m<this->M_model->mMaxF( 0, q); m++ )
+            {
+                bool is_empty = FqmBlock[q][m]->linftyNorm()<1e-12;
+                M_notemptyFqm[r][q][m] = !is_empty;
+                // if ( is_empty )
+                //     Feel::cout << "CRBBlock empty block in AD Fqm r="<<r
+                //                << ", q="<<q<<", m="<<m<<std::endl;
+            }
         }
 
         M_blockLqm_pr[r].resize( this->M_model->Ql( output_index ) );
         M_blockLqm_du[r].resize( this->M_model->Ql( output_index ) );
+        M_notemptyLqm[r].resize( this->M_model->Ql( output_index ) );
+        auto LqmBlock = this->model()->FqmBlock(output_index,r);
+
         for ( int q=0; q<M_blockLqm_pr[r].size(); q++ )
         {
             M_blockLqm_pr[r][q].resize( this->M_model->mMaxF( output_index, q ) );
             M_blockLqm_du[r][q].resize( this->M_model->mMaxF( output_index, q ) );
+            M_notemptyLqm[r][q].resize( this->M_model->mMaxF( output_index, q ) );
+            for ( int m=0; m<this->M_model->mMaxF( output_index, q); m++ )
+            {
+                bool is_empty = LqmBlock[q][m]->linftyNorm()<1e-12;
+                M_notemptyLqm[r][q][m] = !is_empty;
+                // if ( is_empty )
+                //     Feel::cout << "CRBBlock empty block in AD Lqm r="<<r
+                //                << ", q="<<q<<", m="<<m<<std::endl;
+            }
         }
     }
 
+    this->model()->clearBlockMatrix();
     this->updateSpecificTerms();
 
     if ( this->M_error_type == CRB_RESIDUAL || this->M_error_type == CRB_RESIDUAL_SCM )
@@ -760,6 +859,9 @@ CRBBlock<TruthModelType>::serialize(Archive & ar, const unsigned int __version )
     ar & BOOST_SERIALIZATION_NVP( M_blockFqm_du );
     ar & BOOST_SERIALIZATION_NVP( M_blockLqm_du );
     ar & BOOST_SERIALIZATION_NVP( M_blockAqm_pr_du );
+    ar & BOOST_SERIALIZATION_NVP( M_notemptyAqm );
+    ar & BOOST_SERIALIZATION_NVP( M_notemptyFqm );
+    ar & BOOST_SERIALIZATION_NVP( M_notemptyLqm );
 }
 
 template<typename TruthModelType>
