@@ -66,6 +66,7 @@ public :
     typedef typename super_type::mesh_ptrtype mesh_ptrtype;
 
     static const bool by_block = model_type::by_block;
+    static const int n_block = space_type::nSpaces;
 
     //! Default Constructor
     DEIMModel() : super_type()
@@ -83,15 +84,18 @@ public :
      */
     void init();
 
-    tensor_ptrtype assemble( parameter_type const& mu, bool online=false ) override;
+    tensor_ptrtype assemble( parameter_type const& mu, bool online=false, bool force_fem=false ) override;
     tensor_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false ) override
         {
             CHECK(this->M_nl_assembly) << "You called nl coefficient for DEIM but you implemented assembleForDEIM(mu)\n";
             return modelAssemble(mu,u,online);
         }
 
-    void updateRb( rbspace_ptrtype const& XN ) override
-        { return updateRb( XN, mpl::bool_<by_block>() ); }
+    void updateRb( rbspace_ptrtype const& XN, std::vector<std::vector<int>> subN ) override
+        {
+            M_subN = subN;
+            return updateRb( XN, mpl::bool_<by_block>() );
+        }
 
     //! \return the online model
     model_ptrtype & onlineModel() { return M_online_model; }
@@ -99,6 +103,40 @@ public :
     model_ptrtype & model() { return M_model; }
 
     int tag() override { return M_tag; }
+
+    int subN( int const& n_space ) const
+        { return subN( n_space, WNmuSize() ); }
+    int subN( int const& n_space, int const& N ) const
+        {
+            CHECK( M_subN.size()>0 )<<"No subN with this deim\n";
+            CHECK( n_space<n_block ) <<"Invalid space number\n";
+            CHECK( N>=0 )<<"Invalid size N="<<N<<std::endl;
+            CHECK( N<M_subN[n_space].size() )<<"Invalid size N="<<N
+                                             <<", size="<<M_subN[n_space].size()<<std::endl;
+            return M_subN[n_space][N];
+        }
+
+    int dimension() const
+        { return dimension( WNmuSize() ); }
+    int dimension( int N ) const
+        {
+            CHECK( M_subN.size()>0 )<<"No subN with this deim\n";
+            int dim = 0;
+            for ( int n=0; n<n_block; n++ )
+                dim += subN(n,N);
+            return dim;
+        }
+
+    int WNmuSize() const
+        {
+            CHECK( M_subN.size()>0 )<<"No subN with this deim\n";
+            int size = M_subN[0].size();
+            for ( int i=0; i<M_subN.size(); i++ )
+                CHECK( size==M_subN[i].size() ) <<"Space #"<<i<<" has different size ("
+                                                <<size<<" versus "<< M_subN[i].size()<<")\n";
+            return size;
+        }
+
 protected :
     //! UpdateRb without block structure
     void updateRb( rbspace_ptrtype const& XN, mpl::false_ );
@@ -144,9 +182,11 @@ protected :
                                     _range=M_online_model->functionspaceMeshSupport( mesh ) );
         }
 
+
 protected :
     model_ptrtype M_model, M_online_model;
     int M_tag;
+    std::vector<std::vector<int>> M_subN;
     using super_type::M_write_nl_solutions;
     using super_type::M_write_nl_directory;
     using super_type::M_rb;
@@ -187,32 +227,24 @@ private :
         ExpansionByBlock( self_type* deim, vectorN_type const& urb ) :
             m_deim( deim ),
             m_urb( urb ),
+            N(0),
             m_start(0),
             U( m_deim->onlineModel()->functionSpace() )
         {
-            int size0 = m_deim->template subRb<0>().size();
-            int size1 = m_deim->template subRb<1>().size();
-            m_supremizer = size0==2*size1;
-            int size_urb = urb.size();
-            int n = space_type::nSpaces;
-            if ( m_supremizer )
-                n++;
-            N = size_urb/n;
-            CHECK( N*n==size_urb ) <<"Error trying to split urb\n";
+            for ( int i=0; i<m_deim->WNmuSize(); i++ )
+                if ( m_deim->dimension(i)==m_urb.size() )
+                    N=i;
+            CHECK(N!=0) <<"Error trying to split urb\n";
         }
 
         template <typename T>
         void operator()( T const& t ) const
         {
             auto WN = m_deim->template subRb<T::value>();
-            int Nwn = N;
-            if ( m_supremizer && T::value==0 )
-                Nwn *= 2;
-
-            CHECK( Nwn<=WN.size() ) << "invalide expansion size, N<n="<<Nwn<<", size="<<WN.size()
-                                    << ", space="<<T::value<<std::endl;
+            int Nwn = m_deim->subN(T::value,N);
             CHECK( m_start+Nwn<=m_urb.size() ) << "invalide expansion size, N<n="<<Nwn<<", size="
-                                                 <<m_urb.size() << ", space="<<T::value<<std::endl;
+                                               <<m_urb.size() << ", space="<<T::value<<std::endl;
+
             auto  coeff = m_urb.segment( m_start, Nwn );
             auto u = U.template element<T::value>();
             u = Feel::expansion( WN, coeff, Nwn ).container();
@@ -224,9 +256,8 @@ private :
     private :
         self_type* m_deim;
         vectorN_type m_urb;
-        mutable int m_start;
-        bool m_supremizer;
         int N;
+        mutable int m_start;
         mutable element_type U;
     };
 
@@ -291,15 +322,15 @@ DEIMModel<ModelType,TensorType>::DEIMModel( model_ptrtype model, sampling_ptrtyp
     if ( !this->M_rebuild )
     {
         if ( this->loadDB() )
-            cout<<"DEIM : Database loaded with " << this->M_M << " basis functions\n";
+            cout<< this->name() + " : Database loaded with " << this->M_M << " basis functions\n";
         else
         {
-            cout <<"DEIM : No Database loaded : start greedy algorithm from beginning\n";
+            cout << this->name() + " : No Database loaded : start greedy algorithm from beginning\n";
             this->M_rebuild=true;
         }
     }
     else
-        cout << "DEIM : option deim.rebuild-database=true : start greedy algorithm from beginning\n";
+        cout << this->name() + " : option deim.rebuild-database=true : start greedy algorithm from beginning\n";
     if ( Rh )
         M_online_model->setFunctionSpaces( Rh );
     this->M_online_model->initOnlineModel();
@@ -327,7 +358,7 @@ DEIMModel<ModelType,TensorType>::init()
 
 template <typename ModelType, typename TensorType>
 typename DEIMModel<ModelType,TensorType>::tensor_ptrtype
-DEIMModel<ModelType,TensorType>::assemble( parameter_type const& mu, bool online )
+DEIMModel<ModelType,TensorType>::assemble( parameter_type const& mu, bool online, bool force_fem )
 {
     if ( this->M_nl_assembly )
     {
@@ -338,13 +369,13 @@ DEIMModel<ModelType,TensorType>::assemble( parameter_type const& mu, bool online
         auto u = M_model->functionSpace()->element();
         bool need_solve = true;
 
-        if ( this->M_ser_use_rb && this->M_crb && !online )
+        if ( this->M_ser_use_rb && this->M_crb && !online && !force_fem )
         {
             std::vector<vectorN_type> uN, uNdu, uNold, uNduold;
             auto o = this->M_crb->lb( this->M_crb->dimension(), mu, uN, uNdu , uNold, uNduold );
             int size = uN.size();
 
-            u = this->M_crb->expansion( uN[size-1], this->M_crb->dimension(), false );
+            u = this->M_crb->expansion( uN[size-1], this->M_crb->WNmuSize(), false );
         }
         else
         {
@@ -356,11 +387,11 @@ DEIMModel<ModelType,TensorType>::assemble( parameter_type const& mu, bool online
                 need_solve = !u.load( _path=M_write_nl_directory,
                                       _suffix=std::to_string(mu.key()), _type="hdf5" );
                 if ( need_solve )
-                    LOG(INFO) << this->name() + " : Unable to load nl solution in direcotry "
+                    LOG(INFO) << this->name() + " : Unable to load nl solution in directotry "
                               << M_write_nl_directory << ", for parameter : " << mu.toString()
                               <<" / " << mu.key()<< ". Solve function will be called.";
                 else
-                    LOG(INFO) << this->name() + " : NL solution loaded in direcotry "
+                    LOG(INFO) << this->name() + " : NL solution loaded in directotry "
                               << M_write_nl_directory << ", for parameter : " << mu.toString()
                               <<" / " << mu.key();
             }
@@ -369,9 +400,11 @@ DEIMModel<ModelType,TensorType>::assemble( parameter_type const& mu, bool online
             {
                 LOG(INFO) << this->name() + " : calling solve function for parameter " << mu.toString()
                           <<" / " << mu.key();
-                u = M_model->solve(mu);
+                auto o = M_model->safeSolve(mu);
+                u = o.first;
+                this->M_last_solve_is_ok = o.second;
 
-                if ( M_write_nl_solutions )
+                if ( M_write_nl_solutions && o.second )
                 {
                     LOG(INFO) << this->name() + " : Writing solution on disk in directory "
                               << M_write_nl_directory << ", for parameter : " << mu.toString()
