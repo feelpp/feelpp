@@ -79,7 +79,7 @@ public :
     std::vector<double> computeBetaTri( parameter_type const& mu )
         { return this->M_model->computeBetaTri(mu); }
 
-    bool isTrilinear cont override
+    bool isTrilinear() const override
         { return true; }
 
     int sizeOfBilinearJ() const
@@ -175,7 +175,7 @@ CRBModelAero<ModelType>::updateJacobianAD( const vector_ptrtype& X, sparse_matri
     auto betaTri = this->M_model->computeBetaTri( mu );
 
     // trilinear part
-    for ( int q=0; q<M_QTri; q ++ )
+    for ( int q=0; q<betaTri.size(); q ++ )
     {
         auto JTri = this->M_model->assembleTrilinearJ( U, q );
         J->addMatrix( betaTri[q], JTri );
@@ -228,10 +228,9 @@ CRBModelAero<ModelType>::updateResidualAD( const vector_ptrtype& X, vector_ptrty
     // bilinear part
     temp->zero();
     for ( size_type q = 0; q < this->sizeOfBilinearJ(); ++q )
-        if ( this->mMaxA(q)==1 )
-        {
-            temp->addMatrix( betaJqm[q][0], M_Jqm[q][0] );
-        }
+    {
+        temp->addMatrix( betaJqm[q][0], M_Jqm[q][0] );
+    }
     R->addVector( X, temp );
 
     // linear part and non-linear+eim
