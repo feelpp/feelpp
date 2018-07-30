@@ -55,9 +55,17 @@ pybind11_add_module(mesh  mesh.cpp)
 target_include_directories(mesh PRIVATE ${PYTHON_INCLUDE_DIRS})
 target_link_libraries( mesh PRIVATE ${FEELPP_LIBRARIES} )
 
+pybind11_add_module(test_nested  test_nested.cpp)
+target_include_directories(test_nested PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_link_libraries( test_nested PRIVATE ${FEELPP_LIBRARIES} )
+
 pybind11_add_module(discr  discr.cpp)
 target_include_directories(discr PRIVATE ${PYTHON_INCLUDE_DIRS})
 target_link_libraries( discr PRIVATE ${FEELPP_LIBRARIES} )
+
+pybind11_add_module(exporter  exporter.cpp)
+target_include_directories(exporter PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_link_libraries( exporter PRIVATE ${FEELPP_LIBRARIES} )
 
 pybind11_add_module(fluid  fluid.cpp)
 target_include_directories(fluid PRIVATE ${PYTHON_INCLUDE_DIRS})
