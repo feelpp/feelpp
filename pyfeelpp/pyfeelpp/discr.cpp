@@ -33,20 +33,45 @@ template<typename MeshT, int Order = 1>
 void defDiscr(py::module &m)
 {
     using namespace Feel;
-    std::string pyclass_name = std::string("Pch_") + std::to_string(MeshT::nDim)+std::string("D_P") + std::to_string(Order);
+    
     using pch_t = Pch_type<MeshT,Order>;
     using mesh_support_vector_t = typename pch_t::mesh_support_vector_type;
     using periodicity_t = typename pch_t::periodicity_type;
+    using mesh_ptr_t = std::shared_ptr<MeshT>;
+    using element_t = typename pch_t::element_type;
+    std::string pyclass_name;
+
+    std::string suffix = std::to_string(MeshT::nDim)+std::string("D_P") + std::to_string(Order);
+    pyclass_name = std::string("mesh_support_vector_")+suffix;
+    py::class_<mesh_support_vector_t>(m,pyclass_name.c_str()).def(py::init<>());
+    pyclass_name = std::string("periodicity_")+suffix;
+    py::class_<periodicity_t>(m,pyclass_name.c_str()).def(py::init<>());
+    
+    pyclass_name = std::string("Pch_") + suffix;
     py::class_<pch_t,std::shared_ptr<pch_t>>(m,pyclass_name.c_str())
-        .def(py::init<std::shared_ptr<MeshT> const&,mesh_support_vector_t const&, size_type, periodicity_t, std::vector<WorldComm> const&, std::vector<bool>>(),
+        .def(py::init<mesh_ptr_t const&,mesh_support_vector_t const&, size_type, periodicity_t, std::vector<WorldComm> const&, std::vector<bool>>(),
              py::arg("mesh"),
              py::arg("support")=mesh_support_vector_t(),
              py::arg("components")=MESH_RENUMBER | MESH_CHECK,
              py::arg("periodicity")=periodicity_t(),
              py::arg("worldsComm") = Environment::worldsComm(1),
-             py::arg("extendedDofTable") = std::vector<bool>(1,false) );
+             py::arg("extendedDofTable") = std::vector<bool>(1,false) )
+        .def("nDof",static_cast<size_type(pch_t::*)() const>(&pch_t::nDof), "get the number of degrees of freedom over the whole domain")
+        .def("nLocalDof",static_cast<size_type(pch_t::*)() const>(&pch_t::nLocalDof), "get the number of degrees of freedom over the current subdomain")
+        .def("nLocalDofWithGhost",static_cast<size_type(pch_t::*)() const>(&pch_t::nLocalDofWithGhost), "get the number of degrees of freedom over the current subdomain withthe ghost")
+        .def("nLocalDofWithoutGhost",static_cast<size_type(pch_t::*)() const>(&pch_t::nLocalDofWithoutGhost), "get the number of degrees of freedom over the current subdomain without the ghost")
+        .def("basisName",static_cast<std::string (pch_t::*)() const>(&pch_t::basisName), "get the basis function name")
 
-    
+        .def("mesh",static_cast<mesh_ptr_t const&(pch_t::*)() const>(&pch_t::mesh), "get the mesh of the function space")
+        .def("element",static_cast<element_t (pch_t::*)(std::string const&, std::string const&)>(&pch_t::element), "get an element of the function space", py::arg("name")="u", py::arg("desc")="u")
+
+        ;
+
+#if 0    
+    pyclass_name = std::string("Element_Pch_") + suffix;
+    py::class_<element_t>(m,pyclass_name.c_str())
+        .def(py::init<std::shared_ptr<pch_t> const&, std::string const&, std::string const&, size_type, ComponentType>(),py::arg("space"), py::arg("name"), py::arg("desc"), py::arg("start")=0, py::arg("ct")= ComponentType::NO_COMPONENT);
+#endif    
 }
     
 PYBIND11_MODULE(discr, m )
@@ -55,8 +80,8 @@ PYBIND11_MODULE(discr, m )
 
     if (import_mpi4py()<0) return ;
     
-    defDiscr<Mesh<Simplex<1>>,1>( m );
+    //defDiscr<Mesh<Simplex<1>>,1>( m );
     defDiscr<Mesh<Simplex<2>>,1>( m );
-    defDiscr<Mesh<Simplex<2>>,2>( m );
+    //defDiscr<Mesh<Simplex<2>>,2>( m );
 }
 
