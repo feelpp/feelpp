@@ -30,11 +30,19 @@ namespace py = pybind11;
 using namespace Feel;
 
 template<typename MeshT, int Order = 1>
+class MyElement: public Pch_type<MeshT,Order>::element_type
+{
+public:
+    using base = typename Pch_type<MeshT,Order>::element_type;
+    MyElement() : base() {}
+};
+template<typename MeshT, int Order = 1>
 void defDiscr(py::module &m)
 {
     using namespace Feel;
     
     using pch_t = Pch_type<MeshT,Order>;
+    using pch_ptr_t = Pch_ptrtype<MeshT,Order>;
     using mesh_support_vector_t = typename pch_t::mesh_support_vector_type;
     using periodicity_t = typename pch_t::periodicity_type;
     using mesh_ptr_t = std::shared_ptr<MeshT>;
@@ -46,6 +54,7 @@ void defDiscr(py::module &m)
     py::class_<mesh_support_vector_t>(m,pyclass_name.c_str()).def(py::init<>());
     pyclass_name = std::string("periodicity_")+suffix;
     py::class_<periodicity_t>(m,pyclass_name.c_str()).def(py::init<>());
+    
     
     pyclass_name = std::string("Pch_") + suffix;
     py::class_<pch_t,std::shared_ptr<pch_t>>(m,pyclass_name.c_str())
@@ -64,14 +73,16 @@ void defDiscr(py::module &m)
 
         .def("mesh",static_cast<mesh_ptr_t const&(pch_t::*)() const>(&pch_t::mesh), "get the mesh of the function space")
         .def("element",static_cast<element_t (pch_t::*)(std::string const&, std::string const&)>(&pch_t::element), "get an element of the function space", py::arg("name")="u", py::arg("desc")="u")
-
         ;
 
-#if 0    
+    // Element
     pyclass_name = std::string("Element_Pch_") + suffix;
-    py::class_<element_t>(m,pyclass_name.c_str())
-        .def(py::init<std::shared_ptr<pch_t> const&, std::string const&, std::string const&, size_type, ComponentType>(),py::arg("space"), py::arg("name"), py::arg("desc"), py::arg("start")=0, py::arg("ct")= ComponentType::NO_COMPONENT);
-#endif    
+    py::class_<element_t,std::shared_ptr<element_t>>(m,pyclass_name.c_str())
+        .def(py::init<>())
+        .def(py::init<std::shared_ptr<pch_t> const&, std::string const&, std::string const&, size_type, ComponentType>(),py::arg("space"), py::arg("name"), py::arg("desc"), py::arg("start")=0, py::arg("ct")= ComponentType::NO_COMPONENT)
+        .def("functionSpace",static_cast<pch_ptr_t const&(element_t::*)() const>(&element_t::functionSpace), "Get funtion space from element")
+        .def("size", static_cast< size_type (element_t::*)() const>(&element_t::size), "Get size of element")
+        ;
 }
     
 PYBIND11_MODULE(discr, m )
@@ -79,6 +90,9 @@ PYBIND11_MODULE(discr, m )
     using namespace Feel;
 
     if (import_mpi4py()<0) return ;
+
+    std::string pyclass_name = std::string("ComponentType");
+    py::class_<ComponentType>(m,pyclass_name.c_str()).def(py::init<>());
     
     //defDiscr<Mesh<Simplex<1>>,1>( m );
     defDiscr<Mesh<Simplex<2>>,1>( m );
