@@ -41,7 +41,7 @@ using namespace Feel;
 
 template<typename MeshT>
 std::shared_ptr<MeshT>
-loadmesh( std::string const& n, double h )
+loadmesh( std::shared_ptr<MeshT> const& m, std::string const& n, double h )
 {
     
     return loadMesh( _mesh=new MeshT, _filename=n, _h=h );
