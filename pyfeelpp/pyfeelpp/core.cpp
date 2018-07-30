@@ -75,6 +75,8 @@ PYBIND11_MODULE(core, m )
         .def("localRank", &Feel::WorldComm::localRank,"returns the rank of the local worldcomm")
         .def("globalRank", &Feel::WorldComm::localRank,"returns the rank of the global worldcomm")
         ;
-    
+    py::class_<std::vector<WorldComm>>(m,"WorldsComm").def(py::init<>());
+    py::class_<std::vector<bool>>(m,"vector_bool").def(py::init<>());
+
     py::class_<po::options_description>(m,"OptionsDescription");
 }
