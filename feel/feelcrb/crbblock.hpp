@@ -407,24 +407,6 @@ CRBBlock<TruthModelType>::orthonormalizeBasis( int number_of_added_elements )
     rangespace_type range;
     boost::fusion::for_each( range, b );
 
-    if ( boption("crb.block.check-infsup") )
-    {
-        int Nmu = this->WNmuSize();
-        auto XN0 = this->model()->rBFunctionSpace()->template rbFunctionSpace<0>();
-        auto XN1 = this->model()->rBFunctionSpace()->template rbFunctionSpace<1>();
-
-        int N0 = this->subN(0,Nmu);
-        int N1 = this->subN(1,Nmu);
-        int n0 = N0 - this->subN(0,Nmu-1);
-        int n1 = N1 - this->subN(1,Nmu-1);
-
-        if ( n0<2 && n1==1 )
-        {
-            XN1->primalRB().pop_back();
-            this->incrementSubN(1,Nmu,-1);
-        }
-    }
-
     LOG(INFO) << "CRBBlock orthonormalize basis end\n";
 }
 
@@ -732,9 +714,6 @@ CRBBlock<TruthModelType>::updateAffineDecompositionSize()
                 {
                     bool is_empty = AqmBlock[q][m]->linftyNorm()<1e-12;
                     M_notemptyAqm[r][c][q][m] = !is_empty;
-                    if ( is_empty )
-                        Feel::cout << "CRBBlock empty block in AD Aqm r="<<r<<", c="<<c
-                                   << ", q="<<q<<", m="<<m<<std::endl;
                 }
             }
         }
@@ -753,9 +732,6 @@ CRBBlock<TruthModelType>::updateAffineDecompositionSize()
             {
                 bool is_empty = FqmBlock[q][m]->linftyNorm()<1e-12;
                 M_notemptyFqm[r][q][m] = !is_empty;
-                // if ( is_empty )
-                //     Feel::cout << "CRBBlock empty block in AD Fqm r="<<r
-                //                << ", q="<<q<<", m="<<m<<std::endl;
             }
         }
 
@@ -773,9 +749,6 @@ CRBBlock<TruthModelType>::updateAffineDecompositionSize()
             {
                 bool is_empty = LqmBlock[q][m]->linftyNorm()<1e-12;
                 M_notemptyLqm[r][q][m] = !is_empty;
-                // if ( is_empty )
-                //     Feel::cout << "CRBBlock empty block in AD Lqm r="<<r
-                //                << ", q="<<q<<", m="<<m<<std::endl;
             }
         }
     }
