@@ -10,15 +10,16 @@
 #define LEVELSET_PN_ORDERPOLY @LEVELSET_PN_ORDERPOLY@
 
 #define LEVELSET_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename ConvexType, typename BasisType, typename PeriodicityType, typename BasisPnType > \
+    template< typename ConvexType, typename BasisType, typename PeriodicityType, typename FunctionSpaceAdvectionVelocityType, typename BasisPnType > \
         /**/
 #define LEVELSET_CLASS_TEMPLATE_TYPE \
-    LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType> \
+    LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType> \
         /**/
 #define LEVELSET_CLASS_TYPE \
     LevelSet< Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>, \
         Lagrange<LEVELSET_ORDERPOLY, Scalar, Continuous, LEVELSET_INTERPOLATION_POINTS >, \
         LEVELSET_PERIODICITY, \
+        FunctionSpace< Mesh<Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>>, bases<Lagrange<LEVELSET_ORDERPOLY, Vectorial, Continuous, LEVELSET_INTERPOLATION_POINTS>>, Periodicity<LEVELSET_PERIODICITY> >, \
         Lagrange<LEVELSET_PN_ORDERPOLY, Scalar, Continuous, LEVELSET_INTERPOLATION_POINTS > \
         >                    \
     /**/

@@ -91,14 +91,15 @@ enum class LevelSetFieldsExported
 
 template<
     typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity, 
+    typename FunctionSpaceAdvectionVelocityType = FunctionSpace< Mesh<ConvexType>, bases<typename detail::ChangeBasisPolySet<Vectorial,BasisType>::type>, Periodicity<PeriodicityType> >,
     typename BasisPnType = BasisType
     >
 class LevelSet : public ModelNumerical,
-                 public boost::enable_shared_from_this< LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType> >
+                 public boost::enable_shared_from_this< LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType> >
 {
     typedef ModelNumerical super_type;
 public:
-    typedef LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType> self_type;
+    typedef LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     static const uint16_type Order = BasisType::nOrder;
@@ -160,9 +161,14 @@ public:
 #endif
     //--------------------------------------------------------------------//
     // Advection toolbox
-    typedef Advection< space_levelset_type > advection_toolbox_type;
+    typedef Advection< space_levelset_type, FunctionSpaceAdvectionVelocityType > advection_toolbox_type;
     typedef boost::shared_ptr<advection_toolbox_type> advection_toolbox_ptrtype;
     static_assert( advection_toolbox_type::is_scalar, "LevelSet function basis must be scalar" );
+
+    typedef typename advection_toolbox_type::space_advection_velocity_type space_advection_velocity_type;
+    typedef typename advection_toolbox_type::space_advection_velocity_ptrtype space_advection_velocity_ptrtype;
+    typedef typename advection_toolbox_type::element_advection_velocity_type element_advection_velocity_type;
+    typedef typename advection_toolbox_type::element_advection_velocity_ptrtype element_advection_velocity_ptrtype;
 
     //--------------------------------------------------------------------//
     // Range types
@@ -232,17 +238,17 @@ public:
     //--------------------------------------------------------------------//
     // ModGradPhi advection
     typedef basis_levelset_type basis_modgradphi_advection_type;
-    typedef Advection< space_levelset_type > modgradphi_advection_type;
+    typedef Advection< space_levelset_type, space_advection_velocity_type > modgradphi_advection_type;
     typedef boost::shared_ptr<modgradphi_advection_type> modgradphi_advection_ptrtype;
     // Stretch advection
     typedef basis_levelset_type basis_stretch_advection_type;
-    typedef Advection< space_levelset_type > stretch_advection_type;
+    typedef Advection< space_levelset_type, space_advection_velocity_type > stretch_advection_type;
     typedef boost::shared_ptr<stretch_advection_type> stretch_advection_ptrtype;
 
     //--------------------------------------------------------------------//
     // Backward characteristics advection
     typedef basis_vectorial_type basis_backwardcharacteristics_advection_type;
-    typedef Advection< space_vectorial_type > backwardcharacteristics_advection_type;
+    typedef Advection< space_vectorial_type, space_advection_velocity_type > backwardcharacteristics_advection_type;
     typedef boost::shared_ptr<backwardcharacteristics_advection_type> backwardcharacteristics_advection_ptrtype;
     typedef typename backwardcharacteristics_advection_type::element_advection_type element_backwardcharacteristics_type;
     typedef boost::shared_ptr<element_backwardcharacteristics_type> element_backwardcharacteristics_ptrtype;
@@ -346,6 +352,7 @@ public:
     template<typename ExprT>
     void
     updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr) { M_advectionToolbox->updateAdvectionVelocity( v_expr ); }
+    void updateAdvectionVelocity( element_advection_velocity_ptrtype const& velocity ) { return M_advectionToolbox->updateAdvectionVelocity( velocity ); }
     //--------------------------------------------------------------------//
     // Spaces
     levelset_space_manager_ptrtype const& functionSpaceManager() const { return M_spaceManager; }
@@ -445,6 +452,7 @@ public:
 
     template<typename ExprT>
     void advect(vf::Expr<ExprT> const& velocity);
+    void advect( element_advection_velocity_ptrtype const& velocity );
     void solve();
 
     void updateTimeStep();
@@ -736,10 +744,10 @@ private:
 
 }; //class LevelSet
 
-template<typename ConvexType, typename BasisType, typename PeriodicityType, typename BasisPnType>
+template<typename ConvexType, typename BasisType, typename PeriodicityType, typename FunctionSpaceAdvectionVelocityType, typename BasisPnType>
 template<typename ExprT>
 void 
-LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType>::advect(vf::Expr<ExprT> const& velocity)
+LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType>::advect(vf::Expr<ExprT> const& velocity)
 {
     this->updateAdvectionVelocity(velocity);
     this->solve();
