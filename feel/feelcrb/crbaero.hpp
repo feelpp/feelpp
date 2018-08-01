@@ -104,79 +104,6 @@ public:
             return boost::make_tuple( output_upper_bound ,primal_residual_coeffs,dual_residual_coeffs,delta_pr,delta_du );
         }
 
-    void addSupremizers( parameter_type const& mu ) override
-        {
-
-            if ( this->model()->addSupremizerInSpace(0) )
-            {
-                int N = this->WNmuSize();
-                int N1 = this->subN(1,N);
-                int n_added1 = N1 - this->subN(1,N-1);
-
-                auto U = this->model()->functionSpace()->element();
-                auto p = U.template element<1>();
-
-                auto XN0 = this->model()->rBFunctionSpace()->template rbFunctionSpace<0>();
-                bool added = false;
-
-                for ( int i = N1-n_added1; i<N1; i++ )
-                {
-                    tic();
-                    p = this->model()->rBFunctionSpace()->template rbFunctionSpace<1>()->primalBasisElement(i);
-                    auto Us = this->model()->supremizer( mu, U, 0 );
-
-                    auto us = Us.template elementPtr<0>();
-                    XN0->addPrimalBasisElement( us );
-                    XN0->addDualBasisElement( us );
-                    this->incrementSubN( 0, N );
-                    added=true;
-                    toc("Add supremizer in space 0");
-                }
-
-                if ( this->orthonormalizeSpace(0) && added )
-                {
-                    tic();
-                    auto wn = XN0->primalRB();
-
-                    double tol = doption(_name="crb.orthonormality-tol");
-                    int maxit = ioption(_name="crb.orthonormality-max-iter");
-                    double norm = tol+1;
-                    int iter=0;
-                    double old = 0;
-                    int Nwn = wn.size();
-
-                    while( norm >=tol && iter < maxit )
-                    {
-                        Feel::cout << "  -- orthonormalization (Gram-Schmidt)\n";
-
-                        auto & wni = unwrap_ptr( wn.back() );
-                        for ( size_type j = 0; j < wn.size()-1; ++j )
-                        {
-                            auto & wnj = unwrap_ptr( wn[j] );
-                            double __rij_pr = this->model()->scalarProduct(  wni, wnj, 0 );
-                            wni.add( -__rij_pr, wnj );
-                        }
-                        double __rii_pr = math::sqrt( this->model()->scalarProduct(  wni, wni, 0 ) );
-                        wni.scale( 1./__rii_pr );
-
-                        matrixN_type A, I;
-                        A.setZero( Nwn, Nwn );
-                        I.setIdentity( Nwn, Nwn );
-                        for ( int i = 0; i < Nwn; ++i )
-                            for ( int j = 0; j < Nwn; ++j )
-                                A( i, j ) = this->model()->scalarProduct(  wn[i], wn[j], 0 );
-                        A -= I;
-                        norm = A.norm();
-                        iter++;
-                    }
-                    XN0->updatePrimalBasisForUse();
-                    Feel::cout <<"Orthonoralzation end with "<<this->subN(0,N)
-                               << " basis vector, actual size of the basis is "<< XN0->primalRB().size()<<std::endl;
-                    toc( "RB Space Orthonormalization#0"  );
-                }
-
-            }
-        }
 
 private:
     void updateJacobianOnline( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const;
@@ -324,7 +251,7 @@ CRBAero<TruthModelType>::buildRbMatrixTrilinear( int number_of_added_elements, p
                     if ( k>=N0-n0 || i>=N0-n0 || j>=N0-n0 )
                     {
                         uc = XN0->primalBasisElement(j);
-                        this->blockTriqm(0,0)[q][k](i,j) = trilinear_operator->energy( Ur, Uc );
+                        this->blockTriqm(0,0)[q][k](i,j) = trilinear_operator->energy( Uc, Ur );
                     }
                 }
             }
@@ -368,7 +295,8 @@ CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, st
     int N0 = this->subN(0,N);
     int N1 = this->subN(1,N);
     int N2 = this->subN(2,N);
-    Feel::cout << "CRBAero Online solve with N="<<N<<", N0="<<N0<<", N1="<<N1<<", N2="<<N2<<std::endl;
+    if ( VERBOSE )
+        Feel::cout << "CRBAero Online solve with N="<<N<<", N0="<<N0<<", N1="<<N1<<", N2="<<N2<<std::endl;
     int sumN = N0+N1+N2;
 
     M_Jbil.resize( sumN, sumN );
@@ -440,10 +368,12 @@ CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, st
     }
     toc("Preassemble Linear terms", VERBOSE);
 
+    //Feel::cout << "Jbil=\n"<<M_Jbil<<"\n Rli=\n"<<M_Rli<<std::endl;
     this->M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobianOnline, boost::ref( *this ), _1, _2  , mu , N );
     this->M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidualOnline, boost::ref( *this ), _1, _2  , mu , N );
-
+    this->M_nlsolver->setRelativeResidualTol( doption("crb.aero.snes.rtol"));
     this->M_nlsolver->solve( map_J , map_UN , map_R, 1e-12, 100 );
+
 
     double conditioning = 0;
     double determinant =0;
@@ -529,20 +459,20 @@ CRBAero<TruthModelType>::updateJacobianOnline( const map_dense_vector_type& X, m
         {
             for ( int i=0; i<N0; i++ )
             {
-                J(k,i) += betaTri[q]*(blockTriqm(0,0)[q][k].row(i).head(N)).dot(X.segment(0,N0));
-                J(k,i) += betaTri[q]*(blockTriqm(0,0)[q][k].col(i).head(N)).dot(X.segment(0,N0));
+                J(k,i) += betaTri[q]*(blockTriqm(0,0)[q][k].row(i).head(N0)).dot(X.segment(0,N0));
+                J(k,i) += betaTri[q]*(blockTriqm(0,0)[q][k].col(i).head(N0)).dot(X.segment(0,N0));
             }
         }
         for ( int k=0; k<N2; k++ )
         {
             for( int i=0; i<N2; i++ )
             {
-                J(N0+N1+k,N0+N1+i) += betaTri[q]*(blockTriqm(2,0)[q][k].row(i)).dot(X.segment(0,N0));
+                J(N0+N1+k,N0+N1+i) += betaTri[q]*(blockTriqm(2,0)[q][k].row(i).head(N0)).dot(X.segment(0,N0));
             }
 
             for( int j=0; j<N0; j++ )
             {
-                J(N0+N1+k,j) += betaTri[q]*(blockTriqm(2,0)[q][k].col(j)).dot(X.segment(N0+N1,N2));
+                J(N0+N1+k,j) += betaTri[q]*(blockTriqm(2,0)[q][k].col(j).head(N2)).dot(X.segment(N0+N1,N2));
             }
         }
     }
@@ -562,6 +492,8 @@ CRBAero<TruthModelType>::updateResidualOnline( const map_dense_vector_type& X, m
     int N2 = this->subN(2,N);
     int sumN = N0+N1+N2;
     matrixN_type temp( sumN, sumN );
+    vectorN_type myR( sumN );
+    vectorN_type checkR( sumN );
 
     beta_vector_type betaJqm;
     std::vector<beta_vector_type> betaRqm;
@@ -571,6 +503,8 @@ CRBAero<TruthModelType>::updateResidualOnline( const map_dense_vector_type& X, m
     R.setZero();
     R += M_Rli;
     R += M_Jbil*X;
+    myR.setZero();
+    checkR.setZero();
     toc("UpdateR some",VERBOSE);
 
     tic();
@@ -595,12 +529,14 @@ CRBAero<TruthModelType>::updateResidualOnline( const map_dense_vector_type& X, m
     {
         for ( int k=0; k<N0; k++ )
             for ( int i=0; i<N0; i++ )
-                temp(k,i) = (blockTriqm(0,0)[q][k].row(i)).dot(X.segment(0,N0));
+                temp(k,i) = (blockTriqm(0,0)[q][k].row(i).head(N0)).dot(X.segment(0,N0));
         for ( int k=0; k<N2; k++ )
             for ( int i=0; i<N2; i++ )
-                temp(N0+N1+k,N0+N1+i) = (blockTriqm(2,0)[q][k].row(i)).dot(X.segment(0,N0));
-        R += betaTri[q]*temp*X;
+                temp(N0+N1+k,N0+N1+i) = (blockTriqm(2,0)[q][k].row(i).head(N0)).dot(X.segment(0,N0));
+        myR += betaTri[q]*temp*X;
     }
+    R += myR;
+
     toc("updateR trilinear", VERBOSE);
     toc("CRBAERO updateRonline", VERBOSE);
 }
@@ -614,7 +550,7 @@ CRBAero<TruthModelType>::maxErrorBounds( size_type N ) const
     std::vector< vectorN_type > uNdu;
     std::vector< vectorN_type > uNold;
     std::vector< vectorN_type > uNduold;
-    POUT <<"start maxerrobounds\n";
+
     double err=0;
     parameter_type mu;
 
@@ -658,7 +594,6 @@ CRBAero<TruthModelType>::maxErrorBounds( size_type N ) const
     err = tuple.template get<1>();
 
     Feel::cout << std::setprecision(15) << "[CRBSaddlePoint] max error="<< err << std::endl;
-    POUT <<"finish maxerrobounds\n";
     return boost::make_tuple( err, mu, 0, 0 );
 }
 
