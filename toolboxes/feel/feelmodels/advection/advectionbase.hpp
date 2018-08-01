@@ -60,6 +60,10 @@ namespace ADRTypes {
 
 template< 
     typename FunctionSpaceType,
+    typename FunctionSpaceAdvectionVelocityType = FunctionSpace< 
+        typename FunctionSpaceType::mesh_type, 
+        bases<Lagrange<FunctionSpaceType::basis_type::nOrder, Vectorial, Continuous, PointSetFekete>>, 
+        typename FunctionSpaceType::periodicity_type >,
     typename BasisDiffusionCoeffType = Lagrange<FunctionSpaceType::basis_type::nOrder, Scalar, Continuous, PointSetFekete>,
     typename BasisReactionCoeffType = Lagrange<FunctionSpaceType::basis_type::nOrder, Scalar, Continuous, PointSetFekete>
         >
@@ -72,7 +76,7 @@ class AdvectionBase :
 public :
     typedef ModelNumerical super_type;
 
-    typedef AdvectionBase< FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType > self_type;
+    typedef AdvectionBase< FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType > self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     // ADR types
@@ -98,7 +102,6 @@ public :
     //--------------------------------------------------------------------//
     // Space advection
     typedef FunctionSpaceType space_advection_type;
-    //typedef FunctionSpace< mesh_type, bases<basis_advection_type>, Periodicity<periodicity_type> > space_advection_type;
     typedef boost::shared_ptr<space_advection_type> space_advection_ptrtype;
 
     typedef typename space_advection_type::basis_type basis_advection_type;
@@ -120,16 +123,14 @@ public :
 
     //--------------------------------------------------------------------//
     // Space advection velocity
-    //typedef typename basis_advection_type::vectorial_basis_type basis_vectorial_type;
-    //typedef Lagrange<nOrder, Vectorial, basis_advection_continuity_type, basis_advection_pointset_type> basis_vectorial_type;
-    typedef Lagrange<nOrder, Vectorial, Continuous, PointSetFekete> basis_vectorial_type;
-
-    typedef bases<basis_vectorial_type> basis_advection_velocity_type;
-    typedef FunctionSpace< 
-        mesh_type, 
-        basis_advection_velocity_type, 
-        value_type, 
-        periodicity_advection_type > space_advection_velocity_type;
+    //typedef Lagrange<nOrder, Vectorial, Continuous, PointSetFekete> basis_vectorial_type;
+    //typedef bases<basis_vectorial_type> basis_advection_velocity_type;
+    //typedef FunctionSpace< 
+        //mesh_type, 
+        //basis_advection_velocity_type, 
+        //value_type, 
+        //periodicity_advection_type > space_advection_velocity_type;
+    typedef FunctionSpaceAdvectionVelocityType space_advection_velocity_type;
     typedef boost::shared_ptr<space_advection_velocity_type> space_advection_velocity_ptrtype;
     typedef typename space_advection_velocity_type::element_type element_advection_velocity_type;
     typedef boost::shared_ptr<element_advection_velocity_type> element_advection_velocity_ptrtype;
@@ -213,6 +214,7 @@ public :
     void build();
     void build( mesh_ptrtype const& mesh );
     void build( space_advection_ptrtype const& space );
+    void build( space_advection_ptrtype const& space, space_advection_velocity_ptrtype const& spaceAdvectionVelocity );
 
     //--------------------------------------------------------------------//
     // Initialization
@@ -306,6 +308,7 @@ public :
     
     //--------------------------------------------------------------------//
     // Advection velocity update
+    void updateAdvectionVelocity( element_advection_velocity_ptrtype const& u );
     template<typename ExprT>
     void updateAdvectionVelocity(vf::Expr<ExprT> const& expr);
     //--------------------------------------------------------------------//
@@ -450,12 +453,13 @@ protected:
 // Advection velocity update
 template< 
     typename FunctionSpaceType,
+    typename FunctionSpaceAdvectionVelocityType,
     typename BasisDiffusionCoeffType,
     typename BasisReactionCoeffType
         >
 template<typename ExprT>
 void
-AdvectionBase<FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateAdvectionVelocity(
+AdvectionBase<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateAdvectionVelocity(
         vf::Expr<ExprT> const& v_expr)
 {
     M_exprAdvectionVelocity.reset(); // remove symbolic expr
@@ -466,12 +470,13 @@ AdvectionBase<FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType
 // Source update
 template< 
     typename FunctionSpaceType,
+    typename FunctionSpaceAdvectionVelocityType,
     typename BasisDiffusionCoeffType,
     typename BasisReactionCoeffType
         >
 template<typename ExprT>
 void 
-AdvectionBase<FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateSourceAdded(
+AdvectionBase<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateSourceAdded(
         vf::Expr<ExprT> const& f_expr)
 {
     if (!M_fieldSource)

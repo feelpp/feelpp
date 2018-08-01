@@ -37,23 +37,32 @@ namespace FeelModels {
 
 template< 
     typename FunctionSpaceType,
+    typename FunctionSpaceAdvectionVelocityType = FunctionSpace< 
+        typename FunctionSpaceType::mesh_type, 
+        bases<Lagrange<FunctionSpaceType::basis_type::nOrder, Vectorial, Continuous, PointSetFekete>>, 
+        typename FunctionSpaceType::periodicity_type >,
     typename BasisDiffusionCoeffType = Lagrange<FunctionSpaceType::basis_type::nOrder, Scalar, Continuous, PointSetFekete>,
     typename BasisReactionCoeffType = Lagrange<FunctionSpaceType::basis_type::nOrder, Scalar, Continuous, PointSetFekete>
         >
 class Advection
-    : public AdvectionBase<FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType>
-    , public boost::enable_shared_from_this< Advection<FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType> >
+    : public AdvectionBase<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType>
+    , public boost::enable_shared_from_this< Advection<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType> >
 {
 public:
-    typedef AdvectionBase<FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType> super_type;
+    typedef AdvectionBase<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType> super_type;
 
-    typedef Advection<FunctionSpaceType, BasisDiffusionCoeffType, BasisReactionCoeffType> self_type;
+    typedef Advection<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     typedef typename super_type::space_advection_type space_advection_type;
     typedef typename super_type::space_advection_ptrtype space_advection_ptrtype;
     typedef typename super_type::element_advection_type element_advection_type;
     typedef typename super_type::element_advection_ptrtype element_advection_ptrtype;
+
+    typedef typename super_type::space_advection_velocity_type space_advection_velocity_type;
+    typedef typename super_type::space_advection_velocity_ptrtype space_advection_velocity_ptrtype;
+    typedef typename super_type::element_advection_velocity_type element_advection_velocity_type;
+    typedef typename super_type::element_advection_velocity_ptrtype element_advection_velocity_ptrtype;
 
     typedef typename super_type::periodicity_type periodicity_type;
 

@@ -1705,6 +1705,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
+LEVELSET_CLASS_TEMPLATE_TYPE::advect( element_advection_velocity_ptrtype const& velocity )
+{
+    this->updateAdvectionVelocity(velocity);
+    this->solve();
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
 LEVELSET_CLASS_TEMPLATE_TYPE::solve()
 {
     this->log("LevelSet", "solve", "start");
