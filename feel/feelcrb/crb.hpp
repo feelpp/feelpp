@@ -1484,7 +1484,6 @@ protected:
     virtual void buildRbMatrixTrilinear( int number_of_added_elements, parameter_type& mu )
         {}
 
-    virtual void addSupremizers( parameter_type const& mu ){}
     virtual void saveRB();
 
     crb_elements_db_type M_elements_database;
@@ -2885,9 +2884,6 @@ CRB<TruthModelType>::offline()
         M_N+=number_of_added_elements;
 
         this->orthonormalizeBasis( number_of_added_elements );
-
-        if ( ioption("crb.gram-schmidt.selection.version")==1 )
-            this->addSupremizers(mu);
 
         this->buildRbMatrix( number_of_added_elements, mu, dual_initial_field );
 
