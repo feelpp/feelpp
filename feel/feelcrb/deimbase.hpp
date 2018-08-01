@@ -588,10 +588,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
             auto mu = M_trainset->max().template get<0>();
             cout <<"===========================================\n";
             cout << name() +" : Start algorithm with mu="<< mu.toString() <<std::endl;
-
-            tic();
             addNewVector(mu);
-            toc("Add new vector in DEIM basis");
         }
     }
     if ( M_use_ser )
