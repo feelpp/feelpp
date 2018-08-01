@@ -197,73 +197,6 @@ public:
         return boost::make_tuple( output_upper_bound ,primal_residual_coeffs,dual_residual_coeffs,delta_pr,delta_du );
     }
 
-    void addSupremizers( parameter_type const& mu ) override
-        {
-            tic();
-            int N = this->WNmuSize();
-            int N1 = this->subN(1,N);
-            int n_added1 = N1 - this->subN(1,N-1);
-
-            auto U = this->functionSpace()->element();
-            auto p = U.template element<1>();
-
-            auto XN0 = m_crb->model()->rBFunctionSpace()->template rbFunctionSpace<0>();
-            bool added = false;
-
-            for ( int i = N1-n_added1; i<N1; i++ )
-            {
-                auto p = this->model()->rBFunctionSpace()->template rbFunctionSpace<1>()->primalBasisElement(i);
-                auto Us = this->model()->supremizer( mu, U, 0 );
-
-                us = Us.template elementPtr<0>();
-                XN0->addDualBasisElement( us );
-                this->incrementSubN( 0, N );
-                added=true;
-            }
-            toc("Add supremizer in space 0");
-
-            if ( this->orthonormalizeSpace(0) && added )
-            {
-                tic();
-                auto wn0 = XN0->primalRB();
-
-                double tol = doption(_name="crb.orthonormality-tol");
-                int maxit = ioption(_name="crb.orthonormality-max-iter");
-                double norm = tol+1;
-                int iter=0;
-                double old = 0;
-                int Nwn = wn.size();
-
-                while( norm >=tol && iter < maxit )
-                {
-                    Feel::cout << "  -- orthonormalization (Gram-Schmidt)\n";
-
-                    auto & wni = unwrap_ptr( wn.back() );
-                    for ( size_type j = 0; j < wn.size()-1; ++j )
-                    {
-                        auto & wnj = unwrap_ptr( wn[j] );
-                        double __rij_pr = this->model()->scalarProduct(  wni, wnj, 0 );
-                        wni.add( -__rij_pr, wnj );
-                    }
-                    double __rii_pr = math::sqrt( this->model()->scalarProduct(  wni, wni, 0 ) );
-                    wni.scale( 1./__rii_pr );
-
-                    typename CRBType::matrixN_type A, I;
-                    A.setZero( Nwn, Nwn );
-                    I.setIdentity( Nwn, Nwn );
-                    for ( int i = 0; i < Nwn; ++i )
-                        for ( int j = 0; j < Nwn; ++j )
-                            A( i, j ) = this->model()->scalarProduct(  wn[i], wn[j], 0 );
-                    A -= I;
-                    norm = A.norm();
-                    iter++;
-                }
-                XN0->updatePrimalBasisForUse();
-                Feel::cout <<"Orthonoralzation end with "<<this->subN(0,N)
-                           << " basis vector, actual size of the basis is "<< XN0->primalRB().size();
-                toc( "RB Space Orthonormalization#0"  );
-            }
-        }
 
 private :
     void initRezMatrix() override;
@@ -464,6 +397,7 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
                     F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
             }
         }
+        //Feel::cout << "A=\n"<<A<<"\n F=\n"<<F<<std::endl;
 
         uN[0] = A.fullPivLu().solve( F );
     }
@@ -1111,7 +1045,7 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
         } // q1 loop Lhs1
     } // j loop Lhs1
 
-    this->M_model->clearBlockMatix();
+    this->M_model->clearBlockMatrix();
 
 }
 
