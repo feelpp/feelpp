@@ -344,7 +344,7 @@ protected:
         M_elements_database( name,
                              prefixvm(prefixExt,"elements"),
                              this->worldComm() ),
-        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldCommSeq() ) ),// this->worldComm() ) ),
         M_model( model ),
         M_output_index( ioption(_name="crb.output-index") ),
         M_tolerance( doption(_name="crb.error-max") ),
