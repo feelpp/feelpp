@@ -55,12 +55,26 @@ public :
             crb->offline();
     }
 
-    void run( int const& size )
+    void run( int const& s )
     {
         using Feel::cout;
         int N = crb->WNmuSize();
         int i=0;
         auto mesh = crb_model->model()->functionSpace()->mesh();
+        int size = s;
+
+        sampling_ptrtype sampling( new sampling_type( crb_model->parameterSpace() ) );
+        if ( size==-1 )
+        {
+            sampling = crb->wnmu();
+            size = sampling->size();
+        }
+        else
+        {
+            sampling->clear();
+            sampling->randomize( size, true );
+        }
+
         std::vector<std::vector<double>> output_error( size );
         std::vector<std::vector<double>> l2_error( size );
         std::vector<std::vector<double>> timers( size );
@@ -74,19 +88,19 @@ public :
                 l2_composite[i].resize( size );
         }
 
-        sampling_ptrtype sampling( new sampling_type( crb_model->parameterSpace() ) );
-        sampling->clear();
-        sampling->randomize( size, true );
 
+        M_e = exporter( _mesh=crb->model()->functionSpace()->mesh(), _name="cvg-study" );
+
+        int j=1;
         cout << "Convergence Study Starts\n"
              << "==================================================\n";
-
         for ( auto mu : *sampling )
         {
-            cout << "mu="<<mu.toString() <<std::endl;
-
+            cout << "["<<j<<"] mu="<<mu.toString() <<std::endl;
+            j++;
             tic();
             auto u_fem = crb->femSolve(mu);//crb_model->model()->solve( mu );
+            auto u_rb = u_fem.functionSpace()->element();
             double output_fem = crb_model->output( crb->outputIndex(), mu, u_fem );
             double u_l2 = l2Norm(u_fem);
             if ( u_l2!=0 )
@@ -108,6 +122,7 @@ public :
                         cout << std::setw(25) << "l2Error_"<<k;
                 cout << std::endl;
 
+
                 for ( int n=1; n<=N; n++ )
                 {
                     std::vector<vectorN_type> Un, Undu, Unold, Unduold;
@@ -121,7 +136,7 @@ public :
                     output_error[i].push_back( math::abs((output_fem-output_rb)/output_fem) );
 
                     vectorN_type u = Un[0];
-                    auto u_rb = crb->expansion( u, n );
+                    u_rb = crb->expansion( u, n );
                     auto u_diff = u_fem-u_rb;
                     l2_error[i].push_back( l2Norm(u_diff)/u_l2 );
 
@@ -143,6 +158,7 @@ public :
                             cout << std::setw(25) << l2_composite[k][i][n-1];
                     cout<<std::endl;
                 }
+                exportSolutions( u_rb, u_fem, i );
                 cout << "==================================================\n";
                 i++;
             }
@@ -156,6 +172,7 @@ public :
             }
         }
 
+        M_e->save();
         this->writeOnFile( l2_error, "l2");
         this->writeOnFile( output_error, "output");
         this->writeOnFile( timers, "timers_rb");
@@ -166,6 +183,22 @@ public :
 
 
 private :
+    void exportSolutions( element_type const& u_rb, element_type const& u_fem, int const& i )
+        {
+            exportSolutions( u_rb, u_fem, i, mpl::bool_< is_composite >() );
+        }
+    void exportSolutions( element_type const& u_rb, element_type const& u_fem, int const& i, mpl::bool_<false> )
+        {
+            M_e->add( "u_rb"+std::to_string(i), u_rb );
+            M_e->add( "u_fem"+std::to_string(i),u_fem );
+        }
+    void exportSolutions( element_type const& u_rb, element_type const& u_fem, int const& i, mpl::bool_<true> )
+        {
+            ExportSolutionsComposite e( u_rb, u_fem, M_e, i );
+            index_vector_type index_vector;
+            fusion::for_each( index_vector, e );
+        }
+
     void writeOnFile( std::vector<std::vector<double>> const& data, std::string const& name )
     {
         int N = crb->WNmuSize();
@@ -259,7 +292,7 @@ private :
 
                 auto u = M_composite_u.template element< T::value >();
                 double norm  = normL2(_range=u.functionSpace()->template rangeElements<0>(),_expr=( idv(u) ) );
-                M_vec(i)= norm ;
+                M_vec(i)= norm;
             }
 
         double norm()
@@ -272,11 +305,35 @@ private :
         element_type M_composite_u;
     };
 
+    struct ExportSolutionsComposite
+    {
+        ExportSolutionsComposite( element_type const& u_rb, element_type const& u_fem, boost::shared_ptr<Exporter<mesh_type>> e, int const& i ) :
+            m_urb( u_rb ),
+            m_ufem( u_fem ),
+            m_e( e ),
+            m_i( i )
+            {}
+
+        template <typename T>
+        void operator()( T const& t ) const
+            {
+                auto suburb = m_urb.template element<T::value>();
+                auto subufem = m_ufem.template element<T::value>();
+                m_e->add( "u_rb"+std::to_string(m_i)+"_"+std::to_string(T::value), suburb );
+                m_e->add( "u_fem"+std::to_string(m_i)+"_"+std::to_string(T::value), subufem );
+            }
+
+    private:
+        element_type m_urb,m_ufem;
+        boost::shared_ptr<Exporter<mesh_type>> m_e;
+        int m_i;
+    };
 
 private :
     crb_model_ptrtype crb_model;
     crb_ptrtype crb;
     ser_ptrtype ser;
+    boost::shared_ptr<Exporter<mesh_type>> M_e;
 };
 
 } //namespace Feel
