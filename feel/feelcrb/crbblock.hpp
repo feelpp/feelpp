@@ -252,7 +252,7 @@ struct AddBasisByBlock
             m_crb->incrementSubN( T::value, m_crb->WNmuSize()+1 );
             toc("Add Basis Function in space "+std::to_string(T::value) );
 
-            if ( m_crb->model()->addSupremizerInSpace(T::value) && ioption("crb.gram-schmidt.selection.version")==2 )
+            if ( m_crb->model()->addSupremizerInSpace(T::value)  )
             {
                 tic();
                 auto Us = model->supremizer( m_mu, m_U, T::value );
