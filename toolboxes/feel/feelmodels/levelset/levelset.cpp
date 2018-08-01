@@ -1536,6 +1536,51 @@ LEVELSET_CLASS_TEMPLATE_TYPE::outerElementsRange( double cut )
     return outerElements;
 }
 
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::range_faces_type
+LEVELSET_CLASS_TEMPLATE_TYPE::interfaceFaces() const
+{
+    if( this->M_doUpdateInterfaceFaces )
+    {
+        mesh_ptrtype const& mesh = this->mesh();
+        auto const& markerIn = this->markerInner();
+        CHECK( markerIn->functionSpace()->extendedDofTable() ) << "interfaceFaces needs extended doftable in markers function space\n";
+
+        auto it_face = mesh->beginFace();
+        auto en_face = mesh->endFace();
+
+        const rank_type pid = mesh->worldCommFaces().localRank();
+
+        faces_reference_wrapper_ptrtype interfaceFaces( new faces_reference_wrapper_type );
+
+        for (; it_face!=en_face; it_face++)
+        {
+            auto const& curFace = it_face->second; 
+            if ( curFace.processId() != pid )
+                continue;
+            if ( !(curFace.isConnectedTo0() && curFace.isConnectedTo1()) )
+                continue;
+            bool isInnerElt0 = (markerIn->localToGlobal( curFace.element0().id(), 0, 0 ) > 1e-3);
+            bool isInnerElt1 = (markerIn->localToGlobal( curFace.element1().id(), 0, 0 ) > 1e-3);
+
+            if( (isInnerElt0 && !isInnerElt1) || (!isInnerElt0 && isInnerElt1) )
+            {
+                interfaceFaces->push_back( boost::cref(curFace) );
+            }
+        }
+
+        M_interfaceFaces = boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                interfaceFaces->begin(),
+                interfaceFaces->end(),
+                interfaceFaces
+                );
+
+        M_doUpdateInterfaceElements = false;
+    }
+
+    return M_interfaceFaces;
+}
+
 //----------------------------------------------------------------------------//
 // Utility distances
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS

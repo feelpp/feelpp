@@ -177,6 +177,11 @@ public:
     typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
     typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
 
+    typedef typename MeshTraits<mesh_type>::face_reference_wrapper_const_iterator face_reference_wrapper_const_iterator;
+    typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_type faces_reference_wrapper_type;
+    typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype faces_reference_wrapper_ptrtype;
+    typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
+
     //--------------------------------------------------------------------//
     // Stretch and shear types
     typedef element_levelset_type element_stretch_type;
@@ -438,6 +443,8 @@ public:
     range_elements_type outerElementsRange( double cut );
     range_elements_type outerElementsRange() { return outerElementsRange( -this->thicknessInterface() ); }
 
+    range_faces_type interfaceFaces() const;
+
     //--------------------------------------------------------------------//
     // Utility distances
     element_levelset_ptrtype distToBoundary();
@@ -585,6 +592,7 @@ protected:
     mutable bool M_doUpdateDirac;
     mutable bool M_doUpdateHeaviside;
     mutable bool M_doUpdateInterfaceElements;
+    mutable bool M_doUpdateInterfaceFaces;
     mutable bool M_doUpdateSmootherInterface;
     mutable bool M_doUpdateSmootherInterfaceVectorial;
     mutable bool M_doUpdateNormal;
@@ -659,6 +667,7 @@ private:
     mutable element_levelset_ptrtype M_heaviside;
     mutable element_levelset_ptrtype M_dirac;
     mutable range_elements_type M_interfaceElements;
+    mutable range_faces_type M_interfaceFaces;
     //--------------------------------------------------------------------//
     // Normal, curvature
     mutable element_vectorial_ptrtype M_levelsetNormal;
