@@ -126,6 +126,17 @@ void defMesh(py::module &m)
     py::class_<faces_reference_wrapper_t<mesh_ptr_t>>(m,pyclass_name.c_str())
         .def(py::init<>());
 
+    pyclass_name = std::string("mesh_support_")+suffix;
+    py::class_<MeshSupport<mesh_t>,std::shared_ptr<MeshSupport<mesh_t>>>(m,pyclass_name.c_str())
+        .def(py::init<mesh_ptr_t const&>(),py::arg("mesh"))
+        .def(py::init<mesh_ptr_t const&, elements_reference_wrapper_t<mesh_t> const&>(),py::arg("mesh"), py::arg("range"))
+        ;
+
+    pyclass_name = std::string("mesh_support_vector_")+suffix;
+    py::class_<fusion::vector<std::shared_ptr<MeshSupport<mesh_t>>>>(m,pyclass_name.c_str())
+        .def(py::init<>());
+        
+
     // load mesh
     m.def("load",&loadmesh<mesh_t>,"load a mesh from a file");
 
