@@ -23,6 +23,10 @@
 //!
 #include <pybind11/pybind11.h>
 
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <mpi4py/mpi4py.h>
 
@@ -63,6 +67,7 @@ void defExporter(py::module &m)
     
     using exporter_t = Exporter<MeshT,Order>;
     using exporter_ptr_t = std::shared_ptr<exporter_t>;
+    using mesh_t = MeshT;
     using mesh_ptr_t = std::shared_ptr<MeshT>;
     std::string pyclass_name;
 
@@ -70,8 +75,21 @@ void defExporter(py::module &m)
     pyclass_name = std::string("Exporter") + suffix;
     py::class_<exporter_t,PyExporter<MeshT,1>,exporter_ptr_t>(m,pyclass_name.c_str())
         .def(py::init<>() )
-        .def("save", &exporter_t::save,"save Exporter data set");
-        //.def(py::init(static_cast<exporter_ptr_t (exporter_t::*)( std::string, WorldComm const&)>(&exporter_t::New)), py::arg("prefix"), py::arg("worldcomm")=Environment::worldComm() );;
+        .def("save", &exporter_t::save,"save Exporter data set")
+        .def("addRegions", &exporter_t::addRegions,"add regions to exported data")
+        .def("addScalar", &exporter_t::template add<double>,"add scalar to exported data", py::arg("name"),py::arg("scalar"),py::arg("cst")=true,py::arg("enable_if")=nullptr)
+
+        // continuous
+        .def("addP1c", &exporter_t::template add<typename Pch_type<mesh_t,1>::element_type>,"add P1 continuous Lagrange function  to exported data", py::arg("name"),py::arg("element"),py::arg("enable_if")=nullptr)
+        .def("addP2c", &exporter_t::template add<typename Pch_type<mesh_t,2>::element_type>,"add P2 continuous Lagrange function  to exported data", py::arg("name"),py::arg("element"),py::arg("enable_if")=nullptr)
+        .def("addP3c", &exporter_t::template add<typename Pch_type<mesh_t,3>::element_type>,"add P3 continuous Lagrange function  to exported data", py::arg("name"),py::arg("element"),py::arg("enable_if")=nullptr)
+
+        // discontinuous
+        .def("addP0d", &exporter_t::template add<typename Pdh_type<mesh_t,0>::element_type>,"add P0 discontinuous Lagrange function  to exported data", py::arg("name"),py::arg("element"),py::arg("enable_if")=nullptr)
+        .def("addP1d", &exporter_t::template add<typename Pdh_type<mesh_t,1>::element_type>,"add P1 discontinuous Lagrange function  to exported data", py::arg("name"),py::arg("element"),py::arg("enable_if")=nullptr)
+        .def("addP2d", &exporter_t::template add<typename Pdh_type<mesh_t,2>::element_type>,"add P2 discontinuous Lagrange function  to exported data", py::arg("name"),py::arg("element"),py::arg("enable_if")=nullptr)
+        .def("addP3d", &exporter_t::template add<typename Pdh_type<mesh_t,3>::element_type>,"add P3 discontinuous Lagrange function  to exported data", py::arg("name"),py::arg("element"),py::arg("enable_if")=nullptr)
+        ;
 
     m.def( "exporter",
            &exporter_impl<MeshT,Order>,
