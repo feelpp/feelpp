@@ -4993,15 +4993,6 @@ public:
         return u;
     }
 
-    element_ptrtype
-    elementPtr( std::string const& e, std::string const& name = "u", std::string const& desc = "u")
-    {
-        element_ptrtype u = this->elementPtr(name,desc);
-        bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
-        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-        u->on( _range=elements(M_mesh,entityProcess), _expr=expr<nComponents1,nComponents2>(e) );
-        return u;
-    }
     typedef std::vector<element_ptrtype> elements_ptrtype;
 
     /**
