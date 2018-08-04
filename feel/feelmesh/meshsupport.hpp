@@ -48,6 +48,7 @@ public :
     using element_type = typename mesh_type::element_type;
     using face_type = typename mesh_type::face_type;
 
+    MeshSupport() = default;
     MeshSupport( mesh_ptrtype const& mesh )
         :
         M_mesh( mesh ),
