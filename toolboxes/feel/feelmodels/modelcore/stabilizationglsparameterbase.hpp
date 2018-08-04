@@ -31,6 +31,8 @@ public :
             CHECK( M_method == "eigenvalue" || M_method == "doubly-asymptotic-approximation" )  << "invalid method";
         }
 
+    virtual ~StabilizationGLSParameterBase() = default;
+    
     virtual void init() = 0;
 
     double hSize( size_type eltId ) const
