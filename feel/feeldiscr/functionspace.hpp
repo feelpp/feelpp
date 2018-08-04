@@ -95,6 +95,7 @@
 
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelvf/exprbase.hpp>
+#include <feel/feelvf/ginac.hpp>
 #include <feel/feelvf/detail/gmc.hpp>
 
 namespace Feel
@@ -2250,7 +2251,7 @@ public:
         //@{
 
         Element();
-
+        Element( Element&& ) = default;
         Element( Element const& __e );
 
         friend class FunctionSpace<A0,A1,A2,A3,A4>;
@@ -2297,7 +2298,7 @@ public:
         /** @name Operator overloads
          */
         //@{
-
+        Element& operator=( Element && __e ) = default;
         Element& operator=( Element const& __e );
 #if 0
         template<typename ExprT>
@@ -4955,6 +4956,16 @@ public:
         return u;
     }
 
+    element_type
+    elementFromExpr( std::string const& e, std::string const& name, std::string const& desc = "u" )
+    {
+        element_type u( this->shared_from_this(), name, desc );
+        bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
+        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        u.on( _range=elements(M_mesh,entityProcess), _expr=expr<nComponents1,nComponents2>(e) );
+        return u;
+    }
+
     /**
      * \return the element 0 of the function space
      */
@@ -4982,6 +4993,15 @@ public:
         return u;
     }
 
+    element_ptrtype
+    elementPtr( std::string const& e, std::string const& name = "u", std::string const& desc = "u")
+    {
+        element_ptrtype u = this->elementPtr(name,desc);
+        bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
+        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        u->on( _range=elements(M_mesh,entityProcess), _expr=expr<nComponents1,nComponents2>(e) );
+        return u;
+    }
     typedef std::vector<element_ptrtype> elements_ptrtype;
 
     /**
