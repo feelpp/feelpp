@@ -158,5 +158,6 @@ PYBIND11_MODULE(mesh, m )
 
     defMesh<Simplex<1>>(m);
     defMesh<Simplex<2>>(m);
+    defMesh<Simplex<3>>(m);
     //defMesh<3>();
 }
