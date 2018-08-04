@@ -63,13 +63,24 @@ pybind11_add_module(discr  discr.cpp)
 target_include_directories(discr PRIVATE ${PYTHON_INCLUDE_DIRS})
 target_link_libraries( discr PRIVATE ${FEELPP_LIBRARIES} )
 
+pybind11_add_module(ts  ts.cpp)
+target_include_directories(ts PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_link_libraries( ts PRIVATE ${FEELPP_LIBRARIES} )
+
 pybind11_add_module(exporter  exporter.cpp)
 target_include_directories(exporter PRIVATE ${PYTHON_INCLUDE_DIRS})
 target_link_libraries( exporter PRIVATE ${FEELPP_LIBRARIES} )
 
+pybind11_add_module(modelcore  modelcore.cpp)
+target_include_directories(modelcore PRIVATE ${PYTHON_INCLUDE_DIRS} ${FEELPP_DIR}/include/feelpp/toolboxes)
+find_library( FEELPP_MODELCORE feelpp_modelcore HINTS ${FEELPP_DIR}/lib)
+message(STATUS "modelcore: ${FEELPP_MODELCORE_LIB}" )
+target_link_libraries( modelcore PRIVATE ${FEELPP_MODELCORE}  ${FEELPP_LIBRARIES} )
+
 pybind11_add_module(fluid  fluid.cpp)
-target_include_directories(fluid PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries( fluid PRIVATE feelpp_toolbox_fluid_lib_2dP2P1G1 ${FEELPP_LIBRARIES} )
+target_include_directories(fluid PRIVATE ${PYTHON_INCLUDE_DIRS} ${FEELPP_DIR}/include/feelpp/toolboxes)
+find_library( FEELPP_FLUID feelpp_toolbox_fluid_lib HINTS ${FEELPP_DIR}/lib)
+target_link_libraries( fluid PRIVATE ${FEELPP_FLUID}  ${FEELPP_LIBRARIES} )
 
 pybind11_add_module(crb  crb.cpp)
 target_include_directories(crb PRIVATE ${PYTHON_INCLUDE_DIRS})
