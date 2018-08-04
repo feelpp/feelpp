@@ -23,6 +23,7 @@
 //!
 #include <pybind11/pybind11.h>
 
+#include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 #include <mpi4py/mpi4py.h>
 
@@ -39,17 +40,31 @@ template<int nDim, int OrderVelocity=2, int OrderPressure = 1, int OrderGeo = 1>
 void defFM(py::module &m)
 {
     using namespace Feel;
-    using fm_t = FeelModels::FluidMechanics< Simplex<nDim,OrderGeo>,
-                                             Lagrange<OrderVelocity, Vectorial,Continuous,PointSetFekete>,
-                                             Lagrange<OrderPressure, Scalar,Continuous,PointSetFekete> > ;
+    using namespace Feel::FeelModels;
+    using fm_t = FluidMechanics< Simplex<nDim,OrderGeo>,
+                                 Lagrange<OrderVelocity, Vectorial,Continuous,PointSetFekete>,
+                                 Lagrange<OrderPressure, Scalar,Continuous,PointSetFekete> > ;
     std::string pyclass_name = std::string("Fluid_P") + std::to_string(OrderVelocity) + std::string("P") + std::to_string(OrderPressure) + std::string("G") + std::to_string(OrderGeo);
-    py::class_<fm_t,std::shared_ptr<fm_t>>(m,pyclass_name.c_str())
+    py::class_<fm_t,std::shared_ptr<fm_t>,ModelNumerical>(m,pyclass_name.c_str())
         .def(py::init<std::string const&,bool,WorldComm const&,std::string const&, ModelBaseRepository const&>(),
-             py::arg(_buildmesh)=true,
-             py::arg(_worldComm)=Environment::worldComm(),
-             py::arg(_subprefix)="",
-             py::arg(_modelRep) = ModelBaseRepository() 
-             );
+             py::arg("prefix"),
+             py::arg("buildmesh")=true,
+             py::arg("worldComm")=Environment::worldComm(),
+             py::arg("subprefix")=std::string(""),
+             py::arg("modelRep") = ModelBaseRepository(),
+             "Initialize the fluid mechanics toolbox"
+             )
+        .def("init",&fm_t::init, "initialize the fluid mechanics toolbox",py::arg("buildModelAlgebraicFactory")= true)
+
+        // time stepping
+        .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (fm_t::*)() const>(&fm_t::timeStepBase), "get time stepping base")
+        .def("updateTimeStep",&fm_t::updateTimeStep, "update time stepping")
+
+        // solve
+        .def("solve",&fm_t::solve, "solve the fluid mechanics problem")
+        .def("exportResults",static_cast<void (fm_t::*)()>(&fm_t::exportResults), "export the results of the fluid mechanics problem")
+        .def("exportResults",static_cast<void (fm_t::*)( double )>(&fm_t::exportResults), "export the results of the fluid mechanics problem", py::arg("time"))
+        ;
         
 }
     
@@ -60,6 +75,7 @@ PYBIND11_MODULE(fluid, m )
 
     if (import_mpi4py()<0) return ;
 
+    
     
     defFM<2,2,1,1>(m);
 
