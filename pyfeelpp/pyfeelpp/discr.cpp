@@ -123,9 +123,24 @@ PYBIND11_MODULE(discr, m )
     
     //defDiscr<Mesh<Simplex<1>>,1>( m );
     defDiscr<Pch_type<Mesh<Simplex<2>>,1>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<2>>,2>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<2>>,3>>( m );
+
+    defDiscr<Pch_type<Mesh<Simplex<3>>,1>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<3>>,2>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<3>>,3>>( m );
+    
     defDiscr<Pdh_type<Mesh<Simplex<2>>,0>>( m );
     defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<2>>,0>>( m );
     defDiscr<Pdh_type<Mesh<Simplex<2>>,1>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<2>>,2>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<2>>,3>>( m );
+
+    defDiscr<Pdh_type<Mesh<Simplex<3>>,0>>( m );
+    defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<3>>,0>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<3>>,1>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<3>>,2>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<3>>,3>>( m );
     //defDiscr<Mesh<Simplex<2>>,2>( m );
 }
 
