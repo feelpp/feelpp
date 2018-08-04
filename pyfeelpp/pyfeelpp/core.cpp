@@ -40,9 +40,10 @@ PYBIND11_MODULE(core, m )
     using namespace Feel;
 
     if (import_mpi4py()<0) return ;
-    
+
+    py::class_<po::options_description>(m,"OptionsDescription").def(py::init<>());
     py::class_<Environment>(m,"Environment")
-        .def( py::init<py::list,po::options_description>(),"Construct a Feel++ Environment")//,py::arg("arg"), py::arg("opts") = feel_nooptions())
+        .def( py::init<py::list,po::options_description>(),"Construct a Feel++ Environment",py::arg("arg"), py::arg("opts") = feel_nooptions())
         .def( py::init<py::list>(),"Construct a Feel++ Environment")//,py::arg("arg"), py::arg("opts") = feel_nooptions())
         .def_static("initialized",&Feel::Environment::initialized, "return true if MPI is initialized, false otherwise",py::return_value_policy::copy)
         .def_static("finalized",&Feel::Environment::finalized, "return true if MPI is finalized, false otherwise",py::return_value_policy::copy)
@@ -72,11 +73,12 @@ PYBIND11_MODULE(core, m )
         ;
     py::class_<WorldComm,std::shared_ptr<WorldComm>>(m,"WorldComm")
         .def(py::init<>())
+        .def("isMasterRank", &Feel::WorldComm::isMasterRank,"returns true if master rank, false otherwise")
         .def("localRank", &Feel::WorldComm::localRank,"returns the rank of the local worldcomm")
         .def("globalRank", &Feel::WorldComm::localRank,"returns the rank of the global worldcomm")
         ;
     py::class_<std::vector<WorldComm>>(m,"WorldsComm").def(py::init<>());
     py::class_<std::vector<bool>>(m,"vector_bool").def(py::init<>());
 
-    py::class_<po::options_description>(m,"OptionsDescription");
+    
 }
