@@ -38,6 +38,8 @@ public :
         super_type( mesh, prefix )
         {}
 
+    virtual ~StabilizationGLSParameter() = default;
+    
     void init();
 
     template<bool HasConvectionExpr=true, bool HasCoeffDiffusionExpr=true, typename ExprConvectiontype, typename ExprCoeffDiffusionType, typename RangeType>
