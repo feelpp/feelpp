@@ -62,7 +62,7 @@ public:
         }
     Interpolator( const Interpolator& ) = default;
     Interpolator( Interpolator&& ) = default;
-    ~Interpolator() = default;
+    virtual ~Interpolator() = default;
     /**
      *  Evaluate the interpolant
      */
@@ -176,7 +176,7 @@ public:
                         ExtrapolationType_spline r = ExtrapolationType_spline::natural,
                         ExtrapolationType_spline l = ExtrapolationType_spline::natural );
     InterpolatorSpline( const InterpolatorSpline& ) = default;
-    ~InterpolatorSpline() = default; // the vector is cleared by Eigen
+    virtual ~InterpolatorSpline() = default; // the vector is cleared by Eigen
     value_type operator()( double _x ) const;
     value_type diff( double _x ) const;
     int type( void ) const { return 2; }
@@ -209,7 +209,7 @@ public:
     using pair_type = std::pair<value_type, value_type>;
     InterpolatorAkima( std::vector<pair_type> const& data );
     InterpolatorAkima( const InterpolatorAkima& ) = default;
-    ~InterpolatorAkima() = default; // the vector is cleared by Eigen
+    virtual ~InterpolatorAkima() = default; // the vector is cleared by Eigen
     value_type operator()( double _x ) const;
     value_type diff( double _x ) const;
     int type( void ) const { return 3; }
