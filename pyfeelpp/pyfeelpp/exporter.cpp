@@ -107,5 +107,6 @@ PYBIND11_MODULE(exporter, m )
     if (import_mpi4py()<0) return ;
     
     defExporter<Mesh<Simplex<2>>,1>( m );
+    defExporter<Mesh<Simplex<3>>,1>( m );
 }
 
