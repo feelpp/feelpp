@@ -487,7 +487,7 @@ class MatrixBlockBase : public MatrixSparse<T>
      */
     void reinitSubmatrix( MatrixSparse<value_type>& submatrix,
                           const std::vector<size_type>& rows,
-                          const std::vector<size_type>& cols ) const
+                          const std::vector<size_type>& cols ) const override
     {
         this->_get_submatrix( submatrix,
                               rows,
