@@ -104,7 +104,7 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::initModel()
                << " Box nDof = " << this->Xh->nDof() << std::endl;
     this->setupCommunicatorsBS();
 
-    M_deim = Feel::deim( _model=boost::dynamic_pointer_cast<self_type>(this->shared_from_this()),
+    M_deim = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()),
                          _sampling=Pset, _prefix="bs");
     M_deim->run();
     Feel::cout << tc::green << "Construction of BiotSavart DEIM finished!!"
