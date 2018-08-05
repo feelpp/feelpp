@@ -39,7 +39,7 @@
 #include <feel/feelcrb/options.hpp>
 
 namespace py = pybind11;
-PYBIND11_DECLARE_HOLDER_TYPE(T, boost::shared_ptr<T>);
+PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
 using namespace Feel;
 
 namespace Eigen {
@@ -156,9 +156,9 @@ public:
         {
             PYBIND11_OVERLOAD_PURE( void, CRBPluginAPI, loadDBFromId, i, l, root );
         }
-    boost::shared_ptr<ParameterSpaceX> parameterSpace() const override
+    std::shared_ptr<ParameterSpaceX> parameterSpace() const override
         {
-            PYBIND11_OVERLOAD_PURE(boost::shared_ptr<ParameterSpaceX>, CRBPluginAPI, parameterSpace,  );
+            PYBIND11_OVERLOAD_PURE(std::shared_ptr<ParameterSpaceX>, CRBPluginAPI, parameterSpace,  );
         }
     CRBResults run( ParameterSpaceX::Element const& mu, 
                     double eps , int N, bool print_rb_matrix ) const override
@@ -240,8 +240,8 @@ PYBIND11_MODULE( crb, m )
     //!
     py::class_<std::vector<ParameterSpaceX::Element>>(m,"VectorParameterSpaceElement");
     
-    py::class_<ParameterSpaceX::Sampling, boost::shared_ptr<ParameterSpaceX::Sampling>>(m,"ParameterSpaceSampling")
-        .def(py::init<boost::shared_ptr<ParameterSpaceX>,int,boost::shared_ptr<ParameterSpaceX::Sampling>>())
+    py::class_<ParameterSpaceX::Sampling, std::shared_ptr<ParameterSpaceX::Sampling>>(m,"ParameterSpaceSampling")
+        .def(py::init<std::shared_ptr<ParameterSpaceX>,int,std::shared_ptr<ParameterSpaceX::Sampling>>())
         .def("sampling",&ParameterSpaceX::Sampling::sampling)
         .def("__getitem__", &std_item<ParameterSpaceX::Sampling>::get,py::return_value_policy::reference)
         .def("__setitem__", &std_item<ParameterSpaceX::Sampling>::set)
@@ -252,7 +252,7 @@ PYBIND11_MODULE( crb, m )
     //!
     //! Parameter Space
     //!
-    py::class_<ParameterSpaceX,boost::shared_ptr<ParameterSpaceX>>(m,"ParameterSpace")
+    py::class_<ParameterSpaceX,std::shared_ptr<ParameterSpaceX>>(m,"ParameterSpace")
         .def( py::init<>() )
         .def("sampling", &ParameterSpaceX::sampling)
         .def("element", &ParameterSpaceX::element)
@@ -260,7 +260,7 @@ PYBIND11_MODULE( crb, m )
         .def_static("create",&ParameterSpaceX::create )
         ;
 
-    py::class_<CRBPluginAPI,CRBPluginAPIWrap,boost::shared_ptr<CRBPluginAPI>>(m,"CRBPlugin")
+    py::class_<CRBPluginAPI,CRBPluginAPIWrap,std::shared_ptr<CRBPluginAPI>>(m,"CRBPlugin")
         //.def(py::init<>())
         .def("name",&CRBPluginAPI::name,py::return_value_policy::reference)
         //.def("setName",pure_virtual(&CRBPluginAPI::setName))
