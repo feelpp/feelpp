@@ -4,7 +4,7 @@ set -eo pipefail
 
 component=${1:-base}
 
-COMPONENTS=(base toolboxes crb) 
+COMPONENTS=(base toolboxes crb pyfeelpp) 
 
 source $(dirname $0)/common.sh
 
@@ -21,6 +21,10 @@ if [ "${component}" = "base" ] ; then
     dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-libs:${tag}" > docker/feelpp-${component}/dockerfile.tmp
 elif [ "${component}" = "toolboxes" ] ; then
     dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-base:${tag}" > docker/feelpp-${component}/dockerfile.tmp
+elif [ "${component}" = "crb" ] ; then
+    dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/feelpp-${component}/dockerfile.tmp
+elif [ "${component}" = "pyfeelpp" ] ; then
+    dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-crb:${tag}" > docker/feelpp-${component}/dockerfile.tmp
 else
     dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/feelpp-${component}/dockerfile.tmp
 fi    
