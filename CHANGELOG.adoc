@@ -4,6 +4,7 @@
 :toc: left
 :toc-title: Releases
 :toclevels: 2
+:feelpp: Feel++
 :uri-issue: https://github.com/feelpp/feelpp/issues
 :uri-pull: https://github.com/feelpp/feelpp/pull
 :uri-toolbox-issue: https://github.com/feelpp/toolbox/issues
@@ -16,11 +17,20 @@ https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
 
 === Features
 
+* [**pyfeelpp**] python support for {feelpp}, see Epic {uri-issue}/930[#930]
+** core: Environment, WorldComm
+** mesh: Mesh, ranges(elements and faces)
+** discr: FunctionSpace, FunctionSpace::Element
+** ts: TSBase
+** exporter: Exporter
+** toolbox/modelcore: ModelBase, ModelAlgebraic, ModelNumerical
+** toolbox/fluid: FluidMechanics
 * [**toolbox**] refactoring of gls stabilization in the `fluid` and `heat` toolboxes : now the `heatfluid` toolbox with natural convection can use Galerkin Least Square stabilization(gls).
 * [**toolbox**] implement Statistics post-process  {uri-toolbox-issue}/85[#85]
 * [**toolbox**] add pre/post solve interface with Linear/Picard solver
 
 === Fixes
+* [**all**] boost::shared_ptr has been replaced by std::shared_ptr {uri-issue}/1202[#1202]
 * [**feel/**] Fix support of filename_is_dot and filename_is_dot_dot in boost filesystem with boost 1.61 and 1.62 see {uri-issue}/[#1191]
 * [**toolbox**] remove rho scaling in fluid incompressibilty equation (cherry pick from feature/ls)
 
