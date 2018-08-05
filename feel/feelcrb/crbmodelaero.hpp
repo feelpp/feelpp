@@ -88,6 +88,7 @@ public :
         { return this->M_model->sizeOfLinearR()==-1 ? this->Ql(0):this->M_model->sizeOfLinearR(); }
 
 
+
 private:
     void updateJacobianAD( const vector_ptrtype& X, sparse_matrix_ptrtype & J , const parameter_type & mu);
     void updateResidualAD( const vector_ptrtype& X, vector_ptrtype& R , const parameter_type & mu);
