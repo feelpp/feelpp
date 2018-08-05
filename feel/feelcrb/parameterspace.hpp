@@ -1200,7 +1200,7 @@ public:
          * \param M the number of neighbors to find
          * \return vector of neighbors and index of them in the sampling
          */
-        sampling_ptrtype searchNearestNeighbors( element_type const& mu, size_type M , std::vector<int>& index_vector  );
+        sampling_ptrtype searchNearestNeighbors( element_type const& mu, size_type M , std::vector<int>& index_vector, bool broadcast=true  );
 
         /**
          * \brief if supersampling is != 0, Returns the complement
@@ -2045,14 +2045,15 @@ template<uint16_type P>
 boost::shared_ptr<typename ParameterSpace<P>::Sampling>
 ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
                                                      size_type _M ,
-                                                     std::vector<int>& index_vector)
+                                                     std::vector<int>& index_vector,
+                                                     bool broadcast )
 {
     // make sure that the sampling set is big enough
     size_type M = std::min( _M, size_type(this->size()) );
     sampling_ptrtype neighbors( new sampling_type( M_space, M ) );
 #if defined(FEELPP_HAS_ANN_H)
 
-    if( M_space->worldComm().isMasterRank() )
+    if( M_space->worldComm().isMasterRank() || !broadcast )
     {
         //std::cout << "[ParameterSpace::Sampling::searchNearestNeighbors] start\n";
         //if ( !M_kdtree )
@@ -2107,8 +2108,11 @@ ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
         annDeallocPts( data_pts );
     }//end of procMaster
 
-    boost::mpi::broadcast( M_space->worldComm() , neighbors , M_space->worldComm().masterRank() );
-    boost::mpi::broadcast( M_space->worldComm() , index_vector , M_space->worldComm().masterRank() );
+    if ( broadcast )
+    {
+        boost::mpi::broadcast( M_space->worldComm() , neighbors , M_space->worldComm().masterRank() );
+        boost::mpi::broadcast( M_space->worldComm() , index_vector , M_space->worldComm().masterRank() );
+    }
 
 
 #endif /* FEELPP_HAS_ANN_H */
