@@ -62,6 +62,7 @@ public :
         int i=0;
         auto mesh = crb_model->model()->functionSpace()->mesh();
         int size = s;
+        auto zero_mean = crb->hasZeroMean();
 
         sampling_ptrtype sampling( new sampling_type( crb_model->parameterSpace() ) );
         if ( size==-1 )
@@ -79,6 +80,7 @@ public :
         std::vector<std::vector<double>> l2_error( size );
         std::vector<std::vector<double>> timers( size );
         std::vector<std::vector<std::vector<double>>> l2_composite;
+        std::vector<bool> converged ( size, true );
 
         boost::mpi::timer timer;
         if ( is_composite )
@@ -94,6 +96,7 @@ public :
         int j=1;
         cout << "Convergence Study Starts\n"
              << "==================================================\n";
+        crb->setCheckCvg(true);
         for ( auto mu : *sampling )
         {
             cout << "["<<j<<"] mu="<<mu.toString() <<std::endl;
@@ -137,8 +140,23 @@ public :
 
                     vectorN_type u = Un[0];
                     u_rb = crb->expansion( u, n );
+                    if ( u.norm()==0 )
+                    {
+                        Feel::cout << "Not converged !\n";
+                        converged[i] = false;
+                    }
+
+
                     auto u_diff = u_fem-u_rb;
                     l2_error[i].push_back( l2Norm(u_diff)/u_l2 );
+
+                    // TODO fix in general case
+                    if ( zero_mean[1] )
+                    {
+                        auto p = u_rb.template element<1>();
+                        double mean_p = mean( elements(mesh), idv(p) )(0,0);
+                        p = vf::project( p.functionSpace(), idv(p)-cst(mean_p) );
+                    }
 
                     vectorN_type diff_composite;
                     if ( is_composite )
@@ -173,12 +191,12 @@ public :
         }
 
         M_e->save();
-        this->writeOnFile( l2_error, "l2");
-        this->writeOnFile( output_error, "output");
-        this->writeOnFile( timers, "timers_rb");
+        this->writeOnFile( l2_error, "l2", converged );
+        this->writeOnFile( output_error, "output", converged );
+        this->writeOnFile( timers, "timers_rb", converged );
         if ( is_composite )
             for ( int k=0; k<nb_spaces; k++ )
-                this->writeOnFile( l2_composite[k], "l2_"+std::to_string(k) );
+                this->writeOnFile( l2_composite[k], "l2_"+std::to_string(k), converged );
     }
 
 
@@ -199,8 +217,15 @@ private :
             fusion::for_each( index_vector, e );
         }
 
-    void writeOnFile( std::vector<std::vector<double>> const& data, std::string const& name )
+    void writeOnFile( std::vector<std::vector<double>>& data, std::string const& name,
+                      std::vector<bool> const& converged)
     {
+        for ( int i= converged.size()-1; i>=0; i-- )
+        {
+            if ( !converged[i] )
+                data.erase( data.begin() + i );
+        }
+
         int N = crb->WNmuSize();
         int size = data.size();
 
