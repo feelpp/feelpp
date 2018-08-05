@@ -652,7 +652,7 @@ public :
         {
             if ( M_feSpace )
                 return M_feSpace;
-            return boost::const_pointer_cast<super>( super::shared_from_this() );
+            return std::const_pointer_cast<super>( super::shared_from_this() );
         }
 
     template<int i>
