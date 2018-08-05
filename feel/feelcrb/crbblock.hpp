@@ -2,7 +2,7 @@
 #define CRBBLOCK_H
 
 #include <feel/feelcrb/crb.hpp>
-
+#define POUT std::cout << "[" << Environment::worldComm().globalRank()<<"] "
 namespace Feel
 {
 
@@ -187,6 +187,18 @@ public:
     bool notEmptyLqm( int const& r, int const& q, int const& m ) const
         { return M_notemptyLqm[r][q][m]; }
 
+    std::pair<std::string,element_type> lastSol() { return M_last_sol; }
+    std::map<std::string,std::vector<vectorN_type>>& projSol()
+        { return M_proj_sol; }
+    std::map<std::string,std::vector<vectorN_type>> projSol() const
+        { return M_proj_sol; }
+
+    std::vector<bool> hasZeroMean() override
+        {
+            std::vector<bool> out( n_block,false );
+            return out;
+        }
+
     //! save the CRB SP database
     void saveDB() override;
     //! load the CRB SP Database
@@ -221,6 +233,9 @@ protected:
 
     std::vector< std::vector< std::vector< std::vector< bool >>>> M_notemptyAqm;
     std::vector< std::vector< std::vector< bool >>> M_notemptyFqm, M_notemptyLqm;
+
+    std::pair<std::string,element_type> M_last_sol;
+    std::map<std::string,std::vector<vectorN_type>> M_proj_sol;
 }; //class CRBBlock
 
 
@@ -277,6 +292,7 @@ void
 CRBBlock<TruthModelType>::addBasis( element_type& U, element_type& Udu, parameter_type& mu )
 {
     LOG(INFO) << "CRBBlock addBasis begin\n";
+    M_last_sol=std::make_pair( mu.toString(), U );
     Feel::AddBasisByBlock<self_type> b( U, Udu, mu, this );
     rangespace_type range;
     boost::fusion::for_each( range, b );
@@ -294,14 +310,15 @@ struct OrthonormalizeBasisByBlock
     template <typename T>
     void operator()( T const& t ) const
         {
+            auto XN = m_crb->model()->rBFunctionSpace()->template rbFunctionSpace<T::value>();
+            int Nmu = m_crb->WNmuSize();
+            int N = m_crb->subN(T::value,Nmu);
+
             if ( m_crb->orthonormalizeSpace(T::value) )
             {
                 tic();
                 auto XN = m_crb->model()->rBFunctionSpace()->template rbFunctionSpace<T::value>();
                 auto wn = XN->primalRB();
-
-                int Nmu = m_crb->WNmuSize();
-                int N = m_crb->subN(T::value,Nmu);
                 int n_added = N - m_crb->subN(T::value,Nmu-1);
 
                 CHECK( N==wn.size() )<<"Wrong wn size="<<wn.size()<<" with N="<<N<<std::endl;
@@ -369,6 +386,29 @@ struct OrthonormalizeBasisByBlock
                 LOG(INFO) <<"CRBBlock orthonomalization end\n";
                 Feel::cout <<"Orthonoralzation end with "<<m_crb->subN(T::value,Nmu) << " basis vector, actual size of the basis is "<< XN->primalRB().size()<<std::endl;
                 toc( "RB Space Orthonormalization#" + std::to_string(T::value) );
+            }
+
+            int n_added = N - m_crb->subN(T::value,Nmu-1);
+            auto last_sol = m_crb->lastSol();
+            std::string mu_string = last_sol.first;
+            auto Sol = last_sol.second;
+            auto sol = Sol.template elementPtr<T::value>();
+            if ( m_crb->projSol()[mu_string].size()==0 )
+                m_crb->projSol()[mu_string].resize(3);
+            m_crb->projSol()[mu_string][T::value].conservativeResize(N);
+            for ( int i=0; i<N; i++ )
+            {
+                m_crb->projSol()[mu_string][T::value](i) =
+                    m_crb->model()->scalarProduct( XN->primalRB()[i], sol ,T::value);
+            }
+            for ( auto &m : m_crb->projSol() )
+            {
+                CHECK( m.second.size()==3 ) <<"map not initialized for mu="<<m.first<<", size="<<m.second.size()<<std::endl;
+                m.second[T::value].conservativeResize(N);
+                if ( m.first!=mu_string )
+                    for ( int i=N-n_added; i<N; i++)
+                        m.second[T::value](i) = 0;
+
             }
         }
 
