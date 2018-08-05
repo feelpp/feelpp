@@ -366,7 +366,7 @@ void AlphaElectric::initModel()
         PsetV->readFromFile(supersamplingname);
     }
 
-    auto d = Feel::deim( _model=boost::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetV, _prefix="vec");
+    auto d = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetV, _prefix="vec");
     this->addDeim(d);
     this->deim()->run();
 
@@ -387,7 +387,7 @@ void AlphaElectric::initModel()
         PsetM->readFromFile(supersamplingname);
     }
 
-    auto m = Feel::mdeim( _model=boost::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetM, _prefix="mat");
+    auto m = Feel::mdeim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetM, _prefix="mat");
     this->addMdeim(m);
     this->mdeim()->run();
     Feel::cout << tc::green << "Electric MDEIM construction finished!!" << tc::reset << std::endl;

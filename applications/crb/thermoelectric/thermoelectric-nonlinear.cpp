@@ -373,7 +373,7 @@ void ThermoElectric::initModel()
         auto alpha = cst_ref(M_mu.parameterNamed(mat.second.getString("alphaKey")));
         auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
 
-        auto eim_sigma = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+        auto eim_sigma = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                               _element=M_VT->template element<1>(),
                               _parameter=M_mu,
                               _expr=sigma,
@@ -391,7 +391,7 @@ void ThermoElectric::initModel()
         auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
         auto k = sigma*L*_e1;
 
-        auto eim_k = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+        auto eim_k = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                           _element=M_VT->template element<1>(),
                           _parameter=M_mu,
                           _expr=k,
@@ -401,7 +401,7 @@ void ThermoElectric::initModel()
         this->addEim( eim_k );
     }
     auto gradgrad = _e2v*trans(_e2v);
-    auto eim_gradgrad = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+    auto eim_gradgrad = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                              _element=M_VT->template element<0>(),
                              //_element2=M_VT->template element<0>(),
                              _parameter=M_mu,
@@ -467,7 +467,7 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
         auto sigma0 = cst_ref(M_mu.parameterNamed(mat.second.getString("sigmaKey")));
         auto alpha = cst_ref(M_mu.parameterNamed(mat.second.getString("alphaKey")));
         auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
-        auto eim_sigma = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+        auto eim_sigma = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                               _element=M_VT->template element<1>(),
                               _parameter=M_mu,
                               _expr=sigma,
@@ -487,7 +487,7 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
         auto L = cst_ref(M_mu.parameterNamed("L"));
         auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
         auto k = sigma*L*_e1;
-        auto eim_k = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+        auto eim_k = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                           _element=M_VT->template element<1>(),
                           _parameter=M_mu,
                           _expr=k,
@@ -501,7 +501,7 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
     std::string dbnameEimGrad = ptreeEimGrad.template get<std::string>( "database-filename" );
 
     auto gradgrad = _e2v*trans(_e2v);
-    auto eim_gradgrad = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+    auto eim_gradgrad = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                              _element=M_VT->template element<0>(),
                              _parameter=M_mu,
                              _expr=gradgrad,

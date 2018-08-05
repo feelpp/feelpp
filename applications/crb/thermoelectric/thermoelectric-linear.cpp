@@ -355,7 +355,7 @@ void ThermoElectric::initModel()
     }
 
     auto gradgrad = _e2v*trans(_e2v);
-    auto eim_gradgrad = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+    auto eim_gradgrad = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                              _element=M_VT->template element<0>(),
                              _parameter=M_mu,
                              _expr=gradgrad,
@@ -416,7 +416,7 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
     std::string dbnameEimg = ptreeEimg.template get<std::string>( "database-filename" );
 
     auto gradgrad = _e2v*trans(_e2v);
-    auto eim_gradgrad = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+    auto eim_gradgrad = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                              _element=M_VT->template element<0>(),
                              _parameter=M_mu,
                              _expr=gradgrad,
