@@ -98,8 +98,8 @@ public:
     std::shared_ptr<std::ostringstream> getInfo() const override;
 
     //--------------------------------------------------------------------//
-    std::shared_ptr<self_type> shared_from_this() { return boost::static_pointer_cast<self_type>(super_type::shared_from_this()); }
-    std::shared_ptr<self_type const> shared_from_this() const { return boost::static_pointer_cast<self_type const>(super_type::shared_from_this()); }
+    std::shared_ptr<self_type> shared_from_this() { return std::static_pointer_cast<self_type>(super_type::shared_from_this()); }
+    std::shared_ptr<self_type const> shared_from_this() const { return std::static_pointer_cast<self_type const>(super_type::shared_from_this()); }
 
     //--------------------------------------------------------------------//
     // Function spaces
