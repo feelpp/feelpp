@@ -91,11 +91,25 @@ struct RemoteData
     std::vector<std::pair<std::string,std::string>>
     createFolder( std::string const& folderPath, std::string const& parentId = "", bool sync = true ) const;
 
+    //! Content info data structure
+    class ContentsInfo: public std::tuple<std::vector<std::shared_ptr<FolderInfo>>,std::vector<std::shared_ptr<ItemInfo>>,std::vector<std::shared_ptr<FileInfo>>>
+    {
+    public:
+        using base =  std::tuple<std::vector<std::shared_ptr<FolderInfo>>,std::vector<std::shared_ptr<ItemInfo>>,std::vector<std::shared_ptr<FileInfo>>>;
+        ContentsInfo() = default;
+        ContentsInfo( base const& b ) : base ( b ) {}
+        ~ContentsInfo() = default;
+
+        std::vector<std::shared_ptr<FolderInfo>> folderInfo() { return std::get<0>( *this ); }
+        std::vector<std::shared_ptr<ItemInfo>> itemInfo() { return std::get<1>( *this ); }
+        std::vector<std::shared_ptr<FileInfo>> fileInfo() { return std::get<2>( *this ); }
+    };
+    
     //! get contents of a remote data (folder,item,file)
     //! @return : (Folders info,Items info, Files info)
-    std::tuple<std::vector<std::shared_ptr<FolderInfo>>,std::vector<std::shared_ptr<ItemInfo>>,std::vector<std::shared_ptr<FileInfo>>>
-    contents() const;
+    ContentsInfo contents() const;
 
+    
     class URL
     {
     public :

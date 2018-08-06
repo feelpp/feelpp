@@ -531,12 +531,12 @@ RemoteData::createFolder( std::string const& folderPath, std::string const& pare
     return {};
 }
 
-std::tuple<std::vector<std::shared_ptr<RemoteData::FolderInfo>>,std::vector<std::shared_ptr<RemoteData::ItemInfo>>,std::vector<std::shared_ptr<RemoteData::FileInfo>>>
+RemoteData::ContentsInfo
 RemoteData::contents() const
 {
     if ( M_girder && M_girder->isInit() )
         return M_girder->contents();
-    return std::make_tuple(std::vector<std::shared_ptr<FolderInfo>>(),std::vector<std::shared_ptr<ItemInfo>>(),std::vector<std::shared_ptr<FileInfo>>());
+    return ContentsInfo{std::make_tuple(std::vector<std::shared_ptr<FolderInfo>>(),std::vector<std::shared_ptr<ItemInfo>>(),std::vector<std::shared_ptr<FileInfo>>())};
 }
 
 RemoteData::URL::URL( std::string const& url, WorldComm const& worldComm )
