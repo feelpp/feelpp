@@ -54,7 +54,7 @@ void defDiscr(py::module &m)
     std::string pyclass_name;
     int Order = space_t::basis_0_type::nOrder;
     std::string suffix = std::to_string(mesh_t::nDim)+std::string("D_P") + std::to_string(Order);
-    std::cout << "suffix discr: " << suffix << std::endl;
+    //std::cout << "suffix discr: " << suffix << std::endl;
 
     if ( space_t::is_continuous )
         pyclass_name = std::string("Pch_") + suffix;
@@ -103,7 +103,7 @@ void defDiscrDiscontinuous(py::module &m )
     }
 }
     
-PYBIND11_MODULE(discr, m )
+PYBIND11_MODULE(_discr, m )
 {
     using namespace Feel;
 

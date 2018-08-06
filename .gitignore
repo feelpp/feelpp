@@ -8,6 +8,7 @@ build/
 *.vim
 *.pch
 *.gch
+__pycache__
 /#CTestConfig.cmake#
 /#ctest.make#
 /.DS_Store
