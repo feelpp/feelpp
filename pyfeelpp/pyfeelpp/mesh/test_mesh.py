@@ -1,5 +1,4 @@
-import core
-import mesh
+from pyfeelpp import *
 import sys,time
 
 e=core.Environment(sys.argv)
