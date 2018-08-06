@@ -386,7 +386,8 @@ protected:
         M_useAccurateApee( boption(_name="crb.use-accurate-apee") ),
         M_computeApeeForEachTimeStep( boption(_name="crb.compute-apee-for-each-time-step") ),
         M_seekMuInComplement( boption(_name="crb.seek-mu-in-complement") ),
-        M_showResidual( boption(_name="crb.show-residual") )
+        M_showResidual( boption(_name="crb.show-residual") ),
+        M_check_cvg( false )
         {
             this->setTruthModel( model );
             if( stage == crb::stage::offline )
@@ -707,6 +708,21 @@ public:
     bool offlineStep() const
         {
             return M_offline_step;
+        }
+
+    virtual std::vector<bool> hasZeroMean()
+        { return {false}; }
+
+    void setCheckCvg( bool check )
+        { M_check_cvg = check; }
+
+    bool onlineHasConverged()
+        {return M_last_online_converged; }
+
+    virtual std::map<std::string,double> timerMap() const
+        {
+            std::map<std::string,double> m;
+            return m;
         }
 
     struct ComputePhi
@@ -1708,6 +1724,9 @@ protected:
     bool M_seekMuInComplement;
     bool M_showResidual;
 
+    bool M_check_cvg;
+    mutable bool M_last_online_converged;
+
     mutable std::pair<int,double> offline_iterations_summary;
     mutable std::pair<int,double> online_iterations_summary;
 private:
@@ -2632,7 +2651,7 @@ CRB<TruthModelType>::offline()
 
         if( this->worldComm().isMasterRank() )
         {
-            std::cout << "N = " << M_N << "/"  << M_iter_max << "( max = " << user_max << ")\n";
+            std::cout << "N = " << M_N+1 << "/"  << M_iter_max << "( max = " << user_max << ")\n";
             int size = mu.size();
             std::cout << "  -- mu = [ ";
             for ( int i=0; i< size-1; i++ )
@@ -10960,36 +10979,46 @@ CRB<TruthModelType>::buildSampling()
     else if ( this->M_error_type==CRB_NO_RESIDUAL )// We generate the sampling with choosen strategy
     {
         this->M_WNmu->clear();
-        if ( N_log_equi>0 )
+        std::ifstream file ( file_name );
+        if ( file && boption("crb.reload-last-sampling") )
         {
-            this->M_WNmu->logEquidistribute( N_log_equi , true );
-            if( Environment::isMasterRank() )
-                std::cout<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
-                         <<N_log_equi<<" )"<<std::endl;
-            LOG( INFO )<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
-                       <<N_log_equi<<" )";
+            Feel::cout << "[CRB::offline] Reload last sampling\n";
+            this->M_WNmu->readFromFile(file_name);
         }
-        else if ( N_equi>0 )
+        else
         {
-            this->M_WNmu->equidistribute( N_equi , true );
-            if( Environment::isMasterRank() )
-                std::cout<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
-                         <<N_equi<<" )"<<std::endl;
-            LOG( INFO )<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
-                       <<N_equi<<" )";
+            if ( N_log_equi>0 )
+            {
+                this->M_WNmu->logEquidistribute( N_log_equi , true );
+                if( Environment::isMasterRank() )
+                    std::cout<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
+                             <<N_log_equi<<" )"<<std::endl;
+                LOG( INFO )<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
+                           <<N_log_equi<<" )";
+            }
+            else if ( N_equi>0 )
+            {
+                this->M_WNmu->equidistribute( N_equi , true );
+                if( Environment::isMasterRank() )
+                    std::cout<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
+                             <<N_equi<<" )"<<std::endl;
+                LOG( INFO )<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
+                           <<N_equi<<" )";
+            }
+            else if ( N_random>0 )
+            {
+                bool use_log = boption("crb.randomize.use-log");
+                this->M_WNmu->randomize( N_random , true, "",use_log );
+                if( Environment::isMasterRank() )
+                    std::cout<<"[CRB::offline] Randomize WNmu ( sampling size : "
+                             <<N_random<<" )"<<std::endl;
+                LOG( INFO )<<"[CRB::offline] Randomize WNmu ( sampling size : "
+                           <<N_random<<" )";
+            }
+            else // In this case we don't know what sampling to use
+                throw std::logic_error( "[CRB::offline] ERROR : You have to choose an appropriate strategy for the offline sampling : random, equi, logequi or predefined" );
+
         }
-        else if ( N_random>0 )
-        {
-            bool use_log = boption("crb.randomize.use-log");
-            this->M_WNmu->randomize( N_random , true, "",use_log );
-            if( Environment::isMasterRank() )
-                std::cout<<"[CRB::offline] Randomize WNmu ( sampling size : "
-                         <<N_random<<" )"<<std::endl;
-            LOG( INFO )<<"[CRB::offline] Randomize WNmu ( sampling size : "
-                       <<N_random<<" )";
-        }
-        else // In this case we don't know what sampling to use
-            throw std::logic_error( "[CRB::offline] ERROR : You have to choose an appropriate strategy for the offline sampling : random, equi, logequi or predefined" );
 
         this->M_WNmu->writeOnFile(file_name);
         use_predefined_WNmu=true;
