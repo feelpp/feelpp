@@ -100,7 +100,7 @@ void defExporter(py::module &m)
         
 }
     
-PYBIND11_MODULE(exporter, m )
+PYBIND11_MODULE(_exporter, m )
 {
     using namespace Feel;
 

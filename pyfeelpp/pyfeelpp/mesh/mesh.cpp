@@ -150,7 +150,7 @@ void defMesh(py::module &m)
 }
     
 
-PYBIND11_MODULE(mesh, m )
+PYBIND11_MODULE(_mesh, m )
 {
     using namespace Feel;
 

@@ -1,11 +1,6 @@
-import core
-import mesh
-import sys,time
+import filters
+
 e=core.Environment(sys.argv)
-
-import discr
-import exporter
-
 
 m=mesh.Mesh_3()
 m = mesh.load(m,"feelpp3d.geo",0.1)

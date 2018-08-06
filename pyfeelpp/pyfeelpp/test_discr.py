@@ -1,11 +1,9 @@
 import core
 import mesh
 import sys,time
-e=core.Environment(sys.argv)
-
 import discr
 
-
+e=core.Environment(sys.argv)
 
 print("pid:",e.worldComm().localRank() )
 m2d=mesh.Mesh_2()

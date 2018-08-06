@@ -1,9 +1,9 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 23 Jun 2017
+#       Date: 06 Aug 2018
 #
-#  Copyright (C) 2017 Feel++ Consortium
+#  Copyright (C) 2018 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@
 #
 #
 cmake_minimum_required(VERSION 3.3)
-project(pyfeelpp)
+project(mesh)
 
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
@@ -31,40 +31,6 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   endif()
 endif()
 
-enable_testing()
-
-if ( NOT TARGET check )
-  add_custom_target(check)
-endif()
-
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  list(APPEND CMAKE_MODULE_PATH "$ENV{FEELPP_DIR}/share/cmake/pybind11")
-  list(APPEND CMAKE_MODULE_PATH "/usr/local/share/cmake/pybind11")
-  include(pybind11Tools)
-endif()
-
-pybind11_add_module(pyfeelpp python.cpp)
-target_include_directories(pyfeelpp PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries( pyfeelpp PRIVATE ${FEELPP_LIBRARIES} )
-
-#add_subdirectory(core)
-
-
-pybind11_add_module(test_nested  test_nested.cpp)
-target_include_directories(test_nested PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries( test_nested PRIVATE ${FEELPP_LIBRARIES} )
-
-
-
-
-#add_subdirectory(filters)
-#add_subdirectory(toolboxes)
-
-#configure_file(__init__.py ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
-
-
-
-
-
-#add_subdirectory(core)
-#add_subdirectory(crb)
+pybind11_add_module(_mesh  mesh.cpp)
+target_include_directories(_mesh PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_link_libraries( _mesh PRIVATE ${FEELPP_LIBRARIES} )
