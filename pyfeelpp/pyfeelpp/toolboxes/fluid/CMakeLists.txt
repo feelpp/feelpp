@@ -21,9 +21,18 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+cmake_minimum_required(VERSION 3.3)
+project(toolboxes-fluid)
+
+if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+  find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
+  if(NOT FEELPP_FOUND)
+      message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+  endif()
+endif()
 
 
-pybind11_add_module(fluid  fluid.cpp)
-target_include_directories(fluid PRIVATE ${PYTHON_INCLUDE_DIRS} ${FEELPP_DIR}/include/feelpp/toolboxes)
+pybind11_add_module(_fluid  fluid.cpp)
+target_include_directories(_fluid PRIVATE ${PYTHON_INCLUDE_DIRS} ${FEELPP_DIR}/include/feelpp/toolboxes)
 find_library( FEELPP_FLUID feelpp_toolbox_fluid_lib HINTS ${FEELPP_DIR}/lib)
-target_link_libraries( fluid PRIVATE ${FEELPP_FLUID}  ${FEELPP_LIBRARIES} )
+target_link_libraries( _fluid PRIVATE ${FEELPP_FLUID}  ${FEELPP_LIBRARIES} )

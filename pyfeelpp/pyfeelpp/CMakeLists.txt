@@ -43,9 +43,9 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   include(pybind11Tools)
 endif()
 
-pybind11_add_module(pyfeelpp python.cpp)
-target_include_directories(pyfeelpp PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries( pyfeelpp PRIVATE ${FEELPP_LIBRARIES} )
+pybind11_add_module(_pyfeelpp python.cpp)
+target_include_directories(_pyfeelpp PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_link_libraries( _pyfeelpp PRIVATE ${FEELPP_LIBRARIES} )
 
 #add_subdirectory(core)
 
