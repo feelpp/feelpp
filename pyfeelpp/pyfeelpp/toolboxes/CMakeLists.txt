@@ -22,5 +22,4 @@
 #
 #
 
-add_subdirectory( modelcore )
-add_subdirectory( fluid )
+

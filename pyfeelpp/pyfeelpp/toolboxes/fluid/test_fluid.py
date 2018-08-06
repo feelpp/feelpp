@@ -1,16 +1,14 @@
-import core
-import mesh
+from pyfeelpp import *
 import sys,time
-from modelcore import *
 
-e=core.Environment(sys.argv,opts=toolboxes_options("fluid"))
+import pyfeelpp.toolboxes.modelcore as modelcore
 
-import discr
-import exporter
-import ts
-from fluid import *
+e=core.Environment(sys.argv,opts=modelcore.toolboxes_options("fluid"))
 
-f=Fluid_P2P1G1("fluid")
+# from pyfeelpp import discr,ts,filters
+from pyfeelpp.toolboxes.fluid import *
+
+f=Fluid_P2P1G1("fluid",buildmesh=True,worldComm=e.worldComm())
 f.init()
 f.printAndSaveInfo()
 if f.isStationary():

@@ -69,7 +69,7 @@ void defFM(py::module &m)
 }
     
 
-PYBIND11_MODULE(fluid, m )
+PYBIND11_MODULE(_fluid, m )
 {
     using namespace Feel;
 

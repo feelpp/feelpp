@@ -32,7 +32,7 @@
 namespace py = pybind11;
 using namespace Feel;
 
-PYBIND11_MODULE(modelcore, m )
+PYBIND11_MODULE(_modelcore, m )
 {
     using namespace Feel;
     using namespace Feel::FeelModels;
