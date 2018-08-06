@@ -41,5 +41,5 @@ steps:
    build:
      env:
        GIRDER_ID: "5a4fa90ab0e9571f842931e5"
-       PROJECT: "feelpp-toolboxes feelpp-crb"
+       PROJECT: "feelpp-toolboxes feelpp-crb feelpp-pyfeelpp"
        TAG: ${BUILDKITE_BRANCH}
