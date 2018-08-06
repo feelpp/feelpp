@@ -117,6 +117,23 @@ public:
             return out;
         }
 
+    std::map<std::string,double> timerMap() const override
+        {
+            std::map<std::string,double> m;
+            m["J"] = timerJ;
+            m["Jtri"] = timerJtri;
+            if ( timerJnl>1e-12 )
+                m["Jnl"] = timerJnl;
+            m["R"] = timerR;
+            m["Rtri"] = timerRtri;
+            if ( timerRnl>1e-12 )
+                m["Rnl"] = timerRnl;
+            m["Solve"] = timerSolve;
+            if ( timerBeta>1e-12 )
+                m["Beta"] = timerBeta;
+            m["Niter"] = M_Niter;
+            return m;
+        }
 
 
 private:
@@ -175,6 +192,9 @@ private:
     mutable matrixN_type M_Jbil,M_M;
     mutable vectorN_type M_Rli;
     std::vector<matrixN_type> M_mass;
+
+    mutable double timerJ, timerJtri, timerJnl, timerR, timerRtri, timerRnl, timerSolve, timerBeta, Niter;
+    mutable int M_Niter;
 
     using super::n_block;
     using super::subN;
@@ -365,6 +385,16 @@ template <typename TruthModelType>
 typename CRBAero<TruthModelType>::matrix_info_tuple
 CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu, std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K, bool print_rb_matrix, bool computeOutput ) const
 {
+    timerJ=0; timerJtri=0; timerJnl=0; timerR=0; timerRtri=0; timerRnl=0; timerSolve=0; timerBeta=0;
+    M_Niter=0;
+    boost::mpi::timer t_solve;
+    t_solve.restart();
+    int N0 = this->subN(0,N);
+    int N1 = this->subN(1,N);
+    int N2 = this->subN(2,N);
+    int sumN = N0+N1+N2;
+    typename CRBAero<TruthModelType>::matrix_info_tuple out =  boost::make_tuple(0.,0.);
+
     int number_of_neighbors = this->WNmuSize() - N+1;
     std::vector<int> index_vector;
     auto S = this->M_WNmu->searchNearestNeighbors( mu, number_of_neighbors, index_vector, false);
@@ -380,23 +410,65 @@ CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, st
     auto u_init = this->projSol()[mu_init.toString()];
     CHECK(u_init.size()==3) <<"u_init is empty\n";
 
-    int N0 = this->subN(0,N);
-    int N1 = this->subN(1,N);
-    int N2 = this->subN(2,N);
-    int sumN = N0+N1+N2;
+    auto u_prev = uN[0];
+    int n0 = subN(0,N-1);
+    int n1 = subN(1,N-1);
+    int n2 = subN(2,N-1);
+    int sumn = n0+n1+n2;
 
-    uN[0].resize(sumN);
-    uN[0].segment(     0,N0 ) = u_init[0].head(N0);
-    uN[0].segment(    N0,N1 ) = u_init[1].head(N1);
-    uN[0].segment( N0+N1,N2 ) = u_init[2].head(N2);
+    uN[0].resize( sumN );
+    uN[0].setZero();
 
-    if ( VERBOSE )
-        Feel::cout << "init online sol with "<<mu_init.toString()<<" and vector \n"<<uN[0]<<std::endl;
+    if ( this->M_check_cvg && u_prev.size()==sumn )
+    {
+        uN[0].segment(     0, n0 ) = u_prev.segment(     0, n0 );
+        uN[0].segment(    N0, n1 ) = u_prev.segment(    n0, n1 );
+        uN[0].segment( N0+N1, n2 ) = u_prev.segment( n0+n1, n2 );
+    }
+    else if ( boption("crb.aero.init-online"))
+    {
+        uN[0].segment(     0,N0 ) = u_init[0].head(N0);
+        uN[0].segment(    N0,N1 ) = u_init[1].head(N1);
+        uN[0].segment( N0+N1,N2 ) = u_init[2].head(N2);
+
+    }
 
     if ( M_newton )
-        return onlineSolveNewton( N, mu, uN, uNdu, uNold, uNduold, output_vector, K, print_rb_matrix, computeOutput);
+        onlineSolveNewton( N, mu, uN, uNdu, uNold, uNduold, output_vector, K, print_rb_matrix, computeOutput);
     else
-        return onlineSolvePicard( N, mu, uN, uNdu, uNold, uNduold, output_vector, K, print_rb_matrix, computeOutput);
+        onlineSolvePicard( N, mu, uN, uNdu, uNold, uNduold, output_vector, K, print_rb_matrix, computeOutput);
+
+    if ( !this->M_last_online_converged && ioption("crb.aero.online-continuation") )
+    {
+        Feel::cout << "CRBAero: use continuation for mu="<<mu.toString()<<std::endl;
+        int n = ioption("crb.aero.online-continuation");
+        uN[0].segment(     0,N0 ) = u_init[0].head(N0);
+        uN[0].segment(    N0,N1 ) = u_init[1].head(N1);
+        uN[0].segment( N0+N1,N2 ) = u_init[2].head(N2);
+
+        for ( int i=0; i<=n; i++ )
+        {
+            parameter_type current_mu = (n-i)/(double)n*mu_init + i/(double)n*mu;
+            if ( boption("crb.aero.log-continuation") )
+                for ( int k=0; k<mu.size(); k++ )
+                {
+                    current_mu(k) = std::pow(mu_init(k),(n-i)/(double)n )*std::pow(mu(k),i/(double)n );
+                }
+
+            //Feel::cout << "CRBAero: online continuation current mu="<<current_mu.toString()<<std::endl;
+            if ( M_newton )
+                onlineSolveNewton( N, current_mu, uN, uNdu, uNold, uNduold, output_vector, K, print_rb_matrix, computeOutput);
+            else
+                onlineSolvePicard( N, current_mu, uN, uNdu, uNold, uNduold, output_vector, K, print_rb_matrix, computeOutput);
+             if ( !this->M_last_online_converged )
+                 Feel::cout << "CRBAero: continuation failed for i="<<i<<", mu="<<current_mu.toString()<<std::endl;
+        }
+    }
+
+    // if ( !this->M_last_online_converged )
+    //     Feel::cout << "CRBAero: Online Solver failed to converge, rez="<<M_rez <<std::endl;
+    timerSolve = t_solve.elapsed();
+    return out;
 }
 
 template <typename TruthModelType>
@@ -544,6 +616,8 @@ CRBAero<TruthModelType>::onlineSolvePicard(  size_type N, parameter_type const& 
         J += M_Jbil;
         R += M_Rli;
 
+
+
         uN[0] = J.fullPivLu().solve( R );
 
         increment = (uN[0]-previous_uN).norm();
@@ -552,14 +626,28 @@ CRBAero<TruthModelType>::onlineSolvePicard(  size_type N, parameter_type const& 
         this->online_iterations_summary.first = fi;
         this->online_iterations_summary.second = increment;
 
-        double residual_norm = (J * uN[0] - R).norm() ;
+        for ( int q=0; q<model->QTri(); q++ )
+        {
+            for ( int k=0; k<N0; k++ )
+                for ( int i=0; i<N0; i++ )
+                    J(k,i) += betaTri[q]*(blockTriqm(0,0)[q][k].row(i).head(N0)).dot(uN[0].segment(0,N0));
+            for ( int k=0; k<N2; k++ )
+                for( int i=0; i<N2; i++ )
+                    J(N0+N1+k,N0+N1+i) += betaTri[q]*(blockTriqm(2,0)[q][k].row(i).head(N0)).dot(uN[0].segment(0,N0));
+        }
+        M_rez = (J * uN[0] - R).norm() ;
+
+
         if( this->M_fixedpointVerbose )
-            Feel::cout << "[CRBSaddlePoint::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment << ", incrment_bas="<< residual_norm<<std::endl;
+            Feel::cout << "[CRBAero::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment << ", incrment_bas="<< M_rez<<std::endl;
         fi++;
 
     }while ( !fixPointIsFinished );
-    if ( fi == this->M_fixedpointMaxIterations )
-        Feel::cout << "CRBAero: Picard converged by maxit, increment="<<increment<<std::endl;
+
+    this->M_last_online_converged = increment<this->M_fixedpointIncrementTol;
+
+    // if ( !this->M_last_online_converged )
+    //     Feel::cout << "CRBAero: Picard didn't converged, increment="<<increment<<", residual="<<residual_norm<<std::endl;
 
     if ( computeOutput )
     {
@@ -624,9 +712,14 @@ CRBAero<TruthModelType>::onlineSolveNewton(  size_type N, parameter_type const& 
     M_Jbil.setZero();
     M_Rli.setZero();
 
+
+    boost::mpi::timer tBeta;
+    tBeta.restart();
     beta_vector_type betaJqm;
     std::vector<beta_vector_type> betaRqm;
     boost::tie( boost::tuples::ignore, betaJqm, betaRqm ) = model->computeBetaQm( map_UN, mu );
+    timerBeta += tBeta.elapsed();
+
     tic();
     for ( int q=0; q<model->sizeOfBilinearJ(); q++ )
     {
@@ -685,14 +778,16 @@ CRBAero<TruthModelType>::onlineSolveNewton(  size_type N, parameter_type const& 
     //Feel::cout << "Jbil=\n"<<M_Jbil<<"\n Rli=\n"<<M_Rli<<std::endl;
     this->M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobianOnline, boost::ref( *this ), _1, _2  , mu , N );
     this->M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidualOnline, boost::ref( *this ), _1, _2  , mu , N );
+
+    this->M_nlsolver->setType( TRUST_REGION );
     this->M_nlsolver->setRelativeResidualTol( doption("crb.aero.snes.rtol"));
+    this->M_nlsolver->setKspSolverType( PREONLY );
     auto out = this->M_nlsolver->solve( map_J , map_UN , map_R, 1e-12, 100 );
 
-    if ( this->M_check_cvg )
-    {
-        if ( out.first<0 )
-            uN[0].setZero();
-    }
+    this->M_last_online_converged = out.first>=0 && out.first<20;
+    M_rez = newR( map_UN, mu, N );
+    // if ( !this->M_last_online_converged )
+    //     Feel::cout << "CRBAero Newton did not converged\n";
 
     double conditioning = 0;
     double determinant =0;
@@ -728,6 +823,9 @@ void
 CRBAero<TruthModelType>::updateJacobianOnline( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const
 {
     tic();
+    boost::mpi::timer tJ, tJtri, tJnl, tBeta;
+    M_Niter++;
+    tJ.restart();
     auto model = this->M_model;
     int N0 = this->subN(0,N);
     int N1 = this->subN(1,N);
@@ -735,7 +833,9 @@ CRBAero<TruthModelType>::updateJacobianOnline( const map_dense_vector_type& X, m
     beta_vector_type betaJqm;
 
     J.setZero();
+    tBeta.restart();
     boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = this->M_model->computeBetaQm( X, mu );
+    timerBeta += tBeta.elapsed();
     J += M_Jbil;
     if ( M_use_psit )
     {
@@ -747,6 +847,7 @@ CRBAero<TruthModelType>::updateJacobianOnline( const map_dense_vector_type& X, m
     tic();
     for ( int q=model->sizeOfBilinearJ(); q< model->Qa(); q++ )
     {
+        tJnl.restart();
         for ( int m=0; m<model->mMaxA(q); m++ )
         {
             // first row
@@ -773,10 +874,12 @@ CRBAero<TruthModelType>::updateJacobianOnline( const map_dense_vector_type& X, m
             if ( this->notEmptyAqm(2,2,q,m) )
                 J.block( N0+N1, N0+N1, N2, N2) += betaJqm[q][m]*blockAqm(2,2)[q][m].block(0,0,N2,N2);
         }
+        timerJnl += tJnl.elapsed();
     }
     toc("UpdateJ NL terms",VERBOSE);
 
     tic();
+    tJtri.restart();
     auto betaTri = this->M_model->computeBetaTri( mu );
     for ( int q=0; q<model->QTri(); q++ )
     {
@@ -801,8 +904,9 @@ CRBAero<TruthModelType>::updateJacobianOnline( const map_dense_vector_type& X, m
             }
         }
     }
+    timerJtri += tJtri.elapsed();
     toc("updateJ trilinear", VERBOSE);
-
+    timerJ += tJ.elapsed();
     toc("CRBAERO updateJonline", VERBOSE);
 }
 
@@ -811,6 +915,8 @@ void
 CRBAero<TruthModelType>::updateResidualOnline( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const
 {
     tic();
+    boost::mpi::timer tR, tRtri, tRnl, tBeta;
+    tR.restart();
     auto model = this->M_model;
     int N0 = this->subN(0,N);
     int N1 = this->subN(1,N);
@@ -819,9 +925,11 @@ CRBAero<TruthModelType>::updateResidualOnline( const map_dense_vector_type& X, m
     matrixN_type temp( sumN, sumN );
     vectorN_type myR( sumN );
 
+    tBeta.restart();
     beta_vector_type betaJqm;
     std::vector<beta_vector_type> betaRqm;
     boost::tie( boost::tuples::ignore, betaJqm, betaRqm ) = model->computeBetaQm( X, mu );
+    timerBeta += tBeta.elapsed();
 
     tic();
     R.setZero();
@@ -833,6 +941,7 @@ CRBAero<TruthModelType>::updateResidualOnline( const map_dense_vector_type& X, m
     tic();
     for ( int q=model->sizeOfLinearR(); q<model->Ql(0); q++ )
     {
+        tRnl.restart();
         for ( int m=0; m<model->mMaxF(0,q); m++ )
         {
             if ( this->notEmptyFqm(0,q,m) )
@@ -842,10 +951,12 @@ CRBAero<TruthModelType>::updateResidualOnline( const map_dense_vector_type& X, m
             if ( this->notEmptyFqm(2,q,m) )
                 R.segment(N0+N1,N2) += betaRqm[0][q][m]*blockFqm(2)[q][m].head(N2);
         }
+        timerRnl += tRnl.elapsed();
     }
     toc("UpdateR NL terms",VERBOSE);
 
     tic();
+    tRtri.restart();
     temp.setZero();
     auto betaTri = this->M_model->computeBetaTri( mu );
     for ( int q=0; q<model->QTri(); q++ )
@@ -859,7 +970,8 @@ CRBAero<TruthModelType>::updateResidualOnline( const map_dense_vector_type& X, m
         myR += betaTri[q]*temp*X;
     }
     R += myR;
-
+    timerRtri += tRtri.elapsed();
+    timerR += tR.elapsed();
     toc("updateR trilinear", VERBOSE);
     toc("CRBAERO updateRonline", VERBOSE);
 }
