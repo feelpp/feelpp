@@ -47,6 +47,9 @@ struct RemoteData
     //! return world comm
     WorldComm const& worldComm() const { return M_worldComm; }
 
+    //! set the WorldComm
+    void setWorldComm( WorldComm const& wc ) { M_worldComm = wc; }
+    
     //! return true if enough information are available for download a file
     bool canDownload() const;
 
@@ -126,7 +129,7 @@ struct RemoteData
         //! @return : the path of the downloaded file
         std::string download( std::string const& dir = Environment::downloadsRepository(), std::string const& filename = "" ) const;
     private :
-        WorldComm const& M_worldComm;
+        WorldComm M_worldComm;
         std::string M_url;
         std::string M_protocol, M_domain, M_port, M_path, M_query;
     };
@@ -153,7 +156,7 @@ struct RemoteData
 
         static std::string errorMessage( pt::ptree const& ptree, std::string const& defaultMsg = "", uint16_type statusCode = invalid_uint16_type_value );
     private :
-        WorldComm const& M_worldComm;
+        WorldComm M_worldComm;
         std::string M_owner, M_repo, M_branch, M_path, M_token;
     };
 
@@ -243,7 +246,7 @@ struct RemoteData
 
         static std::string errorMessage( pt::ptree const& ptree, std::string const& defaultMsg = "", uint16_type statusCode = invalid_uint16_type_value );
     private :
-        WorldComm const& M_worldComm;
+        WorldComm M_worldComm;
         std::string M_url, M_apiKey, M_token;
         std::set<std::string> M_fileIds, M_folderIds, M_itemIds;
     };
@@ -325,7 +328,7 @@ struct RemoteData
     };
 
 private :
-    WorldComm const& M_worldComm;
+    WorldComm M_worldComm;
     boost::optional<URL> M_url;
     boost::optional<Github> M_github;
     boost::optional<Girder> M_girder;
