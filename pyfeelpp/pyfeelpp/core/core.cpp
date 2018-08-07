@@ -22,6 +22,7 @@
 //! @copyright 2017 Feel++ Consortium
 //!
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <feel/feel.hpp>
 #include <mpi4py/mpi4py.h>
@@ -56,6 +57,7 @@ PYBIND11_MODULE(_core, m )
         .def_static("isMasterRank",&Feel::Environment::isMasterRank, "true if rank is 0, false otherwise",py::return_value_policy::copy)
         .def_static("worldComm",&Feel::Environment::worldComm, "get the Environment WorldComm",py::return_value_policy::copy)
         .def_static("rootRepository",&Feel::Environment::rootRepository,"get the root repository for Feel++, default $HOME/feel",py::return_value_policy::move)
+        .def_static("downloadsRepository",&Feel::Environment::downloadsRepository,"get the downloads repository for Feel++",py::return_value_policy::move)
         .def_static("findFile",&Feel::Environment::findFile,"find file",py::return_value_policy::move)
         .def_static("expand",&Feel::Environment::expand,"expand variable in string",py::return_value_policy::move)
         ;
@@ -76,7 +78,8 @@ PYBIND11_MODULE(_core, m )
         .def(py::init<>())
         .def("isMasterRank", &Feel::WorldComm::isMasterRank,"returns true if master rank, false otherwise")
         .def("localRank", &Feel::WorldComm::localRank,"returns the rank of the local worldcomm")
-        .def("globalRank", &Feel::WorldComm::localRank,"returns the rank of the global worldcomm")
+        .def("globalRank", &Feel::WorldComm::globalRank,"returns the rank of the global worldcomm")
+        .def("masterRank", &Feel::WorldComm::masterRank,"returns the master rank")
         ;
     py::class_<std::vector<WorldComm>>(m,"WorldsComm").def(py::init<>());
     py::class_<std::vector<bool>>(m,"vector_bool").def(py::init<>());
