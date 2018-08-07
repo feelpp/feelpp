@@ -34,16 +34,21 @@
 #include <boost/mpl/vector.hpp>
 
 #include<feel/feelcore/environment.hpp>
-#include<feel/feelcore/remotedata.hpp>
 
 namespace py = pybind11;
+
+void bindRemoteData( py::module& m );
+
+
 PYBIND11_MODULE(_core, m )
 {
     using namespace Feel;
 
     if (import_mpi4py()<0) return ;
 
-    py::class_<po::options_description>(m,"OptionsDescription").def(py::init<>());
+    py::class_<po::options_description>(m,"OptionsDescription")
+        .def(py::init<>());
+    
     py::class_<Environment>(m,"Environment")
         .def( py::init<py::list,po::options_description>(),"Construct a Feel++ Environment",py::arg("arg"), py::arg("opts") = feel_nooptions())
         .def( py::init<py::list>(),"Construct a Feel++ Environment")//,py::arg("arg"), py::arg("opts") = feel_nooptions())
@@ -84,29 +89,7 @@ PYBIND11_MODULE(_core, m )
     py::class_<std::vector<WorldComm>>(m,"WorldsComm").def(py::init<>());
     py::class_<std::vector<bool>>(m,"vector_bool").def(py::init<>());
 
-    py::class_<RemoteData::ContentsInfo>(m,"ContentsInfo")
-        .def( py::init<>() )
-        .def( py::init<std::tuple<std::vector<std::shared_ptr<RemoteData::FolderInfo>>,std::vector<std::shared_ptr<RemoteData::ItemInfo>>,std::vector<std::shared_ptr<RemoteData::FileInfo>>>>(), "set ContentsInfo from tuple" )
-        .def( "folderInfo", &RemoteData::ContentsInfo::folderInfo, "get remote contents folderInfo" )
-        .def( "itemInfo", &RemoteData::ContentsInfo::itemInfo, "get remote contents itemInfo" )
-        .def( "fileInfo", &RemoteData::ContentsInfo::fileInfo, "get remote contents fileInfo" )
-        ;
-        
-    py::class_<RemoteData>(m,"RemoteData")
-        .def(py::init<std::string const&,WorldComm const&>(),py::arg("desc"),py::arg("worldComm")=Environment::worldComm(),"Initialize the RemoteData handler")
-        .def("worldComm", &RemoteData::worldComm, "get the worldComm" )
-        .def("canDownload", &RemoteData::canDownload, "returns true if data/ressource can be downloaded, false otherwise" )
-        .def("canUpload", &RemoteData::canUpload, "returns true if data/ressource can be uploaded, false otherwise" )
-        .def("download", &RemoteData::download,
-             py::arg("dir")=Environment::downloadsRepository(),
-             py::arg("filename")=std::string(""),
-             "download the requested data/ressource" )
-        .def("upload", static_cast<std::vector<std::string> (RemoteData::*)( std::string const&, std::string const&, bool sync) const>(&RemoteData::upload),
-             py::arg("path"),
-             py::arg("parentId")=std::string(""),
-             py::arg("sync")=true,
-             "upload the requested data/ressource" )
-        .def( "contents", &RemoteData::contents, "get the data/ressource contents information" )
-        ;
+    
+    bindRemoteData( m );
     
 }
