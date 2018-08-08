@@ -34,7 +34,7 @@ namespace py = pybind11;
 using namespace Feel;
 
 
-PYBIND11_MODULE(ts, m )
+PYBIND11_MODULE(_ts, m )
 {
     using namespace Feel;
 
