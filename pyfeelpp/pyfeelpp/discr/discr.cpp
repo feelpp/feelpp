@@ -27,6 +27,7 @@
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feelvf/ginac.hpp>
 #include <mpi4py/mpi4py.h>
 
 namespace py = pybind11;
@@ -89,6 +90,13 @@ void defDiscr(py::module &m)
         .def(py::init<std::shared_ptr<space_t> const&, std::string const&, std::string const&, size_type, ComponentType>(),py::arg("space"), py::arg("name"), py::arg("desc"), py::arg("start")=0, py::arg("ct")= ComponentType::NO_COMPONENT)
         .def("functionSpace",static_cast<space_ptr_t const&(element_t::*)() const>(&element_t::functionSpace), "Get funtion space from element")
         .def("size", static_cast< size_type (element_t::*)() const>(&element_t::size), "Get size of element")
+
+        .def("save", &element_t::saveImpl, py::arg("path"), py::arg("type")="binary", py::arg("suffix")="", py::arg("sep")="", "save functionspace element in file ")
+        .def("load", &element_t::loadImpl, py::arg("path"), py::arg("type")="binary", py::arg("suffix")="", py::arg("sep")="", "load functionspace element from file ")
+
+        .def("on", static_cast<void (element_t::*)( elements_reference_wrapper_t<mesh_ptr_t> const&, Expr<GinacEx<2>> const&, std::string const&, GeomapStrategyType, bool, bool)>(&element_t::template onImpl<elements_reference_wrapper_t<mesh_ptr_t>,Expr<GinacEx<2>>>),
+             py::arg("range"), py::arg("expr"), py::arg("prefix")="",
+             py::arg("geomap")=GeomapStrategyType::GEOMAP_OPT, py::arg("accumulate")=false, py::arg("verbose")=false, "build the interpolant of the expression expr on a range of elements")
         ;
 
     
@@ -106,11 +114,24 @@ void defDiscrDiscontinuous(py::module &m )
 PYBIND11_MODULE(_discr, m )
 {
     using namespace Feel;
+    using namespace Feel::vf;
 
     if (import_mpi4py()<0) return ;
 
     std::string pyclass_name = std::string("ComponentType");
-    py::class_<ComponentType>(m,pyclass_name.c_str()).def(py::init<>());
+    py::enum_<ComponentType>(m,pyclass_name.c_str())
+        .value("NO_COMPONENT", ComponentType::NO_COMPONENT )
+        .value("X", ComponentType::X )
+        .value("Y", ComponentType::Y )
+        .value("Z", ComponentType::Z )
+        .value("NX", ComponentType::NX )
+        .value("NY", ComponentType::NY )
+        .value("NZ", ComponentType::NZ )
+        .value("TX", ComponentType::TX )
+        .value("TY", ComponentType::TY )
+        .value("TZ", ComponentType::TZ )
+        .export_values();
+
     pyclass_name = std::string("Periodic");
     py::class_<Periodic<double>>(m,pyclass_name.c_str()).def(py::init<>());
     pyclass_name = std::string("PeriodicityPeriodic");

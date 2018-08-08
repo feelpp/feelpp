@@ -156,6 +156,12 @@ PYBIND11_MODULE(_mesh, m )
 
     if (import_mpi4py()<0) return ;
 
+    py::enum_<GeomapStrategyType>(m,"GeomapStrategyType")
+        .value("GEOMAP_OPT", GeomapStrategyType::GEOMAP_OPT)
+        .value("GEOMAP_O1", GeomapStrategyType::GEOMAP_O1)
+        .value("GEOMAP_HO", GeomapStrategyType::GEOMAP_HO)
+        .export_values();
+    
     defMesh<Simplex<1>>(m);
     defMesh<Simplex<2>>(m);
     defMesh<Simplex<3>>(m);

@@ -1,9 +1,11 @@
-import core
-import mesh
+from pyfeelpp import *
 import sys,time
-import discr
-
 e=core.Environment(sys.argv)
+
+import pyfeelpp.discr as discr
+import pyfeelpp.vf as vf
+
+
 
 print("pid:",e.worldComm().localRank() )
 m2d=mesh.Mesh_2()
@@ -24,6 +26,7 @@ m3=Xh.mesh()
 assert m3==m2d
 
 u=Xh.element()
+u.on(range=mesh.elements(m2d),expr=vf.expr("x:x"))
 
 assert u.functionSpace() == Xh
 assert u.size() == Xh.nDof()
