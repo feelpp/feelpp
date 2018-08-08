@@ -10,7 +10,7 @@ namespace Feel {
 TimerTool::TimerTool( std::string fileName, WorldComm const& worldComm )
     :
     TimerToolBase(),
-    M_worldComm( worldComm ),
+    M_worldComm( const_cast<WorldComm&>(worldComm).shared_from_this() ),
     M_activeTimers(1,false),
     M_timer(1),
     M_tElapsedCurrent(1,0),
@@ -194,9 +194,9 @@ TimerTool::save()
             dataSend.push_back( M_dataRegister.find(dataKey)->second );
 
         std::vector<std::vector<double> > dataRecv;
-        mpi::gather( M_worldComm.globalComm(), dataSend, dataRecv, M_worldComm.masterRank() );
+        mpi::gather( M_worldComm->globalComm(), dataSend, dataRecv, M_worldComm->masterRank() );
 
-        if ( M_worldComm.isMasterRank() )
+        if ( M_worldComm->isMasterRank() )
         {
             int nProc = dataRecv.size();
             if ( M_saveFileMax )
@@ -253,13 +253,13 @@ TimerTool::save()
         }
     }
     // synchronisation
-    // M_worldComm.barrier();
+    // M_worldComm->barrier();
 }
 
 void
 TimerTool::saveImpl( std::string const& filename )
 {
-    if ( M_worldComm.isMasterRank() )
+    if ( M_worldComm->isMasterRank() )
     {
         // if file not exist, force to write the preambule
         if( !M_reinitSaveFile && !fs::exists(filename) )
@@ -277,7 +277,7 @@ TimerTool::saveImpl( std::string const& filename )
             file << "\n";
         }
 
-        file << std::setw(12) << std::left << M_worldComm.globalSize();
+        file << std::setw(12) << std::left << M_worldComm->globalSize();
         for (auto const& addParam : M_additionalParameters)
         {
             file << std::setw( std::max( int(addParam.first.size()+2), 20 ) ) << std::left << std::setprecision( 5 ) << std::fixed;

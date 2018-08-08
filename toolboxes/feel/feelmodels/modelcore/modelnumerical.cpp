@@ -65,7 +65,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& 
         if ( Environment::vm().count( prefixvm(this->prefix(),"mesh.filename").c_str() ) )
         {
             std::string meshfile = Environment::expand( soption(_prefix=this->prefix(),_name="mesh.filename") );
-            RemoteData rdTool( meshfile, this->worldComm() );
+            RemoteData rdTool( meshfile, const_cast<WorldComm&>(this->worldComm()) );
             if ( rdTool.canDownload() )
             {
                 auto dowloadedData = rdTool.download( (fs::path(Environment::downloadsRepository())/fs::path(this->prefix())/fs::path("meshes")).string() );
