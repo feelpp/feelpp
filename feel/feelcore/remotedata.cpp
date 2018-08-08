@@ -436,9 +436,9 @@ StatusRequestHTTP requestDownloadURL( std::string const& url, std::ostream & ofi
 }
 
 
-RemoteData::RemoteData( std::string const& desc, WorldComm const& worldComm )
+RemoteData::RemoteData( std::string const& desc, WorldComm & worldComm )
     :
-    M_worldComm( worldComm )
+    M_worldComm( worldComm.shared_from_this() )
 {
     RemoteData::URL urlTool( desc,worldComm );
     if ( urlTool.isValid() )
@@ -539,9 +539,9 @@ RemoteData::contents() const
     return ContentsInfo{std::make_tuple(std::vector<std::shared_ptr<FolderInfo>>(),std::vector<std::shared_ptr<ItemInfo>>(),std::vector<std::shared_ptr<FileInfo>>())};
 }
 
-RemoteData::URL::URL( std::string const& url, WorldComm const& worldComm )
+RemoteData::URL::URL( std::string const& url, WorldComm & worldComm )
     :
-    M_worldComm( worldComm )
+    M_worldComm( worldComm.shared_from_this() )
 {
     std::regex ex("(http|https)://([^/ :]+):?([^/ ]*)(/?[^ #?]*)\\x3f?([^ #]*)#?([^ ]*)");
     std::cmatch what;
@@ -600,7 +600,7 @@ RemoteData::URL::download( std::string const& _dir, std::string const& _filename
 
     std::string url = M_url;
 
-    if ( M_worldComm.isMasterRank() )
+    if ( M_worldComm->isMasterRank() )
     {
         if ( !fs::exists( dir ) )
             fs::create_directories( dir );
@@ -621,7 +621,7 @@ RemoteData::URL::download( std::string const& _dir, std::string const& _filename
             std::cout << "Download error : failure when create file  " << thefilename << "\n";
     }
 
-    M_worldComm.barrier();
+    M_worldComm->barrier();
     return thefilename;
 }
 
@@ -684,9 +684,9 @@ convertDescToPropertyTree( std::string const& desc )
 }
 
 
-RemoteData::Github::Github( std::string const& desc, WorldComm const& worldComm )
+RemoteData::Github::Github( std::string const& desc, WorldComm & worldComm )
     :
-    M_worldComm( worldComm )
+    M_worldComm( worldComm.shared_from_this() )
 {
     std::regex ex("([ ]*)github([ ]*):([ ]*)([{])([^]*)([}])");
     std::cmatch what;
@@ -716,7 +716,7 @@ RemoteData::Github::Github( std::string const& desc, WorldComm const& worldComm 
     auto resConvertion = convertDescToPropertyTree( exprtosplit );
     if ( !resConvertion.first )
     {
-        if ( M_worldComm.isMasterRank() )
+        if ( M_worldComm->isMasterRank() )
             std::cout << "Github desc has a syntax error : " << desc << "\n";
         return;
     }
@@ -769,11 +769,11 @@ std::vector<std::string>
 RemoteData::Github::download( std::string const& dir ) const
 {
     std::vector<std::string> downloadFileOrFolder;
-    if ( M_worldComm.isMasterRank() )
+    if ( M_worldComm->isMasterRank() )
     {
         downloadFileOrFolder = this->downloadImpl( dir );
     }
-    mpi::broadcast( M_worldComm.globalComm(), downloadFileOrFolder, M_worldComm.masterRank() );
+    mpi::broadcast( M_worldComm->globalComm(), downloadFileOrFolder, M_worldComm->masterRank() );
     return downloadFileOrFolder;
 }
 
@@ -930,9 +930,9 @@ RemoteData::Github::errorMessage( pt::ptree const& ptree, std::string const& def
 }
 
 
-RemoteData::Girder::Girder( std::string const& desc, WorldComm const& worldComm )
+RemoteData::Girder::Girder( std::string const& desc, WorldComm & worldComm )
     :
-    M_worldComm( worldComm )
+    M_worldComm( worldComm.shared_from_this() )
 {
     std::regex ex("([ ]*)girder([ ]*):([ ]*)([{])([^]*)([}])");
     std::cmatch what;
@@ -946,7 +946,7 @@ RemoteData::Girder::Girder( std::string const& desc, WorldComm const& worldComm 
     auto resConvertion = convertDescToPropertyTree( exprtosplit );
     if ( !resConvertion.first )
     {
-        if ( M_worldComm.isMasterRank() )
+        if ( M_worldComm->isMasterRank() )
             std::cout << "Girder desc has a syntax error : " << desc << "\n";
         return;
     }
@@ -1038,7 +1038,7 @@ std::vector<std::string>
 RemoteData::Girder::download( std::string const& dir ) const
 {
     std::vector<std::string> downloadedFileOrFolder;
-    if ( M_worldComm.isMasterRank() )
+    if ( M_worldComm->isMasterRank() )
     {
         if ( !fs::exists( dir ) )
             fs::create_directories( dir );
@@ -1064,7 +1064,7 @@ RemoteData::Girder::download( std::string const& dir ) const
         if ( M_token.empty() && !M_apiKey.empty() && !token.empty() )
             this->removeToken( token );
     }
-    mpi::broadcast( M_worldComm.globalComm(), downloadedFileOrFolder, M_worldComm.masterRank() );
+    mpi::broadcast( M_worldComm->globalComm(), downloadedFileOrFolder, M_worldComm->masterRank() );
     return downloadedFileOrFolder;
 }
 
@@ -1257,7 +1257,7 @@ RemoteData::Girder::upload( std::vector<std::pair<std::string,std::string> > con
 
     std::vector<std::vector<std::string>> res( dataToUpload.size() );
 
-    if ( M_worldComm.isMasterRank() )
+    if ( M_worldComm->isMasterRank() )
     {
         // use token if given else create token if api key given
         std::string token = M_token;
@@ -1305,7 +1305,7 @@ RemoteData::Girder::upload( std::vector<std::pair<std::string,std::string> > con
     }
 
     if ( sync )
-        mpi::broadcast( M_worldComm.globalComm(), res, M_worldComm.masterRank() );
+        mpi::broadcast( M_worldComm->globalComm(), res, M_worldComm->masterRank() );
 
     return res;
 }
@@ -1324,7 +1324,7 @@ RemoteData::Girder::replaceFile( std::vector<std::pair<std::string,std::string> 
 
     CHECK( !M_token.empty() || !M_apiKey.empty() ) << "authentication unavailable";
 
-    if ( M_worldComm.isMasterRank() )
+    if ( M_worldComm->isMasterRank() )
     {
         // use token if given else create token if api key given
         std::string token = M_token;
@@ -1353,7 +1353,7 @@ RemoteData::Girder::createFolder( std::string const& folderPath, std::string con
     CHECK( !currentParentId.empty() ) << "a parentId is required";
 
     std::vector<boost::tuple<std::string,std::string> > foldersInfo;
-    if ( M_worldComm.isMasterRank() )
+    if ( M_worldComm->isMasterRank() )
     {
         std::string token = M_token;
         if ( M_token.empty() )
@@ -1373,7 +1373,7 @@ RemoteData::Girder::createFolder( std::string const& folderPath, std::string con
             this->removeToken( token );
     }
     if ( sync )
-        mpi::broadcast( M_worldComm.globalComm(), foldersInfo, M_worldComm.masterRank() );
+        mpi::broadcast( M_worldComm->globalComm(), foldersInfo, M_worldComm->masterRank() );
     std::vector<std::pair<std::string,std::string> > res;
     for ( auto const& folderInfo : foldersInfo )
         res.push_back( std::make_pair( boost::get<0>( folderInfo ), boost::get<1>( folderInfo ) ) );
@@ -1649,7 +1649,7 @@ RemoteData::Girder::contents() const
     auto res = std::make_tuple( std::vector<std::shared_ptr<FolderInfo>>(),
                                 std::vector<std::shared_ptr<ItemInfo>>(),
                                 std::vector<std::shared_ptr<FileInfo>>() );
-    if ( M_worldComm.isMasterRank() )
+    if ( M_worldComm->isMasterRank() )
     {
         // use token if given else create token if api key given
         std::string token = M_token;
