@@ -87,7 +87,7 @@ bindRemoteData( py::module & m )
         ;
         
     py::class_<RemoteData>(m,"RemoteData")
-        .def(py::init<std::string const&,WorldComm const&>(),py::arg("desc"),py::arg("worldComm")=Environment::worldComm(),"Initialize the RemoteData handler")
+        .def(py::init<std::string const&,WorldComm &>(),py::arg("desc"),py::arg("worldComm")=Environment::worldComm(),"Initialize the RemoteData handler")
         .def("worldComm", &RemoteData::worldComm, "get the worldComm" )
         .def("canDownload", &RemoteData::canDownload, "returns true if data/ressource can be downloaded, false otherwise" )
         .def("canUpload", &RemoteData::canUpload, "returns true if data/ressource can be uploaded, false otherwise" )
