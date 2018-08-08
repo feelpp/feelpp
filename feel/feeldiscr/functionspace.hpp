@@ -3917,7 +3917,18 @@ public:
 #if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
 #endif
+            saveImpl( path, type, suffix, sep );
+        }
 
+        //!
+        //! save function space element in file
+        //! @param path path to files
+        //! @param type file type binary, ascii, hdf5, xml
+        //! @param suffix filename suffix to use
+        //! @param sep separator to use in filenames
+        //!
+        void saveImpl( std::string const& path, std::string const& type = "binary", std::string const& suffix = "", std::string const & sep = "")
+        {
             // if directory does not exist, create it only by one process
             if ( this->worldComm().isMasterRank() && !fs::exists( fs::path( path ) ) )
             {
@@ -3978,6 +3989,17 @@ public:
 #if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
 #endif
+            return loadImpl( path, type, suffix, sep );
+        }
+        //!
+        //! load function space element from file
+        //! @param path path to file
+        //! @param type file type binary, ascii, hdf5, xml
+        //! @param suffix filename suffix to use
+        //! @param sep separator to use in filename
+        //!
+        bool loadImpl( std::string const& path, std::string const& type = "binary", std::string const& suffix = "", std::string const& sep = "" )
+        {
             fs::path partial_path = fs::path(path);
             fs::path full_path_dir_sol(fs::current_path());
             full_path_dir_sol = full_path_dir_sol/partial_path;
@@ -4188,14 +4210,13 @@ public:
 
 
         }
-    private:
-
+    public:
         template<typename RangeType, typename ExprType>
         FEELPP_NO_EXPORT void onImpl( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate = true, bool verbose = false )
         {
             onImplBase( r, e, prefix, geomap_strategy, accumulate, verbose, boost::is_std_list<RangeType>()  );
         }
-
+    private:
         template<typename RangeType, typename ExprType>
         FEELPP_NO_EXPORT void onImplBase( RangeType const& rList, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::true_ )
         {
