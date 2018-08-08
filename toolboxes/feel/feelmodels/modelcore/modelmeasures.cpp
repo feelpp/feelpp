@@ -49,7 +49,7 @@ std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
 
 ModelMeasuresIO::ModelMeasuresIO( std::string const& pathFile, WorldComm const& worldComm )
     :
-    M_worldComm( worldComm ),
+    M_worldComm( const_cast<WorldComm&>(worldComm).shared_from_this() ),
     M_pathFile( pathFile ),
     M_addNewDataIsLocked( false )
 {}
@@ -68,7 +68,7 @@ ModelMeasuresIO::writeHeader()
 {
     if ( M_dataNameToIndex.empty() )
         return;
-    if ( M_worldComm.isMasterRank() )
+    if ( M_worldComm->isMasterRank() )
     {
         bool hasAlreadyWrited = false;
         std::ofstream fileWrited(M_pathFile, std::ios::out | std::ios::trunc);
@@ -88,7 +88,7 @@ ModelMeasuresIO::writeHeader()
 void
 ModelMeasuresIO::restart( std::string const& paramKey, double val )
 {
-    if ( M_worldComm.isMasterRank() && fs::exists( M_pathFile ) )
+    if ( M_worldComm->isMasterRank() && fs::exists( M_pathFile ) )
     {
         double ti = val;//this->timeInitial();
         std::ifstream fileI(M_pathFile, std::ios::in);
@@ -137,9 +137,9 @@ ModelMeasuresIO::restart( std::string const& paramKey, double val )
         fileW.close();
     }
 
-    mpi::broadcast( M_worldComm.globalComm(), M_dataIndexToName, M_worldComm.masterRank() );
+    mpi::broadcast( M_worldComm->globalComm(), M_dataIndexToName, M_worldComm->masterRank() );
 
-    if ( !M_worldComm.isMasterRank() )
+    if ( !M_worldComm->isMasterRank() )
     {
         M_dataNameToIndex.clear();
         M_data.resize( M_dataIndexToName.size() );
@@ -156,7 +156,7 @@ ModelMeasuresIO::exportMeasures()
         return;
     if ( !M_addNewDataIsLocked )
         this->writeHeader();
-    if ( M_worldComm.isMasterRank() )
+    if ( M_worldComm->isMasterRank() )
     {
         bool hasAlreadyWrited = false;
         std::ofstream fileWrited(M_pathFile, std::ios::out | std::ios::app);

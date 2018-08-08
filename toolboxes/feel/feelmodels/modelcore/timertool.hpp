@@ -67,7 +67,7 @@ private :
 
 private :
 
-    WorldComm M_worldComm;
+    std::shared_ptr<WorldComm> M_worldComm;
     //boost::timer M_timer;
     std::vector<bool> M_activeTimers;
     std::vector<timer_type> M_timer;

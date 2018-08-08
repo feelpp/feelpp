@@ -71,7 +71,7 @@ ModelBaseUpload::ModelBaseUpload( std::string const& desc, std::string const& ba
 {
     if ( desc.empty() )
         return;
-    M_remoteData.reset( new RemoteData( desc,worldComm ) );
+    M_remoteData.reset( new RemoteData( desc,const_cast<WorldComm&>(worldComm) ) );
 }
 
 bool
@@ -253,7 +253,7 @@ ModelBase::ModelBase( std::string const& prefix,
                       std::string const& subPrefix,
                       ModelBaseRepository const& modelRep )
     :
-    M_worldComm(worldComm),
+    M_worldComm(const_cast<WorldComm&>(worldComm).shared_from_this()),
     M_worldsComm( std::vector<WorldComm>(1,worldComm) ),
     M_localNonCompositeWorldsComm( std::vector<WorldComm>(1,worldComm) ),
     M_prefix( prefix ),
@@ -270,7 +270,7 @@ ModelBase::ModelBase( std::string const& prefix,
     M_timersSaveFileAll( boption(_name="timers.save-all",_prefix=this->prefix()) ),
     M_scalabilitySave( boption(_name="scalability-save",_prefix=this->prefix()) ),
     M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix()) ),
-    M_upload( soption(_name="upload",_prefix=this->prefix()), this->repository().rootWithoutNumProc(), M_worldComm )
+    M_upload( soption(_name="upload",_prefix=this->prefix()), this->repository().rootWithoutNumProc(), *M_worldComm )
 {
     if (Environment::vm().count(prefixvm(this->prefix(),"scalability-path")))
         M_scalabilityPath = Environment::vm()[prefixvm(this->prefix(),"scalability-path")].as< std::string >();
@@ -294,7 +294,7 @@ ModelBase::~ModelBase()
 {}
 
 WorldComm const&
-ModelBase::worldComm() const { return M_worldComm; }
+ModelBase::worldComm() const { return *M_worldComm; }
 std::vector<WorldComm> const&
 ModelBase::worldsComm() const { return M_worldsComm; }
 void

@@ -141,7 +141,7 @@ public :
 
 private :
     // worldcomm
-    WorldComm M_worldComm;
+    std::shared_ptr<WorldComm> M_worldComm;
     std::vector<WorldComm> M_worldsComm;
     std::vector<WorldComm> M_localNonCompositeWorldsComm;
     // prefix

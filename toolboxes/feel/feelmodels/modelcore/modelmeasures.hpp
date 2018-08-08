@@ -58,7 +58,7 @@ public :
 private :
     void writeHeader();
 private :
-    WorldComm const& M_worldComm;
+    std::shared_ptr<WorldComm> M_worldComm;
     std::string M_pathFile;
     std::map<std::string,uint16_type> M_dataNameToIndex;
     std::vector<std::string> M_dataIndexToName;
