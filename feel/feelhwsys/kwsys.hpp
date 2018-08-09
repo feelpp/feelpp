@@ -38,8 +38,7 @@ class KWSys
     : public HwSysBase
 {
 public:
-    KWSys( const std::string& name = ( "hwsys-" + std::to_string(HWSYS_INSTANCE_NUMBER) ) )
-        : HwSysBase(name)
+    KWSys()
     {
         using namespace feelpp_kwsys;
         SystemInformation info;
@@ -89,12 +88,9 @@ public:
         M_mem_host_used = std::to_string( info.GetHostMemoryUsed() );
         M_mem_proc_used = std::to_string( info.GetProcMemoryUsed() );
         M_load_avg = std::to_string( info.GetLoadAverage() );
-
-    // @}
-
-    // Hardware
-    // @{
     }
+
+    ~KWSys() override = default;
 };
 
 
