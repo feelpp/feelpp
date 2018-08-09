@@ -461,7 +461,6 @@ Environment::Environment( int argc, char** argv,
     S_desc = boost::make_shared<po::options_description>();
     S_desc->add( *S_desc_app );
 
-    S_timers = std::make_unique<TimerTable>();
 
     // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
     // otherwise we will have duplicated options
@@ -492,6 +491,14 @@ Environment::Environment( int argc, char** argv,
 
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
+    
+    // Enable auto mode for all observers.
+    Environment::journalAutoMode( boption("journal.auto") );
+    
+    // Force environment to connect to the journal.
+    this->journalConnect();
+
+    S_timers = std::make_unique<TimerTable>();
 
     boost::gregorian::date today = boost::gregorian::day_clock::local_day();
     tic();
@@ -525,11 +532,8 @@ Environment::Environment( int argc, char** argv,
         {
             if( password == "?" )
             {
- //               if ( Environment::isMasterRank() )
- //               {
-                    password = askPassword("Enter your mongodb password:");
-                    //mpi::broadcast( Environment::worldComm().globalComm(), password, 0 );
- //               }        
+                // TODO Fix in parallel
+                password = askPassword("Enter your mongodb password:");
             }
             journaldbconf.password = password;
         }
@@ -609,6 +613,10 @@ Environment::~Environment()
 {
     if ( boption( "display-stats" ) )
         Environment::saveTimers( true );
+
+//    Environment::finalize();
+    VLOG(2) << "Environment destructor: Disconnect from journal.";
+    this->journalDisconnect();
 
     double t = toc("env");
     cout << "[ Stopping Feel++ ] " << tc::green << "application " << S_about.appName()
@@ -1829,6 +1837,25 @@ Environment::generateSummary( std::string fname, std::string stage, bool write )
         pt::write_json(jsonfname, S_summary);
     return S_summary;
 }
+
+
+const pt::ptree 
+Environment::journalNotify() const
+{
+    pt::ptree p;
+    p.put( "environment.application.name", Environment::about().appName() );
+    p.put( "environment.application.uuid", Environment::randomUUID() );
+    p.put( "environment.directories.app", Environment::appRepository() );
+    p.put( "environment.directories.export", Environment::exportsRepository() );
+    p.put( "environment.directories.logs", Environment::logsRepository() );
+    p.put( "environment.directories.exprs", Environment::exprRepository() );
+    p.put( "environment.directories.downloads", Environment::downloadsRepository() );
+    p.put( "environment.mpi.number_processors", Environment::numberOfProcessors() );
+    p.put( "environment.mpi.is_parallel", Environment::isParallel() );
+    return p;
+}
+
+
 #if 0
 po::variables_map
 Environment::vm( po::options_description const& desc )
@@ -2361,13 +2388,6 @@ Environment::saveTimersMD( std::ostream &os )
 {
     //S_timers.save( Environment::about().appName(), display );
     S_timers->saveMD( os );
-}
-
-// TODO Remove
-const pt::ptree
-Environment::notifyTimers()
-{
-    return S_timers->journalNotify();
 }
 
 int Environment::S_argc = 0;
