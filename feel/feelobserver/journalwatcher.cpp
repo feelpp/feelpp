@@ -28,8 +28,6 @@ namespace Observer
 {
 
 // Init static variable.
-bool JournalWatcher::M_journal_autoconnect = false;
-
 
 } // Observer namespace
 } // Feel namespace.

@@ -52,33 +52,39 @@ public:
     //! @{
 
     //! Default constructor.
+    //! 
+    //! \param force Force the connection to the journal.
     //!
     //! When this constructor is called by a child class, the new child observer
-    //! is connected a new simulation info slot is created and can be connected
-    //! to the simulation info manager
+    //! is automatically connected (in "auto" mode) to the journal system.
+    //! A slot is created and and is connected to a JournalManager.
     //!
     //! \see JournalManager
-    JournalWatcher()
+    JournalWatcher( bool force = false )
+        : M_journal_is_connected( false )
     {
-        slotNew< notify_type () >( "journalWatcher", std::bind( &JournalWatcher::journalNotify, this) );
-        if( M_journal_autoconnect )
-            journalConnect();
+        slotNew< notify_type () >( "journalWatcher", std::bind( &JournalWatcher::journalNotify, this ) );
+        if( Observer::JournalManager::journalAutoMode() or force )
+           journalConnect();
     }
 
     //! Default destructor.
+    //! The (inherited) object is always disconnected from the journal during the
+    //! destruction.
     virtual ~JournalWatcher()
     {
-        if( M_journal_autoconnect )
-            journalDisconnect();
+        journalDisconnect();
     }
 
     //! @}
-
-    //! Setters
+    
+    //! Getters
     //! @{
-    void journalAutoconnect( bool b = true )
+    //! Check if the object is connected to the journal.
+    //! \return true i
+    const bool journalIsConnected()
     {
-        M_journal_autoconnect = b;
+        return M_journal_is_connected;
     }
 
     //! @}
@@ -87,18 +93,28 @@ public:
     //! @{
 
     //! Connect the derived object to the simulation info manager.
-    void journalConnect()
+    void journalConnect( bool force = false )
     {
-        JournalManager::signalStaticConnect< notify_type (), JournalMerge >( "journalManager", *this, "journalWatcher" );
+        if( not journalIsConnected() or force )
+        {
+            JournalManager::signalStaticConnect< notify_type (), JournalMerge >( "journalManager", *this, "journalWatcher" );
+            M_journal_is_connected=true;
+        }
     }
 
     //! Disconnect the derived object from the simulation info manager.
+    //! The disconnection is safe.
     void journalDisconnect()
     {
-        JournalManager::signalStaticDisconnect< notify_type (), JournalMerge >( "journalManager", *this, "journalWatcher" );
+        if( journalIsConnected() )
+        {
+            JournalManager::signalStaticDisconnect< notify_type (), JournalMerge >( "journalManager", *this, "journalWatcher" );
+            M_journal_is_connected=false;
+        }
     }
+
 private:
-    static bool M_journal_autoconnect;
+    bool M_journal_is_connected;
     //! @}
 };
 
