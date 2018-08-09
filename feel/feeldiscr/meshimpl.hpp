@@ -160,7 +160,9 @@ Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm,
     M_tool_localization( boost::make_shared<Localization<self_type>>() )
 {
     MESH_INSTANCE_NUMBER++;
-    if( boption("journal.enable") and boption("journal.enable.mesh") )
+    if( boption("journal.enable") 
+            and boption("journal.enable.mesh") 
+            and Observer::JournalManager::journalAutoMode() )
     {
         this->journalConnect();
     }

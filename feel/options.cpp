@@ -942,6 +942,7 @@ journal_options( std::string const& prefix )
     po::options_description options( "Journal " + prefix + " options" );
     options.add_options()
         ( prefixvm( prefix,"journal.enable" ).c_str(), Feel::po::value<bool>()->default_value(true), "Enable simulation info" )
+        ( prefixvm( prefix,"journal.auto" ).c_str(), Feel::po::value<bool>()->default_value(true), "Generate the journal automatically based on the code." )
         ( prefixvm( prefix,"journal.filename" ).c_str(), Feel::po::value<std::string>()->default_value("Simulation.info.json"), "name of the json file" )
         ( prefixvm( prefix,"journal.enable.mesh" ).c_str(), Feel::po::value<bool>()->default_value(true), "Enable simulation info" )
         ( prefixvm( prefix,"journal.enable.functionspace" ).c_str(), Feel::po::value<bool>()->default_value(true), "Enable simulation info" )

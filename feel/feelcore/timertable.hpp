@@ -74,19 +74,13 @@ public:
     //! @{
 
     //! Default constructor
-    TimerTable()
-    { 
-        this->journalConnect();
-    };
+    TimerTable() = default;
 
 
     //! @}
 
     //! Destructor
-    ~TimerTable()
-    {
-        this->journalDisconnect();
-    }
+    ~TimerTable() override = default;
 
     //! Modifiers
     //! @{
