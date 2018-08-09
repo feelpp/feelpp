@@ -181,7 +181,8 @@ FEELPP_EXPORT AboutData makeAboutDefault( std::string name );
 //! 
 class FEELPP_EXPORT Environment
 :   boost::noncopyable,
-    public Observer::JournalManager
+    public Observer::JournalManager,
+    public Observer::JournalWatcher
 {
 public:
     //!
@@ -690,7 +691,6 @@ public:
      */
     static void saveTimers( bool save );
     static void saveTimersMD( std::ostream & os );
-    static const pt::ptree notifyTimers();
 
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );
@@ -762,13 +762,10 @@ public:
     //! Finalize feel++ operations
     //! The environement, as journal manager, request to all connected watcher to
     //! send their informations.
+    //! Note: Called by the Environment destructor.
     static const void finalize()
     {
-        //    // This will merge simulation info (map) into one ptree.
-        Environment::journalPull();
-        //    // This will save the ptree into a json file.
-        Environment::journalSave();
-        // end::journal[]
+        Environment::journalFinalize();
     }
 
 
@@ -803,6 +800,11 @@ public:
      * @return the expansion of the feel++ paths defined in string expr
      */
     static std::string expand( std::string const& expr );
+
+
+    //! Send a notification to the simulation info manager.
+    //! \see JournalWatcher JournalManager
+    const pt::ptree journalNotify() const override;
 
     //@}
 
