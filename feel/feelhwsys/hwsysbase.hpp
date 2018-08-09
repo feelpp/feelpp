@@ -41,17 +41,19 @@ namespace pt =  boost::property_tree;
 //! External libraries should have a specific header inheriting from
 //! this base class.
 class HwSysBase
-    : virtual public Observer::JournalWatcher
+    : public Observer::JournalWatcher
 {
 public:
 
     // Default constructor.
-    HwSysBase( const std::string& name = ( "hwsys-" + std::to_string(HWSYS_INSTANCE_NUMBER) ) )
-        : M_instance_name( name ),
-          M_backend( "hwsys" )
+    HwSysBase()
+        : M_backend( "hwsys" )
     {
+        instanceName( "hwsys-" + std::to_string(HWSYS_INSTANCE_NUMBER) );
         HWSYS_INSTANCE_NUMBER++;
-        this->journalConnect();
+        // TODO fix/remove this line. This should not be necessary!
+        // There's must be a problem with the inheritance here.
+        this->journalDisconnect();
         VLOG(2) << "[HwSys] constructor instance number " << M_instance_number << "\n" ;
     }
 
@@ -67,14 +69,8 @@ public:
     // Assignement-move constructor.
     HwSysBase& operator=( HwSysBase&& ) = default;
 
-
-
     // Destructor
-    //~HwSysBase() 
-   // {
-   //     //VLOG(2) << "[HwSys] destructor: Disconnect '" << M_instance_name << "' from journal.";
-   //     //this->journalDisconnect();
-   // }
+    virtual ~HwSysBase() override = default;
 
     // Accessors
     // @{
@@ -83,7 +79,11 @@ public:
     //! @return the name
     std::string instanceName() const { return M_instance_name; }
 
-    const std::string& instanceName( std::string s ) { return M_instance_name; }
+    const std::string& instanceName( std::string s ) 
+    {
+        M_instance_name=s;
+        return M_instance_name;
+    }
 
 #if 0
     const std::string& OSName( std::string const& s ) { return M_os_name; }
@@ -107,6 +107,7 @@ public:
     const pt::ptree journalNotify() const override
     {
         pt::ptree p;
+        const auto ccp = std::to_string( Observer::JournalManager::journalCurrentCheckpoint() );
 		if( not M_host_name.empty() )
 		{
             std::string prefix = "hardware." + M_host_name;
@@ -137,15 +138,15 @@ public:
 			p.put( prefix + ".proc.physical_cpu_number", M_proc_physical_cpu_number );
 			p.put( prefix + ".proc.cpu_id_support", M_proc_cpu_id_support );
 			p.put( prefix + ".proc.apic_id", M_proc_apic_id );
-			p.put( prefix + ".mem.virtual_total", M_mem_virtual_total );
-			p.put( prefix + ".mem.virtual_available", M_mem_virtual_avail );
-			p.put( prefix + ".mem.physical_total", M_mem_physical_total );
-			p.put( prefix + ".mem.physical_available", M_mem_physical_avail );
-			p.put( prefix + ".mem.host_total", M_mem_host_total );
-			p.put( prefix + ".mem.host_available", M_mem_host_avail );
-			p.put( prefix + ".mem.proc_available", M_mem_proc_avail );
-			p.put( prefix + ".mem.host_used", M_mem_host_used );
-			p.put( prefix + ".mem.proc_used", M_mem_proc_used );
+			p.put( prefix + ".mem.total.virtual", M_mem_virtual_total );
+			p.put( prefix + ".mem.total.physical", M_mem_physical_total );
+			p.put( prefix + ".mem.total.host", M_mem_host_total );
+			p.put( prefix + ".mem.available.checkpoint-" + ccp + ".virtual", M_mem_virtual_avail );
+			p.put( prefix + ".mem.available.checkpoint-" + ccp + ".physical", M_mem_physical_avail );
+			p.put( prefix + ".mem.available.checkpoint-" + ccp + ".host", M_mem_host_avail );
+			p.put( prefix + ".mem.available.checkpoint-" + ccp + ".proc", M_mem_proc_avail );
+			p.put( prefix + ".mem.used.checkpoint-" + ccp + ".host", M_mem_host_used );
+			p.put( prefix + ".mem.used.checkpoint-" + ccp + ".proc", M_mem_proc_used );
 			p.put( prefix + ".mem.load_average", M_load_avg );
 		}
 

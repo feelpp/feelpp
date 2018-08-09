@@ -303,11 +303,6 @@ public:
     Mesh( WorldComm const& worldComm = Environment::worldComm(),
           const std::string& name = ( "mesh-" + std::to_string(MESH_INSTANCE_NUMBER) ) );
 
-    ~Mesh() {
-            VLOG(2) << "Mesh destructor: Disconnect '" << M_instance_name << "' from journal.";
-            this->journalDisconnect();
-    }
-
     void clear()
         {
             VLOG(1) << "Mesh clear()";

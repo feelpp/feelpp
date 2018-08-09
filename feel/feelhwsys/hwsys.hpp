@@ -39,11 +39,9 @@ namespace Sys
 class HWSys
     : public HwSysBase
 {
-    HWSys( const std::string& name = ( "hwsys-" + std::to_string(HWSYS_INSTANCE_NUMBER) ) )
-        : HwSysBase( name )
-    {
-    }
+    HWSys() = default;
 
+    ~HWSys() override = default;
 };
 
 } // Sys namespace
