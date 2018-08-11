@@ -21,6 +21,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <feel/feelobserver/journalmanager.hpp>
+#include <boost/uuid/uuid_generators.hpp>
 
 namespace Feel
 {

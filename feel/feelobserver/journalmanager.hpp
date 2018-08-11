@@ -29,6 +29,7 @@
 #include <boost/mpi.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ptree_serialization.hpp>
+#include <boost/uuid/uuid.hpp>    
 #include <feel/feelevent/events.hpp>
 #include <feel/feelobserver/functors/journalmerge.hpp>
 #include <feel/feelcore/mongocxx.hpp>
@@ -52,16 +53,18 @@ namespace Observer
 
 namespace pt =  boost::property_tree;
 namespace mpi = boost::mpi;
+namespace uuids =  boost::uuids;
 
 //! JournalManagerBase handles all journalWatchers.
 //! The purpose of this class is to be inherited by class that manage the 
 //! journal system
 //!
-//! \note Managers should inherit from type JournalManager directly.
+//! \note Journal manager class should inherit from this class
 //!
 //! \remark Environment is the favored journal manager (child class). However,
-//! as mpi, options, etc.. are initialized in Environment constructor, an Env
-//! template parameter has to be define to use static members.
+//! environment (child) is initialized after JournalManager (mother).
+//! Thus a  template parameter is defined in order to use environment static
+//! members.
 //!
 //! \see JournalManager JournalWatcher Environment
 template< typename Env = Feel::Environment >
@@ -87,10 +90,11 @@ public:
 #if defined(FEELPP_HAS_MONGOCXX )
             // Create mongo unique instance!
             Feel::MongoCxx::instance();
-#endif
+#endif 
+            //M_journal_uuid = Env::randomUUID();
             std::time_t t = std::time(nullptr);
-            const std::string tag = "database.time";
-            M_journal_ptree.put( "database.version", FEELPP_DB_JOURNAL_VERSION );
+            const std::string tag = "journal.time";
+            M_journal_ptree.put( "journal.version", FEELPP_DB_JOURNAL_VERSION );
             M_journal_ptree.put( tag + ".time_t", t );
             M_journal_ptree.put( tag + ".gm", std::put_time(std::gmtime(&t), "%c %Z") );
             M_journal_ptree.put( tag + ".local", std::put_time(std::localtime(&t), "%c %Z") );
@@ -110,34 +114,43 @@ public:
         //! @{
 
         //! Set JSON file name.
-        void JournalSetFilename( std::string name )
+        //! \param name the file name.
+        static void journalFilename( const std::string& name )
         {
             M_journal_filename = name;
         }
+        
+        //! Set the journal mode.
+        //! \param m automatic mode true or false
+        static void journalAutoMode( bool m )
+        {
+            M_journal_auto = m;
+        }
+
         //! @}
 
         //! Getters
         //! @{
+
+        //! Get the journal filename (no ext).
+        static const std::string& journalFilename()
+        {
+            return M_journal_filename;
+        }
         
+        //! Get the current journal mode status.
+        //! \return true in automatic mode.
         static const bool journalAutoMode()
         {
             return M_journal_auto;
         }
 
+        //! Get the current checkpoint counter.
+        //! \return the counter value.
         static const uint32_t
         journalCurrentCheckpoint()
         {
             return M_journal_checkpoint;        
-        }
-
-        //! @}
-
-        //! Mutators
-        //! @{
-        
-        static void journalAutoMode( bool m )
-        {
-            M_journal_auto = m;
         }
 
         //! @}
@@ -154,22 +167,27 @@ public:
             const pt::ptree& pt_merged = signalStaticPull< notify_type (), JournalMerge >( "journalManager" );
             ptMerge( M_journal_ptree, pt_merged );
 
-            pt::ptree p;
             if( Env::isParallel() and parallel )
+            {
+                pt::ptree p;
                 mpi::reduce( Env::worldComm(), M_journal_ptree, p, ptMerge, Env::masterRank() );
-            M_journal_ptree = p;
+                M_journal_ptree = p;
+            }
 
             return M_journal_ptree;
         }
 
         //! Save the global property tree into a json file.
         static void
-        journalSave( const std::string& filename = "journal" )
+        journalSave( const std::string& filename = "" )
         {
+            if( not filename.empty() )
+                journalFilename( filename );
+
             if( Env::isMasterRank() )
             {
-                journalJSONSave( filename );
-                journalDBSave( filename );
+                journalJSONSave( M_journal_filename );
+                journalDBSave( M_journal_filename );
             }
         }
         
@@ -189,7 +207,7 @@ public:
         static const void
         journalCheckpoint( bool parallel = true,
                            bool save = false,
-                           const std::string& filename="journal" )
+                           const std::string& filename="" )
         {
             journalPull( parallel );
 
@@ -272,15 +290,14 @@ private:
 
         //! Save the global property tree into a json file.
         static void
-        journalJSONSave( const std::string& filename = "journal" )
+        journalJSONSave( const std::string& filename = "" )
         {
-            std::string fname = M_journal_filename;
-            if( filename != "journal" )
-                fname = filename;
+            if( not filename.empty() )
+                M_journal_filename = filename;
 
             //std::cout << "[Observer: Journal] generate report (JSON).";
             if( not M_journal_ptree.empty() )
-                write_json( fname + ".json", M_journal_ptree );
+                write_json( M_journal_filename + ".json", M_journal_ptree );
         }
 
         //! Save the json in a mongodb database. 
@@ -288,8 +305,10 @@ private:
         //! is send in the mongodb database. The database has to be configured
         //! beforehand.
         static void
-        journalDBSave( const std::string& filename = "journal" )
+        journalDBSave( const std::string& filename = "" )
         {
+            if( not filename.empty() )
+                M_journal_filename = filename;
             auto vm =  Env::vm();
             bool enable = vm["journal.database"].template as<bool>();
             if( enable )
@@ -307,7 +326,7 @@ private:
                 mongocxx::database journaldb = client[M_journal_db_config.name];
                 auto journal = journaldb[M_journal_db_config.collection];
                 //auto builder = bsoncxx::builder::stream::document{};
-                std::ifstream json( filename + ".json");
+                std::ifstream json( M_journal_filename + ".json");
                 std::stringstream jsonbuff;
                 jsonbuff << json.rdbuf();
                 // TODO json is read from file. An improvement would be to extract to add
@@ -344,7 +363,6 @@ template<> pt::ptree JournalManagerBase<>::M_journal_ptree;
 template<> MongoConfig JournalManagerBase<>::M_journal_db_config;
 template<> bool JournalManagerBase<>::M_journal_auto;
 template<> uint32_t JournalManagerBase<>::M_journal_checkpoint;
-
 
 // Manager class should be derived from this alias class.
 using JournalManager = JournalManagerBase<>;

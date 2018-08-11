@@ -4283,8 +4283,8 @@ public:
     {
         FUNCTIONSPACE_INSTANCE_NUMBER++;
         M_instance_name = name;
-        if( boption("journal.enable") 
-                and boption("journal.enable.functionspace") 
+        if( boption("journal") 
+                and boption("journal.auto.functionspace") 
                 and Observer::JournalManager::journalAutoMode() )
         {
             this->journalConnect();
@@ -4308,8 +4308,8 @@ public:
     {
         FUNCTIONSPACE_INSTANCE_NUMBER++;
         M_instance_name = name;
-        if( boption("journal.enable") 
-                and boption("journal.enable.functionspace") 
+        if( boption("journal") 
+                and boption("journal.auto.functionspace") 
                 and Observer::JournalManager::journalAutoMode() )
         {
             this->journalConnect();
@@ -4328,8 +4328,8 @@ public:
     {
        FUNCTIONSPACE_INSTANCE_NUMBER++;
        M_instance_name = name;
-       if( boption("journal.enable") 
-               and boption("journal.enable.functionspace")
+       if( boption("journal") 
+               and boption("journal.auto.functionspace")
                and Observer::JournalManager::journalAutoMode() )
        {
            this->journalConnect();
