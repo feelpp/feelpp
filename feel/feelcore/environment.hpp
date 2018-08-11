@@ -801,15 +801,12 @@ public:
      */
     static std::string expand( std::string const& expr );
 
-
-    //! Send a notification to the simulation info manager.
-    //! \see JournalWatcher JournalManager
-    const pt::ptree journalNotify() const override;
-
     //@}
 
-
 private:
+
+    //! Private Methods
+    //! @{
 
     //! change the directory where the results are stored
     static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np, WorldComm const& worldcomm, bool remove );
@@ -817,8 +814,6 @@ private:
 #if defined ( FEELPP_HAS_PETSC_H )
     FEELPP_NO_EXPORT void initPetsc( int * argc = 0, char *** argv = NULL );
 #endif
-
-
 
     //! process command-line/config-file options
     static FEELPP_NO_EXPORT void doOptions( int argc, char** argv,
@@ -838,6 +833,12 @@ private:
     static FEELPP_NO_EXPORT void generateOLFiles( int argc, char ** argv, std::string const& appName );
     static FEELPP_NO_EXPORT void processGenericOptions();
     static FEELPP_NO_EXPORT void parseAndStoreOptions( po::command_line_parser parser, bool extra_parser = false );
+
+    //! Send a notification to the simulation info manager.
+    //! \see JournalWatcher JournalManager
+    const pt::ptree journalNotify() const override;
+
+    //! @}
 
 private:
     /// Whether this environment object called MPI_Init

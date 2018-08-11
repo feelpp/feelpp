@@ -1190,14 +1190,23 @@ public:
     void saveHDF5( std::string const& filename ) { ioHDF5( IOStatus::isSaving, filename ); }
 #endif
 
-
 private:
+
+    //! Private Methods
+    //! @{
+
+    //! Send a notification to the simulation info manager.
+    //! \see JournalWatcher JournalManager
+    const pt::ptree journalNotify() const override;
+
 #if defined(FEELPP_HAS_HDF5)
     //!
     //!  save mesh in hdf5
     //!
     void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 #endif
+
+    //! @}
 public:
     //!
      //!  encode the mesh data structure into a tighter data structure and to avoid
@@ -1212,10 +1221,6 @@ public:
      //!  sending/receiving the mesh
      //!
     void decode();
-
-    //! Send a notification to the simulation info manager.
-    //! \see JournalWatcher JournalManager
-    const pt::ptree journalNotify() const override;
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
                                      save,

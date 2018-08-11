@@ -5234,7 +5234,6 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
@@ -5247,11 +5246,6 @@ public:
         LOG(INFO) << "         n Global Dof : " << nDof() << "\n";
         LOG(INFO) << "         n Local  Dof : " << nLocalDof() << "\n";
     }
-
-
-    //! Send a notification to the simulation info manager.
-    //! \see JournalWatcher JournalManager
-    const pt::ptree journalNotify() const override;
 
     //@}
 
@@ -5273,7 +5267,6 @@ public:
         DVLOG(2) << "copying FunctionSpace\n";
     }
 
-protected:
 
 private:
 
@@ -5355,6 +5348,9 @@ private:
         mesh_ptrtype M_mesh;
     };
 
+    //! Send a notification to the simulation info manager.
+    //! \see JournalWatcher JournalManager
+    const pt::ptree journalNotify() const override;
 
 protected:
 

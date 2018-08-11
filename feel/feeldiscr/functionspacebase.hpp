@@ -112,19 +112,18 @@ public:
      */
     //@{
 
-
     //@}
 
-    /** @name  Methods
-     */
-    //@{
+    class ElementBase {};
+
+private:
+    //! Private Methods
+    //! @{
 
     // Simulation info observer notifications.
     virtual const pt::ptree journalNotify() const override = 0;
 
-    //@}
-
-    class ElementBase {};
+    //! @}
 
 protected:
 

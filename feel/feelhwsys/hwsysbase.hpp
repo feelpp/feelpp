@@ -45,7 +45,7 @@ class HwSysBase
 {
 public:
 
-    // Default constructor.
+    //! Default constructor.
     HwSysBase()
         : M_backend( "hwsys" )
     {
@@ -57,23 +57,23 @@ public:
         VLOG(2) << "[HwSys] constructor instance number " << M_instance_number << "\n" ;
     }
 
-    // Copy constructor.
+    //! Copy constructor.
     HwSysBase( HwSysBase& ) = default;
 
-    // Move constructor.
+    //! Move constructor.
     HwSysBase( HwSysBase&& ) = default;
 
-    // Assignement constructor.
+    //! Assignement constructor.
     HwSysBase& operator=( HwSysBase& ) = default;
     
-    // Assignement-move constructor.
+    //! Assignement-move constructor.
     HwSysBase& operator=( HwSysBase&& ) = default;
 
-    // Destructor
+    //! Destructor
     virtual ~HwSysBase() override = default;
 
-    // Accessors
-    // @{
+    //! Accessors
+    //! @{
 
     //! Get the name of the current mesh instance.
     //! @return the name
@@ -100,10 +100,12 @@ public:
 
     // @}
     
-    // Methods
-    // @{
+private: 
+
+    //! Private Methods
+    //! @{
     
-    // Add a watcher notification.
+    //! Journal watcher notification.
     const pt::ptree journalNotify() const override
     {
         pt::ptree p;
@@ -153,7 +155,7 @@ public:
         return p;
     }
     
-    // @}
+    //! @}
 
 protected:
 
@@ -161,8 +163,8 @@ protected:
     std::string M_instance_number;
     std::string M_backend;
 
-    // Operating System
-    // @{
+    //! Operating System
+    //! @{
     std::string M_os_name;
     std::string M_os_is_linux;
     std::string M_os_is_apple;
@@ -173,7 +175,7 @@ protected:
 
     std::string M_host_name;
     std::string M_domain_name;
-    // @}
+    //! @}
 
     // Hardware
     // @{
@@ -205,7 +207,7 @@ protected:
 	std::string M_mem_proc_used;
 	std::string M_load_avg;
 
-    // @}
+    //! @}
 };
 
 

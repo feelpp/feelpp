@@ -630,13 +630,11 @@ Environment::~Environment()
     if ( boption( "display-stats" ) )
         Environment::saveTimers( true );
 
-//    Environment::finalize();
-    VLOG(2) << "Environment destructor: Disconnect from journal.";
-    this->journalDisconnect();
-
     double t = toc("env");
     cout << "[ Stopping Feel++ ] " << tc::green << "application " << S_about.appName()
          << " execution time " << t << "s" << tc::reset << std::endl;
+ 
+    //Environment::journalFinalize();
 
 #if defined(FEELPP_HAS_HARTS)
     /* if we used hwloc, we free topology data */
