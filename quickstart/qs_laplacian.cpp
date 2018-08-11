@@ -88,6 +88,8 @@ int main(int argc, char**argv )
     toc("a");
     // end::forms[]
 
+    Environment::journalCheckpoint();
+
     // tag::solve[]
     tic();
     //! solve the linear system, find u s.t. a(u,v)=l(v) for all v

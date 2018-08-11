@@ -515,6 +515,10 @@ Environment::Environment( int argc, char** argv,
         changeRepository( _directory=f,_subdir=createSubdir );
     }
 
+
+    if( S_vm.count( "journal.filename" ) )
+        Environment::journalFilename( S_vm["journal.filename"].as<std::string>() );
+
 #if defined(FEELPP_HAS_MONGOCXX )
     MongoConfig journaldbconf;
     if( S_vm.count( "journal.database.name" ) )
@@ -524,19 +528,31 @@ Environment::Environment( int argc, char** argv,
     if( S_vm.count( "journal.database.port" ) )
        journaldbconf.port = S_vm["journal.database.port"].as<std::string>();
     if( S_vm.count( "journal.database.user" ) )
+    {
        journaldbconf.user = S_vm["journal.database.user"].as<std::string>();
+    }
+    else
+    {
+        if( auto user = std::getenv( "FEELPP_DB_JOURNAL_USER" ) )
+            journaldbconf.user = user;
+    }
+
     if( S_vm.count( "journal.database.password" ) )
     {
         std::string password = S_vm["journal.database.password"].as<std::string>();
         if( S_vm["journal.database"].as<bool>() )
         {
+            // TODO Fix in parallel
             if( password == "?" )
-            {
-                // TODO Fix in parallel
                 password = askPassword("Enter your mongodb password:");
-            }
             journaldbconf.password = password;
         }
+    }
+    // Environment variable.
+    else
+    {
+        if( auto password = std::getenv( "FEELPP_DB_JOURNAL_PASSWORD" ) )
+            journaldbconf.password = password;
     }
     if( S_vm.count( "journal.database.authsrc" ) )
         journaldbconf.authsrc = S_vm["journal.database.authsrc"].as<std::string>();
@@ -1844,14 +1860,47 @@ Environment::journalNotify() const
 {
     pt::ptree p;
     p.put( "environment.application.name", Environment::about().appName() );
-    p.put( "environment.application.uuid", Environment::randomUUID() );
+    p.put( "environment.run.uuid", Environment::randomUUID() );
     p.put( "environment.directories.app", Environment::appRepository() );
     p.put( "environment.directories.export", Environment::exportsRepository() );
     p.put( "environment.directories.logs", Environment::logsRepository() );
     p.put( "environment.directories.exprs", Environment::exprRepository() );
     p.put( "environment.directories.downloads", Environment::downloadsRepository() );
+#if BOOST_VERSION >= 106700
+    const std::stringstream mpi_version;
+    mpi_version << M_env->version().first << "."
+                << M_env->version().second;
+    p.put( "environment.mpi.version", mpi_version.str() );
+#else
+    p.put( "environment.mpi.version", "unknown" );
+#endif
     p.put( "environment.mpi.number_processors", Environment::numberOfProcessors() );
     p.put( "environment.mpi.is_parallel", Environment::isParallel() );
+    if ( S_vm.count( "case" ) )
+    {
+       p.put( "environment.case.enabled", true );
+       pt::ptree pcase;
+       std::stringstream ss( S_vm["case.config-file"].as<std::string>() );
+       boost::property_tree::read_json(ss, pcase);
+       p.push_back( pt::ptree::value_type("environment.case", pcase) );
+    }
+    else
+       p.put( "environment.case.enabled", false );
+    // Softwares
+#if defined ( FEELPP_HAS_PETSC_H )
+    p.put( "environment.software.petsc.version.major", PETSC_VERSION_MAJOR );
+    p.put( "environment.software.petsc.version.minor", PETSC_VERSION_MINOR );
+    p.put( "environment.software.petsc.version.subminor", PETSC_VERSION_SUBMINOR );
+    p.put( "environment.software.petsc.version.patch", PETSC_VERSION_PATCH );
+    p.put( "environment.software.petsc.version.release", PETSC_VERSION_RELEASE );
+    p.put( "environment.software.petsc.date.release", PETSC_RELEASE_DATE );
+    p.put( "environment.software.petsc.date.version", PETSC_VERSION_DATE );
+#endif
+#if defined( OMPI_MPI_H )
+    p.put( "environment.software.openmpi.version.major", OMPI_MAJOR_VERSION );
+    p.put( "environment.software.openmpi.version.minor", OMPI_MINOR_VERSION );
+    p.put( "environment.software.openmpi.version.release", OMPI_RELEASE_VERSION );
+#endif
     return p;
 }
 
