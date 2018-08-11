@@ -45,9 +45,6 @@ public:
     // Type alias.
     using notify_type = pt::ptree;
 
-    //! Watch child properties and notify the manager.
-    virtual const pt::ptree journalNotify() const = 0;
-
     //! Constructors
     //! @{
 
@@ -114,8 +111,16 @@ public:
     }
 
 private:
-    bool M_journal_is_connected;
+    //! Private Methods
+    //! @{
+
+    //! Watch child properties and notify the manager.
+    //! Note: Only this class can call journalNotify!
+    virtual const pt::ptree journalNotify() const = 0;
+
     //! @}
+private:
+    bool M_journal_is_connected;
 };
 
 

@@ -267,8 +267,13 @@ public:
     void test()
     {}
 
-        //! Journal notification.
-        //! \see JournalWatcher
+private:
+
+    //! Private Methods
+    //! @{
+
+    //! Journal notification.
+    //! \see JournalWatcher
     const pt::ptree journalNotify() const override
     {
         using namespace boost::accumulators;
@@ -325,6 +330,8 @@ public:
 
         return p;
     }
+
+    //! @}
 
 private:
     size_type M_max_len = 0;
