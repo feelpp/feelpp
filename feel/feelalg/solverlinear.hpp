@@ -43,11 +43,12 @@ template<typename T> class MatrixSparse;
  * @author Christophe Prud'homme, 2005
  */
 template <typename T>
-class SolverLinear
+class SolverLinear : public CommObject
 {
 
 public:
 
+    using super = CommObject;
     typedef SolverLinear<T> self_type;
     typedef std::shared_ptr<SolverLinear<T> >  self_ptrtype;
 
@@ -82,26 +83,17 @@ public:
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverLinear ( WorldComm const& worldComm = Environment::worldComm() );
+    SolverLinear ( worldcomm_ptr_t& worldComm = Environment::worldCommPtr() );
 
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverLinear ( po::variables_map const& vm, WorldComm const& worldComm = Environment::worldComm() );
+    SolverLinear ( po::variables_map const& vm, worldcomm_ptr_t& worldComm = Environment::worldCommPtr() );
 
     /**
      * Destructor.
      */
     virtual ~SolverLinear ();
-
-    WorldComm const& worldComm() const
-    {
-        return M_worldComm;
-    }
-    void setWorldComm( WorldComm const& worldComm )
-    {
-        M_worldComm=worldComm;
-    }
 
     /**
      * @returns true if the data structures are
@@ -378,11 +370,6 @@ protected:
         M_is_initialized = init;
     }
 
-private:
-
-    //mpi communicator
-    WorldComm M_worldComm;
-
 protected:
 
     ///
@@ -447,8 +434,8 @@ protected:
 /*----------------------- inline functions ----------------------------------*/
 template <typename T>
 inline
-SolverLinear<T>::SolverLinear ( WorldComm const& worldComm ) :
-    M_worldComm( worldComm ),
+SolverLinear<T>::SolverLinear ( worldcomm_ptr_t& worldComm ) :
+    super( worldComm ),
     M_solver_type         ( GMRES ),
     M_preconditioner_type ( LU_PRECOND ),
     M_preconditioner(),
@@ -461,8 +448,8 @@ SolverLinear<T>::SolverLinear ( WorldComm const& worldComm ) :
 
 template <typename T>
 inline
-SolverLinear<T>::SolverLinear ( po::variables_map const& vm, WorldComm const& worldComm ) :
-    M_worldComm( worldComm ),
+SolverLinear<T>::SolverLinear ( po::variables_map const& vm, worldcomm_ptr_t& worldComm ) :
+    super( worldComm ),
     M_vm( vm ),
     M_solver_type         ( GMRES ),
     M_preconditioner_type ( LU_PRECOND ),

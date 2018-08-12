@@ -135,9 +135,9 @@ public:
      * the matrix before usage with
      * \p init(...).
      */
-    MatrixPetsc( WorldComm const& worldComm=Environment::worldComm() );
+    MatrixPetsc( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
     MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
-    MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
+    MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, worldcomm_ptr_t const& worldComm );
 
 
     /**
@@ -631,9 +631,9 @@ public :
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
 
-    MatrixPetscMPI( WorldComm const& worldComm=Environment::worldComm() );
+    MatrixPetscMPI( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
     MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
-    MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
+    MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, worldcomm_ptr_t const& worldComm );
 
     MatrixPetscMPI( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, bool initLocalToGlobalMapping=false, bool destroyMatOnExit=false );
 

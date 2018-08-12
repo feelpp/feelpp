@@ -535,7 +535,7 @@ RemoteData::ContentsInfo
 RemoteData::contents() const
 {
     if ( M_girder && M_girder->isInit() )
-        return M_girder->contents();
+        return ContentsInfo{M_girder->contents()};
     return ContentsInfo{std::make_tuple(std::vector<std::shared_ptr<FolderInfo>>(),std::vector<std::shared_ptr<ItemInfo>>(),std::vector<std::shared_ptr<FileInfo>>())};
 }
 

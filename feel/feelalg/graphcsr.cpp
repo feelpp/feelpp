@@ -38,10 +38,10 @@ GraphCSR::GraphCSR( size_type n,
                     size_type last_row_entry_on_proc,
                     size_type first_col_entry_on_proc,
                     size_type last_col_entry_on_proc,
-                    WorldComm const& worldcomm )
+                    worldcomm_ptr_t const& worldcomm )
     :
+    super( worldcomm ),
     M_is_closed( false ),
-    M_worldComm( worldcomm ),
     M_first_row_entry_on_proc( this->worldComm().globalSize(), first_row_entry_on_proc ),
     M_last_row_entry_on_proc( this->worldComm().globalSize(),last_row_entry_on_proc ),
     M_first_col_entry_on_proc( this->worldComm().globalSize(),first_col_entry_on_proc ),
@@ -51,8 +51,8 @@ GraphCSR::GraphCSR( size_type n,
     M_n_nz( n, 0 ),
     M_n_oz( n, 0 ),
     M_storage(),
-    M_mapRow( new DataMap(worldcomm) ),
-    M_mapCol( new DataMap(worldcomm) )
+    M_mapRow( new DataMap(this->worldCommPtr()) ),
+    M_mapCol( new DataMap(this->worldCommPtr()) )
 {
     const int myrank = this->worldComm().globalRank();
     const int worldsize = this->worldComm().globalSize();
@@ -110,9 +110,9 @@ GraphCSR::GraphCSR( size_type n,
 GraphCSR::GraphCSR( std::shared_ptr<DataMap> const& mapRow,
                     std::shared_ptr<DataMap> const& mapCol )
     :
+    super( mapRow->worldCommPtr() ),
     M_is_closed( false ),
-    M_worldComm( mapRow->worldComm() ),
-    M_first_row_entry_on_proc( mapRow->firstDofGlobalClusterWorld() ),
+     M_first_row_entry_on_proc( mapRow->firstDofGlobalClusterWorld() ),
     M_last_row_entry_on_proc( mapRow->lastDofGlobalClusterWorld() ),
     M_first_col_entry_on_proc( mapCol->firstDofGlobalClusterWorld() ),
     M_last_col_entry_on_proc( mapCol->lastDofGlobalClusterWorld() ),
@@ -128,8 +128,8 @@ GraphCSR::GraphCSR( std::shared_ptr<DataMap> const& mapRow,
 GraphCSR::GraphCSR( DataMap const& mapRow,
                     DataMap const& mapCol )
     :
+    super( mapRow.worldCommPtr() ),
     M_is_closed( false ),
-    M_worldComm( mapRow.worldComm() ),
     M_first_row_entry_on_proc( mapRow.firstDofGlobalClusterWorld() ),
     M_last_row_entry_on_proc( mapRow.lastDofGlobalClusterWorld() ),
     M_first_col_entry_on_proc( mapCol.firstDofGlobalClusterWorld() ),
@@ -149,8 +149,8 @@ GraphCSR::GraphCSR( DataMap const& mapRow,
 GraphCSR::GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
                     bool diagIsNonZero, bool close )
     :
+    super( blockSet(0,0)->worldCommPtr() ), 
     M_is_closed( false ),
-    M_worldComm( blockSet(0,0)->worldComm()/* Environment::worldComm()*/ ),
     M_first_row_entry_on_proc( this->worldComm().globalSize(),0 ),
     M_last_row_entry_on_proc( this->worldComm().globalSize(),0 ),
     M_first_col_entry_on_proc( this->worldComm().globalSize(),0 ),
@@ -217,8 +217,8 @@ GraphCSR::GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
 
 GraphCSR::GraphCSR( GraphCSR const & g )
     :
+    super( g ),
     M_is_closed( g.M_is_closed ),
-    M_worldComm( g.M_worldComm ),
     M_first_row_entry_on_proc( g.M_first_row_entry_on_proc ),
     M_last_row_entry_on_proc( g.M_last_row_entry_on_proc ),
     M_first_col_entry_on_proc( g.M_first_col_entry_on_proc ),
@@ -244,6 +244,7 @@ GraphCSR::operator=( GraphCSR const& g )
 {
     if ( this != &g )
     {
+        super::operator=( g );
         M_first_row_entry_on_proc = g.M_first_row_entry_on_proc;
         M_last_row_entry_on_proc = g.M_last_row_entry_on_proc;
         M_first_col_entry_on_proc = g.M_first_col_entry_on_proc;
@@ -255,7 +256,6 @@ GraphCSR::operator=( GraphCSR const& g )
         M_storage = g.M_storage;
         M_graphT = g.M_graphT;
         M_is_closed = g.M_is_closed;
-        M_worldComm = g.M_worldComm;
         M_mapRow = g.M_mapRow;
         M_mapCol = g.M_mapCol;
     }
@@ -283,8 +283,8 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
             listofdmRow.push_back( blockSet(i,0)->mapRowPtr() );
         for ( uint i=0; i<nCol; ++i )
             listofdmCol.push_back( blockSet(0,i)->mapColPtr() );
-        M_mapRow.reset( new DataMap( listofdmRow, this->worldComm() ) );
-        M_mapCol.reset( new DataMap( listofdmCol, this->worldComm() ) );
+        M_mapRow.reset( new DataMap( listofdmRow, this->worldCommPtr() ) );
+        M_mapCol.reset( new DataMap( listofdmCol, this->worldCommPtr() ) );
     }
 
     for (int proc = 0 ; proc < worldsize ; ++proc)

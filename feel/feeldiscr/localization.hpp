@@ -396,8 +396,8 @@ Localization<MeshType>::init()
     if ( el_it != el_en )
     {
         auto const& elt = boost::unwrap_ref( *el_it );
-        M_gic.reset( new gmc_inverse_type( mesh->gm(), elt, mesh->worldComm().subWorldCommSeq() ) );
-        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), elt, mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() ) );
+        M_gic.reset( new gmc_inverse_type( mesh->gm(), elt, mesh->worldComm().subWorldCommSeqPtr() ) );
+        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), elt, mpl::int_<1>(), mesh->worldComm().subWorldCommSeqPtr() ) );
     }
 
     for ( ; el_it != el_en; ++el_it )
@@ -458,8 +458,8 @@ Localization<MeshType>::initBoundaryFaces()
 
                     if ( !hasInitGic )
                     {
-                        M_gic.reset( new gmc_inverse_type( mesh->gm(), face.element( 0 ), mesh->worldComm().subWorldCommSeq() ) );
-                        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), face.element( 0 ), mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() ) );
+                        M_gic.reset( new gmc_inverse_type( mesh->gm(), face.element( 0 ), mesh->worldComm().subWorldCommSeqPtr() ) );
+                        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), face.element( 0 ), mpl::int_<1>(), mesh->worldComm().subWorldCommSeqPtr() ) );
                         hasInitGic=true;
                     }
                 }
@@ -491,7 +491,7 @@ Localization<MeshType>::isIn( size_type _id, const node_type & _pt ) const
         {
 #if 0
             // get inverse geometric transformation
-            gmc_inverse_type gic( mesh->gm(), elt, mesh->worldComm().subWorldCommSeq() );
+            gmc_inverse_type gic( mesh->gm(), elt, mesh->worldComm().subWorldCommSeqPtr() );
             //apply the inverse geometric transformation for the point p
             gic.setXReal( _pt);
             x_ref=gic.xRef();
@@ -511,7 +511,7 @@ Localization<MeshType>::isIn( size_type _id, const node_type & _pt ) const
         {
 #if 0
             // get inverse geometric transformation
-            gmc1_inverse_type gic( mesh->gm1(), elt, mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() );
+            gmc1_inverse_type gic( mesh->gm1(), elt, mpl::int_<1>(), mesh->worldComm().subWorldCommSeqPtr() );
             //apply the inverse geometric transformation for the point p
             gic.setXReal( _pt);
             x_ref=gic.xRef();
@@ -644,7 +644,7 @@ Localization<MeshType>::searchElement( const node_type & p )
                      << " with elt.id() " << eltUsedForExtrapolation.id()
                      << " and elt.G() " << eltUsedForExtrapolation.G()
                      << "\n";
-            gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeq() );
+            gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeqPtr() );
             //apply the inverse geometric transformation for the point p
             gic.setXReal( p);
             boost::tie(isin,idEltFound,x_ref) = boost::make_tuple(true,eltUsedForExtrapolation.id(),gic.xRef());
@@ -1053,7 +1053,7 @@ Localization<MeshType>::searchElement( const node_type & p,
                     LOG(WARNING) << "WARNING EXTRAPOLATION for the point" << p;
                     //std::cout << "W";
                     auto const& eltUsedForExtrapolation = mesh->element(ListTri.begin()->first);
-                    gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeq() );
+                    gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeqPtr() );
                     //apply the inverse geometric transformation for the point p
                     gic.setXReal( p);
                     boost::tie(isin,idEltFound,x_ref) = boost::make_tuple(true,eltUsedForExtrapolation.id(),gic.xRef());

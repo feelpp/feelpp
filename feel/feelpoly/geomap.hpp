@@ -2271,7 +2271,7 @@ class GeoMap
 
         template <typename GeoElem>
         Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge,
-                 WorldComm const& worldComm = Environment::worldCommSeq() )
+                 worldcomm_ptr_t const& worldComm = Environment::worldCommSeqPtr() )
             : M_gm( __gm ),
               M_xref( __gm->dim() ),
               M_xreal( __ge.G().size1() ),
@@ -2293,7 +2293,7 @@ class GeoMap
 
         template <typename GeoElem>
         Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge, mpl::int_<1> /**/,
-                 WorldComm const& worldComm = Environment::worldCommSeq() )
+                 worldcomm_ptr_t const& worldComm = Environment::worldCommSeqPtr() )
             : M_gm( __gm ),
               M_xref( __gm->dim() ),
               M_xreal( __ge.vertices().size1() ),

@@ -28,6 +28,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/context.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feeltiming/tic.hpp>
 #include <feel/feelmesh/submeshdata.hpp>
 #include <unordered_map>
@@ -77,7 +78,7 @@ const uint16_type MESH_COMPONENTS_DEFAULTS = MESH_RENUMBER | MESH_CHECK;
 //! @author Christophe Prud'homme
 //! @see
 //!/
-class FEELPP_EXPORT MeshBase
+class FEELPP_EXPORT MeshBase : virtual public CommObject
 {
 public:
 
@@ -85,7 +86,8 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    using super = CommObject;
+    
     /**
      * Tuple that contains
      *
@@ -105,7 +107,14 @@ public:
      */
     //@{
 
-    MeshBase() = default;
+    MeshBase()
+        :
+        MeshBase( 3, 3, Environment::worldCommPtr() )
+    {}
+    explicit MeshBase( worldcomm_ptr_t const& w )
+        :
+        MeshBase ( 3, 3, w )
+    {}
     MeshBase( MeshBase const& ) = default;
     MeshBase( MeshBase && ) = default;
     virtual ~MeshBase();
@@ -114,7 +123,7 @@ public:
      * build from a topological dimension, a real dimension and a communicator
      */
     MeshBase( uint16_type topodim, uint16_type realdim,
-              WorldComm const& worldComm = Environment::worldComm() );
+              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     //@}
 
@@ -140,6 +149,16 @@ public:
         return M_is_updated;
     }
 
+    //!
+    //! set the topological dimension
+    //!
+    void setTopologicalDimension( int d ) { M_topodim = d; }
+
+    //!
+    //! set the real dimension
+    //!
+    void setRealDimension( int d ) { M_realdim = d; }
+    
     /**
      * \return the number of elements
      */
@@ -288,26 +307,6 @@ public:
      * Call the default partitioner (currently \p metis_partition()).
      */
     virtual void partition ( const rank_type n_parts ) = 0;
-
-    /**
-     * \return the world comm
-     */
-    WorldComm const& worldComm() const
-    {
-        return M_worldComm;
-    }
-
-    virtual void setWorldComm( WorldComm const& _worldComm ) = 0;
-
-    void setWorldCommMeshBase( WorldComm const& _worldComm )
-    {
-        M_worldComm = _worldComm;
-    }
-
-    mpi::communicator const& comm() const
-    {
-        return M_worldComm.localComm();
-    }
 
     virtual void meshModified() = 0;
 
@@ -802,8 +801,6 @@ private:
      * processor and view the result in GMV.
      */
     rank_type M_n_parts;
-
-    WorldComm M_worldComm;
 
     // sub mesh data
     smd_ptrtype M_smd;

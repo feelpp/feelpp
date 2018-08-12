@@ -59,7 +59,7 @@ namespace Feel
 
 template <typename T>
 inline
-MatrixPetsc<T>::MatrixPetsc( WorldComm const& worldComm )
+MatrixPetsc<T>::MatrixPetsc( worldcomm_ptr_t const& worldComm )
     :
     super( worldComm ),
     M_destroy_mat_on_exit( true )
@@ -73,7 +73,7 @@ MatrixPetsc<T>::MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const
 {}
 template <typename T>
 inline
-MatrixPetsc<T>::MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm )
+MatrixPetsc<T>::MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, worldcomm_ptr_t const& worldComm )
     :
     super( dmRow,dmCol,worldComm ),
     M_destroy_mat_on_exit( true )
@@ -1480,7 +1480,7 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
                                  const std::vector<size_type>& cols ) const
 {
     //auto sub_graph = GraphCSR(rows.size()*cols.size(),0,rows.size()-1,0,cols.size()-1,this->comm());
-    auto sub_graph = graph_ptrtype(new graph_type(0,0,rows.size(),0,cols.size(),this->comm()));
+    auto sub_graph = graph_ptrtype(new graph_type(0,0,rows.size(),0,cols.size(),this->worldCommPtr()));
 
     MatrixPetsc<T>* A = dynamic_cast<MatrixPetsc<T>*> ( &submatrix );
     A->setGraph( sub_graph );
@@ -1940,9 +1940,9 @@ MatrixPetsc<T>::transpose( size_type options ) const
     std::shared_ptr<MatrixSparse<T> > matRes;
     const MatrixPetscMPI<T>* matPetscMpi = dynamic_cast<const MatrixPetscMPI<T>*> ( this );
     if ( matPetscMpi )
-        matRes.reset( new MatrixPetscMPI<T>( this->mapColPtr(),this->mapRowPtr(), this->comm() ) );
+        matRes = std::make_shared<MatrixPetscMPI<T>>( this->mapColPtr(),this->mapRowPtr(), this->worldCommPtr() );
     else
-        matRes.reset( new MatrixPetsc<T>( this->mapColPtr(),this->mapRowPtr(), this->comm() ) );
+        matRes = std::make_shared<MatrixPetsc<T>>( this->mapColPtr(),this->mapRowPtr(), this->worldCommPtr() );
 
     this->transpose( *matRes, options );
 
@@ -2481,7 +2481,7 @@ void MatrixPetsc<T>::serialize(Archive & ar, const unsigned int version )
 
 template <typename T>
 inline
-MatrixPetscMPI<T>::MatrixPetscMPI( WorldComm const& worldComm )
+MatrixPetscMPI<T>::MatrixPetscMPI( worldcomm_ptr_t const& worldComm )
     :
     super( worldComm )
 {}
@@ -2493,7 +2493,7 @@ MatrixPetscMPI<T>::MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype
 {}
 template <typename T>
 inline
-MatrixPetscMPI<T>::MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm )
+MatrixPetscMPI<T>::MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, worldcomm_ptr_t const& worldComm )
     :
     super( dmRow,dmCol,worldComm )
 {}

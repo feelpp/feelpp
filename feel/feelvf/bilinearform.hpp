@@ -1529,7 +1529,7 @@ public:
                                          ) )
         {
             return backend( _name=name, _kind=kind, _rebuild=rebuild,
-                            _worldcomm=this->M_X1->worldComm() )->solve( _matrix=this->matrixPtr(),
+                            _worldcomm=this->M_X1->worldCommPtr() )->solve( _matrix=this->matrixPtr(),
                                                                          _rhs=rhs.vectorPtr(),
                                                                          _solution=solution,
                                                                          _pre=pre,

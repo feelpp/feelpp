@@ -73,14 +73,14 @@ public:
     /**
      *  Dummy-Constructor. Dimension=0
      */
-    Vector ( WorldComm const& _worldComm = Environment::worldComm() );
+    Vector ( worldcomm_ptr_t& _worldComm = Environment::worldCommPtr() );
 
     Vector ( datamap_ptrtype const& n );
 
     /**
      * Constructor. Set dimension to \p n and initialize all elements with zero.
      */
-    Vector ( const size_type n, WorldComm const& _worldComm = Environment::worldComm() );
+    Vector ( const size_type n, worldcomm_ptr_t& _worldComm = Environment::worldCommPtr() );
 
     /**
      * Constructor. Set local dimension to \p n_local, the global dimension
@@ -88,7 +88,7 @@ public:
      */
     Vector ( const size_type n,
              const size_type n_local,
-             WorldComm const& _worldComm = Environment::worldComm() );
+             worldcomm_ptr_t& _worldComm = Environment::worldCommPtr() );
 
     Vector ( Vector const& v );
 
@@ -384,6 +384,27 @@ public:
     WorldComm const& comm() const
     {
         return M_map->comm();
+    }
+    /**
+     * \return the communicator
+     */
+    worldcomm_ptr_t const& commPtr() const
+    {
+        return M_map->worldCommPtr();
+    }
+    /**
+     * \return the communicator
+     */
+    worldcomm_ptr_t const& worldCommPtr() const
+    {
+        return M_map->worldCommPtr();
+    }
+    /**
+     * \return the communicator
+     */
+    worldcomm_ptr_t & worldCommPtr() 
+    {
+        return M_map->worldCommPtr();
     }
 
     /**

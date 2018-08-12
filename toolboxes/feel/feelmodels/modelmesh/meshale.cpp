@@ -37,7 +37,7 @@ namespace FeelModels
 
 template< class Convex >
 MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
-                         std::string const& prefix, WorldComm const& worldcomm,
+                         std::string const& prefix, WorldComm & worldcomm,
                          bool moveGhostEltFromExtendedStencil,
                          ModelBaseRepository const& modelRep )
     :

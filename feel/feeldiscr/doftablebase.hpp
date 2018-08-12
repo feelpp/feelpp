@@ -85,6 +85,10 @@ public:
 
     DofTableBase( WorldComm const& _worldComm )
         :
+        super( _worldComm.clone() )
+        {}
+    DofTableBase( worldcomm_ptr_t& _worldComm )
+        :
         super( _worldComm )
         {}
     DofTableBase( DofTableBase const& ) = default;

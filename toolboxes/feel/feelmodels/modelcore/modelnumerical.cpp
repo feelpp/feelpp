@@ -36,7 +36,7 @@ namespace FeelModels
 {
 
 
-ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& _worldComm, std::string const& subPrefix,
+ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm & _worldComm, std::string const& subPrefix,
                                 ModelBaseRepository const& modelRep )
         :
         super_type( _theprefix, _worldComm, subPrefix, modelRep ),

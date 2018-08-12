@@ -182,13 +182,13 @@ public:
 
     // constructor
     MixedPoisson( std::string const& prefix = "mixedpoisson",
-                  WorldComm const& _worldComm = Environment::worldComm(),
+                  WorldComm & _worldComm = Environment::worldComm(),
                   std::string const& subPrefix = "",
                   ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     MixedPoisson( self_type const& MP ) = default;
     static self_ptrtype New( std::string const& prefix = "mixedpoisson",
-                             WorldComm const& worldComm = Environment::worldComm(),
+                             WorldComm & worldComm = Environment::worldComm(),
                              std::string const& subPrefix = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
@@ -265,7 +265,7 @@ public:
 
 template<int Dim, int Order, int G_Order, int E_Order>
 MixedPoisson<Dim, Order, G_Order, E_Order>::MixedPoisson( std::string const& prefix,
-                                                          WorldComm const& worldComm,
+                                                          WorldComm & worldComm,
                                                           std::string const& subPrefix,
                                                           ModelBaseRepository const& modelRep )
     : super_type( prefix, worldComm, subPrefix, modelRep ),
@@ -300,7 +300,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::MixedPoisson( std::string const& pre
 template<int Dim, int Order, int G_Order, int E_Order>
 typename MixedPoisson<Dim,Order, G_Order, E_Order>::self_ptrtype
 MixedPoisson<Dim,Order,G_Order, E_Order>::New( std::string const& prefix,
-                                               WorldComm const& worldComm, std::string const& subPrefix,
+                                               WorldComm & worldComm, std::string const& subPrefix,
                                                ModelBaseRepository const& modelRep )
 {
     return std::make_shared<self_type> ( prefix,worldComm,subPrefix,modelRep );

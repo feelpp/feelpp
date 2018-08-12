@@ -33,7 +33,7 @@ ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 typename ADVECTION_CLASS_TEMPLATE_TYPE::self_ptrtype 
 ADVECTION_CLASS_TEMPLATE_TYPE::New( 
         std::string const& prefix,
-        WorldComm const& worldComm,
+        WorldComm & worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 {

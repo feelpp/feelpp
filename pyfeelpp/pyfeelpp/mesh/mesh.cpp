@@ -92,16 +92,11 @@ void defMesh(py::module &m)
     int Order = ConvexT::nOrder;
     int RealDim = ConvexT::nRealDim;
     std::string pyclass_name = std::string("Mesh_");
-    std::string suffix = std::to_string(Dim);
-    if ( Order > 1 )
-        suffix += std::string("_") + std::to_string(Order);
-    if ( RealDim != Dim && Order == 1 )
-        suffix += std::string("_") + std::to_string(Order) + std::string("_") + std::to_string(RealDim);
-    else if ( RealDim != Dim && Order == 1 )
-        suffix += std::string("_") + std::to_string(RealDim);
+    std::string suffix = std::to_string(Dim)+"DG"+ std::to_string(Order) + std::string("R") + std::to_string(RealDim);
     pyclass_name += suffix;
     py::class_<mesh_t,std::shared_ptr<mesh_t>>(m,pyclass_name.c_str())
-        .def(py::init<>())
+        .def(py::init<WorldComm const&>(),py::arg("worldComm")=Environment::worldComm(),"Construct a new mesh")
+        .def_static("create",&mesh_t::New,"Construct a new shared_ptr mesh")
         .def("dimension",&mesh_t::dimension,"get topological dimension")
         .def("realDimension",&mesh_t::realDimension,"get real dimension")
 

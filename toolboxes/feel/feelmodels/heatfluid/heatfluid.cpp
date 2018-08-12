@@ -40,7 +40,7 @@ namespace FeelModels
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 HEATFLUID_CLASS_TEMPLATE_TYPE::HeatFluid( std::string const& prefix,
                                           bool buildMesh,
-                                          WorldComm const& worldComm,
+                                          WorldComm & worldComm,
                                           std::string const& subPrefix,
                                           ModelBaseRepository const& modelRep )
     :

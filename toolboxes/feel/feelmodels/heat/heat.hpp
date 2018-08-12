@@ -111,7 +111,7 @@ class Heat : public ModelNumerical,
 
         Heat( std::string const& prefix,
                       bool buildMesh = true,
-                      WorldComm const& worldComm = Environment::worldComm(),
+                      WorldComm & worldComm = Environment::worldComm(),
                       std::string const& subPrefix  = "",
                       ModelBaseRepository const& modelRep = ModelBaseRepository() );
 

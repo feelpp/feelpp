@@ -94,7 +94,7 @@ public:
 
     MatrixEigenDense();
 
-    MatrixEigenDense( size_type r, size_type c, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixEigenDense( size_type r, size_type c, worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
     MatrixEigenDense( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
 

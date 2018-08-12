@@ -19,7 +19,7 @@ namespace FeelModels
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
                                                     bool buildMesh,
-                                                    WorldComm const& worldComm,
+                                                    WorldComm & worldComm,
                                                     std::string const& subPrefix,
                                                     ModelBaseRepository const& modelRep )
     :
@@ -58,7 +58,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix,
                                          bool buildMesh,
-                                         WorldComm const& worldComm,
+                                         WorldComm & worldComm,
                                          std::string const& subPrefix,
                                          ModelBaseRepository const& modelRep )
 {

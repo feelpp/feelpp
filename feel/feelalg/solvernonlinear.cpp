@@ -37,13 +37,13 @@ namespace Feel
 {
 template <typename T>
 inline
-SolverNonLinear<T>::SolverNonLinear ( std::string const& prefix, WorldComm const& worldComm )
+SolverNonLinear<T>::SolverNonLinear ( std::string const& prefix, worldcomm_ptr_t const& worldComm )
     :
+    super( worldComm ),
     residual        ( 0 ),
     jacobian        ( 0 ),
     matvec          ( 0 ),
     M_prefix( prefix ),
-    M_worldComm( worldComm ),
     M_is_initialized ( false ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
     M_snl_type( snesTypeConvertStrToEnum( soption(_prefix=prefix,_name="snes-type" ) ) ),
@@ -78,11 +78,11 @@ template <typename T>
 inline
 SolverNonLinear<T>::SolverNonLinear ( SolverNonLinear const& snl )
     :
+    super( snl ),
     residual        ( snl.residual ),
     jacobian        ( snl.jacobian ),
     matvec          ( snl.matvec ),
     M_prefix( snl.M_prefix ),
-    M_worldComm( snl.M_worldComm ),
     M_is_initialized( snl.M_is_initialized ),
     M_prec_matrix_structure( snl.M_prec_matrix_structure ),
     M_snl_type( snl.M_snl_type ),
@@ -119,19 +119,19 @@ SolverNonLinear<T>::~SolverNonLinear ()
 
 template <typename T>
 std::shared_ptr<SolverNonLinear<T> >
-SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
+SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     return build( prefix,worldComm );
 }
 template <typename T>
 std::shared_ptr<SolverNonLinear<T> >
-SolverNonLinear<T>::build( std::string const& prefix, WorldComm const& worldComm )
+SolverNonLinear<T>::build( std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     return build( soption(_name="backend"),prefix,worldComm );
 }
 template <typename T>
 std::shared_ptr<SolverNonLinear<T> >
-SolverNonLinear<T>::build( std::string const& kind, std::string const& prefix, WorldComm const& worldComm )
+SolverNonLinear<T>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     SolverPackage solver_package=SOLVER_INVALID_PACKAGE;
 
@@ -193,7 +193,7 @@ SolverNonLinear<T>::build( std::string const& kind, std::string const& prefix, W
 }
 template <>
 std::shared_ptr<SolverNonLinear<std::complex<double>> >
-SolverNonLinear<std::complex<double>>::build( std::string const& kind, std::string const& prefix, WorldComm const& worldComm )
+SolverNonLinear<std::complex<double>>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     SolverPackage solver_package=SOLVER_INVALID_PACKAGE;
 
@@ -257,7 +257,7 @@ SolverNonLinear<std::complex<double>>::build( std::string const& kind, std::stri
 
 template <typename T>
 std::shared_ptr<SolverNonLinear<T> >
-SolverNonLinear<T>::build( SolverPackage solver_package, WorldComm const& worldComm )
+SolverNonLinear<T>::build( SolverPackage solver_package, worldcomm_ptr_t const& worldComm )
 {
 #if defined( FEELPP_HAS_PETSC )
 
@@ -310,7 +310,7 @@ SolverNonLinear<T>::build( SolverPackage solver_package, WorldComm const& worldC
 
 template <>
 std::shared_ptr<SolverNonLinear<std::complex<double>> >
-SolverNonLinear<std::complex<double>>::build( SolverPackage solver_package, WorldComm const& worldComm )
+SolverNonLinear<std::complex<double>>::build( SolverPackage solver_package, worldcomm_ptr_t const& worldComm )
 {
 #if defined( FEELPP_HAS_PETSC )
 

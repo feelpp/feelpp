@@ -67,7 +67,7 @@ BOOST_PARAMETER_FUNCTION(
       )
     ( optional
       ( prefix,(std::string), "" )
-      ( worldcomm,      *, Environment::worldComm() )
+      ( worldcomm,      (worldcomm_ptr_t), Environment::worldCommPtr() )
       ( shape,          *( boost::is_convertible<mpl::_,std::string> ),  soption(_prefix=prefix,_name="gmsh.domain.shape") )
       ( shear,          *( boost::is_arithmetic<mpl::_> )    ,  doption(_prefix=prefix,_name="gmsh.domain.shear") )
       ( recombine,      *( boost::is_integral<mpl::_> )    , boption(_prefix=prefix,_name="gmsh.domain.recombine") )

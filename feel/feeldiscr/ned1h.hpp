@@ -65,7 +65,7 @@ Ned1h( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     typedef typename meta::Ned1h<MeshType,Order>::type space_type;
     return space_type::New( _mesh=mesh,
-                            _worldscomm=worldsComm( mesh->worldComm() ),
+                            _worldscomm=makeWorldsComm( 1, mesh->worldCommPtr() ),
                             _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 

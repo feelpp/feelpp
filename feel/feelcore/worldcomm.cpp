@@ -393,15 +393,20 @@ WorldComm::operator==( WorldComm const& wc ) const
 
 //-------------------------------------------------------------------------------
 
-WorldComm::self_type
+worldcomm_t &
+WorldComm::subWorldComm() 
+{
+    return *this->subWorldComm(this->mapColorWorld()[this->globalRank()]);
+}
+worldcomm_t const&
 WorldComm::subWorldComm() const
 {
-    return this->subWorldComm(this->mapColorWorld()[this->globalRank()]);
+    return *this->subWorldComm(this->mapColorWorld()[this->globalRank()]);
 }
 
 //-------------------------------------------------------------------------------
 
-WorldComm::self_type
+worldcomm_ptr_t 
 WorldComm::subWorldComm( int _color ) const
 {
     //std::cout << " WorldComm::subWorldComm( int _color ) " << std::endl;
@@ -424,16 +429,16 @@ WorldComm::subWorldComm( int _color ) const
                 }
         }
 
-    return self_type( this->localComm(),
-                      this->localComm(),
-                      this->godComm(),
-                      myColor,
-                      newIsActive );
-
+    return std::make_shared<self_type>( this->localComm(),
+                                        this->localComm(),
+                                        this->godComm(),
+                                        myColor,
+                                        newIsActive );
+    
 }
 
 //-------------------------------------------------------------------------------
-WorldComm::self_type
+worldcomm_t &
 WorldComm::subWorldComm( std::vector<int> const& colormap )
 {
     M_mapColorWorld = colormap;
@@ -442,7 +447,7 @@ WorldComm::subWorldComm( std::vector<int> const& colormap )
 
 //-------------------------------------------------------------------------------
 
-WorldComm::self_type
+worldcomm_ptr_t 
 WorldComm::subWorldComm( int _color, std::vector<int> const& colormap )
 {
     M_mapColorWorld = colormap;
@@ -450,12 +455,30 @@ WorldComm::subWorldComm( int _color, std::vector<int> const& colormap )
 }
 
 //-------------------------------------------------------------------------------
+WorldComm::self_type &
+WorldComm::subWorldCommSeq() 
+{
+    CHECK(M_subWorldCommSeq) << "M_subWorldCommSeq is not initialized()\n";
+    return *M_subWorldCommSeq;
+}
+worldcomm_ptr_t &
+WorldComm::subWorldCommSeqPtr() 
+{
+    CHECK(M_subWorldCommSeq) << "M_subWorldCommSeq is not initialized()\n";
+    return M_subWorldCommSeq;
+}
 
 WorldComm::self_type const&
 WorldComm::subWorldCommSeq() const
 {
     CHECK(M_subWorldCommSeq) << "M_subWorldCommSeq is not initialized()\n";
     return *M_subWorldCommSeq;
+}
+worldcomm_ptr_t const&
+WorldComm::subWorldCommSeqPtr() const
+{
+    CHECK(M_subWorldCommSeq) << "M_subWorldCommSeq is not initialized()\n";
+    return M_subWorldCommSeq;
 }
 
 //-------------------------------------------------------------------------------
@@ -721,11 +744,11 @@ WorldComm::applyActivityOnlyOn(int _localColor) const
 
 //-------------------------------------------------------------------------------
 
-WorldComm const&
+worldcomm_ptr_t
 WorldComm::subWorld( int n ) const
 {
     if ( this->globalSize() == 1 )
-        return *this;
+        return this->clone();
     if ( !hasSubWorlds( n ) )
         registerSubWorlds( n );
     return M_subworlds.find(n)->second.second[subWorldId(n)];
@@ -738,7 +761,7 @@ WorldComm::subWorldId( int n ) const
 
     if ( !hasSubWorlds( n ) )
         registerSubWorlds( n );
-    return M_subworlds.find(n)->second.first.M_mapColorWorld[this->globalRank()];
+    return M_subworlds.find(n)->second.first->M_mapColorWorld[this->globalRank()];
 }
 bool
 WorldComm::hasSubWorlds( int n ) const
@@ -746,7 +769,15 @@ WorldComm::hasSubWorlds( int n ) const
     return M_subworlds.find( n ) != M_subworlds.end();
 }
 
-std::vector<WorldComm> const&
+worldscomm_ptr_t &
+WorldComm::subWorlds( int n ) 
+{
+    if ( !hasSubWorlds( n ) )
+        registerSubWorlds( n );
+    return M_subworlds[n].second;
+}
+
+worldscomm_ptr_t const&
 WorldComm::subWorlds( int n ) const
 {
     if ( !hasSubWorlds( n ) )
@@ -754,7 +785,7 @@ WorldComm::subWorlds( int n ) const
     return M_subworlds[n].second;
 }
 
-std::vector<WorldComm> const&
+worldscomm_ptr_t &
 WorldComm::subWorldsGroupBySubspace( int n )
 {
     if ( !hasSubWorlds( n ) )
@@ -770,19 +801,21 @@ WorldComm::numberOfSubWorlds() const
     return M_subworlds.begin()->first;
 }
 
-WorldComm const&
+worldcomm_t &
 WorldComm::masterWorld( int n )
 {
     if ( !hasSubWorlds( n ) )
         registerSubWorlds( n );
-    return M_subworlds[n].first;
+    return *M_subworlds[n].first;
 }
 
 void
 WorldComm::registerSubWorlds( int n ) const
 {
-    std::vector<WorldComm> subworlds( n, *this );
-    M_subworlds.insert( std::make_pair( n, std::make_pair( *this, subworlds ) ) );
+    worldscomm_ptr_t subworlds( n );
+    for( auto& sw : subworlds )
+        sw = this->clone();
+    M_subworlds.insert( std::make_pair( n, std::make_pair( this->clone(), subworlds ) ) );
 }
 void
 WorldComm::registerSubWorldsGroupBySubspace( int n )
@@ -805,16 +838,16 @@ WorldComm::registerSubWorldsGroupBySubspace( int n )
                 for( int s = 0; s < n; ++s )
                     MapWorld[nprocs_per_space*s+proc] = s;
             }
-            WorldComm wc(*this);
-            wc.setColorMap( MapWorld );
+            worldcomm_ptr_t wc = this->clone();
+            wc->setColorMap( MapWorld );
 
-            std::vector<WorldComm> subworlds( n, wc );
+            worldscomm_ptr_t subworlds( n );
             for( int s = 0; s < n; ++s )
             {
                 if (this->globalSize()>1)
-                    subworlds[s] = wc.subWorldComm( s, MapWorld );
+                    subworlds[s] = wc->subWorldComm( s, MapWorld );
                 else
-                    subworlds[s] = wc;
+                    subworlds[s] = wc->clone();
             }
             M_subworlds.insert( std::make_pair( n, std::make_pair( wc,  subworlds ) ) );
 
@@ -822,8 +855,10 @@ WorldComm::registerSubWorldsGroupBySubspace( int n )
     }
     else if ( ( n == 1 ) || ( this->globalSize() == 1 ) )
     {
-        std::vector<WorldComm> subworlds( n, *this );
-        M_subworlds.insert( std::make_pair( n, std::make_pair( *this, subworlds ) ) );
+        worldscomm_ptr_t subworlds( n );
+        for( auto & sw : subworlds )
+            sw = this->clone();
+        M_subworlds.insert( std::make_pair( n, std::make_pair( this->shared_from_this(), subworlds ) ) );
     }
 }
 

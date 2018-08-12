@@ -64,7 +64,7 @@ public:
      */
     //@{
     template<typename MeshType>
-    SubMeshData( std::shared_ptr<MeshType> m ) : mesh( m )
+    explicit SubMeshData( std::shared_ptr<MeshType> m ) : mesh( m )
         {}
 
     ~SubMeshData()

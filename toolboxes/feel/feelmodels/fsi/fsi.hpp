@@ -178,7 +178,7 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    FSI( std::string const& prefix, WorldComm const& _worldComm = Environment::worldComm(),
+    FSI( std::string const& prefix, WorldComm & _worldComm = Environment::worldComm(),
          std::string const& rootRepository = "" );
     FSI( self_type const & M ) = default;
 

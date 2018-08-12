@@ -46,10 +46,10 @@ namespace Feel
 template <typename C, typename V, int T> class Mesh;
 
 template <typename MeshType,typename IteratorRange, int TheTag=MeshType::tag>
-class CreateSubmeshTool
+class CreateSubmeshTool : public CommObject
 {
 public :
-
+    using super = CommObject;
     typedef IteratorRange range_type;
     typedef typename boost::tuples::template element<0, range_type>::type idim_type;
     typedef typename boost::tuples::template element<1, range_type>::type iterator_type;
@@ -90,13 +90,13 @@ public :
 
     CreateSubmeshTool( std::shared_ptr<MeshType> inputMesh,
                        IteratorRange const& range,
-                       WorldComm const& wc,
+                       worldcomm_ptr_t const& wc,
                        size_type updateComponentsMesh  )
         :
+        super( wc ),
         M_mesh( inputMesh ),
         M_listRange(),
         M_smd( new smd_type( inputMesh ) ),
-        M_worldComm( wc ),
         M_updateComponentsMesh( updateComponentsMesh ),
         M_subMeshIsOnBoundaryFaces( false )
         {
@@ -105,13 +105,13 @@ public :
 
     CreateSubmeshTool( std::shared_ptr<MeshType> inputMesh,
                        std::list<IteratorRange> const& range,
-                       WorldComm const& wc,
+                       worldcomm_ptr_t const& wc,
                        size_type updateComponentsMesh  )
         :
+        super( wc ),
         M_mesh( inputMesh ),
         M_listRange( range ),
         M_smd( new smd_type( inputMesh ) ),
-        M_worldComm( wc ),
         M_updateComponentsMesh( updateComponentsMesh ),
         M_subMeshIsOnBoundaryFaces( false )
         {}
@@ -185,7 +185,6 @@ private:
     mesh_ptrtype M_mesh;
     std::list<range_type> M_listRange;
     smd_ptrtype M_smd;
-    WorldComm M_worldComm;
     size_type M_updateComponentsMesh;
     bool M_subMeshIsOnBoundaryFaces;
 };
@@ -292,7 +291,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
     typedef typename mesh_type::point_type point_type;
     typedef typename mesh_type::face_type face_type;
 
-    mesh_elements_ptrtype newMesh( new mesh_elements_type(M_worldComm));
+    mesh_elements_ptrtype newMesh( new mesh_elements_type(this->worldCommPtr()));
 
     //-----------------------------------------------------------//
 
@@ -318,8 +317,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
     size_type n_new_edges = 0;
     std::set<size_type> oldFaceIdsDone, oldEdgeIdsDone;
 
-    const int proc_id = M_worldComm.localRank();
-    const int nProc = M_worldComm.localSize();
+    const int proc_id = this->worldComm().localRank();
+    const int nProc = this->worldComm().localSize();
     std::map<rank_type,std::set<boost::tuple<size_type,size_type> > > ghostCellsFind;
 
     for (auto& itList : M_listRange)
@@ -463,7 +462,7 @@ typename CreateSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_faces_ptrtype
 CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /**/ )
 {
     DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] creating new mesh" << "\n";
-    mesh_faces_ptrtype newMesh( new mesh_faces_type( M_worldComm) );
+    mesh_faces_ptrtype newMesh( new mesh_faces_type( this->worldCommPtr()) );
 
     newMesh->setSubStructuring(M_mesh->subStructuring());
     //-----------------------------------------------------------//
@@ -678,7 +677,7 @@ typename CreateSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_edges_ptrtype
 CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /**/ )
 {
     DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] creating new mesh" << "\n";
-    mesh_edges_ptrtype newMesh( new mesh_edges_type( M_worldComm) );
+    mesh_edges_ptrtype newMesh( new mesh_edges_type( this->worldCommPtr()) );
 
     //-----------------------------------------------------------//
     DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] extraction mesh edges" << "\n";
@@ -701,8 +700,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
     size_type n_new_nodes = 0;
     size_type n_new_edges = 0;
 
-    const int proc_id = M_worldComm.localRank();
-    const int nProc = M_worldComm.localSize();
+    const int proc_id = this->worldComm().localRank();
+    const int nProc = this->worldComm().localSize();
     std::map<size_type,size_type> new_node_numbers;
     std::map<size_type,size_type> new_element_id;
     std::map<rank_type,std::set<boost::tuple<size_type,size_type> > > ghostCellsFind;
@@ -1255,7 +1254,7 @@ template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
 CreateSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag>
 createSubmeshTool( std::shared_ptr<MeshType> inputMesh,
                    IteratorRange const& range,
-                   WorldComm const& wc,
+                   worldcomm_ptr_t const& wc,
                    size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                    bool subMeshIsOnBoundaryFaces = false /*allow to reduce mpi comm*/ )
 {
@@ -1280,7 +1279,7 @@ createSubmesh( std::shared_ptr<MeshType> inputMesh,
                size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                bool subMeshIsOnBoundaryFaces = false /*allow to reduce mpi comm*/ )
 {
-    auto t = createSubmeshTool<MeshType,IteratorRange,TheTag>( inputMesh,range,inputMesh->worldComm(),updateComponentsMesh );
+    auto t = createSubmeshTool<MeshType,IteratorRange,TheTag>( inputMesh,range,inputMesh->worldCommPtr(),updateComponentsMesh );
     t.subMeshIsOnBoundaryFaces( subMeshIsOnBoundaryFaces );
     return t.build(ctx);
 }
@@ -1296,7 +1295,7 @@ template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
 typename CreateSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag>::mesh_build_ptrtype
 createSubmesh( std::shared_ptr<MeshType> inputMesh,
                IteratorRange const& range,
-               WorldComm const& wc,
+               worldcomm_ptr_t const& wc,
                size_type ctx = EXTRACTION_KEEP_MESH_RELATION,
                size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                bool subMeshIsOnBoundaryFaces = false /*allow to reduce mpi comm*/ )

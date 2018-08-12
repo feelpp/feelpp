@@ -120,10 +120,10 @@ public:
      \endhtmlonly
 
     */
-    ExporterEnsight( WorldComm const& worldComm = Environment::worldComm() );
-    ExporterEnsight( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterEnsight( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
-    ExporterEnsight( std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) ;
+    ExporterEnsight( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ExporterEnsight( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ExporterEnsight( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
+    ExporterEnsight( std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) ;
 
     ExporterEnsight( ExporterEnsight const & __ex );
 

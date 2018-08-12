@@ -247,7 +247,7 @@ public:
     // Constructor
     LevelSet(
             std::string const& prefix,
-            WorldComm const& _worldComm = Environment::worldComm(),
+            WorldComm& _worldComm = Environment::worldComm(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
@@ -256,7 +256,7 @@ public:
 
     static self_ptrtype New( 
             std::string const& prefix,
-            WorldComm const& _worldComm = Environment::worldComm(),
+            WorldComm & _worldComm = Environment::worldComm(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 

@@ -56,7 +56,7 @@ template<typename T> class OperatorPCDBase;
  * @see
  */
 template<typename T>
-class Preconditioner
+class Preconditioner : public CommObject
 {
 public:
 
@@ -80,6 +80,7 @@ public:
     /** @name Typedefs
      */
     //@{
+    using super = CommObject;
     typedef T value_type;
     typedef Preconditioner<T> preconditioner_type;
     typedef std::shared_ptr<preconditioner_type > preconditioner_ptrtype;
@@ -96,21 +97,21 @@ public:
     //@{
 
     //! default constructor
-    Preconditioner( std::string const& name = "", WorldComm const& worldComm=Environment::worldComm() );
+    Preconditioner( std::string const& name = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
     //! copy constructor
     Preconditioner( Preconditioner const & o )
-    :
-    M_name(),
-    M_worldComm( o.M_worldComm ),
-    M_matrix( o.M_matrix ),
-    M_side( o.M_side ),
-    M_preconditioner_type( o.M_preconditioner_type ),
-    M_matSolverPackage_type( o.M_matSolverPackage_type ),
-    M_prec_matrix_structure ( o.M_prec_matrix_structure ),
-    M_is_initialized( o.M_is_initialized ),
-    M_mat_has_changed( o.M_mat_has_changed ),
-    M_nearNullSpace( o.M_nearNullSpace )
+        :
+        super( o ),
+        M_name(),
+        M_matrix( o.M_matrix ),
+        M_side( o.M_side ),
+        M_preconditioner_type( o.M_preconditioner_type ),
+        M_matSolverPackage_type( o.M_matSolverPackage_type ),
+        M_prec_matrix_structure ( o.M_prec_matrix_structure ),
+        M_is_initialized( o.M_is_initialized ),
+        M_mat_has_changed( o.M_mat_has_changed ),
+        M_nearNullSpace( o.M_nearNullSpace )
         {}
 
     //! destructor
@@ -123,8 +124,8 @@ public:
 #else
             BackendType = BACKEND_NONE,
 #endif
-            WorldComm const& worldComm=Environment::worldComm() );
-
+            worldcomm_ptr_t  const& worldComm=Environment::worldCommPtr() );
+    
     /**
      * Initialize data structures if not done so already.
      */
@@ -141,8 +142,8 @@ public:
         {
             if ( this != &o )
             {
+                super::operator=( o );
                 M_name = o.M_name;
-                M_worldComm = o.M_worldComm;
                 M_matrix = o.M_matrix;
                 M_side = o.M_side;
                 M_is_initialized = o.M_is_initialized;
@@ -173,8 +174,6 @@ public:
         {
             return M_is_initialized;
         }
-
-    WorldComm const& worldComm() const { return M_worldComm; }
 
     /**
      * View preconditioner context
@@ -346,11 +345,6 @@ protected:
     std::string M_name;
 
     /**
-     * Communicator
-     */
-    WorldComm M_worldComm;
-
-    /**
      * The matrix P... ie the matrix to be preconditioned.
      * This is often the actual system matrix of a linear sytem.
      */
@@ -400,21 +394,21 @@ typedef std::shared_ptr<Preconditioner<double> > preconditioner_ptrtype;
 
 template <typename T>
 FEELPP_STRONG_INLINE
-Preconditioner<T>::Preconditioner ( std::string const& name, WorldComm const& worldComm )
-:
-M_name(name),
-M_worldComm(worldComm),
-M_matrix(),
-M_side( LEFT ),
-M_preconditioner_type   ( ILU_PRECOND ),
+Preconditioner<T>::Preconditioner ( std::string const& name, worldcomm_ptr_t const& worldComm )
+    :
+    super( worldComm ),
+    M_name(name),
+    M_matrix(),
+    M_side( LEFT ),
+    M_preconditioner_type   ( ILU_PRECOND ),
 #if FEELPP_HAS_PETSC
-M_matSolverPackage_type ( MATSOLVER_PETSC ),
+    M_matSolverPackage_type ( MATSOLVER_PETSC ),
 #else
-M_matSolverPackage_type ( MATSOLVER_NONE ),
+    M_matSolverPackage_type ( MATSOLVER_NONE ),
 #endif
-M_prec_matrix_structure ( MatrixStructure::SAME_NONZERO_PATTERN ),
-M_is_initialized        ( false ),
-M_mat_has_changed       ( false )
+    M_prec_matrix_structure ( MatrixStructure::SAME_NONZERO_PATTERN ),
+    M_is_initialized        ( false ),
+    M_mat_has_changed       ( false )
 {
 }
 
@@ -453,7 +447,7 @@ BOOST_PARAMETER_FUNCTION( ( std::shared_ptr<Preconditioner<double> > ),
                           )
 {
     using value_type = typename compute_prec_return<Args>::value_type;
-    preconditioner_ptrtype p = Preconditioner<value_type>::build( prefix, backend->type(), backend->comm() );
+    preconditioner_ptrtype p = Preconditioner<value_type>::build( prefix, backend->type(), backend->worldCommPtr() );
     p->setType( pc );
     p->setMatSolverPackageType( pcfactormatsolverpackage );
 

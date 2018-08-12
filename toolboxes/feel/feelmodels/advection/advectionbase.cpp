@@ -32,7 +32,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionStabMethodIdMap = {
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionBase( 
         std::string const& prefix,
-        WorldComm const& worldComm,
+        WorldComm & worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 :

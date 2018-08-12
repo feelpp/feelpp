@@ -31,6 +31,7 @@
 
 #include <unordered_map>
 
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelmesh/geoelement.hpp>
 
 namespace Feel
@@ -44,14 +45,14 @@ namespace Feel
   @see
 */
 template<uint16_type nDim,typename T = double>
-class Points
+class Points : virtual public CommObject
 {
 public:
 
     /** @name Typedefs
      */
     //@{
-
+    using super = CommObject;
     typedef GeoElement0D<nDim,SubFaceOfNone<0>,T> point_type;
 
     typedef std::unordered_map<size_type,point_type> points_type;
@@ -74,16 +75,16 @@ public:
      */
     //@{
 
-    Points( WorldComm const& worldComm = Environment::worldComm() )
+    Points( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
-        M_worldCommPoints( worldComm ),
+        super( worldComm ),
         M_points(),
         M_needToOrderPoints( false )
     {}
 
     Points( Points const & f )
         :
-        M_worldCommPoints( f.M_worldCommPoints ),
+        super( f ),
         M_points( f.M_points ),
         M_needToOrderPoints( false )
     {
@@ -478,9 +479,9 @@ public:
         return M_worldCommPoints;
     }
 
-    void setWorldCommPoints( WorldComm const& _worldComm )
+    void setWorldCommPoints( worldcomm_ptr_t const& _worldComm )
     {
-        M_worldCommPoints = _worldComm;
+        this->setWorldComm( _worldComm );
     }
 
     //@}

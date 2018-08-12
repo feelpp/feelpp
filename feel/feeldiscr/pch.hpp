@@ -79,7 +79,7 @@ Pch_ptrtype<MeshType,Order,T,Pts,Tag>
 Pch( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return Pch_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
-                                                    _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
                                                     _extended_doftable=buildExtendedDofTable );
 }
 
@@ -100,7 +100,7 @@ Pch( std::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> cons
 {
     return Pch_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
                                                     _range=rangeElt,
-                                                    _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
                                                     _extended_doftable=buildExtendedDofTable );
 }
 

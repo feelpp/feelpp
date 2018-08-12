@@ -103,7 +103,7 @@ public:
     /**
      * Constructor. Set dimension to \p n and initialize all elements with zero.
      */
-    VectorPetsc ( const size_type n, WorldComm const& _worldComm = Environment::worldComm() )
+    VectorPetsc ( const size_type n, worldcomm_ptr_t& _worldComm = Environment::worldCommPtr() )
         :
         super( n, _worldComm ),
         M_destroy_vec_on_exit( true )
@@ -117,7 +117,7 @@ public:
      */
     VectorPetsc ( const size_type n,
                   const size_type n_local,
-                  WorldComm const& _worldComm = Environment::worldComm() )
+                  worldcomm_ptr_t& _worldComm = Environment::worldCommPtr() )
         :
         super( n, n_local, _worldComm ),
         M_destroy_vec_on_exit( true )
@@ -224,7 +224,7 @@ public:
         /* map */
         PetscInt n;
         ISGetSize(is,&n);
-        datamap_ptrtype dm( new datamap_type(n, n, v.comm()) );
+        datamap_ptrtype dm( new datamap_type(n, n, v.worldCommPtr()) );
         this->setMap(dm);
         /* init */
         VecGetSubVector(v.vec(), is, &this->M_vec);
@@ -258,7 +258,7 @@ public:
         CHKERRABORT( this->comm(),ierr );
         PetscFree(map);
 
-        datamap_ptrtype dm( new datamap_type(n, n, V->comm()) );
+        datamap_ptrtype dm( new datamap_type(n, n, v.worldCommPtr()) );
         this->setMap(dm);
         /* init */
         ierr = VecGetSubVector(V->vec(), is, &this->M_vec);

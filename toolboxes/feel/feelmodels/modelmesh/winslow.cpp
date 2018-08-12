@@ -38,7 +38,7 @@ namespace FeelModels
 
 
 template< typename MeshType, int Order >
-Winslow<MeshType,Order>::Winslow( mesh_ptrtype mesh, std::string const& prefix, WorldComm const& worldcomm,
+Winslow<MeshType,Order>::Winslow( mesh_ptrtype mesh, std::string const& prefix, WorldComm & worldcomm,
                                   bool useGhostEltFromExtendedStencil, ModelBaseRepository const& modelRep )
     :
     super_type( prefix, worldcomm,"", modelRep ),

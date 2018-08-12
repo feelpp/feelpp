@@ -101,7 +101,7 @@ struct RemoteData
     public:
         using base =  std::tuple<std::vector<std::shared_ptr<FolderInfo>>,std::vector<std::shared_ptr<ItemInfo>>,std::vector<std::shared_ptr<FileInfo>>>;
         ContentsInfo() = default;
-        ContentsInfo( base const& b ) : base ( b ) {}
+        explicit ContentsInfo( base const& b ) : base ( b ) {}
         ~ContentsInfo() = default;
 
         std::vector<std::shared_ptr<FolderInfo>> folderInfo() { return std::get<0>( *this ); }

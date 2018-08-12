@@ -477,7 +477,7 @@ struct InitializeSpace
                      mesh_support_vector_type const& meshSupport,
                      PeriodicityType const& periodicity,
                      std::vector<Dof> const& dofindices,
-                     std::vector<WorldComm> const & worldsComm,
+                     worldscomm_ptr_t const & worldsComm,
                      std::vector<bool> extendedDofTable )
         :
         M_functionspaces( functionspaces ),
@@ -505,7 +505,7 @@ struct InitializeSpace
         auto subMeshSupport = typename subspace_type::mesh_support_vector_type( boost::fusion::at_c<T::value>( M_meshSupport ) );
         auto p = *fusion::find<typename subspace_type::periodicity_0_type>(M_periodicity);
         subSpace = subspace_ptrtype( new subspace_type( M_mesh, subMeshSupport, M_dofindices, p,
-                                                        std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ),
+                                                        makeWorldsComm( 1,M_worldsComm[M_cursor] ),
                                                         std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
         FEELPP_ASSERT( subSpace ).error( "invalid function space" );
 
@@ -525,7 +525,7 @@ struct InitializeSpace
         auto m = boost::fusion::at_c<T::value>( M_mesh );
         auto subMeshSupport = typename subspace_type::mesh_support_vector_type( boost::fusion::at_c<T::value>( M_meshSupport ) );
         subSpace = subspace_ptrtype( new subspace_type( m, subMeshSupport, M_dofindices, p,
-                                                        std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ),
+                                                        makeWorldsComm( 1,M_worldsComm[M_cursor] ),
                                                         std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
         FEELPP_ASSERT( subSpace ).error( "invalid function space" );
 
@@ -533,7 +533,7 @@ struct InitializeSpace
     }
     functionspace_vector_type & M_functionspaces;
     mutable uint16_type M_cursor;
-    std::vector<WorldComm> M_worldsComm;
+    worldscomm_ptr_t M_worldsComm;
     MeshPtrType M_mesh;
     mesh_support_vector_type const& M_meshSupport;
     std::vector<Dof> const& M_dofindices;
@@ -543,8 +543,8 @@ struct InitializeSpace
 template<typename DofType>
 struct updateDataMapProcess
 {
-    updateDataMapProcess( std::vector<WorldComm> const & worldsComm,
-                          WorldComm const& worldCommFusion,
+    updateDataMapProcess( worldscomm_ptr_t const & worldsComm,
+                          worldcomm_ptr_t const& worldCommFusion,
                           uint16_type lastCursor )
         :
         M_cursor( 0 ),
@@ -559,7 +559,7 @@ struct updateDataMapProcess
     void operator()( std::shared_ptr<T> & x ) const
     {
 
-        if ( M_worldsComm[M_cursor].isActive() )
+        if ( M_worldsComm[M_cursor]->isActive() )
         {
             size_type nLocWithGhost=x->nLocalDofWithGhost();
             size_type nLocWithoutGhost=x->nLocalDofWithoutGhost();
@@ -635,7 +635,7 @@ struct updateDataMapProcess
     mutable uint16_type M_cursor;
     mutable size_type M_start_index;
     uint16_type M_lastCursor;
-    std::vector<WorldComm> M_worldsComm;
+    worldscomm_ptr_t M_worldsComm;
     mutable std::shared_ptr<DofType> M_dm;
     mutable std::shared_ptr<DofType> M_dmOnOff;
 }; // updateDataMapProcess
@@ -644,7 +644,7 @@ struct updateDataMapProcess
 template<typename DofType>
 struct updateDataMapProcessStandard
 {
-    updateDataMapProcessStandard( WorldComm const& worldComm,
+    updateDataMapProcessStandard( worldcomm_ptr_t const& worldComm,
                                   uint16_type nSpaces )
         :
         M_worldComm( worldComm ),
@@ -666,7 +666,7 @@ struct updateDataMapProcessStandard
         return M_dm;
     }
 
-    WorldComm const& M_worldComm;
+    worldcomm_ptr_t M_worldComm;
     mutable uint16_type M_cursor;
     uint16_type M_lastCursor;
     mutable std::shared_ptr<DofType> M_dm;
@@ -771,7 +771,7 @@ template< typename IsWithGhostType>
 struct NLocalDof
 {
 
-    NLocalDof( std::vector<WorldComm> const & worldsComm = std::vector<WorldComm>( 1,Environment::worldComm() ),
+    NLocalDof( worldscomm_ptr_t const & worldsComm = Environment::worldsComm(1),
                bool useOffSubSpace = false,
                size_type start = 0, size_type size = invalid_size_type_value )
         :
@@ -822,7 +822,7 @@ struct NLocalDof
 
             else
             {
-                if ( M_worldsComm[M_cursor].isActive() )
+                if ( M_worldsComm[M_cursor]->isActive() )
                     ret += nLocalDof( x, mpl::bool_<IsWithGhostType::value>() );
             }
         }
@@ -840,7 +840,7 @@ struct NLocalDof
 private:
     mutable size_type M_cursor;
     size_type M_finish;
-    std::vector<WorldComm> const& M_worldsComm;
+    worldscomm_ptr_t M_worldsComm;
     bool M_useOffSubSpace;
 };
 #endif // end MPI
@@ -851,7 +851,7 @@ struct NLocalDofOnProc
 {
 
     NLocalDofOnProc( const int proc,
-                     std::vector<WorldComm> const & worldsComm = std::vector<WorldComm>( 1,Environment::worldComm() ),
+                     worldscomm_ptr_t const & worldsComm = Environment::worldsComm(1),
                      bool useOffSubSpace = false,
                      size_type start = 0, size_type size = invalid_size_type_value )
         :
@@ -904,7 +904,7 @@ struct NLocalDofOnProc
 
             else
             {
-                if ( M_worldsComm[M_cursor].isActive() )
+                if ( M_worldsComm[M_cursor]->isActive() )
                     ret += nLocalDof( x, mpl::bool_<IsWithGhostType::value>() );
             }
         }
@@ -923,7 +923,7 @@ private:
     int M_proc;
     mutable size_type M_cursor;
     size_type M_finish;
-    std::vector<WorldComm> const& M_worldsComm;
+    worldscomm_ptr_t M_worldsComm;
     bool M_useOffSubSpace;
 }; // NLocalDofOnProc
 
@@ -931,7 +931,7 @@ private:
 template<int i,typename SpaceCompositeType>
 struct InitializeContainersOff
 {
-    InitializeContainersOff( std::shared_ptr<SpaceCompositeType> const& _space )
+    explicit InitializeContainersOff( std::shared_ptr<SpaceCompositeType> const& _space )
         :
         M_cursor( 0 ),
         M_space( _space )
@@ -983,7 +983,7 @@ struct SendContainersOn
 template<int i,typename SpaceCompositeType>
 struct RecvContainersOff
 {
-    RecvContainersOff( std::shared_ptr<SpaceCompositeType> const& _space )
+    explicit RecvContainersOff( std::shared_ptr<SpaceCompositeType> const& _space )
         :
         M_cursor( 0 ),
         M_space( _space )
@@ -1207,6 +1207,7 @@ struct BasisOrder
 template<typename SpaceType>
 struct createWorldsComm
 {
+    
     typedef typename SpaceType::mesh_ptrtype mesh_ptrtype;
     typedef typename SpaceType::meshes_list meshes_list;
     static const bool useMeshesList = !boost::is_base_of<MeshBase, meshes_list >::value;
@@ -1220,7 +1221,7 @@ struct createWorldsComm
         template<typename T>
         void operator()( T const& t) const
             {
-                M_cwc.M_worldsComm.push_back( t->worldComm() );
+                M_cwc.M_worldsComm.push_back( t->worldComm().shared_from_this() );
             }
         createWorldsComm<SpaceType> & M_cwc;
     };
@@ -1232,16 +1233,17 @@ struct createWorldsComm
     template<bool _UseMeshesList >
     void init( mesh_ptrtype const& mesh, typename std::enable_if< !_UseMeshesList >::type* = nullptr )
         {
-            M_worldsComm.resize( SpaceType::nSpaces, mesh->worldComm() );
+            M_worldsComm.resize( SpaceType::nSpaces, mesh->worldComm().shared_from_this() );
         }
     template<bool _UseMeshesList >
     void init( mesh_ptrtype const& mesh, typename std::enable_if< _UseMeshesList >::type* = nullptr )
         {
             boost::fusion::for_each( mesh, UpdateWorldsComm( *this ) );
         }
-    std::vector<WorldComm> const& worldsComm() const { return M_worldsComm; }
+    worldscomm_ptr_t worldsComm()       { return M_worldsComm; }
+    worldscomm_ptr_t worldsComm() const { return M_worldsComm; }
 
-    std::vector<WorldComm> M_worldsComm;
+    worldscomm_ptr_t M_worldsComm;
 };
 
 template<typename SpaceType>
@@ -1524,6 +1526,8 @@ public:
 
 public:
 
+    using super = FunctionSpaceBase;
+    
     template<typename ThePeriodicityType, int pos>
     struct GetPeriodicity
     {
@@ -2919,7 +2923,7 @@ public:
 
         // Only works for scalar fields
         template < typename p0_space_type >
-        typename p0_space_type::element_type extremeValue( std::shared_ptr<p0_space_type> const& P0h, std::string extreme )
+        typename p0_space_type::element_type extremeValue( std::shared_ptr<p0_space_type> const& P0h, std::string const& extreme )
         {
             // check if the mesh coming from P0h and the class elements is the same
             FEELPP_ASSERT( P0h->mesh() == this->mesh() ).error( "mesh is not the same" );
@@ -3770,11 +3774,19 @@ public:
         /**
          * subWorlds : vector of WorldComm ( >1 if composite)
          */
-        std::vector<WorldComm> const& worldsComm() const
+        worldscomm_ptr_t const& worldsComm() const
         {
             return M_functionspace->worldsComm();
         }
 
+        /**
+         * world communicator
+         */
+        WorldComm & worldComm() 
+        {
+            return M_functionspace->worldComm();
+        }
+        
         /**
          * world communicator
          */
@@ -4294,11 +4306,11 @@ public:
                    mesh_support_vector_type const& meshSupport = mesh_support_vector_type(),
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                    periodicity_type  periodicity = periodicity_type(),
-                   std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces),
+                   worldscomm_ptr_t const& _worldsComm = Environment::worldsComm(nSpaces),
                    std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
         :
+        super( _worldsComm[0]->clone() ),
         M_worldsComm( _worldsComm ),
-        M_worldComm( new WorldComm( _worldsComm[0] ) ),
         M_extendedDofTableComposite( extendedDofTable ),
         M_extendedDofTable( extendedDofTable[0] )
     {
@@ -4309,21 +4321,21 @@ public:
                    mesh_support_vector_type const& meshSupport,
                    std::vector<Dof > const& dofindices,
                    periodicity_type periodicity = periodicity_type(),
-                   std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces),
+                   worldscomm_ptr_t const& _worldsComm = Environment::worldsComm(nSpaces),
                    std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
         :
+        super( _worldsComm[0]->clone() ),
         M_worldsComm( _worldsComm ),
-        M_worldComm( new WorldComm( _worldsComm[0] ) ),
         M_extendedDofTableComposite( extendedDofTable ),
         M_extendedDofTable( extendedDofTable[0] )
     {
         this->init( mesh, meshSupport, 0, dofindices, periodicity );
     }
 
-    FunctionSpace( WorldComm const& worldcomm = Environment::worldComm() )
+    FunctionSpace( WorldComm & worldcomm = Environment::worldComm() )
         :
-        M_worldsComm( std::vector<WorldComm>(nSpaces,worldcomm) ),
-        M_worldComm( new WorldComm( worldcomm ) ),
+        super( worldcomm.clone() ),
+        M_worldsComm( makeWorldsComm( nSpaces, worldcomm ) ),
         M_extendedDofTableComposite( std::vector<bool>(nSpaces,false) ),
         M_extendedDofTable( false )
         {}
@@ -4357,7 +4369,7 @@ public:
                                        ( mesh,* )
                                      )
                                      ( optional
-                                       ( worldscomm, *, Feel::detail::createWorldsComm<functionspace_type>(mesh).worldsComm() )
+                                       ( worldscomm, (worldscomm_ptr_t), Feel::detail::createWorldsComm<functionspace_type>(mesh).worldsComm() )
                                        ( components, ( size_type ), MESH_RENUMBER | MESH_CHECK )
                                        ( periodicity,*,periodicity_type() )
                                        ( extended_doftable,*,std::vector<bool>(nSpaces,false) )
@@ -4372,13 +4384,13 @@ public:
 
     static pointer_type NewImpl( mesh_ptrtype const& __m,
                                  mesh_support_vector_type const& meshSupport,
-                                 std::vector<WorldComm> const& worldsComm = Environment::worldsComm(nSpaces),
+                                 worldscomm_ptr_t & worldscomm = Environment::worldsComm(nSpaces),
                                  size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                                  periodicity_type periodicity = periodicity_type(),
                                  std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
     {
 
-        return pointer_type( new functionspace_type( __m, meshSupport, mesh_components, periodicity, worldsComm, extendedDofTable ) );
+        return pointer_type( new functionspace_type( __m, meshSupport, mesh_components, periodicity, worldscomm, extendedDofTable ) );
     }
 
     template<typename ...FSpaceList>
@@ -4405,7 +4417,7 @@ public:
                                   INVALID_BASIS_TYPE_COMPATIBILITY, (typename SimilarSpaceType::basis_type, basis_type ) );
 
             M_worldsComm = simSpace->worldsComm();
-            M_worldComm = simSpace->worldCommPtr();
+            this->setWorldComm( simSpace->worldCommPtr() );
             M_mesh = simSpace->mesh();
             M_periodicity = simSpace->periodicity();
             M_ref_fe=simSpace->fe();
@@ -4474,28 +4486,19 @@ public:
         }
 
 
-    void setWorldsComm( std::vector<WorldComm> const& _worldsComm )
+    void setWorldsComm( worldscomm_ptr_t const& _worldsComm )
     {
         M_worldsComm=_worldsComm;
     }
-    void setWorldComm( WorldComm const& _worldComm )
-    {
-        M_worldComm.reset( new WorldComm( _worldComm ) );
-    }
-
-    std::vector<WorldComm> const& worldsComm() const
+    worldscomm_ptr_t & worldsComm() 
     {
         return M_worldsComm;
     }
-    WorldComm const& worldComm() const
+    worldscomm_ptr_t const& worldsComm() const
     {
-        return *M_worldComm;
+        return M_worldsComm;
     }
-    std::shared_ptr<WorldComm> const& worldCommPtr() const
-    {
-        return M_worldComm;
-    }
-
+    
     bool hasEntriesForAllSpaces()
     {
         return (this->template mesh<0>()->worldComm().localSize() == this->template mesh<0>()->worldComm().globalSize() );
@@ -5254,8 +5257,8 @@ public:
 
     FunctionSpace( FunctionSpace const& __fe )
         :
+        super( __fe ),
         M_worldsComm( __fe.M_worldsComm ),
-        M_worldComm( __fe.M_worldComm ),
         M_mesh( __fe.M_mesh ),
         M_ref_fe( __fe.M_ref_fe ),
         M_comp_space( __fe.M_comp_space ),
@@ -5356,8 +5359,7 @@ protected:
     //friend class FunctionSpace<mesh_type, typename bases_list::component_basis_type, value_type>;
     //friend class FunctionSpace<mesh_type, bases_list, value_type>;
 
-    std::vector<WorldComm> M_worldsComm;
-    std::shared_ptr<WorldComm> M_worldComm;
+    worldscomm_ptr_t M_worldsComm;
 
     // finite element mesh
     mutable mesh_ptrtype M_mesh;
@@ -5466,7 +5468,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     M_ref_fe = std::make_shared<basis_type>();
 
-    M_dof = std::make_shared<dof_type>( M_ref_fe, fusion::at_c<0>(periodicity), this->worldsComm()[0] );
+    M_dof = std::make_shared<dof_type>( M_ref_fe, fusion::at_c<0>(periodicity), *this->worldsComm()[0] );
 
     M_dof->setBuildDofTableMPIExtended( this->extendedDofTable() );
 
@@ -5519,8 +5521,8 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::initList()
 {
-    if ( !M_worldComm )
-        M_worldComm = std::shared_ptr<WorldComm>( new WorldComm( M_worldsComm[0] ));
+    if ( !this->hasWorldComm() )
+        this->setWorldComm( M_worldsComm[0] );
 
     if ( true )// this->worldComm().globalSize()>1 )
     {
@@ -5531,7 +5533,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
                 DVLOG(2) << "init(<composite>) type hasEntriesForAllSpaces\n";
 
                 // build datamap
-                auto dofInitTool=Feel::detail::updateDataMapProcessStandard<dof_type>( this->worldComm(),
+                auto dofInitTool=Feel::detail::updateDataMapProcessStandard<dof_type>( this->worldCommPtr(),
                                                                                        this->nSubFunctionSpace() );
                 fusion::for_each( M_functionspaces, dofInitTool );
                 // finish update datamap
@@ -5546,12 +5548,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
                 DVLOG(2) << "init(<composite>) type Not hasEntriesForAllSpaces\n";
 
                 // build the WorldComm associated to mix space
-                WorldComm mixSpaceWorldComm = this->worldsComm()[0];
+                worldcomm_ptr_t mixSpaceWorldComm = this->worldsComm()[0]->clone();
 
                 if ( this->worldsComm().size()>1 )
                     for ( int i=1; i<( int )this->worldsComm().size(); ++i )
                         {
-                            mixSpaceWorldComm = mixSpaceWorldComm + this->worldsComm()[i];
+                            *mixSpaceWorldComm = *mixSpaceWorldComm + *this->worldsComm()[i];
                         }
 
                 this->setWorldComm( mixSpaceWorldComm );
