@@ -97,15 +97,15 @@ public:
 
     // -- CONSTRUCTOR --
     BackendEigen();
-    BackendEigen( WorldComm const& worldComm=Environment::worldComm() );
+    BackendEigen( worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
     BackendEigen( po::variables_map const& vm, std::string const& prefix = "",
-                  WorldComm const& worldComm=Environment::worldComm() );
+                  worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
 
     // -- FACTORY METHODS --
     sparse_matrix_ptrtype
     newMatrix()
     {
-        auto A= std::make_shared<eigen_sparse_matrix_type>(0,0,this->comm());
+        auto A= std::make_shared<eigen_sparse_matrix_type>(0,0,this->worldCommPtr());
         return A;
     }
     template<typename DomainSpace, typename DualImageSpace>
@@ -134,7 +134,7 @@ public:
                size_type matrix_properties = NON_HERMITIAN )
     {
         //sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n ) );
-        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n,this->comm() ) );
+        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n,this->worldCommPtr() ) );
         mat->setMatrixProperties( matrix_properties );
         return mat;
     }
@@ -148,7 +148,7 @@ public:
                size_type matrix_properties = NON_HERMITIAN )
     {
         //sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n ) );
-        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n,this->comm() ) );
+        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n,this->worldCommPtr() ) );
         mat->setMatrixProperties( matrix_properties );
         return mat;
     }
@@ -185,25 +185,25 @@ public:
     static vector_ptrtype newVector( std::shared_ptr<SpaceT> const& space )
     {
         //return vector_ptrtype( new eigen_vector_type( space->nDof() ) );
-        return vector_ptrtype( new eigen_vector_type( space->nDof(), space->map()->comm() ) );
+        return vector_ptrtype( new eigen_vector_type( space->nDof(), space->map()->worldCommPtr() ) );
     }
 
     template<typename SpaceT>
     static vector_ptrtype newVector( SpaceT const& space )
     {
         //return vector_ptrtype( new eigen_vector_type( space.nDof() ) );
-        return vector_ptrtype( new eigen_vector_type( space.nDof(), space.map()->comm() ) );
+        return vector_ptrtype( new eigen_vector_type( space.nDof(), space.map()->worldCommPtr() ) );
     }
 
     vector_ptrtype
     newVector( datamap_ptrtype const& d )
     {
-        return vector_ptrtype( new eigen_vector_type( d->nGlobalElements(), this->comm() ) );
+        return vector_ptrtype( new eigen_vector_type( d->nGlobalElements(), this->worldCommPtr() ) );
     }
 
     vector_ptrtype newVector( const size_type n, const size_type n_local )
     {
-        return vector_ptrtype( new eigen_vector_type( n, this->comm() ) );
+        return vector_ptrtype( new eigen_vector_type( n, this->worldCommPtr() ) );
     }
 
 
@@ -266,7 +266,7 @@ private:
 
 // -- CONSTRUCTOR --
 template<typename T, int _Options>
-BackendEigen<T,_Options>::BackendEigen( WorldComm const& _worldComm )
+BackendEigen<T,_Options>::BackendEigen( worldcomm_ptr_t& _worldComm )
     :
     super(_worldComm)
 {
@@ -277,7 +277,7 @@ BackendEigen<T,_Options>::BackendEigen( WorldComm const& _worldComm )
 }
 
 template<typename T, int _Options>
-BackendEigen<T,_Options>::BackendEigen( po::variables_map const& vm, std::string const& prefix, WorldComm const& _worldComm  )
+BackendEigen<T,_Options>::BackendEigen( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t& _worldComm  )
     :
     super( vm, prefix, _worldComm )
 {

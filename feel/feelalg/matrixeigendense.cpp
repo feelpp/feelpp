@@ -43,7 +43,7 @@ MatrixEigenDense<T>::MatrixEigenDense()
     M_mat()
 {}
 template <typename T>
-MatrixEigenDense<T>::MatrixEigenDense( size_type r, size_type c, WorldComm const& worldComm )
+MatrixEigenDense<T>::MatrixEigenDense( size_type r, size_type c, worldcomm_ptr_t const& worldComm )
     :
     super(worldComm),
     M_is_initialized( false ),

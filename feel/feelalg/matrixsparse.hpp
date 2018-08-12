@@ -95,10 +95,10 @@ template <typename T> inline std::ostream& operator << ( std::ostream& os, const
  * @author Christophe Prud'homme, 2005
  */
 template <typename T>
-class FEELPP_EXPORT MatrixSparse : public std::enable_shared_from_this<MatrixSparse<T> >
+class FEELPP_EXPORT MatrixSparse : public CommObject, public std::enable_shared_from_this<MatrixSparse<T> >
 {
 public:
-
+    using super = CommObject;
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
     typedef GraphCSR graph_type;
@@ -126,13 +126,13 @@ public:
      * the matrix before usage with
      * \p init(...).
      */
-    MatrixSparse( WorldComm const& worldComm=Environment::worldComm() );
+    MatrixSparse( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
-    MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
+    MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, worldcomm_ptr_t const& worldComm );
 
     MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
         :
-        MatrixSparse( dmRow, dmCol, dmRow->worldComm() )
+        MatrixSparse( dmRow, dmCol, dmRow->worldCommPtr() )
         {}
 
     /**
@@ -401,14 +401,6 @@ public:
                  << "                 DENSE: " << isDense() << "\n";
             throw std::logic_error( ostr.str() );
         }
-    }
-    /**
-     * \return the communicator
-     */
-    //mpi::communicator const& comm() const { return M_comm; }
-    WorldComm const& comm() const
-    {
-        return M_worldComm;
     }
 
     /**
@@ -931,9 +923,6 @@ protected:
                      << std::endl;
         }
 
-    //! mpi communicator
-    WorldComm M_worldComm;
-
     /**
      * Flag indicating whether or not the matrix
      * has been initialized.
@@ -970,8 +959,8 @@ typedef std::shared_ptr<d_sparse_matrix_type> sparse_matrix_ptrtype;
 // MatrixSparse inline members
 template <typename T>
 inline
-MatrixSparse<T>::MatrixSparse( WorldComm const& worldComm ) :
-    M_worldComm( worldComm ),
+MatrixSparse<T>::MatrixSparse( worldcomm_ptr_t const& worldComm ) :
+    super( worldComm ),
     M_is_initialized( false ),
     M_is_closed( false ),
     M_mprop( NON_HERMITIAN )
@@ -980,8 +969,8 @@ MatrixSparse<T>::MatrixSparse( WorldComm const& worldComm ) :
 
 template <typename T>
 inline
-MatrixSparse<T>::MatrixSparse ( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm ) :
-    M_worldComm( worldComm ),
+MatrixSparse<T>::MatrixSparse ( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, worldcomm_ptr_t const& worldComm ) :
+    super( worldComm ),
     M_is_initialized( false ),
     M_is_closed( false ),
     M_mprop( NON_HERMITIAN ),

@@ -22,7 +22,7 @@ namespace FeelModels
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
                                 bool buildMesh,
-                                WorldComm const& worldComm,
+                                WorldComm & worldComm,
                                 std::string const& subPrefix,
                                 ModelBaseRepository const& modelRep )
     :

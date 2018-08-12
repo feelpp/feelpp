@@ -120,7 +120,7 @@ public :
             //po::variables_map const& vm=Environment::vm(),
             std::string const& prefix="",
             //std::string exportName="ExportMeshALE",
-            WorldComm const& worldcomm=Environment::worldComm(),
+            WorldComm & worldcomm=Environment::worldComm(),
             bool moveGhostEltFromExtendedStencil=false,
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 

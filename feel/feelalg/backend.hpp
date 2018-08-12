@@ -141,7 +141,15 @@ template<int NR, typename T> class VectorBlock;
 
 template<typename T> class BlocksBaseSparseMatrix;
 
-class BackendBase{};
+class BackendBase : public CommObject
+{
+public:
+    using super = CommObject;
+    BackendBase( worldcomm_ptr_t const& w ) : super( w ) {}
+    BackendBase( BackendBase const& ) = default;
+    BackendBase( BackendBase && ) = default;
+    virtual ~BackendBase() = default;
+};
 /**
  * \class Backend
  * \brief base class for all linear algebra backends
@@ -150,9 +158,7 @@ class BackendBase{};
  * @see
  */
 template<typename T>
-class FEELPP_EXPORT Backend:
-        public BackendBase,
-        public std::enable_shared_from_this<Backend<T> >
+class FEELPP_EXPORT Backend : public BackendBase, public std::enable_shared_from_this<Backend<T>>
 {
 public:
 
@@ -160,6 +166,7 @@ public:
     /** @name Typedefs
      */
     //@{
+    using super = BackendBase;
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
 
@@ -198,8 +205,8 @@ public:
      */
     //@{
 
-    Backend( WorldComm const& worldComm=Environment::worldComm() );
-    Backend( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    Backend( worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
+    Backend( po::variables_map const& vm, std::string const& prefix = "", worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
     Backend( Backend const& ) = default;
     Backend( Backend && ) = default;
     virtual ~Backend();
@@ -215,7 +222,7 @@ public:
 #else
         BackendType = BACKEND_GMM
 #endif
-        , WorldComm const& worldComm=Environment::worldComm()
+        , worldcomm_ptr_t& worldComm=Environment::worldCommPtr()
     );
 
     /**
@@ -225,10 +232,10 @@ public:
      * \param worldcomm the communicator
      * \return the backend
      */
-    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
 
 
-    static FEELPP_DEPRECATED backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    static FEELPP_DEPRECATED backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
 
     /**
      * build a backend
@@ -237,7 +244,7 @@ public:
      * \param worldcomm the communicator
      * \return the backend
      */
-    static FEELPP_DEPRECATED backend_ptrtype build( BackendType bt, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    static FEELPP_DEPRECATED backend_ptrtype build( BackendType bt, std::string const& prefix = "", worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
 
     /**
      * convert a vector into a backend pointer vector
@@ -791,14 +798,6 @@ public:
     bool transpose() const
     {
         return M_transpose;
-    }
-
-    /**
-     * \return the communicator
-     */
-    WorldComm const& comm() const
-    {
-        return M_worldComm;
     }
 
     bool showKSPMonitor() const { return M_showKSPMonitor; }
@@ -1458,8 +1457,6 @@ private:
     void reset();
 
 private:
-    WorldComm M_worldComm;
-
     po::variables_map M_vm;
 
 protected:
@@ -1557,7 +1554,7 @@ struct BackendManagerDeleter
 
 template<typename T>
 typename Backend<T>::ptrtype
-backend_impl( std::string const& name, std::string const& kind, bool rebuild, WorldComm const& worldcomm )
+backend_impl( std::string const& name, std::string const& kind, bool rebuild, worldcomm_ptr_t & worldcomm )
 {
     // register the BackendManager into Feel::Environment so that it gets the
     // BackendManager is cleared up when the Environment is deleted
@@ -1568,11 +1565,11 @@ backend_impl( std::string const& name, std::string const& kind, bool rebuild, Wo
         observed = true;
     }
 
-    auto git = Feel::detail::BackendManager<T>::instance().find( boost::make_tuple( kind, name, worldcomm.globalSize() ) );
+    auto git = Feel::detail::BackendManager<T>::instance().find( boost::make_tuple( kind, name, worldcomm->globalSize() ) );
 
     if (  git != Feel::detail::BackendManager<T>::instance().end() && ( rebuild == false ) )
     {
-        DVLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
+        DVLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm->globalSize()=" << worldcomm->globalSize() << "\n";
         return git->second;
     }
 
@@ -1581,12 +1578,12 @@ backend_impl( std::string const& name, std::string const& kind, bool rebuild, Wo
         if (  git != Feel::detail::BackendManager<T>::instance().end() && ( rebuild == true ) )
             git->second->clear();
 
-        DVLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
+        DVLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm->globalSize()=" << worldcomm->globalSize() << "\n";
 
         typename Backend<T>::ptrtype b;
         b = Feel::Backend<T>::build( kind, name, worldcomm );
         DVLOG(2) << "[backend] storing backend in singleton" << "\n";
-        Feel::detail::BackendManager<T>::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
+        Feel::detail::BackendManager<T>::instance().operator[]( boost::make_tuple( kind, name, worldcomm->globalSize() ) ) = b;
         return b;
     }
 
@@ -1602,7 +1599,7 @@ BOOST_PARAMETER_FUNCTION(
                            ( name,           ( std::string ), "" )
                            ( kind,           ( std::string ), soption(_prefix=name,_name="backend"))
                            ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                           ( worldcomm,      (WorldComm), Environment::worldComm() )
+                           ( worldcomm,      (worldcomm_ptr_t), Environment::worldCommPtr() )
                            ) )
 {
     return Feel::detail::backend_impl<double>( name, kind, rebuild, worldcomm);
@@ -1620,7 +1617,7 @@ BOOST_PARAMETER_FUNCTION(
                            ( name,           ( std::string ), "" )
                            ( kind,           ( std::string ), soption(_prefix=name,_name="backend"))
                            ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                           ( worldcomm,      (WorldComm), Environment::worldComm() )
+                           ( worldcomm,      (worldcomm_ptr_t), Environment::worldCommPtr() )
                            ) )
 {
     return Feel::detail::backend_impl<std::complex<double>>( name, kind, rebuild, worldcomm);

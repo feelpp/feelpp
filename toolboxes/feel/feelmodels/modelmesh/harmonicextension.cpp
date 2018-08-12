@@ -54,7 +54,7 @@ namespace FeelModels
 
 template< typename MeshType, int Order >
 HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend_ptrtype const& backend, std::string prefix,
-                                                      WorldComm const& worldcomm,
+                                                      WorldComm & worldcomm,
                                                       bool useGhostEltFromExtendedStencil,
                                                       ModelBaseRepository const& modelRep )
     :

@@ -44,7 +44,7 @@ DhPdh( std::shared_ptr<MeshType> mesh,
 {
     CHECK( buildExtendedDofTable.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << buildExtendedDofTable.size() << "\n";
     return FunctionSpace<MeshType,bases<RaviartThomas<Order>,Lagrange<Order,Scalar,Discontinuous>>>::New( _mesh=mesh,
-                                                                                                          _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ),
+                                                                                                          _worldscomm=makeWorldsComm( 2,mesh->worldComm() ),
                                                                                                           _extended_doftable=buildExtendedDofTable );
 }
 

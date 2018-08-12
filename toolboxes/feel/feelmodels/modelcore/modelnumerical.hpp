@@ -71,7 +71,7 @@ class ModelNumerical : public ModelAlgebraic
         typedef vf::BlocksBase<size_type> block_pattern_type;
 
 
-        ModelNumerical( std::string const& _theprefix, WorldComm const& _worldComm=WorldComm(), std::string const& subPrefix="",
+        ModelNumerical( std::string const& _theprefix, WorldComm & _worldComm=Environment::worldComm(), std::string const& subPrefix="",
                         ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
         ModelNumerical( ModelNumerical const& app ) = default;

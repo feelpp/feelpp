@@ -65,13 +65,13 @@ ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumPr
     ToolboxesDetail::removeTrailingSlash( M_exprRepository );
 }
 
-ModelBaseUpload::ModelBaseUpload( std::string const& desc, std::string const& basePath, WorldComm const& worldComm )
+ModelBaseUpload::ModelBaseUpload( std::string const& desc, std::string const& basePath, WorldComm & worldComm )
     :
     M_basePath( basePath )
 {
     if ( desc.empty() )
         return;
-    M_remoteData.reset( new RemoteData( desc,const_cast<WorldComm&>(worldComm) ) );
+    M_remoteData.reset( new RemoteData( desc, worldComm ) );
 }
 
 bool
@@ -249,13 +249,13 @@ ModelBaseUpload::print() const
 
 
 ModelBase::ModelBase( std::string const& prefix,
-                      WorldComm const& worldComm,
+                      WorldComm & worldComm,
                       std::string const& subPrefix,
                       ModelBaseRepository const& modelRep )
     :
-    M_worldComm(const_cast<WorldComm&>(worldComm).shared_from_this()),
-    M_worldsComm( std::vector<WorldComm>(1,worldComm) ),
-    M_localNonCompositeWorldsComm( std::vector<WorldComm>(1,worldComm) ),
+    M_worldComm(worldComm.shared_from_this()),
+    M_worldsComm( {worldComm.shared_from_this() } ),
+    M_localNonCompositeWorldsComm( { worldComm.shared_from_this() } ),
     M_prefix( prefix ),
     M_subPrefix( subPrefix ),
     M_modelRepository( modelRep ),
@@ -293,16 +293,24 @@ ModelBase::ModelBase( std::string const& prefix,
 ModelBase::~ModelBase()
 {}
 
+ModelBase::worldcomm_ptr_t 
+ModelBase::worldCommPtr() { return M_worldComm; }
+WorldComm &
+ModelBase::worldComm() { return *M_worldComm; }
 WorldComm const&
 ModelBase::worldComm() const { return *M_worldComm; }
-std::vector<WorldComm> const&
+ModelBase::worldscomm_ptr_t &
+ModelBase::worldsComm()  { return M_worldsComm; }
+ModelBase::worldscomm_ptr_t const&
 ModelBase::worldsComm() const { return M_worldsComm; }
 void
-ModelBase::setWorldsComm(std::vector<WorldComm> const& _worldsComm) { M_worldsComm=_worldsComm; }
-std::vector<WorldComm> const&
+ModelBase::setWorldsComm( worldscomm_ptr_t & _worldsComm) { M_worldsComm=_worldsComm; }
+ModelBase::worldscomm_ptr_t &
+ModelBase::localNonCompositeWorldsComm() { return M_localNonCompositeWorldsComm; }
+ModelBase::worldscomm_ptr_t const&
 ModelBase::localNonCompositeWorldsComm() const { return M_localNonCompositeWorldsComm; }
 void
-ModelBase::setLocalNonCompositeWorldsComm(std::vector<WorldComm> const& _worldsComm) { M_localNonCompositeWorldsComm=_worldsComm; }
+ModelBase::setLocalNonCompositeWorldsComm( worldscomm_ptr_t& _worldsComm) { M_localNonCompositeWorldsComm=_worldsComm; }
 void
 ModelBase::createWorldsComm() {}//warning
 

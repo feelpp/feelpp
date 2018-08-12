@@ -70,7 +70,7 @@ public:
     //@{
 
     //! default constructor
-    BasisFunctions(std::shared_ptr<space_type> const& X )
+    explicit BasisFunctions(std::shared_ptr<space_type> const& X )
         :
         M_space( X )
         {}

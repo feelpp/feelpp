@@ -382,7 +382,7 @@ VectorUblas<T,Storage>::VectorUblas( datamap_ptrtype const& dm )
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( size_type __s, size_type __n_local )
     :
-    super1( __s, __n_local, Environment::worldCommSeq() ),
+    super1( __s, __n_local, Environment::worldCommSeqPtr() ),
     M_vec( detail::fake<Storage>( *new ublas::vector<value_type>(), ublas::range() ) ),
     M_vecNonContiguousGhosts( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
 {

@@ -1866,21 +1866,21 @@ Environment::stopLogging( bool remove )
     }
 }
 
-std::vector<WorldComm> const&
+worldscomm_ptr_t &
 Environment::worldsComm( int n )
 {
     CHECK( S_worldcomm ) << "Environment: worldcomm not allocated\n";
     return S_worldcomm->subWorlds( n );
 }
 
-std::vector<WorldComm> const&
+worldscomm_ptr_t &
 Environment::worldsCommSeq( int n )
 {
     CHECK( S_worldcommSeq ) << "Environment: worldcomm not allocated\n";
     return S_worldcommSeq->subWorlds( n );
 }
 
-std::vector<WorldComm> const&
+worldscomm_ptr_t &
 Environment::worldsCommGroupBySubspace( int n )
 {
 #if 0
@@ -1894,7 +1894,7 @@ Environment::worldsCommGroupBySubspace( int n )
 }
 
 
-WorldComm const&
+worldcomm_t &
 Environment::masterWorldComm( int n )
 {
     return S_worldcomm->masterWorld( n );

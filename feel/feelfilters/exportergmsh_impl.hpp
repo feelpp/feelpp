@@ -38,7 +38,7 @@
 namespace Feel
 {
 template<typename MeshType, int N>
-ExporterGmsh<MeshType,N>::ExporterGmsh( WorldComm const& worldComm )
+ExporterGmsh<MeshType,N>::ExporterGmsh( worldcomm_ptr_t const& worldComm )
 :
 super( worldComm ),
 M_element_type()
@@ -46,15 +46,23 @@ M_element_type()
 }
 template<typename MeshType, int N>
 ExporterGmsh<MeshType,N>::ExporterGmsh( std::string const& __p, int freq,
-                                        WorldComm const& worldComm )
+                                        worldcomm_ptr_t const& worldComm )
     :
     super( "gmsh", __p, freq, worldComm )
 {
 
 }
 template<typename MeshType, int N>
+ExporterGmsh<MeshType,N>::ExporterGmsh( std::string const& __p, 
+                                        worldcomm_ptr_t const& worldComm )
+    :
+    ExporterGmsh( __p, 1, worldComm )
+{
+
+}
+template<typename MeshType, int N>
 ExporterGmsh<MeshType,N>::ExporterGmsh( po::variables_map const& vm, std::string const& exp_prefix,
-                                        WorldComm const& worldComm )
+                                        worldcomm_ptr_t const& worldComm )
     :
     super( vm, exp_prefix, worldComm )
 {

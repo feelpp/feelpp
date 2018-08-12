@@ -44,7 +44,7 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/factory.hpp>
 #include <feel/feelcore/singleton.hpp>
-#include <feel/feelcore/worldcomm.hpp>
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
 #include <feel/feelfilters/periodicentities.hpp>
 
@@ -106,10 +106,11 @@ namespace Feel
  * \author Christophe Prud'homme
  * \see http://www.geuz.org/gmsh/
  */
-class Gmsh
+class Gmsh : public CommObject
 {
 public:
 
+    using super = CommObject;
     enum DomainType { GMSH_REFERENCE_DOMAIN = 0, GMSH_REAL_DOMAIN };
 
     struct Factory
@@ -121,7 +122,7 @@ public:
      */
     //@{
 
-    Gmsh( int nDim = 1, int nOrder = GMSH_ORDER_ONE, WorldComm const& worldComm=Environment::worldComm() );
+    Gmsh( int nDim = 1, int nOrder = GMSH_ORDER_ONE, worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
     Gmsh( Gmsh const & __g );
     virtual ~Gmsh();
 
@@ -143,7 +144,7 @@ public:
     static std::shared_ptr<Gmsh> New( po::variables_map const& vm );
     static std::shared_ptr<Gmsh> New( std::string const& shape, uint16_type d = 2,
                                         uint16_type o = 1, std::string const& ct = "simplex",
-                                        WorldComm const& worldComm = Environment::worldComm() );
+                                        worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     //@}
 
@@ -298,12 +299,6 @@ public:
     bool usePhysicalNames() const
         {
             return M_usePhysicalNames;
-        }
-
-    //! \return the world comm
-    WorldComm const& worldComm() const
-        {
-            return M_worldComm;
         }
 
     //! \return the nnumber of partitions
@@ -583,10 +578,16 @@ public:
         }
 
     //! set the communicator
-    void setWorldComm( WorldComm const& _worldcomm )
+    void setWorldComm( WorldComm & _worldcomm )
         {
-            M_worldComm = _worldcomm;
-            M_partitions = M_worldComm.size();
+            super::setWorldComm( _worldcomm );
+            M_partitions = this->worldComm().size();
+        }
+    //! set the communicator
+    void setWorldComm( worldcomm_ptr_t const& _worldcomm )
+        {
+            super::setWorldComm( _worldcomm );
+            M_partitions = this->worldComm().size();
         }
 
     //! set the number of partitions
@@ -724,8 +725,6 @@ private:
     std::string  prefix( std::string const& __name, uint16_type dim ) const;
 
 protected:
-    //! communicator
-    WorldComm M_worldComm;
 
     //! mesh dimension
     int M_dimension;

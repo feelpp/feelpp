@@ -398,7 +398,7 @@ public:
          * \brief create add an element to a sampling
          * \param mu : element_type
          */
-        void addElement( element_type const mu )
+        void addElement( element_type const& mu )
         {
 #if 0
             CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";

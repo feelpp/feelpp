@@ -40,6 +40,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelalg/datamap.hpp>
 #include <feel/feelvf/pattern.hpp>
 #include <feel/feelvf/block.hpp>
@@ -56,10 +57,10 @@ namespace mpi=boost::mpi;
  * @author Christophe Prud'homme
  * @see
  */
-class GraphCSR
+class GraphCSR : public CommObject
 {
 public:
-
+    using super = CommObject;
     friend class boost::serialization::access;
 
     /** @name Typedefs
@@ -97,7 +98,7 @@ public:
               size_type last_row_entry_on_proc = 0,
               size_type first_col_entry_on_proc = 0,
               size_type last_col_entry_on_proc = 0,
-              WorldComm const& worldcomm = Environment::worldComm() );
+              worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() );
 
     GraphCSR( datamap_ptrtype const& mapRow,
               datamap_ptrtype const& mapCol );
@@ -282,15 +283,6 @@ public:
         return M_n_oz;
     }
 
-    /**
-     * \return the communicator
-     */
-    //mpi::communicator const& comm() const { return M_comm; }
-    WorldComm const& worldComm() const
-    {
-        return M_worldComm;
-    }
-
     nz_type const& ia() const
     {
         return M_ia;
@@ -457,8 +449,6 @@ protected:
 
 private:
     bool M_is_closed;
-    //mpi::communicator M_comm;
-    WorldComm M_worldComm;
 
     std::vector<size_type> M_first_row_entry_on_proc;
     std::vector<size_type> M_last_row_entry_on_proc;

@@ -101,7 +101,7 @@ public:
     linear()
         :
         Simget(),
-        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) )
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldCommPtr() ) )
         {
         }
 
@@ -186,7 +186,7 @@ public:
     NL22( const vectorN_type& initial_guess , const vectorN_type & exact_solution)
         :
         Simget(),
-        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldCommPtr() ) ),
         M_initial_guess ( initial_guess ),
         M_exact_solution( exact_solution )
         {

@@ -171,7 +171,7 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
         std::vector<std::shared_ptr<DataMap> > listofdm;
         for ( uint16_type i=0 ; i<nRow; ++i )
             listofdm.push_back( blockVec(i,0)->mapPtr() );
-        dm.reset( new DataMap( listofdm, blockVec(0,0)->map().worldComm() ) );
+        dm.reset( new DataMap( listofdm, blockVec(0,0)->map().worldCommPtr() ) );
     }
     M_vec = backend.newVector( dm );
 

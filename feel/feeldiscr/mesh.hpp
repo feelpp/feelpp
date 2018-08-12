@@ -296,11 +296,11 @@ public:
     //!
      //!  Default mesh constructor
      //!
-    Mesh( WorldComm const& worldComm = Environment::worldComm() );
+    Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     ~Mesh() {}
 
-    void clear()
+    void clear() override
         {
             VLOG(1) << "Mesh clear()";
             M_gm.reset();
@@ -309,12 +309,13 @@ public:
             super::clear();
         }
     //!
-     //!  @brief allocate a new Mesh
-     //!  @return the Mesh shared pointer
-     //!
-    static mesh_ptrtype New()
+    //! @brief allocate a new Mesh
+    //! @param worldcomm communicator defaulting to Environment::worldComm()
+    //! @return the Mesh shared pointer
+    //!
+    static mesh_ptrtype New( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         {
-            return mesh_ptrtype(new mesh_type);
+            return std::make_shared<mesh_type>( worldComm );
         }
 
     self_type& operator+=( self_type const& m );
@@ -327,16 +328,16 @@ public:
      //!  @brief get the number of active elements,faces,edges,points for each partition
      //!  @return the number of active elements
      //!
-    size_type statNumElementsActive( rank_type p = invalid_rank_type_value ) const { return std::get<0>( M_statElements[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
-    size_type statNumElementsAll( rank_type p = invalid_rank_type_value ) const {    return std::get<1>( M_statElements[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
-    size_type statNumFacesActive( rank_type p = invalid_rank_type_value ) const {    return std::get<0>( M_statFaces[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
-    size_type statNumFacesMarkedAll( rank_type p = invalid_rank_type_value ) const { return std::get<1>( M_statFaces[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
-    size_type statNumEdgesActive( rank_type p = invalid_rank_type_value ) const {    return std::get<0>( M_statEdges[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
-    size_type statNumEdgesMarkedAll( rank_type p = invalid_rank_type_value ) const { return std::get<1>( M_statEdges[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
-    size_type statNumPointsActive( rank_type p = invalid_rank_type_value ) const {    return std::get<0>( M_statPoints[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
-    size_type statNumPointsAll( rank_type p = invalid_rank_type_value ) const {       return std::get<1>( M_statPoints[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
-    size_type statNumPointsMarkedAll( rank_type p = invalid_rank_type_value ) const { return std::get<2>( M_statPoints[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
-    size_type statNumVerticesAll(rank_type p = invalid_rank_type_value ) const { return M_statVertices[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ]; }
+    size_type statNumElementsActive( rank_type p = invalid_rank_type_value ) const { return std::get<0>( M_statElements[ ( ( p!=invalid_rank_type_value )? p : MeshBase::worldComm().localRank() ) ] ); }
+    size_type statNumElementsAll( rank_type p = invalid_rank_type_value ) const {    return std::get<1>( M_statElements[ ( ( p!=invalid_rank_type_value )? p : MeshBase::worldComm().localRank() ) ] ); }
+    size_type statNumFacesActive( rank_type p = invalid_rank_type_value ) const {    return std::get<0>( M_statFaces[ ( ( p!=invalid_rank_type_value )? p : MeshBase::worldComm().localRank() ) ] ); }
+    size_type statNumFacesMarkedAll( rank_type p = invalid_rank_type_value ) const { return std::get<1>( M_statFaces[ ( ( p!=invalid_rank_type_value )? p : MeshBase::worldComm().localRank() ) ] ); }
+    size_type statNumEdgesActive( rank_type p = invalid_rank_type_value ) const {    return std::get<0>( M_statEdges[ ( ( p!=invalid_rank_type_value )? p : MeshBase::worldComm().localRank() ) ] ); }
+    size_type statNumEdgesMarkedAll( rank_type p = invalid_rank_type_value ) const { return std::get<1>( M_statEdges[ ( ( p!=invalid_rank_type_value )? p : MeshBase::worldComm().localRank() ) ] ); }
+    size_type statNumPointsActive( rank_type p = invalid_rank_type_value ) const {    return std::get<0>( M_statPoints[ ( ( p!=invalid_rank_type_value )? p : MeshBase::worldComm().localRank() ) ] ); }
+    size_type statNumPointsAll( rank_type p = invalid_rank_type_value ) const {       return std::get<1>( M_statPoints[ ( ( p!=invalid_rank_type_value )? p : MeshBase::worldComm().localRank() ) ] ); }
+    size_type statNumPointsMarkedAll( rank_type p = invalid_rank_type_value ) const { return std::get<2>( M_statPoints[ ( ( p!=invalid_rank_type_value )? p : MeshBase::worldComm().localRank() ) ] ); }
+    size_type statNumVerticesAll(rank_type p = invalid_rank_type_value ) const { return M_statVertices[ ( ( p!=invalid_rank_type_value )? p : MeshBase::worldComm().localRank() ) ]; }
 
     //!
      //!  @brief get the global number of elements
@@ -344,7 +345,7 @@ public:
      //!  retrieve and sum the number of elements in each subdomain.
      //!  @return the global number of elements
      //!
-    size_type numGlobalElements() const { return M_numGlobalElements; }
+    size_type numGlobalElements() const override { return M_numGlobalElements; }
 
     //!
      //!  @return the maximum number of elements over all subdomains
@@ -357,7 +358,7 @@ public:
      //!  retrieve and sum the number of faces in each subdomain.
      //!  @return the global number of faces
      //!
-    size_type numGlobalFaces() const { return M_numGlobalFaces; }
+    size_type numGlobalFaces() const override { return M_numGlobalFaces; }
 
     //!
      //!  @return the maximum number of faces over all subdomains
@@ -370,7 +371,7 @@ public:
      //!  retrieve and sum the number of edges in each subdomain.
      //!  @return the global number of edges
      //!
-    size_type numGlobalEdges() const { return M_numGlobalEdges; }
+    size_type numGlobalEdges() const override { return M_numGlobalEdges; }
 
     //!
      //!  @return the maximum number of edges over all subdomains
@@ -383,7 +384,7 @@ public:
      //!  retrieve and sum the number of points in each subdomain.
      //!  @return the global number of points
      //!
-    size_type numGlobalPoints() const { return M_numGlobalPoints; }
+    size_type numGlobalPoints() const override { return M_numGlobalPoints; }
 
     //!
      //!  @return the maximum number of edges over all subdomains
@@ -396,7 +397,7 @@ public:
      //!  retrieve and sum the number of vertices in each subdomain.
      //!  @return the global number of vertices
      //!
-    size_type numGlobalVertices() const { return M_numGlobalVertices; }
+    size_type numGlobalVertices() const override { return M_numGlobalVertices; }
 
     //!
      //!  @return the maximum number of vertices over all subdomains
@@ -449,8 +450,8 @@ public:
     template<typename MT>
     void updateNumGlobalElements( typename std::enable_if<is_3d<MT>::value>::type* = nullptr )
     {
-        rank_type nProc = this->worldComm().localSize();
-        rank_type currentRank = this->worldComm().localRank();
+        rank_type nProc = MeshBase::worldComm().localSize();
+        rank_type currentRank = MeshBase::worldComm().localRank();
 
         auto rangeElements = this->elementsWithProcessId( currentRank );
         size_type ne = std::distance( std::get<0>( rangeElements ), std::get<1>( rangeElements ) );
@@ -479,13 +480,13 @@ public:
         M_statPoints.resize( nProc,std::make_tuple(0,0,0) );
         M_statVertices.resize( nProc,0 );
 
-        if ( this->worldComm().localSize() > 1 )
+        if ( MeshBase::worldComm().localSize() > 1 )
         {
             std::vector<boost::tuple<boost::tuple<size_type,size_type>,boost::tuple<size_type,size_type>,boost::tuple<size_type,size_type>,
                                      boost::tuple<size_type,size_type,size_type>,size_type> > dataRecvFromAllGather;
             auto dataSendToAllGather = boost::make_tuple(boost::make_tuple(ne,neall),boost::make_tuple(nf,nfmarkedall),boost::make_tuple(ned,nedmarkedall),
                                                          boost::make_tuple(np,npall,npmarkedall),nv);
-            mpi::all_gather( this->worldComm(),
+            mpi::all_gather( MeshBase::worldComm(),
                              dataSendToAllGather,
                              dataRecvFromAllGather );
             for ( rank_type p=0 ; p<nProc ; ++p )
@@ -551,7 +552,7 @@ public:
                 maxNumEntities.push_back( nvall );
 
             auto dataAllReduce = boost::make_tuple( numEntitiesGlobalCounter, maxNumEntities );
-            mpi::all_reduce( this->worldComm(), mpi::inplace(dataAllReduce), UpdateNumGlobalEntitiesForAllReduce() );
+            mpi::all_reduce( MeshBase::worldComm(), mpi::inplace(dataAllReduce), UpdateNumGlobalEntitiesForAllReduce() );
             auto const& numEntitiesGlobalCounterGlobal = boost::get<0>( dataAllReduce );
             auto const& maxNumEntitiesGlobal = boost::get<1>( dataAllReduce );
 
@@ -595,8 +596,8 @@ public:
     template<typename MT>
     void updateNumGlobalElements( typename std::enable_if<mpl::not_<is_3d<MT>>::value>::type* = nullptr )
     {
-        rank_type nProc = this->worldComm().localSize();
-        rank_type currentRank = this->worldComm().localRank();
+        rank_type nProc = MeshBase::worldComm().localSize();
+        rank_type currentRank = MeshBase::worldComm().localRank();
         auto rangeElements = this->elementsWithProcessId( currentRank );
         size_type ne = std::distance( std::get<0>( rangeElements ), std::get<1>( rangeElements ) );
         auto rangeFaces = this->facesWithProcessId( currentRank );
@@ -633,7 +634,7 @@ public:
                                      boost::tuple<size_type,size_type,size_type>,size_type> > dataRecvFromAllGather;
             auto dataSendToAllGather = boost::make_tuple(boost::make_tuple(ne,neall),boost::make_tuple(nf,nfmarkedall),
                                                          boost::make_tuple(np,npall,npmarkedall),nv);
-            mpi::all_gather( this->worldComm(),
+            mpi::all_gather( MeshBase::worldComm(),
                              dataSendToAllGather,
                              dataRecvFromAllGather );
             for ( rank_type p=0 ; p<nProc ; ++p )
@@ -681,7 +682,7 @@ public:
                 maxNumEntities.push_back( nvall );
 
             auto dataAllReduce = boost::make_tuple( numEntitiesGlobalCounter, maxNumEntities );
-            mpi::all_reduce( this->worldComm(), mpi::inplace(dataAllReduce), UpdateNumGlobalEntitiesForAllReduce() );
+            mpi::all_reduce( MeshBase::worldComm(), mpi::inplace(dataAllReduce), UpdateNumGlobalEntitiesForAllReduce() );
             auto const& numEntitiesGlobalCounterGlobal = boost::get<0>( dataAllReduce );
             auto const& maxNumEntitiesGlobal = boost::get<1>( dataAllReduce );
 
@@ -810,25 +811,6 @@ public:
     {
         return M_e2f.find(std::make_pair(e,n))->second;
     }
-#if 0
-    //!
-     //!  @return the world comm
-     //!
-    WorldComm const& worldComm() const
-    {
-        return M_worldComm;
-    }
-
-    void setWorldComm( WorldComm const& _worldComm )
-    {
-        M_worldComm = _worldComm;
-    }
-
-    mpi::communicator const& comm() const
-    {
-        return M_worldComm.localComm();
-    }
-#endif
 
     //!
      //!  \return true if the mesh is substructured, false otherwise
@@ -1108,7 +1090,7 @@ public:
     //!
      //!  Call the default partitioner (currently \p metis_partition()).
      //!
-    void partition ( const uint16_type n_parts = 1 );
+    void partition ( const uint16_type n_parts = 1 ) override;
 
     //!
      //!  After loading/defining a mesh, we want to have as much locality
@@ -1118,7 +1100,7 @@ public:
      //!  This procedure should work also with
      //!  \p comm().size() == 1
      //!
-    void renumber()
+    void renumber() override
     {
         renumber( mpl::bool_<( nDim > 1 )>() );
     }
@@ -1221,7 +1203,7 @@ public:
             }
 
             std::ostringstream os1;
-            os1 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+            os1 << name << sep << suffix << "-" << MeshBase::worldComm().globalSize() << "." << MeshBase::worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
             fs::ofstream ofs( p );
 
@@ -1262,7 +1244,7 @@ public:
             Feel::detail::ignore_unused_variable_warning( args );
 #endif
             std::ostringstream os1;
-            os1 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+            os1 << name << sep << suffix << "-" << MeshBase::worldComm().globalSize() << "." << MeshBase::worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
             if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                 std::cout << "try loading " << p.native()  << "\n";
@@ -1270,7 +1252,7 @@ public:
             {
                 LOG(INFO) << "[mesh::load] failed loading " << p.native() << "\n";
                 std::ostringstream os2;
-                os2 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank();
+                os2 << name << sep << suffix << "-" << MeshBase::worldComm().globalSize() << "." << MeshBase::worldComm().globalRank();
                 p = fs::path( path ) / os2.str();
                 if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                     std::cout << " now try loading " << p.native()  << "\n";
@@ -1353,14 +1335,14 @@ public:
      //!  the mesh. A different behaviour is controlled by setting
      //!  properly \p setComponents(), \p components()
      //!
-    void updateForUse();
+    void updateForUse() override;
 
     //!
      //!  update hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh
      //!
     void updateMeasures();
 
-    void meshModified()
+    void meshModified() override
         {
             for( auto fit = this->beginFace(), fen = this->endFace(); fit != fen; ++fit )
             {
@@ -1445,7 +1427,7 @@ public:
                 mpl::identity<GeoMapInverse<nDim,1,nRealDim,T,Hypercube> > >::type::type super1;
         typedef typename super1::gic_type gic1_type;
 
-        Inverse( std::shared_ptr<self_type> const& m )
+        explicit Inverse( std::shared_ptr<self_type> const& m )
             :
             super(),
             M_mesh ( m )
@@ -1544,7 +1526,7 @@ protected:
     //!
      //!  Update connectivity of entities of codimension 1
      //!
-    void updateEntitiesCoDimensionOne();
+    void updateEntitiesCoDimensionOne() override;
     void updateEntitiesCoDimensionOne(mpl::bool_<true>);
     void updateEntitiesCoDimensionOne(mpl::bool_<false>);
 
@@ -1561,7 +1543,7 @@ protected:
     //!
      //!  check mesh connectivity
      //!
-    void check() const;
+    void check() const override;
 
 
 private:
@@ -1903,7 +1885,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
     if ( keepMeshRelation )
         smd.reset( new SubMeshData( this->shared_from_this() ) );
 
-    P1_mesh_ptrtype new_mesh( new P1_mesh_type( this->worldComm() ) );
+    P1_mesh_ptrtype new_mesh{ std::make_shared<P1_mesh_type>( this->worldCommPtr() ) };
 
     //!  How the nodes on this mesh will be renumbered to nodes on the new_mesh.
     boost::unordered_map<size_type,size_type> new_node_numbers;
@@ -2177,7 +2159,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
                          nbMsgToRecv2 );
         for ( int proc=0; proc<nProc; ++proc )
             CHECK( nbMsgToRecv[proc]==nbMsgToRecv2[proc] ) << "paritioning data incorect "
-                                                           << "myrank " << this->worldComm().localRank() << " proc " << proc
+                                                           << "myrank " << MeshBase::worldComm().localRank() << " proc " << proc
                                                            << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
                                                            << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";
 #endif
@@ -2274,7 +2256,7 @@ Mesh<Shape, T, Tag>::exportVTK( bool exportMarkers, std::string const& vtkFieldN
 
     vtkSmartPointer<vtkUnstructuredGrid> out = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
-    rank_type currentRank = this->worldComm().localRank();
+    rank_type currentRank = MeshBase::worldComm().localRank();
 
     auto rangePoints = this->pointsWithProcessId( currentRank );
     auto itPoint = std::get<0>( rangePoints );

@@ -41,7 +41,7 @@ namespace FeelModels
 
 template <typename MeshType>
 std::shared_ptr<MeshType>
-reloadMesh(std::string const& nameFile, WorldComm const& worldComm, int straighten )
+reloadMesh(std::string const& nameFile, WorldComm & worldComm, int straighten )
 {
     typedef MeshType mesh_type;
 
@@ -58,13 +58,6 @@ reloadMesh(std::string const& nameFile, WorldComm const& worldComm, int straight
     }
     file.close();
 
-#if 0
-    return loadGMSHMesh(_mesh=new mesh_type,
-                        _filename=mshfile,
-                        _worldcomm=worldComm,
-                        _straighten=straighten,
-                        _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-#else
     return loadMesh(_mesh=new mesh_type( worldComm ),
                     _filename=mshfile,
                     _worldcomm=worldComm,
@@ -73,8 +66,6 @@ reloadMesh(std::string const& nameFile, WorldComm const& worldComm, int straight
                     _savehdf5=0,
                     _straighten=straighten,
                     _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
-#endif
-
 } // reloadFluidMesh()
 
 
@@ -182,27 +173,27 @@ createMeshModel( ModelNumerical & model, std::shared_ptr<MeshType> & mesh, std::
 
 }
 
-template std::shared_ptr<Mesh<Simplex<2,1>>> reloadMesh<Mesh<Simplex<2,1>>>( std::string const&, WorldComm const&, int );
-template std::shared_ptr<Mesh<Simplex<3,1>>> reloadMesh<Mesh<Simplex<3,1>>>( std::string const&, WorldComm const&, int );
-template std::shared_ptr<Mesh<Simplex<1,1,2>>> reloadMesh<Mesh<Simplex<1,1,2>>>( std::string const&, WorldComm const&, int );
-template std::shared_ptr<Mesh<Simplex<1,1,3>>> reloadMesh<Mesh<Simplex<1,1,3>>>( std::string const&, WorldComm const&, int );
+template std::shared_ptr<Mesh<Simplex<2,1>>> reloadMesh<Mesh<Simplex<2,1>>>( std::string const&, WorldComm &, int );
+template std::shared_ptr<Mesh<Simplex<3,1>>> reloadMesh<Mesh<Simplex<3,1>>>( std::string const&, WorldComm &, int );
+template std::shared_ptr<Mesh<Simplex<1,1,2>>> reloadMesh<Mesh<Simplex<1,1,2>>>( std::string const&, WorldComm &, int );
+template std::shared_ptr<Mesh<Simplex<1,1,3>>> reloadMesh<Mesh<Simplex<1,1,3>>>( std::string const&, WorldComm &, int );
 template void createMeshModel<Mesh<Simplex<2,1>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<2,1>>> &, std::string const& );
 template void createMeshModel<Mesh<Simplex<3,1>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<3,1>>> &, std::string const& );
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
-template std::shared_ptr<Mesh<Simplex<2,2>>> reloadMesh<Mesh<Simplex<2,2>>>( std::string const&, WorldComm const&, int );
-template std::shared_ptr<Mesh<Simplex<3,2>>> reloadMesh<Mesh<Simplex<3,2>>>( std::string const&, WorldComm const&, int );
+template std::shared_ptr<Mesh<Simplex<2,2>>> reloadMesh<Mesh<Simplex<2,2>>>( std::string const&, WorldComm &, int );
+template std::shared_ptr<Mesh<Simplex<3,2>>> reloadMesh<Mesh<Simplex<3,2>>>( std::string const&, WorldComm &, int );
 template void createMeshModel<Mesh<Simplex<2,2>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<2,2>>> &, std::string const& );
 template void createMeshModel<Mesh<Simplex<3,2>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<3,2>>> &, std::string const& );
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
-template std::shared_ptr<Mesh<Simplex<2,3>>> reloadMesh<Mesh<Simplex<2,3>>>( std::string const&, WorldComm const&, int );
-template std::shared_ptr<Mesh<Simplex<3,3>>> reloadMesh<Mesh<Simplex<3,3>>>( std::string const&, WorldComm const&, int );
+template std::shared_ptr<Mesh<Simplex<2,3>>> reloadMesh<Mesh<Simplex<2,3>>>( std::string const&, WorldComm &, int );
+template std::shared_ptr<Mesh<Simplex<3,3>>> reloadMesh<Mesh<Simplex<3,3>>>( std::string const&, WorldComm &, int );
 template void createMeshModel<Mesh<Simplex<2,3>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<2,3>>> &, std::string const& );
 template void createMeshModel<Mesh<Simplex<3,3>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<3,3>>> &, std::string const& );
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 4 )
-template std::shared_ptr<Mesh<Simplex<2,4>>> reloadMesh<Mesh<Simplex<2,4>>>( std::string const&, WorldComm const&, int );
-template std::shared_ptr<Mesh<Simplex<3,4>>> reloadMesh<Mesh<Simplex<3,4>>>( std::string const&, WorldComm const&, int );
+template std::shared_ptr<Mesh<Simplex<2,4>>> reloadMesh<Mesh<Simplex<2,4>>>( std::string const&, WorldComm &, int );
+template std::shared_ptr<Mesh<Simplex<3,4>>> reloadMesh<Mesh<Simplex<3,4>>>( std::string const&, WorldComm &, int );
 template void createMeshModel<Mesh<Simplex<2,4>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<2,4>>> &, std::string const& );
 template void createMeshModel<Mesh<Simplex<3,4>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<3,4>>> &, std::string const& );
 #endif

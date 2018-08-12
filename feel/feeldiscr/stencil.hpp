@@ -130,7 +130,7 @@ struct compute_graph2
         typedef mpl::bool_<BFType::template rangeiteratorType<tag1,tag2>::hasnotfindrange_type::value> hasnotfindrange_type;
         typedef mpl::bool_<BFType::template rangeExtendedIteratorType<tag1,tag2>::hasnotfindrange_type::value> hasnotfindrange_extended_type;
 
-        if ( M_stencil->testSpace()->worldsComm()[M_test_index].isActive() )
+        if ( M_stencil->testSpace()->worldsComm()[M_test_index]->isActive() )
         {
             if ( M_stencil->isBlockPatternZero( M_test_index,M_trial_index ) )
             {
@@ -164,7 +164,7 @@ struct compute_graph2
                                            M_stencil->trialSpace()->nDofStart( M_trial_index ),
                                            thestencil->graph() );
             }
-        } // if ( M_stencil->testSpace()->worldsComm()[M_test_index].isActive() )
+        } // if ( M_stencil->testSpace()->worldsComm()[M_test_index]->isActive() )
 
         ++M_trial_index;
     }
@@ -1487,7 +1487,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
     // fed into a PetscMatrix to allocate exacly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
-    const size_type proc_id           = _M_X1->worldsComm()[0].localRank();
+    const size_type proc_id           = _M_X1->worldsComm()[0]->localRank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
     //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
     const size_type first1_dof_on_proc = _M_X1->dof()->firstDofGlobalCluster( proc_id );
@@ -1801,7 +1801,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
     // fed into a PetscMatrix to allocate exacly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
-    const size_type proc_id           = _M_X1->worldsComm()[0].localRank();
+    const size_type proc_id           = _M_X1->worldsComm()[0]->localRank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
     //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
     const size_type first1_dof_on_proc = _M_X1->dof()->firstDofGlobalCluster( proc_id );

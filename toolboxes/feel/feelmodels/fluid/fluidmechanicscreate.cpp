@@ -19,7 +19,7 @@ namespace FeelModels {
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
                                                     bool buildMesh,
-                                                    WorldComm const& worldComm,
+                                                    WorldComm & worldComm,
                                                     std::string const& subPrefix,
                                                     ModelBaseRepository const& modelRep )
     :
@@ -56,7 +56,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, bool buildMesh,
-                                         WorldComm const& worldComm, std::string const& subPrefix,
+                                         WorldComm & worldComm, std::string const& subPrefix,
                                          ModelBaseRepository const& modelRep )
 {
     return std::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
@@ -350,7 +350,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createALE()
 
         M_meshALE.reset(new mesh_ale_type( M_mesh,
                                            this->prefix(),
-                                           this->localNonCompositeWorldsComm()[0],
+                                           *this->localNonCompositeWorldsComm()[0],
                                            moveGhostEltFromExtendedStencil,
                                            this->repository() ));
         this->log("FluidMechanics","createALE", "--1--" );

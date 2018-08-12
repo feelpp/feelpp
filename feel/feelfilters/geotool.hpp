@@ -1220,7 +1220,7 @@ public :
           ( partitions,   *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
           ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
           ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
-          ( worldcomm,       (WorldComm), mesh->worldComm() )
+          ( worldcomm,       (worldcomm_ptr_t), mesh->worldCommPtr() )
           ( hmin,     ( double ), 0 )
           ( hmax,     ( double ), 1e22 )
           ( optimize3d_netgen, *( boost::is_integral<mpl::_> ), true )
@@ -1234,7 +1234,7 @@ public :
         _mesh_ptrtype _mesh( mesh );
         _mesh->setWorldComm( worldcomm );
 
-        if ( worldcomm.isActive() )
+        if ( worldcomm->isActive() )
         {
 
             this->cleanOstr();
@@ -1286,9 +1286,9 @@ public :
             }
 
             if ( straighten && _mesh_type::nOrder > 1 )
-                return straightenMesh( _mesh, worldcomm.subWorldComm(), false, false );
+                return straightenMesh( _mesh, worldcomm->subWorldComm(), false, false );
 
-        } // if (worldcomm.isActive())
+        } // if (worldcomm->isActive())
 
         return _mesh;
     }
@@ -1679,14 +1679,14 @@ BOOST_PP_FOR( ( 0, BOOST_PP_SUB( BOOST_PP_ARRAY_SIZE( GEOTOOL_SHAPE ),1 ) ),
 template<typename mesh_type>
 std::shared_ptr<mesh_type>
 createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int straighten = 1,
-                       int partitions=1, WorldComm worldcomm=Environment::worldComm(),
+                       int partitions=1, worldcomm_ptr_t const& worldcomm=Environment::worldCommPtr(),
                        int partition_file = 0, GMSH_PARTITIONER partitioner = GMSH_PARTITIONER_CHACO )
 {
 
     std::shared_ptr<mesh_type> mesh( new mesh_type );
     mesh->setWorldComm( worldcomm );
 
-    if ( !worldcomm.isActive() ) return mesh;
+    if ( !worldcomm->isActive() ) return mesh;
 
     Gmsh gmsh( mesh_type::nDim,mesh_type::nOrder,worldcomm );
     gmsh.setCharacteristicLength( meshSize );
@@ -1737,7 +1737,7 @@ createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int 
     mesh->updateForUse();
 
     if ( straighten && mesh_type::nOrder > 1 )
-        return straightenMesh( mesh, worldcomm.subWorldComm() );
+        return straightenMesh( mesh, worldcomm->subWorldComm() );
 
     return mesh;
 }

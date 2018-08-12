@@ -41,10 +41,10 @@ namespace FeelModels
 
 
 template< class ConvexType >
-FSIMesh<ConvexType>::FSIMesh( std::string prefix, WorldComm const& worldcomm )
+FSIMesh<ConvexType>::FSIMesh( std::string prefix, WorldComm & worldcomm )
     :
     M_prefix( prefix ),
-    M_worldComm( worldcomm ),
+    M_worldComm( worldcomm.shared_from_this() ),
     M_meshSize( 0.1 ),
     M_nPartitions( this->worldComm().localSize() ),
     M_partitioner( ioption(_name="gmsh.partitioner") ),

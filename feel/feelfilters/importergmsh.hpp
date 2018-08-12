@@ -366,7 +366,7 @@ public:
      */
     //@{
 
-    ImporterGmsh( WorldComm const& _worldcomm = Environment::worldComm() )
+    ImporterGmsh( worldcomm_ptr_t const& _worldcomm = Environment::worldCommPtr() )
         :
         super( GMSH, UNDEFINED,  _worldcomm ),
         M_version( FEELPP_GMSH_FORMAT_VERSION ),
@@ -380,7 +380,7 @@ public:
     }
 
     explicit ImporterGmsh( std::string const& _fname, std::string _version = FEELPP_GMSH_FORMAT_VERSION,
-                           WorldComm const& _worldcomm = Environment::worldComm() )
+                           worldcomm_ptr_t const& _worldcomm = Environment::worldCommPtr() )
         :
         super( _fname, GMSH, UNDEFINED, _worldcomm ),
         M_version( _version ),

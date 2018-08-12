@@ -59,7 +59,7 @@ dh_ptrtype<Order,MeshType>
 Dh( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return dh_type<Order,MeshType>::New( _mesh=mesh,
-                                         _worldscomm=worldsComm( mesh->worldComm() ),
+                                         _worldscomm=makeWorldsComm( 1, mesh->worldComm() ),
                                          _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 

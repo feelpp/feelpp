@@ -38,7 +38,7 @@ namespace Feel {
 extern template class Mesh<Simplex<1>>;
 
 std::shared_ptr<Mesh<Simplex<1> > >
-unitSegment( double h, std::string prefix, WorldComm const& wc )
+unitSegment( double h, std::string prefix, worldcomm_ptr_t const& wc )
 {
     std::ostringstream ofs;
     if ( !prefix.empty() )

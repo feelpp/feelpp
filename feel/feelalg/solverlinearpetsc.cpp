@@ -441,7 +441,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
                               const unsigned int m_its,
                               bool transpose )
 {
-    this->setWorldComm( matrix_in.comm() );
+    this->setWorldComm( matrix_in.worldCommPtr() );
     this->init ();
 
     MatrixPetsc<T> * matrix   = const_cast<MatrixPetsc<T> *>( dynamic_cast<MatrixPetsc<T> const*>( &matrix_in ) );

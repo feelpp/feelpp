@@ -70,14 +70,14 @@ public:
     // Constructor
     MultiFluid(
             std::string const& prefix,
-            WorldComm const& wc = Environment::worldComm(),
+            WorldComm & wc = Environment::worldComm(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
     MultiFluid( self_type const& M ) = default;
 
     static self_ptrtype New(
             std::string const& prefix,
-            WorldComm const& wc = Environment::worldComm(),
+            WorldComm & wc = Environment::worldComm(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 

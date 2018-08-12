@@ -93,7 +93,7 @@ public :
     typedef std::shared_ptr<exporter_type> exporter_ptrtype;
 
     Winslow( mesh_ptrtype mesh, std::string const& prefix="",
-             WorldComm const& worldcomm = Environment::worldComm(), bool useGhostEltFromExtendedStencil=false,
+             WorldComm & worldcomm = Environment::worldComm(), bool useGhostEltFromExtendedStencil=false,
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     Winslow( space_ptrtype const& space, std::string const& prefix="",

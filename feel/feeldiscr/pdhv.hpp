@@ -77,7 +77,7 @@ Pdhv_ptrtype<MeshType,Order,Pts,Tag>
 Pdhv( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
 {
     return Pdhv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
-                                                   _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                   _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
                                                    _extended_doftable=buildExtendedDofTable );
 }
 
@@ -95,7 +95,7 @@ Pdhv( std::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> con
 {
     return Pdhv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
                                                    _range=rangeElt,
-                                                   _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                   _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
                                                    _extended_doftable=buildExtendedDofTable );
 }
 

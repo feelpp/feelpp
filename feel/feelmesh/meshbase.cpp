@@ -31,16 +31,16 @@
 namespace Feel
 {
 
-MeshBase::MeshBase( uint16_type topoDim, uint16_type realDim, WorldComm const& worldComm )
+MeshBase::MeshBase( uint16_type topoDim, uint16_type realDim, worldcomm_ptr_t const& worldComm )
     :
+    super( worldComm ),
     M_topodim( topoDim ),
     M_realdim( realDim ),
     M_components( MESH_ALL_COMPONENTS ),
     M_is_updated( false ),
     M_is_parametric( false ),
     M_n_vertices( 0 ),
-    M_n_parts( 1 ),
-    M_worldComm( worldComm )
+    M_n_parts( 1 )
 {
     DVLOG(2) << "[MeshBase] constructor...\n";
 }
@@ -72,7 +72,7 @@ bool
 MeshBase::isPartitioned() const
 {
     if ( mpi::environment::initialized() )
-        return M_n_parts == M_worldComm.localSize();
+        return M_n_parts == this->worldComm().localSize();
 
     else
         return M_n_parts == 1;

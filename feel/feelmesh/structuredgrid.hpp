@@ -94,7 +94,7 @@ struct bbox
      *
      * @param bboxes set of bounding boxes
      */
-    bbox( std::vector<std::shared_ptr<bbox<Dim> > > const& bboxes )
+    explicit bbox( std::vector<std::shared_ptr<bbox<Dim> > > const& bboxes )
         :
         min( Dim ),
         max( Dim ),

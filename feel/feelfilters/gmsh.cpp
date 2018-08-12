@@ -124,9 +124,9 @@ ParseGeoFromMemory( GModel* model, std::string const& name, std::string const& g
 
     return imported;
 }
-Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
+Gmsh::Gmsh( int nDim, int nOrder, worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( worldComm ),
+    super( worldComm ),
     M_dimension( nDim ),
     M_order( nOrder ),
     M_version( FEELPP_GMSH_FORMAT_VERSION ),
@@ -137,7 +137,7 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_addmidpoint( true ),
     M_usePhysicalNames( false ),
     M_partitioner( (GMSH_PARTITIONER)GMSH_PARTITIONER_DEFAULT ),
-    M_partitions( worldComm.size() ),
+    M_partitions( worldComm->size() ),
     M_partition_file( 0 ),
     M_shear( 0 ),
     M_recombine( 0 ),
@@ -152,7 +152,7 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
 }
 Gmsh::Gmsh( Gmsh const & __g )
     :
-    M_worldComm( __g.M_worldComm ),
+    super( __g ),
     M_dimension( __g.M_dimension ),
     M_order( __g.M_order ),
     M_version( __g.M_version ),
@@ -187,6 +187,7 @@ Gmsh::operator=( Gmsh const& __g )
 {
     if (  this != &__g )
     {
+        super::operator=( __g );
         M_dimension = __g.M_dimension;
         M_order = __g.M_order;
         M_version = __g.M_version;
@@ -198,7 +199,6 @@ Gmsh::operator=( Gmsh const& __g )
         M_shear = __g.M_shear;
         M_refine_levels = __g.M_refine_levels;
         M_periodic = __g.M_periodic;
-        M_worldComm = __g.M_worldComm;
         M_gmodel = __g.M_gmodel;
     }
 
@@ -215,7 +215,7 @@ Gmsh::New( po::variables_map const& vm )
 }
 
 std::shared_ptr<Gmsh>
-Gmsh::New( std::string const& shape, uint16_type d, uint16_type o, std::string const& ct, WorldComm const& wc )
+Gmsh::New( std::string const& shape, uint16_type d, uint16_type o, std::string const& ct, worldcomm_ptr_t const& wc )
 {
     std::ostringstream ostr;
 

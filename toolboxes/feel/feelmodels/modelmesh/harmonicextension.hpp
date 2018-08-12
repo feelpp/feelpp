@@ -76,7 +76,7 @@ public :
 
     HarmonicExtension(mesh_ptrtype mesh, backend_ptrtype const& backend,
                       std::string prefix="",
-                      WorldComm const& worldcomm = WorldComm(),
+                      WorldComm & worldcomm = Environment::worldComm(),
                       bool useGhostEltFromExtendedStencil=false,
                       ModelBaseRepository const& modelRep = ModelBaseRepository() );
 

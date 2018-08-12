@@ -50,11 +50,11 @@ public:
         
     MatrixCondensed()
         :
-        super(Environment::worldComm()),
+        super(Environment::worldCommPtr()),
         M_sc( new sc_type ),
         M_strategy( solve::strategy::static_condensation )
         {}
-    MatrixCondensed( WorldComm const& wc )
+    MatrixCondensed( worldcomm_ptr_t const& wc )
         :
         super( wc ),
         M_sc( new sc_type ),

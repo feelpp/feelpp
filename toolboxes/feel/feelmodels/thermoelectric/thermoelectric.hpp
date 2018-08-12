@@ -73,7 +73,7 @@ public:
     // constructor
     ThermoElectric( std::string const& prefix,
                     bool buildMesh = true,
-                    WorldComm const& _worldComm = Environment::worldComm(),
+                    WorldComm & _worldComm = Environment::worldComm(),
                     std::string const& subPrefix = "",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ThermoElectricMesh.path"); }

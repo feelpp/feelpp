@@ -82,7 +82,7 @@ public:
      * constructor,copy,desctructor
      */
     ALE( mesh_ptrtype mesh, std::string prefix="",
-         WorldComm const& worldcomm = WorldComm(),
+         WorldComm & worldcomm = Environment::worldComm(),
          bool moveGhostEltFromExtendedStencil=false,
          ModelBaseRepository const& modelRep = ModelBaseRepository() );
     ALE( ALE const& tc );
@@ -92,7 +92,7 @@ public:
      * static builder
      */
     static self_ptrtype build(mesh_ptrtype mesh, std::string prefix="",
-                              WorldComm const& worldcomm = WorldComm(),
+                              WorldComm & worldcomm = Environment::worldComm(),
                               bool moveGhostEltFromExtendedStencil=false,
                               ModelBaseRepository const& modelRep = ModelBaseRepository() );
 

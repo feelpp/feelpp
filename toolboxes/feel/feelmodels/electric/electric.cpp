@@ -47,7 +47,7 @@ namespace FeelModels
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 ELECTRIC_CLASS_TEMPLATE_TYPE::Electric( std::string const& prefix,
                                         bool buildMesh,
-                                        WorldComm const& worldComm,
+                                        WorldComm & worldComm,
                                         std::string const& subPrefix,
                                         ModelBaseRepository const& modelRep )
     :

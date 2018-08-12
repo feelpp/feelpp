@@ -71,8 +71,9 @@ namespace Feel
 template<typename MeshType, int N = 1>
 class FEELPP_EXPORT Exporter
     :
-public VisitorBase,
-public Visitor<MeshType>
+        public CommObject,
+        public VisitorBase,
+        public Visitor<MeshType>
 {
 public:
 
@@ -80,6 +81,7 @@ public:
     /** @name Typedefs
      */
     //@{
+    using super = CommObject;
     typedef VisitorBase super1;
     typedef Visitor<MeshType> super2;
 
@@ -108,7 +110,7 @@ public:
     /**
      * default constructor
      */
-    Exporter( WorldComm const& worldComm = Environment::worldComm() );
+    Exporter( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     /**
      * Constructor
@@ -119,7 +121,7 @@ public:
     Exporter( std::string const& type,
               std::string const& prefix = "",
               int freq = 1,
-              WorldComm const& worldComm = Environment::worldComm() );
+              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     /**
      * Constructor
@@ -129,7 +131,7 @@ public:
      */
     Exporter( po::variables_map const& vm,
               std::string const& exporter_prefix = "",
-              WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
 
     /**
      * Constructor
@@ -137,7 +139,7 @@ public:
      * \param freq an integer giving the frequency at which the data should be saved
      */
     Exporter( std::string const& exporter_prefix,
-              WorldComm const& worldComm = Environment::worldComm() );
+              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     /**
      * copy constructor
@@ -156,7 +158,7 @@ public:
      */
     static std::shared_ptr<Exporter<MeshType,N> > New( std::string const& exportername,
                                                          std::string prefix,
-                                                         WorldComm const& worldComm = Environment::worldComm() );
+                                                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     /**
      * Static function instantiating from the Exporter Factory an exporter out
@@ -165,13 +167,13 @@ public:
      */
     static std::shared_ptr<Exporter<MeshType,N> > New( po::variables_map const& vm = Environment::vm(),
                                                          std::string prefix = Environment::about().appName(),
-                                                         WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+                                                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
     /**
      * Static function instantiating from the Exporter Factory an exporter using
      * \p prefix for the prefix of the data files.
      */
     static std::shared_ptr<Exporter<MeshType,N> > New( std::string prefix,
-                                                         WorldComm const& worldComm = Environment::worldComm() );
+                                                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     //@}
 
@@ -498,20 +500,9 @@ public:
         }
     }
 
-    void setWorldComm( WorldComm const& wc )
-        {
-            M_worldComm = wc;
-        }
-    WorldComm const& worldComm() const
-        {
-            return M_worldComm;
-        }
-
     ExporterGeometry exporterGeometry() const { return M_ex_geometry; }
     //@}
 protected:
-
-    WorldComm M_worldComm;
 
     bool M_do_export;
     bool M_use_single_transient_file;
@@ -566,7 +557,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
-    auto e =  exporter_type::New( name,mesh->worldComm() );
+    auto e =  exporter_type::New( name,mesh->worldCommPtr() );
     e->setPrefix( name );
     e->setUseSingleTransientFile( fileset );
     if ( std::string(geo).compare("change_coords_only") == 0 )

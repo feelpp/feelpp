@@ -118,9 +118,10 @@ public:
      \endhtmlonly
 
     */
-    ExporterExodus( WorldComm const& worldComm = Environment::worldComm() );
-    ExporterExodus( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterExodus( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    ExporterExodus( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() );
+    ExporterExodus( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() );
+    ExporterExodus( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
+    ExporterExodus( std::string const& __p = "default", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() );
 
     ExporterExodus( ExporterExodus const & __ex );
 
@@ -204,7 +205,7 @@ private:
 };
 
 template<typename MeshType, int N>
-ExporterExodus<MeshType,N>::ExporterExodus( WorldComm const& worldComm )
+ExporterExodus<MeshType,N>::ExporterExodus( worldcomm_ptr_t const& worldComm )
 :
 super( worldComm ),
 M_element_type()
@@ -213,7 +214,7 @@ M_element_type()
     init();
 }
 template<typename MeshType, int N>
-ExporterExodus<MeshType,N>::ExporterExodus( std::string const& __p, int freq, WorldComm const& worldComm )
+ExporterExodus<MeshType,N>::ExporterExodus( std::string const& __p, int freq, worldcomm_ptr_t const& worldComm )
     :
     super( "exodus", __p, freq, worldComm ),
     M_element_type()
@@ -221,9 +222,17 @@ ExporterExodus<MeshType,N>::ExporterExodus( std::string const& __p, int freq, Wo
     init();
 }
 template<typename MeshType, int N>
-ExporterExodus<MeshType,N>::ExporterExodus( po::variables_map const& vm, std::string const& exp_prefix, WorldComm const& worldComm )
+ExporterExodus<MeshType,N>::ExporterExodus( po::variables_map const& vm, std::string const& exp_prefix, worldcomm_ptr_t const& worldComm )
     :
     super( vm, exp_prefix, worldComm )
+{
+    init();
+}
+template<typename MeshType, int N>
+ExporterExodus<MeshType,N>::ExporterExodus( std::string const& __p, worldcomm_ptr_t const& worldComm )
+    :
+    super( "exodus", __p, 1, worldComm ),
+    M_element_type()
 {
     init();
 }

@@ -29,17 +29,19 @@
 #ifndef __FunctionSpaceBase_H
 #define __FunctionSpaceBase_H 1
 
+#include <feel/feelcore/commobject.hpp>
+
 namespace Feel
 {
 
 /**
- * \class FunctionSpaceBase
- * \brief brief description
+ * @class FunctionSpaceBase
+ * @brief base class for FunctionSpace
  *
  * @author Christophe Prud'homme
  * @see
  */
-class FEELPP_EXPORT FunctionSpaceBase
+class FEELPP_EXPORT FunctionSpaceBase : public CommObject
 {
 public:
 
@@ -54,7 +56,7 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    using super = CommObject;
 
     //@}
 
@@ -62,8 +64,12 @@ public:
      */
     //@{
 
+    FunctionSpaceBase() : super( Environment::worldCommPtr() ) {}
+    FunctionSpaceBase( worldcomm_ptr_t const& w ) : super( w ) {}
+    FunctionSpaceBase( FunctionSpaceBase const& ) = default;
+    FunctionSpaceBase( FunctionSpaceBase && ) = default;
     //! destructor
-    virtual ~FunctionSpaceBase() {}
+    virtual ~FunctionSpaceBase() = default;
 
     //@}
 

@@ -122,10 +122,10 @@ public:
      \endhtmlonly
 
     */
-    ExporterEnsightGold( WorldComm const& worldComm = Environment::worldComm() );
-    ExporterEnsightGold( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterEnsightGold( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
-    ExporterEnsightGold( std::string const& exp_prefix, WorldComm const& worldComm = Environment::worldComm() );
+    ExporterEnsightGold( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ExporterEnsightGold( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ExporterEnsightGold( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
+    ExporterEnsightGold( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     ExporterEnsightGold( ExporterEnsightGold const & __ex );
 
@@ -152,15 +152,6 @@ public:
     {
         return M_element_type;
     }
-
-    /**
-     * \return the worldcomm passed in parameters of the exporter constructor (as the worldComm() can return a sequentialized one)
-     */
-    WorldComm const& worldCommBase() const
-    {
-        return M_worldCommBase;
-    }
-
 
     //@}
 
@@ -255,15 +246,6 @@ private:
     FEELPP_NO_EXPORT void saveElement( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __evar, Iterator __evaren ) const;
 
 private:
-
-    /* The purpose of this variable is to keep track */
-    /* of the initial woldcomm that is given through the constructor */
-    /* This is useful, when we don't want to merge the markers, */
-    /* as the base worldComm is replaced with a sequential one */
-    /* (and it also yields less code changes that having to use an alternate variable */
-    /* containing the sequential worlcomm and leaving M_worldComm as the one in param) */
-    WorldComm M_worldCommBase;
-
     mutable std::string M_filename;
     std::string M_element_type;
     std::string M_face_type;

@@ -70,6 +70,10 @@ public:
     //! underlying MPI communicator type
     typedef boost::mpi::communicator communicator_type;
 
+    using worldcomm_t = WorldComm;
+    using worldcomm_ptr_t = std::shared_ptr<WorldComm>;
+    using worldscomm_ptr_t = std::vector<worldcomm_ptr_t>;
+
     //! Default constructor
     WorldComm();
 
@@ -117,6 +121,9 @@ public:
 
     static self_ptrtype New() { return self_ptrtype(new self_type); }
     static self_ptrtype New( super const& s ) { return self_ptrtype(new self_type( s )); }
+
+    worldcomm_ptr_t clone() const { return std::make_shared<worldcomm_t>( *this ); }
+
     void init( int color = 0, bool colormap = false );
 
     //! Returns the current WorldComm
@@ -177,9 +184,11 @@ public:
     }
 
     bool hasSubWorlds( int n ) const;
-    std::vector<WorldComm> const& subWorlds( int n ) const;
-    std::vector<WorldComm> const& subWorldsGroupBySubspace( int n );
-    WorldComm const& subWorld( int n ) const;
+    worldscomm_ptr_t & subWorlds( int n );
+    worldscomm_ptr_t const& subWorlds( int n ) const;
+    worldscomm_ptr_t & subWorldsGroupBySubspace( int n );
+    worldcomm_ptr_t subWorld( int n );
+    worldcomm_ptr_t subWorld( int n ) const;
     int subWorldId( int n ) const;
 
     std::vector<int> const& mapColorWorld() const
@@ -221,15 +230,23 @@ public:
     }
 
 
-    WorldComm subWorldComm() const;
-    WorldComm subWorldComm( int color ) const;
-    WorldComm subWorldComm( std::vector<int> const& colormap ) ;
-    WorldComm subWorldComm( int color, std::vector<int> const& colormap ) ;
-    WorldComm const& masterWorld( int n );
+    worldcomm_t & subWorldComm();
+    worldcomm_t const & subWorldComm() const;
+    worldcomm_ptr_t subWorldComm( int color ) const;
+    worldcomm_t & subWorldComm( std::vector<int> const& colormap ) ;
+    worldcomm_ptr_t  subWorldComm( int color, std::vector<int> const& colormap ) ;
+    worldcomm_t & masterWorld( int n );
     int numberOfSubWorlds() const;
 
     //! Returns the sequential sub worldcomm
+    WorldComm & subWorldCommSeq();
+    //! Returns the sequential sub worldcomm
+    worldcomm_ptr_t & subWorldCommSeqPtr();
+    
+    //! Returns the sequential sub worldcomm
     WorldComm const& subWorldCommSeq() const;
+    //! Returns the sequential sub worldcomm
+    worldcomm_ptr_t const& subWorldCommSeqPtr() const;
 
     //! Returns \c true if current worldcomm is active in God worldcomm
     bool isActive() const
@@ -285,12 +302,32 @@ private :
     std::vector<int> M_mapColorWorld;
     std::vector<rank_type> M_mapLocalRankToGlobalRank;
     std::vector<rank_type> M_mapGlobalRankToGodRank;
-    mutable std::map<int, std::pair<WorldComm,std::vector<WorldComm> > > M_subworlds;
+    mutable std::map<int, std::pair<worldcomm_ptr_t,worldscomm_ptr_t > > M_subworlds;
 
     int M_masterRank;
     mutable std::vector<int/*bool*/> M_isActive;
 
 };
+
+using worldcomm_t = WorldComm;
+using worldcomm_ptr_t = std::shared_ptr<WorldComm>;
+using worldscomm_ptr_t = std::vector<worldcomm_ptr_t>;
+
+
+inline worldscomm_ptr_t makeWorldsComm( int n, WorldComm & wc )
+{
+    worldscomm_ptr_t r( n );
+    for( auto & w : r )
+        w = wc.clone();
+    return r;
+}
+inline worldscomm_ptr_t makeWorldsComm( int n, worldcomm_ptr_t const& wc )
+{
+    worldscomm_ptr_t r( n );
+    for( auto & w : r )
+        w = wc->clone();
+    return r;
+}
 
 } //namespace Feel
 

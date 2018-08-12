@@ -49,7 +49,7 @@ Pdh_ptrtype<MeshType,Order,Pts>
 Pdh( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return Pdh_type<MeshType,Order,Pts>::New( _mesh=mesh,
-                                              _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                              _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
                                               _extended_doftable=buildExtendedDofTable );
 }
 
@@ -64,7 +64,7 @@ Pdh( std::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> cons
 {
     return Pdh_type<MeshType,Order,Pts>::New( _mesh=mesh,
                                               _range=rangeElt,
-                                              _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                              _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
                                               _extended_doftable=buildExtendedDofTable );
 }
 

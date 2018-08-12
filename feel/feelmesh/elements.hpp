@@ -33,6 +33,7 @@
 
 #include <unordered_map>
 
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelmesh/geoelement.hpp>
 #include <feel/feelmesh/filters.hpp>
 
@@ -69,7 +70,7 @@ namespace detail
   @see
 */
 template<typename ElementType, typename T = double>
-class Elements
+class Elements : virtual public CommObject
 {
 public:
 
@@ -77,7 +78,8 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    using super = CommObject;
+    
     /**
      * Element type depending on the dimension, @see geoelement.hpp
      * \note Elements have their topological dimension equal to the
@@ -217,16 +219,16 @@ public:
      */
     //@{
 
-    Elements( WorldComm const& worldComm = Environment::worldComm() )
+    Elements( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
-        M_worldCommElements(worldComm),
+        super( worldComm ),
         M_elements(),
         M_needToOrderElements( false )
     {}
 
     Elements( Elements const & f )
         :
-        M_worldCommElements( f.worldCommElements() ),
+        super( f ),
         M_elements( f.M_elements ),
         M_needToOrderElements( false )
     {
@@ -256,7 +258,7 @@ public:
     {
         if ( this != &e )
         {
-            M_worldCommElements = e.M_worldCommElements;
+            super::operator=( e );
             M_elements = e.M_elements;
             this->buildOrderedElements();
         }
@@ -294,9 +296,13 @@ public:
         return M_elements.empty();
     }
 
+    WorldComm & worldCommElements() 
+        {
+            return this->worldComm();
+        }
     WorldComm const& worldCommElements() const
     {
-        return M_worldCommElements;
+        return this->worldComm();
     }
 
 
@@ -824,9 +830,9 @@ public:
     }
 
 
-    void setWorldCommElements( WorldComm const& _worldComm )
+    void setWorldCommElements( worldcomm_ptr_t const& _worldComm )
     {
-        M_worldCommElements = _worldComm;
+        this->setWorldComm( _worldComm );
     }
 
     void updateOrderedElement()
@@ -888,7 +894,6 @@ private:
 
 
 private:
-    WorldComm M_worldCommElements;
     elements_type M_elements;
     ordered_elements_reference_wrapper_type M_orderedElements;
     bool M_needToOrderElements;

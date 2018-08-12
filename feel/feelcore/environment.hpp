@@ -321,7 +321,7 @@ public:
     /**
      * @return the shared_ptr WorldComm
      */
-    static std::shared_ptr<WorldComm> worldCommPtr()
+    static std::shared_ptr<WorldComm> & worldCommPtr()
         {
             return S_worldcomm;
         }
@@ -337,19 +337,23 @@ public:
     {
         return *S_worldcommSeq;
     }
+    static worldcomm_ptr_t& worldCommSeqPtr()
+    {
+        return S_worldcommSeq;
+    }
 
     /**
      * return n sub world communicators
      */
-    static std::vector<WorldComm> const&  worldsComm( int n );
-    static std::vector<WorldComm> const&  worldsCommSeq( int n );
+    static worldscomm_ptr_t &  worldsComm( int n );
+    static worldscomm_ptr_t &  worldsCommSeq( int n );
 
-    static std::vector<WorldComm> const&  worldsCommGroupBySubspace( int n );
+    static worldscomm_ptr_t &  worldsCommGroupBySubspace( int n );
 
     /**
      * return master world comm associated with a color map of size n
      */
-    static WorldComm const& masterWorldComm( int n );
+    static worldcomm_t & masterWorldComm( int n );
 
     /**
      * return number of processors
@@ -646,7 +650,7 @@ public:
         ( required
           ( name,( std::string ) ) )
         ( optional
-          ( worldcomm, ( WorldComm ), Environment::worldComm() )
+          ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
           ( sub,( std::string ),"" )
           ( prefix,( std::string ),"" )
           ( vm, ( po::variables_map const& ), Environment::vm() )
@@ -874,7 +878,7 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
       ( vm, ( po::variables_map const& ), Environment::vm() )
@@ -889,7 +893,7 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -915,7 +919,7 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -941,7 +945,7 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -968,7 +972,7 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -994,7 +998,7 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -1020,7 +1024,7 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -1065,7 +1069,7 @@ BOOST_PARAMETER_FUNCTION(
       ( name,( std::string ) )
       ( in_out( opt ),* ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
