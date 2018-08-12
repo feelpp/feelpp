@@ -157,6 +157,7 @@ Mesh<Shape, T, Tag>::Mesh( worldcomm_ptr_t const& worldComm )
     M_tool_localization( std::make_shared<Localization<self_type>>() )
 {
     VLOG(2) << "[Mesh] constructor called\n";
+    CHECK( this->hasWorldComm() ) << "Invalid mesh worldComm";
 }
 template<typename Shape, typename T, int Tag>
 void

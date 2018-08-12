@@ -119,8 +119,8 @@ public:
     //! comparison of worldcomm
     bool operator==( WorldComm const& wc ) const;
 
-    static self_ptrtype New() { return self_ptrtype(new self_type); }
-    static self_ptrtype New( super const& s ) { return self_ptrtype(new self_type( s )); }
+    static self_ptrtype New() { return std::make_shared<self_type>(); }
+    static self_ptrtype New( super const& s ) { return std::make_shared<self_type>( s ); }
 
     worldcomm_ptr_t clone() const { return std::make_shared<worldcomm_t>( *this ); }
 

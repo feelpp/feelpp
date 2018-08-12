@@ -103,11 +103,11 @@ public:
 
     VectorEigen();
 
-    VectorEigen( size_type __s, worldcomm_ptr_t& _worldComm = Environment::worldCommPtr() );
+    VectorEigen( size_type __s, worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() );
 
     VectorEigen( datamap_ptrtype const& dm );
 
-    VectorEigen( size_type __s, size_type __n_local, worldcomm_ptr_t& _worldComm = Environment::worldCommPtr() );
+    VectorEigen( size_type __s, size_type __n_local, worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() );
 
     VectorEigen( VectorEigen const & m );
 

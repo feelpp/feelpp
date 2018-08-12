@@ -273,7 +273,7 @@ public :
             auto U = backend()->newBlockVector(_block=solution, _copy_values=false);
             tic();
             auto r1 = backend( _name=name, _kind=kind, _rebuild=rebuild,
-                               _worldcomm=Environment::worldComm() )->solve( _matrix=M_matrix->getSparseMatrix(),
+                               _worldcomm=Environment::worldCommPtr() )->solve( _matrix=M_matrix->getSparseMatrix(),
                                                                              _rhs=rhs.vectorPtr()->getVector(),
                                                                              _solution=U,
                                                                              _pre=pre,

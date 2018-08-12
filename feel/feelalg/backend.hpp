@@ -205,8 +205,8 @@ public:
      */
     //@{
 
-    Backend( worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
-    Backend( po::variables_map const& vm, std::string const& prefix = "", worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
+    Backend( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
+    Backend( po::variables_map const& vm, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
     Backend( Backend const& ) = default;
     Backend( Backend && ) = default;
     virtual ~Backend();
@@ -222,7 +222,7 @@ public:
 #else
         BackendType = BACKEND_GMM
 #endif
-        , worldcomm_ptr_t& worldComm=Environment::worldCommPtr()
+        , worldcomm_ptr_t const& worldComm=Environment::worldCommPtr()
     );
 
     /**
@@ -232,10 +232,10 @@ public:
      * \param worldcomm the communicator
      * \return the backend
      */
-    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
+    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
 
-    static FEELPP_DEPRECATED backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
+    static FEELPP_DEPRECATED backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
     /**
      * build a backend
@@ -244,7 +244,7 @@ public:
      * \param worldcomm the communicator
      * \return the backend
      */
-    static FEELPP_DEPRECATED backend_ptrtype build( BackendType bt, std::string const& prefix = "", worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
+    static FEELPP_DEPRECATED backend_ptrtype build( BackendType bt, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
     /**
      * convert a vector into a backend pointer vector
@@ -1554,7 +1554,7 @@ struct BackendManagerDeleter
 
 template<typename T>
 typename Backend<T>::ptrtype
-backend_impl( std::string const& name, std::string const& kind, bool rebuild, worldcomm_ptr_t & worldcomm )
+backend_impl( std::string const& name, std::string const& kind, bool rebuild, worldcomm_ptr_t const& worldcomm )
 {
     // register the BackendManager into Feel::Environment so that it gets the
     // BackendManager is cleared up when the Environment is deleted

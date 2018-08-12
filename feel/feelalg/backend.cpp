@@ -44,7 +44,7 @@
 namespace Feel
 {
 template <typename T>
-Backend<T>::Backend( worldcomm_ptr_t& worldComm )
+Backend<T>::Backend( worldcomm_ptr_t const& worldComm )
     :
     super(worldComm),
 #if defined( FEELPP_HAS_PETSC_H )
@@ -88,7 +88,7 @@ Backend<T>::Backend( worldcomm_ptr_t& worldComm )
 }
 
 template <typename T>
-Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t& worldComm )
+Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& worldComm )
     :
     super( worldComm ),
     M_vm( vm ),
@@ -142,7 +142,7 @@ Backend<T>::clear()
 }
 template <typename T>
 typename Backend<T>::backend_ptrtype
-Backend<T>::build( BackendType bt, worldcomm_ptr_t&worldComm )
+Backend<T>::build( BackendType bt, worldcomm_ptr_t const&worldComm )
 {
     // Build the appropriate solver
     switch ( bt )
@@ -190,7 +190,7 @@ Backend<T>::build( BackendType bt, worldcomm_ptr_t&worldComm )
 
 template <>
 typename Backend<std::complex<double>>::backend_ptrtype
-Backend<std::complex<double>>::build( BackendType bt, worldcomm_ptr_t& worldComm )
+Backend<std::complex<double>>::build( BackendType bt, worldcomm_ptr_t const& worldComm )
 {
     // Build the appropriate solver
     switch ( bt )
@@ -218,14 +218,14 @@ Backend<std::complex<double>>::build( BackendType bt, worldcomm_ptr_t& worldComm
 
 template <typename T>
 typename Backend<T>::backend_ptrtype
-Backend<T>::build( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t& worldComm )
+Backend<T>::build( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     std::string kind = soption( _name="backend" );
     return build( kind, prefix, worldComm );
 }
 template <typename T>
 typename Backend<T>::backend_ptrtype
-Backend<T>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t& worldComm )
+Backend<T>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     if ( kind == "eigen")
         return backend_ptrtype( new BackendEigen<value_type>( Environment::vm(), prefix, worldComm ) );
@@ -248,7 +248,7 @@ Backend<T>::build( std::string const& kind, std::string const& prefix, worldcomm
 
 template <>
 typename Backend<std::complex<double>>::backend_ptrtype
-Backend<std::complex<double>>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t& worldComm )
+Backend<std::complex<double>>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     if ( kind == "eigen")
         return backend_ptrtype( new BackendEigen<value_type>( Environment::vm(), prefix, worldComm ) );
@@ -261,7 +261,7 @@ Backend<std::complex<double>>::build( std::string const& kind, std::string const
 
 template <typename T>
 typename Backend<T>::backend_ptrtype
-Backend<T>::build( BackendType bt, std::string const& prefix, worldcomm_ptr_t& worldComm )
+Backend<T>::build( BackendType bt, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     return build( enumToKind( bt ), prefix, worldComm );
 }

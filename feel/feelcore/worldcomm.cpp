@@ -745,6 +745,16 @@ WorldComm::applyActivityOnlyOn(int _localColor) const
 //-------------------------------------------------------------------------------
 
 worldcomm_ptr_t
+WorldComm::subWorld( int n ) 
+{
+    if ( this->globalSize() == 1 )
+        return this->clone();
+    if ( !hasSubWorlds( n ) )
+        registerSubWorlds( n );
+    return M_subworlds.find(n)->second.second[subWorldId(n)];
+}
+
+worldcomm_ptr_t
 WorldComm::subWorld( int n ) const
 {
     if ( this->globalSize() == 1 )

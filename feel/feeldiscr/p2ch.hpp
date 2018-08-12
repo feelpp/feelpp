@@ -83,8 +83,8 @@ P2ch( std::shared_ptr<MeshType> mesh,
 {
     CHECK( buildExtendedDofTable.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << buildExtendedDofTable.size() << "\n";
     return P2ch_type<Base1,Base2,MeshType>::New( _mesh=mesh,
-                                                   _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ),
-                                                   _extended_doftable=buildExtendedDofTable );
+                                                 _worldscomm=makeWorldsComm( 2,mesh->worldCommPtr() ),
+                                                 _extended_doftable=buildExtendedDofTable );
 }
 
 

@@ -440,10 +440,9 @@ Environment::Environment( int argc, char** argv,
         M_env = std::make_unique<boost::mpi::environment>(argc, argv, false);
 #endif
     }
-
+    CHECK( M_env->initialized()) << "MPI environment failed to initialize properly.";
     S_argc = argc;
     S_argv = argv;
-    
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );

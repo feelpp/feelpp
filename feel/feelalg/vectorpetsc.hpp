@@ -103,7 +103,7 @@ public:
     /**
      * Constructor. Set dimension to \p n and initialize all elements with zero.
      */
-    VectorPetsc ( const size_type n, worldcomm_ptr_t& _worldComm = Environment::worldCommPtr() )
+    VectorPetsc ( const size_type n, worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() )
         :
         super( n, _worldComm ),
         M_destroy_vec_on_exit( true )
@@ -117,7 +117,7 @@ public:
      */
     VectorPetsc ( const size_type n,
                   const size_type n_local,
-                  worldcomm_ptr_t& _worldComm = Environment::worldCommPtr() )
+                  worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() )
         :
         super( n, n_local, _worldComm ),
         M_destroy_vec_on_exit( true )

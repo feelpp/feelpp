@@ -321,7 +321,7 @@ public:
     /**
      * @return the shared_ptr WorldComm
      */
-    static std::shared_ptr<WorldComm> & worldCommPtr()
+    static std::shared_ptr<WorldComm> const& worldCommPtr()
         {
             return S_worldcomm;
         }

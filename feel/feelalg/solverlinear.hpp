@@ -83,12 +83,12 @@ public:
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverLinear ( worldcomm_ptr_t& worldComm = Environment::worldCommPtr() );
+    SolverLinear ( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverLinear ( po::variables_map const& vm, worldcomm_ptr_t& worldComm = Environment::worldCommPtr() );
+    SolverLinear ( po::variables_map const& vm, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     /**
      * Destructor.
@@ -434,7 +434,7 @@ protected:
 /*----------------------- inline functions ----------------------------------*/
 template <typename T>
 inline
-SolverLinear<T>::SolverLinear ( worldcomm_ptr_t& worldComm ) :
+SolverLinear<T>::SolverLinear ( worldcomm_ptr_t const& worldComm ) :
     super( worldComm ),
     M_solver_type         ( GMRES ),
     M_preconditioner_type ( LU_PRECOND ),
@@ -448,7 +448,7 @@ SolverLinear<T>::SolverLinear ( worldcomm_ptr_t& worldComm ) :
 
 template <typename T>
 inline
-SolverLinear<T>::SolverLinear ( po::variables_map const& vm, worldcomm_ptr_t& worldComm ) :
+SolverLinear<T>::SolverLinear ( po::variables_map const& vm, worldcomm_ptr_t const& worldComm ) :
     super( worldComm ),
     M_vm( vm ),
     M_solver_type         ( GMRES ),

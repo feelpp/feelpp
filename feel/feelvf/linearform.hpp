@@ -1020,7 +1020,7 @@ struct LFAssign
     template<typename SpaceType>
     void operator()( std::shared_ptr<SpaceType> const& X ) const
     {
-        if ( M_lf.testSpace()->worldsComm()[M_index].isActive() )
+        if ( M_lf.testSpace()->worldsComm()[M_index]->isActive() )
         {
             DVLOG(2) << "expression has test functions ? :"
                           << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result
