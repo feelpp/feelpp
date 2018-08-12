@@ -147,12 +147,12 @@ public:
     /**
      *  Constructor. Initializes Petsc data structures
      */
-    SolverLinearPetsc ( worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
+    SolverLinearPetsc ( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
     /**
      *  Constructor. Initializes Petsc data structures
      */
-    SolverLinearPetsc ( po::variables_map const& vm, worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
+    SolverLinearPetsc ( po::variables_map const& vm, worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
     /**
      * Destructor.
@@ -322,7 +322,7 @@ private:
 /*----------------------- functions ----------------------------------*/
 template <typename T>
 inline
-SolverLinearPetsc<T>::SolverLinearPetsc ( worldcomm_ptr_t& worldComm )
+SolverLinearPetsc<T>::SolverLinearPetsc ( worldcomm_ptr_t const& worldComm )
     :
     super( worldComm ),
     M_constant_null_space( false )
@@ -336,7 +336,7 @@ SolverLinearPetsc<T>::SolverLinearPetsc ( worldcomm_ptr_t& worldComm )
 
 template <typename T>
 inline
-SolverLinearPetsc<T>::SolverLinearPetsc ( po::variables_map const& vm, worldcomm_ptr_t& worldComm )
+SolverLinearPetsc<T>::SolverLinearPetsc ( po::variables_map const& vm, worldcomm_ptr_t const& worldComm )
     :
     super( vm, worldComm ),
     M_constant_null_space( false )

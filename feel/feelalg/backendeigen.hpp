@@ -97,9 +97,9 @@ public:
 
     // -- CONSTRUCTOR --
     BackendEigen();
-    BackendEigen( worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
+    BackendEigen( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
     BackendEigen( po::variables_map const& vm, std::string const& prefix = "",
-                  worldcomm_ptr_t& worldComm=Environment::worldCommPtr() );
+                  worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
     // -- FACTORY METHODS --
     sparse_matrix_ptrtype
@@ -266,7 +266,7 @@ private:
 
 // -- CONSTRUCTOR --
 template<typename T, int _Options>
-BackendEigen<T,_Options>::BackendEigen( worldcomm_ptr_t& _worldComm )
+BackendEigen<T,_Options>::BackendEigen( worldcomm_ptr_t const& _worldComm )
     :
     super(_worldComm)
 {
@@ -277,7 +277,7 @@ BackendEigen<T,_Options>::BackendEigen( worldcomm_ptr_t& _worldComm )
 }
 
 template<typename T, int _Options>
-BackendEigen<T,_Options>::BackendEigen( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t& _worldComm  )
+BackendEigen<T,_Options>::BackendEigen( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& _worldComm  )
     :
     super( vm, prefix, _worldComm )
 {

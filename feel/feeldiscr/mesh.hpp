@@ -1023,7 +1023,7 @@ public:
     //!
     //! exporter to VTK data structure
     //!
-    typename MeshBase::vtk_export_type exportVTK( bool exportMarkers, std::string const& vtkFieldNameMarkers ) const;
+    typename MeshBase::vtk_export_type exportVTK( bool exportMarkers, std::string const& vtkFieldNameMarkers ) const override;
 #endif // FEELPP_HAS_VTK
 
     //!

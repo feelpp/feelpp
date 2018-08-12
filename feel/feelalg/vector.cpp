@@ -33,7 +33,7 @@
 namespace Feel
 {
 template <typename T>
-Vector<T>::Vector( worldcomm_ptr_t& _worldComm ) :
+Vector<T>::Vector( worldcomm_ptr_t const& _worldComm ) :
     M_is_closed( false ),
     M_is_initialized( false ),
     M_map ( new datamap_type( _worldComm ) )
@@ -56,7 +56,7 @@ Vector<T>::Vector( datamap_ptrtype const& dm ) :
 
 
 template <typename T>
-Vector<T>::Vector ( const size_type n, worldcomm_ptr_t& _worldComm )
+Vector<T>::Vector ( const size_type n, worldcomm_ptr_t const& _worldComm )
     :
     M_is_closed( false ),
     M_is_initialized( false ),
@@ -68,7 +68,7 @@ Vector<T>::Vector ( const size_type n, worldcomm_ptr_t& _worldComm )
 template <typename T>
 Vector<T>::Vector ( const size_type n,
                     const size_type n_local,
-                    worldcomm_ptr_t& _worldComm )
+                    worldcomm_ptr_t const& _worldComm )
     :
     M_is_closed( false ),
     M_is_initialized( false ),

@@ -43,6 +43,8 @@ MeshBase::MeshBase( uint16_type topoDim, uint16_type realDim, worldcomm_ptr_t co
     M_n_parts( 1 )
 {
     DVLOG(2) << "[MeshBase] constructor...\n";
+    DVLOG(2) << "[MeshBase] worldcomm:" << worldComm->globalRank() ;
+    CHECK( worldComm ) << "invalid mesh worldcomm";
 }
 
 

@@ -554,10 +554,10 @@ public:
         addRegions( std::string const& prefix, std::string const& prefixfname )
         {
             VLOG(1) << "[timeset] Adding regions...\n";
-            WorldComm const& meshComm = (M_mesh.get()->worldComm().numberOfSubWorlds() > 1)?
+            worldcomm_ptr_t meshComm = (M_mesh.get()->worldComm().numberOfSubWorlds() > 1)?
                 M_mesh.get()->worldComm().subWorld(M_mesh.get()->worldComm().numberOfSubWorlds()) :
-                M_mesh.get()->worldComm();
-            this->updateScalarP0( std::vector<WorldComm>(1,meshComm) );
+                M_mesh.get()->worldCommPtr();
+            this->updateScalarP0( makeWorldsComm(1,meshComm) );
 
             VLOG(1) << "[timeset] adding pid...\n";
             this->add( prefixvm(prefix,"pid"), prefixvm(prefixfname,"pid"),  regionProcess( M_scalar_p0 ) );
@@ -1310,7 +1310,7 @@ public:
 
         //@}
 
-        FEELPP_NO_EXPORT void updateScalarP0( std::vector<WorldComm> const& worldsComm )
+        FEELPP_NO_EXPORT void updateScalarP0( worldscomm_ptr_t const& worldsComm )
         {
             if ( !M_ts->M_scalar_p0 )
             {

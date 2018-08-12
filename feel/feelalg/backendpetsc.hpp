@@ -90,7 +90,7 @@ public:
 
 
     // -- CONSTRUCTOR --
-    BackendPetsc( worldcomm_ptr_t& worldComm=Environment::worldCommPtr() )
+    BackendPetsc( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() )
         :
         super( worldComm ),
         M_solver_petsc( worldComm )
@@ -100,7 +100,7 @@ public:
     }
 
     BackendPetsc( po::variables_map const& vm, std::string const& prefix = "",
-                  worldcomm_ptr_t& worldComm=Environment::worldCommPtr() )
+                  worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() )
         :
         super( vm, prefix, worldComm ),
         M_solver_petsc( vm, worldComm )

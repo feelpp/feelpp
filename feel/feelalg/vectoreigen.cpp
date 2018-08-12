@@ -55,7 +55,7 @@ VectorEigen<T>::VectorEigen()
 }
 
 template <typename T>
-VectorEigen<T>::VectorEigen( size_type __s, worldcomm_ptr_t& _worldComm )
+VectorEigen<T>::VectorEigen( size_type __s, worldcomm_ptr_t const& _worldComm )
     :
     super1( __s, _worldComm ),
     M_vec( __s )
@@ -74,7 +74,7 @@ VectorEigen<T>::VectorEigen( datamap_ptrtype const& dm )
 }
 
 template <typename T>
-VectorEigen<T>::VectorEigen( size_type __s, size_type __n_local, worldcomm_ptr_t& _worldComm  )
+VectorEigen<T>::VectorEigen( size_type __s, size_type __n_local, worldcomm_ptr_t const& _worldComm  )
     :
     super1( __s, __n_local, _worldComm ),
     M_vec( __s )

@@ -90,7 +90,7 @@ struct BFAssign2
     {
         DVLOG(2) << "[BFAssign2::operator()] start loop on trial spaces against test space index: " << M_test_index << "\n";
 
-        if ( M_bf.testSpace()->worldsComm()[M_test_index].isActive() )
+        if ( M_bf.testSpace()->worldsComm()[M_test_index]->isActive() )
         {
             fusion::for_each( M_bf.trialSpace()->functionSpaces(),
                               make_bfassign1( M_bf, M_expr, X, M_test_index ) );
@@ -1800,7 +1800,7 @@ template<typename BFType, typename ExprType, typename TestSpaceType>
 template<typename SpaceType>
 void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( std::shared_ptr<SpaceType> const& trial ) const
 {
-    if ( M_bf.testSpace()->worldsComm()[M_test_index].isActive() )
+    if ( M_bf.testSpace()->worldsComm()[M_test_index]->isActive() )
     {
         DVLOG(2) << "[BFAssign1::operator()] expression has test functions index "
                       << M_test_index << " : "
@@ -1874,7 +1874,7 @@ template<typename BFType, typename ExprType, typename TrialSpaceType>
 template<typename SpaceType>
 void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( std::shared_ptr<SpaceType> const& test ) const
 {
-    if ( M_bf.testSpace()->worldsComm()[M_test_index].isActive() )
+    if ( M_bf.testSpace()->worldsComm()[M_test_index]->isActive() )
     {
 
         DVLOG(2) << "[BFAssign3::operator()] expression has trial functions index "
