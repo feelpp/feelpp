@@ -120,7 +120,7 @@ public :
             //po::variables_map const& vm=Environment::vm(),
             std::string const& prefix="",
             //std::string exportName="ExportMeshALE",
-            WorldComm & worldcomm=Environment::worldComm(),
+            worldcomm_ptr_t const& worldcomm=Environment::worldCommPtr(),
             bool moveGhostEltFromExtendedStencil=false,
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
@@ -344,7 +344,7 @@ BOOST_PARAMETER_FUNCTION(
       ) // required
     ( optional
       ( prefix,            (std::string), std::string("") )
-      ( worldcomm,         (WorldComm), Environment::worldComm() )
+      ( worldcomm,         (worldcomm_ptr_t), Environment::worldCommPtr() )
       ( extended_doftable, (bool), true )
       ( directory,         (ModelBaseRepository),  ModelBaseRepository() )
       ) // optionnal

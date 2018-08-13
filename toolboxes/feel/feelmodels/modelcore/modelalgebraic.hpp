@@ -176,7 +176,7 @@ public :
 
 
     ModelAlgebraic( std::string _theprefix,
-                    WorldComm & _worldComm=Environment::worldComm(),
+                    worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
                     std::string const& subPrefix="",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
 

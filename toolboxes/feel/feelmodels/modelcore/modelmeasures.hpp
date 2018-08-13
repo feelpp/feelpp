@@ -40,7 +40,7 @@ namespace FeelModels
 class ModelMeasuresIO
 {
 public :
-    ModelMeasuresIO( std::string const& pathFile, WorldComm const& worldComm /*= Environment::worldComm()*/ );
+    ModelMeasuresIO( std::string const& pathFile, worldcomm_ptr_t const& worldComm /*= Environment::worldComm()*/ );
     ModelMeasuresIO( ModelMeasuresIO const& ) = default;
     void clear();
     FEELPP_DEPRECATED void start() {}

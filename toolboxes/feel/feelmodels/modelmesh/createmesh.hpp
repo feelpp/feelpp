@@ -38,7 +38,7 @@ namespace FeelModels
 {
     template <typename MeshType>
     std::shared_ptr<MeshType>
-    reloadMesh(std::string const& nameFile, WorldComm const& worldComm, int straighten=1 );
+    reloadMesh(std::string const& nameFile, worldcomm_ptr_t const& worldComm, int straighten=1 );
 
     template <typename MeshType>
     void

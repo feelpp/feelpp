@@ -7,10 +7,10 @@
 namespace Feel {
 
 
-TimerTool::TimerTool( std::string fileName, WorldComm const& worldComm )
+TimerTool::TimerTool( std::string fileName, worldcomm_ptr_t const& worldComm )
     :
     TimerToolBase(),
-    M_worldComm( const_cast<WorldComm&>(worldComm).shared_from_this() ),
+    M_worldComm( worldComm ),
     M_activeTimers(1,false),
     M_timer(1),
     M_tElapsedCurrent(1,0),

@@ -65,7 +65,7 @@ private :
 struct ModelBaseUpload
 {
     ModelBaseUpload() = default;
-    ModelBaseUpload( std::string const& desc, std::string const& basePath, WorldComm & worldComm );
+    ModelBaseUpload( std::string const& desc, std::string const& basePath, worldcomm_ptr_t const& worldComm );
     ModelBaseUpload( ModelBaseUpload const& ) = default;
     ModelBaseUpload( ModelBaseUpload && ) = default;
 
@@ -102,7 +102,7 @@ public :
     //! The worldcomm must be allocated via shared_ptr. The WorldComm can be retrieved via \c shared_from_this()
     //!
     ModelBase( std::string const& prefix,
-               WorldComm& worldComm = Environment::worldComm(),
+               worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
                ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
@@ -110,7 +110,8 @@ public :
     virtual ~ModelBase();
 
     // worldcomm
-    worldcomm_ptr_t  worldCommPtr();
+    worldcomm_ptr_t const&  worldCommPtr() const;
+    worldcomm_ptr_t & worldCommPtr();
     worldcomm_t & worldComm();
     worldcomm_t const& worldComm() const;
     worldscomm_ptr_t & worldsComm();

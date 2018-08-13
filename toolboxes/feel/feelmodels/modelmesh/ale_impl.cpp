@@ -75,7 +75,7 @@ buildSpaceHigh(std::shared_ptr<SpaceLowType> spaceLow, bool moveGhostEltFromExte
 
 
 template < class Convex, int Order >
-ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, WorldComm & worldcomm, bool moveGhostEltFromExtendedStencil,
+ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t const& worldcomm, bool moveGhostEltFromExtendedStencil,
                         ModelBaseRepository const& modelRep )
     :
     super_type( mesh,prefix,worldcomm,moveGhostEltFromExtendedStencil,modelRep ),

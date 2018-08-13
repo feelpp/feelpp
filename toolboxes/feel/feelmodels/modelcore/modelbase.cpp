@@ -65,7 +65,7 @@ ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumPr
     ToolboxesDetail::removeTrailingSlash( M_exprRepository );
 }
 
-ModelBaseUpload::ModelBaseUpload( std::string const& desc, std::string const& basePath, WorldComm & worldComm )
+ModelBaseUpload::ModelBaseUpload( std::string const& desc, std::string const& basePath, worldcomm_ptr_t const& worldComm )
     :
     M_basePath( basePath )
 {
@@ -249,13 +249,13 @@ ModelBaseUpload::print() const
 
 
 ModelBase::ModelBase( std::string const& prefix,
-                      WorldComm & worldComm,
+                      worldcomm_ptr_t const& worldComm,
                       std::string const& subPrefix,
                       ModelBaseRepository const& modelRep )
     :
-    M_worldComm(worldComm.shared_from_this()),
-    M_worldsComm( {worldComm.shared_from_this() } ),
-    M_localNonCompositeWorldsComm( { worldComm.shared_from_this() } ),
+    M_worldComm(worldComm),
+    M_worldsComm( {worldComm} ),
+    M_localNonCompositeWorldsComm( { worldComm } ),
     M_prefix( prefix ),
     M_subPrefix( subPrefix ),
     M_modelRepository( modelRep ),
@@ -270,7 +270,7 @@ ModelBase::ModelBase( std::string const& prefix,
     M_timersSaveFileAll( boption(_name="timers.save-all",_prefix=this->prefix()) ),
     M_scalabilitySave( boption(_name="scalability-save",_prefix=this->prefix()) ),
     M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix()) ),
-    M_upload( soption(_name="upload",_prefix=this->prefix()), this->repository().rootWithoutNumProc(), *M_worldComm )
+    M_upload( soption(_name="upload",_prefix=this->prefix()), this->repository().rootWithoutNumProc(), M_worldComm )
 {
     if (Environment::vm().count(prefixvm(this->prefix(),"scalability-path")))
         M_scalabilityPath = Environment::vm()[prefixvm(this->prefix(),"scalability-path")].as< std::string >();
@@ -293,7 +293,9 @@ ModelBase::ModelBase( std::string const& prefix,
 ModelBase::~ModelBase()
 {}
 
-ModelBase::worldcomm_ptr_t 
+ModelBase::worldcomm_ptr_t  const&
+ModelBase::worldCommPtr() const { return M_worldComm; }
+ModelBase::worldcomm_ptr_t  &
 ModelBase::worldCommPtr() { return M_worldComm; }
 WorldComm &
 ModelBase::worldComm() { return *M_worldComm; }
@@ -399,7 +401,7 @@ ModelBase::addTimerTool(std::string const& key,std::string const& fileName) cons
     CHECK( M_mapTimerTool.find( key ) == M_mapTimerTool.end() ) << "key already exist";
     if ( M_timersActivated )
     {
-        auto myTimerTool = std::make_shared<TimerTool>(fileName,this->worldComm());
+        auto myTimerTool = std::make_shared<TimerTool>(fileName,this->worldCommPtr());
         myTimerTool->setReinitSaveFile( this->scalabilityReinitSaveFile() );
         myTimerTool->setSaveFileMasterRank( M_timersSaveFileMasterRank || M_timersSaveFileAll );
         myTimerTool->setSaveFileMax( M_timersSaveFileMax || M_timersSaveFileAll );

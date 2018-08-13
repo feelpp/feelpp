@@ -41,7 +41,7 @@ namespace FeelModels
 
 template <typename MeshType>
 std::shared_ptr<MeshType>
-reloadMesh(std::string const& nameFile, WorldComm & worldComm, int straighten )
+reloadMesh(std::string const& nameFile, worldcomm_ptr_t const& worldComm, int straighten )
 {
     typedef MeshType mesh_type;
 
@@ -83,7 +83,7 @@ createMeshModel( ModelNumerical & model, std::shared_ptr<MeshType> & mesh, std::
         {
             fmpath = (fs::path( model.restartPath() ) / fs::path( modelMeshRestartFile/*model.fileNameMeshPath()*/)).string();
         }
-        mesh = reloadMesh<mesh_type>(fmpath,model.worldComm());
+        mesh = reloadMesh<mesh_type>(fmpath,model.worldCommPtr());
     }
     else
     {
@@ -98,9 +98,9 @@ createMeshModel( ModelNumerical & model, std::shared_ptr<MeshType> & mesh, std::
             if ( rebuildPartition && meshFileExt != ".msh" )
                 CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
 
-            mesh = loadMesh(_mesh=new mesh_type( model.worldComm() ),
+            mesh = loadMesh(_mesh=new mesh_type( model.worldCommPtr() ),
                             _filename=model.meshFile(),
-                            _worldcomm=model.worldComm(),
+                            _worldcomm=model.worldCommPtr(),
                             _prefix=model.prefix(),
                             _rebuild_partitions=rebuildPartition,
                             _rebuild_partitions_filename=mshfileRebuildPartitions,
@@ -127,11 +127,11 @@ createMeshModel( ModelNumerical & model, std::shared_ptr<MeshType> & mesh, std::
 
             gmsh_ptrtype geodesc = geo( _filename=model.geoFile(),
                                         _prefix=model.prefix(),
-                                        _worldcomm=model.worldComm() );
+                                        _worldcomm=model.worldCommPtr() );
             // allow to have a geo and msh file with a filename equal to prefix
             geodesc->setPrefix(model.prefix());
             mesh = createGMSHMesh(_mesh=new mesh_type,_desc=geodesc,
-                                  _prefix=model.prefix(),_worldcomm=model.worldComm(),
+                                  _prefix=model.prefix(),_worldcomm=model.worldCommPtr(),
                                   _partitions=model.worldComm().localSize(),
                                   _directory=model.rootRepository() );
 
@@ -173,27 +173,27 @@ createMeshModel( ModelNumerical & model, std::shared_ptr<MeshType> & mesh, std::
 
 }
 
-template std::shared_ptr<Mesh<Simplex<2,1>>> reloadMesh<Mesh<Simplex<2,1>>>( std::string const&, WorldComm &, int );
-template std::shared_ptr<Mesh<Simplex<3,1>>> reloadMesh<Mesh<Simplex<3,1>>>( std::string const&, WorldComm &, int );
-template std::shared_ptr<Mesh<Simplex<1,1,2>>> reloadMesh<Mesh<Simplex<1,1,2>>>( std::string const&, WorldComm &, int );
-template std::shared_ptr<Mesh<Simplex<1,1,3>>> reloadMesh<Mesh<Simplex<1,1,3>>>( std::string const&, WorldComm &, int );
+template std::shared_ptr<Mesh<Simplex<2,1>>> reloadMesh<Mesh<Simplex<2,1>>>( std::string const&, worldcomm_ptr_t const&, int );
+template std::shared_ptr<Mesh<Simplex<3,1>>> reloadMesh<Mesh<Simplex<3,1>>>( std::string const&, worldcomm_ptr_t const&, int );
+template std::shared_ptr<Mesh<Simplex<1,1,2>>> reloadMesh<Mesh<Simplex<1,1,2>>>( std::string const&, worldcomm_ptr_t const&, int );
+template std::shared_ptr<Mesh<Simplex<1,1,3>>> reloadMesh<Mesh<Simplex<1,1,3>>>( std::string const&, worldcomm_ptr_t const&, int );
 template void createMeshModel<Mesh<Simplex<2,1>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<2,1>>> &, std::string const& );
 template void createMeshModel<Mesh<Simplex<3,1>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<3,1>>> &, std::string const& );
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
-template std::shared_ptr<Mesh<Simplex<2,2>>> reloadMesh<Mesh<Simplex<2,2>>>( std::string const&, WorldComm &, int );
-template std::shared_ptr<Mesh<Simplex<3,2>>> reloadMesh<Mesh<Simplex<3,2>>>( std::string const&, WorldComm &, int );
+template std::shared_ptr<Mesh<Simplex<2,2>>> reloadMesh<Mesh<Simplex<2,2>>>( std::string const&, worldcomm_ptr_t const&, int );
+template std::shared_ptr<Mesh<Simplex<3,2>>> reloadMesh<Mesh<Simplex<3,2>>>( std::string const&, worldcomm_ptr_t const&, int );
 template void createMeshModel<Mesh<Simplex<2,2>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<2,2>>> &, std::string const& );
 template void createMeshModel<Mesh<Simplex<3,2>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<3,2>>> &, std::string const& );
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
-template std::shared_ptr<Mesh<Simplex<2,3>>> reloadMesh<Mesh<Simplex<2,3>>>( std::string const&, WorldComm &, int );
-template std::shared_ptr<Mesh<Simplex<3,3>>> reloadMesh<Mesh<Simplex<3,3>>>( std::string const&, WorldComm &, int );
+template std::shared_ptr<Mesh<Simplex<2,3>>> reloadMesh<Mesh<Simplex<2,3>>>( std::string const&, worldcomm_ptr_t const&, int );
+template std::shared_ptr<Mesh<Simplex<3,3>>> reloadMesh<Mesh<Simplex<3,3>>>( std::string const&, worldcomm_ptr_t const&, int );
 template void createMeshModel<Mesh<Simplex<2,3>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<2,3>>> &, std::string const& );
 template void createMeshModel<Mesh<Simplex<3,3>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<3,3>>> &, std::string const& );
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 4 )
-template std::shared_ptr<Mesh<Simplex<2,4>>> reloadMesh<Mesh<Simplex<2,4>>>( std::string const&, WorldComm &, int );
-template std::shared_ptr<Mesh<Simplex<3,4>>> reloadMesh<Mesh<Simplex<3,4>>>( std::string const&, WorldComm &, int );
+template std::shared_ptr<Mesh<Simplex<2,4>>> reloadMesh<Mesh<Simplex<2,4>>>( std::string const&, worldcomm_ptr_t const&, int );
+template std::shared_ptr<Mesh<Simplex<3,4>>> reloadMesh<Mesh<Simplex<3,4>>>( std::string const&, worldcomm_ptr_t const&, int );
 template void createMeshModel<Mesh<Simplex<2,4>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<2,4>>> &, std::string const& );
 template void createMeshModel<Mesh<Simplex<3,4>>>( ModelNumerical&, std::shared_ptr<Mesh<Simplex<3,4>>> &, std::string const& );
 #endif

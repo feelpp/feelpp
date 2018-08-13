@@ -51,7 +51,7 @@ public :
     typedef typename mesh_fluid_type::shape_type shape_fluid_type;
     typedef typename mesh_solid_type::shape_type shape_solid_type;
 
-    FSIMesh( std::string prefix, WorldComm & worldcomm = Environment::worldComm() );
+    FSIMesh( std::string prefix, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() );
 
     std::string prefix() const { return M_prefix; }
     WorldComm & worldComm() { return *M_worldComm; }
