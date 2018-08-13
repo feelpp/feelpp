@@ -130,11 +130,12 @@ int main(int argc, char**argv )
 
     auto errors = norms( g_str );
     // tag::journal[]
-    // Add a watcher functor for the journal system.
+    // Add an entry watcher functor for the journal system.
     Observer::JournalFeed journal_entry{
         {"error.norm.L2", errors.at("L2")},
         {"error.norm.H1", errors.at("H1")}
     };
+    // end::journal[]
 
     Environment::finalize();
 

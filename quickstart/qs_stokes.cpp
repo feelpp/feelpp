@@ -42,6 +42,7 @@ stokes(SpacePtrType Vh)
     auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f"), "f" );
     auto solution = expr<FEELPP_DIM,1>( checker().solution(), "solution" );
     auto g = checker().check()?solution:expr<FEELPP_DIM,1>( soption(_name="functions.g"), "g" );
+    auto g_str = checker().check()? checker().solution():soption(_name="functions.g");
     toc("Vh");
     // end::mesh_space[]
     
@@ -110,6 +111,15 @@ stokes(SpacePtrType Vh)
     int status = checker().runOnce( norms, rate::hp( mesh->hMax(), Vh->template functionSpace<0>()->fe()->order() ) );
     // end::check[]
 
+    
+    auto errors = norms( g_str );
+    // tag::journal[]
+    Observer::JournalFeed journal_entry{
+        {"error.norm.L2", errors.at("L2")},
+        {"error.norm.H1", errors.at("H1")}
+    };
+    // end::journal[]
+
     return status;
 }
 int main(int argc, char**argv )
@@ -142,5 +152,8 @@ int main(int argc, char**argv )
         // default P2P1: good space
         status = stokes( THch<1>( mesh ) );
     }
+
+    Environment::finalize();
+
     return !status;
 }
