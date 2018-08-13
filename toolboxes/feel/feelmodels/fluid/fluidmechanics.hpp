@@ -344,14 +344,14 @@ public:
     // constructor
     FluidMechanics( std::string const& prefix,
                     bool __buildMesh = true,
-                    WorldComm & _worldComm = Environment::worldComm(),
+                    worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                     std::string const& subPrefix = "",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
     FluidMechanics( self_type const & M ) = default;
 
     static self_ptrtype New( std::string const& prefix,
                              bool buildMesh = true,
-                             WorldComm & worldComm = Environment::worldComm(),
+                             worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
     //___________________________________________________________________________________//

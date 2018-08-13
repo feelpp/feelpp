@@ -40,7 +40,7 @@ namespace FeelModels
 MAXWELL_CLASS_TEMPLATE_DECLARATIONS
 MAXWELL_CLASS_TEMPLATE_TYPE::Maxwell( std::string const& prefix,
                                       bool buildMesh,
-                                      WorldComm const& worldComm,
+                                      worldcomm_ptr_t const& worldComm,
                                       std::string const& subPrefix,
                                       ModelBaseRepository const& modelRep )
     :

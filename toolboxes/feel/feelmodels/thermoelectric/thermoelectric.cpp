@@ -45,7 +45,7 @@ namespace FeelModels
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::ThermoElectric( std::string const& prefix,
                                                     bool buildMesh,
-                                                    WorldComm & worldComm,
+                                                    worldcomm_ptr_t const& worldComm,
                                                     std::string const& subPrefix,
                                                     ModelBaseRepository const& modelRep )
     :

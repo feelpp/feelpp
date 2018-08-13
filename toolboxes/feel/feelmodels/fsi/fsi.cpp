@@ -36,7 +36,7 @@ namespace FeelModels
 {
 
 template< class FluidType, class SolidType >
-FSI<FluidType,SolidType>::FSI(std::string const& prefix,WorldComm & worldComm, std::string const& rootRepository )
+FSI<FluidType,SolidType>::FSI(std::string const& prefix,worldcomm_ptr_t const& worldComm, std::string const& rootRepository )
     :
     super_type( prefix, worldComm, "", self_type::expandStringFromSpec( rootRepository ) ),
     M_meshSize( doption(_name="hsize",_prefix=this->prefix()) ),

@@ -9,7 +9,7 @@ namespace FeelModels {
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 ADVECTION_CLASS_TEMPLATE_TYPE::Advection( 
         std::string const& prefix,
-        WorldComm const& worldComm,
+        worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 : super_type( prefix, worldComm, subPrefix, modelRep )
@@ -33,7 +33,7 @@ ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 typename ADVECTION_CLASS_TEMPLATE_TYPE::self_ptrtype 
 ADVECTION_CLASS_TEMPLATE_TYPE::New( 
         std::string const& prefix,
-        WorldComm & worldComm,
+        worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 {

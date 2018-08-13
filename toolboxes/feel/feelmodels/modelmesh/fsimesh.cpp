@@ -44,7 +44,7 @@ template< class ConvexType >
 FSIMesh<ConvexType>::FSIMesh( std::string prefix, worldcomm_ptr_t const& worldcomm )
     :
     M_prefix( prefix ),
-    M_worldComm( worldcomm.shared_from_this() ),
+    M_worldComm( worldcomm ),
     M_meshSize( 0.1 ),
     M_nPartitions( this->worldComm().localSize() ),
     M_partitioner( ioption(_name="gmsh.partitioner") ),
@@ -122,13 +122,13 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
 #if 1
         auto/*gmsh_ptrtype*/ geodesc = geo( _filename=this->geoPathFSI().string(),
                                             _prefix=this->prefix(),
-                                            _worldcomm=this->worldComm().subWorldCommSeq() );
+                                            _worldcomm=this->worldComm().subWorldCommSeqPtr() );
         // allow to have a geo and msh file with a filename equal to prefix
         geodesc->setPrefix(this->mshPathFSI().stem().string());//this->prefix());
-        auto meshFSI = createGMSHMesh(_mesh=new mesh_type(this->worldComm().subWorldCommSeq()),
+        auto meshFSI = createGMSHMesh(_mesh=new mesh_type(this->worldComm().subWorldCommSeqPtr()),
                                       _desc=geodesc,
                                       _prefix=this->prefix(),
-                                      _worldcomm=this->worldComm().subWorldCommSeq(),
+                                      _worldcomm=this->worldComm().subWorldCommSeqPtr(),
                                       _h=this->meshSize(),
                                       _straighten=false,
                                       _partitions=1/*this->worldComm().subWorldCommSeq().localSize()*/,
@@ -230,7 +230,7 @@ FSIMesh<ConvexType>::buildMeshesPartitioning()
             std::cout << "partitioning fluid submesh in " << this->nPartitions() << " part......\n"
                       << "From : " << this->mshPathFluidPart1() << "\n"
                       << "Write : " << this->mshPathFluidPartN() <<"\n";
-            auto fluidmeshSeq = loadMesh(_mesh=new mesh_type(this->worldComm().subWorldCommSeq()), _savehdf5=0,
+            auto fluidmeshSeq = loadMesh(_mesh=new mesh_type(this->worldComm().subWorldCommSeqPtr()), _savehdf5=0,
                                          _filename=this->mshPathFluidPart1().string(),
                                          _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
             PartitionIO<mesh_fluid_type> iofluid( this->mshPathFluidPartN().string() );
@@ -242,7 +242,7 @@ FSIMesh<ConvexType>::buildMeshesPartitioning()
             std::cout << "partitioning structure submesh in " << this->nPartitions() << " part......\n"
                       << "From : " << this->mshPathSolidPart1() << "\n"
                       << "Write : " << this->mshPathSolidPartN() <<"\n";
-            auto solidmeshSeq = loadMesh(_mesh=new mesh_type(this->worldComm().subWorldCommSeq()), _savehdf5=0,
+            auto solidmeshSeq = loadMesh(_mesh=new mesh_type(this->worldComm().subWorldCommSeqPtr()), _savehdf5=0,
                                          _filename=this->mshPathSolidPart1().string(),
                                          _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
             PartitionIO<mesh_solid_type> iosolid( this->mshPathSolidPartN().string() );
