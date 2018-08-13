@@ -94,10 +94,10 @@ public:
             //M_journal_uuid = Env::randomUUID();
             std::time_t t = std::time(nullptr);
             const std::string tag = "journal.time";
-            M_journal_ptree.put( "journal.version", FEELPP_DB_JOURNAL_VERSION );
-            M_journal_ptree.put( tag + ".time_t", t );
-            M_journal_ptree.put( tag + ".gm", std::put_time(std::gmtime(&t), "%c %Z") );
-            M_journal_ptree.put( tag + ".local", std::put_time(std::localtime(&t), "%c %Z") );
+            S_journal_ptree.put( "journal.version", FEELPP_DB_JOURNAL_VERSION );
+            S_journal_ptree.put( tag + ".time_t", t );
+            S_journal_ptree.put( tag + ".gm", std::put_time(std::gmtime(&t), "%c %Z") );
+            S_journal_ptree.put( tag + ".local", std::put_time(std::localtime(&t), "%c %Z") );
             // Create a signal for simulation info.
             signalStaticNew< notify_type (), JournalMerge >( "journalManager" );
         }
@@ -117,14 +117,20 @@ public:
         //! \param name the file name.
         static void journalFilename( const std::string& name )
         {
-            M_journal_filename = name;
+            S_journal_filename = name;
         }
         
         //! Set the journal mode.
-        //! \param m automatic mode true or false
+        //! \param m automatic mode true or false.
         static void journalAutoMode( bool m )
         {
-            M_journal_auto = m;
+            S_journal_auto = m;
+        }
+
+        //! Activate or deactivate the journal.
+        static void journalEnable( bool m )
+        {
+            S_journal_enabled = m;
         }
 
         //! @}
@@ -135,14 +141,21 @@ public:
         //! Get the journal filename (no ext).
         static const std::string& journalFilename()
         {
-            return M_journal_filename;
+            return S_journal_filename;
         }
         
         //! Get the current journal mode status.
         //! \return true in automatic mode.
         static const bool journalAutoMode()
         {
-            return M_journal_auto;
+            return S_journal_auto;
+        }
+
+        //! Get the journal status.
+        //! \return true if journal is enabled.
+        static const bool journalEnabled()
+        {
+            return S_journal_enabled;
         }
 
         //! Get the current checkpoint counter.
@@ -150,7 +163,7 @@ public:
         static const uint32_t
         journalCurrentCheckpoint()
         {
-            return M_journal_checkpoint;        
+            return S_journal_checkpoint;        
         }
 
         //! @}
@@ -165,16 +178,16 @@ public:
         journalPull( bool parallel = true )
         {
             const pt::ptree& pt_merged = signalStaticPull< notify_type (), JournalMerge >( "journalManager" );
-            ptMerge( M_journal_ptree, pt_merged );
+            ptMerge( S_journal_ptree, pt_merged );
 
             if( Env::isParallel() and parallel )
             {
                 pt::ptree p;
-                mpi::reduce( Env::worldComm(), M_journal_ptree, p, ptMerge, Env::masterRank() );
-                M_journal_ptree = p;
+                mpi::reduce( Env::worldComm(), S_journal_ptree, p, ptMerge, Env::masterRank() );
+                S_journal_ptree = p;
             }
 
-            return M_journal_ptree;
+            return S_journal_ptree;
         }
 
         //! Save the global property tree into a json file.
@@ -186,8 +199,8 @@ public:
 
             if( Env::isMasterRank() )
             {
-                journalJSONSave( M_journal_filename );
-                journalDBSave( M_journal_filename );
+                journalJSONSave( S_journal_filename );
+                journalDBSave( S_journal_filename );
             }
         }
         
@@ -209,18 +222,22 @@ public:
                            bool save = false,
                            const std::string& filename="" )
         {
-            journalPull( parallel );
+            if( S_journal_enabled )
+            {
+                S_journal_checkpoint++;
 
-            std::time_t t = std::time(nullptr);
-            const std::string tag = "checkpoints.checkpoint-" + std::to_string( M_journal_checkpoint ) + ".time";
-            M_journal_ptree.put( "checkpoints.number", M_journal_checkpoint);
-            M_journal_ptree.put( tag + ".time_t", t );
-            M_journal_ptree.put( tag + ".gm", std::put_time(std::gmtime(&t), "%c %Z") );
-            M_journal_ptree.put( tag + ".local", std::put_time(std::localtime(&t), "%c %Z") );
-            
-            M_journal_checkpoint++;
-            if( save ) 
-                journalSave( filename );
+                journalPull( parallel );
+
+                std::time_t t = std::time(nullptr);
+                const std::string tag = "journal.checkpoints.checkpoint-" + std::to_string( S_journal_checkpoint ) + ".time";
+                S_journal_ptree.put( "journal.checkpoints.number", S_journal_checkpoint);
+                S_journal_ptree.put( tag + ".time_t", t );
+                S_journal_ptree.put( tag + ".gm", std::put_time(std::gmtime(&t), "%c %Z") );
+                S_journal_ptree.put( tag + ".local", std::put_time(std::localtime(&t), "%c %Z") );
+
+                if( save ) 
+                    journalSave( filename );
+            }
         }
 
         //! Create the journal.
@@ -238,49 +255,49 @@ public:
         //! Set the mongodb database name.
         static void journalSetDBName( const std::string& dbname = "feelpp")
         {
-            M_journal_db_config.name = dbname;
+            S_journal_db_config.name = dbname;
         }
 
         //! Set the mongodb host.
         static void journalSetDBHost( const std::string&  host = "localhost")
         {
-            M_journal_db_config.host = host;
+            S_journal_db_config.host = host;
         }
 
         //! Set the mongodb user name.
         static void journalSetDBUsername( const std::string& user = "")
         {
-            M_journal_db_config.user = user;
+            S_journal_db_config.user = user;
         }
 
         //! Set the mongodb user password.
         static void journalSetDBPassword( const std::string& password = "")
         {
-            M_journal_db_config.password = password;
+            S_journal_db_config.password = password;
         }
 
         //! Set the mongodb port.
         static void journalSetDBPort( const std::string& port = "27017")
         {
-            M_journal_db_config.port = port;
+            S_journal_db_config.port = port;
         }
 
         //! Set the collection used to authenticate.
         static void journalSetDBAuthsrc( const std::string& authsrc = "admin")
         {
-            M_journal_db_config.authsrc = authsrc;
+            S_journal_db_config.authsrc = authsrc;
         }
         
         //! Set mongodb collection to use for the journal.
         static void journalSetDBCollection( const std::string& dbname = "journal")
         {
-            M_journal_db_config.name = dbname;
+            S_journal_db_config.name = dbname;
         }
         
         //! Set mongodb collection to use for the journal.
         static void journalDBConfig( const MongoConfig& mc )
         {
-            M_journal_db_config = mc;
+            S_journal_db_config = mc;
         }
         //! @}
 
@@ -292,12 +309,15 @@ private:
         static void
         journalJSONSave( const std::string& filename = "" )
         {
-            if( not filename.empty() )
-                M_journal_filename = filename;
+            if( S_journal_enabled )
+            {
+                if( not filename.empty() )
+                    S_journal_filename = filename;
 
-            //std::cout << "[Observer: Journal] generate report (JSON).";
-            if( not M_journal_ptree.empty() )
-                write_json( M_journal_filename + ".json", M_journal_ptree );
+                //std::cout << "[Observer: Journal] generate report (JSON).";
+                if( not S_journal_ptree.empty() )
+                    write_json( S_journal_filename + ".json", S_journal_ptree );
+            }
         }
 
         //! Save the json in a mongodb database. 
@@ -307,33 +327,36 @@ private:
         static void
         journalDBSave( const std::string& filename = "" )
         {
-            if( not filename.empty() )
-                M_journal_filename = filename;
-            auto vm =  Env::vm();
-            bool enable = vm["journal.database"].template as<bool>();
-            if( enable )
+            if( S_journal_enabled )
             {
+                if( not filename.empty() )
+                    S_journal_filename = filename;
+                auto vm =  Env::vm();
+                bool enable = vm["journal.database"].template as<bool>();
+                if( enable )
+                {
 #if defined(FEELPP_HAS_MONGOCXX )
-                using bsoncxx::builder::stream::close_array;
-                using bsoncxx::builder::stream::close_document;
-                using bsoncxx::builder::stream::document;
-                using bsoncxx::builder::stream::finalize;
-                using bsoncxx::builder::stream::open_array;
-                using bsoncxx::builder::stream::open_document;
-                auto uri_str = M_journal_db_config();
-                mongocxx::uri uri( uri_str );
-                mongocxx::client client(uri);
-                mongocxx::database journaldb = client[M_journal_db_config.name];
-                auto journal = journaldb[M_journal_db_config.collection];
-                //auto builder = bsoncxx::builder::stream::document{};
-                std::ifstream json( M_journal_filename + ".json");
-                std::stringstream jsonbuff;
-                jsonbuff << json.rdbuf();
-                // TODO json is read from file. An improvement would be to extract to add
-                // from_ptree method to avoid disk access.
-                bsoncxx::document::value document = bsoncxx::from_json(jsonbuff.str());
-                bsoncxx::stdx::optional<mongocxx::result::insert_one> result = journal.insert_one(document.view());
+                    using bsoncxx::builder::stream::close_array;
+                    using bsoncxx::builder::stream::close_document;
+                    using bsoncxx::builder::stream::document;
+                    using bsoncxx::builder::stream::finalize;
+                    using bsoncxx::builder::stream::open_array;
+                    using bsoncxx::builder::stream::open_document;
+                    auto uri_str = S_journal_db_config();
+                    mongocxx::uri uri( uri_str );
+                    mongocxx::client client(uri);
+                    mongocxx::database journaldb = client[S_journal_db_config.name];
+                    auto journal = journaldb[S_journal_db_config.collection];
+                    //auto builder = bsoncxx::builder::stream::document{};
+                    std::ifstream json( S_journal_filename + ".json");
+                    std::stringstream jsonbuff;
+                    jsonbuff << json.rdbuf();
+                    // TODO json is read from file. An improvement would be to extract to add
+                    // from_ptree method to avoid disk access.
+                    bsoncxx::document::value document = bsoncxx::from_json(jsonbuff.str());
+                    bsoncxx::stdx::optional<mongocxx::result::insert_one> result = journal.insert_one(document.view());
 #endif
+                }
             }
         }
 
@@ -341,28 +364,32 @@ private:
 
 private:
         //! JSON filename.
-        static std::string M_journal_filename;
+        static std::string S_journal_filename;
         //! Global property tree.
-        static pt::ptree M_journal_ptree;
+        static pt::ptree S_journal_ptree;
 
         //! MongoDB specific attribute. These attributes are set via options.
         //! @{
-        static MongoConfig M_journal_db_config;
+        static MongoConfig S_journal_db_config;
         //! @}
  
         //! Journal automatic mode enable or disable.
-        static bool M_journal_auto;
+        static bool S_journal_enabled;
+
+        //! Journal automatic mode enable or disable.
+        static bool S_journal_auto;
 
         //! checkpoint number
-        static uint32_t M_journal_checkpoint;
+        static uint32_t S_journal_checkpoint;
 };
 
 // Extern explicit instanciation.
-template<> std::string JournalManagerBase<>::M_journal_filename;
-template<> pt::ptree JournalManagerBase<>::M_journal_ptree;
-template<> MongoConfig JournalManagerBase<>::M_journal_db_config;
-template<> bool JournalManagerBase<>::M_journal_auto;
-template<> uint32_t JournalManagerBase<>::M_journal_checkpoint;
+template<> std::string JournalManagerBase<>::S_journal_filename;
+template<> pt::ptree JournalManagerBase<>::S_journal_ptree;
+template<> MongoConfig JournalManagerBase<>::S_journal_db_config;
+template<> bool JournalManagerBase<>::S_journal_enabled;
+template<> bool JournalManagerBase<>::S_journal_auto;
+template<> uint32_t JournalManagerBase<>::S_journal_checkpoint;
 
 // Manager class should be derived from this alias class.
 using JournalManager = JournalManagerBase<>;
