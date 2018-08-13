@@ -493,6 +493,7 @@ Environment::Environment( int argc, char** argv,
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
     
     // Enable auto mode for all observers.
+    Environment::journalEnable( boption("journal") );
     Environment::journalAutoMode( boption("journal.auto") );
     
     // Force environment to connect to the journal.
@@ -634,8 +635,6 @@ Environment::~Environment()
     cout << "[ Stopping Feel++ ] " << tc::green << "application " << S_about.appName()
          << " execution time " << t << "s" << tc::reset << std::endl;
  
-    //Environment::journalFinalize();
-
 #if defined(FEELPP_HAS_HARTS)
     /* if we used hwloc, we free topology data */
     Environment::destroyHwlocTopology();
