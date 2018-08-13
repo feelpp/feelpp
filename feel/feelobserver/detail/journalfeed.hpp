@@ -58,7 +58,8 @@ public:
     //! Create a ptree from initializer list.
     JournalFeed( init_type m )
     {
-        this->journalConnect();
+        if( JournalManager::journalAutoMode() )
+            this->journalConnect();
         for( const auto& kv: m )
         {
             // Visit initializer list value (variant) and transform the value into string.
