@@ -47,7 +47,7 @@ namespace Feel
  * @see Elements, Edges, Points
  */
 template<typename EntityType, typename ElementType>
-class Faces : virtual public CommObject
+class Faces
 {
 public:
 
@@ -55,7 +55,7 @@ public:
     /** @name Typedefs
      */
     //@{
-    using super = CommObject;
+    
     typedef typename ElementType::value_type value_type;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<EntityType::nRealDim-1> >,
                               mpl::identity<typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<0> >,
@@ -130,14 +130,14 @@ public:
 
     Faces( worldcomm_ptr_t  const& worldComm = Environment::worldCommPtr() )
         :
-        super( worldComm ),
+        M_worldComm( worldComm ),
         M_faces(),
         M_needToOrderFaces( false )
     {}
 
     Faces( Faces const & f )
         :
-        super( f ),
+        M_worldComm( f.M_worldComm ),
         M_faces( f.M_faces ),
         M_needToOrderFaces( false )
     {
@@ -163,7 +163,7 @@ public:
     {
         if ( this != &e )
         {
-            super::operator=( e );
+            M_worldComm = e.M_worldComm;
             M_faces = e.M_faces;
             this->buildOrderedFaces();
         }
@@ -195,7 +195,7 @@ public:
 
     WorldComm const& worldCommFaces() const
     {
-        return this->worldComm();
+        return *M_worldComm;
     }
 
     virtual bool isEmpty() const
@@ -719,7 +719,7 @@ public:
 
     void setWorldCommFaces( worldcomm_ptr_t const& _worldComm )
     {
-        this->setWorldComm( _worldComm );
+        M_worldComm = _worldComm;
     }
 
     void updateOrderedFace()
@@ -779,6 +779,7 @@ private:
         }
 
 private:
+    worldcomm_ptr_t M_worldComm;
     faces_type M_faces;
     ordered_faces_reference_wrapper_type M_orderedFaces;
     bool M_needToOrderFaces;

@@ -45,7 +45,7 @@ namespace Feel
   @see
 */
 template<typename EdgeType,typename FaceType>
-class Edges : virtual public CommObject
+class Edges 
 {
 public:
 
@@ -53,7 +53,6 @@ public:
     /** @name Typedefs
      */
     //@{
-    using super = CommObject;
     typedef typename FaceType::value_type value_type;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<EdgeType::nRealDim>, mpl::int_<3> >,
                               mpl::identity<GeoElement1D<3, EdgeType,SubFaceOfMany<FaceType>,value_type > >,
@@ -81,14 +80,14 @@ public:
 
     Edges( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
-        super( worldComm ),
+        M_worldComm( worldComm ),
         M_edges(),
         M_needToOrderEdges( false )
     {}
 
     Edges( Edges const & f )
         :
-        super( f ),
+        M_worldComm( f.M_worldComm ),
         M_edges( f.M_edges ),
         M_needToOrderEdges( false )
     {
@@ -139,7 +138,7 @@ public:
      */
     WorldComm const& worldCommEdges() const
     {
-        return this->worldComm();
+        return *M_worldComm;
     }
 
     /**
@@ -431,7 +430,7 @@ public:
 
     void setWorldCommEdges( worldcomm_ptr_t const& _worldComm )
     {
-        this->setWorldComm( _worldComm );
+        M_worldComm  = _worldComm;
     }
 
     void updateOrderedEdges()
@@ -490,6 +489,7 @@ private:
         }
 
 private:
+    worldcomm_ptr_t M_worldComm;
     edges_type M_edges;
     ordered_edges_reference_wrapper_type M_orderedEdges;
     bool M_needToOrderEdges;

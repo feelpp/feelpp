@@ -273,7 +273,7 @@ public:
     //! prints information on \p out on the WorldComm
     void showMe( std::ostream& __out = std::cout ) const;
 
-    WorldComm operator+( WorldComm const & _worldComm ) const;
+    worldcomm_ptr_t operator+( WorldComm const & _worldComm ) const;
 
     void setIsActive( std::vector<int> const& _isActive ) const { M_isActive=_isActive; }
 

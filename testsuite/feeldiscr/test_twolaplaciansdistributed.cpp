@@ -73,8 +73,8 @@ void run()
     const int domainColor2=2;
     const int nTotalProc = Environment::worldComm().size();
 
-    auto worldCommDomain1 = Environment::worldComm();
-    auto worldCommDomain2 = Environment::worldComm();
+    auto worldCommDomain1 = Environment::worldCommPtr();
+    auto worldCommDomain2 = Environment::worldCommPtr();
 
     if ( nTotalProc>1)
     {
@@ -103,7 +103,7 @@ void run()
     Omega1.setMarker( _type="surface",_name="Omega",_markerAll=true );
     auto mesh1 = Omega1.createMesh(_mesh=new mesh_type,
                                    _name ="omega1_"+ mesh_type::shape_type::name(),
-                                   _partitions=worldCommDomain1.localSize(),
+                                   _partitions=worldCommDomain1->localSize(),
                                    _worldcomm=worldCommDomain1 );
 
     GeoTool::Node x21( -1,0.3 );
@@ -113,7 +113,7 @@ void run()
     Omega2.setMarker( _type="surface",_name="Omega",_markerAll=true );
     auto mesh2 = Omega2.createMesh(_mesh=new mesh_type,
                                    _name ="omega2_"+ mesh_type::shape_type::name(),
-                                   _partitions=worldCommDomain2.localSize(),
+                                   _partitions=worldCommDomain2->localSize(),
                                    _worldcomm=worldCommDomain2 );
     //---------------------------------------------------------------------------------------//
     // functionspaces
@@ -123,8 +123,8 @@ void run()
     auto u2 = Xh2->element();
     //---------------------------------------------------------------------------------------//
     // backends
-    auto backend1 = backend(_rebuild=true,_worldcomm=Xh1->worldComm());
-    auto backend2 = backend(_rebuild=true,_worldcomm=Xh2->worldComm());
+    auto backend1 = backend(_rebuild=true,_worldcomm=Xh1->worldCommPtr());
+    auto backend2 = backend(_rebuild=true,_worldcomm=Xh2->worldCommPtr());
     //---------------------------------------------------------------------------------------//
     // init matrix and vectors
     auto A1 = backend1->newMatrix(_test=Xh1,_trial=Xh1);

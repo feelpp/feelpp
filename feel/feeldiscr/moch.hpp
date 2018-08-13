@@ -51,7 +51,7 @@ Moch( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
                          bases<Lagrange<Order,Scalar,Continuous,Pts>>,
                          Periodicity <NoPeriodicity>,
                          mortars<Mortar>>::New( _mesh=mesh,
-                                                _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
                                                 _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 

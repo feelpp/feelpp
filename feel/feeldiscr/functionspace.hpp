@@ -5553,7 +5553,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
                 if ( this->worldsComm().size()>1 )
                     for ( int i=1; i<( int )this->worldsComm().size(); ++i )
                         {
-                            *mixSpaceWorldComm = *mixSpaceWorldComm + *this->worldsComm()[i];
+                            mixSpaceWorldComm = *mixSpaceWorldComm + *this->worldsComm()[i];
                         }
 
                 this->setWorldComm( mixSpaceWorldComm );
@@ -5831,7 +5831,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
 
     for ( ; it != ite; ++it )
     {
-        inv_trans_type __git( M_mesh->gm(), M_mesh->element( ( *it )->id ), this->worldComm().subWorldCommSeq() );
+        inv_trans_type __git( M_mesh->gm(), M_mesh->element( ( *it )->id ), this->worldComm().subWorldCommSeqPtr() );
 
         size_type cv_stored = ( *it )->id;
 

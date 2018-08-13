@@ -74,12 +74,12 @@ BOOST_PARAMETER_FUNCTION(
       ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
       ( physical_are_elementary_regions,		   (bool), boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions") )
-      ( worldcomm,       (worldcomm_ptr_t), mesh->worldCommPtr() )
+      ( worldcomm,       *, mesh->worldCommPtr() )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.rebuild") )
       ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition") )
       ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition") )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
-      ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm->globalSize() )
+      ( partitions,      *( boost::is_integral<mpl::_> ), (worldcomm)?worldcomm->globalSize():1 )
       ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
       ( savehdf5,        *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.savehdf5") )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
@@ -102,6 +102,8 @@ BOOST_PARAMETER_FUNCTION(
 
     std::string filenameExpand = Environment::expand(filename);
     fs::path mesh_name=fs::path(Environment::findFile(filenameExpand));
+    CHECK( mesh ) << "invalid mesh";
+    CHECK( mesh->worldCommPtr() ) << "invalid mesh WC";
     int proc_rank = worldcomm->globalRank();
     //Environment::isMasterRank()
 

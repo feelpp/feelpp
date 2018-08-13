@@ -70,7 +70,7 @@ namespace detail
   @see
 */
 template<typename ElementType, typename T = double>
-class Elements : virtual public CommObject
+class Elements 
 {
 public:
 
@@ -78,7 +78,7 @@ public:
     /** @name Typedefs
      */
     //@{
-    using super = CommObject;
+
     
     /**
      * Element type depending on the dimension, @see geoelement.hpp
@@ -221,14 +221,14 @@ public:
 
     Elements( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
-        super( worldComm ),
+        M_worldComm( worldComm ),
         M_elements(),
         M_needToOrderElements( false )
     {}
 
     Elements( Elements const & f )
         :
-        super( f ),
+        M_worldComm( f.M_worldComm ),
         M_elements( f.M_elements ),
         M_needToOrderElements( false )
     {
@@ -258,7 +258,7 @@ public:
     {
         if ( this != &e )
         {
-            super::operator=( e );
+            M_worldComm = e.M_worldComm;
             M_elements = e.M_elements;
             this->buildOrderedElements();
         }
@@ -298,11 +298,11 @@ public:
 
     WorldComm & worldCommElements() 
         {
-            return this->worldComm();
+            return *M_worldComm;
         }
     WorldComm const& worldCommElements() const
     {
-        return this->worldComm();
+        return *M_worldComm;
     }
 
 
@@ -832,7 +832,7 @@ public:
 
     void setWorldCommElements( worldcomm_ptr_t const& _worldComm )
     {
-        this->setWorldComm( _worldComm );
+        M_worldComm = _worldComm;
     }
 
     void updateOrderedElement()
@@ -894,6 +894,7 @@ private:
 
 
 private:
+    worldcomm_ptr_t M_worldComm;
     elements_type M_elements;
     ordered_elements_reference_wrapper_type M_orderedElements;
     bool M_needToOrderElements;
