@@ -741,7 +741,9 @@ public:
     //! Environment::generateSummary( about().appName(), "end", true ); // write to disk
     //! \endcode
     //!
-    static pt::ptree& generateSummary( std::string fname, std::string stage, bool write = true );
+    //! Note: (deprecated) will be replaced by the journal system.
+    //!
+    FEELPP_DEPRECATED static pt::ptree& generateSummary( std::string fname, std::string stage, bool write = true );
 
     template<typename Observer>
     static void
