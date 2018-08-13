@@ -218,13 +218,13 @@ public:
     
     // constructor
     MixedElasticity( std::string const& prefix = "mixedelasticity",
-                     WorldComm & _worldComm = Environment::worldComm(),
+                     worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                      std::string const& subPrefix = "",
                      ModelBaseRepository const& modelRep = ModelBaseRepository() );
     
     MixedElasticity( self_type const& ME ) = default;
     static self_ptrtype New( std::string const& prefix = "mixedelasticity",
-                             WorldComm & worldComm = Environment::worldComm(),
+                             worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
@@ -297,7 +297,7 @@ public:
 
 template<int Dim, int Order, int G_Order, int E_Order>
 MixedElasticity<Dim, Order, G_Order, E_Order>::MixedElasticity( std::string const& prefix,
-                                                                WorldComm & worldComm,
+                                                                worldcomm_ptr_t const& worldComm,
                                                                 std::string const& subPrefix,
                                                                 ModelBaseRepository const& modelRep )
     : super_type( prefix, worldComm, subPrefix, modelRep )
@@ -440,7 +440,7 @@ MixedElasticity<Dim,Order,G_Order, E_Order>::createTimeDiscretization()
 template<int Dim, int Order, int G_Order, int E_Order>
 typename MixedElasticity<Dim,Order, G_Order, E_Order>::self_ptrtype
 MixedElasticity<Dim,Order,G_Order,E_Order>::New( std::string const& prefix,
-                                                 WorldComm & worldComm, std::string const& subPrefix,
+                                                 worldcomm_ptr_t const& worldComm, std::string const& subPrefix,
                                                  ModelBaseRepository const& modelRep )
 {
     return std::make_shared<self_type> ( prefix,worldComm,subPrefix,modelRep );

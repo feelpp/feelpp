@@ -11,7 +11,7 @@ namespace FeelModels {
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
         std::string const& prefix,
-        WorldComm & wc,
+        worldcomm_ptr_t const& wc,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 : super_type( prefixvm(prefix,"fluid"), false, wc, subPrefix, modelRep )
@@ -27,7 +27,7 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 typename MULTIFLUID_CLASS_TEMPLATE_TYPE::self_ptrtype
 MULTIFLUID_CLASS_TEMPLATE_TYPE::New(
         std::string const& prefix,
-        WorldComm & wc,
+        worldcomm_ptr_t const& wc,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 {

@@ -22,7 +22,7 @@ namespace FeelModels
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
                                 bool buildMesh,
-                                WorldComm & worldComm,
+                                worldcomm_ptr_t const& worldComm,
                                 std::string const& subPrefix,
                                 ModelBaseRepository const& modelRep )
     :
@@ -230,7 +230,7 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->initPostProcess();
 
     // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldComm() );
+    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldCommPtr() );
 
     // vector solution
     M_blockVectorSolution.resize( 1 );

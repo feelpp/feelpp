@@ -63,13 +63,13 @@ public:
     // Constructor
     Advection( 
             std::string const& prefix,
-            WorldComm & _worldComm = Environment::worldComm(),
+            worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     static self_ptrtype New( 
             std::string const& prefix,
-            WorldComm & _worldComm = Environment::worldComm(),
+            worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
     //--------------------------------------------------------------------//

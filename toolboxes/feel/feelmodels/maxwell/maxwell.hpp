@@ -124,7 +124,7 @@ public:
     // constructor
     Maxwell( std::string const& prefix,
              bool buildMesh = true,
-             WorldComm const& _worldComm = Environment::worldComm(),
+             worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
              std::string const& subPrefix = "",
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"MaxwellMesh.path"); }

@@ -307,14 +307,14 @@ public:
 
     SolidMechanics( std::string const& prefix,
                     bool buildMesh=true,
-                    WorldComm & worldComm = Environment::worldComm(),
+                    worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                     std::string const& subPrefix = "",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
     SolidMechanics( self_type const & M ) = default;
 
     static self_ptrtype New( std::string const& prefix,
                              bool buildMesh = true,
-                             WorldComm & worldComm = Environment::worldComm(),
+                             worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
