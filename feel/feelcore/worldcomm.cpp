@@ -547,7 +547,7 @@ WorldComm::showMe( std::ostream& __out ) const
 
 //-------------------------------------------------------------------------------
 
-WorldComm::self_type
+worldcomm_ptr_t
 WorldComm::operator+( WorldComm const & _worldComm ) const
 {
     int color;
@@ -610,14 +610,14 @@ WorldComm::operator+( WorldComm const & _worldComm ) const
               <<"     "  << _worldComm.localRank()<< " " << _worldComm.globalRank() << " " << _worldComm.godRank()
               <<std::endl;this->godComm().barrier();*/
 
-    self_type res(colorOnProc,newLocRank,//this->localRank(),
-                  colorSplit,this->godRank(),//this->globalRank(),
-                  this->godComm(),
-                  active,
-                  false );
+    auto res = std::make_shared<WorldComm>(colorOnProc,newLocRank,//this->localRank(),
+                                           colorSplit,this->godRank(),//this->globalRank(),
+                                           this->godComm(),
+                                           active,
+                                           false );
 
-    std::vector<int> godRankActivefusion(res.globalSize());
-    mpi::all_gather( res.globalComm(),
+    std::vector<int> godRankActivefusion(res->globalSize());
+    mpi::all_gather( res->globalComm(),
                      godRankActif,
                      godRankActivefusion );
     std::vector<int> newIsActive(this->godSize(),false);
@@ -625,8 +625,8 @@ WorldComm::operator+( WorldComm const & _worldComm ) const
     {
         newIsActive[godRankActivefusion[k]]=true;
     }
-    res.setIsActive(newIsActive);
-    res.upMasterRank();
+    res->setIsActive(newIsActive);
+    res->upMasterRank();
 
     return res;
 

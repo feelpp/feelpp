@@ -45,14 +45,14 @@ namespace Feel
   @see
 */
 template<uint16_type nDim,typename T = double>
-class Points : virtual public CommObject
+class Points
 {
 public:
 
     /** @name Typedefs
      */
     //@{
-    using super = CommObject;
+    
     typedef GeoElement0D<nDim,SubFaceOfNone<0>,T> point_type;
 
     typedef std::unordered_map<size_type,point_type> points_type;
@@ -77,14 +77,14 @@ public:
 
     Points( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
-        super( worldComm ),
+        M_worldComm( worldComm ),
         M_points(),
         M_needToOrderPoints( false )
     {}
 
     Points( Points const & f )
         :
-        super( f ),
+        M_worldComm( f.M_worldComm ),
         M_points( f.M_points ),
         M_needToOrderPoints( false )
     {
@@ -111,7 +111,7 @@ public:
     {
         if ( this != &e )
         {
-            M_worldCommPoints = e.M_worldCommPoints;
+            M_worldComm = e.M_worldComm;
             M_points = e.M_points;
             this->buildOrderedPoints();
         }
@@ -476,12 +476,12 @@ public:
 
     WorldComm const& worldCommPoints() const
     {
-        return M_worldCommPoints;
+        return *M_worldComm;
     }
 
     void setWorldCommPoints( worldcomm_ptr_t const& _worldComm )
     {
-        this->setWorldComm( _worldComm );
+        M_worldComm = _worldComm;
     }
 
     //@}
@@ -541,7 +541,7 @@ private:
         }
 
 private:
-    WorldComm M_worldCommPoints;
+    worldcomm_ptr_t M_worldComm;
 
     points_type M_points;
     ordered_points_reference_wrapper_type M_orderedPoints;

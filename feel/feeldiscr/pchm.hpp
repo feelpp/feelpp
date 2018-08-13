@@ -108,7 +108,7 @@ Pchm_ptrtype<MeshType,Order,T,Pts,Tag>
 Pchm( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return Pchm_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
-                                                    _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                    _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
                                                     _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 

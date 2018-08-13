@@ -1821,19 +1821,19 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
     auto worldCommFusion = this->map().worldComm()+vecInput.map().worldComm();
     std::vector<rank_type> globalRankToFusionRank_this(this->map().worldComm().globalSize());
     mpi::all_gather( this->map().worldComm().globalComm(),
-                     worldCommFusion.globalRank(),
+                     worldCommFusion->globalRank(),
                      globalRankToFusionRank_this );
     std::vector<rank_type> globalRankToFusionRank_input(vecInput.map().worldComm().globalSize());
     mpi::all_gather( vecInput.map().worldComm().globalComm(),
-                     worldCommFusion.globalRank(),
+                     worldCommFusion->globalRank(),
                      globalRankToFusionRank_input );
 
-    std::vector<int> thisProcIsActive_fusion(worldCommFusion.globalSize());
-    mpi::all_gather( worldCommFusion.globalComm(),
+    std::vector<int> thisProcIsActive_fusion(worldCommFusion->globalSize());
+    mpi::all_gather( worldCommFusion->globalComm(),
                      (int)this->map().worldComm().isActive(),
                      thisProcIsActive_fusion );
-    std::vector<int> inputProcIsActive_fusion(worldCommFusion.globalSize());
-    mpi::all_gather( worldCommFusion.globalComm(),
+    std::vector<int> inputProcIsActive_fusion(worldCommFusion->globalSize());
+    mpi::all_gather( worldCommFusion->globalComm(),
                      (int)vecInput.map().worldComm().isActive(),
                      inputProcIsActive_fusion );
 
@@ -1908,15 +1908,15 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
              it_rankLocalization!=en_rankLocalization;++it_rankLocalization)
         {
             const int rankLocalization = *it_rankLocalization;
-            if ( this->map().worldComm().globalRank() == proc  && thisProcIsActive_fusion[worldCommFusion.globalRank()] )  // send info to rankLocalization
+            if ( this->map().worldComm().globalRank() == proc  && thisProcIsActive_fusion[worldCommFusion->globalRank()] )  // send info to rankLocalization
             {
                 const int rankToSend = globalRankToFusionRank_input[rankLocalization];
-                worldCommFusion.globalComm().send(rankToSend,0,originaldofClusterMissing );
+                worldCommFusion->globalComm().send(rankToSend,0,originaldofClusterMissing );
             }
-            else if ( vecInput.map().worldComm().globalRank()==rankLocalization && inputProcIsActive_fusion[worldCommFusion.globalRank()] )
+            else if ( vecInput.map().worldComm().globalRank()==rankLocalization && inputProcIsActive_fusion[worldCommFusion->globalRank()] )
             {
                 const int rankToRecv = globalRankToFusionRank_this[proc];
-                worldCommFusion.globalComm().recv(rankToRecv,0,originaldofClusterMissing_recv );
+                worldCommFusion->globalComm().recv(rankToRecv,0,originaldofClusterMissing_recv );
 
                 const size_type nDataRecv = originaldofClusterMissing_recv.size();
                 dofClusterMissing_RequestVal.resize(nDataRecv);
@@ -1933,15 +1933,15 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
                     }
                     else dofClusterMissing_RequestIsFind[k]=0;
                 }
-                worldCommFusion.globalComm().send( rankToRecv, 1, dofClusterMissing_RequestVal );
-                worldCommFusion.globalComm().send( rankToRecv, 2, dofClusterMissing_RequestIsFind );
+                worldCommFusion->globalComm().send( rankToRecv, 1, dofClusterMissing_RequestVal );
+                worldCommFusion->globalComm().send( rankToRecv, 2, dofClusterMissing_RequestIsFind );
             }
 
-            if ( this->map().worldComm().globalRank() == proc && thisProcIsActive_fusion[worldCommFusion.globalRank()]  )
+            if ( this->map().worldComm().globalRank() == proc && thisProcIsActive_fusion[worldCommFusion->globalRank()]  )
             {
                 const int rankToRecv = globalRankToFusionRank_input[rankLocalization];
-                worldCommFusion.globalComm().recv( rankToRecv, 1, dofClusterMissing_RequestVal );
-                worldCommFusion.globalComm().recv( rankToRecv, 2, dofClusterMissing_RequestIsFind );
+                worldCommFusion->globalComm().recv( rankToRecv, 1, dofClusterMissing_RequestVal );
+                worldCommFusion->globalComm().recv( rankToRecv, 2, dofClusterMissing_RequestIsFind );
 
                 const size_type nDataRecv = dofClusterMissing_RequestVal.size();
                 for (size_type k=0;k<nDataRecv;++k)
@@ -1954,7 +1954,7 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
                 }
             }
             //---------------------------------------
-            worldCommFusion.globalComm().barrier();
+            worldCommFusion->globalComm().barrier();
             //---------------------------------------
         }
     }

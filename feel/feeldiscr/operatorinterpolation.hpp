@@ -459,7 +459,7 @@ public:
      */
     //@{
 
-    WorldComm const& worldCommFusion() const { return M_WorldCommFusion; }
+    WorldComm const& worldCommFusion() const { return *M_WorldCommFusion; }
 
     InterpType const& interpolationType() const { return M_interptype; }
 
@@ -560,7 +560,7 @@ private:
                                                extrapolation_memory_type & dof_extrapolationData);
 
     std::list<range_iterator> M_listRange;
-    WorldComm M_WorldCommFusion;
+    worldcomm_ptr_t M_WorldCommFusion;
     InterpType M_interptype;
 };
 
@@ -574,8 +574,8 @@ OperatorInterpolation( domain_space_ptrtype const& domainspace,
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange(),
-    M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldComm() == this->dualImageSpace()->worldComm() ) ) ?
-                       this->domainSpace()->worldComm() :
+    M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldCommPtr() == this->dualImageSpace()->worldCommPtr() ) ) ?
+                       this->domainSpace()->worldCommPtr() :
                        this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
     M_interptype(interptype)
 {
@@ -595,8 +595,8 @@ OperatorInterpolation( domain_space_ptrtype const& domainspace,
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange(),
-    M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldComm() == this->dualImageSpace()->worldComm() ) ) ?
-                       this->domainSpace()->worldComm() :
+    M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldCommPtr() == this->dualImageSpace()->worldCommPtr() ) ) ?
+                       this->domainSpace()->worldCommPtr() :
                        this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
     M_interptype(interptype)
 {
@@ -615,9 +615,9 @@ OperatorInterpolation( domain_space_ptrtype const& domainspace,
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange( r ),
-    M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldComm() == this->dualImageSpace()->worldComm() ) ) ?
-                       this->domainSpace()->worldComm() :
-                       this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldCommPtr() == this->dualImageSpace()->worldCommPtr() ) ) ?
+                       this->domainSpace()->worldCommPtr() :
+                       this->domainSpace()->worldCommPtr()+this->dualImageSpace()->worldCommPtr() ),
     M_interptype(interptype)
 {
     update();
@@ -651,8 +651,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     }
     else // no relation between meshes
     {
-        if ( this->dualImageSpace()->worldComm().localSize() > 1 ||
-             this->domainSpace()->worldComm().localSize() > 1 )
+        if ( this->dualImageSpace()->worldCommPtr()->localSize() > 1 ||
+             this->domainSpace()->worldCommPtr()->localSize() > 1 )
             this->updateNoRelationMeshMPI();
 
         else
@@ -1065,9 +1065,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
     {
         CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
-        reqs[cptRequest] = this->dualImageSpace()->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
+        reqs[cptRequest] = this->dualImageSpace()->worldCommPtr()->localComm().isend( p , 0, dataToSend.find(p)->second );
         ++cptRequest;
-        reqs[cptRequest] = this->dualImageSpace()->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
+        reqs[cptRequest] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( p , 0, dataToRecv[p] );
         ++cptRequest;
     }
     // wait all requests
@@ -1109,9 +1109,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
     {
         CHECK( dataToReSend.find(p) != dataToReSend.end() ) << " no data to send to proc " << p << "\n";
-        reqs[cptRequest] = this->dualImageSpace()->worldComm().localComm().isend( p , 0, dataToReSend.find(p)->second );
+        reqs[cptRequest] = this->dualImageSpace()->worldCommPtr()->localComm().isend( p , 0, dataToReSend.find(p)->second );
         ++cptRequest;
-        reqs[cptRequest] = this->dualImageSpace()->worldComm().localComm().irecv( p , 0, dataToReRecv[p] );
+        reqs[cptRequest] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( p , 0, dataToReRecv[p] );
         ++cptRequest;
     }
     // wait all requests
@@ -1173,7 +1173,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     // determine if ghost dofs must used if the active dof in not present from the range
     std::set<size_type> ghostDofUsedToInterpolate;
-    if ( this->dualImageSpace()->worldComm().localSize() > 0 )
+    if ( this->dualImageSpace()->worldCommPtr()->localSize() > 0 )
     {
         ghostDofUsedToInterpolate = this->defineGhostDofUsedToInterpolate();
     }
@@ -1303,7 +1303,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     DVLOG(2) << "[interpolate] different meshes\n";
     //std::cout << "OperatorInterpolation::updateNoRelationMesh start " << std::endl;
 
-    const size_type proc_id = this->dualImageSpace()->mesh()->worldComm().localRank();
+    const size_type proc_id = this->dualImageSpace()->mesh()->worldCommPtr()->localRank();
     const size_type n1_dof_on_proc = this->dualImageSpace()->nLocalDof();
     const size_type firstrow_dof_on_proc = this->dualImageSpace()->dof()->firstDof( proc_id );
     const size_type lastrow_dof_on_proc = this->dualImageSpace()->dof()->lastDof( proc_id );
@@ -1313,7 +1313,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
                                                   firstrow_dof_on_proc, lastrow_dof_on_proc,
                                                   firstcol_dof_on_proc, lastcol_dof_on_proc,
-                                                  this->dualImageSpace()->mesh()->worldComm().subWorldCommSeq() ) );
+                                                  this->dualImageSpace()->mesh()->worldCommPtr()->subWorldCommSeq() ) );
 #else
     graph_ptrtype sparsity_graph( new graph_type( this->dualImageSpace()->dof(), this->domainSpace()->dof() ) );
 #endif
@@ -1447,33 +1447,33 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 {
     //std::cout << "OperatorInterpolation::updateNoRelationMeshMPI start " << std::endl;
 
-    auto testCommActivities_image=this->dualImageSpace()->worldComm().hasMultiLocalActivity();
+    auto testCommActivities_image=this->dualImageSpace()->worldCommPtr()->hasMultiLocalActivity();
 
     if (testCommActivities_image.template get<0>())
         {
             //std::cout << "OperatorInterpolation::updateNoRelationMeshMPI hasMultiLocalActivity " << std::endl;
             // save initial activities
-            std::vector<int> saveActivities_image = this->dualImageSpace()->worldComm().activityOnWorld();
+            std::vector<int> saveActivities_image = this->dualImageSpace()->worldCommPtr()->activityOnWorld();
             // iterate on each local activity
             const auto colorWhichIsActive = testCommActivities_image.template get<1>();
             auto it_color=colorWhichIsActive.begin();
             auto const en_color=colorWhichIsActive.end();
             for ( ;it_color!=en_color;++it_color )
                 {
-                    this->dualImageSpace()->worldComm().applyActivityOnlyOn( *it_color );
-                    this->dualImageSpace()->mapOn().worldComm().applyActivityOnlyOn( *it_color );
-                    this->dualImageSpace()->mapOnOff().worldComm().applyActivityOnlyOn( *it_color );
+                    this->dualImageSpace()->worldCommPtr()->applyActivityOnlyOn( *it_color );
+                    this->dualImageSpace()->mapOn().worldCommPtr()->applyActivityOnlyOn( *it_color );
+                    this->dualImageSpace()->mapOnOff().worldCommPtr()->applyActivityOnlyOn( *it_color );
                     this->updateNoRelationMeshMPI_run(false);
                 }
             // revert initial activities
-            this->dualImageSpace()->worldComm().setIsActive(saveActivities_image);
-            this->dualImageSpace()->mapOn().worldComm().setIsActive(saveActivities_image);
-            this->dualImageSpace()->mapOnOff().worldComm().setIsActive(saveActivities_image);
+            this->dualImageSpace()->worldCommPtr()->setIsActive(saveActivities_image);
+            this->dualImageSpace()->mapOn().worldCommPtr()->setIsActive(saveActivities_image);
+            this->dualImageSpace()->mapOnOff().worldCommPtr()->setIsActive(saveActivities_image);
         }
     else
         {
             //std::cout << "OperatorInterpolation::updateNoRelationMeshMPI has One LocalActivity " << std::endl;
-            if ( !this->dualImageSpace()->worldComm().isActive() && !this->domainSpace()->worldComm().isActive() )
+            if ( !this->dualImageSpace()->worldCommPtr()->isActive() && !this->domainSpace()->worldCommPtr()->isActive() )
                 {
                     this->matPtr() = this->backend()->newZeroMatrix( this->domainSpace()->dofOnOff(),
                                                                      this->dualImageSpace()->dofOn() );
@@ -1497,14 +1497,14 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // PreProcess : datamap properties and graph
     //-----------------------------------------------------------------------------------------
 
-    const int proc_id = this->dualImageSpace()->worldComm().localRank();
-    const int proc_id_row = this->dualImageSpace()->worldComm().localRank();
-    const int proc_id_col = this->domainSpace()->worldComm().localRank();
-    const int nProc = this->dualImageSpace()->mesh()->worldComm().size();
-    const int nProc_row = this->dualImageSpace()->mesh()->worldComm().localSize();
-    const int nProc_col = this->domainSpace()->mesh()->worldComm().localSize();
-    const int nProc_image = this->dualImageSpace()->mesh()->worldComm().localSize();
-    const int nProc_domain = this->domainSpace()->mesh()->worldComm().localSize();
+    const int proc_id = this->dualImageSpace()->worldCommPtr()->localRank();
+    const int proc_id_row = this->dualImageSpace()->worldCommPtr()->localRank();
+    const int proc_id_col = this->domainSpace()->worldCommPtr()->localRank();
+    const int nProc = this->dualImageSpace()->mesh()->worldCommPtr()->size();
+    const int nProc_row = this->dualImageSpace()->mesh()->worldCommPtr()->localSize();
+    const int nProc_col = this->domainSpace()->mesh()->worldCommPtr()->localSize();
+    const int nProc_image = this->dualImageSpace()->mesh()->worldCommPtr()->localSize();
+    const int nProc_domain = this->domainSpace()->mesh()->worldCommPtr()->localSize();
     const size_type nrow_dof_on_proc = this->dualImageSpace()->nLocalDof();
     const size_type firstrow_dof_on_proc = this->dualImageSpace()->dof()->firstDofGlobalCluster( proc_id_row );
     const size_type lastrow_dof_on_proc = this->dualImageSpace()->dof()->lastDofGlobalCluster( proc_id_row );
@@ -1518,13 +1518,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     size_type new_nLocalDofWithoutGhost=this->domainSpace()->nDof()/nProc_row;
     size_type new_nLocalDofWithoutGhost_tempp=this->domainSpace()->nDof()/nProc_row;
     size_type new_nLocalDofWithoutGhostMiss=this->domainSpace()->nDof()%nProc_row;
-    if (this->dualImageSpace()->worldComm().globalSize()==this->domainSpace()->worldComm().globalSize() )
+    if (this->dualImageSpace()->worldCommPtr()->globalSize()==this->domainSpace()->worldCommPtr()->globalSize() )
     {
         new_nLocalDofWithoutGhost = this->domainSpace()->mapOnOff().nLocalDofWithoutGhost();
     }
     else
     {
-        if (this->dualImageSpace()->worldComm().globalRank()==this->dualImageSpace()->worldComm().masterRank())  new_nLocalDofWithoutGhost+=new_nLocalDofWithoutGhostMiss;
+        if (this->dualImageSpace()->worldCommPtr()->globalRank()==this->dualImageSpace()->worldCommPtr()->masterRank())  new_nLocalDofWithoutGhost+=new_nLocalDofWithoutGhostMiss;
     }
 
     size_type new_firstdofcol=0,new_lastdofcol=new_nLocalDofWithoutGhost-1;
@@ -1532,11 +1532,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     int currentProc=0;
     while(!findMyProc)
         {
-            if (currentProc==this->dualImageSpace()->worldComm().globalRank())
+            if (currentProc==this->dualImageSpace()->worldCommPtr()->globalRank())
                 {
                     findMyProc=true;
                 }
-            else if (currentProc==this->dualImageSpace()->worldComm().masterRank())
+            else if (currentProc==this->dualImageSpace()->worldCommPtr()->masterRank())
                 {
                     new_firstdofcol+=new_nLocalDofWithoutGhost_tempp+new_nLocalDofWithoutGhostMiss;
                     new_lastdofcol+=new_nLocalDofWithoutGhost_tempp+new_nLocalDofWithoutGhostMiss;
@@ -1556,7 +1556,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     //std::vector<boost::tuple<int,int,int,int> > worldcommFusionProperties;
     boost::tuple<std::vector<rank_type>,std::vector<rank_type>,std::vector<boost::tuple<int,int> > > worldcommFusionProperties;
-    if ( this->domainSpace()->worldComm() == this->dualImageSpace()->worldComm() )
+    if ( this->domainSpace()->worldCommPtr() == this->dualImageSpace()->worldCommPtr() )
     {
         std::vector<rank_type> localMeshRankToWorldCommFusion_domain(nProc_col);
         for( rank_type p = 0 ; p<nProc_col ; ++p )
@@ -1573,16 +1573,16 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     {
         // Attention : marche que si les 2 worldcomms qui s'emboite (mon cas)
         std::vector<rank_type> localMeshRankToWorldCommFusion_domain(nProc_col);
-        mpi::all_gather( this->domainSpace()->mesh()->worldComm().localComm(),
+        mpi::all_gather( this->domainSpace()->mesh()->worldCommPtr()->localComm(),
                          this->worldCommFusion().globalRank(),
                          localMeshRankToWorldCommFusion_domain );
         std::vector<rank_type> localMeshRankToWorldCommFusion_image(nProc_row);
-        mpi::all_gather( this->dualImageSpace()->mesh()->worldComm().localComm(),
+        mpi::all_gather( this->dualImageSpace()->mesh()->worldCommPtr()->localComm(),
                          this->worldCommFusion().globalRank(),
                          localMeshRankToWorldCommFusion_image );
 
         std::vector<boost::tuple<int,int> > procActivitiesOnWorldCommFusion(this->worldCommFusion().globalSize());
-        auto dataSendToAllGather = boost::make_tuple( (int)this->domainSpace()->worldComm().isActive(),(int)this->dualImageSpace()->worldComm().isActive() );
+        auto dataSendToAllGather = boost::make_tuple( (int)this->domainSpace()->worldCommPtr()->isActive(),(int)this->dualImageSpace()->worldCommPtr()->isActive() );
         mpi::all_gather( this->worldCommFusion().globalComm(),
                          dataSendToAllGather,
                          procActivitiesOnWorldCommFusion );
@@ -1613,12 +1613,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
         for (int p=0;p<localMeshRankToWorldCommFusion_image.size(); ++p)
         {
-            if (!this->dualImageSpace()->worldComm().isActive())
+            if (!this->dualImageSpace()->worldCommPtr()->isActive())
                 localMeshRankToWorldCommFusion_image[p]=p%nProc_image+firstActiveProc_image; // FAIRE COMMMUNICATION!!!!!
         }
         for (int p=0;p<localMeshRankToWorldCommFusion_domain.size(); ++p)
         {
-            if (!this->domainSpace()->worldComm().isActive())
+            if (!this->domainSpace()->worldCommPtr()->isActive())
                 localMeshRankToWorldCommFusion_domain[p]=p%nProc_domain+firstActiveProc_domain; // FAIRE COMMMUNICATION!!!!!
         }
         //----------------------------------------------//
@@ -1660,8 +1660,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
 
     uint16_type nMPIsearch=15;//5;
-    if( InterpType::isConforming()) nMPIsearch=this->domainSpace()->mesh()->worldComm().localSize();
-    else if (this->domainSpace()->mesh()->worldComm().localSize()<nMPIsearch) nMPIsearch=this->domainSpace()->mesh()->worldComm().localSize();
+    if( InterpType::isConforming()) nMPIsearch=this->domainSpace()->mesh()->worldCommPtr()->localSize();
+    else if (this->domainSpace()->mesh()->worldCommPtr()->localSize()<nMPIsearch) nMPIsearch=this->domainSpace()->mesh()->worldCommPtr()->localSize();
    // only one int this case
    if (!this->interpolationType().searchWithCommunication()) nMPIsearch=1;
    uint16_type counterMPIsearch=1;
@@ -1670,7 +1670,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
    boost::mpi::timer mytimer;
    this->worldCommFusion().globalComm().barrier();
-   if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldComm().masterRank() )
+   if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
        std::cout << " start while " << std::endl;
 
    size_type nbLocalisationFail=1;
@@ -1684,7 +1684,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            auto memmapVertices = pointDistribution.template get<3>();
            //std::cout <<  "proc " << this->worldCommFusion().globalRank() <<  " pointsSearched.size() " << pointsSearched.size() << std::endl;
            double t1 = mytimer.elapsed();
-           if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldComm().masterRank() )
+           if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
                std::cout << "finish-step1 in " << (boost::format("%1%") % t1).str() << std::endl;
            //this->worldCommFusion().globalComm().barrier();
            mytimer.restart();
@@ -1702,7 +1702,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                                                        );
            //std::cout <<  "proc " << this->worldCommFusion().globalRank() <<  " memory_localisationFail.size() " << memory_localisationFail.size() << std::endl;
            double t2 = mytimer.elapsed();
-           if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldComm().masterRank() )
+           if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
                std::cout << "finish-step2 in " << (boost::format("%1%") % t2).str() << std::endl;
            //this->worldCommFusion().globalComm().barrier();
            mytimer.restart();
@@ -1733,11 +1733,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            //nbLocalisationFail = memory_localisationFail.size()+memory_localisationFail2.size();
 
            double t3 = mytimer.elapsed();
-           if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldComm().masterRank() )
+           if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
                std::cout << "finish-step3 in " << (boost::format("%1%") % t3).str() << std::endl;
            mytimer.restart();
 
-           if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldComm().masterRank() )
+           if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
                std::cout << " it " << counterMPIsearch << "  nbLocalisationFail " << nbLocalisationFail << std::endl;
 
            //std::cout <<  "proc " << this->worldCommFusion().globalRank()
@@ -1754,7 +1754,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            std::vector<std::set<size_type> > dof_searchWithProcExtrap(this->dualImageSpace()->nLocalDof());
            //locTool->setExtrapolation(true);
            uint16_type nMPIsearchExtrap=5;
-           if (this->domainSpace()->mesh()->worldComm().localSize()<5) nMPIsearchExtrap=this->domainSpace()->mesh()->worldComm().localSize();
+           if (this->domainSpace()->mesh()->worldCommPtr()->localSize()<5) nMPIsearchExtrap=this->domainSpace()->mesh()->worldCommPtr()->localSize();
            // only one int this case
            if (!this->interpolationType().searchWithCommunication()) nMPIsearchExtrap=1;
            uint16_type counterMPIsearchExtrap=1;
@@ -1913,8 +1913,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //-----------------------------------------
     // build data map for the columns
     //this->domainSpace()->mapOnOff().showMeMapGlobalProcessToGlobalCluster();
-    //this->dualImageSpace()->worldComm().showMe();
-    std::shared_ptr<DataMap> mapColInterp( new DataMap(this->dualImageSpace()->worldComm()));// this->domainSpace()->mapOnOff().worldComm());
+    //this->dualImageSpace()->worldCommPtr()->showMe();
+    std::shared_ptr<DataMap> mapColInterp( new DataMap(this->dualImageSpace()->worldCommPtr()));// this->domainSpace()->mapOnOff().worldCommPtr());
     mapColInterp->setNDof(this->domainSpace()->mapOnOff().nDof());
 
     mapColInterp->setNLocalDofWithoutGhost( proc_id, new_nLocalDofWithoutGhost );//  this->domainSpace()->mapOnOff().nLocalDofWithoutGhost() );
@@ -1925,14 +1925,14 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     mapColInterp->setLastDofGlobalCluster( proc_id, new_lastdofcol );
     mapColInterp->setMapGlobalProcessToGlobalCluster(mapCol_globalProcessToGlobalCluster);
     //mapColInterp->setMapGlobalClusterToGlobalProcess(new_mapGlobalClusterToGlobalProcess);
-    //if ( this->dualImageSpace()->worldComm().isActive() ) mapColInterp.showMeMapGlobalProcessToGlobalCluster();
+    //if ( this->dualImageSpace()->worldCommPtr()->isActive() ) mapColInterp.showMeMapGlobalProcessToGlobalCluster();
 
     //-----------------------------------------
-    //std::cout << "Op---4----- " << this->worldCommFusion().godRank() << " isA " << this->dualImageSpace()->worldComm().isActive() << std::endl;
+    //std::cout << "Op---4----- " << this->worldCommFusion().godRank() << " isA " << this->dualImageSpace()->worldCommPtr()->isActive() << std::endl;
     //this->worldCommFusion().barrier();
     //-----------------------------------------
     // create matrix for active process
-    if ( this->dualImageSpace()->worldComm().isActive() )
+    if ( this->dualImageSpace()->worldCommPtr()->isActive() )
         {
             this->matPtr() = this->backend()->newMatrix( mapColInterp,//this->domainSpace()->mapOnOff(),
                                                          this->dualImageSpace()->dofOn(),
@@ -1943,7 +1943,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //this->worldCommFusion().barrier();
     //-----------------------------------------
     // create null matrix for inactive process
-    if ( !this->dualImageSpace()->worldComm().isActive() && buildNonZeroMatrix )
+    if ( !this->dualImageSpace()->worldCommPtr()->isActive() && buildNonZeroMatrix )
         {
             this->matPtr() = this->backend()->newZeroMatrix( mapColInterp,//this->domainSpace()->mapOnOff(),
                                                              this->dualImageSpace()->dofOn() );
@@ -1953,7 +1953,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //this->worldCommFusion().barrier();
     //-----------------------------------------
     // assemble matrix
-    if ( this->dualImageSpace()->worldComm().isActive() )
+    if ( this->dualImageSpace()->worldCommPtr()->isActive() )
         {
             for (size_type idx_i=0 ; idx_i<nrow_dof_on_proc;++idx_i)
                 {
@@ -1994,7 +1994,7 @@ OperatorInterpolation<DomainSpaceType,
 {
     std::list<boost::tuple<size_type,uint16_type> > memory_localisationFail;// gdof,comp
 
-    const auto proc_id = this->domainSpace()->mesh()->worldComm().localRank();
+    const auto proc_id = this->domainSpace()->mesh()->worldCommPtr()->localRank();
 
     auto const* imagedof = this->dualImageSpace()->dof().get();
     auto const* domaindof = this->domainSpace()->dof().get();
@@ -2009,8 +2009,8 @@ OperatorInterpolation<DomainSpaceType,
     matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
     matrix_node_type verticesOfEltSearched;
 
-    //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
-    // size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldCommPtr()->localRank())->id();
+    // size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldCommPtr()->localRank())->id();
     auto const& eltRandom = this->domainSpace()->mesh()->firstElementIteratorWithProcessId()->second;
     size_type eltIdLocalised = eltRandom.id();
 
@@ -2239,14 +2239,14 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     auto const* domaindof = this->domainSpace()->dof().get();
     auto const* domainbasis = this->domainSpace()->basis().get();
 
-    const size_type proc_id = this->dualImageSpace()->worldComm()/*worldsComm()[0]*/.localRank();
-    const size_type proc_id_image = this->dualImageSpace()->mesh()->worldComm().localRank();
-    const size_type proc_id_domain = this->domainSpace()->mesh()->worldComm().localRank();
-    const size_type nProc = this->dualImageSpace()->mesh()->worldComm().size();
-    const size_type nProc_row = this->dualImageSpace()->mesh()->worldComm().localSize();
-    const size_type nProc_col = this->domainSpace()->mesh()->worldComm().localSize();
-    const size_type nProc_image = this->dualImageSpace()->mesh()->worldComm().localSize();
-    const size_type nProc_domain = this->domainSpace()->mesh()->worldComm().localSize();
+    const size_type proc_id = this->dualImageSpace()->worldCommPtr()/*worldsComm()[0]*/.localRank();
+    const size_type proc_id_image = this->dualImageSpace()->mesh()->worldCommPtr()->localRank();
+    const size_type proc_id_domain = this->domainSpace()->mesh()->worldCommPtr()->localRank();
+    const size_type nProc = this->dualImageSpace()->mesh()->worldCommPtr()->size();
+    const size_type nProc_row = this->dualImageSpace()->mesh()->worldCommPtr()->localSize();
+    const size_type nProc_col = this->domainSpace()->mesh()->worldCommPtr()->localSize();
+    const size_type nProc_image = this->dualImageSpace()->mesh()->worldCommPtr()->localSize();
+    const size_type nProc_domain = this->domainSpace()->mesh()->worldCommPtr()->localSize();
 
     // localisation tool with matrix node
     auto locTool = this->domainSpace()->mesh()->tool_localization();
@@ -2259,15 +2259,15 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     matrix_node_type verticesOfEltSearched;
 
     // random (just to start)
-    //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
-    // size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldCommPtr()->localRank())->id();
+    // size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldCommPtr()->localRank())->id();
     auto const& eltRandom = this->domainSpace()->mesh()->firstElementIteratorWithProcessId()->second;
     size_type eltIdLocalised = eltRandom.id();
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
 
     // usefull container
-    std::vector<size_type> pointsSearchedSizeWorld(this->dualImageSpace()->mesh()->worldComm().localComm().size());
+    std::vector<size_type> pointsSearchedSizeWorld(this->dualImageSpace()->mesh()->worldCommPtr()->localComm().size());
     std::vector<typename image_mesh_type::node_type> dataToRecv(1);
     std::vector<uint16_type> dataToRecv_Comp(1,0);
     std::vector< std::vector< typename image_mesh_type::node_type > > dataToRecv_Vertices(1);
@@ -2282,21 +2282,21 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 #if 0
     // Attention : marche que si les 2 worldcomms qui s'emboite (mon cas)
     std::vector<int> localMeshRankToWorldCommFusion_domain(nProc_col);
-    mpi::all_gather( this->domainSpace()->mesh()->worldComm().localComm(),
+    mpi::all_gather( this->domainSpace()->mesh()->worldCommPtr()->localComm(),
                      this->worldCommFusion().globalRank(),
                      localMeshRankToWorldCommFusion_domain );
     std::vector<int> localMeshRankToWorldCommFusion_image(nProc_row);
-    mpi::all_gather( this->dualImageSpace()->mesh()->worldComm().localComm(),
+    mpi::all_gather( this->dualImageSpace()->mesh()->worldCommPtr()->localComm(),
                      this->worldCommFusion().globalRank(),
                      localMeshRankToWorldCommFusion_image );
 
     std::vector<int> domainProcIsActive_fusion(this->worldCommFusion().globalSize());
     mpi::all_gather( this->worldCommFusion().globalComm(),
-                     (int)this->domainSpace()->worldComm().isActive(),
+                     (int)this->domainSpace()->worldCommPtr()->isActive(),
                      domainProcIsActive_fusion );
     std::vector<int> imageProcIsActive_fusion(this->worldCommFusion().globalSize());
     mpi::all_gather( this->worldCommFusion().globalComm(),
-                     (int)this->dualImageSpace()->worldComm().isActive(),
+                     (int)this->dualImageSpace()->worldCommPtr()->isActive(),
                      imageProcIsActive_fusion );
 
     int firstActiveProc_image=0;
@@ -2322,11 +2322,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
     for (int p=0;p<localMeshRankToWorldCommFusion_image.size(); ++p)
         {
-            if (!this->dualImageSpace()->worldComm().isActive()) localMeshRankToWorldCommFusion_image[p]=p%nProc_image+firstActiveProc_image; // FAIRE COMMMUNICATION!!!!!
+            if (!this->dualImageSpace()->worldCommPtr()->isActive()) localMeshRankToWorldCommFusion_image[p]=p%nProc_image+firstActiveProc_image; // FAIRE COMMMUNICATION!!!!!
         }
     for (int p=0;p<localMeshRankToWorldCommFusion_domain.size(); ++p)
         {
-            if (!this->domainSpace()->worldComm().isActive()) localMeshRankToWorldCommFusion_domain[p]=p%nProc_domain+firstActiveProc_domain; // FAIRE COMMMUNICATION!!!!!
+            if (!this->domainSpace()->worldCommPtr()->isActive()) localMeshRankToWorldCommFusion_domain[p]=p%nProc_domain+firstActiveProc_domain; // FAIRE COMMMUNICATION!!!!!
         }
 #else
 
@@ -2702,14 +2702,14 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     auto const* domaindof = this->domainSpace()->dof().get();
     auto const* domainbasis = this->domainSpace()->basis().get();
 
-    const size_type proc_id = this->dualImageSpace()->worldComm()/*worldsComm()[0]*/.localRank();
-    const size_type proc_id_image = this->dualImageSpace()->mesh()->worldComm().localRank();
-    const size_type proc_id_domain = this->domainSpace()->mesh()->worldComm().localRank();
-    const size_type nProc = this->dualImageSpace()->mesh()->worldComm().size();
-    const size_type nProc_row = this->dualImageSpace()->mesh()->worldComm().localSize();
-    const size_type nProc_col = this->domainSpace()->mesh()->worldComm().localSize();
-    const size_type nProc_image = this->dualImageSpace()->mesh()->worldComm().localSize();
-    const size_type nProc_domain = this->domainSpace()->mesh()->worldComm().localSize();
+    const size_type proc_id = this->dualImageSpace()->worldCommPtr()/*worldsComm()[0]*/->localRank();
+    const size_type proc_id_image = this->dualImageSpace()->mesh()->worldCommPtr()->localRank();
+    const size_type proc_id_domain = this->domainSpace()->mesh()->worldCommPtr()->localRank();
+    const size_type nProc = this->dualImageSpace()->mesh()->worldCommPtr()->size();
+    const size_type nProc_row = this->dualImageSpace()->mesh()->worldCommPtr()->localSize();
+    const size_type nProc_col = this->domainSpace()->mesh()->worldCommPtr()->localSize();
+    const size_type nProc_image = this->dualImageSpace()->mesh()->worldCommPtr()->localSize();
+    const size_type nProc_domain = this->domainSpace()->mesh()->worldCommPtr()->localSize();
 
     // localisation tool with matrix node
     auto locTool = this->domainSpace()->mesh()->tool_localization();
@@ -2722,8 +2722,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     matrix_node_type verticesOfEltSearched;
 
     // random (just to start)
-    //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
-    // size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldCommPtr()->localRank())->id();
+    // size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldCommPtr()->localRank())->id();
     auto const& eltRandom = this->domainSpace()->mesh()->firstElementIteratorWithProcessId()->second;
     size_type eltIdLocalised = eltRandom.id();
 
@@ -3102,11 +3102,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                                                                            std::vector<std::set<size_type> > const& dof_searchWithProc,
                                                                                            std::set<size_type> const& ghostDofUsedToInterpolate )
 {
-    //std::cout << " pointDistribution--1--- " << this->domainSpace()->mesh()->worldComm().godRank() << std::endl;
+    //std::cout << " pointDistribution--1--- " << this->domainSpace()->mesh()->worldCommPtr()->godRank() << std::endl;
     //const size_type proc_id = this->dualImageSpace()->worldsComm()[0].localRank();
-    //const size_type nProc = this->dualImageSpace()->mesh()->worldComm().size();
-    //const size_type nProc_image = this->dualImageSpace()->mesh()->worldComm().localSize();
-    const int nProc_domain = this->domainSpace()->mesh()->worldComm().localSize();
+    //const size_type nProc = this->dualImageSpace()->mesh()->worldCommPtr()->size();
+    //const size_type nProc_image = this->dualImageSpace()->mesh()->worldCommPtr()->localSize();
+    const int nProc_domain = this->domainSpace()->mesh()->worldCommPtr()->localSize();
 
     auto const* imagedof = this->dualImageSpace()->dof().get();
     //iterator_type it, en;
@@ -3120,7 +3120,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 #if 0
     // Warning communication!!
     std::vector<typename image_mesh_type::node_type> vecBarycenter(nProc_domain);
-    mpi::all_gather( this->domainSpace()->mesh()->worldComm().localComm(),
+    mpi::all_gather( this->domainSpace()->mesh()->worldCommPtr()->localComm(),
                      locTool->barycenter(),
                      vecBarycenter );
 #else
@@ -3135,7 +3135,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
     //auto const& vecBarycenter = locTool->barycentersWorld();
 #endif
-    /*std::cout << " proc " << this->domainSpace()->mesh()->worldComm().localRank()
+    /*std::cout << " proc " << this->domainSpace()->mesh()->worldCommPtr()->localRank()
               << "  procFuion " << this->worldCommFusion().globalRank()
               << " bary " << locTool->barycenter()
               << std::endl;*/
@@ -3144,7 +3144,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     double distanceMin=0,distance=0,distanceSquare=0;
     int procForPt=0;
 
-    if ( this->dualImageSpace()->worldComm().isActive() )
+    if ( this->dualImageSpace()->worldCommPtr()->isActive() )
     {
         auto itListRange = M_listRange.begin();
         auto const enListRange = M_listRange.end();
@@ -3199,9 +3199,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                             }
                             else // only with myself
                             {
-                                memSetGdofAndComp[this->domainSpace()->worldComm().globalRank()].push_back(boost::make_tuple(gdof,comp));
+                                memSetGdofAndComp[this->domainSpace()->worldCommPtr()->globalRank()].push_back(boost::make_tuple(gdof,comp));
                                 if (InterpType::isConforming()) // conformal case
-                                    memSetVertices_conformeInterp[this->domainSpace()->worldComm().globalRank()].push_back(theImageElt.vertices());
+                                    memSetVertices_conformeInterp[this->domainSpace()->worldCommPtr()->globalRank()].push_back(theImageElt.vertices());
                             }
 
                             dof_done[gdof]=true;

@@ -78,7 +78,7 @@ const uint16_type MESH_COMPONENTS_DEFAULTS = MESH_RENUMBER | MESH_CHECK;
 //! @author Christophe Prud'homme
 //! @see
 //!/
-class FEELPP_EXPORT MeshBase : virtual public CommObject
+class FEELPP_EXPORT MeshBase : public CommObject
 {
 public:
 
