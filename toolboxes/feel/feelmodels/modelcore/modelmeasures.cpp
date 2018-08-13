@@ -47,9 +47,9 @@ std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
 
 
 
-ModelMeasuresIO::ModelMeasuresIO( std::string const& pathFile, WorldComm const& worldComm )
+ModelMeasuresIO::ModelMeasuresIO( std::string const& pathFile, worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( const_cast<WorldComm&>(worldComm).shared_from_this() ),
+    M_worldComm( worldComm ),
     M_pathFile( pathFile ),
     M_addNewDataIsLocked( false )
 {}

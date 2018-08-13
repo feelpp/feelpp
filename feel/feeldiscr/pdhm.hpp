@@ -108,7 +108,7 @@ Pdhm_ptrtype<MeshType,Order,T,Pts,Tag>
 Pdhm( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return Pdhm_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
-                                                    _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                    _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
                                                     _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
@@ -126,7 +126,7 @@ Pdhms_ptrtype<MeshType,Order,T,Pts,Tag>
 Pdhms( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return Pdhms_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
-                                                      _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                      _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
                                                       _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 

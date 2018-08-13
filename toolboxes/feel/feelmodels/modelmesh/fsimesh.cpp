@@ -41,7 +41,7 @@ namespace FeelModels
 
 
 template< class ConvexType >
-FSIMesh<ConvexType>::FSIMesh( std::string prefix, WorldComm & worldcomm )
+FSIMesh<ConvexType>::FSIMesh( std::string prefix, worldcomm_ptr_t const& worldcomm )
     :
     M_prefix( prefix ),
     M_worldComm( worldcomm.shared_from_this() ),
@@ -66,10 +66,10 @@ FSIMesh<ConvexType>::buildFSIMeshFromMsh()
          ( !fs::exists( M_mshfilepathFluidPart1 ) || !fs::exists( M_mshfilepathSolidPart1 ) || this->forceRebuild() ) )
     {
         std::cout << "[FSIMesh] : load fsi mesh ....\n";
-        auto meshFSI = loadMesh( _mesh=new mesh_type(this->worldComm().subWorldCommSeq()),
+        auto meshFSI = loadMesh( _mesh=new mesh_type(this->worldComm().subWorldCommSeqPtr()),
                                  _filename=this->mshPathFSI().string(),
                                  _straighten=false,
-                                 _worldcomm=this->worldComm().subWorldCommSeq(),
+                                 _worldcomm=this->worldComm().subWorldCommSeqPtr(),
                                  _rebuild_partitions=false,
                                  _update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES)
                                  );

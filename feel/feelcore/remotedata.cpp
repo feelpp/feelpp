@@ -436,23 +436,23 @@ StatusRequestHTTP requestDownloadURL( std::string const& url, std::ostream & ofi
 }
 
 
-RemoteData::RemoteData( std::string const& desc, WorldComm & worldComm )
+RemoteData::RemoteData( std::string const& desc, worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( worldComm.shared_from_this() )
+    M_worldComm( worldComm )
 {
-    RemoteData::URL urlTool( desc,worldComm );
+    RemoteData::URL urlTool( desc,*worldComm );
     if ( urlTool.isValid() )
     {
         M_url.emplace( urlTool );
         return;
     }
-    RemoteData::Github githubTool( desc,worldComm );
+    RemoteData::Github githubTool( desc,*worldComm );
     if ( githubTool.isInit() )
     {
         M_github.emplace( githubTool );
         return;
     }
-    RemoteData::Girder girderTool( desc,worldComm );
+    RemoteData::Girder girderTool( desc,*worldComm );
     if ( girderTool.isInit() )
     {
         M_girder.emplace( girderTool );

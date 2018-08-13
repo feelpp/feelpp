@@ -35,7 +35,7 @@ namespace FeelModels {
 
 
 ModelAlgebraic::ModelAlgebraic( std::string _theprefix,
-                                WorldComm & _worldComm,
+                                worldcomm_ptr_t const& _worldComm,
                                 std::string const& subPrefix,
                                 ModelBaseRepository const& modelRep )
     :

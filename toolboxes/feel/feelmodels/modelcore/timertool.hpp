@@ -32,7 +32,7 @@ public:
     typedef boost::mpi::timer timer_type;
     //typedef boost::timer::cpu_timer timer_type;
 
-    TimerTool( std::string fileName = "timers.data", WorldComm const& worldComm = Environment::worldComm() );
+    TimerTool( std::string fileName = "timers.data", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     TimerTool( TimerTool const& e ) = default;
     //TimerTool( TimerTool && e ) = default;
     virtual ~TimerTool() = default;
