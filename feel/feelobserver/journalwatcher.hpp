@@ -61,8 +61,8 @@ public:
         : M_journal_is_connected( false )
     {
         slotNew< notify_type () >( "journalWatcher", std::bind( &JournalWatcher::journalNotify, this ) );
-        if( Observer::JournalManager::journalAutoMode() or force )
-           journalConnect();
+        if( JournalManager::journalAutoMode() )
+           journalConnect( force );
     }
 
     //! Default destructor.
@@ -92,7 +92,8 @@ public:
     //! Connect the derived object to the simulation info manager.
     void journalConnect( bool force = false )
     {
-        if( not journalIsConnected() or force )
+        if( ( JournalManager::journalEnabled() and not journalIsConnected() )
+            or force )
         {
             JournalManager::signalStaticConnect< notify_type (), JournalMerge >( "journalManager", *this, "journalWatcher" );
             M_journal_is_connected=true;
@@ -101,9 +102,10 @@ public:
 
     //! Disconnect the derived object from the simulation info manager.
     //! The disconnection is safe.
-    void journalDisconnect()
+    void journalDisconnect( bool force = false )
     {
-        if( journalIsConnected() )
+        if( journalIsConnected()
+            or force )
         {
             JournalManager::signalStaticDisconnect< notify_type (), JournalMerge >( "journalManager", *this, "journalWatcher" );
             M_journal_is_connected=false;
