@@ -328,7 +328,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
            dual_image_space_ptrtype( dual_image_space_type::New( _mesh=image_mesh_ptrtype( new image_mesh_type ) ) ),
            backend,
            false ),
-    M_mesh( new image_mesh_type(space->worldComm()) ),
+    M_mesh( new image_mesh_type(space->worldCommPtr()) ),
     M_el2el(),
     M_el2pt(),
     M_pset( 0 ),
@@ -396,7 +396,7 @@ OperatorLagrangeP1<space_type>::buildReferenceMesh( bool rebuild, std::string pa
                      _filename=pathMeshDataBase,
                      _straighten=0,_refine=0,
                      _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES,
-                     _worldcomm=M_p2m.mesh()->worldComm(),
+                     _worldcomm=M_p2m.mesh()->worldCommPtr(),
                      _respect_partition=0,_rebuild_partitions=0 );
         //if (M_mesh->worldComm().isMasterRank() )
         //    saveGMSHMesh(_mesh=M_p2m.mesh(),_filename="toto.msh");
@@ -986,7 +986,7 @@ OperatorLagrangeP1<space_type>::buildOperator()
     // construct the p1 space and set the operator
 
     //auto Xh_image = dual_image_space_type::New(_mesh=M_mesh,_worldscomm=worldsComm);
-    auto Xh_image = dual_image_space_type::New(_mesh=M_mesh,_worldscomm=std::vector<WorldComm>(dual_image_space_type::nSpaces,M_mesh->worldComm() ) );
+    auto Xh_image = dual_image_space_type::New(_mesh=M_mesh,_worldscomm=makeWorldsComm(dual_image_space_type::nSpaces,M_mesh->worldCommPtr() ) );
 
     this->init( this->domainSpace(),
                 Xh_image,

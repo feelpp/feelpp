@@ -41,7 +41,7 @@ namespace FeelModels
 
         MechanicalPropertiesDescription( MechanicalPropertiesDescription const& app  ) = default;
 
-        void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, std::vector<WorldComm> const& worldsComm )
+        void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, worldscomm_ptr_t const& worldsComm )
             {
                 std::set<std::string> eltMarkersInMesh;
                 for (auto const& markPair : mesh->markerNames() )

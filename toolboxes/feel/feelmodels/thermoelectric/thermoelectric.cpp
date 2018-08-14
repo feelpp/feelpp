@@ -187,14 +187,14 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 #endif
  
 
-    M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), false, this->worldComm(),
+    M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), false, this->worldCommPtr(),
                                                            this->subPrefix(), this->repository() ) );
     if ( !M_heatModel->modelPropertiesPtr() )
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
     M_heatModel->setMesh( this->mesh() );
     M_heatModel->init( false );
 
-    M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), false, this->worldComm(),
+    M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), false, this->worldCommPtr(),
                                                    this->subPrefix(), this->repository() ) );
     if ( !M_electricModel->modelPropertiesPtr() )
         M_electricModel->setModelProperties( this->modelPropertiesPtr() );
@@ -241,7 +241,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->initPostProcess();
 
     // backend
-    M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
+    M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
 
     // block vector solution
     auto blockVectorSolutionHeat = M_heatModel->blockVectorSolution();
