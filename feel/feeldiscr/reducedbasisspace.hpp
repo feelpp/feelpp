@@ -336,14 +336,14 @@ public :
             this->init();
         }
 #else
-    ReducedBasisSpace( WorldComm const& worldcomm = Environment::worldComm() )
+    ReducedBasisSpace( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() )
         :
         super( worldcomm )
         {
             this->init( mpl::bool_<fespace_type::is_composite>() );
         }
 
-    ReducedBasisSpace( fespace_ptrtype const& Xh, WorldComm const& worldcomm = Environment::worldComm() )
+    ReducedBasisSpace( fespace_ptrtype const& Xh, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() )
         :
         super( worldcomm ),
         M_mesh()

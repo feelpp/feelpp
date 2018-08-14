@@ -4332,9 +4332,9 @@ public:
         this->init( mesh, meshSupport, 0, dofindices, periodicity );
     }
 
-    FunctionSpace( WorldComm & worldcomm = Environment::worldComm() )
+    FunctionSpace( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() )
         :
-        super( worldcomm.clone() ),
+        super( worldcomm ),
         M_worldsComm( makeWorldsComm( nSpaces, worldcomm ) ),
         M_extendedDofTableComposite( std::vector<bool>(nSpaces,false) ),
         M_extendedDofTable( false )

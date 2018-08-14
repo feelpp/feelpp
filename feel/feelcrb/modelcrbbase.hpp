@@ -291,11 +291,11 @@ public :
     typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     ModelCrbBase() = delete;
-    ModelCrbBase( std::string const& name,  WorldComm const& worldComm = Environment::worldComm() )
+    ModelCrbBase( std::string const& name,  worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         ModelCrbBase( name, Environment::randomUUID( true ), worldComm )
         {}
-    ModelCrbBase( std::string const& name, uuids::uuid const& uid, WorldComm const& worldComm = Environment::worldComm() )
+    ModelCrbBase( std::string const& name, uuids::uuid const& uid, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
@@ -382,7 +382,7 @@ public :
      */
     void setModelOnlineDeim( std::string name )
     {
-        M_backend = backend( _name=name, _worldcomm=Environment::worldCommSeq() );
+        M_backend = backend( _name=name, _worldcomm=Environment::worldCommSeqPtr() );
     }
 
     //! functions call by deim to init specific part of the model when online.
@@ -1646,7 +1646,7 @@ public :
 
             Gmsh gmsh( dimension,
                        order,
-                       Environment::worldComm() );
+                       Environment::worldCommPtr() );
            gmsh.setNumberOfPartitions( N );
            gmsh.rebuildPartitionMsh( mshfile /*mesh with 1 partition*/, target /*mesh with N partitions*/ );
     }
