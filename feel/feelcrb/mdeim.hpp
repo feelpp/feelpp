@@ -102,9 +102,9 @@ private :
             saveGMSHMesh( _mesh=submesh, _filename=this->name(true)+"-submesh.msh" );
             auto seqmesh = loadMesh( _mesh=new mesh_type,
                                      _filename=this->name(true)+"-submesh.msh",
-                                     _worldcomm= Environment::worldCommSeq() );
+                                     _worldcomm= Environment::worldCommSeqPtr() );
             Rh = space_type::New( seqmesh,
-                                  _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
+                                  _worldscomm=makeWorldsComm(space_type::nSpaces,Environment::worldCommSeqPtr()) );
 
             this->M_map->init( Rh, Xh );
 

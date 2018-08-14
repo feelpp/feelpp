@@ -119,7 +119,7 @@ public:
     CRBSCM( std::string const& name = "defaultname_crbscm",
             std::string const& ext = "scma",
             bool scm_for_mass_matrix = false,
-            WorldComm const& worldComm = Environment::worldComm() )
+            worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         super( name, ext, worldComm ),
         M_is_initialized( false ),

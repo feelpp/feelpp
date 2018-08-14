@@ -38,14 +38,14 @@
 
 namespace Feel
 {
-CRBDB::CRBDB( std::string const& name, std::string const& ext, WorldComm const& worldComm )
+CRBDB::CRBDB( std::string const& name, std::string const& ext, worldcomm_ptr_t const& worldComm )
     :
     CRBDB( name, ext, Environment::randomUUID(true), worldComm )
 {}
 
-CRBDB::CRBDB( std::string const& name, std::string const& ext, uuids::uuid const& uuid, WorldComm const& worldComm )
+CRBDB::CRBDB( std::string const& name, std::string const& ext, uuids::uuid const& uuid, worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( worldComm ),
+    super( worldComm ),
     M_name( algorithm::to_lower_copy(name) ),
     M_ext( ext ),
     M_uuid( uuid ),

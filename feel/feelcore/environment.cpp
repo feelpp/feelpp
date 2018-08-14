@@ -1264,7 +1264,7 @@ Environment::doOptions( int argc, char** argv,
         {
             std::vector<std::string> cfgsInCaseDir;
             std::string caseDir = S_vm["case"].as<std::string>();
-            RemoteData rdTool( caseDir, worldComm());
+            RemoteData rdTool( caseDir, worldCommPtr());
             if ( rdTool.canDownload() )
             {
                 auto dowloadedFolder = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cases")).string() );
@@ -1316,7 +1316,7 @@ Environment::doOptions( int argc, char** argv,
             }
             for ( std::string const& cfgFile : configFilesFromCmd )
             {
-                RemoteData rdTool( cfgFile, worldComm());
+                RemoteData rdTool( cfgFile, worldCommPtr());
                 if ( rdTool.canDownload() )
                 {
                     auto dowloadedData = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cfgs")).string() );

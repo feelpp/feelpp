@@ -444,6 +444,11 @@ public:
     //!
     WorldComm const& worldComm() const { return M_model->worldComm(); }
 
+    //!
+    //! world communicator
+    //!
+    worldcomm_ptr_t const& worldCommPtr() const { return M_model->worldCommPtr(); }
+
     /**
      * \return  the \p variables_map
      */

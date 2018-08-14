@@ -327,24 +327,23 @@ public:
                              crb::stage stage = crb::stage::online,
                              std::string const& prefixExt = "" )
         {
-            auto crb = std::shared_ptr<self_type>( new self_type( name, model, stage, prefixExt ) );
+            auto crb = std::make_shared<self_type>( name, model, stage, prefixExt );
             if ( stage == crb::stage::offline )
                 crb->init();
             return crb;
         }
 
-protected:
     //! constructor from command line options
     CRB( std::string const& name,
          truth_model_ptrtype const & model,
          crb::stage stage = crb::stage::online,
          std::string const& prefixExt = "" )
         :
-        super( name, prefixvm(prefixExt, "crb"), model->worldComm()),
+        super( name, prefixvm(prefixExt, "crb"), model->worldCommPtr()),
         M_elements_database( name,
                              prefixvm(prefixExt,"elements"),
-                             this->worldComm() ),
-        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
+                             this->worldCommPtr() ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldCommPtr() ) ),
         M_model( model ),
         M_output_index( ioption(_name="crb.output-index") ),
         M_tolerance( doption(_name="crb.error-max") ),
@@ -357,8 +356,8 @@ protected:
         // M_WNmu_complement(),
         // M_primal_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
         // M_dual_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_scmA( new scm_type( name, prefixvm(prefixExt,"scma"), false /*not scm for mass mastrix*/, this->worldComm() )  ),
-        M_scmM( new scm_type( name, prefixvm(prefixExt,"scmm"), true /*scm for mass matrix*/, this->worldComm() ) ),
+        M_scmA( new scm_type( name, prefixvm(prefixExt,"scma"), false /*not scm for mass mastrix*/, this->worldCommPtr() )  ),
+        M_scmM( new scm_type( name, prefixvm(prefixExt,"scmm"), true /*scm for mass matrix*/, this->worldCommPtr() ) ),
         M_N( 0 ),
         M_solve_dual_problem( boption(_name="crb.solve-dual-problem") ),
         M_orthonormalize_primal( boption(_name="crb.orthonormalize-primal") ),

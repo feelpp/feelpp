@@ -41,7 +41,7 @@ struct RemoteData
     struct FileInfo;
 
     RemoteData( std::string const& desc, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
-    RemoteData( std::string const& desc, WorldComm const& worldComm = Environment::worldComm() ) : RemoteData( desc, const_cast<WorldComm&>(worldComm).shared_from_this() ) {}
+    FEELPP_DEPRECATED RemoteData( std::string const& desc, WorldComm const& worldComm ) : RemoteData( desc, const_cast<WorldComm&>(worldComm).shared_from_this() ) {}
     RemoteData( RemoteData const& ) = default;
     RemoteData( RemoteData && ) = default;
     ~RemoteData() = default;
