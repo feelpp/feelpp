@@ -346,7 +346,7 @@ public:
             if( !projectorL2_tensor2symm )
                 projectorL2_tensor2symm = Feel::projector(
                         this->functionSpaceTensor2Symm(), this->functionSpaceTensor2Symm(), 
-                        backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
+                        backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldCommPtr())
                         );
             M_projectorL2Tensor2Symm = projectorL2_tensor2symm;
         }
