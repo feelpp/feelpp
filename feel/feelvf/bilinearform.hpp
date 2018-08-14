@@ -1908,7 +1908,7 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( std::shared_ptr<Spac
         Feel::vf::list_block_type list_block;
 
         // with mpi, dof start to 0 (thanks to the LocalToGlobal mapping).
-        if ( M_bf.testSpace()->worldsComm()[M_test_index].globalSize()>1 )
+        if ( M_bf.testSpace()->worldsComm()[M_test_index]->globalSize()>1 )
         {
             //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
             if (M_bf.testSpace()->hasEntriesForAllSpaces())
