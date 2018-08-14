@@ -1379,7 +1379,7 @@ public:
     //@{
 
     //! default constructor
-    ParameterSpace( uint16_type dim = 0, WorldComm const& worldComm = Environment::worldComm() )
+    ParameterSpace( uint16_type dim = 0, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         M_worldComm( worldComm ),
         M_nDim( (Dimension == invalid_uint16_type_value)? dim : Dimension ),
@@ -1415,14 +1415,14 @@ public:
      */
     static parameterspace_ptrtype create( uint16_type dim)
         {
-            return New( dim, Environment::worldComm() );
+            return New( dim, Environment::worldCommPtr() );
         }
-    static parameterspace_ptrtype New( uint16_type dim = 0, WorldComm const& worldComm = Environment::worldComm())
+    static parameterspace_ptrtype New( uint16_type dim = 0, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr())
         {
             return parameterspace_ptrtype( new parameterspace_type( dim,worldComm ) );
         }
 
-    static parameterspace_ptrtype New( std::string const& filename, WorldComm const& worldComm = Environment::worldComm() )
+    static parameterspace_ptrtype New( std::string const& filename, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         {
             parameterspace_ptrtype ps( new parameterspace_type( 0,worldComm ) );
             ps->loadJson( filename );
@@ -1443,7 +1443,7 @@ public:
     //@{
 
     //! \return the mpi communicators
-    WorldComm const& worldComm() const { return M_worldComm; }
+    WorldComm const& worldComm() const { return *M_worldComm; }
 
     //! \return the parameter space dimension
     uint16_type dimension() const
@@ -1509,7 +1509,7 @@ public:
     /**
      * set worldcomm
      */
-    void setWorldComm( WorldComm const& worldComm )
+    void setWorldComm( worldcomm_ptr_t const& worldComm )
         {
             M_worldComm = worldComm;
         }
@@ -1954,7 +1954,7 @@ private:
     private:
 
     //! mpi communicators
-    WorldComm const& M_worldComm;
+    worldcomm_ptr_t M_worldComm;
 
     //! parameter space dimension
     uint16_type M_nDim;
