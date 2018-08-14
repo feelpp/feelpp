@@ -131,7 +131,7 @@ public:
         :
         super1(),
         super2(),
-        M_mesh( new mesh_type( Environment::worldCommSeq() ) ),
+        M_mesh( new mesh_type( Environment::worldCommSeqPtr() ) ),
         M_vertices()
     {}
     PointSetToMesh( PointSetToMesh const & p )
@@ -327,7 +327,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
 {
 #if defined(FEELPP_HAS_VTK)
     // reinitialize mesh
-    M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeq() ) );
+    M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeqPtr() ) );
 
     vtkPoints *newPoints = vtkPoints::New();
 
@@ -429,7 +429,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
 {
 #if defined(FEELPP_HAS_VTK)
     // reinitialize mesh
-    M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeq() ) );
+    M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeqPtr() ) );
 
     vtkPoints *newPoints = vtkPoints::New();
 

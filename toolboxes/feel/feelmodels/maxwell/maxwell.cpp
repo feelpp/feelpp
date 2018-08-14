@@ -151,7 +151,7 @@ MAXWELL_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->initPostProcess();
 
     // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
+    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
 
     size_type currentStartIndex = 0;// velocity and pressure before
     M_startBlockIndexFieldsInMatrix["potential-maxwell"] = currentStartIndex;

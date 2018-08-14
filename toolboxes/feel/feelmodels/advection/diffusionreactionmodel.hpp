@@ -65,9 +65,9 @@ public :
 
     void initFromMesh( mesh_ptrtype const& mesh, bool useExtendedDofTable )
     {
-        M_spaceDiffusion = space_diffusion_type::New( _mesh=mesh, _worldscomm=std::vector<WorldComm>(1,mesh->worldComm()),
+        M_spaceDiffusion = space_diffusion_type::New( _mesh=mesh, _worldscomm=makeWorldsComm(1,mesh->worldCommPtr()),
                                    _extended_doftable=std::vector<bool>(1,useExtendedDofTable) );
-        M_spaceReaction = space_reaction_type::New( _mesh=mesh, _worldscomm=std::vector<WorldComm>(1,mesh->worldComm()),
+        M_spaceReaction = space_reaction_type::New( _mesh=mesh, _worldscomm=makeWorldsComm(1,mesh->worldCommPtr()),
                                    _extended_doftable=std::vector<bool>(1,useExtendedDofTable) );
         M_fieldDiffusionCoeff = this->functionSpaceDiffusion()->elementPtr( cst( this->cstDiffusionCoeff() ) );
         M_fieldReactionCoeff = this->functionSpaceReaction()->elementPtr( cst( this->cstReactionCoeff() ) );

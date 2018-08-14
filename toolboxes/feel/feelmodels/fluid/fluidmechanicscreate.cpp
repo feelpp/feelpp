@@ -350,7 +350,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createALE()
 
         M_meshALE.reset(new mesh_ale_type( M_mesh,
                                            this->prefix(),
-                                           *this->localNonCompositeWorldsComm()[0],
+                                           this->localNonCompositeWorldsComm()[0],
                                            moveGhostEltFromExtendedStencil,
                                            this->repository() ));
         this->log("FluidMechanics","createALE", "--1--" );
@@ -844,7 +844,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidInlet()
                           _expr=gradt(velinlet)*trans(grad(velinlet)) );
             a+=on(_range=boundaryfaces(meshinlet), _rhs=l, _element=*velinlet, _expr=cst(0.) );
 
-            auto backendinlet = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"fluidinlet"), M_Xh->worldComm() );
+            auto backendinlet = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"fluidinlet"), M_Xh->worldCommPtr() );
             backendinlet->solve(_matrix=a.matrixPtr(),_rhs=l.vectorPtr(),_solution=*velinletRef );
             maxVelRef = velinletRef->max();
         }
@@ -951,7 +951,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->initMesh();
 
     // backend
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
+    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
 
     if ( M_modelName.empty() )
     {
@@ -1236,7 +1236,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidOutlet()
 
         M_fluidOutletWindkesselMesh = createSubmesh( this->mesh(), markedfaces(this->mesh(),markerNameBFOutletForSubmesh) );
         M_fluidOutletWindkesselSpace = space_fluidoutlet_windkessel_type::New( _mesh=M_fluidOutletWindkesselMesh,
-                                                                               _worldscomm=std::vector<WorldComm>(2,this->worldComm()) );
+                                                                               _worldscomm=makeWorldsComm(2,this->worldCommPtr()) );
     }
 
     // clean

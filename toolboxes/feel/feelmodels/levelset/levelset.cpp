@@ -439,7 +439,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     {
         M_modGradPhiAdvection = modgradphi_advection_type::New(
                 prefixvm(this->prefix(), "modgradphi-advection"),
-                this->worldComm()
+                this->worldCommPtr()
                 );
         M_modGradPhiAdvection->setModelName( "Advection-Reaction" );
         M_modGradPhiAdvection->build( this->functionSpace() );
@@ -451,7 +451,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     {
         M_stretchAdvection = stretch_advection_type::New(
                 prefixvm(this->prefix(), "stretch-advection"),
-                this->worldComm()
+                this->worldCommPtr()
                 );
         M_stretchAdvection->setModelName( "Advection-Reaction" );
         M_stretchAdvection->build( this->functionSpace() );
@@ -463,7 +463,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     {
         M_backwardCharacteristicsAdvection = backwardcharacteristics_advection_type::New(
                 prefixvm(this->prefix(), "backward-characteristics-advection"),
-                this->worldComm()
+                this->worldCommPtr()
                 );
         M_backwardCharacteristicsAdvection->setModelName( "Advection" );
         M_backwardCharacteristicsAdvection->build( this->functionSpaceVectorial() );
@@ -526,13 +526,13 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 {
-    M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "projector-l2"), _worldcomm=this->worldComm()) );
-    M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "projector-l2-vec"), _worldcomm=this->worldComm()) );
+    M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "projector-l2"), _worldcomm=this->worldCommPtr()) );
+    M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "projector-l2-vec"), _worldcomm=this->worldCommPtr()) );
     if( M_useCauchyAugmented )
     {
         M_projectorL2Tensor2Symm = projector( 
                 this->functionSpaceTensor2Symm() , this->functionSpaceTensor2Symm(), 
-                backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
+                backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldCommPtr())
                 );
     }
 
@@ -1154,7 +1154,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smoother() const
     {
         M_smoother = projector( 
                 this->functionSpace() , this->functionSpace(), 
-                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldComm()), 
+                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldCommPtr()), 
                 DIFF, 
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother"))/Order,
                 30);
@@ -1169,7 +1169,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherVectorial() const
     if( !M_smootherVectorial )
         M_smootherVectorial = projector( 
                 this->functionSpaceVectorial() , this->functionSpaceVectorial(), 
-                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldComm()), 
+                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldCommPtr()), 
                 DIFF, 
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother-vec"))/Order,
                 30);
@@ -1189,7 +1189,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherInterface() const
                 );
         M_smootherInterface = Feel::projector( 
                 spaceInterface, spaceInterface,
-                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldComm(), _rebuild=true), 
+                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldCommPtr(), _rebuild=true), 
                 DIFF,
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother"))/Order,
                 30);
@@ -1211,7 +1211,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherInterfaceVectorial() const
                 );
         M_smootherInterfaceVectorial = Feel::projector(
                 spaceInterfaceVectorial, spaceInterfaceVectorial,
-                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldComm(), _rebuild=true),
+                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldCommPtr(), _rebuild=true),
                 DIFF, 
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother-vec"))/Order,
                 30);

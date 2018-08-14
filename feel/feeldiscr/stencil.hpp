@@ -65,7 +65,7 @@ struct compute_graph3
         typedef mpl::bool_<BFType::template rangeiteratorType<tag2,tag1>::hasnotfindrange_type::value> hasnotfindrange_type;
         typedef mpl::bool_<BFType::template rangeExtendedIteratorType<tag2,tag1>::hasnotfindrange_type::value> hasnotfindrange_extended_type;
 
-        if ( M_stencil->testSpace()->worldsComm()[M_test_index].isActive() )
+        if ( M_stencil->testSpace()->worldsComm()[M_test_index]->isActive() )
         {
             if ( M_stencil->isBlockPatternZero( M_test_index,M_trial_index ) )
             {
