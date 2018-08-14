@@ -61,7 +61,18 @@ enum {
     UseBlock=0x8
 };
 
-class ModelCrbBaseBase {};
+class ModelCrbBaseBase : public CommObject
+{
+public:
+    using super = CommObject;
+    ModelCrbBaseBase() : super( Environment::worldCommPtr() ) {}
+    ModelCrbBaseBase( worldcomm_ptr_t const& w ) : super( w ) {}
+    ModelCrbBaseBase( ModelCrbBaseBase const& ) = default;
+    ModelCrbBaseBase( ModelCrbBaseBase && ) = default;
+    ModelCrbBaseBase& operator=( ModelCrbBaseBase const& ) = default;
+    ModelCrbBaseBase& operator=( ModelCrbBaseBase && ) = default;
+    virtual ~ModelCrbBaseBase() = default;
+};
 
 class ParameterDefinitionBase
 {
@@ -116,7 +127,7 @@ class ModelCrbBase :
 {
 
 public :
-
+    using super = ModelCrbBaseBase;
     typedef ModelCrbBase self_type;
     typedef typename EimDefinition::fun_type fun_type;
     typedef typename EimDefinition::fund_type fund_type;
@@ -297,6 +308,7 @@ public :
         {}
     ModelCrbBase( std::string const& name, uuids::uuid const& uid, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
+        super( worldComm ),
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
         M_backend( backend() ),
@@ -382,7 +394,7 @@ public :
      */
     void setModelOnlineDeim( std::string name )
     {
-        M_backend = backend( _name=name, _worldcomm=Environment::worldCommSeqPtr() );
+        M_backend = backend( _name=name, _worldcomm=this->subWorldCommSeqPtr() );
     }
 
     //! functions call by deim to init specific part of the model when online.
@@ -400,11 +412,6 @@ public :
     //! CRB type object is created because they use the id
     //!
     void setId( uuids::uuid const& i ) { M_crbModelDb.setId( i ); }
-
-    /**
-     * \return the mpi communicators
-     */
-    WorldComm const& worldComm() const { return Dmu->worldComm(); }
 
     /**
      * return directory path where symbolic expression (ginac) are built
@@ -1008,7 +1015,7 @@ public :
 
     virtual std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA()
     {
-        if( M_Aqm.size() == 0 && Environment::worldComm().isMasterRank() )
+        if( M_Aqm.size() == 0 && this->worldComm().isMasterRank() )
         {
             std::cout<<"************************************************************************"<<std::endl;
             std::cout<<"** It seems that you are using operators free and you don't have      **"<<std::endl;
@@ -1078,7 +1085,7 @@ public :
 
     virtual affine_decomposition_type computePicardAffineDecomposition()
     {
-        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs     **"<<std::endl;
@@ -1200,7 +1207,7 @@ public :
     }
     betaq_type computeBetaQ( parameter_type const& mu , mpl::bool_<false>, double time , bool only_terms_time_dependent=false)
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"*******************************************************************"<<std::endl;
             std::cout<<"** Error ! You want to access to computeBetaQ ( mu , time) but   **"<<std::endl;
@@ -1219,7 +1226,7 @@ public :
     }
     betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>  )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"*******************************************************************"<<std::endl;
             std::cout<<"** Error ! You want to access to computeBetaQm( mu ) wherease    **"<<std::endl;
@@ -1237,7 +1244,7 @@ public :
 
     virtual betaqm_type computePicardBetaQm( parameter_type const& mu )
     {
-        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1254,7 +1261,7 @@ public :
 
     betaq_type computeBetaQ( parameter_type const& mu , mpl::bool_<true>  )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"*******************************************************************"<<std::endl;
             std::cout<<"** Error ! You want to access to computeBetaQ ( mu ) wherease    **"<<std::endl;
@@ -1324,7 +1331,7 @@ public :
 
     virtual betaqm_type computePicardBetaQm( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false)
     {
-        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1391,7 +1398,7 @@ public :
     {
         if( is_time_dependent )
         {
-            if( Environment::worldComm().isMasterRank() )
+            if( this->worldComm().isMasterRank() )
             {
                 std::cout<<"*******************************************************************"<<std::endl;
                 std::cout<<"** Error ! You have implemented a transient problem but you      **"<<std::endl;
@@ -1416,7 +1423,7 @@ public :
     //so the user doesn't have to specify this function
     virtual betaqm_type computeBetaQm( element_type const& u, parameter_type const& mu ,  double time , bool only_time_dependent_terms=false )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"*******************************************************************"<<std::endl;
             std::cout<<"** You are using the function computeBetaQm( u , mu , time ) but **"<<std::endl;
@@ -1428,7 +1435,7 @@ public :
     }
     virtual betaqm_type computeBetaQm( element_type const& u , parameter_type const& mu )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** You are using the function computeBetaQm( u , mu ) but     **"<<std::endl;
@@ -1440,7 +1447,7 @@ public :
     }
     virtual betaqm_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu , double time , bool only_time_dependent_terms=false )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"*******************************************************************"<<std::endl;
             std::cout<<"** You are using the function computeBetaQm( u , mu , time ) but **"<<std::endl;
@@ -1452,7 +1459,7 @@ public :
     }
     virtual betaqm_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"*******************************************************************"<<std::endl;
             std::cout<<"** You are using the function computeBetaQm( urb , mu ) but      **"<<std::endl;
@@ -1465,7 +1472,7 @@ public :
 
     virtual betaqm_type computePicardBetaQm( element_type const& u , parameter_type const& mu )
     {
-        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1476,7 +1483,7 @@ public :
     }
     virtual betaqm_type computePicardBetaQm( element_type const& u, parameter_type const& mu ,  double time , bool only_time_dependent_terms=false )
     {
-        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1499,7 +1506,7 @@ public :
     }
     virtual parameter_type refParameter()
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"**************************************************************************************************"<<std::endl;
             std::cout<<"** You want to specify reference parameters because referenceParametersGivenByUser returns true **"<<std::endl;
@@ -1639,9 +1646,9 @@ public :
 
     void partitionMesh( std::string mshfile , std::string target , int dimension, int order )
     {
-        int N = Environment::worldComm().globalSize();
+        int N = this->worldComm().globalSize();
 
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout<<"[ModelCrbBase] generate target file : "<<target<<" from "<<mshfile<<std::endl;
 
             Gmsh gmsh( dimension,
@@ -1685,7 +1692,7 @@ public :
             mean2 = square.mean();
             standard_deviation = math::sqrt( mean2 - mean1 );
 
-            if( Environment::worldComm().isMasterRank() )
+            if( this->worldComm().isMasterRank() )
             {
                 if( force )
                 {
@@ -1712,7 +1719,7 @@ public :
 
     void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename , std::string extra="")
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             Eigen::MatrixXf::Index index_max;
             Eigen::MatrixXf::Index index_min;
@@ -1773,7 +1780,7 @@ public :
     **/
     void writeVectorsExtremumsRatio( std::vector< vectorN_type > const& error, std::vector< vectorN_type > const& estimated, std::string filename )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
 
             Eigen::MatrixXf::Index index_max;
@@ -1800,7 +1807,7 @@ public :
 
     void readConvergenceDataFromFile( std::vector< vectorN_type > & vector, std::string filename )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::vector< std::vector< double > > tmpvector;
             std::ifstream file ( filename );
@@ -2014,7 +2021,7 @@ public :
      */
     virtual void run( const double * X, unsigned long N, double * Y, unsigned long P )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"**************************************************"<<std::endl;
             std::cout<<"** You are using the function run whereas       **"<<std::endl;

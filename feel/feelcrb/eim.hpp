@@ -3287,10 +3287,10 @@ public:
             // std::cout << "EIM load geoctx " << hasCtxGeoEim <<"\n";
             if ( hasCtxGeoEim )
             {
-                geometricspace_ptrtype geospace( new geometricspace_type( this->worldComm() ) );
+                auto geospace = std::make_shared<geometricspace_type>( this->worldCommPtr() );
                 if ( this->functionSpace() && this->functionSpace()->mesh() )
                     geospace->setMesh( this->functionSpace()->mesh() );
-                M_ctxGeoEim.reset( new geometricspace_context_type( geospace ) );
+                M_ctxGeoEim = std::make_shared<geometricspace_context_type>( geospace );
                 __ar & BOOST_SERIALIZATION_NVP( *M_ctxGeoEim );
             }
         }

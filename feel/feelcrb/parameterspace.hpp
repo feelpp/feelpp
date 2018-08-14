@@ -46,6 +46,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelmesh/kdtree.hpp>
 #include <feel/feelcore/ptreetools.hpp>
 #include <feel/feelcore/utility.hpp>
@@ -61,7 +62,7 @@ namespace Feel
  * @see
  */
 template<uint16_type P = invalid_uint16_type_value >
-class ParameterSpace: public std::enable_shared_from_this<ParameterSpace<P> >
+class ParameterSpace: public CommObject, public std::enable_shared_from_this<ParameterSpace<P> >
 {
 public:
 
@@ -78,7 +79,7 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    using super = CommObject;
     typedef ParameterSpace<Dimension> parameterspace_type;
     typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
 
@@ -1381,7 +1382,7 @@ public:
     //! default constructor
     ParameterSpace( uint16_type dim = 0, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
-        M_worldComm( worldComm ),
+        super( worldComm ),
         M_nDim( (Dimension == invalid_uint16_type_value)? dim : Dimension ),
         M_min(),
         M_max()
@@ -1407,8 +1408,7 @@ public:
         }
 #endif
     //! destructor
-    ~ParameterSpace()
-        {}
+    virtual ~ParameterSpace() = default;
 
     /**
      * generate a shared_ptr out of a parameter space
@@ -1419,12 +1419,12 @@ public:
         }
     static parameterspace_ptrtype New( uint16_type dim = 0, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr())
         {
-            return parameterspace_ptrtype( new parameterspace_type( dim,worldComm ) );
+            return std::make_shared<parameterspace_type>( dim,worldComm );
         }
 
     static parameterspace_ptrtype New( std::string const& filename, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         {
-            parameterspace_ptrtype ps( new parameterspace_type( 0,worldComm ) );
+            auto ps = std::make_shared<parameterspace_type>( 0,worldComm );
             ps->loadJson( filename );
             return ps;
         }
@@ -1441,9 +1441,6 @@ public:
     /** @name Accessors
      */
     //@{
-
-    //! \return the mpi communicators
-    WorldComm const& worldComm() const { return *M_worldComm; }
 
     //! \return the parameter space dimension
     uint16_type dimension() const
@@ -1505,14 +1502,6 @@ public:
     /** @name  Mutators
      */
     //@{
-
-    /**
-     * set worldcomm
-     */
-    void setWorldComm( worldcomm_ptr_t const& worldComm )
-        {
-            M_worldComm = worldComm;
-        }
 
     /**
      * set the parameter space dimension
@@ -1952,9 +1941,6 @@ private:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
     private:
-
-    //! mpi communicators
-    worldcomm_ptr_t M_worldComm;
 
     //! parameter space dimension
     uint16_type M_nDim;

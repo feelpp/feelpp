@@ -32,7 +32,18 @@
 namespace Feel
 {
 
-struct GeometricSpaceBase {};
+struct GeometricSpaceBase : public CommObject
+{
+    using super = CommObject;
+    GeometricSpaceBase() : super( Environment::worldCommPtr() ) {}
+    GeometricSpaceBase( worldcomm_ptr_t const& w ) : super( w ) {}
+    GeometricSpaceBase( GeometricSpaceBase const& ) = default;
+    GeometricSpaceBase( GeometricSpaceBase && ) = default;
+    GeometricSpaceBase& operator=( GeometricSpaceBase const& ) = default;
+    GeometricSpaceBase& operator=( GeometricSpaceBase && ) = default;
+    virtual ~GeometricSpaceBase() = default;
+
+};
 struct ContextGeometricBase {};
 
 template <typename MeshType>
@@ -43,6 +54,7 @@ class GeometricSpace :
     typedef GeometricSpace<MeshType> self_type;
 public :
 
+    using super = GeometricSpaceBase;
     typedef self_type geometricspace_type;
     typedef std::shared_ptr<geometricspace_type> geometricspace_ptrtype;
 
@@ -54,18 +66,16 @@ public :
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
 
-    GeometricSpace( WorldComm const& worldComm = Environment::worldComm() )
+    GeometricSpace( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
-        M_worldComm( worldComm )
+        super( worldComm )
         {}
 
     GeometricSpace( mesh_ptrtype const& mesh )
         :
-        M_worldComm( Environment::worldComm() ),
+        super( mesh->worldCommPtr() ),
         M_mesh( mesh )
         {}
-
-    WorldComm const& worldComm() const { return (M_mesh)? M_mesh->worldComm() : M_worldComm; }
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
 
@@ -289,7 +299,7 @@ public :
             rank_type myrank = M_Xh->worldComm().rank();
 
             if ( !M_meshGeoContext )
-                M_meshGeoContext.reset( new mesh_type( M_Xh->worldComm() ) );
+                M_meshGeoContext = std::make_shared<mesh_type>( M_Xh->worldCommPtr() );
 
             std::shared_ptr<ContextGeometric> geoCtxReload;
             if ( myrank == procId )
@@ -357,7 +367,7 @@ public :
                 ar & BOOST_SERIALIZATION_NVP( geoCtxKeys );
 
                 if ( !M_meshGeoContext )
-                    M_meshGeoContext.reset( new mesh_type( M_Xh->worldComm() ) );
+                    M_meshGeoContext = std::make_shared<mesh_type>( M_Xh->worldCommPtr() );
 
                 for ( int geoCtxKey : geoCtxKeys )
                 {
@@ -385,7 +395,6 @@ public :
     std::shared_ptr<ContextGeometric> contextBasis( std::pair<int, std::shared_ptr<ContextGeometric>> const& p, Context const& c ) const { return p.second; }
 
 private :
-    WorldComm const& M_worldComm;
     mesh_ptrtype M_mesh;
 
 };

@@ -67,6 +67,17 @@ public:
         {
             return M_worldComm;
         }
+    /**
+     * \return the sequential mpi communicator
+     */
+    worldcomm_ptr_t const& subWorldCommSeqPtr() const
+        {
+            return M_worldComm->subWorldCommSeqPtr();
+        }
+    worldcomm_ptr_t & subWorldCommSeqPtr() 
+        {
+            return M_worldComm->subWorldCommSeqPtr();
+        }
 
     /**
      * \return the mpi communicator

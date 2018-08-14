@@ -159,7 +159,7 @@ protected :
     DEIMBase(  space_ptrtype Xh, parameterspace_ptrtype Dmu, sampling_ptrtype sampling,
                uuids::uuid const& uid, std::string const& modelname,
                std::string prefix, std::string const& dbfilename, std::string const& dbdirectory,
-               WorldComm const& worldComm = Environment::worldComm() );
+               worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
 public :
     //! Destructor
@@ -437,7 +437,7 @@ protected :
 
 
 template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
-DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, parameterspace_ptrtype Dmu, sampling_ptrtype sampling, uuids::uuid const& uid, std::string const& modelname, std::string prefix, std::string const& dbfilename, std::string const& dbdirectory, WorldComm const& worldComm ) :
+DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, parameterspace_ptrtype Dmu, sampling_ptrtype sampling, uuids::uuid const& uid, std::string const& modelname, std::string prefix, std::string const& dbfilename, std::string const& dbdirectory, worldcomm_ptr_t const& worldComm ) :
     super ( ( boost::format( "%1%DEIM%2%" ) %(is_matrix ? "M":"") %prefix  ).str(),
             "deim",
             uid,
@@ -1026,9 +1026,9 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::loadDB()
         {
             auto seqmesh = loadMesh( _mesh=new mesh_type,
                                      _filename=filename.string(),
-                                     _worldcomm= Environment::worldCommSeq() );
+                                     _worldcomm= Environment::worldCommSeqPtr() );
             Rh = space_type::New( seqmesh,
-                                  _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
+                                  _worldscomm=makeWorldsComm(space_type::nSpaces,Environment::worldCommSeqPtr()) );
         }
 
         boost::archive::binary_iarchive ia( ifs );

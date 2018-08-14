@@ -67,7 +67,7 @@ struct InitializeRbSubSpace
         }
         else
         {
-            auto rbSubSpace = std::shared_ptr<rbsubspace_type>( new rbsubspace_type( M_rbSpaceType.worldComm() ) );
+            auto rbSubSpace = std::make_shared<rbsubspace_type>( M_rbSpaceType.worldCommPtr() );
             rbSubSpace->setFunctionSpace( M_rbSpaceType.template subFeFunctionSpace<key_type::value>() );
             x = std::make_pair(key_type(), rbSubSpace);
         }
@@ -409,7 +409,6 @@ public :
 
             int rbdim = ptree.template get<size_type>( "dimension" );
             this->setDimension( rbdim );
-            WorldComm const& worldcomm = this->worldComm();
             std::string meshFilename = ptree.template get<std::string>( "mesh-filename" );
             if ( !dbDir.empty() && !fs::path(meshFilename).is_absolute() )
                 meshFilename = (fs::path(dbDir)/fs::path(meshFilename).filename()).string();
@@ -417,7 +416,7 @@ public :
             auto meshCtxInPtree = ptree.template get_optional<size_type>("mesh-context");
             if ( meshCtxInPtree )
                 meshUpdateContext = *meshCtxInPtree;
-            auto mesh = loadMesh(_mesh=new mesh_type(worldcomm),_filename=meshFilename,
+            auto mesh = loadMesh(_mesh=new mesh_type(this->worldCommPtr()),_filename=meshFilename,
                                  _update=meshUpdateContext );
                                  //_update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
                                  //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
@@ -1130,7 +1129,7 @@ public :
             rank_type myrank = M_rbspace->worldComm().rank();
 
             if ( !M_meshForRbContext )
-                M_meshForRbContext.reset( new mesh_type( M_rbspace->worldComm() ) );
+                M_meshForRbContext = std::make_shared<mesh_type>( M_rbspace->worldCommPtr() );
 
             ctxrb_ptrtype rbCtxReload;
             if ( myrank == procId )
@@ -1194,7 +1193,7 @@ public :
                 if ( M_rbspace )
                 {
                     if ( !M_meshForRbContext )
-                        M_meshForRbContext.reset( new mesh_type( M_rbspace->worldComm() ) );
+                        M_meshForRbContext = std::make_shared<mesh_type>( M_rbspace->worldCommPtr() );
                 }
 
                 ar & BOOST_SERIALIZATION_NVP( M_nPoints );

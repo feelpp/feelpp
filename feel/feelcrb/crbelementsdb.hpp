@@ -79,7 +79,7 @@ public :
     //! constructors
     CRBElementsDB( std::string const& name = "defaultname_crbelementdb",
                    std::string const& ext = "elements",
-                   WorldComm const& worldComm = Environment::worldComm() )
+                   worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
     :
         super( name, ext, worldComm ),
         M_fileFormat( soption(_name="crb.db.format") ),
