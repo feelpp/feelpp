@@ -97,7 +97,7 @@ public :
     buildSpaceP0()
     {
         M_XhP0 = space_P0_type::New(_mesh=M_mesh,
-                                    _worldscomm=std::vector<WorldComm>(1,M_mesh->worldComm()),
+                                    _worldscomm=makeWorldsComm(1,M_mesh->worldCommPtr()),
                                     _extended_doftable=std::vector<bool>(1,true) );
     }
 
