@@ -458,7 +458,7 @@ void AlphaElectric::setupSpecificityModel( boost::property_tree::ptree const& pt
                                    {
                                        return p.second.hasMinMax();
                                    });
-    Dmu = parameterspace_type::New( nbCrbParameters, Environment::worldComm() );
+    Dmu = parameterspace_type::New( nbCrbParameters );
 
     auto mu_min = Dmu->element();
     auto mu_max = Dmu->element();
