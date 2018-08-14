@@ -105,7 +105,7 @@ FSI<FluidType,SolidType>::createMesh()
 {
     this->log("FSI","createMesh","start");
 
-    FSIMesh<typename fluid_type::convex_type> fsimeshTool(this->prefix(),this->worldComm());
+    FSIMesh<typename fluid_type::convex_type> fsimeshTool(this->prefix(),this->worldCommPtr());
 
     int nPart = this->worldComm().size();//this->nPartitions();
 
@@ -268,7 +268,7 @@ FSI<FluidType,SolidType>::init()
     // fluid model build
     if ( !M_fluidModel )
     {
-        M_fluidModel = fluid_ptrtype( new fluid_type("fluid",false,this->worldComm(), "", this->repository() ) );
+        M_fluidModel = std::make_shared<fluid_type>("fluid",false,this->worldCommPtr(), "", this->repository() );
         if ( !M_mshfilepathFluidPartN.empty() )
             M_fluidModel->setMeshFile(M_mshfilepathFluidPartN.string());
 
@@ -281,7 +281,7 @@ FSI<FluidType,SolidType>::init()
     // solid model build
     if ( !M_solidModel )
     {
-        M_solidModel = solid_ptrtype( new solid_type("solid",false,this->worldComm(), "", this->repository() ) );
+        M_solidModel = std::make_shared<solid_type>("solid",false,this->worldCommPtr(), "", this->repository() );
         bool doExtractSubmesh = boption(_name="solid-mesh.extract-1d-from-fluid-mesh",_prefix=this->prefix() );
         if ( doExtractSubmesh )
         {

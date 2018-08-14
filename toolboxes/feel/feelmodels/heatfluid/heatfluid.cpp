@@ -166,15 +166,15 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("HeatFluid","init", "start" );
     this->timerTool("Constructor").start();
 
-    M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), false, this->worldComm(),
-                                                           this->subPrefix(), this->repository() ) );
+    M_heatModel = std::make_shared<heat_model_type>(prefixvm(this->prefix(),"heat"), false, this->worldCommPtr(),
+                                                    this->subPrefix(), this->repository() );
     if ( !M_heatModel->modelPropertiesPtr() )
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
     M_heatModel->setMesh( this->mesh() );
     M_heatModel->init( false );
 
-    M_fluidModel.reset( new fluid_model_type(prefixvm(this->prefix(),"fluid"), false, this->worldComm(),
-                                             this->subPrefix(), this->repository() ) );
+    M_fluidModel = std::make_shared<fluid_model_type>(prefixvm(this->prefix(),"fluid"), false, this->worldCommPtr(),
+                                                       this->subPrefix(), this->repository() );
     if ( !M_fluidModel->modelPropertiesPtr() )
         M_fluidModel->setModelProperties( this->modelPropertiesPtr() );
     M_fluidModel->setMesh( this->mesh() );
@@ -212,7 +212,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->initPostProcess();
 
     // backend
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
+    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
 
     // block vector solution
     auto blockVectorSolutionFluid = M_fluidModel->blockVectorSolution();
