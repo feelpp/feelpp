@@ -1,19 +1,15 @@
 from pyfeelpp import core
 import sys
+
 e=core.Environment(sys.argv)
-rd = core.RemoteData("github:{repo:feelpp,path:quickstart/laplacian/feelpp2d/feelpp2d.geo}",worldComm=core.Environment.worldCommPtr())
-if rd.canDownload():
-    d=e.downloadsRepository()
-    print("download mesh in ", d);
-    geo={'2':rd.download( d )[0]}
-    print(geo)
-rd = core.RemoteData("github:{repo:feelpp,path:quickstart/laplacian/feelpp3d/feelpp3d.geo}",worldComm=core.Environment.worldCommPtr())
-if rd.canDownload():
-    d=e.downloadsRepository()
-    print("download mesh in ", d);
-    geo['3']=rd.download( d )[0]
-    print(geo)
+
 from pyfeelpp import mesh
+
+geo={
+    '2':core.download( "github:{repo:feelpp,path:quickstart/laplacian/feelpp2d/feelpp2d.geo}", worldComm=core.Environment.worldCommPtr() )[0],
+    '3':core.download( "github:{repo:feelpp,path:quickstart/laplacian/feelpp3d/feelpp3d.geo}", worldComm=core.Environment.worldCommPtr() )[0]
+}
+
 
 def run( m, geofile ):
     if e.isMasterRank():
