@@ -95,7 +95,7 @@ void defMesh(py::module &m)
     std::string suffix = std::to_string(Dim)+"DG"+ std::to_string(Order) + std::string("R") + std::to_string(RealDim);
     pyclass_name += suffix;
     py::class_<mesh_t,std::shared_ptr<mesh_t>>(m,pyclass_name.c_str())
-        .def(py::init<WorldComm const&>(),py::arg("worldComm")=Environment::worldComm(),"Construct a new mesh")
+        .def(py::init<worldcomm_ptr_t const&>(),py::arg("worldComm")=Environment::worldCommPtr(),"Construct a new mesh")
         .def_static("create",&mesh_t::New,"Construct a new shared_ptr mesh")
         .def("dimension",&mesh_t::dimension,"get topological dimension")
         .def("realDimension",&mesh_t::realDimension,"get real dimension")
@@ -156,9 +156,20 @@ PYBIND11_MODULE(_mesh, m )
         .value("GEOMAP_O1", GeomapStrategyType::GEOMAP_O1)
         .value("GEOMAP_HO", GeomapStrategyType::GEOMAP_HO)
         .export_values();
-    
-    defMesh<Simplex<1>>(m);
-    defMesh<Simplex<2>>(m);
-    defMesh<Simplex<3>>(m);
-    //defMesh<3>();
+
+    // 1D
+    defMesh<Simplex<1,1,1>>(m);
+    defMesh<Simplex<1,2,1>>(m);
+    // 2D
+    defMesh<Simplex<2,1,2>>(m);
+    defMesh<Simplex<2,2,2>>(m);
+    //defMesh<Simplex<1,1,2>>(m);
+    //defMesh<Simplex<1,2,2>>(m);
+    // 3D
+    defMesh<Simplex<3,1,3>>(m);
+    defMesh<Simplex<3,2,3>>(m);
+    //defMesh<Simplex<2,1,3>>(m);
+    //defMesh<Simplex<2,2,3>>(m);
+    //defMesh<Simplex<1,1,3>>(m);
+    //defMesh<Simplex<1,2,3>>(m);
 }
