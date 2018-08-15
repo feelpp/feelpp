@@ -44,7 +44,7 @@ void defFM(py::module &m)
     using fm_t = FluidMechanics< Simplex<nDim,OrderGeo>,
                                  Lagrange<OrderVelocity, Vectorial,Continuous,PointSetFekete>,
                                  Lagrange<OrderPressure, Scalar,Continuous,PointSetFekete> > ;
-    std::string pyclass_name = std::string("Fluid_P") + std::to_string(OrderVelocity) + std::string("P") + std::to_string(OrderPressure) + std::string("G") + std::to_string(OrderGeo);
+    std::string pyclass_name = std::string("Fluid_") + std::to_string(fm_t::mesh_type::nDim) + std::string("D") + std::string("P") + std::to_string(OrderVelocity) + std::string("P") + std::to_string(OrderPressure) + std::string("G") + std::to_string(OrderGeo);
     py::class_<fm_t,std::shared_ptr<fm_t>,ModelNumerical>(m,pyclass_name.c_str())
         .def(py::init<std::string const&,bool,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
@@ -56,6 +56,29 @@ void defFM(py::module &m)
              )
         .def("init",&fm_t::init, "initialize the fluid mechanics toolbox",py::arg("buildModelAlgebraicFactory")= true)
 
+        // function spaces and elements
+        .def("functionSpace",&fm_t::functionSpace, "get the velocity/pressure function space")
+        .def("fieldVelocityPressurePtr",static_cast<typename fm_t::element_fluid_ptrtype& (fm_t::*)()>(&fm_t::fieldVelocityPressurePtr), "get the velocity/pressure shared_ptr field")
+        .def("fieldVelocityPressure",static_cast<typename fm_t::element_fluid_type& (fm_t::*)()>(&fm_t::fieldVelocityPressure), "get the velocity/pressure field")
+        
+        .def("functionSpaceVelocity",&fm_t::functionSpaceVelocity, "get the velocity function space")
+        .def("fieldVelocity",static_cast<typename fm_t::element_fluid_velocity_type& (fm_t::*)()>(&fm_t::fieldVelocity), "get the velocity field")
+        
+        .def("functionSpacePressure",&fm_t::functionSpacePressure, "get the pressure function space")
+        .def("fieldPressure",static_cast<typename fm_t::element_fluid_pressure_type& (fm_t::*)()>(&fm_t::fieldPressure), "get the pressure field")
+
+        // normal stress
+        .def("createFunctionSpacesNormalStress",&fm_t::createFunctionSpacesNormalStress, "create a normal stress function space")
+        //.def("functionSpaceNormalStress",&fm_t::functionSpaceNormalStress, "get the normal stress function space")
+        .def("fieldNormalStressPtr",static_cast<typename fm_t::element_stress_ptrtype& (fm_t::*)()>(&fm_t::fieldNormalStressPtr), "get the normal stress field")
+        .def("fieldNormalStress",static_cast<typename fm_t::element_stress_type const& (fm_t::*)() const>(&fm_t::fieldNormalStress), "get the normal stress field")
+        
+        // vorticity
+        .def("createFunctionSpacesVorticity",&fm_t::createFunctionSpacesVorticity, "create a vorticity function space")
+        //.def("functionSpaceVorticity",&fm_t::functionSpaceVorticity, "get the vorticity function space")
+        .def("fieldVorticityPtr",static_cast<typename fm_t::element_vorticity_ptrtype& (fm_t::*)()>(&fm_t::fieldVorticityPtr), "get the vorticity field")
+        .def("fieldVorticity",static_cast<typename fm_t::element_vorticity_type& (fm_t::*)()>(&fm_t::fieldVorticity), "get the vorticity field")
+        
         // time stepping
         .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (fm_t::*)() const>(&fm_t::timeStepBase), "get time stepping base")
         .def("updateTimeStep",&fm_t::updateTimeStep, "update time stepping")
@@ -78,6 +101,9 @@ PYBIND11_MODULE(_fluid, m )
     
     
     defFM<2,2,1,1>(m);
+    defFM<2,3,2,1>(m);
+    defFM<3,2,1,1>(m);
+    defFM<3,3,2,1>(m);
 
 }
 
