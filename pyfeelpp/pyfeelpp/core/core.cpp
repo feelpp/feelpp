@@ -61,6 +61,7 @@ PYBIND11_MODULE(_core, m )
         .def_static("isParallel",&Feel::Environment::isParallel, "true if process is parallel, false otherwise",py::return_value_policy::copy)
         .def_static("isMasterRank",&Feel::Environment::isMasterRank, "true if rank is 0, false otherwise",py::return_value_policy::copy)
         .def_static("worldComm",&Feel::Environment::worldComm, "get the Environment WorldComm",py::return_value_policy::copy)
+        .def_static("worldCommPtr",static_cast<worldcomm_ptr_t const& (*)()>(&Feel::Environment::worldCommPtr), "get the Environment WorldComm")
         .def_static("rootRepository",&Feel::Environment::rootRepository,"get the root repository for Feel++, default $HOME/feel",py::return_value_policy::move)
         .def_static("downloadsRepository",&Feel::Environment::downloadsRepository,"get the downloads repository for Feel++",py::return_value_policy::move)
         .def_static("findFile",&Feel::Environment::findFile,"find file",py::return_value_policy::move)
@@ -86,7 +87,8 @@ PYBIND11_MODULE(_core, m )
         .def("globalRank", &Feel::WorldComm::globalRank,"returns the rank of the global worldcomm")
         .def("masterRank", &Feel::WorldComm::masterRank,"returns the master rank")
         ;
-    py::class_<std::vector<WorldComm>>(m,"WorldsComm").def(py::init<>());
+    py::class_<worldscomm_ptr_t>(m,"WorldsComm").def(py::init<>());
+    m.def( "makeWorldsComm", static_cast<worldscomm_ptr_t (*)(int, worldcomm_ptr_t const& )>(&Feel::makeWorldsComm), py::arg("n")=1, py::arg("worldComm")=Environment::worldCommPtr(), "create a vector of WorldComm with n entries" );
     py::class_<std::vector<bool>>(m,"vector_bool").def(py::init<>());
 
     
