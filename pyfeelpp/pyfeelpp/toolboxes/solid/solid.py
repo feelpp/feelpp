@@ -1,14 +1,14 @@
-from pyfeelpp import *
-import sys,time
+from pyfeelpp import core
+import sys
 
 import pyfeelpp.toolboxes.modelcore as modelcore
 
 e=core.Environment(sys.argv,opts=modelcore.toolboxes_options("solid"))
 
-from pyfeelpp import discr,ts,filters
+#from pyfeelpp import discr,ts,filters
 from pyfeelpp.toolboxes.solid import *
 
-f=Solid_2DP1.create("solid",buildmesh=True,worldComm=e.worldComm())
+f=solid(dim=2,orderDisp=1,worldComm=e.worldCommPtr())
 f.init()
 f.printAndSaveInfo()
 if f.isStationary():
