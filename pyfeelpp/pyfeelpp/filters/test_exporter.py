@@ -5,19 +5,10 @@ e=core.Environment(sys.argv)
 
 from pyfeelpp import mesh,discr,filters,vf
 
-rd = core.RemoteData("github:{repo:feelpp,path:quickstart/laplacian/feelpp2d/feelpp2d.geo}",worldComm=core.Environment.worldCommPtr())
-if rd.canDownload():
-    d=e.downloadsRepository()
-    geo={'2':rd.download( d )[0]}
-    if e.isMasterRank():
-        print(geo)
-
-rd = core.RemoteData("github:{repo:feelpp,path:quickstart/laplacian/feelpp3d/feelpp3d.geo}",worldComm=core.Environment.worldCommPtr())
-if rd.canDownload():
-    d=e.downloadsRepository()
-    geo['3']=rd.download( d )[0]
-    if e.isMasterRank():
-        print(geo)        
+geo={
+    '2':core.download( "github:{repo:feelpp,path:quickstart/laplacian/feelpp2d/feelpp2d.geo}", worldComm=core.Environment.worldCommPtr() )[0],
+    '3':core.download( "github:{repo:feelpp,path:quickstart/laplacian/feelpp3d/feelpp3d.geo}", worldComm=core.Environment.worldCommPtr() )[0]
+}
 
 def run( m, geo ):
     m2d = mesh.load(m,geo,0.1)
