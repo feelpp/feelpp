@@ -1267,9 +1267,9 @@ Environment::doOptions( int argc, char** argv,
             RemoteData rdTool( caseDir, worldCommPtr());
             if ( rdTool.canDownload() )
             {
-                auto dowloadedFolder = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cases")).string() );
-                CHECK( dowloadedFolder.size() == 1 ) << "download only one folder";
-                caseDir = dowloadedFolder[0];
+                auto downloadedFolder = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cases")).string() );
+                CHECK( downloadedFolder.size() == 1 ) << "download only one folder";
+                caseDir = downloadedFolder[0];
             }
 
             fs::path fscaseDir( caseDir );
