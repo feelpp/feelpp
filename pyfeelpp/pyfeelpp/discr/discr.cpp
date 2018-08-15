@@ -62,7 +62,7 @@ void defDiscr(py::module &m)
     else
         pyclass_name = std::string("Pdh_") + suffix;
     py::class_<space_t,std::shared_ptr<space_t>>(m,pyclass_name.c_str())
-        .def(py::init<mesh_ptr_t const&,mesh_support_vector_t const&, size_type, periodicity_t, std::vector<WorldComm> const&, std::vector<bool>>(),
+        .def(py::init<mesh_ptr_t const&,mesh_support_vector_t const&, size_type, periodicity_t, std::vector<worldcomm_ptr_t> const&, std::vector<bool>>(),
              py::arg("mesh"),
              py::arg("support")=mesh_support_vector_t(),
              py::arg("components")=MESH_RENUMBER | MESH_CHECK,
@@ -142,7 +142,10 @@ PYBIND11_MODULE(_discr, m )
     py::class_<Periodicity<NoPeriodicity>>(m,pyclass_name.c_str()).def(py::init<>());
 
     
-    //defDiscr<Mesh<Simplex<1>>,1>( m );
+    defDiscr<Pch_type<Mesh<Simplex<1>>,1>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<1>>,2>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<1>>,3>>( m );
+    
     defDiscr<Pch_type<Mesh<Simplex<2>>,1>>( m );
     defDiscr<Pch_type<Mesh<Simplex<2>>,2>>( m );
     defDiscr<Pch_type<Mesh<Simplex<2>>,3>>( m );
