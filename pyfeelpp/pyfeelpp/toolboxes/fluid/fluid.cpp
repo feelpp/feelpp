@@ -46,10 +46,10 @@ void defFM(py::module &m)
                                  Lagrange<OrderPressure, Scalar,Continuous,PointSetFekete> > ;
     std::string pyclass_name = std::string("Fluid_P") + std::to_string(OrderVelocity) + std::string("P") + std::to_string(OrderPressure) + std::string("G") + std::to_string(OrderGeo);
     py::class_<fm_t,std::shared_ptr<fm_t>,ModelNumerical>(m,pyclass_name.c_str())
-        .def(py::init<std::string const&,bool,WorldComm const&,std::string const&, ModelBaseRepository const&>(),
+        .def(py::init<std::string const&,bool,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
              py::arg("buildmesh")=true,
-             py::arg("worldComm")=Environment::worldComm(),
+             py::arg("worldComm")=Environment::worldCommPtr(),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize the fluid mechanics toolbox"
