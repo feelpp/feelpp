@@ -114,13 +114,13 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
                                                     BSFunctionSpaceDefinition> >;
 
     using self_type = BiotSavartAlphaElectricCRB<te_rb_model_type>;
-    using self_ptrtype = boost::shared_ptr<self_type>;
+    using self_ptrtype = std::shared_ptr<self_type>;
 
-    using te_rb_model_ptrtype = boost::shared_ptr<te_rb_model_type>;
+    using te_rb_model_ptrtype = std::shared_ptr<te_rb_model_type>;
     using crb_model_type = CRBModel<te_rb_model_type>;
-    using crb_model_ptrtype = boost::shared_ptr<crb_model_type>;
+    using crb_model_ptrtype = std::shared_ptr<crb_model_type>;
     using crb_type = CRB<crb_model_type>;
-    using crb_ptrtype = boost::shared_ptr<crb_type>;
+    using crb_ptrtype = std::shared_ptr<crb_type>;
 
     using value_type = typename te_rb_model_type::value_type;
     using param_space_type = typename te_rb_model_type::parameterspace_type;
@@ -132,7 +132,7 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
     using mesh_type = typename super_type::mesh_type;
     using mesh_ptrtype = typename super_type::mesh_ptrtype;
     using exporter_type = Exporter<mesh_type>;
-    using exporter_ptrtype = boost::shared_ptr<exporter_type>;
+    using exporter_ptrtype = std::shared_ptr<exporter_type>;
 
     using space_type = typename super_type::space_type;
     using space_ptrtype = typename super_type::space_ptrtype;
@@ -151,16 +151,16 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
     using dof_points_type = typename std::vector<dof_point_type>;
 
     using deim_type = DEIM<self_type>;
-    using deim_ptrtype = boost::shared_ptr<deim_type>;
+    using deim_ptrtype = std::shared_ptr<deim_type>;
     using vector_ptrtype = typename super_type::vector_ptrtype;
 
     using prop_type = ModelProperties;
-    using prop_ptrtype = boost::shared_ptr<prop_type>;
+    using prop_ptrtype = std::shared_ptr<prop_type>;
     using mat_type = ModelMaterial;
     using map_mat_type = std::map<std::string,mat_type>;
 
   public:
-    static self_ptrtype New(crb::stage stage = crb::stage::online) { return boost::make_shared<self_type>(stage); }
+    static self_ptrtype New(crb::stage stage = crb::stage::online) { return std::make_shared<self_type>(stage); }
     BiotSavartAlphaElectricCRB(crb::stage stage = crb::stage::online);
 
     void initModel();

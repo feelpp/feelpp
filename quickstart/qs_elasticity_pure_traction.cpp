@@ -132,7 +132,7 @@ int main(int argc, char**argv )
     if ( !boption( "no-solve" ) )
     {
         tic();
-        boost::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(backend(),qsNullSpace(Vh,mpl::int_<FEELPP_DIM>())) );
+        std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(backend(),qsNullSpace(Vh,mpl::int_<FEELPP_DIM>())) );
         backend()->attachNearNullSpace( myNullSpace );
         if ( boption(_name="nullspace") )
             backend()->attachNearNullSpace( myNullSpace );

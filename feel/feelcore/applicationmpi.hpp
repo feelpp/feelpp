@@ -308,7 +308,7 @@ private:
 
 
     static bool _S_is_mpi_initialized;
-    boost::shared_ptr<mpi::environment> M_env;
+    std::shared_ptr<mpi::environment> M_env;
     static mpi::communicator S_world;
 };
 

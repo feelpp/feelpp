@@ -520,7 +520,7 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef backend_type::sparse_matrix_type sparse_matrix_type;
@@ -530,12 +530,12 @@ public:
 
     typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix_type;
     typedef eigen_matrix_type ematrix_type;
-    typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
+    typedef std::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
     /*mesh*/
     typedef Simplex<2,1> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
     typedef p0_space_type::element_type p0_element_type;
@@ -545,20 +545,20 @@ public:
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef space_type functionspace_type;
     typedef space_ptrtype functionspace_ptrtype;
     typedef space_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
 
     /* parameter space */
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
     typedef parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef parameterspace_type::sampling_type sampling_type;
@@ -762,8 +762,8 @@ public:
     void solve( sparse_matrix_ptrtype& ,element_type& ,vector_ptrtype&  );
 
     /**
-     * returns the scalar product of the boost::shared_ptr vector x and
-     * boost::shared_ptr vector y
+     * returns the scalar product of the std::shared_ptr vector x and
+     * std::shared_ptr vector y
      */
     double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y );
 

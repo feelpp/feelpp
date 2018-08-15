@@ -138,7 +138,7 @@ public :
  * @see
  */
 class EEG : public ModelCrbBase< ParameterDefinition , FunctionSpaceDefinition ,EimDefinition<ParameterDefinition,FunctionSpaceDefinition> >,
-            public boost::enable_shared_from_this< EEG >
+            public std::enable_shared_from_this< EEG >
 {
 public:
 
@@ -165,7 +165,7 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -176,13 +176,13 @@ public:
 
     typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix_type;
     typedef eigen_matrix_type ematrix_type;
-    typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
+    typedef std::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
 
     /*mesh*/
     typedef Simplex<Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef bases<Lagrange<Order, Scalar> > basis_type;
     typedef bases<Lagrange<Order, Scalar>,Lagrange<0, Scalar> > prod_basis_type;
@@ -190,31 +190,31 @@ public:
     /*space*/
     typedef FunctionSpace<mesh_type, prod_basis_type, value_type> functionspace_type;
     typedef functionspace_type space_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef functionspace_ptrtype space_ptrtype;
 
     /*reduced basis space*/
     typedef ReducedBasisSpace<EEG, mesh_type, prod_basis_type, value_type> rbfunctionspace_type;
-    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
+    typedef std::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
     typedef typename element_type::sub_element<0>::type element_0_type;
     typedef typename element_type::sub_element<1>::type element_1_type;
 
     typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar, Discontinuous> > > p0_space_type;
-    typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
+    typedef std::shared_ptr<p0_space_type> p0_space_ptrtype;
     typedef typename p0_space_type::element_type p0_element_type;
 
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
 
     /* parameter space */
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
     typedef parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef parameterspace_type::sampling_type sampling_type;
@@ -442,8 +442,8 @@ public:
     void solve( sparse_matrix_ptrtype& ,element_type& ,vector_ptrtype&  );
 
     /**
-     * returns the scalar product of the boost::shared_ptr vector x and
-     * boost::shared_ptr vector y
+     * returns the scalar product of the std::shared_ptr vector x and
+     * std::shared_ptr vector y
      */
     double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y );
 

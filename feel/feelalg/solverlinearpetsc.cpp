@@ -143,8 +143,8 @@ extern "C"
         }
         else
         {
-            boost::shared_ptr<VectorPetsc<double> > x_vec;
-            boost::shared_ptr<VectorPetsc<double> > y_vec;
+            std::shared_ptr<VectorPetsc<double> > x_vec;
+            std::shared_ptr<VectorPetsc<double> > y_vec;
             if ( preconditioner->worldComm().localSize() > 1 )
             {
                 CHECK ( preconditioner->matrix() ) << "matrix is not defined";
@@ -441,7 +441,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
                               const unsigned int m_its,
                               bool transpose )
 {
-    this->setWorldComm( matrix_in.comm() );
+    this->setWorldComm( matrix_in.worldCommPtr() );
     this->init ();
 
     MatrixPetsc<T> * matrix   = const_cast<MatrixPetsc<T> *>( dynamic_cast<MatrixPetsc<T> const*>( &matrix_in ) );

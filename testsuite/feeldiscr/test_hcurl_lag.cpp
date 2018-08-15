@@ -112,7 +112,7 @@ namespace Feel
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order G_order
     typedef Simplex<HL_DIM,HL_ORDER> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! the basis type of our approximation space
     //typedef bases<Nedelec<0> > basis_type;
@@ -129,12 +129,12 @@ namespace Feel
     typedef FunctionSpace<mesh_type, bases<basis_type, lagrange_basis_v_type> > mixed_space_v_type;
 
     //! the approximation function space type (shared_ptr<> type)
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef boost::shared_ptr<lagrange_space_s_type> lagrange_space_s_ptrtype;
-    typedef boost::shared_ptr<lagrange_space_v_type> lagrange_space_v_ptrtype;
-    typedef boost::shared_ptr<lagrange_space_v_s_type> lagrange_space_v_s_ptrtype;
-    typedef boost::shared_ptr<mixed_space_s_type> mixed_space_s_ptrtype;
-    typedef boost::shared_ptr<mixed_space_v_type> mixed_space_v_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<lagrange_space_s_type> lagrange_space_s_ptrtype;
+    typedef std::shared_ptr<lagrange_space_v_type> lagrange_space_v_ptrtype;
+    typedef std::shared_ptr<lagrange_space_v_s_type> lagrange_space_v_s_ptrtype;
+    typedef std::shared_ptr<mixed_space_s_type> mixed_space_s_ptrtype;
+    typedef std::shared_ptr<mixed_space_v_type> mixed_space_v_ptrtype;
 
     /**
      * Constructor

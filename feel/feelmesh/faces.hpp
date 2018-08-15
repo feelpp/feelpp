@@ -31,7 +31,7 @@
 #define __faces_H 1
 
 #include <unordered_map>
-
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelmesh/geoelement.hpp>
 #include <feel/feelmesh/filters.hpp>
 
@@ -55,6 +55,7 @@ public:
     /** @name Typedefs
      */
     //@{
+    
     typedef typename ElementType::value_type value_type;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<EntityType::nRealDim-1> >,
                               mpl::identity<typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<0> >,
@@ -127,16 +128,16 @@ public:
      */
     //@{
 
-    Faces( WorldComm const& worldComm = Environment::worldComm() )
+    Faces( worldcomm_ptr_t  const& worldComm = Environment::worldCommPtr() )
         :
-        M_worldCommFaces( worldComm ),
+        M_worldComm( worldComm ),
         M_faces(),
         M_needToOrderFaces( false )
     {}
 
     Faces( Faces const & f )
         :
-        M_worldCommFaces( f.M_worldCommFaces ),
+        M_worldComm( f.M_worldComm ),
         M_faces( f.M_faces ),
         M_needToOrderFaces( false )
     {
@@ -162,7 +163,7 @@ public:
     {
         if ( this != &e )
         {
-            M_worldCommFaces = e.M_worldCommFaces;
+            M_worldComm = e.M_worldComm;
             M_faces = e.M_faces;
             this->buildOrderedFaces();
         }
@@ -194,7 +195,7 @@ public:
 
     WorldComm const& worldCommFaces() const
     {
-        return M_worldCommFaces;
+        return *M_worldComm;
     }
 
     virtual bool isEmpty() const
@@ -716,9 +717,9 @@ public:
         this->updateMarkerWithRangeFaces( 3, range, flag );
     }
 
-    void setWorldCommFaces( WorldComm const& _worldComm )
+    void setWorldCommFaces( worldcomm_ptr_t const& _worldComm )
     {
-        M_worldCommFaces = _worldComm;
+        M_worldComm = _worldComm;
     }
 
     void updateOrderedFace()
@@ -778,7 +779,7 @@ private:
         }
 
 private:
-    WorldComm M_worldCommFaces;
+    worldcomm_ptr_t M_worldComm;
     faces_type M_faces;
     ordered_faces_reference_wrapper_type M_orderedFaces;
     bool M_needToOrderFaces;

@@ -22,11 +22,11 @@
 //! @copyright 2017 Feel++ Consortium
 //!
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <feel/feel.hpp>
 #include <mpi4py/mpi4py.h>
 
-#include <boost/shared_ptr.hpp>
 #include <boost/parameter/keyword.hpp>
 #include <boost/parameter/preprocessor.hpp>
 #include <boost/parameter/binding.hpp>
@@ -36,14 +36,21 @@
 #include<feel/feelcore/environment.hpp>
 
 namespace py = pybind11;
-PYBIND11_MODULE(core, m )
+
+void bindRemoteData( py::module& m );
+
+
+PYBIND11_MODULE(_core, m )
 {
     using namespace Feel;
 
     if (import_mpi4py()<0) return ;
+
+    py::class_<po::options_description>(m,"OptionsDescription")
+        .def(py::init<>());
     
     py::class_<Environment>(m,"Environment")
-        .def( py::init<py::list,po::options_description>(),"Construct a Feel++ Environment")//,py::arg("arg"), py::arg("opts") = feel_nooptions())
+        .def( py::init<py::list,po::options_description>(),"Construct a Feel++ Environment",py::arg("arg"), py::arg("opts") = feel_nooptions())
         .def( py::init<py::list>(),"Construct a Feel++ Environment")//,py::arg("arg"), py::arg("opts") = feel_nooptions())
         .def_static("initialized",&Feel::Environment::initialized, "return true if MPI is initialized, false otherwise",py::return_value_policy::copy)
         .def_static("finalized",&Feel::Environment::finalized, "return true if MPI is finalized, false otherwise",py::return_value_policy::copy)
@@ -54,7 +61,9 @@ PYBIND11_MODULE(core, m )
         .def_static("isParallel",&Feel::Environment::isParallel, "true if process is parallel, false otherwise",py::return_value_policy::copy)
         .def_static("isMasterRank",&Feel::Environment::isMasterRank, "true if rank is 0, false otherwise",py::return_value_policy::copy)
         .def_static("worldComm",&Feel::Environment::worldComm, "get the Environment WorldComm",py::return_value_policy::copy)
+        .def_static("worldCommPtr",static_cast<worldcomm_ptr_t const& (*)()>(&Feel::Environment::worldCommPtr), "get the Environment WorldComm")
         .def_static("rootRepository",&Feel::Environment::rootRepository,"get the root repository for Feel++, default $HOME/feel",py::return_value_policy::move)
+        .def_static("downloadsRepository",&Feel::Environment::downloadsRepository,"get the downloads repository for Feel++",py::return_value_policy::move)
         .def_static("findFile",&Feel::Environment::findFile,"find file",py::return_value_policy::move)
         .def_static("expand",&Feel::Environment::expand,"expand variable in string",py::return_value_policy::move)
         ;
@@ -71,8 +80,18 @@ PYBIND11_MODULE(core, m )
         .def_static("version",&Feel::Info::versionString,"Feel++ version string",py::return_value_policy::copy)
 
         ;
-    py::class_<WorldComm>(m,"WorldComm")
-        .def(py::init<>());
+    py::class_<WorldComm,std::shared_ptr<WorldComm>>(m,"WorldComm")
+        .def(py::init<>())
+        .def("isMasterRank", &Feel::WorldComm::isMasterRank,"returns true if master rank, false otherwise")
+        .def("localRank", &Feel::WorldComm::localRank,"returns the rank of the local worldcomm")
+        .def("globalRank", &Feel::WorldComm::globalRank,"returns the rank of the global worldcomm")
+        .def("masterRank", &Feel::WorldComm::masterRank,"returns the master rank")
+        ;
+    py::class_<worldscomm_ptr_t>(m,"WorldsComm").def(py::init<>());
+    m.def( "makeWorldsComm", static_cast<worldscomm_ptr_t (*)(int, worldcomm_ptr_t const& )>(&Feel::makeWorldsComm), py::arg("n")=1, py::arg("worldComm")=Environment::worldCommPtr(), "create a vector of WorldComm with n entries" );
+    py::class_<std::vector<bool>>(m,"vector_bool").def(py::init<>());
+
     
-    py::class_<po::options_description>(m,"OptionsDescription");
+    bindRemoteData( m );
+    
 }

@@ -95,9 +95,9 @@ template<int OrderU, int OrderP, int OrderT>
 void
 OpusModel<OrderU,OrderP,OrderT>::init()
 {
-    M_exporter = boost::shared_ptr<export_type> ( Exporter<mesh_type,1>::New( "ensight", "opus" ) );
+    M_exporter = std::shared_ptr<export_type> ( Exporter<mesh_type,1>::New( "ensight", "opus" ) );
     M_exporter->setPrefix( "opus" );
-    M_exporter_fluid = boost::shared_ptr<export_type> ( Exporter<mesh_type,1>::New( "ensight", "fluid" ) );
+    M_exporter_fluid = std::shared_ptr<export_type> ( Exporter<mesh_type,1>::New( "ensight", "fluid" ) );
     M_exporter_fluid->setPrefix( "fluid" );
 
     M_mesh = createGMSHMesh( _mesh=new mesh_type,

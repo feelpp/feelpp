@@ -63,7 +63,7 @@ public:
     //@{
 
     typedef MeshType mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename mesh_type::point_const_iterator point_const_iterator;
 
     typedef Exporter<MeshType,N> super;
@@ -84,10 +84,11 @@ public:
      */
     //@{
 
-    ExporterGmsh( WorldComm const& worldComm = Environment::worldComm() );
-    ExporterGmsh( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterGmsh( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
-
+    ExporterGmsh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ExporterGmsh( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ExporterGmsh( po::variables_map const& vm, std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ExporterGmsh( std::string const& __p = "default", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    
     ExporterGmsh( ExporterGmsh const & __ex );
 
     ~ExporterGmsh();

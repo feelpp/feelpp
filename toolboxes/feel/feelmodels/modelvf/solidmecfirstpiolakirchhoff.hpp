@@ -103,10 +103,10 @@ namespace FeelModels
         typename super_type::matrix_shape_type const& locRes( uint16_type q ) const { return M_locRes[q]; }
 
         static
-        boost::shared_ptr<self_type>
+        std::shared_ptr<self_type>
         New( std::string const& name, expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            boost::shared_ptr<self_type> res;
+            std::shared_ptr<self_type> res;
             if ( name == "classic" )
                 res.reset( new tensor_volumic_part_classic_type( expr,geom,fev,feu ) );
             else if ( name == "simo1985" )
@@ -114,10 +114,10 @@ namespace FeelModels
             return res;
         }
         static
-        boost::shared_ptr<self_type>
+        std::shared_ptr<self_type>
         New( std::string const& name, expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev )
         {
-            boost::shared_ptr<self_type> res;
+            std::shared_ptr<self_type> res;
             if ( name == "classic" )
                 res.reset( new tensor_volumic_part_classic_type( expr,geom,fev ) );
             else if ( name == "simo1985" )
@@ -125,10 +125,10 @@ namespace FeelModels
             return res;
         }
         static
-        boost::shared_ptr<self_type>
+        std::shared_ptr<self_type>
         New( std::string const& name, expr_type const& expr,Geo_t const& geom )
         {
-            boost::shared_ptr<self_type> res;
+            std::shared_ptr<self_type> res;
             if ( name == "classic" )
                 res.reset( new tensor_volumic_part_classic_type( expr,geom ) );
             else if ( name == "simo1985" )
@@ -297,9 +297,9 @@ namespace FeelModels
         typedef typename super_type::gmc_type gmc_type;
         // fe displacement context
         typedef typename fe_displacement_type::PreCompute pc_displacement_type;
-        typedef boost::shared_ptr<pc_displacement_type> pc_displacement_ptrtype;
+        typedef std::shared_ptr<pc_displacement_type> pc_displacement_ptrtype;
         typedef typename fe_displacement_type::template Context<expr_type::context_displacement, fe_displacement_type, gm_type,geoelement_type,gmc_type::context> ctx_displacement_type;
-        typedef boost::shared_ptr<ctx_displacement_type> ctx_displacement_ptrtype;
+        typedef std::shared_ptr<ctx_displacement_type> ctx_displacement_ptrtype;
         typedef typename expr_type::value_type value_type;
 
         typedef typename super_type::shape_type shape;
@@ -456,9 +456,9 @@ namespace FeelModels
         typedef typename expr_type::fe_mechprop_scalar_type fe_mechprop_scalar_type;
         static const size_type context_mechprop_scalar = expr_type::context_mechprop_scalar;
         typedef typename fe_mechprop_scalar_type::PreCompute pc_mechprop_scalar_type;
-        typedef boost::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
+        typedef std::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
         typedef typename fe_mechprop_scalar_type::template Context<context_mechprop_scalar, fe_mechprop_scalar_type, gm_type,geoelement_type,gmc_type::context> ctx_mechprop_scalar_type;
-        typedef boost::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
+        typedef std::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
 
         tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff( expr_type const& expr,
                                                   Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -952,9 +952,9 @@ namespace FeelModels
         typedef typename expr_type::fe_mechprop_scalar_type fe_mechprop_scalar_type;
         static const size_type context_mechprop_scalar = expr_type::context_mechprop_scalar;
         typedef typename fe_mechprop_scalar_type::PreCompute pc_mechprop_scalar_type;
-        typedef boost::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
+        typedef std::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
         typedef typename fe_mechprop_scalar_type::template Context<context_mechprop_scalar, fe_mechprop_scalar_type, gm_type,geoelement_type,gmc_type::context> ctx_mechprop_scalar_type;
-        typedef boost::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
+        typedef std::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
 
         typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartBase<Geo_t,Basis_i_t,Basis_j_t,ExprType> tensor_volumic_part_type;
 
@@ -1455,7 +1455,7 @@ namespace FeelModels
         typename super_type::array_value_type M_locEvalPrecomputeDetF1/*,M_locEvalPrecomputeDetF2*/,M_locEvalPrecomputeDetF3, M_locEvalPrecomputeInvDetF, M_locEvalPrecomputeTraceC;
         typename super_type::array_matrix_tensor2_type M_locEvalPrecomputeTrialDetF;
 
-        boost::shared_ptr<tensor_volumic_part_type> M_tensorVolumicPart;
+        std::shared_ptr<tensor_volumic_part_type> M_tensorVolumicPart;
     };
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ExprType,bool useDispPresForm>
@@ -1473,9 +1473,9 @@ namespace FeelModels
         typedef typename expr_type::fe_mechprop_scalar_type fe_mechprop_scalar_type;
         static const size_type context_mechprop_scalar = expr_type::context_mechprop_scalar;
         typedef typename fe_mechprop_scalar_type::PreCompute pc_mechprop_scalar_type;
-        typedef boost::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
+        typedef std::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
         typedef typename fe_mechprop_scalar_type::template Context<context_mechprop_scalar, fe_mechprop_scalar_type, gm_type,geoelement_type,gmc_type::context> ctx_mechprop_scalar_type;
-        typedef boost::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
+        typedef std::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
 
         //
         typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartBase<Geo_t,Basis_i_t,Basis_j_t,ExprType> tensor_volumic_part_type;
@@ -1711,7 +1711,7 @@ namespace FeelModels
         ctx_mechprop_scalar_ptrtype M_ctxMechPropField;
         typename super_type::array_scalar_type M_locEvalFieldCoefflame2;
         typename super_type::array_value_type M_locEvalPrecomputePowDetF,M_locEvalPrecomputeDetF;
-        boost::shared_ptr<tensor_volumic_part_type> M_tensorVolumicPart;
+        std::shared_ptr<tensor_volumic_part_type> M_tensorVolumicPart;
     };
 
 
@@ -1738,9 +1738,9 @@ namespace FeelModels
         typedef typename expr_type::fe_mechprop_scalar_type fe_mechprop_scalar_type;
         static const size_type context_mechprop_scalar = expr_type::context_mechprop_scalar;
         typedef typename fe_mechprop_scalar_type::PreCompute pc_mechprop_scalar_type;
-        typedef boost::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
+        typedef std::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
         typedef typename fe_mechprop_scalar_type::template Context<context_mechprop_scalar, fe_mechprop_scalar_type, gm_type,geoelement_type,gmc_type::context> ctx_mechprop_scalar_type;
-        typedef boost::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
+        typedef std::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
 
         tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheoryAndSimo1985( expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
@@ -2254,7 +2254,7 @@ public:
         struct is_zero { static const bool value = false; };
 
         typedef tensorBase<Geo_t, Basis_i_t, Basis_j_t,shape,value_type> tensorbase_type;
-        typedef boost::shared_ptr<tensorbase_type> tensorbase_ptrtype;
+        typedef std::shared_ptr<tensorbase_type> tensorbase_ptrtype;
 
         typedef typename tensorbase_type::matrix_shape_type matrix_shape_type;
 

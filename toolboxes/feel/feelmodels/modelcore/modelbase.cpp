@@ -65,13 +65,13 @@ ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumPr
     ToolboxesDetail::removeTrailingSlash( M_exprRepository );
 }
 
-ModelBaseUpload::ModelBaseUpload( std::string const& desc, std::string const& basePath, WorldComm const& worldComm )
+ModelBaseUpload::ModelBaseUpload( std::string const& desc, std::string const& basePath, worldcomm_ptr_t const& worldComm )
     :
     M_basePath( basePath )
 {
     if ( desc.empty() )
         return;
-    M_remoteData.reset( new RemoteData( desc,worldComm ) );
+    M_remoteData.reset( new RemoteData( desc, worldComm ) );
 }
 
 bool
@@ -249,13 +249,13 @@ ModelBaseUpload::print() const
 
 
 ModelBase::ModelBase( std::string const& prefix,
-                      WorldComm const& worldComm,
+                      worldcomm_ptr_t const& worldComm,
                       std::string const& subPrefix,
                       ModelBaseRepository const& modelRep )
     :
     M_worldComm(worldComm),
-    M_worldsComm( std::vector<WorldComm>(1,worldComm) ),
-    M_localNonCompositeWorldsComm( std::vector<WorldComm>(1,worldComm) ),
+    M_worldsComm( {worldComm} ),
+    M_localNonCompositeWorldsComm( { worldComm } ),
     M_prefix( prefix ),
     M_subPrefix( subPrefix ),
     M_modelRepository( modelRep ),
@@ -293,16 +293,26 @@ ModelBase::ModelBase( std::string const& prefix,
 ModelBase::~ModelBase()
 {}
 
+ModelBase::worldcomm_ptr_t  const&
+ModelBase::worldCommPtr() const { return M_worldComm; }
+ModelBase::worldcomm_ptr_t  &
+ModelBase::worldCommPtr() { return M_worldComm; }
+WorldComm &
+ModelBase::worldComm() { return *M_worldComm; }
 WorldComm const&
-ModelBase::worldComm() const { return M_worldComm; }
-std::vector<WorldComm> const&
+ModelBase::worldComm() const { return *M_worldComm; }
+ModelBase::worldscomm_ptr_t &
+ModelBase::worldsComm()  { return M_worldsComm; }
+ModelBase::worldscomm_ptr_t const&
 ModelBase::worldsComm() const { return M_worldsComm; }
 void
-ModelBase::setWorldsComm(std::vector<WorldComm> const& _worldsComm) { M_worldsComm=_worldsComm; }
-std::vector<WorldComm> const&
+ModelBase::setWorldsComm( worldscomm_ptr_t & _worldsComm) { M_worldsComm=_worldsComm; }
+ModelBase::worldscomm_ptr_t &
+ModelBase::localNonCompositeWorldsComm() { return M_localNonCompositeWorldsComm; }
+ModelBase::worldscomm_ptr_t const&
 ModelBase::localNonCompositeWorldsComm() const { return M_localNonCompositeWorldsComm; }
 void
-ModelBase::setLocalNonCompositeWorldsComm(std::vector<WorldComm> const& _worldsComm) { M_localNonCompositeWorldsComm=_worldsComm; }
+ModelBase::setLocalNonCompositeWorldsComm( worldscomm_ptr_t& _worldsComm) { M_localNonCompositeWorldsComm=_worldsComm; }
 void
 ModelBase::createWorldsComm() {}//warning
 
@@ -337,10 +347,10 @@ ModelBase::setFilenameSaveInfo( std::string const& s )
 {
     M_filenameSaveInfo = s;
 }
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 ModelBase::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     return _ostr;
 }
 void
@@ -391,7 +401,7 @@ ModelBase::addTimerTool(std::string const& key,std::string const& fileName) cons
     CHECK( M_mapTimerTool.find( key ) == M_mapTimerTool.end() ) << "key already exist";
     if ( M_timersActivated )
     {
-        auto myTimerTool = std::make_shared<TimerTool>(fileName,this->worldComm());
+        auto myTimerTool = std::make_shared<TimerTool>(fileName,this->worldCommPtr());
         myTimerTool->setReinitSaveFile( this->scalabilityReinitSaveFile() );
         myTimerTool->setSaveFileMasterRank( M_timersSaveFileMasterRank || M_timersSaveFileAll );
         myTimerTool->setSaveFileMax( M_timersSaveFileMax || M_timersSaveFileAll );

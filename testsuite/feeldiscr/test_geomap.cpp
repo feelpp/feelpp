@@ -59,11 +59,11 @@ struct TestInterp
     typedef Entity<Dim, 1,Dim> entity_type;
     typedef Reference<entity_type,Dim,1,Dim> ref_entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptr_type;
+    typedef std::shared_ptr<mesh_type> mesh_ptr_type;
 
     typedef typename mesh_type::gm_type gm_type;
     typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN, typename mesh_type::element_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename gm_type::Inverse gic_type;
 public:
     TestInterp()

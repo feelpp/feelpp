@@ -45,16 +45,16 @@ public:
     using graph_ptrtype = typename super::graph_ptrtype;
     using value_type = T;
     using sc_type = StaticCondensation<value_type>;
-    using sc_ptrtype = boost::shared_ptr<sc_type>;
-    using this_matrix_ptrtype = boost::shared_ptr<MatrixCondensed<value_type>>;
+    using sc_ptrtype = std::shared_ptr<sc_type>;
+    using this_matrix_ptrtype = std::shared_ptr<MatrixCondensed<value_type>>;
         
     MatrixCondensed()
         :
-        super(Environment::worldComm()),
+        super(Environment::worldCommPtr()),
         M_sc( new sc_type ),
         M_strategy( solve::strategy::static_condensation )
         {}
-    MatrixCondensed( WorldComm const& wc )
+    MatrixCondensed( worldcomm_ptr_t const& wc )
         :
         super( wc ),
         M_sc( new sc_type ),
@@ -136,7 +136,7 @@ public:
             else
                 super::zero();
         }
-    void zero( int n1, int n2 )
+    void zeroBlock( int n1, int n2 ) 
         {
             if ( staticCondensation() )
                 M_sc->zero( n1, n2 );
@@ -149,12 +149,12 @@ private:
 template<typename T>
 using condensed_matrix_t = MatrixCondensed<T>;
 template<typename T>
-using condensed_matrix_ptr_t = boost::shared_ptr<condensed_matrix_t<T>>;
+using condensed_matrix_ptr_t = std::shared_ptr<condensed_matrix_t<T>>;
 
 //!
 //! Create a shared pointer \p MatrixCondensed<T> from \p Args
 //! @code
-//! // create a MatrixCondensed boost::shared_ptr
+//! // create a MatrixCondensed std::shared_ptr
 //! auto mc = makeSharedMatrixCondensed<double>();
 //! @endcode
 //!
@@ -162,7 +162,7 @@ template< class T, class... Args >
 condensed_matrix_ptr_t<T>
 makeSharedMatrixCondensed( Args&&... args )
 {
-    return boost::make_shared<MatrixCondensed<T>>( args... );
+    return std::make_shared<MatrixCondensed<T>>( args... );
 }
 
 #if !defined(FEELPP_MATRIXCONDENSED_NOEXTERN)

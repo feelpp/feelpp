@@ -65,7 +65,7 @@ public:
                                                       mpl::identity<DisplSpaceType>>::type::type;
     using mesh_type = typename displacement_space_type::mesh_type;
     using mesh_ptrtype = typename displacement_space_type::mesh_ptrtype;
-    using displacement_space_ptrtype = boost::shared_ptr<displacement_space_type>;
+    using displacement_space_ptrtype = std::shared_ptr<displacement_space_type>;
     using displacement_type = typename displacement_space_type::element_type;
     static constexpr int dim = mesh_type::nDim;
     static constexpr int order = displacement_space_type::basis_type::nOrder;
@@ -85,10 +85,10 @@ public:
     using properties = typename Pdh_type<mesh_type,0>::element_type;
 
     // exporter
-    using exporter_ptrtype = boost::shared_ptr<Exporter<mesh_type>>;
+    using exporter_ptrtype = std::shared_ptr<Exporter<mesh_type>>;
 
     // time stepping
-    using ts_ptrtype = boost::shared_ptr<Newmark<displacement_space_type>>;
+    using ts_ptrtype = std::shared_ptr<Newmark<displacement_space_type>>;
 
     // Projection operator
     using l2_projector_ptrtype = projector_ptrtype<stress_space_type,stress_space_type>;
@@ -261,7 +261,7 @@ private:
     backend_ptrtype M_backend;
     vector_ptrtype Res;
     sparse_matrix_ptrtype Jac;
-    boost::shared_ptr<NullSpace<double>> K;
+    std::shared_ptr<NullSpace<double>> K;
 
     
     exporter_ptrtype e,et;

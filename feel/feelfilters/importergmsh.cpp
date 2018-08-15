@@ -35,9 +35,9 @@ const auto med = GmshReaderFactory::instance().emplace( ".med",
                                                             status = GModel::readMED(fname);
                                                             GModel *gm = new GModel();
                                                             gm = GModel::current();
-                                                            auto m = boost::make_shared<GModel>( *gm );
+                                                            auto m = std::make_shared<GModel>( *gm );
 #else
-                                                            auto m = boost::make_shared<GModel>();
+                                                            auto m = std::make_shared<GModel>();
                                                             throw std::logic_error("Gmsh MED support is not available. Cannot load MED file");
 #endif
                                                             return std::make_pair( status, m );
@@ -46,7 +46,7 @@ const auto med = GmshReaderFactory::instance().emplace( ".med",
 const auto mesh = GmshReaderFactory::instance().emplace( ".mesh",
                                                          []( std::string fname )
                                                          {
-                                                             auto m = boost::make_shared<GModel>();
+                                                             auto m = std::make_shared<GModel>();
 
                                                              int status = m->readMESH(fname);
                                                              return std::make_pair( status, m );
@@ -55,7 +55,7 @@ const auto mesh = GmshReaderFactory::instance().emplace( ".mesh",
 const auto reader_bdf = GmshReaderFactory::instance().emplace( ".bdf",
                                                                []( std::string fname )
                                                                {
-                                                                   auto m = boost::make_shared<GModel>();
+                                                                   auto m = std::make_shared<GModel>();
                                                                    int status = m->readBDF(fname);
                                                                    return std::make_pair( status, m );
                                                                });
@@ -63,7 +63,7 @@ const auto reader_bdf = GmshReaderFactory::instance().emplace( ".bdf",
 const auto reader_p3d = GmshReaderFactory::instance().emplace( ".p3d",
                                                                []( std::string fname )
                                                                {
-                                                                   auto m = boost::make_shared<GModel>();
+                                                                   auto m = std::make_shared<GModel>();
                                                                    int status = m->readP3D(fname);
                                                                    return std::make_pair( status, m );
                                                                });
@@ -71,7 +71,7 @@ const auto reader_p3d = GmshReaderFactory::instance().emplace( ".p3d",
 const auto reader_cgns = GmshReaderFactory::instance().emplace( ".cgns",
                                                                 []( std::string fname )
                                                                 {
-                                                                    auto m = boost::make_shared<GModel>();
+                                                                    auto m = std::make_shared<GModel>();
                                                                     int status = 1;
 #ifdef FEELPP_HAS_GMSH_HAS_CGNS
                                                                     status = m->readCGNS(fname);

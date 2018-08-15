@@ -17,7 +17,7 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 BOOST_AUTO_TEST_SUITE( element_component )
 
 template<int O=1>
-boost::shared_ptr<Mesh<Simplex<2,O,2>>>
+std::shared_ptr<Mesh<Simplex<2,O,2>>>
 getReferenceTriangleMesh()
 {
     GeoTool::Node x1( -1,-1 );
@@ -32,7 +32,7 @@ getReferenceTriangleMesh()
 }
 
 template<int O=1>
-boost::shared_ptr<Mesh<Simplex<2,O,2>>>
+std::shared_ptr<Mesh<Simplex<2,O,2>>>
 getTriangleMesh()
 {
     GeoTool::Node x1( 0,0 );
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE( element_component_vectorial )
 
 template<typename SpaceT>
 void
-test_tensor2symm_basic(std::string const& name, boost::shared_ptr<SpaceT> const& Vh )
+test_tensor2symm_basic(std::string const& name, std::shared_ptr<SpaceT> const& Vh )
 {
     auto mesh = Vh->mesh();
     auto uTensor2 = Vh->element();
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE( element_component_tensor2symm_continuous_basic )
 
 template</*typename MeshT,*/ typename SpaceT>
 void
-test_tensor2(std::string const& name, boost::shared_ptr<typename SpaceT::mesh_type/*MeshT*/> const& mesh )
+test_tensor2(std::string const& name, std::shared_ptr<typename SpaceT::mesh_type/*MeshT*/> const& mesh )
 {
     using Feel::cout;
     using mesh_type = typename SpaceT::mesh_type;

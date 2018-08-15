@@ -71,10 +71,10 @@ namespace Feel
 template<typename Shape, typename T = double>
 class Mesh0D
     :
-public VisitableBase<>,
-public MeshBase,
-public Elements<Shape,T>,
-public Points<Shape::nRealDim,T>
+        public VisitableBase<>,
+        public MeshBase,
+        public Elements<Shape,T>,
+        public Points<Shape::nRealDim,T>
 {
     // check at compilation time that the shape has indeed dimension 1
     BOOST_STATIC_ASSERT( Shape::nDim == 0 && Shape::nRealDim >= 1 );
@@ -119,7 +119,7 @@ public:
     typedef typename super_points::point_type point_type;
 
     typedef Mesh0D<Shape,T> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     using face_type = point_type;
     using face_iterator = element_iterator;
@@ -163,19 +163,19 @@ public:
     /**
      * default constructor
      */
-    Mesh0D( WorldComm const& worldComm = Environment::worldComm() )
+    Mesh0D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         super_visitable(),
         super( 0, nRealDim, worldComm ),
         super_elements( worldComm ),
         super_points( worldComm )
-    {}
+        {}
 
     Mesh0D( Mesh0D const& m ) = default;
     Mesh0D( Mesh0D && m ) = default;
 
     ~Mesh0D()
-    {}
+        {}
 
     //@}
 
@@ -196,52 +196,52 @@ public:
      * \return \p true if all containers are empty, \p false otherwise
      */
     bool isEmpty() const
-    {
-        return ( super_elements::isEmpty() &&
-                 super_points::isEmpty() );
-    }
+        {
+            return ( super_elements::isEmpty() &&
+                     super_points::isEmpty() );
+        }
 
 
     /**
      * \return the number of elements
      */
     size_type numElements() const
-    {
-        return this->elements().size();
-    }
+        {
+            return this->elements().size();
+        }
 
     /**
      * \return the number of faces in an element
      */
     size_type numLocalFaces() const
-    {
-        return super_elements::element_type::numLocalFaces;
-    }
+        {
+            return super_elements::element_type::numLocalFaces;
+        }
 
     /**
      * \return the number of vertices in an element
      */
     size_type numLocalVertices() const
-    {
-        return super_elements::element_type::numLocalVertices;
-    }
+        {
+            return super_elements::element_type::numLocalVertices;
+        }
 
     /**
      * \return the number of faces
      */
     size_type numFaces() const
-    {
-        return 0;
-    }
+        {
+            return 0;
+        }
 
 
     /**
      * \return the number of points
      */
     size_type numPoints() const
-    {
-        return this->points().size();
-    }
+        {
+            return this->points().size();
+        }
 
     //@}
 
@@ -249,9 +249,9 @@ public:
      */
     //@{
 
-    void setWorldComm( WorldComm const& _worldComm )
+    void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
         {
-            this->setWorldCommMeshBase( _worldComm );
+            MeshBase::setWorldComm( _worldComm );
             this->setWorldCommPoints( _worldComm );
         }
 
@@ -267,11 +267,11 @@ public:
      * \p true after a \p clear()
      */
     virtual void clear()
-    {
-        super_elements::clear();
-        super_points::clear();
-        FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
-    }
+        {
+            super_elements::clear();
+            super_points::clear();
+            FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
+        }
 
 
 
@@ -287,26 +287,26 @@ protected:
      * \see Mesh
      */
     void renumber()
-    {
-        FEELPP_ASSERT( 0 ).error( "invalid call" );
-    }
+        {
+            FEELPP_ASSERT( 0 ).error( "invalid call" );
+        }
 
 
     /**
      * update permutation of entities of co-dimension 1
      */
     void updateEntitiesCoDimensionOnePermutation()
-    {
-        // no-op
-    }
+        {
+            // no-op
+        }
 
     /**
      * update the entities of co-dimension 2
      */
     void updateEntitiesCoDimensionTwo()
-    {
-        // no-op
-    }
+        {
+            // no-op
+        }
 private:
 
     friend class boost::serialization::access;

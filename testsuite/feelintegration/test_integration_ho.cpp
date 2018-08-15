@@ -111,7 +111,7 @@ template<typename T, int Dim = 2,int Order = 1>
 struct imesh
 {
     typedef Mesh<Simplex<Dim, Order>, T > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 template<typename T>

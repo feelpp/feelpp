@@ -90,11 +90,11 @@ public:
     typedef Epetra_Operator operator_type;
 
     typedef OperatorMatrix op_mat_type;
-    typedef boost::shared_ptr<OperatorMatrix> op_mat_ptrtype;
+    typedef std::shared_ptr<OperatorMatrix> op_mat_ptrtype;
 
-    typedef boost::shared_ptr<epetra_sparse_matrix_type> epetra_sparse_matrix_ptrtype;
-    typedef boost::shared_ptr<epetra_vector_type> epetra_vector_ptrtype;
-    typedef boost::shared_ptr<operator_type> operator_ptrtype;
+    typedef std::shared_ptr<epetra_sparse_matrix_type> epetra_sparse_matrix_ptrtype;
+    typedef std::shared_ptr<epetra_vector_type> epetra_vector_ptrtype;
+    typedef std::shared_ptr<operator_type> operator_ptrtype;
 
     typedef super::solve_return_type solve_return_type;
     typedef super::nl_solve_return_type nl_solve_return_type;

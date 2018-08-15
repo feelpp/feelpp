@@ -63,7 +63,7 @@ public:
     //@{
 
     typedef OpusData opusdata_type;
-    typedef boost::shared_ptr<opusdata_type> opusdata_ptrtype;
+    typedef std::shared_ptr<opusdata_type> opusdata_ptrtype;
 
     //@}
 

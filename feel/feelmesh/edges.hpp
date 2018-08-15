@@ -30,7 +30,7 @@
 #define __edges_H 1
 
 #include <unordered_map>
-
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelmesh/geoelement.hpp>
 
 namespace Feel
@@ -45,7 +45,7 @@ namespace Feel
   @see
 */
 template<typename EdgeType,typename FaceType>
-class Edges
+class Edges 
 {
 public:
 
@@ -78,16 +78,16 @@ public:
      */
     //@{
 
-    Edges( WorldComm const& worldComm = Environment::worldComm() )
+    Edges( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
-        M_worldCommEdges( worldComm ),
+        M_worldComm( worldComm ),
         M_edges(),
         M_needToOrderEdges( false )
     {}
 
     Edges( Edges const & f )
         :
-        M_worldCommEdges( f.M_worldCommEdges ),
+        M_worldComm( f.M_worldComm ),
         M_edges( f.M_edges ),
         M_needToOrderEdges( false )
     {
@@ -138,7 +138,7 @@ public:
      */
     WorldComm const& worldCommEdges() const
     {
-        return M_worldCommEdges;
+        return *M_worldComm;
     }
 
     /**
@@ -428,9 +428,9 @@ public:
         }
 
 
-    void setWorldCommEdges( WorldComm const& _worldComm )
+    void setWorldCommEdges( worldcomm_ptr_t const& _worldComm )
     {
-        M_worldCommEdges = _worldComm;
+        M_worldComm  = _worldComm;
     }
 
     void updateOrderedEdges()
@@ -489,7 +489,7 @@ private:
         }
 
 private:
-    WorldComm M_worldCommEdges;
+    worldcomm_ptr_t M_worldComm;
     edges_type M_edges;
     ordered_edges_reference_wrapper_type M_orderedEdges;
     bool M_needToOrderEdges;

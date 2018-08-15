@@ -32,40 +32,50 @@
 namespace Feel
 {
 
-struct GeometricSpaceBase {};
+struct GeometricSpaceBase : public CommObject
+{
+    using super = CommObject;
+    GeometricSpaceBase() : super( Environment::worldCommPtr() ) {}
+    GeometricSpaceBase( worldcomm_ptr_t const& w ) : super( w ) {}
+    GeometricSpaceBase( GeometricSpaceBase const& ) = default;
+    GeometricSpaceBase( GeometricSpaceBase && ) = default;
+    GeometricSpaceBase& operator=( GeometricSpaceBase const& ) = default;
+    GeometricSpaceBase& operator=( GeometricSpaceBase && ) = default;
+    virtual ~GeometricSpaceBase() = default;
+
+};
 struct ContextGeometricBase {};
 
 template <typename MeshType>
 class GeometricSpace :
         public GeometricSpaceBase,
-        public boost::enable_shared_from_this<GeometricSpace<MeshType> >
+        public std::enable_shared_from_this<GeometricSpace<MeshType> >
 {
     typedef GeometricSpace<MeshType> self_type;
 public :
 
+    using super = GeometricSpaceBase;
     typedef self_type geometricspace_type;
-    typedef boost::shared_ptr<geometricspace_type> geometricspace_ptrtype;
+    typedef std::shared_ptr<geometricspace_type> geometricspace_ptrtype;
 
     typedef MeshType mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename mesh_type::element_type element_type;
     typedef typename element_type::gm_type gm_type;
     typedef typename gm_type::template Context<vm::POINT, element_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
 
-    GeometricSpace( WorldComm const& worldComm = Environment::worldComm() )
+    GeometricSpace( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
-        M_worldComm( worldComm )
+        super( worldComm )
         {}
 
     GeometricSpace( mesh_ptrtype const& mesh )
         :
-        M_worldComm( Environment::worldComm() ),
+        super( mesh->worldCommPtr() ),
         M_mesh( mesh )
         {}
-
-    WorldComm const& worldComm() const { return (M_mesh)? M_mesh->worldComm() : M_worldComm; }
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
 
@@ -77,7 +87,7 @@ public :
     class ContextGeometric : public ContextGeometricBase
     {
     public :
-        typedef boost::shared_ptr<gmc_type> geometric_mapping_context_ptrtype;
+        typedef std::shared_ptr<gmc_type> geometric_mapping_context_ptrtype;
 
         ContextGeometric() = default;
 
@@ -123,7 +133,7 @@ public :
                     // std::cout << "geospace ContextGeo with minimal mesh\n";
                     if ( !M_meshGeoContext->hasElement( meshEltCtx.id() ) )
                     {
-                        auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( M_meshGeoContext.get(),
+                        auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( M_meshGeoContext.get(),
                                                                                                              M_meshGeoContext->gm(),
                                                                                                              M_meshGeoContext->gm1() );
                         meshEltCtx.setCommonData( geondEltCommon );
@@ -153,10 +163,10 @@ public :
 
     class Context
         :
-        public std::map<int,boost::shared_ptr<ContextGeometric>>
+        public std::map<int,std::shared_ptr<ContextGeometric>>
     {
     public:
-        typedef std::map<int,boost::shared_ptr<ContextGeometric>> super_type;
+        typedef std::map<int,std::shared_ptr<ContextGeometric>> super_type;
         typedef typename super_type::iterator iterator;
 
         typedef geometricspace_type functionspace_type;
@@ -246,7 +256,7 @@ public :
                 DVLOG(2) << "build geometric mapping context\n";
 
                 int number = M_t.size()-1;
-                ret = this->insert( std::make_pair( number , boost::make_shared<ContextGeometric>( M_Xh, gmc ) ) );
+                ret = this->insert( std::make_pair( number , std::make_shared<ContextGeometric>( M_Xh, gmc ) ) );
 
                 if ( nprocs > 1 )
                     mpi::all_reduce( M_Xh->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
@@ -289,9 +299,9 @@ public :
             rank_type myrank = M_Xh->worldComm().rank();
 
             if ( !M_meshGeoContext )
-                M_meshGeoContext.reset( new mesh_type( M_Xh->worldComm() ) );
+                M_meshGeoContext = std::make_shared<mesh_type>( M_Xh->worldCommPtr() );
 
-            boost::shared_ptr<ContextGeometric> geoCtxReload;
+            std::shared_ptr<ContextGeometric> geoCtxReload;
             if ( myrank == procId )
             {
                 // update additional mesh used in rb context
@@ -303,7 +313,7 @@ public :
                 if ( !M_meshGeoContext->hasElement( modelMeshEltCtx.id(), modelMeshEltCtx.processId() ) )
                 {
                     element_type meshEltCtx = modelMeshEltCtx;
-                    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( M_meshGeoContext.get(),
+                    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( M_meshGeoContext.get(),
                                                                                                          M_meshGeoContext->gm(),
                                                                                                          M_meshGeoContext->gm1() );
                     meshEltCtx.setCommonData( geondEltCommon );
@@ -357,11 +367,11 @@ public :
                 ar & BOOST_SERIALIZATION_NVP( geoCtxKeys );
 
                 if ( !M_meshGeoContext )
-                    M_meshGeoContext.reset( new mesh_type( M_Xh->worldComm() ) );
+                    M_meshGeoContext = std::make_shared<mesh_type>( M_Xh->worldCommPtr() );
 
                 for ( int geoCtxKey : geoCtxKeys )
                 {
-                    boost::shared_ptr<ContextGeometric> geoCtxReload( new ContextGeometric( M_Xh ) );
+                    std::shared_ptr<ContextGeometric> geoCtxReload( new ContextGeometric( M_Xh ) );
                     geoCtxReload->setMeshGeoContext( M_meshGeoContext );
                     std::string geoctxNameInSerialization = (boost::format("geoSpaceContext_%1%")%geoCtxKey).str();
                     // std::cout << "geospace::Context load name : " << geoctxNameInSerialization << "\n";
@@ -382,10 +392,9 @@ public :
 
     Context context() /*const*/ { return Context( this->shared_from_this() ); }
 
-    boost::shared_ptr<ContextGeometric> contextBasis( std::pair<int, boost::shared_ptr<ContextGeometric>> const& p, Context const& c ) const { return p.second; }
+    std::shared_ptr<ContextGeometric> contextBasis( std::pair<int, std::shared_ptr<ContextGeometric>> const& p, Context const& c ) const { return p.second; }
 
 private :
-    WorldComm const& M_worldComm;
     mesh_ptrtype M_mesh;
 
 };

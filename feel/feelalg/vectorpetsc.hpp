@@ -103,7 +103,7 @@ public:
     /**
      * Constructor. Set dimension to \p n and initialize all elements with zero.
      */
-    VectorPetsc ( const size_type n, WorldComm const& _worldComm = Environment::worldComm() )
+    VectorPetsc ( const size_type n, worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() )
         :
         super( n, _worldComm ),
         M_destroy_vec_on_exit( true )
@@ -117,7 +117,7 @@ public:
      */
     VectorPetsc ( const size_type n,
                   const size_type n_local,
-                  WorldComm const& _worldComm = Environment::worldComm() )
+                  worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() )
         :
         super( n, n_local, _worldComm ),
         M_destroy_vec_on_exit( true )
@@ -224,7 +224,7 @@ public:
         /* map */
         PetscInt n;
         ISGetSize(is,&n);
-        datamap_ptrtype dm( new datamap_type(n, n, v.comm()) );
+        datamap_ptrtype dm( new datamap_type(n, n, v.worldCommPtr()) );
         this->setMap(dm);
         /* init */
         VecGetSubVector(v.vec(), is, &this->M_vec);
@@ -258,7 +258,7 @@ public:
         CHKERRABORT( this->comm(),ierr );
         PetscFree(map);
 
-        datamap_ptrtype dm( new datamap_type(n, n, V->comm()) );
+        datamap_ptrtype dm( new datamap_type(n, n, v.worldCommPtr()) );
         this->setMap(dm);
         /* init */
         ierr = VecGetSubVector(V->vec(), is, &this->M_vec);
@@ -712,7 +712,7 @@ public:
      * This function creates a vector which is defined
      * by the row indices given in the "rows" entries.
      */
-    boost::shared_ptr<Vector<T> >
+    std::shared_ptr<Vector<T> >
     createSubVector( std::vector<size_type> const& rows,
                      bool checkAndFixRange=true ) const override;
 
@@ -721,7 +721,7 @@ public:
      * into row indices given in the "rows" entries.
      */
     void
-    updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
+    updateSubVector( std::shared_ptr<Vector<T> > & subvector,
                      std::vector<size_type> const& rows,
                      bool init=true ) override;
 

@@ -66,14 +66,14 @@ public:
 
     typedef Simplex<2,1,2> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //-----------------------------------------------------------------------------------//
 
     // scalar basis
     typedef bases<Lagrange<5,Scalar> > basis_scalar_type;
     typedef FunctionSpace<mesh_type, basis_scalar_type> space_scalar_type;
-    typedef boost::shared_ptr<space_scalar_type> space_scalar_ptrtype;
+    typedef std::shared_ptr<space_scalar_type> space_scalar_ptrtype;
     typedef  space_scalar_type::element_type element_scalar_type;
 
     //-----------------------------------------------------------------------------------//
@@ -88,7 +88,7 @@ public:
     BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<0> >::type, basis_u_type::ChangeTag<0>::type> ) );
     BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<1> >::type, basis_p_type::ChangeTag<1>::type> ) );
     BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<2> >::type, basis_l_type::ChangeTag<2>::type> ) );
-    typedef boost::shared_ptr<space_mixed_type> space_mixed_ptrtype;
+    typedef std::shared_ptr<space_mixed_type> space_mixed_ptrtype;
     // functions
     typedef space_mixed_type::element_type element_mixed_type;
     typedef element_mixed_type::sub_element<0>::type element_mixed_0_type;

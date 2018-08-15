@@ -28,18 +28,18 @@
 namespace Feel
 {
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
-template boost::shared_ptr<Mesh<Simplex<2,3>>>
-straightenMesh<Mesh<Simplex<2,3>>>( boost::shared_ptr<Mesh<Simplex<2,3>>>,
+template std::shared_ptr<Mesh<Simplex<2,3>>>
+straightenMesh<Mesh<Simplex<2,3>>>( std::shared_ptr<Mesh<Simplex<2,3>>>,
                                     WorldComm const& , bool, bool  );
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 4 )
-template boost::shared_ptr<Mesh<Simplex<2,4>>>
-straightenMesh<Mesh<Simplex<2,4>>>( boost::shared_ptr<Mesh<Simplex<2,4>>>,
+template std::shared_ptr<Mesh<Simplex<2,4>>>
+straightenMesh<Mesh<Simplex<2,4>>>( std::shared_ptr<Mesh<Simplex<2,4>>>,
                                         WorldComm const& , bool, bool  );
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 5 )
-template boost::shared_ptr<Mesh<Simplex<2,5>>>
-straightenMesh<Mesh<Simplex<2,5>>>( boost::shared_ptr<Mesh<Simplex<2,5>>>,
+template std::shared_ptr<Mesh<Simplex<2,5>>>
+straightenMesh<Mesh<Simplex<2,5>>>( std::shared_ptr<Mesh<Simplex<2,5>>>,
                                     WorldComm const& , bool, bool  );
 #endif
 

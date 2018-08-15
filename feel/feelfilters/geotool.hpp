@@ -107,24 +107,24 @@ namespace GeoTool
 typedef node<double>::type node_type;
 
 class GeoGMSHTool;
-typedef boost::shared_ptr< GeoGMSHTool> GeoGMSHTool_ptrtype;
+typedef std::shared_ptr< GeoGMSHTool> GeoGMSHTool_ptrtype;
 
 typedef std::map<uint16_type,uint16_type> map_data_type;
 typedef std::vector<map_data_type> vec_map_data_type;
-typedef boost::shared_ptr<vec_map_data_type> vec_map_data_ptrtype;
+typedef std::shared_ptr<vec_map_data_type> vec_map_data_ptrtype;
 
 //if bool=true => surface stoker dans un tableau gmsh
 typedef std::vector<std::map<uint16_type,bool> > vec_map_data_surf1_type;
-typedef boost::shared_ptr<vec_map_data_surf1_type> vec_map_data_surf1_ptrtype;
+typedef std::shared_ptr<vec_map_data_surf1_type> vec_map_data_surf1_ptrtype;
 //=> la string est le nom de ce tableau
 typedef std::vector<std::map<uint16_type,std::string> > vec_map_data_surf2_type;
-typedef boost::shared_ptr<vec_map_data_surf2_type> vec_map_data_surf2_ptrtype;
+typedef std::shared_ptr<vec_map_data_surf2_type> vec_map_data_surf2_ptrtype;
 // list of pt define in more in the surface
 typedef std::vector<std::map<uint16_type,std::list<uint16_type> > > vec_map_data_ptsinsurf_type;
-typedef boost::shared_ptr<vec_map_data_ptsinsurf_type> vec_map_data_ptsinsurf_ptrtype;
+typedef std::shared_ptr<vec_map_data_ptsinsurf_type> vec_map_data_ptsinsurf_ptrtype;
 
 typedef std::map<int,std::list<int> > map_surfaceLoop_type;
-//typedef boost::shared_ptr<map_surfaceLoop_type> map_surfaceLoop_ptrtype;
+//typedef std::shared_ptr<map_surfaceLoop_type> map_surfaceLoop_ptrtype;
 
 
 typedef boost::tuple< GeoGMSHTool* /*GeoGMSHTool_ptrtype*/,
@@ -137,7 +137,7 @@ typedef boost::tuple< GeoGMSHTool* /*GeoGMSHTool_ptrtype*/,
         vec_map_data_ptsinsurf_ptrtype,
                        map_surfaceLoop_type,*/
         double /*meshSize*/ > data_geo_type;
-typedef boost::shared_ptr<data_geo_type> data_geo_ptrtype;
+typedef std::shared_ptr<data_geo_type> data_geo_ptrtype;
 
 
 void run( data_geo_ptrtype __dg );
@@ -1220,7 +1220,7 @@ public :
           ( partitions,   *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
           ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
           ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
-          ( worldcomm,       (WorldComm), mesh->worldComm() )
+          ( worldcomm,       (worldcomm_ptr_t), mesh->worldCommPtr() )
           ( hmin,     ( double ), 0 )
           ( hmax,     ( double ), 1e22 )
           ( optimize3d_netgen, *( boost::is_integral<mpl::_> ), true )
@@ -1234,7 +1234,7 @@ public :
         _mesh_ptrtype _mesh( mesh );
         _mesh->setWorldComm( worldcomm );
 
-        if ( worldcomm.isActive() )
+        if ( worldcomm->isActive() )
         {
 
             this->cleanOstr();
@@ -1286,9 +1286,9 @@ public :
             }
 
             if ( straighten && _mesh_type::nOrder > 1 )
-                return straightenMesh( _mesh, worldcomm.subWorldComm(), false, false );
+                return straightenMesh( _mesh, worldcomm->subWorldComm(), false, false );
 
-        } // if (worldcomm.isActive())
+        } // if (worldcomm->isActive())
 
         return _mesh;
     }
@@ -1457,19 +1457,19 @@ public :
     // gestion des surface : shape,name,value
     // value is the marker associated to the planeSurface (init to 0 and to use when call geoStr())
     //std::list< std::list< boost::tuple<std::string,std::string, uint16_type > > > M_surfaceList;
-    boost::shared_ptr<ligne_name_type> M_ligneList;
-    boost::shared_ptr<surface_name_type> M_surfaceList;
-    boost::shared_ptr<volume_name_type> M_volumeList;
-    boost::shared_ptr<surfaceloop_name_type> M_surfaceLoopList;
+    std::shared_ptr<ligne_name_type> M_ligneList;
+    std::shared_ptr<surface_name_type> M_surfaceList;
+    std::shared_ptr<volume_name_type> M_volumeList;
+    std::shared_ptr<surfaceloop_name_type> M_surfaceLoopList;
 
     // data containers
-    boost::shared_ptr<parameter_name_type> M_paramShape;
-    boost::shared_ptr<marker_type_type> M_markShape;
+    std::shared_ptr<parameter_name_type> M_paramShape;
+    std::shared_ptr<marker_type_type> M_markShape;
 
     // output string
-    boost::shared_ptr<std::ostringstream> M_ostr;
+    std::shared_ptr<std::ostringstream> M_ostr;
 
-    boost::shared_ptr<std::ostringstream> M_ostrDefineByUser;
+    std::shared_ptr<std::ostringstream> M_ostrDefineByUser;
     bool M_geoIsDefineByUser;
 
 
@@ -1677,16 +1677,16 @@ BOOST_PP_FOR( ( 0, BOOST_PP_SUB( BOOST_PP_ARRAY_SIZE( GEOTOOL_SHAPE ),1 ) ),
 
 
 template<typename mesh_type>
-boost::shared_ptr<mesh_type>
+std::shared_ptr<mesh_type>
 createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int straighten = 1,
-                       int partitions=1, WorldComm worldcomm=Environment::worldComm(),
+                       int partitions=1, worldcomm_ptr_t const& worldcomm=Environment::worldCommPtr(),
                        int partition_file = 0, GMSH_PARTITIONER partitioner = GMSH_PARTITIONER_CHACO )
 {
 
-    boost::shared_ptr<mesh_type> mesh( new mesh_type );
+    std::shared_ptr<mesh_type> mesh( new mesh_type );
     mesh->setWorldComm( worldcomm );
 
-    if ( !worldcomm.isActive() ) return mesh;
+    if ( !worldcomm->isActive() ) return mesh;
 
     Gmsh gmsh( mesh_type::nDim,mesh_type::nOrder,worldcomm );
     gmsh.setCharacteristicLength( meshSize );
@@ -1737,7 +1737,7 @@ createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int 
     mesh->updateForUse();
 
     if ( straighten && mesh_type::nOrder > 1 )
-        return straightenMesh( mesh, worldcomm.subWorldComm() );
+        return straightenMesh( mesh, worldcomm->subWorldComm() );
 
     return mesh;
 }

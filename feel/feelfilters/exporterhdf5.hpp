@@ -51,16 +51,16 @@ class Exporterhdf5
 public: 
     typedef MeshType mesh_type;
     typedef typename mesh_type::value_type value_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;    
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;    
     typedef typename super::timeset_type timeset_type;
     typedef typename super::timeset_ptrtype timeset_ptrtype;
     typedef typename super::timeset_iterator timeset_iterator;
     typedef typename super::timeset_const_iterator timeset_const_iterator;
 
-    Exporterhdf5( WorldComm const& worldComm = Environment::worldComm() );
-    Exporterhdf5( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    Exporterhdf5( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
-    Exporterhdf5( std::string const& exp_prefix, WorldComm const& worldComm = Environment::worldComm() );
+    Exporterhdf5( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    Exporterhdf5( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    Exporterhdf5( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
+    Exporterhdf5( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     Exporterhdf5( Exporterhdf5 const & __ex );
 

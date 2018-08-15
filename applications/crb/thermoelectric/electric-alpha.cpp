@@ -41,7 +41,7 @@ AlphaElectric::AlphaElectric( mesh_ptrtype mesh )
       M_penalDir(doption("thermoelectric.penal-dir")),
       M_propertyPath(Environment::expand( soption("thermoelectric.filename")))
 {
-    M_modelProps = boost::make_shared<prop_type>(M_propertyPath);
+    M_modelProps = std::make_shared<prop_type>(M_propertyPath);
 
     auto parameters = M_modelProps->parameters();
     int nbCrbParameters = count_if(parameters.begin(), parameters.end(), [] (auto const& p)
@@ -366,7 +366,7 @@ void AlphaElectric::initModel()
         PsetV->readFromFile(supersamplingname);
     }
 
-    auto d = Feel::deim( _model=boost::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetV, _prefix="vec");
+    auto d = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetV, _prefix="vec");
     this->addDeim(d);
     this->deim()->run();
 
@@ -387,7 +387,7 @@ void AlphaElectric::initModel()
         PsetM->readFromFile(supersamplingname);
     }
 
-    auto m = Feel::mdeim( _model=boost::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetM, _prefix="mat");
+    auto m = Feel::mdeim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetM, _prefix="mat");
     this->addMdeim(m);
     this->mdeim()->run();
     Feel::cout << tc::green << "Electric MDEIM construction finished!!" << tc::reset << std::endl;
@@ -448,7 +448,7 @@ void AlphaElectric::setupSpecificityModel( boost::property_tree::ptree const& pt
     else
         Feel::cerr << "Warning!! the database does not contain the property file! Expect bugs!"
                    << std::endl;
-    M_modelProps = boost::make_shared<prop_type>(propertyPath);
+    M_modelProps = std::make_shared<prop_type>(propertyPath);
 
     auto parameters = M_modelProps->parameters();
     Feel::cout << "Using parameters:" << std::endl
@@ -458,7 +458,7 @@ void AlphaElectric::setupSpecificityModel( boost::property_tree::ptree const& pt
                                    {
                                        return p.second.hasMinMax();
                                    });
-    Dmu = parameterspace_type::New( nbCrbParameters, Environment::worldComm() );
+    Dmu = parameterspace_type::New( nbCrbParameters );
 
     auto mu_min = Dmu->element();
     auto mu_max = Dmu->element();
@@ -476,7 +476,7 @@ void AlphaElectric::setupSpecificityModel( boost::property_tree::ptree const& pt
     Dmu->setMax(mu_max);
     M_mu = Dmu->element();
 
-    boost::shared_ptr<J_space_type> JspaceEim;
+    std::shared_ptr<J_space_type> JspaceEim;
     if ( !pT )
         pT.reset( new element_type );
 

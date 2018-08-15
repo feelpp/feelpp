@@ -157,10 +157,10 @@ public:
 
     typedef Simplex<1,1,2> entity12_type;
     typedef Mesh<entity12_type> mesh12_type;
-    typedef boost::shared_ptr<mesh12_type> mesh12_ptrtype;
+    typedef std::shared_ptr<mesh12_type> mesh12_ptrtype;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -170,15 +170,15 @@ public:
 
     typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix_type;
     typedef eigen_matrix_type ematrix_type;
-    typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
+    typedef std::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
     typedef typename FunctionSpaceDefinition<OrderU,OrderP,OrderT>::temp_functionspace_type temp_functionspace_type;
     typedef ReducedBasisSpace<super_type> temp_rbfunctionspace_type;
 
-    typedef boost::shared_ptr<temp_functionspace_type> temp_functionspace_ptrtype;
-    typedef boost::shared_ptr<temp_rbfunctionspace_type> temp_rbfunctionspace_ptrtype;
+    typedef std::shared_ptr<temp_functionspace_type> temp_functionspace_ptrtype;
+    typedef std::shared_ptr<temp_rbfunctionspace_type> temp_rbfunctionspace_ptrtype;
     typedef typename temp_functionspace_type::element_type temp_element_type;
-    typedef boost::shared_ptr<temp_element_type> temp_element_ptrtype;
+    typedef std::shared_ptr<temp_element_type> temp_element_ptrtype;
 
     typedef temp_functionspace_type functionspace_type;
     typedef temp_functionspace_ptrtype functionspace_ptrtype;
@@ -190,58 +190,58 @@ public:
 
     typedef bases<Lagrange<OrderT, Vectorial> > grad_temp_basis_type;
     typedef FunctionSpace<mesh_type, grad_temp_basis_type> grad_temp_functionspace_type;
-    typedef boost::shared_ptr<grad_temp_functionspace_type> grad_temp_functionspace_ptrtype;
+    typedef std::shared_ptr<grad_temp_functionspace_type> grad_temp_functionspace_ptrtype;
     typedef typename grad_temp_functionspace_type::element_type grad_temp_element_type;
-    typedef boost::shared_ptr<grad_temp_element_type> grad_temp_element_ptrtype;
+    typedef std::shared_ptr<grad_temp_element_type> grad_temp_element_ptrtype;
 
     /* 1D profil */
     typedef bases<Lagrange<1, Scalar> > p1_basis_type;
     typedef FunctionSpace<mesh12_type, p1_basis_type, value_type> p1_functionspace_type;
-    typedef boost::shared_ptr<p1_functionspace_type> p1_functionspace_ptrtype;
+    typedef std::shared_ptr<p1_functionspace_type> p1_functionspace_ptrtype;
     typedef typename p1_functionspace_type::element_type p1_element_type;
-    typedef boost::shared_ptr<p1_element_type> p1_element_ptrtype;
+    typedef std::shared_ptr<p1_element_type> p1_element_ptrtype;
 
     /* P0 */
     typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar, Discontinuous > > > p0_space_type;
-    typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
+    typedef std::shared_ptr<p0_space_type> p0_space_ptrtype;
     typedef typename p0_space_type::element_type p0_element_type;
-    typedef boost::shared_ptr<p0_element_type> p0_element_ptrtype;
+    typedef std::shared_ptr<p0_element_type> p0_element_ptrtype;
 
     /* velocity */
     typedef bases<Lagrange<OrderU, Vectorial> > velocity_basis_type;
     typedef FunctionSpace<mesh_type, velocity_basis_type, value_type> velocity_functionspace_type;
-    typedef boost::shared_ptr<velocity_functionspace_type> velocity_functionspace_ptrtype;
+    typedef std::shared_ptr<velocity_functionspace_type> velocity_functionspace_ptrtype;
     typedef typename velocity_functionspace_type::element_type velocity_element_type;
-    typedef boost::shared_ptr<velocity_element_type> velocity_element_ptrtype;
+    typedef std::shared_ptr<velocity_element_type> velocity_element_ptrtype;
 
     /* pressure */
     typedef bases<Lagrange<OrderP, Scalar> > pressure_basis_type;
     typedef FunctionSpace<mesh_type, pressure_basis_type, value_type> pressure_functionspace_type;
-    typedef boost::shared_ptr<pressure_functionspace_type> pressure_functionspace_ptrtype;
+    typedef std::shared_ptr<pressure_functionspace_type> pressure_functionspace_ptrtype;
     typedef typename pressure_functionspace_type::element_type pressure_element_type;
-    typedef boost::shared_ptr<pressure_element_type> pressure_element_ptrtype;
+    typedef std::shared_ptr<pressure_element_type> pressure_element_ptrtype;
     /* fluid */
     typedef bases<Lagrange<OrderU, Vectorial>,Lagrange<OrderP, Scalar> > fluid_basis_type;
 
     typedef FunctionSpace<mesh_type, fluid_basis_type, value_type> fluid_functionspace_type;
-    typedef boost::shared_ptr<fluid_functionspace_type> fluid_functionspace_ptrtype;
+    typedef std::shared_ptr<fluid_functionspace_type> fluid_functionspace_ptrtype;
     typedef typename fluid_functionspace_type::element_type fluid_element_type;
-    typedef boost::shared_ptr<fluid_element_type> fluid_element_ptrtype;
+    typedef std::shared_ptr<fluid_element_type> fluid_element_ptrtype;
     typedef typename fluid_element_type::template sub_element<0>::type fluid_element_0_type;
     typedef typename fluid_element_type::template sub_element<1>::type fluid_element_1_type;
 
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     typedef typename super_type::parameterspace_type parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename super_type::parameter_type parameter_type;
 
     /* time */
     typedef Bdf<temp_functionspace_type>  temp_bdf_type;
-    typedef boost::shared_ptr<temp_bdf_type> temp_bdf_ptrtype;
+    typedef std::shared_ptr<temp_bdf_type> temp_bdf_ptrtype;
 
     using super_type::computeBetaQm;
     typedef typename super_type::beta_vector_type beta_vector_type;
@@ -501,8 +501,8 @@ public:
     std::vector<double> sigmaQ( double k,double r, double Q );
 
     /**
-     * returns the scalar product of the boost::shared_ptr vector x and
-     * boost::shared_ptr vector y
+     * returns the scalar product of the std::shared_ptr vector x and
+     * std::shared_ptr vector y
      */
     double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y );
 
@@ -512,8 +512,8 @@ public:
     double scalarProduct( vector_type const& x, vector_type const& y );
 
     /**
-     * returns the scalar product used for POD of the boost::shared_ptr vector x and
-     * boost::shared_ptr vector y
+     * returns the scalar product used for POD of the std::shared_ptr vector x and
+     * std::shared_ptr vector y
      */
     double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y );
 
@@ -629,7 +629,7 @@ private:
     grad_temp_functionspace_ptrtype M_grad_Th;
     element_ptrtype pT,pV;
 
-    boost::shared_ptr<export_type> M_exporter;
+    std::shared_ptr<export_type> M_exporter;
 
     sparse_matrix_ptrtype D,M,Mass,Mpod;
     std::vector<vector_ptrtype> L;

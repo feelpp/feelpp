@@ -43,13 +43,13 @@ template<
         >
 class Advection
     : public AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType>
-    , public boost::enable_shared_from_this< Advection<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType> >
+    , public std::enable_shared_from_this< Advection<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType> >
 {
 public:
     typedef AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType> super_type;
 
     typedef Advection<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     typedef typename super_type::space_advection_type space_advection_type;
     typedef typename super_type::space_advection_ptrtype space_advection_ptrtype;
@@ -63,13 +63,13 @@ public:
     // Constructor
     Advection( 
             std::string const& prefix,
-            WorldComm const& _worldComm = Environment::worldComm(),
+            worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     static self_ptrtype New( 
             std::string const& prefix,
-            WorldComm const& _worldComm = Environment::worldComm(),
+            worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
     //--------------------------------------------------------------------//

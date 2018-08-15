@@ -123,7 +123,7 @@ private:
 };
 
 typedef Material material_type;
-typedef boost::shared_ptr<Material> material_ptrtype;
+typedef std::shared_ptr<Material> material_ptrtype;
 
 } // Feel
 

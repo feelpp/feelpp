@@ -366,7 +366,7 @@ public:
      */
     //@{
 
-    ImporterGmsh( WorldComm const& _worldcomm = Environment::worldComm() )
+    ImporterGmsh( worldcomm_ptr_t const& _worldcomm = Environment::worldCommPtr() )
         :
         super( GMSH, UNDEFINED,  _worldcomm ),
         M_version( FEELPP_GMSH_FORMAT_VERSION ),
@@ -380,7 +380,7 @@ public:
     }
 
     explicit ImporterGmsh( std::string const& _fname, std::string _version = FEELPP_GMSH_FORMAT_VERSION,
-                           WorldComm const& _worldcomm = Environment::worldComm() )
+                           worldcomm_ptr_t const& _worldcomm = Environment::worldCommPtr() )
         :
         super( _fname, GMSH, UNDEFINED, _worldcomm ),
         M_version( _version ),
@@ -473,7 +473,7 @@ public:
      * @brief set the GMsh GModel object
      * @param gmodel GMsh GModel object
      */
-    void setGModel( boost::shared_ptr<GModel> gmodel ) { M_gmodel = gmodel; }
+    void setGModel( std::shared_ptr<GModel> gmodel ) { M_gmodel = gmodel; }
 #endif
 
     //@}
@@ -542,7 +542,7 @@ private:
     //std::map<int,int> itoii;
     //std::vector<int> ptseen;
 #if defined( FEELPP_HAS_GMSH_H )
-    boost::shared_ptr<GModel> M_gmodel;
+    std::shared_ptr<GModel> M_gmodel;
 #endif
 };
 
@@ -2078,7 +2078,7 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
 
 // Gmsh reader factory
 #if defined( FEELPP_HAS_GMSH_H )
-using GmshReaderFactory = Feel::Singleton< std::map< std::string, std::function<std::pair<int,boost::shared_ptr<GModel>>(std::string)> > >;
+using GmshReaderFactory = Feel::Singleton< std::map< std::string, std::function<std::pair<int,std::shared_ptr<GModel>>(std::string)> > >;
 #endif
 
 

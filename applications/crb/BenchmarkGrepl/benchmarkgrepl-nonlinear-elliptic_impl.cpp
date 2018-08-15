@@ -20,7 +20,7 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::setupSpecificityModel( boost::p
 {
     M_mu = this->Dmu->element();
 
-    boost::shared_ptr<space_type_eimg> Xh_eimg;
+    std::shared_ptr<space_type_eimg> Xh_eimg;
     if ( !pT )
         pT.reset( new element_type );
 
@@ -28,7 +28,7 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::setupSpecificityModel( boost::p
     auto const& ptreeEimg = ptreeEim.get_child( "eim_g" );
     std::string dbnameEimg = ptreeEimg.template get<std::string>( "database-filename" );
 
-    auto eim_g = eim( _model=boost::dynamic_pointer_cast< BenchmarkGreplNonlinearElliptic<Order,Dim> >( this->shared_from_this() ),
+    auto eim_g = eim( _model=std::dynamic_pointer_cast< BenchmarkGreplNonlinearElliptic<Order,Dim> >( this->shared_from_this() ),
                       _element=*pT,
                       _space=Xh_eimg,
                       _parameter=M_mu,
@@ -128,7 +128,7 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::initModel()
     int M = 0;
     if ( M_use_deim )
     {
-        auto d = deim( _model=boost::dynamic_pointer_cast<self_type>(this->shared_from_this()),
+        auto d = deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()),
                        _sampling=Pset );
         this->addDeim( d );
         this->deim()->run();
@@ -137,7 +137,7 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::initModel()
     else
     {
         space_ptrtype_eimg Xh_eimg = space_type_eimg::New( mesh );
-        auto eim_g = eim( _model=boost::dynamic_pointer_cast<self_type >( this->shared_from_this() ),
+        auto eim_g = eim( _model=std::dynamic_pointer_cast<self_type >( this->shared_from_this() ),
                           _element=*pT,
                           _space=Xh_eimg,
                           _parameter=M_mu,

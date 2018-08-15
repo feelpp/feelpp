@@ -31,35 +31,35 @@
 
 namespace Feel
 {
-DataMap::DataMap( WorldComm const& _worldComm )
+DataMap::DataMap( worldcomm_ptr_t const& _worldComm )
     :
+    super( _worldComm ),
     M_closed( false ),
     M_n_dofs( 0 ),
-    M_n_localWithoutGhost_df( _worldComm.globalSize(),0 ),
-    M_n_localWithGhost_df( _worldComm.globalSize(),0 ),
-    M_first_df( _worldComm.globalSize(),0 ),
-    M_last_df( _worldComm.globalSize(),0 ),
-    M_first_df_globalcluster( _worldComm.globalSize(),0 ),
-    M_last_df_globalcluster( _worldComm.globalSize(),0 ),
+    M_n_localWithoutGhost_df( _worldComm->globalSize(),0 ),
+    M_n_localWithGhost_df( _worldComm->globalSize(),0 ),
+    M_first_df( _worldComm->globalSize(),0 ),
+    M_last_df( _worldComm->globalSize(),0 ),
+    M_first_df_globalcluster( _worldComm->globalSize(),0 ),
+    M_last_df_globalcluster( _worldComm->globalSize(),0 ),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
-    M_worldComm( _worldComm ),
     M_indexSplit()
 {}
 
-DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
+DataMap::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& _worldComm )
     :
+    super( _worldComm ),
     M_closed( false ),
     M_n_dofs( n ),
-    M_n_localWithoutGhost_df( _worldComm.globalSize(),0 ),
-    M_n_localWithGhost_df( _worldComm.globalSize(),0 ),
-    M_first_df( _worldComm.globalSize(),0 ),
-    M_last_df( _worldComm.globalSize(),0 ),
-    M_first_df_globalcluster( _worldComm.globalSize(),0 ),
-    M_last_df_globalcluster( _worldComm.globalSize(),0 ),
+    M_n_localWithoutGhost_df( _worldComm->globalSize(),0 ),
+    M_n_localWithGhost_df( _worldComm->globalSize(),0 ),
+    M_first_df( _worldComm->globalSize(),0 ),
+    M_last_df( _worldComm->globalSize(),0 ),
+    M_first_df_globalcluster( _worldComm->globalSize(),0 ),
+    M_last_df_globalcluster( _worldComm->globalSize(),0 ),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
-    M_worldComm( _worldComm ),
     M_indexSplit()
 {
 
@@ -125,7 +125,7 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
 
 }
 
-DataMap::DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, WorldComm const& _worldComm )
+DataMap::DataMap( std::vector<std::shared_ptr<DataMap> > const& listofdm, worldcomm_ptr_t const& _worldComm )
     :
     DataMap( _worldComm )
 {
@@ -239,7 +239,7 @@ DataMap::DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, Worl
     bool computeIndexSplit = true;
     if ( computeIndexSplit )
     {
-        boost::shared_ptr<IndexSplit> indexSplit( new IndexSplit() );
+        std::shared_ptr<IndexSplit> indexSplit( new IndexSplit() );
         const size_type firstDofGC = this->firstDofGlobalCluster();
         for ( uint16_type i=0; i<nRow; ++i )
             indexSplit->addSplit( firstDofGC, listofdm[i]->indexSplit() );
@@ -255,7 +255,7 @@ DataMap::DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, Worl
             }
         if ( hasComponentsSplit )
         {
-            boost::shared_ptr<IndexSplit> indexSplitWithComponents( new IndexSplit() );
+            std::shared_ptr<IndexSplit> indexSplitWithComponents( new IndexSplit() );
             for ( uint16_type i=0; i<nRow; ++i )
                 indexSplitWithComponents->addSplit( firstDofGC, listofdm[i]->indexSplitWithComponents() );
             this->setIndexSplitWithComponents( indexSplitWithComponents );
@@ -573,7 +573,7 @@ DataMap::activeDofClusterUsedByProc( std::set<size_type> const& dofGlobalProcess
 }
 
 
-boost::shared_ptr<DataMap>
+std::shared_ptr<DataMap>
 DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _checkAndFixInputRange ) const
 {
     rank_type curProcId = this->worldComm().localRank();
@@ -587,7 +587,7 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
     idExtract.insert( idExtractVec.begin(), idExtractVec.end() );
 
     // init new dataMap pointer
-    boost::shared_ptr<DataMap> dataMapRes( new DataMap(this->worldComm()) );
+    std::shared_ptr<DataMap> dataMapRes( new DataMap( this->worldCommPtr() ) );
 
     // define neighbor process as identical
     dataMapRes->setNeighborSubdomains( this->neighborSubdomains() );
@@ -758,7 +758,7 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
     else
     {
         // TODO : reuse parent indexsplit structure to build the new one
-        boost::shared_ptr<IndexSplit> indexSplit( new IndexSplit( this->indexSplit()->size() ) );
+        std::shared_ptr<IndexSplit> indexSplit( new IndexSplit( this->indexSplit()->size() ) );
         size_type startIS = dataMapRes->firstDofGlobalCluster( curProcId );
         for ( int k = 0 ; k < this->indexSplit()->size() ; ++k )
         {

@@ -82,14 +82,14 @@ template<typename T>
 typename BlocksBaseVector<T>::vector_ptrtype&
 BlocksBaseVector<T>::vectorMonolithic()
 {
-    boost::shared_ptr< VectorBlockBase<T> > vcast = boost::dynamic_pointer_cast< VectorBlockBase<T> >( M_vector );
+    std::shared_ptr< VectorBlockBase<T> > vcast = std::dynamic_pointer_cast< VectorBlockBase<T> >( M_vector );
     return vcast->getVector();
 }
 template<typename T>
 typename BlocksBaseVector<T>::vector_ptrtype const&
 BlocksBaseVector<T>::vectorMonolithic() const
 {
-    boost::shared_ptr< VectorBlockBase<T> const > vcast = boost::dynamic_pointer_cast< VectorBlockBase<T> const >( M_vector );
+    std::shared_ptr< VectorBlockBase<T> const > vcast = std::dynamic_pointer_cast< VectorBlockBase<T> const >( M_vector );
     return vcast->getVector();
 }
 
@@ -161,17 +161,17 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
 {
     auto nRow = blockVec.nRow();
 
-    boost::shared_ptr<DataMap> dm;
+    std::shared_ptr<DataMap> dm;
     if ( nRow == 1 )
     {
         dm = blockVec(0,0)->mapPtr();
     }
     else
     {
-        std::vector<boost::shared_ptr<DataMap> > listofdm;
+        std::vector<std::shared_ptr<DataMap> > listofdm;
         for ( uint16_type i=0 ; i<nRow; ++i )
             listofdm.push_back( blockVec(i,0)->mapPtr() );
-        dm.reset( new DataMap( listofdm, blockVec(0,0)->map().worldComm() ) );
+        dm.reset( new DataMap( listofdm, blockVec(0,0)->map().worldCommPtr() ) );
     }
     M_vec = backend.newVector( dm );
 

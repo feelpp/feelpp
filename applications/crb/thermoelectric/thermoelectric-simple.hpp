@@ -98,7 +98,7 @@ public:
     using element_ptrtype = super_type::element_ptrtype;
 
     using J_space_type = FunctionSpaceDefinition::J_space_type;
-    using J_space_ptrtype = boost::shared_ptr<J_space_type>;
+    using J_space_ptrtype = std::shared_ptr<J_space_type>;
     using q_sigma_space_type = space_type::template sub_functionspace<0>::type;
     using q_sigma_element_type = q_sigma_space_type::element_type;
     using V_view_type = typename element_type::template sub_element_type<0>;
@@ -109,7 +109,7 @@ public:
     using current_element_type = typename current_space_type::element_type;
 
     using prop_type = ModelProperties;
-    using prop_ptrtype = boost::shared_ptr<prop_type>;
+    using prop_ptrtype = std::shared_ptr<prop_type>;
 
     using parameter_type = super_type::parameter_type;
     using vectorN_type = super_type::vectorN_type;

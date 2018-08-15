@@ -295,7 +295,7 @@ ThermoElectric::functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
 void ThermoElectric::initModel()
 {
     Feel::cout << "initModel" << std::endl;
-    M_modelProps = boost::make_shared<prop_type>(M_propertyPath);
+    M_modelProps = std::make_shared<prop_type>(M_propertyPath);
     this->addModelFile("property-file", M_propertyPath);
 
     M_materials = M_modelProps->materials().materialWithPhysic(std::vector<std::string>({"electric","thermic"}));
@@ -373,7 +373,7 @@ void ThermoElectric::initModel()
         auto alpha = cst_ref(M_mu.parameterNamed(mat.second.getString("alphaKey")));
         auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
 
-        auto eim_sigma = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+        auto eim_sigma = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                               _element=M_VT->template element<1>(),
                               _parameter=M_mu,
                               _expr=sigma,
@@ -391,7 +391,7 @@ void ThermoElectric::initModel()
         auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
         auto k = sigma*L*_e1;
 
-        auto eim_k = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+        auto eim_k = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                           _element=M_VT->template element<1>(),
                           _parameter=M_mu,
                           _expr=k,
@@ -401,7 +401,7 @@ void ThermoElectric::initModel()
         this->addEim( eim_k );
     }
     auto gradgrad = _e2v*trans(_e2v);
-    auto eim_gradgrad = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+    auto eim_gradgrad = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                              _element=M_VT->template element<0>(),
                              //_element2=M_VT->template element<0>(),
                              _parameter=M_mu,
@@ -425,7 +425,7 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
     else
         Feel::cerr << "Warning!! the database does not contain the property file! Expect bugs!"
                    << std::endl;
-    M_modelProps = boost::make_shared<prop_type>(M_propertyPath);
+    M_modelProps = std::make_shared<prop_type>(M_propertyPath);
     M_materials = M_modelProps->materials().materialWithPhysic(std::vector<std::string>({"electric","thermic"}));
     M_elecMaterials = M_modelProps->materials().materialWithPhysic("electric");
     M_therMaterials = M_modelProps->materials().materialWithPhysic("thermic");
@@ -467,7 +467,7 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
         auto sigma0 = cst_ref(M_mu.parameterNamed(mat.second.getString("sigmaKey")));
         auto alpha = cst_ref(M_mu.parameterNamed(mat.second.getString("alphaKey")));
         auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
-        auto eim_sigma = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+        auto eim_sigma = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                               _element=M_VT->template element<1>(),
                               _parameter=M_mu,
                               _expr=sigma,
@@ -487,7 +487,7 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
         auto L = cst_ref(M_mu.parameterNamed("L"));
         auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
         auto k = sigma*L*_e1;
-        auto eim_k = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+        auto eim_k = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                           _element=M_VT->template element<1>(),
                           _parameter=M_mu,
                           _expr=k,
@@ -501,7 +501,7 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
     std::string dbnameEimGrad = ptreeEimGrad.template get<std::string>( "database-filename" );
 
     auto gradgrad = _e2v*trans(_e2v);
-    auto eim_gradgrad = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+    auto eim_gradgrad = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                              _element=M_VT->template element<0>(),
                              _parameter=M_mu,
                              _expr=gradgrad,

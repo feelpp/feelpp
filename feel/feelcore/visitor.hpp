@@ -313,11 +313,11 @@ protected:
  * addition to deriving it from VisitableBase<R>
  */
 #define FEELPP_DEFINE_VISITABLE()                          \
-    virtual return_type accept( VisitorBase& guest )         \
+    virtual return_type accept( VisitorBase& guest ) override   \
     {                                                        \
         return this->acceptImpl( this, &guest );             \
     }                                                        \
-    virtual return_type accept( VisitorBase* guest )         \
+    virtual return_type accept( VisitorBase* guest ) override   \
     {                                                        \
         return this->acceptImpl( this, guest );              \
     }

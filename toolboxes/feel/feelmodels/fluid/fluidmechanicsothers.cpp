@@ -44,7 +44,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::string ALEmode;if (M_isMoveDomain) ALEmode="Yes"; else ALEmode="No";
@@ -94,7 +94,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
     for ( std::string const& fieldName : M_postProcessUserFieldExported )
         doExport_str=(doExport_str.empty())? fieldName : doExport_str + " - " + fieldName;
 
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -881,8 +881,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
 
     if ( M_preconditionerAttachPCD && this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") )
     {
-        boost::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
-            boost::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
+        std::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
+            std::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
         myOpPCD->setParameterValues( paramValues );
     }
 }
@@ -1088,8 +1088,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
 {
     CHECK( this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") ) << "operator PCD does not init";
 
-    boost::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
-        boost::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
+    std::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
+        std::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
     auto const& rho = this->materialProperties()->fieldRho();
     auto const& mu = this->materialProperties()->fieldMu();
     bool hasAlpha = !this->isStationaryModel();

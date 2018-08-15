@@ -43,17 +43,22 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   include(pybind11Tools)
 endif()
 
-pybind11_add_module(pyfeelpp python.cpp)
-target_include_directories(pyfeelpp PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries( pyfeelpp PRIVATE ${FEELPP_LIBRARIES} )
+pybind11_add_module(_pyfeelpp python.cpp)
+target_include_directories(_pyfeelpp PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_link_libraries( _pyfeelpp PRIVATE ${FEELPP_LIBRARIES} )
 
-pybind11_add_module(core  core.cpp)
-target_include_directories(core PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries( core PRIVATE ${FEELPP_LIBRARIES} )
+#add_subdirectory(core)
 
-pybind11_add_module(crb  crb.cpp)
-target_include_directories(crb PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries( crb PRIVATE ${FEELPP_LIBRARIES} )
+
+pybind11_add_module(test_nested  test_nested.cpp)
+target_include_directories(test_nested PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_link_libraries( test_nested PRIVATE ${FEELPP_LIBRARIES} )
+
+
+
+
+#add_subdirectory(filters)
+#add_subdirectory(toolboxes)
 
 #configure_file(__init__.py ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
 

@@ -61,7 +61,18 @@ enum {
     UseBlock=0x8
 };
 
-class ModelCrbBaseBase {};
+class ModelCrbBaseBase : public CommObject
+{
+public:
+    using super = CommObject;
+    ModelCrbBaseBase() : super( Environment::worldCommPtr() ) {}
+    ModelCrbBaseBase( worldcomm_ptr_t const& w ) : super( w ) {}
+    ModelCrbBaseBase( ModelCrbBaseBase const& ) = default;
+    ModelCrbBaseBase( ModelCrbBaseBase && ) = default;
+    ModelCrbBaseBase& operator=( ModelCrbBaseBase const& ) = default;
+    ModelCrbBaseBase& operator=( ModelCrbBaseBase && ) = default;
+    virtual ~ModelCrbBaseBase() = default;
+};
 
 class ParameterDefinitionBase
 {
@@ -112,64 +123,64 @@ template <typename ParameterDefinition=ParameterDefinitionBase,
           >
 class ModelCrbBase :
         public ModelCrbBaseBase,
-        public boost::enable_shared_from_this< ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,_Options,EimDefinition> >
+        public std::enable_shared_from_this< ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,_Options,EimDefinition> >
 {
 
 public :
-
+    using super = ModelCrbBaseBase;
     typedef ModelCrbBase self_type;
     typedef typename EimDefinition::fun_type fun_type;
     typedef typename EimDefinition::fund_type fund_type;
 
     typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
 
     typedef typename mpl::if_<is_shared_ptr<FunctionSpaceDefinition>,
                               mpl::identity<typename FunctionSpaceDefinition::element_type>,
                               mpl::identity<FunctionSpaceDefinition>>::type::type::space_type space_type;
     typedef space_type functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef functionspace_ptrtype space_ptrtype;
 
     typedef typename functionspace_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename functionspace_type::basis_type basis_type;
     typedef typename functionspace_type::value_type value_type;
 
     typedef typename space_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
 
     /*reduced basis space*/
     typedef ReducedBasisSpace<space_type> rbfunctionspace_type;
-    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
+    typedef std::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
     typedef typename rbfunctionspace_type::ctxrbset_type rbfunctionspace_context_type;
     typedef typename rbfunctionspace_type::ctxrbset_ptrtype rbfunctionspace_context_ptrtype;
 
     /*backend*/
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
 
-    typedef boost::shared_ptr<fun_type> fun_ptrtype;
+    typedef std::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
-    typedef boost::shared_ptr<fund_type> fund_ptrtype;
+    typedef std::shared_ptr<fund_type> fund_ptrtype;
     typedef std::vector<fund_ptrtype> funsd_type;
 
     typedef Eigen::VectorXd vectorN_type;
 
     typedef OperatorLinear< space_type , space_type > operator_type;
-    typedef boost::shared_ptr<operator_type> operator_ptrtype;
+    typedef std::shared_ptr<operator_type> operator_ptrtype;
 
     typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
-    typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
+    typedef std::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
 
     typedef FsFunctionalLinearComposite< space_type > functionalcomposite_type;
-    typedef boost::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
+    typedef std::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
 
     typedef FsFunctionalLinear< space_type > functional_type;
-    typedef boost::shared_ptr<functional_type> functional_ptrtype;
+    typedef std::shared_ptr<functional_type> functional_ptrtype;
 
 
     typedef typename backend_type::vector_type vector_type;
@@ -179,9 +190,9 @@ public :
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
 
     typedef DEIMBase<parameterspace_type,space_type,vector_type> deim_type;
-    typedef boost::shared_ptr<deim_type> deim_ptrtype;
+    typedef std::shared_ptr<deim_type> deim_ptrtype;
     typedef DEIMBase<parameterspace_type,space_type,sparse_matrix_type> mdeim_type;
-    typedef boost::shared_ptr<mdeim_type> mdeim_ptrtype;
+    typedef std::shared_ptr<mdeim_type> mdeim_ptrtype;
 
     typedef std::vector<deim_ptrtype> deim_vector_type;
     typedef std::vector<mdeim_ptrtype> mdeim_vector_type;
@@ -194,9 +205,9 @@ public :
     typedef vf::detail::LinearForm<functionspace_type,vector_type,vector_type> form1_type;
 
     typedef Pchv_type<mesh_type,1> displacement_space_type;
-    typedef boost::shared_ptr<displacement_space_type> displacement_space_ptrtype;
+    typedef std::shared_ptr<displacement_space_type> displacement_space_ptrtype;
     typedef typename displacement_space_type::element_type displacement_field_type;
-    typedef typename boost::shared_ptr<displacement_field_type> displacement_field_ptrtype;
+    typedef typename std::shared_ptr<displacement_field_type> displacement_field_ptrtype;
 
 #if 0
     static const bool is_time_dependent = FunctionSpaceDefinition::is_time_dependent;
@@ -281,22 +292,23 @@ public :
                                >::type betaq_type;
 
     typedef std::vector< boost::tuple< sparse_matrix_ptrtype , std::string > > lhs_light_type;
-    typedef boost::shared_ptr<lhs_light_type> lhs_light_ptrtype;
+    typedef std::shared_ptr<lhs_light_type> lhs_light_ptrtype;
     typedef std::vector< boost::tuple<  vector_ptrtype , std::string > > rhs_light_type;
-    typedef boost::shared_ptr<rhs_light_type> rhs_light_ptrtype ;
+    typedef std::shared_ptr<rhs_light_type> rhs_light_ptrtype ;
     typedef std::vector< boost::tuple<  std::vector< vector_ptrtype > , std::string > > outputs_light_type;
-    typedef boost::shared_ptr<outputs_light_type> outputs_light_ptrtype ;
+    typedef std::shared_ptr<outputs_light_type> outputs_light_ptrtype ;
 
     typedef Bdf<space_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     ModelCrbBase() = delete;
-    ModelCrbBase( std::string const& name,  WorldComm const& worldComm = Environment::worldComm() )
+    ModelCrbBase( std::string const& name,  worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         ModelCrbBase( name, Environment::randomUUID( true ), worldComm )
         {}
-    ModelCrbBase( std::string const& name, uuids::uuid const& uid, WorldComm const& worldComm = Environment::worldComm() )
+    ModelCrbBase( std::string const& name, uuids::uuid const& uid, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
+        super( worldComm ),
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
         M_backend( backend() ),
@@ -382,7 +394,7 @@ public :
      */
     void setModelOnlineDeim( std::string name )
     {
-        M_backend = backend( _name=name, _worldcomm=Environment::worldCommSeq() );
+        M_backend = backend( _name=name, _worldcomm=this->subWorldCommSeqPtr() );
     }
 
     //! functions call by deim to init specific part of the model when online.
@@ -400,11 +412,6 @@ public :
     //! CRB type object is created because they use the id
     //!
     void setId( uuids::uuid const& i ) { M_crbModelDb.setId( i ); }
-
-    /**
-     * \return the mpi communicators
-     */
-    WorldComm const& worldComm() const { return Dmu->worldComm(); }
 
     /**
      * return directory path where symbolic expression (ginac) are built
@@ -1008,7 +1015,7 @@ public :
 
     virtual std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA()
     {
-        if( M_Aqm.size() == 0 && Environment::worldComm().isMasterRank() )
+        if( M_Aqm.size() == 0 && this->worldComm().isMasterRank() )
         {
             std::cout<<"************************************************************************"<<std::endl;
             std::cout<<"** It seems that you are using operators free and you don't have      **"<<std::endl;
@@ -1078,7 +1085,7 @@ public :
 
     virtual affine_decomposition_type computePicardAffineDecomposition()
     {
-        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs     **"<<std::endl;
@@ -1200,7 +1207,7 @@ public :
     }
     betaq_type computeBetaQ( parameter_type const& mu , mpl::bool_<false>, double time , bool only_terms_time_dependent=false)
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"*******************************************************************"<<std::endl;
             std::cout<<"** Error ! You want to access to computeBetaQ ( mu , time) but   **"<<std::endl;
@@ -1219,7 +1226,7 @@ public :
     }
     betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>  )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"*******************************************************************"<<std::endl;
             std::cout<<"** Error ! You want to access to computeBetaQm( mu ) wherease    **"<<std::endl;
@@ -1237,7 +1244,7 @@ public :
 
     virtual betaqm_type computePicardBetaQm( parameter_type const& mu )
     {
-        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1254,7 +1261,7 @@ public :
 
     betaq_type computeBetaQ( parameter_type const& mu , mpl::bool_<true>  )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"*******************************************************************"<<std::endl;
             std::cout<<"** Error ! You want to access to computeBetaQ ( mu ) wherease    **"<<std::endl;
@@ -1324,7 +1331,7 @@ public :
 
     virtual betaqm_type computePicardBetaQm( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false)
     {
-        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1391,7 +1398,7 @@ public :
     {
         if( is_time_dependent )
         {
-            if( Environment::worldComm().isMasterRank() )
+            if( this->worldComm().isMasterRank() )
             {
                 std::cout<<"*******************************************************************"<<std::endl;
                 std::cout<<"** Error ! You have implemented a transient problem but you      **"<<std::endl;
@@ -1416,7 +1423,7 @@ public :
     //so the user doesn't have to specify this function
     virtual betaqm_type computeBetaQm( element_type const& u, parameter_type const& mu ,  double time , bool only_time_dependent_terms=false )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"*******************************************************************"<<std::endl;
             std::cout<<"** You are using the function computeBetaQm( u , mu , time ) but **"<<std::endl;
@@ -1428,7 +1435,7 @@ public :
     }
     virtual betaqm_type computeBetaQm( element_type const& u , parameter_type const& mu )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** You are using the function computeBetaQm( u , mu ) but     **"<<std::endl;
@@ -1440,7 +1447,7 @@ public :
     }
     virtual betaqm_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu , double time , bool only_time_dependent_terms=false )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"*******************************************************************"<<std::endl;
             std::cout<<"** You are using the function computeBetaQm( u , mu , time ) but **"<<std::endl;
@@ -1452,7 +1459,7 @@ public :
     }
     virtual betaqm_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"*******************************************************************"<<std::endl;
             std::cout<<"** You are using the function computeBetaQm( urb , mu ) but      **"<<std::endl;
@@ -1465,7 +1472,7 @@ public :
 
     virtual betaqm_type computePicardBetaQm( element_type const& u , parameter_type const& mu )
     {
-        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1476,7 +1483,7 @@ public :
     }
     virtual betaqm_type computePicardBetaQm( element_type const& u, parameter_type const& mu ,  double time , bool only_time_dependent_terms=false )
     {
-        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1499,7 +1506,7 @@ public :
     }
     virtual parameter_type refParameter()
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"**************************************************************************************************"<<std::endl;
             std::cout<<"** You want to specify reference parameters because referenceParametersGivenByUser returns true **"<<std::endl;
@@ -1639,14 +1646,14 @@ public :
 
     void partitionMesh( std::string mshfile , std::string target , int dimension, int order )
     {
-        int N = Environment::worldComm().globalSize();
+        int N = this->worldComm().globalSize();
 
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout<<"[ModelCrbBase] generate target file : "<<target<<" from "<<mshfile<<std::endl;
 
             Gmsh gmsh( dimension,
                        order,
-                       Environment::worldComm() );
+                       Environment::worldCommPtr() );
            gmsh.setNumberOfPartitions( N );
            gmsh.rebuildPartitionMsh( mshfile /*mesh with 1 partition*/, target /*mesh with N partitions*/ );
     }
@@ -1685,7 +1692,7 @@ public :
             mean2 = square.mean();
             standard_deviation = math::sqrt( mean2 - mean1 );
 
-            if( Environment::worldComm().isMasterRank() )
+            if( this->worldComm().isMasterRank() )
             {
                 if( force )
                 {
@@ -1712,7 +1719,7 @@ public :
 
     void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename , std::string extra="")
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             Eigen::MatrixXf::Index index_max;
             Eigen::MatrixXf::Index index_min;
@@ -1773,7 +1780,7 @@ public :
     **/
     void writeVectorsExtremumsRatio( std::vector< vectorN_type > const& error, std::vector< vectorN_type > const& estimated, std::string filename )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
 
             Eigen::MatrixXf::Index index_max;
@@ -1800,7 +1807,7 @@ public :
 
     void readConvergenceDataFromFile( std::vector< vectorN_type > & vector, std::string filename )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::vector< std::vector< double > > tmpvector;
             std::ifstream file ( filename );
@@ -2014,7 +2021,7 @@ public :
      */
     virtual void run( const double * X, unsigned long N, double * Y, unsigned long P )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"**************************************************"<<std::endl;
             std::cout<<"** You are using the function run whereas       **"<<std::endl;

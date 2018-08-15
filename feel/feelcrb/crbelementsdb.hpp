@@ -57,7 +57,7 @@ class CRBElementsDB : public CRBDB
 public :
 
     typedef ModelType model_type;
-    typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef std::shared_ptr<model_type> model_ptrtype;
 
     //! element of the functionspace type
     typedef typename model_type::element_type element_type;
@@ -65,21 +65,21 @@ public :
 
     //! mesh type
     typedef typename model_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! function space type
     typedef typename model_type::space_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
-    typedef boost::shared_ptr<rbfunctionspace_type> rbfunctionspace_ptrtype;
+    typedef std::shared_ptr<rbfunctionspace_type> rbfunctionspace_ptrtype;
 
     typedef typename rbfunctionspace_type::rb_basis_type wn_type;
 
     //! constructors
     CRBElementsDB( std::string const& name = "defaultname_crbelementdb",
                    std::string const& ext = "elements",
-                   WorldComm const& worldComm = Environment::worldComm() )
+                   worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
     :
         super( name, ext, worldComm ),
         M_fileFormat( soption(_name="crb.db.format") ),

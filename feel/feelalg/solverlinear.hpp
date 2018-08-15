@@ -43,18 +43,19 @@ template<typename T> class MatrixSparse;
  * @author Christophe Prud'homme, 2005
  */
 template <typename T>
-class SolverLinear
+class SolverLinear : public CommObject
 {
 
 public:
 
+    using super = CommObject;
     typedef SolverLinear<T> self_type;
-    typedef boost::shared_ptr<SolverLinear<T> >  self_ptrtype;
+    typedef std::shared_ptr<SolverLinear<T> >  self_ptrtype;
 
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
 
-    typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
+    typedef std::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
 
     class SolveData : public boost::tuple<bool,size_type,value_type>
     {
@@ -82,26 +83,17 @@ public:
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverLinear ( WorldComm const& worldComm = Environment::worldComm() );
+    SolverLinear ( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverLinear ( po::variables_map const& vm, WorldComm const& worldComm = Environment::worldComm() );
+    SolverLinear ( po::variables_map const& vm, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     /**
      * Destructor.
      */
     virtual ~SolverLinear ();
-
-    WorldComm const& worldComm() const
-    {
-        return M_worldComm;
-    }
-    void setWorldComm( WorldComm const& worldComm )
-    {
-        M_worldComm=worldComm;
-    }
 
     /**
      * @returns true if the data structures are
@@ -248,11 +240,11 @@ public:
         M_preconditioner = preconditioner;
     }
 
-    void attachNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    void attachNullSpace( std::shared_ptr<NullSpace<value_type> > const& ns )
     {
         M_nullSpace = ns;
     }
-    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    void attachNearNullSpace( std::shared_ptr<NullSpace<value_type> > const& ns )
     {
         M_nearNullSpace = ns;
     }
@@ -378,11 +370,6 @@ protected:
         M_is_initialized = init;
     }
 
-private:
-
-    //mpi communicator
-    WorldComm M_worldComm;
-
 protected:
 
     ///
@@ -420,7 +407,7 @@ protected:
     /**
      * Near Null Space
      */
-    boost::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
+    std::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
 
     FieldSplitType M_fieldSplit_type;
 
@@ -447,8 +434,8 @@ protected:
 /*----------------------- inline functions ----------------------------------*/
 template <typename T>
 inline
-SolverLinear<T>::SolverLinear ( WorldComm const& worldComm ) :
-    M_worldComm( worldComm ),
+SolverLinear<T>::SolverLinear ( worldcomm_ptr_t const& worldComm ) :
+    super( worldComm ),
     M_solver_type         ( GMRES ),
     M_preconditioner_type ( LU_PRECOND ),
     M_preconditioner(),
@@ -461,8 +448,8 @@ SolverLinear<T>::SolverLinear ( WorldComm const& worldComm ) :
 
 template <typename T>
 inline
-SolverLinear<T>::SolverLinear ( po::variables_map const& vm, WorldComm const& worldComm ) :
-    M_worldComm( worldComm ),
+SolverLinear<T>::SolverLinear ( po::variables_map const& vm, worldcomm_ptr_t const& worldComm ) :
+    super( worldComm ),
     M_vm( vm ),
     M_solver_type         ( GMRES ),
     M_preconditioner_type ( LU_PRECOND ),

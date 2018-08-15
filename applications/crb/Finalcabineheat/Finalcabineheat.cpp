@@ -71,7 +71,7 @@ class FinalCabineHeatFemApp   : public Application
 public:
 
     typedef CRBModel<FinalCabineHeat> crbmodel_type;
-    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
+    typedef std::shared_ptr<crbmodel_type> crbmodel_ptrtype;
 
     FinalCabineHeatFemApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :

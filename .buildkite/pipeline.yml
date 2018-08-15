@@ -1,51 +1,39 @@
 steps:
- - name: ':ubuntu: 16.04,clang-4.0'
+ - name: ':$TARGET, ${CXX}'
    command: tools/scripts/buildkite/install-feelpp-lib.sh
    agents:
      docker: true
      ubuntu: "16.04"
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:16.04
  - wait
- - name: ':ubuntu: 16.04,clang-4.0  feelpp-base :hammer:'
+ - name: ':$TARGET, $CXX, feelpp-base :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh base
    agents:
      docker: true
      ubuntu: "16.04"
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:16.04
  - wait
- - name: ':ubuntu: 16.04,clang-4.0 feelpp-toolboxes :hammer:'
+ - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh toolboxes
    agents:
      docker: true
      ubuntu: "16.04"
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:16.04
  - wait
- - name: ':ubuntu: 16.04,clang-4.0 feelpp-crb :hammer:'
+ - name: ':$TARGET, $CXX, feelpp-crb :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh crb
    agents:
      docker: true
      ubuntu: "16.04"
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:16.04
  - wait
- - command: tools/scripts/buildkite/release.sh  -- feelpp-libs feelpp-base feelpp-toolboxes feelpp-crb
+ - name: ':$TARGET, $CXX, feelpp-pyfeelpp :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh pyfeelpp
+   agents:
+     docker: true
+     ubuntu: "16.04"
+ - wait
+ - command: tools/scripts/buildkite/release.sh  -- feelpp-libs feelpp-base feelpp-toolboxes feelpp-crb feelpp-pyfeelpp
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
      ubuntu: "16.04"
-   env:
-     TARGET: ubuntu:16.04
  - wait
  - trigger: "feelpp-singularity"
    label: ":package: create Feel++ :singularity: containers"
@@ -53,5 +41,5 @@ steps:
    build:
      env:
        GIRDER_ID: "5a4fa90ab0e9571f842931e5"
-       PROJECT: "feelpp-toolboxes feelpp-crb"
+       PROJECT: "feelpp-toolboxes feelpp-crb feelpp-pyfeelpp"
        TAG: ${BUILDKITE_BRANCH}

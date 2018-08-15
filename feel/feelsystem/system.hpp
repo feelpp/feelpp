@@ -54,7 +54,7 @@ public:
     typedef typename SpaceType::value_type value_type;
 
     typedef SpaceType functionspace_type;
-    typedef boost::shared_ptr<SpaceType> functionspace_ptrtype;
+    typedef std::shared_ptr<SpaceType> functionspace_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
 

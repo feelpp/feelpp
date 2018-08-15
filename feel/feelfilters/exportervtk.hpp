@@ -131,7 +131,7 @@ public:
     //@{
 
     typedef MeshType mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef Exporter<MeshType,N> super;
     typedef typename mesh_type::value_type value_type;
@@ -204,10 +204,10 @@ public:
      */
     //@{
 
-    ExporterVTK( WorldComm const& worldComm = Environment::worldComm() );
-    ExporterVTK( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterVTK( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
-    ExporterVTK( std::string const& exp_prefix, WorldComm const& worldComm = Environment::worldComm() );
+    ExporterVTK( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ExporterVTK( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ExporterVTK( po::variables_map const& vm, std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
+    ExporterVTK( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     ExporterVTK( ExporterVTK const & __ex );
 

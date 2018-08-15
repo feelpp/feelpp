@@ -74,14 +74,14 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         typedef typename super_type::gmc_type gmc_type;
         // fe velocity context
         typedef typename fe_velocity_type::PreCompute pc_velocity_type;
-        typedef boost::shared_ptr<pc_velocity_type> pc_velocity_ptrtype;
+        typedef std::shared_ptr<pc_velocity_type> pc_velocity_ptrtype;
         typedef typename fe_velocity_type::template Context<expr_type::context_velocity, fe_velocity_type, gm_type,geoelement_type,gmc_type::context> ctx_velocity_type;
-        typedef boost::shared_ptr<ctx_velocity_type> ctx_velocity_ptrtype;
+        typedef std::shared_ptr<ctx_velocity_type> ctx_velocity_ptrtype;
         // fe pressure context
         typedef typename fe_pressure_type::PreCompute pc_pressure_type;
-        typedef boost::shared_ptr<pc_pressure_type> pc_pressure_ptrtype;
+        typedef std::shared_ptr<pc_pressure_type> pc_pressure_ptrtype;
         typedef typename fe_pressure_type::template Context<expr_type::context_pressure, fe_pressure_type, gm_type,geoelement_type,gmc_type::context> ctx_pressure_type;
-        typedef boost::shared_ptr<ctx_pressure_type> ctx_pressure_ptrtype;
+        typedef std::shared_ptr<ctx_pressure_type> ctx_pressure_ptrtype;
 
         typedef typename expr_type::value_type value_type;
 
@@ -273,9 +273,9 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         typedef typename expr_type::fe_muP0_type fe_muP0_type;
         static const size_type context_muP0 = expr_type::context_muP0;
         typedef typename fe_muP0_type::PreCompute pc_muP0_type;
-        typedef boost::shared_ptr<pc_muP0_type> pc_muP0_ptrtype;
+        typedef std::shared_ptr<pc_muP0_type> pc_muP0_ptrtype;
         typedef typename fe_muP0_type::template Context<context_muP0, fe_muP0_type, gm_type,geoelement_type,gmc_type::context> ctx_muP0_type;
-        typedef boost::shared_ptr<ctx_muP0_type> ctx_muP0_ptrtype;
+        typedef std::shared_ptr<ctx_muP0_type> ctx_muP0_ptrtype;
 
         tensorFluidStressTensorNewtonian( expr_type const& expr,
                                           Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -1410,7 +1410,7 @@ public:
                                   mpl::identity<Feel::vf::detail::gmc<0> >,
                                   mpl::identity<Feel::vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gmc_type::gm_type gm_type;
 
         //----------------------------------------------------------------------------------------------------//
@@ -1423,7 +1423,7 @@ public:
         //----------------------------------------------------------------------------------------------------//
 
         typedef tensorBase<Geo_t, Basis_i_t, Basis_j_t,shape,value_type> tensorbase_type;
-        typedef boost::shared_ptr<tensorbase_type> tensorbase_ptrtype;
+        typedef std::shared_ptr<tensorbase_type> tensorbase_ptrtype;
 
         typedef typename tensorbase_type::matrix_shape_type matrix_shape_type;
 

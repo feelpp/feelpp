@@ -94,7 +94,7 @@ class Test_MeshStructured
     void run (double pixelsize) 
         {
             tic();
-            auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
+            auto mesh = std::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
                                                             Environment::worldComm(),"", false, false);
 
             mesh->components().reset();
@@ -130,7 +130,7 @@ class Test_MeshStructured
     void runImage  (double pixelsize) 
         {
 
-            auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
+            auto mesh = std::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
                                                             Environment::worldComm(),"", false, false);
             mesh->components().reset();
             mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
@@ -167,7 +167,7 @@ class Test_MeshStructured
             auto y = readHBF( hbf2 );
             auto z = readHBF( solution );
 
-            auto mesh = boost::make_shared<MeshStructured>( x.rows(),
+            auto mesh = std::make_shared<MeshStructured>( x.rows(),
                                                             x.cols(),
                                                             pixelsize,
                                                             cx,cy,
@@ -212,7 +212,7 @@ class Test_MeshStructured
         {
             tic();
             Feel::cout << "[nbPt X] x [nbPt Y] = " << ima.rows() << "\t" << ima.cols() << std::endl;
-            auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
+            auto mesh = std::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
                                                             Environment::worldComm(),"", false, false);
             Feel::cout <<"  mesh->numGlobalElements() " << mesh->numGlobalElements() << std::endl;
             Feel::cout <<"  mesh->numGlobalPoints()   " << mesh->numGlobalPoints()   << std::endl;

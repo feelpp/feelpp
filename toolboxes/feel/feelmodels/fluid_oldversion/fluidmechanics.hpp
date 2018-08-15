@@ -82,7 +82,7 @@ public:
     
     using self_type = FluidMechanics<FluidSpaceType>;
     using fluid_space_type = decay_type<FluidSpaceType>;
-    using fluid_space_ptrtype = boost::shared_ptr<fluid_space_type>;
+    using fluid_space_ptrtype = std::shared_ptr<fluid_space_type>;
     using fluid_type = typename fluid_space_type::element_type;
 
     // mesh
@@ -91,20 +91,20 @@ public:
 
     // velocity
     using velocity_space_type = typename fluid_space_type::template sub_functionspace_type<0>;
-    using velocity_space_ptrtype = boost::shared_ptr<velocity_space_type>;
+    using velocity_space_ptrtype = std::shared_ptr<velocity_space_type>;
     using velocity_type = typename velocity_space_type::element_type;
     using velocity_view_type = typename fluid_type::template sub_element_type<0>;
 
     // pressure
     using pressure_space_type = typename fluid_space_type::template sub_functionspace_type<1>;
-    using pressure_space_ptrtype = boost::shared_ptr<pressure_space_type>;
+    using pressure_space_ptrtype = std::shared_ptr<pressure_space_type>;
     using pressure_type = typename pressure_space_type::element_type;
     using pressure_view_type = typename fluid_type::template sub_element_type<1>;
 
 #if defined( FEELPP_FLUIDMECHANICS_BOUSSINESQ )
     // temperature
     using temperature_space_type = typename fluid_space_type::template sub_functionspace_type<2>;
-    using temperature_space_ptrtype = boost::shared_ptr<temperature_space_type>;
+    using temperature_space_ptrtype = std::shared_ptr<temperature_space_type>;
     using temperature_type = typename temperature_space_type::element_type;
     using temperature_view_type = typename fluid_type::template sub_element_type<2>;
 #endif
@@ -114,10 +114,10 @@ public:
     using properties = typename Pdh_type<mesh_type,0>::element_type;
 
     // exporter
-    using exporter_ptrtype = boost::shared_ptr<Exporter<mesh_type>>;
+    using exporter_ptrtype = std::shared_ptr<Exporter<mesh_type>>;
 
     // time stepping
-    using ts_ptrtype = boost::shared_ptr<Bdf<fluid_space_type>>;
+    using ts_ptrtype = std::shared_ptr<Bdf<fluid_space_type>>;
     
     FluidMechanics() = delete;
     FluidMechanics( std::string name, fluid_space_ptrtype Xh, int _Options = FM_LINEARIZED );

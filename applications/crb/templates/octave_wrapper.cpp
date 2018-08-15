@@ -34,7 +34,7 @@
 #include <@CRB_MODEL_SHORT_NAME@.hpp>
 #include <feel/feelcrb/opusapp.hpp>
 
-static boost::shared_ptr<Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@ > > app;
+static std::shared_ptr<Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@ > > app;
 
 DEFUN_DLD ( @CRB_MODEL_WRAPPER_NAME@, args, nargout, "Oct file for @CRB_MODEL_LONG_NAME@" )
 {
@@ -57,7 +57,7 @@ DEFUN_DLD ( @CRB_MODEL_WRAPPER_NAME@, args, nargout, "Oct file for @CRB_MODEL_LO
 
             if ( !is_init )
             {
-                app = boost::shared_ptr<Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@ > >( new Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@ >( Feel::make@CRB_MODEL_LONG_NAME@About( "@CRB_MODEL_SHORT_NAME@" ),
+                app = std::shared_ptr<Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@ > >( new Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@ >( Feel::make@CRB_MODEL_LONG_NAME@About( "@CRB_MODEL_SHORT_NAME@" ),
                         Feel::make@CRB_MODEL_LONG_NAME@Options() ) );
                 app->setMode( @CRB_MODEL_WRAPPER_TYPE@ );
                 is_init = true;

@@ -91,7 +91,7 @@ def main(args):
      (options, args) = parser.parse_args()
      print("members:",pyfeelpp.crb.CRBLoad.__members__)
      print("rb members:",pyfeelpp.crb.CRBLoad.__members__["rb"])
-
+     
      e=pyfeelpp.core.Environment(sys.argv,pyfeelpp.crb.makeCRBOptions())
     
      model=loadPlugin(pluginname=options.name,plugindir=options.dir,load=pyfeelpp.crb.CRBLoad.__members__[options.load])

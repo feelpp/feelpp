@@ -45,7 +45,7 @@ namespace FeelModels
                                   mpl::identity<Feel::vf::detail::gmc<0> >,
                                   mpl::identity<Feel::vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gmc_type::gm_type gm_type;
 
         typedef Basis_i_t map_basis_fec_test_type;

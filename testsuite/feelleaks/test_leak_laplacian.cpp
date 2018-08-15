@@ -23,7 +23,7 @@ int main(int argc, char**argv )
 
 
 
-    boost::shared_ptr<Mesh<Simplex<2>>> mesh;
+    std::shared_ptr<Mesh<Simplex<2>>> mesh;
     decltype( Pch<2>( mesh ) ) Vh;
     decltype( exporter( _mesh=mesh ) ) e;
 

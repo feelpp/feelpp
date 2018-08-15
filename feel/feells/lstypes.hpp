@@ -37,7 +37,7 @@ namespace Feel {
 template<int Dim, int GeoOrder=1,template <uint16_type,uint16_type,uint16_type> class Convex=Simplex>
 using ls_mesh_type = Feel::Mesh< Convex<Dim,GeoOrder,Dim> >;
 template<int Dim, int GeoOrder=1,template <uint16_type,uint16_type,uint16_type> class Convex=Simplex>
-using ls_mesh_ptrtype = boost::shared_ptr<Feel::Mesh< Convex<Dim,GeoOrder,Dim> >>;
+using ls_mesh_ptrtype = std::shared_ptr<Feel::Mesh< Convex<Dim,GeoOrder,Dim> >>;
 
 template<int Dim,int GeoOrder=1,template <uint16_type,uint16_type,uint16_type> class Convex=Simplex>
 using ls_space_type = Pch_type<ls_mesh_type<Dim,GeoOrder,Convex>,1>;

@@ -492,7 +492,7 @@ private:
     std::vector<std::string> M_to_pass_further;
 
 
-    boost::shared_ptr<mpi::environment> M_env;
+    std::shared_ptr<mpi::environment> M_env;
     WorldComm M_comm;
 
     simgets_type M_simgets;

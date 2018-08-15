@@ -160,9 +160,9 @@ public:
     typedef typename super_type::mesh_ptrtype mesh_ptrtype;
 
     typedef typename FunctionSpaceDefinition<Order>::space_type space_type;
-    typedef typename boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename std::shared_ptr<space_type> space_ptrtype;
     typedef typename FunctionSpaceDefinition<Order>::space_type_eimg space_type_eimg;
-    typedef typename boost::shared_ptr<space_type_eimg> space_ptrtype_eimg;
+    typedef typename std::shared_ptr<space_type_eimg> space_ptrtype_eimg;
 
     typedef typename super_type::beta_vector_type beta_vector_type;
     typedef typename super_type::affine_decomposition_type affine_decomposition_type;

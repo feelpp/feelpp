@@ -35,64 +35,64 @@
 namespace Feel 
 { 
 template<typename MeshType>
-boost::shared_ptr<MeshType>
-straightenMesh( boost::shared_ptr<MeshType> m, 
+std::shared_ptr<MeshType>
+straightenMesh( std::shared_ptr<MeshType> m, 
                 WorldComm const& comm = Environment::worldComm(),
                 bool refine = false,
                 bool save = false );
 
 #if !defined(FEELPP_INSTANTIATE_STRAIGHTENMESH)
 // 1D
-extern template boost::shared_ptr<Mesh<Simplex<1,1>>>
-straightenMesh<Mesh<Simplex<1,1>>>( boost::shared_ptr<Mesh<Simplex<1,1>>>, 
+extern template std::shared_ptr<Mesh<Simplex<1,1>>>
+straightenMesh<Mesh<Simplex<1,1>>>( std::shared_ptr<Mesh<Simplex<1,1>>>, 
                                     WorldComm const& , bool, bool  );
-extern template boost::shared_ptr<Mesh<Hypercube<1,1>>>
-straightenMesh<Mesh<Hypercube<1,1>>>( boost::shared_ptr<Mesh<Hypercube<1,1>>>, 
+extern template std::shared_ptr<Mesh<Hypercube<1,1>>>
+straightenMesh<Mesh<Hypercube<1,1>>>( std::shared_ptr<Mesh<Hypercube<1,1>>>, 
                                     WorldComm const& , bool, bool  );
-extern template boost::shared_ptr<Mesh<Simplex<1,1,2>>>
-straightenMesh<Mesh<Simplex<1,1,2>>>( boost::shared_ptr<Mesh<Simplex<1,1,2>>>, 
+extern template std::shared_ptr<Mesh<Simplex<1,1,2>>>
+straightenMesh<Mesh<Simplex<1,1,2>>>( std::shared_ptr<Mesh<Simplex<1,1,2>>>, 
                                       WorldComm const& , bool, bool  );
-extern template boost::shared_ptr<Mesh<Hypercube<1,1,2>>>
-straightenMesh<Mesh<Hypercube<1,1,2>>>( boost::shared_ptr<Mesh<Hypercube<1,1,2>>>, 
+extern template std::shared_ptr<Mesh<Hypercube<1,1,2>>>
+straightenMesh<Mesh<Hypercube<1,1,2>>>( std::shared_ptr<Mesh<Hypercube<1,1,2>>>, 
                                       WorldComm const& , bool, bool  );
-extern template boost::shared_ptr<Mesh<Simplex<1,2>>>
-straightenMesh<Mesh<Simplex<1,2>>>( boost::shared_ptr<Mesh<Simplex<1,2>>>, 
+extern template std::shared_ptr<Mesh<Simplex<1,2>>>
+straightenMesh<Mesh<Simplex<1,2>>>( std::shared_ptr<Mesh<Simplex<1,2>>>, 
                                     WorldComm const& , bool, bool  );
 
 // 2D
-extern template boost::shared_ptr<Mesh<Simplex<2,1>>>
-straightenMesh<Mesh<Simplex<2,1>>>( boost::shared_ptr<Mesh<Simplex<2,1>>>, 
+extern template std::shared_ptr<Mesh<Simplex<2,1>>>
+straightenMesh<Mesh<Simplex<2,1>>>( std::shared_ptr<Mesh<Simplex<2,1>>>, 
                                     WorldComm const& , bool, bool  );
-extern template boost::shared_ptr<Mesh<Hypercube<2,1>>>
-straightenMesh<Mesh<Hypercube<2,1>>>( boost::shared_ptr<Mesh<Hypercube<2,1>>>, 
+extern template std::shared_ptr<Mesh<Hypercube<2,1>>>
+straightenMesh<Mesh<Hypercube<2,1>>>( std::shared_ptr<Mesh<Hypercube<2,1>>>, 
                                     WorldComm const& , bool, bool  );
-extern template boost::shared_ptr<Mesh<Simplex<2,2>>>
-straightenMesh<Mesh<Simplex<2,2>>>( boost::shared_ptr<Mesh<Simplex<2,2>>>, 
+extern template std::shared_ptr<Mesh<Simplex<2,2>>>
+straightenMesh<Mesh<Simplex<2,2>>>( std::shared_ptr<Mesh<Simplex<2,2>>>, 
                                     WorldComm const& , bool, bool  );
 
-extern template boost::shared_ptr<Mesh<Simplex<2,3>>>
-straightenMesh<Mesh<Simplex<2,3>>>( boost::shared_ptr<Mesh<Simplex<2,3>>>, 
+extern template std::shared_ptr<Mesh<Simplex<2,3>>>
+straightenMesh<Mesh<Simplex<2,3>>>( std::shared_ptr<Mesh<Simplex<2,3>>>, 
                                     WorldComm const& , bool, bool  );
-extern template boost::shared_ptr<Mesh<Simplex<2,4>>>
-straightenMesh<Mesh<Simplex<2,4>>>( boost::shared_ptr<Mesh<Simplex<2,4>>>, 
+extern template std::shared_ptr<Mesh<Simplex<2,4>>>
+straightenMesh<Mesh<Simplex<2,4>>>( std::shared_ptr<Mesh<Simplex<2,4>>>, 
                                     WorldComm const& , bool, bool  );
 
 // 3D
-extern template boost::shared_ptr<Mesh<Simplex<3,1>>>
-straightenMesh<Mesh<Simplex<3,1>>>( boost::shared_ptr<Mesh<Simplex<3,1>>>, 
+extern template std::shared_ptr<Mesh<Simplex<3,1>>>
+straightenMesh<Mesh<Simplex<3,1>>>( std::shared_ptr<Mesh<Simplex<3,1>>>, 
                                     WorldComm const& , bool, bool  );
-extern template boost::shared_ptr<Mesh<Hypercube<3,1>>>
-straightenMesh<Mesh<Hypercube<3,1>>>( boost::shared_ptr<Mesh<Hypercube<3,1>>>, 
+extern template std::shared_ptr<Mesh<Hypercube<3,1>>>
+straightenMesh<Mesh<Hypercube<3,1>>>( std::shared_ptr<Mesh<Hypercube<3,1>>>, 
                                     WorldComm const& , bool, bool  );
-extern template boost::shared_ptr<Mesh<Simplex<3,2>>>
-straightenMesh<Mesh<Simplex<3,2>>>( boost::shared_ptr<Mesh<Simplex<3,2>>>, 
+extern template std::shared_ptr<Mesh<Simplex<3,2>>>
+straightenMesh<Mesh<Simplex<3,2>>>( std::shared_ptr<Mesh<Simplex<3,2>>>, 
                                     WorldComm const& , bool, bool  );
 
-extern template boost::shared_ptr<Mesh<Simplex<3,3>>>
-straightenMesh<Mesh<Simplex<3,3>>>( boost::shared_ptr<Mesh<Simplex<3,3>>>, 
+extern template std::shared_ptr<Mesh<Simplex<3,3>>>
+straightenMesh<Mesh<Simplex<3,3>>>( std::shared_ptr<Mesh<Simplex<3,3>>>, 
                                     WorldComm const& , bool, bool  );
-extern template boost::shared_ptr<Mesh<Simplex<3,4>>>
-straightenMesh<Mesh<Simplex<3,4>>>( boost::shared_ptr<Mesh<Simplex<3,4>>>, 
+extern template std::shared_ptr<Mesh<Simplex<3,4>>>
+straightenMesh<Mesh<Simplex<3,4>>>( std::shared_ptr<Mesh<Simplex<3,4>>>, 
                                     WorldComm const& , bool, bool  );
 #endif
 }

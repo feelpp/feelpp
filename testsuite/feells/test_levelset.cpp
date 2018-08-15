@@ -76,7 +76,7 @@ class TestLevelSet
 {
 public:
     using mesh_type = Mesh< Simplex<DIM,G_ORDER> >;
-    using mesh_ptrtype = boost::shared_ptr< mesh_type >;
+    using mesh_ptrtype = std::shared_ptr< mesh_type >;
 
     /// Init the geometry with a circle/sphere from radius and characteristic length
     ///     \param radius   Circle or sphere radius.

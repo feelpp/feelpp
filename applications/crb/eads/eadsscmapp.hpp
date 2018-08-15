@@ -64,9 +64,9 @@ public:
 
     typedef CRBModel<OpusModelRB<2,1,2> > opusmodel_type;
     //typedef CRBModel<Heat1D> opusmodel_type;
-    typedef boost::shared_ptr<opusmodel_type> opusmodel_ptrtype;
+    typedef std::shared_ptr<opusmodel_type> opusmodel_ptrtype;
     typedef CRBSCM<opusmodel_type> scm_type;
-    typedef boost::shared_ptr<scm_type> scm_ptrtype;
+    typedef std::shared_ptr<scm_type> scm_ptrtype;
 
     EadsSCMApp( AboutData const& ad, po::options_description const& od );
     EadsSCMApp( int argc, char** argv, AboutData const& ad, po::options_description const& od );

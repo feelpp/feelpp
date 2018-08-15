@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( LagrangeCG, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "check continuity for LagrangeCG in  " << T::value << "D\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type );
 

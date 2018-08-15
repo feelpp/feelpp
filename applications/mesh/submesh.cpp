@@ -70,7 +70,7 @@ runCreateSubmeshAndSaveElement( MeshType const& mesh, std::list<std::string> con
                                 std::string const& outputPathMesh, mpl::false_ ) {}
 template <typename MeshType>
 void
-runCreateSubmeshAndSaveElement( boost::shared_ptr<MeshType> const& mesh, std::list<std::string> const& markers,
+runCreateSubmeshAndSaveElement( std::shared_ptr<MeshType> const& mesh, std::list<std::string> const& markers,
                                 std::string const& outputPathMesh, mpl::true_ )
 {
     Feel::cout << "-----------------------------\n"
@@ -104,7 +104,7 @@ runCreateSubmeshAndSaveFace( MeshType const& mesh, std::list<std::string> const&
                              bool extractBoundaryFaces, std::string const& outputPathMesh, mpl::false_ ) {}
 template <typename MeshType>
 void
-runCreateSubmeshAndSaveFace( boost::shared_ptr<MeshType> const& mesh, std::list<std::string> const& markers,
+runCreateSubmeshAndSaveFace( std::shared_ptr<MeshType> const& mesh, std::list<std::string> const& markers,
                              bool extractBoundaryFaces, std::string const& outputPathMesh, mpl::true_ )
 {
     Feel::cout << "-----------------------------\n"
@@ -120,7 +120,7 @@ runCreateSubmeshAndSaveFace( boost::shared_ptr<MeshType> const& mesh, std::list<
     }
 
     tic();
-    boost::shared_ptr<typename MeshType::trace_mesh_type> submesh;
+    std::shared_ptr<typename MeshType::trace_mesh_type> submesh;
     if ( extractBoundaryFaces )
     {
         submesh = createSubmesh( mesh, boundaryfaces(mesh), EXTRACTION_KEEP_MESH_RELATION, MESH_UPDATE_FACES|MESH_UPDATE_EDGES, true );
@@ -152,7 +152,7 @@ runCreateSubmeshAndSaveEdge( MeshType const& mesh, std::list<std::string> const&
                              std::string const& outputPathMesh, mpl::false_ ) {}
 template <typename MeshType>
 void
-runCreateSubmeshAndSaveEdge( boost::shared_ptr<MeshType> const& mesh, std::list<std::string> const& markers,
+runCreateSubmeshAndSaveEdge( std::shared_ptr<MeshType> const& mesh, std::list<std::string> const& markers,
                              std::string const& outputPathMesh, mpl::true_ )
 {
     Feel::cout << "-----------------------------\n"

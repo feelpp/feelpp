@@ -44,25 +44,25 @@ namespace crbplugin_details
 struct DofTablesComposite
 {
     template <typename T>
-    void operator()( boost::shared_ptr<T> const& x ) const
+    void operator()( std::shared_ptr<T> const& x ) const
         {
             doftables.push_back( x->dof() );
         }
 
-    mutable std::vector<boost::shared_ptr<DofTableBase>> doftables;
+    mutable std::vector<std::shared_ptr<DofTableBase>> doftables;
 };
 
 template <typename SpaceType>
-std::vector<boost::shared_ptr<DofTableBase>>
-doftables( boost::shared_ptr<SpaceType> const& space, typename std::enable_if< !SpaceType::is_composite >::type* = nullptr )
+std::vector<std::shared_ptr<DofTableBase>>
+doftables( std::shared_ptr<SpaceType> const& space, typename std::enable_if< !SpaceType::is_composite >::type* = nullptr )
 {
-    std::vector<boost::shared_ptr<DofTableBase>> dt;
+    std::vector<std::shared_ptr<DofTableBase>> dt;
     dt.push_back( space->dof() );
     return dt;
 }
 template <typename SpaceType>
-std::vector<boost::shared_ptr<DofTableBase>>
-doftables( boost::shared_ptr<SpaceType> const& space, typename std::enable_if< SpaceType::is_composite >::type* = nullptr )
+std::vector<std::shared_ptr<DofTableBase>>
+doftables( std::shared_ptr<SpaceType> const& space, typename std::enable_if< SpaceType::is_composite >::type* = nullptr )
 {
     Feel::crbplugin_details::DofTablesComposite dtc;
     boost::fusion::for_each( space->functionSpaces(),dtc );
@@ -73,7 +73,7 @@ doftables( boost::shared_ptr<SpaceType> const& space, typename std::enable_if< S
 template <typename ElementType>
 struct SubElementsComposite
 {
-    SubElementsComposite( boost::shared_ptr<ElementType> _uFE ) : uFE( _uFE ) {}
+    SubElementsComposite( std::shared_ptr<ElementType> _uFE ) : uFE( _uFE ) {}
 
     template <typename T>
     void operator()( T const& t ) const
@@ -81,21 +81,21 @@ struct SubElementsComposite
             subelements.push_back( uFE->template elementPtr<T::value>() );
         }
 
-    boost::shared_ptr<ElementType> uFE;
-    mutable std::vector<boost::shared_ptr<Vector<typename ElementType::value_type>> > subelements;
+    std::shared_ptr<ElementType> uFE;
+    mutable std::vector<std::shared_ptr<Vector<typename ElementType::value_type>> > subelements;
 };
 
 template <typename ElementType>
-std::vector<boost::shared_ptr<Vector<typename ElementType::value_type>> >
-subelements( boost::shared_ptr<ElementType> uFE, typename std::enable_if< !ElementType::is_composite >::type* = nullptr )
+std::vector<std::shared_ptr<Vector<typename ElementType::value_type>> >
+subelements( std::shared_ptr<ElementType> uFE, typename std::enable_if< !ElementType::is_composite >::type* = nullptr )
 {
-    std::vector<boost::shared_ptr<Vector<typename ElementType::value_type>> > res;
+    std::vector<std::shared_ptr<Vector<typename ElementType::value_type>> > res;
     res.push_back( uFE );
     return res;
 }
 template <typename ElementType>
-std::vector<boost::shared_ptr<Vector<typename ElementType::value_type>> >
-subelements( boost::shared_ptr<ElementType> uFE, typename std::enable_if< ElementType::is_composite >::type* = nullptr )
+std::vector<std::shared_ptr<Vector<typename ElementType::value_type>> >
+subelements( std::shared_ptr<ElementType> uFE, typename std::enable_if< ElementType::is_composite >::type* = nullptr )
 {
     mpl::range_c<int,0,ElementType::functionspace_type::nSpaces> keySpaces;
     Feel::crbplugin_details::SubElementsComposite<ElementType> sec(uFE);
@@ -116,10 +116,10 @@ public:
     using model_t = ModelT;
     using crbmodel_type = CRBModelT<model_t>;
     using crb_type = AlgoBaseT<crbmodel_type> ;
-    using crb_ptrtype = boost::shared_ptr<crb_type>;
+    using crb_ptrtype = std::shared_ptr<crb_type>;
     using method_t = AlgoT<crbmodel_type>;
     using mesh_t = typename model_t::mesh_type;
-    using exporter_ptr_t = boost::shared_ptr<Exporter<mesh_t> >;
+    using exporter_ptr_t = std::shared_ptr<Exporter<mesh_t> >;
     
     CRBPlugin( std::string const& name )
         :
@@ -159,72 +159,72 @@ public:
 
     bool isAllLoaded() const override { return M_load == crb::load::all; }
     
-    boost::shared_ptr<ParameterSpaceX> parameterSpace() const override
+    std::shared_ptr<ParameterSpaceX> parameterSpace() const override
         {
             DCHECK( M_crb ) << "DB not loaded";
             return M_crb->Dmu();
         }
 
-    boost::shared_ptr<CRBModelBase> crbmodel() const override
+    std::shared_ptr<CRBModelBase> crbmodel() const override
         {
             DCHECK( M_crb ) << "DB not loaded";
             return M_crb->model();
         }
-    std::vector<boost::shared_ptr<MeshBase>> meshes() const override
+    std::vector<std::shared_ptr<MeshBase>> meshes() const override
         {
             DCHECK( M_crb ) << "DB not loaded";
-            std::vector<boost::shared_ptr<MeshBase>> m;
+            std::vector<std::shared_ptr<MeshBase>> m;
             m.push_back( M_crb->model()->rBFunctionSpace()->functionSpace()->mesh() );
             // TODO composite case with several meshes
             return m;
         }
 
 
-    std::pair<std::vector<boost::shared_ptr<DofTableBase>>,boost::shared_ptr<DataMap>> doftables() const override
+    std::pair<std::vector<std::shared_ptr<DofTableBase>>,std::shared_ptr<DataMap>> doftables() const override
         {
             DCHECK( M_crb ) << "DB not loaded";
             if ( M_crb->model() && M_crb->model()->rBFunctionSpace() && M_crb->model()->rBFunctionSpace()->functionSpace() )
                 return std::make_pair( Feel::crbplugin_details::doftables( M_crb->model()->rBFunctionSpace()->functionSpace() ),
                                        M_crb->model()->rBFunctionSpace()->functionSpace()->dof() );
             else
-                return std::make_pair( std::vector<boost::shared_ptr<DofTableBase>>(), boost::shared_ptr<DataMap>() );
+                return std::make_pair( std::vector<std::shared_ptr<DofTableBase>>(), std::shared_ptr<DataMap>() );
         }
 
-    boost::shared_ptr<Vector<double>> feElement() const override
+    std::shared_ptr<Vector<double>> feElement() const override
         {
             DCHECK( M_crb ) << "DB not loaded";
             if ( M_crb->model() && M_crb->model()->rBFunctionSpace() && M_crb->model()->rBFunctionSpace()->functionSpace() )
                 return M_crb->model()->rBFunctionSpace()->functionSpace()->elementPtr();
             else
-                return boost::shared_ptr<Vector<double>>();
+                return std::shared_ptr<Vector<double>>();
         }
 
-    std::vector<boost::shared_ptr<Vector<double>> > feSubElements( boost::shared_ptr<Vector<double>> u ) const override
+    std::vector<std::shared_ptr<Vector<double>> > feSubElements( std::shared_ptr<Vector<double>> u ) const override
         {
             DCHECK( M_crb ) << "DB not loaded";
-            auto uFE = boost::dynamic_pointer_cast< typename crbmodel_type::space_type::element_type >( u );
+            auto uFE = std::dynamic_pointer_cast< typename crbmodel_type::space_type::element_type >( u );
             CHECK( uFE ) << "dynamic_pointer_cast fails : wrong type of element u";
             return Feel::crbplugin_details::subelements( uFE );
         }
 
-    std::vector<boost::shared_ptr<Vector<double>>> reducedBasisFunctionsPrimal() const override
+    std::vector<std::shared_ptr<Vector<double>>> reducedBasisFunctionsPrimal() const override
         {
             DCHECK( M_crb ) << "DB not loaded";
             auto const& rbPrimal = M_crb->model()->rBFunctionSpace()->primalRB();
             int nBasis = rbPrimal.size();
-            std::vector<boost::shared_ptr<Vector<double>>> res( nBasis );
+            std::vector<std::shared_ptr<Vector<double>>> res( nBasis );
             for ( int k=0;k<nBasis;++k )
             {
                 res[k] = rbPrimal[k];
             }
             return res;
         }
-    std::vector<boost::shared_ptr<Vector<double>>> reducedBasisFunctionsDual() const override
+    std::vector<std::shared_ptr<Vector<double>>> reducedBasisFunctionsDual() const override
         {
             DCHECK( M_crb ) << "DB not loaded";
             auto const& rbDual = M_crb->model()->rBFunctionSpace()->dualRB();
             int nBasis = rbDual.size();
-            std::vector<boost::shared_ptr<Vector<double>>> res( nBasis );
+            std::vector<std::shared_ptr<Vector<double>>> res( nBasis );
             for ( int k=0;k<nBasis;++k )
             {
                 res[k] = rbDual[k];;
@@ -301,9 +301,9 @@ public:                                                                 \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \
-    static boost::shared_ptr<this_t> create()                           \
+    static std::shared_ptr<this_t> create()                           \
         {                                                               \
-            return boost::shared_ptr<this_t>( new this_t() );           \
+            return std::shared_ptr<this_t>( new this_t() );           \
         }                                                               \
 };                                                                      \
                                                                         \
@@ -322,9 +322,9 @@ public:                                                                 \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \
-    static boost::shared_ptr<this_t> create()                           \
+    static std::shared_ptr<this_t> create()                           \
         {                                                               \
-            return boost::shared_ptr<this_t>( new this_t() );           \
+            return std::shared_ptr<this_t>( new this_t() );           \
         }                                                               \
 };                                                                      \
                                                                         \
@@ -344,9 +344,9 @@ public:                                                                 \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \
-    static boost::shared_ptr<this_t> create()                           \
+    static std::shared_ptr<this_t> create()                           \
         {                                                               \
-            return boost::shared_ptr<this_t>( new this_t() );           \
+            return std::shared_ptr<this_t>( new this_t() );           \
         }                                                               \
 };                                                                      \
                                                                         \
@@ -366,9 +366,9 @@ public:                                                                 \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \
-    static boost::shared_ptr<this_t> create()                           \
+    static std::shared_ptr<this_t> create()                           \
         {                                                               \
-            return boost::shared_ptr<this_t>( new this_t() );           \
+            return std::shared_ptr<this_t>( new this_t() );           \
         }                                                               \
 };                                                                      \
                                                                         \

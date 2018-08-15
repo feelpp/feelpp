@@ -19,7 +19,7 @@ public:
     typedef typename super_type::mesh_type mesh_type;
 
     typedef typename levelset_type::space_levelset_vectorial_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     typedef typename space_type::element_type element_type;
     typedef typename space_type::element_ptrtype element_ptrtype;
@@ -43,7 +43,7 @@ public:
     void build( std::string const& prefix, levelset_ptrtype const& ls );
     void loadParametersFromOptionsVm();
 
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const;
 
 private:
     virtual element_energyderivative_ptrtype const& energyDerivative1Impl() const;
@@ -74,10 +74,10 @@ LinearElasticForceModel<LevelSetType>::loadParametersFromOptionsVm()
 }
 
 template<typename LevelSetType>
-boost::shared_ptr<std::ostringstream> 
+std::shared_ptr<std::ostringstream> 
 LinearElasticForceModel<LevelSetType>::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "Linear elastic force ("
            << "stretch modulus = " << this->M_elasticStretchModulus << ", "
            << "shear modulus = " << this->M_elasticShearModulus

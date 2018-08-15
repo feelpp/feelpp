@@ -39,7 +39,7 @@ namespace Feel {
  */
 template<typename MeshType>
 auto
-measurePointElements( boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<MeshType::nOrder,Scalar> > > >& Xh ) -> decltype( Xh->element() )
+measurePointElements( std::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<MeshType::nOrder,Scalar> > > >& Xh ) -> decltype( Xh->element() )
 {
     auto _fn = Xh->element( "measurePointElements" );
     _fn.setZero();

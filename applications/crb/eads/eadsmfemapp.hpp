@@ -61,7 +61,7 @@ class EadsMFemApp   : public Application
 public:
 
     typedef OpusModelBase opus_type;
-    typedef boost::shared_ptr<opus_type> opus_ptrtype;
+    typedef std::shared_ptr<opus_type> opus_ptrtype;
 
     EadsMFemApp( AboutData const& ad, po::options_description const& od )
         :

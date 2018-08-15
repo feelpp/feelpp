@@ -33,6 +33,7 @@
 
 #include <unordered_map>
 
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelmesh/geoelement.hpp>
 #include <feel/feelmesh/filters.hpp>
 
@@ -69,7 +70,7 @@ namespace detail
   @see
 */
 template<typename ElementType, typename T = double>
-class Elements
+class Elements 
 {
 public:
 
@@ -78,6 +79,7 @@ public:
      */
     //@{
 
+    
     /**
      * Element type depending on the dimension, @see geoelement.hpp
      * \note Elements have their topological dimension equal to the
@@ -217,16 +219,16 @@ public:
      */
     //@{
 
-    Elements( WorldComm const& worldComm = Environment::worldComm() )
+    Elements( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
-        M_worldCommElements(worldComm),
+        M_worldComm( worldComm ),
         M_elements(),
         M_needToOrderElements( false )
     {}
 
     Elements( Elements const & f )
         :
-        M_worldCommElements( f.worldCommElements() ),
+        M_worldComm( f.M_worldComm ),
         M_elements( f.M_elements ),
         M_needToOrderElements( false )
     {
@@ -256,7 +258,7 @@ public:
     {
         if ( this != &e )
         {
-            M_worldCommElements = e.M_worldCommElements;
+            M_worldComm = e.M_worldComm;
             M_elements = e.M_elements;
             this->buildOrderedElements();
         }
@@ -294,9 +296,13 @@ public:
         return M_elements.empty();
     }
 
+    WorldComm & worldCommElements() 
+        {
+            return *M_worldComm;
+        }
     WorldComm const& worldCommElements() const
     {
-        return M_worldCommElements;
+        return *M_worldComm;
     }
 
 
@@ -824,9 +830,9 @@ public:
     }
 
 
-    void setWorldCommElements( WorldComm const& _worldComm )
+    void setWorldCommElements( worldcomm_ptr_t const& _worldComm )
     {
-        M_worldCommElements = _worldComm;
+        M_worldComm = _worldComm;
     }
 
     void updateOrderedElement()
@@ -888,7 +894,7 @@ private:
 
 
 private:
-    WorldComm M_worldCommElements;
+    worldcomm_ptr_t M_worldComm;
     elements_type M_elements;
     ordered_elements_reference_wrapper_type M_orderedElements;
     bool M_needToOrderElements;
