@@ -53,15 +53,15 @@ PYBIND11_MODULE(_modelcore, m )
     m.def( "toolboxes_options", &toolboxes_options, "get fluid command line options");
 
     py::class_<ModelBase, std::shared_ptr<ModelBase>>(m,"ModelBase")
-        .def(py::init<std::string const&,WorldComm const&,std::string const&, ModelBaseRepository const&>(),
+        .def(py::init<std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
-             py::arg("worldComm")=Environment::worldComm(),
+             py::arg("worldComm")=Environment::worldCommPtr(),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize ModelBase base class"
              )
-        .def("worldComm", &ModelBase::worldComm, "get model WorldComm")
-        .def("worldsComm", &ModelBase::worldsComm, "get model WorldsComm")
+        .def("worldComm", static_cast<worldcomm_ptr_t& (ModelBase::*)()>(&ModelBase::worldCommPtr), "get model WorldComm")
+        .def("worldsComm", static_cast<worldscomm_ptr_t& (ModelBase::*)()>(&ModelBase::worldsComm), "get model WorldsComm")
 
         // prefix
         .def("prefix", &ModelBase::prefix, "get model prefix")
@@ -82,9 +82,9 @@ PYBIND11_MODULE(_modelcore, m )
         ;
 
     py::class_<ModelAlgebraic, std::shared_ptr<ModelAlgebraic>, ModelBase>(m,"ModelAlgebraic")
-        .def(py::init<std::string const&,WorldComm const&,std::string const&, ModelBaseRepository const&>(),
+        .def(py::init<std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
-             py::arg("worldComm")=Environment::worldComm(),
+             py::arg("worldComm")=Environment::worldCommPtr(),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize ModelAlgebraic"
@@ -92,9 +92,9 @@ PYBIND11_MODULE(_modelcore, m )
         ;
 
     py::class_<ModelNumerical, std::shared_ptr<ModelNumerical>, ModelAlgebraic>(m,"ModelNumerical")
-        .def(py::init<std::string const&,WorldComm const&,std::string const&, ModelBaseRepository const&>(),
+        .def(py::init<std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
-             py::arg("worldComm")=Environment::worldComm(),
+             py::arg("worldComm")=Environment::worldCommPtr(),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize ModelNumerical"
