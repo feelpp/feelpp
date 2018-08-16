@@ -77,7 +77,8 @@ setup(
               'pyfeelpp.core','pyfeelpp.mesh','pyfeelpp.discr','pyfeelpp.ts','pyfeelpp.filters','pyfeelpp.vf',
               'pyfeelpp.crb',
               'pyfeelpp.toolboxes',
-              'pyfeelpp.toolboxes.modelcore','pyfeelpp.toolboxes.fluid','pyfeelpp.toolboxes.solid','pyfeelpp.toolboxes.electric',
+              'pyfeelpp.toolboxes.modelcore','pyfeelpp.toolboxes.fluid','pyfeelpp.toolboxes.solid',
+              'pyfeelpp.toolboxes.electric','pyfeelpp.toolboxes.heat',
     ],
     #packages=['pyfeelpp','pyfeelpp.core' ],
 #    ext_modules=[Extension('pyfeelpp',['pyfeelpp/python.cpp'],include_dirs=@FEELPP_INCLUDE_DIRS@,libraries=@FEELPP_LIBRARIES@)
@@ -92,6 +93,7 @@ setup(
                  CMakeExtension('_fluid','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp/toolboxes/fluid'),
                  CMakeExtension('_solid','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp/toolboxes/solid'),
                  CMakeExtension('_electric','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp/toolboxes/electric'),
+                 CMakeExtension('_heat','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp/toolboxes/heat'),
     ],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,

@@ -24,7 +24,7 @@ https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
 ** ts: TSBase
 ** exporter: Exporter
 ** toolbox/modelcore: ModelBase, ModelAlgebraic, ModelNumerical
-** toolboxes: fluid, solid, electric
+** toolboxes: fluid, solid, electric, heat
 ** toolboxes/fluid: FluidMechanics
 ** toolboxes/solid: SolidMechanics
 * [**toolbox**] refactoring of gls stabilization in the `fluid` and `heat` toolboxes : now the `heatfluid` toolbox with natural convection can use Galerkin Least Square stabilization(gls).
