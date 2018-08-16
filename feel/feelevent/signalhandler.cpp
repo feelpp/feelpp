@@ -29,6 +29,7 @@ namespace Event
 
 // init static.
 SignalHandler::sig_map_type SignalHandler::S_sigs;
+SignalHandler::link_map_type SignalHandler::S_links;
 
 } // Event namespace
 } // Feel namespace

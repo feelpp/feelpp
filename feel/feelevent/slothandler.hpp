@@ -38,10 +38,12 @@ class SlotHandler
 public:
 
     //! Feel++ slot type.
+    template< typename T >
+        using func_type = std::function<T>;
     using slot_map_type = std::map< std::string, boost::any >;
     template< typename SlotType >
         using slot_map_entry_type = std::pair< std::string,
-                                               std::function<SlotType> >;
+                                               func_type<SlotType> >;
 
     //| Allocators
     //! @{
@@ -76,14 +78,14 @@ public:
     //! \see slotSet
     template< typename SlotType >
         const auto& slotNew( const std::string& name,
-                             const std::function<SlotType>& slot )
+                             const func_type<SlotType>& slot )
     {
         return slotStore( name, slot );
     };
 
     template< typename SlotType >
         static const auto& slotStaticNew( const std::string& name,
-                             const std::function<SlotType>& slot )
+                             const func_type<SlotType>& slot )
     {
         return slotStaticStore( name, slot );
     };
@@ -120,7 +122,7 @@ public:
     decltype(auto)
     slot( const std::string& name )
     {
-        using RetType = const std::function<SlotType>&;
+        using RetType = const func_type<SlotType>&;
         return boost::any_cast< RetType >( M_slots[name] );
     };
 
@@ -131,7 +133,7 @@ public:
     static decltype(auto)
     slotStatic( const std::string& name )
     {
-        using RetType = const std::function<SlotType>&;
+        using RetType = const func_type<SlotType>&;
         return boost::any_cast< RetType >( S_slots[name] );
     };
 
@@ -167,15 +169,26 @@ public:
         std::cout << std::string(40,'-') << std::endl;
     }
 
+    //! Operators
+    //! @{
+
+    // Compare operators.
+    friend bool operator< (const SlotHandler& lhs, const SlotHandler& rhs )
+    {
+        return &lhs < &rhs;
+    }
+
+    //! @}
+
 private:
 
     //! Store a slot as a pointer in the map.
     template< typename SlotType >
     decltype(auto)
     slotStore( const std::string& name,
-               const std::function<SlotType>& s )
+               const func_type<SlotType>& s )
     {
-        using RetType = const std::function<SlotType> &;
+        using RetType = const func_type<SlotType> &;
         using MapEntry = slot_map_entry_type< SlotType >;
         M_slots.insert( MapEntry( name, s ) );
         return boost::any_cast< RetType >( M_slots[name] );
@@ -185,9 +198,9 @@ private:
     template< typename SlotType >
     static decltype(auto)
     slotStaticStore( const std::string& name,
-               const std::function<SlotType>& s )
+               const func_type<SlotType>& s )
     {
-        using RetType = const std::function<SlotType> &;
+        using RetType = const func_type<SlotType> &;
         using MapEntry = slot_map_entry_type< SlotType >;
         S_slots.insert( MapEntry( name, s ) );
         return boost::any_cast< RetType >( S_slots[name] );
