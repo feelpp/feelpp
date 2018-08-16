@@ -56,8 +56,8 @@ public:
                     e = w;
             }
         }
-    WorldsComm( super const& s ) : super(s) {}
-    WorldsComm( super && s ) : super(s) {}
+    explicit WorldsComm( super const& s ) : super(s) {}
+    explicit WorldsComm( super && s ) : super(s) {}
 };
 
 FEELPP_DEPRECATED inline worldscomm_ptr_t

@@ -65,7 +65,7 @@ public:
     //@{
 
     FunctionSpaceBase() : super( Environment::worldCommPtr() ) {}
-    FunctionSpaceBase( worldcomm_ptr_t const& w ) : super( w ) {}
+    explicit FunctionSpaceBase( worldcomm_ptr_t const& w ) : super( w ) {}
     FunctionSpaceBase( FunctionSpaceBase const& ) = default;
     FunctionSpaceBase( FunctionSpaceBase && ) = default;
     //! destructor

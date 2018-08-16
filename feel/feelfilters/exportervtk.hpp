@@ -204,7 +204,7 @@ public:
      */
     //@{
 
-    ExporterVTK( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit ExporterVTK( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterVTK( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterVTK( po::variables_map const& vm, std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
     ExporterVTK( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );

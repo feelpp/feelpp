@@ -157,7 +157,7 @@ class Mesh3D
     /**
      * default constructor
      */
-    Mesh3D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit Mesh3D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     Mesh3D( Mesh3D const& m ) = default;
     Mesh3D( Mesh3D&& m ) = default;

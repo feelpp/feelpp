@@ -108,10 +108,9 @@ public :
                    std::string const& ext,
                    model_ptrtype const & model )
         :
-        CRBElementsDB( name, ext )
-        {
-            M_model = model;
-        }
+        CRBElementsDB( name, ext ),
+        M_model( model )
+        {}
 
     //! destructor
     ~CRBElementsDB()

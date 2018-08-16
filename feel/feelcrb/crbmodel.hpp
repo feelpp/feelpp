@@ -243,7 +243,6 @@ public:
         M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
 
         {
-            M_model = model;
             if ( stage == crb::stage::offline )
                 this->init();
         }
@@ -2837,7 +2836,7 @@ public:
     {
         return M_model->initializationField( initial_field,mu );
     }
-    void initializationField( element_ptrtype& initial_field,parameter_type const& mu,mpl::bool_<false> ) {};
+    void initializationField( element_ptrtype& initial_field,parameter_type const& mu,mpl::bool_<false> ) {}
 
 
     typename model_type::displacement_field_ptrtype meshDisplacementField( parameter_type const& mu )

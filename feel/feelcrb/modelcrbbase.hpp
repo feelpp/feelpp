@@ -66,7 +66,7 @@ class ModelCrbBaseBase : public CommObject
 public:
     using super = CommObject;
     ModelCrbBaseBase() : super( Environment::worldCommPtr() ) {}
-    ModelCrbBaseBase( worldcomm_ptr_t const& w ) : super( w ) {}
+    explicit ModelCrbBaseBase( worldcomm_ptr_t const& w ) : super( w ) {}
     ModelCrbBaseBase( ModelCrbBaseBase const& ) = default;
     ModelCrbBaseBase( ModelCrbBaseBase && ) = default;
     ModelCrbBaseBase& operator=( ModelCrbBaseBase const& ) = default;
@@ -392,7 +392,7 @@ public :
      * Define the model as an online (sequential) model
      * used for the computation of coefficient during the online phase
      */
-    void setModelOnlineDeim( std::string name )
+    void setModelOnlineDeim( std::string const& name )
     {
         M_backend = backend( _name=name, _worldcomm=this->subWorldCommSeqPtr() );
     }
@@ -1664,7 +1664,7 @@ public :
      * arguments : vectors of double and associated names
      * results : statistics on data
      */
-    vectorN_type computeStatistics( Eigen::VectorXd vector , std::string name )
+    vectorN_type computeStatistics( Eigen::VectorXd const& vector , std::string const& name )
     {
         double min=0,max=0,mean=0,mean1=0,mean2=0,standard_deviation=0,variance=0;
         Eigen::MatrixXf::Index index;
@@ -1717,7 +1717,7 @@ public :
     }
 
 
-    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename , std::string extra="")
+    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string const& filename , std::string const& extra="")
     {
         if( this->worldComm().isMasterRank() )
         {
@@ -1778,7 +1778,7 @@ public :
     * usefull to compute error estimation efficiency associated to
     * min/max errors
     **/
-    void writeVectorsExtremumsRatio( std::vector< vectorN_type > const& error, std::vector< vectorN_type > const& estimated, std::string filename )
+    void writeVectorsExtremumsRatio( std::vector< vectorN_type > const& error, std::vector< vectorN_type > const& estimated, std::string const& filename )
     {
         if( this->worldComm().isMasterRank() )
         {
@@ -1805,7 +1805,7 @@ public :
         }
     }
 
-    void readConvergenceDataFromFile( std::vector< vectorN_type > & vector, std::string filename )
+    void readConvergenceDataFromFile( std::vector< vectorN_type > & vector, std::string const& filename )
     {
         if( this->worldComm().isMasterRank() )
         {

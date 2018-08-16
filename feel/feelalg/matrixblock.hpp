@@ -170,7 +170,7 @@ class MatrixBlockBase : public MatrixSparse<T>
     {
     }
 
-    MatrixBlockBase( worldcomm_ptr_t const& wc )
+    explicit MatrixBlockBase( worldcomm_ptr_t const& wc )
         : super( wc ),
           M_backend(),
           M_mat()

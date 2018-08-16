@@ -296,7 +296,7 @@ public:
     //!
      //!  Default mesh constructor
      //!
-    Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     ~Mesh() {}
 

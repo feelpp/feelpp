@@ -165,7 +165,7 @@ public:
      */
     //@{
 
-    DataMap( worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() );
+    explicit DataMap( worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() );
 
     /**
      * \param n total size of the vector

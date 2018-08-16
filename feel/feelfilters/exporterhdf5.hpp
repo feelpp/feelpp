@@ -57,7 +57,7 @@ public:
     typedef typename super::timeset_iterator timeset_iterator;
     typedef typename super::timeset_const_iterator timeset_const_iterator;
 
-    Exporterhdf5( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit Exporterhdf5( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     Exporterhdf5( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     Exporterhdf5( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
     Exporterhdf5( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );

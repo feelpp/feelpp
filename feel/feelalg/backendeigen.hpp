@@ -97,7 +97,7 @@ public:
 
     // -- CONSTRUCTOR --
     BackendEigen();
-    BackendEigen( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
+    explicit BackendEigen( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
     BackendEigen( po::variables_map const& vm, std::string const& prefix = "",
                   worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 

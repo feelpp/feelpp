@@ -140,7 +140,7 @@ class Mesh1D
     /**
      * default constructor
      */
-    Mesh1D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    explicit Mesh1D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         : super_visitable(),
           super( 1, nRealDim, worldComm ),
           super_elements( worldComm ),

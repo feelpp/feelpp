@@ -55,7 +55,7 @@ def mult(a,b):
         return a*b;
     else:
         axe=0 if Array(a).rank()==1 else 1;
-        return tensorcontraction(tensorproduct(a,b),(axe,axe+1));        
+        return tensorcontraction(tensorproduct(a,b),(axe,axe+1));
 
 def n(a,c=1,nsymbols=[nx,ny,nz]):
     axe=0 if Array(a).rank()==1 else 1;

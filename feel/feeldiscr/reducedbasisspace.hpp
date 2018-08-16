@@ -336,7 +336,7 @@ public :
             this->init();
         }
 #else
-    ReducedBasisSpace( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() )
+    explicit ReducedBasisSpace( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() )
         :
         super( worldcomm )
         {

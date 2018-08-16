@@ -128,7 +128,7 @@ public:
      */
     //@{
 
-    Faces( worldcomm_ptr_t  const& worldComm = Environment::worldCommPtr() )
+    explicit Faces( worldcomm_ptr_t  const& worldComm = Environment::worldCommPtr() )
         :
         M_worldComm( worldComm ),
         M_faces(),

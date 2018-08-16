@@ -147,7 +147,7 @@ public:
     /**
      *  Constructor. Initializes Petsc data structures
      */
-    SolverLinearPetsc ( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
+    explicit SolverLinearPetsc ( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
     /**
      *  Constructor. Initializes Petsc data structures

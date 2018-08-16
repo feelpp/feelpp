@@ -118,7 +118,7 @@ class ImporterAcusimRawMesh : public Importer<MeshType>
     typedef typename super::face_type face_type;
     typedef typename super::element_type element_type;
 
-    ImporterAcusimRawMesh( worldcomm_ptr_t const& _worldcomm = Environment::worldCommPtr() )
+    explicit ImporterAcusimRawMesh( worldcomm_ptr_t const& _worldcomm = Environment::worldCommPtr() )
         :
         super( ACUSIM, ASCII, _worldcomm )
     {

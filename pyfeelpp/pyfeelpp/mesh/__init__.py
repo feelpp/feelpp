@@ -18,7 +18,7 @@ _meshes={
 
 def mesh( dim=2, geo=1, realdim=2, worldComm=core.Environment.worldCommPtr() ):
     """create a mesh 
-    The mesh is of topological dimension 'dim', in real dimension 'realdim' with geometric order 'geo'. 
+    The mesh is of topological dimension 'dim', in real dimension 'realdim' with geometric order 'geo'.
     The mesh is configured with a WorldComm which provides the parallel process layout.
     Keyword arguments:
     dim -- the topological dimension (default: 2)

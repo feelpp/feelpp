@@ -118,7 +118,7 @@ public:
      \endhtmlonly
 
     */
-    ExporterExodus( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() );
+    explicit ExporterExodus( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() );
     ExporterExodus( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() );
     ExporterExodus( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
     ExporterExodus( std::string const& __p = "default", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() );
