@@ -144,8 +144,9 @@ public:
     signal( const std::string& name )
     {
         using RetType = const SignalHandler::sig_shared_ptr_type< SlotType, Args... >&;
-        RetType sig = boost::any_cast< RetType >( M_sigs.at(name) );
-        CHECK( sig != nullptr ) << "Bad signal allocation 'journalManager'";
+        const boost::any& asig = M_sigs.at(name);
+        RetType sig = boost::any_cast< RetType >( asig );
+        CHECK( sig != nullptr ) << "Bad signal allocation 'signalHandler'";
         return sig;
     }
 
@@ -158,8 +159,9 @@ public:
     signalStatic( const std::string& name )
     {
         using RetType = const SignalHandler::sig_shared_ptr_type< SlotType, Args... >&;
-        RetType sig = boost::any_cast< RetType >( S_sigs.at(name) );
-        CHECK( sig != nullptr ) << "Bad signal allocation 'journalManager'";
+        const boost::any& asig = S_sigs.at(name);
+        RetType sig = boost::any_cast< RetType >( asig );
+        CHECK( sig != nullptr ) << "Bad signal allocation 'SignalHandler'";
         return  sig;
     }
 

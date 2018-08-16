@@ -4283,12 +4283,8 @@ public:
     {
         FUNCTIONSPACE_INSTANCE_NUMBER++;
         M_instance_name = name;
-        if( boption("journal") 
-                and boption("journal.auto.functionspace") 
-                and Observer::JournalManager::journalAutoMode() )
-        {
-            this->journalConnect();
-        }
+        if( not boption("journal.auto.functionspace") )
+            this->journalDisconnect();
         this->init( mesh, meshSupport, mesh_components, periodicity );
     }
 

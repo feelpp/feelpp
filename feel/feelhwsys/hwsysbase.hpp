@@ -53,7 +53,7 @@ public:
         HWSYS_INSTANCE_NUMBER++;
         // TODO fix/remove this line. This should not be necessary!
         // There's must be a problem with the inheritance here.
-        this->journalDisconnect();
+//        this->journalDisconnect();
         VLOG(2) << "[HwSys] constructor instance number " << M_instance_number << "\n" ;
     }
 
@@ -84,19 +84,6 @@ public:
         M_instance_name=s;
         return M_instance_name;
     }
-
-#if 0
-    const std::string& OSName( std::string const& s ) { return M_os_name; }
-    const std::string& OSRelease( std::string const& s ) { return M_os_release; }
-    const std::string& OSVersion( std::string const& s ) { return M_os_version; }
-    const std::string& OSPlatform( std::string const& s ) { return M_os_platform; }
-    const std::string& HostName( std::string const& s ) { return M_host_name; }
-    const std::string& DomainName( std::string const& s ) { return M_domain_name; }
-
-    const std::string& HostTotalMemory( std::string const& s ) { return M_host_total_mem; }
-    const std::string& HostTotalMemoryAvailable( std::string const& s ) { return M_host_total_mem_avail; }
-    const std::string& ProcCacheSize( std::string const& s ) { return M_proc_cache_size; }
-#endif
 
     // @}
     

@@ -160,12 +160,8 @@ Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm,
     M_tool_localization( boost::make_shared<Localization<self_type>>() )
 {
     MESH_INSTANCE_NUMBER++;
-    if( boption("journal") 
-            and boption("journal.auto.mesh") 
-            and Observer::JournalManager::journalAutoMode() )
-    {
-        this->journalConnect();
-    }
+    if( not boption("journal.auto.mesh") ) 
+        this->journalDisconnect();
     VLOG(2) << "[Mesh] constructor instance number " << M_instance_number << "\n" ;
 }
 template<typename Shape, typename T, int Tag>
