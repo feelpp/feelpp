@@ -76,6 +76,10 @@ public:
     template< typename... Args >
         using sig_map_entry_type = std::pair< std::string,
                                               sig_shared_ptr_type<Args...> >;
+    using slothdlr_base_type = SlotHandler;
+    using connection_type = boost::signals2::connection;
+    using link_type = std::tuple<std::string, std::reference_wrapper<slothdlr_base_type const>, std::string>;
+    using link_map_type = std::map< link_type, std::vector<connection_type> >;
 
     //! @}
 
@@ -187,13 +191,16 @@ public:
     //! The first argument is the slot type. The signal can only connect
     //! to a slot that have the same type!
     template< typename SlotType, typename... SignalArgs, typename SlotHdlr >
-    void signalConnect( const std::string& signame,
-                        SlotHdlr& slothdlr,
-                        const std::string& slotname )
+    connection_type signalConnect( const std::string& signame,
+                                SlotHdlr& slothdlr,
+                                const std::string& slotname )
     {
         const auto& sig = signal<SlotType, SignalArgs...>( signame );
         const auto& slo = slothdlr.template slot<SlotType>( slotname );
-        sig->connect( slo );
+        const link_type& link = std::make_tuple( signame, std::cref(slothdlr), slotname );
+        const auto& c = sig->connect( slo );
+        S_links[link].push_back( c );
+        // TODO update like signalStaticConnect with flags
     }
 
     //! Connect a slot to a static signal.
@@ -206,23 +213,27 @@ public:
     //! The first argument is the slot type. The signal can only connect
     //! to a slot that have the same type!
     template< typename SlotType, typename... SignalArgs, typename SlotHdlr >
-    static void
+    static const connection_type
     signalStaticConnect( const std::string& signame,
                          SlotHdlr& slothdlr,
                          const std::string& slotname,
                          SigConnectFlags flags = DEFAULT )
     {
        const auto& sig = signalStatic<SlotType, SignalArgs...>( signame );
+       const link_type& link = std::make_tuple( signame, std::cref(slothdlr), slotname );
        if( flags == SLOT_STATIC )
        {
            const auto& slo = slothdlr.template slotStatic<SlotType>( slotname );
-           sig->connect( slo );
+           const auto& c = sig->connect( slo );
+           S_links[link].push_back( c );
        }
        else
        {
            const auto& slo = slothdlr.template slot<SlotType>( slotname );
-           sig->connect( slo );
+           const auto& c = sig->connect( slo );
+           S_links[link].push_back( c );
        }
+       return S_links[link].back();
     }
 
     //! Disconnect a slot from the signal.
@@ -241,7 +252,11 @@ public:
     {
         const auto& sig = signal<SlotType, SignalArgs...>( signame );
         const auto& slo = slothdlr.template slot<SlotType>( slotname );
-        sig->disconnect( slo );
+        const link_type& link = std::make_tuple( signame, std::cref(slothdlr), slotname );
+        const auto& v = S_links[link];
+        for( const auto& c : v )
+            c.disconnect();
+        // TODO update like signalStaticDisconnect with flags
     }
 
     //! Disconnect a slot from a static signal.
@@ -253,6 +268,7 @@ public:
     //! \param slotname Slot name.
     //! The first argument is the slot type. The signal can only connect
     //! to a slot that have the same type!
+    //! Note: All connections are closed!
     template< typename SlotType, typename... SignalArgs, typename SlotHdlr >
     static void
     signalStaticDisconnect( const std::string& signame,
@@ -264,13 +280,18 @@ public:
        if( flags == SLOT_STATIC )
        {
            const auto& slo = slothdlr.template slotStatic<SlotType>( slotname );
-           // TODO
-//           sig->disconnect( slo );
+           const link_type& link = std::make_tuple( signame, std::cref(slothdlr), slotname );
+           const auto& v = S_links[link];
+           for( const auto& c : v )
+               c.disconnect();
        }
        else
        {
            const auto& slo = slothdlr.template slot<SlotType>( slotname );
-//           sig->disconnect( slo );
+           const link_type& link = std::make_tuple( signame, std::cref(slothdlr), slotname );
+           const auto& v = S_links[link];
+           for( const auto& c : v )
+               c.disconnect();
        }
     }
 
@@ -350,6 +371,8 @@ private:
     sig_map_type M_sigs;
     //! Static Map containing signal
     static sig_map_type S_sigs;
+    //! Static map gathering connections per link.
+    static link_map_type S_links;
 };
 
 } // Event namespace
