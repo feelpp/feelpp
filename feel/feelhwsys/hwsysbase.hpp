@@ -51,9 +51,6 @@ public:
     {
         instanceName( "hwsys-" + std::to_string(HWSYS_INSTANCE_NUMBER) );
         HWSYS_INSTANCE_NUMBER++;
-        // TODO fix/remove this line. This should not be necessary!
-        // There's must be a problem with the inheritance here.
-//        this->journalDisconnect();
         VLOG(2) << "[HwSys] constructor instance number " << M_instance_number << "\n" ;
     }
 
