@@ -353,17 +353,17 @@ template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas()
     :
     super1(),
-    M_vec( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
+    M_vec( detail::fake<Storage>( *std::make_shared<ublas::vector<value_type>>(), ublas::range() ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *std::make_shared<ublas::vector<value_type>>(), ublas::range() ) )
 {
 }
 
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( size_type __s )
     :
-    super1( __s, Environment::worldCommSeq() ),
-    M_vec( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
+    super1( __s, Environment::worldCommSeqPtr() ),
+    M_vec( detail::fake<Storage>( *std::make_shared<ublas::vector<value_type>>(), ublas::range() ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *std::make_shared<ublas::vector<value_type>>(), ublas::range() ) )
 {
     this->init( __s, __s, false );
 }
@@ -372,7 +372,7 @@ template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( datamap_ptrtype const& dm )
     :
     super1( dm ),
-    M_vec( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
+    M_vec( detail::fake<Storage>( *std::make_shared<ublas::vector<value_type>>(), ublas::range() ) ),
     M_vecNonContiguousGhosts( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
 {
     //this->init( dm.nGlobalElements(), dm.nMyElements(), false );
@@ -384,7 +384,7 @@ VectorUblas<T,Storage>::VectorUblas( size_type __s, size_type __n_local )
     :
     super1( __s, __n_local, Environment::worldCommSeqPtr() ),
     M_vec( detail::fake<Storage>( *new ublas::vector<value_type>(), ublas::range() ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( *std::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *std::make_shared<ublas::vector<value_type>>(), ublas::range() ) )
 {
     this->init( this->size(), this->localSize(), false );
 }
