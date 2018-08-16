@@ -41,19 +41,29 @@ namespace Feel {
  * @author Christophe Prud'homme
  * @see
  */
-class WorldsComm : public std::vector<WorldComm>
+class WorldsComm : public std::vector<worldcomm_ptr_t>
 {
 public:
-    typedef std::vector<WorldComm> super;
+    typedef std::vector<worldcomm_ptr_t> super;
 
-    WorldsComm( std::vector<WorldComm> const& s ) : super(s) {}
-    WorldsComm( std::vector<WorldComm>&& s ) : super(s) {}
+    WorldsComm( int n, worldcomm_ptr_t w, bool duplicate = true ) : super( n )
+        {
+            for( auto& e : *this )
+            {
+                if ( duplicate )
+                    e = w->clone();
+                else
+                    e = w;
+            }
+        }
+    WorldsComm( super const& s ) : super(s) {}
+    WorldsComm( super && s ) : super(s) {}
 };
 
-inline WorldsComm
-worldsComm( WorldComm const& wc )
+FEELPP_DEPRECATED inline worldscomm_ptr_t
+worldsComm( worldcomm_ptr_t const& wc )
 {
-    return WorldsComm( std::vector<WorldComm>( 1, wc ) );
+    return WorldsComm{ 1, wc };
 }
 
 
