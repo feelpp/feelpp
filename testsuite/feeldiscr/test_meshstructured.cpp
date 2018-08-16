@@ -95,8 +95,8 @@ class Test_MeshStructured
         {
             tic();
             auto mesh = std::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
-                                                            Environment::worldComm(),"", false, false);
-
+                                                          Environment::worldCommPtr(),"", false, false);
+            
             mesh->components().reset();
             mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
             mesh->updateForUse();
@@ -131,7 +131,7 @@ class Test_MeshStructured
         {
 
             auto mesh = std::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
-                                                            Environment::worldComm(),"", false, false);
+                                                          Environment::worldCommPtr(),"", false, false);
             mesh->components().reset();
             mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
             mesh->updateForUse();
@@ -172,7 +172,7 @@ class Test_MeshStructured
                                                             pixelsize,
                                                             cx,cy,
                                                             /*NULL,*/
-                                                            Environment::worldComm(),
+                                                            Environment::worldCommPtr(),
                                                             "",
                                                             false,
                                                             false);
@@ -213,7 +213,7 @@ class Test_MeshStructured
             tic();
             Feel::cout << "[nbPt X] x [nbPt Y] = " << ima.rows() << "\t" << ima.cols() << std::endl;
             auto mesh = std::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
-                                                            Environment::worldComm(),"", false, false);
+                                                          Environment::worldCommPtr(),"", false, false);
             Feel::cout <<"  mesh->numGlobalElements() " << mesh->numGlobalElements() << std::endl;
             Feel::cout <<"  mesh->numGlobalPoints()   " << mesh->numGlobalPoints()   << std::endl;
             mesh->components().reset();

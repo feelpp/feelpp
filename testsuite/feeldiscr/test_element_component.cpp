@@ -27,7 +27,7 @@ getReferenceTriangleMesh()
     R.setMarker(_type="line",_name="Neumann",_marker3=true);
     R.setMarker(_type="line",_name="Dirichlet",_marker1=true,_marker2=true);
     R.setMarker(_type="surface",_name="Omega",_markerAll=true);
-    return R.createMesh(_mesh=new Mesh<Simplex<2,O,2>>(Environment::worldCommSeq()),
+    return R.createMesh(_mesh=new Mesh<Simplex<2,O,2>>(Environment::worldCommSeqPtr()),
                         _name= (boost::format("domainRef_p%1%")%Environment::worldComm().rank()).str() );
 }
 
@@ -125,7 +125,7 @@ test_tensor2(std::string const& name, std::shared_ptr<typename SpaceT::mesh_type
                                               _xmin=0,_xmax=4,
                                               _ymin=0,_ymax=1 ) );
 #endif
-    auto VhTensor2 = SpaceT::New( _mesh=mesh, _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+    auto VhTensor2 = SpaceT::New( _mesh=mesh, _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
                                   _extended_doftable=std::vector<bool>( 1,true ));
     auto uTensor2 = VhTensor2->element();
     uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( cst(1.),cst(2.),cst(3.),cst(4.) ) );
