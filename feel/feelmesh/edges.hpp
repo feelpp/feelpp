@@ -78,7 +78,7 @@ public:
      */
     //@{
 
-    Edges( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    explicit Edges( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         M_worldComm( worldComm ),
         M_edges(),

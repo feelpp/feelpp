@@ -73,7 +73,7 @@ doftables( std::shared_ptr<SpaceType> const& space, typename std::enable_if< Spa
 template <typename ElementType>
 struct SubElementsComposite
 {
-    SubElementsComposite( std::shared_ptr<ElementType> _uFE ) : uFE( _uFE ) {}
+    explicit SubElementsComposite( std::shared_ptr<ElementType> const& _uFE ) : uFE( _uFE ) {}
 
     template <typename T>
     void operator()( T const& t ) const

@@ -83,7 +83,7 @@ public:
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverLinear ( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit SolverLinear ( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     /**
      *  Constructor. Initializes Solver data structures
@@ -436,6 +436,10 @@ template <typename T>
 inline
 SolverLinear<T>::SolverLinear ( worldcomm_ptr_t const& worldComm ) :
     super( worldComm ),
+    M_rtolerance( 1e-8 ),
+    M_dtolerance( 1e5 ),
+    M_atolerance( 1e-50 ),
+    M_maxit( 1000 ),
     M_solver_type         ( GMRES ),
     M_preconditioner_type ( LU_PRECOND ),
     M_preconditioner(),
@@ -451,6 +455,10 @@ inline
 SolverLinear<T>::SolverLinear ( po::variables_map const& vm, worldcomm_ptr_t const& worldComm ) :
     super( worldComm ),
     M_vm( vm ),
+    M_rtolerance( 1e-8 ),
+    M_dtolerance( 1e5 ),
+    M_atolerance( 1e-50 ),
+    M_maxit( 1000 ),
     M_solver_type         ( GMRES ),
     M_preconditioner_type ( LU_PRECOND ),
     M_is_initialized      ( false ),

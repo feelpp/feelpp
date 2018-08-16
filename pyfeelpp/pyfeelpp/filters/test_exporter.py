@@ -13,8 +13,8 @@ geo={
 def run( m, geo ):
     m2d = mesh.load(m,geo,0.1)
 
-    Xh=discr.functionSpace( type="Pch", mesh=m2d, order=1 )
-    P0h = discr.functionSpace( type="Pdh", mesh=m2d, order=0 )
+    Xh=discr.functionSpace( space="Pch", mesh=m2d, order=1 )
+    P0h = discr.functionSpace( space="Pdh", mesh=m2d, order=0 )
     #u=Xh.elementFromExpr("{sin(2*pi*x)*cos(pi*y)}:x:y")
     u=Xh.element()
     u.on(range=mesh.elements(m2d),expr=vf.expr("x*x:x"))
@@ -26,4 +26,4 @@ def run( m, geo ):
     e.save()
 
 run( mesh.mesh( dim=2 ), geo['2'] )
-run( mesh.mesh( dim=3, realdim=3 ), geo['3'] )    
+run( mesh.mesh( dim=3, realdim=3 ), geo['3'] )

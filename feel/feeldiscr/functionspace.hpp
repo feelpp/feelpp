@@ -4332,7 +4332,7 @@ public:
         this->init( mesh, meshSupport, 0, dofindices, periodicity );
     }
 
-    FunctionSpace( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() )
+    explicit FunctionSpace( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() )
         :
         super( worldcomm ),
         M_worldsComm( makeWorldsComm( nSpaces, worldcomm ) ),

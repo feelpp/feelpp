@@ -163,7 +163,7 @@ public:
     /**
      * default constructor
      */
-    Mesh0D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    explicit Mesh0D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         super_visitable(),
         super( 0, nRealDim, worldComm ),

@@ -39,9 +39,9 @@
 namespace Feel {
 namespace FeelModels {
 
-    void Log(std::string _className,std::string _functionName,std::string _msg);
-    void Log(std::string _className,std::string _functionName,std::string _msg, WorldComm const& worldComm, bool allproc=false);
-    void Log(std::string _msgbefore,std::string _className,std::string _functionName,std::string _msg, WorldComm const& worldComm, bool allproc=false);
+    void Log(std::string const& _className,std::string const& _functionName, std::string const& _msg);
+    void Log(std::string const& _className,std::string const& _functionName, std::string const& _msg, WorldComm const& worldComm, bool allproc=false);
+    void Log(std::string const& _msgbefore,std::string const& _className, std::string const& _functionName, std::string const& _msg, WorldComm const& worldComm, bool allproc=false);
 
 
 } // namespace FeelModels

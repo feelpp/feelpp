@@ -33,10 +33,10 @@ _spaces={
     'Pdh(3,3)':Pdh_3D_P3,
 }
 
-def functionSpace( type="Pch", mesh=mesh.mesh(2,1), order=1):
+def functionSpace( space="Pch", mesh=mesh.mesh(2,1), order=1):
     """create a function space
     """
-    key=type+'('+str(mesh.dimension())+','+str(order)+')'
+    key=space+'('+str(mesh.dimension())+','+str(order)+')'
     if key not in _spaces:
         raise RuntimeError('FunctionSpace '+key+' not existing in dictionary')
     return _spaces[key]( mesh )

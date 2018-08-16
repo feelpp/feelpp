@@ -120,7 +120,7 @@ public:
      \endhtmlonly
 
     */
-    ExporterEnsight( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit ExporterEnsight( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterEnsight( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterEnsight( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
     ExporterEnsight( std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) ;

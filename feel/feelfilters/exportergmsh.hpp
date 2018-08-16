@@ -84,7 +84,7 @@ public:
      */
     //@{
 
-    ExporterGmsh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit ExporterGmsh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterGmsh( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterGmsh( po::variables_map const& vm, std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterGmsh( std::string const& __p = "default", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );

@@ -36,7 +36,7 @@ struct GeometricSpaceBase : public CommObject
 {
     using super = CommObject;
     GeometricSpaceBase() : super( Environment::worldCommPtr() ) {}
-    GeometricSpaceBase( worldcomm_ptr_t const& w ) : super( w ) {}
+    explicit GeometricSpaceBase( worldcomm_ptr_t const& w ) : super( w ) {}
     GeometricSpaceBase( GeometricSpaceBase const& ) = default;
     GeometricSpaceBase( GeometricSpaceBase && ) = default;
     GeometricSpaceBase& operator=( GeometricSpaceBase const& ) = default;
@@ -66,12 +66,12 @@ public :
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
 
-    GeometricSpace( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    explicit GeometricSpace( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         super( worldComm )
         {}
 
-    GeometricSpace( mesh_ptrtype const& mesh )
+    explicit GeometricSpace( mesh_ptrtype const& mesh )
         :
         super( mesh->worldCommPtr() ),
         M_mesh( mesh )

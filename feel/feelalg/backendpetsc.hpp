@@ -90,7 +90,7 @@ public:
 
 
     // -- CONSTRUCTOR --
-    BackendPetsc( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() )
+    explicit BackendPetsc( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() )
         :
         super( worldComm ),
         M_solver_petsc( worldComm )

@@ -122,7 +122,7 @@ public:
      \endhtmlonly
 
     */
-    ExporterEnsightGold( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit ExporterEnsightGold( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterEnsightGold( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterEnsightGold( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
     ExporterEnsightGold( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );

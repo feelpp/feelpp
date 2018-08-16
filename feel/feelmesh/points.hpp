@@ -75,7 +75,7 @@ public:
      */
     //@{
 
-    Points( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    explicit Points( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         M_worldComm( worldComm ),
         M_points(),
