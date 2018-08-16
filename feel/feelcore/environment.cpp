@@ -757,6 +757,8 @@ Environment::~Environment()
         stopLogging();
         generateSummary( S_about.appName(), "end", true );
         S_timers.reset();
+        S_hwSysInstance.reset(); // call deleter
+
         // Journal manager must destruct object last!
         Observer::JournalManagerBase<>::~JournalManagerBase<>();
 
