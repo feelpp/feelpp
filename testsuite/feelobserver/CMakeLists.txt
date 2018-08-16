@@ -23,5 +23,3 @@ set_directory_properties(PROPERTIES LABEL testobserver )
 
 feelpp_add_test( observer )
 feelpp_add_test( observer_mesh )
-feelpp_add_test( observer_fspace )
-

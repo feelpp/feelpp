@@ -61,10 +61,8 @@ BOOST_AUTO_TEST_CASE( journal_mesh )
     // Mesh 2 won't be observed anymore.
     mesh2->journalDisconnect();
 
-//    // This will merge simulation info (map) into one ptree.
-    Environment::journalPull();
-//    // This will save the ptree into a json file.
-    Environment::journalSave();
+    // This create a checkpoint and save the result in a json file.
+    Environment::journalFinalize();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

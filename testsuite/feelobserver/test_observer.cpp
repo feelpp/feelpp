@@ -75,9 +75,9 @@ class Object2
         const pt::ptree journalNotify() const
         {
             pt::ptree p;
-            p.put( M_name + ".a","1");
-            p.put( M_name + ".b","2");
-            p.put( M_name + ".c.d","3");
+            p.put( M_name + ".a","1" );
+            p.put( M_name + ".b","2" );
+            p.put( M_name + ".c.d","3" );
             return p;
         }
 
@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_SUITE( observers )
 
 BOOST_AUTO_TEST_CASE( journal_basic )
 {
-
+    Object1::journalAutoMode(false);
     Object1 m;
     Object2 p1( "p1" );
     Object2 p2( "p2" );
@@ -136,6 +136,40 @@ BOOST_AUTO_TEST_CASE( journal_basic )
     CHECK( a == 1 );
     CHECK( b == 2 );
     CHECK( d == 3 );
+}
+
+BOOST_AUTO_TEST_CASE( journal_auto )
+{
+    // Object1 class is a journal manager with environment class (aside).
+    Object1::journalAutoMode(true);
+    
+    // We retrieve a signal of Object1 called JournalManager (used for the feel++ journal
+    // system). The signals template arguments are required to cast into the proper signal type.
+    const auto& sigptr = Object1::signalStatic< pt::ptree(), Observer::JournalMerge >( "journalManager" );
+    int na = sigptr->num_slots();
+    std::cout << "Number of slots: " << na << std::endl;
+
+    // The three objects are connected automatically via their constructor.
+    std::shared_ptr<Object2> p1 = std::make_shared<Object2>( "p1" );
+    std::shared_ptr<Object2> p2 = std::make_shared<Object2>( "p2" );
+    std::shared_ptr<Object2> p3 = std::make_shared<Object2>( "p3" );
+    if(1)
+    {
+      std::shared_ptr<Object2> p4 = std::make_shared<Object2>( "p4" );
+      std::cout << "Number of slots: " << sigptr->num_slots() << std::endl;
+    }
+    // p4 is destructed here, thus disconnected from the journal by the destructor.
+
+    p3->journalDisconnect();
+
+    int nb = sigptr->num_slots();
+
+    std::cout << "Number of slots: " << sigptr->num_slots() << std::endl;
+
+    // Only p1 and p2 remains.
+    CHECK( nb-na == 2 );
+
+    Object1::journalFinalize();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
