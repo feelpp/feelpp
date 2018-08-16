@@ -61,8 +61,11 @@ public:
         : M_journal_is_connected( false )
     {
         slotNew< notify_type () >( "journalWatcher", std::bind( &JournalWatcher::journalNotify, this ) );
-        if( JournalManager::journalAutoMode() )
+        if( JournalManager::journalEnabled()
+            and JournalManager::journalAutoMode() )
+        {
            journalConnect( force );
+        }
     }
 
     //! Default destructor.
