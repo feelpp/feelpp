@@ -517,20 +517,9 @@ public:
     decltype(auto)
     evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const;
 
-#if 1
     matrix_type
     evaluate( bool parallel=true,
-              WorldComm const& worldcomm = Environment::worldComm() ) const
-#else
-    //typename expression_type::template tensor<Geo_t>::value_type
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( matrix_type ),
-                                     evaluate,
-                                     tag,
-                                     /*(required
-                                     //(h,*(double)))*/
-                                     ( optional
-                                       ( parallel,*( bool ), true ) ) )
-#endif
+              worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
     {
         typename eval::matrix_type loc =  evaluate( mpl::int_<iDim>() );
 
@@ -545,9 +534,9 @@ public:
             // and thus argument worldComm can be remove
             // auto const& worldcomm = const_cast<MeshBase*>( this->beginElement()->mesh() )->worldComm();
 
-            if ( worldcomm.localSize() > 1 )
+            if ( worldcomm->localSize() > 1 )
             {
-                mpi::all_reduce( worldcomm.localComm(),
+                mpi::all_reduce( worldcomm->localComm(),
                                  loc,
                                  glo,
                                  [] ( matrix_type const& x, matrix_type const& y )
