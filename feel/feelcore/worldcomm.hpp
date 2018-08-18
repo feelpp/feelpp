@@ -232,6 +232,7 @@ public:
 
     worldcomm_t & subWorldComm();
     worldcomm_t const & subWorldComm() const;
+    worldcomm_ptr_t subWorldCommPtr();
     worldcomm_ptr_t subWorldComm( int color ) const;
     worldcomm_t & subWorldComm( std::vector<int> const& colormap ) ;
     worldcomm_ptr_t  subWorldComm( int color, std::vector<int> const& colormap ) ;
