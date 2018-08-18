@@ -403,6 +403,11 @@ WorldComm::subWorldComm() const
 {
     return *this->subWorldComm(this->mapColorWorld()[this->globalRank()]);
 }
+worldcomm_ptr_t 
+WorldComm::subWorldCommPtr() 
+{
+    return this->subWorldComm(this->mapColorWorld()[this->globalRank()]);
+}
 
 //-------------------------------------------------------------------------------
 
