@@ -28,6 +28,7 @@
 #include <boost/detail/identifier.hpp>
 #include <boost/serialization/split_free.hpp>
 #include <boost/serialization/shared_ptr.hpp>
+#include <boost/serialization/vector.hpp>
 
 #include <feel/feelcore/disablewarnings.hpp>
 #include <Eigen/Core>
