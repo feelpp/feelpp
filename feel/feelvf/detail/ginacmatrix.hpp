@@ -345,7 +345,7 @@ public:
     }
 
     Eigen::MatrixXd
-    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
+    evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
     {
         return this->evaluateImpl();
     }

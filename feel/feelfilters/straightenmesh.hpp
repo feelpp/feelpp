@@ -37,7 +37,7 @@ namespace Feel
 template<typename MeshType>
 std::shared_ptr<MeshType>
 straightenMesh( std::shared_ptr<MeshType> m, 
-                WorldComm const& comm = Environment::worldComm(),
+                worldcomm_ptr_t const& comm = Environment::worldCommPtr(),
                 bool refine = false,
                 bool save = false );
 
@@ -45,55 +45,55 @@ straightenMesh( std::shared_ptr<MeshType> m,
 // 1D
 extern template std::shared_ptr<Mesh<Simplex<1,1>>>
 straightenMesh<Mesh<Simplex<1,1>>>( std::shared_ptr<Mesh<Simplex<1,1>>>, 
-                                    WorldComm const& , bool, bool  );
+                                    worldcomm_ptr_t const& , bool, bool  );
 extern template std::shared_ptr<Mesh<Hypercube<1,1>>>
 straightenMesh<Mesh<Hypercube<1,1>>>( std::shared_ptr<Mesh<Hypercube<1,1>>>, 
-                                    WorldComm const& , bool, bool  );
+                                    worldcomm_ptr_t const& , bool, bool  );
 extern template std::shared_ptr<Mesh<Simplex<1,1,2>>>
 straightenMesh<Mesh<Simplex<1,1,2>>>( std::shared_ptr<Mesh<Simplex<1,1,2>>>, 
-                                      WorldComm const& , bool, bool  );
+                                      worldcomm_ptr_t const& , bool, bool  );
 extern template std::shared_ptr<Mesh<Hypercube<1,1,2>>>
 straightenMesh<Mesh<Hypercube<1,1,2>>>( std::shared_ptr<Mesh<Hypercube<1,1,2>>>, 
-                                      WorldComm const& , bool, bool  );
+                                      worldcomm_ptr_t const& , bool, bool  );
 extern template std::shared_ptr<Mesh<Simplex<1,2>>>
 straightenMesh<Mesh<Simplex<1,2>>>( std::shared_ptr<Mesh<Simplex<1,2>>>, 
-                                    WorldComm const& , bool, bool  );
+                                    worldcomm_ptr_t const& , bool, bool  );
 
 // 2D
 extern template std::shared_ptr<Mesh<Simplex<2,1>>>
 straightenMesh<Mesh<Simplex<2,1>>>( std::shared_ptr<Mesh<Simplex<2,1>>>, 
-                                    WorldComm const& , bool, bool  );
+                                    worldcomm_ptr_t const& , bool, bool  );
 extern template std::shared_ptr<Mesh<Hypercube<2,1>>>
 straightenMesh<Mesh<Hypercube<2,1>>>( std::shared_ptr<Mesh<Hypercube<2,1>>>, 
-                                    WorldComm const& , bool, bool  );
+                                    worldcomm_ptr_t const& , bool, bool  );
 extern template std::shared_ptr<Mesh<Simplex<2,2>>>
 straightenMesh<Mesh<Simplex<2,2>>>( std::shared_ptr<Mesh<Simplex<2,2>>>, 
-                                    WorldComm const& , bool, bool  );
+                                    worldcomm_ptr_t const& , bool, bool  );
 
 extern template std::shared_ptr<Mesh<Simplex<2,3>>>
 straightenMesh<Mesh<Simplex<2,3>>>( std::shared_ptr<Mesh<Simplex<2,3>>>, 
-                                    WorldComm const& , bool, bool  );
+                                    worldcomm_ptr_t const& , bool, bool  );
 extern template std::shared_ptr<Mesh<Simplex<2,4>>>
 straightenMesh<Mesh<Simplex<2,4>>>( std::shared_ptr<Mesh<Simplex<2,4>>>, 
-                                    WorldComm const& , bool, bool  );
+                                    worldcomm_ptr_t const& , bool, bool  );
 
 // 3D
 extern template std::shared_ptr<Mesh<Simplex<3,1>>>
 straightenMesh<Mesh<Simplex<3,1>>>( std::shared_ptr<Mesh<Simplex<3,1>>>, 
-                                    WorldComm const& , bool, bool  );
+                                    worldcomm_ptr_t const& , bool, bool  );
 extern template std::shared_ptr<Mesh<Hypercube<3,1>>>
 straightenMesh<Mesh<Hypercube<3,1>>>( std::shared_ptr<Mesh<Hypercube<3,1>>>, 
-                                    WorldComm const& , bool, bool  );
+                                    worldcomm_ptr_t const& , bool, bool  );
 extern template std::shared_ptr<Mesh<Simplex<3,2>>>
 straightenMesh<Mesh<Simplex<3,2>>>( std::shared_ptr<Mesh<Simplex<3,2>>>, 
-                                    WorldComm const& , bool, bool  );
+                                    worldcomm_ptr_t const& , bool, bool  );
 
 extern template std::shared_ptr<Mesh<Simplex<3,3>>>
 straightenMesh<Mesh<Simplex<3,3>>>( std::shared_ptr<Mesh<Simplex<3,3>>>, 
-                                    WorldComm const& , bool, bool  );
+                                    worldcomm_ptr_t const& , bool, bool  );
 extern template std::shared_ptr<Mesh<Simplex<3,4>>>
 straightenMesh<Mesh<Simplex<3,4>>>( std::shared_ptr<Mesh<Simplex<3,4>>>, 
-                                    WorldComm const& , bool, bool  );
+                                    worldcomm_ptr_t const& , bool, bool  );
 #endif
 }
 #endif /* FEELPP_STRAIGHTENMESH_HPP */

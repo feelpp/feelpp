@@ -30,12 +30,12 @@ namespace Feel
 
 template std::shared_ptr<Mesh<Hypercube<1,1,2>>>
 straightenMesh<Mesh<Hypercube<1,1,2>>>( std::shared_ptr<Mesh<Hypercube<1,1,2>>>, 
-                                        WorldComm const& , bool, bool  );
+                                        worldcomm_ptr_t const& , bool, bool  );
 
 
 template std::shared_ptr<Mesh<Simplex<1,2>>>
 straightenMesh<Mesh<Simplex<1,2>>>( std::shared_ptr<Mesh<Simplex<1,2>>>, 
-                                    WorldComm const& , bool, bool  );
+                                    worldcomm_ptr_t const& , bool, bool  );
 
 
 }

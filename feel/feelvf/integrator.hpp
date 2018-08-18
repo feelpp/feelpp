@@ -520,7 +520,7 @@ public:
     matrix_type
     evaluate( bool parallel=true,
               worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
-    {
+     {
         typename eval::matrix_type loc =  evaluate( mpl::int_<iDim>() );
 
         if ( !parallel )

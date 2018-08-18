@@ -98,7 +98,7 @@ public:
         return (value_type)M_expr.evaluate();
     }
 
-    constexpr value_type evaluate( bool, WorldComm const& ) const
+    constexpr value_type evaluate( bool, worldcomm_ptr_t const& ) const
     {
         return (value_type)M_expr.evaluate();
     }

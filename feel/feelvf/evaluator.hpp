@@ -715,7 +715,7 @@ BOOST_PARAMETER_FUNCTION(
     ) // 4. one required parameter, and
 
     ( optional
-      ( worldcomm,       (WorldComm), Environment::worldComm() )
+      ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() )
       ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
     )
 )
@@ -726,8 +726,8 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename details::Evaluator<EVAL_NODAL, _range_type, _pset_type, Expr<_expr_type>>::eval_element_type eval_element_type;
     typedef typename eval_element_type::element_type element_type;
 
-    int proc_number = worldcomm.globalRank();
-    int world_size = worldcomm.size();
+    int proc_number = worldcomm->globalRank();
+    int world_size = worldcomm->size();
     constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
 
 
@@ -763,7 +763,7 @@ BOOST_PARAMETER_FUNCTION(
     std::vector<normLinfData<nRealDim>> D_world( world_size );
     normLinfData<nRealDim> D( maxe, n );
 
-    mpi::all_gather( worldcomm.globalComm(),
+    mpi::all_gather( worldcomm->globalComm(),
                      D,
                      D_world );
 
@@ -872,7 +872,7 @@ BOOST_PARAMETER_FUNCTION(
     ) // 4. one required parameter, and
 
     ( optional
-      ( worldcomm,       (WorldComm), Environment::worldComm() )
+      ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() )
       ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
     )
 )
@@ -884,7 +884,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename eval_element_type::element_type element_type;
 
     constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
-    int proc_number = worldcomm.globalRank();
+    int proc_number = worldcomm->globalRank();
 
     LOG(INFO) << "evaluate minmax(expression)..." << std::endl;
     auto e = evaluate_impl( range, pset, expr, geomap );
@@ -928,10 +928,10 @@ BOOST_PARAMETER_FUNCTION(
     LOG(INFO) << "proc "<<proc_number <<" index at which function (size: " << e.data().size() << ") is minimal: " << indexmin << " coord = \n"<<n.col(0)<<"\n";
     LOG(INFO) << "proc "<<proc_number <<" index at which function (size: " << e.data().size() << ") is maximal: " << indexmax << " coord = \n"<<n.col(1)<<"\n";
 
-    int world_size = worldcomm.size();
+    int world_size = worldcomm->size();
     minmaxData<nRealDim> D( boost::make_tuple( mine, maxe, n) );
     std::vector<minmaxData<nRealDim>> D_world( world_size );
-    mpi::all_gather( worldcomm.globalComm(), D, D_world );
+    mpi::all_gather( worldcomm->globalComm(), D, D_world );
 
     auto it_min = std::min_element( D_world.begin() , D_world.end(),
                                     []( auto const& d1, auto const& d2 )
