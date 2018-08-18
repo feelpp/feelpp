@@ -163,7 +163,7 @@ straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mp
 */
 template<typename MeshType>
 std::shared_ptr<MeshType>
-straightenMesh( std::shared_ptr<MeshType> mesh, WorldComm const& worldcomm, bool refine, bool save )
+straightenMesh( std::shared_ptr<MeshType> mesh, worldcomm_ptr_t const& worldcomm, bool refine, bool save )
 {
     typedef MeshType _mesh_type;
     typedef std::shared_ptr<MeshType> _mesh_ptrtype;
@@ -196,7 +196,7 @@ straightenMesh( std::shared_ptr<MeshType> mesh, WorldComm const& worldcomm, bool
     straightener=( xLo-xHo )-( xLoBdy-xHoBdy );
 
 #if 0
-    if (worldcomm.localSize()>1)
+    if (worldcomm->localSize()>1)
         Feel::detail::straightenMeshUpdateEdgesOnBoundaryIsolated( straightener,mpl::int_<_mesh_type::nDim>() );
 #endif
     double norm_mean_value = integrate( _range=boundaryfaces( _mesh ), _expr=idv( straightener ) ).evaluate(true,worldcomm).norm();

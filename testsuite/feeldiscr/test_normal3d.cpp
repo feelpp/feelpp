@@ -92,7 +92,7 @@ runtest()
     auto mesh=mesh_;
 
     if ( straighten )
-        mesh = straightenMesh( mesh_, Environment::worldComm(), false, true );
+        mesh = straightenMesh( mesh_, Environment::worldCommPtr(), false, true );
 
     //-----------------------------------------------------------//
 

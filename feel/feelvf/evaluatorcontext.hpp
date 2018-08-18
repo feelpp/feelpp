@@ -32,6 +32,7 @@
 #include <boost/timer.hpp>
 #include <boost/signals2/signal.hpp>
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelvf/projectors.hpp>
 
@@ -50,7 +51,7 @@ namespace details
  * @author Christophe Prud'homme
  */
 template<typename CTX, typename ExprT, typename CTX2=CTX>
-class EvaluatorContext
+class EvaluatorContext : public CommObject
 {
 public:
 
@@ -58,7 +59,8 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    using super = CommObject;
+    
     //we don't use it, we use this delcared in function space Context
     //static const size_type context = ExprT::context|vm::POINT ;
 
@@ -82,9 +84,9 @@ public:
                       GeomapStrategyType geomap_strategy,
                       bool mpi_communications,
                       bool projection,
-                      WorldComm const& worldComm )
+                      worldcomm_ptr_t const& worldComm )
         :
-        M_worldComm( worldComm ),
+        super( worldComm ),
         M_ctx( ctx ),
         M_ctx2( ctx2 ),
         M_expr( __expr ),
@@ -99,7 +101,7 @@ public:
 
     EvaluatorContext( EvaluatorContext const& __vfi )
         :
-        M_worldComm( __vfi.M_worldComm ),
+        super( __vfi ),
         M_ctx( __vfi.M_ctx ),
         M_ctx2( __vfi.M_ctx2 ),
         M_expr( __vfi.M_expr ),
@@ -173,9 +175,6 @@ public:
 
 private:
 
-    //! mpi communicators
-    WorldComm const& M_worldComm;
-
     context_type M_ctx;
     context2_type M_ctx2;
     expression_type const&  M_expr;
@@ -192,12 +191,11 @@ EvaluatorContext<CTX, ExprT, CTX2>::operator()() const
     if( M_projection )
         return evaluateProjection();
 
-    auto const& worldComm = M_worldComm;//Xh->worldComm();
     //rank of the current processor
-    int proc_number = worldComm.globalRank();
+    int proc_number = this->worldComm().globalRank();
 
     //total number of processors
-    int nprocs = worldComm.globalSize();
+    int nprocs = this->worldComm().globalSize();
 
     auto it = M_ctx.begin();
     auto en = M_ctx.end();
@@ -220,7 +218,7 @@ EvaluatorContext<CTX, ExprT, CTX2>::operator()() const
         local_max_size = M_max_points_used;
     else
         local_max_size = npoints;
-    mpi::all_reduce( worldComm , local_max_size, global_max_size, mpi::maximum<int>() );
+    mpi::all_reduce( this->worldComm(), local_max_size, global_max_size, mpi::maximum<int>() );
 
     element_type __globalv( global_max_size*shape::M*shape::N );
     __globalv.setZero();
@@ -289,7 +287,7 @@ EvaluatorContext<CTX, ExprT, CTX2>::operator()() const
 
     //bring back each proc contribution in __globalv
     //mpi::all_reduce( worldComm , __localv, __globalv, std::plus< element_type >() );
-    mpi::all_reduce( worldComm , __localv, __globalv, [](element_type x, element_type y)
+    mpi::all_reduce( this->worldComm(), __localv, __globalv, [](element_type x, element_type y)
                      {
                          return x + y;
                      } );
@@ -439,7 +437,7 @@ evaluatecontext_impl( Ctx const& ctx,
                       GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO,
                       bool mpi_communications = true,
                       bool projection = false,
-                      WorldComm const& worldComm = Environment::worldComm() )
+                      worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
 {
     typedef details::EvaluatorContext<Ctx, Expr<ExprT>, Ctx2 > proj_t;
     proj_t p( ctx, ctx2, __expr, max_points_used, geomap , mpi_communications , projection, worldComm );
@@ -475,7 +473,7 @@ BOOST_PARAMETER_FUNCTION(
       ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
       ( mpi_communications, (bool), true )
       ( projection, (bool), false )
-      ( worldcomm,  (WorldComm), (mpi_communications && !context.ctxHaveBeenMpiBroadcasted() )? context.functionSpace()->worldComm() : context.functionSpace()->worldComm().subWorldCommSeq() )
+      ( worldcomm,  (worldcomm_ptr_t), (mpi_communications && !context.ctxHaveBeenMpiBroadcasted() )? context.functionSpace()->worldCommPtr() : context.functionSpace()->worldComm().subWorldCommSeqPtr() )
     )
 )
 {

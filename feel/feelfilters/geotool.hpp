@@ -1286,7 +1286,7 @@ public :
             }
 
             if ( straighten && _mesh_type::nOrder > 1 )
-                return straightenMesh( _mesh, worldcomm->subWorldComm(), false, false );
+                return straightenMesh( _mesh, worldcomm->subWorldCommPtr(), false, false );
 
         } // if (worldcomm->isActive())
 
