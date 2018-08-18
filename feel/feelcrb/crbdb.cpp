@@ -30,8 +30,10 @@
 #include <boost/uuid/uuid_generators.hpp> // generators
 #include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
 
+#include <feel/feelcore/disablewarnings.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
+#include <feel/feelcore/reenablewarnings.hpp>
 //#include <boost/assign/std/vector.hpp>
 #include <boost/algorithm/string.hpp>
 #include <feel/feelcrb/crbdb.hpp>

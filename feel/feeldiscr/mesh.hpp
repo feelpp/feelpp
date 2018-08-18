@@ -32,6 +32,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
+
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdivision-by-zero"
@@ -40,10 +41,12 @@
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
+#include <feel/feelcore/disablewarnings.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/mpi/operations.hpp>
+#include <feel/feelcore/reenablewarnings.hpp>
 
 #include <feel/feelcore/context.hpp>
 
