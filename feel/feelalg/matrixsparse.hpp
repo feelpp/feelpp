@@ -55,6 +55,7 @@
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/fusion/include/fold.hpp>
+#include <feel/feelcore/disablewarnings.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -62,7 +63,7 @@
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/export.hpp>
-
+#include <feel/feelcore/reenablewarnings.hpp>
 #include <Eigen/Core>
 
 

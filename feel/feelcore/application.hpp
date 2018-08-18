@@ -32,6 +32,10 @@
 
 #include <boost/optional.hpp>
 #include <boost/format.hpp>
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
 #include <boost/ptr_container/ptr_list.hpp>
 
 #include <feel/feelcore/feel.hpp>
@@ -501,4 +505,7 @@ private:
 
 };
 }
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 #endif /* __Application_H */

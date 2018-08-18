@@ -24,7 +24,7 @@
 #include <memory>
 #include <boost/shared_ptr.hpp>
 #include <boost/numeric/ublas/vector.hpp>
-
+#include <feel/feelcore/disablewarnings.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -32,6 +32,7 @@
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/export.hpp>
+#include <feel/feelcore/reenablewarnings.hpp>
 
 #include <feel/feelcore/traits.hpp>
 
