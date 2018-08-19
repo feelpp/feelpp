@@ -126,3 +126,4 @@ ginac.pc
 /applications/crb/opusheat/opusheatapp.cpp
 /applications/crb/thermalbuilding/thermalbuildingapp.cpp
 /contrib/paralution/
+pyfeelpp-env
