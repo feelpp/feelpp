@@ -34,6 +34,12 @@
 #define BOOST_PARAMETER_MAX_ARITY 10
 #endif
 
+
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 106700
+#include <contrib/boost/fusion/include/boost/fusion/container/vector/vector.hpp>
+#endif
+
 #include <boost/parameter.hpp>
 #include <boost/type_traits.hpp>
 #if 0
