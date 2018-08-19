@@ -35,7 +35,7 @@ https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
 * [**all**] boost::shared_ptr has been replaced by std::shared_ptr {uri-issue}/1202[#1202]
 * [**feel/**] Fix support of filename_is_dot and filename_is_dot_dot in boost filesystem with boost 1.61 and 1.62 see {uri-issue}/[#1191]
 * [**toolbox**] remove rho scaling in fluid incompressibilty equation (cherry pick from feature/ls)
-
+* boost 1.67 is now supported, see {uri-issue}/1147[#1147]
 
 [[v0.105.0-2018-06-20]]
 == v0.105.0
