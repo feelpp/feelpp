@@ -35,13 +35,19 @@
 
 #include <boost/static_assert.hpp>
 
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 106700
+#include <contrib/boost/fusion/include/boost/fusion/container/vector/vector.hpp>
+#else
+#include <boost/fusion/container/vector.hpp>
+#endif
+
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/transform.hpp>
 #include <boost/fusion/support/pair.hpp>
 #include <boost/fusion/support/is_sequence.hpp>
 #include <boost/fusion/sequence.hpp>
-#include <boost/fusion/container/vector.hpp>
 #include <boost/fusion/algorithm.hpp>
 #include <boost/fusion/adapted/mpl.hpp>
 #include <boost/mpl/range_c.hpp>
