@@ -171,16 +171,35 @@ public:
         //! Journal gather/save.
         //! @{
 
-        //! Fetch and merge notifications coming from all observed objects into
-        //! a global property tree.
+        //! Fetch and merge notifications coming from all observed objects.
+        //! The operation is performed locally to the process.
+        //! \return The global journal property tree.
         //! \see JournalWatcher
         static const notify_type
-        journalPull( bool parallel = true )
+        journalLocalPull()
         {
             const pt::ptree& pt_merged = signalStaticPull< notify_type (), JournalMerge >( "journalManager" );
             ptMerge( S_journal_ptree, pt_merged );
 
-            if( Env::isParallel() and parallel )
+            return S_journal_ptree;
+        } 
+        
+        //! Fetch and merge global property_tree into the one owned by the
+        //! master rank. The operation is processed in parallel.
+        //!
+        //! \remark The signal is not executed in that case!
+        //!
+        //! \return The global journal property tree.
+        //!
+        //! \see JournalWatcher
+        //
+        // Note: TODO free/reset non master rank property_tree to save memory.
+        // Only updated information will be saved in the local ptree by the
+        // journalPull. It should improve/faster the ptree merge step.
+        static const notify_type
+        journalGlobalPull()
+        {
+            if( Env::isParallel() )
             {
                 pt::ptree p;
                 mpi::reduce( Env::worldComm(), S_journal_ptree, p, ptMerge, Env::masterRank() );
@@ -189,18 +208,40 @@ public:
 
             return S_journal_ptree;
         }
+        
+        //! Fetch and merge global property_tree into the one owned by the
+        //! master rank. The operation is processed in parallel if the flag
+        //! is set to true.
+        //!
+        //! \param parallel Boolean to enable or disable parallel merge.
+        //!
+        //! \return The global journal property tree.
+        //!
+        //! \see JournalLocalPull, JournalGlobalPull
+        static const notify_type
+        journalPull( bool parallel )
+        {
+            journalLocalPull();
+            if( parallel )
+                journalGlobalPull();
+
+            return S_journal_ptree;
+        }
 
         //! Save the global property tree into a json file.
         static void
-        journalSave( const std::string& filename = "" )
+        journalSave( bool save = true, const std::string& filename = "" )
         {
-            if( not filename.empty() )
-                journalFilename( filename );
-
-            if( Env::isMasterRank() )
+            if( save )
             {
-                journalJSONSave( S_journal_filename );
-                journalDBSave( S_journal_filename );
+                if( not filename.empty() )
+                    journalFilename( filename );
+
+                if( Env::isMasterRank() )
+                {
+                    journalJSONSave( S_journal_filename );
+                    journalDBSave( S_journal_filename );
+                }
             }
         }
         
@@ -235,8 +276,7 @@ public:
                 S_journal_ptree.put( tag + ".gm", std::put_time(std::gmtime(&t), "%c %Z") );
                 S_journal_ptree.put( tag + ".local", std::put_time(std::localtime(&t), "%c %Z") );
 
-                if( save ) 
-                    journalSave( filename );
+                journalSave( save, filename );
             }
         }
 

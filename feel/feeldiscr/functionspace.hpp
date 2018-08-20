@@ -4304,12 +4304,8 @@ public:
     {
         FUNCTIONSPACE_INSTANCE_NUMBER++;
         M_instance_name = name;
-        if( boption("journal") 
-                and boption("journal.auto.functionspace") 
-                and Observer::JournalManager::journalAutoMode() )
-        {
-            this->journalConnect();
-        }
+        if( not boption("journal.auto.functionspace") )
+            this->journalDisconnect();
         this->init( mesh, meshSupport, 0, dofindices, periodicity );
     }
 
@@ -4324,12 +4320,8 @@ public:
     {
        FUNCTIONSPACE_INSTANCE_NUMBER++;
        M_instance_name = name;
-       if( boption("journal") 
-               and boption("journal.auto.functionspace")
-               and Observer::JournalManager::journalAutoMode() )
-       {
-           this->journalConnect();
-       }
+       if( not boption("journal.auto.functionspace") )
+           this->journalDisconnect();
     }
     // template<typename... FSpaceList>
     // FunctionSpace( FSpaceList... space_list )
@@ -5867,7 +5859,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::journalNotify() const
 {
     pt::ptree p;
     std::string prefix = "function_space." + instanceName();
-    p.put( prefix + ".mesh", mesh()->instanceName() );
+    int k=0;
+//   if( fusion::traits::is_sequence<decltype(mesh())>::value )
+        p.put( prefix + ".mesh", mesh<0>()->instanceName() );
+//        fusion::for_each( mesh(), [&]( auto x ) {
+//                p.put( prefix + ".mesh." + std::to_string(k++), x->instanceName() );
+//        });
+//    else
+//        p.put( prefix + ".mesh", mesh()->instanceName() );
     p.put( prefix + ".component_number", qDim() );
     p.put( prefix + ".global_dof_number", nDof() );
     p.put( prefix + ".local_dof_number", nLocalDof() );

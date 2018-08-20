@@ -117,8 +117,8 @@ BOOST_AUTO_TEST_CASE( journal_basic )
     // Merge p1, p2 simulation info property tree into one using a call from
     // the manager.
 
-    // Retrieve the merged property tree.
-    const auto& res = Object1::journalPull();
+    // Retrieve the merged property tree (no MPI).
+    const auto& res = Object1::journalPull(false);
     // This also works
     // m.journalPull();
 

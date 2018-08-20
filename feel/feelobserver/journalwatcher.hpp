@@ -32,6 +32,7 @@
 
 namespace Feel
 {
+
 namespace Observer
 {
 
@@ -73,6 +74,8 @@ public:
     //! destruction.
     virtual ~JournalWatcher()
     {
+        // store info in the global ptree (No MPI comm!).
+        JournalManager::journalLocalPull();
         journalDisconnect();
     }
 
@@ -121,7 +124,12 @@ private:
 
     //! Watch child properties and notify the manager.
     //! Note: Only this class can call journalNotify!
-    virtual const pt::ptree journalNotify() const = 0;
+    virtual const pt::ptree journalNotify() const
+    {
+        pt::ptree p;
+        // return empty tree by default;
+        return p;
+    }
 
     //! @}
 private:
