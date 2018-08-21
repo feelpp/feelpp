@@ -27,11 +27,8 @@
    \date 2014-01-21
  */
 
-//#define USE_BOOST_TEST 1
-#if defined(USE_BOOST_TEST)
-#define BOOST_TEST_MODULE onimpl
+#define BOOST_TEST_MODULE upmarker_faces
 #include <testsuite.hpp>
-#endif
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/pch.hpp>
@@ -50,23 +47,6 @@ makeOptions()
     ( "radius", po::value<double>()->default_value( 0.2 ), "circle or sphere radius" )
     ;
     return opts.add( Feel::feel_options() );
-}
-
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "test_updatemarker2faces" ,
-                     "test_updatemarker2faces" ,
-                     "0.1",
-                     "test onimpl",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2015 Feel++ Consortium" );
-
-    about.addAuthor( "Guillaume Dolle", "developer", "gdolle@unistra.fr", "" );
-    about.addAuthor( "Vincent Doyeux", "developer", "vincent.doyeux@ujf-grenoble.fr", "" );
-
-    return about;
 }
 
 /// Method to create a marker on faces though a P0 discontinuous function.
@@ -123,30 +103,26 @@ public:
 
         auto range = marked2elements(M_mesh,"select_elements");
 
-        auto it=begin(range);
-        auto en=end(range);
-
-        boost::shared_ptr<cont_range_type> myfaces( new cont_range_type );
+        BOOST_CHECK( nelements(range,true) == mark.sum() );
 
         // Create faces range: Iterate on selected elements, select only
         // boundary faces, add them in a vector.
-        for(;it!=en;++it)
+        boost::shared_ptr<cont_range_type> myfaces( new cont_range_type );
+        for( auto const& eltWrap : range )
         {
-            auto const& elt = boost::unwrap_ref( *it );
-            for(uint16_type f=0;f<elt.numTopologicalFaces; ++f)
+            auto const& elt = boost::unwrap_ref( eltWrap );
+            for( uint16_type f=0;f<elt.numTopologicalFaces; ++f )
             {
                 auto face = elt.face(f);
-                if( face.isOnBoundary() )
+                if ( face.isOnBoundary() )
                     myfaces->push_back(boost::cref(face));
             }
         }
 
         // Create a range of faces.
         auto myrangefaces = boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                                        myfaces->begin(),
-                                        myfaces->end() );
-
-
+                                               myfaces->begin(),
+                                               myfaces->end() );
 
         M_mesh->updateMarker2WithRangeFaces( myrangefaces, 666 );
         M_mesh->addMarkerName( "select_faces", 666, DIM-1 );
@@ -156,52 +132,30 @@ public:
         test_elements1.on( marked2elements(M_mesh,"select_elements"), cst(42) );
         test_faces.on( marked2faces(M_mesh,"select_faces"), cst(42) );
 
-#if defined(USE_BOOST_TEST)
-        // Max error around mesh size h.
-        //BOOST_CHECK_CLOSE( phi.max(), M_radius, h() );
-        //BOOST_CHECK_SMALL( err.max(), h() )
-#else
-        auto fit = myfaces->begin();
-        auto fen = myfaces->end();
-#if 0
-        for( ;fit!=fen;++fit)
-        {
-            std::cout << "rank: " << Environment::worldComm().rank() << " face id: " << fit->id() << "\n";
-        }
-#endif
         // ----------------------------------
         // CHECK
-        int size=0;
-        //for(;it!=en;++it)
-        //    size++;
-        it = boost::get<1>(range);
-        for(;it!=en;++it)
+        int size = 0;
+        for( auto const& eltWrap : range )
         {
-            auto const& elt = boost::unwrap_ref( *it );
+            auto const& elt = unwrap_ref( eltWrap );
             for(uint16_type f=0;f<elt.numTopologicalFaces; ++f)
             {
                 auto face = elt.face(f);
                 if( face.isOnBoundary() )
                 {
-                    std::cout
-                        << "elt mk2: "<< elt.marker2().value()
-                        << " elt mk3: "<< elt.marker3().value()
-                        << " | face mk2: " << face.marker2().value()
-                        << " | face mk3: " << face.marker3().value()
-                        << "\n";
+                    BOOST_CHECK( face.marker2().value() == 666 );
                     size++;
                 }
             }
         }
-
+#if 0
         auto exp = exporter(_mesh=M_mesh, _name="testsuite_upmarker_faces");
-        exp->step(0)->setMesh(M_mesh);
-        exp->step(0)->add("test_elements_boundary", test_boundary);
-        exp->step(0)->add("mark", mark);
-        exp->step(0)->add("partitions", parts);
-        exp->step(0)->add("test_elements_Xdh0", test_elements0);
-        exp->step(0)->add("test_elements_Xh", test_elements1);
-        exp->step(0)->add("test_faces", test_faces);
+        exp->add("test_elements_boundary", test_boundary);
+        exp->add("mark", mark);
+        exp->add("partitions", parts);
+        exp->add("test_elements_Xdh0", test_elements0);
+        exp->add("test_elements_Xh", test_elements1);
+        exp->add("test_faces", test_faces);
         exp->save();
 #endif
     }
@@ -210,27 +164,14 @@ private:
     mesh_ptrtype M_mesh;
 };
 
-#if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAboutDefault("test_upmarker_faces"), makeOptions() );
+
 BOOST_AUTO_TEST_SUITE( upmarker2faces )
 
-//BOOST_AUTO_TEST_CASE( test_1d )
-//{
-//    TestUpMarker2Faces<3,1,1> tumf;
-//    tumf.test();
-//}
-
-BOOST_AUTO_TEST_SUITE_END()
-
-#else
-int main(int argc, char** argv )
+BOOST_AUTO_TEST_CASE( test1 )
 {
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _about=makeAbout(),
-                           _desc=makeOptions() );
     TestUpMarker2Faces<3,1,1> tumf;
     tumf.test();
-
-    return 0;
 }
-#endif
+
+BOOST_AUTO_TEST_SUITE_END()
