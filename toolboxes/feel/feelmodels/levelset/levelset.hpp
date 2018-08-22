@@ -66,6 +66,7 @@ namespace Feel {
     BOOST_PARAMETER_NAME(space_manager)
     BOOST_PARAMETER_NAME(tool_manager)
     BOOST_PARAMETER_NAME(exporter_manager)
+    BOOST_PARAMETER_NAME(space_velocity)
     BOOST_PARAMETER_NAME(reinitializer)
 
 namespace FeelModels {
@@ -299,6 +300,7 @@ public:
             ( optional
               ( tool_manager, (levelset_tool_manager_ptrtype), levelset_tool_manager_ptrtype() )
               ( exporter_manager, (exporter_manager_ptrtype), exporter_manager_ptrtype() )
+              ( space_velocity, (space_advection_velocity_ptrtype), space_advection_velocity_ptrtype() )
               ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ), reinitializer_ptrtype() )
             )
             )
@@ -319,7 +321,10 @@ public:
         // Function spaces
         this->createFunctionSpaces();
         // Advection toolbox
-        M_advectionToolbox->build( this->functionSpace() );
+        if( space_velocity )
+            M_advectionToolbox->build( this->functionSpace(), space_velocity );
+        else
+            M_advectionToolbox->build( this->functionSpace() );
         M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
         // createInterfaceQuantities
         this->createInterfaceQuantities();
@@ -358,6 +363,7 @@ public:
     void
     updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr) { M_advectionToolbox->updateAdvectionVelocity( v_expr ); }
     void updateAdvectionVelocity( element_advection_velocity_ptrtype const& velocity ) { return M_advectionToolbox->updateAdvectionVelocity( velocity ); }
+    void updateAdvectionVelocity( element_advection_velocity_type const& velocity ) { return M_advectionToolbox->updateAdvectionVelocity( velocity ); }
     //--------------------------------------------------------------------//
     // Spaces
     levelset_space_manager_ptrtype const& functionSpaceManager() const { return M_spaceManager; }
@@ -366,6 +372,8 @@ public:
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
     space_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceVectorial; }
     space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const { return M_spaceTensor2Symm; }
+
+    space_advection_velocity_ptrtype const& functionSpaceAdvectionVelocity() const { return M_advectionToolbox->functionSpaceAdvectionVelocity(); }
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
 
@@ -460,6 +468,7 @@ public:
     template<typename ExprT>
     void advect(vf::Expr<ExprT> const& velocity);
     void advect( element_advection_velocity_ptrtype const& velocity );
+    void advect( element_advection_velocity_type const& velocity );
     void solve();
 
     void updateTimeStep();
@@ -753,6 +762,8 @@ private:
 
 }; //class LevelSet
 
+//----------------------------------------------------------------------------//
+// Advection
 template<typename ConvexType, typename BasisType, typename PeriodicityType, typename FunctionSpaceAdvectionVelocityType, typename BasisPnType>
 template<typename ExprT>
 void 

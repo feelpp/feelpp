@@ -1752,7 +1752,14 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::advect( element_advection_velocity_ptrtype const& velocity )
 {
-    this->updateAdvectionVelocity(velocity);
+    this->advect( *velocity );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::advect( element_advection_velocity_type const& velocity )
+{
+    this->updateAdvectionVelocity( velocity );
     this->solve();
 }
 
