@@ -72,7 +72,7 @@ public:
     // Hamilton-Jacobi advection
     template<typename SpaceType>
     class AdvectionHJ
-        : public Feel::FeelModels::AdvectionBase<SpaceType>
+        : public Feel::FeelModels::AdvectionBase<SpaceType/*,TODO*/>
         , public boost::enable_shared_from_this< AdvectionHJ<SpaceType> >
     {
     public:

@@ -40,7 +40,12 @@ public:
     typedef typename levelset_type::space_levelset_ptrtype space_levelset_ptrtype;
     typedef typename levelset_type::space_vectorial_ptrtype space_levelset_vectorial_ptrtype;
     typedef typename levelset_type::space_markers_ptrtype space_levelset_markers_ptrtype;
+    typedef typename levelset_type::space_advection_velocity_type space_levelset_advection_velocity_type;
+    typedef typename levelset_type::space_advection_velocity_ptrtype space_levelset_advection_velocity_ptrtype;
     typedef typename fluid_type::component_space_fluid_velocity_type component_space_fluid_velocity_type;
+
+    typedef typename fluid_type::space_fluid_velocity_type space_fluid_velocity_type;
+    typedef typename fluid_type::space_fluid_velocity_ptrtype space_fluid_velocity_ptrtype;
 
     typedef typename levelset_type::element_levelset_type element_levelset_type;
     typedef typename levelset_type::element_levelset_ptrtype element_levelset_ptrtype; 
