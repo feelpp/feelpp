@@ -952,6 +952,14 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity( element_advection_ve
     M_fieldAdvectionVelocity = u;
 }
 
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity( element_advection_velocity_type const& u )
+{
+    M_exprAdvectionVelocity.reset(); // remove symbolic expr
+    *M_fieldAdvectionVelocity = u;
+}
+
 
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//

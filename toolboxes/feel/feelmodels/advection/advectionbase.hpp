@@ -309,6 +309,7 @@ public :
     //--------------------------------------------------------------------//
     // Advection velocity update
     void updateAdvectionVelocity( element_advection_velocity_ptrtype const& u );
+    void updateAdvectionVelocity( element_advection_velocity_type const& u );
     template<typename ExprT>
     void updateAdvectionVelocity(vf::Expr<ExprT> const& expr);
     //--------------------------------------------------------------------//

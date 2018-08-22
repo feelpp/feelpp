@@ -65,6 +65,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
     // Build inherited FluidMechanics
     this->loadMesh( this->createMesh() );
+    // Init inherited FluidMechanics (to build spaces, algebraic data, ...)
+    super_type::init();
 
     // Get levelset mesh
     mesh_ptrtype mesh;
@@ -106,11 +108,25 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
         M_levelsets[i].reset(
                 new levelset_type( levelset_prefix, this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
                 );
-        M_levelsets[i]->build(
-                _space_manager=M_levelsetSpaceManager,
-                _tool_manager=M_levelsetToolManager
-                //_exporter_manager=M_globalLevelsetExporter
-                //_reinitializer=M_globalLevelset->reinitializer()
+        hana::eval_if( std::is_same<space_levelset_advection_velocity_type, space_fluid_velocity_type>{},
+                    [&](auto _) {
+                    Feel::cout << "Using fluid velocity function space\n";
+                        _(M_levelsets)[i]->build(
+                                _space_manager=M_levelsetSpaceManager,
+                                _tool_manager=M_levelsetToolManager,
+                                _space_velocity=this->functionSpaceVelocity()
+                                //_exporter_manager=M_globalLevelsetExporter
+                                //_reinitializer=M_globalLevelset->reinitializer()
+                                );
+                    },
+                    [&](auto _) {
+                        _(M_levelsets)[i]->build(
+                                _space_manager=M_levelsetSpaceManager,
+                                _tool_manager=M_levelsetToolManager
+                                //_exporter_manager=M_globalLevelsetExporter
+                                //_reinitializer=M_globalLevelset->reinitializer()
+                                );
+                    }
                 );
         // Set global options if unspecified otherwise
         if( !Environment::vm().count( prefixvm(levelset_prefix,"thickness-interface").c_str() ) )
@@ -261,8 +277,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
     {
         M_levelsets[i]->init();
     }
-    // Init inherited FluidMechanics (to build spaces, algebraic data, ...)
-    super_type::init();
     // Init FluidMechanics densityViscosityModel
     M_fluidDensityViscosityModel->updateForUse( this->densityViscosityModel()->dynamicViscositySpace(), this->modelProperties().materials() );
     // Init levelsets densityViscosityModels and interfaceForcesModels
@@ -858,7 +872,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::advectLevelsets()
     this->log("MultiFluid", "advectLevelsets", "start");
     this->timerTool("Solve").start();
 
-    auto u = this->fieldVelocity();
+    auto const& u = this->fieldVelocity();
     
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {

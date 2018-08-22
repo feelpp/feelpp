@@ -17,6 +17,7 @@ runApplicationMultiFluid()
     typedef FeelModels::LevelSet< convex_type, 
                                   Lagrange<OrderLevelset, Scalar, Continuous, PointSetFekete>,
                                   NoPeriodicity,
+                                  typename model_fluid_type::space_fluid_velocity_type,
                                   Lagrange<OrderPNLevelset, Scalar, Continuous, PointSetFekete>
                                   > model_levelset_type;
 
