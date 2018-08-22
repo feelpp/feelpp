@@ -112,7 +112,7 @@ struct test_integration_internal_faces_v: public Application
         BOOST_CHECK_SMALL( v1, eps );
         BOOST_TEST_MESSAGE( "int left(2*X^t) =" << v1l << "\n" );
         BOOST_TEST_MESSAGE( "int right(2*X^t) =" << v1r << "\n" );
-        //BOOST_CHECK_CLOSE( v1l, -v1r, eps );
+        BOOST_CHECK_SMALL( v1l+v1r, eps );
 #else
         FEELPP_ASSERT( math::abs( v1-0.0 ) < eps )( v1 )( math::abs( v1-0.0 ) )( eps ).warn ( "v1 != 0" );
 #endif /* USE_BOOST_TEST */
