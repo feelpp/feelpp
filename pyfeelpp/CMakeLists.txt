@@ -58,10 +58,34 @@ endif()
 #add_subdirectory(pyfeelpp)
 
 #
-# setup
+# setup for pyfeelpp-libfeelpp
 #
-set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
-set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
-configure_file(${SETUP_PY_IN} ${SETUP_PY})
+OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "Enable PyFeel++ for libfeelpp" ON  )
+if (FEELPP_ENABLE_PYFEELPP_LIBFEELPP)
+  set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
+  set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
+  configure_file(${SETUP_PY_IN} ${SETUP_PY})
+  install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install)")
+endif()
 
-install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install)")
+#
+# setup pyfeelpp-toolboxes
+#
+OPTION(FEELPP_ENABLE_PYFEELPP_TOOLBOXES "Enable PyFeel++ for toolboxes" ON  )
+if (FEELPP_ENABLE_PYFEELPP_TOOLBOXES)
+  set(SETUP_TOOLBOXES_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup-toolboxes.py")
+  set(SETUP_TOOLBOXES_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup-toolboxes.py")
+  configure_file(${SETUP_TOOLBOXES_PY_IN} ${SETUP_TOOLBOXES_PY})
+  install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_TOOLBOXES_PY} install)")
+endif()
+
+#
+# setup pyfeelpp-mor
+#
+OPTION(FEELPP_ENABLE_PYFEELPP_MOR "Enable PyFeel++ for MOR" ON  )
+if (FEELPP_ENABLE_PYFEELPP_MOR)
+  set(SETUP_MOR_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup-mor.py")
+  set(SETUP_MOR_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup-mor.py")
+  configure_file(${SETUP_MOR_PY_IN} ${SETUP_MOR_PY})
+  install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_MOR_PY} install)")
+endif()
