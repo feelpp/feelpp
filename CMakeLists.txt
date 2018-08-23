@@ -107,7 +107,9 @@ OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" 
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
-OPTION(FEELPP_ENABLE_PYFEELPP "enable Feel++ PyFeelpp" ON)
+OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "enable PyFeel++" ON)
+OPTION(FEELPP_ENABLE_PYFEELPP_TOOLBOXES "enable PyFeel++ for Toolboxes" ON)
+OPTION(FEELPP_ENABLE_PYFEELPP_MOR "enable PyFeelpp for MOR" ON)
 OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" ON)
 option(FEELPP_ENABLE_MOR "Enable MOR(Model Order Reduction) Applications in Feel++" ON)
 
