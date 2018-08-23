@@ -109,6 +109,7 @@ OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT}
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
 OPTION(FEELPP_ENABLE_PYFEELPP "enable Feel++ PyFeelpp" ON)
 OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" ON)
+option(FEELPP_ENABLE_MOR "Enable MOR(Model Order Reduction) Applications in Feel++" ON)
 
 # enable PCH only for GCC as for now
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -368,6 +369,7 @@ endif()
 ADD_SUBDIRECTORY ( feel )
 
 IF( FEELPP_MINIMAL_CONFIGURATION )
+  set( FEELPP_ENABLE_MOR OFF )
   set( FEELPP_ENABLE_TOOLBOXES OFF )
   set( FEELPP_ENABLE_BENCHMARKS OFF )
   set( FEELPP_ENABLE_TESTS OFF )
@@ -380,13 +382,6 @@ IF( FEELPP_MINIMAL_CONFIGURATION )
 ENDIF( FEELPP_MINIMAL_CONFIGURATION )
 
 
-option(FEELPP_ENABLE_APPLICATIONS_CRB "Enable CRB applications in Feel++" ON)
-if (ANN_FOUND AND GLPK_FOUND)
-  #set( FEELPP_ENABLE_APPLICATIONS_CRB ON )
-  #set( FEELPP_ENABLE_OPENTURNS ON)
-else()
-  set( FEELPP_ENABLE_APPLICATIONS_CRB OFF )
-endif()
 
 #
 # Enable testing
@@ -420,8 +415,6 @@ endif()
 
 if ( FEELPP_ENABLE_APPLICATIONS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/applications)
   ADD_SUBDIRECTORY ( applications )
-elseif (EXISTS ${FEELPP_SOURCE_DIR}/applications/opus )
-  ADD_SUBDIRECTORY ( applications/opus )
 endif()
 
 if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEELPP_ENABLE_RESEARCH )
@@ -439,6 +432,12 @@ include(feelpp.module.toolboxes)
 if ( FEELPP_HAS_TOOLBOXES )
   add_custom_target(toolboxes)
   add_subdirectory(toolboxes)
+endif()
+
+include(feelpp.module.mor)
+if ( FEELPP_HAS_MOR )
+  add_custom_target(mor)
+  add_subdirectory(mor)
 endif()
 
 include(feelpp.module.pyfeelpp)

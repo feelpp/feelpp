@@ -1,0 +1,12 @@
+
+set(FEELPP_MOR_MODEL_LIBRARIES_CMAKE_VARIABLES @FEELPP_MOR_LIBRARIES@)
+
+include(${CMAKE_CURRENT_LIST_DIR}/feelpp.mor.includes.config.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/feelpp.mor.libraries.config.cmake)
+
+set(FEELPP_MOR_FOUND 1)
+set(Feel++-MOR_FOUND 1)
+
+if (NOT FEELPP_MOR_DONT_SETUP_CMAKE)
+  include_directories(${FEELPP_MOR_INCLUDE_DIR})
+endif()
