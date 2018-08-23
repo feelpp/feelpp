@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE( journal_basic )
     // Save into a json file.
     Object1::journalSave();
 
-    auto t = res.get_child( "ProbeTest1.p1" );
+    auto t = res.get_child( "p1" );
     auto a = t.get<int>("a");
     auto b = t.get<int>("b");
     auto c = t.get_child("c");
