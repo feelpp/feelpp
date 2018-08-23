@@ -52,9 +52,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // 4. one required parameter, and
 
     ( optional
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
-      ( geomap, *, (vf::detail::integrate_type<Args>::geoOrder > 1 )?GeomapStrategyType::GEOMAP_OPT:GeomapStrategyType::GEOMAP_HO )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
+      ( quad,   *, quad_order_from_expression )
+      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
+      ( quad1,   *, quad_order_from_expression )
       ( use_tbb,   ( bool ), false )
       ( use_harts,   ( bool ), false )
       ( grainsize,   ( int ), 100 )
@@ -70,24 +70,46 @@ BOOST_PARAMETER_FUNCTION(
     Eigen::Matrix<T, nDim,1> Y;
 
     LOG(INFO) << "convolve::dof:" << space->dof()->dofPoints().size();
+    size_type nLocalDofWithoutGhost = space->nLocalDofWithoutGhost();
+    X.resize( nLocalDofWithoutGhost );
     for( auto const& d :  space->dof()->dofPoints() )
     {
+        size_type dofId = d.first;
+        if ( space->dof()->dofGlobalProcessIsGhost( dofId ) )
+            continue;
+        DCHECK( dofId < nLocalDofWithoutGhost ) << "dofId " << dofId << " should be less than " << nLocalDofWithoutGhost;
         auto const& y = d.second.template get<0>();
-        for ( int i = 0; i < nDim; ++i ) Y(i)=y(i);
-        X.push_back( Y );
+        for ( int i = 0; i < nDim; ++i )
+            Y(i)=y(i);
+        X[dofId] = Y;
     }
-    LOG(INFO) << "convolve::X(" << X.size() << ")=" << X;
-    auto const& wc = worldComm(range);
-    mpi::all_gather( wc.localComm(), X.data(), X.size(), Z  );
-    LOG(INFO) << "convolve::Z(" << Z.size() << ")=" << Z;
+    DLOG(INFO) << "convolve::X(" << X.size() << ")=" << X;
+
+    auto const& wc = space->worldComm();
+    //mpi::all_gather( wc.localComm(), X.data(), X.size(), Z  );
+    if ( wc.localSize() > 1 )
+    {
+        std::vector<std::vector<Eigen::Matrix<T, nDim,1>>> ZB;
+        mpi::all_gather( wc.localComm(), X, ZB  );
+        Z.reserve( space->nDof() );
+        for ( size_type k=0;k<ZB.size();++k )
+            Z.insert( Z.end(), ZB[k].begin(), ZB[k].end() );
+        CHECK( Z.size() == space->nDof() ) << "Z.size=" << Z.size() << " should be "<< space->nDof();
+    }
+    else
+    {
+        Z = std::move( X );
+    }
+    DLOG(INFO) << "convolve::Z(" << Z.size() << ")=" << Z;
     auto ret = integrate( _range=range, _expr=expr, _quad=quad, _geomap=geomap,
                           _quad1=quad1,_use_tbb=use_tbb,_grainsize=grainsize,
-                          _partitioner=partitioner,_verbose=verbose,_quadptloc=quadptloc).evaluate( Z );
-    LOG(INFO) << "convolve::ret(" << ret.size() <<")=" << ret << std::endl;
+                          _partitioner=partitioner,_verbose=verbose,_quadptloc=quadptloc).evaluate( Z, true, wc );
+    DLOG(INFO) << "convolve::ret(" << ret.size() <<")=" << ret << std::endl;
     auto v = space->element();
-    for( int i = 0; i < space->nLocalDof(); ++i )
-        v(i) = ret[space->dof()->firstDof()+i]( 0, 0);
-    v.close();
+    size_type firstDofGlobalCluster = space->dof()->firstDofGlobalCluster();
+    for( int i = 0; i < nLocalDofWithoutGhost; ++i )
+        v(i) = ret[firstDofGlobalCluster+i]( 0, 0);
+    sync(v);
     return v;
 }
 

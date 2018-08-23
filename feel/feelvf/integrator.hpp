@@ -515,7 +515,9 @@ public:
      */
     template<typename T,int M, int N=1>
     decltype(auto)
-    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const;
+    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v,
+              bool parallel=true,
+              WorldComm const& worldcomm = Environment::worldComm() ) const;
 
 #if 1
     matrix_type
@@ -5113,7 +5115,8 @@ generateLambdaExpr( ExprLambdaType const& exprLambda, ExprXType const& exprX, Ex
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename T, int M,int N>
 decltype(auto)
-Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>> const& v ) const
+Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>> const& v,
+                                               bool parallel, WorldComm const& worldComm ) const
 {
     DLOG(INFO)  << "integrating over "
                 << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
@@ -5262,7 +5265,26 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
             }
         }
     }
-    return res;
+
+
+    if ( !parallel || ( worldComm.localSize() == 1 ) )
+        return res;
+    else
+    {
+        std::vector<m_t> resGlob( res.size(), m_t::Zero() );
+        mpi::all_reduce( worldComm.localComm(),
+                         res,
+                         resGlob,
+                         [] ( std::vector<m_t> const& x, std::vector<m_t> const& y )
+                         {
+                             CHECK( x.size() == y.size() ) << "invalid size " << x.size() << " vs " << y.size();
+                             std::vector<m_t> r( x.size() );
+                             for ( int k=0;k<x.size();++k )
+                                 r[k] = x[k] + y[k];
+                             return r;
+                         } );
+        return resGlob;
+    }
 
 }
 
