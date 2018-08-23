@@ -63,15 +63,16 @@ public:
     }
 };
 
-//! Singleton to guaranty a MongoDB unique instance.
+//! Singleton to guaranty a MongoDB unique instance of the mongocxx::instance
+//! TODO mongocxx instance should be called only once. We should add a check
+//! provided by mongodb in case another library initialize the instance.
 class MongoCxx
 {
     public:
-        static std::unique_ptr<mongocxx::instance>&& instance()
+        static void instance()
         {
             if( not S_mongocxx_instance )
                 S_mongocxx_instance = std::make_unique<mongocxx::instance>();
-            return std::move(S_mongocxx_instance);
         }
 
         static void reset()

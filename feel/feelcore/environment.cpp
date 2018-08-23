@@ -560,8 +560,7 @@ Environment::Environment( int argc, char** argv,
     if( S_vm.count( "journal.database.collection" ) )
         journaldbconf.collection = S_vm["journal.database.collection"].as<std::string>();
     Environment::journalDBConfig( journaldbconf ); 
-    if( !S_mongocxxInstance )
-        S_mongocxxInstance = Feel::MongoCxx::instance();
+    Feel::MongoCxx::instance();
 #endif
 
     if ( not S_hwSysInstance )
@@ -723,7 +722,7 @@ Environment::~Environment()
 
 #if defined(FEELPP_HAS_MONGOCXX )
     VLOG( 2 ) << "cleaning mongocxxInstance";
-    S_mongocxxInstance.reset();
+    MongoCxx::reset();
 #endif
 #if defined( FEELPP_HAS_GMSH_H )
     GmshFinalize();
@@ -1226,7 +1225,7 @@ Environment::processGenericOptions()
             MPI_Finalize();
         }
 #if defined(FEELPP_HAS_MONGOCXX )
-        S_mongocxxInstance.reset();
+        MongoCxx::reset();
 #endif
         exit( 0 );
     }
@@ -2474,11 +2473,6 @@ hwloc_topology_t Environment::S_hwlocTopology = NULL;
 #endif
 
 std::unique_ptr<TimerTable> Environment::S_timers;
-
-#if defined(FEELPP_HAS_MONGOCXX )
-std::unique_ptr<mongocxx::instance> Environment::S_mongocxxInstance;
-#endif
-
 std::unique_ptr<Sys::HwSysBase> Environment::S_hwSysInstance;
 
 }

@@ -890,10 +890,6 @@ private:
 #endif
     static std::unique_ptr<TimerTable> S_timers;
 
-#if defined(FEELPP_HAS_MONGOCXX )
-    static std::unique_ptr<mongocxx::instance> S_mongocxxInstance;
-#endif
-
     //! Hardware System information instance.
     static std::unique_ptr<Sys::HwSysBase> S_hwSysInstance;
 };
