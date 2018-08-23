@@ -167,6 +167,10 @@ private:
             boost::tie( local_shift, global_shift ) = shifts;
 
             size_type ie = elt.id();
+            auto const& pt0 = elt.point(0);
+            auto const& pt1 = elt.point(1);
+            Marker1 markerPt0 = pt0.hasMarker()? pt0.marker() : Marker1(0);
+            Marker1 markerPt1 = pt1.hasMarker()? pt1.marker() : Marker1(0);
 
             uint16_type lc = local_shift;
             size_type n = elt.neighbor( 0 );
@@ -174,10 +178,10 @@ private:
             {
                 size_type gDof = M_doftable->mesh()->element( n ).point(1).id()*fe_type::nDofPerVertex;
                 DVLOG(2) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
-                M_doftable->insertDof( ie, lc++, 0, std::make_tuple(  0, gDof ), processor, next_free_dof, 1, false, global_shift, elt.point(0).marker() );
+                M_doftable->insertDof( ie, lc++, 0, std::make_tuple(  0, gDof ), processor, next_free_dof, 1, false, global_shift, markerPt0 );
                 gDof = ( elt.point( 1 ).id() ) * mortar_fe_type::nDofPerVertex;
                 M_doftable->insertDof( ie, lc++, 1, std::make_tuple(  0, gDof ),
-                                       processor, next_free_dof, 1, false, global_shift, elt.point( 1 ).marker() );
+                                       processor, next_free_dof, 1, false, global_shift, markerPt1 );
                 DVLOG(2) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
             }
             else
@@ -188,11 +192,11 @@ private:
                 size_type gDof = ( elt.point( 0 ).id() ) * mortar_fe_type::nDofPerVertex;
                 DVLOG(2) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
                 M_doftable->insertDof( ie, lc++, 0, std::make_tuple(  0, gDof ),
-                                       processor, next_free_dof, 1, false, global_shift, elt.point( 0 ).marker() );
+                                       processor, next_free_dof, 1, false, global_shift, markerPt0 );
 
                 gDof = M_doftable->mesh()->element( n ).point(0).id()*fe_type::nDofPerVertex;
                 DVLOG(2) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
-                M_doftable->insertDof( ie, lc++, 1, std::make_tuple(  0, gDof ), processor, next_free_dof, 1, false, global_shift, elt.point(1).marker() );
+                M_doftable->insertDof( ie, lc++, 1, std::make_tuple(  0, gDof ), processor, next_free_dof, 1, false, global_shift, markerPt1 );
             }
 
 
@@ -230,6 +234,8 @@ private:
 
             size_type ie = elt.id();
             uint16_type lc = local_shift;
+            Marker1 markerElt = elt.hasMarker()? elt.marker() : Marker1(0);
+
             DVLOG(2) << "adding mortar dof on edge " << mortar_fe_type::nDofPerEdge << " nOrder = " << nOrder;
             for ( uint16_type l = 0; l < mortar_fe_type::nDofPerEdge; ++l, ++lc )
             {
@@ -249,11 +255,11 @@ private:
                         gDof = M_doftable->mesh()->element( n ).point(0).id()*fe_type::nDofPerVertex;
                     }
                     DVLOG(2) << "inserting dof " << gDof << "," << next_free_dof << "," << ie;
-                    M_doftable->insertDof( ie, lc, l, std::make_tuple(  0, gDof ), processor, next_free_dof, 1, false, global_shift, elt.marker() );
+                    M_doftable->insertDof( ie, lc, l, std::make_tuple(  0, gDof ), processor, next_free_dof, 1, false, global_shift, markerElt );
                 }
                 else
                 {
-                    M_doftable->insertDof( ie, lc, l, std::make_tuple(  1, gDof ), processor, next_free_dof, 1, false, global_shift, elt.marker() );
+                    M_doftable->insertDof( ie, lc, l, std::make_tuple(  1, gDof ), processor, next_free_dof, 1, false, global_shift, markerElt );
                 }
             }
 
@@ -280,6 +286,8 @@ private:
 
             for ( uint16_type i = 0; i < element_type::numEdges; ++i )
             {
+                Marker1 markerEdge = elt.edge( i ).hasMarker()? elt.edge( i ).marker() : Marker1(0);
+
                 for ( uint16_type l = 0; l < mortar_fe_type::nDofPerEdge; ++l, ++lc )
                 {
                     size_type gDof = elt.edge( i ).id() * mortar_fe_type::nDofPerEdge;
@@ -308,7 +316,7 @@ private:
                     else
                         FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                    M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, elt.edge( i ).marker() );
+                    M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, markerEdge );
                 }
             }
 
@@ -335,6 +343,7 @@ private:
 
             for ( uint16_type i = 0; i < element_type::numEdges; ++i )
             {
+                Marker1 markerEdge = elt.edge( i ).hasMarker()? elt.edge( i ).marker() : Marker1(0);
                 for ( uint16_type l = 0; l < mortar_fe_type::nDofPerEdge; ++l, ++lc )
                 {
                     size_type gDof = elt.edge( i ).id() * mortar_fe_type::nDofPerEdge;
@@ -363,7 +372,7 @@ private:
                     else
                         FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                    M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, elt.edge( i ).marker() );
+                    M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, markerEdge );
                 }
             }
 
@@ -395,11 +404,12 @@ private:
 
             size_type ie = elt.id();
             uint16_type lc = local_shift;
+            Marker1 markerElt = elt.hasMarker()? elt.marker() : Marker1(0);
 
             for ( uint16_type l = 0; l < mortar_fe_type::nDofPerFace; ++l, ++lc )
             {
                 const size_type gDof = is_p0_continuous? l:ie * mortar_fe_type::nDofPerFace + l;
-                M_doftable->insertDof( ie, lc, l, std::make_tuple(  2, gDof ), processor, next_free_dof, 1, false, global_shift, elt.marker() );
+                M_doftable->insertDof( ie, lc, l, std::make_tuple(  2, gDof ), processor, next_free_dof, 1, false, global_shift, markerElt );
             }
 
             // update shifts
@@ -426,6 +436,8 @@ private:
             {
                 face_permutation_type permutation = elt.facePermutation( i );
                 FEELPP_ASSERT( permutation != face_permutation_type( 0 ) ).error ( "invalid face permutation" );
+
+                Marker1 markerFace =  elt.face( i ).hasMarker()? elt.face( i ).marker() : Marker1(0);
 
                 // Polynomial order in each direction
                 uint16_type p=1;
@@ -479,7 +491,7 @@ private:
                         }
                     }
 
-                    M_doftable->insertDof( ie, lc, i, std::make_tuple(  2, gDof ), processor, next_free_dof, sign, false, global_shift,elt.face( i ).marker() );
+                    M_doftable->insertDof( ie, lc, i, std::make_tuple(  2, gDof ), processor, next_free_dof, sign, false, global_shift,markerFace );
 
                 }
             }
@@ -508,11 +520,12 @@ private:
 
             size_type ie = elt.id();
             uint16_type lc = local_shift;
+            Marker1 markerElt =  elt.hasMarker()? elt.marker() : Marker1(0);
 
             for ( uint16_type l = 0; l < mortar_fe_type::nDofPerVolume; ++l, ++lc )
             {
                 const size_type gDof = is_p0_continuous? l:ie * mortar_fe_type::nDofPerVolume + l;
-                M_doftable->insertDof( ie, lc, l, std::make_tuple(  3, gDof ), processor, next_free_dof, 1, false, global_shift, elt.marker() );
+                M_doftable->insertDof( ie, lc, l, std::make_tuple(  3, gDof ), processor, next_free_dof, 1, false, global_shift, markerElt );
             }
 
             // update shifts
