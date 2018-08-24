@@ -87,6 +87,7 @@ enum class LevelSetMeasuresExported
 enum class LevelSetFieldsExported
 {
     GradPhi, ModGradPhi, 
+    AdvectionVelocity,
     BackwardCharacteristics, CauchyGreenInvariant1, CauchyGreenInvariant2
 };
 

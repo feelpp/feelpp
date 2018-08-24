@@ -988,6 +988,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
                 this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::GradPhi );
             if( o == "modgradphi" || o == "all" )
                 this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+            if( o == "advection-velocity" || o == "all" )
+                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::AdvectionVelocity );
             if( o == "backwardcharacteristics" )
                 this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::BackwardCharacteristics );
             if( o == "cauchygreeninvariant1" )
@@ -1003,6 +1005,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_modgradphi").c_str()) )
         if ( boption(_name="do_export_modgradphi",_prefix=this->prefix()) )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_advectionvelocity").c_str()) )
+        if ( boption(_name="do_export_advectionvelocity",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::AdvectionVelocity );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_backwardcharacteristics").c_str()) )
         if ( boption(_name="do_export_backwardcharacteristics",_prefix=this->prefix()) )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::BackwardCharacteristics );
@@ -2397,6 +2402,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
         exportedFields = (exportedFields.empty())? "GradPhi": exportedFields+" - GradPhi";
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::ModGradPhi ) )
         exportedFields = (exportedFields.empty())? "ModGradPhi": exportedFields+" - ModGradPhi";
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::AdvectionVelocity ) )
+        exportedFields = (exportedFields.empty())? "AdvectionVelocity": exportedFields+" - AdvectionVelocity";
     if ( this->M_useStretchAugmented )
         exportedFields = (exportedFields.empty())? "Stretch": exportedFields+" - Stretch";
 
@@ -2600,17 +2607,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time, bool save )
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ModGradPhi")),
                                        *this->modGradPhi() );
     }
-
-    auto diracElts = this->functionSpace()->element();
-    diracElts.on( _range=this->rangeDiracElements(), _expr=cst(1.) );
-    this->M_exporter->step( time )->add( prefixvm(this->prefix(),"DiracElts"),
-            prefixvm(this->prefix(),prefixvm(this->subPrefix(),"DiracElts")),
-            diracElts );
-
-    auto extensionVelocity = this->extensionVelocity( idv(this->M_advectionToolbox->fieldAdvectionVelocity()) );
-    this->M_exporter->step( time )->add( prefixvm(this->prefix(),"ExtensionVelocity"),
-            prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ExtensionVelocity")),
-            extensionVelocity );
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::AdvectionVelocity ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"AdvectionVelocity"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"AdvectionVelocity")),
+                                       M_advectionToolbox->fieldAdvectionVelocity() );
+    }
 
     if( M_useGradientAugmented )
     {
