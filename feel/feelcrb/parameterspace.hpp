@@ -1264,9 +1264,15 @@ public:
                     boost::property_tree::ptree ptreeMu;
                     for ( int d=0;d<nDim;++d )
                     {
-                        ptreeMu.add( "", mu(d) );
+                        // ptreeMu.add( "", mu(d) );
+                        // the line commented above fails in debug, need to be replaced by the code below :
+                        boost::property_tree::ptree ptreeTmp;
+                        ptreeTmp.put( "", mu(d) );
+                        ptreeMu.push_back( std::make_pair("", ptreeTmp) );
                     }
-                    ptreeSampling.add_child("",ptreeMu);
+                    // ptreeSampling.add_child("",ptreeMu);
+                    // the line commented above fails in debug, need to be replaced by the code below :
+                    ptreeSampling.push_back( std::make_pair( "", ptreeMu ) );
                 }
                 ptree.add_child( "sampling", ptreeSampling );
             }
