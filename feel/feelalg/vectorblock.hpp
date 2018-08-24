@@ -44,14 +44,14 @@ template<typename T> class Backend;
 
 
 template <typename T=double>
-class BlocksBaseVector : public vf::BlocksBase<boost::shared_ptr<Vector<T> > >
+class BlocksBaseVector : public vf::BlocksBase<std::shared_ptr<Vector<T> > >
 {
 public :
-    typedef vf::BlocksBase<boost::shared_ptr<Vector<T> > > super_type;
+    typedef vf::BlocksBase<std::shared_ptr<Vector<T> > > super_type;
     typedef BlocksBaseVector<T> self_type;
     typedef Vector<T> vector_type;
-    typedef boost::shared_ptr<vector_type> vector_ptrtype;
-    typedef boost::shared_ptr<Backend<T> > backend_ptrtype;
+    typedef std::shared_ptr<vector_type> vector_ptrtype;
+    typedef std::shared_ptr<Backend<T> > backend_ptrtype;
     //using local_vector_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic>;
 
     BlocksBaseVector(uint16_type nr = 0,
@@ -178,7 +178,7 @@ public :
      */
     template<typename Arg1, typename ...Args>
     void
-    fillWithNewVector( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args )
+    fillWithNewVector( int n, const std::shared_ptr<Arg1>& arg1, const std::shared_ptr<Args>&... args )
         {
             this->operator()( n ) = M_backend->newBlockVector( arg1 );
             // do submatrix (n+1,n+1)
@@ -190,7 +190,7 @@ public :
      */
     template<typename Arg1, typename ...Args>
     void
-    fill( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args )
+    fill( int n, const std::shared_ptr<Arg1>& arg1, const std::shared_ptr<Args>&... args )
         {
             this->operator()( n ) = arg1;
             // do submatrix (n+1,n+1)
@@ -249,10 +249,10 @@ public:
     using real_type = typename super::real_type;
     
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     typedef Vector<T> vector_type;
-    typedef boost::shared_ptr<vector_type> vector_ptrtype;
+    typedef std::shared_ptr<vector_type> vector_ptrtype;
     using clone_ptrtype = typename super::clone_ptrtype;
     //@}
 
@@ -346,7 +346,7 @@ public:
 
     virtual clone_ptrtype clone () const override
         {
-            clone_ptrtype v = boost::make_shared<VectorBlockBase<value_type>>( *this );
+            clone_ptrtype v = std::make_shared<VectorBlockBase<value_type>>( *this );
             return v;
         } 
     virtual void printMatlab( const std::string name="NULL", bool renumber = false ) const override

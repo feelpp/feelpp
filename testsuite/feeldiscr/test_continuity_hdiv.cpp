@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( HDivRT0, T, dim_types )
     BOOST_TEST_MESSAGE( "check continuity for HDivRT in  " << nDim << "D P" << nOrder << "\n" );
 
     typedef Mesh<Simplex<nDim,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type );
 

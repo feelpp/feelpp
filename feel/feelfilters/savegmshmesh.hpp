@@ -56,7 +56,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
 #if BOOST_FILESYSTEM_VERSION == 3
-    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  mesh->worldComm() );
+    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  mesh->worldCommPtr() );
 #elif BOOST_FILESYSTEM_VERSION == 2
     ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, mesh->worldComm() );
 #endif

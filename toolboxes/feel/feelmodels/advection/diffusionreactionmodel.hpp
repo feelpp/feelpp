@@ -42,17 +42,17 @@ class DiffusionReactionModel
     typedef DiffusionReactionModel<DiffusionSpaceType, ReactionSpaceType> self_type;
 public :
     typedef DiffusionSpaceType space_diffusion_type;
-    typedef boost::shared_ptr<space_diffusion_type> space_diffusion_ptrtype;
+    typedef std::shared_ptr<space_diffusion_type> space_diffusion_ptrtype;
     typedef typename space_diffusion_type::element_type element_diffusion_type;
-    typedef boost::shared_ptr<element_diffusion_type> element_diffusion_ptrtype;
+    typedef std::shared_ptr<element_diffusion_type> element_diffusion_ptrtype;
 
     typedef ReactionSpaceType space_reaction_type;
-    typedef boost::shared_ptr<space_reaction_type> space_reaction_ptrtype;
+    typedef std::shared_ptr<space_reaction_type> space_reaction_ptrtype;
     typedef typename space_reaction_type::element_type element_reaction_type;
-    typedef boost::shared_ptr<element_reaction_type> element_reaction_ptrtype;
+    typedef std::shared_ptr<element_reaction_type> element_reaction_ptrtype;
 
     typedef typename space_diffusion_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     
     static std::string defaultMaterialName() { return std::string("FEELPP_DEFAULT_MATERIAL_NAME"); }
 
@@ -65,9 +65,9 @@ public :
 
     void initFromMesh( mesh_ptrtype const& mesh, bool useExtendedDofTable )
     {
-        M_spaceDiffusion = space_diffusion_type::New( _mesh=mesh, _worldscomm=std::vector<WorldComm>(1,mesh->worldComm()),
+        M_spaceDiffusion = space_diffusion_type::New( _mesh=mesh, _worldscomm=makeWorldsComm(1,mesh->worldCommPtr()),
                                    _extended_doftable=std::vector<bool>(1,useExtendedDofTable) );
-        M_spaceReaction = space_reaction_type::New( _mesh=mesh, _worldscomm=std::vector<WorldComm>(1,mesh->worldComm()),
+        M_spaceReaction = space_reaction_type::New( _mesh=mesh, _worldscomm=makeWorldsComm(1,mesh->worldCommPtr()),
                                    _extended_doftable=std::vector<bool>(1,useExtendedDofTable) );
         M_fieldDiffusionCoeff = this->functionSpaceDiffusion()->elementPtr( cst( this->cstDiffusionCoeff() ) );
         M_fieldReactionCoeff = this->functionSpaceReaction()->elementPtr( cst( this->cstReactionCoeff() ) );

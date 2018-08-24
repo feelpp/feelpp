@@ -57,8 +57,8 @@ public:
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef boost::shared_ptr<coef_space_type> coef_space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<coef_space_type> coef_space_ptrtype;
     typedef typename space_type::indexsplit_ptrtype  indexsplit_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
@@ -72,7 +72,7 @@ public:
     // Qh3 - temporary version
     typedef Lagrange<1,Vectorial> lag_v_type;
     typedef FunctionSpace<mesh_type, bases< lag_v_type >> lag_v_space_type;
-    typedef boost::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
+    typedef std::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
 
     // Elements
     typedef typename potential_space_type::element_type potential_element_type;
@@ -82,13 +82,13 @@ public:
 
     // operatrors
     typedef OperatorMatrix<value_type> op_mat_type;
-    typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
+    typedef std::shared_ptr<op_mat_type> op_mat_ptrtype;
 
     typedef OperatorInverse<op_mat_type> op_inv_type;
-    typedef boost::shared_ptr<op_inv_type> op_inv_ptrtype;
+    typedef std::shared_ptr<op_inv_type> op_inv_ptrtype;
 
     typedef OperatorBase<value_type> op_type;
-    typedef boost::shared_ptr<op_type> op_ptrtype;
+    typedef std::shared_ptr<op_type> op_ptrtype;
 
     /**
      * \param t Kind of prec
@@ -498,7 +498,7 @@ template< typename space_type , typename coef_space_type >
     struct blockas
 {
     typedef PreconditionerAS<space_type, coef_space_type> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 }
 BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockas<

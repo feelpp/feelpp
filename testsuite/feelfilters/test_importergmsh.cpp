@@ -63,7 +63,7 @@ void
 checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simplex" )
 {
     typedef Mesh<Entity<Dim,1,Dim> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh;
     // simplex
@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshellipsoid, T, dim_types )
 BOOST_AUTO_TEST_CASE( gmshgeo )
 {
     typedef Mesh<Simplex<2,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh;
     // simplex
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE( gmshgeo )
 BOOST_AUTO_TEST_CASE( gmshpartgeo )
 {
     typedef Mesh<Simplex<2,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh;
     // simplex
@@ -175,7 +175,7 @@ public:
 BOOST_AUTO_TEST_CASE( gmshgeo_tbb )
 {
     typedef Mesh<Simplex<2,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh;
     // simplex
@@ -220,7 +220,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
 
     BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh,meshimp;
     // simplex
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
     std::ostringstream estr;
     estr << "gmshexp-" << T::value;
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
     export_ptrtype exporter( Exporter<mesh_type>::New( "gmsh", estr.str() ) );
     exporter->step( 0 )->setMesh( mesh );
     exporter->save();
@@ -281,7 +281,7 @@ BOOST_AUTO_TEST_CASE( supportedgmshmesh_import )
 {
     using namespace Feel::vf;
     typedef Mesh<Simplex<3> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     std::vector<std::string> supported_formats = {".mesh"};
 #ifdef FEELPP_HAS_GMSH_HAS_MED
@@ -305,7 +305,7 @@ BOOST_AUTO_TEST_CASE( supportedgmshmesh_import )
 	std::ostringstream estr;
 	estr << "gmshexp-" << T::value;
 	typedef Exporter<mesh_type> export_type;
-	typedef boost::shared_ptr<export_type> export_ptrtype;
+	typedef std::shared_ptr<export_type> export_ptrtype;
 	export_ptrtype exporter( Exporter<mesh_type>::New( "gmsh", estr.str() ) );
 	exporter->step( 0 )->setMesh( mesh );
 	exporter->save();

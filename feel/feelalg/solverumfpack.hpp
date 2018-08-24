@@ -172,7 +172,7 @@ private:
 private:
 
     class Pimpl;
-    boost::shared_ptr<Pimpl> M_p;
+    std::shared_ptr<Pimpl> M_p;
 
     bool M_matrix_reset;
     bool M_matrix_values_reset;

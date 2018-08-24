@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE( test_mesh0d_1 )
 {
     using namespace Feel;
     typedef Mesh<Simplex<0,1,3> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     auto m = loadMesh(_mesh=new mesh_type );
 }

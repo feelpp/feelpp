@@ -46,6 +46,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelmesh/kdtree.hpp>
 #include <feel/feelcore/ptreetools.hpp>
 #include <feel/feelcore/utility.hpp>
@@ -61,7 +62,7 @@ namespace Feel
  * @see
  */
 template<uint16_type P = invalid_uint16_type_value >
-class ParameterSpace: public boost::enable_shared_from_this<ParameterSpace<P> >
+class ParameterSpace: public CommObject, public std::enable_shared_from_this<ParameterSpace<P> >
 {
 public:
 
@@ -78,9 +79,9 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    using super = CommObject;
     typedef ParameterSpace<Dimension> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
 
     //@}
 
@@ -93,7 +94,7 @@ public:
         using super = Eigen::VectorXd;
     public:
         typedef ParameterSpace<Dimension> parameterspace_type;
-        typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+        typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
         //typedef typename Eigen::internal::ref_selector<Element>::type Nested;
         typedef typename Eigen::internal::remove_all<Eigen::VectorXd>::type NestedExpression;
 
@@ -283,7 +284,7 @@ public:
     };
 
     typedef Element element_type;
-    typedef boost::shared_ptr<Element> element_ptrtype;
+    typedef std::shared_ptr<Element> element_ptrtype;
     element_type element( bool broadcast = true, bool apply_log = false )
     {
 #if 0
@@ -330,17 +331,17 @@ public:
     public:
 
         typedef Sampling sampling_type;
-        typedef boost::shared_ptr<sampling_type> sampling_ptrtype;
+        typedef std::shared_ptr<sampling_type> sampling_ptrtype;
 
         typedef ParameterSpace<Dimension> parameterspace_type;
-        typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+        typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
 
         typedef typename parameterspace_type::Element element_type;
-        typedef boost::shared_ptr<element_type> element_ptrtype;
+        typedef std::shared_ptr<element_type> element_ptrtype;
 
 #if defined(FEELPP_HAS_ANN_H)
         typedef ANNkd_tree kdtree_type;
-        typedef boost::shared_ptr<kdtree_type> kdtree_ptrtype;
+        typedef std::shared_ptr<kdtree_type> kdtree_ptrtype;
 #endif /* FEELPP_HAS_ANN_H */
 
     public:
@@ -398,7 +399,7 @@ public:
          * \brief create add an element to a sampling
          * \param mu : element_type
          */
-        void addElement( element_type const mu )
+        void addElement( element_type const& mu )
         {
 #if 0
             CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
@@ -1376,7 +1377,7 @@ public:
     };
 
     typedef Sampling sampling_type;
-    typedef boost::shared_ptr<sampling_type> sampling_ptrtype;
+    typedef std::shared_ptr<sampling_type> sampling_ptrtype;
 
     sampling_ptrtype sampling() { return sampling_ptrtype( new sampling_type( this->shared_from_this() ) ); }
 
@@ -1385,9 +1386,9 @@ public:
     //@{
 
     //! default constructor
-    ParameterSpace( uint16_type dim = 0, WorldComm const& worldComm = Environment::worldComm() )
+    ParameterSpace( uint16_type dim = 0, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
-        M_worldComm( worldComm ),
+        super( worldComm ),
         M_nDim( (Dimension == invalid_uint16_type_value)? dim : Dimension ),
         M_min(),
         M_max()
@@ -1413,24 +1414,23 @@ public:
         }
 #endif
     //! destructor
-    ~ParameterSpace()
-        {}
+    virtual ~ParameterSpace() = default;
 
     /**
      * generate a shared_ptr out of a parameter space
      */
     static parameterspace_ptrtype create( uint16_type dim)
         {
-            return New( dim, Environment::worldComm() );
+            return New( dim, Environment::worldCommPtr() );
         }
-    static parameterspace_ptrtype New( uint16_type dim = 0, WorldComm const& worldComm = Environment::worldComm())
+    static parameterspace_ptrtype New( uint16_type dim = 0, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr())
         {
-            return parameterspace_ptrtype( new parameterspace_type( dim,worldComm ) );
+            return std::make_shared<parameterspace_type>( dim,worldComm );
         }
 
-    static parameterspace_ptrtype New( std::string const& filename, WorldComm const& worldComm = Environment::worldComm() )
+    static parameterspace_ptrtype New( std::string const& filename, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         {
-            parameterspace_ptrtype ps( new parameterspace_type( 0,worldComm ) );
+            auto ps = std::make_shared<parameterspace_type>( 0,worldComm );
             ps->loadJson( filename );
             return ps;
         }
@@ -1447,9 +1447,6 @@ public:
     /** @name Accessors
      */
     //@{
-
-    //! \return the mpi communicators
-    WorldComm const& worldComm() const { return M_worldComm; }
 
     //! \return the parameter space dimension
     uint16_type dimension() const
@@ -1511,14 +1508,6 @@ public:
     /** @name  Mutators
      */
     //@{
-
-    /**
-     * set worldcomm
-     */
-    void setWorldComm( WorldComm const& worldComm )
-        {
-            M_worldComm = worldComm;
-        }
 
     /**
      * set the parameter space dimension
@@ -1959,9 +1948,6 @@ private:
 
     private:
 
-    //! mpi communicators
-    WorldComm const& M_worldComm;
-
     //! parameter space dimension
     uint16_type M_nDim;
 
@@ -1984,7 +1970,7 @@ using ParameterSpaceX = ParameterSpace<>;
 
 template<uint16_type P>
 //typename ParameterSpace<P>::sampling_ptrtype
-boost::shared_ptr<typename ParameterSpace<P>::Sampling>
+std::shared_ptr<typename ParameterSpace<P>::Sampling>
 ParameterSpace<P>::Sampling::complement() const
 {
     //std::cout << "[ParameterSpace::Sampling::complement] start\n";
@@ -2048,7 +2034,7 @@ ParameterSpace<P>::Sampling::complement() const
 
 }
 template<uint16_type P>
-boost::shared_ptr<typename ParameterSpace<P>::Sampling>
+std::shared_ptr<typename ParameterSpace<P>::Sampling>
 ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
                                                      size_type _M ,
                                                      std::vector<int>& index_vector)

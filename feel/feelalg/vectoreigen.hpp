@@ -103,11 +103,11 @@ public:
 
     VectorEigen();
 
-    VectorEigen( size_type __s, WorldComm const& _worldComm = Environment::worldComm() );
+    VectorEigen( size_type __s, worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() );
 
     VectorEigen( datamap_ptrtype const& dm );
 
-    VectorEigen( size_type __s, size_type __n_local, WorldComm const& _worldComm = Environment::worldComm() );
+    VectorEigen( size_type __s, size_type __n_local, worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() );
 
     VectorEigen( VectorEigen const & m );
 
@@ -807,8 +807,8 @@ element_product( VectorEigen<T> const& v1, VectorEigen<T> const& v2 )
  */
 template <typename T>
 VectorEigen<T>
-element_product( boost::shared_ptr<VectorEigen<T> > const& v1,
-                 boost::shared_ptr<VectorEigen<T> > const& v2 )
+element_product( std::shared_ptr<VectorEigen<T> > const& v1,
+                 std::shared_ptr<VectorEigen<T> > const& v2 )
 {
     return v1->vec().array()*v2->vec().array();
 }

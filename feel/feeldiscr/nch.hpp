@@ -45,7 +45,7 @@ struct NChv
                           double,
                           Periodicity <NoPeriodicity>,
                           mortars<NoMortar>> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 } // meta
@@ -72,10 +72,10 @@ template<int Order,
          int Tag = 0>
 inline
 NChv_ptrtype<MeshType,Order,Pts,Tag>
-NChv( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
+NChv( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
 {
     return NChv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
-                                                   _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                   _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
                                                    _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 

@@ -1025,7 +1025,7 @@ class Nedelec
     :
     public HCurlPolynomialSet,
     public NedelecBase<N,O,Kind,T,TheTAG>::type,
-    public boost::enable_shared_from_this<Nedelec<N,O,Kind,T,TheTAG> >
+    public std::enable_shared_from_this<Nedelec<N,O,Kind,T,TheTAG> >
 {
 
 public:

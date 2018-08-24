@@ -43,7 +43,7 @@ class MDEIM :
 
 public :
     typedef ModelType model_type;
-    typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef std::shared_ptr<model_type> model_ptrtype;
     typedef typename super_type::parameter_type parameter_type;
     typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename super_type::sampling_ptrtype sampling_ptrtype;
@@ -102,9 +102,9 @@ private :
             saveGMSHMesh( _mesh=submesh, _filename=this->name(true)+"-submesh.msh" );
             auto seqmesh = loadMesh( _mesh=new mesh_type,
                                      _filename=this->name(true)+"-submesh.msh",
-                                     _worldcomm= Environment::worldCommSeq() );
+                                     _worldcomm= Environment::worldCommSeqPtr() );
             Rh = space_type::New( seqmesh,
-                                  _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
+                                  _worldscomm=makeWorldsComm(space_type::nSpaces,Environment::worldCommSeqPtr()) );
 
             this->M_map->init( Rh, Xh );
 
@@ -142,7 +142,7 @@ struct compute_mdeim_return
     typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
 
     typedef MDEIM<model_type> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 } // namespace detail
 
@@ -164,7 +164,7 @@ BOOST_PARAMETER_FUNCTION(
                          )
 {
     typedef typename Feel::detail::compute_mdeim_return<Args>::type mdeim_type;
-    return boost::make_shared<mdeim_type>( model, sampling, prefix, filename, directory, tag );
+    return std::make_shared<mdeim_type>( model, sampling, prefix, filename, directory, tag );
 }
 
 

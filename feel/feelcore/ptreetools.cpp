@@ -26,6 +26,7 @@
 
 #include <feel/feelcore/feel.hpp>
 
+#include <feel/feelcore/disablewarnings.hpp>
 //  Copyright (c) 2001-2010 Hartmut Kaiser
 //  Copyright (c) 2001-2007 Joel de Guzman
 //
@@ -36,6 +37,7 @@
 #include <boost/spirit/include/lex_lexertl.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
+#include <feel/feelcore/reenablewarnings.hpp>
 
 #include <iostream>
 #include <string>

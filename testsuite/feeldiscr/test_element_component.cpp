@@ -17,7 +17,7 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 BOOST_AUTO_TEST_SUITE( element_component )
 
 template<int O=1>
-boost::shared_ptr<Mesh<Simplex<2,O,2>>>
+std::shared_ptr<Mesh<Simplex<2,O,2>>>
 getReferenceTriangleMesh()
 {
     GeoTool::Node x1( -1,-1 );
@@ -27,12 +27,12 @@ getReferenceTriangleMesh()
     R.setMarker(_type="line",_name="Neumann",_marker3=true);
     R.setMarker(_type="line",_name="Dirichlet",_marker1=true,_marker2=true);
     R.setMarker(_type="surface",_name="Omega",_markerAll=true);
-    return R.createMesh(_mesh=new Mesh<Simplex<2,O,2>>(Environment::worldCommSeq()),
+    return R.createMesh(_mesh=new Mesh<Simplex<2,O,2>>(Environment::worldCommSeqPtr()),
                         _name= (boost::format("domainRef_p%1%")%Environment::worldComm().rank()).str() );
 }
 
 template<int O=1>
-boost::shared_ptr<Mesh<Simplex<2,O,2>>>
+std::shared_ptr<Mesh<Simplex<2,O,2>>>
 getTriangleMesh()
 {
     GeoTool::Node x1( 0,0 );
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE( element_component_vectorial )
 
 template<typename SpaceT>
 void
-test_tensor2symm_basic(std::string const& name, boost::shared_ptr<SpaceT> const& Vh )
+test_tensor2symm_basic(std::string const& name, std::shared_ptr<SpaceT> const& Vh )
 {
     auto mesh = Vh->mesh();
     auto uTensor2 = Vh->element();
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE( element_component_tensor2symm_continuous_basic )
 
 template</*typename MeshT,*/ typename SpaceT>
 void
-test_tensor2(std::string const& name, boost::shared_ptr<typename SpaceT::mesh_type/*MeshT*/> const& mesh )
+test_tensor2(std::string const& name, std::shared_ptr<typename SpaceT::mesh_type/*MeshT*/> const& mesh )
 {
     using Feel::cout;
     using mesh_type = typename SpaceT::mesh_type;
@@ -125,7 +125,7 @@ test_tensor2(std::string const& name, boost::shared_ptr<typename SpaceT::mesh_ty
                                               _xmin=0,_xmax=4,
                                               _ymin=0,_ymax=1 ) );
 #endif
-    auto VhTensor2 = SpaceT::New( _mesh=mesh, _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+    auto VhTensor2 = SpaceT::New( _mesh=mesh, _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
                                   _extended_doftable=std::vector<bool>( 1,true ));
     auto uTensor2 = VhTensor2->element();
     uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( cst(1.),cst(2.),cst(3.),cst(4.) ) );
@@ -134,47 +134,47 @@ test_tensor2(std::string const& name, boost::shared_ptr<typename SpaceT::mesh_ty
     auto uyx = uTensor2.comp( Component::Y,Component::X );
     auto uyy = uTensor2.comp( Component::Y,Component::Y );
 
-    double sxxRef = integrate( _range=elements( mesh ), _expr=cst(1.) ).evaluate(true,mesh->worldComm())( 0,0 );
-    double sxx1 = integrate( _range=elements( mesh ), _expr=inner( idv( uTensor2 )*oneX(),oneX() ) ).evaluate(true,mesh->worldComm())( 0,0 );
-    double sxx2 = integrate( _range=elements( mesh ), _expr=idv(uxx) ).evaluate(true,mesh->worldComm())( 0,0 );
+    double sxxRef = integrate( _range=elements( mesh ), _expr=cst(1.) ).evaluate(true,mesh->worldCommPtr())( 0,0 );
+    double sxx1 = integrate( _range=elements( mesh ), _expr=inner( idv( uTensor2 )*oneX(),oneX() ) ).evaluate(true,mesh->worldCommPtr())( 0,0 );
+    double sxx2 = integrate( _range=elements( mesh ), _expr=idv(uxx) ).evaluate(true,mesh->worldCommPtr())( 0,0 );
     BOOST_CHECK_CLOSE( sxx1, sxxRef, 1e-12 );
     BOOST_CHECK_CLOSE( sxx2, sxxRef, 1e-12 );
     double sxyRef = 0;
     if ( SpaceT::is_tensor2symm )
-        sxyRef = integrate( _range=elements( mesh ), _expr=cst(3.) ).evaluate(true,mesh->worldComm())( 0,0 );
+        sxyRef = integrate( _range=elements( mesh ), _expr=cst(3.) ).evaluate(true,mesh->worldCommPtr())( 0,0 );
     else
-        sxyRef = integrate( _range=elements( mesh ), _expr=cst(2.) ).evaluate(true,mesh->worldComm())( 0,0 );
-    double sxy1 = integrate( _range=elements( mesh ), _expr=inner( idv( uTensor2 )*oneY(),oneX() ) ).evaluate(true,mesh->worldComm())( 0,0 );
-    double sxy2 = integrate( _range=elements( mesh ), _expr=idv(uxy) ).evaluate(true,mesh->worldComm())( 0,0 );
+        sxyRef = integrate( _range=elements( mesh ), _expr=cst(2.) ).evaluate(true,mesh->worldCommPtr())( 0,0 );
+    double sxy1 = integrate( _range=elements( mesh ), _expr=inner( idv( uTensor2 )*oneY(),oneX() ) ).evaluate(true,mesh->worldCommPtr())( 0,0 );
+    double sxy2 = integrate( _range=elements( mesh ), _expr=idv(uxy) ).evaluate(true,mesh->worldCommPtr())( 0,0 );
     BOOST_CHECK_CLOSE( sxy1, sxyRef, 1e-12 );
     BOOST_CHECK_CLOSE( sxy2, sxyRef, 1e-12 );
     double syxRef = 0;
-    syxRef = integrate( _range=elements( mesh ), _expr=cst(3.) ).evaluate(true,mesh->worldComm())( 0,0 );
+    syxRef = integrate( _range=elements( mesh ), _expr=cst(3.) ).evaluate(true,mesh->worldCommPtr())( 0,0 );
 
-    double syx1 = integrate( _range=elements( mesh ), _expr=inner( idv( uTensor2 )*oneX(),oneY() ) ).evaluate(true,mesh->worldComm())( 0,0 );
-    double syx2 = integrate( _range=elements( mesh ), _expr=idv(uyx) ).evaluate(true,mesh->worldComm())( 0,0 );
+    double syx1 = integrate( _range=elements( mesh ), _expr=inner( idv( uTensor2 )*oneX(),oneY() ) ).evaluate(true,mesh->worldCommPtr())( 0,0 );
+    double syx2 = integrate( _range=elements( mesh ), _expr=idv(uyx) ).evaluate(true,mesh->worldCommPtr())( 0,0 );
     BOOST_CHECK_CLOSE( syx1, syxRef, 1e-12 );
     BOOST_CHECK_CLOSE( syx2, syxRef, 1e-12 );
-    double syyRef = integrate( _range=elements( mesh ), _expr=cst(4.) ).evaluate(true,mesh->worldComm())( 0,0 );
-    double syy1 = integrate( _range=elements( mesh ), _expr=inner( idv( uTensor2 )*oneY(),oneY() ) ).evaluate(true,mesh->worldComm())( 0,0 );
-    double syy2 = integrate( _range=elements( mesh ), _expr=idv(uyy) ).evaluate(true,mesh->worldComm())( 0,0 );
+    double syyRef = integrate( _range=elements( mesh ), _expr=cst(4.) ).evaluate(true,mesh->worldCommPtr())( 0,0 );
+    double syy1 = integrate( _range=elements( mesh ), _expr=inner( idv( uTensor2 )*oneY(),oneY() ) ).evaluate(true,mesh->worldCommPtr())( 0,0 );
+    double syy2 = integrate( _range=elements( mesh ), _expr=idv(uyy) ).evaluate(true,mesh->worldCommPtr())( 0,0 );
     BOOST_CHECK_CLOSE( syy1, syyRef, 1e-12 );
     BOOST_CHECK_CLOSE( syy2, syyRef, 1e-12 );
 
-    auto sfull = integrate( _range=elements( mesh ), _expr=idv(uTensor2) ).evaluate(true,mesh->worldComm());
+    auto sfull = integrate( _range=elements( mesh ), _expr=idv(uTensor2) ).evaluate(true,mesh->worldCommPtr());
     BOOST_CHECK_CLOSE( sfull(0,0),sxxRef, 1e-12 );
     BOOST_CHECK_CLOSE( sfull(0,1),sxyRef, 1e-12 );
     BOOST_CHECK_CLOSE( sfull(1,0),syxRef, 1e-12 );
     BOOST_CHECK_CLOSE( sfull(1,1),syyRef, 1e-12 );
 
-    double area = integrate( _range=elements( mesh ), _expr=cst(1.) ).evaluate(true,mesh->worldComm())(0,0);
+    double area = integrate( _range=elements( mesh ), _expr=cst(1.) ).evaluate(true,mesh->worldCommPtr())(0,0);
     uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( Px(),cst(0.),cst(3.),2.3*Py() ) );
-    auto sdiv = integrate( _range=elements( mesh ), _expr=divv(uTensor2) ).evaluate(true,mesh->worldComm());
+    auto sdiv = integrate( _range=elements( mesh ), _expr=divv(uTensor2) ).evaluate(true,mesh->worldCommPtr());
     BOOST_CHECK_CLOSE( sdiv(0,0),area, 1e-12 );
     BOOST_CHECK_CLOSE( sdiv(1,0),2.3*area, 1e-12 );
 
     uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( Py(),3.4*Px(),4.5*Py(),2.3*Py() ) );
-    sdiv = integrate( _range=elements( mesh ), _expr=divv(uTensor2) ).evaluate(true,mesh->worldComm());
+    sdiv = integrate( _range=elements( mesh ), _expr=divv(uTensor2) ).evaluate(true,mesh->worldCommPtr());
     if ( SpaceT::is_tensor2symm )
         BOOST_CHECK_CLOSE( sdiv(0,0),4.5*area, 1e-12 );
     else
@@ -182,7 +182,7 @@ test_tensor2(std::string const& name, boost::shared_ptr<typename SpaceT::mesh_ty
     BOOST_CHECK_CLOSE( sdiv(1,0),2.3*area, 1e-12 );
 
     uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( Px(),3.4*Py(),3.8*Px(),2.3*Py()+Px() ) );
-    sdiv = integrate( _range=elements( mesh ), _expr=divv(uTensor2) ).evaluate(true,mesh->worldComm());
+    sdiv = integrate( _range=elements( mesh ), _expr=divv(uTensor2) ).evaluate(true,mesh->worldCommPtr());
     if ( SpaceT::is_tensor2symm )
         BOOST_CHECK_CLOSE( sdiv(0,0),area, 1e-12 );
     else
@@ -191,7 +191,7 @@ test_tensor2(std::string const& name, boost::shared_ptr<typename SpaceT::mesh_ty
 
 #if 0
     uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( Px()*Py(),Py()+Px(),Py(),2.3*Py()+Px() ) );
-    sdiv = integrate( _range=elements( mesh ), _expr=divv(uTensor2) ).evaluate(true,mesh->worldComm());
+    sdiv = integrate( _range=elements( mesh ), _expr=divv(uTensor2) ).evaluate(true,mesh->worldCommPtr());
     BOOST_CHECK_CLOSE( sdiv(0,0),2*area, 1e-12 );
     BOOST_CHECK_CLOSE( sdiv(1,0),2.3*area, 1e-12 );
 #endif
@@ -266,8 +266,8 @@ test_tensor2(std::string const& name, boost::shared_ptr<typename SpaceT::mesh_ty
         BOOST_CHECK_CLOSE( a12v, 7*area, 1e-11 );
     else
         BOOST_CHECK_CLOSE( a12v, 12*area, 1e-11 );
-    double a12vv = integrate( _range=elements(mesh), _expr=trans(idv(w))*divv(uTensor2)).evaluate(true,mesh->worldComm())(0,0);
-    double a12vvv = integrate( _range=elements(mesh), _expr=trans(idv(w))*(2*ones<2,1>())).evaluate(true,mesh->worldComm())(0,0);
+    double a12vv = integrate( _range=elements(mesh), _expr=trans(idv(w))*divv(uTensor2)).evaluate(true,mesh->worldCommPtr())(0,0);
+    double a12vvv = integrate( _range=elements(mesh), _expr=trans(idv(w))*(2*ones<2,1>())).evaluate(true,mesh->worldCommPtr())(0,0);
     cout << "a12vv=" << a12vv << " a12v=" << a12v << " a12vvv=" << a12vvv << std::endl;
     BOOST_CHECK_CLOSE( a12v, a12vv, 1e-11 );
     cout << "a12(ones, ones) = " << a12v << std::endl;
@@ -345,9 +345,9 @@ test_tensor2(std::string const& name, boost::shared_ptr<typename SpaceT::mesh_ty
     a22 += integrate(_range=boundaryfaces(mesh),
                      _expr=-(pow(h(),0)*trans(idt(w))*id(w)));
 
-    auto I = integrate( _range=internalfaces(mesh), _expr=cst(4.)).evaluate(true,mesh->worldComm())(0,0)
+    auto I = integrate( _range=internalfaces(mesh), _expr=cst(4.)).evaluate(true,mesh->worldCommPtr())(0,0)
         +integrate(_range=boundaryfaces(mesh),
-                   _expr=cst(2.)).evaluate(true,mesh->worldComm())(0,0);
+                   _expr=cst(2.)).evaluate(true,mesh->worldCommPtr())(0,0);
 
     auto a22v = a22(w,w);
     BOOST_CHECK_CLOSE( a22v, -I, 1e-11 );
@@ -397,7 +397,7 @@ test_tensor2(std::string const& name, boost::shared_ptr<typename SpaceT::mesh_ty
                       _expr=trans(id(l))*(idt(uTensor2)*N()));
     a31b.close();
     double a31b_v_res = integrate(_range=markedfaces(mesh,"Neumann"),
-                                  _expr=trans(one())*N()).evaluate(true,mesh->worldComm())(0,0);
+                                  _expr=trans(one())*N()).evaluate(true,mesh->worldCommPtr())(0,0);
     auto a31b_v = a31b(l,uTensor2);
     BOOST_CHECK_SMALL( a31b_v - a31b_v_res, 1e-11 );
     cout << "a31b(ones, eye) = " << a31b_v << std::endl;
@@ -428,8 +428,8 @@ test_tensor2(std::string const& name, boost::shared_ptr<typename SpaceT::mesh_ty
 
     // a33
 
-    auto I1 = integrate( _range=internalfaces(mesh), _expr=cst(2.)).evaluate(true,mesh->worldComm())(0,0);
-    auto I2 = integrate( _range=elements(face_mesh), _expr=cst(2.)).evaluate(true,mesh->worldComm())(0,0);
+    auto I1 = integrate( _range=internalfaces(mesh), _expr=cst(2.)).evaluate(true,mesh->worldCommPtr())(0,0);
+    auto I2 = integrate( _range=elements(face_mesh), _expr=cst(2.)).evaluate(true,mesh->worldCommPtr())(0,0);
 
     auto a33a = form2(_trial=Mh, _test=Mh );
     a33a += integrate(_range=internalfaces(mesh),
@@ -457,9 +457,9 @@ test_tensor2(std::string const& name, boost::shared_ptr<typename SpaceT::mesh_ty
     a33c.close();
     auto a33c_v = a33c(l,l);
     double lenghtDirichlet = integrate(_range=markedfaces(mesh,"Dirichlet"),
-                                     _expr=cst(1.) ).evaluate(true,mesh->worldComm())(0,0);
+                                     _expr=cst(1.) ).evaluate(true,mesh->worldCommPtr())(0,0);
     double lenghtNeumann = integrate(_range=markedfaces(mesh,"Neumann"),
-                                     _expr=cst(1.) ).evaluate(true,mesh->worldComm())(0,0);
+                                     _expr=cst(1.) ).evaluate(true,mesh->worldCommPtr())(0,0);
     BOOST_CHECK_CLOSE(a33b_v + a33c_v, 2*lenghtDirichlet+2*lenghtNeumann, 1e-11);
 
     cout << "a33 works fine" << std::endl;

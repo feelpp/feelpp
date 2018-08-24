@@ -133,7 +133,7 @@ class Mesh3D
     typedef typename std::pair<size_type, size_type> edge_pair_type;
 
     typedef Mesh3D<Shape,T> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     static const size_type SHAPE = Shape::Shape;
 
@@ -157,7 +157,7 @@ class Mesh3D
     /**
      * default constructor
      */
-    Mesh3D( WorldComm const& worldComm = Environment::worldComm() );
+    explicit Mesh3D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     Mesh3D( Mesh3D const& m ) = default;
     Mesh3D( Mesh3D&& m ) = default;
@@ -185,7 +185,7 @@ class Mesh3D
     /**
      * \return \p true if all containers are empty, \p false otherwise
      */
-    bool isEmpty() const
+    bool isEmpty() const override
     {
         return ( super_elements::isEmpty() &&
                  super_points::isEmpty() &&
@@ -197,7 +197,7 @@ class Mesh3D
     /**
  * \return the number of elements
  */
-    size_type numElements() const
+    size_type numElements() const override
     {
         return this->elements().size();
     }
@@ -238,7 +238,7 @@ class Mesh3D
     /**
  * \return the number of faces
  */
-    size_type numFaces() const
+    size_type numFaces() const override
     {
         return this->faces().size();
     }
@@ -254,7 +254,7 @@ class Mesh3D
     /**
  * \return the number of points
  */
-    size_type numPoints() const
+    size_type numPoints() const override
     {
         return this->points().size();
     }
@@ -290,9 +290,9 @@ class Mesh3D
     /** @name  Methods
      */
     //@{
-    virtual void setWorldComm( WorldComm const& _worldComm )
+    virtual void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
     {
-        this->setWorldCommMeshBase( _worldComm );
+        MeshBase::setWorldComm( _worldComm );
         this->setWorldCommElements( _worldComm );
         this->setWorldCommFaces( _worldComm );
         this->setWorldCommEdges( _worldComm );
@@ -303,7 +303,7 @@ class Mesh3D
      * clear out all data from the mesh, \p isEmpty() should return
      * \p true after a \p clear()
      */
-    virtual void clear();
+    virtual void clear() override;
 
     FEELPP_DEFINE_VISITABLE();
 
@@ -314,7 +314,7 @@ class Mesh3D
      * dummy  implementation
      * \see Mesh
      */
-    void renumber()
+    void renumber() override
     {
         FEELPP_ASSERT( 0 )
             .error( "invalid call" );
@@ -323,30 +323,12 @@ class Mesh3D
     /**
      * update the entities of co-dimension 2
      */
-    void updateEntitiesCoDimensionTwo();
+    void updateEntitiesCoDimensionTwo() override;
 
     /**
      * update permutation of entities of co-dimension 1
      */
     void updateEntitiesCoDimensionOnePermutation();
-
-#if 0
-/**
- * update the faces information of the mesh
- */
-void updateFaces();
-
-/**
- * update the edges information of the mesh
- */
-void updateEdges();
-
-/**
- * check the mesh connectivity
- */
-void check() const;
-
-#endif // 0
 
   private:
     friend class boost::serialization::access;
@@ -386,7 +368,7 @@ void check() const;
 };
 
 template <typename GEOSHAPE, typename T>
-Mesh3D<GEOSHAPE,T>::Mesh3D( WorldComm const& worldComm )
+Mesh3D<GEOSHAPE,T>::Mesh3D( worldcomm_ptr_t const& worldComm )
     : super_visitable(),
       super( 3, nRealDim, worldComm ),
       super_elements( worldComm ),

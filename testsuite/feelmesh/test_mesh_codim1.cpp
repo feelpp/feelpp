@@ -49,7 +49,7 @@ namespace Feel
 namespace detail
 {
 typedef Mesh<Simplex<1, 1, 2> > mesh_type;
-typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 }
 Feel::detail::mesh_ptrtype
 createMesh( double hsize )
@@ -111,7 +111,7 @@ struct test_mesh_filters
             typedef gm_type::precompute_ptrtype geopc_ptrtype;
             typedef gm_type::precompute_type geopc_type;
             typedef gm_type::Context<vm::POINT, Feel::detail::mesh_type::element_type> gmc_type;
-            typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+            typedef std::shared_ptr<gmc_type> gmc_ptrtype;
             BOOST_TEST_MESSAGE( "test_mesh_filters check elements" );
             //
             // Precompute some data in the reference element for

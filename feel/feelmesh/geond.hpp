@@ -177,7 +177,7 @@ public:
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_hypercube>,
                 mpl::identity<GT_Lagrange<nDim, GmOrder, nRealDim, Hypercube, T> >,
                 mpl::identity<GT_Lagrange<nDim, GmOrder, nRealDim, Simplex, T> > >::type::type type;
-        typedef boost::shared_ptr<type> ptrtype;
+        typedef std::shared_ptr<type> ptrtype;
     };
     typedef typename GetGm<nOrder>::type gm_type;
     typedef typename GetGm<nOrder>::ptrtype gm_ptrtype;
@@ -274,7 +274,7 @@ public:
     /**
      * set common data
      */
-    void setCommonData( boost::shared_ptr<GeoNDCommon<self_type>> const& commonData )
+    void setCommonData( std::shared_ptr<GeoNDCommon<self_type>> const& commonData )
     {
         M_commonData = commonData;
     }
@@ -1049,35 +1049,35 @@ public:
                        quad_meas_type const& thequad );
     template<typename CtxType, typename CtxFaceType>
     void updateWithCtx( quad_meas_type const& thequad,
-                       boost::shared_ptr<CtxType>& ctx,
-                       boost::shared_ptr<CtxFaceType>& ctxf ) const;
+                       std::shared_ptr<CtxType>& ctx,
+                       std::shared_ptr<CtxFaceType>& ctxf ) const;
 
     void updateWithPc1( typename gm1_type::precompute_ptrtype const& pc,
                         typename gm1_type::faces_precompute_type & pcf,
                         quad_meas1_type const& thequad ) ;
     template<typename CtxType, typename CtxFaceType>
     void updateWithCtx1( quad_meas1_type const& thequad,
-                        boost::shared_ptr<CtxType>& ctx,
-                        boost::shared_ptr<CtxFaceType>& ctxf ) const;
+                        std::shared_ptr<CtxType>& ctx,
+                        std::shared_ptr<CtxFaceType>& ctxf ) const;
 private:
 
     template<typename GmType, typename QuadType>
-    void updateMeasureImpl( boost::shared_ptr<GmType> gm, typename GmType::precompute_ptrtype const& pc,
+    void updateMeasureImpl( std::shared_ptr<GmType> gm, typename GmType::precompute_ptrtype const& pc,
                             QuadType const& thequad );
     template<typename GmType, typename QuadType>
-    void updateMeasureFaceImpl( boost::shared_ptr<GmType> gm, typename GmType::faces_precompute_type & pcf,
+    void updateMeasureFaceImpl( std::shared_ptr<GmType> gm, typename GmType::faces_precompute_type & pcf,
                                 QuadType const& thequad, mpl::bool_<true> );
     template<typename GmType, typename QuadType>
-    void updateMeasureFaceImpl( boost::shared_ptr<GmType> gm, typename GmType::faces_precompute_type & pcf,
+    void updateMeasureFaceImpl( std::shared_ptr<GmType> gm, typename GmType::faces_precompute_type & pcf,
                                 QuadType const& thequad, mpl::bool_<false> );
 
     
     template<typename QuadType, typename CtxType>
-    void updateMeasureImpl( QuadType const& thequad, boost::shared_ptr<CtxType>& ) const;
+    void updateMeasureImpl( QuadType const& thequad, std::shared_ptr<CtxType>& ) const;
     template<typename QuadType, typename CtxType>
-    void updateMeasureFaceImpl( QuadType const& thequad, boost::shared_ptr<CtxType>&, mpl::bool_<true> ) const;
+    void updateMeasureFaceImpl( QuadType const& thequad, std::shared_ptr<CtxType>&, mpl::bool_<true> ) const;
     template<typename QuadType, typename CtxType>
-    void updateMeasureFaceImpl( QuadType const& thequad, boost::shared_ptr<CtxType>&, mpl::bool_<false> ) const;
+    void updateMeasureFaceImpl( QuadType const& thequad, std::shared_ptr<CtxType>&, mpl::bool_<false> ) const;
 private:
 
 private:
@@ -1131,7 +1131,7 @@ private:
     std::map<uint16_type,Marker1> M_markers;
 
     //! common data shared in a collection of multi-dimensional geometrical entity
-    mutable boost::shared_ptr<GeoNDCommon<self_type> > M_commonData;
+    mutable std::shared_ptr<GeoNDCommon<self_type> > M_commonData;
 };
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
@@ -1249,8 +1249,8 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 template<typename CtxType, typename CtxFaceType>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithCtx( quad_meas_type const& thequad,
-                                                  boost::shared_ptr<CtxType>& ctx,
-                                                  boost::shared_ptr<CtxFaceType>& ctxf ) const
+                                                  std::shared_ptr<CtxType>& ctx,
+                                                  std::shared_ptr<CtxFaceType>& ctxf ) const
 {
     updateMeasureImpl( thequad, ctx );
     updateMeasureFaceImpl( thequad, ctxf, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
@@ -1260,8 +1260,8 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 template<typename CtxType, typename CtxFaceType>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithCtx1( quad_meas1_type const& thequad,
-                                                  boost::shared_ptr<CtxType>& ctx,
-                                                  boost::shared_ptr<CtxFaceType>& ctxf ) const
+                                                  std::shared_ptr<CtxType>& ctx,
+                                                  std::shared_ptr<CtxFaceType>& ctxf ) const
 {
     updateMeasureImpl( thequad, ctx );
     updateMeasureFaceImpl( thequad, ctxf, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
@@ -1269,7 +1269,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithCtx1( quad_meas1_type const& thequa
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 template<typename GmType, typename QuadType>
 void
-GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureImpl( boost::shared_ptr<GmType> gm,
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureImpl( std::shared_ptr<GmType> gm,
                                                       typename GmType::precompute_ptrtype const& pc,
                                                       QuadType const& thequad )
 {
@@ -1290,7 +1290,7 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 template<typename QuadType, typename CtxType>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureImpl( QuadType const& thequad,
-                                                      boost::shared_ptr<CtxType>& ctx ) const
+                                                      std::shared_ptr<CtxType>& ctx ) const
 {
     if ( M_measures.find( GEOND_MEASURES::MEAS_ELEMENT ) == M_measures.end() )
     {
@@ -1308,7 +1308,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureImpl( QuadType const& thequad,
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 template<typename GmType, typename QuadType>
 void
-GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( boost::shared_ptr<GmType> gm,
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( std::shared_ptr<GmType> gm,
                                                           typename GmType::faces_precompute_type& pcf,
                                                           QuadType const& thequad,
                                                           mpl::bool_<true> )
@@ -1335,7 +1335,7 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 template<typename QuadType, typename CtxType>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( QuadType const& thequad,
-                                                          boost::shared_ptr<CtxType>& ctx,
+                                                          std::shared_ptr<CtxType>& ctx,
                                                           mpl::bool_<true> ) const
 {
     if ( M_measures.find( GEOND_MEASURES::MEAS_FACES ) == M_measures.end() )
@@ -1358,7 +1358,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( QuadType const& thequa
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 template<typename GmType, typename QuadType>
 void
-GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( boost::shared_ptr<GmType> gm,
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( std::shared_ptr<GmType> gm,
                                                           typename GmType::faces_precompute_type& pcf,
                                                           QuadType const& thequad,
                                                           mpl::bool_<false> )
@@ -1376,7 +1376,7 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 template<typename QuadType, typename CtxType>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( QuadType const& thequad,
-                                                          boost::shared_ptr<CtxType>& ctx,
+                                                          std::shared_ptr<CtxType>& ctx,
                                                           mpl::bool_<false> ) const
 {
     // need because M_measurefaces is used in Geomap::Context

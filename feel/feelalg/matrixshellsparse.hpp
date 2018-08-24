@@ -55,7 +55,7 @@ public:
     typedef typename super::value_type value_type;
     typedef typename super::real_type real_type;
     typedef MatrixSparse<value_type> sparse_matrix_type;
-    typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
+    typedef std::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
     typedef typename super::vector_type vector_type;
     typedef typename super::vector_ptrtype vector_ptrtype;
 

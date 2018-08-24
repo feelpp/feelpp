@@ -103,20 +103,20 @@ public:
     //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
-    typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
+    typedef typename std::shared_ptr<backend_type> backend_ptrtype ;
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order G_order
     typedef Simplex<2,1> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! the basis type of our approximation space
     typedef bases<Lagrange<1> > basis_type;
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     /**

@@ -29,7 +29,7 @@ public :
 
     static const uint16_type nOrder = OrderPoly;
     using space_t = Pdh_type<mesh_t,nOrder>;
-    using space_ptr_t = boost::shared_ptr<space_t>;
+    using space_ptr_t = std::shared_ptr<space_t>;
     using element_t = typename space_t::element_type;
     using element_ptr_t = typename space_t::element_ptrtype;
 
@@ -38,6 +38,8 @@ public :
         super_type( mesh, prefix )
         {}
 
+    virtual ~StabilizationGLSParameter() = default;
+    
     void init();
 
     template<bool HasConvectionExpr=true, bool HasCoeffDiffusionExpr=true, typename ExprConvectiontype, typename ExprCoeffDiffusionType, typename RangeType>

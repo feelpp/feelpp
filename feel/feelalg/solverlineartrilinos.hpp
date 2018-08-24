@@ -70,8 +70,8 @@ public:
 
     typedef MatrixEpetra sparse_matrix_type;
     typedef VectorEpetra<value_type> vector_type;
-    typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
-    typedef boost::shared_ptr<vector_type> vector_ptrtype;
+    typedef std::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
+    typedef std::shared_ptr<vector_type> vector_ptrtype;
 
     typedef Teuchos::ParameterList list_type;
     //typedef typename backend_type::list_type list_type;
@@ -174,7 +174,7 @@ public:
     }
 
     std::pair<unsigned int, real_type>
-    solve ( boost::shared_ptr<OperatorMatrix>  const& op,
+    solve ( std::shared_ptr<OperatorMatrix>  const& op,
             Vector<T> & solution,
             Vector<T> const& rhs,
             const double tol,

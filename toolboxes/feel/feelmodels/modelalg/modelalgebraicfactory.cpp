@@ -186,14 +186,14 @@ namespace FeelModels
     ModelAlgebraicFactory::attachNullSpace( NullSpace<value_type> const& nullSpace )
     {
         CHECK( this->backend() ) << "backend not init\n";
-        boost::shared_ptr<NullSpace<value_type> > mynullspace( new NullSpace<value_type>(this->backend(),nullSpace) );
+        std::shared_ptr<NullSpace<value_type> > mynullspace( new NullSpace<value_type>(this->backend(),nullSpace) );
         this->backend()->attachNullSpace( mynullspace );
     }
     void
     ModelAlgebraicFactory::attachNearNullSpace( NullSpace<value_type> const& nearNullSpace )
     {
         CHECK( this->backend() ) << "backend not init\n";
-        boost::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(this->backend(),nearNullSpace) );
+        std::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(this->backend(),nearNullSpace) );
         this->backend()->attachNearNullSpace( myNearNullSpace );
     }
     void
@@ -201,7 +201,7 @@ namespace FeelModels
     {
         CHECK( this->backend() ) << "backend not init\n";
         CHECK( M_PrecondManage ) << "preconditioner not init\n";
-        boost::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(this->backend(),nearNullSpace) );
+        std::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(this->backend(),nearNullSpace) );
         M_PrecondManage->attachNearNullSpace( k, myNearNullSpace );
     }
 
@@ -252,10 +252,10 @@ namespace FeelModels
     //---------------------------------------------------------------------------------------------------------------//
     //---------------------------------------------------------------------------------------------------------------//
 
-    boost::shared_ptr<std::ostringstream>
+    std::shared_ptr<std::ostringstream>
     ModelAlgebraicFactory::getInfo() const
     {
-        boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+        std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
 
         *_ostr << "\n||==============================================||"
                << "\n||---------------Info : SolverNum---------------||"

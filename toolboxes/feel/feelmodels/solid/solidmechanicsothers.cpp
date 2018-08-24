@@ -47,7 +47,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::restartExporters( double time )
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     this->log("SolidMechanics","getInfo", "start" );
@@ -118,7 +118,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
     for ( std::string const& userFieldName : M_postProcessUserFieldExported )
         doExport_str=(doExport_str.empty())?userFieldName:doExport_str+" - "+userFieldName;
 
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
 
     *_ostr << "\n||==============================================||"
            << "\n||----------Info : SolidMechanics---------------||"
@@ -1510,7 +1510,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateMassMatrixLumped()
     massMatrix->close();
 
     // mass matrix lumped
-    auto graph = boost::make_shared<graph_type>( Vh->dof(),Vh->dof() );
+    auto graph = std::make_shared<graph_type>( Vh->dof(),Vh->dof() );
     graph->addMissingZeroEntriesDiagonal();
     graph->close();
     M_massMatrixLumped = this->backend()->newMatrix( 0,0,0,0,graph );

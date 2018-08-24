@@ -71,12 +71,12 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*mesh*/
     typedef Entity<Dim,1,Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
     //# marker1 #
@@ -86,7 +86,7 @@ public:
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     /* export */
@@ -132,7 +132,7 @@ private:
     double mu;
     double penalbc;
 
-    boost::shared_ptr<export_type> M_exporter;
+    std::shared_ptr<export_type> M_exporter;
 }; // LaplacianV
 
 

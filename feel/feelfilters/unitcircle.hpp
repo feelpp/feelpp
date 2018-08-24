@@ -43,7 +43,7 @@ namespace Feel {
  */
 template<int Ngeo=1>
 inline
-boost::shared_ptr<Mesh<Simplex<2,Ngeo> > >
+std::shared_ptr<Mesh<Simplex<2,Ngeo> > >
 unitCircle( double h = doption(_name="gmsh.hsize") )
 {
 #ifdef FEELPP_HAS_GMSH
@@ -56,7 +56,7 @@ unitCircle( double h = doption(_name="gmsh.hsize") )
                                         _h=h ) );
 #else
     LOG(WARNING) << "unitCircle: Feel++ was not built with Gmsh. This function will return a empty mesh.";
-    return boost::make_shared<Mesh<Simplex<2, Ngeo> > >();
+    return std::make_shared<Mesh<Simplex<2, Ngeo> > >();
 #endif
 }
 

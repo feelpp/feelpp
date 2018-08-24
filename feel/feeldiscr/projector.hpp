@@ -60,14 +60,14 @@ struct projector_args
 {
     typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::element_type domain_type;
     typedef typename vf::detail::clean_type<Args,tag::imageSpace>::type::element_type image_type;
-    typedef boost::shared_ptr<Projector<domain_type,image_type> > return_type;
+    typedef std::shared_ptr<Projector<domain_type,image_type> > return_type;
 };
 
 template<typename Args>
 struct lift_args
 {
     typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::element_type domain_type;
-    typedef boost::shared_ptr<Projector<domain_type,domain_type> > lift_return_type;
+    typedef std::shared_ptr<Projector<domain_type,domain_type> > lift_return_type;
 };
 
 } // detail
@@ -103,7 +103,7 @@ public :
     typedef typename backend_type::sparse_matrix_type matrix_type;
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
-    typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
+    typedef std::shared_ptr<matrix_type> matrix_ptrtype;
 
     typedef FsFunctionalLinear<DualImageSpace> image_element_type;
 
@@ -686,7 +686,7 @@ template<class DomainSpace, class DualImageSpace>
 using projector_type =  Projector<DomainSpace,DualImageSpace>;
 
 template<class DomainSpace, class DualImageSpace>
-using projector_ptrtype =  boost::shared_ptr<Projector<DomainSpace,DualImageSpace>>;
+using projector_ptrtype =  std::shared_ptr<Projector<DomainSpace,DualImageSpace>>;
 
 
 
@@ -699,22 +699,22 @@ using projector_ptrtype =  boost::shared_ptr<Projector<DomainSpace,DualImageSpac
  */
 
 template<typename TDomainSpace, typename TDualImageSpace>
-boost::shared_ptr< Projector<TDomainSpace, TDualImageSpace> >
-projector( boost::shared_ptr<TDomainSpace> const& domainspace,
-           boost::shared_ptr<TDualImageSpace> const& imagespace,
+std::shared_ptr< Projector<TDomainSpace, TDualImageSpace> >
+projector( std::shared_ptr<TDomainSpace> const& domainspace,
+           std::shared_ptr<TDualImageSpace> const& imagespace,
            typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& abackend = Backend<double>::build( soption( _name="backend" ) ),
            ProjectorType proj_type=L2, double epsilon=0.01, double gamma = 20, DirichletType dirichlet_type = WEAK)
 {
     typedef Projector<TDomainSpace, TDualImageSpace > Proj_type;
-    return boost::make_shared<Proj_type>( domainspace, imagespace, abackend, proj_type, epsilon, gamma, dirichlet_type ) ;
+    return std::make_shared<Proj_type>( domainspace, imagespace, abackend, proj_type, epsilon, gamma, dirichlet_type ) ;
 }
 
 BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::projector_args<Args>::return_type ),
                           opProjection,
                           tag,
                           ( required
-                            ( domainSpace,   *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-                            ( imageSpace,   *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+                            ( domainSpace,   *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
+                            ( imageSpace,   *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
                           )
                           ( optional
                             ( type, (ProjectorType), L2 )
@@ -729,7 +729,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::lift_args<Args>::lift_return_
                           opLift,
                           tag,
                           ( required
-                            ( domainSpace,   *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+                            ( domainSpace,   *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
                           )
                           ( optional
                             ( type, (DirichletType), WEAK )

@@ -578,7 +578,7 @@ public:
     }
 
     evaluate_type
-    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
+    evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
     {
         return this->evaluateImpl();
     }
@@ -643,7 +643,7 @@ private :
 
 private:
     mutable ginac_expression_type  M_fun;
-    boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
+    std::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
     std::string M_filename;
     std::string M_exprDesc;
     symbols_expression_type M_expr;

@@ -225,7 +225,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             static const size_type context = VF_OPERATOR_CONTEXT( O );  \
                                                                         \
             typedef Element element_type;                               \
-            typedef boost::shared_ptr<element_type> element_ptrtype;    \
+            typedef std::shared_ptr<element_type> element_ptrtype;    \
             typedef VF_OPERATOR_NAME( O )<element_type, VF_OP_TYPE_OBJECT(T)> this_type; \
             typedef this_type self_type;                                \
                                                                         \
@@ -318,7 +318,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     mpl::identity<vf::detail::gmc<0> >,                     \
                     mpl::identity<vf::detail::gmc<1> > >::type::type basis_context_key_type;  \
                 typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type; \
-                typedef boost::shared_ptr<gmc_type> gmc_ptrtype;        \
+                typedef std::shared_ptr<gmc_type> gmc_ptrtype;        \
                 typedef typename gmc_type::gm_type gm_type;             \
                 BOOST_MPL_ASSERT_MSG( ( fusion::result_of::has_key<map_basis_context_type, basis_context_key_type >::value ), INVALID_BASISMAP_OP, (map_basis_context_type, key_type, basis_context_key_type, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>, mpl::bool_<VF_OP_TYPE_IS_TRIAL( T )> )); \
                 typedef typename mpl::if_<mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>, \
@@ -342,9 +342,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     mpl::identity<Shape<gmc_type::NDim, Vectorial, VF_OPERATOR_TRANSPOSE(O)> >, \
                                   mpl::identity<Shape<gmc_type::NDim, Tensor2, false> > >::type>::type::type shape; \
                 typedef typename fe_type::PreCompute pc_type;           \
-                typedef boost::shared_ptr<pc_type> pc_ptrtype;          \
+                typedef std::shared_ptr<pc_type> pc_ptrtype;          \
                 typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type; \
-                typedef boost::shared_ptr<ctx_type> ctx_ptrtype;        \
+                typedef std::shared_ptr<ctx_type> ctx_ptrtype;        \
                 /*typedef Eigen::Matrix<value_type,shape::M,shape::N> loc_type;*/ \
                 using loc_type = Eigen::Tensor<value_type,2>;           \
                 typedef Eigen::Matrix<value_type,shape::M,shape::N> ret_type; \
@@ -832,7 +832,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
               BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_COMMA, BOOST_PP_EMPTY )() \
         BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )() > \
     inline Expr< VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> >   \
-    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( boost::shared_ptr<ELEM> expr,bool useInterpWithConfLoc=false ) \
+    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( std::shared_ptr<ELEM> expr,bool useInterpWithConfLoc=false ) \
         {                                                               \
             typedef VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> expr_t; \
             return Expr< expr_t >(  expr_t(*expr,useInterpWithConfLoc) ); \

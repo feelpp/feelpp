@@ -124,9 +124,9 @@ ParseGeoFromMemory( GModel* model, std::string const& name, std::string const& g
 
     return imported;
 }
-Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
+Gmsh::Gmsh( int nDim, int nOrder, worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( worldComm ),
+    super( worldComm ),
     M_dimension( nDim ),
     M_order( nOrder ),
     M_version( FEELPP_GMSH_FORMAT_VERSION ),
@@ -137,7 +137,7 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_addmidpoint( true ),
     M_usePhysicalNames( false ),
     M_partitioner( (GMSH_PARTITIONER)GMSH_PARTITIONER_DEFAULT ),
-    M_partitions( worldComm.size() ),
+    M_partitions( worldComm->size() ),
     M_partition_file( 0 ),
     M_shear( 0 ),
     M_recombine( 0 ),
@@ -152,7 +152,7 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
 }
 Gmsh::Gmsh( Gmsh const & __g )
     :
-    M_worldComm( __g.M_worldComm ),
+    super( __g ),
     M_dimension( __g.M_dimension ),
     M_order( __g.M_order ),
     M_version( __g.M_version ),
@@ -187,6 +187,7 @@ Gmsh::operator=( Gmsh const& __g )
 {
     if (  this != &__g )
     {
+        super::operator=( __g );
         M_dimension = __g.M_dimension;
         M_order = __g.M_order;
         M_version = __g.M_version;
@@ -198,24 +199,23 @@ Gmsh::operator=( Gmsh const& __g )
         M_shear = __g.M_shear;
         M_refine_levels = __g.M_refine_levels;
         M_periodic = __g.M_periodic;
-        M_worldComm = __g.M_worldComm;
         M_gmodel = __g.M_gmodel;
     }
 
     return *this;
 }
 
-boost::shared_ptr<Gmsh>
+std::shared_ptr<Gmsh>
 Gmsh::New( po::variables_map const& vm )
 {
     std::ostringstream ostr;
     ostr << vm["convex"].as<std::string>() << "(" << vm["dim"].as<int>() << "," << vm["order"].as<int>() << ")";
-    boost::shared_ptr<Gmsh> gmsh_ptr( Gmsh::Factory::type::instance().createObject( ostr.str() ) );
+    std::shared_ptr<Gmsh> gmsh_ptr( Gmsh::Factory::type::instance().createObject( ostr.str() ) );
     return gmsh_ptr;
 }
 
-boost::shared_ptr<Gmsh>
-Gmsh::New( std::string const& shape, uint16_type d, uint16_type o, std::string const& ct, WorldComm const& wc )
+std::shared_ptr<Gmsh>
+Gmsh::New( std::string const& shape, uint16_type d, uint16_type o, std::string const& ct, worldcomm_ptr_t const& wc )
 {
     std::ostringstream ostr;
 
@@ -225,7 +225,7 @@ Gmsh::New( std::string const& shape, uint16_type d, uint16_type o, std::string c
     else
         ostr << shape << "(" << d << "," << o << "," << boost::to_lower_copy( ct ) << ")";
 
-    boost::shared_ptr<Gmsh> gmsh_ptr( Gmsh::Factory::type::instance().createObject( ostr.str() ) );
+    std::shared_ptr<Gmsh> gmsh_ptr( Gmsh::Factory::type::instance().createObject( ostr.str() ) );
     gmsh_ptr->setWorldComm( wc );
     return gmsh_ptr;
 }
@@ -650,7 +650,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
 
         CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
 
-        M_gmodel = boost::make_shared<GModel>();
+        M_gmodel = std::make_shared<GModel>();
         M_gmodel->setName( _name );
         // M_gmodel->setFileName( _name );
         if ( M_in_memory )
@@ -716,7 +716,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
         CTX _backup = *(CTX::instance());
 
-        M_gmodel=boost::make_shared<GModel>();
+        M_gmodel=std::make_shared<GModel>();
         M_gmodel->readMSH( nameMshInput );
 
         meshPartitionOptions newPartionOption;

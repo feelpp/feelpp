@@ -53,12 +53,12 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     using space_type = SpaceType;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     using properties_space_type = PropertiesSpaceType;
-    using properties_space_ptrtype = boost::shared_ptr<properties_space_type>;
+    using properties_space_ptrtype = std::shared_ptr<properties_space_type>;
     using property_type = typename properties_space_type::element_type;
-    typedef boost::shared_ptr<property_type> property_ptrtype;
+    typedef std::shared_ptr<property_type> property_ptrtype;
 
     typedef typename space_type::indexsplit_ptrtype  indexsplit_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
@@ -79,12 +79,12 @@ public:
     static const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
 
     typedef OperatorMatrix<value_type> op_mat_type;
-    typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
+    typedef std::shared_ptr<op_mat_type> op_mat_ptrtype;
 
     typedef typename OperatorPCD<space_type>::type op_pcd_type;
     typedef typename OperatorPCD<space_type>::ptrtype op_pcd_ptrtype;
     typedef OperatorBase<value_type> op_type;
-    typedef boost::shared_ptr<op_type> op_ptrtype;
+    typedef std::shared_ptr<op_type> op_ptrtype;
 
     /**
      * \param Xh velocity/pressure space type
@@ -150,7 +150,7 @@ public:
                                      update,
                                      tag,
                                      ( required
-                                       ( matrix,*( boost::is_convertible<mpl::_,boost::shared_ptr<MatrixSparse> > ) )
+                                       ( matrix,*( boost::is_convertible<mpl::_,std::shared_ptr<MatrixSparse> > ) )
                                        ( bc, *) )
                                      ( optional
                                        ( diffusion,*( boost::is_convertible<mpl::_,ExprBase> ), cst(M_mu) )
@@ -328,9 +328,9 @@ PreconditionerBlockNS( std::string t,
     M_bcFlags( bcFlags ),
     M_prefix( s )
 {
-    M_mu = boost::make_shared<property_type>( M_Ph->element(cst(mu), "mu") );
-    M_alpha = boost::make_shared<property_type>( M_Ph->element(cst(alpha), "alpha") );
-    M_rho = boost::make_shared<property_type>( M_Ph->element(cst(rho), "rho") );
+    M_mu = std::make_shared<property_type>( M_Ph->element(cst(mu), "mu") );
+    M_alpha = std::make_shared<property_type>( M_Ph->element(cst(alpha), "alpha") );
+    M_rho = std::make_shared<property_type>( M_Ph->element(cst(rho), "rho") );
 
     tic();
     LOG(INFO) << "[PreconditionerBlockNS] setup starts";
@@ -382,9 +382,9 @@ PreconditionerBlockNS( std::string t,
     M_bcFlags( bcFlags ),
     M_prefix( s )
 {
-    M_mu = boost::make_shared<property_type>( M_Ph->element(mu, "mu") );
-    M_alpha = boost::make_shared<property_type>( M_Ph->element(alpha, "alpha") );
-    M_rho = boost::make_shared<property_type>( M_Ph->element(rho, "rho") );
+    M_mu = std::make_shared<property_type>( M_Ph->element(mu, "mu") );
+    M_alpha = std::make_shared<property_type>( M_Ph->element(alpha, "alpha") );
+    M_rho = std::make_shared<property_type>( M_Ph->element(rho, "rho") );
 
     tic();
     LOG(INFO) << "[PreconditionerBlockNS] setup starts";
@@ -467,7 +467,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::setType( std::string t )
     case PCD:
     case PCD_ACCELERATION:
         tic();
-        pcdOp = boost::make_shared<op_pcd_type>( M_Xh, M_b, M_bcFlags, M_prefix, M_type==PCD_ACCELERATION );
+        pcdOp = std::make_shared<op_pcd_type>( M_Xh, M_b, M_bcFlags, M_prefix, M_type==PCD_ACCELERATION );
         pcdOp->setBt( M_Bt );
         this->setSide( super::RIGHT );
 
@@ -775,7 +775,7 @@ template< typename SpaceType, typename PropertiesSpaceType >
 struct blockns
 {
     typedef PreconditionerBlockNS<SpaceType,PropertiesSpaceType> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 }
 BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type,

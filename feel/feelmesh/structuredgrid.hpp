@@ -94,7 +94,7 @@ struct bbox
      *
      * @param bboxes set of bounding boxes
      */
-    bbox( std::vector<boost::shared_ptr<bbox<Dim> > > const& bboxes )
+    explicit bbox( std::vector<std::shared_ptr<bbox<Dim> > > const& bboxes )
         :
         min( Dim ),
         max( Dim ),
@@ -296,7 +296,7 @@ public:
      * @param __f
      */
     void save( std::string const& prefix,
-               std::vector<boost::shared_ptr<f_type> > const& __f );
+               std::vector<std::shared_ptr<f_type> > const& __f );
 
     //@}
 
@@ -315,7 +315,7 @@ private:
 template<uint16_type Dim,  uint16_type Order>
 void
 StructuredGrid<Dim, Order>::save( std::string const& prefix,
-                                  std::vector<boost::shared_ptr<f_type> > const& __f )
+                                  std::vector<std::shared_ptr<f_type> > const& __f )
 {
     std::ofstream __ofs( ( prefix + ".geo" ).c_str() );
     __ofs <<

@@ -19,7 +19,7 @@ namespace FeelModels {
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
                                                     bool buildMesh,
-                                                    WorldComm const& worldComm,
+                                                    worldcomm_ptr_t const& worldComm,
                                                     std::string const& subPrefix,
                                                     ModelBaseRepository const& modelRep )
     :
@@ -56,10 +56,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, bool buildMesh,
-                                         WorldComm const& worldComm, std::string const& subPrefix,
+                                         worldcomm_ptr_t const& worldComm, std::string const& subPrefix,
                                          ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
+    return std::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
 
 }
 
@@ -621,7 +621,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
 // #endif
         //auto Xh_create_ho = space_create_ho_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
 
-        boost::shared_ptr<mesh_visu_ho_type> meshVisuHO;
+        std::shared_ptr<mesh_visu_ho_type> meshVisuHO;
         std::string hovisuSpaceUsed = soption(_name="hovisu.space-used",_prefix=this->prefix());
         bool doLagP1parallel=false;
         if ( hovisuSpaceUsed == "velocity" )
@@ -844,7 +844,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidInlet()
                           _expr=gradt(velinlet)*trans(grad(velinlet)) );
             a+=on(_range=boundaryfaces(meshinlet), _rhs=l, _element=*velinlet, _expr=cst(0.) );
 
-            auto backendinlet = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"fluidinlet"), M_Xh->worldComm() );
+            auto backendinlet = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"fluidinlet"), M_Xh->worldCommPtr() );
             backendinlet->solve(_matrix=a.matrixPtr(),_rhs=l.vectorPtr(),_solution=*velinletRef );
             maxVelRef = velinletRef->max();
         }
@@ -951,7 +951,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->initMesh();
 
     // backend
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
+    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
 
     if ( M_modelName.empty() )
     {
@@ -1236,7 +1236,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidOutlet()
 
         M_fluidOutletWindkesselMesh = createSubmesh( this->mesh(), markedfaces(this->mesh(),markerNameBFOutletForSubmesh) );
         M_fluidOutletWindkesselSpace = space_fluidoutlet_windkessel_type::New( _mesh=M_fluidOutletWindkesselMesh,
-                                                                               _worldscomm=std::vector<WorldComm>(2,this->worldComm()) );
+                                                                               _worldscomm=makeWorldsComm(2,this->worldCommPtr()) );
     }
 
     // clean
@@ -1837,8 +1837,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         //CHECK( this->algebraicFactory()->preconditionerTool()->matrix() ) << "no matrix define in preconditionerTool";
 
         // build pcd operator
-        boost::shared_ptr<OperatorPCD<space_fluid_type>> opPCD;
-        opPCD = boost::make_shared<OperatorPCD<space_fluid_type>>( this->functionSpace(),this->backend(),bcPrecPCD,"velocity",false,true);
+        std::shared_ptr<OperatorPCD<space_fluid_type>> opPCD;
+        opPCD = std::make_shared<OperatorPCD<space_fluid_type>>( this->functionSpace(),this->backend(),bcPrecPCD,"velocity",false,true);
         this->algebraicFactory()->preconditionerTool()->attachOperatorPCD("pcd",opPCD);
     }
 

@@ -170,8 +170,8 @@ extern "C"
         Feel::SolverNonLinearPetsc<double>* solver =
             static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
 
-        boost::shared_ptr<Feel::Vector<double> > R;
-        boost::shared_ptr<Feel::Vector<double> > X_global;
+        std::shared_ptr<Feel::Vector<double> > R;
+        std::shared_ptr<Feel::Vector<double> > X_global;
 
         if ( solver->comm().size()>1 )
         {
@@ -212,8 +212,8 @@ extern "C"
         Feel::SolverNonLinearPetsc<double>* solver =
             static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
 
-        boost::shared_ptr<Feel::MatrixSparse<double> > Jac;
-        boost::shared_ptr<Feel::Vector<double> > X_global;
+        std::shared_ptr<Feel::MatrixSparse<double> > Jac;
+        std::shared_ptr<Feel::Vector<double> > X_global;
 
         if ( solver->comm().size()>1 )
         {

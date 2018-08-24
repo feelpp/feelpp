@@ -58,7 +58,7 @@ if (NOT FEELPP_DATADIR )
   set(FEELPP_DATADIR ${CMAKE_INSTALL_PREFIX}/share/feelpp/feel )
 endif()
 
-#FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/applications/crb/templates/*")
+#FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/mor/templates/*")
 #INSTALL(FILES ${files} DESTINATION share/feel/crb/templates COMPONENT Devel)
 
 # documentation and examples
@@ -144,6 +144,10 @@ if ( TARGET app-databases )
   set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/databases/cmake_install.cmake")
 endif()
 
+if ( TARGET feelpp_remotedata )
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/tools/remotedata/cmake_install.cmake")
+endif()
+
 set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
   -DCMAKE_INSTALL_COMPONENT=Bin   -P "${CMAKE_BINARY_DIR}/tools/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/contrib/eigen/cmake_install.cmake"
@@ -159,7 +163,11 @@ endif()
 if ( TARGET app-databases )
   list(APPEND FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET app-databases )
 endif()
-  add_custom_target(install-feelpp-lib
+if ( TARGET feelpp_remotedata )
+  list(APPEND FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET feelpp_remotedata )
+endif()
+
+add_custom_target(install-feelpp-lib
     DEPENDS ${FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET}
     COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
     )

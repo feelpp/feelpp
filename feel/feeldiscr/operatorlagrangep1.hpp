@@ -142,7 +142,7 @@ public:
     typedef typename domain_mesh_type::gm_type gm_type;
     typedef typename domain_mesh_type::element_type element_type;
     typedef typename gm_type::template Context<vm::POINT, element_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename gm_type::precompute_ptrtype gmpc_ptrtype;
 
     //typedef typename mpl::at_c<functionspace_vector_type,SpaceIndex>::type functionspace_ptrtype;
@@ -328,7 +328,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
            dual_image_space_ptrtype( dual_image_space_type::New( _mesh=image_mesh_ptrtype( new image_mesh_type ) ) ),
            backend,
            false ),
-    M_mesh( new image_mesh_type(space->worldComm()) ),
+    M_mesh( new image_mesh_type(space->worldCommPtr()) ),
     M_el2el(),
     M_el2pt(),
     M_pset( 0 ),
@@ -396,7 +396,7 @@ OperatorLagrangeP1<space_type>::buildReferenceMesh( bool rebuild, std::string pa
                      _filename=pathMeshDataBase,
                      _straighten=0,_refine=0,
                      _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES,
-                     _worldcomm=M_p2m.mesh()->worldComm(),
+                     _worldcomm=M_p2m.mesh()->worldCommPtr(),
                      _respect_partition=0,_rebuild_partitions=0 );
         //if (M_mesh->worldComm().isMasterRank() )
         //    saveGMSHMesh(_mesh=M_p2m.mesh(),_filename="toto.msh");
@@ -986,7 +986,7 @@ OperatorLagrangeP1<space_type>::buildOperator()
     // construct the p1 space and set the operator
 
     //auto Xh_image = dual_image_space_type::New(_mesh=M_mesh,_worldscomm=worldsComm);
-    auto Xh_image = dual_image_space_type::New(_mesh=M_mesh,_worldscomm=std::vector<WorldComm>(dual_image_space_type::nSpaces,M_mesh->worldComm() ) );
+    auto Xh_image = dual_image_space_type::New(_mesh=M_mesh,_worldscomm=makeWorldsComm(dual_image_space_type::nSpaces,M_mesh->worldCommPtr() ) );
 
     this->init( this->domainSpace(),
                 Xh_image,
@@ -1102,8 +1102,8 @@ OperatorLagrangeP1<space_type>::localDof( typename domain_mesh_type::element_typ
  * \return the P1 Lagrange adaptor  associated to the space \p Xh
  */
 template<typename space_type>
-boost::shared_ptr<OperatorLagrangeP1<space_type> >
-opLagrangeP1_impl( boost::shared_ptr<space_type> const& Xh,
+std::shared_ptr<OperatorLagrangeP1<space_type> >
+opLagrangeP1_impl( std::shared_ptr<space_type> const& Xh,
                    typename OperatorLagrangeP1<space_type>::backend_ptrtype const& backend,
                    std::string pathMeshLagP1,
                    std::string prefix,
@@ -1111,7 +1111,7 @@ opLagrangeP1_impl( boost::shared_ptr<space_type> const& Xh,
                    bool parallel
                    )
 {
-    return boost::shared_ptr<OperatorLagrangeP1<space_type> >( new OperatorLagrangeP1<space_type>( Xh,backend,pathMeshLagP1,prefix,rebuild,parallel ) );
+    return std::shared_ptr<OperatorLagrangeP1<space_type> >( new OperatorLagrangeP1<space_type>( Xh,backend,pathMeshLagP1,prefix,rebuild,parallel ) );
 }
 
 
@@ -1119,7 +1119,7 @@ template<typename Args>
 struct compute_opLagrangeP1_return
 {
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
-    typedef boost::shared_ptr<OperatorLagrangeP1<space_type> > type;
+    typedef std::shared_ptr<OperatorLagrangeP1<space_type> > type;
 };
 
 
@@ -1128,7 +1128,7 @@ BOOST_PARAMETER_FUNCTION(
     lagrangeP1,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
-      ( space,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( space,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
       ( backend,    *, Backend<typename compute_opLagrangeP1_return<Args>::space_type::value_type>::build( soption( _name="backend" ) ) )

@@ -19,13 +19,13 @@ BOOST_AUTO_TEST_SUITE( add_matrix_suite )
 BOOST_AUTO_TEST_CASE( test_0 )
 {
     typedef Backend<double> backend_type;
-    typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
+    typedef typename std::shared_ptr<backend_type> backend_ptrtype ;
     using sparse_matrix_ptrtype = backend_type::sparse_matrix_ptrtype;
 
     typedef Mesh<Simplex<2,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef Mesh<Simplex<1,1,2> > face_mesh_type;
-    typedef boost::shared_ptr<face_mesh_type> face_mesh_ptrtype;
+    typedef std::shared_ptr<face_mesh_type> face_mesh_ptrtype;
 
     auto mesh = loadMesh( new mesh_type);
     auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );

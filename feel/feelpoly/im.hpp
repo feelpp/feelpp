@@ -115,7 +115,7 @@ public:
             if ( nDim > 0 )
             {
                 auto gm = makeGeometricTransformation<convex_type,T>();
-                auto face_qr = boost::make_shared<face_quad_type>(o);
+                auto face_qr = std::make_shared<face_quad_type>(o);
                 this->constructQROnFace( makeReferenceConvex<convex_type,nDim,1,nRealDim>(), gm, face_qr );
             }
         }
@@ -135,7 +135,7 @@ public:
         {
             super::create(order);
             auto gm = makeGeometricTransformation<convex_type,T>();
-            auto face_qr = boost::make_shared<face_quad_type>(order);
+            auto face_qr = std::make_shared<face_quad_type>(order);
          
             this->constructQROnFace( Reference<convex_type,nDim,1,nRealDim>(), gm, face_qr );
         }
@@ -187,7 +187,7 @@ IMT const& im( IMT const& the_im, std::enable_if_t<std::is_base_of<PointSetBase,
 //! build a quadrature formula from a @p mesh and a polynomial order @p O to integrate exactly
 //!
 template<typename MeshT,typename T = double>
-im_t<typename MeshT::element_type,T> im( boost::shared_ptr<MeshT> mesh, uint16_type O )
+im_t<typename MeshT::element_type,T> im( std::shared_ptr<MeshT> mesh, uint16_type O )
 {
     return im_t<typename MeshT::element_type,T>{ O };
 }

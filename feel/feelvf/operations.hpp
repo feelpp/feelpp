@@ -706,14 +706,14 @@
 #
 # define VF_ASSEMBLE()                                                  \
     template<typename Elem1, typename Elem2, typename FormType>         \
-    void assemble( boost::shared_ptr<Elem1> const& __u,  boost::shared_ptr<Elem2> const& __v, FormType& __f ) const \
+    void assemble( std::shared_ptr<Elem1> const& __u,  std::shared_ptr<Elem2> const& __v, FormType& __f ) const \
     {                                                                   \
         M_left.assemble( __u, __v, __f );                              \
         M_right.assemble( __u, __v, __f );                             \
     }                                                                   \
                                                                         \
     template<typename Elem1, typename FormType>                         \
-    void assemble( boost::shared_ptr<Elem1> const& __v, FormType& __f  ) const \
+    void assemble( std::shared_ptr<Elem1> const& __v, FormType& __f  ) const \
     {                                                                   \
         M_left.assemble( __v, __f );                                   \
         M_right.assemble( __v, __f );                                  \

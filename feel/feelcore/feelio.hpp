@@ -49,13 +49,13 @@ public:
      * WorldComm master rank process is in charge of outputting the data from
      * the MasterStream
      */
-    MasterStream(std::ostream& _out, boost::shared_ptr<WorldComm> _wc = Environment::worldCommPtr() )
+    MasterStream(std::ostream& _out, std::shared_ptr<WorldComm> _wc = Environment::worldCommPtr() )
         :
         out(_out),
         wc(_wc)
         {}
 
-    void attachWorldComm( boost::shared_ptr<WorldComm>& _wc )
+    void attachWorldComm( std::shared_ptr<WorldComm>& _wc )
         {
             wc = _wc;
         }
@@ -97,7 +97,7 @@ public:
     /**
      * @return the shared_ptr WorldComm
      */
-    boost::shared_ptr<WorldComm> worldCommPtr() const { return wc; }
+    std::shared_ptr<WorldComm> worldCommPtr() const { return wc; }
 
     /**
      * variadic template function to provide open() from std::ofstream
@@ -122,7 +122,7 @@ public:
 
 protected:
     std::ostream& out;
-    boost::shared_ptr<WorldComm> wc;
+    std::shared_ptr<WorldComm> wc;
 };
 
 

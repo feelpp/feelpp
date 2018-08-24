@@ -46,8 +46,8 @@ namespace ublas = boost::numeric::ublas;
 
 template<typename Convex,typename T>
 typename mpl::if_<Feel::is_simplex<Convex>,
-                  mpl::identity<boost::shared_ptr<GT_Lagrange<Convex::nDim,1,Convex::nDim,Simplex,T>>>,
-                  mpl::identity<boost::shared_ptr<GT_Lagrange<Convex::nDim,1,Convex::nDim,Hypercube,T>>> >::type::type
+                  mpl::identity<std::shared_ptr<GT_Lagrange<Convex::nDim,1,Convex::nDim,Simplex,T>>>,
+                  mpl::identity<std::shared_ptr<GT_Lagrange<Convex::nDim,1,Convex::nDim,Hypercube,T>>> >::type::type
     makeGeometricTransformation();
 
 /**
@@ -95,7 +95,7 @@ public:
     explicit IMSimplex( uint16_type order ): super( order ) 
         {
             auto gm = makeGeometricTransformation<convex_type,T>();
-            auto face_qr = boost::make_shared<face_quad_type>(order);
+            auto face_qr = std::make_shared<face_quad_type>(order);
             this->constructQROnFace( makeReferenceConvex<convex_type,nDim,1,nRealDim>(), gm, face_qr );
         }
 
@@ -124,7 +124,7 @@ public:
         {
             super::create(order);
             auto gm = makeGeometricTransformation<convex_type,T>();
-            auto face_qr = boost::make_shared<face_quad_type>(order);
+            auto face_qr = std::make_shared<face_quad_type>(order);
          
             this->constructQROnFace( Reference<convex_type,nDim,1,nRealDim>(), gm, face_qr );
         }

@@ -86,17 +86,17 @@ SYMMETRIC = 1 << 3
 namespace detail
 {
 template<typename T>
-FEELPP_EXPORT boost::shared_ptr<DataMap> datamap( T const& t, mpl::true_ )
+FEELPP_EXPORT std::shared_ptr<DataMap> datamap( T const& t, mpl::true_ )
 {
     return t->mapPtr();
 }
 template<typename T>
-FEELPP_EXPORT boost::shared_ptr<DataMap> datamap( T const& t, mpl::false_ )
+FEELPP_EXPORT std::shared_ptr<DataMap> datamap( T const& t, mpl::false_ )
 {
     return t.mapPtr();
 }
 template<typename T>
-FEELPP_EXPORT boost::shared_ptr<DataMap> datamap( T const& t )
+FEELPP_EXPORT std::shared_ptr<DataMap> datamap( T const& t )
 {
     return datamap( t, Feel::detail::is_shared_ptr<T>() );
 }
@@ -141,7 +141,15 @@ template<int NR, typename T> class VectorBlock;
 
 template<typename T> class BlocksBaseSparseMatrix;
 
-class BackendBase{};
+class BackendBase : public CommObject
+{
+public:
+    using super = CommObject;
+    BackendBase( worldcomm_ptr_t const& w ) : super( w ) {}
+    BackendBase( BackendBase const& ) = default;
+    BackendBase( BackendBase && ) = default;
+    virtual ~BackendBase() = default;
+};
 /**
  * \class Backend
  * \brief base class for all linear algebra backends
@@ -150,9 +158,7 @@ class BackendBase{};
  * @see
  */
 template<typename T>
-class FEELPP_EXPORT Backend:
-        public BackendBase,
-        public boost::enable_shared_from_this<Backend<T> >
+class FEELPP_EXPORT Backend : public BackendBase, public std::enable_shared_from_this<Backend<T>>
 {
 public:
 
@@ -160,32 +166,33 @@ public:
     /** @name Typedefs
      */
     //@{
+    using super = BackendBase;
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
 
     typedef Vector<value_type> vector_type;
-    typedef boost::shared_ptr<vector_type> vector_ptrtype;
+    typedef std::shared_ptr<vector_type> vector_ptrtype;
     typedef MatrixSparse<value_type> sparse_matrix_type;
-    typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
+    typedef std::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
 
     typedef MatrixShell<value_type> shell_matrix_type;
-    typedef boost::shared_ptr<shell_matrix_type> shell_matrix_ptrtype;
+    typedef std::shared_ptr<shell_matrix_type> shell_matrix_ptrtype;
 
     typedef typename sparse_matrix_type::graph_type graph_type;
     typedef typename sparse_matrix_type::graph_ptrtype graph_ptrtype;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef backend_ptrtype ptrtype;
 
     typedef SolverNonLinear<value_type> solvernonlinear_type;
-    typedef boost::shared_ptr<solvernonlinear_type> solvernonlinear_ptrtype;
+    typedef std::shared_ptr<solvernonlinear_type> solvernonlinear_ptrtype;
 
     typedef typename SolverLinear<real_type>::solve_return_type solve_return_type;
     typedef typename solvernonlinear_type::solve_return_type nl_solve_return_type;
 
     typedef DataMap datamap_type;
-    typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
+    typedef std::shared_ptr<datamap_type> datamap_ptrtype;
 
     typedef typename datamap_type::indexsplit_type indexsplit_type;
     typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
@@ -198,8 +205,8 @@ public:
      */
     //@{
 
-    Backend( WorldComm const& worldComm=Environment::worldComm() );
-    Backend( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    Backend( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
+    Backend( po::variables_map const& vm, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
     Backend( Backend const& ) = default;
     Backend( Backend && ) = default;
     virtual ~Backend();
@@ -215,7 +222,7 @@ public:
 #else
         BackendType = BACKEND_GMM
 #endif
-        , WorldComm const& worldComm=Environment::worldComm()
+        , worldcomm_ptr_t const& worldComm=Environment::worldCommPtr()
     );
 
     /**
@@ -225,10 +232,10 @@ public:
      * \param worldcomm the communicator
      * \return the backend
      */
-    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
 
-    static FEELPP_DEPRECATED backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    static FEELPP_DEPRECATED backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
     /**
      * build a backend
@@ -237,7 +244,7 @@ public:
      * \param worldcomm the communicator
      * \return the backend
      */
-    static FEELPP_DEPRECATED backend_ptrtype build( BackendType bt, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    static FEELPP_DEPRECATED backend_ptrtype build( BackendType bt, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
     /**
      * convert a vector into a backend pointer vector
@@ -261,9 +268,9 @@ public:
      * apply a dynamic_pointer_cast is necessary for shared<VectorUblas>
      */
     template<typename VecType>
-    vector_ptrtype toBackendVectorPtr( boost::shared_ptr<VecType> const& v  )
+    vector_ptrtype toBackendVectorPtr( std::shared_ptr<VecType> const& v  )
     {
-        vector_ptrtype vcast = boost::dynamic_pointer_cast< vector_type >( v );
+        vector_ptrtype vcast = std::dynamic_pointer_cast< vector_type >( v );
         return this->toBackendVectorPtr( vcast );
     }
 
@@ -359,8 +366,8 @@ public:
                                      newMatrix,
                                      tag,
                                      ( required
-                                       ( trial,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) ) )
+                                       ( trial,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
+                                       ( test,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) ) )
                                      ( optional
                                        ( pattern,( size_type ),Pattern::COUPLED )
                                        ( properties,( size_type ),NON_HERMITIAN )
@@ -458,7 +465,7 @@ public:
                                               bool diag_is_nonzero=true )
     {
         typedef MatrixBlockBase<value_type> matrix_block_type;
-        typedef boost::shared_ptr<matrix_block_type> matrix_block_ptrtype;
+        typedef std::shared_ptr<matrix_block_type> matrix_block_ptrtype;
 
         matrix_block_ptrtype mb;
         if ( b.isClosed() )
@@ -482,7 +489,7 @@ public:
                                               bool diag_is_nonzero=true )
     {
         typedef MatrixBlockBase<value_type> matrix_block_type;
-        typedef boost::shared_ptr<matrix_block_type> matrix_block_ptrtype;
+        typedef std::shared_ptr<matrix_block_type> matrix_block_ptrtype;
 
         matrix_block_ptrtype mb;
         if ( b.isClosed() )
@@ -524,7 +531,7 @@ public:
                                        bool copy_values=true )
     {
         using vector_block_type = VectorBlockBase<typename decay_type<BlockType>::value_type>;
-        return boost::make_shared<vector_block_type>( b, *this, copy_values );
+        return std::make_shared<vector_block_type>( b, *this, copy_values );
     }
 
     /**
@@ -552,8 +559,8 @@ public:
                                      newZeroMatrix,
                                      tag,
                                      ( required
-                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
-                                       ( trial,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
+                                       ( test,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> >) )
+                                       ( trial,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> >) )
                                      )
                                    )
     {
@@ -577,7 +584,7 @@ public:
                                      newVector,
                                      tag,
                                      ( required
-                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
+                                       ( test,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> >) )
                                      )
                                    )
     {
@@ -791,14 +798,6 @@ public:
     bool transpose() const
     {
         return M_transpose;
-    }
-
-    /**
-     * \return the communicator
-     */
-    WorldComm const& comm() const
-    {
-        return M_worldComm;
     }
 
     bool showKSPMonitor() const { return M_showKSPMonitor; }
@@ -1084,8 +1083,8 @@ public:
             this->attachPreconditioner( prec );
 
         // attach null space (or near null space for multigrid) in backend
-        auto mynullspace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
-        auto myNearNullSpace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),near_null_space);
+        auto mynullspace = std::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
+        auto myNearNullSpace = std::make_shared<NullSpace<value_type>>(this->shared_from_this(),near_null_space);
         if ( mynullspace->size() > 0 )
         {
             this->attachNullSpace( mynullspace );
@@ -1291,8 +1290,8 @@ public:
             this->nlSolver()->attachPreconditioner( M_preconditioner );
 
         // attach null space (or near null space for multigrid) in backend
-        auto mynullspace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
-        auto myNearNullSpace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),near_null_space);
+        auto mynullspace = std::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
+        auto myNearNullSpace = std::make_shared<NullSpace<value_type>>(this->shared_from_this(),near_null_space);
         if ( mynullspace->size() > 0 )
         {
             this->attachNullSpace( mynullspace );
@@ -1385,11 +1384,11 @@ public:
     }
 
 
-    void attachNullSpace( boost::shared_ptr<NullSpace<value_type> > nullSpace )
+    void attachNullSpace( std::shared_ptr<NullSpace<value_type> > nullSpace )
     {
         M_nullSpace = nullSpace;
     }
-    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type> > nearNullSpace )
+    void attachNearNullSpace( std::shared_ptr<NullSpace<value_type> > nearNullSpace )
     {
         M_nearNullSpace = nearNullSpace;
     }
@@ -1409,7 +1408,7 @@ public:
      */
     template<typename Observer>
     void
-    addDeleteObserver( boost::shared_ptr<Observer> const& obs )
+    addDeleteObserver( std::shared_ptr<Observer> const& obs )
         {
             M_deleteObservers.connect(boost::bind(&Observer::operator(), obs));
         }
@@ -1448,7 +1447,7 @@ public:
 
 protected:
     preconditioner_ptrtype M_preconditioner;
-    boost::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
+    std::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
 private:
 
     void start();
@@ -1458,8 +1457,6 @@ private:
     void reset();
 
 private:
-    WorldComm M_worldComm;
-
     po::variables_map M_vm;
 
 protected:
@@ -1513,13 +1510,13 @@ private:
 
 
 typedef Backend<double> backend_type;
-typedef boost::shared_ptr<backend_type> backend_ptrtype;
+typedef std::shared_ptr<backend_type> backend_ptrtype;
 
 typedef Backend<std::complex<double>> c_backend_type;
-typedef boost::shared_ptr<c_backend_type> c_backend_ptrtype;
+typedef std::shared_ptr<c_backend_type> c_backend_ptrtype;
 
 template<typename T = double>
-using backend_ptr_t = boost::shared_ptr<Backend<T>>;
+using backend_ptr_t = std::shared_ptr<Backend<T>>;
 
 namespace detail
 {
@@ -1557,7 +1554,7 @@ struct BackendManagerDeleter
 
 template<typename T>
 typename Backend<T>::ptrtype
-backend_impl( std::string const& name, std::string const& kind, bool rebuild, WorldComm const& worldcomm )
+backend_impl( std::string const& name, std::string const& kind, bool rebuild, worldcomm_ptr_t const& worldcomm )
 {
     // register the BackendManager into Feel::Environment so that it gets the
     // BackendManager is cleared up when the Environment is deleted
@@ -1568,11 +1565,11 @@ backend_impl( std::string const& name, std::string const& kind, bool rebuild, Wo
         observed = true;
     }
 
-    auto git = Feel::detail::BackendManager<T>::instance().find( boost::make_tuple( kind, name, worldcomm.globalSize() ) );
+    auto git = Feel::detail::BackendManager<T>::instance().find( boost::make_tuple( kind, name, worldcomm->globalSize() ) );
 
     if (  git != Feel::detail::BackendManager<T>::instance().end() && ( rebuild == false ) )
     {
-        DVLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
+        DVLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm->globalSize()=" << worldcomm->globalSize() << "\n";
         return git->second;
     }
 
@@ -1581,12 +1578,12 @@ backend_impl( std::string const& name, std::string const& kind, bool rebuild, Wo
         if (  git != Feel::detail::BackendManager<T>::instance().end() && ( rebuild == true ) )
             git->second->clear();
 
-        DVLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
+        DVLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm->globalSize()=" << worldcomm->globalSize() << "\n";
 
         typename Backend<T>::ptrtype b;
         b = Feel::Backend<T>::build( kind, name, worldcomm );
         DVLOG(2) << "[backend] storing backend in singleton" << "\n";
-        Feel::detail::BackendManager<T>::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
+        Feel::detail::BackendManager<T>::instance().operator[]( boost::make_tuple( kind, name, worldcomm->globalSize() ) ) = b;
         return b;
     }
 
@@ -1602,7 +1599,7 @@ BOOST_PARAMETER_FUNCTION(
                            ( name,           ( std::string ), "" )
                            ( kind,           ( std::string ), soption(_prefix=name,_name="backend"))
                            ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                           ( worldcomm,      (WorldComm), Environment::worldComm() )
+                           ( worldcomm,      (worldcomm_ptr_t), Environment::worldCommPtr() )
                            ) )
 {
     return Feel::detail::backend_impl<double>( name, kind, rebuild, worldcomm);
@@ -1620,14 +1617,14 @@ BOOST_PARAMETER_FUNCTION(
                            ( name,           ( std::string ), "" )
                            ( kind,           ( std::string ), soption(_prefix=name,_name="backend"))
                            ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                           ( worldcomm,      (WorldComm), Environment::worldComm() )
+                           ( worldcomm,      (worldcomm_ptr_t), Environment::worldCommPtr() )
                            ) )
 {
     return Feel::detail::backend_impl<std::complex<double>>( name, kind, rebuild, worldcomm);
 }
 
 template<typename T>
-bool isMatrixInverseSymmetric ( boost::shared_ptr<MatrixSparse<T> >& A, boost::shared_ptr<MatrixSparse<T> >& At, bool print=false  )
+bool isMatrixInverseSymmetric ( std::shared_ptr<MatrixSparse<T> >& A, std::shared_ptr<MatrixSparse<T> >& At, bool print=false  )
 {
 #if FEELPP_HAS_PETSC
     auto u = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());

@@ -14,10 +14,10 @@ class StabilizationGLSParameterBase
 {
 public :
     using mesh_t = MeshType;
-    using mesh_ptr_t = boost::shared_ptr<mesh_t>;
+    using mesh_ptr_t = std::shared_ptr<mesh_t>;
 
     using space_tau_t = Pdh_type<mesh_t,0>;
-    using space_tau_ptr_t = boost::shared_ptr<space_tau_t>;
+    using space_tau_ptr_t = std::shared_ptr<space_tau_t>;
     using element_tau_t = typename space_tau_t::element_type;
     using element_tau_ptr_t = typename space_tau_t::element_ptrtype;
 
@@ -31,6 +31,8 @@ public :
             CHECK( M_method == "eigenvalue" || M_method == "doubly-asymptotic-approximation" )  << "invalid method";
         }
 
+    virtual ~StabilizationGLSParameterBase() = default;
+    
     virtual void init() = 0;
 
     double hSize( size_type eltId ) const

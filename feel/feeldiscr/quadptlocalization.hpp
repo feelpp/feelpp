@@ -74,7 +74,7 @@ public :
 
 
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename gm_type::precompute_type pc_type;
     typedef typename gm_type::precompute_ptrtype pc_ptrtype;
 #if 0
@@ -439,7 +439,7 @@ public :
     template <typename Mesh1Type>
     void
     localization( mpl::int_<MESH_FACES> /**/,
-                  boost::shared_ptr<Mesh1Type> meshTest,
+                  std::shared_ptr<Mesh1Type> meshTest,
                   std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > & testEltToPtsQuad )
     {
 
@@ -527,7 +527,7 @@ public :
     template <typename Mesh1Type>
     void
     localization( mpl::int_<MESH_ELEMENTS> /**/,
-                  boost::shared_ptr<Mesh1Type> meshTest,
+                  std::shared_ptr<Mesh1Type> meshTest,
                   std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > & testEltToPtsQuad )
     {
 
@@ -592,8 +592,8 @@ public :
     template <typename Mesh1Type,typename Mesh2Type>
     void
     localization( mpl::int_<MESH_FACES> /**/,
-                  boost::shared_ptr<Mesh1Type> meshTest,
-                  boost::shared_ptr<Mesh2Type> meshTrial,
+                  std::shared_ptr<Mesh1Type> meshTest,
+                  std::shared_ptr<Mesh2Type> meshTrial,
                   std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > & testEltToPtsQuad,
                   std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > & trialEltToPtsQuad,
                   std::vector<std::list<size_type> > & EltCoupled )
@@ -737,8 +737,8 @@ public :
     template <typename Mesh1Type,typename Mesh2Type>
     void
     localization( mpl::int_<MESH_ELEMENTS> /**/,
-                  boost::shared_ptr<Mesh1Type> meshTest,
-                  boost::shared_ptr<Mesh2Type> meshTrial,
+                  std::shared_ptr<Mesh1Type> meshTest,
+                  std::shared_ptr<Mesh2Type> meshTrial,
                   std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > & testEltToPtsQuad,
                   std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > & trialEltToPtsQuad,
                   std::vector<std::list<size_type> > & EltCoupled )
@@ -911,7 +911,7 @@ public :
 
     template <typename Mesh1Type>
     void
-    update( boost::shared_ptr<Mesh1Type> meshTest )
+    update( std::shared_ptr<Mesh1Type> meshTest )
     {
         typedef Mesh1Type mesh_test_type;
 
@@ -956,7 +956,7 @@ public :
 
     template <typename Mesh1Type,typename Mesh2Type>
     void
-    update( boost::shared_ptr<Mesh1Type> meshTest, boost::shared_ptr<Mesh2Type> meshTrial )
+    update( std::shared_ptr<Mesh1Type> meshTest, std::shared_ptr<Mesh2Type> meshTrial )
     {
         typedef Mesh1Type mesh_test_type;
         typedef Mesh2Type mesh_trial_type;
@@ -1090,8 +1090,8 @@ private :
 #if FEELPP_EXPORT_QUADLOCALIZATION
     template <typename Mesh1Type,typename Mesh2Type>
     void
-    exportQuadLocalization( boost::shared_ptr<Mesh1Type> meshTest,
-                            boost::shared_ptr<Mesh2Type> meshTrial,
+    exportQuadLocalization( std::shared_ptr<Mesh1Type> meshTest,
+                            std::shared_ptr<Mesh2Type> meshTrial,
                             std::map<size_type,std::list<size_type> > const& mapBetweenMeshes_test,
                             std::map<size_type,std::list<size_type> > const& mapBetweenMeshes_trial ) const
     {
@@ -1111,7 +1111,7 @@ private :
                             }
                     }
             }
-        //auto exporterTest = boost::shared_ptr<Feel::Exporter<Mesh1Type> >( Feel::Exporter<Mesh1Type>::New( "ensight", "ExportQuadLocalizationTest" ) );
+        //auto exporterTest = std::shared_ptr<Feel::Exporter<Mesh1Type> >( Feel::Exporter<Mesh1Type>::New( "ensight", "ExportQuadLocalizationTest" ) );
         auto exporterTest = Feel::Exporter<Mesh1Type>::New( "ensight", "ExportQuadLocalizationTest" );
         exporterTest->step( 0 )->setMesh( graphProjTest.mesh() );
         exporterTest->step( 0 )->add( "quadLocalizationProjTest", graphProjTest );
@@ -1133,7 +1133,7 @@ private :
                             }
                     }
             }
-        //auto exporterTrial = boost::shared_ptr<Feel::Exporter<Mesh2Type> >( Feel::Exporter<Mesh2Type>::New( "ensight", "ExportQuadLocalizationTrial" ) );
+        //auto exporterTrial = std::shared_ptr<Feel::Exporter<Mesh2Type> >( Feel::Exporter<Mesh2Type>::New( "ensight", "ExportQuadLocalizationTrial" ) );
         auto exporterTrial = Feel::Exporter<Mesh2Type>::New( "ensight", "ExportQuadLocalizationTrial" );
         exporterTrial->step( 0 )->setMesh( graphProjTrial.mesh() );
         exporterTrial->step( 0 )->add( "quadLocalizationProjTrial", graphProjTrial );
@@ -1157,7 +1157,7 @@ struct bilinearformContext
     typedef typename FormType::gm_1_type gm_formTest_type;
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
     typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc_formTest_type;
-    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
     typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
     //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
@@ -1165,7 +1165,7 @@ struct bilinearformContext
     typedef typename FormType::gm_2_type gm_formTrial_type;
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
     typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc_formTrial_type;
-    typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
+    typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
     //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
@@ -1249,7 +1249,7 @@ struct linearformContext
     typedef typename FormType::gm_type gm_form_type;
     typedef typename FormType::mesh_test_element_type geoelement_form_type;
     typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
-    typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
+    typedef std::shared_ptr<gmc_form_type> gmc_form_ptrtype;
     typedef typename gm_form_type::precompute_type pc_form_type;
     typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
 
@@ -1355,25 +1355,25 @@ struct quadptlocrangetype
 
 
 template<typename MeshTestType, typename MeshTrialType, typename IteratorRange,typename Im,typename Expr>
-boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<IteratorRange>::type,Im,Expr> >
-quadPtLocPtr( boost::shared_ptr<MeshTestType> meshTest,
-              boost::shared_ptr<MeshTrialType> meshTrial,
+std::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<IteratorRange>::type,Im,Expr> >
+quadPtLocPtr( std::shared_ptr<MeshTestType> meshTest,
+              std::shared_ptr<MeshTrialType> meshTrial,
               IteratorRange const& elts,
               Im const& im,
               Expr const& expr )
 {
     typedef QuadPtLocalization<typename Feel::detail::quadptlocrangetype<IteratorRange>::type,Im,Expr> quadptloc_type;
-    boost::shared_ptr<quadptloc_type> res(new quadptloc_type(elts, im) );
+    std::shared_ptr<quadptloc_type> res(new quadptloc_type(elts, im) );
     res->update( meshTest,meshTrial );
     return res;
 }
 
 template<typename MeshTestType, typename IteratorRange,typename Im,typename Expr>
-boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<IteratorRange>::type,Im,Expr> >
-quadPtLocPtr( boost::shared_ptr<MeshTestType> meshTest, IteratorRange const& elts,Im const& im,Expr const& expr )
+std::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<IteratorRange>::type,Im,Expr> >
+quadPtLocPtr( std::shared_ptr<MeshTestType> meshTest, IteratorRange const& elts,Im const& im,Expr const& expr )
 {
     typedef QuadPtLocalization<typename Feel::detail::quadptlocrangetype<IteratorRange>::type,Im,Expr> quadptloc_type;
-    boost::shared_ptr<quadptloc_type> res(new quadptloc_type(elts,im) );
+    std::shared_ptr<quadptloc_type> res(new quadptloc_type(elts,im) );
     res->update( meshTest );
     return res;
 }

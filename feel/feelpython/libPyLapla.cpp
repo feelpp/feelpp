@@ -63,45 +63,45 @@ typedef FunctionSpace<Mesh<Simplex<2>>,Feel::bases<Feel::Lagrange<1,Feel::Scalar
 
 //definition of all methods we need for the wrapping and wich are create from a BOOST_PARAMETER_FUNCTION or a method with default value arguments  
 
-boost::shared_ptr<Mesh<Simplex<2>>> unitSquare_w ()
+std::shared_ptr<Mesh<Simplex<2>>> unitSquare_w ()
 {
     return unitSquare();
 }
 
 
-function_space_type::element_type element_w(boost::shared_ptr<Feel::meta::Pch<Mesh<Simplex<2>>,1>::type> f)
+function_space_type::element_type element_w(std::shared_ptr<Feel::meta::Pch<Mesh<Simplex<2>>,1>::type> f)
     {
         return f->element("u");
 
             }
 //form 
 
-form1_return_type form1_w (boost::shared_ptr<Feel::meta::Pch<Mesh<Simplex<2>>,1>::type> f)
+form1_return_type form1_w (std::shared_ptr<Feel::meta::Pch<Mesh<Simplex<2>>,1>::type> f)
 {
     return form1(_test=f);
 }
 
-form2_return_type form2_w (boost::shared_ptr<Feel::meta::Pch<Mesh<Simplex<2>>,1>::type> f,boost::shared_ptr<Feel::meta::Pch<Mesh<Simplex<2>>,1>::type> f2)
+form2_return_type form2_w (std::shared_ptr<Feel::meta::Pch<Mesh<Simplex<2>>,1>::type> f,std::shared_ptr<Feel::meta::Pch<Mesh<Simplex<2>>,1>::type> f2)
 {
     return form2(_trial=f,_test=f2);
 }
 
 //integrate
 
-form1_return_type integrate_form1 (form1_return_type f,boost::shared_ptr<Mesh<Feel::Simplex<2>>> mesh, function_space_type::element_type v)
+form1_return_type integrate_form1 (form1_return_type f,std::shared_ptr<Mesh<Feel::Simplex<2>>> mesh, function_space_type::element_type v)
 {
   f=integrate(_range=elements(mesh),_expr=id(v));
   return f;
 }
 
 
-form2_return_type integrate_form2 (form2_return_type f,boost::shared_ptr<Mesh<Feel::Simplex<2>>> mesh,function_space_type::element_type u,function_space_type::element_type v)
+form2_return_type integrate_form2 (form2_return_type f,std::shared_ptr<Mesh<Feel::Simplex<2>>> mesh,function_space_type::element_type u,function_space_type::element_type v)
 {
  f=integrate(_range=elements(mesh),_expr=gradt(u)*trans(grad(v)));
  return f;
 }
 
-form2_return_type on_form2 (form2_return_type f,form1_return_type l, boost::shared_ptr<Mesh<Simplex<2>>> mesh,function_space_type::element_type u)
+form2_return_type on_form2 (form2_return_type f,form1_return_type l, std::shared_ptr<Mesh<Simplex<2>>> mesh,function_space_type::element_type u)
 {
  f+=on(_range=boundaryfaces(mesh),_rhs=l,_element=u,_expr=constant(0.));
  return f;
@@ -118,7 +118,7 @@ form2_return_type on_form2 (form2_return_type f,form1_return_type l, boost::shar
 //exporter
 
 template<typename MeshType,int N>
-void expo_w ( boost::shared_ptr<MeshType> m,function_space_type::element_type u)
+void expo_w ( std::shared_ptr<MeshType> m,function_space_type::element_type u)
 {
     auto x=Exporter<MeshType,N>::New();
     x->setMesh(m);

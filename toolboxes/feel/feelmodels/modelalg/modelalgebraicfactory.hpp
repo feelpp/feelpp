@@ -44,22 +44,22 @@ namespace FeelModels
         typedef ModelAlgebraicFactory self_type;
 
         typedef FeelModels::ModelAlgebraic model_type;
-        typedef boost::shared_ptr<model_type> model_ptrtype;
-        typedef boost::weak_ptr<model_type> model_weakptrtype;
+        typedef std::shared_ptr<model_type> model_ptrtype;
+        typedef std::weak_ptr<model_type> model_weakptrtype;
 
         typedef typename model_type::value_type value_type;
         typedef typename model_type::backend_type backend_type;
         typedef typename model_type::backend_ptrtype backend_ptrtype;
 
         typedef GraphCSR graph_type;
-        typedef boost::shared_ptr<graph_type> graph_ptrtype;
+        typedef std::shared_ptr<graph_type> graph_ptrtype;
 
         typedef typename model_type::vector_ptrtype vector_ptrtype;
         typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
         typedef typename sparse_matrix_ptrtype::element_type sparse_matrix_type;
 
         typedef Preconditioner<value_type> preconditioner_type;
-        typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+        typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
         typedef typename backend_type::solve_return_type solve_return_type;
         typedef typename backend_type::nl_solve_return_type nl_solve_return_type;
@@ -92,7 +92,7 @@ namespace FeelModels
 
         template <typename SpaceType>
         void
-        initFromFunctionSpace(boost::shared_ptr<SpaceType> const& space )
+        initFromFunctionSpace(std::shared_ptr<SpaceType> const& space )
         {
 
             if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".MethodNum","initFromFunctionSpace", "start",
@@ -127,7 +127,7 @@ namespace FeelModels
                    graph_ptrtype const& graph,
                    indexsplit_ptrtype const& indexSplit);
 
-        boost::shared_ptr<std::ostringstream> getInfo() const;
+        std::shared_ptr<std::ostringstream> getInfo() const;
         void printInfo() const;
 
         //---------------------------------------------------------------------------------------------------------------//

@@ -13,20 +13,20 @@ namespace Feel
 {
 
 class FMU :
-        public boost::enable_shared_from_this<FMU>
+        public std::enable_shared_from_this<FMU>
 {
 public :
     typedef jm_callbacks callbacks_type;
-    typedef boost::shared_ptr<jm_callbacks> callbacks_ptrtype;
+    typedef std::shared_ptr<jm_callbacks> callbacks_ptrtype;
 
     typedef FmuModelBase fmumodel_type;
-    typedef boost::shared_ptr<fmumodel_type> fmumodel_ptrtype;
+    typedef std::shared_ptr<fmumodel_type> fmumodel_ptrtype;
 
     typedef SolverBase solver_type;
-    typedef boost::shared_ptr<solver_type> solver_ptrtype;
+    typedef std::shared_ptr<solver_type> solver_ptrtype;
 
     typedef std::vector<std::string> var_list_type;
-    typedef boost::shared_ptr<var_list_type> var_list_ptrtype;
+    typedef std::shared_ptr<var_list_type> var_list_ptrtype;
 
 
     FMU( std::string prefix="" );

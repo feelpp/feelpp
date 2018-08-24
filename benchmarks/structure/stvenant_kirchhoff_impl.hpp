@@ -447,7 +447,7 @@ StVenantKirchhoff<Dim, Order>::exportResults( double time, element_type& U, disp
         typename timeset_type::step_ptrtype timeStep = timeSet->step( time );
         timeStep->setMesh( M_displacement_oplagp1->dualImageSpace()->mesh() );
         timeStep->add( "pid",
-                       regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
+                       regionProcess( std::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
 
 
         element_type V( M_Xh, "V" );

@@ -79,11 +79,11 @@ namespace parallel
 
         typedef ExprType expression_type;
         typedef typename eval::gm_type gm_type;
-        typedef boost::shared_ptr<gm_type> gm_ptrtype;
+        typedef std::shared_ptr<gm_type> gm_ptrtype;
         typedef typename eval::gmc_type gmc_type;
         typedef typename eval::gmpc_type gmpc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-        typedef boost::shared_ptr<gmpc_type> gmpc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmpc_type> gmpc_ptrtype;
         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
         typedef typename eval_expr_type::shape shape;

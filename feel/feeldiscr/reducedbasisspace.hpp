@@ -67,7 +67,7 @@ struct InitializeRbSubSpace
         }
         else
         {
-            auto rbSubSpace = boost::shared_ptr<rbsubspace_type>( new rbsubspace_type( M_rbSpaceType.worldComm() ) );
+            auto rbSubSpace = std::make_shared<rbsubspace_type>( M_rbSpaceType.worldCommPtr() );
             rbSubSpace->setFunctionSpace( M_rbSpaceType.template subFeFunctionSpace<key_type::value>() );
             x = std::make_pair(key_type(), rbSubSpace);
         }
@@ -214,14 +214,14 @@ class ReducedBasisSpace : public SpaceType
 {
 
     typedef SpaceType super;
-    typedef boost::shared_ptr<super> super_ptrtype;
+    typedef std::shared_ptr<super> super_ptrtype;
 
 public :
 
     typedef double value_type;
 
     typedef typename super::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef super fespace_type;
     typedef super_ptrtype fespace_ptrtype;
@@ -230,13 +230,13 @@ public :
 
     //typedef typename super::element_type space_element_type;
     typedef typename fespace_type::element_type space_element_type;
-    typedef boost::shared_ptr<space_element_type> space_element_ptrtype;
+    typedef std::shared_ptr<space_element_type> space_element_ptrtype;
 
     typedef std::vector< space_element_ptrtype > rb_basis_type;
-    typedef boost::shared_ptr<rb_basis_type> rb_basis_ptrtype;
+    typedef std::shared_ptr<rb_basis_type> rb_basis_ptrtype;
 
     typedef ReducedBasisSpace<SpaceType> this_type;
-    typedef boost::shared_ptr<this_type> this_ptrtype;
+    typedef std::shared_ptr<this_type> this_ptrtype;
 
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> eigen_vector_type;
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix_type;
@@ -264,13 +264,13 @@ public :
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::gm_type>, mpl::identity<mpl::void_> >::type::type gm_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::gm1_type>, mpl::identity<mpl::void_> >::type::type gm1_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::element_type>, mpl::identity<mpl::void_> >::type::type geoelement_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+    typedef std::shared_ptr<gm_type> gm_ptrtype;
+    typedef std::shared_ptr<gm1_type> gm1_ptrtype;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT, geoelement_type> >,
                               mpl::identity<mpl::void_> >::type::type pts_gmc_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> >,
                               mpl::identity<mpl::void_> >::type::type gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_ptrtype>, mpl::identity<mpl::void_> >::type::type geopc_ptrtype;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_type>, mpl::identity<mpl::void_> >::type::type geopc_type;
 
@@ -301,7 +301,7 @@ public :
 
 
     typedef typename super::periodicity_type periodicity_type;
-    typedef boost::shared_ptr<periodicity_type> periodicity_ptrtype;
+    typedef std::shared_ptr<periodicity_type> periodicity_ptrtype;
 #else
     typedef typename super::basis_0_type basis_0_type;
     typedef typename super::basis_type basis_type;
@@ -311,7 +311,7 @@ public :
     struct sub_rbfunctionspace
     {
         typedef ReducedBasisSpace<typename fespace_type::template sub_functionspace<i>::type > type;
-        typedef boost::shared_ptr<type> ptrtype;
+        typedef std::shared_ptr<type> ptrtype;
     };
 
     template<typename keyType>
@@ -336,14 +336,14 @@ public :
             this->init();
         }
 #else
-    ReducedBasisSpace( WorldComm const& worldcomm = Environment::worldComm() )
+    explicit ReducedBasisSpace( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() )
         :
         super( worldcomm )
         {
             this->init( mpl::bool_<fespace_type::is_composite>() );
         }
 
-    ReducedBasisSpace( fespace_ptrtype const& Xh, WorldComm const& worldcomm = Environment::worldComm() )
+    ReducedBasisSpace( fespace_ptrtype const& Xh, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() )
         :
         super( worldcomm ),
         M_mesh()
@@ -409,7 +409,6 @@ public :
 
             int rbdim = ptree.template get<size_type>( "dimension" );
             this->setDimension( rbdim );
-            WorldComm const& worldcomm = this->worldComm();
             std::string meshFilename = ptree.template get<std::string>( "mesh-filename" );
             if ( !dbDir.empty() && !fs::path(meshFilename).is_absolute() )
                 meshFilename = (fs::path(dbDir)/fs::path(meshFilename).filename()).string();
@@ -417,7 +416,7 @@ public :
             auto meshCtxInPtree = ptree.template get_optional<size_type>("mesh-context");
             if ( meshCtxInPtree )
                 meshUpdateContext = *meshCtxInPtree;
-            auto mesh = loadMesh(_mesh=new mesh_type(worldcomm),_filename=meshFilename,
+            auto mesh = loadMesh(_mesh=new mesh_type(this->worldCommPtr()),_filename=meshFilename,
                                  _update=meshUpdateContext );
                                  //_update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
                                  //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
@@ -652,7 +651,7 @@ public :
         {
             if ( M_feSpace )
                 return M_feSpace;
-            return boost::const_pointer_cast<super>( super::shared_from_this() );
+            return std::const_pointer_cast<super>( super::shared_from_this() );
         }
 
     template<int i>
@@ -677,14 +676,14 @@ public :
     class ContextRB
         :
         public fespace_type::basis_context_type,
-        public boost::enable_shared_from_this<ContextRB>
+        public std::enable_shared_from_this<ContextRB>
     {
     public:
         typedef this_type reducedbasisspace_type;
         typedef this_ptrtype reducedbasisspace_ptrtype;
         typedef typename fespace_type::basis_context_type  super;
         typedef std::pair<int,super> ctx_type;
-        typedef std::pair<int,boost::shared_ptr<super>> ctx_ptrtype;
+        typedef std::pair<int,std::shared_ptr<super>> ctx_ptrtype;
 
         static const uint16_type nComponents = reducedbasisspace_type::nComponents;
 
@@ -733,7 +732,7 @@ public :
                 //
                 // id
                 //
-                M_phi = M_rbspace->evaluateBasis( boost::dynamic_pointer_cast<super>( this->shared_from_this() ) );
+                M_phi = M_rbspace->evaluateBasis( std::dynamic_pointer_cast<super>( this->shared_from_this() ) );
 
                 //
                 // grad
@@ -741,7 +740,7 @@ public :
                 for( int i=0; i<N; i++)
                 {
                     //matrix containing grad at all points
-                    auto evaluation = M_rbspace->evaluateGradBasis( i , boost::dynamic_pointer_cast<super>( this->shared_from_this() ) );
+                    auto evaluation = M_rbspace->evaluateGradBasis( i , std::dynamic_pointer_cast<super>( this->shared_from_this() ) );
                     for(int c=0; c<nComponents; c++)
                     {
                         for(int d=0; d<nDim; d++)
@@ -923,7 +922,7 @@ public :
                     {
                         if ( !M_meshForRbContext->hasElement( meshEltCtx.id() ) )
                         {
-                            auto geondEltCommon = boost::make_shared<GeoNDCommon<typename mesh_type::element_type::super>>( M_meshForRbContext.get(),
+                            auto geondEltCommon = std::make_shared<GeoNDCommon<typename mesh_type::element_type::super>>( M_meshForRbContext.get(),
                                                                                                                             M_meshForRbContext->gm(),
                                                                                                                             M_meshForRbContext->gm1() );
                             meshEltCtx.setCommonData( geondEltCommon );
@@ -961,7 +960,7 @@ public :
     };
 
     typedef ContextRB ctxrb_type;
-    typedef boost::shared_ptr<ctxrb_type> ctxrb_ptrtype;
+    typedef std::shared_ptr<ctxrb_type> ctxrb_ptrtype;
 
 
 
@@ -969,28 +968,28 @@ public :
      * store the evaluation of basis functions in given points
      */
     class ContextRBSet
-        : public std::map<int,boost::shared_ptr<ContextRB> >
+        : public std::map<int,std::shared_ptr<ContextRB> >
     {
-        typedef typename std::map<int,boost::shared_ptr<ContextRB>> super;
+        typedef typename std::map<int,std::shared_ptr<ContextRB>> super;
 
     public :
         static const bool is_rb_context = true;
 
 
         typedef ReducedBasisSpace<SpaceType> rbspace_type;
-        typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
+        typedef std::shared_ptr<rbspace_type> rbspace_ptrtype;
 
         typedef typename rbspace_type::super_ptrtype functionspace_ptrtype;
         typedef typename rbspace_type::super functionspace_type;
         typedef typename functionspace_type::Context fe_context_type;
-        typedef boost::shared_ptr<fe_context_type> fe_context_ptrtype;
+        typedef std::shared_ptr<fe_context_type> fe_context_ptrtype;
 
         typedef typename super::iterator iterator;
 
         typedef rbspace_type::eigen_vector_type eigen_vector_type;
 
         typedef rbspace_type::rb_basis_type rb_basis_type;
-        typedef boost::shared_ptr<rb_basis_type> basis_ptrtype;
+        typedef std::shared_ptr<rb_basis_type> basis_ptrtype;
 
         typedef Eigen::MatrixXd eigen_matrix_type;
 
@@ -1111,7 +1110,7 @@ public :
             // add it to the ContextRB set
             if ( ret.second )
             {
-                return this->insert( std::make_pair( ret.first->first, boost::make_shared<ContextRB>( *ret.first, M_rbspace ) ) );
+                return this->insert( std::make_pair( ret.first->first, std::make_shared<ContextRB>( *ret.first, M_rbspace ) ) );
             }
             return std::make_pair( this->end(), false );
         }
@@ -1130,7 +1129,7 @@ public :
             rank_type myrank = M_rbspace->worldComm().rank();
 
             if ( !M_meshForRbContext )
-                M_meshForRbContext.reset( new mesh_type( M_rbspace->worldComm() ) );
+                M_meshForRbContext = std::make_shared<mesh_type>( M_rbspace->worldCommPtr() );
 
             ctxrb_ptrtype rbCtxReload;
             if ( myrank == procId )
@@ -1144,7 +1143,7 @@ public :
                 if ( !M_meshForRbContext->hasElement( modelMeshEltCtx.id(), modelMeshEltCtx.processId() ) )
                 {
                     geoelement_type meshEltCtx = modelMeshEltCtx;;
-                    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename mesh_type::element_type::super>>( M_meshForRbContext.get(),
+                    auto geondEltCommon = std::make_shared<GeoNDCommon<typename mesh_type::element_type::super>>( M_meshForRbContext.get(),
                                                                                                                     M_meshForRbContext->gm(),
                                                                                                                     M_meshForRbContext->gm1() );
                     meshEltCtx.setCommonData( geondEltCommon );
@@ -1194,7 +1193,7 @@ public :
                 if ( M_rbspace )
                 {
                     if ( !M_meshForRbContext )
-                        M_meshForRbContext.reset( new mesh_type( M_rbspace->worldComm() ) );
+                        M_meshForRbContext = std::make_shared<mesh_type>( M_rbspace->worldCommPtr() );
                 }
 
                 ar & BOOST_SERIALIZATION_NVP( M_nPoints );
@@ -1203,7 +1202,7 @@ public :
                 for ( int rbCtxKey : rbCtxKeys )
                 {
                     std::string rbctxNameInSerialization = (boost::format("rbSpaceContext_%1%")%rbCtxKey).str();
-                    boost::shared_ptr<ContextRB> rbCtxReload( new ContextRB );
+                    std::shared_ptr<ContextRB> rbCtxReload( new ContextRB );
                     if ( M_rbspace )
                     {
                         rbCtxReload->setRbSpace( M_rbspace );
@@ -1223,15 +1222,15 @@ public :
         bool M_ctxHaveBeenMpiBroadcasted;
     };
     typedef ContextRBSet ctxrbset_type;
-    typedef boost::shared_ptr<ctxrbset_type> ctxrbset_ptrtype;
+    typedef std::shared_ptr<ctxrbset_type> ctxrbset_ptrtype;
 
     /**
      * \return function space context
      */
-    ContextRBSet context() { return ContextRBSet( boost::dynamic_pointer_cast< ReducedBasisSpace<SpaceType> >( this->shared_from_this() ) ); }
+    ContextRBSet context() { return ContextRBSet( std::dynamic_pointer_cast< ReducedBasisSpace<SpaceType> >( this->shared_from_this() ) ); }
 
     ctxrb_ptrtype
-    contextBasis( std::pair<int,boost::shared_ptr<ContextRB>> const& p, ContextRBSet const& c )
+    contextBasis( std::pair<int,std::shared_ptr<ContextRB>> const& p, ContextRBSet const& c )
         {
             return p.second;
         }
@@ -1241,7 +1240,7 @@ public :
      * returns matrix of size nComponents x N if N is RB size
      */
     template <typename ContextBasisFem>
-    eigen_matrix_type evaluateBasis( boost::shared_ptr<ContextBasisFem> const& ctx )
+    eigen_matrix_type evaluateBasis( std::shared_ptr<ContextBasisFem> const& ctx )
         {
             eigen_matrix_type m( nComponents, M_primal_rb_basis.size() );
 
@@ -1263,7 +1262,7 @@ public :
         }
 
     template <typename ContextBasisFem>
-    eigen_matrix_type evaluateGradBasis( int i , boost::shared_ptr<ContextBasisFem> const& ctxs )
+    eigen_matrix_type evaluateGradBasis( int i , std::shared_ptr<ContextBasisFem> const& ctxs )
         {
             auto ctx = this->functionSpace()->context();
             ctx.addCtx( ctxs, this->functionSpace()->worldComm().localRank() );
@@ -1319,10 +1318,10 @@ public :
     {
     public:
         typedef ReducedBasisSpace<SpaceType> rbspace_type;
-        typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
+        typedef std::shared_ptr<rbspace_type> rbspace_ptrtype;
 
         typedef rbspace_type::super functionspace_type;
-        typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+        typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
 
         typedef Eigen::MatrixXd eigen_matrix_type;
         typedef rbspace_type::eigen_vector_type eigen_vector_type;
@@ -1333,7 +1332,7 @@ public :
         //RB context
         typedef rbspace_type::ContextRBSet ctxrbset_type;
         typedef rbspace_type::ContextRB ctxrb_type;
-        typedef boost::shared_ptr<rbspace_type::ContextRB> ctxrb_ptrtype;
+        typedef std::shared_ptr<rbspace_type::ContextRB> ctxrb_ptrtype;
 
         typedef T value_type;
 
@@ -1342,14 +1341,14 @@ public :
 
 
         typedef typename functionspace_type::gm_type gm_type;
-        typedef boost::shared_ptr<gm_type> gm_ptrtype;
+        typedef std::shared_ptr<gm_type> gm_ptrtype;
 
         /**
          * geometry typedef
          */
         typedef typename mesh_type::element_type geoelement_type;
         typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
         typedef typename gm_type::precompute_type geopc_type;
 
@@ -1365,7 +1364,7 @@ public :
         typedef typename mpl::if_<mpl::bool_<is_composite>,
                                   mpl::identity<boost::none_t>,
                                   mpl::identity<typename basis_0_type::PreCompute> >::type::type pc_type;
-        typedef boost::shared_ptr<pc_type> pc_ptrtype;
+        typedef std::shared_ptr<pc_type> pc_ptrtype;
 
         static const uint16_type nComponents1 = functionspace_type::nComponents1;
         static const uint16_type nComponents2 = functionspace_type::nComponents2;
@@ -1576,7 +1575,7 @@ public :
                                                                     typename boost::fusion::result_of::find<my_vector_ctx_type,ctxrb_ptrtype>::type>::type pos_ctx_type;
                 typedef typename boost::fusion::result_of::distance<typename boost::fusion::result_of::begin<my_vector_ctx_type>::type,
                                                                     typename boost::fusion::result_of::find<my_vector_ctx_type,
-                                                                                                            boost::shared_ptr<typename ctxrb_type::super> >::type>::type pos_fectx_type;
+                                                                                                            std::shared_ptr<typename ctxrb_type::super> >::type>::type pos_fectx_type;
 
                 static const int myNumberOfCtx = boost::mpl::size<my_vector_ctx_type>::type::value;
                 CHECK( pos_ctx_type::value < myNumberOfCtx || pos_fectx_type::value < myNumberOfCtx ) << "no compatible context";
@@ -1745,7 +1744,7 @@ public :
             {
                 //new context for evaluate the points
                 typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
-                typedef boost::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
+                typedef std::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
 
                 gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),  context.pc() ) );
 
@@ -1763,7 +1762,7 @@ public :
             {
                 //new context for the interpolation
                 typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
-                typedef boost::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
+                typedef std::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
 
                 typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::permutation_type permutation_type;
                 typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::precompute_ptrtype precompute_ptrtype;
@@ -1790,19 +1789,19 @@ public :
     };//Element of the reduced basis space
 
     typedef Element<value_type> element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
 
     //Access to an element of the reduced basis space
     element_type element( std::string const& name="u" )
         {
-            element_type u(boost::dynamic_pointer_cast<ReducedBasisSpace<SpaceType>>(this->shared_from_this() ), name );
+            element_type u(std::dynamic_pointer_cast<ReducedBasisSpace<SpaceType>>(this->shared_from_this() ), name );
             u.setZero();
             return u;
         }
 
     element_ptrtype elementPtr( std::string const& name="u" )
         {
-            element_ptrtype u( new element_type( boost::dynamic_pointer_cast<ReducedBasisSpace<SpaceType>>(this->shared_from_this() ) , name ) );
+            element_ptrtype u( new element_type( std::dynamic_pointer_cast<ReducedBasisSpace<SpaceType>>(this->shared_from_this() ) , name ) );
             u->setZero();
             return u;
         }
@@ -2171,16 +2170,16 @@ ReducedBasisSpace<SpaceType>::Element<Y,Cont>::idInterpolate( matrix_node_type _
 
 template<typename SpaceType>
 inline
-boost::shared_ptr<ReducedBasisSpace<SpaceType> >
-RbSpacePch(  boost::shared_ptr<SpaceType> const& Xh )
+std::shared_ptr<ReducedBasisSpace<SpaceType> >
+RbSpacePch(  std::shared_ptr<SpaceType> const& Xh )
 {
     return ReducedBasisSpace<SpaceType>::New( Xh );
 }
 
 template<int Order, typename SpaceType>
 inline
-boost::shared_ptr<ReducedBasisSpace<SpaceType>>
-RbSpacePchv(  boost::shared_ptr<SpaceType> const& Xh)
+std::shared_ptr<ReducedBasisSpace<SpaceType>>
+RbSpacePchv(  std::shared_ptr<SpaceType> const& Xh)
 {
     return ReducedBasisSpace<SpaceType>::New( Xh );
 }

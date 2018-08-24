@@ -42,12 +42,13 @@ class MeshSupport : public MeshSupportBase
 public :
     using super_type = MeshSupportBase;
     using mesh_type = typename MeshTraits<MeshType>::mesh_type;
-    using mesh_ptrtype = boost::shared_ptr<mesh_type>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
     using range_elements_type = elements_reference_wrapper_t<mesh_type>;
     using range_faces_type = faces_reference_wrapper_t<mesh_type>;
     using element_type = typename mesh_type::element_type;
     using face_type = typename mesh_type::face_type;
 
+    MeshSupport() = default;
     MeshSupport( mesh_ptrtype const& mesh )
         :
         M_mesh( mesh ),

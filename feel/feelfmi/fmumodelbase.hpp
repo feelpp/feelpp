@@ -9,10 +9,10 @@ class FmuModelBase
 {
 public :
     typedef jm_callbacks callbacks_type;
-    typedef boost::shared_ptr<jm_callbacks> callbacks_ptrtype;
+    typedef std::shared_ptr<jm_callbacks> callbacks_ptrtype;
 
     typedef std::vector<std::string> var_list_type;
-    typedef boost::shared_ptr<var_list_type> var_list_ptrtype;
+    typedef std::shared_ptr<var_list_type> var_list_ptrtype;
 
     FmuModelBase( callbacks_ptrtype callbacks ) :
         M_callbacks( callbacks ),

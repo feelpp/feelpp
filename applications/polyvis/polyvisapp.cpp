@@ -82,7 +82,7 @@ class PolyvisApp
 public:
 
     typedef PolyvisBase polyvisbase_type;
-    typedef boost::shared_ptr<PolyvisBase> polyvisbase_ptrtype;
+    typedef std::shared_ptr<PolyvisBase> polyvisbase_ptrtype;
     PolyvisApp()
         :
         super(),

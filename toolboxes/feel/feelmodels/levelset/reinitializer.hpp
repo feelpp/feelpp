@@ -45,16 +45,16 @@ public:
     //--------------------------------------------------------------------//
     // Typedefs
     typedef Reinitializer<FunctionSpaceType> reinitializer_type;
-    typedef boost::shared_ptr<reinitializer_type> reinitializer_ptrtype;
+    typedef std::shared_ptr<reinitializer_type> reinitializer_ptrtype;
 
     typedef FunctionSpaceType functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
 
     typedef typename functionspace_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
 
     typedef typename functionspace_type::periodicity_0_type periodicity_type;
     static const bool is_periodic = functionspace_type::is_periodic;

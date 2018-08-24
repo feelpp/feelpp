@@ -85,37 +85,37 @@ struct ExtractGm
 /// \endcond
 } // detail
 template<typename GmcT>
-fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>>
-mapgmc( boost::shared_ptr<GmcT>& ctx )
+fusion::map<fusion::pair<vf::detail::gmc<0>, std::shared_ptr<GmcT>>>
+mapgmc( std::shared_ptr<GmcT>& ctx )
 {
     return { fusion::make_pair<vf::detail::gmc<0> >( ctx ) };
 }
-template<typename GmcT> using map_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>>;
+template<typename GmcT> using map_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, std::shared_ptr<GmcT>>>;
 
 template<typename GmcT>
-fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<GmcT>> >
-mapgmc( boost::shared_ptr<GmcT>& ctx1, boost::shared_ptr<GmcT>& ctx2 )
+fusion::map<fusion::pair<vf::detail::gmc<0>, std::shared_ptr<GmcT>>, fusion::pair<vf::detail::gmc<1>, std::shared_ptr<GmcT>> >
+mapgmc( std::shared_ptr<GmcT>& ctx1, std::shared_ptr<GmcT>& ctx2 )
 {
     return { fusion::make_pair<vf::detail::gmc<0> >( ctx1 ), fusion::make_pair<vf::detail::gmc<1> >( ctx2 ) };
 }
-template<typename GmcT> using map2_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<GmcT>> >;
+template<typename GmcT> using map2_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, std::shared_ptr<GmcT>>, fusion::pair<vf::detail::gmc<1>, std::shared_ptr<GmcT>> >;
 
 
 template<typename FecT>
-fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<FecT>>>
-    mapfec( boost::shared_ptr<FecT>& ctx )
+fusion::map<fusion::pair<vf::detail::gmc<0>, std::shared_ptr<FecT>>>
+    mapfec( std::shared_ptr<FecT>& ctx )
 {
     return { fusion::make_pair<vf::detail::gmc<0> >( ctx ) };
 }
-template<typename FecT> using map_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<FecT>>>;
+template<typename FecT> using map_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, std::shared_ptr<FecT>>>;
 
 template<typename FecT>
-fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<FecT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<FecT>> >
-    mapfec( boost::shared_ptr<FecT>& ctx1, boost::shared_ptr<FecT>& ctx2 )
+fusion::map<fusion::pair<vf::detail::gmc<0>, std::shared_ptr<FecT>>, fusion::pair<vf::detail::gmc<1>, std::shared_ptr<FecT>> >
+    mapfec( std::shared_ptr<FecT>& ctx1, std::shared_ptr<FecT>& ctx2 )
 {
     return { fusion::make_pair<vf::detail::gmc<0> >( ctx1 ), fusion::make_pair<vf::detail::gmc<1> >( ctx2 ) };
 }
-template<typename FecT> using map2_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<FecT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<FecT>> >;
+template<typename FecT> using map2_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, std::shared_ptr<FecT>>, fusion::pair<vf::detail::gmc<1>, std::shared_ptr<FecT>> >;
 
 
 

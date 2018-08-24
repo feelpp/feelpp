@@ -115,7 +115,7 @@ public:
     //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
-    typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
+    typedef typename std::shared_ptr<backend_type> backend_ptrtype ;
 
     //! sparse matrix type associated with backend
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -128,21 +128,21 @@ public:
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef Lagrange<OrderV,Scalar> V_single_basis_type;
     typedef Lagrange<OrderT,Scalar> T_single_basis_type;
     typedef bases<V_single_basis_type, T_single_basis_type> basis_type;
 
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     /**
      * Constructor

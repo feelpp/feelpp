@@ -38,7 +38,7 @@ struct P2ch
                           double,
                           Periodicity <NoPeriodicity,NoPeriodicity>,
                           mortars<NoMortar,NoMortar> > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 } //meta
@@ -62,7 +62,7 @@ using P2ch_type = FunctionSpace<MeshType,
  * \endcode
  */
 template<typename Base1, typename Base2, typename MeshType>
-using P2ch_ptrtype = boost::shared_ptr<P2ch_type<Base1,Base2,MeshType>>;
+using P2ch_ptrtype = std::shared_ptr<P2ch_type<Base1,Base2,MeshType>>;
     
 /**
    Given a \p mesh and polynomial order \f$k\f$(template argument), build a
@@ -78,13 +78,13 @@ using P2ch_ptrtype = boost::shared_ptr<P2ch_type<Base1,Base2,MeshType>>;
 template<typename Base1, typename Base2, typename MeshType>
 inline
 P2ch_ptrtype<Base1, Base2, MeshType>
-P2ch( boost::shared_ptr<MeshType> mesh,
+P2ch( std::shared_ptr<MeshType> mesh,
       std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2,false ) )
 {
     CHECK( buildExtendedDofTable.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << buildExtendedDofTable.size() << "\n";
     return P2ch_type<Base1,Base2,MeshType>::New( _mesh=mesh,
-                                                   _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ),
-                                                   _extended_doftable=buildExtendedDofTable );
+                                                 _worldscomm=makeWorldsComm( 2,mesh->worldCommPtr() ),
+                                                 _extended_doftable=buildExtendedDofTable );
 }
 
 

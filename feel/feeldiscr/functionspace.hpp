@@ -101,6 +101,7 @@
 
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelvf/exprbase.hpp>
+#include <feel/feelvf/ginac.hpp>
 #include <feel/feelvf/detail/gmc.hpp>
 
 namespace Feel
@@ -482,7 +483,7 @@ struct InitializeSpace
                      mesh_support_vector_type const& meshSupport,
                      PeriodicityType const& periodicity,
                      std::vector<Dof> const& dofindices,
-                     std::vector<WorldComm> const & worldsComm,
+                     worldscomm_ptr_t const & worldsComm,
                      std::vector<bool> extendedDofTable )
         :
         M_functionspaces( functionspaces ),
@@ -510,7 +511,7 @@ struct InitializeSpace
         auto subMeshSupport = typename subspace_type::mesh_support_vector_type( boost::fusion::at_c<T::value>( M_meshSupport ) );
         auto p = *fusion::find<typename subspace_type::periodicity_0_type>(M_periodicity);
         subSpace = subspace_ptrtype( new subspace_type( M_mesh, subMeshSupport, M_dofindices, p,
-                                                        std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ),
+                                                        makeWorldsComm( 1,M_worldsComm[M_cursor] ),
                                                         std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
         FEELPP_ASSERT( subSpace ).error( "invalid function space" );
 
@@ -530,7 +531,7 @@ struct InitializeSpace
         auto m = boost::fusion::at_c<T::value>( M_mesh );
         auto subMeshSupport = typename subspace_type::mesh_support_vector_type( boost::fusion::at_c<T::value>( M_meshSupport ) );
         subSpace = subspace_ptrtype( new subspace_type( m, subMeshSupport, M_dofindices, p,
-                                                        std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ),
+                                                        makeWorldsComm( 1,M_worldsComm[M_cursor] ),
                                                         std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
         FEELPP_ASSERT( subSpace ).error( "invalid function space" );
 
@@ -538,7 +539,7 @@ struct InitializeSpace
     }
     functionspace_vector_type & M_functionspaces;
     mutable uint16_type M_cursor;
-    std::vector<WorldComm> M_worldsComm;
+    worldscomm_ptr_t M_worldsComm;
     MeshPtrType M_mesh;
     mesh_support_vector_type const& M_meshSupport;
     std::vector<Dof> const& M_dofindices;
@@ -548,8 +549,8 @@ struct InitializeSpace
 template<typename DofType>
 struct updateDataMapProcess
 {
-    updateDataMapProcess( std::vector<WorldComm> const & worldsComm,
-                          WorldComm const& worldCommFusion,
+    updateDataMapProcess( worldscomm_ptr_t const & worldsComm,
+                          worldcomm_ptr_t const& worldCommFusion,
                           uint16_type lastCursor )
         :
         M_cursor( 0 ),
@@ -561,10 +562,10 @@ struct updateDataMapProcess
     {}
 
     template <typename T>
-    void operator()( boost::shared_ptr<T> & x ) const
+    void operator()( std::shared_ptr<T> & x ) const
     {
 
-        if ( M_worldsComm[M_cursor].isActive() )
+        if ( M_worldsComm[M_cursor]->isActive() )
         {
             size_type nLocWithGhost=x->nLocalDofWithGhost();
             size_type nLocWithoutGhost=x->nLocalDofWithoutGhost();
@@ -628,11 +629,11 @@ struct updateDataMapProcess
         ++M_cursor;// warning M_cursor < nb color
     }
 
-    boost::shared_ptr<DofType> dataMap() const
+    std::shared_ptr<DofType> dataMap() const
     {
         return M_dm;
     }
-    boost::shared_ptr<DofType> dataMapOnOff() const
+    std::shared_ptr<DofType> dataMapOnOff() const
     {
         return M_dmOnOff;
     }
@@ -640,16 +641,16 @@ struct updateDataMapProcess
     mutable uint16_type M_cursor;
     mutable size_type M_start_index;
     uint16_type M_lastCursor;
-    std::vector<WorldComm> M_worldsComm;
-    mutable boost::shared_ptr<DofType> M_dm;
-    mutable boost::shared_ptr<DofType> M_dmOnOff;
+    worldscomm_ptr_t M_worldsComm;
+    mutable std::shared_ptr<DofType> M_dm;
+    mutable std::shared_ptr<DofType> M_dmOnOff;
 }; // updateDataMapProcess
 
 
 template<typename DofType>
 struct updateDataMapProcessStandard
 {
-    updateDataMapProcessStandard( WorldComm const& worldComm,
+    updateDataMapProcessStandard( worldcomm_ptr_t const& worldComm,
                                   uint16_type nSpaces )
         :
         M_worldComm( worldComm ),
@@ -658,7 +659,7 @@ struct updateDataMapProcessStandard
     {}
 
     template <typename T>
-    void operator()( boost::shared_ptr<T> & x ) const
+    void operator()( std::shared_ptr<T> & x ) const
     {
         M_subdm.push_back( x->mapPtr() );
         if ( M_cursor == M_lastCursor )
@@ -666,15 +667,15 @@ struct updateDataMapProcessStandard
         ++M_cursor;
     }
 
-    boost::shared_ptr<DofType> dataMap() const
+    std::shared_ptr<DofType> dataMap() const
     {
         return M_dm;
     }
 
-    WorldComm const& M_worldComm;
+    worldcomm_ptr_t M_worldComm;
     mutable uint16_type M_cursor;
     uint16_type M_lastCursor;
-    mutable boost::shared_ptr<DofType> M_dm;
+    mutable std::shared_ptr<DofType> M_dm;
     mutable std::vector<datamap_ptrtype> M_subdm;
 };
 
@@ -776,7 +777,7 @@ template< typename IsWithGhostType>
 struct NLocalDof
 {
 
-    NLocalDof( std::vector<WorldComm> const & worldsComm = std::vector<WorldComm>( 1,Environment::worldComm() ),
+    NLocalDof( worldscomm_ptr_t const & worldsComm = Environment::worldsComm(1),
                bool useOffSubSpace = false,
                size_type start = 0, size_type size = invalid_size_type_value )
         :
@@ -827,7 +828,7 @@ struct NLocalDof
 
             else
             {
-                if ( M_worldsComm[M_cursor].isActive() )
+                if ( M_worldsComm[M_cursor]->isActive() )
                     ret += nLocalDof( x, mpl::bool_<IsWithGhostType::value>() );
             }
         }
@@ -845,7 +846,7 @@ struct NLocalDof
 private:
     mutable size_type M_cursor;
     size_type M_finish;
-    std::vector<WorldComm> const& M_worldsComm;
+    worldscomm_ptr_t M_worldsComm;
     bool M_useOffSubSpace;
 };
 #endif // end MPI
@@ -856,7 +857,7 @@ struct NLocalDofOnProc
 {
 
     NLocalDofOnProc( const int proc,
-                     std::vector<WorldComm> const & worldsComm = std::vector<WorldComm>( 1,Environment::worldComm() ),
+                     worldscomm_ptr_t const & worldsComm = Environment::worldsComm(1),
                      bool useOffSubSpace = false,
                      size_type start = 0, size_type size = invalid_size_type_value )
         :
@@ -909,7 +910,7 @@ struct NLocalDofOnProc
 
             else
             {
-                if ( M_worldsComm[M_cursor].isActive() )
+                if ( M_worldsComm[M_cursor]->isActive() )
                     ret += nLocalDof( x, mpl::bool_<IsWithGhostType::value>() );
             }
         }
@@ -928,7 +929,7 @@ private:
     int M_proc;
     mutable size_type M_cursor;
     size_type M_finish;
-    std::vector<WorldComm> const& M_worldsComm;
+    worldscomm_ptr_t M_worldsComm;
     bool M_useOffSubSpace;
 }; // NLocalDofOnProc
 
@@ -936,28 +937,28 @@ private:
 template<int i,typename SpaceCompositeType>
 struct InitializeContainersOff
 {
-    InitializeContainersOff( boost::shared_ptr<SpaceCompositeType> const& _space )
+    explicit InitializeContainersOff( std::shared_ptr<SpaceCompositeType> const& _space )
         :
         M_cursor( 0 ),
         M_space( _space )
     {}
     template <typename T>
-    void operator()( boost::shared_ptr<T> & x ) const
+    void operator()( std::shared_ptr<T> & x ) const
     {
         if ( M_cursor==i && !x )
-            x = boost::shared_ptr<T>( new T( M_space->template functionSpace<i>()->dof() ) );
+            x = std::shared_ptr<T>( new T( M_space->template functionSpace<i>()->dof() ) );
 
         ++M_cursor;// warning M_cursor < nb color
     }
     mutable uint16_type M_cursor;
-    boost::shared_ptr<SpaceCompositeType> M_space;
+    std::shared_ptr<SpaceCompositeType> M_space;
 };
 
 
 template<int i,typename SpaceCompositeType>
 struct SendContainersOn
 {
-    SendContainersOn( boost::shared_ptr<SpaceCompositeType> const& _space,
+    SendContainersOn( std::shared_ptr<SpaceCompositeType> const& _space,
                       std::vector<double> const& _dataToSend )
         :
         M_cursor( 0 ),
@@ -965,7 +966,7 @@ struct SendContainersOn
         M_dataToSend( _dataToSend )
     {}
     template <typename T>
-    void operator()( boost::shared_ptr<T> & x ) const
+    void operator()( std::shared_ptr<T> & x ) const
     {
         if ( M_cursor!=i )
         {
@@ -980,7 +981,7 @@ struct SendContainersOn
         ++M_cursor;// warning M_cursor < nb color
     }
     mutable uint16_type M_cursor;
-    boost::shared_ptr<SpaceCompositeType> M_space;
+    std::shared_ptr<SpaceCompositeType> M_space;
     std::vector<double> M_dataToSend;
 };
 
@@ -988,13 +989,13 @@ struct SendContainersOn
 template<int i,typename SpaceCompositeType>
 struct RecvContainersOff
 {
-    RecvContainersOff( boost::shared_ptr<SpaceCompositeType> const& _space )
+    explicit RecvContainersOff( std::shared_ptr<SpaceCompositeType> const& _space )
         :
         M_cursor( 0 ),
         M_space( _space )
     {}
     template <typename T>
-    void operator()( boost::shared_ptr<T> & x ) const
+    void operator()( std::shared_ptr<T> & x ) const
     {
         if ( M_cursor==i )
         {
@@ -1011,7 +1012,7 @@ struct RecvContainersOff
         ++M_cursor;// warning M_cursor < nb color
     }
     mutable uint16_type M_cursor;
-    boost::shared_ptr<SpaceCompositeType> M_space;
+    std::shared_ptr<SpaceCompositeType> M_space;
 };
 
 
@@ -1143,7 +1144,7 @@ struct computeNDofForEachSpace
         M_startSplit(startSplit)
     {}
 
-    boost::shared_ptr<IndexSplit> const& indexSplit() const { return M_indexSplit; }
+    std::shared_ptr<IndexSplit> const& indexSplit() const { return M_indexSplit; }
 
     typedef boost::tuple< uint16_type, size_type, IndexSplit > result_type;
 
@@ -1163,7 +1164,7 @@ struct computeNDofForEachSpace
         M_indexSplit->addSplit( M_startSplit, t->map().indexSplitWithComponents() );
     }
 
-    mutable boost::shared_ptr<IndexSplit> M_indexSplit;
+    mutable std::shared_ptr<IndexSplit> M_indexSplit;
     size_type M_startSplit;
 };
 
@@ -1171,7 +1172,7 @@ struct rebuildDofPointsTool
 {
 
     template <typename T>
-    void operator()( boost::shared_ptr<T> & x ) const
+    void operator()( std::shared_ptr<T> & x ) const
     {
         x->dof()->rebuildDofPoints( *x->mesh() );
     }
@@ -1212,6 +1213,7 @@ struct BasisOrder
 template<typename SpaceType>
 struct createWorldsComm
 {
+    
     typedef typename SpaceType::mesh_ptrtype mesh_ptrtype;
     typedef typename SpaceType::meshes_list meshes_list;
     static const bool useMeshesList = !boost::is_base_of<MeshBase, meshes_list >::value;
@@ -1225,7 +1227,7 @@ struct createWorldsComm
         template<typename T>
         void operator()( T const& t) const
             {
-                M_cwc.M_worldsComm.push_back( t->worldComm() );
+                M_cwc.M_worldsComm.push_back( t->worldComm().shared_from_this() );
             }
         createWorldsComm<SpaceType> & M_cwc;
     };
@@ -1237,16 +1239,17 @@ struct createWorldsComm
     template<bool _UseMeshesList >
     void init( mesh_ptrtype const& mesh, typename std::enable_if< !_UseMeshesList >::type* = nullptr )
         {
-            M_worldsComm.resize( SpaceType::nSpaces, mesh->worldComm() );
+            M_worldsComm.resize( SpaceType::nSpaces, mesh->worldComm().shared_from_this() );
         }
     template<bool _UseMeshesList >
     void init( mesh_ptrtype const& mesh, typename std::enable_if< _UseMeshesList >::type* = nullptr )
         {
             boost::fusion::for_each( mesh, UpdateWorldsComm( *this ) );
         }
-    std::vector<WorldComm> const& worldsComm() const { return M_worldsComm; }
+    worldscomm_ptr_t worldsComm()       { return M_worldsComm; }
+    worldscomm_ptr_t worldsComm() const { return M_worldsComm; }
 
-    std::vector<WorldComm> M_worldsComm;
+    worldscomm_ptr_t M_worldsComm;
 };
 
 template<typename SpaceType>
@@ -1511,7 +1514,7 @@ typename A0,
 class FunctionSpace
     :
 public FunctionSpaceBase,
-public boost::enable_shared_from_this<FunctionSpace<A0,A1,A2,A3,A4> >
+public std::enable_shared_from_this<FunctionSpace<A0,A1,A2,A3,A4> >
 {
 public:
     template<typename FA0,typename FA1,typename FA2,typename FA3,typename FA4>
@@ -1529,6 +1532,8 @@ public:
 
 public:
 
+    using super = FunctionSpaceBase;
+    
     template<typename ThePeriodicityType, int pos>
     struct GetPeriodicity
     {
@@ -1566,7 +1571,7 @@ public:
                               Feel::detail::bases<BasisType>,value_type,
                               Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type >,
                               mortar_list> _type;
-        typedef boost::shared_ptr<_type> type;
+        typedef std::shared_ptr<_type> type;
     };
     template<typename BasisType>
     struct ChangeBasis
@@ -1577,7 +1582,7 @@ public:
                                                      typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
 
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<BasisType>,value_type, Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type>, mortars<typename GetMortar<mortar_list,pos::value>::type > > > > >,
+                                  mpl::identity<mpl::identity<std::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<BasisType>,value_type, Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type>, mortars<typename GetMortar<mortar_list,pos::value>::type > > > > >,
                                   mpl::identity<ChangeMesh<BasisType> > >::type::type::type type;
 
 //mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,BasisType>, mpl::back_inserter<fusion::vector<> > >::type > >::type::type type;
@@ -1599,7 +1604,7 @@ public:
                               Feel::detail::bases<component_basis_type>,value_type,
                               Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type >,
                               mortar_list> _type;
-        typedef boost::shared_ptr<_type> type;
+        typedef std::shared_ptr<_type> type;
     };
 
     template<typename BasisType>
@@ -1608,7 +1613,7 @@ public:
         typedef typename BasisType::component_basis_type component_basis_type;
         //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<component_basis_type>,value_type, periodicity_type, mortar_list> > > >,
+                                  mpl::identity<mpl::identity<std::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<component_basis_type>,value_type, periodicity_type, mortar_list> > > >,
                                   mpl::identity<ChangeMeshToComponentBasis<BasisType> > >::type::type::type type;
     };
 
@@ -1661,11 +1666,11 @@ public:
     template<typename MeshType>
     struct ChangeToMeshPtr
     {
-        typedef boost::shared_ptr<MeshType> type;
+        typedef std::shared_ptr<MeshType> type;
     };
 
     typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                              mpl::identity<boost::shared_ptr<mesh_type> >,
+                              mpl::identity<std::shared_ptr<mesh_type> >,
                               mpl::identity<typename mpl::transform<meshes_list, ChangeToMeshPtr<mpl::_1>, mpl::back_inserter<meshes<> > >::type  > >::type::type mesh_ptrtype;
     typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
             mpl::identity<typename mesh_type::element_type>,
@@ -1752,11 +1757,11 @@ public:
 
     typedef FunctionSpace<A0,A1,A2,A3,A4> functionspace_type;
     typedef functionspace_type space_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
-    typedef boost::shared_ptr<functionspace_type> pointer_type;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> pointer_type;
 
     typedef FunctionSpace<meshes_list, component_basis_vector_type, value_type, periodicity_type, mortar_list> component_functionspace_type;
-    typedef boost::shared_ptr<component_functionspace_type> component_functionspace_ptrtype;
+    typedef std::shared_ptr<component_functionspace_type> component_functionspace_ptrtype;
 
 
     // basis
@@ -1771,9 +1776,9 @@ public:
             mpl::identity<basis_0_type> >::type::type basis_type;
 
 
-    typedef boost::shared_ptr<basis_type> basis_ptrtype;
+    typedef std::shared_ptr<basis_type> basis_ptrtype;
     typedef basis_type reference_element_type;
-    typedef boost::shared_ptr<reference_element_type> reference_element_ptrtype;
+    typedef std::shared_ptr<reference_element_type> reference_element_ptrtype;
     typedef reference_element_type fe_type;
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<fe_type>,
@@ -1782,7 +1787,7 @@ public:
     typedef typename mpl::if_<mpl::bool_<is_composite>,
             mpl::identity<boost::none_t>,
             mpl::identity<typename basis_0_type::PreCompute> >::type pc_type;
-    typedef boost::shared_ptr<pc_type> pc_ptrtype;
+    typedef std::shared_ptr<pc_type> pc_ptrtype;
 
     // component basis
 #if 0
@@ -1797,7 +1802,7 @@ public:
             value_type,
             convex_type> >::type::type component_basis_type;
 #endif
-    typedef boost::shared_ptr<component_basis_type> component_basis_ptrtype;
+    typedef std::shared_ptr<component_basis_type> component_basis_ptrtype;
 
     // trace space
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
@@ -1809,7 +1814,7 @@ public:
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
             mpl::identity<FunctionSpace<trace_mesh_type, bases_list> >,
             mpl::identity<mpl::void_> >::type::type trace_functionspace_type;
-    typedef typename boost::shared_ptr<trace_functionspace_type> trace_functionspace_ptrtype;
+    typedef typename std::shared_ptr<trace_functionspace_type> trace_functionspace_ptrtype;
 
     // wirebasket
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
@@ -1821,7 +1826,7 @@ public:
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
             mpl::identity<FunctionSpace<trace_trace_mesh_type, bases_list> >,
             mpl::identity<mpl::void_> >::type::type trace_trace_functionspace_type;
-    typedef typename boost::shared_ptr<trace_trace_functionspace_type> trace_trace_functionspace_ptrtype;
+    typedef typename std::shared_ptr<trace_trace_functionspace_type> trace_trace_functionspace_ptrtype;
 
 #if 0
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
@@ -1840,14 +1845,14 @@ public:
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::face_type>, mpl::identity<mpl::void_> >::type::type geoface_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::edge_type>, mpl::identity<mpl::void_> >::type::type geoedge_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::point_type>, mpl::identity<mpl::void_> >::type::type geopoint_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+    typedef std::shared_ptr<gm_type> gm_ptrtype;
+    typedef std::shared_ptr<gm1_type> gm1_ptrtype;
     //typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT, geoelement_type> >,
     //mpl::identity<mpl::void_> >::type::type pts_gmc_type;
     using pts_gmc_type = typename gm_type::template Context<vm::POINT, geoelement_type>;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> >,
                               mpl::identity<mpl::void_> >::type::type gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_ptrtype>, mpl::identity<mpl::void_> >::type::type geopc_ptrtype;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_type>, mpl::identity<mpl::void_> >::type::type geopc_type;
 
@@ -1866,16 +1871,16 @@ public:
                               mpl::identity<mpl::void_>,
                               mpl::identity<typename basis_0_type::template Context<basis_context_value, basis_0_type, gm_type, geoelement_type> > >::type::type basis_context_type;
 #endif
-    typedef boost::shared_ptr<basis_context_type> basis_context_ptrtype;
+    typedef std::shared_ptr<basis_context_type> basis_context_ptrtype;
 
     // dof
     typedef typename mpl::if_<mpl::bool_<is_composite>,
             mpl::identity<DofComposite>,
                               mpl::identity<DofTable<mesh_type, basis_type, periodicity_0_type, mortar_0_type> > >::type::type dof_type;
 
-    typedef boost::shared_ptr<dof_type> dof_ptrtype;
-    typedef boost::shared_ptr<DataMap> datamap_ptrtype;
-    typedef boost::shared_ptr<IndexSplit> indexsplit_ptrtype;
+    typedef std::shared_ptr<dof_type> dof_ptrtype;
+    typedef std::shared_ptr<DataMap> datamap_ptrtype;
+    typedef std::shared_ptr<IndexSplit> indexsplit_ptrtype;
 
     // return types
     //typedef typename bases_list::polyset_type return_value_type;
@@ -2131,7 +2136,7 @@ public:
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
             typedef typename ChangeBasis<BasisType>::type::element_type fs_type;
             typedef typename fs_type::template Element<value_type, typename Cont/*VectorUblas<T>*/::range::type > element_type;
-            typedef std::pair< keyType, boost::shared_ptr<element_type> > the_type;
+            typedef std::pair< keyType, std::shared_ptr<element_type> > the_type;
 
             typedef typename mpl::if_<mpl::bool_<FunctionSpace<A0,A1,A2,A3,A4>::is_composite>,
                                       mpl::identity<the_type>,
@@ -2154,7 +2159,7 @@ public:
         struct AddOffContainer
         {
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
-            typedef boost::shared_ptr<Cont> type;
+            typedef std::shared_ptr<Cont> type;
         };
         typedef typename mpl::transform<bases_list, AddOffContainer<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type container_vector_type;
 
@@ -2163,7 +2168,7 @@ public:
         typedef FunctionSpace<A0,A1,A2,A3,A4> functionspace_type;
         using mesh_type = typename functionspace_type::mesh_type;
         using mesh_ptrtype = typename functionspace_type::mesh_ptrtype;
-        typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+        typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
 
         static const uint16_type nDim = mesh_type::nDim;
         static const uint16_type nRealDim = mesh_type::nRealDim;
@@ -2202,7 +2207,7 @@ public:
         typedef typename mpl::if_<mpl::bool_<is_composite>,
                 mpl::identity<boost::none_t>,
                 mpl::identity<typename basis_0_type::PreCompute> >::type::type pc_type;
-        typedef boost::shared_ptr<pc_type> pc_ptrtype;
+        typedef std::shared_ptr<pc_type> pc_ptrtype;
         //typedef typename basis_type::polyset_type return_value_type;
         typedef typename functionspace_type::return_type return_type;
 
@@ -2243,9 +2248,9 @@ public:
          */
         typedef typename mesh_type::element_type geoelement_type;
         typedef typename functionspace_type::gm_type gm_type;
-        typedef boost::shared_ptr<gm_type> gm_ptrtype;
+        typedef std::shared_ptr<gm_type> gm_ptrtype;
         typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
         typedef typename gm_type::precompute_type geopc_type;
 
@@ -2256,7 +2261,7 @@ public:
         //@{
 
         Element();
-
+        Element( Element&& ) = default;
         Element( Element const& __e );
 
         friend class FunctionSpace<A0,A1,A2,A3,A4>;
@@ -2303,7 +2308,7 @@ public:
         /** @name Operator overloads
          */
         //@{
-
+        Element& operator=( Element && __e ) = default;
         Element& operator=( Element const& __e );
 #if 0
         template<typename ExprT>
@@ -2924,7 +2929,7 @@ public:
 
         // Only works for scalar fields
         template < typename p0_space_type >
-        typename p0_space_type::element_type extremeValue( boost::shared_ptr<p0_space_type> const& P0h, std::string extreme )
+        typename p0_space_type::element_type extremeValue( std::shared_ptr<p0_space_type> const& P0h, std::string const& extreme )
         {
             // check if the mesh coming from P0h and the class elements is the same
             FEELPP_ASSERT( P0h->mesh() == this->mesh() ).error( "mesh is not the same" );
@@ -2968,7 +2973,7 @@ public:
         }
 
         template < typename p0_space_type >
-        typename p0_space_type::element_type max( boost::shared_ptr<p0_space_type> const& P0h )
+        typename p0_space_type::element_type max( std::shared_ptr<p0_space_type> const& P0h )
         {
             return this->extremeValue( P0h, "max" );
         }
@@ -2983,7 +2988,7 @@ public:
         }
 
         template < typename p0_space_type >
-        typename p0_space_type::element_type min( boost::shared_ptr<p0_space_type> const& P0h )
+        typename p0_space_type::element_type min( std::shared_ptr<p0_space_type> const& P0h )
         {
             return this->extremeValue( P0h, "min" );
         }
@@ -3162,7 +3167,7 @@ public:
         {
             //new context for evaluate the points
             typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
-            typedef boost::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
+            typedef std::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
 
             gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),  context.pc() ) );
 
@@ -3180,7 +3185,7 @@ public:
         {
             //new context for the interpolation
             typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
-            typedef boost::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
+            typedef std::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
 
             typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::permutation_type permutation_type;
             typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::precompute_ptrtype precompute_ptrtype;
@@ -3691,7 +3696,7 @@ public:
         template<typename BackendType>
         typename BackendType::vector_ptrtype
         extractValuesWithMarker( std::string const& m,
-                                 boost::shared_ptr<BackendType> backend )
+                                 std::shared_ptr<BackendType> backend )
             {
                 auto r =  functionSpace()->dof()->markerToDof( m );
                 size_type s = std::distance( r.first, r.second );
@@ -3705,7 +3710,7 @@ public:
         template<typename BackendType>
         typename BackendType::vector_ptrtype
         extractValuesWithoutMarker( std::string const& m,
-                                    boost::shared_ptr<BackendType> backend )
+                                    std::shared_ptr<BackendType> backend )
             {
                 auto r1 =  functionSpace()->dof()->markerToDofLessThan( m );
                 auto r2 =  functionSpace()->dof()->markerToDofGreaterThan( m );
@@ -3775,11 +3780,19 @@ public:
         /**
          * subWorlds : vector of WorldComm ( >1 if composite)
          */
-        std::vector<WorldComm> const& worldsComm() const
+        worldscomm_ptr_t const& worldsComm() const
         {
             return M_functionspace->worldsComm();
         }
 
+        /**
+         * world communicator
+         */
+        WorldComm & worldComm() 
+        {
+            return M_functionspace->worldComm();
+        }
+        
         /**
          * world communicator
          */
@@ -3922,7 +3935,18 @@ public:
 #if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
 #endif
+            saveImpl( path, type, suffix, sep );
+        }
 
+        //!
+        //! save function space element in file
+        //! @param path path to files
+        //! @param type file type binary, ascii, hdf5, xml
+        //! @param suffix filename suffix to use
+        //! @param sep separator to use in filenames
+        //!
+        void saveImpl( std::string const& path, std::string const& type = "binary", std::string const& suffix = "", std::string const & sep = "")
+        {
             // if directory does not exist, create it only by one process
             if ( this->worldComm().isMasterRank() && !fs::exists( fs::path( path ) ) )
             {
@@ -3983,6 +4007,17 @@ public:
 #if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
 #endif
+            return loadImpl( path, type, suffix, sep );
+        }
+        //!
+        //! load function space element from file
+        //! @param path path to file
+        //! @param type file type binary, ascii, hdf5, xml
+        //! @param suffix filename suffix to use
+        //! @param sep separator to use in filename
+        //!
+        bool loadImpl( std::string const& path, std::string const& type = "binary", std::string const& suffix = "", std::string const& sep = "" )
+        {
             fs::path partial_path = fs::path(path);
             fs::path full_path_dir_sol(fs::current_path());
             full_path_dir_sol = full_path_dir_sol/partial_path;
@@ -4193,14 +4228,13 @@ public:
 
 
         }
-    private:
-
+    public:
         template<typename RangeType, typename ExprType>
         FEELPP_NO_EXPORT void onImpl( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate = true, bool verbose = false )
         {
             onImplBase( r, e, prefix, geomap_strategy, accumulate, verbose, boost::is_std_list<RangeType>()  );
         }
-
+    private:
         template<typename RangeType, typename ExprType>
         FEELPP_NO_EXPORT void onImplBase( RangeType const& rList, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::true_ )
         {
@@ -4258,8 +4292,8 @@ public:
     typedef Element<value_type> element_type;
     typedef Element<value_type> real_element_type;
     typedef Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type > element_external_storage_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
-    typedef boost::shared_ptr<element_external_storage_type> element_external_storage_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_external_storage_type> element_external_storage_ptrtype;
 
     typedef std::map< size_type, std::vector< size_type > > proc_dist_map_type;
 
@@ -4278,11 +4312,11 @@ public:
                    mesh_support_vector_type const& meshSupport = mesh_support_vector_type(),
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                    periodicity_type  periodicity = periodicity_type(),
-                   std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces),
+                   worldscomm_ptr_t const& _worldsComm = Environment::worldsComm(nSpaces),
                    std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
         :
+        super( _worldsComm[0]->clone() ),
         M_worldsComm( _worldsComm ),
-        M_worldComm( new WorldComm( _worldsComm[0] ) ),
         M_extendedDofTableComposite( extendedDofTable ),
         M_extendedDofTable( extendedDofTable[0] )
     {
@@ -4293,21 +4327,21 @@ public:
                    mesh_support_vector_type const& meshSupport,
                    std::vector<Dof > const& dofindices,
                    periodicity_type periodicity = periodicity_type(),
-                   std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces),
+                   worldscomm_ptr_t const& _worldsComm = Environment::worldsComm(nSpaces),
                    std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
         :
+        super( _worldsComm[0]->clone() ),
         M_worldsComm( _worldsComm ),
-        M_worldComm( new WorldComm( _worldsComm[0] ) ),
         M_extendedDofTableComposite( extendedDofTable ),
         M_extendedDofTable( extendedDofTable[0] )
     {
         this->init( mesh, meshSupport, 0, dofindices, periodicity );
     }
 
-    FunctionSpace( WorldComm const& worldcomm = Environment::worldComm() )
+    explicit FunctionSpace( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() )
         :
-        M_worldsComm( std::vector<WorldComm>(nSpaces,worldcomm) ),
-        M_worldComm( new WorldComm( worldcomm ) ),
+        super( worldcomm ),
+        M_worldsComm( makeWorldsComm( nSpaces, worldcomm ) ),
         M_extendedDofTableComposite( std::vector<bool>(nSpaces,false) ),
         M_extendedDofTable( false )
         {}
@@ -4320,7 +4354,7 @@ public:
     // }
 
     /**
-     * helper static function to create a boost::shared_ptr<> out of
+     * helper static function to create a std::shared_ptr<> out of
      * the \c FunctionSpace
      */
 #if 0 // ambiguous call with new below
@@ -4341,7 +4375,7 @@ public:
                                        ( mesh,* )
                                      )
                                      ( optional
-                                       ( worldscomm, *, Feel::detail::createWorldsComm<functionspace_type>(mesh).worldsComm() )
+                                       ( worldscomm, (worldscomm_ptr_t), Feel::detail::createWorldsComm<functionspace_type>(mesh).worldsComm() )
                                        ( components, ( size_type ), MESH_RENUMBER | MESH_CHECK )
                                        ( periodicity,*,periodicity_type() )
                                        ( extended_doftable,*,std::vector<bool>(nSpaces,false) )
@@ -4356,13 +4390,13 @@ public:
 
     static pointer_type NewImpl( mesh_ptrtype const& __m,
                                  mesh_support_vector_type const& meshSupport,
-                                 std::vector<WorldComm> const& worldsComm = Environment::worldsComm(nSpaces),
+                                 worldscomm_ptr_t & worldscomm = Environment::worldsComm(nSpaces),
                                  size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                                  periodicity_type periodicity = periodicity_type(),
                                  std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
     {
 
-        return pointer_type( new functionspace_type( __m, meshSupport, mesh_components, periodicity, worldsComm, extendedDofTable ) );
+        return pointer_type( new functionspace_type( __m, meshSupport, mesh_components, periodicity, worldscomm, extendedDofTable ) );
     }
 
     template<typename ...FSpaceList>
@@ -4381,7 +4415,7 @@ public:
      * but not totally a view : must be use we caution
      */
     template<typename SimilarSpaceType>
-    void shallowCopy( boost::shared_ptr<SimilarSpaceType> const& simSpace )
+    void shallowCopy( std::shared_ptr<SimilarSpaceType> const& simSpace )
         {
             BOOST_MPL_ASSERT_MSG( ( boost::is_same<typename SimilarSpaceType::mesh_type, mesh_type>::value ),
                                   INVALID_MESH_TYPE_COMPATIBILITY, (typename SimilarSpaceType::mesh_type, mesh_type ) );
@@ -4389,7 +4423,7 @@ public:
                                   INVALID_BASIS_TYPE_COMPATIBILITY, (typename SimilarSpaceType::basis_type, basis_type ) );
 
             M_worldsComm = simSpace->worldsComm();
-            M_worldComm = simSpace->worldCommPtr();
+            this->setWorldComm( simSpace->worldCommPtr() );
             M_mesh = simSpace->mesh();
             M_periodicity = simSpace->periodicity();
             M_ref_fe=simSpace->fe();
@@ -4458,28 +4492,19 @@ public:
         }
 
 
-    void setWorldsComm( std::vector<WorldComm> const& _worldsComm )
+    void setWorldsComm( worldscomm_ptr_t const& _worldsComm )
     {
         M_worldsComm=_worldsComm;
     }
-    void setWorldComm( WorldComm const& _worldComm )
-    {
-        M_worldComm.reset( new WorldComm( _worldComm ) );
-    }
-
-    std::vector<WorldComm> const& worldsComm() const
+    worldscomm_ptr_t & worldsComm() 
     {
         return M_worldsComm;
     }
-    WorldComm const& worldComm() const
+    worldscomm_ptr_t const& worldsComm() const
     {
-        return *M_worldComm;
+        return M_worldsComm;
     }
-    boost::shared_ptr<WorldComm> const& worldCommPtr() const
-    {
-        return M_worldComm;
-    }
-
+    
     bool hasEntriesForAllSpaces()
     {
         return (this->template mesh<0>()->worldComm().localSize() == this->template mesh<0>()->worldComm().globalSize() );
@@ -4525,7 +4550,7 @@ public:
     {
         //new context for the interpolation
         typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
-        typedef boost::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
+        typedef std::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
 
         typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::permutation_type permutation_type;
         typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::precompute_ptrtype precompute_ptrtype;
@@ -4903,7 +4928,7 @@ public:
     }
 
 
-    boost::shared_ptr<IndexSplit>
+    std::shared_ptr<IndexSplit>
     buildDofIndexSplit()
     {
         auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), Feel::detail::computeStartOfFieldSplit() ).template get<1>();
@@ -4911,7 +4936,7 @@ public:
         boost::fusion::for_each( functionSpaces(), computeSplit );
         return computeSplit.indexSplit();
     }
-    boost::shared_ptr<IndexSplit>
+    std::shared_ptr<IndexSplit>
     buildDofIndexSplitWithComponents()
     {
         bool hasCompSplit = boost::fusion::fold( functionSpaces(), false, Feel::detail::hasSubSpaceWithComponentsSplit() );
@@ -4923,10 +4948,10 @@ public:
             return computeSplit.indexSplit();
         }
         else
-            return boost::shared_ptr<IndexSplit>();
+            return std::shared_ptr<IndexSplit>();
     }
 
-    boost::shared_ptr<IndexSplit> const&
+    std::shared_ptr<IndexSplit> const&
     dofIndexSplit() const
     {
         return this->dof()->indexSplit();
@@ -4961,13 +4986,23 @@ public:
         return u;
     }
 
+    element_type
+    elementFromExpr( std::string const& e, std::string const& name, std::string const& desc = "u" )
+    {
+        element_type u( this->shared_from_this(), name, desc );
+        bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
+        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        u.on( _range=elements(M_mesh,entityProcess), _expr=expr<nComponents1,nComponents2>(e) );
+        return u;
+    }
+
     /**
      * \return the element 0 of the function space
      */
     element_ptrtype
     elementPtr( std::string const& name = "u", std::string const& desc = "u" )
     {
-        return boost::make_shared<element_type>( this->shared_from_this(), name, desc );
+        return std::make_shared<element_type>( this->shared_from_this(), name, desc );
     }
 
     /**
@@ -4980,7 +5015,7 @@ public:
     elementPtr( ExprT e, std::string const& name = "u", std::string const& desc = "u",
                 typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
     {
-        //return boost::make_shared<element_type>( e, name, desc );
+        //return std::make_shared<element_type>( e, name, desc );
         element_ptrtype u = this->elementPtr(name,desc);
         bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
         EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
@@ -5000,7 +5035,7 @@ public:
         elements_ptrtype u( r );
         for( int i = 0; i <  r; ++i )
         {
-            u[i] = boost::make_shared<element_type>( this->shared_from_this(), name );
+            u[i] = std::make_shared<element_type>( this->shared_from_this(), name );
         }
         return u;
     }
@@ -5016,7 +5051,7 @@ public:
         elements_ptrtype u( r );
         for( int i = 0; i <  r; ++i )
         {
-            u[i] = boost::make_shared<element_type>( e, name );
+            u[i] = std::make_shared<element_type>( e, name );
         }
         return u;
     }
@@ -5027,7 +5062,7 @@ public:
      * \return the element of the function space with value shared by the input vector
      */
     Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type >
-    element( boost::shared_ptr<Vector<value_type> > const& vec, int blockIdStart = 0 )
+    element( std::shared_ptr<Vector<value_type> > const& vec, int blockIdStart = 0 )
     {
         return this->element( *vec, blockIdStart );
     }
@@ -5228,8 +5263,8 @@ public:
 
     FunctionSpace( FunctionSpace const& __fe )
         :
+        super( __fe ),
         M_worldsComm( __fe.M_worldsComm ),
-        M_worldComm( __fe.M_worldComm ),
         M_mesh( __fe.M_mesh ),
         M_ref_fe( __fe.M_ref_fe ),
         M_comp_space( __fe.M_comp_space ),
@@ -5330,8 +5365,7 @@ protected:
     //friend class FunctionSpace<mesh_type, typename bases_list::component_basis_type, value_type>;
     //friend class FunctionSpace<mesh_type, bases_list, value_type>;
 
-    std::vector<WorldComm> M_worldsComm;
-    boost::shared_ptr<WorldComm> M_worldComm;
+    worldscomm_ptr_t M_worldsComm;
 
     // finite element mesh
     mutable mesh_ptrtype M_mesh;
@@ -5438,9 +5472,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         M_mesh->removeFacesFromBoundary( { periodicity.tag1(), periodicity.tag2() } );
     }
 
-    M_ref_fe = boost::make_shared<basis_type>();
+    M_ref_fe = std::make_shared<basis_type>();
 
-    M_dof = boost::make_shared<dof_type>( M_ref_fe, fusion::at_c<0>(periodicity), this->worldsComm()[0] );
+    M_dof = std::make_shared<dof_type>( M_ref_fe, fusion::at_c<0>(periodicity), *this->worldsComm()[0] );
 
     M_dof->setBuildDofTableMPIExtended( this->extendedDofTable() );
 
@@ -5493,8 +5527,8 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::initList()
 {
-    if ( !M_worldComm )
-        M_worldComm = boost::shared_ptr<WorldComm>( new WorldComm( M_worldsComm[0] ));
+    if ( !this->hasWorldComm() )
+        this->setWorldComm( M_worldsComm[0] );
 
     if ( true )// this->worldComm().globalSize()>1 )
     {
@@ -5505,7 +5539,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
                 DVLOG(2) << "init(<composite>) type hasEntriesForAllSpaces\n";
 
                 // build datamap
-                auto dofInitTool=Feel::detail::updateDataMapProcessStandard<dof_type>( this->worldComm(),
+                auto dofInitTool=Feel::detail::updateDataMapProcessStandard<dof_type>( this->worldCommPtr(),
                                                                                        this->nSubFunctionSpace() );
                 fusion::for_each( M_functionspaces, dofInitTool );
                 // finish update datamap
@@ -5520,12 +5554,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
                 DVLOG(2) << "init(<composite>) type Not hasEntriesForAllSpaces\n";
 
                 // build the WorldComm associated to mix space
-                WorldComm mixSpaceWorldComm = this->worldsComm()[0];
+                worldcomm_ptr_t mixSpaceWorldComm = this->worldsComm()[0]->clone();
 
                 if ( this->worldsComm().size()>1 )
                     for ( int i=1; i<( int )this->worldsComm().size(); ++i )
                         {
-                            mixSpaceWorldComm = mixSpaceWorldComm + this->worldsComm()[i];
+                            mixSpaceWorldComm = *mixSpaceWorldComm + *this->worldsComm()[i];
                         }
 
                 this->setWorldComm( mixSpaceWorldComm );
@@ -5803,7 +5837,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
 
     for ( ; it != ite; ++it )
     {
-        inv_trans_type __git( M_mesh->gm(), M_mesh->element( ( *it )->id ), this->worldComm().subWorldCommSeq() );
+        inv_trans_type __git( M_mesh->gm(), M_mesh->element( ( *it )->id ), this->worldComm().subWorldCommSeqPtr() );
 
         size_type cv_stored = ( *it )->id;
 

@@ -55,6 +55,7 @@
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/fusion/include/fold.hpp>
+#include <feel/feelcore/disablewarnings.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -62,7 +63,7 @@
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/export.hpp>
-
+#include <feel/feelcore/reenablewarnings.hpp>
 #include <Eigen/Core>
 
 
@@ -95,20 +96,20 @@ template <typename T> inline std::ostream& operator << ( std::ostream& os, const
  * @author Christophe Prud'homme, 2005
  */
 template <typename T>
-class FEELPP_EXPORT MatrixSparse : public boost::enable_shared_from_this<MatrixSparse<T> >
+class FEELPP_EXPORT MatrixSparse : public CommObject, public std::enable_shared_from_this<MatrixSparse<T> >
 {
 public:
-
+    using super = CommObject;
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
     typedef GraphCSR graph_type;
-    typedef boost::shared_ptr<graph_type> graph_ptrtype;
+    typedef std::shared_ptr<graph_type> graph_ptrtype;
     typedef Vector<T> vector_type;
-    typedef boost::shared_ptr<Vector<T> > vector_ptrtype;
+    typedef std::shared_ptr<Vector<T> > vector_ptrtype;
 
     typedef DataMap datamap_type;
-    typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
-    using sparse_matrix_ptrtype = boost::shared_ptr<MatrixSparse<T>>;
+    typedef std::shared_ptr<datamap_type> datamap_ptrtype;
+    using sparse_matrix_ptrtype = std::shared_ptr<MatrixSparse<T>>;
 
     typedef typename datamap_type::indexsplit_type indexsplit_type;
     typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
@@ -126,13 +127,13 @@ public:
      * the matrix before usage with
      * \p init(...).
      */
-    MatrixSparse( WorldComm const& worldComm=Environment::worldComm() );
+    MatrixSparse( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
-    MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
+    MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, worldcomm_ptr_t const& worldComm );
 
     MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
         :
-        MatrixSparse( dmRow, dmCol, dmRow->worldComm() )
+        MatrixSparse( dmRow, dmCol, dmRow->worldCommPtr() )
         {}
 
     /**
@@ -402,14 +403,6 @@ public:
             throw std::logic_error( ostr.str() );
         }
     }
-    /**
-     * \return the communicator
-     */
-    //mpi::communicator const& comm() const { return M_comm; }
-    WorldComm const& comm() const
-    {
-        return M_worldComm;
-    }
 
     /**
      * Release all memory and return to a state just like after having
@@ -519,7 +512,7 @@ public:
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix ( const T& s, boost::shared_ptr<MatrixSparse<T> > const& m, Feel::MatrixStructure matStruc = Feel::SAME_NONZERO_PATTERN )
+    void addMatrix ( const T& s, std::shared_ptr<MatrixSparse<T> > const& m, Feel::MatrixStructure matStruc = Feel::SAME_NONZERO_PATTERN )
     {
         this->addMatrix( s, *m, matStruc );
     }
@@ -537,8 +530,8 @@ public:
      * Multiplies the matrix with \p arg and stores the result in \p
      * dest.
      */
-    void multVector ( const boost::shared_ptr<Vector<T> >& arg,
-                      boost::shared_ptr<Vector<T> >& dest ) const
+    void multVector ( const std::shared_ptr<Vector<T> >& arg,
+                      std::shared_ptr<Vector<T> >& dest ) const
     {
         this->multVector( *arg, *dest );
     }
@@ -559,7 +552,7 @@ public:
     /**
      * set diagonal entries from vector vecDiag
      */
-    void setDiagonal( boost::shared_ptr<Vector<T> > const& vecDiag )
+    void setDiagonal( std::shared_ptr<Vector<T> > const& vecDiag )
         {
             this->setDiagonal( *vecDiag );
         }
@@ -574,7 +567,7 @@ public:
     /**
      * add diagonal entries from vector vecDiag
      */
-    void addDiagonal( boost::shared_ptr<Vector<T> > const& vecDiag )
+    void addDiagonal( std::shared_ptr<Vector<T> > const& vecDiag )
         {
             this->addDiagonal( *vecDiag );
         }
@@ -594,7 +587,7 @@ public:
                             const size_type j ) const = 0;
 
     virtual MatrixSparse<T> & operator = ( MatrixSparse<value_type> const& M ) = 0;
-    MatrixSparse<T> & operator = ( boost::shared_ptr<MatrixSparse<value_type> > const& M )
+    MatrixSparse<T> & operator = ( std::shared_ptr<MatrixSparse<value_type> > const& M )
     {
         *this = *M;
         return *this;
@@ -607,7 +600,7 @@ public:
     /**
      * Copies the diagonal part of the matrix into \p dest.
      */
-    void diagonal ( boost::shared_ptr<Vector<T> >& dest ) const
+    void diagonal ( std::shared_ptr<Vector<T> >& dest ) const
     {
         diagonal( *dest );
     }
@@ -615,10 +608,10 @@ public:
     /**
      * Return copy vector of the diagonal part of the matrix.
      */
-    virtual boost::shared_ptr<Vector<T> > diagonal() const
+    virtual std::shared_ptr<Vector<T> > diagonal() const
     {
         CHECK( false ) << "Not Implemented in base class!";
-        return boost::shared_ptr<Vector<T>>();
+        return std::shared_ptr<Vector<T>>();
     }
 
     /**
@@ -631,10 +624,10 @@ public:
     /**
      * \return the transpose of the matrix
      */
-    virtual boost::shared_ptr<MatrixSparse<T> > transpose( size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
+    virtual std::shared_ptr<MatrixSparse<T> > transpose( size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
     {
         CHECK( false ) << "Not Implemented in base class!";
-        boost::shared_ptr<MatrixSparse<T> > Mt;
+        std::shared_ptr<MatrixSparse<T> > Mt;
         transpose( *Mt, options );
         return Mt;
     }
@@ -645,7 +638,7 @@ public:
      * \param M the matrix to transpose
      * \param Mt the matrix transposed
      */
-    void transpose( boost::shared_ptr<MatrixSparse<value_type> >& Mt, size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
+    void transpose( std::shared_ptr<MatrixSparse<value_type> >& Mt, size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
     {
         this->transpose( *Mt, options );
     }
@@ -658,7 +651,7 @@ public:
     /**
      * Returns the symmetric part of the matrix
      */
-    void symmetricPart( boost::shared_ptr<MatrixSparse<value_type> >& Ms ) const
+    void symmetricPart( std::shared_ptr<MatrixSparse<value_type> >& Ms ) const
     {
         symmetricPart( *Ms );
     }
@@ -773,14 +766,14 @@ public:
      * checkAndFixRange : add missing dof entries in // ( typically a ghost dof present but not active dof associated )
      */
     virtual
-    boost::shared_ptr<MatrixSparse<T> >
+    std::shared_ptr<MatrixSparse<T> >
     createSubMatrix( std::vector<size_type> const& rows,
                      std::vector<size_type> const& cols,
                      bool useSameDataMap=false,
                      bool checkAndFixRange=true ) const
     {
         CHECK( false ) << "invalid call : Not Implemented in base class";
-        boost::shared_ptr<MatrixSparse<T> > res;
+        std::shared_ptr<MatrixSparse<T> > res;
         return res;
     }
 
@@ -790,7 +783,7 @@ public:
      */
     virtual
     void
-    updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
+    updateSubMatrix( std::shared_ptr<MatrixSparse<T> > & submatrix,
                      std::vector<size_type> const& rows,
                      std::vector<size_type> const& cols, bool doClose = true )
     {
@@ -844,7 +837,7 @@ public:
     /**
      * update a block matrix
      */
-    virtual void updateBlockMat( boost::shared_ptr<MatrixSparse<T> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j ) = 0;
+    virtual void updateBlockMat( std::shared_ptr<MatrixSparse<T> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j ) = 0;
 
 
     /**
@@ -857,7 +850,7 @@ public:
 
     virtual void sqrt( MatrixSparse<value_type>& _m ) const;
 
-    void sqrt( boost::shared_ptr<MatrixSparse<value_type> >& _m ) const
+    void sqrt( std::shared_ptr<MatrixSparse<value_type> >& _m ) const
     {
         sqrt(*_m);
     }
@@ -931,9 +924,6 @@ protected:
                      << std::endl;
         }
 
-    //! mpi communicator
-    WorldComm M_worldComm;
-
     /**
      * Flag indicating whether or not the matrix
      * has been initialized.
@@ -962,16 +952,16 @@ protected:
 };
 
 typedef MatrixSparse<double> d_sparse_matrix_type;
-typedef boost::shared_ptr<d_sparse_matrix_type> d_sparse_matrix_ptrtype;
-typedef boost::shared_ptr<d_sparse_matrix_type> sparse_matrix_ptrtype;
+typedef std::shared_ptr<d_sparse_matrix_type> d_sparse_matrix_ptrtype;
+typedef std::shared_ptr<d_sparse_matrix_type> sparse_matrix_ptrtype;
 
 
 //-----------------------------------------------------------------------
 // MatrixSparse inline members
 template <typename T>
 inline
-MatrixSparse<T>::MatrixSparse( WorldComm const& worldComm ) :
-    M_worldComm( worldComm ),
+MatrixSparse<T>::MatrixSparse( worldcomm_ptr_t const& worldComm ) :
+    super( worldComm ),
     M_is_initialized( false ),
     M_is_closed( false ),
     M_mprop( NON_HERMITIAN )
@@ -980,8 +970,8 @@ MatrixSparse<T>::MatrixSparse( WorldComm const& worldComm ) :
 
 template <typename T>
 inline
-MatrixSparse<T>::MatrixSparse ( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm ) :
-    M_worldComm( worldComm ),
+MatrixSparse<T>::MatrixSparse ( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, worldcomm_ptr_t const& worldComm ) :
+    super( worldComm ),
     M_is_initialized( false ),
     M_is_closed( false ),
     M_mprop( NON_HERMITIAN ),
@@ -1078,7 +1068,7 @@ template <class MatrixType>
 struct is_matrix_ptr : mpl::false_ {};
 
 template <class MatrixType>
-struct is_matrix_ptr<boost::shared_ptr<MatrixType> >
+struct is_matrix_ptr<std::shared_ptr<MatrixType> >
         :
         boost::is_base_of<MatrixSparse<typename MatrixType::value_type>,
         MatrixType>
@@ -1155,11 +1145,11 @@ FEELPP_EXPORT void load(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned 
     ar & BOOST_SERIALIZATION_NVP(map_col);
     ar & BOOST_SERIALIZATION_NVP(graph);
 
-    auto map_row_ptr = boost::make_shared<Feel::DataMap>( map_row );
-    auto map_col_ptr = boost::make_shared<Feel::DataMap>( map_col );
+    auto map_row_ptr = std::make_shared<Feel::DataMap>( map_row );
+    auto map_col_ptr = std::make_shared<Feel::DataMap>( map_col );
     m.setMapRow( map_row_ptr );
     m.setMapCol( map_col_ptr );
-    auto graph_ptr = boost::make_shared<Feel::GraphCSR>( graph );
+    auto graph_ptr = std::make_shared<Feel::GraphCSR>( graph );
 
     m.init( map_row.nDof(), map_col.nDof(),
             map_row.nLocalDofWithoutGhost(), map_col.nLocalDofWithoutGhost(),

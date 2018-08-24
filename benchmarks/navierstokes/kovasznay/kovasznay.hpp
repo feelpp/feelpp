@@ -85,7 +85,7 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -94,7 +94,7 @@ public:
     /*mesh*/
     typedef Entity convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
     typedef Lagrange<OrderU, Vectorial> basis_u_type;
@@ -111,7 +111,7 @@ public:
     BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<0> >::type, typename basis_u_type::template ChangeTag<0>::type> ) );
     BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<1> >::type, typename basis_p_type::template ChangeTag<1>::type> ) );
     //BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<2> >::type, basis_l_type> ) );
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     /* functions */
     typedef typename space_type::element_type element_type;
@@ -152,7 +152,7 @@ private:
     double penalbc;
     double M_beta;
 
-    boost::shared_ptr<export_type> exporter;
+    std::shared_ptr<export_type> exporter;
     typename export_type::timeset_ptrtype timeSet;
     mesh_ptrtype mesh;
 private:

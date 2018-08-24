@@ -82,7 +82,7 @@ void
 checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simplex" )
 {
     typedef Mesh<Entity<Dim,1,Dim> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef Mesh<Simplex<3>> mesh_type;
     //size_type updateComponentsMesh = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES;

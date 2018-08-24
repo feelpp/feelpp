@@ -15,11 +15,11 @@ class MaxwellPropertiesDescription
     typedef MaxwellPropertiesDescription<SpaceType> self_type;
 public :
     typedef SpaceType space_type;
-    typedef boost::shared_ptr<SpaceType> space_ptrtype;
+    typedef std::shared_ptr<SpaceType> space_ptrtype;
     typedef typename SpaceType::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     explicit MaxwellPropertiesDescription( std::string const& prefix )
         :
@@ -29,7 +29,7 @@ public :
 
     MaxwellPropertiesDescription( MaxwellPropertiesDescription const& ) = default;
 
-    void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, std::vector<WorldComm> const& worldsComm )
+    void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, worldscomm_ptr_t const& worldsComm )
         {
             std::set<std::string> eltMarkersInMesh;
             for (auto const& markPair : mesh->markerNames() )
@@ -123,10 +123,10 @@ public :
             return M_magneticPermeabilityByMaterial.find( matName )->second;
         }
 
-    boost::shared_ptr<std::ostringstream>
+    std::shared_ptr<std::ostringstream>
     getInfoMaterialParameters() const
         {
-            boost::shared_ptr<std::ostringstream> ostr( new std::ostringstream() );
+            std::shared_ptr<std::ostringstream> ostr( new std::ostringstream() );
             *ostr << "\n   Materials parameters";
             std::set<std::string> matNames;
             for ( auto const& matRange : M_rangeMeshElementsByMaterial)

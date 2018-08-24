@@ -48,9 +48,9 @@ class CRBApp   : public Application
 public:
 
     typedef CRBModel<ModelType> crbmodel_type;
-    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
+    typedef std::shared_ptr<crbmodel_type> crbmodel_ptrtype;
     typedef CRB<crbmodel_type> crb_type;
-    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+    typedef std::shared_ptr<crb_type> crb_ptrtype;
 
     CRBApp( AboutData const& ad, po::options_description const& od )
         :
