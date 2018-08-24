@@ -468,6 +468,9 @@ levelset_options(std::string const& prefix)
 
         (prefixvm(prefix,"fix-volume").c_str(), Feel::po::value<bool>()->default_value(false), "correct levelset volume after each iteration (using phi->phi+(V-Vi)/L)")
 
+        (prefixvm(prefix,"use-extension-velocity").c_str(), Feel::po::value<bool>()->default_value(false), "use extension velocity which preserves the distance property when advecting the level set")
+        (prefixvm(prefix,"extension-velocity.gamma").c_str(), Feel::po::value<double>()->default_value(10), "value for the gamma premultying Nitsche's term to impose the weak BC at the interface")
+
         (prefixvm(prefix,"do_export_advection").c_str(), Feel::po::value<bool>()->default_value(false), "doExportAdvection")
         (prefixvm(prefix,"do_export_gradphi").c_str(), Feel::po::value<bool>(), "doExportGradPhi")
         (prefixvm(prefix,"do_export_modgradphi").c_str(), Feel::po::value<bool>(), "doExportModGradPhi")
@@ -490,6 +493,7 @@ levelset_options(std::string const& prefix)
         .add( backend_options( prefixvm(prefix, "projector-sm-scalar") ) )
         .add( backend_options( prefixvm(prefix, "projector-sm-vectorial") ) )
         .add( backend_options( prefixvm(prefix, "projector-sm-tensor2symm") ) )
+        .add( backend_options( prefixvm(prefix, "extension-velocity") ) )
         .add( reinitializer_fm_options( prefixvm(prefix, "reinit-fm") ) )
         .add( reinitializer_hj_options( prefixvm(prefix, "reinit-hj") ) )
         ;

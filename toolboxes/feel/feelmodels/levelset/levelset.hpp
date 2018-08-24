@@ -488,6 +488,11 @@ public:
     bool hasReinitialized() const { return M_hasReinitialized; }
 
     //--------------------------------------------------------------------//
+    // Extension velocity
+    template<typename ExprT>
+    element_advection_velocity_type extensionVelocity( vf::Expr<ExprT> const& u ) const;
+
+    //--------------------------------------------------------------------//
     // Initial value
     void setInitialValue(element_levelset_type const& phiv, bool doReinitialize);
     void setInitialValue(element_levelset_type const& phiv)
@@ -741,6 +746,11 @@ private:
     // Vector that stores the iterSinceReinit of each time-step
     std::vector<int> M_vecIterSinceReinit;
     //bool M_useSmoothReinitialization;
+
+    //--------------------------------------------------------------------//
+    // Extension velocity
+    bool M_useExtensionVelocity;
+    double M_extensionVelocityNitscheGamma;
     
     //--------------------------------------------------------------------//
     // Export
@@ -771,6 +781,59 @@ LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityT
 {
     this->updateAdvectionVelocity(velocity);
     this->solve();
+}
+//----------------------------------------------------------------------------//
+// Extension velocity
+template<typename ConvexType, typename BasisType, typename PeriodicityType, typename FunctionSpaceAdvectionVelocityType, typename BasisPnType>
+template<typename ExprT>
+typename LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType>::element_advection_velocity_type
+LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType>::extensionVelocity( vf::Expr<ExprT> const& u) const
+{
+    this->log("LevelSet", "extensionVelocity", "start");
+    this->timerTool("Solve").start();
+
+    auto const& spaceVelocity = this->functionSpaceAdvectionVelocity();
+    auto const& spaceVelocityComp = spaceVelocity->compSpace();
+    auto bilinearForm = form2( _trial=spaceVelocityComp, _test=spaceVelocityComp );
+    auto linearForm = form1( _test=spaceVelocityComp );
+    auto Fext = spaceVelocityComp->element();
+
+    auto const& phi = this->phi();
+    //auto gradPhiExpr = trans(gradv(phi));
+    auto gradPhiExpr = idv(this->gradPhi());;
+    auto NExpr = gradPhiExpr / sqrt(trans(gradPhiExpr)*gradPhiExpr);
+
+    bilinearForm = integrate(
+            _range=elements(this->mesh()),
+            _expr=(gradt(Fext)*gradPhiExpr)*id(Fext)
+            );
+    linearForm = integrate(
+            _range=elements(this->mesh()),
+            _expr=cst(0)*id(Fext)
+            );
+    // BC at interface with penalty method
+    bilinearForm += integrate(
+            _range=elements(this->mesh()),
+            _expr=M_extensionVelocityNitscheGamma/h() * idt(Fext)*id(Fext) * idv(this->dirac())
+            );
+    linearForm += integrate(
+            _range=elements(this->mesh()),
+            _expr=M_extensionVelocityNitscheGamma/h() * (trans(u)*NExpr)*id(Fext) * idv(this->dirac())
+            );
+    double timeElapsedAssembly = this->timerTool("Solve").stop();
+    this->log("LevelSet", "extensionVelocity", "assembly finish in "+(boost::format("%1% s") %timeElapsedAssembly).str() );
+    this->timerTool("Solve").start();
+
+    bilinearForm.solve( _rhs=linearForm, _solution=Fext, _name=prefixvm(this->prefix(),"extension-velocity") );
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("LevelSet", "extensionVelocity", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+
+    return vf::project(
+            _space=spaceVelocity,
+            _range=elements(this->mesh()),
+            _expr=(idv(Fext)*NExpr - u)*idv(this->heaviside()) + u
+            );
 }
 
 } // namespace FeelModels
