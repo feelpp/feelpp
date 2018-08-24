@@ -189,7 +189,7 @@ run( std::vector<std::string> const& markers, bool extractBoundaryFaces )
 
     fs::path inputPathMesh = fs::system_complete( soption("ifile") );
     tic();
-    auto mesh = loadMesh(_mesh=new mesh_type(Environment::worldComm()), _savehdf5=0,
+    auto mesh = loadMesh(_mesh=new mesh_type(Environment::worldCommPtr()), _savehdf5=0,
                          _filename=inputPathMesh.string(),
                          //_update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
                          _update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
