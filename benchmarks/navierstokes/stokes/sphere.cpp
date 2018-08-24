@@ -34,7 +34,7 @@
 #include <feel/feelvf/vf.hpp>
 
 template<typename MeshType>
-void myexport( std::string const& name, boost::shared_ptr<MeshType> mesh )
+void myexport( std::string const& name, std::shared_ptr<MeshType> mesh )
 {
     using namespace Feel;
     using namespace Feel::vf;

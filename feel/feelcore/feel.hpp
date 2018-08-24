@@ -74,6 +74,7 @@
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdivision-by-zero"
+#pragma clang diagnostic ignored "-Wexpansion-to-defined"
 #endif
 #include <boost/mpi.hpp>
 #if defined(__clang__)

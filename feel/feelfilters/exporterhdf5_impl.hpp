@@ -44,7 +44,7 @@ namespace Feel
 namespace fs = boost::filesystem;
 
 template<typename MeshType, int N>
-Exporterhdf5<MeshType,N>::Exporterhdf5( WorldComm const& worldComm )
+Exporterhdf5<MeshType,N>::Exporterhdf5( worldcomm_ptr_t const& worldComm )
 :
 super( worldComm ),
 M_element_type()
@@ -53,7 +53,7 @@ M_element_type()
     init();
 }
 template<typename MeshType, int N>
-Exporterhdf5<MeshType,N>::Exporterhdf5( std::string const& __p, int freq, WorldComm const& worldComm )
+Exporterhdf5<MeshType,N>::Exporterhdf5( std::string const& __p, int freq, worldcomm_ptr_t const& worldComm )
     :
     super( "hdf5", __p, freq, worldComm ),
     M_element_type()
@@ -61,7 +61,7 @@ Exporterhdf5<MeshType,N>::Exporterhdf5( std::string const& __p, int freq, WorldC
     init();
 }
 template<typename MeshType, int N>
-Exporterhdf5<MeshType,N>::Exporterhdf5( po::variables_map const& vm, std::string const& exp_prefix, WorldComm const& worldComm )
+Exporterhdf5<MeshType,N>::Exporterhdf5( po::variables_map const& vm, std::string const& exp_prefix, worldcomm_ptr_t const& worldComm )
     :
     super( vm, exp_prefix, worldComm )
 {
@@ -69,7 +69,7 @@ Exporterhdf5<MeshType,N>::Exporterhdf5( po::variables_map const& vm, std::string
 }
 
 template<typename MeshType, int N>
-Exporterhdf5<MeshType,N>::Exporterhdf5( std::string const& exp_prefix, WorldComm const& worldComm )
+Exporterhdf5<MeshType,N>::Exporterhdf5( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm )
     :
     super( exp_prefix, worldComm )
 {

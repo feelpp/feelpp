@@ -75,7 +75,7 @@ enum class CRBModelMode
  */
 template<typename ModelType>
 class CRBModel : public CRBModelBase,
-                 public boost::enable_shared_from_this<CRBModel<ModelType> >
+                 public std::enable_shared_from_this<CRBModel<ModelType> >
 {
 public:
 
@@ -95,7 +95,7 @@ public:
 
     //! model type
     typedef ModelType model_type;
-    typedef boost::shared_ptr<ModelType> model_ptrtype;
+    typedef std::shared_ptr<ModelType> model_ptrtype;
 
     //! value_type
     typedef typename model_type::value_type value_type;
@@ -110,7 +110,7 @@ public:
 
     //! function space type
     typedef typename model_type::space_type functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
 
     //! reduced basis function space type
     typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
@@ -119,21 +119,21 @@ public:
 
     //! element of the functionspace type
     typedef typename model_type::space_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
     typedef typename model_type::backend_type backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
     typedef typename backend_type::vector_type vector_type;
 
     typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix_type;
     typedef eigen_matrix_type ematrix_type;
-    typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
+    typedef std::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
     typedef typename model_type::parameterspace_type parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename model_type::parameter_type parameter_type;
-    typedef boost::shared_ptr<parameter_type> parameter_ptrtype;
+    typedef std::shared_ptr<parameter_type> parameter_ptrtype;
 
 
     typedef typename model_type::parameterspace_type::sampling_type sampling_type;
@@ -191,16 +191,16 @@ public:
 
     //! time discretization
     typedef Bdf<space_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
-    typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
+    typedef std::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
 
     typedef FsFunctionalLinearComposite< space_type > functionalcomposite_type;
-    typedef boost::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
+    typedef std::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
 
     typedef Preconditioner<double> preconditioner_type;
-    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+    typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
     static const int nb_spaces = functionspace_type::nSpaces;
     typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
@@ -218,7 +218,7 @@ public:
 
     CRBModel( crb::stage stage, int level = 0 )
         :
-        CRBModel( boost::make_shared<model_type>(), stage, level )
+        CRBModel( std::make_shared<model_type>(), stage, level )
     {
     }
     CRBModel( model_ptrtype const& model, crb::stage stage, int level = 0 )
@@ -243,7 +243,6 @@ public:
         M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
 
         {
-            M_model = model;
             if ( stage == crb::stage::offline )
                 this->init();
         }
@@ -443,6 +442,11 @@ public:
     //! world communicator
     //!
     WorldComm const& worldComm() const { return M_model->worldComm(); }
+
+    //!
+    //! world communicator
+    //!
+    worldcomm_ptr_t const& worldCommPtr() const { return M_model->worldCommPtr(); }
 
     /**
      * \return  the \p variables_map
@@ -2832,7 +2836,7 @@ public:
     {
         return M_model->initializationField( initial_field,mu );
     }
-    void initializationField( element_ptrtype& initial_field,parameter_type const& mu,mpl::bool_<false> ) {};
+    void initializationField( element_ptrtype& initial_field,parameter_type const& mu,mpl::bool_<false> ) {}
 
 
     typename model_type::displacement_field_ptrtype meshDisplacementField( parameter_type const& mu )
@@ -2965,7 +2969,7 @@ struct PreAssembleMassMatrixInCompositeCase
 
 
     typedef OperatorLinearComposite<space_type, space_type> operatorcomposite_type;
-    typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
+    typedef std::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
 
     PreAssembleMassMatrixInCompositeCase( element_type const u ,
                                           element_type const v )
@@ -3092,7 +3096,7 @@ struct AssembleInitialGuessVInCompositeCase
 
     AssembleInitialGuessVInCompositeCase( element_type const v ,
                                           initial_guess_type const initial_guess ,
-                                          boost::shared_ptr<CRBModel<ModelType> > crb_model)
+                                          std::shared_ptr<CRBModel<ModelType> > crb_model)
         :
         M_composite_v ( v ),
         M_composite_initial_guess ( initial_guess ),
@@ -3124,7 +3128,7 @@ struct AssembleInitialGuessVInCompositeCase
 
     element_type  M_composite_v;
     initial_guess_type  M_composite_initial_guess;
-    mutable boost::shared_ptr<CRBModel<ModelType> > M_crb_model;
+    mutable std::shared_ptr<CRBModel<ModelType> > M_crb_model;
 };
 
 

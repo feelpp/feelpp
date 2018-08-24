@@ -58,7 +58,7 @@ class TestUpMarker2Faces
 {
 public: 
     using mesh_type = Mesh< Simplex<DIM,G_ORDER> >;
-    using mesh_ptrtype = boost::shared_ptr< mesh_type >;
+    using mesh_ptrtype = std::shared_ptr< mesh_type >;
     using face_type=typename mesh_type::face_type;
     using cont_range_type=std::vector< typename mesh_type::face_type >;
 

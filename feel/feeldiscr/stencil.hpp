@@ -48,7 +48,7 @@ namespace detail
 template<typename BFType, typename Space1Type>
 struct compute_graph3
 {
-    compute_graph3( BFType* bf, boost::shared_ptr<Space1Type> const& space1, size_type trial_index, size_type hints  )
+    compute_graph3( BFType* bf, std::shared_ptr<Space1Type> const& space1, size_type trial_index, size_type hints  )
         :
         M_stencil( bf ),
         M_space1( space1 ),
@@ -58,14 +58,14 @@ struct compute_graph3
     {}
 
     template <typename Space2>
-    void operator()( boost::shared_ptr<Space2> const& space2 ) const
+    void operator()( std::shared_ptr<Space2> const& space2 ) const
     {
         static const uint16_type tag1 = Space1Type::basis_type::TAG;
         static const uint16_type tag2 = Space2::basis_type::TAG;
         typedef mpl::bool_<BFType::template rangeiteratorType<tag2,tag1>::hasnotfindrange_type::value> hasnotfindrange_type;
         typedef mpl::bool_<BFType::template rangeExtendedIteratorType<tag2,tag1>::hasnotfindrange_type::value> hasnotfindrange_extended_type;
 
-        if ( M_stencil->testSpace()->worldsComm()[M_test_index].isActive() )
+        if ( M_stencil->testSpace()->worldsComm()[M_test_index]->isActive() )
         {
             if ( M_stencil->isBlockPatternZero( M_test_index,M_trial_index ) )
             {
@@ -103,7 +103,7 @@ struct compute_graph3
 
 
     mutable BFType* M_stencil;
-    boost::shared_ptr<Space1Type> const& M_space1;
+    std::shared_ptr<Space1Type> const& M_space1;
     mutable size_type M_test_index;
     size_type M_trial_index;
     size_type M_hints;
@@ -113,7 +113,7 @@ struct compute_graph3
 template<typename BFType, typename Space1Type>
 struct compute_graph2
 {
-    compute_graph2( BFType* bf, boost::shared_ptr<Space1Type> const& space1, size_type test_index, size_type hints  )
+    compute_graph2( BFType* bf, std::shared_ptr<Space1Type> const& space1, size_type test_index, size_type hints  )
         :
         M_stencil( bf ),
         M_space1( space1 ),
@@ -123,14 +123,14 @@ struct compute_graph2
     {}
 
     template <typename Space2>
-    void operator()( boost::shared_ptr<Space2> const& space2 ) const
+    void operator()( std::shared_ptr<Space2> const& space2 ) const
     {
         static const uint16_type tag1 = Space1Type::basis_type::TAG;
         static const uint16_type tag2 = Space2::basis_type::TAG;
         typedef mpl::bool_<BFType::template rangeiteratorType<tag1,tag2>::hasnotfindrange_type::value> hasnotfindrange_type;
         typedef mpl::bool_<BFType::template rangeExtendedIteratorType<tag1,tag2>::hasnotfindrange_type::value> hasnotfindrange_extended_type;
 
-        if ( M_stencil->testSpace()->worldsComm()[M_test_index].isActive() )
+        if ( M_stencil->testSpace()->worldsComm()[M_test_index]->isActive() )
         {
             if ( M_stencil->isBlockPatternZero( M_test_index,M_trial_index ) )
             {
@@ -164,14 +164,14 @@ struct compute_graph2
                                            M_stencil->trialSpace()->nDofStart( M_trial_index ),
                                            thestencil->graph() );
             }
-        } // if ( M_stencil->testSpace()->worldsComm()[M_test_index].isActive() )
+        } // if ( M_stencil->testSpace()->worldsComm()[M_test_index]->isActive() )
 
         ++M_trial_index;
     }
 
 
     mutable BFType* M_stencil;
-    boost::shared_ptr<Space1Type> const& M_space1;
+    std::shared_ptr<Space1Type> const& M_space1;
     size_type M_test_index;
     mutable size_type M_trial_index;
     size_type M_hints;
@@ -189,7 +189,7 @@ struct compute_graph1
     {}
 
     template <typename Space1>
-    void operator()( boost::shared_ptr<Space1> const& space1 ) const
+    void operator()( std::shared_ptr<Space1> const& space1 ) const
     {
         fusion::for_each( M_stencil->trialSpace()->functionSpaces(),
                           compute_graph2<BFType,Space1>( M_stencil, space1, M_test_index, M_hints ) );
@@ -363,7 +363,7 @@ public:
     typedef typename X1::element_type test_space_type;
     typedef typename X2::element_type trial_space_type;
     typedef GraphCSR graph_type;
-    typedef boost::shared_ptr<graph_type> graph_ptrtype;
+    typedef std::shared_ptr<graph_type> graph_ptrtype;
     typedef Stencil<X1,X2,RangeIteratorTestType,RangeExtendedIteratorType,QuadSetType> self_type;
 
     typedef RangeIteratorTestType rangeiterator_test_type;
@@ -773,23 +773,27 @@ struct compute_stencil_type
     typedef typename remove_pointer_const_reference_default_type<Args,tag::range_extended, stencilRangeMap0Type >::type _range_extended_type;
     typedef typename remove_pointer_const_reference_default_type<Args,tag::quad, stencilQuadSet<> >::type _quad_type;
     typedef Stencil<_test_type, _trial_type, _range_type, _range_extended_type, _quad_type> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 }
 
+template<class T, class U> inline bool operator<(std::weak_ptr<T> const & a, std::weak_ptr<U> const & b) 
+{
+    return a.owner_before( b );
+}
 class StencilManagerImpl:
-    public std::map<boost::tuple<boost::weak_ptr<FunctionSpaceBase>,
-    boost::weak_ptr<FunctionSpaceBase>,
+    public std::map<boost::tuple<std::weak_ptr<FunctionSpaceBase>,
+    std::weak_ptr<FunctionSpaceBase>,
     size_type,
     std::vector<size_type>,
-    bool >, boost::shared_ptr<GraphCSR> >,
+    bool >, std::shared_ptr<GraphCSR> >,
 public boost::noncopyable
 {
 public:
-    typedef boost::shared_ptr<GraphCSR> graph_ptrtype;
-    typedef boost::tuple<boost::weak_ptr<FunctionSpaceBase>,
-            boost::weak_ptr<FunctionSpaceBase>,
+    typedef std::shared_ptr<GraphCSR> graph_ptrtype;
+    typedef boost::tuple<std::weak_ptr<FunctionSpaceBase>,
+            std::weak_ptr<FunctionSpaceBase>,
             size_type,
             std::vector<size_type>,
             bool > key_type;
@@ -815,8 +819,8 @@ BOOST_PARAMETER_FUNCTION(
     stencil,                                       // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required                                  // 4. one required parameter, and
-      ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( trial,            *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( test,             *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
+      ( trial,            *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     )
     ( optional                                  //    four optional parameters, with defaults
       ( pattern,          *( boost::is_integral<mpl::_> ), Pattern::COUPLED )
@@ -1483,7 +1487,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
     // fed into a PetscMatrix to allocate exacly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
-    const size_type proc_id           = _M_X1->worldsComm()[0].localRank();
+    const size_type proc_id           = _M_X1->worldsComm()[0]->localRank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
     //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
     const size_type first1_dof_on_proc = _M_X1->dof()->firstDofGlobalCluster( proc_id );
@@ -1797,7 +1801,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
     // fed into a PetscMatrix to allocate exacly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
-    const size_type proc_id           = _M_X1->worldsComm()[0].localRank();
+    const size_type proc_id           = _M_X1->worldsComm()[0]->localRank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
     //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
     const size_type first1_dof_on_proc = _M_X1->dof()->firstDofGlobalCluster( proc_id );
@@ -1922,7 +1926,7 @@ struct gmcDefStencil
     typedef typename EltType::gm_type::precompute_type pc_type;
     typedef typename EltType::gm_type::precompute_ptrtype pc_ptrtype;
     typedef typename EltType::gm_type::template Context<vm::POINT, EltType> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 };
 
 template<typename FaceType>
@@ -2466,7 +2470,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
         }
     }
 
-    auto exporter = boost::shared_ptr<Feel::Exporter<mesh_export_type> >( Feel::Exporter<mesh_export_type>::New( "ensight", "ExportGraph" ) );
+    auto exporter = std::shared_ptr<Feel::Exporter<mesh_export_type> >( Feel::Exporter<mesh_export_type>::New( "ensight", "ExportGraph" ) );
     exporter->step( 0 )->setMesh( graphProj.mesh() );
     exporter->step( 0 )->add( "graphProj", graphProj );
     exporter->save();

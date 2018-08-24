@@ -81,8 +81,8 @@ BOOST_PARAMETER_FUNCTION(
       ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition") )
       ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition") )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, desc->prefix()+".msh" )
-      ( worldcomm,      *, Environment::worldComm() )
-      ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm.localSize() )
+      ( worldcomm,      (worldcomm_ptr_t), Environment::worldCommPtr() )
+      ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm->localSize() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( partitioner,   *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
       ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity") )
@@ -93,10 +93,10 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename Feel::detail::mesh<Args>::type _mesh_type;
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
-    _mesh_ptrtype _mesh( mesh );
+    _mesh_ptrtype _mesh{ mesh };
     _mesh->setWorldComm( worldcomm );
 
-    if ( worldcomm.isActive() )
+    if ( worldcomm->isActive() )
     {
         desc->setDimension( mesh->nDim );
         desc->setOrder( mesh->nOrder );
@@ -156,7 +156,7 @@ BOOST_PARAMETER_FUNCTION(
             _mesh->components().reset();
         }
         if ( straighten && _mesh_type::nOrder > 1 )
-            return straightenMesh( _mesh, worldcomm.subWorldComm() );
+            return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
     }
     return _mesh;
 }

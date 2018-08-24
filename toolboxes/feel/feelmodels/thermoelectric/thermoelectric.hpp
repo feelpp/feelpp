@@ -41,43 +41,43 @@ namespace FeelModels
 
 template< typename HeatType, typename ElectricType>
 class ThermoElectric : public ModelNumerical,
-                       public boost::enable_shared_from_this< ThermoElectric<HeatType,ElectricType> >
+                       public std::enable_shared_from_this< ThermoElectric<HeatType,ElectricType> >
 {
 
 public:
     typedef ModelNumerical super_type;
     typedef ThermoElectric<HeatType,ElectricType> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     typedef HeatType heat_model_type;
-    typedef boost::shared_ptr<heat_model_type> heat_model_ptrtype;
+    typedef std::shared_ptr<heat_model_type> heat_model_ptrtype;
 
     typedef ElectricType electric_model_type;
-    typedef boost::shared_ptr<electric_model_type> electric_model_ptrtype;
+    typedef std::shared_ptr<electric_model_type> electric_model_ptrtype;
 
     // mesh
     typedef typename heat_model_type::mesh_type mesh_heat_type;
     typedef typename electric_model_type::mesh_type mesh_electric_type;
     typedef mesh_heat_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     // exporter
     typedef Exporter<mesh_type,mesh_type::nOrder> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     // algebraic solver
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
     //___________________________________________________________________________________//
     // constructor
     ThermoElectric( std::string const& prefix,
                     bool buildMesh = true,
-                    WorldComm const& _worldComm = Environment::worldComm(),
+                    worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                     std::string const& subPrefix = "",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ThermoElectricMesh.path"); }
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const;
 
 private :
     void loadParameterFromOptionsVm();
@@ -114,8 +114,8 @@ public :
 
     //___________________________________________________________________________________//
 
-    boost::shared_ptr<TSBase> timeStepBase() { return this->heatModel()->timeStepBase(); }
-    boost::shared_ptr<TSBase> timeStepBase() const { return this->heatModel()->timeStepBase(); }
+    std::shared_ptr<TSBase> timeStepBase() { return this->heatModel()->timeStepBase(); }
+    std::shared_ptr<TSBase> timeStepBase() const { return this->heatModel()->timeStepBase(); }
     void updateTimeStep() {  this->heatModel()->updateTimeStep(); }
 
     //___________________________________________________________________________________//

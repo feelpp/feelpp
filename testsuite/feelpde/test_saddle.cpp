@@ -38,20 +38,20 @@ BOOST_AUTO_TEST_CASE( test_0 )
     typedef double value_type;
 typedef Simplex<3> convex_type;
 typedef Mesh<convex_type> mesh_type;
-typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 //! Hcurl space
 typedef Nedelec<0,NedelecKind::NED1 > curl_basis_type;
 typedef FunctionSpace<mesh_type, Feel::detail::bases<curl_basis_type>, value_type,Feel::Periodicity<Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar>> curl_space_type;
-typedef boost::shared_ptr<curl_space_type> curl_space_ptrtype;
+typedef std::shared_ptr<curl_space_type> curl_space_ptrtype;
 typedef typename curl_space_type::element_type curl_element_type;
 //! Pch space
 typedef Lagrange<1, Scalar> lag_basis_type; 
 typedef FunctionSpace<mesh_type, Feel::detail::bases<lag_basis_type>, value_type,Feel::Periodicity<Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar>> lag_space_type;
-typedef boost::shared_ptr<lag_space_type> lag_space_ptrtype;
+typedef std::shared_ptr<lag_space_type> lag_space_ptrtype;
 typedef typename lag_space_type::element_type lag_element_type;
 //! Comp space 
 typedef FunctionSpace<mesh_type, Feel::detail::bases<curl_basis_type,lag_basis_type>, value_type,Feel::Periodicity<Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar>> comp_space_type;
-typedef boost::shared_ptr<comp_space_type> comp_space_ptrtype;
+typedef std::shared_ptr<comp_space_type> comp_space_ptrtype;
 typedef typename comp_space_type::element_type comp_element_type;
 
   auto mesh = loadMesh(_mesh = new Mesh<Simplex<FEELPP_DIM>> );
@@ -113,7 +113,7 @@ typedef typename comp_space_type::element_type comp_element_type;
   auto prec = preconditioner(_backend=backend(_name="ms"),_pc=pcTypeConvertStrToEnum(soption("ms.pc-type")), _prefix="ms",_matrix=a.matrixPtr());
   if(soption("ms.pc-type") == "blockms" )
   {
-    auto precBMS = boost::make_shared<PreconditionerBlockMS<comp_space_type>>(
+    auto precBMS = std::make_shared<PreconditionerBlockMS<comp_space_type>>(
         U.functionSpace(),
         model,
         "ms",

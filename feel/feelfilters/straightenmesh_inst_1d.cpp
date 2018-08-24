@@ -27,20 +27,20 @@
 
 namespace Feel
 {
-template boost::shared_ptr<Mesh<Simplex<1,1>>>
-straightenMesh<Mesh<Simplex<1,1>>>( boost::shared_ptr<Mesh<Simplex<1,1>>>,
-                                    WorldComm const& , bool, bool  );
+template std::shared_ptr<Mesh<Simplex<1,1>>>
+straightenMesh<Mesh<Simplex<1,1>>>( std::shared_ptr<Mesh<Simplex<1,1>>>,
+                                    worldcomm_ptr_t const& , bool, bool  );
 
-template boost::shared_ptr<Mesh<Simplex<1,1,2>>>
-straightenMesh<Mesh<Simplex<1,1,2>>>( boost::shared_ptr<Mesh<Simplex<1,1,2>>>,
-                                    WorldComm const& , bool, bool  );
+template std::shared_ptr<Mesh<Simplex<1,1,2>>>
+straightenMesh<Mesh<Simplex<1,1,2>>>( std::shared_ptr<Mesh<Simplex<1,1,2>>>,
+                                    worldcomm_ptr_t const& , bool, bool  );
 
-template boost::shared_ptr<Mesh<Simplex<1,1,3>>>
-straightenMesh<Mesh<Simplex<1,1,3>>>( boost::shared_ptr<Mesh<Simplex<1,1,3>>>,
-                                    WorldComm const& , bool, bool  );
+template std::shared_ptr<Mesh<Simplex<1,1,3>>>
+straightenMesh<Mesh<Simplex<1,1,3>>>( std::shared_ptr<Mesh<Simplex<1,1,3>>>,
+                                    worldcomm_ptr_t const& , bool, bool  );
 
-template boost::shared_ptr<Mesh<Hypercube<1,1>>>
-straightenMesh<Mesh<Hypercube<1,1>>>( boost::shared_ptr<Mesh<Hypercube<1,1>>>,
-                                    WorldComm const& , bool, bool  );
+template std::shared_ptr<Mesh<Hypercube<1,1>>>
+straightenMesh<Mesh<Hypercube<1,1>>>( std::shared_ptr<Mesh<Hypercube<1,1>>>,
+                                    worldcomm_ptr_t const& , bool, bool  );
 
 }

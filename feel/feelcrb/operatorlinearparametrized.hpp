@@ -72,7 +72,7 @@ public:
     typedef typename backend_type::sparse_matrix_type matrix_type;
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
-    typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
+    typedef std::shared_ptr<matrix_type> matrix_ptrtype;
 
     template<typename T, typename Storage>
     struct domain_element: public super::domain_space_type::template Element<T,Storage> {};
@@ -81,7 +81,7 @@ public:
 
     /* parameter space */
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
     typedef parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef parameterspace_type::sampling_type sampling_type;

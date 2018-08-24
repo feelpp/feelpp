@@ -135,9 +135,9 @@ public:
      * the matrix before usage with
      * \p init(...).
      */
-    MatrixPetsc( WorldComm const& worldComm=Environment::worldComm() );
+    explicit MatrixPetsc( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
     MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
-    MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
+    MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, worldcomm_ptr_t const& worldComm );
 
 
     /**
@@ -441,7 +441,7 @@ public:
     /**
      * Return copy vector of the diagonal part of the matrix.
      */
-    boost::shared_ptr<Vector<T> > diagonal() const;
+    std::shared_ptr<Vector<T> > diagonal() const;
 
     /**
      * Returns the transpose of a matrix
@@ -456,7 +456,7 @@ public:
      *
      * \param options options for tranpose
      */
-    boost::shared_ptr<MatrixSparse<T> > transpose( size_type options ) const;
+    std::shared_ptr<MatrixSparse<T> > transpose( size_type options ) const;
 
     /**
     * Returns the symmetric part of the matrix
@@ -491,7 +491,7 @@ public:
      * This function creates a matrix called "submatrix" which is defined
      * by the row and column indices given in the "rows" and "cols" entries.
      */
-    boost::shared_ptr<MatrixSparse<T> >
+    std::shared_ptr<MatrixSparse<T> >
     createSubMatrix( std::vector<size_type> const& rows,
                      std::vector<size_type> const& cols,
                      bool useSameDataMap=false,
@@ -502,7 +502,7 @@ public:
      * row and column indices given in the "rows" and "cols" entries.
      */
     void
-    updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
+    updateSubMatrix( std::shared_ptr<MatrixSparse<T> > & submatrix,
                      std::vector<size_type> const& rows,
                      std::vector<size_type> const& cols, bool doClose = true );
 
@@ -536,7 +536,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<T> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
+    void updateBlockMat( std::shared_ptr<MatrixSparse<T> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
 
     void updatePCFieldSplit( PC & pc, indexsplit_ptrtype const& is );
     void updatePCFieldSplit( PC & pc );
@@ -631,9 +631,9 @@ public :
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
 
-    MatrixPetscMPI( WorldComm const& worldComm=Environment::worldComm() );
+    explicit MatrixPetscMPI( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
     MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
-    MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
+    MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, worldcomm_ptr_t const& worldComm );
 
     MatrixPetscMPI( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, bool initLocalToGlobalMapping=false, bool destroyMatOnExit=false );
 

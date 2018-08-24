@@ -42,16 +42,16 @@ constexpr auto is_void = hana::integral(hana::metafunction<std::is_void>);
 struct product_space_tag {};
 
 template<typename T, bool same_mesh = false>
-class ProductSpace : public std::vector<boost::shared_ptr<decay_type<T>>>, ProductSpaceBase
+class ProductSpace : public std::vector<std::shared_ptr<decay_type<T>>>, ProductSpaceBase
 {
 public:
     using feel_tag = product_space_tag;
     
-    using super =  std::vector<boost::shared_ptr<decay_type<T>>>;
+    using super =  std::vector<std::shared_ptr<decay_type<T>>>;
     //using value_type = typename decay_type<decltype(super[0_c])>::value_type;
     using functionspace_type = ProductSpace<T,same_mesh>;
     using underlying_functionspace_type = decay_type<T>;
-    using underlying_functionspace_ptrtype = boost::shared_ptr<underlying_functionspace_type>;
+    using underlying_functionspace_ptrtype = std::shared_ptr<underlying_functionspace_type>;
     using mesh_type = typename underlying_functionspace_type::mesh_type;
     using mesh_ptrtype = typename underlying_functionspace_type::mesh_ptrtype;
     using value_type = typename underlying_functionspace_type::value_type;
@@ -169,9 +169,9 @@ public:
         functionspace_type& M_fspace;
     };
     using element_type = Element;
-    using element_ptrtype = boost::shared_ptr<element_type>;
+    using element_ptrtype = std::shared_ptr<element_type>;
     Element element() { Element u( *this ); return u; }
-    boost::shared_ptr<Element> elementPtr() { return boost::make_shared<Element>( *this ); }
+    std::shared_ptr<Element> elementPtr() { return std::make_shared<Element>( *this ); }
     size_type M_nspaces;
 };
 
@@ -250,17 +250,17 @@ public:
 
     Element element() { Element u( *this ); return u; }
     using element_type = Element;
-    using element_ptrtype = boost::shared_ptr<element_type>;
+    using element_ptrtype = std::shared_ptr<element_type>;
 };
 
 template<typename T,typename... SpaceList>
-class ProductSpaces2 : public  hana::tuple<SpaceList...,boost::shared_ptr<ProductSpace<T,true>>>, ProductSpacesBase
+class ProductSpaces2 : public  hana::tuple<SpaceList...,std::shared_ptr<ProductSpace<T,true>>>, ProductSpacesBase
 {
 public:
 
     using super = typename mpl::if_<mpl::is_void_<T>,
                                     mpl::identity<hana::tuple<SpaceList...>>,
-                                    mpl::identity<hana::tuple<SpaceList...,boost::shared_ptr<ProductSpace<T,true>>>>
+                                    mpl::identity<hana::tuple<SpaceList...,std::shared_ptr<ProductSpace<T,true>>>>
                                     >::type::type ;//hana::if_(is_void(T),,>);
 
     //using value_type = typename decay_type<decltype(super[0_c])>::value_type;
@@ -270,7 +270,7 @@ public:
     using mesh_ptrtype = typename decay_type<T>::mesh_ptrtype;
 
     ProductSpaces2() = default;
-    ProductSpaces2( boost::shared_ptr<ProductSpace<T,true>> const& p, SpaceList... l ) : super( l..., p) {}
+    ProductSpaces2( std::shared_ptr<ProductSpace<T,true>> const& p, SpaceList... l ) : super( l..., p) {}
     
     int numberOfSpaces() const { return int(hana::size( *this ))+hana::back(*this)->numberOfSpaces()-1; }
 
@@ -367,9 +367,9 @@ public:
     };
 
     Element element() { Element u( *this ); return u; }
-    boost::shared_ptr<Element> elementPtr() { return boost::make_shared<Element>( *this );  }
+    std::shared_ptr<Element> elementPtr() { return std::make_shared<Element>( *this );  }
     using element_type = Element;
-    using element_ptrtype = boost::shared_ptr<element_type>;
+    using element_ptrtype = std::shared_ptr<element_type>;
 };
 
 template<typename PS>
@@ -392,7 +392,7 @@ product( SpaceList... spaces )
 
 template<typename T, typename... SpaceList>
 ProductSpaces2<T,SpaceList...>
-product2( boost::shared_ptr<ProductSpace<T,true>> const& ps, SpaceList... spaces )
+product2( std::shared_ptr<ProductSpace<T,true>> const& ps, SpaceList... spaces )
 {
     return ProductSpaces2<T,SpaceList...>( ps, spaces... );
 }
@@ -438,7 +438,7 @@ struct Product
     typedef typename mpl::transform<fusion::vector<SpaceList...>, GetMortar<mpl::_1>, mpl::back_inserter<mortars<> > >::type mortar_type;
 
     typedef FunctionSpace<typename mpl::front<mesh_type>::type,basis_type,double,periodicity_type,mortar_type> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 } }
 

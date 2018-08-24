@@ -90,28 +90,28 @@ class BlockBilinearForm
 public :
     using value_type = typename std::decay_t<PS>::value_type;
     using condensed_matrix_type = MatrixCondensed<value_type>;
-    using condensed_matrix_ptrtype = boost::shared_ptr<condensed_matrix_type>;
+    using condensed_matrix_ptrtype = std::shared_ptr<condensed_matrix_type>;
     using product_space_t = PS;
 
     template<typename T>
     BlockBilinearForm( T&& ps )
         :
         M_ps(std::forward<T>(ps)),
-        M_matrix( boost::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), backend(), false ) )
+        M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), backend(), false ) )
         {}
     
     template<typename T,typename BackendT>
     BlockBilinearForm( T&& ps, BackendT&& b )
         :
         M_ps(std::forward<T>(ps)),
-        M_matrix( boost::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), std::forward<BackendT>(b), false ) )
+        M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), std::forward<BackendT>(b), false ) )
         {}
 
     template<typename T, typename BackendT>
     BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED )
         :
         M_ps(std::forward<T>(ps)),
-        M_matrix( boost::make_shared<condensed_matrix_type>( s,
+        M_matrix( std::make_shared<condensed_matrix_type>( s,
                                                              csrGraphBlocks(M_ps, (s==solve::strategy::static_condensation)?Pattern::COUPLED:pattern),
                                                              std::forward<BackendT>(b),
                                                              (s==solve::strategy::static_condensation)?false:true )  )
@@ -273,7 +273,7 @@ public :
             auto U = backend()->newBlockVector(_block=solution, _copy_values=false);
             tic();
             auto r1 = backend( _name=name, _kind=kind, _rebuild=rebuild,
-                               _worldcomm=Environment::worldComm() )->solve( _matrix=M_matrix->getSparseMatrix(),
+                               _worldcomm=Environment::worldCommPtr() )->solve( _matrix=M_matrix->getSparseMatrix(),
                                                                              _rhs=rhs.vectorPtr()->getVector(),
                                                                              _solution=U,
                                                                              _pre=pre,
@@ -448,7 +448,7 @@ public :
     using value_type = typename std::decay_t<PS>::value_type;
     using product_space_t = PS;
     using condensed_vector_type = VectorCondensed<value_type>;
-    using condensed_vector_ptrtype = boost::shared_ptr<condensed_vector_type>;
+    using condensed_vector_ptrtype = std::shared_ptr<condensed_vector_type>;
 
     BlockLinearForm() = default;
 
@@ -456,19 +456,19 @@ public :
     BlockLinearForm( T&& ps, solve::strategy s, BackendT&& b )
         :
         M_ps(std::forward<T>(ps)),
-        M_vector(boost::make_shared<condensed_vector_type>(s, blockVector(M_ps), std::forward<BackendT>(b), false))
+        M_vector(std::make_shared<condensed_vector_type>(s, blockVector(M_ps), std::forward<BackendT>(b), false))
         {}
     template<typename T>
     BlockLinearForm(T&& ps)
         :
         M_ps(std::forward<T>(ps)),
-        M_vector(boost::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
+        M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
         {}
     template<typename T, typename BackendT>
     BlockLinearForm(T&& ps, BackendT&& b )
         :
         M_ps(std::forward<T>(ps)),
-        M_vector(boost::make_shared<condensed_vector_type>(blockVector(M_ps), std::forward<BackendT>(b), false))
+        M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), std::forward<BackendT>(b), false))
         {}
     template<typename T>
     BlockLinearForm(T&& ps, condensed_vector_ptrtype v )

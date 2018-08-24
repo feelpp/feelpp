@@ -30,22 +30,24 @@
 #include <boost/uuid/uuid_generators.hpp> // generators
 #include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
 
+#include <feel/feelcore/disablewarnings.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
+#include <feel/feelcore/reenablewarnings.hpp>
 //#include <boost/assign/std/vector.hpp>
 #include <boost/algorithm/string.hpp>
 #include <feel/feelcrb/crbdb.hpp>
 
 namespace Feel
 {
-CRBDB::CRBDB( std::string const& name, std::string const& ext, WorldComm const& worldComm )
+CRBDB::CRBDB( std::string const& name, std::string const& ext, worldcomm_ptr_t const& worldComm )
     :
     CRBDB( name, ext, Environment::randomUUID(true), worldComm )
 {}
 
-CRBDB::CRBDB( std::string const& name, std::string const& ext, uuids::uuid const& uuid, WorldComm const& worldComm )
+CRBDB::CRBDB( std::string const& name, std::string const& ext, uuids::uuid const& uuid, worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( worldComm ),
+    super( worldComm ),
     M_name( algorithm::to_lower_copy(name) ),
     M_ext( ext ),
     M_uuid( uuid ),

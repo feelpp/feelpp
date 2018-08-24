@@ -164,22 +164,22 @@ public:
 
         typedef the_element_type element_type;
         typedef typename the_element_type::gm_type gm_type;
-        typedef boost::shared_ptr<gm_type> gm_ptrtype;
+        typedef std::shared_ptr<gm_type> gm_ptrtype;
         typedef typename the_element_type::gm1_type gm1_type;
-        typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+        typedef std::shared_ptr<gm1_type> gm1_ptrtype;
         //typedef typename gm_type::template Context<expression_type::context, the_element_type, im_type::numPoints> gmc_type;
         typedef typename gm_type::template Context<expression_type::context|vm::JACOBIAN, the_element_type> gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gm1_type::template Context<expression_type::context|vm::JACOBIAN, the_element_type> gmc1_type;
-        typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
+        typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
 #if 0
         typedef typename gm_type::template precompute<im_type::numPoints>::type gmpc_type;
         typedef typename gm_type::template precompute<im_type::numPoints>::ptrtype gmpc_ptrtype;
 #else
         typedef typename gm_type::PreCompute gmpc_type;
-        typedef boost::shared_ptr<gmpc_type> gmpc_ptrtype;
+        typedef std::shared_ptr<gmpc_type> gmpc_ptrtype;
         typedef typename gm1_type::PreCompute gmpc1_type;
-        typedef boost::shared_ptr<gmpc1_type> gmpc1_ptrtype;
+        typedef std::shared_ptr<gmpc1_type> gmpc1_ptrtype;
 #endif
         //typedef typename eval_expr_type::value_type value_type;
         //typedef typename strongest_numeric_type<typename Im::value_type, typename expression_type::value_type>::type value_type;
@@ -248,7 +248,7 @@ public:
                 GeomapStrategyType gt,
                 Im2 const& __im2,
                 bool use_tbb, bool use_harts, int grainsize, std::string const& partitioner,
-                boost::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
+                std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
         :
         M_elts(),
         M_eltbegin( elts.template get<1>() ),
@@ -276,7 +276,7 @@ public:
                 GeomapStrategyType gt,
                 Im2 const& __im2,
                 bool use_tbb, bool use_harts, int grainsize, std::string const& partitioner,
-                boost::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
+                std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
         :
         M_elts( elts ),
         M_im( __im ),
@@ -356,7 +356,7 @@ public:
             using quad1_type = im_t<typename expr_order_t::the_element_type,typename e_type::value_type>;
             //typedef _Q< ExpressionOrder<Elements,e_type>::value > quad_type;
             //typedef _Q< ExpressionOrder<Elements,e_type>::value_1 > quad1_type;
-            typedef boost::shared_ptr<QuadPtLocalization<Elements,quad_type,expr_type > > quadptloc_ptrtype;
+            typedef std::shared_ptr<QuadPtLocalization<Elements,quad_type,expr_type > > quadptloc_ptrtype;
             quad_type quad( expr_order_t::value(new_expr) );
             quad1_type quad1( expr_order_t::value_1(new_expr) );
 
@@ -495,17 +495,17 @@ public:
 
 
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __u,
-                   boost::shared_ptr<Elem2> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __u,
+                   std::shared_ptr<Elem2> const& __v,
                    FormType& __form ) const;
 
     template<typename Elem1, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __v,
                    FormType& __form ) const;
 
     //typename expression_type::template tensor<Geo_t>::value_type
     template<typename P0hType>
-    typename P0hType::element_type  broken( boost::shared_ptr<P0hType>& P0h ) const
+    typename P0hType::element_type  broken( std::shared_ptr<P0hType>& P0h ) const
     {
         auto p0 = broken( P0h, mpl::int_<iDim>() );
         return p0;
@@ -519,21 +519,10 @@ public:
               bool parallel=true,
               WorldComm const& worldcomm = Environment::worldComm() ) const;
 
-#if 1
     matrix_type
     evaluate( bool parallel=true,
-              WorldComm const& worldcomm = Environment::worldComm() ) const
-#else
-    //typename expression_type::template tensor<Geo_t>::value_type
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( matrix_type ),
-                                     evaluate,
-                                     tag,
-                                     /*(required
-                                     //(h,*(double)))*/
-                                     ( optional
-                                       ( parallel,*( bool ), true ) ) )
-#endif
-    {
+              worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
+     {
         typename eval::matrix_type loc =  evaluate( mpl::int_<iDim>() );
 
         if ( !parallel )
@@ -547,9 +536,9 @@ public:
             // and thus argument worldComm can be remove
             // auto const& worldcomm = const_cast<MeshBase*>( this->beginElement()->mesh() )->worldComm();
 
-            if ( worldcomm.localSize() > 1 )
+            if ( worldcomm->localSize() > 1 )
             {
-                mpi::all_reduce( worldcomm.localComm(),
+                mpi::all_reduce( worldcomm->localComm(),
                                  loc,
                                  glo,
                                  [] ( matrix_type const& x, matrix_type const& y )
@@ -573,13 +562,13 @@ public:
         typedef typename eval::gm_type gm_type;
         typedef typename eval::gmc_type gmc_type;
         typedef typename eval::gmpc_type gmpc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-        typedef boost::shared_ptr<gmpc_type> gmpc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmpc_type> gmpc_ptrtype;
         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
         typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
         //typedef vf::detail::FormContextBase<map_gmc_type,im_type> fcb_type;
         typedef form_context_type fcb_type;
-        typedef boost::shared_ptr<fcb_type> fcb_ptrtype;
+        typedef std::shared_ptr<fcb_type> fcb_ptrtype;
 
 
         Context( FormType& _form,
@@ -652,11 +641,11 @@ public:
         //
         typedef ExprType expression_type;
         typedef typename eval::gm_type gm_type;
-        typedef boost::shared_ptr<gm_type> gm_ptrtype;
+        typedef std::shared_ptr<gm_type> gm_ptrtype;
         typedef typename eval::gmc_type gmc_type;
         typedef typename eval::gmpc_type gmpc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-        typedef boost::shared_ptr<gmpc_type> gmpc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmpc_type> gmpc_ptrtype;
         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
         typedef typename eval_expr_type::shape shape;
@@ -863,9 +852,9 @@ private:
 
 
     template<typename P0hType>
-    typename P0hType::element_type  broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_ELEMENTS> ) const;
+    typename P0hType::element_type  broken( std::shared_ptr<P0hType>& P0h, mpl::int_<MESH_ELEMENTS> ) const;
     template<typename P0hType>
-    typename P0hType::element_type  broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const;
+    typename P0hType::element_type  broken( std::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const;
 
     typename eval::matrix_type evaluate( mpl::int_<MESH_ELEMENTS> ) const;
     typename eval::matrix_type evaluate( mpl::int_<MESH_FACES> ) const;
@@ -884,7 +873,7 @@ private:
     bool M_use_harts;
     int M_grainsize;
     std::string M_partitioner;
-    mutable boost::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > M_QPL;
+    mutable std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > M_QPL;
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > M_profile_local_assembly;
 
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > M_profile_global_assembly;
@@ -893,8 +882,8 @@ private:
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename Elem1, typename Elem2, typename FormType>
 void
-Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& __u,
-        boost::shared_ptr<Elem2> const& __v,
+Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __u,
+        std::shared_ptr<Elem2> const& __v,
         FormType& __form ) const
 {
 #if 0
@@ -947,7 +936,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& _
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename Elem1, typename FormType>
 void
-Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& __v,
+Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __v,
         FormType& __form ) const
 {
 #if 0
@@ -1011,8 +1000,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             typedef typename eval::gm1_type gm1_type;
             typedef typename eval::gmc_type gmc_type;
             typedef typename eval::gmc1_type gmc1_type;
-            typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-            typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
+            typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+            typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
 
             typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
             typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
@@ -1299,8 +1288,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             typedef typename eval::gm1_type gm1_type;
             typedef typename eval::gmc_type gmc_type;
             typedef typename eval::gmc1_type gmc1_type;
-            typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-            typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
+            typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+            typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
             typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
             typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
             typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
@@ -1616,35 +1605,35 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 namespace detail
 {
 template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-boost::shared_ptr<GmcType>
-buildGmcWithRelationDifferentMeshType( boost::shared_ptr<SpaceType> const& /*space*/,typename GmcType::gm_ptrtype const& /*gm*/, ImType const& im,
-                                        size_type /*idElt*/ ,boost::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/, mpl::true_ )
+std::shared_ptr<GmcType>
+buildGmcWithRelationDifferentMeshType( std::shared_ptr<SpaceType> const& /*space*/,typename GmcType::gm_ptrtype const& /*gm*/, ImType const& im,
+                                        size_type /*idElt*/ ,std::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/, mpl::true_ )
 {
     return gmcExpr;
 }
 
 template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-boost::shared_ptr<GmcType>
-buildGmcWithRelationDifferentMeshType( boost::shared_ptr<SpaceType> const& /*space*/,typename GmcType::gm_ptrtype const& /*gm*/, ImType const& im,
-                                        size_type /*idElt*/ ,boost::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/, mpl::false_ )
+std::shared_ptr<GmcType>
+buildGmcWithRelationDifferentMeshType( std::shared_ptr<SpaceType> const& /*space*/,typename GmcType::gm_ptrtype const& /*gm*/, ImType const& im,
+                                        size_type /*idElt*/ ,std::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/, mpl::false_ )
 {
     CHECK( false ) << "not allowed\n";
-    return boost::shared_ptr<GmcType>();
+    return std::shared_ptr<GmcType>();
 }
 
 template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-boost::shared_ptr<GmcType>
-buildGmcWithRelationDifferentMeshType( boost::shared_ptr<SpaceType> const& space,typename GmcType::gm_ptrtype const& gm, ImType const& im,
-                                        size_type idElt ,boost::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/ )
+std::shared_ptr<GmcType>
+buildGmcWithRelationDifferentMeshType( std::shared_ptr<SpaceType> const& space,typename GmcType::gm_ptrtype const& gm, ImType const& im,
+                                        size_type idElt ,std::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/ )
 {
     return buildGmcWithRelationDifferentMeshType<SpaceType,ImType,GmcType,GmcExprType>( space,gm,im, idElt, gmcExpr,
                                                                                         mpl::int_<0>(),
                                                                                         mpl::bool_<boost::is_same<GmcType,GmcExprType>::type::value>() );
 }
 template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-boost::shared_ptr<GmcType>
-buildGmcWithRelationDifferentMeshType( boost::shared_ptr<SpaceType> const& space,typename GmcType::gm_ptrtype const& gm, ImType const& im,
-                                       size_type idElt,boost::shared_ptr<GmcExprType> /**/ ,mpl::int_<1> /**/ )
+std::shared_ptr<GmcType>
+buildGmcWithRelationDifferentMeshType( std::shared_ptr<SpaceType> const& space,typename GmcType::gm_ptrtype const& gm, ImType const& im,
+                                       size_type idElt,std::shared_ptr<GmcExprType> /**/ ,mpl::int_<1> /**/ )
 {
     typedef typename QuadMapped<ImType>::permutation_type permutation_type;
     typedef GmcType gmc_type;
@@ -1655,7 +1644,7 @@ buildGmcWithRelationDifferentMeshType( boost::shared_ptr<SpaceType> const& space
     typedef typename gmc_type::gm_type::precompute_type geopc_type;
     typedef typename gmc_type::gm_type::precompute_ptrtype geopc_ptrtype;
 #endif
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
     std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( im.nFaces() );
 
@@ -1675,16 +1664,16 @@ buildGmcWithRelationDifferentMeshType( boost::shared_ptr<SpaceType> const& space
 }
 template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 void
-updateGmcWithRelationDifferentMeshType( boost::shared_ptr<SpaceType> const& /*space*/,
-                                        boost::shared_ptr<GmcType> /*gmc*/, boost::shared_ptr<GmcExprType> /*gmcExpr*/,
+updateGmcWithRelationDifferentMeshType( std::shared_ptr<SpaceType> const& /*space*/,
+                                        std::shared_ptr<GmcType> /*gmc*/, std::shared_ptr<GmcExprType> /*gmcExpr*/,
                                         size_type /*idElt*/, mpl::int_<0> /**/ )
 {
     // nothing to do!
 }
 template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 void
-updateGmcWithRelationDifferentMeshType( boost::shared_ptr<SpaceType> const& space,
-                                        boost::shared_ptr<GmcType> gmc, boost::shared_ptr<GmcExprType> gmcExpr,
+updateGmcWithRelationDifferentMeshType( std::shared_ptr<SpaceType> const& space,
+                                        std::shared_ptr<GmcType> gmc, std::shared_ptr<GmcExprType> gmcExpr,
                                         size_type idElt, mpl::int_<1> /**/ )
 {
     typedef typename QuadMapped<ImType>::permutation_type permutation_type;
@@ -1711,51 +1700,51 @@ updateGmcWithRelationDifferentMeshType( boost::shared_ptr<SpaceType> const& spac
 
 
 template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-boost::shared_ptr<GmcType>
-buildGmcWithRelationDifferentMeshType2( boost::shared_ptr<SpaceType> const& /*space*/,typename GmcType::gm_ptrtype const& /*gm*/, ImType const& im,
-                                        size_type /*idElt*/ ,boost::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/, mpl::true_ )
+std::shared_ptr<GmcType>
+buildGmcWithRelationDifferentMeshType2( std::shared_ptr<SpaceType> const& /*space*/,typename GmcType::gm_ptrtype const& /*gm*/, ImType const& im,
+                                        size_type /*idElt*/ ,std::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/, mpl::true_ )
 {
     return gmcExpr;
 }
 
 template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-boost::shared_ptr<GmcType>
-buildGmcWithRelationDifferentMeshType2( boost::shared_ptr<SpaceType> const& /*space*/,typename GmcType::gm_ptrtype const& /*gm*/, ImType const& im,
-                                        size_type /*idElt*/ ,boost::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/, mpl::false_ )
+std::shared_ptr<GmcType>
+buildGmcWithRelationDifferentMeshType2( std::shared_ptr<SpaceType> const& /*space*/,typename GmcType::gm_ptrtype const& /*gm*/, ImType const& im,
+                                        size_type /*idElt*/ ,std::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/, mpl::false_ )
 {
     CHECK( false ) << "not allowed\n";
-    return boost::shared_ptr<GmcType>();
+    return std::shared_ptr<GmcType>();
 }
 
 template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-boost::shared_ptr<GmcType>
-buildGmcWithRelationDifferentMeshType2( boost::shared_ptr<SpaceType> const& space,typename GmcType::gm_ptrtype const& gm, ImType const& im,
-                                        size_type idElt ,boost::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/ )
+std::shared_ptr<GmcType>
+buildGmcWithRelationDifferentMeshType2( std::shared_ptr<SpaceType> const& space,typename GmcType::gm_ptrtype const& gm, ImType const& im,
+                                        size_type idElt ,std::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/ )
 {
     return buildGmcWithRelationDifferentMeshType2<SpaceType,ImType,GmcType,GmcExprType>( space,gm,im, idElt, gmcExpr,
                                                                                          mpl::int_<0>(),
                                                                                          mpl::bool_<boost::is_same<GmcType,GmcExprType>::type::value>() );
 }
 template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-boost::shared_ptr<GmcType>
-buildGmcWithRelationDifferentMeshType2( boost::shared_ptr<SpaceType> const& space,typename GmcType::gm_ptrtype const& gm, ImType const& im,
-                                        size_type idElt,boost::shared_ptr<GmcExprType> /**/ ,mpl::int_<1> /**/ )
+std::shared_ptr<GmcType>
+buildGmcWithRelationDifferentMeshType2( std::shared_ptr<SpaceType> const& space,typename GmcType::gm_ptrtype const& gm, ImType const& im,
+                                        size_type idElt,std::shared_ptr<GmcExprType> /**/ ,mpl::int_<1> /**/ )
 {
     typedef GmcType gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename gmc_type::gm_type::precompute_type geopc_type;
     typedef typename gmc_type::gm_type::precompute_ptrtype geopc_ptrtype;
 
-    geopc_ptrtype geopc( boost::make_shared<geopc_type>( gm, im.points() ) );
+    geopc_ptrtype geopc( std::make_shared<geopc_type>( gm, im.points() ) );
     CHECK( space->mesh()->hasElement( idElt ) ) << " mesh doesnt have an element id " << idElt;
     auto const& eltInit = space->mesh()->element( idElt );
-    return boost::make_shared<gmc_type>( gm, eltInit, geopc );
+    return std::make_shared<gmc_type>( gm, eltInit, geopc );
 }
 
 template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 size_type
-updateGmcWithRelationDifferentMeshType2( FaceType const& theface, boost::shared_ptr<SpaceType> const& /*space*/,
-                                         boost::shared_ptr<GmcType> /*gmc*/, boost::shared_ptr<GmcExprType> /*gmcExpr*/,
+updateGmcWithRelationDifferentMeshType2( FaceType const& theface, std::shared_ptr<SpaceType> const& /*space*/,
+                                         std::shared_ptr<GmcType> /*gmc*/, std::shared_ptr<GmcExprType> /*gmcExpr*/,
                                          size_type idElt, mpl::int_<0> /**/ )
 {
     // nothing to do!
@@ -1763,8 +1752,8 @@ updateGmcWithRelationDifferentMeshType2( FaceType const& theface, boost::shared_
 }
 template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 size_type
-updateGmcWithRelationDifferentMeshType21( FaceType const& theface, boost::shared_ptr<SpaceType> const& /*space*/,
-                                          boost::shared_ptr<GmcType> /*gmc*/, boost::shared_ptr<GmcExprType> /*gmcExpr*/,
+updateGmcWithRelationDifferentMeshType21( FaceType const& theface, std::shared_ptr<SpaceType> const& /*space*/,
+                                          std::shared_ptr<GmcType> /*gmc*/, std::shared_ptr<GmcExprType> /*gmcExpr*/,
                                           size_type /*idElt*/, mpl::int_<0> /**/ )
 {
     // nothing to do!
@@ -1773,8 +1762,8 @@ updateGmcWithRelationDifferentMeshType21( FaceType const& theface, boost::shared
 
 template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 size_type
-updateGmcWithRelationDifferentMeshType2( FaceType const& theface, boost::shared_ptr<SpaceType> const& space,
-                                         boost::shared_ptr<GmcType>& gmc, boost::shared_ptr<GmcExprType>& gmcExpr,
+updateGmcWithRelationDifferentMeshType2( FaceType const& theface, std::shared_ptr<SpaceType> const& space,
+                                         std::shared_ptr<GmcType>& gmc, std::shared_ptr<GmcExprType>& gmcExpr,
                                          size_type idElt, mpl::int_<1> /**/ )
 {
     typedef typename QuadMapped<ImType>::permutation_type permutation_type;
@@ -1789,8 +1778,8 @@ updateGmcWithRelationDifferentMeshType2( FaceType const& theface, boost::shared_
 
 template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 size_type
-updateGmcWithRelationDifferentMeshType21( FaceType const& theface, boost::shared_ptr<SpaceType> const& space,
-                                          boost::shared_ptr<GmcType> gmc, boost::shared_ptr<GmcExprType> gmcExpr,
+updateGmcWithRelationDifferentMeshType21( FaceType const& theface, std::shared_ptr<SpaceType> const& space,
+                                          std::shared_ptr<GmcType> gmc, std::shared_ptr<GmcExprType> gmcExpr,
                                           size_type idElt, mpl::int_<1> /**/ )
 {
     typedef typename QuadMapped<ImType>::permutation_type permutation_type;
@@ -1819,8 +1808,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename eval::gm1_type gm1_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc_expr_type;
     typedef typename gm1_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc1_expr_type;
-    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
-    typedef boost::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
+    typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef std::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm1_expr_type::precompute_type pc1_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
@@ -1836,8 +1825,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
     typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc_formTest_type;
     typedef typename gm1_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc1_formTest_type;
-    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
-    typedef boost::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
+    typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef std::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
     typedef typename gm1_formTest_type::precompute_type pc1_formTest_type;
     typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
@@ -1851,8 +1840,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
     typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc_formTrial_type;
     typedef typename gm1_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc1_formTrial_type;
-    typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
-    typedef boost::shared_ptr<gmc1_formTrial_type> gmc1_formTrial_ptrtype;
+    typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
+    typedef std::shared_ptr<gmc1_formTrial_type> gmc1_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
     typedef typename gm1_formTrial_type::precompute_type pc1_formTrial_type;
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
@@ -2034,8 +2023,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename eval::gm1_type gm1_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc_expr_type;
     typedef typename gm1_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc1_expr_type;
-    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
-    typedef boost::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
+    typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef std::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm1_expr_type::precompute_type pc1_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
@@ -2051,8 +2040,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
     typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc_formTest_type;
     typedef typename gm1_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc1_formTest_type;
-    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
-    typedef boost::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
+    typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef std::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
     typedef typename gm1_formTest_type::precompute_type pc1_formTest_type;
     typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
@@ -2066,8 +2055,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
     typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc_formTrial_type;
     typedef typename gm1_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc1_formTrial_type;
-    typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
-    typedef boost::shared_ptr<gmc1_formTrial_type> gmc1_formTrial_ptrtype;
+    typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
+    typedef std::shared_ptr<gmc1_formTrial_type> gmc1_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
     typedef typename gm1_formTrial_type::precompute_type pc1_formTrial_type;
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
@@ -2293,7 +2282,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc_expr_type;
-    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
@@ -2304,7 +2293,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename FormType::gm_1_type gm_formTest_type;
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
     typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc_formTest_type;
-    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
     typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
@@ -2312,7 +2301,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename FormType::gm_2_type gm_formTrial_type;
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
     typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc_formTrial_type;
-    typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
+    typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
@@ -2462,7 +2451,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc_expr_type;
-    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
@@ -2473,7 +2462,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename FormType::gm_1_type gm_formTest_type;
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
     typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc_formTest_type;
-    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
     typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
@@ -2481,7 +2470,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename FormType::gm_2_type gm_formTrial_type;
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
     typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc_formTrial_type;
-    typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
+    typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
@@ -2689,7 +2678,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc_expr_type;
-    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
@@ -2699,7 +2688,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     typedef typename FormType::gm_type gm_form_type;
     typedef typename FormType::mesh_test_element_type geoelement_form_type;
     typedef typename gm_form_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_form_type> gmc_form_type;
-    typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
+    typedef std::shared_ptr<gmc_form_type> gmc_form_ptrtype;
     typedef typename gm_form_type::precompute_type pc_form_type;
     typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;
@@ -3019,12 +3008,12 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     typedef typename eval::gm_type gm_type;
     typedef typename eval::gm1_type gm1_type;
     //typedef typename FormType::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+    typedef std::shared_ptr<gm_type> gm_ptrtype;
+    typedef std::shared_ptr<gm1_type> gm1_ptrtype;
     typedef typename gm_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_type;
     typedef typename gm1_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc1_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-    typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
     //
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
@@ -3143,8 +3132,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
         typedef typename FormType::template Context<map_gmc_type, expression_type, face_im_type> form_context_type;
         typedef typename FormType::template Context<map_gmc1_type, expression_type, face_im2_type> form1_context_type;
-        typedef boost::shared_ptr<form_context_type> form_context_ptrtype;
-        typedef boost::shared_ptr<form1_context_type> form1_context_ptrtype;
+        typedef std::shared_ptr<form_context_type> form_context_ptrtype;
+        typedef std::shared_ptr<form1_context_type> form1_context_ptrtype;
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
         map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c01 ) );
         form_context_ptrtype form;
@@ -3161,8 +3150,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc1_ptrtype> > map21_gmc_type;
         typedef typename FormType::template Context<map2_gmc_type, expression_type, face_im_type> form2_context_type;
         typedef typename FormType::template Context<map21_gmc_type, expression_type, face_im2_type> form21_context_type;
-        typedef boost::shared_ptr<form2_context_type> form2_context_ptrtype;
-        typedef boost::shared_ptr<form21_context_type> form21_context_ptrtype;
+        typedef std::shared_ptr<form2_context_type> form2_context_ptrtype;
+        typedef std::shared_ptr<form21_context_type> form21_context_ptrtype;
         form2_context_ptrtype form2;
         form21_context_ptrtype form21;
 
@@ -3506,8 +3495,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename eval::gm1_type gm1_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
     typedef typename gm1_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc1_expr_type;
-    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
-    typedef boost::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
+    typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef std::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm1_expr_type::precompute_type pc1_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
@@ -3526,8 +3515,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                                                    mpl::int_<expression_type::context|vm::POINT> >::type::value;
     typedef typename gm_formTest_type::template Context<contextTest,geoelement_formTest_type> gmc_formTest_type;
     typedef typename gm1_formTest_type::template Context<contextTest,geoelement_formTest_type> gmc1_formTest_type;
-    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
-    typedef boost::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
+    typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef std::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
     typedef typename gm1_formTest_type::precompute_type pc1_formTest_type;
     typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
@@ -3544,8 +3533,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                                                    mpl::int_<expression_type::context|vm::POINT> >::type::value;
     typedef typename gm_formTrial_type::template Context<contextTrial,geoelement_formTrial_type> gmc_formTrial_type;
     typedef typename gm1_formTrial_type::template Context<contextTrial,geoelement_formTrial_type> gmc1_formTrial_type;
-    typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
-    typedef boost::shared_ptr<gmc1_formTrial_type> gmc1_formTrial_ptrtype;
+    typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
+    typedef std::shared_ptr<gmc1_formTrial_type> gmc1_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
     typedef typename gm1_formTrial_type::precompute_type pc1_formTrial_type;
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
@@ -3588,14 +3577,14 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     // typedef on formcontext
     typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
     typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type, map_gmc1_formTrial_type> form1_context_type;
-    typedef boost::shared_ptr<form_context_type> form_context_ptrtype;
-    typedef boost::shared_ptr<form1_context_type> form1_context_ptrtype;
+    typedef std::shared_ptr<form_context_type> form_context_ptrtype;
+    typedef std::shared_ptr<form1_context_type> form1_context_ptrtype;
 
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype>,fusion::pair<vf::detail::gmc<1>, gmc_expr_ptrtype> > map2_gmc_expr_type;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype>,fusion::pair<vf::detail::gmc<1>, gmc_formTrial_ptrtype> > map2_gmc_formTrial_type;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype>,fusion::pair<vf::detail::gmc<1>, gmc_formTest_ptrtype> > map2_gmc_formTest_type;
     typedef typename FormType::template Context<map2_gmc_formTest_type, expression_type, face_im_type, map2_gmc_expr_type, map2_gmc_formTrial_type> form2_context_type;
-    typedef boost::shared_ptr<form2_context_type> form2_context_ptrtype;
+    typedef std::shared_ptr<form2_context_type> form2_context_ptrtype;
     form2_context_ptrtype form2;
 
 
@@ -3690,10 +3679,10 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         if ( faceInit.isConnectedTo1() )
         {
             uint16_type __face_id_in_elt_1 = faceInit.pos_second();
-            gmcExpr1 = boost::make_shared<gmc_expr_type>( faceInit.element( 1 ).gm(), faceInit.element( 1 ), __geopc, __face_id_in_elt_1 );
+            gmcExpr1 = std::make_shared<gmc_expr_type>( faceInit.element( 1 ).gm(), faceInit.element( 1 ), __geopc, __face_id_in_elt_1 );
         }
         else
-            gmcExpr1 = boost::make_shared<gmc_expr_type>( faceInit.element( 0 ).gm(), faceInit.element( 0 ), __geopc, __face_id_in_elt_0 );
+            gmcExpr1 = std::make_shared<gmc_expr_type>( faceInit.element( 0 ).gm(), faceInit.element( 0 ), __geopc, __face_id_in_elt_0 );
 
         gmcFormTest1 = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_1_type,im_formtest_type,
                                                                        gmc_formTest_type,gmc_expr_type>
@@ -3840,8 +3829,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename eval::gm1_type gm1_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
     typedef typename gm1_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc1_expr_type;
-    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
-    typedef boost::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
+    typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef std::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm1_expr_type::precompute_type pc1_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
@@ -3860,8 +3849,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                                                    mpl::int_<expression_type::context|vm::POINT> >::type::value;
     typedef typename gm_formTest_type::template Context<contextTest,geoelement_formTest_type> gmc_formTest_type;
     typedef typename gm1_formTest_type::template Context<contextTest,geoelement_formTest_type> gmc1_formTest_type;
-    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
-    typedef boost::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
+    typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef std::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
     typedef typename gm1_formTest_type::precompute_type pc1_formTest_type;
     typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
@@ -3878,8 +3867,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                                                    mpl::int_<expression_type::context|vm::POINT> >::type::value;
     typedef typename gm_formTrial_type::template Context<contextTrial,geoelement_formTrial_type> gmc_formTrial_type;
     typedef typename gm1_formTrial_type::template Context<contextTrial,geoelement_formTrial_type> gmc1_formTrial_type;
-    typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
-    typedef boost::shared_ptr<gmc1_formTrial_type> gmc1_formTrial_ptrtype;
+    typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
+    typedef std::shared_ptr<gmc1_formTrial_type> gmc1_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
     typedef typename gm1_formTrial_type::precompute_type pc1_formTrial_type;
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
@@ -3932,16 +3921,16 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type, map_gmc1_formTrial_type> form1_context_type;
     typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type, map_gmc1_formTrial_type,mortarTag> form1_mortar_context_type;
 
-    typedef boost::shared_ptr<form_context_type> form_context_ptrtype;
-    typedef boost::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
-    typedef boost::shared_ptr<form1_context_type> form1_context_ptrtype;
-    typedef boost::shared_ptr<form1_mortar_context_type> form1_mortar_context_ptrtype;
+    typedef std::shared_ptr<form_context_type> form_context_ptrtype;
+    typedef std::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
+    typedef std::shared_ptr<form1_context_type> form1_context_ptrtype;
+    typedef std::shared_ptr<form1_mortar_context_type> form1_mortar_context_ptrtype;
 
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype>,fusion::pair<vf::detail::gmc<1>, gmc_expr_ptrtype> > map2_gmc_expr_type;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype>,fusion::pair<vf::detail::gmc<1>, gmc_formTrial_ptrtype> > map2_gmc_formTrial_type;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype>,fusion::pair<vf::detail::gmc<1>, gmc_formTest_ptrtype> > map2_gmc_formTest_type;
     typedef typename FormType::template Context<map2_gmc_formTest_type, expression_type, face_im_type, map2_gmc_expr_type, map2_gmc_formTrial_type> form2_context_type;
-    typedef boost::shared_ptr<form2_context_type> form2_context_ptrtype;
+    typedef std::shared_ptr<form2_context_type> form2_context_ptrtype;
     form2_context_ptrtype form2;
 
 
@@ -4038,7 +4027,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         if ( faceInit.isConnectedTo1() )
         {
             uint16_type __face_id_in_elt_1 = faceInit.pos_second();
-            gmcExpr1 = boost::make_shared<gmc_expr_type>( faceInit.element( 1 ).gm(), faceInit.element( 1 ), __geopc, __face_id_in_elt_1 );
+            gmcExpr1 = std::make_shared<gmc_expr_type>( faceInit.element( 1 ).gm(), faceInit.element( 1 ), __geopc, __face_id_in_elt_1 );
             gmcFormTest1 = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_1_type,im_formtest_type,
                                                                            gmc_formTest_type,gmc_expr_type>
                 ( __form.testSpace(), __form.testSpace()->gm(), imTest,
@@ -4193,8 +4182,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename eval::gm1_type gm1_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
     typedef typename gm1_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc1_expr_type;
-    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
-    typedef boost::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
+    typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef std::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm1_expr_type::precompute_type pc1_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
@@ -4213,8 +4202,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                                                    mpl::int_<expression_type::context|vm::POINT> >::type::value;
     typedef typename gm_formTest_type::template Context<contextTest,geoelement_formTest_type> gmc_formTest_type;
     typedef typename gm1_formTest_type::template Context<contextTest,geoelement_formTest_type> gmc1_formTest_type;
-    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
-    typedef boost::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
+    typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef std::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
     typedef typename gm1_formTest_type::precompute_type pc1_formTest_type;
     typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
@@ -4258,9 +4247,9 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTest_type,mortarTag> form_mortar_context_type;
 
     typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type> form1_context_type;
-    typedef boost::shared_ptr<form_context_type> form_context_ptrtype;
-    typedef boost::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
-    typedef boost::shared_ptr<form1_context_type> form1_context_ptrtype;
+    typedef std::shared_ptr<form_context_type> form_context_ptrtype;
+    typedef std::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
+    typedef std::shared_ptr<form1_context_type> form1_context_ptrtype;
 
 
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
@@ -4422,7 +4411,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
-    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
@@ -4432,7 +4421,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     /*typedef typename FormType::gm_type gm_form_type;
       typedef typename FormType::mesh_element_type geoelement_form_type;
       typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
-      typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
+      typedef std::shared_ptr<gmc_form_type> gmc_form_ptrtype;
       typedef typename gm_form_type::precompute_type pc_form_type;
       typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
       typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;*/
@@ -4440,7 +4429,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename FormType::gm_1_type gm_formTest_type;
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
     typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc_formTest_type;
-    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
     typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
@@ -4448,7 +4437,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename FormType::gm_2_type gm_formTrial_type;
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
     typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc_formTrial_type;
-    typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
+    typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
@@ -4637,7 +4626,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
-    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
@@ -4647,7 +4636,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     /*typedef typename FormType::gm_type gm_form_type;
       typedef typename FormType::mesh_element_type geoelement_form_type;
       typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
-      typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
+      typedef std::shared_ptr<gmc_form_type> gmc_form_ptrtype;
       typedef typename gm_form_type::precompute_type pc_form_type;
       typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
       typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;*/
@@ -4655,7 +4644,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename FormType::gm_1_type gm_formTest_type;
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
     typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc_formTest_type;
-    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
     typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
@@ -4663,7 +4652,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename FormType::gm_2_type gm_formTrial_type;
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
     typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc_formTrial_type;
-    typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
+    typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
@@ -4682,7 +4671,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTrial_type, mortarTag> form_mortar_context_type;
     typedef form_context_type fcb_type;
     typedef fcb_type* focb_ptrtype;
-    typedef boost::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
+    typedef std::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
 
     element_iterator elt_it, elt_en;
     bool findEltForInit = false;
@@ -4906,7 +4895,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
-    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
@@ -4916,7 +4905,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     typedef typename FormType::gm_type gm_form_type;
     typedef typename FormType::mesh_test_element_type geoelement_form_type;
     typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
-    typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
+    typedef std::shared_ptr<gmc_form_type> gmc_form_ptrtype;
     typedef typename gm_form_type::precompute_type pc_form_type;
     typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;
@@ -4931,7 +4920,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     typedef typename FormType::template Context<map_gmc_form_type, expression_type, face_im_type,map_gmc_expr_type,map_gmc_form_type,mortarTag> form_mortar_context_type;
     typedef form_context_type fcb_type;
     typedef fcb_type* focb_ptrtype;
-    typedef boost::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
+    typedef std::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
 
 
     element_iterator elt_it, elt_en;
@@ -5803,14 +5792,14 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_element_type;
                     typedef the_element_type element_type;
                     typedef typename the_element_type::gm_type gm_type;
-                    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+                    typedef std::shared_ptr<gm_type> gm_ptrtype;
                     typedef typename eval::gmc_type gmc_type;
-                    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+                    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
                     typedef typename the_element_type::gm1_type gm1_type;
-                    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+                    typedef std::shared_ptr<gm1_type> gm1_ptrtype;
                     typedef typename eval::gmc1_type gmc1_type;
-                    typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
+                    typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
 
                     //typedef typename eval_expr_type::value_type value_type;
                     //typedef typename Im::value_type value_type;
@@ -5961,9 +5950,9 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
     typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_face_element_type;
     typedef typename the_face_element_type::super2::entity_type the_element_type;
     typedef typename the_element_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef std::shared_ptr<gm_type> gm_ptrtype;
     typedef typename gm_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, the_element_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     //typedef typename eval_expr_type::value_type value_type;
     //typedef typename Im::value_type value_type;
 
@@ -6030,14 +6019,14 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
-        typedef boost::shared_ptr<eval_expr_type> eval_expr_ptrtype;
+        typedef std::shared_ptr<eval_expr_type> eval_expr_ptrtype;
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
         eval_expr_ptrtype expr( new eval_expr_type( expression(), mapgmc ) );
         expr->init( im() );
 
         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
         typedef typename expression_type::template tensor<map2_gmc_type> eval2_expr_type;
-        typedef boost::shared_ptr<eval2_expr_type> eval2_expr_ptrtype;
+        typedef std::shared_ptr<eval2_expr_type> eval2_expr_ptrtype;
         eval2_expr_ptrtype expr2;
 
         // true if connected to another element, false otherwise
@@ -6170,7 +6159,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
  template<typename Elements, typename Im, typename Expr, typename Im2>
      template<typename P0hType>
      typename P0hType::element_type
-     Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_ELEMENTS> ) const
+     Integrator<Elements, Im, Expr, Im2>::broken( std::shared_ptr<P0hType>& P0h, mpl::int_<MESH_ELEMENTS> ) const
  {
      DLOG(INFO) << "integrating over "
                 << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
@@ -6183,11 +6172,11 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_element_type;
      typedef the_element_type element_type;
      typedef typename the_element_type::gm_type gm_type;
-     typedef boost::shared_ptr<gm_type> gm_ptrtype;
+     typedef std::shared_ptr<gm_type> gm_ptrtype;
      typedef typename gm_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::POINT, the_element_type> gmc_type;
-     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
      //typedef typename eval::gm_type gmc_type;
-     //typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+     //typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
      //typedef typename eval_expr_type::value_type value_type;
      //typedef typename Im::value_type value_type;
@@ -6272,7 +6261,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
  template<typename Elements, typename Im, typename Expr, typename Im2>
      template<typename P0hType>
      typename P0hType::element_type
-     Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const
+     Integrator<Elements, Im, Expr, Im2>::broken( std::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const
  {
      DLOG(INFO) << "integrating over "
                 << std::distance( this->beginElement(), this->endElement() )  << "faces\n";
@@ -6285,9 +6274,9 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_face_element_type;
      typedef typename the_face_element_type::super2::entity_type the_element_type;
      typedef typename the_element_type::gm_type gm_type;
-     typedef boost::shared_ptr<gm_type> gm_ptrtype;
+     typedef std::shared_ptr<gm_type> gm_ptrtype;
      typedef typename gm_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, the_element_type> gmc_type;
-     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
      //typedef typename eval_expr_type::value_type value_type;
      //typedef typename Im::value_type value_type;
 
@@ -6349,14 +6338,14 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
          typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
          typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
-         typedef boost::shared_ptr<eval_expr_type> eval_expr_ptrtype;
+         typedef std::shared_ptr<eval_expr_type> eval_expr_ptrtype;
          map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
          eval_expr_ptrtype expr( new eval_expr_type( expression(), mapgmc ) );
          expr->init( im() );
 
          typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
          typedef typename expression_type::template tensor<map2_gmc_type> eval2_expr_type;
-         typedef boost::shared_ptr<eval2_expr_type> eval2_expr_ptrtype;
+         typedef std::shared_ptr<eval2_expr_type> eval2_expr_ptrtype;
          eval2_expr_ptrtype expr2;
 
          // true if connected to another element, false otherwise
@@ -6483,8 +6472,8 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
                      bool use_harts,
                      int grainsize,
                      std::string const& partitioner,
-                     boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > > quadptloc
-                     = boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > >() )
+                     std::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > > quadptloc
+                     = std::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > >() )
  {
 
      typedef typename Feel::detail::quadptlocrangetype< Elts >::type range_type;
@@ -6594,7 +6583,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
 
      typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
 
-     typedef boost::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
+     typedef std::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
 
  };
  } // detail

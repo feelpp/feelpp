@@ -88,9 +88,9 @@ public:
     /*mesh*/
     typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     MyIntegrals( po::variables_map const& vm, AboutData const& about )
@@ -112,7 +112,7 @@ private:
     double meshSize;
     std::string shape;
     int nthreads;
-    boost::shared_ptr<Backend<double> > backend;
+    std::shared_ptr<Backend<double> > backend;
 }; // MyIntegrals
 
 

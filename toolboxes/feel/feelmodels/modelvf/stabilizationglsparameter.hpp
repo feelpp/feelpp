@@ -319,7 +319,7 @@ public:
         struct is_zero { static const bool value = false; };
 
         typedef tensorBase<Geo_t, Basis_i_t, Basis_j_t,shape,value_type> tensorbase_type;
-        typedef boost::shared_ptr<tensorbase_type> tensorbase_ptrtype;
+        typedef std::shared_ptr<tensorbase_type> tensorbase_ptrtype;
         typedef typename tensorbase_type::matrix_shape_type matrix_shape_type;
 
         tensor( this_type const& expr,

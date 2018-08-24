@@ -204,7 +204,7 @@ void Poisson()
     /* Mesh */
 
     typedef Mesh<GeoEntity<Simplex<2, 1> > > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     mesh_ptrtype mesh( new mesh_type );
 
     ImporterGmsh<mesh_type> import( fname );
@@ -219,7 +219,7 @@ void Poisson()
     t.restart();
     typedef BoundaryAdaptedPolynomialSet<2, N, Scalar, value_type, Simplex> basis_type;
     typedef FunctionSpace<mesh_type, basis_type, value_type > space_type;
-    boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+    std::shared_ptr<space_type> Xh( new space_type( mesh ) );
 
     typedef MatrixGmm<value_type, gmm::row_major> gmm_matrix_type;
 

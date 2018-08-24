@@ -1,4 +1,5 @@
 build/
+*.bak
 *.aux
 *.cppbck
 *.hppbck
@@ -7,6 +8,7 @@ build/
 *.vim
 *.pch
 *.gch
+__pycache__
 /#CTestConfig.cmake#
 /#ctest.make#
 /.DS_Store
@@ -124,3 +126,4 @@ ginac.pc
 /applications/crb/opusheat/opusheatapp.cpp
 /applications/crb/thermalbuilding/thermalbuildingapp.cpp
 /contrib/paralution/
+pyfeelpp-env

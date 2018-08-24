@@ -21,7 +21,7 @@ public :
 
     typedef typename super_type::callbacks_ptrtype callbacks_ptrtype;
     typedef Fmi2Variable variable_type;
-    typedef boost::shared_ptr<variable_type> variable_ptrtype;
+    typedef std::shared_ptr<variable_type> variable_ptrtype;
     typedef std::map<std::string,variable_ptrtype> var_map_type;
 
     FmuModel2( fmi_import_context_t* context, std::string tmp_dir, callbacks_ptrtype callbacks );

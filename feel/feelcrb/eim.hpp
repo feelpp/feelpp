@@ -146,12 +146,12 @@ public:
     typedef typename ModelType::node_type node_type;
 
     typedef typename ModelType::functionspace_type functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
     typedef typename functionspace_type::element_ptrtype element_ptrtype;
 
     typedef typename ModelType::model_functionspace_type model_functionspace_type;
-    typedef boost::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
+    typedef std::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
     typedef typename model_functionspace_type::element_type model_element_type;
     typedef typename model_functionspace_type::element_type model_solution_type;
 
@@ -1231,7 +1231,7 @@ class EIMFunctionBase : public CRBDB
 public:
 
     typedef SpaceType functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_ptrtype element_ptrtype;
     typedef typename functionspace_type::element_type solution_type;
     typedef typename functionspace_type::element_type element_type;
@@ -1242,7 +1242,7 @@ public:
     typedef typename functionspace_type::Context context_type;
 
     typedef ModelSpaceType model_functionspace_type;
-    typedef boost::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
+    typedef std::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
     typedef typename model_functionspace_type::element_type model_element_type;
     typedef typename model_functionspace_type::element_type model_solution_type;
     typedef typename model_functionspace_type::element_ptrtype model_element_ptrtype;
@@ -1251,7 +1251,7 @@ public:
     static const uint16_type nDim = mesh_type::nDim;
 
     typedef ParameterSpaceType parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
     typedef Eigen::Matrix<double, nDim, 1> node_type;
     //typedef Eigen::Matrix<double, SpaceType::basis_type::nLocalDof, Eigen::Dynamic> matrix_basis_pc_type;
@@ -1265,23 +1265,23 @@ public:
     typedef EIM<EIMFunctionBase<SpaceType,model_functionspace_type, ParameterSpaceType> > eim_type;
     typedef typename eim_type::vector_type vector_type;
 
-    typedef boost::shared_ptr<eim_type> eim_ptrtype;
+    typedef std::shared_ptr<eim_type> eim_ptrtype;
     //typedef typename eim_type::betam_type betam_type;
     //typedef typename eim_type::qm_type qm_type;
 
     typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
-    typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
+    typedef std::shared_ptr<matrix_type> matrix_ptrtype;
     typedef boost::tuple<double,parameter_type> parameter_residual_type;
 
     enum ResidualNormType { Linfty = 0, L2 = 1, LinftyVec = 2 };
 
     typedef GeometricSpace<mesh_type> geometricspace_type;
-    typedef boost::shared_ptr<geometricspace_type> geometricspace_ptrtype;
+    typedef std::shared_ptr<geometricspace_type> geometricspace_ptrtype;
     typedef typename geometricspace_type::Context geometricspace_context_type;
-    typedef boost::shared_ptr<geometricspace_context_type> geometricspace_context_ptrtype;
+    typedef std::shared_ptr<geometricspace_context_type> geometricspace_context_ptrtype;
 
     typedef CRBBase<model_functionspace_type,parameterspace_type> crb_type;
-    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+    typedef std::shared_ptr<crb_type> crb_ptrtype;
 
     EIMFunctionBase( parameterspace_ptrtype const& pspace,
                      sampling_ptrtype const& sampling,
@@ -1481,15 +1481,15 @@ class EIMFunctionFeSpaceDb
 {
 public :
     typedef EimSpaceType eim_functionspace_type;
-    typedef boost::shared_ptr<eim_functionspace_type> eim_functionspace_ptrtype;
+    typedef std::shared_ptr<eim_functionspace_type> eim_functionspace_ptrtype;
     typedef typename eim_functionspace_type::element_type eim_element_type;
 
     typedef ModelType model_type;
-    typedef boost::shared_ptr<model_type> model_ptrtype;
-    typedef boost::weak_ptr<model_type> model_weakptrtype;
+    typedef std::shared_ptr<model_type> model_ptrtype;
+    typedef std::weak_ptr<model_type> model_weakptrtype;
 
     typedef typename model_type::functionspace_type model_functionspace_type;
-    typedef boost::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
+    typedef std::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
     typedef typename model_functionspace_type::element_type model_element_type;
 
     EIMFunctionFeSpaceDb()
@@ -1679,8 +1679,8 @@ class EIMFunction
 public:
     typedef ModelType model_type;
     //typedef ModelType* model_ptrtype;
-    typedef boost::shared_ptr<model_type> model_ptrtype;
-    typedef boost::weak_ptr<model_type> model_weakptrtype;
+    typedef std::shared_ptr<model_type> model_ptrtype;
+    typedef std::weak_ptr<model_type> model_weakptrtype;
 
     static const bool model_use_nosolve = boost::is_base_of<EimFunctionNoSolveBase,model_type>::type::value;
     static const bool model_use_solve = !model_use_nosolve;
@@ -1688,7 +1688,7 @@ public:
     static const bool model_is_modelcrbbase = boost::is_base_of<ModelCrbBaseBase,model_type>::type::value;
 
     typedef SpaceType functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename super::element_type element_type;
     typedef typename super::element_ptrtype element_ptrtype;
     typedef typename super::model_element_type model_element_type;
@@ -1699,7 +1699,7 @@ public:
     typedef typename super::solution_type solution_type;
 
     typedef typename super::model_functionspace_type model_functionspace_type;
-    typedef boost::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
+    typedef std::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
     typedef typename super::model_solution_context_type model_solution_context_type;
     static const bool use_subspace_element = (SubSpaceId != -1 && model_functionspace_type::is_composite);
 
@@ -1723,7 +1723,7 @@ public:
 
     typedef typename model_element_expr_type::functionspace_type  model_element_expr_functionspace_type;
     typedef typename model_element_expr_functionspace_type::Context model_element_expr_context_type;
-    typedef boost::shared_ptr<model_element_expr_context_type> model_element_expr_context_ptrtype;
+    typedef std::shared_ptr<model_element_expr_context_type> model_element_expr_context_ptrtype;
 
     typedef typename SpaceType::mesh_type mesh_type;
     static const uint16_type nDim = mesh_type::nDim;
@@ -1753,7 +1753,7 @@ public:
         typedef typename TheModelType::rbfunctionspace_type type;
     };
     typedef typename RbSpaceFromModel<model_type,mpl::bool_<model_is_modelcrbbase> >::type rbfunctionspace_type;
-    typedef boost::shared_ptr<rbfunctionspace_type> rbfunctionspace_ptrtype;
+    typedef std::shared_ptr<rbfunctionspace_type> rbfunctionspace_ptrtype;
 
     template <typename TheRbSpaceType,int TheSubSpaceId>
     struct RbSpaceCtxFromRbSpace
@@ -1766,12 +1766,12 @@ public:
         typedef typename TheRbSpaceType::ctxrbset_type type;
     };
     typedef typename RbSpaceCtxFromRbSpace<rbfunctionspace_type,SubSpaceId>::type rbfunctionspace_context_type;
-    typedef boost::shared_ptr<rbfunctionspace_context_type> rbfunctionspace_context_ptrtype;
+    typedef std::shared_ptr<rbfunctionspace_context_type> rbfunctionspace_context_ptrtype;
     typedef typename RbSpaceCtxFromRbSpace<rbfunctionspace_type,SubSpaceId2>::type rbfunctionspace_context2_type;
-    typedef boost::shared_ptr<rbfunctionspace_context2_type> rbfunctionspace_context2_ptrtype;
+    typedef std::shared_ptr<rbfunctionspace_context2_type> rbfunctionspace_context2_ptrtype;
 
     typedef ExprType expr_type;
-    typedef boost::shared_ptr<expr_type> expr_ptrtype;
+    typedef std::shared_ptr<expr_type> expr_ptrtype;
 
     typedef typename super::eim_type eim_type;
     typedef typename super::eim_ptrtype eim_ptrtype;
@@ -1779,12 +1779,12 @@ public:
     typedef typename super::vector_type vector_type;
 
     typedef CRBModel<ModelType> crbmodel_type;
-    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
+    typedef std::shared_ptr<crbmodel_type> crbmodel_ptrtype;
     typedef CRBBase<typename model_type::functionspace_type,parameterspace_type> crb_type;
-    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+    typedef std::shared_ptr<crb_type> crb_ptrtype;
 
     typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
-    typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
+    typedef std::shared_ptr<matrix_type> matrix_ptrtype;
 
     typedef boost::tuple<double,parameter_type> parameter_residual_type;
     typedef typename super::node_type node_type;
@@ -3287,10 +3287,10 @@ public:
             // std::cout << "EIM load geoctx " << hasCtxGeoEim <<"\n";
             if ( hasCtxGeoEim )
             {
-                geometricspace_ptrtype geospace( new geometricspace_type( this->worldComm() ) );
+                auto geospace = std::make_shared<geometricspace_type>( this->worldCommPtr() );
                 if ( this->functionSpace() && this->functionSpace()->mesh() )
                     geospace->setMesh( this->functionSpace()->mesh() );
-                M_ctxGeoEim.reset( new geometricspace_context_type( geospace ) );
+                M_ctxGeoEim = std::make_shared<geometricspace_context_type>( geospace );
                 __ar & BOOST_SERIALIZATION_NVP( *M_ctxGeoEim );
             }
         }
@@ -3321,8 +3321,8 @@ private:
     int M_M_max;
     std::vector<node_type> M_t;
     geometricspace_context_ptrtype M_ctxGeoEim;
-    boost::shared_ptr<context_type> M_ctxFeBasisEim;
-    boost::shared_ptr<model_element_expr_context_type> M_ctxFeModelSolution;
+    std::shared_ptr<context_type> M_ctxFeBasisEim;
+    std::shared_ptr<model_element_expr_context_type> M_ctxFeModelSolution;
     rbfunctionspace_context_ptrtype M_ctxRbModelSolution;
     rbfunctionspace_context2_ptrtype M_ctxRbModelSolution2;
     matrix_type M_B;
@@ -3335,7 +3335,7 @@ private:
     std::vector<int> M_rb_online_iterations;
     std::vector<double> M_rb_online_increments;
 
-    boost::shared_ptr<element_type> M_internalModelFeFunc;
+    std::shared_ptr<element_type> M_internalModelFeFunc;
 };
 
 namespace detail
@@ -3358,7 +3358,7 @@ struct compute_eim_return
                                             mpl::int_<-1> >::type::value;
 
     typedef EIMFunction<model_type, space_type, expr_type, subspaceid, subspaceid2 > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 }
 
@@ -3376,7 +3376,7 @@ BOOST_PARAMETER_FUNCTION(
         ) // required
     ( optional
       ( in_out(element2),        *, element )
-      //( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ), model->functionSpace() )
+      //( space, *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ), model->functionSpace() )
       //( space, *, model->functionSpace() )
       ( sampling, *, model->parameterSpace()->sampling() )
       ( verbose, (int), 0 )
@@ -3390,8 +3390,8 @@ BOOST_PARAMETER_FUNCTION(
 #endif
     typedef typename Feel::detail::compute_eim_return<Args>::type eim_type;
     typedef typename Feel::detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
-    // return boost::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename );
-    auto eimFunc = boost::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename, directory );
+    // return std::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename );
+    auto eimFunc = std::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename, directory );
     if ( eim_type::model_use_nosolve )
         eimFunc->attachModel( model );
     return eimFunc;
@@ -3414,10 +3414,10 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
 
     // reduced basis space
     //typedef typename ModelType::rbfunctionspace_type rbfunctionspace_type;
-    //typedef boost::shared_ptr<rbfunctionspace_type> rbfunctionspace_ptrtype;
+    //typedef std::shared_ptr<rbfunctionspace_type> rbfunctionspace_ptrtype;
 
-    typedef boost::shared_ptr<ModelType> model_ptrtype;
-    typedef boost::weak_ptr<ModelType> model_weakptrtype;
+    typedef std::shared_ptr<ModelType> model_ptrtype;
+    typedef std::weak_ptr<ModelType> model_weakptrtype;
 
     static const int nb_spaces = functionspace_type::nSpaces;
     typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
@@ -3502,10 +3502,10 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
 };
 
 template<typename ModelType>
-boost::shared_ptr<EimFunctionNoSolve<ModelType>>
-eim_no_solve( boost::shared_ptr<ModelType> model )
+std::shared_ptr<EimFunctionNoSolve<ModelType>>
+eim_no_solve( std::shared_ptr<ModelType> model )
 {
-    return boost::shared_ptr<EimFunctionNoSolve<ModelType>>( new EimFunctionNoSolve<ModelType>( model ) );
+    return std::shared_ptr<EimFunctionNoSolve<ModelType>>( new EimFunctionNoSolve<ModelType>( model ) );
 }
 
 template< typename ExprType , typename EimType >

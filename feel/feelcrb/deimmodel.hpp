@@ -50,7 +50,7 @@ class DEIMModel :
 
 public :
     typedef ModelType model_type;
-    typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef std::shared_ptr<model_type> model_ptrtype;
     typedef typename model_type::parameterspace_type parameterspace_type;
     typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename super_type::parameter_type parameter_type;

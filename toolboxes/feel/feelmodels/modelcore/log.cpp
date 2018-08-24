@@ -33,7 +33,7 @@ namespace Feel {
 namespace FeelModels {
 
     void
-    Log(std::string _className,std::string _functionName,std::string _msg)
+    Log(std::string const& _className,std::string const& _functionName,std::string const& _msg)
     {
         std::cout<<"["
                  << _className
@@ -45,7 +45,7 @@ namespace FeelModels {
     }
 
     void
-    Log(std::string _className,std::string _functionName,std::string _msg,
+    Log(std::string const& _className,std::string const& _functionName,std::string const& _msg,
         WorldComm const& worldComm, bool allproc)
     {
         if (allproc || worldComm.globalRank()==worldComm.masterRank() )
@@ -60,8 +60,8 @@ namespace FeelModels {
     }
 
     void
-    Log(std::string _msgbefore,
-        std::string _className,std::string _functionName,std::string _msg,
+    Log(std::string const& _msgbefore,
+        std::string const& _className,std::string const& _functionName,std::string const& _msg,
         WorldComm const& worldComm, bool allproc)
     {
         if (allproc || worldComm.globalRank()==worldComm.masterRank() )

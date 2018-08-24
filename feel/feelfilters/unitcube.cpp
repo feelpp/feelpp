@@ -35,7 +35,7 @@
 
 namespace Feel {
 extern template class Mesh<Simplex<3>>;
-boost::shared_ptr<Mesh<Simplex<3> > >
+std::shared_ptr<Mesh<Simplex<3> > >
 unitCube( double h )
 {
 #ifdef FEELPP_HAS_GMSH
@@ -46,7 +46,7 @@ unitCube( double h )
                                         _h= h ) );
 #else
     LOG(WARNING) << "unitCube: Feel++ was not built with Gmsh. This function will return a empty mesh.";
-    return boost::make_shared<Mesh<Simplex<3> > >();
+    return std::make_shared<Mesh<Simplex<3> > >();
 #endif
 }
 

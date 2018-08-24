@@ -90,9 +90,9 @@ public:
         typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
         typedef the_element_type element_type;
         typedef typename the_element_type::gm_type gm_type;
-        typedef boost::shared_ptr<gm_type> gm_ptrtype;
+        typedef std::shared_ptr<gm_type> gm_ptrtype;
         typedef typename gm_type::template Context<expression_type::context, the_element_type> gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gm_type::precompute_ptrtype gmcpc_ptrtype;
         //typedef typename eval_expr_type::value_type value_type;
         //typedef typename strongest_numeric_type<typename Pts::value_type, typename expression_type::value_type>::type value_type;
@@ -183,8 +183,8 @@ public:
      *
      */
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __u,
-                   boost::shared_ptr<Elem2> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __u,
+                   std::shared_ptr<Elem2> const& __v,
                    FormType& __f ) const
     {
         typedef typename Elem1::functionspace_type functionspace_type;
@@ -204,13 +204,13 @@ public:
 private:
 
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& /*__u*/,
-                   boost::shared_ptr<Elem2> const& /*__v*/,
+    void assemble( std::shared_ptr<Elem1> const& /*__u*/,
+                   std::shared_ptr<Elem2> const& /*__v*/,
                    FormType& /*__f*/, mpl::bool_<false> ) const {}
 
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __u,
-                   boost::shared_ptr<Elem2> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __u,
+                   std::shared_ptr<Elem2> const& __v,
                    FormType& __f, mpl::bool_<true> ) const;
 
     ret_type evaluate( mpl::int_<MESH_ELEMENTS> ) const;
@@ -228,8 +228,8 @@ private:
 template<typename ElementRange, typename Pts, typename DiracExpr>
 template<typename Elem1, typename Elem2, typename FormType>
 void
-IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
-        boost::shared_ptr<Elem2> const& /*__v*/,
+IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( std::shared_ptr<Elem1> const& /*__u*/,
+        std::shared_ptr<Elem2> const& /*__v*/,
         FormType& __form,
         mpl::bool_<true> ) const
 {
@@ -269,9 +269,9 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem
 
     // geometric mapping context
     typedef mesh_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef std::shared_ptr<gm_type> gm_ptrtype;
     typedef gm_type::Context<vm::POINT, geoelement_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
     // basis
     typedef space_type::basis_type basis_type;
@@ -378,9 +378,9 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
 
     // geometric mapping context
     typedef mesh_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef std::shared_ptr<gm_type> gm_ptrtype;
     typedef gm_type::Context<vm::POINT, geoelement_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
     //
     // Precompute some data in the reference element for

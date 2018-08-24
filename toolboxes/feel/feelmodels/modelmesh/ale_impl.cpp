@@ -57,16 +57,16 @@ namespace ALE_IMPL
 namespace detailALE
 {
 template < typename SpaceLowType,typename SpaceHighType >
-boost::shared_ptr<SpaceHighType>
-buildSpaceHigh(boost::shared_ptr<SpaceLowType> spaceLow, bool moveGhostEltFromExtendedStencil, mpl::bool_<false> /**/ )
+std::shared_ptr<SpaceHighType>
+buildSpaceHigh(std::shared_ptr<SpaceLowType> spaceLow, bool moveGhostEltFromExtendedStencil, mpl::bool_<false> /**/ )
 {
     return SpaceHighType::New( _mesh=spaceLow->mesh(),_worldscomm=spaceLow->worldsComm(),
                                _extended_doftable=std::vector<bool>(1,moveGhostEltFromExtendedStencil) );
 }
 
 template < typename SpaceLowType,typename SpaceHighType >
-boost::shared_ptr<SpaceHighType>
-buildSpaceHigh(boost::shared_ptr<SpaceLowType> spaceLow, bool moveGhostEltFromExtendedStencil, mpl::bool_<true> /**/ )
+std::shared_ptr<SpaceHighType>
+buildSpaceHigh(std::shared_ptr<SpaceLowType> spaceLow, bool moveGhostEltFromExtendedStencil, mpl::bool_<true> /**/ )
 {
     return spaceLow;
 }
@@ -75,7 +75,7 @@ buildSpaceHigh(boost::shared_ptr<SpaceLowType> spaceLow, bool moveGhostEltFromEx
 
 
 template < class Convex, int Order >
-ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, WorldComm const& worldcomm, bool moveGhostEltFromExtendedStencil,
+ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t const& worldcomm, bool moveGhostEltFromExtendedStencil,
                         ModelBaseRepository const& modelRep )
     :
     super_type( mesh,prefix,worldcomm,moveGhostEltFromExtendedStencil,modelRep ),
@@ -159,10 +159,10 @@ ALE<Convex,Order>::~ALE() {}
 //-------------------------------------------------------------------------------------------//
 
 template < class Convex, int Order >
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 ALE<Convex,Order>::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n   Physical Markers";
     if ( this->flagSet().find("fixed") != this->flagSet().end() )
     {
@@ -267,7 +267,7 @@ template < class Convex, int Order >
 void
 ALE<Convex,Order>::createALE()
 {
-    M_fspaceLow = space_low_type::New( _mesh=M_reference_mesh,_worldscomm=std::vector<WorldComm>(1,this->worldComm()),
+    M_fspaceLow = space_low_type::New( _mesh=M_reference_mesh,_worldscomm=makeWorldsComm(1,this->worldCommPtr()),
                                        _extended_doftable=std::vector<bool>(1,M_moveGhostEltFromExtendedStencil) );
     M_aleLow.reset( new element_low_type( M_fspaceLow, "low_order_ALE_map" ) );
     M_displacementLow.reset( new element_low_type( M_fspaceLow, "low_order_displacement" ) );
@@ -281,7 +281,7 @@ template < class Convex, int Order >
 void
 ALE<Convex,Order>::createALEHO( mpl::true_ )
 {
-    M_bHigh = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"ho"), this->worldComm() );
+    M_bHigh = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"ho"), this->worldCommPtr() );
     M_fspaceHigh = detailALE::buildSpaceHigh<space_low_type,space_high_type>(M_fspaceLow, M_moveGhostEltFromExtendedStencil,
                                                                              mpl::bool_<isEqualOrderAndOrderLow>() );
 #if ALE_WITH_BOUNDARYELEMENT
@@ -361,7 +361,7 @@ ALE<Convex,Order>::createWinslow()
     bool useGhostEltFromExtendedStencil = M_fspaceLow->dof()->buildDofTableMPIExtended() && M_reference_mesh->worldComm().localSize()>1;
     M_winslowFactory.reset(new winslow_type( M_reference_mesh,
                                              prefixvm(this->prefix(),"winslow"),
-                                             this->worldComm(),useGhostEltFromExtendedStencil) );
+                                             this->worldCommPtr(),useGhostEltFromExtendedStencil) );
     //M_winslowFactory.reset( new winslow_type( M_fspaceLow,M_bLow,prefixvm(M_prefix,"alemesh.winslow")/*M_prefix*/) );
     M_winslowFactory->setflagSet(this->flagSet());
     M_winslowFactory->init();

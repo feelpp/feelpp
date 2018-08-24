@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE( element_component_vectorial )
 
 template <typename SpaceType>
 void
-test_tensor2( boost::shared_ptr<SpaceType> const& Xh )
+test_tensor2( std::shared_ptr<SpaceType> const& Xh )
 {
     auto mesh = Xh->mesh();
     auto u = Xh->element( mat<3,3>( cst( 1. ),cst( 2. ),cst( 3. ),
@@ -126,7 +126,7 @@ test_tensor2( boost::shared_ptr<SpaceType> const& Xh )
 }
 template <typename SpaceType>
 void
-test_tensor2symm( boost::shared_ptr<SpaceType> const& Xh )
+test_tensor2symm( std::shared_ptr<SpaceType> const& Xh )
 {
     auto mesh = Xh->mesh();
     auto u = Xh->element();

@@ -370,7 +370,7 @@ private:
 };
 
 typedef Iteration<double> iteration_type;
-typedef boost::shared_ptr<iteration_type> iteration_ptrtype;
+typedef std::shared_ptr<iteration_type> iteration_ptrtype;
 }
 
 

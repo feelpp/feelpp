@@ -63,70 +63,70 @@ public :
     typedef ModelBase super_type;
 
     typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*
      * Moving mesh typedefs
      */
     typedef Convex convex_type;
     typedef Mesh< convex_type > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*
      * Reference mesh typedefs
      */
     typedef typename mesh_type::P1_mesh_type  mesh_ref_type;
-    typedef boost::shared_ptr<mesh_ref_type> mesh_ref_ptrtype;
+    typedef std::shared_ptr<mesh_ref_type> mesh_ref_ptrtype;
     typedef typename mesh_ref_type::shape_type convex_ref_type;
 
     typedef ALE< convex_ref_type, mesh_type::nOrder > ale_map_type;
-    typedef boost::shared_ptr< ale_map_type > ale_map_ptrtype;
+    typedef std::shared_ptr< ale_map_type > ale_map_ptrtype;
 
     typedef typename ale_map_type::ale_map_functionspace_type ale_map_functionspace_ref_type;
-    typedef boost::shared_ptr<ale_map_functionspace_ref_type> ale_map_functionspace_ref_ptrtype;
+    typedef std::shared_ptr<ale_map_functionspace_ref_type> ale_map_functionspace_ref_ptrtype;
 
     typedef typename ale_map_type::ale_map_element_type ale_map_element_ref_type;
-    typedef boost::shared_ptr<ale_map_element_ref_type> ale_map_element_ref_ptrtype;
+    typedef std::shared_ptr<ale_map_element_ref_type> ale_map_element_ref_ptrtype;
 
     typedef typename ale_map_type::ale_map_basis_type ale_map_basis_type;
     typedef FunctionSpace<mesh_type, ale_map_basis_type> ale_map_functionspace_type;
-    typedef boost::shared_ptr<ale_map_functionspace_type> ale_map_functionspace_ptrtype;
+    typedef std::shared_ptr<ale_map_functionspace_type> ale_map_functionspace_ptrtype;
     typedef typename ale_map_functionspace_type::element_type ale_map_element_type;
-    typedef boost::shared_ptr<ale_map_element_type> ale_map_element_ptrtype;
+    typedef std::shared_ptr<ale_map_element_type> ale_map_element_ptrtype;
 
     typedef FunctionSpace< mesh_type, bases<Lagrange< mesh_type::nOrder/*-1*/,Vectorial,Discontinuous> > > ale_map_functionspacedisc_type;
-    typedef boost::shared_ptr<ale_map_functionspacedisc_type> ale_map_functionspacedisc_ptrtype;
+    typedef std::shared_ptr<ale_map_functionspacedisc_type> ale_map_functionspacedisc_ptrtype;
     typedef typename ale_map_functionspacedisc_type::element_type ale_map_elementdisc_type;
-    typedef boost::shared_ptr<ale_map_elementdisc_type> ale_map_elementdisc_ptrtype;
+    typedef std::shared_ptr<ale_map_elementdisc_type> ale_map_elementdisc_ptrtype;
 
 
     typedef Bdf< ale_map_functionspace_ref_type > bdf_ale_displacement_ref_type;
-    typedef boost::shared_ptr<bdf_ale_displacement_ref_type> bdf_ale_displacement_ref_ptrtype;
+    typedef std::shared_ptr<bdf_ale_displacement_ref_type> bdf_ale_displacement_ref_ptrtype;
 
     typedef Bdf< ale_map_functionspace_type > bdf_ale_displacement_type;
-    typedef boost::shared_ptr<bdf_ale_displacement_type> bdf_ale_displacement_ptrtype;
+    typedef std::shared_ptr<bdf_ale_displacement_type> bdf_ale_displacement_ptrtype;
 
     typedef Exporter<mesh_type,mesh_type::nOrder> exporter_type;
-    typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
+    typedef std::shared_ptr<exporter_type> exporter_ptrtype;
 
     typedef Exporter<mesh_ref_type,mesh_ref_type::nOrder> exporter_ref_type;
-    typedef boost::shared_ptr<exporter_ref_type> exporter_ref_ptrtype;
+    typedef std::shared_ptr<exporter_ref_type> exporter_ref_ptrtype;
 
     typedef DofRelationshipMap<ale_map_functionspace_ref_type,ale_map_functionspace_type > DofRelationshipMap_type;
-    typedef boost::shared_ptr<DofRelationshipMap_type> DofRelationshipMap_ptrtype;
+    typedef std::shared_ptr<DofRelationshipMap_type> DofRelationshipMap_ptrtype;
 
 
     MeshALE(mesh_ptrtype mesh_moving,
             //po::variables_map const& vm=Environment::vm(),
             std::string const& prefix="",
             //std::string exportName="ExportMeshALE",
-            WorldComm const& worldcomm=Environment::worldComm(),
+            worldcomm_ptr_t const& worldcomm=Environment::worldCommPtr(),
             bool moveGhostEltFromExtendedStencil=false,
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     void init();
 
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const;
 
 
     void addBoundaryFlags(std::string __type, std::string __marker);
@@ -266,16 +266,16 @@ private :
     ale_map_functionspace_ref_ptrtype M_Xhref;
     ale_map_functionspace_ptrtype M_Xhmove;
 
-    boost::shared_ptr<ale_map_element_type> M_identity_ale;
-    boost::shared_ptr<ale_map_element_ref_type> M_dispP1ToHO_ref;
+    std::shared_ptr<ale_map_element_type> M_identity_ale;
+    std::shared_ptr<ale_map_element_ref_type> M_dispP1ToHO_ref;
 
-    boost::shared_ptr<ale_map_element_type> M_displacementOnMovingBoundary_HO_ref;
-    boost::shared_ptr<ale_map_element_ref_type> M_displacementOnMovingBoundary_P1_ref;
+    std::shared_ptr<ale_map_element_type> M_displacementOnMovingBoundary_HO_ref;
+    std::shared_ptr<ale_map_element_ref_type> M_displacementOnMovingBoundary_P1_ref;
 
-    boost::shared_ptr<ale_map_element_type> M_displacement;
-    boost::shared_ptr<ale_map_element_ref_type> M_displacement_ref;
-    boost::shared_ptr<ale_map_element_ref_type> M_map_ref;
-    boost::shared_ptr<ale_map_element_type> M_meshVelocity;
+    std::shared_ptr<ale_map_element_type> M_displacement;
+    std::shared_ptr<ale_map_element_ref_type> M_displacement_ref;
+    std::shared_ptr<ale_map_element_ref_type> M_map_ref;
+    std::shared_ptr<ale_map_element_type> M_meshVelocity;
 
     bdf_ale_displacement_ref_ptrtype M_bdf_ale_displacement_ref;
     bdf_ale_displacement_ptrtype M_bdf_ale_identity;
@@ -332,7 +332,7 @@ struct compute_meshale_return
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::mesh>::type>::type::element_type mesh_type;
     typedef typename mesh_type::shape_type convex_type;
     typedef MeshALE<convex_type> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 BOOST_PARAMETER_FUNCTION(
@@ -340,11 +340,11 @@ BOOST_PARAMETER_FUNCTION(
     meshale,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
-      ( mesh,    *( boost::is_convertible<mpl::_,boost::shared_ptr<MeshBase> > ) )
+      ( mesh,    *( boost::is_convertible<mpl::_,std::shared_ptr<MeshBase> > ) )
       ) // required
     ( optional
       ( prefix,            (std::string), std::string("") )
-      ( worldcomm,         (WorldComm), Environment::worldComm() )
+      ( worldcomm,         (worldcomm_ptr_t), Environment::worldCommPtr() )
       ( extended_doftable, (bool), true )
       ( directory,         (ModelBaseRepository),  ModelBaseRepository() )
       ) // optionnal

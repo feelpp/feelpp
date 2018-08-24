@@ -441,7 +441,7 @@ public FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
     fem::detail::RaviartThomasDual,
     PointSetEquiSpaced >,
 public HDivPolynomialSet,
-public boost::enable_shared_from_this<RaviartThomas<N,O,T,Convex> >
+public std::enable_shared_from_this<RaviartThomas<N,O,T,Convex> >
 {
     typedef FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
             fem::detail::RaviartThomasDual,
@@ -740,10 +740,10 @@ public:
      */
     template<typename ExprType, typename ContextType>
     std::vector<value_type>
-    interpolate( boost::shared_ptr<ContextType>& ctx, ExprType & expr )
+    interpolate( std::shared_ptr<ContextType>& ctx, ExprType & expr )
     {
         using namespace Feel::vf;
-        typedef boost::shared_ptr<ContextType> gmc_ptrtype;
+        typedef std::shared_ptr<ContextType> gmc_ptrtype;
         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
         std::vector<value_type> v( nLocalDof );
@@ -772,7 +772,7 @@ public:
 
 #if 0
     template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
-    static void transform( boost::shared_ptr<GMContext> gmc,  boost::shared_ptr<PC> const& pc,
+    static void transform( std::shared_ptr<GMContext> gmc,  std::shared_ptr<PC> const& pc,
                            Phi& phi_t,
                            GPhi& g_phi_t, const bool do_gradient,
                            HPhi& h_phi_t, const bool do_hessian

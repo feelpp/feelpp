@@ -45,7 +45,7 @@ namespace FeelModels
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::ThermoElectric( std::string const& prefix,
                                                     bool buildMesh,
-                                                    WorldComm const& worldComm,
+                                                    worldcomm_ptr_t const& worldComm,
                                                     std::string const& subPrefix,
                                                     ModelBaseRepository const& modelRep )
     :
@@ -187,14 +187,14 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 #endif
  
 
-    M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), false, this->worldComm(),
+    M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), false, this->worldCommPtr(),
                                                            this->subPrefix(), this->repository() ) );
     if ( !M_heatModel->modelPropertiesPtr() )
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
     M_heatModel->setMesh( this->mesh() );
     M_heatModel->init( false );
 
-    M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), false, this->worldComm(),
+    M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), false, this->worldCommPtr(),
                                                    this->subPrefix(), this->repository() ) );
     if ( !M_electricModel->modelPropertiesPtr() )
         M_electricModel->setModelProperties( this->modelPropertiesPtr() );
@@ -241,7 +241,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->initPostProcess();
 
     // backend
-    M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
+    M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
 
     // block vector solution
     auto blockVectorSolutionHeat = M_heatModel->blockVectorSolution();
@@ -314,10 +314,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
 
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << M_heatModel->getInfo()->str();
     *_ostr << M_electricModel->getInfo()->str();
 
