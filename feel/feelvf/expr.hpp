@@ -656,9 +656,9 @@ public:
     }
     template<typename T, int M, int N=1>
     decltype(auto)
-    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const
+    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v, bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
         {
-            return M_expr.evaluate( v );
+            return M_expr.evaluate( v, true, worldcomm );
         }
     typename expression_type::value_type
     evaluateAndSum() const
