@@ -73,7 +73,7 @@ setup(
     description='PyFeel++-MOR: Python bindings for Feel++ for MOR(Model Order Reduction)',
     long_description='',
     package_dir={ 'pyfeelpp-mor': '@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp-mor' },
-    packages=['pyfeelpp.crb',
+    packages=['pyfeelpp-mor.crb',
     ],
     install_requires=['pyfeelpp' ],
     ext_modules=[CMakeExtension('_crb','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp-mor/crb'),
