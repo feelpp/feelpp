@@ -58,7 +58,7 @@ if (NOT FEELPP_DATADIR )
   set(FEELPP_DATADIR ${CMAKE_INSTALL_PREFIX}/share/feelpp/feel )
 endif()
 
-#FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/applications/crb/templates/*")
+#FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/mor/templates/*")
 #INSTALL(FILES ${files} DESTINATION share/feel/crb/templates COMPONENT Devel)
 
 # documentation and examples
