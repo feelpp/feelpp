@@ -79,7 +79,7 @@ set(CPACK_SOURCE_IGNORE_FILES
   "${PROJECT_SOURCE_DIR}/data/gmsh/aorta"
   "${PROJECT_SOURCE_DIR}/data/ensoght"
   "${PROJECT_SOURCE_DIR}/data/gmsh/pelvis"
-  #"${PROJECT_SOURCE_DIR}/applications/crb"
+  #"${PROJECT_SOURCE_DIR}/mor"
   "${PROJECT_SOURCE_DIR}/applications/check"
   "${PROJECT_SOURCE_DIR}/applications/polyvis"
   "${PROJECT_SOURCE_DIR}/testsuite"
