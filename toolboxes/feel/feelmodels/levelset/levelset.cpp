@@ -50,6 +50,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateDirac(true),
     M_doUpdateHeaviside(true),
     M_doUpdateInterfaceElements(true),
+    M_doUpdateRangeDiracElements(true),
     M_doUpdateInterfaceFaces(true),
     M_doUpdateSmootherInterface(true),
     M_doUpdateSmootherInterfaceVectorial(true),
@@ -248,7 +249,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
             {
                 phi_init = vf::project(
                         _space=this->functionSpace(),
-                        _range=elements(this->mesh()),
+                        _range=this->rangeMeshElements(),
                         _expr=expression(iv),
                         _geomap=this->geomap()
                         );
@@ -278,7 +279,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
                 
             phi_init = vf::project( 
                 _space=this->functionSpace(),
-                _range=elements(this->mesh()),
+                _range=this->rangeMeshElements(),
                 //_expr=idv(phi_init) / idv(modGradPhiInit)
                 _expr=idv(phi_init) / sqrt( trans(idv(gradPhiInit))*idv(gradPhiInit) )
                 );
@@ -311,7 +312,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
             auto gradPhi = this->gradPhi();
             *(M_modGradPhiAdvection->fieldSolutionPtr()) = vf::project( 
                     _space=this->functionSpace(),
-                    _range=elements(this->mesh()),
+                    _range=this->rangeMeshElements(),
                     _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) 
                     );
         }
@@ -365,7 +366,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::addShape(
             auto R = shapeParams.dget("radius");
             phi = vf::project(
                     _space=this->functionSpace(),
-                    _range=elements(this->mesh()),
+                    _range=this->rangeMeshElements(),
                     _expr=vf::min( idv(phi), sqrt(X*X+Y*Y+Z*Z)-R ),
                     _geomap=this->geomap()
                     );
@@ -407,7 +408,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::interfaceRectangularFunction( element_levelset_ptr
 
     return vf::project( 
             this->functionSpace(), 
-            elements(this->mesh()),
+            this->rangeMeshElements(),
             R_expr
             );
 }
@@ -1055,7 +1056,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
     {
         case DerivationMethod::NODAL_PROJECTION:
             this->log("LevelSet", "updateGradPhi", "perform nodal projection");
-            M_levelsetGradPhi->on( _range=elements(this->mesh()), _expr=trans(gradv(phi)) );
+            M_levelsetGradPhi->on( _range=this->rangeMeshElements(), _expr=trans(gradv(phi)) );
             break;
         case DerivationMethod::L2_PROJECTION:
             this->log("LevelSet", "updateGradPhi", "perform L2 projection");
@@ -1093,7 +1094,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateModGradPhi()
     auto gradPhi = this->gradPhi();
     *M_levelsetModGradPhi = vf::project( 
             _space=this->functionSpace(),
-            _range=elements(this->mesh()),
+            _range=this->rangeMeshElements(),
             _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) 
             );
     //*M_levelsetModGradPhi = this->projectorL2()->project( _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) );
@@ -1118,25 +1119,25 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
         auto gradPhi = this->gradPhi();
         auto gradPhiX = vf::project(
                 _space=this->functionSpace(),
-                _range=elements(this->mesh()),
+                _range=this->rangeMeshElements(),
                 _expr=idv(gradPhi->comp(Component::X))
                 );
         auto gradPhiY = vf::project(
                 _space=this->functionSpace(),
-                _range=elements(this->mesh()),
+                _range=this->rangeMeshElements(),
                 _expr=idv(gradPhi->comp(Component::Y))
                 );
 #if FEELPP_DIM == 3
         auto gradPhiZ = vf::project(
                 _space=this->functionSpace(),
-                _range=elements(this->mesh()),
+                _range=this->rangeMeshElements(),
                 _expr=idv(gradPhi->comp(Component::Z))
                 );
 #endif
         auto eps_elt = this->functionSpace()->element();
         eps_elt = vf::project(
                 _space=this->functionSpace(),
-                _range=elements(this->mesh()),
+                _range=this->rangeMeshElements(),
                 _expr=(vf::abs(idv(gradPhiX))+vf::abs(idv(gradPhiY))
 #if FEELPP_DIM == 3
                     + vf::abs(idv(gradPhiZ))
@@ -1151,7 +1152,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
             auto psi = idv(this->phi()) / idv(this->modGradPhi());
 
             if ( M_useHeavisideDiracNodalProj )
-                *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
+                *M_dirac = vf::project( this->functionSpace(), this->rangeMeshElements(),
                         Feel::FeelModels::levelsetDelta(psi, eps) );
             else
                 *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps) );
@@ -1161,7 +1162,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
             auto psi = idv(this->phi());
 
             if ( M_useHeavisideDiracNodalProj )
-                *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
+                *M_dirac = vf::project( this->functionSpace(), this->rangeMeshElements(),
                         Feel::FeelModels::levelsetDelta(psi, eps) );
             else
                 *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps) );
@@ -1176,7 +1177,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
             auto psi = idv(this->phi()) / idv(this->modGradPhi());
 
             if ( M_useHeavisideDiracNodalProj )
-                *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
+                *M_dirac = vf::project( this->functionSpace(), this->rangeMeshElements(),
                         Feel::FeelModels::levelsetDelta(psi, eps) );
             else
                 *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps) );
@@ -1186,7 +1187,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
             auto psi = idv(this->phi());
 
             if ( M_useHeavisideDiracNodalProj )
-                *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
+                *M_dirac = vf::project( this->functionSpace(), this->rangeMeshElements(),
                         Feel::FeelModels::levelsetDelta(psi, eps) );
             else
                 *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps) );
@@ -1213,7 +1214,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         auto psi = idv(this->phi()) / idv(this->modGradPhi());
 
         if ( M_useHeavisideDiracNodalProj )
-            *M_heaviside = vf::project( this->functionSpace(), elements(this->mesh()),
+            *M_heaviside = vf::project( this->functionSpace(), this->rangeMeshElements(),
                    Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
         else
             *M_heaviside = M_projectorL2Scalar->project( Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
@@ -1223,7 +1224,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         auto psi = idv(this->phi());
 
         if ( M_useHeavisideDiracNodalProj )
-            *M_heaviside = vf::project( this->functionSpace(), elements(this->mesh()),
+            *M_heaviside = vf::project( this->functionSpace(), this->rangeMeshElements(),
                    Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
         else
             *M_heaviside = M_projectorL2Scalar->project( Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
@@ -1266,7 +1267,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateNormal()
     auto gradPhi = this->gradPhi();
     *M_levelsetNormal = vf::project( 
             _space=this->functionSpaceVectorial(),
-            _range=elements(this->mesh()),
+            _range=this->rangeMeshElements(),
             //_expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) 
             _expr=idv(gradPhi) / sqrt(trans(idv(gradPhi)) * idv(gradPhi)) 
             );
@@ -1288,7 +1289,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
     {
         case DerivationMethod::NODAL_PROJECTION:
             this->log("LevelSet", "updateCurvature", "perform nodal projection");
-            M_levelsetCurvature->on( _range=elements(this->mesh()), _expr=divv(this->normal()) );
+            M_levelsetCurvature->on( _range=this->rangeMeshElements(), _expr=divv(this->normal()) );
             break;
         case DerivationMethod::L2_PROJECTION:
             this->log("LevelSet", "updateCurvature", "perform L2 projection");
@@ -1500,7 +1501,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::outerElementsRange( double cut )
 
     element_levelset_type phi = this->functionSpace()->element();
     if( this->M_useRegularPhi )
-        phi.on( _range=elements(this->mesh()), _expr=idv(this->phi()) / idv(this->modGradPhi()) );
+        phi.on( _range=this->rangeMeshElements(), _expr=idv(this->phi()) / idv(this->modGradPhi()) );
     else
         phi = *(this->phi());
 
@@ -1541,8 +1542,55 @@ LEVELSET_CLASS_TEMPLATE_TYPE::outerElementsRange( double cut )
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::range_elements_type const&
+LEVELSET_CLASS_TEMPLATE_TYPE::rangeDiracElements() const
+{
+    if( M_doUpdateRangeDiracElements )
+    {
+        mesh_ptrtype const& mesh = this->mesh();
+
+        auto it_elt = mesh->beginOrderedElement();
+        auto en_elt = mesh->endOrderedElement();
+
+        const rank_type pid = mesh->worldCommElements().localRank();
+        const int ndofv = space_levelset_type::fe_type::nDof;
+
+        double thickness = 2*this->thicknessInterface();
+        elements_reference_wrapper_ptrtype diracElts( new elements_reference_wrapper_type );
+
+        for (; it_elt!=en_elt; it_elt++)
+        {
+            auto const& elt = boost::unwrap_ref( *it_elt );
+            if ( elt.processId() != pid )
+                continue;
+            bool mark_elt = false;
+            for (int j=0; j<ndofv; j++)
+            {
+                if ( this->dirac()->localToGlobal(elt.id(), j, 0) > 0. )
+                {
+                    mark_elt = true;
+                    break; //don't need to do the others dof
+                }
+            }
+            if( mark_elt )
+                diracElts->push_back( boost::cref(elt) );
+        }
+
+        M_rangeDiracElements = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                diracElts->begin(),
+                diracElts->end(),
+                diracElts
+                );
+
+        M_doUpdateRangeDiracElements = false;
+    }
+
+    return M_rangeDiracElements;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::range_faces_type
-LEVELSET_CLASS_TEMPLATE_TYPE::interfaceFaces() const
+LEVELSET_CLASS_TEMPLATE_TYPE::rangeInterfaceFaces() const
 {
     CHECK( Environment::isSequential() ) << "There is a bug to be fixed in parallel. Only run in sequential at the moment...\n";
 
@@ -1968,23 +2016,23 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
             );
     auto invGradY = vf::project(
             _space=this->functionSpaceTensor2Symm(),
-            _range=elements(this->mesh()),
+            _range=this->rangeMeshElements(),
             _expr=inv(idv(gradY))
             );
     // K = (gradY)^-1 (gradY)^-T
     auto const& N = this->N();
     M_leftCauchyGreenTensor_K->on(
-            _range=elements(this->mesh()),
+            _range=this->rangeMeshElements(),
             _expr=idv(invGradY)*trans(idv(invGradY))
             );
     auto const& K = *M_leftCauchyGreenTensor_K;
     M_leftCauchyGreenTensor_KN->on(
-            _range=elements(this->mesh()),
+            _range=this->rangeMeshElements(),
             _expr=idv(K)*idv(this->N())
             );
     auto const& KN = *M_leftCauchyGreenTensor_KN;
     M_leftCauchyGreenTensor->on(
-            _range=elements(this->mesh()),
+            _range=this->rangeMeshElements(),
             _expr=idv(K) - idv(KN)*trans(idv(KN))/(trans(idv(N))*idv(KN))
             );
 #endif
@@ -2087,6 +2135,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
     M_doUpdateDirac = true;
     M_doUpdateHeaviside = true;
     M_doUpdateInterfaceElements = true;
+    M_doUpdateRangeDiracElements = true;
     M_doUpdateInterfaceFaces = true;
     M_doUpdateSmootherInterface = true;
     M_doUpdateSmootherInterfaceVectorial = true;
@@ -2134,7 +2183,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
                 
                 *phiReinit = vf::project(
                         this->functionSpace(), 
-                        elements(this->mesh()), 
+                        this->rangeMeshElements(), 
                         idv(phi)/ sqrt( trans(gradPhi) * gradPhi )
                         );
             }
@@ -2151,7 +2200,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
                 
                 *phiReinit = vf::project(
                         this->functionSpace(), 
-                        elements(this->mesh()), 
+                        this->rangeMeshElements(), 
                         idv(phi)/idv(modgradphi) 
                         );
             }
@@ -2207,7 +2256,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
         //auto R = this->interfaceRectangularFunction();
         //*phi = vf::project(
                 //_space=this->functionSpace(),
-                //_range=elements(this->mesh()),
+                //_range=this->rangeMeshElements(),
                 //_expr=idv(phi)*idv(R) + idv(phiReinit)*(1.-idv(R))
                 //);
     //}
@@ -2552,6 +2601,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time, bool save )
                                        *this->modGradPhi() );
     }
 
+    auto diracElts = this->functionSpace()->element();
+    diracElts.on( _range=this->rangeDiracElements(), _expr=cst(1.) );
+    this->M_exporter->step( time )->add( prefixvm(this->prefix(),"DiracElts"),
+            prefixvm(this->prefix(),prefixvm(this->subPrefix(),"DiracElts")),
+            diracElts );
+
     auto extensionVelocity = this->extensionVelocity( idv(this->M_advectionToolbox->fieldAdvectionVelocity()) );
     this->M_exporter->step( time )->add( prefixvm(this->prefix(),"ExtensionVelocity"),
             prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ExtensionVelocity")),
@@ -2666,7 +2721,7 @@ double
 LEVELSET_CLASS_TEMPLATE_TYPE::volume() const
 {
     double volume = integrate(
-            _range=elements(this->mesh()),
+            _range=this->rangeMeshElements(),
             _expr=(1-idv(this->heaviside())) 
             ).evaluate()(0,0);
 
@@ -2678,7 +2733,7 @@ double
 LEVELSET_CLASS_TEMPLATE_TYPE::perimeter() const
 {
     double perimeter = integrate(
-            _range=elements(this->mesh()),
+            _range=this->rangeDiracElements(),
             _expr=idv(this->dirac())
             ).evaluate()(0,0);
 
@@ -2690,7 +2745,7 @@ auto
 LEVELSET_CLASS_TEMPLATE_TYPE::positionCOM() const
 {
     auto com = integrate( 
-            _range=elements(this->mesh()), 
+            _range=this->rangeMeshElements(), 
             _expr=vf::P() * (1.-idv(this->H()))
             ).evaluate();
     com = com / this->volume();
@@ -2703,7 +2758,7 @@ auto
 LEVELSET_CLASS_TEMPLATE_TYPE::velocityCOM() const
 {
     auto ucom = integrate( 
-            _range=elements(this->mesh()), 
+            _range=this->rangeMeshElements(), 
             _expr=idv(M_advectionToolbox->fieldAdvectionVelocity()) * (1.-idv(this->H()))
             ).evaluate();
     ucom /= this->volume();
@@ -2867,7 +2922,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
     auto phi = this->phi();
     auto phio = this->phio();
 
-    auto prod = vf::project(this->functionSpace(), elements(mesh),
+    auto prod = vf::project(this->functionSpace(), this->rangeMeshElements(),
                             idv(phio) * idv(phi) );
 
 
