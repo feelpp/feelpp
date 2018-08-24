@@ -50,6 +50,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateDirac(true),
     M_doUpdateHeaviside(true),
     M_doUpdateInterfaceElements(true),
+    M_doUpdateInterfaceFaces(true),
     M_doUpdateSmootherInterface(true),
     M_doUpdateSmootherInterfaceVectorial(true),
     M_doUpdateNormal(true),
@@ -859,6 +860,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_doExportAdvection = boption(_name="do_export_advection", _prefix=this->prefix());
 
     M_fixVolume = boption( _name="fix-volume", _prefix=this->prefix() );
+
+    M_useExtensionVelocity = boption( _name="use-extension-velocity", _prefix=this->prefix() );
+    M_extensionVelocityNitscheGamma = doption( _name="extension-velocity.gamma", _prefix=this->prefix() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1540,10 +1544,13 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::range_faces_type
 LEVELSET_CLASS_TEMPLATE_TYPE::interfaceFaces() const
 {
+    CHECK( Environment::isSequential() ) << "There is a bug to be fixed in parallel. Only run in sequential at the moment...\n";
+
     if( this->M_doUpdateInterfaceFaces )
     {
         mesh_ptrtype const& mesh = this->mesh();
-        auto const& markerIn = this->markerInner();
+        auto& markerIn = this->markerInner();
+        markerIn->close();
         CHECK( markerIn->functionSpace()->extendedDofTable() ) << "interfaceFaces needs extended doftable in markers function space\n";
 
         auto it_face = mesh->beginFace();
@@ -1575,7 +1582,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::interfaceFaces() const
                 interfaceFaces
                 );
 
-        M_doUpdateInterfaceElements = false;
+        M_doUpdateInterfaceFaces = false;
     }
 
     return M_interfaceFaces;
@@ -1769,6 +1776,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
 {
     this->log("LevelSet", "solve", "start");
     this->timerTool("Solve").start();
+
+    if( this->M_useExtensionVelocity )
+    {
+        auto uExt = this->extensionVelocity( idv(M_advectionToolbox->fieldAdvectionVelocity()) );
+        this->updateAdvectionVelocity( uExt );
+    }
 
     // Solve phi
     M_advectionToolbox->solve();
@@ -2074,6 +2087,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
     M_doUpdateDirac = true;
     M_doUpdateHeaviside = true;
     M_doUpdateInterfaceElements = true;
+    M_doUpdateInterfaceFaces = true;
     M_doUpdateSmootherInterface = true;
     M_doUpdateSmootherInterfaceVectorial = true;
     M_doUpdateNormal = true;
@@ -2537,6 +2551,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time, bool save )
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ModGradPhi")),
                                        *this->modGradPhi() );
     }
+
+    auto extensionVelocity = this->extensionVelocity( idv(this->M_advectionToolbox->fieldAdvectionVelocity()) );
+    this->M_exporter->step( time )->add( prefixvm(this->prefix(),"ExtensionVelocity"),
+            prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ExtensionVelocity")),
+            extensionVelocity );
 
     if( M_useGradientAugmented )
     {
