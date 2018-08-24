@@ -383,6 +383,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createOthers()
 {
+    M_rangeMeshElements = elements(this->mesh());
+
     M_fieldSolution.reset( new element_advection_type(M_Xh, "phi") );
 
     // Advection velocity 
@@ -395,7 +397,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createOthers()
         M_exprAdvectionVelocity = expr<nDim,1>( soption(_prefix=this->prefix(),_name="advection-velocity"),
                                                                  this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
         //this->updateFieldVelocityConvection();
-        M_fieldAdvectionVelocity->on( _range=elements(this->mesh()), _expr=*M_exprAdvectionVelocity );
+        M_fieldAdvectionVelocity->on( _range=this->rangeMeshElements(), _expr=*M_exprAdvectionVelocity );
     }
 
     // Source term
@@ -742,7 +744,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         this->timerTool("Solve").start();
         
         bilinearForm += integrate(
-                _range=elements(mesh),
+                _range=this->rangeMeshElements(),
                 _expr=inner((gradt(phi)*idv(advection_velocity)), id(psi)),
                 _geomap=this->geomap()
                 );
@@ -759,7 +761,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         auto const& D = this->diffusionReactionModel()->fieldDiffusionCoeff();
 
         bilinearForm += integrate(
-                _range=elements(mesh),
+                _range=this->rangeMeshElements(),
                 _expr=inner(trans(gradt(phi)),idv(D)*trans(grad(psi))),
                 _geomap=this->geomap()
                 );
@@ -776,7 +778,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         auto const& R = this->diffusionReactionModel()->fieldReactionCoeff();
         
         bilinearForm += integrate(
-                _range=elements(mesh),
+                _range=this->rangeMeshElements(),
                 _expr=inner(idv(R)*idt(phi), id(psi)),
                 _geomap=this->geomap()
                 );
@@ -801,7 +803,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
     if( this->hasSourceAdded() && !BuildCstPart )
     {
         linearForm +=
-            integrate( _range=elements(mesh),
+            integrate( _range=this->rangeMeshElements(),
                        _expr= inner(idv(M_fieldSource),id(psi)),
                        _geomap=this->geomap() );
     }
@@ -922,7 +924,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDETransient( sparse_matrix_ptrty
     if (build_Form2TransientTerm)
     {
         bilinearForm += integrate( 
-                _range=elements(mesh),
+                _range=this->rangeMeshElements(),
                 _expr=M_bdf->polyDerivCoefficient(0)*inner(idt(phi),id(psi)),
                 _geomap=this->geomap() 
                 );
@@ -930,7 +932,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDETransient( sparse_matrix_ptrty
     if (build_Form1TransientTerm)
     {
         linearForm += integrate(
-                _range=elements(mesh),
+                _range=this->rangeMeshElements(),
                 _expr=inner(idv(M_bdf->polyDeriv()),id(psi)),
                 _geomap=this->geomap() 
                 );

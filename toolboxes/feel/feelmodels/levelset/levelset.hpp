@@ -447,11 +447,16 @@ public:
     element_markers_ptrtype const& markerHeaviside( double cut = 0.999 ) const { return this->markerOuter(cut); }
     element_markers_ptrtype const& markerCrossedElements() const;
 
+    //--------------------------------------------------------------------//
+    // Ranges
+    range_elements_type const& rangeMeshElements() const { return M_advectionToolbox->rangeMeshElements(); }
+
     range_elements_type interfaceElements() const;
     range_elements_type outerElementsRange( double cut );
     range_elements_type outerElementsRange() { return outerElementsRange( -this->thicknessInterface() ); }
+    range_elements_type const& rangeDiracElements() const;
 
-    range_faces_type interfaceFaces() const;
+    range_faces_type rangeInterfaceFaces() const;
 
     //--------------------------------------------------------------------//
     // Utility distances
@@ -512,7 +517,7 @@ public:
     {
         auto phi_init = this->functionSpace()->element();
         phi_init.on( 
-                _range=elements(this->mesh()),
+                _range=this->rangeMeshElements(),
                 _expr=expr
                 );
         this->setInitialValue( phi_init, doReinitialize );
@@ -606,6 +611,7 @@ protected:
     mutable bool M_doUpdateDirac;
     mutable bool M_doUpdateHeaviside;
     mutable bool M_doUpdateInterfaceElements;
+    mutable bool M_doUpdateRangeDiracElements;
     mutable bool M_doUpdateInterfaceFaces;
     mutable bool M_doUpdateSmootherInterface;
     mutable bool M_doUpdateSmootherInterfaceVectorial;
@@ -661,6 +667,10 @@ private:
     mutable element_markers_ptrtype M_markerCrossedElements;
     mutable element_markers_ptrtype M_markerInterface;
     bool M_doUpdateMarkers;
+
+    //--------------------------------------------------------------------//
+    // Ranges
+    mutable range_elements_type M_rangeDiracElements;
     //--------------------------------------------------------------------//
     // Tools (projectors)
     levelset_tool_manager_ptrtype M_toolManager;
@@ -751,6 +761,8 @@ private:
     // Extension velocity
     bool M_useExtensionVelocity;
     double M_extensionVelocityNitscheGamma;
+    mutable sparse_matrix_ptrtype M_extensionVelocityLHSMatrix;
+    mutable vector_ptrtype M_extensionVelocityRHSVector;
     
     //--------------------------------------------------------------------//
     // Export
@@ -794,8 +806,28 @@ LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityT
 
     auto const& spaceVelocity = this->functionSpaceAdvectionVelocity();
     auto const& spaceVelocityComp = spaceVelocity->compSpace();
-    auto bilinearForm = form2( _trial=spaceVelocityComp, _test=spaceVelocityComp );
-    auto linearForm = form1( _test=spaceVelocityComp );
+    auto const& backendExtensionVelocity = backend(
+                _name=prefixvm(this->prefix(),"extension-velocity"),
+                _worldcomm=spaceVelocityComp->worldComm()
+            );
+
+    if( !M_extensionVelocityLHSMatrix )
+    {
+        M_extensionVelocityLHSMatrix = backendExtensionVelocity->newMatrix(
+                _trial=spaceVelocityComp,
+                _test=spaceVelocityComp,
+                _pattern=size_type(Pattern::COUPLED)
+                );
+    }
+    if( !M_extensionVelocityRHSVector )
+    {
+        M_extensionVelocityRHSVector = backendExtensionVelocity->newVector(
+                _test=spaceVelocityComp
+                );
+    }
+
+    auto bilinearForm = form2( _trial=spaceVelocityComp, _test=spaceVelocityComp, _matrix=M_extensionVelocityLHSMatrix );
+    auto linearForm = form1( _test=spaceVelocityComp, _vector=M_extensionVelocityRHSVector );
     auto Fext = spaceVelocityComp->element();
 
     auto const& phi = this->phi();
@@ -804,34 +836,35 @@ LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityT
     auto NExpr = gradPhiExpr / sqrt(trans(gradPhiExpr)*gradPhiExpr);
 
     bilinearForm = integrate(
-            _range=elements(this->mesh()),
+            _range=this->rangeMeshElements(),
             _expr=(gradt(Fext)*gradPhiExpr)*id(Fext)
-            );
-    linearForm = integrate(
-            _range=elements(this->mesh()),
-            _expr=cst(0)*id(Fext)
             );
     // BC at interface with penalty method
     bilinearForm += integrate(
-            _range=elements(this->mesh()),
+            _range=this->rangeDiracElements(),
             _expr=M_extensionVelocityNitscheGamma/h() * idt(Fext)*id(Fext) * idv(this->dirac())
             );
-    linearForm += integrate(
-            _range=elements(this->mesh()),
+    linearForm = integrate(
+            _range=this->rangeDiracElements(),
             _expr=M_extensionVelocityNitscheGamma/h() * (trans(u)*NExpr)*id(Fext) * idv(this->dirac())
             );
     double timeElapsedAssembly = this->timerTool("Solve").stop();
     this->log("LevelSet", "extensionVelocity", "assembly finish in "+(boost::format("%1% s") %timeElapsedAssembly).str() );
     this->timerTool("Solve").start();
 
-    bilinearForm.solve( _rhs=linearForm, _solution=Fext, _name=prefixvm(this->prefix(),"extension-velocity") );
+    //bilinearForm.solve( _rhs=linearForm, _solution=Fext, _name=prefixvm(this->prefix(),"extension-velocity") );
+    backendExtensionVelocity->solve(
+            _matrix=M_extensionVelocityLHSMatrix,
+            _solution=Fext,
+            _rhs=M_extensionVelocityRHSVector
+            );
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("LevelSet", "extensionVelocity", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 
     return vf::project(
             _space=spaceVelocity,
-            _range=elements(this->mesh()),
+            _range=this->rangeMeshElements(),
             _expr=(idv(Fext)*NExpr - u)*idv(this->heaviside()) + u
             );
 }

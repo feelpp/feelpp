@@ -148,6 +148,18 @@ public :
     typedef boost::shared_ptr<element_P0d_type> element_P0d_ptrtype;
 
     //--------------------------------------------------------------------//
+    // Range types
+    typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
+    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
+    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
+    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+
+    typedef typename MeshTraits<mesh_type>::face_reference_wrapper_const_iterator face_reference_wrapper_const_iterator;
+    typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_type faces_reference_wrapper_type;
+    typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype faces_reference_wrapper_ptrtype;
+    typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
+
+    //--------------------------------------------------------------------//
     // Diffusion-reaction model
     typedef BasisDiffusionCoeffType basis_diffusioncoeff_type;
     typedef BasisReactionCoeffType basis_reactioncoeff_type;
@@ -245,6 +257,7 @@ public :
     virtual std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"AdvectionMesh.path"); }
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
+    range_elements_type const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_advection_ptrtype const& functionSpace() const { return M_Xh; }
     space_advection_velocity_ptrtype const& functionSpaceAdvectionVelocity() const { return M_XhAdvectionVelocity; }
@@ -391,6 +404,7 @@ protected:
     //--------------------------------------------------------------------//
     // Mesh
     mesh_ptrtype M_mesh;
+    range_elements_type M_rangeMeshElements;
     // Periodicity
     periodicity_type M_periodicity;
     // Advection space
