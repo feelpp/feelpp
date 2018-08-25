@@ -140,6 +140,7 @@ template<typename T> class VectorBlockBase;
 template<int NR, typename T> class VectorBlock;
 
 template<typename T> class BlocksBaseSparseMatrix;
+template<typename T> class BlocksBaseVector;
 
 class BackendBase : public CommObject
 {
@@ -526,12 +527,12 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-    template < typename BlockType=vector_ptrtype >
-    vector_ptrtype newBlockVectorImpl( vf::BlocksBase<BlockType> const & b,
+    template<typename TB>
+    vector_ptrtype newBlockVectorImpl( BlocksBaseVector<TB> const & b,
                                        bool copy_values=true )
     {
-        using vector_block_type = VectorBlockBase<typename decay_type<BlockType>::value_type>;
-        return std::make_shared<vector_block_type>( b, *this, copy_values );
+        using vector_block_type = VectorBlockBase<TB>;
+        return std::make_shared<vector_block_type>( b, *this, copy_values )->getVector();
     }
 
     /**
@@ -1688,4 +1689,7 @@ extern template class Backend<double>;
 #endif
 
 }
+
+#include <feel/feelalg/vectorblock.hpp>
+
 #endif /* Backend_H */
