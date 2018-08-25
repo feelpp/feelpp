@@ -22,7 +22,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file matrixblock.hpp
+   \file vectorblock.hpp
    \author Vincent Chabannes <vincent.chabannes@imag.fr>
    \date 2012-01-18
  */
@@ -155,6 +155,9 @@ public :
      */
     void updateVectorFromSubVectors();
 
+    //! update values of monolithic vector from each subvector
+    void updateVectorFromSubVectors( vector_type & vec ) const;
+
     vector_ptrtype& vector() { return M_vector; }
     vector_ptrtype const& vector() const { return M_vector; }
 
@@ -260,12 +263,13 @@ public:
      */
     //@{
     VectorBlockBase() = default;
-    VectorBlockBase( vf::BlocksBase<vector_ptrtype > const & blockVec,
+    VectorBlockBase( BlocksBaseVector<T> const & blockVec,
                      backend_ptrtype backend,
                      bool copy_values=true )
-        :VectorBlockBase( blockVec, *backend, copy_values )
+        :
+        VectorBlockBase( blockVec, *backend, copy_values )
         {}
-    VectorBlockBase( vf::BlocksBase<vector_ptrtype > const & blockVec,
+    VectorBlockBase( BlocksBaseVector<T> const & blockVec,
                      backend_type &backend,
                      bool copy_values=true );
 
@@ -323,7 +327,7 @@ public:
      */
     //@{
 
-    void updateBlockVec( vector_ptrtype const & m, size_type start_i );
+    FEELPP_DEPRECATED void updateBlockVec( vector_ptrtype const & m, size_type start_i );
 
     //!
     //! add local vector to global vector
@@ -387,8 +391,8 @@ public:
     typedef typename super_type::value_type value_type;
     typedef typename super_type::vector_ptrtype vector_ptrtype;
     typedef typename super_type::backend_type backend_type;
-    typedef vf::Blocks<NBLOCKROWS,1,vector_ptrtype > blocks_type;
-    typedef vf::BlocksBase<vector_ptrtype> blocksbase_type;
+    //typedef vf::Blocks<NBLOCKROWS,1,vector_ptrtype > blocks_type;
+    typedef BlocksBaseVector<value_type> blocksbase_type;
 
     template<typename BackendT>
     VectorBlock(  blocksbase_type const & blockVec,
