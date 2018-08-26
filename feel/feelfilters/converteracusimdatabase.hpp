@@ -395,7 +395,7 @@ ConverterAcusimDatabase<MeshType>::loadMesh()
     if ( !this->worldComm().isMasterRank() )
         return mesh;
 
-    mesh.reset( new mesh_type( Environment::worldCommSeq() ) );
+    mesh.reset( new mesh_type( Environment::worldCommSeqPtr() ) );
     //-------------------------------------------------------------//
     // load mesh points
     //-------------------------------------------------------------//
