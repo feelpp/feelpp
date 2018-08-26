@@ -186,7 +186,9 @@ while [ -n "$1" ]; do
        CXXFLAGS=`echo $1 | sed "s,^--cxxflags=\(.*\),\1,"`
        ;;
    --cmakeflags=*)
-       CMAKEFLAGS=`echo $1 | sed "s,^--cmakeflags=\(.*\),\1,"`
+       CMAKEFLAGS_CLI=`echo $1 | sed "s,^--cmakeflags=\(.*\),\1,"`
+       CMAKEFLAGS="${CMAKEFLAGS} ${CMAKEFLAGS_CLI}"
+       export CMAKEFLAGS
        ;;
    --local-config)
       _WANT_LOCAL_CONFIG=yes
