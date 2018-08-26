@@ -22,7 +22,7 @@
 #
 #
 cmake_minimum_required(VERSION 3.3)
-project(pyfeelpp)
+project(pyfeelpp-toolboxes)
 
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
@@ -56,13 +56,12 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
 endif()
 
 #
-# setup for pyfeelpp-libfeelpp
+# setup pyfeelpp-toolboxes
 #
-OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "Enable PyFeel++ for libfeelpp" ON  )
-if (FEELPP_ENABLE_PYFEELPP_LIBFEELPP)
-  set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
-  set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
-  configure_file(${SETUP_PY_IN} ${SETUP_PY})
-  install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install)")
+OPTION(FEELPP_ENABLE_PYFEELPP_TOOLBOXES "Enable PyFeel++ for toolboxes" ON  )
+if (FEELPP_ENABLE_PYFEELPP_TOOLBOXES)
+  set(SETUP_TOOLBOXES_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup-toolboxes.py")
+  set(SETUP_TOOLBOXES_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup-toolboxes.py")
+  configure_file(${SETUP_TOOLBOXES_PY_IN} ${SETUP_TOOLBOXES_PY})
+  install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_TOOLBOXES_PY} install)")
 endif()
-
