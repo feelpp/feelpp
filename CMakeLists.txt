@@ -445,6 +445,8 @@ endif()
 include(feelpp.module.pyfeelpp)
 if ( FEELPP_HAS_PYFEELPP )
   add_subdirectory(pyfeelpp)
+  add_subdirectory(pyfeelpp-toolboxes)
+  add_subdirectory(pyfeelpp-mor)
 endif()
 
 add_subdirectory(tools)
