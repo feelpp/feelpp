@@ -234,6 +234,9 @@ fi
 echo BUILDROOT=${BUILDROOT}
 echo INSTALL_PREFIX=${PROJECT_INSTALL_PREFIX}
 echo CMAKE_FIND_DIR=${CMAKE_FIND_DIR}
+echo CMAKEFLAGS=${CMAKEFLAGS}
+echo CXX=${CXX}
+echo CC=${CC}
 
 echo "# Do not edit" > cmake.configure
 if [ "X${PROJECT_INSTALL_PREFIX}" != "X" ]; then
