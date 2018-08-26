@@ -67,9 +67,7 @@ _WANT_DEV_WARNINGS=
 _WANT_NUMERICS=TRUE
 _WANT_LOCAL_CONFIG=no
 CXXFLAGS=
-CMAKEFLAGS_ENV=${CMAKEFLAGS:-}
-echo CMAKEFLAGS_ENV=${CMAKEFLAGS}
-CMAKEFLAGS=${CMAKEFLAGS_ENV}
+CMAKEFLAGS=
 ENABLE_NUMA=TRUE
 ENABLE_CUDA=TRUE
 PROJECT_STDLIB_CPP=stdc++
@@ -188,9 +186,7 @@ while [ -n "$1" ]; do
        CXXFLAGS=`echo $1 | sed "s,^--cxxflags=\(.*\),\1,"`
        ;;
    --cmakeflags=*)
-       CMAKEFLAGS_CLI=`echo $1 | sed "s,^--cmakeflags=\(.*\),\1,"`
-       CMAKEFLAGS="${CMAKEFLAGS_ENV} ${CMAKEFLAGS_CLI}"
-       export CMAKEFLAGS
+       CMAKEFLAGS=`echo $1 | sed "s,^--cmakeflags=\(.*\),\1,"`
        ;;
    --local-config)
       _WANT_LOCAL_CONFIG=yes
