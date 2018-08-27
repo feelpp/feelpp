@@ -76,7 +76,7 @@ Application::Application( int argc,
     //std::cout << "is_mpi_initialized = " << is_mpi_initialized << "\n";
     if ( !is_mpi_initialized )
     {
-        M_env = boost::shared_ptr<mpi::environment>( new mpi::environment( argc, argv ) );
+        M_env = std::shared_ptr<mpi::environment>( new mpi::environment( argc, argv ) );
         ///std::cout << "processor name = " << M_env->processor_name() << "\n";
 #if 0
         //int __argc = this->unknownArgc();
@@ -149,7 +149,7 @@ Application::Application( int argc,
     //std::cout << "is_mpi_initialized = " << is_mpi_initialized << "\n";
     if ( !is_mpi_initialized )
     {
-        M_env = boost::shared_ptr<mpi::environment>( new mpi::environment( argc, argv ) );
+        M_env = std::shared_ptr<mpi::environment>( new mpi::environment( argc, argv ) );
         //std::cout << "processor name = " << M_env->processor_name() << "\n";
 #if 0
         //int __argc = this->unknownArgc();

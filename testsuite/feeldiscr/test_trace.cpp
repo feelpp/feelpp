@@ -61,7 +61,7 @@ struct imesh
 {
     typedef Simplex<Dim, Order> convex_type;
     typedef Mesh<convex_type, T > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 template<int Dim, int Order>

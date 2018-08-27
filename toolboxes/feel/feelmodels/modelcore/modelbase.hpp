@@ -65,7 +65,7 @@ private :
 struct ModelBaseUpload
 {
     ModelBaseUpload() = default;
-    ModelBaseUpload( std::string const& desc, std::string const& basePath, WorldComm const& worldComm );
+    ModelBaseUpload( std::string const& desc, std::string const& basePath, worldcomm_ptr_t const& worldComm );
     ModelBaseUpload( ModelBaseUpload const& ) = default;
     ModelBaseUpload( ModelBaseUpload && ) = default;
 
@@ -92,8 +92,17 @@ private :
 class ModelBase
 {
 public :
+    using worldcomm_t = WorldComm;
+    using worldcomm_ptr_t = std::shared_ptr<WorldComm>;
+    using worldscomm_ptr_t = std::vector<std::shared_ptr<WorldComm>>;
+    
+    //!
+    //! @param worldcomm communicator
+    //!
+    //! The worldcomm must be allocated via shared_ptr. The WorldComm can be retrieved via \c shared_from_this()
+    //!
     ModelBase( std::string const& prefix,
-               WorldComm const& worldComm = Environment::worldComm(),
+               worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
                ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
@@ -101,11 +110,16 @@ public :
     virtual ~ModelBase();
 
     // worldcomm
-    WorldComm const& worldComm() const;
-    std::vector<WorldComm> const& worldsComm() const;
-    void setWorldsComm(std::vector<WorldComm> const& _worldsComm);
-    std::vector<WorldComm> const& localNonCompositeWorldsComm() const;
-    void setLocalNonCompositeWorldsComm(std::vector<WorldComm> const& _worldsComm);
+    worldcomm_ptr_t const&  worldCommPtr() const;
+    worldcomm_ptr_t & worldCommPtr();
+    worldcomm_t & worldComm();
+    worldcomm_t const& worldComm() const;
+    worldscomm_ptr_t & worldsComm();
+    worldscomm_ptr_t const& worldsComm() const;
+    void setWorldsComm(worldscomm_ptr_t & _worldsComm);
+    worldscomm_ptr_t & localNonCompositeWorldsComm() ;
+    worldscomm_ptr_t const& localNonCompositeWorldsComm() const;
+    void setLocalNonCompositeWorldsComm( worldscomm_ptr_t & _worldsComm);
     virtual void createWorldsComm();
     // prefix
     std::string const& prefix() const;
@@ -120,7 +134,7 @@ public :
     // info
     std::string filenameSaveInfo() const;
     void setFilenameSaveInfo(std::string const& s);
-    virtual boost::shared_ptr<std::ostringstream> getInfo() const;
+    virtual std::shared_ptr<std::ostringstream> getInfo() const;
     virtual void printInfo() const;
     virtual void saveInfo() const;
     virtual void printAndSaveInfo() const;
@@ -141,9 +155,9 @@ public :
 
 private :
     // worldcomm
-    WorldComm M_worldComm;
-    std::vector<WorldComm> M_worldsComm;
-    std::vector<WorldComm> M_localNonCompositeWorldsComm;
+    worldcomm_ptr_t M_worldComm;
+    worldscomm_ptr_t M_worldsComm;
+    worldscomm_ptr_t M_localNonCompositeWorldsComm;
     // prefix
     std::string M_prefix;
     std::string M_subPrefix;

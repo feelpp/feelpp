@@ -67,9 +67,9 @@ public:
     typedef typename super::sparse_matrix_type sparse_matrix_type;
     typedef typename super::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef MatrixPetsc<value_type> petsc_sparse_matrix_type;
-    typedef boost::shared_ptr<sparse_matrix_type> petsc_sparse_matrix_ptrtype;
+    typedef std::shared_ptr<sparse_matrix_type> petsc_sparse_matrix_ptrtype;
     typedef MatrixPetscMPI<value_type> petscMPI_sparse_matrix_type;
-    //typedef boost::shared_ptr<sparse_matrix_type> petscMPI_sparse_matrix_ptrtype;
+    //typedef std::shared_ptr<sparse_matrix_type> petscMPI_sparse_matrix_ptrtype;
 
     typedef typename sparse_matrix_type::graph_type graph_type;
     typedef typename sparse_matrix_type::graph_ptrtype graph_ptrtype;
@@ -78,9 +78,9 @@ public:
     typedef typename super::vector_type vector_type;
     typedef typename super::vector_ptrtype vector_ptrtype;
     typedef VectorPetsc<value_type> petsc_vector_type;
-    typedef boost::shared_ptr<vector_type> petsc_vector_ptrtype;
+    typedef std::shared_ptr<vector_type> petsc_vector_ptrtype;
     typedef VectorPetscMPI<value_type> petscMPI_vector_type;
-    typedef boost::shared_ptr<petscMPI_vector_type> petscMPI_vector_ptrtype;
+    typedef std::shared_ptr<petscMPI_vector_type> petscMPI_vector_ptrtype;
 
     typedef typename super::solve_return_type solve_return_type;
     typedef typename super::nl_solve_return_type nl_solve_return_type;
@@ -90,7 +90,7 @@ public:
 
 
     // -- CONSTRUCTOR --
-    BackendPetsc( WorldComm const& worldComm=Environment::worldComm() )
+    explicit BackendPetsc( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() )
         :
         super( worldComm ),
         M_solver_petsc( worldComm )
@@ -100,7 +100,7 @@ public:
     }
 
     BackendPetsc( po::variables_map const& vm, std::string const& prefix = "",
-                  WorldComm const& worldComm=Environment::worldComm() )
+                  worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() )
         :
         super( vm, prefix, worldComm ),
         M_solver_petsc( vm, worldComm )
@@ -133,9 +133,9 @@ public:
     {
         sparse_matrix_ptrtype mat;
         if ( this->comm().globalSize()>1 )
-            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( this->comm() ) );
+            mat = std::make_shared<petscMPI_sparse_matrix_type>( this->worldCommPtr() );
         else // seq
-            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( this->comm() ) );
+            mat = std::make_shared<petsc_sparse_matrix_type>( this->worldCommPtr() );
         return mat;
     }
 
@@ -149,9 +149,9 @@ public:
 
         sparse_matrix_ptrtype mat;
         if ( Yh->worldComm().globalSize()>1 )
-            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( Yh->dof(),Xh->dof() ) );
+            mat = std::make_shared<petscMPI_sparse_matrix_type>( Yh->dof(),Xh->dof() );
         else // seq
-            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( Yh->dof(),Xh->dof() ) );
+            mat = std::make_shared<petsc_sparse_matrix_type>( Yh->dof(),Xh->dof() );
 
         mat->setMatrixProperties( matrix_properties );
         mat->init( Yh->nDof(), Xh->nDof(),
@@ -191,9 +191,9 @@ public:
         sparse_matrix_ptrtype mat;
 
         if ( this->comm().globalSize()>1 )
-            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
+            mat = std::make_shared<petscMPI_sparse_matrix_type>();
         else
-            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type );
+            mat = std::make_shared<petsc_sparse_matrix_type>();
 
         mat->setMatrixProperties( matrix_properties );
         mat->init( m,n,m_l,n_l,nnz,noz );
@@ -209,9 +209,9 @@ public:
         sparse_matrix_ptrtype mat;
 
         if ( imagemap->worldComm().globalSize()>1 )
-            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( imagemap,domainmap,imagemap->worldComm() ) );
+            mat = std::make_shared<petscMPI_sparse_matrix_type>( imagemap,domainmap,imagemap->worldCommPtr() );
         else
-            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( imagemap,domainmap,imagemap->worldComm() ) );
+            mat = std::make_shared<petsc_sparse_matrix_type>( imagemap,domainmap,imagemap->worldCommPtr() );
 
         mat->setMatrixProperties( matrix_properties );
 
@@ -236,9 +236,9 @@ public:
         auto const& mapGraphRow = graph->mapRowPtr();
         auto const& mapGraphCol = graph->mapColPtr();
         if ( this->comm().globalSize()>1 )
-            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( mapGraphRow,mapGraphCol,mapGraphRow->worldComm() ) );
+            mat = std::make_shared<petscMPI_sparse_matrix_type>( mapGraphRow,mapGraphCol,mapGraphRow->worldCommPtr() );
         else
-            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( mapGraphRow,mapGraphCol,mapGraphRow->worldComm() ) ) ;
+            mat = std::make_shared<petsc_sparse_matrix_type>( mapGraphRow,mapGraphCol,mapGraphRow->worldCommPtr() );
 
         mat->setMatrixProperties( matrix_properties );
         //mat->init( m,n,m_l,n_l,graph );
@@ -260,9 +260,9 @@ public:
 
         sparse_matrix_ptrtype mat;
         if ( imagemap->worldComm().globalSize()>1 )
-            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( imagemap,domainmap,imagemap->worldComm() ) );
+            mat = std::make_shared<petscMPI_sparse_matrix_type>( imagemap,domainmap,imagemap->worldCommPtr() );
         else
-            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( imagemap,domainmap,imagemap->worldComm() ) );
+            mat = std::make_shared<petsc_sparse_matrix_type>( imagemap,domainmap,imagemap->worldCommPtr() );
 
         mat->init( imagemap->nDof(), domainmap->nDof(),
                    imagemap->nLocalDofWithoutGhost(), domainmap->nLocalDofWithoutGhost(),
@@ -312,7 +312,7 @@ public:
 
     vector_ptrtype newVector( const size_type n, const size_type n_local )
     {
-        return vector_ptrtype( new petsc_vector_type( n, n_local, this->comm() ) );
+        return vector_ptrtype( new petsc_vector_type( n, n_local, this->worldCommPtr() ) );
     }
 
 

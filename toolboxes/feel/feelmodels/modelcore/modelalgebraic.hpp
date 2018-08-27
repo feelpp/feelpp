@@ -48,7 +48,7 @@ public :
 
     typedef double value_type;
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef backend_type::vector_ptrtype vector_ptrtype;
@@ -176,7 +176,7 @@ public :
 
 
     ModelAlgebraic( std::string _theprefix,
-                    WorldComm const& _worldComm=Environment::worldComm(),
+                    worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
                     std::string const& subPrefix="",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
 

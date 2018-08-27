@@ -46,9 +46,9 @@ struct FEContextInit
 
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >, mpl::identity<test_fe_type>, mpl::identity<trial_fe_type> >::type::type fe_type;
-    typedef boost::shared_ptr<fe_type> fe_ptrtype;
+    typedef std::shared_ptr<fe_type> fe_ptrtype;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >, mpl::identity<typename FormContextType::test_fecontext_type>,mpl::identity<typename FormContextType::trial_fecontext_type> >::type::type fecontext_type;
-    typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
+    typedef std::shared_ptr<fecontext_type> fecontext_ptrtype;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >,
             mpl::identity<typename FormContextType::test_geometric_mapping_context_ptrtype>,
@@ -58,7 +58,7 @@ struct FEContextInit
 
     //typedef typename FormContextType::form_type form_type;
     typedef FormContextType form_type;
-    typedef boost::shared_ptr<form_type> form_ptrtype;
+    typedef std::shared_ptr<form_type> form_ptrtype;
 
     template<typename Sig>
     struct result;
@@ -131,7 +131,7 @@ struct FEContextUpdate
 
     //typedef typename FormContextType::form_type form_type;
     typedef FormContextType form_type;
-    typedef boost::shared_ptr<form_type> form_ptrtype;
+    typedef std::shared_ptr<form_type> form_ptrtype;
 
     FEContextUpdate( map_geometric_mapping_context_type const& mapgmc,
                      form_type const& form )

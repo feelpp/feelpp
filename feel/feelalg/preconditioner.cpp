@@ -42,7 +42,7 @@ template <typename T>
 typename Preconditioner<T>::preconditioner_ptrtype
 Preconditioner<T>::build( std::string const& name,
                           BackendType backend,
-                          WorldComm const& worldComm )
+                          worldcomm_ptr_t const& worldComm )
 {
 #if FEELPP_HAS_PETSC
     switch ( backend )
@@ -62,7 +62,7 @@ template <>
 typename Preconditioner<std::complex<double>>::preconditioner_ptrtype
 Preconditioner<std::complex<double>>::build( std::string const& name,
                                              BackendType backend,
-                                             WorldComm const& worldComm )
+                                             worldcomm_ptr_t const& worldComm )
 {
 #if FEELPP_HAS_PETSC && defined(PETSC_HAS_COMPLEX_SUPPORT ) 
     switch ( backend )

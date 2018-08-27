@@ -44,14 +44,14 @@ class ConvergenceTest
 public:
     using convex_type = Simplex<Dim,G_Order>;
     using mesh_type = Mesh<convex_type>;
-    using mesh_ptrtype = boost::shared_ptr<mesh_type>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
     static const uint16_type expr_order = Order+E_Order;
     using expr_scalar_type = scalar_field_expression<expr_order>;
     using expr_vectorial_type = vector_field_expression<Dim,G_Order,expr_order>;
 
     using mixed_poisson_type = FeelModels::MixedPoisson<Dim,Order,G_Order,E_Order>;
-    using mixed_poisson_ptrtype = boost::shared_ptr<mixed_poisson_type> ;
+    using mixed_poisson_ptrtype = std::shared_ptr<mixed_poisson_type> ;
 
     using flux_type = typename mixed_poisson_type::Vh_element_t;
     using potential_type = typename mixed_poisson_type::Wh_element_t;
@@ -59,7 +59,7 @@ public:
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     using markers_type = std::vector<std::string>;
 private:

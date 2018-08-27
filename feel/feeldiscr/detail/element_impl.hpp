@@ -351,10 +351,10 @@ struct InitializeElement
         {
             // build view if not built or built with an empty space
             if ( !x.second || ( !x.second->functionSpace() ) )
-                x = std::make_pair(key_type(), boost::shared_ptr<myelt_type>( new myelt_type( M_element->template elementImpl<key_type::value>( name ) ) ) );
+                x = std::make_pair(key_type(), std::shared_ptr<myelt_type>( new myelt_type( M_element->template elementImpl<key_type::value>( name ) ) ) );
         }
         else if ( !x.second )
-            x = std::make_pair(key_type(), boost::shared_ptr<myelt_type>( new myelt_type() ) );
+            x = std::make_pair(key_type(), std::shared_ptr<myelt_type>( new myelt_type() ) );
     }
     ElementType * M_element;
 };
@@ -454,7 +454,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 
 
         typedef typename gm_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, geoelement_type> gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         gmc_ptrtype __c( new gmc_type( __gm,
                                        functionSpace()->mesh()->element( __cv_id ),
                                        __geopc ) );
@@ -467,7 +467,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
         typedef typename mesh_type::element_type geoelement_type;
         typedef typename functionspace_type::fe_type fe_type;
         typedef typename fe_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, fe_type, gm_type, geoelement_type> fectx_type;
-        typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+        typedef std::shared_ptr<fectx_type> fectx_ptrtype;
         fectx_ptrtype fectx( new fectx_type( this->functionSpace()->fe(),
                                              __c,
                                              pc ) );
@@ -658,7 +658,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::JACOBIAN|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
                                          __c,
                                          __pc ) );
@@ -733,7 +733,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
 
 
         typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::KB, geoelement_type> gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         gmc_ptrtype __c( new gmc_type( __gm,
                                        functionSpace()->mesh()->element( __cv_id ),
                                        __geopc ) );
@@ -741,7 +741,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
         typedef typename mesh_type::element_type geoelement_type;
         typedef typename functionspace_type::fe_type fe_type;
         typedef typename fe_type::template Context<vm::GRAD, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-        typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+        typedef std::shared_ptr<fectx_type> fectx_ptrtype;
         fectx_ptrtype fectx( new fectx_type( this->functionSpace()->fe(),
                                              __c,
                                              pc ) );
@@ -942,7 +942,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_nod
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::GRAD|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
                                          __c,
                                          __pc ) );
@@ -1121,7 +1121,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::DIV|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
                                          __c,
                                          __pc ) );
@@ -1314,7 +1314,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
                                          __c,
                                          __pc ) );
@@ -1405,7 +1405,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( matrix_nod
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
                                          __c,
                                          __pc ) );
@@ -1495,7 +1495,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
                                          __c,
                                          __pc ) );
@@ -1584,7 +1584,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
                                          __c,
                                          __pc ) );
@@ -1713,7 +1713,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_t
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::GRAD|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
                                          __c,
                                          __pc ) );
@@ -1794,7 +1794,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::GRAD|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
                                          __c,
                                          __pc ) );
@@ -1875,7 +1875,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::GRAD|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
                                          __c,
                                          __pc ) );
@@ -2007,7 +2007,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
                                          __c,
                                          __pc ) );
@@ -2177,7 +2177,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacianInterpolate( matrix
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
                                          __c,
                                          __pc ) );
@@ -2235,15 +2235,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
     // geometric mapping context
     typedef typename functionspace_type::mesh_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef std::shared_ptr<gm_type> gm_ptrtype;
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<Feel::vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
     typedef typename gm_type::template Context<context, geoelement_type> gm_context_type;
     typedef typename geoelement_type::gm1_type gm1_type;
     typedef typename gm1_type::template Context<context, geoelement_type> gm1_context_type;
-    typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
-    typedef boost::shared_ptr<gm1_context_type> gm1_context_ptrtype;
+    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
+    typedef std::shared_ptr<gm1_context_type> gm1_context_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm1_context_ptrtype> > map_gmc1_type;
 
@@ -2254,7 +2254,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     // basis
     typedef typename element_type::functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
-    typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
+    typedef std::shared_ptr<fecontext_type> fecontext_ptrtype;
     //typedef fusion::map<fusion::pair<Feel::vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
 
     // expression
@@ -2396,9 +2396,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
     // geometric mapping context
     typedef typename geoelement_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef std::shared_ptr<gm_type> gm_ptrtype;
     typedef typename geoelement_type::gm1_type gm1_type;
-    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+    typedef std::shared_ptr<gm1_type> gm1_ptrtype;
 
     typedef typename element_type::functionspace_type::fe_type fe_type;
     const size_type context = mpl::if_< mpl::or_<mpl::bool_<is_hdiv_conforming>, mpl::bool_<is_hcurl_conforming> >,
@@ -2407,10 +2407,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
 
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
     typedef typename gm1_type::template Context<context, geoelement_type> gmc1_type;
-    typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
+    typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
 
 
@@ -2419,9 +2419,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
     // basis
     typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
-    typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
+    typedef std::shared_ptr<fecontext_type> fecontext_ptrtype;
     typedef typename fe_type::template Context< context, fe_type, gm1_type, geoelement_type> fecontext1_type;
-    typedef boost::shared_ptr<fecontext1_type> fecontext1_ptrtype;
+    typedef std::shared_ptr<fecontext1_type> fecontext1_ptrtype;
     //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
 
     // expression

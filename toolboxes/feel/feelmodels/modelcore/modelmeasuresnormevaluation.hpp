@@ -198,7 +198,7 @@ measureNormEvaluation( RangeType const& range,
 
 template<typename MeshType, typename RangeType, typename SymbolsExpr, typename FieldTupleType>
 void
-measureNormEvaluation( boost::shared_ptr<MeshType> const& mesh, RangeType const& defaultRange,
+measureNormEvaluation( std::shared_ptr<MeshType> const& mesh, RangeType const& defaultRange,
                        ModelPostprocessNorm const& ppNorm,  std::map<std::string,double> & res,
                        SymbolsExpr const& symbolsExpr, FieldTupleType const& fieldTuple )
 {

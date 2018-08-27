@@ -83,7 +83,7 @@ public:
     typedef typename super::clone_ptrtype clone_ptrtype;
 
     typedef VectorEpetra<value_type> epetra_vector_type;
-    typedef boost::shared_ptr<epetra_vector_type> epetra_vector_ptrtype;
+    typedef std::shared_ptr<epetra_vector_type> epetra_vector_ptrtype;
     //@}
 
     /** @name Constructors, destructor
@@ -307,11 +307,11 @@ public:
      * The returned object is a view of the Epetra_FEVector contained
      * in the vectorEpetra
      */
-    boost::shared_ptr<Epetra_Vector> epetraVector ()
+    std::shared_ptr<Epetra_Vector> epetraVector ()
     {
         double** V;
         M_vec.ExtractView( &V );
-        boost::shared_ptr<Epetra_Vector> EV( new Epetra_Vector( View,M_vec.Map(),V[0] ) );
+        std::shared_ptr<Epetra_Vector> EV( new Epetra_Vector( View,M_vec.Map(),V[0] ) );
         return EV;
     }
 

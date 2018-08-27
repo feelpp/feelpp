@@ -94,12 +94,12 @@ enum class LevelSetFieldsExported
 
 template<typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity>
 class LevelSet : public ModelNumerical,
-                 public boost::enable_shared_from_this< LevelSet<ConvexType, BasisType, PeriodicityType> >
+                 public std::enable_shared_from_this< LevelSet<ConvexType, BasisType, PeriodicityType> >
 {
     typedef ModelNumerical super_type;
 public:
     typedef LevelSet<ConvexType, BasisType, PeriodicityType> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     static const uint16_type Order = BasisType::nOrder;
     typedef double value_type;
@@ -111,7 +111,7 @@ public:
     static const uint16_type nOrderGeo = convex_type::nOrder;
     static const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type mymesh_type;
 
     //--------------------------------------------------------------------//
@@ -119,36 +119,36 @@ public:
     typedef PeriodicityType periodicity_type;
     // advection toolbox
     typedef Advection< ConvexType, BasisType, PeriodicityType > advection_toolbox_type;
-    typedef boost::shared_ptr<advection_toolbox_type> advection_toolbox_ptrtype;
+    typedef std::shared_ptr<advection_toolbox_type> advection_toolbox_ptrtype;
     static_assert( advection_toolbox_type::is_scalar, "LevelSet function basis must be scalar" );
     //--------------------------------------------------------------------//
     // Space levelset
     typedef typename advection_toolbox_type::basis_advection_type basis_levelset_type;
     typedef typename advection_toolbox_type::space_advection_type space_levelset_type;
-    typedef boost::shared_ptr<space_levelset_type> space_levelset_ptrtype;
+    typedef std::shared_ptr<space_levelset_type> space_levelset_ptrtype;
     typedef typename space_levelset_type::element_type element_levelset_type;
-    typedef boost::shared_ptr<element_levelset_type> element_levelset_ptrtype;
+    typedef std::shared_ptr<element_levelset_type> element_levelset_ptrtype;
 
     //--------------------------------------------------------------------//
     // Space vectorial levelset
     //typedef Lagrange<Order, Vectorial> basis_levelset_vectorial_type;
     typedef typename detail::ChangeBasisPolySet<Vectorial, basis_levelset_type>::type basis_levelset_vectorial_type;
     typedef FunctionSpace<mymesh_type, bases<basis_levelset_vectorial_type>, Periodicity<periodicity_type> > space_levelset_vectorial_type;
-    typedef boost::shared_ptr<space_levelset_vectorial_type> space_levelset_vectorial_ptrtype;
+    typedef std::shared_ptr<space_levelset_vectorial_type> space_levelset_vectorial_ptrtype;
     typedef typename space_levelset_vectorial_type::element_type element_levelset_vectorial_type;
-    typedef boost::shared_ptr< element_levelset_vectorial_type > element_levelset_vectorial_ptrtype;
+    typedef std::shared_ptr< element_levelset_vectorial_type > element_levelset_vectorial_ptrtype;
 
     //--------------------------------------------------------------------//
     // Space markers P0
     typedef Lagrange<0, Scalar, Discontinuous> basis_markers_type;
     typedef FunctionSpace<mymesh_type, bases<basis_markers_type>, value_type, Periodicity<NoPeriodicity> > space_markers_type;
-    typedef boost::shared_ptr<space_markers_type> space_markers_ptrtype;
+    typedef std::shared_ptr<space_markers_type> space_markers_ptrtype;
     typedef typename space_markers_type::element_type element_markers_type;
-    typedef boost::shared_ptr< element_markers_type > element_markers_ptrtype;
+    typedef std::shared_ptr< element_markers_type > element_markers_ptrtype;
 
 #if defined (MESH_ADAPTATION_LS)
     typedef MeshAdaptation<Dim, Order, 1, periodicity_type > mesh_adaptation_type;
-    typedef boost::shared_ptr< mesh_adaptation_type > mesh_adaptation_ptrtype;
+    typedef std::shared_ptr< mesh_adaptation_type > mesh_adaptation_ptrtype;
 #endif
 
     //--------------------------------------------------------------------//
@@ -156,9 +156,9 @@ public:
     //typedef Lagrange<Order, Tensor2Symm> basis_tensor2symm_type;
     typedef Lagrange<Order, Tensor2> basis_tensor2symm_type;
     typedef FunctionSpace<mymesh_type, bases<basis_tensor2symm_type>, Periodicity<periodicity_type> > space_tensor2symm_type;
-    typedef boost::shared_ptr<space_tensor2symm_type> space_tensor2symm_ptrtype;
+    typedef std::shared_ptr<space_tensor2symm_type> space_tensor2symm_ptrtype;
     typedef typename space_tensor2symm_type::element_type element_tensor2symm_type;
-    typedef boost::shared_ptr<element_tensor2symm_type> element_tensor2symm_ptrtype;
+    typedef std::shared_ptr<element_tensor2symm_type> element_tensor2symm_ptrtype;
 
     //--------------------------------------------------------------------//
     // Range types
@@ -175,22 +175,22 @@ public:
     //--------------------------------------------------------------------//
     // Projectors
     typedef Projector<space_levelset_type, space_levelset_type> projector_levelset_type;
-    typedef boost::shared_ptr<projector_levelset_type> projector_levelset_ptrtype;
+    typedef std::shared_ptr<projector_levelset_type> projector_levelset_ptrtype;
     
     typedef Projector<space_levelset_vectorial_type, space_levelset_vectorial_type> projector_levelset_vectorial_type;
-    typedef boost::shared_ptr<projector_levelset_vectorial_type> projector_levelset_vectorial_ptrtype;
+    typedef std::shared_ptr<projector_levelset_vectorial_type> projector_levelset_vectorial_ptrtype;
 
     typedef Projector<space_tensor2symm_type, space_tensor2symm_type> projector_tensor2symm_type;
-    typedef boost::shared_ptr<projector_tensor2symm_type> projector_tensor2symm_ptrtype;
+    typedef std::shared_ptr<projector_tensor2symm_type> projector_tensor2symm_ptrtype;
 
     //--------------------------------------------------------------------//
     // Reinitialization
     typedef Reinitializer<space_levelset_type> reinitializer_type;
-    typedef boost::shared_ptr<reinitializer_type> reinitializer_ptrtype;
+    typedef std::shared_ptr<reinitializer_type> reinitializer_ptrtype;
     typedef ReinitializerFM<space_levelset_type> reinitializerFM_type;
-    typedef boost::shared_ptr<reinitializerFM_type> reinitializerFM_ptrtype;
+    typedef std::shared_ptr<reinitializerFM_type> reinitializerFM_ptrtype;
     typedef ReinitializerHJ<space_levelset_type> reinitializerHJ_type;
-    typedef boost::shared_ptr<reinitializerHJ_type> reinitializerHJ_ptrtype;
+    typedef std::shared_ptr<reinitializerHJ_type> reinitializerHJ_ptrtype;
 
     enum class FastMarchingInitializationMethod { 
         NONE=0, ILP, SMOOTHED_ILP, HJ_EQ, IL_HJ_EQ
@@ -208,7 +208,7 @@ public:
     //--------------------------------------------------------------------//
     // Backend
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
@@ -217,27 +217,27 @@ public:
     // ModGradPhi advection
     typedef basis_levelset_type basis_modgradphi_advection_type;
     typedef Advection<ConvexType, basis_modgradphi_advection_type, PeriodicityType> modgradphi_advection_type;
-    typedef boost::shared_ptr<modgradphi_advection_type> modgradphi_advection_ptrtype;
+    typedef std::shared_ptr<modgradphi_advection_type> modgradphi_advection_ptrtype;
     // Stretch advection
     typedef basis_levelset_type basis_stretch_advection_type;
     typedef Advection<ConvexType, basis_stretch_advection_type, PeriodicityType> stretch_advection_type;
-    typedef boost::shared_ptr<stretch_advection_type> stretch_advection_ptrtype;
+    typedef std::shared_ptr<stretch_advection_type> stretch_advection_ptrtype;
 
     //--------------------------------------------------------------------//
     // Backward characteristics advection
     typedef basis_levelset_vectorial_type basis_backwardcharacteristics_advection_type;
     typedef Advection<ConvexType, basis_backwardcharacteristics_advection_type, PeriodicityType> backwardcharacteristics_advection_type;
-    typedef boost::shared_ptr<backwardcharacteristics_advection_type> backwardcharacteristics_advection_ptrtype;
+    typedef std::shared_ptr<backwardcharacteristics_advection_type> backwardcharacteristics_advection_ptrtype;
     typedef typename backwardcharacteristics_advection_type::element_advection_type element_backwardcharacteristics_type;
-    typedef boost::shared_ptr<element_backwardcharacteristics_type> element_backwardcharacteristics_ptrtype;
+    typedef std::shared_ptr<element_backwardcharacteristics_type> element_backwardcharacteristics_ptrtype;
     // Cauchy-Green tensor invariants types
     typedef element_levelset_type element_cauchygreen_invariant_type;
-    typedef boost::shared_ptr<element_cauchygreen_invariant_type> element_cauchygreen_invariant_ptrtype;
+    typedef std::shared_ptr<element_cauchygreen_invariant_type> element_cauchygreen_invariant_ptrtype;
 
     //--------------------------------------------------------------------//
     // Exporter
     typedef Exporter<mymesh_type, nOrderGeo> exporter_type;
-    typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
+    typedef std::shared_ptr<exporter_type> exporter_ptrtype;
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -247,7 +247,7 @@ public:
     // Constructor
     LevelSet(
             std::string const& prefix,
-            WorldComm const& _worldComm = Environment::worldComm(),
+            worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
@@ -256,7 +256,7 @@ public:
 
     static self_ptrtype New( 
             std::string const& prefix,
-            WorldComm const& _worldComm = Environment::worldComm(),
+            worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
@@ -346,7 +346,7 @@ public:
             if( !projectorL2_tensor2symm )
                 projectorL2_tensor2symm = Feel::projector(
                         this->functionSpaceTensor2Symm(), this->functionSpaceTensor2Symm(), 
-                        backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
+                        backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldCommPtr())
                         );
             M_projectorL2Tensor2Symm = projectorL2_tensor2symm;
         }
@@ -363,15 +363,15 @@ public:
     void initLevelsetValue();
     void initPostProcess();
 
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const;
 
     // advection data
     typename advection_toolbox_type::mesh_ptrtype const& mesh() const { return M_advectionToolbox->mesh(); }
     typename advection_toolbox_type::space_advection_ptrtype const& functionSpace() const { return M_advectionToolbox->functionSpace(); }
     typename advection_toolbox_type::bdf_ptrtype timeStepBDF() { return  M_advectionToolbox->timeStepBDF(); }
     typename advection_toolbox_type::bdf_ptrtype /*const&*/ timeStepBDF() const { return M_advectionToolbox->timeStepBDF(); }
-    boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
-    boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
+    std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
+    std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
     template<typename ExprT>
     void
     updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr) { M_advectionToolbox->updateAdvectionVelocity( v_expr ); }

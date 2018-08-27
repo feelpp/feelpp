@@ -157,14 +157,14 @@ public:
     typedef MatrixGmm<value_type, gmm::row_major> sparse_matrix_type;
     /*mesh*/
     typedef Mesh<GeoEntity<Simplex<dim, 1> > > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptr_type;
+    typedef std::shared_ptr<mesh_type> mesh_ptr_type;
 
     /*basis*/
     typedef Basis basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef typename element_type::template sub_element<0>::type element_0_type;
     typedef typename element_type::template sub_element<1>::type element_1_type;
@@ -292,7 +292,7 @@ private:
     double bcCoeff;
     int nMesh;
 
-    boost::shared_ptr<export_type> exporter;
+    std::shared_ptr<export_type> exporter;
     typename export_type::timeset_ptrtype timeSet;
 
     std::vector<std::map<std::string,std::pair<boost::timer,double> > > timers;

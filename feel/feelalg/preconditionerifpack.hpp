@@ -59,14 +59,14 @@ class PreconditionerIfpack
 public:
 
     typedef Ifpack_Preconditioner prec_type;
-    typedef boost::shared_ptr<prec_type> prec_ptrtype;
+    typedef std::shared_ptr<prec_type> prec_ptrtype;
 
 
     typedef MatrixSparse<double> sparse_matrix_type;
-    typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
+    typedef std::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
 
     typedef MatrixEpetra epetra_sparse_matrix_type;
-    typedef boost::shared_ptr<epetra_sparse_matrix_type> epetra_sparse_matrix_ptrtype;
+    typedef std::shared_ptr<epetra_sparse_matrix_type> epetra_sparse_matrix_ptrtype;
 
     typedef Teuchos::ParameterList list_type;
 

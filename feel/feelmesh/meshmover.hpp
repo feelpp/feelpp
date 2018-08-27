@@ -49,12 +49,12 @@ public:
     //@{
 
     typedef MeshType mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename mesh_type::value_type value_type;
 
     typedef typename mesh_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef std::shared_ptr<gm_type> gm_ptrtype;
 
     typedef typename mesh_type::element_iterator element_iterator;
     typedef typename mesh_type::element_const_iterator element_const_iterator;
@@ -155,7 +155,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     typedef typename mesh_type::element_type element_type;
     typedef typename mesh_type::face_type face_type;
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
-    typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
+    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
     typedef typename DisplType::functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
@@ -183,13 +183,13 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm, gm->points() ) );
 
     typedef typename DisplType::pc_type pc_type;
-    typedef boost::shared_ptr<pc_type> pc_ptrtype;
+    typedef std::shared_ptr<pc_type> pc_ptrtype;
     pc_ptrtype __pc( new pc_type( u.functionSpace()->fe(), gm->points() ) );
     gm_context_ptrtype __c( new gm_context_type( gm, *it_elt, __geopc ) );
 
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename fe_type::template Context<0, fe_type, gm_type, geoelement_type,gm_context_type::context> fectx_type;
-    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( u.functionSpace()->fe(),
                                          __c,
                                          __pc ) );
@@ -313,8 +313,8 @@ MeshMover<MeshType>::updateForUse( mesh_ptrtype& imesh )
 
 
 template<typename MeshType, typename DisplType>
-boost::shared_ptr<MeshType>
-meshMove( boost::shared_ptr<MeshType>& m, DisplType const& u )
+std::shared_ptr<MeshType>
+meshMove( std::shared_ptr<MeshType>& m, DisplType const& u )
 {
     MeshMover<MeshType> mover( m );
     mover.apply( m, u );

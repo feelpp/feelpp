@@ -51,7 +51,7 @@ BOOST_PARAMETER_FUNCTION(
       ( partitioner,   *, "auto" )
       ( verbose,   ( bool ), false )
       ( parallel,   *( boost::is_integral<mpl::_> ), 1 )
-      ( worldcomm,       (WorldComm), Environment::worldComm() )
+      ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() )
     )
 )
 {
@@ -91,7 +91,7 @@ BOOST_PARAMETER_FUNCTION(
       ( partitioner,   *, "auto" )
       ( verbose,   ( bool ), false )
       ( parallel,   *( boost::is_integral<mpl::_> ), 1 )
-      ( worldcomm,       (WorldComm), Environment::worldComm() )
+      ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() )
     )
 )
 {

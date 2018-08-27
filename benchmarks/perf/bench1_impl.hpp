@@ -66,7 +66,7 @@ namespace Feel
 
 template<typename FSType>
 void
-Bench1::R( boost::shared_ptr<FSType> const& Xh  )
+Bench1::R( std::shared_ptr<FSType> const& Xh  )
 {
     typename FSType::element_type u( Xh );
     typename FSType::element_type v( Xh );
@@ -114,7 +114,7 @@ Bench1::R( boost::shared_ptr<FSType> const& Xh  )
 
 template<typename FSType>
 void
-Bench1::D( boost::shared_ptr<FSType> const& Xh  )
+Bench1::D( std::shared_ptr<FSType> const& Xh  )
 {
     typename FSType::element_type u( Xh );
     typename FSType::element_type v( Xh );
@@ -147,18 +147,18 @@ Bench1::D( boost::shared_ptr<FSType> const& Xh  )
 }
 template<typename FSType>
 void
-Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
+Bench1::A( std::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
 {
     typename FSType::element_type u( Xh );
     typename FSType::element_type v( Xh );
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
     typedef FunctionSpace<typename FSType::mesh_type, bases<Lagrange<0,Vectorial,Discontinuous> > > P0h_type;
-    boost::shared_ptr<P0h_type> P0h = P0h_type::New( Xh->mesh() );
+    std::shared_ptr<P0h_type> P0h = P0h_type::New( Xh->mesh() );
     auto beta0 = P0h->element( "beta" );
 
     typedef FunctionSpace<typename FSType::mesh_type, bases<Lagrange<FSType::fe_type::nOrder,Vectorial> > > Pkh_type;
-    boost::shared_ptr<Pkh_type> Pkh = Pkh_type::New( Xh->mesh() );
+    std::shared_ptr<Pkh_type> Pkh = Pkh_type::New( Xh->mesh() );
     auto betak = Pkh->element( "betak" );
 
     form2( Xh,Xh,_matrix=M,_init=true );
@@ -190,18 +190,18 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
 
 template<typename FSType>
 void
-Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
+Bench1::A( std::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
 {
     typename FSType::element_type u( Xh );
     typename FSType::element_type v( Xh );
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
     typedef FunctionSpace<typename FSType::mesh_type, bases<Lagrange<0,Vectorial,Discontinuous> > > P0h_type;
-    boost::shared_ptr<P0h_type> P0h = P0h_type::New( Xh->mesh() );
+    std::shared_ptr<P0h_type> P0h = P0h_type::New( Xh->mesh() );
     auto beta0 = P0h->element( "beta" );
 
     typedef FunctionSpace<typename FSType::mesh_type, bases<Lagrange<FSType::fe_type::nOrder,Vectorial> > > Pkh_type;
-    boost::shared_ptr<Pkh_type> Pkh = Pkh_type::New( Xh->mesh() );
+    std::shared_ptr<Pkh_type> Pkh = Pkh_type::New( Xh->mesh() );
     auto betak = Pkh->element( "betak" );
 
     form2( Xh,Xh,_matrix=M,_init=true );
@@ -232,18 +232,18 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
 
 template<typename FSType>
 void
-Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
+Bench1::A( std::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
 {
     typename FSType::element_type u( Xh );
     typename FSType::element_type v( Xh );
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
     typedef FunctionSpace<typename FSType::mesh_type, bases<Lagrange<0,Vectorial,Discontinuous> > > P0h_type;
-    boost::shared_ptr<P0h_type> P0h = P0h_type::New( Xh->mesh() );
+    std::shared_ptr<P0h_type> P0h = P0h_type::New( Xh->mesh() );
     auto beta0 = P0h->element( "beta" );
 
     typedef FunctionSpace<typename FSType::mesh_type, bases<Lagrange<FSType::fe_type::nOrder,Vectorial> > > Pkh_type;
-    boost::shared_ptr<Pkh_type> Pkh = Pkh_type::New( Xh->mesh() );
+    std::shared_ptr<Pkh_type> Pkh = Pkh_type::New( Xh->mesh() );
     auto betak = Pkh->element( "betak" );
 
     form2( Xh,Xh,_matrix=M,_init=true );
@@ -274,7 +274,7 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
 
 template<typename FSType>
 void
-Bench1::DR( boost::shared_ptr<FSType> const& Xh )
+Bench1::DR( std::shared_ptr<FSType> const& Xh )
 {
     typename FSType::element_type u( Xh );
     typename FSType::element_type v( Xh );
@@ -305,7 +305,7 @@ Bench1::DR( boost::shared_ptr<FSType> const& Xh )
 }
 template<typename FSType>
 void
-Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
+Bench1::ADR( std::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
 {
     typename FSType::element_type u( Xh );
     typename FSType::element_type v( Xh );
@@ -340,7 +340,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
 
 template<typename FSType>
 void
-Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
+Bench1::ADR( std::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
 {
     typename FSType::element_type u( Xh );
     typename FSType::element_type v( Xh );
@@ -378,7 +378,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
 }
 template<typename FSType>
 void
-Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
+Bench1::ADR( std::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
 {
     typename FSType::element_type u( Xh );
     typename FSType::element_type v( Xh );
@@ -416,7 +416,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
 }
 template<typename MeshType, int Order>
 void
-Bench1::bench1( boost::shared_ptr<MeshType> & mesh )
+Bench1::bench1( std::shared_ptr<MeshType> & mesh )
 {
 
 

@@ -45,28 +45,28 @@ public:
     // Typedefs
     typedef Reinitializer<FunctionSpaceType> super_type;
     typedef ReinitializerHJ<FunctionSpaceType> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     typedef FunctionSpaceType functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
 
     typedef typename functionspace_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
 
     typedef typename functionspace_type::periodicity_0_type periodicity_type;
     static const bool is_periodic = functionspace_type::is_periodic;
 
     typedef FunctionSpace<mesh_type, bases<Lagrange<1,Vectorial,Continuous>>> functionspace_P1v_type;
-    typedef boost::shared_ptr<functionspace_P1v_type> functionspace_P1v_ptrtype;
+    typedef std::shared_ptr<functionspace_P1v_type> functionspace_P1v_ptrtype;
 
     typedef Projector<functionspace_P1v_type, functionspace_P1v_type> projectorL2_vectorial_type;
-    typedef boost::shared_ptr<projectorL2_vectorial_type> projectorL2_vectorial_ptrtype;
+    typedef std::shared_ptr<projectorL2_vectorial_type> projectorL2_vectorial_ptrtype;
 
     typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar,Discontinuous> > > functionspace_P0_type;
-    typedef boost::shared_ptr<functionspace_P0_type> functionspace_P0_ptrtype;
+    typedef std::shared_ptr<functionspace_P0_type> functionspace_P0_ptrtype;
 
     //--------------------------------------------------------------------//
     // Hamilton-Jacobi advection
@@ -77,7 +77,7 @@ public:
             typename SpaceType::template Basis<0>::type,
             typename SpaceType::periodicity_0_type
           >
-        , public boost::enable_shared_from_this< AdvectionHJ<SpaceType> >
+        , public std::enable_shared_from_this< AdvectionHJ<SpaceType> >
     {
     public:
         typedef Feel::FeelModels::AdvectionBase<
@@ -87,10 +87,10 @@ public:
           > super_type;
 
         typedef AdvectionHJ<SpaceType> self_type;
-        typedef boost::shared_ptr<self_type> self_ptrtype;
+        typedef std::shared_ptr<self_type> self_ptrtype;
 
         typedef SpaceType functionspace_type;
-        typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+        typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
 
         // Constructor
         AdvectionHJ(
@@ -111,7 +111,7 @@ public:
     };
 
     typedef AdvectionHJ<FunctionSpaceType> advectionhj_type;
-    typedef boost::shared_ptr<advectionhj_type> advectionhj_ptrtype;
+    typedef std::shared_ptr<advectionhj_type> advectionhj_ptrtype;
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -401,7 +401,7 @@ typename REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::template ADVECTIONHJ_CLASS_TEMPLAT
 REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::ADVECTIONHJ_CLASS_TEMPLATE_TYPE::New(
         std::string const& prefix )
 {
-    return boost::make_shared<self_type>( prefix );
+    return std::make_shared<self_type>( prefix );
 }
 
 REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS

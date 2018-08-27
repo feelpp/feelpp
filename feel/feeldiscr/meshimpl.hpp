@@ -144,7 +144,7 @@ void print( MeshT * m )
 
 // Constructor.
 template<typename Shape, typename T, int Tag>
-Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm,
+Mesh<Shape, T, Tag>::Mesh( worldcomm_ptr_t const& worldComm,
                            const std::string& name )
     :
     super( worldComm ),
@@ -157,9 +157,11 @@ Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm,
     M_measbdy( 0 ),
     M_substructuring( false ),
     //M_part(),
-    M_tool_localization( boost::make_shared<Localization<self_type>>() )
+    M_tool_localization( std::make_shared<Localization<self_type>>() )
 {
     MESH_INSTANCE_NUMBER++;
+    VLOG(2) << "[Mesh] constructor called\n";
+    CHECK( this->hasWorldComm() ) << "Invalid mesh worldComm";
     if( not boption("journal.auto.mesh") ) 
         this->journalDisconnect();
     VLOG(2) << "[Mesh] constructor instance number " << M_instance_number << "\n" ;
@@ -199,7 +201,7 @@ Mesh<Shape, T, Tag>::updateForUse()
 #if 0
 
         // partition mesh
-        if ( this->components().test( MESH_PARTITION ) || ( this->worldComm().localSize() > 1 ) )
+        if ( this->components().test( MESH_PARTITION ) || ( MeshBase::worldComm().localSize() > 1 ) )
         {
             boost::timer ti1;
             this->partition();
@@ -237,7 +239,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             VLOG(1) << "[Mesh::updateForUse] update entities of codimension 2";
         }
 
-        if ( this->worldComm().localSize()>1 )
+        if ( MeshBase::worldComm().localSize()>1 )
         {
             tic();
             auto rangeGhostElement = this->ghostElements();
@@ -458,10 +460,10 @@ Mesh<Shape, T, Tag>::updateMeasures()
     if ( iv != en )
     {
         auto const& eltInit = iv->second;
-        boost::shared_ptr<typename gm_type::template Context<vm::JACOBIAN,element_type>> ctx;
-        boost::shared_ptr<typename gm_type::template Context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN,element_type>> ctxf;
-        boost::shared_ptr<typename gm1_type::template Context<vm::JACOBIAN,element_type>> ctx1;
-        boost::shared_ptr<typename gm1_type::template Context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN,element_type>> ctxf1;
+        std::shared_ptr<typename gm_type::template Context<vm::JACOBIAN,element_type>> ctx;
+        std::shared_ptr<typename gm_type::template Context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN,element_type>> ctxf;
+        std::shared_ptr<typename gm1_type::template Context<vm::JACOBIAN,element_type>> ctx1;
+        std::shared_ptr<typename gm1_type::template Context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN,element_type>> ctxf1;
         if ( pc )
             ctx = M_gm->template context<vm::JACOBIAN>( eltInit, pc );
         if ( !pcf.empty() )
@@ -499,11 +501,11 @@ Mesh<Shape, T, Tag>::updateMeasures()
     } // if ()
 #if BOOST_VERSION >= 105500
     std::vector<value_type> gmeas{ M_local_meas, M_local_measbdy };
-    mpi::all_reduce(this->worldComm(), mpi::inplace(gmeas.data()), 2, std::plus<value_type>());
+    mpi::all_reduce(MeshBase::worldComm(), mpi::inplace(gmeas.data()), 2, std::plus<value_type>());
 #else
     std::vector<value_type> lmeas{ M_local_meas, M_local_measbdy };
     std::vector<value_type> gmeas( 2, 0.0 );
-    mpi::all_reduce(this->worldComm(), lmeas.data(), 2, gmeas.data(), std::plus<value_type>());
+    mpi::all_reduce(MeshBase::worldComm(), lmeas.data(), 2, gmeas.data(), std::plus<value_type>());
 #endif
     M_meas = gmeas[0];
     M_measbdy = gmeas[1];
@@ -545,7 +547,7 @@ Mesh<Shape, T, Tag>::updateMeasures()
         value_type reduction[3] = { M_h_avg, M_h_min, M_h_max };
         MPI_Op op;
         MPI_Op_create((MPI_User_function*)(Functor::AvgMinMax<value_type, WorldComm::communicator_type>), 1, &op);
-        MPI_Allreduce(MPI_IN_PLACE, reduction, 3, mpi::get_mpi_datatype<value_type>(), op, this->worldComm());
+        MPI_Allreduce(MPI_IN_PLACE, reduction, 3, mpi::get_mpi_datatype<value_type>(), op, MeshBase::worldComm());
         MPI_Op_free(&op);
 
         M_h_avg = reduction[0];
@@ -715,7 +717,7 @@ template<typename TheShape>
 void
 Mesh<Shape, T, Tag>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim==1>* )
 {
-    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
+    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
         iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
@@ -728,8 +730,8 @@ template<typename TheShape>
 void
 Mesh<Shape, T, Tag>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim==2>* )
 {
-    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
-    auto geondFaceCommon = boost::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
+    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
+    auto geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
         iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
@@ -742,9 +744,9 @@ template<typename TheShape>
 void
 Mesh<Shape, T, Tag>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim==3>* )
 {
-    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
-    auto geondFaceCommon = boost::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
-    auto geondEdgeCommon = boost::make_shared<GeoNDCommon<typename edge_type::super>>( this/*,this->gm(), this->gm1()*/ );
+    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
+    auto geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
+    auto geondEdgeCommon = std::make_shared<GeoNDCommon<typename edge_type::super>>( this/*,this->gm(), this->gm1()*/ );
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
         iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
@@ -1059,8 +1061,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 {
     const bool updateComponentAddElements = this->components().test( MESH_ADD_ELEMENTS_INFO );
 
-    rank_type currentPid = this->worldComm().localRank();
-    rank_type numPartition = this->worldComm().localSize();
+    rank_type currentPid = MeshBase::worldComm().localRank();
+    rank_type numPartition = MeshBase::worldComm().localSize();
 
     // stores local vertex ids of the faces to identify them
     std::vector<size_type> lids(face_type::numVertices);
@@ -1245,10 +1247,10 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                         FEELPP_ASSERT( __element.facePtr( j ) )( j )( __element.id() ).warn( "invalid element face error" );
                         FEELPP_ASSERT( cface.isConnectedTo0() && cface.isConnectedTo1() )
                             ( cface.isConnectedTo0() )( cface.isConnectedTo1() ).error ("inconsistent data structure" );
-                        if ( cface.processId()!=this->worldComm().localRank() )
+                        if ( cface.processId()!=MeshBase::worldComm().localRank() )
                         {
-                            if ( ( cface.element0().processId()==this->worldComm().localRank() ) ||
-                                 ( cface.element1().processId()==this->worldComm().localRank() ) )
+                            if ( ( cface.element0().processId()==MeshBase::worldComm().localRank() ) ||
+                                 ( cface.element1().processId()==MeshBase::worldComm().localRank() ) )
                                 facePtr->setProcessId( currentPid );
                         }
                     }
@@ -1366,8 +1368,8 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneMinimal()
 {
-    rank_type currentPid = this->worldComm().localRank();
-    rank_type numPartition = this->worldComm().localSize();
+    rank_type currentPid = MeshBase::worldComm().localRank();
+    rank_type numPartition = MeshBase::worldComm().localSize();
 
     const uint16_type _numLocalFaces = this->numLocalFaces();
     std::vector<uint16_type> myfToP( face_type::numVertices*_numLocalFaces );
@@ -2039,11 +2041,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
 {
     typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_type;
 
-    VLOG(2) << "[Mesh::updateEntitiesCoDimensionGhostCell] start on god rank "<< this->worldComm().godRank() << "\n";
+    VLOG(2) << "[Mesh::updateEntitiesCoDimensionGhostCell] start on god rank "<< MeshBase::worldComm().godRank() << "\n";
 
-    std::vector<int> nbMsgToSend( this->worldComm().localSize(), 0 );
-    std::vector<int> nbMsgToRecv( this->worldComm().localSize(), 0 );
-    std::vector< std::map<int,int> > mapMsg( this->worldComm().localSize() );
+    std::vector<int> nbMsgToSend( MeshBase::worldComm().localSize(), 0 );
+    std::vector<int> nbMsgToRecv( MeshBase::worldComm().localSize(), 0 );
+    std::vector< std::map<int,int> > mapMsg( MeshBase::worldComm().localSize() );
 
     typename super_elements::ElementGhostConnectPointToElement elementGhostConnectPointToElement;
     typename super_elements::ElementGhostConnectEdgeToElement elementGhostConnectEdgeToElement;
@@ -2062,9 +2064,9 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
             elementGhostConnectEdgeToElement( eltModified );
 
         // send
-        this->worldComm().localComm().send( IdProcessOfGhost , nbMsgToSend[IdProcessOfGhost], idInPartition );
+        MeshBase::worldComm().localComm().send( IdProcessOfGhost , nbMsgToSend[IdProcessOfGhost], idInPartition );
 #if 0
-        std::cout<< "I am the proc" << this->worldComm().localRank()<<" , I send to proc " << IdProcessOfGhost
+        std::cout<< "I am the proc" << MeshBase::worldComm().localRank()<<" , I send to proc " << IdProcessOfGhost
                  <<" with tag "<< nbMsgToSend[IdProcessOfGhost]
                  << " idSend " << idInPartition
                  << " it_ghost->G() " << __element.G()
@@ -2078,7 +2080,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
 
     //------------------------------------------------------------------------------------------------//
 
-    auto rangeElements = this->elementsWithProcessId( this->worldComm().localRank() );
+    auto rangeElements = this->elementsWithProcessId( MeshBase::worldComm().localRank() );
     auto itEltActif = std::get<0>( rangeElements );
     auto const enEltActif = std::get<1>( rangeElements );
     for ( ; itEltActif!=enEltActif ; ++itEltActif )
@@ -2096,13 +2098,13 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
 #if !defined( NDEBUG )
     // check nbMsgToRecv computation
     std::vector<int> nbMsgToRecv2;
-    mpi::all_to_all( this->worldComm().localComm(),
+    mpi::all_to_all( MeshBase::worldComm().localComm(),
                      nbMsgToSend,
                      nbMsgToRecv2 );
-    for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
+    for ( int proc=0; proc<MeshBase::worldComm().localSize(); ++proc )
     {
         CHECK( nbMsgToRecv[proc]==nbMsgToRecv2[proc] ) << "paritioning data incorect "
-                                                       << "myrank " << this->worldComm().localRank() << " proc " << proc
+                                                       << "myrank " << MeshBase::worldComm().localRank() << " proc " << proc
                                                        << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
                                                        << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";
     }
@@ -2110,15 +2112,15 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
 
     //------------------------------------------------------------------------------------------------//
     // recv id asked and re-send set of face id
-    for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
+    for ( int proc=0; proc<MeshBase::worldComm().localSize(); ++proc )
     {
         for ( int cpt=0; cpt<nbMsgToRecv[proc]; ++cpt )
         {
             //recv
             size_type idRecv;
-            this->worldComm().localComm().recv( proc, cpt, idRecv );
+            MeshBase::worldComm().localComm().recv( proc, cpt, idRecv );
 #if 0
-            std::cout<< "I am the proc" << this->worldComm().localRank()<<" I receive to proc " << proc
+            std::cout<< "I am the proc" << MeshBase::worldComm().localRank()<<" I receive to proc " << proc
                      <<" with tag "<< cpt << " idRecv " << idRecv
                      << " it_ghost->G() " << this->element( idRecv ).G()
                      << std::endl;
@@ -2173,37 +2175,37 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
             theresponse[1] = idFacesWithBary;
             //auto theresponse = boost::make_tuple( idPointsWithNode, idFacesWithBary );
             // send response
-            //this->worldComm().localComm().send( proc, cpt, idFacesWithBary );
-            this->worldComm().localComm().send( proc, cpt, theresponse );
+            //MeshBase::worldComm().localComm().send( proc, cpt, idFacesWithBary );
+            MeshBase::worldComm().localComm().send( proc, cpt, theresponse );
         }
     }
 
     //------------------------------------------------------------------------------------------------//
     // get response to initial request and update Feel::Mesh::Faces data
-    for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
+    for ( int proc=0; proc<MeshBase::worldComm().localSize(); ++proc )
     {
         for ( int cpt=0; cpt<nbMsgToSend[proc]; ++cpt )
         {
             //recv
 #if 0
             std::vector< boost::tuple<size_type, std::vector<double> > > idFacesWithBaryRecv(this->numLocalFaces());
-            this->worldComm().localComm().recv( proc, cpt, idFacesWithBaryRecv );
+            MeshBase::worldComm().localComm().recv( proc, cpt, idFacesWithBaryRecv );
 #elif 0
             typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_face_type;
             typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_point_type;
             boost::tuple<resultghost_point_type,resultghost_face_type> requestRecv;
-            this->worldComm().localComm().recv( proc, cpt, requestRecv );
+            MeshBase::worldComm().localComm().recv( proc, cpt, requestRecv );
             auto const& idPointsWithNodeRecv = requestRecv.template get<0>();
             auto const& idFacesWithBaryRecv = requestRecv.template get<1>();
 #else
             std::vector<resultghost_type> requestRecv;
-            this->worldComm().localComm().recv( proc, cpt, requestRecv );
+            MeshBase::worldComm().localComm().recv( proc, cpt, requestRecv );
             auto const& idPointsWithNodeRecv = requestRecv[0];
             auto const& idFacesWithBaryRecv = requestRecv[1];
 #endif
 
 #if 0
-            std::cout<< "I am the proc " << this->worldComm().localRank()<<" I receive to proc " << proc
+            std::cout<< "I am the proc " << MeshBase::worldComm().localRank()<<" I receive to proc " << proc
                      <<" with tag "<< cpt << std::endl;
 #endif
             auto const& theelt = this->element( mapMsg[proc][cpt]/*,proc*/ );
@@ -2406,9 +2408,9 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     typedef std::vector< boost::tuple<size_type, bool, std::vector<double> > > resultghost_edge_type;
     typedef std::vector< boost::tuple<size_type, bool, std::vector<double> > > resultghost_face_type;
 
-    DVLOG(1) << "updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm : start on rank " << this->worldComm().localRank() << "\n";
+    DVLOG(1) << "updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm : start on rank " << MeshBase::worldComm().localRank() << "\n";
 
-    const rank_type nProc = this->worldComm().localSize();
+    const rank_type nProc = MeshBase::worldComm().localSize();
 
     typename super_elements::ElementGhostConnectPointToElement elementGhostConnectPointToElement;
     typename super_elements::ElementGhostConnectEdgeToElement elementGhostConnectEdgeToElement;
@@ -2490,8 +2492,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
 #if 0
     // compute nbMsgToRecv
     std::set<rank_type> procToRecv;
-    auto itEltActif = this->beginElementWithProcessId( this->worldComm().localRank() );
-    auto const enEltActif = this->endElementWithProcessId( this->worldComm().localRank() );
+    auto itEltActif = this->beginElementWithProcessId( MeshBase::worldComm().localRank() );
+    auto const enEltActif = this->endElementWithProcessId( MeshBase::worldComm().localRank() );
     for ( ; itEltActif!=enEltActif ; ++itEltActif )
     {
         if (itEltActif->numberOfNeighborPartitions() == 0 ) continue;
@@ -2520,7 +2522,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     auto const enDataToSend = dataToSend.end();
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
-        reqs[cptRequest] = this->worldComm().localComm().isend( itDataToSend->first , 0, itDataToSend->second );
+        reqs[cptRequest] = MeshBase::worldComm().localComm().isend( itDataToSend->first , 0, itDataToSend->second );
         ++cptRequest;
     }
     //------------------------------------------------------------------------------------------------//
@@ -2531,7 +2533,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     for ( ; itProcToRecv != enProcToRecv ; ++itProcToRecv )
     {
         const rank_type idProc = *itProcToRecv;
-        reqs[cptRequest] = this->worldComm().localComm().irecv( idProc , 0, dataToRecv[idProc] );
+        reqs[cptRequest] = MeshBase::worldComm().localComm().irecv( idProc , 0, dataToRecv[idProc] );
         ++cptRequest;
     }
 #else
@@ -2543,8 +2545,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     // first send/recv
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank] );
-        reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank] );
+        reqs[cptRequest++] = MeshBase::worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank] );
+        reqs[cptRequest++] = MeshBase::worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank] );
     }
 #endif
     //------------------------------------------------------------------------------------------------//
@@ -2633,7 +2635,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     auto const enDataToReSend = dataToReSend.end();
     for ( ; itDataToReSend!=enDataToReSend ; ++itDataToReSend )
     {
-        reqs[cptRequest] = this->worldComm().localComm().isend( itDataToReSend->first , 0, itDataToReSend->second );
+        reqs[cptRequest] = MeshBase::worldComm().localComm().isend( itDataToReSend->first , 0, itDataToReSend->second );
         ++cptRequest;
     }
     //------------------------------------------------------------------------------------------------//
@@ -2644,7 +2646,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
         const rank_type idProc = itDataToSend->first;
-        reqs[cptRequest] = this->worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc] );
+        reqs[cptRequest] = MeshBase::worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc] );
         ++cptRequest;
     }
 #else
@@ -2653,8 +2655,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     // second send/recv
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, dataToReSend[neighborRank] );
-        reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, finalDataToRecv[neighborRank] );
+        reqs[cptRequest++] = MeshBase::worldComm().localComm().isend( neighborRank , 0, dataToReSend[neighborRank] );
+        reqs[cptRequest++] = MeshBase::worldComm().localComm().irecv( neighborRank , 0, finalDataToRecv[neighborRank] );
     }
 #endif
     //------------------------------------------------------------------------------------------------//
@@ -2776,7 +2778,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     } // for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
     //------------------------------------------------------------------------------------------------//
 
-    DVLOG(1) << "updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm : finish on rank " << this->worldComm().localRank() << "\n";
+    DVLOG(1) << "updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm : finish on rank " << MeshBase::worldComm().localRank() << "\n";
 
 }
 
@@ -2790,8 +2792,8 @@ Mesh<Shape, T, Tag>::check() const
         return;
 #if !defined( NDEBUG )
     VLOG(2) << "[Mesh::check] numLocalFaces = " << this->numLocalFaces() << "\n";
-    //element_iterator iv = this->beginElementWithProcessId( this->worldComm().localRank() );
-    //element_iterator en = this->endElementWithProcessId( this->worldComm().localRank() );
+    //element_iterator iv = this->beginElementWithProcessId( MeshBase::worldComm().localRank() );
+    //element_iterator en = this->endElementWithProcessId( MeshBase::worldComm().localRank() );
     auto iv = this->beginElement();
     auto en = this->endElement();
     size_type nEltInMesh = std::distance( iv,en );
@@ -2886,7 +2888,7 @@ Mesh<Shape, T, Tag>::findNeighboringProcessors()
 {
     // Don't need to do anything if there is
     // only one processor.
-    if ( this->worldComm().localSize() == 1 )
+    if ( MeshBase::worldComm().localSize() == 1 )
         return;
 
 #ifdef FEELPP_HAS_MPI
@@ -2894,7 +2896,7 @@ Mesh<Shape, T, Tag>::findNeighboringProcessors()
     M_neighboring_processors.clear();
 
     // Get the bounding sphere for the local processor
-    Sphere bounding_sphere = processorBoundingSphere ( *this, this->worldComm().localRank() );
+    Sphere bounding_sphere = processorBoundingSphere ( *this, MeshBase::worldComm().localRank() );
 
     // Just to be sure, increase its radius by 10%.  Sure would suck to
     // miss a neighboring processor!
@@ -2904,7 +2906,7 @@ Mesh<Shape, T, Tag>::findNeighboringProcessors()
     {
         std::vector<double>
         send ( 4,                         0 ),
-             recv ( 4*this->worldComm().localSize(), 0 );
+             recv ( 4*MeshBase::worldComm().localSize(), 0 );
 
         send[0] = bounding_sphere.center()( 0 );
         send[1] = bounding_sphere.center()( 1 );
@@ -2913,10 +2915,10 @@ Mesh<Shape, T, Tag>::findNeighboringProcessors()
 
         MPI_Allgather ( &send[0], send.size(), MPI_DOUBLE,
                         &recv[0], send.size(), MPI_DOUBLE,
-                        this->worldComm().localComm() );
+                        MeshBase::worldComm().localComm() );
 
 
-        for ( unsigned int proc=0; proc<this->worldComm().localSize(); proc++ )
+        for ( unsigned int proc=0; proc<MeshBase::worldComm().localSize(); proc++ )
         {
             const Point center ( recv[4*proc+0],
                                  recv[4*proc+1],
@@ -2931,7 +2933,7 @@ Mesh<Shape, T, Tag>::findNeighboringProcessors()
         }
 
         // Print out the _neighboring_processors list
-        VLOG(2) << "Processor " << this->worldComm().localRank() << " intersects:\n";
+        VLOG(2) << "Processor " << MeshBase::worldComm().localRank() << " intersects:\n";
 
         for ( unsigned int p=0; p< M_neighboring_processors.size(); p++ )
             VLOG(2) << " - proc " << M_neighboring_processors[p] << "\n";
@@ -3123,7 +3125,7 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::encode()
 {
-    //std::cout<<"encode=   " << this->worldComm().localSize() << std::endl;
+    //std::cout<<"encode=   " << MeshBase::worldComm().localSize() << std::endl;
 
     M_enc_pts.clear();
     for( auto pt_it = this->beginPoint(), pt_en = this->endPoint(); pt_it != pt_en; ++pt_it )
@@ -3191,7 +3193,7 @@ Mesh<Shape, T, Tag>::encode()
 
         M_enc_elts[curelt.id()] = elts;
     } // elements
-    //std::cout<<"encode=   " << this->worldComm().localSize() << std::endl;
+    //std::cout<<"encode=   " << MeshBase::worldComm().localSize() << std::endl;
 }
 
 template<typename Shape, typename T, int Tag>
@@ -3199,20 +3201,20 @@ void
 Mesh<Shape, T, Tag>::decode()
 {
 #if 0
-    std::vector<int> mapWorld(this->worldComm().size());
-    for(int cpu=0; cpu < this->worldComm().size(); ++cpu)
+    std::vector<int> mapWorld(MeshBase::worldComm().size());
+    for(int cpu=0; cpu < MeshBase::worldComm().size(); ++cpu)
         mapWorld[cpu] = cpu;
     WorldComm worldcomm(mapWorld);
 
 
 
 
-    // std::cout<<"decode=   " << this->worldComm().size() << std::endl;
+    // std::cout<<"decode=   " << MeshBase::worldComm().size() << std::endl;
     //std::cout<<"decode=   " << worldcomm.subWorldComm().localRank() << std::endl;
     this->setWorldComm(worldcomm.subWorldComm());
 #else
-    LOG(INFO) <<"decode=   " << this->worldComm().size() << "\n" ;
-    LOG(INFO) <<"decode=   " << this->worldComm().subWorldComm().localRank() << "\n";
+    LOG(INFO) <<"decode=   " << MeshBase::worldComm().size() << "\n" ;
+    LOG(INFO) <<"decode=   " << MeshBase::worldComm().subWorldComm().localRank() << "\n";
 #endif
     static const uint16_type npoints_per_face = ( face_type::numVertices*face_type::nbPtsPerVertex+
             face_type::numEdges*face_type::nbPtsPerEdge+
@@ -3244,9 +3246,9 @@ Mesh<Shape, T, Tag>::decode()
         for(int i = 0; i < tags.size(); ++i ) tags[i] = face_it->second[2+i];
         pf.setTags(  tags  );
         pf.setId( this->numFaces() );
-        pf.setProcessIdInPartition( this->worldComm().localRank() );
-        pf.setProcessId( this->worldComm().localRank() );
-        //pf.setIdInPartition( this->worldComm().localRank(),pf.id() );
+        pf.setProcessIdInPartition( MeshBase::worldComm().localRank() );
+        pf.setProcessId( MeshBase::worldComm().localRank() );
+        //pf.setIdInPartition( MeshBase::worldComm().localRank(),pf.id() );
 
         const int shift = face_it->second[1]+1;
         for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
@@ -3266,9 +3268,9 @@ Mesh<Shape, T, Tag>::decode()
         std::vector<int> tags( elt_it->second[1] );
         for(int i = 0; i < tags.size(); ++i ) tags[i] = elt_it->second[2+i];
         pv.setTags(  tags  );
-        pv.setProcessIdInPartition( this->worldComm().localRank() );
-        pv.setProcessId( this->worldComm().localRank() );
-        //pv.setIdInPartition( this->worldComm().localRank(),pv.id() );
+        pv.setProcessIdInPartition( MeshBase::worldComm().localRank() );
+        pv.setProcessId( MeshBase::worldComm().localRank() );
+        //pv.setIdInPartition( MeshBase::worldComm().localRank(),pv.id() );
 
         const int shift = elt_it->second[1]+1;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
@@ -3279,7 +3281,7 @@ Mesh<Shape, T, Tag>::decode()
 #if 0
         __idGmshToFeel=pv.id();
         auto theelt = mesh->elementIterator( pv.id(), pv.partitionId() );
-        mesh->elements().modify( theelt, Feel::detail::updateIdInOthersPartitions( this->worldComm().localRank(), pv.id() ) );
+        mesh->elements().modify( theelt, Feel::detail::updateIdInOthersPartitions( MeshBase::worldComm().localRank(), pv.id() ) );
 #endif
     }
     LOG(INFO) << "distance  elts: "<< std::distance( this->beginElement(), this->endElement() ) << "\n";
@@ -3289,16 +3291,16 @@ Mesh<Shape, T, Tag>::decode()
 
     //this->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     //this->updateForUse();
-    //std::cout<<"decode=   " << this->worldComm().localSize() << std::endl;
+    //std::cout<<"decode=   " << MeshBase::worldComm().localSize() << std::endl;
     this->setSubStructuring(true);
 }
 
 template<typename Shape, typename T, int Tag1, int Tag2=Tag1, int TheTag=Tag1>
-boost::shared_ptr<Mesh<Shape, T, TheTag> >
-merge( boost::shared_ptr<Mesh<Shape, T, Tag1> > m1,
-       boost::shared_ptr<Mesh<Shape, T, Tag2> > m2 )
+std::shared_ptr<Mesh<Shape, T, TheTag> >
+merge( std::shared_ptr<Mesh<Shape, T, Tag1> > m1,
+       std::shared_ptr<Mesh<Shape, T, Tag2> > m2 )
 {
-    boost::shared_ptr<Mesh<Shape, T, TheTag> > m( new Mesh<Shape, T, TheTag> );
+    std::shared_ptr<Mesh<Shape, T, TheTag> > m( new Mesh<Shape, T, TheTag> );
 
     // add the points
 
@@ -3319,7 +3321,7 @@ merge( boost::shared_ptr<Mesh<Shape, T, Tag1> > m1,
     typedef typename Mesh<Shape, T, TheTag>::face_type face_type;
     typedef typename Mesh<Shape, T, TheTag>::element_type element_type;
 
-    auto addface = [&]( boost::shared_ptr<Mesh<Shape, T, TheTag> > m, face_iterator it, size_type shift )
+    auto addface = [&]( std::shared_ptr<Mesh<Shape, T, TheTag> > m, face_iterator it, size_type shift )
         {
             face_type pf = *it;
             pf.disconnect();
@@ -3345,7 +3347,7 @@ merge( boost::shared_ptr<Mesh<Shape, T, Tag1> > m1,
         addface( m, it, shift_p );
     }
     // add the elements
-    auto addelement = [&]( boost::shared_ptr<Mesh<Shape, T, TheTag> > m, element_iterator it, size_type shift_f, size_type shift_p )
+    auto addelement = [&]( std::shared_ptr<Mesh<Shape, T, TheTag> > m, element_iterator it, size_type shift_f, size_type shift_p )
         {
             element_type pf = *it;
 
@@ -3389,7 +3391,7 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 
     typedef typename self_type::element_type element_type;
     typedef typename gm_type::template Context<vm::JACOBIAN|vm::KB|vm::POINT, element_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     BoundingBox<> bb;
 
     typename gm_type::reference_convex_type refelem;

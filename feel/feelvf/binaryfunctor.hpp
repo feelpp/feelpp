@@ -53,7 +53,7 @@ public:
     typedef T2 value_2_type;
     typedef FunctorDomain<value_1_type> functordomain_1_type;
     typedef FunctorDomain<value_2_type> functordomain_2_type;
-    //typedef boost::shared_ptr<functordomain_type> functordomain_ptrtype;
+    //typedef std::shared_ptr<functordomain_type> functordomain_ptrtype;
     /** @name Constructors, destructor
      */
     //@{

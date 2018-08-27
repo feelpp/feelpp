@@ -62,7 +62,7 @@ public:
     typedef Space space_type;
     typedef typename space_type::value_type value_type;
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     static const uint16_type Dim = space_type::nDim;
 
@@ -74,7 +74,7 @@ public:
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
 
     /* space */
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     AdvReact( const space_ptrtype& space,

@@ -465,7 +465,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U 
     auto Xh = this->functionSpace();
     auto mesh = this->mesh();
 
-    if ( !Xh->worldsComm()[0].isActive()) // only on Displacement Proc
+    if ( !Xh->worldsComm()[0]->isActive()) // only on Displacement Proc
         return;
 
     auto u = Xh->element( U, this->rowStartInVector() );

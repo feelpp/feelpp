@@ -530,16 +530,16 @@ protected:
 
     template<typename Elem, typename GM, typename IM>
     void constructQROnFace( Elem const& ref_convex,
-                            boost::shared_ptr<GM> const& __gm,
-                            boost::shared_ptr<IM> const& __qr_face )
+                            std::shared_ptr<GM> const& __gm,
+                            std::shared_ptr<IM> const& __qr_face )
     {
         constructQROnFace( ref_convex, __gm, __qr_face, mpl::bool_<( Convex::nDim > 1 )>() );
     }
 
     template<typename Elem, typename GM, typename IM>
     void constructQROnFace( Elem const& /*ref_convex*/,
-                            boost::shared_ptr<GM> const& /*__gm*/,
-                            boost::shared_ptr<IM> const& /*__qr_face*/,
+                            std::shared_ptr<GM> const& /*__gm*/,
+                            std::shared_ptr<IM> const& /*__qr_face*/,
                             mpl::bool_<false> )
     {
 
@@ -564,22 +564,22 @@ protected:
 
     template<typename Elem, typename GM, typename IM>
     void constructQROnFace( Elem const& ref_convex,
-                            boost::shared_ptr<GM> const& __gm,
-                            boost::shared_ptr<IM> const& __qr_face,
+                            std::shared_ptr<GM> const& __gm,
+                            std::shared_ptr<IM> const& __qr_face,
                             mpl::bool_<true> );
 
     template<typename Elem, typename GM, typename IM>
     void constructQROnEdge( Elem const& ref_convex,
-                            boost::shared_ptr<GM> const& __gm,
-                            boost::shared_ptr<IM> const& __qr_edge )
+                            std::shared_ptr<GM> const& __gm,
+                            std::shared_ptr<IM> const& __qr_edge )
     {
         constructQROnEdge( ref_convex, __gm, __qr_edge, mpl::bool_<( Convex::nDim == 3 )>() );
     }
 
     template<typename Elem, typename GM, typename IM>
     void constructQROnEdge( Elem const& /*ref_convex*/,
-                            boost::shared_ptr<GM> const& /*__gm*/,
-                            boost::shared_ptr<IM> const& /*__qr_edge*/,
+                            std::shared_ptr<GM> const& /*__gm*/,
+                            std::shared_ptr<IM> const& /*__qr_edge*/,
                             mpl::bool_<false> )
     {
 
@@ -604,8 +604,8 @@ protected:
 
     template<typename Elem, typename GM, typename IM>
     void constructQROnEdge( Elem const& ref_convex,
-                            boost::shared_ptr<GM> const& __gm,
-                            boost::shared_ptr<IM> const& __qr_edge,
+                            std::shared_ptr<GM> const& __gm,
+                            std::shared_ptr<IM> const& __qr_edge,
                             mpl::bool_<true> );
 
 protected:
@@ -637,8 +637,8 @@ template<class Convex, typename T>
 template<typename Elem, typename GM, typename IM>
 void
 PointSetQuadrature<Convex,T>::constructQROnFace( Elem const& ref_convex,
-        boost::shared_ptr<GM> const& __gm,
-        boost::shared_ptr<IM> const& __qr_face,
+        std::shared_ptr<GM> const& __gm,
+        std::shared_ptr<IM> const& __qr_face,
         mpl::bool_<true>  )
 {
     M_n_face.resize( Elem::numTopologicalFaces );
@@ -707,8 +707,8 @@ template<class Convex, typename T>
 template<typename Elem, typename GM, typename IM>
 void
 PointSetQuadrature<Convex,T>::constructQROnEdge( Elem const& ref_convex,
-                                                 boost::shared_ptr<GM> const& __gm,
-                                                                    boost::shared_ptr<IM> const& __qr_edge,
+                                                 std::shared_ptr<GM> const& __gm,
+                                                                    std::shared_ptr<IM> const& __qr_edge,
                                                                     mpl::bool_<true>  )
 {
     M_n_edge.resize( Elem::numEdges );
@@ -718,7 +718,7 @@ PointSetQuadrature<Convex,T>::constructQROnEdge( Elem const& ref_convex,
     using edge_pc_type =  typename GM::edge_gm_type::precompute_type;
     using edge_pc_ptrtype =  typename GM::edge_gm_type::precompute_ptrtype;
 
-    edge_pc_ptrtype __geopc = boost::make_shared<edge_pc_type>( __gm->edgeMap(),__qr_edge->points() );
+    edge_pc_ptrtype __geopc = std::make_shared<edge_pc_type>( __gm->edgeMap(),__qr_edge->points() );
 
     for ( uint16_type __f = 0; __f < Elem::numEdges; ++__f )
     {

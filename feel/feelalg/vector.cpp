@@ -33,7 +33,7 @@
 namespace Feel
 {
 template <typename T>
-Vector<T>::Vector( WorldComm const& _worldComm ) :
+Vector<T>::Vector( worldcomm_ptr_t const& _worldComm ) :
     M_is_closed( false ),
     M_is_initialized( false ),
     M_map ( new datamap_type( _worldComm ) )
@@ -56,7 +56,7 @@ Vector<T>::Vector( datamap_ptrtype const& dm ) :
 
 
 template <typename T>
-Vector<T>::Vector ( const size_type n, WorldComm const& _worldComm )
+Vector<T>::Vector ( const size_type n, worldcomm_ptr_t const& _worldComm )
     :
     M_is_closed( false ),
     M_is_initialized( false ),
@@ -68,7 +68,7 @@ Vector<T>::Vector ( const size_type n, WorldComm const& _worldComm )
 template <typename T>
 Vector<T>::Vector ( const size_type n,
                     const size_type n_local,
-                    WorldComm const& _worldComm )
+                    worldcomm_ptr_t const& _worldComm )
     :
     M_is_closed( false ),
     M_is_initialized( false ),
@@ -170,8 +170,8 @@ Vector<T>::addVector ( const Vector<T>& V_in,
 
 template<typename T>
 void
-Vector<T>::addVector ( const boost::shared_ptr<Vector<T> >& V_in,
-                       const boost::shared_ptr<MatrixShell<T> >& A_in )
+Vector<T>::addVector ( const std::shared_ptr<Vector<T> >& V_in,
+                       const std::shared_ptr<MatrixShell<T> >& A_in )
 {
     A_in->multVector( *V_in, *this );
 }

@@ -24,7 +24,7 @@ struct ExprTraits
 
     typedef typename element_type::gm_type gm_type;
     typedef typename gm_type::template Context<ExprType::context|vm::JACOBIAN, element_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<Feel::vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
     typedef typename ExprType::template tensor<map_gmc_type> eval_expr_type;
     typedef typename eval_expr_type::shape shape;

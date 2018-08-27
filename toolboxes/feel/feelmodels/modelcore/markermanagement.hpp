@@ -215,7 +215,7 @@ namespace detail
 
 template <typename MeshType>
 std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> >
-distributeMarkerListOnSubEntity( boost::shared_ptr<MeshType> const& mesh, std::set<std::string> const& listMarker )
+distributeMarkerListOnSubEntity( std::shared_ptr<MeshType> const& mesh, std::set<std::string> const& listMarker )
 {
     std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > res;
     for ( std::string const& marker : listMarker )
@@ -248,7 +248,7 @@ distributeMarkerListOnSubEntity( boost::shared_ptr<MeshType> const& mesh, std::s
 
 template <typename MeshType>
 std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> >
-distributeMarkerListOnSubEntity( boost::shared_ptr<MeshType> const& mesh, std::list<std::string> const& listMarker )
+distributeMarkerListOnSubEntity( std::shared_ptr<MeshType> const& mesh, std::list<std::string> const& listMarker )
 {
     std::set<std::string> setOfMarkers(listMarker.begin(),listMarker.end());
     return distributeMarkerListOnSubEntity( mesh,setOfMarkers );
@@ -256,7 +256,7 @@ distributeMarkerListOnSubEntity( boost::shared_ptr<MeshType> const& mesh, std::l
 
 template <typename MeshType>
 std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> >
-distributeMarkerListOnSubEntity( boost::shared_ptr<MeshType> const& mesh, std::initializer_list< std::list<std::string> > const& listOflistMarker )
+distributeMarkerListOnSubEntity( std::shared_ptr<MeshType> const& mesh, std::initializer_list< std::list<std::string> > const& listOflistMarker )
 {
     std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > res;
     std::set<std::string> setOfMarkers;

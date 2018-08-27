@@ -298,7 +298,7 @@ public :
     DynamicViscosityCarreauYasudaLaw const& carreauYasudaLaw() const { CHECK( this->hasCarreauYasudaLaw() ) << "no CarreauYasudaLaw";return *M_carreauYasudaLaw; }
     DynamicViscosityWalburnSchneckLaw const& walburnSchneckLaw() const { CHECK( this->hasWalburnSchneckLaw() ) << "no WalburnSchneckLaw";return *M_walburnSchneckLaw; }
 
-    void getInfo( boost::shared_ptr<std::ostringstream> ostr ) const
+    void getInfo( std::shared_ptr<std::ostringstream> ostr ) const
         {
             *ostr << "\n          + law : " << this->lawName();
             if ( this->isNewtonianLaw() )
@@ -372,11 +372,11 @@ class FluidMechanicsMaterialProperties
     typedef FluidMechanicsMaterialProperties<SpaceType> self_type;
 public :
     typedef SpaceType space_type;
-    typedef boost::shared_ptr<SpaceType> space_ptrtype;
+    typedef std::shared_ptr<SpaceType> space_ptrtype;
     typedef typename SpaceType::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     FluidMechanicsMaterialProperties( std::string const& prefix )
         :
@@ -504,10 +504,10 @@ public :
 
 
 
-    boost::shared_ptr<std::ostringstream>
+    std::shared_ptr<std::ostringstream>
     getInfo() const
     {
-        boost::shared_ptr<std::ostringstream> ostr( new std::ostringstream() );
+        std::shared_ptr<std::ostringstream> ostr( new std::ostringstream() );
 
         *ostr << "\n   Materials parameters";
         *ostr << "\n     -- number of materials : " << M_rangeMeshElementsByMaterial.size();

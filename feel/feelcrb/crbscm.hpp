@@ -85,7 +85,7 @@ public:
 
     typedef TruthModelType truth_model_type;
     typedef truth_model_type model_type;
-    typedef boost::shared_ptr<truth_model_type> truth_model_ptrtype;
+    typedef std::shared_ptr<truth_model_type> truth_model_ptrtype;
 
     typedef double value_type;
     typedef boost::tuple<double,double> bounds_type;
@@ -119,7 +119,7 @@ public:
     CRBSCM( std::string const& name = "defaultname_crbscm",
             std::string const& ext = "scma",
             bool scm_for_mass_matrix = false,
-            WorldComm const& worldComm = Environment::worldComm() )
+            worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         super( name, ext, worldComm ),
         M_is_initialized( false ),

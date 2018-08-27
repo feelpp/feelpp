@@ -96,7 +96,7 @@ public:
     //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
-    typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
+    typedef typename std::shared_ptr<backend_type> backend_ptrtype ;
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order G_order
     typedef Simplex<3,1> convex_type;
@@ -104,8 +104,8 @@ public:
     typedef Mesh<convex_type> mesh_type;
     typedef Mesh< Simplex<1,1,3> > submesh1d_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef boost::shared_ptr<submesh1d_type> submesh1d_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<submesh1d_type> submesh1d_ptrtype;
 
     //! the basis type of our approximation space
     typedef bases<Nedelec<0,NedelecKind::NED1> > basis_type;
@@ -116,16 +116,16 @@ public:
     typedef FunctionSpace<mesh_type, lagrange_basis_s_type> lagrange_space_s_type;
     typedef FunctionSpace<mesh_type, lagrange_basis_v_type> lagrange_space_v_type;
     //! the approximation function space type (shared_ptr<> type)
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef boost::shared_ptr<lagrange_space_s_type> lagrange_space_s_ptrtype;
-    typedef boost::shared_ptr<lagrange_space_v_type> lagrange_space_v_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<lagrange_space_s_type> lagrange_space_s_ptrtype;
+    typedef std::shared_ptr<lagrange_space_v_type> lagrange_space_v_ptrtype;
     //! an element type of the approximation function space
     typedef typename space_type::element_type element_type;
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     /**
      * Constructor

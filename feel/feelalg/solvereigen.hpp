@@ -60,20 +60,20 @@ public:
     typedef typename type_traits<T>::real_type real_type;
 
     typedef SolverEigen<value_type> solvereigen_type;
-    typedef boost::shared_ptr<solvereigen_type> solvereigen_ptrtype;
+    typedef std::shared_ptr<solvereigen_type> solvereigen_ptrtype;
 
     typedef boost::tuple<size_type, size_type, std::vector<double> > solve_return_type;
 
     typedef Vector<value_type> vector_type;
-    typedef boost::shared_ptr<vector_type> vector_ptrtype;
+    typedef std::shared_ptr<vector_type> vector_ptrtype;
     typedef MatrixSparse<value_type> sparse_matrix_type;
-    typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
+    typedef std::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
 
     typedef boost::tuple<real_type, real_type, vector_ptrtype> eigenpair_type;
     typedef std::map<real_type, eigenpair_type> eigenmodes_type;
 
     typedef DataMap datamap_type;
-    typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
+    typedef std::shared_ptr<datamap_type> datamap_ptrtype;
 
     //@}
 
@@ -117,7 +117,7 @@ public:
      * Builds a \p SolverEigen using the linear solver package
      * specified by \p solver_package
      */
-    static boost::shared_ptr<SolverEigen<value_type> > build( const SolverPackage solver_package = SOLVERS_SLEPC );
+    static std::shared_ptr<SolverEigen<value_type> > build( const SolverPackage solver_package = SOLVERS_SLEPC );
 
     /**
      * Builds a \p SolverEigen using the linear solver package
@@ -125,7 +125,7 @@ public:
      * \param vm variables_map that contains the command line options and their defaults
      * \param prefix string that allows for various options of the same type
      */
-    static boost::shared_ptr<SolverEigen<value_type> > build( po::variables_map const& vm,
+    static std::shared_ptr<SolverEigen<value_type> > build( po::variables_map const& vm,
             std::string const& prefix = std::string() );
 
     /**
@@ -424,7 +424,7 @@ public:
      * number of converged eigenpairs and the number
      * of iterations.
      */
-    solve_return_type solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
+    solve_return_type solve ( std::shared_ptr<MatrixSparse<value_type> > &matrix_A,
                               int nev,
                               int ncv,
                               const double tol,
@@ -451,8 +451,8 @@ public:
      * Bx\f$ and returns the number of converged eigenpairs and the
      * number of iterations.
      */
-    solve_return_type solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
-                              boost::shared_ptr<MatrixSparse<value_type> > &matrix_B,
+    solve_return_type solve ( std::shared_ptr<MatrixSparse<value_type> > &matrix_A,
+                              std::shared_ptr<MatrixSparse<value_type> > &matrix_B,
                               int nev,
                               int ncv,
                               const double tol,
@@ -563,9 +563,9 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
                                  )
                                )
 {
-    typedef boost::shared_ptr<Vector<double> > vector_ptrtype;
-    //boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
-    boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build();
+    typedef std::shared_ptr<Vector<double> > vector_ptrtype;
+    //std::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
+    std::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build();
     eigen->setEigenSolverType( solver );
     eigen->setEigenProblemType( problem );
     eigen->setPositionOfSpectrum( spectrum );
@@ -639,9 +639,9 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename compute_eigs_return_type<Args>::type
                                  )
                                )
 {
-    typedef boost::shared_ptr<Vector<double> > vector_ptrtype;
-    //boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
-    boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build();
+    typedef std::shared_ptr<Vector<double> > vector_ptrtype;
+    //std::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
+    std::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build();
     eigen->setEigenSolverType( (EigenSolverType)EigenMap[solver] );
     eigen->setEigenProblemType( (EigenProblemType)EigenMap[problem] );
     eigen->setPositionOfSpectrum( (PositionOfSpectrum)EigenMap[spectrum] );

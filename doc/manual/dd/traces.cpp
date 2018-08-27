@@ -80,7 +80,7 @@ Traces<Dim,Order>::run()
     unsigned int* send = recv + nbNeighbors;
     MPI_Request* rq = new MPI_Request[2 * nbNeighbors];
     std::string kind = soption(_name = "backend");
-    boost::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build(kind, "", Environment::worldCommSeq());
+    std::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build(kind, "", Environment::worldCommSeq());
     int i = 0;
     for( const size_type neighbor_subdomain : mesh->faceNeighborSubdomains() )
     {

@@ -444,10 +444,9 @@ Environment::Environment( int argc, char** argv,
         M_env = std::make_unique<boost::mpi::environment>(argc, argv, false);
 #endif
     }
-
+    CHECK( M_env->initialized()) << "MPI environment failed to initialize properly.";
     S_argc = argc;
     S_argv = argv;
-    
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
@@ -456,9 +455,9 @@ Environment::Environment( int argc, char** argv,
     cerr.attachWorldComm( S_worldcomm );
     clog.attachWorldComm( S_worldcomm );
 
-    S_desc_app = boost::make_shared<po::options_description>( desc );
-    S_desc_lib = boost::make_shared<po::options_description>( desc_lib );
-    S_desc = boost::make_shared<po::options_description>();
+    S_desc_app = std::make_shared<po::options_description>( desc );
+    S_desc_lib = std::make_shared<po::options_description>( desc_lib );
+    S_desc = std::make_shared<po::options_description>();
     S_desc->add( *S_desc_app );
 
 
@@ -1244,11 +1243,11 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 {
     VLOG( 2 ) << " parsing options...\n";
 
-    boost::shared_ptr<po::parsed_options> parsed;
+    std::shared_ptr<po::parsed_options> parsed;
 
     if ( extra_parser )
     {
-        parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
+        parsed = std::shared_ptr<po::parsed_options>( new po::parsed_options( parser
                  .options( *S_desc )
                  .extra_parser( at_option_parser_2 )
                  .allow_unregistered()
@@ -1258,7 +1257,7 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 
     else
     {
-        parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
+        parsed = std::shared_ptr<po::parsed_options>( new po::parsed_options( parser
                  .options( *S_desc )
                  .allow_unregistered()
                  .run() ) );
@@ -1323,7 +1322,7 @@ Environment::doOptions( int argc, char** argv,
     //std::locale::global(std::locale(""));
     try
     {
-        S_commandLineParser = boost::shared_ptr<po::command_line_parser>( new po::command_line_parser( argc, argv ) );
+        S_commandLineParser = std::shared_ptr<po::command_line_parser>( new po::command_line_parser( argc, argv ) );
         parseAndStoreOptions( po::command_line_parser( argc, argv ), true );
         processGenericOptions();
 
@@ -1335,12 +1334,12 @@ Environment::doOptions( int argc, char** argv,
         {
             std::vector<std::string> cfgsInCaseDir;
             std::string caseDir = S_vm["case"].as<std::string>();
-            RemoteData rdTool( caseDir, worldComm());
+            RemoteData rdTool( caseDir, worldCommPtr());
             if ( rdTool.canDownload() )
             {
-                auto dowloadedFolder = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cases")).string() );
-                CHECK( dowloadedFolder.size() == 1 ) << "download only one folder";
-                caseDir = dowloadedFolder[0];
+                auto downloadedFolder = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cases")).string() );
+                CHECK( downloadedFolder.size() == 1 ) << "download only one folder";
+                caseDir = downloadedFolder[0];
             }
 
             fs::path fscaseDir( caseDir );
@@ -1387,7 +1386,7 @@ Environment::doOptions( int argc, char** argv,
             }
             for ( std::string const& cfgFile : configFilesFromCmd )
             {
-                RemoteData rdTool( cfgFile, worldComm());
+                RemoteData rdTool( cfgFile, worldCommPtr());
                 if ( rdTool.canDownload() )
                 {
                     auto dowloadedData = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cfgs")).string() );
@@ -1988,21 +1987,21 @@ Environment::stopLogging( bool remove )
     }
 }
 
-std::vector<WorldComm> const&
+worldscomm_ptr_t &
 Environment::worldsComm( int n )
 {
     CHECK( S_worldcomm ) << "Environment: worldcomm not allocated\n";
     return S_worldcomm->subWorlds( n );
 }
 
-std::vector<WorldComm> const&
+worldscomm_ptr_t &
 Environment::worldsCommSeq( int n )
 {
     CHECK( S_worldcommSeq ) << "Environment: worldcomm not allocated\n";
     return S_worldcommSeq->subWorlds( n );
 }
 
-std::vector<WorldComm> const&
+worldscomm_ptr_t &
 Environment::worldsCommGroupBySubspace( int n )
 {
 #if 0
@@ -2016,7 +2015,7 @@ Environment::worldsCommGroupBySubspace( int n )
 }
 
 
-WorldComm const&
+worldcomm_t &
 Environment::masterWorldComm( int n )
 {
     return S_worldcomm->masterWorld( n );
@@ -2443,18 +2442,18 @@ char** Environment::S_argv = 0;
 
 AboutData Environment::S_about;
 pt::ptree Environment::S_summary;
-boost::shared_ptr<po::command_line_parser> Environment::S_commandLineParser;
+std::shared_ptr<po::command_line_parser> Environment::S_commandLineParser;
 std::vector<std::tuple<std::string,std::istringstream> > Environment::S_configFiles;
 po::variables_map Environment::S_vm;
-boost::shared_ptr<po::options_description> Environment::S_desc;
-boost::shared_ptr<po::options_description> Environment::S_desc_app;
-boost::shared_ptr<po::options_description> Environment::S_desc_lib;
+std::shared_ptr<po::options_description> Environment::S_desc;
+std::shared_ptr<po::options_description> Environment::S_desc_app;
+std::shared_ptr<po::options_description> Environment::S_desc_lib;
 std::vector<std::string> Environment::S_to_pass_further;
 
 boost::signals2::signal<void()> Environment::S_deleteObservers;
 
-boost::shared_ptr<WorldComm> Environment::S_worldcomm;
-boost::shared_ptr<WorldComm> Environment::S_worldcommSeq;
+std::shared_ptr<WorldComm> Environment::S_worldcomm;
+std::shared_ptr<WorldComm> Environment::S_worldcommSeq;
 boost::uuids::random_generator Environment::S_generator;
 
 std::vector<fs::path> Environment::S_paths = { fs::current_path(),

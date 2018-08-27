@@ -100,7 +100,7 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -111,24 +111,24 @@ public:
     /*mesh*/
     typedef Entity<Dim,1,Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
     typedef bases<Lagrange<Order, Scalar> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type> functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
 
     typedef OperatorLinear<functionspace_type,functionspace_type> oplin_type;
-    typedef boost::shared_ptr<oplin_type> oplin_ptrtype;
+    typedef std::shared_ptr<oplin_type> oplin_ptrtype;
     typedef FsFunctionalLinear<functionspace_type> funlin_type;
-    typedef boost::shared_ptr<funlin_type> funlin_ptrtype;
+    typedef std::shared_ptr<funlin_type> funlin_ptrtype;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     /**
      * Constructor

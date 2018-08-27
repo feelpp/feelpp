@@ -49,7 +49,7 @@ registerPartitioner()
     
 }
 template<typename MeshType>
-void partition( std::string partitioner, boost::shared_ptr<MeshType> mesh, int n_parts )
+void partition( std::string const& partitioner, std::shared_ptr<MeshType> mesh, int n_parts )
 {
     
 

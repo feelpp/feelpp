@@ -496,7 +496,7 @@ projection3d( KDTree::node_type & res,
  * Recursive function wich wrote in latex format the hyperplan associated with a node
  */
 void
-writeDecompositionData( KDTree::Element * tree, boost::shared_ptr<std::ostringstream> __ostr )
+writeDecompositionData( KDTree::Element * tree, std::shared_ptr<std::ostringstream> __ostr )
 {
     if ( ! tree->isleaf() )
     {
@@ -865,7 +865,7 @@ KDTree::writeLatexData( std::string __nameFile )
             return;
     }
 
-    boost::shared_ptr<std::ostringstream> __ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> __ostr( new std::ostringstream() );
     detail::writeDecompositionData( M_tree,__ostr );
     __file << __ostr->str();
 

@@ -94,9 +94,9 @@ class Test_MeshStructured
     void run (double pixelsize) 
         {
             tic();
-            auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
-                                                            Environment::worldComm(),"", false, false);
-
+            auto mesh = std::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
+                                                          Environment::worldCommPtr(),"", false, false);
+            
             mesh->components().reset();
             mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
             mesh->updateForUse();
@@ -130,8 +130,8 @@ class Test_MeshStructured
     void runImage  (double pixelsize) 
         {
 
-            auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
-                                                            Environment::worldComm(),"", false, false);
+            auto mesh = std::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
+                                                          Environment::worldCommPtr(),"", false, false);
             mesh->components().reset();
             mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
             mesh->updateForUse();
@@ -167,12 +167,12 @@ class Test_MeshStructured
             auto y = readHBF( hbf2 );
             auto z = readHBF( solution );
 
-            auto mesh = boost::make_shared<MeshStructured>( x.rows(),
+            auto mesh = std::make_shared<MeshStructured>( x.rows(),
                                                             x.cols(),
                                                             pixelsize,
                                                             cx,cy,
                                                             /*NULL,*/
-                                                            Environment::worldComm(),
+                                                            Environment::worldCommPtr(),
                                                             "",
                                                             false,
                                                             false);
@@ -212,8 +212,8 @@ class Test_MeshStructured
         {
             tic();
             Feel::cout << "[nbPt X] x [nbPt Y] = " << ima.rows() << "\t" << ima.cols() << std::endl;
-            auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
-                                                            Environment::worldComm(),"", false, false);
+            auto mesh = std::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
+                                                          Environment::worldCommPtr(),"", false, false);
             Feel::cout <<"  mesh->numGlobalElements() " << mesh->numGlobalElements() << std::endl;
             Feel::cout <<"  mesh->numGlobalPoints()   " << mesh->numGlobalPoints()   << std::endl;
             mesh->components().reset();

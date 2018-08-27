@@ -55,12 +55,12 @@ template<typename MeshType >
 class ConverterAcusimDatabase
 {
     typedef MeshType mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<1, Vectorial,Continuous> > > space_vectorial_P1_type;
-    typedef boost::shared_ptr<space_vectorial_P1_type> space_vectorial_P1_ptrtype;
+    typedef std::shared_ptr<space_vectorial_P1_type> space_vectorial_P1_ptrtype;
     typedef typename space_vectorial_P1_type::component_functionspace_type space_scalar_P1_type;
-    typedef boost::shared_ptr<space_scalar_P1_type> space_scalar_P1_ptrtype;
+    typedef std::shared_ptr<space_scalar_P1_type> space_scalar_P1_ptrtype;
 public :
 
     ConverterAcusimDatabase()
@@ -136,7 +136,7 @@ private :
 
     template<typename SpaceType>
     void
-    generateDofMappingP1( boost::shared_ptr<SpaceType> const& space );
+    generateDofMappingP1( std::shared_ptr<SpaceType> const& space );
 
     template<typename ElementType>
     void
@@ -148,11 +148,11 @@ private :
 
     template<typename SpaceType>
     void
-    runSaveFieldInTimeSet( boost::shared_ptr<SpaceType> const& space, std::string const& fieldName, int fieldIndex );
+    runSaveFieldInTimeSet( std::shared_ptr<SpaceType> const& space, std::string const& fieldName, int fieldIndex );
 
     template<typename SpaceType>
     void
-    runSaveFieldInTimeSet( boost::shared_ptr<SpaceType> const& space, std::string const& fieldName, int fieldIndex, int nComp1, int nComp2 );
+    runSaveFieldInTimeSet( std::shared_ptr<SpaceType> const& space, std::string const& fieldName, int fieldIndex, int nComp1, int nComp2 );
 private :
 
     fs::path M_acusimRepository;
@@ -307,7 +307,7 @@ ConverterAcusimDatabase<MeshType>::run()
 template <typename MeshType>
 template<typename SpaceType>
 void
-ConverterAcusimDatabase<MeshType>::runSaveFieldInTimeSet( boost::shared_ptr<SpaceType> const& space, std::string const& fieldName, int fieldIndex )
+ConverterAcusimDatabase<MeshType>::runSaveFieldInTimeSet( std::shared_ptr<SpaceType> const& space, std::string const& fieldName, int fieldIndex )
 {
     int outVarDim = space->nComponents;
     double * outFieldValues = new double[M_nNodes*outVarDim];
@@ -331,7 +331,7 @@ ConverterAcusimDatabase<MeshType>::runSaveFieldInTimeSet( boost::shared_ptr<Spac
 template <typename MeshType>
 template<typename SpaceType>
 void
-ConverterAcusimDatabase<MeshType>::runSaveFieldInTimeSet( boost::shared_ptr<SpaceType> const& space, std::string const& fieldName, int fieldIndex, int nComp1, int nComp2 )
+ConverterAcusimDatabase<MeshType>::runSaveFieldInTimeSet( std::shared_ptr<SpaceType> const& space, std::string const& fieldName, int fieldIndex, int nComp1, int nComp2 )
 {
     std::vector<std::string> compIdToCompName = { "X","Y","Z" };
     int nComp = nComp1*nComp2;
@@ -395,7 +395,7 @@ ConverterAcusimDatabase<MeshType>::loadMesh()
     if ( !this->worldComm().isMasterRank() )
         return mesh;
 
-    mesh.reset( new mesh_type( Environment::worldCommSeq() ) );
+    mesh.reset( new mesh_type( Environment::worldCommSeqPtr() ) );
     //-------------------------------------------------------------//
     // load mesh points
     //-------------------------------------------------------------//
@@ -593,7 +593,7 @@ ConverterAcusimDatabase<MeshType>::loadFieldInfo()
 template <typename MeshType>
 template<typename SpaceType>
 void
-ConverterAcusimDatabase<MeshType>::generateDofMappingP1( boost::shared_ptr<SpaceType> const& space )
+ConverterAcusimDatabase<MeshType>::generateDofMappingP1( std::shared_ptr<SpaceType> const& space )
 {
     auto mesh = space->mesh();
     auto doftable = space->dof();

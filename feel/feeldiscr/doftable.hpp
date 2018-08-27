@@ -157,7 +157,7 @@ public:
     using self_type = DofTable<MeshType, FEType, PeriodicityType, MortarType>;
     using doftable_type = self_type;
 
-    typedef boost::shared_ptr<FEType> fe_ptrtype;
+    typedef std::shared_ptr<FEType> fe_ptrtype;
     typedef MortarType mortar_type;
     static const bool is_mortar = mortar_type::is_mortar;
     typedef typename fe_type::SSpace::type mortar_fe_type;
@@ -1032,7 +1032,7 @@ public:
     /**
      * build the dof map
      */
-    void build( boost::shared_ptr<mesh_type>& M )
+    void build( std::shared_ptr<mesh_type>& M )
         {
             this->build( *M );
         }
@@ -2693,7 +2693,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
 
     DVLOG(2) << "[Dof::generateDofPoints] mortar case, generating dof coordinates\n";
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
-    typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
+    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
     typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
     typedef typename fe_type::template Context<vm::POINT, mortar_fe_type, gm_type, element_type> mfecontext_type;
@@ -2847,7 +2847,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
-    typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
+    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
 #if 0
     auto rangeElements = M.elementsWithProcessId( M.worldComm().localRank() );
@@ -2962,7 +2962,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoin
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
-    typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
+    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
     typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
 

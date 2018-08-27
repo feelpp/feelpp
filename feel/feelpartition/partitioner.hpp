@@ -45,7 +45,7 @@ class Partitioner
 public:
     
     using mesh_type = decay_type<MeshType>;
-    using mesh_ptrtype = boost::shared_ptr<mesh_type>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
     using partitioner_type = Partitioner<mesh_type>;
     using clone_ptrtype = std::unique_ptr<partitioner_type>;
 

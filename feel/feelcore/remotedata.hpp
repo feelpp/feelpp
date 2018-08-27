@@ -40,13 +40,18 @@ struct RemoteData
     struct ItemInfo;
     struct FileInfo;
 
-    RemoteData( std::string const& desc, WorldComm const& worldComm = Environment::worldComm() );
+    RemoteData( std::string const& desc, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    FEELPP_DEPRECATED RemoteData( std::string const& desc, WorldComm const& worldComm ) : RemoteData( desc, const_cast<WorldComm&>(worldComm).shared_from_this() ) {}
     RemoteData( RemoteData const& ) = default;
     RemoteData( RemoteData && ) = default;
-
+    ~RemoteData() = default;
+    
     //! return world comm
-    WorldComm const& worldComm() const { return M_worldComm; }
+    WorldComm & worldComm() const { return *M_worldComm; }
 
+    //! set the WorldComm
+    void setWorldComm( WorldComm & wc ) { M_worldComm = wc.shared_from_this(); }
+    
     //! return true if enough information are available for download a file
     bool canDownload() const;
 
@@ -91,15 +96,29 @@ struct RemoteData
     std::vector<std::pair<std::string,std::string>>
     createFolder( std::string const& folderPath, std::string const& parentId = "", bool sync = true ) const;
 
+    //! Content info data structure
+    class ContentsInfo: public std::tuple<std::vector<std::shared_ptr<FolderInfo>>,std::vector<std::shared_ptr<ItemInfo>>,std::vector<std::shared_ptr<FileInfo>>>
+    {
+    public:
+        using base =  std::tuple<std::vector<std::shared_ptr<FolderInfo>>,std::vector<std::shared_ptr<ItemInfo>>,std::vector<std::shared_ptr<FileInfo>>>;
+        ContentsInfo() = default;
+        explicit ContentsInfo( base const& b ) : base ( b ) {}
+        ~ContentsInfo() = default;
+
+        std::vector<std::shared_ptr<FolderInfo>> folderInfo() { return std::get<0>( *this ); }
+        std::vector<std::shared_ptr<ItemInfo>> itemInfo() { return std::get<1>( *this ); }
+        std::vector<std::shared_ptr<FileInfo>> fileInfo() { return std::get<2>( *this ); }
+    };
+    
     //! get contents of a remote data (folder,item,file)
     //! @return : (Folders info,Items info, Files info)
-    std::tuple<std::vector<std::shared_ptr<FolderInfo>>,std::vector<std::shared_ptr<ItemInfo>>,std::vector<std::shared_ptr<FileInfo>>>
-    contents() const;
+    ContentsInfo contents() const;
 
+    
     class URL
     {
     public :
-        URL( std::string const& url, WorldComm const& worldComm = Environment::worldComm() );
+        URL( std::string const& url, WorldComm & worldComm = Environment::worldComm() );
         URL( URL const& ) = default;
         URL( URL && ) = default;
 
@@ -112,7 +131,7 @@ struct RemoteData
         //! @return : the path of the downloaded file
         std::string download( std::string const& dir = Environment::downloadsRepository(), std::string const& filename = "" ) const;
     private :
-        WorldComm const& M_worldComm;
+        std::shared_ptr<WorldComm> M_worldComm;
         std::string M_url;
         std::string M_protocol, M_domain, M_port, M_path, M_query;
     };
@@ -122,7 +141,7 @@ struct RemoteData
     public :
         //! init from a description :
         //!   github:{owner:feelpp,repo:feelpp,branch:develop,path:toolboxes/fluid/TurekHron,token:xxxxx}
-        Github( std::string const& desc, WorldComm const& worldComm = Environment::worldComm() );
+        Github( std::string const& desc, WorldComm & worldComm = Environment::worldComm() );
         Github( Github const& ) = default;
         Github( Github && ) = default;
 
@@ -139,7 +158,7 @@ struct RemoteData
 
         static std::string errorMessage( pt::ptree const& ptree, std::string const& defaultMsg = "", uint16_type statusCode = invalid_uint16_type_value );
     private :
-        WorldComm const& M_worldComm;
+        std::shared_ptr<WorldComm> M_worldComm;
         std::string M_owner, M_repo, M_branch, M_path, M_token;
     };
 
@@ -149,7 +168,7 @@ struct RemoteData
         //! init from a description : github:{owner:feelpp,repo:feelpp,branch:develop,path:toolboxes/fluid/TurekHron,token:xxxxx}
         //!   girder:{url:https://girder.math.unistra.fr,file:5ac722e9b0e9574027047886,token:xxxxx}
         //!   girder:{url:https://girder.math.unistra.fr,file:[5ac7253ab0e957402704788d,5ac722e9b0e9574027047886],token:xxxxx}
-        Girder( std::string const& desc, WorldComm const& worldComm = Environment::worldComm() );
+        Girder( std::string const& desc, WorldComm & worldComm = Environment::worldComm() );
         Girder( Girder const& ) = default;
         Girder( Girder && ) = default;
 
@@ -229,7 +248,7 @@ struct RemoteData
 
         static std::string errorMessage( pt::ptree const& ptree, std::string const& defaultMsg = "", uint16_type statusCode = invalid_uint16_type_value );
     private :
-        WorldComm const& M_worldComm;
+        std::shared_ptr<WorldComm> M_worldComm;
         std::string M_url, M_apiKey, M_token;
         std::set<std::string> M_fileIds, M_folderIds, M_itemIds;
     };
@@ -311,7 +330,7 @@ struct RemoteData
     };
 
 private :
-    WorldComm const& M_worldComm;
+    std::shared_ptr<WorldComm> M_worldComm;
     boost::optional<URL> M_url;
     boost::optional<Github> M_github;
     boost::optional<Girder> M_girder;

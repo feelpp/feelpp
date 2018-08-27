@@ -30,7 +30,7 @@
 #define __importer_H 1
 
 #include <feel/feelcore/visitor.hpp>
-#include <feel/feelcore/worldcomm.hpp>
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelfilters/enums.hpp>
 
 
@@ -49,11 +49,13 @@ namespace Feel
 template<typename MeshType>
 class FEELPP_EXPORT Importer
     :
-public VisitorBase,
-public Visitor<MeshType>
+        public CommObject,
+        public VisitorBase,
+        public Visitor<MeshType>
 {
-public:
+  public:
 
+    using super = CommObject;
     typedef MeshType mesh_type;
     typedef typename mesh_type::point_type point_type;
     typedef typename point_type::node_type node_type;
@@ -66,13 +68,13 @@ public:
      */
     Importer( MeshFormat const& _format = GMSH, 
               FileType t = ASCII,
-              WorldComm const& _worldcomm = Environment::worldComm() )
+              worldcomm_ptr_t const& _worldcomm = Environment::worldCommPtr() )
         :
-        M_worldComm( _worldcomm ),
+        super( _worldcomm ),
         M_filename(),
         M_format( _format ),
         M_file_type( t )
-    {}
+        {}
 
     /**
      * constructor
@@ -82,13 +84,13 @@ public:
     Importer( std::string const& _filename,  
               MeshFormat const& _format = GMSH, 
               FileType const& _file_type = ASCII, 
-              WorldComm const& _worldcomm = Environment::worldComm() )
+              worldcomm_ptr_t const& _worldcomm = Environment::worldCommPtr() )
         :
-        M_worldComm( _worldcomm ),
+        super( _worldcomm ),
         M_filename( _filename ),
         M_format( _format ),
         M_file_type( _file_type )
-    {}
+        {}
 
     virtual ~Importer()
     {}
@@ -137,22 +139,11 @@ public:
     }
 
     /**
-     * \return the world comm
-     */
-    WorldComm const& worldComm() const
-    {
-        return M_worldComm;
-    }
-
-    /**
      * file type see \p FileType
      */
     FileType fileType() const { return M_file_type; }
 
-private:
-
-    //! communicator
-    WorldComm M_worldComm;
+  private:
 
     //! name of the file to import
     std::string M_filename;

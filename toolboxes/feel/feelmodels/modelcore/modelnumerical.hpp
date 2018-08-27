@@ -71,15 +71,15 @@ class ModelNumerical : public ModelAlgebraic
         typedef vf::BlocksBase<size_type> block_pattern_type;
 
 
-        ModelNumerical( std::string const& _theprefix, WorldComm const& _worldComm=WorldComm(), std::string const& subPrefix="",
+        ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(), std::string const& subPrefix="",
                         ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
         ModelNumerical( ModelNumerical const& app ) = default;
 
         virtual ~ModelNumerical() {};
 
-        //boost::shared_ptr<PsLogger> psLogger()  { return M_PsLogger; }
-        //boost::shared_ptr<PsLogger> const& psLogger() const { return M_PsLogger; }
+        //std::shared_ptr<PsLogger> psLogger()  { return M_PsLogger; }
+        //std::shared_ptr<PsLogger> const& psLogger() const { return M_PsLogger; }
 
         bool isStationary() const { return M_isStationary; }
         void setStationary(bool b);
@@ -177,7 +177,7 @@ class ModelNumerical : public ModelAlgebraic
         ModelMeasuresIO M_postProcessMeasuresIO;
         ModelMeasuresEvaluatorContext M_postProcessMeasuresEvaluatorContext;
 
-        //boost::shared_ptr<PsLogger> M_PsLogger;
+        //std::shared_ptr<PsLogger> M_PsLogger;
 
         GeomapStrategyType M_geomap;
 
