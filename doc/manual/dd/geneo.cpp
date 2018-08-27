@@ -69,20 +69,20 @@ static inline unsigned short assignRBM(double**& ev, NullSpace<double>& ns, std:
     return modes.size();
 }
 template<uint16_type Dim, uint16_type Order>
-static inline unsigned short generateRBM(double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh, NullSpace<double>& ns) {
+static inline unsigned short generateRBM(double**& ev, std::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh, NullSpace<double>& ns) {
     return assignRBM(ev, ns, { Vh->element(cst(1.0)) });
 }
 template<uint16_type Order>
-static inline unsigned short generateRBM(double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh, NullSpace<double>& ns) {
+static inline unsigned short generateRBM(double**& ev, std::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh, NullSpace<double>& ns) {
     return assignRBM(ev, ns, { Vh->element(oneX()), Vh->element(oneY()), Vh->element(vec(Py(), -Px())) });
 }
 template<uint16_type Order>
-static inline unsigned short generateRBM(double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh, NullSpace<double>& ns) {
+static inline unsigned short generateRBM(double**& ev, std::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh, NullSpace<double>& ns) {
     return assignRBM(ev, ns, { Vh->element(oneX()), Vh->element(oneY()), Vh->element(oneZ()),
                                Vh->element(vec(Py(), -Px(), cst(0.0))), Vh->element(vec(-Pz(), cst(0.0), Px())), Vh->element(vec(cst(0.0), Pz(), -Py())) });
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type>
-static inline void coefficients(double* r, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>>& Vh) {
+static inline void coefficients(double* r, std::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>>& Vh) {
     auto x = Vh->element();
     if(!std::is_same<Type<Dim>, Vectorial<Dim>>::value) {
         kappa k;
@@ -98,7 +98,7 @@ static inline void coefficients(double* r, boost::shared_ptr<FunctionSpace<Mesh<
     std::copy(x.begin(), x.end(), r);
 }
 template<uint16_type Dim, uint16_type Order>
-static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh) {
+static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, std::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh) {
     typename FunctionSpace<typename Mesh<Simplex<Dim>>::mesh_type, bases<Lagrange<Order, Scalar>>>::element_type u = Vh->element(), v = Vh->element();
     kappa k;
     k.val = doption("parameters.kappa");
@@ -110,7 +110,7 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     A->close();
 }
 template<uint16_type Order>
-static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
+static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, std::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
     typename FunctionSpace<typename Mesh<Simplex<2>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type u = Vh->element(), v = Vh->element();
     stripes s;
     s.first  = doption("parameters.epsilon");
@@ -135,7 +135,7 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     A->close();
 }
 template<uint16_type Order>
-static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
+static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, std::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
     typename FunctionSpace<typename Mesh<Simplex<3>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type u = Vh->element(), v = Vh->element();
     stripes s;
     s.first  = doption("parameters.epsilon");
@@ -173,7 +173,7 @@ void Geneopp<Dim, Order, Type>::run()
     static_assert(Dim == 2 || Dim == 3, "Wrong dimension");
     HPDDM::Option& opt = *HPDDM::Option::get();
     mpi::timer time;
-    boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
+    std::shared_ptr<Mesh<Simplex<Dim>>> mesh;
     NullSpace<double> ns;
     double** ev;
 #ifdef FEELPP_HAS_HPDDM
@@ -241,7 +241,7 @@ void Geneopp<Dim, Order, Type>::run()
         {
             std::vector<std::vector<int>> map(mesh->neighborSubdomains().size());
             std::string kind = soption(_name = "backend");
-            boost::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build(kind, "", Environment::worldCommSeq());
+            std::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build(kind, "", Environment::worldCommSeq());
             Backend<double>::vector_ptrtype f = ptr_backend->newVector(VhLocal);
 #pragma omp parallel for shared(map) schedule(static, 4)
             for(int i = 0; i < map.size(); ++i) { // faces
@@ -479,7 +479,7 @@ void Geneopp<Dim, Order, Type>::run()
             if(ioption("v") > 2) {
 #endif
                 time.restart();
-                boost::shared_ptr<Backend<double>> ptr_global = Backend<double>::build("petsc", "", wComm);
+                std::shared_ptr<Backend<double>> ptr_global = Backend<double>::build("petsc", "", wComm);
                 auto D = ptr_global->newMatrix(VhVisu, VhVisu);
                 auto F = ptr_global->newVector(VhVisu);
                 assemble(D, F, VhVisu);

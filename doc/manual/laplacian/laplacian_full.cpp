@@ -143,7 +143,7 @@ public:
 #endif
         /*space*/
         typedef FunctionSpace<mesh_type, basis_type, Conti, value_type> type;
-        typedef boost::shared_ptr<type> ptrtype;
+        typedef std::shared_ptr<type> ptrtype;
         typedef typename type::element_type element_type;
         //typedef typename element_type::template sub_element<0>::type element_0_type;
         //typedef typename element_type::template sub_element<1>::type element_1_type;

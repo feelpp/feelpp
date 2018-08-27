@@ -94,7 +94,7 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -105,11 +105,11 @@ public:
     /*mesh*/
     typedef Entity<Dim, 1,Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef Entity<1, 1,Dim> line_entity_type;
     typedef Mesh<line_entity_type> line_mesh_type;
-    typedef boost::shared_ptr<line_mesh_type> line_mesh_ptrtype;
+    typedef std::shared_ptr<line_mesh_type> line_mesh_ptrtype;
 
     typedef DiscontinuousInterfaces<fusion::vector<mpl::vector<mpl::int_<4>, mpl::int_<6>, mpl::int_<7> > > > discontinuity_type;
     typedef bases<Lagrange<Order, Scalar, discontinuity_type> > basis_type;
@@ -117,19 +117,19 @@ public:
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type> functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef FunctionSpace<mesh_type, vectorial_basis_type> vectorial_functionspace_type;
-    typedef boost::shared_ptr<vectorial_functionspace_type> vectorial_functionspace_ptrtype;
+    typedef std::shared_ptr<vectorial_functionspace_type> vectorial_functionspace_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
 
     typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar, Discontinuous> > > p0_space_type;
-    typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
+    typedef std::shared_ptr<p0_space_type> p0_space_ptrtype;
     typedef typename p0_space_type::element_type p0_element_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     /** constructor */
     ResistanceLaplacian();
