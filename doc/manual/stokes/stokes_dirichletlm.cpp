@@ -1,13 +1,12 @@
 // -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
 #include <feel/feel.hpp>
-#include <feel/feelalg/vectorblock.hpp>
 
 namespace Feel
 {
 
 template <uint16_type OrderGeo>
-boost::shared_ptr<Mesh<Simplex<2,OrderGeo> > >
+std::shared_ptr<Mesh<Simplex<2,OrderGeo> > >
 createMeshStokesDirichletLM( mpl::int_<2> /**/ )
 {
     typedef Mesh<Simplex<2,OrderGeo> > mesh_type;
@@ -27,7 +26,7 @@ createMeshStokesDirichletLM( mpl::int_<2> /**/ )
 
 
 template <uint16_type OrderGeo>
-boost::shared_ptr<Mesh<Simplex<3,OrderGeo> > >
+std::shared_ptr<Mesh<Simplex<3,OrderGeo> > >
 createMeshStokesDirichletLM( mpl::int_<3> /**/ )
 {
     typedef Mesh<Simplex<3,OrderGeo> > mesh_type;
