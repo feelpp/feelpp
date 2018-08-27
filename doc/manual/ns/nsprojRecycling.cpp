@@ -13,10 +13,10 @@ using namespace Feel;
 
 struct CustomOperator : HPDDM::EmptyOperator<double> {
     Mat                                            _A;
-    boost::shared_ptr<PreconditionerPetsc<double>> _P;
+    std::shared_ptr<PreconditionerPetsc<double>> _P;
     Vec                                          _rhs;
     Vec                                         _work;
-    CustomOperator(Mat A, boost::shared_ptr<PreconditionerPetsc<double>> P) : HPDDM::EmptyOperator<double>(0), _A(A), _P(P) {
+    CustomOperator(Mat A, std::shared_ptr<PreconditionerPetsc<double>> P) : HPDDM::EmptyOperator<double>(0), _A(A), _P(P) {
         int n, N;
         MatGetLocalSize(_A, &n, NULL);
         HPDDM::EmptyOperator<double>::_n = n;
@@ -106,7 +106,7 @@ int main(int argc, char**argv )
     auto pnm1  = Ph->element( "p" );
     auto q   = Ph->element( "q" );
 
-    boost::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build("petsc");
+    std::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build("petsc");
 
     auto poiseuille = vec( 4*0.3*Py()*(0.41-Py())/(0.41*0.41),cst(0.) );
 

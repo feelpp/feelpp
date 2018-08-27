@@ -130,7 +130,7 @@ public:
     /*mesh*/
     typedef Entity<Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Discontinuous > p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
@@ -140,12 +140,12 @@ public:
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     /* BDF discretization */
     typedef Bdf<space_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -197,7 +197,7 @@ private:
     // average file
     std::ofstream out;
     double Tavg, Tgamma1;
-    boost::shared_ptr<export_type> M_exporter;
+    std::shared_ptr<export_type> M_exporter;
 
 }; // HeatSink class
 
