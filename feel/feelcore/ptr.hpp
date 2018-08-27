@@ -32,7 +32,7 @@ namespace Feel
 {
 namespace detail
 {
-BOOST_DETAIL_IS_XXX_DEF( shared_ptr, boost::shared_ptr, 1 )
+BOOST_DETAIL_IS_XXX_DEF( shared_ptr, std::shared_ptr, 1 )
 }
 }
 #endif

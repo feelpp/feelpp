@@ -45,16 +45,17 @@ class FSIMesh
 public :
 
     typedef Mesh<ConvexType> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type mesh_fluid_type;
     typedef mesh_type mesh_solid_type;
     typedef typename mesh_fluid_type::shape_type shape_fluid_type;
     typedef typename mesh_solid_type::shape_type shape_solid_type;
 
-    FSIMesh( std::string prefix, WorldComm const& worldcomm = Environment::worldComm() );
+    FSIMesh( std::string prefix, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() );
 
     std::string prefix() const { return M_prefix; }
-    WorldComm const& worldComm() const { return M_worldComm; }
+    WorldComm & worldComm() { return *M_worldComm; }
+    WorldComm const& worldComm() const { return *M_worldComm; }
 
     fs::path const& geoPathFSI() const { return M_geoPathFSI; }
     fs::path const& mshPathFSI() const { return M_mshPathFSI; }
@@ -100,7 +101,7 @@ public :
 private :
 
     std::string M_prefix;
-    WorldComm M_worldComm;
+    std::shared_ptr<WorldComm> M_worldComm;
     fs::path M_geoPathFSI,M_mshPathFSI;
     fs::path M_mshfilepathFluidPartN,M_mshfilepathFluidPart1;
     fs::path M_mshfilepathSolidPartN,M_mshfilepathSolidPart1;

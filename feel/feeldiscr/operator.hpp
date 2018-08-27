@@ -51,10 +51,10 @@ public:
 
     typedef typename domain_space_type::value_type value_type;
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
-    typedef boost::shared_ptr<domain_space_type> domain_space_ptrtype;
-    typedef boost::shared_ptr<dual_image_space_type>
+    typedef std::shared_ptr<domain_space_type> domain_space_ptrtype;
+    typedef std::shared_ptr<dual_image_space_type>
     dual_image_space_ptrtype;
     typedef typename domain_space_type::element_type domain_element_type;
     typedef FsFunctionalLinear<dual_image_space_type> image_element_type;

@@ -54,8 +54,8 @@ BlocksBaseSparseMatrix<T>::close()
 {
     if ( this->isClosed() ) return;
 
-    std::vector<boost::shared_ptr<DataMap> > dataMapRowRef(this->nRow());
-    std::vector<boost::shared_ptr<DataMap> > dataMapColRef(this->nCol());
+    std::vector<std::shared_ptr<DataMap> > dataMapRowRef(this->nRow());
+    std::vector<std::shared_ptr<DataMap> > dataMapColRef(this->nCol());
 
     // search a reference row datamap foreach row
     for ( index_type i=0 ; i<this->nRow() ;++i)
@@ -432,7 +432,7 @@ MatrixBlockBase<T>::transpose( MatrixSparse<value_type>& Mt, size_type options )
 
 template <typename T>
 void
-MatrixBlockBase<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j )
+MatrixBlockBase<T>::updateBlockMat( std::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j )
 {
     M_mat->updateBlockMat( m,start_i,start_j );
 }

@@ -65,7 +65,7 @@ public:
 
     /* mesh */
     typedef Mesh<ENTITY<Dim > > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptr_type;
+    typedef std::shared_ptr<mesh_type> mesh_ptr_type;
 
     /* bases */
     typedef bases<Lagrange<uOrder, Vectorial, Continuous>,
@@ -74,19 +74,19 @@ public:
 
     /* spaces */
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef space_type::element_type element_type;
 
     typedef element_type::sub_element<0>::type::functionspace_type space_U_type;
-    typedef boost::shared_ptr<space_U_type> space_U_ptrtype;
+    typedef std::shared_ptr<space_U_type> space_U_ptrtype;
     typedef space_U_type::element_type element_U_type;
 
     typedef element_type::sub_element<1>::type::functionspace_type space_p_type;
-    typedef boost::shared_ptr<space_p_type> space_p_ptrtype;
+    typedef std::shared_ptr<space_p_type> space_p_ptrtype;
     typedef space_p_type::element_type element_p_type;
 
     typedef FunctionSpace<mesh_type, basis_i_type, value_type> space_i_type;
-    typedef boost::shared_ptr<space_i_type> space_i_ptrtype;
+    typedef std::shared_ptr<space_i_type> space_i_ptrtype;
     typedef space_i_type::element_type element_i_type;
 
     /* quadrature for postprocessing */
@@ -99,7 +99,7 @@ public:
     // linear algebra backends
     //typedef BackendAdaptiveReusePC<Backend<value_type> > backend_type;
     typedef Backend<value_type > backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     Kovasznay( int argc, char** argv, AboutData const& ad );
 
@@ -149,7 +149,7 @@ private:
     double M_meshSize;
     double M_nu;
 
-    boost::shared_ptr<export_type> M_exporter;
+    std::shared_ptr<export_type> M_exporter;
 
     std::map<std::string,std::pair<boost::timer,double> > M_timers;
 

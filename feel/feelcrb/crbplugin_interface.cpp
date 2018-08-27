@@ -45,7 +45,7 @@ public:
 struct CRBPluginManager : public  Feel::Singleton<CRBPluginManagerImpl> {};
 }
 
-boost::shared_ptr<CRBPluginAPI>
+std::shared_ptr<CRBPluginAPI>
 factoryCRBPlugin( std::string const& pluginname, std::string const& pluginlibname, std::string const& dirname )
 {
     auto p = Feel::detail::CRBPluginManager::instance().find( pluginname );

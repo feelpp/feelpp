@@ -26,11 +26,28 @@
 # pyfeelpp
 #
 
-if ( FEELPP_ENABLE_PYFEELPP )
-  if ( EXISTS ${CMAKE_SOURCE_DIR}/pyfeelpp/CMakeLists.txt )
+if ( FEELPP_ENABLE_PYFEELPP_LIBFEELPP )
+  if ( EXISTS ${CMAKE_SOURCE_DIR}/pyfeelpp/setup.py )
     SET(FEELPP_HAS_PYFEELPP 1)
-    SET(FEELPP_ENABLED_MODULES "${FEELPP_ENABLED_MODULES} PyFeelpp" )
-    ADD_DEFINITIONS( -DFEELPP_HAS_PYFEELPP )
+    SET(FEELPP_ENABLED_MODULES "${FEELPP_ENABLED_MODULES} pyfeelpp" )
+  else()
+    MESSAGE(WARNING "[feelpp] PyFeelpp was not found on your system. Either install it or set FEELPP_ENABLE_PYFEELPP to OFF.")
+  endif() 
+endif()
+
+if ( FEELPP_ENABLE_PYFEELPP_TOOLBOXES )
+  if ( EXISTS ${CMAKE_SOURCE_DIR}/pyfeelpp-toolboxes/setup-toolboxes.py )
+    SET(FEELPP_HAS_PYFEELPP 1)
+    SET(FEELPP_ENABLED_MODULES "${FEELPP_ENABLED_MODULES} pyfeelpp-toolboxes" )
+  else()
+    MESSAGE(WARNING "[feelpp] PyFeelpp Toolboxes source was not found on your system. Either install it or set FEELPP_ENABLE_PYFEELPP to OFF.")
+  endif() 
+endif()
+
+if ( FEELPP_ENABLE_PYFEELPP_MOR )
+  if ( EXISTS ${CMAKE_SOURCE_DIR}/pyfeelpp-mor/setup-mor.py )
+    SET(FEELPP_HAS_PYFEELPP 1)
+    SET(FEELPP_ENABLED_MODULES "${FEELPP_ENABLED_MODULES} pyfeelpp-mor" )
   else()
     MESSAGE(WARNING "[feelpp] PyFeelpp was not found on your system. Either install it or set FEELPP_ENABLE_PYFEELPP to OFF.")
   endif() 

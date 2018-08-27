@@ -38,25 +38,25 @@ namespace FeelModels
 
 
 template< typename MeshType, int Order >
-Winslow<MeshType,Order>::Winslow( mesh_ptrtype mesh, std::string const& prefix, WorldComm const& worldcomm,
+Winslow<MeshType,Order>::Winslow( mesh_ptrtype mesh, std::string const& prefix, worldcomm_ptr_t const& worldcomm,
                                   bool useGhostEltFromExtendedStencil, ModelBaseRepository const& modelRep )
     :
     super_type( prefix, worldcomm,"", modelRep ),
-    M_backend( backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() ) ),
+    M_backend( backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() ) ),
     M_solverType( soption(_prefix=this->prefix(),_name="solver") ),
     M_mesh(mesh),
     M_flagSet(/*flagSet*/),
-    M_Xh(space_type::New(_mesh=mesh,_worldscomm=std::vector<WorldComm>(1,this->worldComm()),
+    M_Xh(space_type::New(_mesh=mesh,_worldscomm=makeWorldsComm(1,this->worldCommPtr()),
                          _extended_doftable=std::vector<bool>(1,useGhostEltFromExtendedStencil) )),
     M_displacement( new element_type(M_Xh) ),
     M_displacementOld( new element_type(M_Xh) ),
     M_dispImposedOnBoundary( new element_type(M_Xh) ),
     M_identity( new element_type(M_Xh) ),
-    M_XhScalM1(space_scal_m1_type::New(_mesh=mesh,_worldscomm=std::vector<WorldComm>(1,this->worldComm()))),
-    M_XhScalP0Disc(space_p0_type::New(_mesh=mesh,_worldscomm=std::vector<WorldComm>(1,this->worldComm()))),
+    M_XhScalM1(space_scal_m1_type::New(_mesh=mesh,_worldscomm=makeWorldsComm(1,this->worldCommPtr()))),
+    M_XhScalP0Disc(space_p0_type::New(_mesh=mesh,_worldscomm=makeWorldsComm(1,this->worldCommPtr()))),
     M_l2projector(opProjection(_domainSpace=this->functionSpaceScalM1(),
                                _imageSpace=this->functionSpaceScalM1(),
-                               _backend=backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"l2proj"), this->worldComm() ),
+                               _backend=backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"l2proj"), this->worldCommPtr() ),
                                _type=Feel::L2 ) )
 {
     EntityProcessType entityProcess = (useGhostEltFromExtendedStencil)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
@@ -69,8 +69,8 @@ template< typename MeshType, int Order >
 Winslow<MeshType,Order>::Winslow( space_ptrtype const& space, std::string const& prefix,
                                   ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, space->worldComm(),"",modelRep ),
-    M_backend( backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() ) ),
+    super_type( prefix, space->worldCommPtr(),"",modelRep ),
+    M_backend( backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() ) ),
     M_solverType( soption(_prefix=this->prefix(),_name="solver") ),
     M_mesh(space->mesh()),
     M_flagSet(/*flagSet*/),
@@ -79,11 +79,11 @@ Winslow<MeshType,Order>::Winslow( space_ptrtype const& space, std::string const&
     M_displacementOld( new element_type(M_Xh) ),
     M_dispImposedOnBoundary( new element_type(M_Xh) ),
     M_identity( new element_type(M_Xh) ),
-    M_XhScalM1(space_scal_m1_type::New(_mesh=M_mesh,_worldscomm=std::vector<WorldComm>(1,this->worldComm()))),
-    M_XhScalP0Disc(space_p0_type::New(_mesh=M_mesh,_worldscomm=std::vector<WorldComm>(1,this->worldComm()))),
+    M_XhScalM1(space_scal_m1_type::New(_mesh=M_mesh,_worldscomm=makeWorldsComm(1,this->worldCommPtr()))),
+    M_XhScalP0Disc(space_p0_type::New(_mesh=M_mesh,_worldscomm=makeWorldsComm(1,this->worldCommPtr()))),
     M_l2projector(opProjection(_domainSpace=this->functionSpaceScalM1(),
                                _imageSpace=this->functionSpaceScalM1(),
-                               _backend=backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"l2proj"), this->worldComm() ),
+                               _backend=backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"l2proj"), this->worldCommPtr() ),
                                _type=Feel::L2 ) )
 {
     *M_identity = vf::project( _space=M_Xh, _range=elements(M_mesh), _expr=vf::P() );
@@ -128,7 +128,7 @@ Winslow<MeshType,Order>::init()
 
 
     M_fieldMetricDerivative.reset( new element_type( M_Xh ) );
-    M_backendMetricDerivative = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"metric-derivative"), this->worldComm() );
+    M_backendMetricDerivative = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"metric-derivative"), this->worldCommPtr() );
     M_matrixMetricDerivative = M_backendMetricDerivative->newMatrix(_test=M_Xh,_trial=M_Xh);
     M_vectorMetricDerivative = M_backendMetricDerivative->newVector(M_Xh);
 
@@ -175,10 +175,10 @@ Winslow<MeshType,Order>::init()
 }
 
 template< typename MeshType, int Order >
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 Winslow<MeshType,Order>::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
 
     *_ostr << "\n   Winslow "
            << "\n     -- solver type : " << M_solverType

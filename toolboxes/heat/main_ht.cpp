@@ -10,7 +10,7 @@ runApplicationHeat()
 
     typedef FeelModels::Heat< Simplex<nDim,1>,
                                       Lagrange<OrderT, Scalar,Continuous,PointSetFekete> > model_type;
-    boost::shared_ptr<model_type> heat( new model_type("heat") );
+    std::shared_ptr<model_type> heat( new model_type("heat") );
     heat->init();
     heat->printAndSaveInfo();
 

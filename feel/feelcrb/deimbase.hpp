@@ -86,16 +86,16 @@ public :
     typedef typename TensorType::value_type value_type;
 
     typedef ParameterSpaceType parameterspace_type;
-    typedef typename boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef typename std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
     typedef typename parameterspace_type::sampling_type sampling_type;
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
     typedef TensorType tensor_type;
-    typedef boost::shared_ptr<tensor_type> tensor_ptrtype;
+    typedef std::shared_ptr<tensor_type> tensor_ptrtype;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -118,22 +118,22 @@ public :
     typedef boost::tuple<double,std::pair<int,int>> matrixmax_type;
 
     typedef SpaceType space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef ReducedBasisSpace<space_type> rbspace_type;
-    typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
+    typedef std::shared_ptr<rbspace_type> rbspace_ptrtype;
 
     typedef std::map<int,tensor_ptrtype> solutionsmap_type;
 
     typedef CRBBase<space_type,parameterspace_type> crb_type;
-    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+    typedef std::shared_ptr<crb_type> crb_ptrtype;
 
     typedef TwoSpacesMap<space_type> spaces_map_type;
-    typedef boost::shared_ptr<spaces_map_type> spaces_map_ptrtype;
+    typedef std::shared_ptr<spaces_map_type> spaces_map_ptrtype;
 
 
     static const int n_spaces = space_type::nSpaces;
@@ -159,7 +159,7 @@ protected :
     DEIMBase(  space_ptrtype Xh, parameterspace_ptrtype Dmu, sampling_ptrtype sampling,
                uuids::uuid const& uid, std::string const& modelname,
                std::string prefix, std::string const& dbfilename, std::string const& dbdirectory,
-               WorldComm const& worldComm = Environment::worldComm() );
+               worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
 public :
     //! Destructor
@@ -437,7 +437,7 @@ protected :
 
 
 template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
-DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, parameterspace_ptrtype Dmu, sampling_ptrtype sampling, uuids::uuid const& uid, std::string const& modelname, std::string prefix, std::string const& dbfilename, std::string const& dbdirectory, WorldComm const& worldComm ) :
+DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, parameterspace_ptrtype Dmu, sampling_ptrtype sampling, uuids::uuid const& uid, std::string const& modelname, std::string prefix, std::string const& dbfilename, std::string const& dbdirectory, worldcomm_ptr_t const& worldComm ) :
     super ( ( boost::format( "%1%DEIM%2%" ) %(is_matrix ? "M":"") %prefix  ).str(),
             "deim",
             uid,
@@ -1026,9 +1026,9 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::loadDB()
         {
             auto seqmesh = loadMesh( _mesh=new mesh_type,
                                      _filename=filename.string(),
-                                     _worldcomm= Environment::worldCommSeq() );
+                                     _worldcomm= Environment::worldCommSeqPtr() );
             Rh = space_type::New( seqmesh,
-                                  _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
+                                  _worldscomm=makeWorldsComm(space_type::nSpaces,Environment::worldCommSeqPtr()) );
         }
 
         boost::archive::binary_iarchive ia( ifs );

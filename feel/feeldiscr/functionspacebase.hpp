@@ -30,6 +30,7 @@
 #define __FunctionSpaceBase_H 1
 
 #include <feel/feelobserver/observer.hpp>
+#include <feel/feelcore/commobject.hpp>
 
 namespace Feel
 {
@@ -40,14 +41,15 @@ static uint16_type FUNCTIONSPACE_INSTANCE_NUMBER = 0;
 static const std::string functionSpaceDefaultInstanceName() { return "function_space-" + std::to_string(FUNCTIONSPACE_INSTANCE_NUMBER); }
 
 /**
- * \class FunctionSpaceBase
- * \brief brief description
+ * @class FunctionSpaceBase
+ * @brief base class for FunctionSpace
  *
  * @author Christophe Prud'homme
  * @see
  */
 class FEELPP_EXPORT FunctionSpaceBase
-: public Observer::JournalWatcher
+    : public CommObject,
+      public Observer::JournalWatcher
 {
 public:
 
@@ -62,7 +64,7 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    using super = CommObject;
 
     //@}
 
@@ -70,8 +72,12 @@ public:
      */
     //@{
 
+    FunctionSpaceBase() : super( Environment::worldCommPtr() ) {}
+    explicit FunctionSpaceBase( worldcomm_ptr_t const& w ) : super( w ) {}
+    FunctionSpaceBase( FunctionSpaceBase const& ) = default;
+    FunctionSpaceBase( FunctionSpaceBase && ) = default;
     //! destructor
-    virtual ~FunctionSpaceBase() {}
+    virtual ~FunctionSpaceBase() = default;
 
     //@}
 

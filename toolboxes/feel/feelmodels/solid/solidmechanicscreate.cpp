@@ -19,7 +19,7 @@ namespace FeelModels
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
                                                     bool buildMesh,
-                                                    WorldComm const& worldComm,
+                                                    worldcomm_ptr_t const& worldComm,
                                                     std::string const& subPrefix,
                                                     ModelBaseRepository const& modelRep )
     :
@@ -58,11 +58,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix,
                                          bool buildMesh,
-                                         WorldComm const& worldComm,
+                                         worldcomm_ptr_t const& worldComm,
                                          std::string const& subPrefix,
                                          ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
+    return std::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
 }
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -300,8 +300,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createWorldsComm()
 
     if (this->worldComm().localSize()==this->worldComm().globalSize())
     {
-        std::vector<WorldComm> vecWorldComm(space_displacement_type::nSpaces,this->worldComm());
-        std::vector<WorldComm> vecLocalWorldComm(1,this->worldComm());
+        auto vecWorldComm{ makeWorldsComm(space_displacement_type::nSpaces,this->worldCommPtr())};
+        auto vecLocalWorldComm{ makeWorldsComm(1,this->worldCommPtr()) };
         this->setWorldsComm(vecWorldComm);
         this->setLocalNonCompositeWorldsComm(vecLocalWorldComm);
     }
@@ -335,8 +335,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createWorldsComm()
         this->setLocalNonCompositeWorldsComm(vecLocalWorldComm);
 #else
         // non composite case
-        std::vector<WorldComm> vecWorldComm(1,this->worldComm());
-        std::vector<WorldComm> vecLocalWorldComm(1,this->worldComm());
+        worldscomm_ptr_t vecWorldComm{ makeWorldsComm(1,this->worldCommPtr()) };
+        worldscomm_ptr_t vecLocalWorldComm{ makeWorldsComm(1,this->worldCommPtr()) };
         this->setWorldsComm(vecWorldComm);
         this->setLocalNonCompositeWorldsComm(vecLocalWorldComm);
 #endif
@@ -439,11 +439,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
             smpath = (fs::path( this->restartPath() ) / fs::path( modelMeshRestartFile)).string();
 
 #if defined(SOLIDMECHANICS_1D_REDUCED_CREATESUBMESH)
-        auto meshSM2dClass = reloadMesh<mesh_type>(smpath,this->worldComm());
+        auto meshSM2dClass = reloadMesh<mesh_type>(smpath,this->worldCommPtr());
         SOLIDMECHANICS_1D_REDUCED_CREATESUBMESH(meshSM2dClass);
         M_mesh_1dReduced=mesh;
 #else
-        M_mesh_1dReduced = reloadMesh<mesh_1dreduced_type>(smpath,this->worldComm());
+        M_mesh_1dReduced = reloadMesh<mesh_1dreduced_type>(smpath,this->worldCommPtr());
 #endif
     }
     else
@@ -467,11 +467,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
 
             gmsh_ptrtype geodesc = geo( _filename=geofile,
                                         _prefix=prefix1dreduced,
-                                        _worldcomm=this->worldComm() );
+                                        _worldcomm=this->worldCommPtr() );
             // allow to have a geo and msh file with a filename equal to prefix
             geodesc->setPrefix(prefix1dreduced);
             M_mesh_1dReduced = createGMSHMesh(_mesh=new mesh_1dreduced_type,_desc=geodesc,
-                                              _prefix=prefix1dreduced,_worldcomm=this->worldComm(),
+                                              _prefix=prefix1dreduced,_worldcomm=this->worldCommPtr(),
                                               _partitions=this->worldComm().localSize() );
 
             // go back to previous repository
@@ -539,7 +539,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     //--------------------------------------------------------//
 
     // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_XhDisplacement->worldComm() );
+    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_XhDisplacement->worldCommPtr() );
 
     this->timerTool("Constructor").stop("createSpaces");
     this->log("SolidMechanics","createFunctionSpaces", "finish" );
@@ -555,7 +555,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces1dReduced()
 
     // function space and elements
     M_Xh_vect_1dReduced = space_vect_1dreduced_type::New(_mesh=M_mesh_1dReduced,
-                                                         _worldscomm=std::vector<WorldComm>(1,M_mesh_1dReduced->worldComm()));
+                                                         _worldscomm=makeWorldsComm(1,M_mesh_1dReduced->worldCommPtr()));
     M_Xh_1dReduced = M_Xh_vect_1dReduced->compSpace();
     // scalar field
     M_disp_1dReduced.reset( new element_1dreduced_type( M_Xh_1dReduced, "structure displacement" ));
@@ -566,7 +566,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces1dReduced()
     M_velocity_vect_1dReduced.reset(new element_vect_1dreduced_type( M_Xh_vect_1dReduced, "velocity vect 1d displacement" ));
 
     // backend : use worldComm of Xh_1dReduced
-    M_backend_1dReduced = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh_1dReduced->worldComm() );
+    M_backend_1dReduced = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh_1dReduced->worldCommPtr() );
 
     this->log("SolidMechanics","createFunctionSpaces1dReduced", "finish" );
 }
@@ -661,7 +661,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI1dReduced()
 
     // normal stress as source term
     M_XhStressVect_1dReduced = space_stress_vect_1dreduced_type::New(_mesh=M_mesh_1dReduced,
-                                                                       _worldscomm=std::vector<WorldComm>(1,M_mesh_1dReduced->worldComm()));
+                                                                       _worldscomm=makeWorldsComm(1,M_mesh_1dReduced->worldCommPtr()));
     M_stress_1dReduced.reset( new element_stress_scal_1dreduced_type( M_XhStressVect_1dReduced->compSpace(), "structure stress" ));
     M_stress_vect_1dReduced.reset(new element_stress_vect_1dreduced_type( M_XhStressVect_1dReduced, "stress 1d vect displacement" ));
 
@@ -770,7 +770,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
     else
     {
 #if 1 //defined(FEELPP_HAS_VTK)
-        boost::shared_ptr<mesh_visu_ho_type> meshVisuHO;
+        std::shared_ptr<mesh_visu_ho_type> meshVisuHO;
         std::string hovisuSpaceUsed = soption(_name="hovisu.space-used",_prefix=this->prefix());
         bool doLagP1parallel=false;
         if ( hovisuSpaceUsed == "displacement" )
@@ -893,8 +893,8 @@ NullSpace<double> getNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
 }
 template< typename TheBackendType >
 NullSpace<double> extendNullSpace( NullSpace<double> const& ns,
-                                   boost::shared_ptr<TheBackendType> const& mybackend,
-                                   boost::shared_ptr<DataMap> const& dm )
+                                   std::shared_ptr<TheBackendType> const& mybackend,
+                                   std::shared_ptr<DataMap> const& dm )
 {
     std::vector< typename NullSpace<double>::vector_ptrtype > myvecbasis(ns.size());
     for ( int k=0;k< ns.size();++k )

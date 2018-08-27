@@ -32,15 +32,15 @@ namespace Feel {
 //!
 //! Create a shared pointer \p Mesh<T> from \p Args
 //! @code
-//! // create a tetrahedron mesh boost::shared_ptr
+//! // create a tetrahedron mesh std::shared_ptr
 //! auto mesh = makeSharedMesh<Simplex<3>>();
 //! @endcode
 //!
 template< class T, class... Args >
-boost::shared_ptr<Mesh<T>>
+std::shared_ptr<Mesh<T>>
 makeSharedMesh( Args&&... args )
 {
-    return boost::make_shared<Mesh<T>>( args... );
+    return std::make_shared<Mesh<T>>( args... );
 }
 
 //!

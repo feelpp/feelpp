@@ -22,21 +22,21 @@
 //! @copyright 2017 Feel++ Consortium
 //!
 
+#define BOOST_TEST_MODULE gmsh
+#include <testsuite.hpp>
+
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelfilters/domain.hpp>
 
-int main(int argc, char** argv)
+BOOST_AUTO_TEST_SUITE( gmsh )
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_CASE( test1 )
 {
-  using namespace Feel;
-  Environment env( _argc=argc, _argv=argv );
-  //auto p = Gmsh::New( "hypercube", 2,1 );
-  auto m = unitSquare();
-#if 0
-  auto p = domain( _name="square",
-                   _shape="hypercube",
-                   _dim=2,
-                   _h=0.1);
-#endif
+    using namespace Feel;
+    auto m = unitSquare();
 }
 
+BOOST_AUTO_TEST_SUITE_END()

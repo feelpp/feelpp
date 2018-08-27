@@ -65,7 +65,7 @@ class FeelppDatabase
 {
 public :
     using mesh_type = decay_type<MeshType>;
-    using mesh_ptrtype = boost::shared_ptr<mesh_type>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
     FeelppDatabase( WorldComm const& worldComm = Environment::worldComm() )
         :

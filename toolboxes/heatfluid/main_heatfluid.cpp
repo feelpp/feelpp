@@ -14,7 +14,7 @@ runApplicationHeatFluid()
                                         Lagrange<OrderV, Vectorial,Continuous,PointSetFekete>,
                                         Lagrange<OrderP, Scalar,Continuous,PointSetFekete> > model_fluid_type;
     typedef FeelModels::HeatFluid< model_heat_type,model_fluid_type> model_type;
-    boost::shared_ptr<model_type> heatFluid( new model_type("heat-fluid") );
+    std::shared_ptr<model_type> heatFluid( new model_type("heat-fluid") );
     heatFluid->init();
     heatFluid->printAndSaveInfo();
 

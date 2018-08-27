@@ -166,7 +166,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
     using namespace Feel;
     using namespace Feel::vf;
     typedef Mesh<Simplex<2,T::value> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     mesh_ptrtype mesh;
     std::string shape =  vm["shape"].template as<std::string>();
     std::map<std::string,std::vector<boost::tuple<double,double,double,double> > > ho;

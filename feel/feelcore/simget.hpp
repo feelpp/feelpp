@@ -272,7 +272,7 @@ createSimget( AboutData cponst& about )
                         new Feel::Environment();                        \
                     is_init = true;                                     \
                 }                                                       \
-                boost::shared_ptr<ResidualEstimator<dim,order> > OCTNAME(app_,dim,order)( new ResidualEstimator<dim,order>( makeAbout() ) ); \
+                std::shared_ptr<ResidualEstimator<dim,order> > OCTNAME(app_,dim,order)( new ResidualEstimator<dim,order>( makeAbout() ) ); \
                 std::vector<double> x( dims(0) );                       \
                 for( int j = 0; j < dims(0); ++j )                      \
                     {                                                   \

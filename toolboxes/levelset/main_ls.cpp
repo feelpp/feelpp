@@ -35,7 +35,7 @@ runLevelsetApplication()
 
     bool exportDistToBoundary = boption( _name="export-dist-to-boundary" );
 
-    boost::shared_ptr<Exporter<typename model_type::mesh_type>> myExporter;
+    std::shared_ptr<Exporter<typename model_type::mesh_type>> myExporter;
 
     if( exportDistToBoundary )
     {

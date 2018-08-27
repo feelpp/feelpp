@@ -70,15 +70,15 @@ public:
     enum status_type {FAR=0, CLOSE=1, DONE=2};
 
     typedef ReinitializerFMS<FunctionSpaceType, periodicity_type> self_type;
-    typedef boost::shared_ptr< self_type > self_ptrtype;
+    typedef std::shared_ptr< self_type > self_ptrtype;
 
     typedef Backend<double> backend_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     typedef FunctionSpaceType functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
     typedef typename functionspace_type::value_type value_type;
 
     typedef typename functionspace_type::mesh_type mesh_type;
@@ -181,8 +181,8 @@ extern template class Feel::ReinitializerFMS< lsh_space_type<3>, Feel::NoPeriodi
 
 
 template<typename FunctionSpaceType, typename periodicity_type = NoPeriodicity>
-boost::shared_ptr< ReinitializerFMS< FunctionSpaceType, periodicity_type > >
-fms ( boost::shared_ptr<FunctionSpaceType> const& Xh, periodicity_type p = NoPeriodicity() )
+std::shared_ptr< ReinitializerFMS< FunctionSpaceType, periodicity_type > >
+fms ( std::shared_ptr<FunctionSpaceType> const& Xh, periodicity_type p = NoPeriodicity() )
 {
     auto fm = ReinitializerFMS< FunctionSpaceType, periodicity_type >::New( Xh, p );
     return fm;

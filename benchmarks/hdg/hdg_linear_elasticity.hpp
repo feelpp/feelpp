@@ -88,7 +88,7 @@ public:
     //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
-    typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
+    typedef typename std::shared_ptr<backend_type> backend_ptrtype ;
 
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order G_order
@@ -96,11 +96,11 @@ public:
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // The Lagrange multiplier lives in R^n-1
     typedef Simplex<Dim-1,OrderG,Dim> face_convex_type;
     typedef Mesh<face_convex_type> face_mesh_type;
-    typedef boost::shared_ptr<face_mesh_type> face_mesh_ptrtype;
+    typedef std::shared_ptr<face_mesh_type> face_mesh_ptrtype;
 
 	static const uint16_type expr_order = OrderP+4;
 
@@ -116,17 +116,17 @@ public:
 
 
     using product_space_type = ProductSpaces<Vh_ptr_t,Wh_ptr_t,Mh_ptr_t>;
-    using product_space_ptrtype = boost::shared_ptr<product_space_type>;
+    using product_space_ptrtype = std::shared_ptr<product_space_type>;
 
     using blockform2_type = BlockBilinearForm<ProductSpaces< Vh_ptr_t, Wh_ptr_t, Mh_ptr_t > &>;
-    using blockform2_ptrtype = boost::shared_ptr<blockform2_type>;
+    using blockform2_ptrtype = std::shared_ptr<blockform2_type>;
     using blockform1_type = BlockLinearForm<ProductSpaces< Vh_ptr_t, Wh_ptr_t, Mh_ptr_t > &>;
-    using blockform1_ptrtype = boost::shared_ptr<blockform1_type>;
+    using blockform1_ptrtype = std::shared_ptr<blockform1_type>;
 
    //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     /**
      * Constructor
@@ -320,7 +320,7 @@ Hdg<Dim, OrderP, OrderG>::run()
 	auto rhs = blockform1( ps , s, backend() );
 #else
     Ch_ptr_t Ch = Pchv<0>(face_mesh, true);
-	auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >(0, Ch);
+	auto ibcSpaces = std::make_shared<ProductSpace<Ch_ptr_t,true> >(0, Ch);
 	auto ps = product2( ibcSpaces, Vh, Wh, Mh );
 
 	auto A = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(ps), backend() );

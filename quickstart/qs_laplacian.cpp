@@ -40,6 +40,7 @@ int main(int argc, char**argv )
                    _about=about(_name="qs_laplacian",
                                 _author="Feel++ Consortium",
                                 _email="feelpp-devel@feelpp.org"));
+
     // end::env[]
 
     // tag::mesh_space[]
@@ -141,6 +142,5 @@ int main(int argc, char**argv )
 
     // exit status = 0 means no error
     return !status;
-
 }
 // end::global[]

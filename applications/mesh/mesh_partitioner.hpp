@@ -46,7 +46,7 @@ void partition( std::vector<int> const& nParts)
         fs::path inputPathMesh = fs::system_complete( soption("ifile") );
 
         tic();
-        auto mesh = loadMesh(_mesh=new mesh_type(Environment::worldCommSeq()), _savehdf5=0,
+        auto mesh = loadMesh(_mesh=new mesh_type(Environment::worldCommSeqPtr()), _savehdf5=0,
                              _filename=inputPathMesh.string(),
                              _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED),
                              _straighten=false );

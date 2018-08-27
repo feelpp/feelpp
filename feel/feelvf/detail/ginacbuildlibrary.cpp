@@ -34,7 +34,7 @@ namespace detail
 {
 FEELPP_EXPORT
 void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::string const& exprDesc, std::string const& filename, WorldComm const& world,
-                        boost::shared_ptr<GiNaC::FUNCP_CUBA>& cfun )
+                        std::shared_ptr<GiNaC::FUNCP_CUBA>& cfun )
 {
     // register the GinacExprManager into Feel::Environment so that it gets the
     // GinacExprManager is cleared up when the Environment is deleted

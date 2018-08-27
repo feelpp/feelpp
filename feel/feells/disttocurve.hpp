@@ -80,10 +80,10 @@ public :
     static_assert( FunctionSpaceP1Type::fe_type::nOrder == 1, "FunctionSpaceP1Type needs to be a finite element space of order 1");
 
     typedef DistToCurve<FunctionSpaceP0Type, FunctionSpaceP1Type> self_type;
-    typedef boost::shared_ptr< self_type > self_ptrtype;
+    typedef std::shared_ptr< self_type > self_ptrtype;
 
-    typedef typename boost::shared_ptr< FunctionSpaceP0Type > spaceP0_ptrtype;
-    typedef typename boost::shared_ptr< FunctionSpaceP1Type > spaceP1_ptrtype;
+    typedef typename std::shared_ptr< FunctionSpaceP0Type > spaceP0_ptrtype;
+    typedef typename std::shared_ptr< FunctionSpaceP1Type > spaceP1_ptrtype;
 
     typedef typename FunctionSpaceP1Type::element_ptrtype element_ptrtype;
     typedef typename FunctionSpaceP1Type::value_type value_type;
@@ -1389,8 +1389,8 @@ private :
 
 
 template< typename FunctionSpaceP0Type, typename FunctionSpaceP1Type >
-boost::shared_ptr< DistToCurve< FunctionSpaceP0Type, FunctionSpaceP1Type > >
-distToCurve( boost::shared_ptr<FunctionSpaceP0Type> spaceP0, boost::shared_ptr<FunctionSpaceP1Type> spaceP1 )
+std::shared_ptr< DistToCurve< FunctionSpaceP0Type, FunctionSpaceP1Type > >
+distToCurve( std::shared_ptr<FunctionSpaceP0Type> spaceP0, std::shared_ptr<FunctionSpaceP1Type> spaceP1 )
 {
     auto dtc = DistToCurve< FunctionSpaceP0Type, FunctionSpaceP1Type >::New( spaceP0, spaceP1 );
     return dtc;

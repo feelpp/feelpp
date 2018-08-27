@@ -162,8 +162,8 @@ public :
             }
         }
 
-        boost::shared_ptr<GT_Lagrange<2,1, 2 ,Simplex, T> > gm( new GT_Lagrange<2, 1, 2, Simplex,T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<2,1, 2 ,Simplex, T> > gm( new GT_Lagrange<2, 1, 2, Simplex,T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Simplex<2, 1, 2>,2,1>(), gm, face_qr );
 
@@ -235,8 +235,8 @@ public :
             }
         }
 
-        boost::shared_ptr<GT_Lagrange<3, 1, 3, Simplex, T> > gm( new GT_Lagrange<3, 1, 3, Simplex, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<3, 1, 3, Simplex, T> > gm( new GT_Lagrange<3, 1, 3, Simplex, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Simplex<3, 1, 3>,3,1>(), gm, face_qr );
     }
@@ -290,8 +290,8 @@ public :
             }
         }
 
-        boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<2, 1, 2>,2,1>(), gm, face_qr );
     }
@@ -344,8 +344,8 @@ public :
             }
         }
 
-        boost::shared_ptr<GT_Lagrange<3, 1, 3, Hypercube, T> > gm( new GT_Lagrange<3, 1, 3, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<3, 1, 3, Hypercube, T> > gm( new GT_Lagrange<3, 1, 3, Hypercube, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<3, 1, 3>,3,1>(), gm, face_qr );
     }

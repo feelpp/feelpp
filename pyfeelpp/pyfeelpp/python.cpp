@@ -21,6 +21,8 @@
 //! @date 15 Jun 2017
 //! @copyright 2017 Feel++ Consortium
 //!
+#include <iostream>
+
 #include <pybind11/pybind11.h>
 #include <feel/feelinfo.h>
 #include <feel/feelcore/info.hpp>
@@ -32,7 +34,7 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(pyfeelpp,m)
+PYBIND11_MODULE(_pyfeelpp,m)
 {
     m.doc()=R"pbdoc(
         PyFeelpp Module plugin
@@ -43,7 +45,9 @@ PYBIND11_MODULE(pyfeelpp,m)
     )pbdoc";
 
 #ifdef FEELPP_VERSION_STRING
+    
     m.attr("__version__") = py::str(stringize(FEELPP_VERSION_STRING));
+    std::cout << "version: " << stringize(FEELPP_VERSION_STRING) << "\n";
 #else
     m.attr("__version__") = py::str("develop");
 #endif

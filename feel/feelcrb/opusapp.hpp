@@ -82,7 +82,7 @@ public:
 
     //! model type
     typedef ModelType model_type;
-    typedef boost::shared_ptr<ModelType> model_ptrtype;
+    typedef std::shared_ptr<ModelType> model_ptrtype;
 
     //! function space type
     typedef typename model_type::functionspace_type functionspace_type;
@@ -95,18 +95,18 @@ public:
 #if 0
     //old
     typedef CRBModel<ModelType> crbmodel_type;
-    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
+    typedef std::shared_ptr<crbmodel_type> crbmodel_ptrtype;
     typedef CRB<crbmodel_type> crb_type;
-    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+    typedef std::shared_ptr<crb_type> crb_ptrtype;
 #endif
 
     typedef Model<ModelType> crbmodel_type;
-    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
+    typedef std::shared_ptr<crbmodel_type> crbmodel_ptrtype;
     typedef RM<crbmodel_type> crb_type;
-    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+    typedef std::shared_ptr<crb_type> crb_ptrtype;
 
     typedef SER<crb_type> ser_type;
-    typedef boost::shared_ptr<ser_type> ser_ptrtype;
+    typedef std::shared_ptr<ser_type> ser_ptrtype;
 
     typedef CRBModel<ModelType> crbmodelbilinear_type;
 
@@ -211,7 +211,7 @@ public:
      */
     crb_ptrtype newCRB( int level=0 )
         {
-            model = boost::make_shared<crbmodel_type>(crb::stage::offline,level);
+            model = std::make_shared<crbmodel_type>(crb::stage::offline,level);
             return crb_type::New(model->model()->modelName(), model, crb::stage::offline );
         }
     crb_ptrtype & crbPtr() { return crb; }

@@ -46,9 +46,9 @@ runApplicationMaxwell()
     using model_type = FeelModels::Maxwell< Simplex<FEELPP_DIM> >;
     using mesh_type = typename model_type::mesh_type;
     using exporter_type = Exporter<mesh_type>;
-    using exporter_ptrtype = boost::shared_ptr<exporter_type>;
+    using exporter_ptrtype = std::shared_ptr<exporter_type>;
 
-    boost::shared_ptr<model_type> maxwell( new model_type("maxwell", false) );
+    std::shared_ptr<model_type> maxwell( new model_type("maxwell", false) );
 
     int maxiter = ioption("cvg.nb-iter");
     double factor = doption("cvg.factor");

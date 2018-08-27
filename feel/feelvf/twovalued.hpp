@@ -104,7 +104,7 @@ public:
      */
     //@{
 
-    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > > >, typename Basis_j_t = Basis_i_t>
+    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,std::shared_ptr<vf::detail::gmc<0> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
         typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;
@@ -427,7 +427,7 @@ public:
                 mpl::identity<yyy >,
                 mpl::identity<ttt<e_type> > >::type::type::type gmc_type;
 
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
 
         typedef fusion::map<fusion::pair<key_type, gmc_ptrtype> > map_gmc_type;
@@ -675,7 +675,7 @@ public:
                 mpl::identity<yyy >,
                 mpl::identity<ttt<e_type> > >::type::type::type gmc_type;
 
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
         typedef fusion::map<fusion::pair<key_type, gmc_ptrtype> > map_gmc_type;
 
@@ -894,7 +894,7 @@ public:
      */
     //@{
 
-    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > > >, typename Basis_j_t = Basis_i_t>
+    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,std::shared_ptr<vf::detail::gmc<0> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
         typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;

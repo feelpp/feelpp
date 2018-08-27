@@ -36,8 +36,8 @@ namespace Feel {
 /**
    build a mesh of the unit segment [0,1]
 */
-boost::shared_ptr<Mesh<Simplex<1>>>
-unitSegment( double h = option(_name="gmsh.hsize").as<double>(), std::string prefix="", WorldComm const& c = Environment::worldComm() );
+std::shared_ptr<Mesh<Simplex<1>>>
+unitSegment( double h = option(_name="gmsh.hsize").as<double>(), std::string prefix="", worldcomm_ptr_t const& c = Environment::worldCommPtr() );
 
 }
 #endif /* FEELPP_UNISEGMENT_HPP */

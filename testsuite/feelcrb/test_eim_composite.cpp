@@ -103,19 +103,19 @@ makeAbout()
  *
  */
 class EimModel:
-        public boost::enable_shared_from_this<EimModel>
+        public std::enable_shared_from_this<EimModel>
 {
-    typedef boost::enable_shared_from_this<EimModel> super;
+    typedef std::enable_shared_from_this<EimModel> super;
 public:
     typedef Mesh<Simplex<2> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     //typedef FunctionSpace<mesh_type,bases<Lagrange<1> > > space_type;
     typedef Lagrange<1> basis_type;
     typedef bases<basis_type,basis_type> prod_basis_type;
     typedef FunctionSpace<mesh_type, bases< Lagrange<1> > > u1_space_type;
     typedef FunctionSpace<mesh_type, prod_basis_type > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef boost::shared_ptr<u1_space_type> u1_space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<u1_space_type> u1_space_ptrtype;
     typedef space_type functionspace_type;
     typedef space_ptrtype functionspace_ptrtype;
     typedef space_type::element_type element_type;
@@ -125,14 +125,14 @@ public:
     typedef u1_space_type::element_ptrtype u1_element_ptrtype;
 
     typedef ParameterSpace<2> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
     typedef parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef parameterspace_type::sampling_type sampling_type;
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
     typedef EIMFunctionBase<u1_space_type, space_type, parameterspace_type> fun_type;
-    typedef boost::shared_ptr<fun_type> fun_ptrtype;
+    typedef std::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
     typedef Eigen::VectorXd vectorN_type;
@@ -298,7 +298,7 @@ BOOST_AUTO_TEST_CASE( test_eim_composite )
 {
     BOOST_TEST_MESSAGE( "test_eim_composite starts..." );
 
-    boost::shared_ptr<EimModel> m( new EimModel);
+    std::shared_ptr<EimModel> m( new EimModel);
     m->init();
     m->run();
 

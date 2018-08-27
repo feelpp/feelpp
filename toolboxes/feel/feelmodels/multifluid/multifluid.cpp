@@ -11,7 +11,7 @@ namespace FeelModels {
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
         std::string const& prefix,
-        WorldComm const& wc,
+        worldcomm_ptr_t const& wc,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 : super_type( prefixvm(prefix,"fluid"), false, wc, subPrefix, modelRep )
@@ -27,7 +27,7 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 typename MULTIFLUID_CLASS_TEMPLATE_TYPE::self_ptrtype
 MULTIFLUID_CLASS_TEMPLATE_TYPE::New(
         std::string const& prefix,
-        WorldComm const& wc,
+        worldcomm_ptr_t const& wc,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 {
@@ -67,16 +67,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
     this->loadMesh( this->createMesh() );
     super_type::init();
 
-    M_globalLevelset.reset(
-            new levelset_type( prefixvm(this->prefix(),"levelset"), this->worldComm(), "", this->repository() )
-            );
+    M_globalLevelset = std::make_shared<levelset_type>( prefixvm(this->prefix(),"levelset"), this->worldCommPtr(), "", this->repository() );
 
     M_globalLevelset->build( this->mesh() );
     //if( nLevelSets < 2 )
     //    M_globalLevelset->getExporter()->setDoExport( false );
 
     // "Deep" copy
-    M_fluidDensityViscosityModel.reset( new densityviscosity_model_type( this->fluidPrefix() ) );
+    M_fluidDensityViscosityModel = std::make_shared<densityviscosity_model_type>( this->fluidPrefix() );
     M_fluidDensityViscosityModel->updateForUse( this->materialProperties()->dynamicViscositySpace(), this->modelProperties().materials() );
     //M_fluidDensityViscosityModel->initFromSpace( this->materialProperties()->dynamicViscositySpace() );
     //M_fluidDensityViscosityModel->updateFromModelMaterials( this->modelProperties().materials() );
@@ -87,9 +85,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
         auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
-        M_levelsets[i].reset(
-                new levelset_type( levelset_prefix, this->worldComm(), "", this->repository() )
-                );
+        M_levelsets[i] = std::make_shared<levelset_type>( levelset_prefix, this->worldCommPtr(), "", this->repository() );
         M_levelsets[i]->build(
                 _space=M_globalLevelset->functionSpace(),
                 _space_vectorial=M_globalLevelset->functionSpaceVectorial(),
@@ -166,9 +162,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::createMesh()
         file.close();
 
         mesh = loadMesh(
-                _mesh=new mesh_type( this->worldComm() ),
+                _mesh=new mesh_type( this->worldCommPtr() ),
                 _filename=mshfile,
-                _worldcomm=this->worldComm(),
+                _worldcomm=this->worldCommPtr(),
                 //_prefix=this->prefix(),
                 _rebuild_partitions=false,
                 _savehdf5=0,
@@ -189,9 +185,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::createMesh()
                 CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
 
             mesh = loadMesh(
-                    _mesh=new mesh_type( this->worldComm() ),
+                    _mesh=new mesh_type( this->worldCommPtr() ),
                     _filename=this->meshFile(),
-                    _worldcomm=this->worldComm(),
+                    _worldcomm=this->worldCommPtr(),
                     _prefix=this->prefix(),
                     _rebuild_partitions=rebuildPartition,
                     _rebuild_partitions_filename=mshfileRebuildPartitions,
@@ -210,13 +206,13 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::createMesh()
             gmsh_ptrtype geodesc = geo( 
                     _filename=this->geoFile(),
                     _prefix=this->prefix(),
-                    _worldcomm=this->worldComm() 
+                    _worldcomm=this->worldCommPtr() 
                     );
             // allow to have a geo and msh file with a filename equal to prefix
             geodesc->setPrefix(this->prefix());
             mesh = createGMSHMesh(
                     _mesh=new mesh_type,_desc=geodesc,
-                    _prefix=this->prefix(),_worldcomm=this->worldComm(),
+                    _prefix=this->prefix(),_worldcomm=this->worldCommPtr(),
                     _partitions=this->worldComm().localSize(),
                     _directory=this->rootRepository() 
                     );
@@ -322,10 +318,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"

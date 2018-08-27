@@ -169,20 +169,20 @@ public:
                                   mpl::identity<Feel::vf::detail::gmc<0> >,
                                   mpl::identity<Feel::vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gmc_type::gm_type gm_type;
 
         // fe velocity context
         typedef typename fe_type::PreCompute pc_type;
-        typedef boost::shared_ptr<pc_type> pc_ptrtype;
+        typedef std::shared_ptr<pc_type> pc_ptrtype;
         typedef typename fe_type::template Context<context_velocity, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type;
-        typedef boost::shared_ptr<ctx_type> ctx_ptrtype;
+        typedef std::shared_ptr<ctx_type> ctx_ptrtype;
 
         // fe muP0 context
         typedef typename fe_muP0_type::PreCompute pc_muP0_type;
-        typedef boost::shared_ptr<pc_muP0_type> pc_muP0_ptrtype;
+        typedef std::shared_ptr<pc_muP0_type> pc_muP0_ptrtype;
         typedef typename fe_muP0_type::template Context<context_muP0, fe_muP0_type, gm_type,geoelement_type,gmc_type::context> ctx_muP0_type;
-        typedef boost::shared_ptr<ctx_muP0_type> ctx_muP0_ptrtype;
+        typedef std::shared_ptr<ctx_muP0_type> ctx_muP0_ptrtype;
 
 
         // fe context for test and trial function

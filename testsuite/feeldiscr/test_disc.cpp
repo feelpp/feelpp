@@ -58,7 +58,7 @@ struct imesh
 {
     typedef Simplex<Dim, Order> convex_type;
     typedef Mesh<convex_type, T > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 
@@ -71,7 +71,7 @@ struct test_disc: public Application
     typedef DiscontinuousInterfaces<fusion::vector<mpl::vector<mpl::int_<4>, mpl::int_<6>, mpl::int_<7> > > > discontinuity_type;
     typedef bases<Lagrange<Order, Scalar, discontinuity_type> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     test_disc()
@@ -182,7 +182,7 @@ struct test_disc: public Application
         BOOST_CHECK_SMALL( int3( 0,0 ), 1e-12 );
         BOOST_CHECK_SMALL( int3( 1,0 ), 1e-12 );
     }
-    boost::shared_ptr<Feel::Backend<double> > backend;
+    std::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;

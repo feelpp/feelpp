@@ -52,10 +52,10 @@ namespace Feel {
  * @endcode
  */
 template<typename T>
-inline boost::shared_ptr<BackendPetsc<T>>
-toPETSc( boost::shared_ptr<Backend<T>> const& b )
+inline std::shared_ptr<BackendPetsc<T>>
+toPETSc( std::shared_ptr<Backend<T>> const& b )
 {
-    return boost::dynamic_pointer_cast<BackendPetsc<T>>( b );
+    return std::dynamic_pointer_cast<BackendPetsc<T>>( b );
 }
 
 /**
@@ -78,10 +78,10 @@ toPETSc( boost::shared_ptr<Backend<T>> const& b )
  * @endcode
  */
 template<typename T>
-inline boost::shared_ptr<VectorPetsc<T>>
-toPETSc( boost::shared_ptr<Vector<T>> const& v )
+inline std::shared_ptr<VectorPetsc<T>>
+toPETSc( std::shared_ptr<Vector<T>> const& v )
 {
-    return boost::dynamic_pointer_cast<VectorPetsc<T>>( v );
+    return std::dynamic_pointer_cast<VectorPetsc<T>>( v );
 }
 
 
@@ -105,10 +105,10 @@ toPETSc( boost::shared_ptr<Vector<T>> const& v )
  * @endcode
  */
 template<typename T>
-inline boost::shared_ptr<MatrixPetsc<T>>
-toPETSc( boost::shared_ptr<MatrixSparse<T>> const& m )
+inline std::shared_ptr<MatrixPetsc<T>>
+toPETSc( std::shared_ptr<MatrixSparse<T>> const& m )
 {
-    return boost::dynamic_pointer_cast<MatrixPetsc<T>>( m );
+    return std::dynamic_pointer_cast<MatrixPetsc<T>>( m );
 }
 
 /**
@@ -130,10 +130,10 @@ toPETSc( boost::shared_ptr<MatrixSparse<T>> const& m )
  * @endcode
  */
 template<typename T>
-inline boost::shared_ptr<PreconditionerPetsc<T>>
-toPETSc( boost::shared_ptr<Preconditioner<T>> const& p )
+inline std::shared_ptr<PreconditionerPetsc<T>>
+toPETSc( std::shared_ptr<Preconditioner<T>> const& p )
 {
-    return boost::dynamic_pointer_cast<PreconditionerPetsc<T>>( p );
+    return std::dynamic_pointer_cast<PreconditionerPetsc<T>>( p );
 }
 
 
@@ -149,7 +149,7 @@ namespace detail
  * the shared_ptr is returned in order to not destroy the temporary object (ublas cases)
  */
 template<typename T>
-std::pair<VectorPetsc<T> *, boost::shared_ptr<VectorPetsc<T> > >
+std::pair<VectorPetsc<T> *, std::shared_ptr<VectorPetsc<T> > >
 toPETScPairPtr( Vector<T> & vec );
 
 /**
@@ -162,7 +162,7 @@ toPETScPairPtr( Vector<T> & vec );
  * the shared_ptr is returned in order to not destroy the temporary object (ublas or copy cases)
  */
 template<typename T>
-std::pair<const VectorPetsc<T> *, boost::shared_ptr<VectorPetsc<T> > >
+std::pair<const VectorPetsc<T> *, std::shared_ptr<VectorPetsc<T> > >
 toPETScPairPtr( Vector<T> const& vec, bool allowCopy = false );
 
 } // namespace detail

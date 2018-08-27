@@ -30,8 +30,8 @@ runApplicationMultiFluid()
     typedef FunctionSpace< Mesh<mesh_type>,
                            bases<Lagrange<OrderVelocity-1, Scalar, Continuous, PointSetFekete>>
                                > space_velocity_surfdiv_type;
-    boost::shared_ptr<space_velocity_surfdiv_type> spaceSurfDivU;
-    boost::shared_ptr<Exporter<typename model_multifluid_type::mesh_type>> surfDivUExporter;
+    std::shared_ptr<space_velocity_surfdiv_type> spaceSurfDivU;
+    std::shared_ptr<Exporter<typename model_multifluid_type::mesh_type>> surfDivUExporter;
     if( exportVelocitySurfaceDivergence )
     {
         spaceSurfDivU = space_velocity_surfdiv_type::New(

@@ -60,9 +60,9 @@ runApplicationThermoElectric()
     using model_type = FeelModels::ThermoElectric< model_heat_type,model_electric_type>;
     using mesh_type = typename model_type::mesh_type;
     using exporter_type = Exporter<mesh_type>;
-    using exporter_ptrtype = boost::shared_ptr<exporter_type>;
+    using exporter_ptrtype = std::shared_ptr<exporter_type>;
 
-    boost::shared_ptr<model_type> thermoElectric( new model_type("thermo-electric", false) );
+    std::shared_ptr<model_type> thermoElectric( new model_type("thermo-electric", false) );
 
     int maxiter = ioption("cvg.nb-iter");
     double factor = doption("cvg.factor");

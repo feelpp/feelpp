@@ -38,6 +38,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelcrb/crbenums.hpp>
 
 namespace Feel
@@ -49,7 +50,7 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-class CRBDB
+class CRBDB : public CommObject
 {
 public:
 
@@ -64,7 +65,7 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    using super = CommObject;
 
     //@}
 
@@ -77,12 +78,12 @@ public:
     //! default constructor
     CRBDB( std::string const& name,
            std::string const& ext, 
-           WorldComm const& worldComm = Environment::worldComm() );
+           worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     CRBDB( std::string const& name,
            std::string const& ext,
            uuids::uuid const& i,
-           WorldComm const& worldComm = Environment::worldComm() );
+           worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     
     //! copy constructor
     CRBDB( CRBDB const & ) = default;
@@ -103,9 +104,6 @@ public:
     /** @name Accessors
      */
     //@{
-
-    //! \return the mpi communicators
-    WorldComm const& worldComm() const { return M_worldComm; }
 
     //! \return name
     std::string const& name() const
@@ -330,8 +328,6 @@ protected:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 private:
-    //! mpi communicators
-    WorldComm const& M_worldComm;
 
     std::string M_name;
     std::string M_ext;

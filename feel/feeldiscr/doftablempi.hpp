@@ -1265,7 +1265,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints( ext_
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
-    typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
+    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
     typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
 

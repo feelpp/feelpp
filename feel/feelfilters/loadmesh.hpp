@@ -67,7 +67,7 @@ BOOST_PARAMETER_FUNCTION(
       ( prefix,(std::string), "" )
       ( name,(std::string), "" ) // Mesh object instance name (for db/json save).
       ( filename, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.filename") )
-      ( desc, *,boost::shared_ptr<gmsh_type>() )  // geo() can't be used here as default !!
+      ( desc, *,std::shared_ptr<gmsh_type>() )  // geo() can't be used here as default !!
 
       ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
       ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.scale") )
@@ -75,12 +75,12 @@ BOOST_PARAMETER_FUNCTION(
       ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
       ( physical_are_elementary_regions,		   (bool), boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions") )
-      ( worldcomm,       (WorldComm), mesh->worldComm() )
+      ( worldcomm,       *, mesh->worldCommPtr() )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.rebuild") )
       ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition") )
       ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition") )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
-      ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
+      ( partitions,      *( boost::is_integral<mpl::_> ), (worldcomm)?worldcomm->globalSize():1 )
       ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
       ( savehdf5,        *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.savehdf5") )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
@@ -103,7 +103,9 @@ BOOST_PARAMETER_FUNCTION(
 
     std::string filenameExpand = Environment::expand(filename);
     fs::path mesh_name=fs::path(Environment::findFile(filenameExpand));
-    int proc_rank = worldcomm.globalRank();
+    CHECK( mesh ) << "invalid mesh";
+    CHECK( mesh->worldCommPtr() ) << "invalid mesh WC";
+    int proc_rank = worldcomm->globalRank();
     //Environment::isMasterRank()
 
     // add mesh format supported by gmsh: unv (i-deas), mesh(inria), bdf(nastran), actran, p3d, cgns, med
@@ -288,7 +290,7 @@ BOOST_PARAMETER_FUNCTION(
     return m;
 #else
     LOG(WARNING) << "Gmsh support not available. No mesh file provided, return an empty mesh.";
-    return boost::make_shared<_mesh_type>();
+    return std::make_shared<_mesh_type>();
 #endif
 #if defined(__clang__)
 #pragma clang diagnostic pop
