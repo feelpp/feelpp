@@ -75,7 +75,8 @@ public:
     virtual ~JournalWatcher()
     {
         // store info in the global ptree (No MPI comm!).
-        JournalManager::journalLocalPull();
+        if( JournalManager::journalAutoPullAtDelete() )
+            JournalManager::journalLocalPull();
         journalDisconnect();
     }
 

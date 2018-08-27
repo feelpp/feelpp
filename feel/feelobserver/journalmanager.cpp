@@ -34,6 +34,7 @@ template<> pt::ptree JournalManagerBase<>::S_journal_ptree = {};
 template<> MongoConfig JournalManagerBase<>::S_journal_db_config = {};
 template<> bool JournalManagerBase<>::S_journal_auto = false;
 template<> bool JournalManagerBase<>::S_journal_enabled = true;
+template<> bool JournalManagerBase<>::S_journal_allow_destructor_call = false;
 template<> uint32_t JournalManagerBase<>::S_journal_checkpoint = 0;
 
 } // Observer namespace
