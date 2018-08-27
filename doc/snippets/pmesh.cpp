@@ -50,12 +50,13 @@ int main(int argc, char** argv )
         auto mesh = loadMesh(_mesh=new  Mesh<Hypercube<2>>,
                              _partitions=nparts,
                              _respect_partition=true,
-                             _worldcomm=Environment::worldCommSeq() );
+                             _worldcomm=Environment::worldCommSeqPtr() );
         //! [load]
         std::cout << "looking for first element(masters) in each partition\n";
         std::vector<int> masters( nparts, -1 );
-        for( auto elt : allelements( mesh ) )
+        for( auto const& eltWrap : allelements( mesh ) )
         {
+            auto const& elt = unwrap_ref( eltWrap );
             int part  = elt.processId();
             int eid  = elt.id();
             //std::cout << "element " << eid << " in partition " << part << "\n";
