@@ -495,7 +495,8 @@ Environment::Environment( int argc, char** argv,
     // Enable auto mode for all observers.
     Environment::journalEnable( boption("journal") );
     Environment::journalAutoMode( boption("journal.auto") );
-    
+    Environment::journalAutoPullAtDelete( boption("journal.auto.pullatdelete") )
+
     // Force environment to connect to the journal.
     this->journalConnect();
 

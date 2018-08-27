@@ -158,6 +158,14 @@ public:
             return S_journal_enabled;
         }
 
+        //! Get the journal pull at delete status.
+        //! The journal manager allows its watchers to execute the signal.
+        //! \return true if journal if delete pull is allowed.
+        static const bool journalAutoPullAtDelete()
+        {
+            return S_journal_allow_destructor_call;
+        }
+
         //! Get the current checkpoint counter.
         //! \return the counter value.
         static const uint32_t
@@ -419,6 +427,9 @@ private:
         //! Journal automatic mode enable or disable.
         static bool S_journal_auto;
 
+        //! Journal automatic mode enable or disable.
+        static bool S_journal_allow_destructor_call;
+
         //! checkpoint number
         static uint32_t S_journal_checkpoint;
 };
@@ -429,6 +440,7 @@ template<> pt::ptree JournalManagerBase<>::S_journal_ptree;
 template<> MongoConfig JournalManagerBase<>::S_journal_db_config;
 template<> bool JournalManagerBase<>::S_journal_enabled;
 template<> bool JournalManagerBase<>::S_journal_auto;
+template<> bool JournalManagerBase<>::S_journal_allow_destructor_call;
 template<> uint32_t JournalManagerBase<>::S_journal_checkpoint;
 
 // Manager class should be derived from this alias class.
