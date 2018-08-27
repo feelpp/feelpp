@@ -639,7 +639,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                     edg.setOnBoundary( true, 0 );
                     edg.setProcessId( invalid_rank_type_value );
                     for ( uint16_type k = 0; k < 2 + face_type::nbPtsPerEdge; k++ )
-                        edg.setPoint( k, const_cast<Geo0D<nDim,T>&>(bface.point( face_type::eToP( j, k ) ) ) );
+                        edg.setPoint( k, const_cast< point_type &>(bface.point( face_type::eToP( j, k ) ) ) );
 
                     auto res = this->addEdge( edg );
                     auto & edgeInserted = res.first->second;
