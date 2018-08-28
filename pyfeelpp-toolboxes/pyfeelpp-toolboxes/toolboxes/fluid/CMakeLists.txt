@@ -33,6 +33,6 @@ endif()
 
 
 pybind11_add_module(_fluid  fluid.cpp)
-target_include_directories(_fluid PRIVATE ${PYTHON_INCLUDE_DIRS} ${FEELPP_DIR}/include/feelpp/toolboxes)
+target_include_directories(_fluid PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${FEELPP_DIR}/include/feelpp/toolboxes)
 find_library( FEELPP_FLUID feelpp_toolbox_fluid_lib HINTS ${FEELPP_DIR}/lib)
 target_link_libraries( _fluid PRIVATE ${FEELPP_FLUID}  ${FEELPP_LIBRARIES} )
