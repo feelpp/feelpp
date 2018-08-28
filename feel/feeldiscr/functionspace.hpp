@@ -4349,7 +4349,7 @@ public:
         this->init( mesh, meshSupport, 0, dofindices, periodicity );
     }
 
-    explicit FunctionSpace( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() 
+    explicit FunctionSpace( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
                             const std::string& name = functionSpaceDefaultInstanceName() )
         :
         super( worldcomm ),
