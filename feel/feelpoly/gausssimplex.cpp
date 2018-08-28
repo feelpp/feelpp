@@ -98,9 +98,8 @@ const bool im123gausssimplex = IMFactory<double>::instance().registerProduct( "i
 const bool im124gausssimplex = IMFactory<double>::instance().registerProduct( "im(1,24,simplex)", Feel::detail::GaussSimplex< 1 ,double>(24) );
 const bool im125gausssimplex = IMFactory<double>::instance().registerProduct( "im(1,25,simplex)", Feel::detail::GaussSimplex< 1 ,double>(25) );
 const bool im126gausssimplex = IMFactory<double>::instance().registerProduct( "im(1,26,simplex)", Feel::detail::GaussSimplex< 1 ,double>(26) );
-
-
 #endif
+const bool imMaxOrder1gausssimplex = IMMaxOrderFactory<double>::instance().insert( std::pair< std::string, IMMaxOrder<double> >( "im(1,simplex)",26 ) ).second;
 
 const bool im10gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,0,simplex)", Feel::detail::GaussSimplex< 1 ,float>(0) );
 const bool im11gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,1,simplex)", Feel::detail::GaussSimplex< 1 ,float>(1) );
@@ -130,8 +129,7 @@ const bool im123gausssimplexf = IMFactory<float>::instance().registerProduct( "i
 const bool im124gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,24,simplex)", Feel::detail::GaussSimplex< 1 ,float>(24) );
 const bool im125gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,25,simplex)", Feel::detail::GaussSimplex< 1 ,float>(25) );
 const bool im126gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,26,simplex)", Feel::detail::GaussSimplex< 1 ,float>(26) );
-
-
 #endif
+const bool imMaxOrder1gausssimplexf = IMMaxOrderFactory<float>::instance().insert( std::pair< std::string, IMMaxOrder<float> >( "im(1,simplex)",26 ) ).second;
 
 }

@@ -251,6 +251,8 @@ const bool im127gausshypercube = IMFactory<double>::instance().registerProduct( 
 const bool im128gausshypercube = IMFactory<double>::instance().registerProduct( "im(1,28,hypercube)", Feel::detail::GaussHypercube< 1 ,double>(28) );
 const bool im129gausshypercube = IMFactory<double>::instance().registerProduct( "im(1,29,hypercube)", Feel::detail::GaussHypercube< 1 ,double>(29) );
 const bool im130gausshypercube = IMFactory<double>::instance().registerProduct( "im(1,30,hypercube)", Feel::detail::GaussHypercube< 1 ,double>(30) );
+const bool imMaxOrder1gausshypercube = IMMaxOrderFactory<double>::instance().insert( std::pair< std::string, IMMaxOrder<double> >( "im(1,hypercube)",30 ) ).second;
+
 const bool im20gausshypercube = IMFactory<double>::instance().registerProduct( "im(2,0,hypercube)", Feel::detail::GaussHypercube< 2 ,double>(0) );
 const bool im21gausshypercube = IMFactory<double>::instance().registerProduct( "im(2,1,hypercube)", Feel::detail::GaussHypercube< 2 ,double>(1) );
 const bool im22gausshypercube = IMFactory<double>::instance().registerProduct( "im(2,2,hypercube)", Feel::detail::GaussHypercube< 2 ,double>(2) );
@@ -282,6 +284,8 @@ const bool im227gausshypercube = IMFactory<double>::instance().registerProduct( 
 const bool im228gausshypercube = IMFactory<double>::instance().registerProduct( "im(2,28,hypercube)", Feel::detail::GaussHypercube< 2 ,double>(28) );
 const bool im229gausshypercube = IMFactory<double>::instance().registerProduct( "im(2,29,hypercube)", Feel::detail::GaussHypercube< 2 ,double>(29) );
 const bool im230gausshypercube = IMFactory<double>::instance().registerProduct( "im(2,30,hypercube)", Feel::detail::GaussHypercube< 2 ,double>(30) );
+const bool imMaxOrder2gausshypercube = IMMaxOrderFactory<double>::instance().insert( std::pair< std::string, IMMaxOrder<double> >( "im(2,hypercube)",30 ) ).second;
+
 const bool im30gausshypercube = IMFactory<double>::instance().registerProduct( "im(3,0,hypercube)", Feel::detail::GaussHypercube< 3 ,double>(0) );
 const bool im31gausshypercube = IMFactory<double>::instance().registerProduct( "im(3,1,hypercube)", Feel::detail::GaussHypercube< 3 ,double>(1) );
 const bool im32gausshypercube = IMFactory<double>::instance().registerProduct( "im(3,2,hypercube)", Feel::detail::GaussHypercube< 3 ,double>(2) );
@@ -313,7 +317,7 @@ const bool im327gausshypercube = IMFactory<double>::instance().registerProduct( 
 const bool im328gausshypercube = IMFactory<double>::instance().registerProduct( "im(3,28,hypercube)", Feel::detail::GaussHypercube< 3 ,double>(28) );
 const bool im329gausshypercube = IMFactory<double>::instance().registerProduct( "im(3,29,hypercube)", Feel::detail::GaussHypercube< 3 ,double>(29) );
 const bool im330gausshypercube = IMFactory<double>::instance().registerProduct( "im(3,30,hypercube)", Feel::detail::GaussHypercube< 3 ,double>(30) );
-
+const bool imMaxOrder3gausshypercube = IMMaxOrderFactory<double>::instance().insert( std::pair< std::string, IMMaxOrder<double> >( "im(3,hypercube)",30 ) ).second;
 
 const bool im10gausshypercubef = IMFactory<float>::instance().registerProduct( "im(1,0,hypercube)", Feel::detail::GaussHypercube< 1 ,float>(0) );
 const bool im11gausshypercubef = IMFactory<float>::instance().registerProduct( "im(1,1,hypercube)", Feel::detail::GaussHypercube< 1 ,float>(1) );
@@ -346,6 +350,8 @@ const bool im127gausshypercubef = IMFactory<float>::instance().registerProduct( 
 const bool im128gausshypercubef = IMFactory<float>::instance().registerProduct( "im(1,28,hypercube)", Feel::detail::GaussHypercube< 1 ,float>(28) );
 const bool im129gausshypercubef = IMFactory<float>::instance().registerProduct( "im(1,29,hypercube)", Feel::detail::GaussHypercube< 1 ,float>(29) );
 const bool im130gausshypercubef = IMFactory<float>::instance().registerProduct( "im(1,30,hypercube)", Feel::detail::GaussHypercube< 1 ,float>(30) );
+const bool imMaxOrder1gausshypercubef = IMMaxOrderFactory<float>::instance().insert( std::pair< std::string, IMMaxOrder<float> >( "im(1,hypercube)",30 ) ).second;
+
 const bool im20gausshypercubef = IMFactory<float>::instance().registerProduct( "im(2,0,hypercube)", Feel::detail::GaussHypercube< 2 ,float>(0) );
 const bool im21gausshypercubef = IMFactory<float>::instance().registerProduct( "im(2,1,hypercube)", Feel::detail::GaussHypercube< 2 ,float>(1) );
 const bool im22gausshypercubef = IMFactory<float>::instance().registerProduct( "im(2,2,hypercube)", Feel::detail::GaussHypercube< 2 ,float>(2) );
@@ -377,6 +383,8 @@ const bool im227gausshypercubef = IMFactory<float>::instance().registerProduct( 
 const bool im228gausshypercubef = IMFactory<float>::instance().registerProduct( "im(2,28,hypercube)", Feel::detail::GaussHypercube< 2 ,float>(28) );
 const bool im229gausshypercubef = IMFactory<float>::instance().registerProduct( "im(2,29,hypercube)", Feel::detail::GaussHypercube< 2 ,float>(29) );
 const bool im230gausshypercubef = IMFactory<float>::instance().registerProduct( "im(2,30,hypercube)", Feel::detail::GaussHypercube< 2 ,float>(30) );
+const bool imMaxOrder2gausshypercubef = IMMaxOrderFactory<float>::instance().insert( std::pair< std::string, IMMaxOrder<float> >( "im(2,hypercube)",30 ) ).second;
+
 const bool im30gausshypercubef = IMFactory<float>::instance().registerProduct( "im(3,0,hypercube)", Feel::detail::GaussHypercube< 3 ,float>(0) );
 const bool im31gausshypercubef = IMFactory<float>::instance().registerProduct( "im(3,1,hypercube)", Feel::detail::GaussHypercube< 3 ,float>(1) );
 const bool im32gausshypercubef = IMFactory<float>::instance().registerProduct( "im(3,2,hypercube)", Feel::detail::GaussHypercube< 3 ,float>(2) );
@@ -408,6 +416,7 @@ const bool im327gausshypercubef = IMFactory<float>::instance().registerProduct( 
 const bool im328gausshypercubef = IMFactory<float>::instance().registerProduct( "im(3,28,hypercube)", Feel::detail::GaussHypercube< 3 ,float>(28) );
 const bool im329gausshypercubef = IMFactory<float>::instance().registerProduct( "im(3,29,hypercube)", Feel::detail::GaussHypercube< 3 ,float>(29) );
 const bool im330gausshypercubef = IMFactory<float>::instance().registerProduct( "im(3,30,hypercube)", Feel::detail::GaussHypercube< 3 ,float>(30) );
+const bool imMaxOrder3gausshypercubef = IMMaxOrderFactory<float>::instance().insert( std::pair< std::string, IMMaxOrder<float> >( "im(3,hypercube)",30 ) ).second;
 
 }
 #endif
