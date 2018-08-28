@@ -32,6 +32,6 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
 endif()
 
 pybind11_add_module(_exporter  exporter.cpp)
-target_include_directories(_exporter PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_include_directories(_exporter PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR})
 target_link_libraries( _exporter PRIVATE ${FEELPP_LIBRARIES} )
 
