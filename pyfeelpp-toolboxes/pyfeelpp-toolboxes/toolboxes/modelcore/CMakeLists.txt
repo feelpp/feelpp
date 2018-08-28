@@ -32,7 +32,7 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
 endif()
 
 pybind11_add_module(_modelcore  modelcore.cpp)
-target_include_directories(_modelcore PRIVATE ${PYTHON_INCLUDE_DIRS} ${FEELPP_DIR}/include/feelpp/toolboxes)
+target_include_directories(_modelcore PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${FEELPP_DIR}/include/feelpp/toolboxes)
 find_library( FEELPP_MODELCORE feelpp_modelcore HINTS ${FEELPP_DIR}/lib)
 message(STATUS "modelcore: ${FEELPP_MODELCORE_LIB}" )
 target_link_libraries( _modelcore PRIVATE ${FEELPP_MODELCORE}  ${FEELPP_LIBRARIES} )

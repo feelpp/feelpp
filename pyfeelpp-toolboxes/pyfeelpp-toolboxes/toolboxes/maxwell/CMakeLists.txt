@@ -33,6 +33,6 @@ endif()
 
 
 pybind11_add_module(_maxwell  maxwell.cpp)
-target_include_directories(_maxwell PRIVATE ${PYTHON_INCLUDE_DIRS} ${FEELPP_DIR}/include/feelpp/toolboxes)
+target_include_directories(_maxwell PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${FEELPP_DIR}/include/feelpp/toolboxes)
 find_library( FEELPP_MAXWELL feelpp_toolbox_maxwell_lib HINTS ${FEELPP_DIR}/lib)
 target_link_libraries( _maxwell PRIVATE ${FEELPP_MAXWELL}  ${FEELPP_LIBRARIES} )

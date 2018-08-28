@@ -33,6 +33,6 @@ endif()
 
 
 pybind11_add_module(_heat  heat.cpp)
-target_include_directories(_heat PRIVATE ${PYTHON_INCLUDE_DIRS} ${FEELPP_DIR}/include/feelpp/toolboxes)
+target_include_directories(_heat PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${FEELPP_DIR}/include/feelpp/toolboxes)
 find_library( FEELPP_HEAT feelpp_toolbox_heat_lib HINTS ${FEELPP_DIR}/lib)
 target_link_libraries( _heat PRIVATE ${FEELPP_HEAT}  ${FEELPP_LIBRARIES} )

@@ -33,6 +33,6 @@ endif()
 
 
 pybind11_add_module(_solid  solid.cpp)
-target_include_directories(_solid PRIVATE ${PYTHON_INCLUDE_DIRS} ${FEELPP_DIR}/include/feelpp/toolboxes)
+target_include_directories(_solid PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${FEELPP_DIR}/include/feelpp/toolboxes)
 find_library( FEELPP_SOLID feelpp_toolbox_solid_lib HINTS ${FEELPP_DIR}/lib)
 target_link_libraries( _solid PRIVATE ${FEELPP_SOLID}  ${FEELPP_LIBRARIES} )

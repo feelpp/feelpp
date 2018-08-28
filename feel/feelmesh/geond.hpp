@@ -145,9 +145,8 @@ public:
 
     //typedef PointType point_type;
     typedef typename super::face_type face_type;
-    using geo0d_type = Geo0D<Dim,T>;
-    using point_type = geo0d_type;
-    
+    using point_type = PointType;
+
     static const size_type Shape = super::Shape;
     static const uint16_type numPoints = super::numPoints;
     static const uint16_type numVertices = super::numVertices;
