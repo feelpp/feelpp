@@ -86,6 +86,24 @@ private:
 
 template<typename T>
 using IMFactory = Feel::Singleton< Feel::Factory< IMBase<T>, std::string > >;
+
+template<typename T>
+struct IMMaxOrder
+{
+    IMMaxOrder( uint16_type maxOrder ) : M_maxOrder( maxOrder ) {}
+    IMMaxOrder( IMMaxOrder const& ) = default;
+    IMMaxOrder( IMMaxOrder && ) = default;
+    IMMaxOrder& operator=( IMMaxOrder const& i ) = default;
+    IMMaxOrder& operator=( IMMaxOrder && i ) = default;
+    uint16_type maxOrder() const { return M_maxOrder; }
+private :
+    uint16_type M_maxOrder;
+};
+template<typename T>
+using IMMaxOrderFactory = Feel::Singleton< std::map< std::string, IMMaxOrder<T> > >;
+
+
+
 #if 0
 # define DIMS BOOST_PP_TUPLE_TO_LIST(2,(Triangle,Tetrahedra))
 # define ORDERS BOOST_PP_TUPLE_TO_LIST(21,(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20))

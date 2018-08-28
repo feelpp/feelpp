@@ -82,20 +82,30 @@ public :
     PointSetQuadrature( const PointSetQuadrature& Qp ) = default;
 
     explicit PointSetQuadrature( uint16_type order )
-        : super( order ), 
+        : super( order ),
           M_order( order ),
           M_name( (boost::format("im(%1%,%2%,%3%)")%nDim %order%Convex::type() ).str() ),
           M_quad(),
           M_w(), M_prod(), M_exprq()
         {
-            DLOG(INFO) << "Quad name: " << M_name << std::endl;
             if ( nDim > 0 )
             {
+                std::string imNameMaxOrder =  (boost::format("im(%1%,%2%)")%nDim %Convex::type() ).str();
+                auto itFindMaxOrder = IMMaxOrderFactory<value_type>::instance().find( imNameMaxOrder );
+                CHECK( itFindMaxOrder != IMMaxOrderFactory<value_type>::instance().end() ) << "im type not found with " << imNameMaxOrder;
+                uint16_type maxOrder = itFindMaxOrder->second.maxOrder();
+                if ( M_order > maxOrder )
+                {
+                    LOG(INFO) << "quadrature order " << M_order << " is too big, change to max defined which is " << maxOrder;
+                    M_order = maxOrder;
+                    M_name = (boost::format("im(%1%,%2%,%3%)")%nDim %M_order%Convex::type() ).str();
+                }
+                DLOG(INFO) << "Quad name: " << M_name << std::endl;
                 M_quad = *IMFactory<value_type>::instance().createObject( M_name );
                 M_w.resize(M_quad.numberOfPoints());
                 M_prod.resize( M_quad.numberOfPoints() );
                 M_exprq.resize( M_quad.numberOfPoints() );
-                create( order );
+                create( M_order );
             }
         }
 

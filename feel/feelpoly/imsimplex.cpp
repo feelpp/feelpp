@@ -8363,6 +8363,7 @@ const bool im217simplex = IMFactory<double>::instance().registerProduct( "im(2,1
 const bool im218simplex = IMFactory<double>::instance().registerProduct( "im(2,18,simplex)", Feel::detail::IMTriangle< 18 ,double>() );
 const bool im219simplex = IMFactory<double>::instance().registerProduct( "im(2,19,simplex)", Feel::detail::IMTriangle< 19 ,double>() );
 const bool im220simplex = IMFactory<double>::instance().registerProduct( "im(2,20,simplex)", Feel::detail::IMTriangle< 20 ,double>() );
+const bool imMaxOrder2simplex = IMMaxOrderFactory<double>::instance().insert( std::pair< std::string, IMMaxOrder<double> >( "im(2,simplex)",20 ) ).second;
 
 // tetrahedron
 const bool im30simplex = IMFactory<double>::instance().registerProduct( "im(3,0,simplex)", Feel::detail::IMTetrahedra< 0 ,double>() );
@@ -8387,7 +8388,7 @@ const bool im318simplex = IMFactory<double>::instance().registerProduct( "im(3,1
 const bool im319simplex = IMFactory<double>::instance().registerProduct( "im(3,19,simplex)", Feel::detail::IMTetrahedra< 19 ,double>() );
 const bool im320simplex = IMFactory<double>::instance().registerProduct( "im(3,20,simplex)", Feel::detail::IMTetrahedra< 20 ,double>() );
 const bool im321simplex = IMFactory<double>::instance().registerProduct( "im(3,21,simplex)", Feel::detail::IMTetrahedra< 21 ,double>() );
-
+const bool imMaxOrder3simplex = IMMaxOrderFactory<double>::instance().insert( std::pair< std::string, IMMaxOrder<double> >( "im(3,simplex)",21 ) ).second;
 
 const bool im20simplexf = IMFactory<float>::instance().registerProduct( "im(2,0,simplex)", Feel::detail::IMTriangle< 0 ,float>() );
 const bool im21simplexf = IMFactory<float>::instance().registerProduct( "im(2,1,simplex)", Feel::detail::IMTriangle< 1 ,float>() );
@@ -8410,6 +8411,7 @@ const bool im217simplexf = IMFactory<float>::instance().registerProduct( "im(2,1
 const bool im218simplexf = IMFactory<float>::instance().registerProduct( "im(2,18,simplex)", Feel::detail::IMTriangle< 18 ,float>() );
 const bool im219simplexf = IMFactory<float>::instance().registerProduct( "im(2,19,simplex)", Feel::detail::IMTriangle< 19 ,float>() );
 const bool im220simplexf = IMFactory<float>::instance().registerProduct( "im(2,20,simplex)", Feel::detail::IMTriangle< 20 ,float>() );
+const bool imMaxOrder2simplexf = IMMaxOrderFactory<float>::instance().insert( std::pair< std::string, IMMaxOrder<float> >( "im(2,simplex)",20 ) ).second;
 
 // tetrahedron
 const bool im30simplexf = IMFactory<float>::instance().registerProduct( "im(3,0,simplex)", Feel::detail::IMTetrahedra< 0 ,float>() );
@@ -8434,7 +8436,7 @@ const bool im318simplexf = IMFactory<float>::instance().registerProduct( "im(3,1
 const bool im319simplexf = IMFactory<float>::instance().registerProduct( "im(3,19,simplex)", Feel::detail::IMTetrahedra< 19 ,float>() );
 const bool im320simplexf = IMFactory<float>::instance().registerProduct( "im(3,20,simplex)", Feel::detail::IMTetrahedra< 20 ,float>() );
 const bool im321simplexf = IMFactory<float>::instance().registerProduct( "im(3,21,simplex)", Feel::detail::IMTetrahedra< 21 ,float>() );
-
+const bool imMaxOrder3simplexf = IMMaxOrderFactory<float>::instance().insert( std::pair< std::string, IMMaxOrder<float> >( "im(3,simplex)",21 ) ).second;
 
 } // Feel
 
