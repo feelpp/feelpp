@@ -37,7 +37,6 @@ namespace Feel
 
 // Incremented in child class constructors.
 static uint16_type FUNCTIONSPACE_INSTANCE_NUMBER = 0;
-
 static const std::string functionSpaceDefaultInstanceName() { return "function_space-" + std::to_string(FUNCTIONSPACE_INSTANCE_NUMBER); }
 
 /**

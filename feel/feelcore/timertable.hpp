@@ -45,6 +45,7 @@
 namespace Feel {
 
 static uint16_type TIMERDATA_INSTANCE_NUMBER = 0;
+static const std::string timerDefaultInstanceName() { return "timer-" + std::to_string(TIMERDATA_INSTANCE_NUMBER); }
 
 //! TimerData is the value for the TimerTable map.
 class TimerData : public std::vector<double>
@@ -53,7 +54,7 @@ class TimerData : public std::vector<double>
     TimerData() = default;
     TimerData(TimerData const& ) = default;
     TimerData( std::string const& m, 
-               std::string const& p = ( "timer-" + std::to_string(TIMERDATA_INSTANCE_NUMBER) ) )
+               std::string const& p = timerDefaultInstanceName() )
         : msg(m), instance_name(p)
     {
         TIMERDATA_INSTANCE_NUMBER++;

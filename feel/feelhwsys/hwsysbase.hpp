@@ -29,6 +29,7 @@ namespace Feel
 {
 
 static uint16_type HWSYS_INSTANCE_NUMBER = 0;
+static const std::string hwsysDefaultInstanceName() { return "hwsys-" + std::to_string(HWSYS_INSTANCE_NUMBER); }
 
 namespace Sys
 {
@@ -49,7 +50,7 @@ public:
     HwSysBase()
         : M_backend( "hwsys" )
     {
-        instanceName( "hwsys-" + std::to_string(HWSYS_INSTANCE_NUMBER) );
+        instanceName( hwsysDefaultInstanceName() );
         HWSYS_INSTANCE_NUMBER++;
         VLOG(2) << "[HwSys] constructor instance number " << M_instance_number << "\n" ;
     }

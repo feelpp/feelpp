@@ -121,10 +121,20 @@ public:
         }
         
         //! Set the journal mode.
-        //! \param m automatic mode true or false.
-        static void journalAutoMode( bool m )
+        //! \param b automatic mode true or false.
+        static void journalAutoMode( bool b )
         {
-            S_journal_auto = m;
+            S_journal_auto = b;
+        }
+
+        //! Set the journal delete mode.
+        //! The journal manager allows its watchers to execute the signal and
+        //! send their information before they are deleted.
+        //! \param m pull at delete mode true or false
+        //! \return true if journal if delete pull is allowed.
+        static void journalAutoPullAtDelete( bool m )
+        {
+            S_journal_allow_destructor_call = m;
         }
 
         //! Activate or deactivate the journal.

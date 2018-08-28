@@ -111,6 +111,7 @@ const size_type EXTRACTION_KEEP_ALL_IDS                   = ( EXTRACTION_KEEP_PO
 const size_type EXTRACTION_KEEP_MESH_RELATION             = ( 1<<4 );
 
 static uint16_type MESH_INSTANCE_NUMBER = 0;
+static const std::string meshDefaultInstanceName() { return "mesh-" + std::to_string(MESH_INSTANCE_NUMBER); }
 }
 #include <feel/feeldiscr/createsubmesh.hpp>
 #include <feel/feeldiscr/localization.hpp>
@@ -165,7 +166,7 @@ class Mesh
                                                             mpl::identity<Mesh2D<GeoShape,T> >,
                                                             mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type,
         public boost::addable<Mesh<GeoShape,T,Tag> >,
-        public std::enable_shared_from_this< Mesh<GeoShape,T,Tag> >
+        public std::enable_shared_from_this< Mesh<GeoShape,T,Tag> >,
         public Observer::JournalWatcher
 {
     using super = typename mpl::if_<is_0d<GeoShape>,
@@ -304,7 +305,7 @@ public:
     //!  Default mesh constructor
     //!
     explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
-                   std::string const& name = ( "mesh-" + std::to_string(MESH_INSTANCE_NUMBER) ) );
+                   std::string const& name = meshDefaultInstanceName() );
 
     ~Mesh() {}
 
