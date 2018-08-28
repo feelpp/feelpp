@@ -33,6 +33,6 @@ endif()
 
 
 pybind11_add_module(_advection  advection.cpp)
-target_include_directories(_advection PRIVATE ${PYTHON_INCLUDE_DIRS} ${FEELPP_DIR}/include/feelpp/toolboxes)
+target_include_directories(_advection PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${FEELPP_DIR}/include/feelpp/toolboxes)
 find_library( FEELPP_ADVECTION feelpp_toolbox_advection_lib HINTS ${FEELPP_DIR}/lib)
 target_link_libraries( _advection PRIVATE ${FEELPP_ADVECTION}  ${FEELPP_LIBRARIES} )

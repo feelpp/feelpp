@@ -33,6 +33,6 @@ endif()
 
 
 pybind11_add_module(_thermoelectric  thermoelectric.cpp)
-target_include_directories(_thermoelectric PRIVATE ${PYTHON_INCLUDE_DIRS} ${FEELPP_DIR}/include/feelpp/toolboxes)
+target_include_directories(_thermoelectric PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${FEELPP_DIR}/include/feelpp/toolboxes)
 find_library( FEELPP_THERMOELECTRIC feelpp_toolbox_thermoelectric_lib HINTS ${FEELPP_DIR}/lib)
 target_link_libraries( _thermoelectric PRIVATE ${FEELPP_THERMOELECTRIC}  ${FEELPP_LIBRARIES} )
