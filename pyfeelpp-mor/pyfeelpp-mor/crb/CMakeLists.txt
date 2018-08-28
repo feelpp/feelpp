@@ -32,5 +32,5 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
 endif()
 
 pybind11_add_module(_crb  crb.cpp)
-target_include_directories(_crb PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_include_directories(_crb PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR})
 target_link_libraries( _crb PRIVATE ${FEELPP_LIBRARIES} )
