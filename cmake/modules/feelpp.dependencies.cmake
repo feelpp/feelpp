@@ -518,6 +518,12 @@ if(FEELPP_ENABLE_PYTHON)
       message(STATUS "[feelpp] sympy (at least 1.1) has not been  found")
     endif()
 
+
+    Find_Package(MPI4PY)
+    if ( MPI4PY_FOUND )
+      set( FEELPP_HAS_MPI4PY 1 )
+    endif()
+      
   endif()
 
 endif()
