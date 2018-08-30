@@ -8343,8 +8343,8 @@ BOOST_PP_FOR((1, 21), PRED, OP, MACROTET)
 } // detail
 
 // class instantiation (TODO : move in imfactory.cpp for example)
-template class FEELPP_EXPORT Feel::Singleton< Feel::Factory< IMBase<double>, std::string > >;
-template class FEELPP_EXPORT Feel::Singleton< Feel::Factory< IMBase<float>, std::string > >;
+template class Feel::Singleton< Feel::Factory< IMBase<double>, std::string > >;
+template class Feel::Singleton< Feel::Factory< IMBase<float>, std::string > >;
 template class Feel::Singleton< std::map< std::string, IMMaxOrder<double> > >;
 template class Feel::Singleton< std::map< std::string, IMMaxOrder<float> > >;
 
