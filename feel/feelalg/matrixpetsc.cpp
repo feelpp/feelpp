@@ -96,7 +96,11 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, IS& isrow, IS& i
     datamap_ptrtype dmcol( new datamap_type(ncol, ncol) );
     this->setMapRow(dmrow);
     this->setMapCol(dmcol);
+#if PETSC_VERSION_LESS_THAN( 3,8,0 )
     ierr = MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->M_mat);
+#else
+    ierr = MatCreateSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->M_mat);
+#endif
     CHKERRABORT( this->comm(),ierr );
     this->setInitialized( true );
     this->close();
@@ -142,7 +146,11 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, std::vector<int>
     datamap_ptrtype dmcol( new datamap_type(ncol, ncol) );
     this->setMapRow(dmrow);
     this->setMapCol(dmcol);
+#if PETSC_VERSION_LESS_THAN( 3,8,0 )
     ierr = MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->M_mat);
+#else
+    ierr = MatCreateSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->M_mat);
+#endif
     CHKERRABORT( this->comm(),ierr );
     this->setInitialized( true );
     this->close();
@@ -1457,10 +1465,17 @@ MatrixPetsc<T>::getSubMatrixPetsc( std::vector<size_type> const& rows,
     ierr = ISCreateGeneral(this->comm(),ncol,colMap,&iscol);
     CHKERRABORT( this->comm(),ierr );
 #endif
+#if PETSC_VERSION_LESS_THAN( 3,8,0 )
     if ( submat == NULL )
         ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &submat);
     else
         ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_REUSE_MATRIX, &submat);
+#else
+    if ( submat == NULL )
+        ierr = MatCreateSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &submat);
+    else
+        ierr = MatCreateSubMatrix(this->mat(), isrow, iscol, MAT_REUSE_MATRIX, &submat);
+#endif
     CHKERRABORT( this->comm(),ierr );
 
     ierr = PETSc::ISDestroy( isrow );
@@ -1510,7 +1525,11 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
     ierr = ISCreateGeneral(this->comm(),ncol,colMap,&iscol);
     CHKERRABORT( this->comm(),ierr );
 #endif
+#if PETSC_VERSION_LESS_THAN( 3,8,0 )
     ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &A->mat());
+#else
+    ierr = MatCreateSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &A->mat());
+#endif
     CHKERRABORT( this->comm(),ierr );
 
     PETSc::ISDestroy( isrow );
