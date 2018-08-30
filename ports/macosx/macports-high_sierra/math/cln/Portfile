@@ -3,6 +3,8 @@
 
 PortSystem 1.0
 PortGroup       muniversal 1.0
+#PortGroup       mpi 1.0
+PortGroup               compilers 1.0
 
 name            cln
 conflicts       puppet
@@ -26,6 +28,7 @@ checksums       rmd160  81c83ca070425627d248579ff6e9d168aae12a85 \
 
 depends_lib     port:gmp
 
+compilers.setup
 
 configure.args  --prefix=${prefix} LDFLAGS=-dynamic
 
@@ -37,36 +40,3 @@ test.target     check
 
 livecheck.type  regex
 livecheck.regex ${name}-(\[0-9.\]+)${extract.suffix}
-
-if {![variant_isset gcc48] && ![variant_isset gcc5] && ![variant_isset clang36] && ![variant_isset clang37] && ![variant_isset clang38] } {
-    #default_variants +gcc48
-    default_variants +clang38
-}
-
-
-variant gcc48 description {Build with gcc 4.8} conflicts clang36 clang37 gcc5 {
-    depends_lib-append  port:gcc48
-    configure.compiler  macports-gcc-4.8
-}
-
-variant clang36 description {Build with clang 3.6} conflicts clang37 gcc48 gcc5 {
-    depends_lib-append  port:clang-3.6
-    configure.compiler  macports-clang-3.6
-    #configure.env-append CXXFLAGS=-stdlib=libc++
-}
-variant clang37 description {Build with clang 3.7} conflicts clang36 gcc48 gcc5 {
-    depends_lib-append  port:clang-3.7
-    configure.compiler  macports-clang-3.7
-    #configure.env-append CXXFLAGS=-stdlib=libc++
-}
-
-variant clang38 description {Build with clang 3.8} conflicts clang36 clang37 gcc48 gcc5 {
-    depends_lib-append  port:clang-3.8
-    configure.compiler  macports-clang-3.8
-    #configure.env-append CXXFLAGS=-stdlib=libc++
-}
-
-variant gcc5 description {Build with gcc 5.} conflicts clang36 clang37 gcc48 {
-    depends_lib-append  port:gcc5
-    configure.compiler  macports-gcc-5
-}
