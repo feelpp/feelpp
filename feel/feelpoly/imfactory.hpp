@@ -102,8 +102,10 @@ private :
 template<typename T>
 using IMMaxOrderFactory = Feel::Singleton< std::map< std::string, IMMaxOrder<T> > >;
 
-
-
+extern template class FEELPP_EXPORT Feel::Singleton< Feel::Factory< IMBase<double>, std::string > >;
+extern template class FEELPP_EXPORT Feel::Singleton< Feel::Factory< IMBase<float>, std::string > >;
+extern template class FEELPP_EXPORT Feel::Singleton< std::map< std::string, IMMaxOrder<double> > >;
+extern template class FEELPP_EXPORT Feel::Singleton< std::map< std::string, IMMaxOrder<float> > >;
 #if 0
 # define DIMS BOOST_PP_TUPLE_TO_LIST(2,(Triangle,Tetrahedra))
 # define ORDERS BOOST_PP_TUPLE_TO_LIST(21,(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20))
