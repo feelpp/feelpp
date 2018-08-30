@@ -7,10 +7,10 @@
 
 find_path(FEELPP_INCLUDE_DIR feel.hpp
     HINTS
-    $ENV{FEELPP_DIR}/include/feel
-    /usr/include/feel
-    /usr/local/include/feel
-    /opt/local/include/feel
+    $ENV{FEELPP_DIR}/include/feelpp/feel
+    /usr/include/feelpp/feel
+    /usr/local/include/feelpp/feel
+    /opt/local/include/feelpp/feel
     NO_DEFAULT_PATH
 )
 

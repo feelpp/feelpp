@@ -137,19 +137,19 @@ if ( FEELPP_HAS_MONGOCXX )
 endif()
 
 if ( TARGET feelpp_mesh_partitioner )
-  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/mesh/cmake_install.cmake")
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/feelpp/tools/mesh/cmake_install.cmake")
 endif()
 
 if ( TARGET app-databases )
-  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/databases/cmake_install.cmake")
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/feelpp/tools/databases/cmake_install.cmake")
 endif()
 
 if ( TARGET feelpp_remotedata )
-  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/tools/remotedata/cmake_install.cmake")
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/feelpp/tools/remotedata/cmake_install.cmake")
 endif()
 
 set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
-  -DCMAKE_INSTALL_COMPONENT=Bin   -P "${CMAKE_BINARY_DIR}/tools/cmake_install.cmake"
+  -DCMAKE_INSTALL_COMPONENT=Bin   -P "${CMAKE_BINARY_DIR}/feelpp/tools/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/contrib/eigen/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Libs  -P "${CMAKE_BINARY_DIR}/feel/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/feel/cmake_install.cmake"
@@ -184,7 +184,7 @@ if ( NOT TARGET install-feelpp-base )
     "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Geo
     -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
     "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Quickstart
-    -P "${CMAKE_BINARY_DIR}/quickstart/cmake_install.cmake"
+    -P "${CMAKE_BINARY_DIR}/feelpp/quickstart/cmake_install.cmake"
     )
 endif()
 

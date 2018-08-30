@@ -105,11 +105,6 @@ endif()
 OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
-OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
-OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
-OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "enable PyFeel++" ON)
-OPTION(FEELPP_ENABLE_PYFEELPP_TOOLBOXES "enable PyFeel++ for Toolboxes" ON)
-OPTION(FEELPP_ENABLE_PYFEELPP_MOR "enable PyFeelpp for MOR" ON)
 OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" ON)
 option(FEELPP_ENABLE_MOR "Enable MOR(Model Order Reduction) Applications in Feel++" ON)
 
@@ -144,7 +139,7 @@ if ( NOT DEFINED FEELPP_INSTANTIATION_ORDER_MAX)
 endif()
 
 
-SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/cmake/modules ${FEELPP_HOME_DIR}/cmake/machines ${FEELPP_HOME_DIR}/contrib/nt2/cmake )
+SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/cmake/modules ${FEELPP_HOME_DIR}/cmake/machines )
 add_subdirectory(cmake)
 
 include(feelpp.dirs)
@@ -361,30 +356,6 @@ if (APPLE)
   list(REMOVE_ITEM FEELPP_LIBRARIES /usr/lib/libstdc++.dylib)
 endif()
 
-
-################################################################################
-# Feel
-################################################################################
-if(NOT FEELPP_ENABLE_BUILD_STATIC)
-	set(CMAKE_C++_CREATE_SHARED_LIBRARY 1)
-endif()
-ADD_SUBDIRECTORY ( feel )
-
-IF( FEELPP_MINIMAL_CONFIGURATION )
-  set( FEELPP_ENABLE_MOR OFF )
-  set( FEELPP_ENABLE_TOOLBOXES OFF )
-  set( FEELPP_ENABLE_BENCHMARKS OFF )
-  set( FEELPP_ENABLE_TESTS OFF )
-  set( FEELPP_ENABLE_RESEARCH OFF )
-  set( FEELPP_ENABLE_APPLICATIONS OFF )
-  set( FEELPP_ENABLE_DOCUMENTATION ON )
-  set( FEELPP_ENABLE_INSTANTIATION_MODE OFF )
-  UNSET( FEELPP_INSTANTIATION_MODE CACHE )
-  SET(FEELPP_MESH_MAX_ORDER "1" CACHE STRING "maximum geometrical order in templates to instantiate" FORCE )
-ENDIF( FEELPP_MINIMAL_CONFIGURATION )
-
-
-
 #
 # Enable testing
 #
@@ -399,36 +370,25 @@ add_custom_target(install-testcase
   )
 
 add_custom_target(check-full COMMAND "ctest")
-if ( FEELPP_ENABLE_DOCUMENTATION OR FEELPP_ENABLE_DOXYGEN )
-  add_dependencies(check-full doc)
-  set(FEELPP_DOC_ENABLE_CAVITY_CRB off)
-  ADD_SUBDIRECTORY ( doc )
-endif()
-#add_dependencies(check benchmarks)
-#add_dependencies(check examples)
-IF(FEELPP_ENABLE_TESTS AND EXISTS  ${CMAKE_CURRENT_SOURCE_DIR}/testsuite)
-  add_subdirectory( testsuite )
-  add_dependencies(check-full testsuite)
-endif()
 
-if ( FEELPP_ENABLE_BENCHMARKS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks )
-  ADD_SUBDIRECTORY ( benchmarks )
-endif()
 
-if ( FEELPP_ENABLE_APPLICATIONS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/applications)
-  ADD_SUBDIRECTORY ( applications )
-endif()
+################################################################################
+# Feel
+################################################################################
+ADD_SUBDIRECTORY ( feelpp )
 
-if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEELPP_ENABLE_RESEARCH )
-  ADD_SUBDIRECTORY ( research )
-endif()
-
-include(feelpp.module.quickstart)
-if ( FEELPP_HAS_QUICKSTART )
-  add_custom_target(quickstart)
-  add_subdirectory(quickstart)
-endif()
-
+IF( FEELPP_MINIMAL_CONFIGURATION )
+  set( FEELPP_ENABLE_MOR OFF )
+  set( FEELPP_ENABLE_TOOLBOXES OFF )
+  set( FEELPP_ENABLE_BENCHMARKS OFF )
+  set( FEELPP_ENABLE_TESTS OFF )
+  set( FEELPP_ENABLE_RESEARCH OFF )
+  set( FEELPP_ENABLE_APPLICATIONS OFF )
+  set( FEELPP_ENABLE_DOCUMENTATION ON )
+  set( FEELPP_ENABLE_INSTANTIATION_MODE OFF )
+  UNSET( FEELPP_INSTANTIATION_MODE CACHE )
+  SET(FEELPP_MESH_MAX_ORDER "1" CACHE STRING "maximum geometrical order in templates to instantiate" FORCE )
+ENDIF( FEELPP_MINIMAL_CONFIGURATION )
 
 include(feelpp.module.toolboxes)
 if ( FEELPP_HAS_TOOLBOXES )
@@ -442,14 +402,33 @@ if ( FEELPP_HAS_MOR )
   add_subdirectory(mor)
 endif()
 
-include(feelpp.module.pyfeelpp)
-if ( FEELPP_HAS_PYFEELPP )
-  add_subdirectory(pyfeelpp)
-  add_subdirectory(pyfeelpp-toolboxes)
-  add_subdirectory(pyfeelpp-mor)
+#
+# Enable testing
+#
+IF(FEELPP_ENABLE_TESTS AND EXISTS  ${CMAKE_CURRENT_SOURCE_DIR}/testsuite)
+  add_subdirectory( testsuite )
+  add_dependencies(check-full testsuite)
 endif()
 
-add_subdirectory(tools)
+
+
+if ( FEELPP_ENABLE_DOCUMENTATION OR FEELPP_ENABLE_DOXYGEN )
+  add_dependencies(check-full doc)
+  set(FEELPP_DOC_ENABLE_CAVITY_CRB off)
+  ADD_SUBDIRECTORY ( doc )
+endif()
+
+if ( FEELPP_ENABLE_BENCHMARKS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks )
+  ADD_SUBDIRECTORY ( benchmarks )
+endif()
+
+
+
+
+if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEELPP_ENABLE_RESEARCH )
+  ADD_SUBDIRECTORY ( research )
+endif()
+
 
 ################################################################################
 # generate configuration header

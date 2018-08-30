@@ -43,6 +43,8 @@ set(FEELPP_MOR_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${FEELPP_MOR_SOURCE_DIR})
 include_directories(${FEELPP_MOR_BINARY_DIR})
 
+OPTION(FEELPP_ENABLE_PYFEELPP_MOR "enable PyFeelpp for MOR" ON)
+
 OPTION(FEELPP_ENABLE_MOR_ALL "enable all MOR testcase" ON)
 
 OPTION(FEELPP_ENABLE_MOR_EADS "enable EADS testcase" ${FEELPP_ENABLE_MOR_ALL})
@@ -66,6 +68,15 @@ OPTION(FEELPP_ENABLE_MOR_CONVECTION "enable Convection testcase" ${FEELPP_ENABLE
 OPTION(FEELPP_ENABLE_MOR_STOKESDEIM "enable stokes with deim testcase" ${FEELPP_ENABLE_MOR_ALL})
 
 set(FEELPP_MOR_LIBRARIES)
+
+INCLUDE(CTest)
+ENABLE_TESTING()
+
+add_subdirectory(onlinerun)
+if ( FEELPP_HAS_PYFEELPP_MOR )
+  add_subdirectory(pyfeelpp-mor)
+endif()
+
 IF ( FEELPP_ENABLE_MOR_EADS )
   #add_subdirectory(eads)
 ENDIF()
@@ -150,7 +161,7 @@ ENDIF()
 
 
 
-add_subdirectory(onlinerun)
+
 add_subdirectory(minimal)
 add_subdirectory(thermoelectric)
 add_subdirectory(biotsavart)

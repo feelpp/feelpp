@@ -36,12 +36,12 @@ add_custom_target(pdf-ginac)
 set (CMAKE_CXX_STANDARD 11)
 
 find_package(CLN 1.2.2 REQUIRED)
-include_directories(${CLN_INCLUDE_DIR})
+#include_directories(${CLN_INCLUDE_DIR})
 
 include(CheckIncludeFile)
 check_include_file("unistd.h" HAVE_UNISTD_H)
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/ginac)
+#include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/ginac)
 
 # This macro implements some very special logic how to deal with the cache.
 # By default the various install locations inherit their value from their

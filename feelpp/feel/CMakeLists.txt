@@ -62,7 +62,10 @@ endif()
 set_target_properties(feelpp PROPERTIES OUTPUT_NAME "feelpp")
 #set_target_properties(feelpp PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
 set_property(TARGET feelpp PROPERTY LABELS feel++)
-
+target_include_directories(feelpp PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+  $<INSTALL_INTERFACE:include/feelpp> )  
 
 #target_link_libraries (feelpp ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES} ${TBB_LIBRARIES})
 target_link_libraries(feelpp ${FEELPP_LIBRARIES})
@@ -89,5 +92,6 @@ install(EXPORT feelpp-export-targets DESTINATION share/feelpp/feel/cmake/modules
 
 # add feelpp into FEELPP_LIBRARIES
 set(FEELPP_LIBRARIES feelpp ${FEELPP_LIBRARIES} PARENT_SCOPE)
+
 
 include(feelpp.lib.install)
