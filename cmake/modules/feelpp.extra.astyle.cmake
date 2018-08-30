@@ -26,4 +26,4 @@ find_program(ASTYLE astyle
   HINTS
   # for macosx mac port
   /opt/local/bin )
-configure_file( tools/scripts/astyle/feelpp.astyle.sh.in ${FEELPP_SOURCE_DIR}/tools/scripts/astyle/feelpp.astyle.sh )
+

@@ -1,9 +1,9 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 19 Jan 2017
+#       Date: 30 Aug 2018
 #
-#  Copyright (C) 2017 Feel++ Consortium
+#  Copyright (C) 2018 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,5 +22,4 @@
 #
 #
 
-add_subdirectory(buildkite)
-add_subdirectory(docker)
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.astyle.sh.in ${CMAKE_CURRENT_BINARY_DIR}/feelpp.astyle.sh )

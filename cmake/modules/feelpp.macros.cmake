@@ -230,7 +230,7 @@ macro(feelpp_add_application)
 
   foreach(APP_TEST ${APP_TESTS})
     # disable leak detection for now
-    set_tests_properties(${APP_TEST} PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;LSAN_OPTIONS=suppressions=${CMAKE_SOURCE_DIR}/tools/lsan/suppressions.txt")
+    set_tests_properties(${APP_TEST} PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;LSAN_OPTIONS=suppressions=${CMAKE_SOURCE_DIR}/feelpp/tools/lsan/suppressions.txt")
   endforeach()
 
   #add_dependencies(crb ${execname})

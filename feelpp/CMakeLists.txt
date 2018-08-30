@@ -1,9 +1,9 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 19 Jan 2017
+#       Date: 30 Aug 2018
 #
-#  Copyright (C) 2017 Feel++ Consortium
+#  Copyright (C) 2018 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,6 +22,22 @@
 #
 #
 
-add_subdirectory(remotedata)
-add_subdirectory(scripts)
-install(DIRECTORY lsan DESTINATION share/feelpp)
+if(NOT FEELPP_ENABLE_BUILD_STATIC)
+	set(CMAKE_C++_CREATE_SHARED_LIBRARY 1)
+endif()
+
+# feel++ lib
+ADD_SUBDIRECTORY ( feel )
+
+OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
+OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "enable PyFeel++" ON)
+
+add_subdirectory(tools)
+include(feelpp.module.quickstart)
+if ( FEELPP_HAS_QUICKSTART )
+  add_custom_target(quickstart)
+  add_subdirectory(quickstart)
+endif()
+include(feelpp.module.pyfeelpp)
+add_subdirectory(pyfeelpp)
+

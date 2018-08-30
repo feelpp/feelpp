@@ -63,7 +63,15 @@ set(FEELPP_TOOLBOXES_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${FEELPP_TOOLBOXES_SOURCE_DIR})
 include_directories(${FEELPP_TOOLBOXES_BINARY_DIR})
 
+INCLUDE(CTest)
+ENABLE_TESTING()
+
 add_subdirectory( feel/feelmodels )
+
+OPTION(FEELPP_ENABLE_PYFEELPP_TOOLBOXES "enable PyFeel++ for Toolboxes" ON)
+if ( FEELPP_HAS_PYFEELPP_TOOLBOXES )
+  add_subdirectory( pyfeelpp-toolboxes )
+endif()
 
 if ( FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
   add_subdirectory( fluid )
