@@ -200,6 +200,7 @@ public:
     boost::tuple<beta_vector_type,  std::vector<beta_vector_type>  >
     computeBetaQm( parameter_type const& mu )
     {
+        this->M_betaAqm[0][0]=1;
         auto eim_g = this->scalarContinuousEim()[0];
         int eim_g_size = eim_g->mMax();
         vectorN_type beta_g = eim_g->beta( mu );
@@ -246,7 +247,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false );
+    value_type output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false ) override;
 
     bool referenceParametersGivenByUser() { return true; }
     parameter_type refParameter()
