@@ -154,8 +154,8 @@ public:
     BenchmarkGreplLinearElliptic();
 
     //! initialization of the model
-    void initModel();
-    void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir );
+    void initModel() override;
+    void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
     //@}
 
@@ -192,13 +192,13 @@ public:
      * \param mu parameter to evaluate the coefficients
      */
     boost::tuple<beta_vector_type,  std::vector<beta_vector_type> >
-    computeBetaQm( element_type const& T,parameter_type const& mu )
+    computeBetaQm( element_type const& T,parameter_type const& mu ) override
     {
         return computeBetaQm( mu );
     }
 
     boost::tuple<beta_vector_type,  std::vector<beta_vector_type>  >
-    computeBetaQm( parameter_type const& mu )
+    computeBetaQm( parameter_type const& mu ) override
     {
         this->M_betaAqm[0][0]=1;
         auto eim_g = this->scalarContinuousEim()[0];
@@ -220,7 +220,7 @@ public:
         return boost::make_tuple( this->M_betaAqm, this->M_betaFqm );
     }
 
-    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu , double time=1e30 )
+    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu , double time=1e30 ) override
     {
         beta_vector_type beta;
         beta.resize(1);
@@ -233,11 +233,11 @@ public:
     /**
      * \brief Returns the affine decomposition
      */
-    affine_decomposition_type computeAffineDecomposition();
-    std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA();
-    monolithic_type computeMonolithicFormulation( parameter_type const& mu );
+    affine_decomposition_type computeAffineDecomposition() override;
+    std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA() override;
+    monolithic_type computeMonolithicFormulation( parameter_type const& mu ) override;
 
-    void assemble();
+    void assemble() override;
 
 
     //@}
@@ -249,8 +249,8 @@ public:
      */
     value_type output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false ) override;
 
-    bool referenceParametersGivenByUser() { return true; }
-    parameter_type refParameter()
+    bool referenceParametersGivenByUser() override { return true; }
+    parameter_type refParameter() override
     {
         return this->Dmu->min();
     }
@@ -259,7 +259,7 @@ public:
 
     void checkEimExpansion();
 
-    eim_interpolation_error_type eimInterpolationErrorEstimation()
+    eim_interpolation_error_type eimInterpolationErrorEstimation() override
     {
         std::map<int,double> eim_error_aq;
         std::vector< std::map<int,double> > eim_error_fq;
@@ -273,7 +273,7 @@ public:
         return boost::make_tuple( eim_error_aq, eim_error_fq );
     }
 
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN ) override
     {
 
         std::map<int,double> eim_error_aq;
