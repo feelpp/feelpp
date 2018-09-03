@@ -4,6 +4,7 @@
 //#define DEBUG_HELFRICHFORCEMODEL
 
 #include <feel/feelmodels/multifluid/interfaceforcesmodel.hpp>
+#include <feel/feelmodels/multifluid/helfrichforceexpr.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -203,6 +204,28 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
                     "curvature_dirac", "curvature_dirac", curvD );
             M_exporter->save();
 #endif
+        }
+        break;
+        case 1:
+        {
+            auto phi = this->levelset()->phi();
+            auto N = this->levelset()->N();
+            auto K = this->levelset()->K();
+            auto gradPhi = this->levelset()->gradPhi();
+            auto modGradPhi = this->levelset()->modGradPhi();
+
+            auto helfrichInnerDiv = vf::project(
+                    _space=this->levelset()->functionSpaceVectorial(),
+                    _range=elements(this->levelset()->mesh()),
+                    _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi )
+                    );
+            auto Fb = vf::project(
+                    _space=this->levelset()->functionSpaceVectorial(),
+                    _range=elements(this->levelset()->mesh()),
+                    _expr=this->bendingModulus() * divv(helfrichInnerDiv) * idv(this->levelset()->D()) * idv(gradPhi)
+                    //_expr=this->bendingModulus() * divv(helfrichInnerDiv) * idv(this->levelset()->D()) * idv(N)
+                    );
+            *F = Fb;
         }
         break;
         default:

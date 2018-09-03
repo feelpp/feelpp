@@ -209,7 +209,7 @@ void
 ReinitializerFM<FunctionSpaceType>::init(functionspace_ptrtype const& space, 
         typename std::enable_if< UseReinitP1Space<FST>::value >::type*)
 {
-    M_opLagrangeP1 = lagrangeP1( space );
+    M_opLagrangeP1 = lagrangeP1( _space=space, _update=MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES );
     M_spaceReinitP1 = functionspace_reinitP1_type::New(
             _mesh=M_opLagrangeP1->mesh(),
             _periodicity=periodicity(NoPeriodicity())
