@@ -160,18 +160,6 @@ public :
     typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
 
     //--------------------------------------------------------------------//
-    // Space P0d
-    typedef Lagrange<0, Scalar, Discontinuous, PointSetFekete> basis_P0d_type;
-    typedef FunctionSpace< 
-        mesh_type, 
-        bases<basis_P0d_type>, 
-        value_type, 
-        periodicity_advection_type > space_P0d_type;
-    typedef boost::shared_ptr<space_P0d_type> space_P0d_ptrtype;
-    typedef typename space_P0d_type::element_type element_P0d_type;
-    typedef boost::shared_ptr<element_P0d_type> element_P0d_ptrtype;
-
-    //--------------------------------------------------------------------//
     // Diffusion-reaction model
     typedef BasisDiffusionCoeffType basis_diffusioncoeff_type;
     typedef BasisReactionCoeffType basis_reactioncoeff_type;
