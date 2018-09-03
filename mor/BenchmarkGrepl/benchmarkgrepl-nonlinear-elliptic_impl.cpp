@@ -522,15 +522,16 @@ typename BenchmarkGreplNonlinearElliptic<Order,Dim>::element_type
 BenchmarkGreplNonlinearElliptic<Order,Dim>::solve( parameter_type const& mu )
 {
     auto Xh=this->Xh;
-    sparse_matrix_ptrtype J = backend()->newMatrix( Xh, Xh);
-    vector_ptrtype R = backend()->newVector( Xh );
-    backend()->nlSolver()->jacobian = boost::bind( &self_type::updateJacobianMonolithic,
+    auto backendMonolithic = backend(_rebuild=true);
+    sparse_matrix_ptrtype J = backendMonolithic->newMatrix( Xh, Xh);
+    vector_ptrtype R = backendMonolithic->newVector( Xh );
+    backendMonolithic->nlSolver()->jacobian = boost::bind( &self_type::updateJacobianMonolithic,
                                                    boost::ref( *this ), _1, _2, mu );
-    backend()->nlSolver()->residual = boost::bind( &self_type::updateResidualMonolithic,
+    backendMonolithic->nlSolver()->residual = boost::bind( &self_type::updateResidualMonolithic,
                                                    boost::ref( *this ), _1, _2, mu );
 
     auto solution = Xh->element();
-    backend()->nlSolve(_jacobian=J, _solution=solution, _residual=R);
+    backendMonolithic->nlSolve(_jacobian=J, _solution=solution, _residual=R);
 
     return solution;
 
