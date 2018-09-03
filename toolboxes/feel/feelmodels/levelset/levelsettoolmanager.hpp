@@ -196,7 +196,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMDefault()
                 backendName,
                 this->functionSpaceManager()->functionSpaceVectorial()->worldComm()
                 );
-        M_projectorL2Vectorial = projector(
+        M_projectorSMVectorial = projector(
                 this->functionSpaceManager()->functionSpaceVectorial(),
                 this->functionSpaceManager()->functionSpaceVectorial(),
                 this->M_backendProjectorL2Vectorial,
