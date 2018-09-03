@@ -159,7 +159,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
                 M_levelsetInterfaceForcesModels[i][forceName] = interfaceforces_factory_type::instance().createObject( 
                         forceName
                         );
-                M_levelsetInterfaceForcesModels[i][forceName]->build( levelset_prefix, M_levelsets[i] );
+                M_levelsetInterfaceForcesModels[i][forceName]->build( levelset_prefix, M_levelsets[i], this->fluidModel() );
             }
 
             M_hasInterfaceForcesModel = true;
@@ -600,12 +600,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveImpl()
 {
     // Update density and viscosity
     this->updateFluidDensityViscosity();
-    // Update interface forces
-    if( this->hasInterfaceForces() )
-    {
-        this->updateInterfaceForces();
-    }
-    // Solve fluid equations
+    // Solve fluid equations (with direct assembly of interface forces)
     this->solveFluid();
     // Advect levelsets
     this->advectLevelsets();
@@ -903,6 +898,45 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional( DataUpdateLinear & da
     bool BuildNonCstPart = !_BuildCstPart;
     bool BuildCstPart = _BuildCstPart;
 
+    // Update interface forces
+    if( this->hasInterfaceForces() )
+    {
+        this->log("MultiFluid", "updateLinearPDEAdditional", "start: update interface forces");
+        this->timerTool("Solve").start();
+        if( M_hasInterfaceForcesModel )
+        {
+            this->timerTool("Solve").start();
+            for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+            {
+                for( auto const& force: M_levelsetInterfaceForcesModels[i] )
+                {
+                    if( force.second )
+                    {
+                        force.second->updateFluidInterfaceForcesLinearPDE( data );
+                    }
+                }
+            }
+
+            double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
+            this->log("MultiFluid", "updateLinearPDEAdditional", "update interface (model) forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+        }
+
+        if( M_additionalInterfaceForcesModel.size() > 0 )
+        {
+            this->timerTool("Solve").start();
+            for( auto const& f: M_additionalInterfaceForcesModel )
+                f.second->updateFluidInterfaceForcesLinearPDE( data );
+
+            double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
+            this->log("MultiFluid", "updateLinearPDEAdditional", "update additional interface forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+        }
+
+        double timeElapsed = this->timerTool("Solve").stop();
+        this->log( "MultiFluid", "updateLinearPDEAdditional", 
+                "interface forces updated in "+(boost::format("%1% s") %timeElapsed).str() );
+    }
+
+    // Update inextensibility
     if( this->M_enableInextensibility )
     {
         auto mesh = this->mesh();
@@ -1003,6 +1037,45 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianAdditional( DataUpdateJacobian & d
     bool BuildNonCstPart = !_BuildCstPart;
     bool BuildCstPart = _BuildCstPart;
 
+    // Update interface forces
+    if( this->hasInterfaceForces() )
+    {
+        this->log("MultiFluid", "updateJacobianAdditional", "start: update interface forces");
+        this->timerTool("Solve").start();
+        if( M_hasInterfaceForcesModel )
+        {
+            this->timerTool("Solve").start();
+            for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+            {
+                for( auto const& force: M_levelsetInterfaceForcesModels[i] )
+                {
+                    if( force.second )
+                    {
+                        force.second->updateFluidInterfaceForcesJacobian( data );
+                    }
+                }
+            }
+
+            double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
+            this->log("MultiFluid", "updateJacobianAdditional", "update interface (model) forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+        }
+
+        if( M_additionalInterfaceForcesModel.size() > 0 )
+        {
+            this->timerTool("Solve").start();
+            for( auto const& f: M_additionalInterfaceForcesModel )
+                f.second->updateFluidInterfaceForcesJacobian( data );
+
+            double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
+            this->log("MultiFluid", "updateJacobianAdditional", "update additional interface forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+        }
+
+        double timeElapsed = this->timerTool("Solve").stop();
+        this->log( "MultiFluid", "updateJacobianAdditional", 
+                "interface forces updated in "+(boost::format("%1% s") %timeElapsed).str() );
+    }
+
+    // Update inextensibility
     if( this->M_enableInextensibility )
     {
         auto mesh = this->mesh();
@@ -1103,6 +1176,45 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualAdditional( DataUpdateResidual & d
     bool BuildNonCstPart = !BuildCstPart;
     bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
 
+    // Update interface forces
+    if( this->hasInterfaceForces() )
+    {
+        this->log("MultiFluid", "updateResidualAdditional", "start: update interface forces");
+        this->timerTool("Solve").start();
+        if( M_hasInterfaceForcesModel )
+        {
+            this->timerTool("Solve").start();
+            for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+            {
+                for( auto const& force: M_levelsetInterfaceForcesModels[i] )
+                {
+                    if( force.second )
+                    {
+                        force.second->updateFluidInterfaceForcesResidual( data );
+                    }
+                }
+            }
+
+            double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
+            this->log("MultiFluid", "updateResidualAdditional", "update interface (model) forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+        }
+
+        if( M_additionalInterfaceForcesModel.size() > 0 )
+        {
+            this->timerTool("Solve").start();
+            for( auto const& f: M_additionalInterfaceForcesModel )
+                f.second->updateFluidInterfaceForcesResidual( data );
+
+            double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
+            this->log("MultiFluid", "updateResidualAdditional", "update additional interface forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+        }
+
+        double timeElapsed = this->timerTool("Solve").stop();
+        this->log( "MultiFluid", "updateResidualAdditional", 
+                "interface forces updated in "+(boost::format("%1% s") %timeElapsed).str() );
+    }
+
+    // Update inextensibility
     if( this->M_enableInextensibility )
     {
         auto mesh = this->mesh();
