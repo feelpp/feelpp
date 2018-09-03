@@ -154,12 +154,12 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
     BenchmarkGreplNonlinearElliptic();
 
     //! initialization of the model
-    void initModel();
-    void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir );
+    void initModel() override;
+    void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
     //@}
 
-    vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
+    vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag ) override
     {
         auto Xh = this->Xh;
         vector_ptrtype V = this->M_backend->newVector(Xh);
@@ -170,7 +170,7 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
     }
 
 
-    virtual beta_vector_type computeBetaInitialGuess( parameter_type const& mu )
+    virtual beta_vector_type computeBetaInitialGuess( parameter_type const& mu ) override
     {
 
         this->M_betaInitialGuess.resize( 1 );
@@ -187,7 +187,7 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
      * \param mu parameter to evaluate the coefficients
      */
     beta_type
-    computeBetaQm( element_type const& T,parameter_type const& mu )
+    computeBetaQm( element_type const& T,parameter_type const& mu ) override
     {
         std::vector<vectorN_type*> betas;
         if ( M_use_deim )
@@ -211,7 +211,7 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
     }
 
     beta_type
-    computeBetaQm( vectorN_type const& urb, parameter_type const& mu )
+    computeBetaQm( vectorN_type const& urb, parameter_type const& mu ) override
     {
         std::vector<vectorN_type*> betas;
         if ( M_use_deim )
@@ -235,7 +235,7 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
     }
 
     beta_type
-    computeBetaQm( parameter_type const& mu )
+    computeBetaQm( parameter_type const& mu ) override
     {
         std::vector<vectorN_type*> betas;
         if ( M_use_deim )
@@ -259,7 +259,7 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
     }
 
     beta_type
-    computePicardBetaQm( element_type const& T,parameter_type const& mu )
+    computePicardBetaQm( element_type const& T,parameter_type const& mu ) override
     {
         std::vector<vectorN_type*> betas;
         if ( M_use_deim )
@@ -280,7 +280,7 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
     }
 
     beta_type
-    computePicardBetaQm( parameter_type const& mu )
+    computePicardBetaQm( parameter_type const& mu ) override
     {
         std::vector<vectorN_type*> betas;
         if ( M_use_deim )
@@ -385,7 +385,7 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
 
     }
 
-    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu , double time=1e30 )
+    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu , double time=1e30 ) override
     {
         beta_vector_type beta;
         beta.resize(1);
@@ -397,13 +397,13 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
     /**
      * \brief Returns the affine decomposition
      */
-    affine_decomposition_type computeAffineDecomposition();
-    affine_decomposition_type computePicardAffineDecomposition();
-    std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA();
+    affine_decomposition_type computeAffineDecomposition() override;
+    affine_decomposition_type computePicardAffineDecomposition() override;
+    std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA() override;
 
-    void assemble();
+    void assemble() override;
 
-    std::vector< std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition( );
+    std::vector< std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition() override;
 
 
     //@}
@@ -413,7 +413,7 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false );
+    value_type output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false ) override;
 
     gmsh_ptrtype createGeo( double hsize );
 
@@ -421,12 +421,12 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
     void assembleJacobianWithAffineDecomposition(std::vector<std::vector<sparse_matrix_ptrtype> > & Jqm);
     void assembleFunctionalWithAffineDecomposition(std::vector<std::vector<sparse_matrix_ptrtype> > & RF_Aqm,
                                                    std::vector< std::vector<std::vector<vector_ptrtype> > >& RF_Fqm);
-    bool updateResidual(element_type const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm);
+    bool updateResidual(element_type const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm) override;
     void updateResidualMonolithic(vector_ptrtype const& X, vector_ptrtype & R, parameter_type const& mu);
     void updateJacobianMonolithic(vector_ptrtype const& X, sparse_matrix_ptrtype & J, parameter_type const& mu);
-    monolithic_type computeMonolithicFormulationU( parameter_type const& mu , element_type const& solution );
+    monolithic_type computeMonolithicFormulationU( parameter_type const& mu , element_type const& solution ) override;
 
-    element_type solve( parameter_type const& mu );
+    element_type solve( parameter_type const& mu ) override;
 
 private:
 
