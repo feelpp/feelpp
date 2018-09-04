@@ -7,7 +7,7 @@
     {
         "equations":"Hyper-Elasticity"
     },
-    // tag::models[]
+    // end::models[]
     // tag::materials[]
     "Materials":
     {
