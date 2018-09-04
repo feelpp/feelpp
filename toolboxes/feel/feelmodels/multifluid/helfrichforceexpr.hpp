@@ -176,22 +176,18 @@ public:
 
     virtual matrix_shape_type const& evalijq( uint16_type i, uint16_type j, uint16_type q ) const
     {
-        CHECK( false ) << "not allowed\n";
         return this->evalq( q );
     }
     virtual value_type evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
     {
-        CHECK( false ) << "not allowed\n";
         return this->evalq( c1,c2,q );
     }
     virtual value_type evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
     {
-        CHECK( false ) << "not allowed\n";
         return this->evalq( c1,c2,q );
     }
     virtual matrix_shape_type const& evaliq( uint16_type i, uint16_type q ) const
     {
-        CHECK( false ) << "not allowed\n";
         return this->evalq( q );
     }
     virtual value_type evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -266,7 +262,8 @@ public:
             super_type( expr, geom, fev, feu ),
             M_pcModGradPhi( new pc_modgradphi_type( expr.modgradphi().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ),
             M_ctxModGradPhi( new ctx_modgradphi_type( expr.modgradphi().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_modgradphi_ptrtype const&)M_pcModGradPhi ) ),
-            M_locModGradPhi( expr.modgradphi().idExtents(*fusion::at_key<key_type>( geom )) )
+            M_locModGradPhi( expr.modgradphi().idExtents(*fusion::at_key<key_type>( geom )) ),
+            M_locGradModGradPhi( expr.modgradphi().gradExtents(*fusion::at_key<key_type>( geom )) )
     {}
     tensorHelfrichInnerDivTensorGeneric( expr_type const& expr,
             Geo_t const& geom, Basis_i_t const& fev )
@@ -274,7 +271,8 @@ public:
             super_type( expr, geom, fev ),
             M_pcModGradPhi( new pc_modgradphi_type( expr.modgradphi().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ),
             M_ctxModGradPhi( new ctx_modgradphi_type( expr.modgradphi().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_modgradphi_ptrtype const&)M_pcModGradPhi ) ),
-            M_locModGradPhi( expr.modgradphi().idExtents(*fusion::at_key<key_type>( geom )) )
+            M_locModGradPhi( expr.modgradphi().idExtents(*fusion::at_key<key_type>( geom )) ),
+            M_locGradModGradPhi( expr.modgradphi().gradExtents(*fusion::at_key<key_type>( geom )) )
     {}
     tensorHelfrichInnerDivTensorGeneric( expr_type const& expr, Geo_t const& geom )
         :
