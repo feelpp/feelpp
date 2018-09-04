@@ -30,6 +30,10 @@ public:
     typedef typename space_type::element_type element_type;
     typedef typename space_type::element_ptrtype element_ptrtype;
 
+    typedef typename fluidmechanics_type::DataUpdateJacobian DataUpdateJacobian;
+    typedef typename fluidmechanics_type::DataUpdateResidual DataUpdateResidual;
+    typedef typename fluidmechanics_type::DataUpdateLinear DataUpdateLinear;
+
     static const uint16_type Dim = levelset_type::nDim;
 
     //--------------------------------------------------------------------//
@@ -46,6 +50,10 @@ public:
     double bendingModulus() const { return M_helfrichBendingModulus; }
     void setBendingModulus( double k ) { M_helfrichBendingModulus = k; }
 
+    //--------------------------------------------------------------------//
+    virtual void updateFluidInterfaceForcesLinearPDE( DataUpdateLinear & data ) const override;
+    virtual void updateFluidInterfaceForcesJacobian( DataUpdateJacobian & data ) const override;
+    virtual void updateFluidInterfaceForcesResidual( DataUpdateResidual & data ) const override;
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -100,6 +108,102 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::loadParametersFromOptionsV
             );
     M_exporterInitDone = false;
 #endif
+}
+
+template<typename LevelSetType, typename FluidMechanicsType>
+void
+HelfrichForceModel<LevelSetType, FluidMechanicsType>::updateFluidInterfaceForcesLinearPDE( DataUpdateLinear & data ) const
+{
+    CHECK( this->fluid() ) << "FluidMechanics model must be provided to use updateFluidInterfaceForcesLinearPDE\n";
+    bool BuildCstPart = data.buildCstPart();
+    bool BuildNonCstPart = !BuildCstPart;
+
+    vector_ptrtype& F = data.rhs();
+    auto Xh = this->fluid()->functionSpace();
+    auto myLinearForm = form1( _test=Xh, _vector=F,
+                               _rowstart=this->fluid()->rowStartInVector() );
+
+    auto const& U = this->fluid()->fieldVelocityPressure();
+    auto u = U.template element<0>();
+    auto v = U.template element<0>();
+
+    if( BuildNonCstPart )
+    {
+        auto phi = this->levelset()->phi();
+        auto N = this->levelset()->N();
+        auto K = this->levelset()->K();
+        auto gradPhi = this->levelset()->gradPhi();
+        auto modGradPhi = this->levelset()->modGradPhi();
+        auto D = this->levelset()->D();
+
+        auto helfrichInnerDiv = Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi );
+        //auto helfrichInnerDiv = vf::project(
+                //_space=this->levelset()->functionSpaceVectorial(),
+                //_range=elements(this->levelset()->mesh()),
+                //_expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi )
+                //);
+        //auto helfrichInnerDiv = vf::project(
+                //_space=this->fluid()->functionSpaceVelocity(),
+                //_range=this->fluid()->rangeMeshElements(),
+                //_expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi )
+                //);
+        myLinearForm +=
+            integrate( _range=this->fluid()->rangeMeshElements(),
+                       _expr= -this->bendingModulus() * trans(helfrichInnerDiv) * (
+                           trans(gradv(D))*(trans(idv(N))*id(v))
+                           + idv(D)*( trans(gradv(N))*id(v)+trans(grad(v))*idv(N) )
+                           ),
+                       _geomap=this->fluid()->geomap() 
+                       );
+    }
+}
+
+template<typename LevelSetType, typename FluidMechanicsType>
+void
+HelfrichForceModel<LevelSetType, FluidMechanicsType>::updateFluidInterfaceForcesJacobian( DataUpdateJacobian & data ) const
+{
+    CHECK( this->fluid() ) << "FluidMechanics model must be provided to use updateFluidInterfaceForcesJacobian\n";
+}
+
+template<typename LevelSetType, typename FluidMechanicsType>
+void
+HelfrichForceModel<LevelSetType, FluidMechanicsType>::updateFluidInterfaceForcesResidual( DataUpdateResidual & data ) const
+{
+    CHECK( this->fluid() ) << "FluidMechanics model must be provided to use updateFluidInterfaceForcesResidual\n";
+    bool BuildCstPart = data.buildCstPart();
+    bool BuildNonCstPart = !BuildCstPart;
+    bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
+
+    const vector_ptrtype& XVec = data.currentSolution();
+    vector_ptrtype& R = data.residual();
+    auto Xh = this->fluid()->functionSpace();
+
+    auto U = Xh->element(XVec, this->fluid()->rowStartInVector());
+    auto u = U.template element<0>();
+    auto v = U.template element<0>();
+
+    auto linearForm_PatternCoupled = form1( _test=Xh, _vector=R,
+                                            _pattern=size_type(Pattern::COUPLED),
+                                            _rowstart=this->fluid()->rowStartInVector() );
+    if( BuildNonCstPart )
+    {
+        auto phi = this->levelset()->phi();
+        auto N = this->levelset()->N();
+        auto K = this->levelset()->K();
+        auto gradPhi = this->levelset()->gradPhi();
+        auto modGradPhi = this->levelset()->modGradPhi();
+        auto D = this->levelset()->D();
+
+        auto helfrichInnerDiv = Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi );
+        linearForm_PatternCoupled +=
+            integrate( _range=this->fluid()->rangeMeshElements(),
+                       _expr= this->bendingModulus() * trans(helfrichInnerDiv) * (
+                           trans(gradv(D))*(trans(idv(N))*id(v))
+                           + idv(D)*( trans(gradv(N))*id(v)+trans(grad(v))*idv(N) )
+                           ),
+                       _geomap=this->fluid()->geomap() 
+                       );
+    }
 }
 
 template<typename LevelSetType, typename FluidMechanicsType>
