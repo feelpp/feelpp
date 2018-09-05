@@ -564,37 +564,40 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         //LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
         timer.restart();
 
-        if( ser && ser_error_estimation && doption(_name="ser.eim-greedy-rtol")!=0 )
+        if ( M_model->modelUseSolve() )
         {
-            // Compute the error indicator with mu
-            auto riesz = M_model->RieszResidualNorm( mu );
-            double error_indicator = riesz.template get<0>();
-            uN = riesz.template get<1>();
-            if( error_indicator > max_rb_error ) // Update the max error indicator to be used at the next step
-                max_rb_error = error_indicator;
-            if( M_greedy_rbmaxerr != 0 ) // Takes whole sampling with the roughest RB approx (greedy_maxerr uninitialized)
-                error_criterion[index] = error_indicator/M_greedy_rbmaxerr < rtol;
-        }
+            if ( ser ) //Use SER
+            {
+                if( ser_error_estimation && doption(_name="ser.eim-greedy-rtol")!=0 )
+                {
+                    // Compute the error indicator with mu
+                    auto riesz = M_model->RieszResidualNorm( mu );
+                    double error_indicator = riesz.template get<0>();
+                    uN = riesz.template get<1>();
+                    if( error_indicator > max_rb_error ) // Update the max error indicator to be used at the next step
+                        max_rb_error = error_indicator;
+                    if( M_greedy_rbmaxerr != 0 ) // Takes whole sampling with the roughest RB approx (greedy_maxerr uninitialized)
+                        error_criterion[index] = error_indicator/M_greedy_rbmaxerr < rtol;
+                }
 
-        if( ser ) //Use SER
-        {
-            if( boption(_name="ser.use-rb-in-eim-mu-selection") && error_criterion[index] )
-                solution = M_model->computeRbExpansion( mu, uN ); //RB
+                if( boption(_name="ser.use-rb-in-eim-mu-selection") && error_criterion[index] )
+                    solution = M_model->computeRbExpansion( mu, uN ); //RB
+                else
+                    solution = M_model->computePfem( mu ); //PFEM
+            }
             else
-                solution = M_model->computePfem( mu ); //PFEM
+                solution = M_model->solve( mu ); //FEM
+            time_solve += timer.elapsed();
+            timer.restart();
         }
-        else
-            solution = M_model->solve( mu ); //FEM
-        time_solve += timer.elapsed();
 
-        timer.restart();
         rhs = M_model->computeExpansionCoefficients( mu , solution, __M );
         auto z = expansion( M_model->q(), rhs, __M );
         auto resmax = M_model->computeMaximumOfResidual( mu , solution, z );
         time_exp += timer.elapsed();
         //DCHECK( rhs.size() == __M ) << "Invalid size rhs: " << rhs.size() << " M=" << __M  << " rhs = " << rhs << "\n";
 
-        LOG_ASSERT( index < subtrainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << subtrainset->size() << "\n";
+        DCHECK( index < subtrainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << subtrainset->size() << "\n";
         maxerr( index ) = resmax.template get<0>();
         if( error_criterion[index] )
             index_criterion++;
@@ -1348,6 +1351,8 @@ public:
     mesh_ptrtype const& mesh() const { return M_fspace->mesh(); }
     mesh_ptrtype mesh()  { return M_fspace->mesh(); }
 
+    virtual bool modelUseSolve() const = 0;
+
     virtual element_type operator()( parameter_type const& ) = 0;
     virtual element_type operator()( model_solution_type const& , parameter_type const& ) = 0;
     virtual element_type interpolant( parameter_type const& ) = 0;
@@ -1464,6 +1469,7 @@ public:
     virtual model_solution_type computePfem( parameter_type const& mu )=0;
     virtual boost::tuple<double,std::vector<vectorN_type> > RieszResidualNorm( parameter_type const& mu )=0;
     virtual sampling_ptrtype createSubTrainset( sampling_ptrtype const& trainset, int method )=0;
+
 protected :
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
@@ -1915,6 +1921,8 @@ public:
         }
 
     model_ptrtype model() const { return M_model.lock(); }
+
+    bool modelUseSolve() const override { return model_use_solve;}
 
     auto expr( parameter_type const& mu ) const
     {
