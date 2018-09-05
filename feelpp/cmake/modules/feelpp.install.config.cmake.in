@@ -15,39 +15,39 @@ if ( EXISTS ${_FEELPP_CONFIG_LIB_FILE} )
   
   set(DIRS_TO_MODIFY)
   if ( FEELPP_HAS_GFLAGS )
-    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/contrib/gflags/ )
+    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/feelpp/contrib/gflags/ )
     list(REMOVE_ITEM FEELPP_LIBRARIES feelpp_gflags)
   endif()
   if ( FEELPP_HAS_GLOG )
     list(REMOVE_ITEM FEELPP_LIBRARIES feelpp_glog)
-    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/contrib/glog/ )
+    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/feelpp/contrib/glog/ )
   endif()
   if ( FEELPP_HAS_GINAC )
     list(REMOVE_ITEM FEELPP_LIBRARIES feelpp_ginac)
-    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/contrib/ginac/ginac/ )
+    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/feelpp/contrib/ginac/ginac/ )
   endif()
   if ( FEELPP_HAS_METIS )
     list(REMOVE_ITEM FEELPP_LIBRARIES feelpp_metis)
-     list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/contrib/metis/libmetis/ )
+     list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/feelpp/contrib/metis/libmetis/ )
   endif()
   if ( FEELPP_HAS_NLOPT )
     list(REMOVE_ITEM FEELPP_LIBRARIES feelpp_nlopt)
-    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/contrib/nlopt/ )
+    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/feelpp/contrib/nlopt/ )
   endif()
   if ( FEELPP_HAS_IPOPT )
     list(REMOVE_ITEM FEELPP_LIBRARIES feelpp_ipopt)
     list(REMOVE_ITEM FEELPP_LIBRARIES feelpp_ipoptfort)
-    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/contrib/ipopt/ )
+    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/feelpp/contrib/ipopt/ )
   endif()
   if ( FEELPP_HAS_PYBIND11 )
     
-    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/contrib/pybind11/ )
+    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/feelpp/contrib/pybind11/ )
   endif()
   if ( FEELPP_HAS_MONGOCXX )
     list(REMOVE_ITEM FEELPP_LIBRARIES feelpp_mongocxx)
     list(REMOVE_ITEM FEELPP_LIBRARIES feelpp_bsoncxx)
-    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/contrib/mongocxx/src/bsoncxx )
-    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/contrib/mongocxx/src/mongocxx )
+    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/feelpp/contrib/mongocxx/src/bsoncxx )
+    list(APPEND DIRS_TO_MODIFY ${FEELPP_BINARY_BUILD_DIR}/feelpp/contrib/mongocxx/src/mongocxx )
   endif()
 
   foreach( DIR_TO_MODIFY ${DIRS_TO_MODIFY} )
@@ -103,11 +103,11 @@ if ( EXISTS ${_FEELPP_CONFIG_LIB_FILE} )
   file( INSTALL ${FEELPP_BINARY_BUILD_DIR}${CMAKE_FILES_DIRECTORY}/feelpp.include.config.cmake
     DESTINATION ${FEELPP_INSTALL_DIR}/share/feelpp/feel/cmake/modules/ )
 
-  file(INSTALL ${FEELPP_BINARY_BUILD_DIR}/cmake/modules/feelpp.compile.definition.config.cmake
+  file(INSTALL ${FEELPP_BINARY_BUILD_DIR}/feelpp/cmake/modules/feelpp.compile.definition.config.cmake
     DESTINATION ${FEELPP_INSTALL_DIR}/share/feelpp/feel/cmake/modules/
     )
 
-  file(INSTALL ${FEELPP_BINARY_BUILD_DIR}/cmake/modules/feelpp.boost.config.cmake
+  file(INSTALL ${FEELPP_BINARY_BUILD_DIR}/feelpp/cmake/modules/feelpp.boost.config.cmake
     DESTINATION ${FEELPP_INSTALL_DIR}/share/feelpp/feel/cmake/modules/
     )
 

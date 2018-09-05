@@ -320,5 +320,5 @@ find_package_handle_standard_args (PETSc
 
 if ( PETSC_FOUND )
   # add PETSC includes (in case of non conventionnal install of petsc TPS)
-  include_directories(${PETSC_INCLUDES})
+  #include_directories(${PETSC_INCLUDES})
 endif( PETSC_FOUND )

@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.8.5)
 
 # guard against in-source builds
 
-if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+if(${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
 
@@ -380,7 +380,7 @@ else()
       )
 endif()
 set(CMAKEPACKAGE_INSTALL_DIR
-    "${CMAKE_INSTALL_DATADIR}/feelpp/eigen/cmake"
+    "${CMAKE_INSTALL_DATADIR}/feelpp/feel/cmake/modules/"#eigen/cmake"
     CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen3Config.cmake is installed"
     )
 set(PKGCONFIG_INSTALL_DIR
@@ -526,9 +526,11 @@ if (NOT CMAKE_VERSION VERSION_LESS 3.0)
 
   target_compile_definitions (eigen INTERFACE ${EIGEN_DEFINITIONS})
   target_include_directories (eigen INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}>
-  )
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/unsupported>
+    $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}/>
+    $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}/unsupported>
+    )
 
   # Export as title case Eigen
   set_target_properties (eigen PROPERTIES EXPORT_NAME Eigen)

@@ -153,14 +153,14 @@ macro(feelpp_add_application)
     set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${FEELPP_APP_DEFS})
   endif()
   if ( FEELPP_APP_NO_FEELPP_LIBRARY )
-      target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+      target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} )
   else()
-      target_link_libraries( ${execname} ${FEELPP_LIBRARY} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+      target_link_libraries( ${execname} feelpp ${FEELPP_APP_LINK_LIBRARIES} )
   endif()
 
   # Use feel++ lib precompiled headers.
   #if( FEELPP_ENABLE_PCH )
-  #    add_precompiled_header( ${FEELPP_LIBRARY} )
+  #    add_precompiled_header( feelpp )
   #endif()
   # Create application precompiled headers.
   if( FEELPP_ENABLE_PCH_APPLICATIONS )
@@ -797,16 +797,16 @@ endmacro( feelpp_add_omc )
 macro( feelppContribPrepare contribname )
   set( FEELPP_CONTRIB_PREPARE_SUCCEED FALSE )
   set( FEELPP_CONTRIB_SUBMODULE_UPDATED FALSE )
-  message(STATUS "[feelpp] contrib/${contribname} : ${CMAKE_SOURCE_DIR}/contrib/${contribname}")
+  message(STATUS "[feelpp] contrib/${contribname} : ${CMAKE_SOURCE_DIR}/feelpp/contrib/${contribname}")
   # Count files number in contrib/<name>.
-  file(GLOB CONTRIB_LIST_FILES "${CMAKE_SOURCE_DIR}/contrib/${contribname}/*")
+  file(GLOB CONTRIB_LIST_FILES "${CMAKE_SOURCE_DIR}/feelpp/contrib/${contribname}/*")
   list(LENGTH CONTRIB_LIST_FILES CONTRIB_NFILES)
-  if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/${contribname} )
+  if ( EXISTS ${CMAKE_SOURCE_DIR}/feelpp/contrib/${contribname} )
     # Update submodule if the contrib/<name> directory is empty. User should run
     # `git submodule update --init --recursive` in other cases.
     if ( GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git/ AND CONTRIB_NFILES EQUAL 0 )
       execute_process(
-        COMMAND git submodule update --init --recursive contrib/${contribname}
+        COMMAND git submodule update --init --recursive feelpp/contrib/${contribname}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         OUTPUT_FILE ${FEELPP_BUILD_DIR}/git.${contribname}.log
         ERROR_FILE ${FEELPP_BUILD_DIR}/git.${contribname}.log
@@ -819,9 +819,9 @@ macro( feelppContribPrepare contribname )
         MESSAGE(WARNING "Git submodule contrib/${contribname} failed to be updated (error: ${ERROR_CODE}). Possible cause: No internet access, firewalls ...")
       endif()
     else()
-      if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/${contribname})
-        message( WARNING "Please make sure that git submodule contrib/${contribname} is available")
-        message( WARNING "  run `git submodule update --init --recursive contrib/${contribname}`")
+      if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/feelpp/contrib/${contribname})
+        message( WARNING "Please make sure that git submodule feelpp/contrib/${contribname} is available")
+        message( WARNING "  run `git submodule update --init --recursive feelpp/contrib/${contribname}`")
       else()
         message( STATUS "[feelpp] contrib/${contribname}: submodule hold!`")
         set( FEELPP_CONTRIB_PREPARE_SUCCEED TRUE )
