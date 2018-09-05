@@ -137,16 +137,6 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::updateFluidInterfaceForces
         auto D = this->levelset()->D();
 
         auto helfrichInnerDiv = Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi );
-        //auto helfrichInnerDiv = vf::project(
-                //_space=this->levelset()->functionSpaceVectorial(),
-                //_range=elements(this->levelset()->mesh()),
-                //_expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi )
-                //);
-        //auto helfrichInnerDiv = vf::project(
-                //_space=this->fluid()->functionSpaceVelocity(),
-                //_range=this->fluid()->rangeMeshElements(),
-                //_expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi )
-                //);
         myLinearForm +=
             integrate( _range=this->fluid()->rangeMeshElements(),
                        _expr= -this->bendingModulus() * trans(helfrichInnerDiv) * (
