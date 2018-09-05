@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(GKlib)
 
 
-set(GKLIB_PATH ${FEELPP_SOURCE_DIR}/contrib/metis/GKlib)
+set(GKLIB_PATH ${FEELPP_SOURCE_DIR}/feelpp/contrib/metis/GKlib)
 message(STATUS "GKlib path ${GKLIB_PATH}")
 include(GKlibSystem.cmake)
 

@@ -100,16 +100,16 @@ boost_hana_append_flag(BOOST_HANA_HAS_WWRITE_STRINGS             -Wwrite-strings
 ##############################################################################
 # Setup include paths. More include paths can be added in subdirectories.
 ##############################################################################
-include_directories(${Boost.Hana_SOURCE_DIR}/include)
+#include_directories(${Boost.Hana_SOURCE_DIR}/include)
 
-find_package(Boost 1.59)
-if (Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIRS})
-else()
-    message(WARNING
-        "The Boost library headers were not found; targets depending "
-        "on Boost won't be available.")
-endif()
+#find_package(Boost 1.59)
+#if (Boost_FOUND)
+#    include_directories(${Boost_INCLUDE_DIRS})
+#else()
+#    message(WARNING
+#        "The Boost library headers were not found; targets depending "
+#        "on Boost won't be available.")
+#endif()
 
 
 ##############################################################################

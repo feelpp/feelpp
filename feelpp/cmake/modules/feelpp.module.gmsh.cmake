@@ -26,7 +26,7 @@
   #add_subdirectory(contrib/gmsh)
   # we include this directory : add some missing headers from Gmsh
   #INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/contrib/gmsh )
-  INCLUDE_DIRECTORIES( ${FEELPP_BINARY_DIR}/contrib/gmsh )
+  #INCLUDE_DIRECTORIES( ${FEELPP_BINARY_DIR}/contrib/gmsh )
 
 #else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
 # else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gmsh )

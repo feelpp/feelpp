@@ -1,5 +1,5 @@
 # Add this directory for internal users.
-include_directories(.)
+
 # Find sources.
 file(GLOB metis_sources *.c)
 
@@ -14,6 +14,7 @@ endforeach()
 
 # Build libmetis.
 add_library(feelpp_metis ${METIS_LIBRARY_TYPE} ${GKlib_sources} ${metis_sources})
+target_include_directories(feelpp_metis PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 if(UNIX)
  target_link_libraries(feelpp_metis m)
 endif()

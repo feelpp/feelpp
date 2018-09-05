@@ -11,15 +11,20 @@ add_library(
   SHARED
   ${FEELPP_MODELS_MESH_SRC}
 )
-target_link_libraries(feelpp_modelmesh
-  feelpp_modelcore
-  ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
+target_link_libraries(feelpp_modelmesh PUBLIC feelpp_modelcore )
+target_include_directories(feelpp_modelmesh PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )
 set_property(TARGET feelpp_modelmesh PROPERTY MACOSX_RPATH ON)
 if( FEELPP_ENABLE_PCH_MODELS )
     add_precompiled_header( feelpp_modelmesh )
 endif()
-INSTALL(TARGETS feelpp_modelmesh DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
-
+install(TARGETS feelpp_modelmesh EXPORT feelpp-toolboxes-targets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+  )
 #######################################################
 # meshale lib
 #######################################################

@@ -28,8 +28,13 @@ if ( FEELPP_ENABLE_NLOPT )
 
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     set(NLOPT_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/nlopt/api  ${FEELPP_BINARY_DIR}/contrib/nlopt/api)
-    include_directories(${NLOPT_INCLUDE_DIR})
-    SET( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt/Contrib" )
+    target_include_directories(feelpp_contrib INTERFACE
+      $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/nlopt/api>
+      $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/contrib/nlopt/api>
+      $<INSTALL_INTERFACE:include/feelpp>
+      )
+    target_link_libraries(feelpp_contrib INTERFACE feelpp_nlopt )
+    SET( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt/Contrib")
     SET(FEELPP_HAS_NLOPT 1)
     list(INSERT FEELPP_LIBRARIES 0 feelpp_nlopt)
   endif()

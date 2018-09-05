@@ -29,13 +29,17 @@ if( FEELPP_ENABLE_IPOPT )
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     #add_subdirectory(contrib/ipopt)
     SET(IPOPT_INCLUDE_DIR
-      ${FEELPP_SOURCE_DIR}/contrib/ipopt/Ipopt/src/Interfaces
-      ${FEELPP_BINARY_DIR}/contrib/ipopt/include/
+      ${FEELPP_SOURCE_DIR}/feelpp/contrib/ipopt/Ipopt/src/Interfaces
+      ${FEELPP_BINARY_DIR}/feelpp/contrib/ipopt/include/
+      $<INSTALL_INTERFACE:include/feelpp>
       )
 
     # Compile/copy header in cmake binary dirs.
-    include_directories(${IPOPT_INCLUDE_DIR})
-
+    target_include_directories(feelpp_contrib INTERFACE
+      $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/feelpp/contrib/ipopt/Ipopt/src/Interfaces>
+      $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/feelpp/contrib/ipopt/include/>
+      )
+    target_link_libraries(feelpp_contrib INTERFACE feelpp_ipopt feelpp_ipoptfort )
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Ipopt/Contrib" )
     SET(FEELPP_HAS_IPOPT 1)
     list(INSERT FEELPP_LIBRARIES 0 feelpp_ipopt feelpp_ipoptfort)

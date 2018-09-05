@@ -59,6 +59,7 @@ else()
   set_target_properties(feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
   set_property(TARGET ${target} PROPERTY MACOSX_RPATH ON)
 endif()
+add_library(Feelpp::feelpp ALIAS feelpp )  # to match exported target
 set_target_properties(feelpp PROPERTIES OUTPUT_NAME "feelpp")
 #set_target_properties(feelpp PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
 set_property(TARGET feelpp PROPERTY LABELS feel++)
@@ -67,15 +68,126 @@ target_include_directories(feelpp PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
   $<INSTALL_INTERFACE:include/feelpp> )  
 
-#target_link_libraries (feelpp ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES} ${TBB_LIBRARIES})
-target_link_libraries(feelpp ${FEELPP_LIBRARIES})
+IF (FEELPP_HAS_LIBDL)
+  target_link_libraries( feelpp PRIVATE ${DL_LIBRARY} )
+endif()
+IF (CURL_FOUND)
+  target_include_directories( feelpp PUBLIC ${CURL_INCLUDE_DIRS} )
+  target_link_libraries( feelpp PUBLIC ${CURL_LIBRARIES} )
+endif()
+if ( MPI_FOUND )
+  target_include_directories( feelpp PUBLIC ${MPI_INCLUDE_PATH} )
+  target_compile_definitions( feelpp PUBLIC FEELPP_HAS_MPI=1 FEELPP_HAS_MPI_H=1 )
+  target_link_libraries( feelpp PRIVATE ${MPI_LIBRARIES} )
+endif()
+if ( PYTHONLIBS_FOUND )
+  target_include_directories( feelpp PUBLIC ${PYTHON_INCLUDE_DIRS})
+  target_link_libraries( feelpp PRIVATE ${PYTHON_LIBRARIES} )
+endif()
+if ( HDF5_FOUND AND HDF5_IS_PARALLEL )
+  target_include_directories( feelpp PRIVATE $<BUILD_INTERFACE:${HDF5_INCLUDE_DIRS}>)
+  target_link_libraries( feelpp PRIVATE ${HDF5_LIBRARIES} )
+endif()
+if ( XDMF_FOUND )
+  target_include_directories( feelpp PRIVATE $<BUILD_INTERFACE:${XDMF_INCLUDE_DIRS}>)
+  #target_link_libraries( feelpp PRIVATE ${XDMF_LIBRARIES} )
+  target_link_libraries( feelpp PRIVATE XDMF::XDMF )
+endif()
+if ( Boost_FOUND )
+  target_compile_definitions(
+    feelpp
+    PUBLIC
+    # result_of
+    BOOST_RESULT_OF_USE_TR1=1
+    # Boost::none
+    BOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE=1
+    # Boost::ublas
+    BOOST_UBLAS_SHALLOW_ARRAY_ADAPTOR=1
+    # Boost::parameter
+    BOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY}
+    # Boost::filesystem
+    BOOST_FILESYSTEM_VERSION=${BOOST_FILESYSTEM_VERSION}
+    )
+  if (BOOST_ENABLE_TEST_DYN_LINK)
+    target_compile_definitions( feelpp PUBLIC BOOST_TEST_DYN_LINK )
+  endif (BOOST_ENABLE_TEST_DYN_LINK)
+
+  target_include_directories( feelpp PUBLIC ${Boost_INCLUDE_DIR} )
+  target_link_libraries( feelpp PUBLIC ${Boost_LIBRARIES} )
+  
+endif()
+if ( FFTW_FOUND )
+  target_include_directories( feelpp PRIVATE ${FFTW_INCLUDES} )
+  target_link_libraries( feelpp PUBLIC ${FFTW_LIBRARIES} )
+endif()
+if ( ANN_FOUND )
+  target_include_directories( feelpp PRIVATE ${ANN_INCLUDE_DIR} )
+  target_link_libraries( feelpp PUBLIC ${ANN_LIBRARIES} )
+endif()
+if ( GLPK_FOUND )
+  target_include_directories( feelpp PRIVATE ${GLPK_INCLUDE_DIR} )
+  target_link_libraries( feelpp PUBLIC ${GLPK_LIBRARIES} )
+endif()
+if ( GOOGLE_PERFTOOLS_FOUND )
+  target_include_directories( feelpp PRIVATE ${GOOGLE_PERFTOOLS_INCLUDE_DIR} )
+  target_link_libraries( feelpp PUBLIC ${TCMALLOC_LIBRARIES} )
+endif()
+if (PETSC_FOUND)
+  target_include_directories( feelpp PUBLIC ${PETSC_PACKAGE_INCLUDES} ${PETSC_INCLUDE_DIR} PRIVATE ${PETSC_INCLUDE_CONF})
+  target_link_libraries( feelpp PUBLIC ${PETSC_LIBRARIES} ${PETSC_PACKAGE_LIBS} )
+endif()
+if (SLEPC_FOUND)
+  target_include_directories( feelpp PUBLIC ${SLEPC_INCLUDE_DIR} )
+  target_link_libraries( feelpp PUBLIC ${SLEPC_LIBRARIES} )
+endif()
+if (GSL_FOUND)
+  target_include_directories( feelpp PUBLIC ${GSL_INCLUDE_DIRS} )
+  target_link_libraries( feelpp PUBLIC ${GSL_LIBRARIES} )
+endif()
+if ( GMSH_FOUND )
+  target_compile_definitions( feelpp PUBLIC FEELPP_HAS_GMSH=1 FEELPP_HAS_GMSH_ GMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
+  target_include_directories( feelpp PUBLIC ${GMSH_INCLUDE_DIR} )
+  target_link_libraries( feelpp PUBLIC ${GMSH_LIBRARIES} )
+  target_include_directories( feelpp
+    PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/gmsh>
+    $<INSTALL_INTERFACE:include/feelpp> )
+endif()
+if (FMILIB_FOUND)
+  target_include_directories( feelpp PUBLIC ${FMILIB_INCLUDE_DIR} )
+  target_link_libraries( feelpp PUBLIC ${FMILIB_LIBRARIES} )
+endif()
+target_link_libraries( feelpp PUBLIC feelpp_contrib )
+
+get_property(INC_DIR_LIST TARGET feelpp PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+message(STATUS "[feelpp]: include_dir ${INC_DIR_LIST}")
+get_property(INC_DIR_LIST TARGET feelpp PROPERTY PRIVATE_INCLUDE_DIRECTORIES)
+message(STATUS "[feelpp]: private einclude_dir ${INC_DIR_LIST}")
+get_property(INC_DIR_LIST TARGET feelpp PROPERTY PRIVATE_LINK_LIBRARIES)
+message(STATUS "[feelpp]: private libs ${INC_DIR_LIST}")
+get_property(INC_DIR_LIST TARGET feelpp PROPERTY PUBLIC_LINK_LIBRARIES)
+message(STATUS "[feelpp]: public libs ${INC_DIR_LIST}")
+
+#target_link_libraries(feelpp ${FEELPP_LIBRARIES})
 if( FEELPP_ENABLE_PCH )
     add_precompiled_header( feelpp )
 endif()
 
 # Install feelpp
-INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs EXPORT feelpp-export-targets)
-install(EXPORT feelpp-export-targets DESTINATION share/feelpp/feel/cmake/modules)
+install(TARGETS feelpp EXPORT FeelppTargets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+  )
+install(EXPORT FeelppTargets
+  FILE FeelppTargets.cmake
+  NAMESPACE Feelpp::
+  DESTINATION share/feelpp/feel/cmake/modules
+  )
+
+#INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs EXPORT feelpp-export-targets)
+#install(EXPORT feelpp-export-targets DESTINATION share/feelpp/feel/cmake/modules)
 
 # Handle static library if needed
 # if(FEELPP_ENABLE_BUILD_STATIC)
@@ -89,9 +201,5 @@ install(EXPORT feelpp-export-targets DESTINATION share/feelpp/feel/cmake/modules
 #     # Install feelpp
 #     INSTALL(TARGETS feelpp-static DESTINATION lib/ COMPONENT Bin)
 # endif()
-
-# add feelpp into FEELPP_LIBRARIES
-set(FEELPP_LIBRARIES feelpp ${FEELPP_LIBRARIES} PARENT_SCOPE)
-
 
 include(feelpp.lib.install)

@@ -110,30 +110,30 @@ ENDIF()
 set(_INSTALL_FEELPP_LIB_COMMAND ${CMAKE_COMMAND})
 
 if ( FEELPP_HAS_GFLAGS )
-  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/gflags/cmake_install.cmake")
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/feelpp/contrib/gflags/cmake_install.cmake")
 endif()
 if ( FEELPP_HAS_GLOG )
-  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/glog/cmake_install.cmake")
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/feelpp/contrib/glog/cmake_install.cmake")
 endif()
 if ( FEELPP_HAS_GINAC )
-  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/ginac/cmake_install.cmake")
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/feelpp/contrib/ginac/cmake_install.cmake")
 endif()
-set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/eigen/cmake_install.cmake")
+set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/feelpp/contrib/eigen/cmake_install.cmake")
 if(FEELPP_ENABLE_METIS)
-  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/metis/cmake_install.cmake")
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/feelpp/contrib/metis/cmake_install.cmake")
 endif()
 if ( FEELPP_HAS_NLOPT )
-  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/nlopt/cmake_install.cmake")
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/feelpp/contrib/nlopt/cmake_install.cmake")
 endif()
 if ( FEELPP_HAS_IPOPT )
-  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/ipopt/cmake_install.cmake")
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/feelpp/contrib/ipopt/cmake_install.cmake")
 endif()
 if ( FEELPP_HAS_PYBIND11 ) #AND FEELPP_ENABLE_PYTHON AND FEELPP_ENABLE_PYTHON_WRAPPING )
-  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/pybind11/cmake_install.cmake")
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/feelpp/contrib/pybind11/cmake_install.cmake")
 endif()
 
 if ( FEELPP_HAS_MONGOCXX )
-  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/mongocxx/src/cmake_install.cmake")
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/feelpp/contrib/mongocxx/src/cmake_install.cmake")
 endif()
 
 if ( TARGET feelpp_mesh_partitioner )
@@ -150,10 +150,10 @@ endif()
 
 set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
   -DCMAKE_INSTALL_COMPONENT=Bin   -P "${CMAKE_BINARY_DIR}/feelpp/tools/cmake_install.cmake"
-  -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/contrib/eigen/cmake_install.cmake"
-  -DCMAKE_INSTALL_COMPONENT=Libs  -P "${CMAKE_BINARY_DIR}/feel/cmake_install.cmake"
-  -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/feel/cmake_install.cmake"
-  -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/cmake/modules/cmake_install.cmake"
+  -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/feelpp/contrib/eigen/cmake_install.cmake"
+  -DCMAKE_INSTALL_COMPONENT=Libs  -P "${CMAKE_BINARY_DIR}/feelpp/feel/cmake_install.cmake"
+  -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/feelpp//feel/cmake_install.cmake"
+  -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/feelpp/cmake/modules/cmake_install.cmake"
   )
 
 set( FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET contrib tools feelpp )

@@ -44,15 +44,15 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
 endif()
 
 pybind11_add_module(_pyfeelpp python.cpp)
-target_include_directories(_pyfeelpp PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries( _pyfeelpp PRIVATE ${FEELPP_LIBRARIES} )
+target_include_directories(_pyfeelpp PRIVATE ${PYTHON_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS})
+target_link_libraries( _pyfeelpp PRIVATE Feelpp::feelpp )
 
 #add_subdirectory(core)
 
-
+message(STATUS "[pybind11] ${PYBIND11_INCLUDE_DIRS}")
 pybind11_add_module(test_nested  test_nested.cpp)
-target_include_directories(test_nested PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries( test_nested PRIVATE ${FEELPP_LIBRARIES} )
+target_include_directories(test_nested PRIVATE ${PYTHON_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS})
+target_link_libraries( test_nested PRIVATE Feelpp::feelpp pybind11::pybind11 )
 
 
 

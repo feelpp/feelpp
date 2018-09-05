@@ -58,7 +58,6 @@ endif()
 #
 # setup pyfeelpp-mor
 #
-OPTION(FEELPP_ENABLE_PYFEELPP_MOR "Enable PyFeel++ for MOR" ON  )
 if (FEELPP_ENABLE_PYFEELPP_MOR)
   set(SETUP_MOR_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup-mor.py")
   set(SETUP_MOR_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup-mor.py")

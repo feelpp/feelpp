@@ -33,4 +33,4 @@ endif()
 
 pybind11_add_module(_discr  discr.cpp)
 target_include_directories(_discr PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR})
-target_link_libraries( _discr PRIVATE ${FEELPP_LIBRARIES} )
+target_link_libraries( _discr PRIVATE  Feelpp::feelpp  )

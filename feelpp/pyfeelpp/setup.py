@@ -34,6 +34,7 @@ class CMakeBuild(build_ext):
     def build_extension(self, ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = [
+            '-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON',
             '-DCMAKE_CXX_COMPILER=@CMAKE_CXX_COMPILER@',
             '-DCMAKE_C_COMPILER=@CMAKE_C_COMPILER@',
             '-DCMAKE_INSTALL_PREFIX=@CMAKE_INSTALL_PREFIX@',
