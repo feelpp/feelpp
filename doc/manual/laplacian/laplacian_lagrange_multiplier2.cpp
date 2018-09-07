@@ -6,7 +6,7 @@
 namespace Feel
 {
 
-boost::shared_ptr<Mesh<Simplex<2> > >
+std::shared_ptr<Mesh<Simplex<2> > >
 createMeshLaplacianLM()
 {
     typedef Mesh<Simplex<2> > mesh_type;

@@ -123,28 +123,28 @@ public:
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! the basis type of our approximation space
     using  space_type = Pch_type<mesh_type,Order>;
     //! the approximation function space type (shared_ptr<> type)
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     //! an element type of the approximation function space
     typedef typename space_type::element_type element_type;
 
     //! Scalar P0 space
     using  p0_space_type = Pdh_type<mesh_type,0>;
-    typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
+    typedef std::shared_ptr<p0_space_type> p0_space_ptrtype;
     typedef typename p0_space_type::element_type p0_element_type;
 
     //! Vectorial P1 space
     using  p1vec_space_type = Pchv_type<mesh_type,1>;
-    typedef boost::shared_ptr<p1vec_space_type> p1vec_space_ptrtype;
+    typedef std::shared_ptr<p1vec_space_type> p1vec_space_ptrtype;
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     /**
      * Constructor

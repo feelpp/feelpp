@@ -14,10 +14,10 @@ namespace FeelModels {
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
         std::string const& prefix,
-        WorldComm const& wc,
+        worldcomm_ptr_t const& wc,
         std::string const& subPrefix,
-        std::string const& rootRepository )
-: super_type( prefixvm(prefix,"fluid"), false, wc, subPrefix, self_type::expandStringFromSpec( rootRepository ) )
+        ModelBaseRepository const& modelRep )
+: super_type( prefixvm(prefix,"fluid"), false, wc, subPrefix, modelRep )
 , M_prefix( prefix )
 , M_doUpdateGlobalLevelset( true )
 , M_doRebuildSpaceInextensibilityLM( true )
@@ -31,11 +31,11 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 typename MULTIFLUID_CLASS_TEMPLATE_TYPE::self_ptrtype
 MULTIFLUID_CLASS_TEMPLATE_TYPE::New(
         std::string const& prefix,
-        WorldComm const& wc,
+        worldcomm_ptr_t const& wc,
         std::string const& subPrefix,
-        std::string const& rootRepository )
+        ModelBaseRepository const& modelRep )
 {
-    self_ptrtype new_multifluid( new self_type(prefix, wc, subPrefix, rootRepository) );
+    self_ptrtype new_multifluid( new self_type(prefix, wc, subPrefix, modelRep ) );
     return new_multifluid;
 }
 
@@ -58,10 +58,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
     this->log("MultiFluid", "build", "start");
 
     // Read mesh info from multifluid options
-    if (Environment::vm().count(prefixvm(this->prefix(),"mshfile").c_str()))
-        this->setMshfileStr( Environment::expand( soption(_prefix=this->prefix(),_name="mshfile") ) );
-    if (Environment::vm().count(prefixvm(this->prefix(),"geofile").c_str()))
-        this->setGeofileStr( Environment::expand( soption(_prefix=this->prefix(),_name="geofile") ) );
+    if ( Environment::vm().count( prefixvm(this->prefix(),"mesh.filename").c_str() ) )
+    {
+        std::string meshfile = Environment::expand( soption(_prefix=this->prefix(),_name="mesh.filename") );
+        if ( fs::path( meshfile ).extension() == ".geo" )
+            this->setGeoFile( meshfile );
+        else
+            this->setMeshFile( meshfile );
+    }
 
     // Build inherited FluidMechanics
     this->loadMesh( this->createMesh() );
@@ -82,11 +86,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
         mesh = this->mesh();
     }
     // Build levelsets space manager
-    M_levelsetSpaceManager = boost::make_shared<levelset_space_manager_type>( mesh, this->globalLevelsetPrefix() );
+    M_levelsetSpaceManager = std::make_shared<levelset_space_manager_type>( mesh, this->globalLevelsetPrefix() );
     // Temporary hack: ensures the defaults levelset spaces are built for interfaceForces
     M_levelsetSpaceManager->createFunctionSpaceDefault();
     // Build levelsets tool manager
-    M_levelsetToolManager = boost::make_shared<levelset_tool_manager_type>( M_levelsetSpaceManager, this->globalLevelsetPrefix() );
+    M_levelsetToolManager = std::make_shared<levelset_tool_manager_type>( M_levelsetSpaceManager, this->globalLevelsetPrefix() );
     // Update global levelset thickness interface
     if( Environment::vm().count( prefixvm(this->globalLevelsetPrefix(),"thickness-interface").c_str() ) )
         M_globalLevelsetThicknessInterface = doption( _name="thickness-interface", _prefix=this->globalLevelsetPrefix() );
@@ -106,7 +110,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
     {
         auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
         M_levelsets[i].reset(
-                new levelset_type( levelset_prefix, this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
+                new levelset_type( levelset_prefix, this->worldCommPtr(), "", this->repository().rootWithoutNumProc() )
                 );
         hana::eval_if( std::is_same<space_levelset_advection_velocity_type, space_fluid_velocity_type>{},
                     [&](auto _) {
@@ -133,17 +137,17 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
             M_levelsets[i]->setThicknessInterface( this->globalLevelsetThicknessInterface() );
     }
 
-    // "Deep" copy FluidMechanics densityViscosityModel
-    M_fluidDensityViscosityModel.reset( new densityviscosity_model_type( this->fluidPrefix() ) );
-    // Build levelsets densityViscosityModels and interfaceForcesModels
-    M_levelsetDensityViscosityModels.resize( nLevelSets );
+    // "Deep" copy FluidMechanics materialProperties
+    M_fluidMaterialProperties.reset( new material_properties_type( this->fluidPrefix() ) );
+    // Build levelsets materialProperties and interfaceForcesModels
+    M_levelsetsMaterialProperties.resize( nLevelSets );
     M_levelsetInterfaceForcesModels.resize( nLevelSets );
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
         auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
 
-        M_levelsetDensityViscosityModels[i].reset(
-                new densityviscosity_model_type( levelset_prefix )
+        M_levelsetsMaterialProperties[i].reset(
+                new material_properties_type( levelset_prefix )
                 );
 
         if( Environment::vm().count( prefixvm(levelset_prefix, "interface-forces-model").c_str() ) )
@@ -198,9 +202,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::createMesh()
         file.close();
 
         mesh = loadMesh(
-                _mesh=new mesh_type( this->worldComm() ),
+                _mesh=new mesh_type( this->worldCommPtr() ),
                 _filename=mshfile,
-                _worldcomm=this->worldComm(),
+                _worldcomm=this->worldCommPtr(),
                 //_prefix=this->prefix(),
                 _rebuild_partitions=false,
                 _savehdf5=0,
@@ -210,20 +214,20 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::createMesh()
     }
     else
     {
-        if (this->hasMshfileStr())
+        if (this->hasMeshFile())
         {
             std::string mshfileRebuildPartitions = this->rootRepository() + "/" + this->prefix() + ".msh";
 
-            this->log("createMesh","", "load mesh file : " + this->mshfileStr());
-            std::string meshFileExt = fs::path( this->mshfileStr() ).extension().string();
+            this->log("createMesh","", "load mesh file : " + this->meshFile());
+            std::string meshFileExt = fs::path( this->meshFile() ).extension().string();
             bool rebuildPartition = boption(_prefix=this->prefix(), _name="gmsh.partition");
             if ( rebuildPartition && meshFileExt != ".msh" )
                 CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
 
             mesh = loadMesh(
-                    _mesh=new mesh_type( this->worldComm() ),
-                    _filename=this->mshfileStr(),
-                    _worldcomm=this->worldComm(),
+                    _mesh=new mesh_type( this->worldCommPtr() ),
+                    _filename=this->meshFile(),
+                    _worldcomm=this->worldCommPtr(),
                     _prefix=this->prefix(),
                     _rebuild_partitions=rebuildPartition,
                     _rebuild_partitions_filename=mshfileRebuildPartitions,
@@ -232,28 +236,28 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::createMesh()
                     _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES
                     );
 
-            if (rebuildPartition) this->setMshfileStr(mshfileRebuildPartitions);
+            if (rebuildPartition) this->setMeshFile(mshfileRebuildPartitions);
         }
-        else if (this->hasGeofileStr())
+        else if (this->hasGeoFile() )
         {
             std::string mshfile = this->rootRepository() + "/" + this->prefix() + ".msh";
-            this->setMshfileStr(mshfile);
+            this->setMeshFile(mshfile);
 
             gmsh_ptrtype geodesc = geo( 
-                    _filename=this->geofileStr(),
+                    _filename=this->geoFile(),
                     _prefix=this->prefix(),
-                    _worldcomm=this->worldComm() 
+                    _worldcomm=this->worldCommPtr() 
                     );
             // allow to have a geo and msh file with a filename equal to prefix
             geodesc->setPrefix(this->prefix());
             mesh = createGMSHMesh(
                     _mesh=new mesh_type,_desc=geodesc,
-                    _prefix=this->prefix(),_worldcomm=this->worldComm(),
+                    _prefix=this->prefix(),_worldcomm=this->worldCommPtr(),
                     _partitions=this->worldComm().localSize(),
                     _directory=this->rootRepository() 
                     );
         }
-        this->saveMSHfilePath(fmpath);
+        this->saveMeshFile(fmpath);
     }
 
     CHECK( mesh ) << "mesh generation fail";
@@ -277,14 +281,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
     {
         M_levelsets[i]->init();
     }
-    // Init FluidMechanics densityViscosityModel
-    M_fluidDensityViscosityModel->updateForUse( this->densityViscosityModel()->dynamicViscositySpace(), this->modelProperties().materials() );
-    // Init levelsets densityViscosityModels and interfaceForcesModels
+    // Init FluidMechanics materialProperties
+    M_fluidMaterialProperties->updateForUse( this->materialProperties()->dynamicViscositySpace(), this->modelProperties().materials() );
+    // Init levelsets materialProperties and interfaceForcesModels
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
         auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
 
-        M_levelsetDensityViscosityModels[i]->updateForUse(this->densityViscosityModel()->dynamicViscositySpace(), M_levelsets[i]->modelProperties().materials() );
+        M_levelsetsMaterialProperties[i]->updateForUse(this->materialProperties()->dynamicViscositySpace(), M_levelsets[i]->modelProperties().materials() );
     }
     // Update density-viscosity
     this->updateFluidDensityViscosity();
@@ -341,10 +345,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -358,17 +362,15 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
 
     *_ostr << "\n   Fluids Parameters";
     *_ostr << "\n     -- fluid 0 (outer fluid)"
-           << "\n       * rho : " << this->M_fluidDensityViscosityModel->cstRho()
-           << "\n       * mu  : " << this->M_fluidDensityViscosityModel->cstMu()
-           << "\n       * nu  : " << this->M_fluidDensityViscosityModel->cstNu();
-    *_ostr << this->M_fluidDensityViscosityModel->getInfo("")->str();
-    for( uint16_type i = 0; i < M_levelsetDensityViscosityModels.size(); ++i )
+           << "\n       * rho : " << this->M_fluidMaterialProperties->cstDensity()
+           << "\n       * mu  : " << this->M_fluidMaterialProperties->cstMu();
+    *_ostr << this->M_fluidMaterialProperties->getInfo()->str();
+    for( uint16_type i = 0; i < M_levelsetsMaterialProperties.size(); ++i )
     {
     *_ostr << "\n     -- fluid " << i+1
-           << "\n       * rho : " << this->M_levelsetDensityViscosityModels[i]->cstRho()
-           << "\n       * mu  : " << this->M_levelsetDensityViscosityModels[i]->cstMu()
-           << "\n       * nu  : " << this->M_levelsetDensityViscosityModels[i]->cstNu();
-    *_ostr << this->M_levelsetDensityViscosityModels[i]->getInfo("")->str();
+           << "\n       * rho : " << this->M_levelsetsMaterialProperties[i]->cstDensity()
+           << "\n       * mu  : " << this->M_levelsetsMaterialProperties[i]->cstMu();
+    *_ostr << this->M_levelsetsMaterialProperties[i]->getInfo()->str();
     }
 
     *_ostr << "\n   Level Sets Parameters";
@@ -452,13 +454,13 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::globalLevelsetElt() const
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-typename MULTIFLUID_CLASS_TEMPLATE_TYPE::densityviscosity_model_ptrtype const&
-MULTIFLUID_CLASS_TEMPLATE_TYPE::fluidDensityViscosityModel( uint16_type n ) const
+typename MULTIFLUID_CLASS_TEMPLATE_TYPE::material_properties_ptrtype const&
+MULTIFLUID_CLASS_TEMPLATE_TYPE::fluidMaterialProperties( uint16_type n ) const
 {
     if( n == 0 )
-        return M_fluidDensityViscosityModel;
+        return M_fluidMaterialProperties;
     else
-        return M_levelsetDensityViscosityModels.at(n-1);
+        return M_levelsetsMaterialProperties.at(n-1);
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -714,7 +716,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
     if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
     {
         // Add inextensibility LM block index
-        this->M_startBlockIndexFieldsInMatrix["inextensibility-lm"] = currentStartIndex++;
+        this->setStartSubBlockSpaceIndex( "inextensibility-lm", currentStartIndex++ );
     }
 
     return currentStartIndex;
@@ -747,15 +749,15 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
             );
 
     auto rho = vf::project( 
-            this->densityViscosityModel()->dynamicViscositySpace(),
+            this->materialProperties()->dynamicViscositySpace(),
             elements(this->mesh()),
-            idv(M_fluidDensityViscosityModel->fieldRho())*globalH
+            idv(M_fluidMaterialProperties->fieldRho())*globalH
             );
 
     auto mu = vf::project( 
-            this->densityViscosityModel()->dynamicViscositySpace(),
+            this->materialProperties()->dynamicViscositySpace(),
             elements(this->mesh()),
-            idv(M_fluidDensityViscosityModel->fieldMu())*globalH
+            idv(M_fluidMaterialProperties->fieldMu())*globalH
             );
 
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
@@ -765,14 +767,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
                 cst( this->globalLevelsetThicknessInterface() )
                 );
         rho += vf::project( 
-                this->densityViscosityModel()->dynamicViscositySpace(),
+                this->materialProperties()->dynamicViscositySpace(),
                 elements(this->mesh()),
-                idv(M_levelsetDensityViscosityModels[i]->fieldRho())*(1. - Hi)
+                idv(M_levelsetsMaterialProperties[i]->fieldRho())*(1. - Hi)
                 );
         mu += vf::project( 
-                this->densityViscosityModel()->dynamicViscositySpace(),
+                this->materialProperties()->dynamicViscositySpace(),
                 elements(this->mesh()),
-                idv(M_levelsetDensityViscosityModels[i]->fieldMu())*(1. - Hi)
+                idv(M_levelsetsMaterialProperties[i]->fieldMu())*(1. - Hi)
                 );
     }
 
@@ -846,7 +848,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveFluid()
                 _kind=soption( _name="backend", _prefix=this->fluidPrefix() ), 
                 _name=this->fluidPrefix(),
                 _rebuild=true,
-                _worldcomm=this->functionSpace()->worldComm() 
+                _worldcomm=this->functionSpace()->worldCommPtr() 
                 );
         this->algebraicFactory()->reset( this->M_backend, graph, graph->mapRow().indexSplit() );
         // Rebuild solution vector
@@ -985,9 +987,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional( DataUpdateLinear & da
                 }
                 if( this->inextensibilityMethod(n) == "lagrange-multiplier" )
                 {
+                    CHECK( this->hasStartSubBlockSpaceIndex("inextensibility-lm") ) << " start dof index for inextensibility-lm is not present\n";
                     this->timerTool("Solve").start();
 
-                    size_type startBlockIndexInextensibilityLM = this->startBlockIndexFieldsInMatrix().find("inextensibility-lm")->second;
+                    size_type startBlockIndexInextensibilityLM = this->startSubBlockSpaceIndex("inextensibility-lm");
                     auto submeshInextensibilityLM = this->levelsetModel(n)->submeshDirac();
                     auto lambda = this->functionSpaceInextensibilityLM()->element();
 
@@ -1124,9 +1127,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianAdditional( DataUpdateJacobian & d
                 }
                 if( this->inextensibilityMethod(n) == "lagrange-multiplier" )
                 {
+                    CHECK( this->hasStartSubBlockSpaceIndex("inextensibility-lm") ) << " start dof index for inextensibility-lm is not present\n";
                     this->timerTool("Solve").start();
 
-                    size_type startBlockIndexInextensibilityLM = this->startBlockIndexFieldsInMatrix().find("inextensibility-lm")->second;
+                    size_type startBlockIndexInextensibilityLM = this->startSubBlockSpaceIndex("inextensibility-lm");
                     auto submeshInextensibilityLM = this->levelsetModel(n)->submeshDirac();
                     auto lambda = this->functionSpaceInextensibilityLM()->element();
 
@@ -1262,9 +1266,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualAdditional( DataUpdateResidual & d
                 }
                 if( this->inextensibilityMethod(n) == "lagrange-multiplier" )
                 {
+                    CHECK( this->hasStartSubBlockSpaceIndex("inextensibility-lm") ) << " start dof index for inextensibility-lm is not present\n";
                     this->timerTool("Solve").start();
 
-                    size_type startBlockIndexInextensibilityLM = this->startBlockIndexFieldsInMatrix().find("inextensibility-lm")->second;
+                    size_type startBlockIndexInextensibilityLM = this->startSubBlockSpaceIndex("inextensibility-lm");
                     auto submeshInextensibilityLM = this->levelsetModel(n)->submeshDirac();
                     auto lambda = this->functionSpaceInextensibilityLM()->element(XVec,rowStartInVector+startBlockIndexInextensibilityLM);
 

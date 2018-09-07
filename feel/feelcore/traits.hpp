@@ -80,7 +80,7 @@ struct is_shared_ptr
 };
 
 template <class T>
-struct is_shared_ptr<boost::shared_ptr<T> >
+struct is_shared_ptr<std::shared_ptr<T> >
         : mpl::true_
 {
 };
@@ -92,7 +92,7 @@ struct remove_shared_ptr
 };
 
 template <class T>
-struct remove_shared_ptr<boost::shared_ptr<T> >
+struct remove_shared_ptr<std::shared_ptr<T> >
 {
     typedef T type;
 };

@@ -41,9 +41,6 @@ public:
     static const size_type context = PrintExprT::context;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = PrintExprT::imorder;
-    static const bool imIsPoly = PrintExprT::imIsPoly;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -87,6 +84,12 @@ public:
     {}
 
     //@}
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_expr.isPolynomial(); }
 
     /** @name Operator overloads
      */
@@ -257,8 +260,8 @@ public:
     //@{
 
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __u,
-                   boost::shared_ptr<Elem2> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __u,
+                   std::shared_ptr<Elem2> const& __v,
                    FormType& __f ) const
     {
         DVLOG(2) << "calling assemble(u,v)\n";
@@ -267,7 +270,7 @@ public:
     }
 
     template<typename Elem1, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __v,
                    FormType& __f ) const
     {
         DVLOG(2) << "calling assemble(v)\n";

@@ -25,6 +25,7 @@
 #define FEELPP_MODELOUTPUTS_HPP 1
 
 #include <boost/property_tree/ptree.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelvf/ginac.hpp>
 
 namespace Feel {

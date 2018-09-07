@@ -59,7 +59,7 @@ public :
     typedef OperatorSteklovPc<fs_type> this_type;
     typedef OperatorLinear<fs_type, fs_type> super_type;
     typedef fs_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename super::backend_type backend_type;
     typedef typename super::backend_ptrtype backend_ptrtype;
     typedef FsFunctionalLinear<fs_type> image_element_type;
@@ -140,12 +140,12 @@ private :
  */
 
 template<typename space_type>
-boost::shared_ptr< OperatorSteklovPc<space_type> >
-operatorSteklPc( boost::shared_ptr<space_type> const& space,
+std::shared_ptr< OperatorSteklovPc<space_type> >
+operatorSteklPc( std::shared_ptr<space_type> const& space,
                  typename OperatorSteklovPc<space_type>::backend_ptrtype const& backend = Backend<double>::build( BACKEND_PETSC ) )
 {
     typedef OperatorSteklovPc<space_type> StekPc_type;
-    boost::shared_ptr<StekPc_type> Steklov( new StekPc_type( space, backend ) );
+    std::shared_ptr<StekPc_type> Steklov( new StekPc_type( space, backend ) );
     return Steklov;
 }
 

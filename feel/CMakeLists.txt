@@ -25,7 +25,7 @@ CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
 CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 
 
-SET(DIRS core math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models fmi )
+SET(DIRS core timing math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models fmi )
 foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
 endforeach()

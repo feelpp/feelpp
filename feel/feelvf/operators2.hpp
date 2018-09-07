@@ -44,9 +44,6 @@ public:
 
     static const size_type context = vm::JACOBIAN;
 
-    static const uint16_type imorder = Element1::functionspace_type::basis_type::nOrder+Element2::functionspace_type::basis_type::nOrder;
-    static const bool imIsPoly = true;
-
     typedef Element1 test_element_type;
     typedef Element2 trial_element_type;
     typedef OpMass<test_element_type, trial_element_type> this_type;
@@ -81,6 +78,12 @@ public:
         DVLOG(2) << "[" BOOST_PP_STRINGIZE( OpMass ) "] copy constructorn";
 
     }
+
+    //! polynomial order
+    constexpr uint16_type polynomialOrder() const { return Element1::functionspace_type::basis_type::nOrder+Element2::functionspace_type::basis_type::nOrder; }
+
+    //! expression is polynomial?
+    constexpr bool isPolynomial() const { return true; }
 
     test_element_type const& testFunction() const
     {

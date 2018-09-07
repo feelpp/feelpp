@@ -26,11 +26,16 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-07-07
  */
-#define FEELPP_MESH_IMPL_NOEXTERN 1
+#define FEELPP_MESH_IMPL_NOEXTERN_2D 1
 #include <feel/feeldiscr/meshimpl.hpp>
 
 namespace Feel
 {
+template<typename Shape, typename T, int Tag>
+const uint16_type Mesh<Shape, T, Tag>::nDim;
+template<typename Shape, typename T, int Tag>
+const uint16_type Mesh<Shape, T, Tag>::nOrder;
+
 //
 // Explicit instatiations
 //

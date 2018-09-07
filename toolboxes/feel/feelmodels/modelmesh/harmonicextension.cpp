@@ -54,25 +54,27 @@ namespace FeelModels
 
 template< typename MeshType, int Order >
 HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend_ptrtype const& backend, std::string prefix,
-                                                      WorldComm const& worldcomm,
-                                                      bool useGhostEltFromExtendedStencil )
+                                                      worldcomm_ptr_t const& worldcomm,
+                                                      bool useGhostEltFromExtendedStencil,
+                                                      ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, worldcomm,"","" ),
+    super_type( prefix, worldcomm,"",modelRep ),
     M_backend( backend ),
     M_mesh( mesh ),
     M_useAdaptPenal( option(_prefix=this->prefix(),_name="use_adaptive_penalisation").template as<bool>() )
 {
-    M_Xh = space_type::New(_mesh=this->mesh(),_worldscomm=std::vector<WorldComm>(1,worldcomm),
+    M_Xh = space_type::New(_mesh=this->mesh(),_worldscomm=makeWorldsComm(1,worldcomm),
                            _extended_doftable=std::vector<bool>(1,useGhostEltFromExtendedStencil) );
     M_displacement = M_Xh->elementPtr();
     M_dispImposedOnBoundary = M_Xh->elementPtr();
-    M_XhP0 = space_P0_type::New( _mesh=this->mesh(),_worldscomm=std::vector<WorldComm>(1,worldcomm) );
+    M_XhP0 = space_P0_type::New( _mesh=this->mesh(),_worldscomm=makeWorldsComm(1,worldcomm) );
 }
 
 template< typename MeshType, int Order >
-HarmonicExtension<MeshType,Order>::HarmonicExtension( space_ptrtype space, backend_ptrtype const& backend, std::string prefix )
+HarmonicExtension<MeshType,Order>::HarmonicExtension( space_ptrtype space, backend_ptrtype const& backend, std::string prefix,
+                                                      ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, space->worldComm(),"","" ),
+    super_type( prefix, space->worldCommPtr(),"",modelRep ),
     M_backend( backend ),
     M_mesh( space->mesh() ),
     M_Xh( space ),
@@ -80,7 +82,7 @@ HarmonicExtension<MeshType,Order>::HarmonicExtension( space_ptrtype space, backe
 {
     M_displacement = M_Xh->elementPtr();
     M_dispImposedOnBoundary = M_Xh->elementPtr();
-    M_XhP0 = space_P0_type::New( _mesh=this->mesh(),_worldscomm=std::vector<WorldComm>(1,this->worldComm()) );
+    M_XhP0 = space_P0_type::New( _mesh=this->mesh(),_worldscomm=makeWorldsComm(1,this->worldCommPtr()) );
 }
 
 
@@ -199,10 +201,10 @@ HarmonicExtension<MeshType,Order>::init()
 }
 
 template< typename MeshType, int Order >
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 HarmonicExtension<MeshType,Order>::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
 
     *_ostr << "\n   Harmonic Extension "
            << "\n     -- type : " << ((M_useAdaptPenal)?"yes":"no")

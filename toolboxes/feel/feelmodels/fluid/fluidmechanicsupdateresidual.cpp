@@ -23,7 +23,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     vector_ptrtype& R = data.residual();
     bool BuildCstPart = data.buildCstPart();
     bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
     bool BuildNonCstPart = !BuildCstPart;
 
     std::string sc=(BuildCstPart)?" (build cst part)":" (build non cst part)";
@@ -60,8 +59,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     // identity Matrix
     auto Id = eye<nDim,nDim>();
     // dynamic viscosity
-    auto const& mu = this->densityViscosityModel()->fieldMu();
-    auto const& rho = this->densityViscosityModel()->fieldRho();
+    auto const& mu = this->materialProperties()->fieldMu();
+    auto const& rho = this->materialProperties()->fieldRho();
     // stress tensor (eval)
     auto Sigmav = -idv(p)*Id + 2*idv(mu)*defv;
 
@@ -78,7 +77,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             linearForm_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
                            //_expr= /*idv(*M_P0Rho)**/inner( Feel::vf::FSI::fluidMecConvection(u,*M_P0Rho) + idv(*M_P0Rho)*0.5*divv(u)*idv(u), id(v) ),
-                           _expr=inner( Feel::vf::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
+                           _expr=inner( Feel::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
                            _geomap=this->geomap() );
 
             /*if (this->isMoveDomain()  && !BuildCstPart && !UseJacobianLinearTerms)
@@ -95,7 +94,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 #if 0
             auto convecTerm = val( idv(rho)*trans( gradv(u)*idv(u) ))*id(v);
 #else
-            auto convecTerm = inner( Feel::vf::FeelModels::fluidMecConvection(u,rho),id(v) );
+            auto convecTerm = inner( Feel::FeelModels::fluidMecConvection(u,rho),id(v) );
 #endif
             linearForm_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
@@ -122,52 +121,58 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 #endif
 
     //--------------------------------------------------------------------------------------------------//
-    //this->updateResidualModel( data, U );
-    if ( this->densityViscosityModel()->dynamicViscosityLaw() == "newtonian")
+    // sigma : grad(v) on Omega
+    for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
     {
-        // sigma : grad(v) on Omega
-        if ( BuildNonCstPart && !UseJacobianLinearTerms )
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
+        if ( dynamicViscosity.isNewtonianLaw() )
         {
-            this->log("FluidMechanics","updateResidualModel","assembly with newtonian viscosity" );
-            auto const mu_newtonian = idv(mu);
-            auto const Sigmav_newtonian = -idv(p)*Id + 2*mu_newtonian*defv;
-#if 1
-            linearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           //_expr= inner( StressTensorExpr,grad(v) ),
-                           _expr= inner( val(Sigmav_newtonian),grad(v) ),
-                           _geomap=this->geomap() );
-#else
-            form1( Xh, R ) +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= 2*idv(*M_P0Mu)*trace(trans(defv)*grad(v)),
-                           _geomap=this->geomap() );
-            form1( Xh, R ) +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= -idv(p)*div(v),
-                           _geomap=this->geomap() );
-#endif
-        }
-    }
-    else
-    {
-        if ( BuildNonCstPart && !UseJacobianLinearTerms )
-        {
-            linearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= -idv(p)*div(v),
-                           _geomap=this->geomap() );
-        }
-        if ( BuildNonCstPart )
-        {
-            auto const StressTensorExpr = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),false/*true*/);
             // sigma : grad(v) on Omega
-            linearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= inner( StressTensorExpr,grad(v) ),
-                           _geomap=this->geomap() );
+            if ( BuildNonCstPart && !UseJacobianLinearTerms )
+            {
+                this->log("FluidMechanics","updateResidualModel","assembly with newtonian viscosity" );
+                auto const mu_newtonian = idv(mu);
+                auto const Sigmav_newtonian = -idv(p)*Id + 2*mu_newtonian*defv;
+#if 1
+                linearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               //_expr= inner( StressTensorExpr,grad(v) ),
+                               _expr= inner( val(Sigmav_newtonian),grad(v) ),
+                               _geomap=this->geomap() );
+#else
+                form1( Xh, R ) +=
+                    integrate( _range=range,
+                               _expr= 2*idv(*M_P0Mu)*trace(trans(defv)*grad(v)),
+                               _geomap=this->geomap() );
+                form1( Xh, R ) +=
+                    integrate( _range=range,
+                               _expr= -idv(p)*div(v),
+                               _geomap=this->geomap() );
+#endif
+            }
         }
-    } // non newtonian
+        else
+        {
+            if ( BuildNonCstPart && !UseJacobianLinearTerms )
+            {
+                linearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= -idv(p)*div(v),
+                               _geomap=this->geomap() );
+            }
+            if ( BuildNonCstPart )
+            {
+                auto const StressTensorExpr = Feel::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,false/*true*/);
+                // sigma : grad(v) on Omega
+                linearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= inner( StressTensorExpr,grad(v) ),
+                               _geomap=this->geomap() );
+            }
+        } // non newtonian
+    }
 
     //--------------------------------------------------------------------------------------------------//
     // take into account that div u != 0
@@ -178,7 +183,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                        _expr= idv(this->velocityDiv())*id(q),
                        _geomap=this->geomap() );
 
-        auto coeffDiv = (2./3.)*idv(this->densityViscosityModel()->fieldMu()); //(eps-2mu/3)
+        auto coeffDiv = (2./3.)*idv(this->materialProperties()->fieldMu()); //(eps-2mu/3)
         linearForm_PatternCoupled +=
             integrate( _range=M_rangeMeshElements,
                        _expr= val(-coeffDiv*gradv(this->velocityDiv()))*id(v),
@@ -236,7 +241,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     //------------------------------------------------------------------------------------//
 
     //transients terms
-    if (!this->isStationary())
+    if (!this->isStationaryModel())
     {
         bool Build_TransientTerm = !BuildCstPart;
         if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=!BuildCstPart && !UseJacobianLinearTerms;
@@ -279,9 +284,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         }
         if ( this->definePressureCstMethod() == "lagrange-multiplier" )
         {
-            CHECK( this->startBlockIndexFieldsInMatrix().find("define-pressure-cst-lm") != this->startBlockIndexFieldsInMatrix().end() )
-                << " start dof index for define-pressure-cst-lm is not present\n";
-            size_type startBlockIndexDefinePressureCstLM = this->startBlockIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
+            CHECK( this->hasStartSubBlockSpaceIndex("define-pressure-cst-lm") ) << " start dof index for define-pressure-cst-lm is not present\n";
+            size_type startBlockIndexDefinePressureCstLM = this->startSubBlockSpaceIndex("define-pressure-cst-lm");
 
             if ( !BuildCstPart && !UseJacobianLinearTerms )
             {
@@ -322,7 +326,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     this->updateResidualStabilisation( data, U );
 
     //------------------------------------------------------------------------------------//
-
+#if 0
     if ( UsePeriodicity && !BuildCstPart )
     {
         std::string marker1 = soption(_name="periodicity.marker1",_prefix=this->prefix());
@@ -331,101 +335,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             integrate( _range=markedfaces( this->mesh(),this->mesh()->markerName(marker1) ),
                        _expr=-inner(pressureJump*N(),id(v) ) );
     }
-
+#endif
     //------------------------------------------------------------------------------------//
 
     this->updateResidualWeakBC( data, U );
-
-    //------------------------------------------------------------------------------------//
-    if ( M_useThermodynModel && M_useGravityForce )
-    {
-        DataUpdateResidual dataThermo( data );
-        dataThermo.setDoBCStrongDirichlet( false );
-        M_thermodynModel->updateResidual( dataThermo );
-
-        if ( !BuildCstPart )
-        {
-            //auto const& t = M_thermodynModel->fieldTemperature();
-            auto XhT = M_thermodynModel->spaceTemperature();
-            auto t = XhT->element(XVec, M_thermodynModel->rowStartInVector() );
-            auto const& thermalProperties = M_thermodynModel->thermalProperties();
-
-            auto thecoeff = idv(thermalProperties->fieldRho())*idv(thermalProperties->fieldHeatCapacity());
-            form1( _test=M_thermodynModel->spaceTemperature(), _vector=R,
-                   _pattern=size_type(Pattern::COUPLED),
-                   _rowstart=M_thermodynModel->rowStartInVector() ) +=
-                integrate( _range=M_rangeMeshElementsAeroThermal,
-                           _expr= thecoeff*(gradv(t)*idv(u))*id(t),
-                           _geomap=this->geomap() );
-
-            double T0 = M_BoussinesqRefTemperature;
-            auto betaFluid = idv(thermalProperties->fieldThermalExpansion());
-            linearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElementsAeroThermal,
-                           _expr= idv(thermalProperties->fieldRho())*(betaFluid*(idv(t)-T0))*inner(M_gravityForce,id(u)),
-                           _geomap=this->geomap() );
-        }
-    }
-    //------------------------------------------------------------------------------------//
-
-    bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet();
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
-#endif
-    if ( M_useThermodynModel && M_useGravityForce )
-        hasStrongDirichletBC = hasStrongDirichletBC || M_thermodynModel->hasMarkerDirichletBCelimination();
-
-    if (!BuildCstPart && _doBCStrongDirichlet && hasStrongDirichletBC)
-    {
-        R->close();
-
-        auto resFeView = Xh->element(R,rowStartInVector);
-        auto resFeViewVelocity = resFeView.template element<0>();
-
-        auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("velocity");
-        auto const& dofsWithValueImposedVelocity = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
-        for ( size_type thedof : dofsWithValueImposedVelocity )
-            resFeViewVelocity.set( thedof,0. );
-        sync( resFeViewVelocity, "=", dofsWithValueImposedVelocity );
-
-
-        if ( this->hasMarkerPressureBC() )
-        {
-#if 0
-            size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
-            auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
-            lambdaPressure1.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
-                               _expr=vf::zero<1,1>() );
-            if ( nDim == 3 )
-            {
-                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
-                auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
-                lambdaPressure2.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
-                                   _expr=vf::zero<1,1>() );
-            }
-#else
-            auto itFindDofsWithValueImposedPressureBC = M_dofsWithValueImposed.find("pressurebc-lm");
-            auto const& dofsWithValueImposedPressureBC = ( itFindDofsWithValueImposedPressureBC != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposedPressureBC->second : std::set<size_type>();
-            size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
-            auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
-            for ( size_type thedof : dofsWithValueImposedPressureBC )
-                lambdaPressure1.set( thedof,0. );
-            sync( lambdaPressure1, "=", dofsWithValueImposedPressureBC );
-            if ( nDim == 3 )
-            {
-                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
-                auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
-                for ( size_type thedof : dofsWithValueImposedPressureBC )
-                    lambdaPressure2.set( thedof,0. );
-                sync( lambdaPressure2, "=", dofsWithValueImposedPressureBC );
-            }
-
-#endif
-        }
-
-        if ( M_useThermodynModel && M_useGravityForce )
-            M_thermodynModel->updateBCDirichletStrongResidual( R );
-    }
 
     //------------------------------------------------------------------------------------//
 
@@ -554,12 +467,63 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) 
         sync( pSol, "=" );
     }
 
-    if ( M_useThermodynModel && M_useGravityForce )
+    this->log("FluidMechanics","updateNewtonInitialGuess","finish");
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
+{
+    if ( !this->hasStrongDirichletBC() ) return;
+
+    vector_ptrtype& R = data.residual();
+    auto Xh = this->spaceVelocityPressure();
+    size_type rowStartInVector = this->rowStartInVector();
+
+    auto resFeView = Xh->element(R,rowStartInVector);
+    auto resFeViewVelocity = resFeView.template element<0>();
+
+    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("velocity");
+    auto const& dofsWithValueImposedVelocity = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
+    for ( size_type thedof : dofsWithValueImposedVelocity )
+        resFeViewVelocity.set( thedof,0. );
+    sync( resFeViewVelocity, "=", dofsWithValueImposedVelocity );
+
+
+    if ( this->hasMarkerPressureBC() )
     {
-        M_thermodynModel->updateNewtonInitialGuess( U );
+#if 0
+        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
+        auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
+        lambdaPressure1.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
+                           _expr=vf::zero<1,1>() );
+        if ( nDim == 3 )
+        {
+            size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
+            auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
+            lambdaPressure2.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
+                               _expr=vf::zero<1,1>() );
+        }
+#else
+        auto itFindDofsWithValueImposedPressureBC = M_dofsWithValueImposed.find("pressurebc-lm");
+        auto const& dofsWithValueImposedPressureBC = ( itFindDofsWithValueImposedPressureBC != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposedPressureBC->second : std::set<size_type>();
+        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
+        auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
+        for ( size_type thedof : dofsWithValueImposedPressureBC )
+            lambdaPressure1.set( thedof,0. );
+        sync( lambdaPressure1, "=", dofsWithValueImposedPressureBC );
+        if ( nDim == 3 )
+        {
+            size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
+            auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
+            for ( size_type thedof : dofsWithValueImposedPressureBC )
+                lambdaPressure2.set( thedof,0. );
+            sync( lambdaPressure2, "=", dofsWithValueImposedPressureBC );
+        }
+
+#endif
     }
 
-    this->log("FluidMechanics","updateNewtonInitialGuess","finish");
 }
 
 

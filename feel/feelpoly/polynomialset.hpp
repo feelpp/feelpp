@@ -81,10 +81,10 @@ using matricial_t = rank_t<2>;
 template<typename Poly, template<uint16_type> class PolySetType = Scalar >
 class PolynomialSet
     :
-        public boost::enable_shared_from_this<PolynomialSet<Poly, PolySetType > >,
+        public std::enable_shared_from_this<PolynomialSet<Poly, PolySetType > >,
         public PolySetType<Poly::nRealDim>
 {
-    typedef boost::enable_shared_from_this<PolynomialSet<Poly, PolySetType > > super_enable_shared_from_this;
+    typedef std::enable_shared_from_this<PolynomialSet<Poly, PolySetType > > super_enable_shared_from_this;
 public:
 
     /** @name Constants
@@ -101,7 +101,7 @@ public:
      */
     //@{
     typedef PolynomialSet<Poly, PolySetType> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
     typedef typename Poly::value_type value_type;
     typedef typename Poly::basis_type basis_type;
     static const bool is_product = Poly::is_product;
@@ -761,7 +761,7 @@ public:
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         typedef PolynomialSet<Poly, PolySetType > reference_element_type;
-        typedef boost::shared_ptr<reference_element_type> reference_element_ptrtype;
+        typedef std::shared_ptr<reference_element_type> reference_element_ptrtype;
 
         typedef typename reference_element_type::value_type value_type;
         using polyset_type = typename reference_element_type::polyset_type;
@@ -1223,18 +1223,18 @@ public:
     }; /** class PreCompute **/
 
     typedef PreCompute precompute_type;
-    typedef boost::shared_ptr<precompute_type> precompute_ptrtype;
+    typedef std::shared_ptr<precompute_type> precompute_ptrtype;
 
     precompute_ptrtype
     preCompute( self_ptrtype p, points_type const& P )
     {
-        return boost::make_shared<PreCompute>( p, P );
+        return std::make_shared<PreCompute>( p, P );
     }
 
     precompute_ptrtype
     preCompute( points_type const& P )
     {
-        return boost::make_shared<PreCompute>( super_enable_shared_from_this::shared_from_this(), P );
+        return std::make_shared<PreCompute>( super_enable_shared_from_this::shared_from_this(), P );
     }
 
     typedef std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> > faces_precompute_type;
@@ -1292,8 +1292,8 @@ public:
         std::vector<std::map<permutation_type, precompute_ptrtype> > __geopc( convex_type::numEdges );
         for ( uint16_type __f = 0; __f < convex_type::numEdges; ++__f )
         {
-            __geopc[__f][permutation_type::NO_PERMUTATION] = boost::make_shared<precompute_type>(  gm, p(__f) );
-            __geopc[__f][permutation_type::REVERSE_PERMUTATION] = boost::make_shared<precompute_type>(  gm, p( __f ) );
+            __geopc[__f][permutation_type::NO_PERMUTATION] = std::make_shared<precompute_type>(  gm, p(__f) );
+            __geopc[__f][permutation_type::REVERSE_PERMUTATION] = std::make_shared<precompute_type>(  gm, p( __f ) );
         }
         return __geopc;
     }
@@ -1339,13 +1339,13 @@ public:
 
 
         typedef Basis_t reference_element_type;
-        typedef boost::shared_ptr<Basis_t> reference_element_ptrtype;
+        typedef std::shared_ptr<Basis_t> reference_element_ptrtype;
 
         typedef typename reference_element_type::value_type value_type;
 
         typedef ElementType geometric_element_type;
         typedef typename Geo_t::template Context<context_g, ElementType> geometric_mapping_context_type;
-        typedef boost::shared_ptr<geometric_mapping_context_type> geometric_mapping_context_ptrtype;
+        typedef std::shared_ptr<geometric_mapping_context_type> geometric_mapping_context_ptrtype;
 
         typedef typename node<value_type>::type node_type;
 
@@ -1897,7 +1897,18 @@ public:
                 return M_curl[i][q]( c1 );
             }
 
-
+        value_type curlx( uint16_type i, uint32_type q ) const
+            {
+                return curlx( i, q, do_optimization_p1_t() );
+            }
+        value_type curlx( uint16_type i, uint32_type q, optimization_p1_t ) const
+            {
+                return M_curl[i][0](0);
+            }
+        value_type curlx( uint16_type i, uint32_type q, no_optimization_p1_t ) const
+            {
+                return M_curl[i][q](0);
+            }
         value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
             Feel::detail::ignore_unused_variable_warning( c1 );
@@ -2085,10 +2096,10 @@ public:
     };
 
     template<size_type context_v, typename BasisType, typename GeoType, typename ElementType>
-    boost::shared_ptr<Context<context_v,BasisType, GeoType, ElementType> >
-    context( boost::shared_ptr<BasisType> b, boost::shared_ptr<GeoType> gm, precompute_ptrtype& pc )
+    std::shared_ptr<Context<context_v,BasisType, GeoType, ElementType> >
+    context( std::shared_ptr<BasisType> b, std::shared_ptr<GeoType> gm, precompute_ptrtype& pc )
     {
-        return boost::shared_ptr<Context<context_v,BasisType, GeoType, ElementType> >(
+        return std::shared_ptr<Context<context_v,BasisType, GeoType, ElementType> >(
                    new Context<context_v, BasisType, GeoType, ElementType>( context_v,
                            b,
                            gm,
@@ -2096,23 +2107,23 @@ public:
     }
 
     template<int contextv, int contextg, typename BasisType, typename GeoType,typename ElementType>
-    boost::shared_ptr<Context<contextv,BasisType, GeoType, ElementType> >
-    ctx( boost::shared_ptr<BasisType> const& b,
-         boost::shared_ptr<typename GeoType::template Context<contextg, ElementType> > const& gm,
+    std::shared_ptr<Context<contextv,BasisType, GeoType, ElementType> >
+    ctx( std::shared_ptr<BasisType> const& b,
+         std::shared_ptr<typename GeoType::template Context<contextg, ElementType> > const& gm,
          precompute_ptrtype pc, ElementType& e )
     {
         typedef Context<contextv,BasisType, GeoType, ElementType> ctx_type;
-        return boost::shared_ptr<ctx_type>( new ctx_type( b, gm, pc ) );
+        return std::shared_ptr<ctx_type>( new ctx_type( b, gm, pc ) );
 
     }
     template<int contextv, typename BasisType, typename GeoType,typename ElementType>
-    boost::shared_ptr<Context<contextv,BasisType, GeoType, ElementType> >
-    ctx( boost::shared_ptr<BasisType> const& b,
-         boost::shared_ptr<typename GeoType::template Context<contextv, ElementType> > const& gm,
+    std::shared_ptr<Context<contextv,BasisType, GeoType, ElementType> >
+    ctx( std::shared_ptr<BasisType> const& b,
+         std::shared_ptr<typename GeoType::template Context<contextv, ElementType> > const& gm,
          precompute_ptrtype pc, ElementType& e )
     {
         typedef Context<contextv,BasisType, GeoType, ElementType> ctx_type;
-        return boost::shared_ptr<ctx_type>( new ctx_type( b, gm, pc ) );
+        return std::shared_ptr<ctx_type>( new ctx_type( b, gm, pc ) );
 
     }
 

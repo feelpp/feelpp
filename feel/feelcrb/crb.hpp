@@ -195,7 +195,7 @@ public:
 
     typedef TruthModelType truth_model_type;
     typedef truth_model_type model_type;
-    typedef boost::shared_ptr<truth_model_type> truth_model_ptrtype;
+    typedef std::shared_ptr<truth_model_type> truth_model_ptrtype;
 
     typedef double value_type;
     typedef boost::tuple<double,double> bounds_type;
@@ -219,18 +219,19 @@ public:
     typedef typename convergence_type::value_type convergence;
 
     typedef CRB self_type;
+    using self_ptrtype = std::shared_ptr<self_type>;
 
     //! scm
     typedef CRBSCM<truth_model_type> scm_type;
-    typedef boost::shared_ptr<scm_type> scm_ptrtype;
+    typedef std::shared_ptr<scm_type> scm_ptrtype;
 
     //! elements database
     typedef CRBElementsDB<truth_model_type> crb_elements_db_type;
-    typedef boost::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
+    typedef std::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
 
     //! POD
     typedef POD<truth_model_type> pod_type;
-    typedef boost::shared_ptr<pod_type> pod_ptrtype;
+    typedef std::shared_ptr<pod_type> pod_ptrtype;
     typedef typename pod_type::mode_set_type mode_set_type;
 
     //! function space type
@@ -243,7 +244,7 @@ public:
     typedef typename model_type::element_ptrtype element_ptrtype;
 
     typedef typename model_type::backend_type backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename model_type::vector_ptrtype vector_ptrtype;
     typedef typename model_type::beta_vector_type beta_vector_type;
@@ -257,7 +258,7 @@ public:
     typedef boost::tuple< std::vector<wn_type> , std::vector<std::string> > export_vector_wn_type;
 
     typedef std::vector<double> vector_double_type;
-    typedef boost::shared_ptr<vector_double_type> vector_double_ptrtype;
+    typedef std::shared_ptr<vector_double_type> vector_double_ptrtype;
 
     using vectorN_type = Feel::vectorN_type;
     using matrixN_type = Feel::matrixN_type;
@@ -275,22 +276,22 @@ public:
 
     //! mesh type
     typedef typename model_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! space type
     typedef typename model_type::space_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     //! time discretization
     typedef Bdf<space_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     // ! export
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     typedef Preconditioner<double> preconditioner_type;
-    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+    typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
     //here a fusion vector containing sequence 0 ... nb_spaces
     //useful to acces to a component of a composite space in ComputeIntegrals
@@ -311,20 +312,26 @@ public:
      */
     //@{
 
-    //! default constructor
-    CRB( crb::stage stage = crb::stage::online )
-        :
-        CRB( "noname", boost::make_shared<truth_model_type>(stage), stage )
+    static self_ptrtype New( crb::stage stage = crb::stage::online )
         {
-
+            return New( "noname", std::make_shared<truth_model_type>(stage), stage );
         }
 
-    CRB( std::string const& name, crb::stage stage = crb::stage::online )
-        :
-        CRB( name, boost::make_shared<truth_model_type>(stage), stage )
-    {
+    static self_ptrtype New( std::string const& name, crb::stage stage = crb::stage::online )
+        {
+            return New( name, std::make_shared<truth_model_type>(stage), stage );
+        }
 
-    }
+    static self_ptrtype New( std::string const& name,
+                             truth_model_ptrtype const & model,
+                             crb::stage stage = crb::stage::online,
+                             std::string const& prefixExt = "" )
+        {
+            auto crb = std::make_shared<self_type>( name, model, stage, prefixExt );
+            if ( stage == crb::stage::offline )
+                crb->init();
+            return crb;
+        }
 
     //! constructor from command line options
     CRB( std::string const& name,
@@ -332,11 +339,11 @@ public:
          crb::stage stage = crb::stage::online,
          std::string const& prefixExt = "" )
         :
-        super( name, prefixvm(prefixExt, "crb"), model->worldComm()),
+        super( name, prefixvm(prefixExt, "crb"), model->worldCommPtr()),
         M_elements_database( name,
                              prefixvm(prefixExt,"elements"),
-                             this->worldComm() ),
-        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
+                             this->worldCommPtr() ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldCommPtr() ) ),
         M_model( model ),
         M_output_index( ioption(_name="crb.output-index") ),
         M_tolerance( doption(_name="crb.error-max") ),
@@ -349,8 +356,8 @@ public:
         // M_WNmu_complement(),
         // M_primal_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
         // M_dual_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_scmA( new scm_type( name, prefixvm(prefixExt,"scma"), false /*not scm for mass mastrix*/, this->worldComm() )  ),
-        M_scmM( new scm_type( name, prefixvm(prefixExt,"scmm"), true /*scm for mass matrix*/, this->worldComm() ) ),
+        M_scmA( new scm_type( name, prefixvm(prefixExt,"scma"), false /*not scm for mass mastrix*/, this->worldCommPtr() )  ),
+        M_scmM( new scm_type( name, prefixvm(prefixExt,"scmm"), true /*scm for mass matrix*/, this->worldCommPtr() ) ),
         M_N( 0 ),
         M_solve_dual_problem( boption(_name="crb.solve-dual-problem") ),
         M_orthonormalize_primal( boption(_name="crb.orthonormalize-primal") ),
@@ -381,38 +388,8 @@ public:
         M_showResidual( boption(_name="crb.show-residual") )
         {
             this->setTruthModel( model );
-            if ( stage == crb::stage::offline )
+            if( stage == crb::stage::offline )
             {
-                if ( !M_rebuild && !fs::exists(this->dbLocalPath()/fs::path(this->jsonFilename()) ) )
-                {
-                    M_rebuild = true;
-                    this->worldComm().barrier();
-                }
-                if ( !M_rebuild )
-                {
-                    this->setupOfflineFromDB();
-                }
-                else
-                {
-                    M_scmM->setId( this->id() );
-                    M_scmA->setId( this->id() );
-                    M_elements_database.setId( this->id() );
-                }
-                if( this->worldComm().isMasterRank() )
-                    std::cout << "Use DB id " << this->id() << std::endl;
-
-                if ( M_N == 0 )
-                {
-                    if( this->worldComm().isMasterRank() )
-                        std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
-                    LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
-                }
-
-                // fe vector is requiert in online : must not be TODO
-                if ( M_use_newton && M_loadElementsDb && M_Rqm.empty() )
-                    boost::tie( boost::tuples::ignore, boost::tuples::ignore/*M_Jqm*/, M_Rqm ) = M_model->computeAffineDecomposition();
-
-
                 // define offline backend and preconditioner
                 M_backend =  backend();
                 M_backend_primal = backend(_name="backend-primal");
@@ -490,10 +467,44 @@ public:
         M_SER_maxerr( o.M_SER_maxerr )
         {}
 
+public:
     //! destructor
     ~CRB()
         {}
 
+    void init()
+        {
+            if ( !M_rebuild && !fs::exists(this->dbLocalPath()/fs::path(this->jsonFilename()) ) )
+            {
+                M_rebuild = true;
+                this->worldComm().barrier();
+            }
+            if ( !M_rebuild )
+            {
+                this->setupOfflineFromDB();
+            }
+            else
+            {
+                M_scmM->setId( this->id() );
+                M_scmA->setId( this->id() );
+                M_elements_database.setId( this->id() );
+            }
+            if( this->worldComm().isMasterRank() )
+                std::cout << "Use DB id " << this->id() << std::endl;
+
+            if ( M_N == 0 )
+            {
+                if( this->worldComm().isMasterRank() )
+                    std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
+                LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
+            }
+
+            // fe vector is requiert in online : must not be TODO
+            if ( M_use_newton && M_loadElementsDb && M_Rqm.empty() )
+                boost::tie( boost::tuples::ignore, boost::tuples::ignore/*M_Jqm*/, M_Rqm ) = M_model->computeAffineDecomposition();
+
+
+        }
 
     //@}
 
@@ -624,11 +635,11 @@ public:
             M_model = model;
             this->setDBDirectory( M_model->uuid() );
             M_Dmu = M_model->parameterSpace();
-            M_Xi = boost::make_shared<sampling_type>( M_Dmu );
-            M_WNmu = boost::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
+            M_Xi = std::make_shared<sampling_type>( M_Dmu );
+            M_WNmu = std::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
             //M_WNmu_complement(),
-            M_primal_apee_mu = boost::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
-            M_dual_apee_mu = boost::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
+            M_primal_apee_mu = std::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
+            M_dual_apee_mu = std::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
 
             M_elements_database.setModel( model );
 #if 0
@@ -1005,7 +1016,7 @@ public:
      * \param output : vector of outpus at each time step
      * \param K : number of time step ( default value, must be >0 if used )
      */
-    void fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > const& uN,
+    virtual void fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > const& uN,
                           std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K=0) const;
 
     /**
@@ -1304,12 +1315,12 @@ public:
     /**
      * save the CRB database
      */
-    void saveDB() override;
+    virtual void saveDB() override;
 
     /**
      * load the CRB database
      */
-    bool loadDB() override;
+    virtual bool loadDB() override;
 
     /**
      *  do the projection on the POD space of u (for transient problems)
@@ -1373,7 +1384,7 @@ public:
      * \pram uNold : old primal solution
      * \param K : time index
      */
-    double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu , std::vector<vectorN_type> const & uNold,  int const K=0) const;
+    virtual double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu , std::vector<vectorN_type> const & uNold,  int const K=0) const;
 
     /*
      * build matrix to store functions used to compute the variance output
@@ -1454,7 +1465,7 @@ protected:
 
     crb_elements_db_type M_elements_database;
 
-    boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
+    std::shared_ptr<SolverNonLinear<double> > M_nlsolver;
 
     truth_model_ptrtype M_model;
 
@@ -2487,7 +2498,8 @@ CRB<TruthModelType>::offline()
     bool use_predefined_WNmu = buildSampling();
 
     LOG(INFO) << "[CRB::offline] strategy "<< M_error_type <<"\n";
-    if( this->worldComm().isMasterRank() ) std::cout << "[CRB::offline] strategy "<< M_error_type <<std::endl;
+    if( this->worldComm().isMasterRank() )
+        std::cout << "[CRB::offline] strategy "<< M_error_type <<std::endl;
 
     if( M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
     {
@@ -2832,17 +2844,11 @@ CRB<TruthModelType>::offline()
 
         }//end of transient case
 
-        if( this->worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() && !M_model->isSteady() )
         {
-            if ( M_model->isSteady() )
-            {
-            }
-            else
-            {
-                std::cout<<"-- time to perform primal POD : "<<tpr<<" s"<<std::endl;
-                std::cout<<"-- time to perform dual POD : "<<tdu<<" s"<<std::endl;
-                std::cout<<"-- time to add primal and dual basis : "<<time<<" s"<<std::endl;
-            }
+            std::cout<<"-- time to perform primal POD : "<<tpr<<" s"<<std::endl;
+            std::cout<<"-- time to perform dual POD : "<<tdu<<" s"<<std::endl;
+            std::cout<<"-- time to add primal and dual basis : "<<time<<" s"<<std::endl;
         }
 
         //in the case of transient problem, we can add severals modes for a same mu
@@ -2888,9 +2894,9 @@ CRB<TruthModelType>::offline()
             M_model->updateRbSpaceContextEim();
             M_hasRbSpaceContextEim = true;
         }
-        if ( M_model->hasDeim() )
+        if ( M_model->hasDeim() && !M_model->isLinear() )
         {
-            M_model->updateRbInDeim( this->wn() );
+            M_model->updateRbInDeim();
         }
 
 
@@ -4493,7 +4499,6 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
                 // backup uNdu
                 next_uNdu = uNdu[0];
                 // update coefficients of affine decomposition
-                // warning! should be uN[0] instead of uNdu[0] but no access to uN[0] at this time
                 if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
                     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( uN[0], mu/*, N*/ );
                 else
@@ -4836,8 +4841,11 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                 }
                 else
                 {
+                    double oldEltL2Norm = previous_uN.norm();
                     increment = (uN[0]-previous_uN).norm();
-                    auto increment_abs = (uN[0]-previous_uN).array().abs();
+                    if ( oldEltL2Norm > 1e-13 )
+                        increment /= oldEltL2Norm;
+
                     fixPointIsFinished = increment < M_fixedpointIncrementTol || fi>=M_fixedpointMaxIterations;
 
                     this->online_iterations_summary.first = fi;
@@ -4849,6 +4857,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                         VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
                         double residual_norm = (A * uN[0] - F).norm() ;
                         VLOG(2) << " residual_norm :  "<<residual_norm;
+                        std::cout << "[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment << " residual_norm :  "<<residual_norm <<std::endl;
                     }
                 }
                 ++fi;
@@ -5781,7 +5790,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         double time_for_output = time_step;
         if ( !M_model->isSteady() )
         {
-            double time_for_output = (number_of_time_step-1)*time_step;
+            time_for_output = (number_of_time_step-1)*time_step;
             if ( K > 0 )
                 time_for_output = K*time_step;
         }
@@ -10911,10 +10920,10 @@ CRB<TruthModelType>::buildSampling()
 
     std::string file_name = ( boost::format("SamplingWNmu") ).str();
     std::ifstream file ( file_name );
-    this->M_WNmu->clear();
 
     if ( use_predefined_WNmu ) // In this case we want to read the sampling
     {
+        this->M_WNmu->clear();
         if( ! file ) // The user forgot to give the sampling file
             throw std::logic_error( "[CRB::offline] ERROR the file SamplingWNmu doesn't exist so it's impossible to known which parameters you want to use to build the database" );
         else
@@ -10929,6 +10938,7 @@ CRB<TruthModelType>::buildSampling()
     }
     else if ( this->M_error_type==CRB_NO_RESIDUAL )// We generate the sampling with choosen strategy
     {
+        this->M_WNmu->clear();
         if ( N_log_equi>0 )
         {
             this->M_WNmu->logEquidistribute( N_log_equi , true );
@@ -11586,7 +11596,7 @@ CRB<TruthModelType>::saveDB()
         fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
         if ( ofs )
         {
-            //boost::archive::text_oarchive oa( ofs );
+            // boost::archive::text_oarchive oa( ofs );
             boost::archive::binary_oarchive oa( ofs );
             // write class instance to archive
             oa << *this;

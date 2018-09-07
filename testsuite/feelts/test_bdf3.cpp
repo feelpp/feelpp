@@ -72,10 +72,10 @@ public :
     using mesh_type = Mesh<Simplex<Dim,1>>;
     using element_type = typename Pch_type<mesh_type,1>::element_type;
     using timeset_type = typename Exporter<mesh_type>::timeset_type;
-    using timeset_ptrtype = boost::shared_ptr<timeset_type>;
+    using timeset_ptrtype = std::shared_ptr<timeset_type>;
     using space_type = Pch_type<mesh_type,1>;
     using bdf_type = Bdf<space_type>;
-    using bdf_ptrtype = boost::shared_ptr<bdf_type>;
+    using bdf_ptrtype = std::shared_ptr<bdf_type>;
 
     // Test creation of new timeSet and exporter with bdf.
     // It solves successively three laplacian problem
@@ -151,7 +151,7 @@ public :
                     }
                     else
                     {
-                        auto timeset = boost::make_shared<timeset_type>(
+                        auto timeset = std::make_shared<timeset_type>(
                             timeset_type( prefix ) );
                         e->addTimeSet( timeset );
                     }

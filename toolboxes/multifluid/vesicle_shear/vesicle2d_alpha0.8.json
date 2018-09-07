@@ -1,8 +1,10 @@
 {
-    "Name": "Vesicle2d",
-    "ShortName": "Vesicle2d",
-    "Model": "Levelset",
-
+    "Name": "VesicleShear2d",
+    "ShortName": "VesicleShear2d",
+    "Models":
+    {
+        "equations":"Advection"
+    },
     "Parameters":
     {
         "x0": "0.",
@@ -10,7 +12,6 @@
         "a0": "1.485836479448006",
         "b0": "0.6730215698894606"
     },
-
     "InitialConditions":
     {
         "multifluid.levelset1":
@@ -37,7 +38,10 @@
     },
     "PostProcess":
     {
-        "Fields": ["modgradphi", "gradphi"],
+        "Exports":
+        {
+            "fields": ["modgradphi", "gradphi"]
+        },
         "PhysicalQuantities": ["volume", "perimeter"]
     }
 }

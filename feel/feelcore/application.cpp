@@ -842,11 +842,11 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 {
     DVLOG(2) << "[Application::Application] parsing options...\n";
 
-    boost::shared_ptr<po::parsed_options> parsed;
+    std::shared_ptr<po::parsed_options> parsed;
 
     if ( extra_parser )
     {
-        parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
+        parsed = std::shared_ptr<po::parsed_options>( new po::parsed_options( parser
                  .options( M_desc )
                  .extra_parser( at_option_parser )
                  .allow_unregistered()
@@ -855,7 +855,7 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 
     else
     {
-        parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
+        parsed = std::shared_ptr<po::parsed_options>( new po::parsed_options( parser
                  .options( M_desc )
                  .allow_unregistered()
                  .run() ) );

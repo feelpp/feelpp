@@ -45,7 +45,7 @@ struct Odh
                           double,
                           Periodicity <NoPeriodicity>,
                           mortars<NoMortar>> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 } // meta
@@ -66,11 +66,11 @@ using Odh_ptrtype = typename meta::Odh<MeshType,Order,Tag>::ptrtype;
 template<int Order,typename MeshType, int Tag = 0>
 inline
 Odh_ptrtype<MeshType,Order,Tag>
-Odh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+Odh( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     
     return Odh_type<MeshType,Order,Tag>::New( _mesh=mesh,
-                                              _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                              _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
                                               _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 

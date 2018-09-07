@@ -547,6 +547,9 @@ struct _PC_FieldSplitLink {
   VecScatter        sctx;
   IS                is,is_col;
   PC_FieldSplitLink next,previous;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+  PetscLogEvent     event;
+#endif
 };
 
 typedef struct {
@@ -573,8 +576,17 @@ typedef struct {
   PCFieldSplitSchurFactType schurfactorization;
   KSP                       kspschur;              /* The solver for S */
   KSP                       kspupper;              /* The solver for A in the upper diagonal part of the factorization (H_2 in [El08]) */
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,8,0)
+  PetscScalar               schurscale;            /* Scaling factor for the Schur complement solution with DIAG factorization */
+#endif
+
   PC_FieldSplitLink         head;
+#if PETSC_VERSION_LESS_THAN(3,8,0)
   PetscBool                 reset;                  /* indicates PCReset() has been last called on this object, hack */
+#endif
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+  PetscBool                 isrestrict;             /* indicates PCFieldSplitRestrictIS() has been last called on this object, hack */
+#endif
   PetscBool                 suboptionsset;          /* Indicates that the KSPSetFromOptions() has been called on the sub-KSPs */
   PetscBool                 dm_splits;              /* Whether to use DMCreateFieldDecomposition() whenever possible */
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,5,0)

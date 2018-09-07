@@ -57,7 +57,7 @@ int main(int argc, char**argv )
     typedef Nedelec<0, NedelecKind::NED1> curl_basis_type;
     typedef Lagrange<1,Scalar> lag_basis_type;
     typedef FunctionSpace<mesh_type, bases<curl_basis_type, lag_basis_type> > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     BoundaryConditions bcs;
     map_vector_field<FEELPP_DIM,1,2> m_dirichlet { bcs.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet")};

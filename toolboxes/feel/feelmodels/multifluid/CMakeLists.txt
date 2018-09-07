@@ -16,15 +16,15 @@ foreach( _DIM 2 3)
             LEVELSET_PN_ORDER ${FEELPP_MODELS_LEVELSET_PN_ORDER}
             GEO_ORDER  1
             )
-        set(FEELPP_MODELS_LIBRARIES_MULTIFLUID  ${FEELPP_MODELS_LIBRARIES_MULTIFLUID} ${LIBBASE_NAME}  )
+        set(FEELPP_MODELS_LIBRARIES_MULTIFLUID  ${FEELPP_MODELS_LIBRARIES_MULTIFLUID} ${MULTIFLUID_LIB_NAME}  )
     endforeach()
   endforeach()
 endforeach()
 
-add_library(feelpp_model_multifluid SHARED libmultifluid.cpp)
-target_link_libraries(feelpp_model_multifluid ${FEELPP_MODELS_LIBRARIES_MULTIFLUID})
-
-install(TARGETS feelpp_model_multifluid DESTINATION lib/ COMPONENT Libs)
+add_library(feelpp_toolbox_multifluid_lib SHARED libmultifluid.cpp)
+target_link_libraries(feelpp_toolbox_multifluid_lib ${FEELPP_MODELS_LIBRARIES_MULTIFLUID})
+set_property(TARGET feelpp_toolbox_multifluid_lib PROPERTY MACOSX_RPATH ON)
+install(TARGETS feelpp_toolbox_multifluid_lib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/multifluid COMPONENT Devel)

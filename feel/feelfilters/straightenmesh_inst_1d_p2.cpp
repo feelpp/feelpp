@@ -28,14 +28,14 @@
 namespace Feel
 {
 
-template boost::shared_ptr<Mesh<Hypercube<1,1,2>>>
-straightenMesh<Mesh<Hypercube<1,1,2>>>( boost::shared_ptr<Mesh<Hypercube<1,1,2>>>, 
-                                        WorldComm const& , bool, bool  );
+template std::shared_ptr<Mesh<Hypercube<1,1,2>>>
+straightenMesh<Mesh<Hypercube<1,1,2>>>( std::shared_ptr<Mesh<Hypercube<1,1,2>>>, 
+                                        worldcomm_ptr_t const& , bool, bool  );
 
 
-template boost::shared_ptr<Mesh<Simplex<1,2>>>
-straightenMesh<Mesh<Simplex<1,2>>>( boost::shared_ptr<Mesh<Simplex<1,2>>>, 
-                                    WorldComm const& , bool, bool  );
+template std::shared_ptr<Mesh<Simplex<1,2>>>
+straightenMesh<Mesh<Simplex<1,2>>>( std::shared_ptr<Mesh<Simplex<1,2>>>, 
+                                    worldcomm_ptr_t const& , bool, bool  );
 
 
 }

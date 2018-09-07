@@ -40,7 +40,7 @@
 namespace Feel
 {
 template<typename MeshType, int N>
-ExporterEnsight<MeshType,N>::ExporterEnsight( WorldComm const& worldComm )
+ExporterEnsight<MeshType,N>::ExporterEnsight( worldcomm_ptr_t const& worldComm )
 :
 super( worldComm ),
 M_element_type()
@@ -49,7 +49,7 @@ M_element_type()
     init();
 }
 template<typename MeshType, int N>
-ExporterEnsight<MeshType,N>::ExporterEnsight( std::string const& __p, int freq, WorldComm const& worldComm )
+ExporterEnsight<MeshType,N>::ExporterEnsight( std::string const& __p, int freq, worldcomm_ptr_t const& worldComm )
     :
     super( "ensight", __p, freq, worldComm ),
     M_element_type()
@@ -57,7 +57,7 @@ ExporterEnsight<MeshType,N>::ExporterEnsight( std::string const& __p, int freq, 
     init();
 }
 template<typename MeshType, int N>
-ExporterEnsight<MeshType,N>::ExporterEnsight( po::variables_map const& vm, std::string const& exp_prefix, WorldComm const& worldComm )
+ExporterEnsight<MeshType,N>::ExporterEnsight( po::variables_map const& vm, std::string const& exp_prefix, worldcomm_ptr_t const& worldComm )
     :
     super( vm, exp_prefix, worldComm )
 {
@@ -65,7 +65,7 @@ ExporterEnsight<MeshType,N>::ExporterEnsight( po::variables_map const& vm, std::
 }
 
 template<typename MeshType, int N>
-ExporterEnsight<MeshType,N>::ExporterEnsight( std::string const& exp_prefix, WorldComm const& worldComm )
+ExporterEnsight<MeshType,N>::ExporterEnsight( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm )
     :
     super( exp_prefix, worldComm )
 {

@@ -97,7 +97,7 @@ namespace Feel
         //! linear algebra backend factory
         typedef Backend<double> backend_type;
         //! linear algebra backend factory shared_ptr<> type
-        typedef boost::shared_ptr<backend_type> backend_ptrtype;
+        typedef std::shared_ptr<backend_type> backend_ptrtype;
 
         //! sparse matrix type associated with backend
         typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -112,38 +112,38 @@ namespace Feel
         //! mesh type
         typedef Mesh<convex_type> mesh_type;
         //! mesh shared_ptr<> type
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
         //! the exporter factory type
         typedef Exporter<mesh_type> export_type;
         //! the exporter factory (shared_ptr<> type)
-        typedef boost::shared_ptr<export_type> export_ptrtype;
+        typedef std::shared_ptr<export_type> export_ptrtype;
 
         // typedef bases<Lagrange<Order, Scalar> > basis_type;
         // typedef FunctionSpace<mesh_type, basis_type> space_type;
         typedef Pch_type<mesh_type, Order> space_type;
-        typedef boost::shared_ptr<space_type> space_ptrtype;
+        typedef std::shared_ptr<space_type> space_ptrtype;
         typedef typename space_type::element_type element_type;
 
         //! Scalar P0 space
         // typedef bases<Lagrange<0,Scalar, Discontinuous > > p0_basis_type;
         // typedef FunctionSpace<mesh_type, p0_basis_type> p0_space_type;
         typedef Pdh_type<mesh_type, 0> p0_space_type;
-        typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
+        typedef std::shared_ptr<p0_space_type> p0_space_ptrtype;
         typedef typename p0_space_type::element_type p0_element_type;
 
         // //! Scalar P1 space
         // typedef bases<Lagrange<1, Scalar> > p1_basis_type;
         // typedef FunctionSpace<mesh_type, p1_basis_type> p1_space_type;
         typedef Pch_type<mesh_type, 1> p1_space_type;
-        typedef boost::shared_ptr<p1_space_type> p1_space_ptrtype;
+        typedef std::shared_ptr<p1_space_type> p1_space_ptrtype;
         typedef typename p1_space_type::element_type p1_element_type;
 
 
         //! Vectorial P1 space
         typedef bases<Lagrange<1, Vectorial> > p1vec_basis_type;
         typedef FunctionSpace<mesh_type, p1vec_basis_type> p1vec_space_type;
-        typedef boost::shared_ptr<p1vec_space_type> p1vec_space_ptrtype;
+        typedef std::shared_ptr<p1vec_space_type> p1vec_space_ptrtype;
         typedef typename p1vec_space_type::element_type p1vec_element_type;
 
         typedef typename mesh_type::point_type point_type;
@@ -1122,7 +1122,7 @@ namespace Feel
         // Define P(k-2) space from Order parameter
         typedef bases<Lagrange<Order-2,Scalar, Discontinuous> > p_km2_basis_type;
         typedef FunctionSpace<mesh_type, p_km2_basis_type> p_km2_space_type;
-        typedef boost::shared_ptr<p_km2_space_type> p_km2_space_ptrtype;
+        typedef std::shared_ptr<p_km2_space_type> p_km2_space_ptrtype;
         typedef typename p_km2_space_type::element_type p_km2_element_type;
 
         p_km2_space_ptrtype Pkm2H = p_km2_space_type::New( mesh );

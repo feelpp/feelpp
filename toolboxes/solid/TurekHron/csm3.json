@@ -2,18 +2,17 @@
 {
     "Name": "Solid Mechanics ",
     "ShortName":"Solid",
-    "Model":"Hyper-Elasticity",
+    "Models":
+    {
+        "equations":"Hyper-Elasticity"
+    },
     "Parameters":
     {
-        "gravity":
-        {
-            "value":"2"
-        }
+        "gravity":"2"
     },
     "Materials":
     {
         "beam":{
-            "name":"solid",
             "E":"1.4e6",
             "nu":"0.4",
             "rho":"1e3"
@@ -48,7 +47,10 @@
     },
     "PostProcess":
     {
-        "Fields":["displacement"],
+        "Exports":
+        {
+            "fields":["displacement"]
+        },
         "Measures":
         {
             "Points":
@@ -59,12 +61,13 @@
                     "fields":["displacement","velocity"]
                 }
             },
-            "Maximum":
+            "Statistics":
             {
-                "free-wall":
+                "disp":
                 {
                     "markers":"free-wall",
-                    "fields":["displacement","velocity"]
+                    "type":"max",
+                    "expr":"solid_D_magnitude:solid_D_magnitude"
                 }
             }
         }

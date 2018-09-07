@@ -65,7 +65,7 @@ class Test:
     public Simget
 {
     typedef Mesh<Simplex<Dim>> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
   
     //! Hcurl space
     using curl_space_type = Ned1h_type<mesh_type,0>;

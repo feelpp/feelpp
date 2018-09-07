@@ -23,7 +23,7 @@ public:
     typedef typename super_type::mesh_type mesh_type;
 
     typedef typename levelset_type::space_vectorial_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     typedef typename space_type::element_type element_type;
     typedef typename space_type::element_ptrtype element_ptrtype;
@@ -37,7 +37,7 @@ public:
 
     void build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm = fluidmechanics_ptrtype() ) override;
 
-    boost::shared_ptr<std::ostringstream> getInfo() const override;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
 
     void loadParametersFromOptionsVm();
     //--------------------------------------------------------------------//
@@ -64,10 +64,10 @@ SurfaceTensionForceModel<LevelSetType, FluidMechanicsType>::build( std::string c
 }
 
 template<typename LevelSetType, typename FluidMechanicsType>
-boost::shared_ptr<std::ostringstream> 
+std::shared_ptr<std::ostringstream> 
 SurfaceTensionForceModel<LevelSetType, FluidMechanicsType>::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "Surface tension ("
            << "coeff = " << this->M_surfaceTensionCoeff
            << ")";

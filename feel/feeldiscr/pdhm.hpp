@@ -47,7 +47,7 @@ struct Pdhmg
                           T,
                           Periodicity <NoPeriodicity>,
                           mortars<NoMortar>> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 template<typename MeshType,
@@ -105,10 +105,10 @@ template<int Order,
          int Tag = 0>
 inline
 Pdhm_ptrtype<MeshType,Order,T,Pts,Tag>
-Pdhm( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+Pdhm( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return Pdhm_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
-                                                    _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                    _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
                                                     _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
@@ -123,10 +123,10 @@ template<int Order,
          int Tag = 0>
 inline
 Pdhms_ptrtype<MeshType,Order,T,Pts,Tag>
-Pdhms( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+Pdhms( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return Pdhms_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
-                                                      _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                      _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
                                                       _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 

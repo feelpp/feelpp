@@ -39,12 +39,13 @@
 
 namespace Feel {
 
+extern template class Mesh<Simplex<3>>;
 /**
    Generate the mesh of an hypercube
  */
 template<int Dim, typename Convex=Simplex<Dim>>
 inline
-boost::shared_ptr<Mesh<Convex> >
+std::shared_ptr<Mesh<Convex> >
 unitHypercube( double h = doption(_name="gmsh.hsize") )
 {
 #ifdef FEELPP_HAS_GMSH
@@ -56,7 +57,7 @@ unitHypercube( double h = doption(_name="gmsh.hsize") )
                                         _h=h ) );
 #else
     LOG(WARNING) << "unitHypercube: Feel++ was not built with Gmsh. This function will return a empty mesh.";
-    return boost::make_shared<Mesh<Convex> >();
+    return std::make_shared<Mesh<Convex> >();
 #endif
 }
 

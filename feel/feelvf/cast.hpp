@@ -42,9 +42,6 @@ public:
     static const size_type context = vm::JACOBIAN;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = 0;
-    static const bool imIsPoly = true;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -82,6 +79,12 @@ public:
     Cast( Cast const& c ) = default;
     Cast& operator=( Cast const& c ) = default;
 
+    //! polynomial order
+    uint16_type polynomialOrder() const { return 0; }
+
+    //! expression is polynomial?
+    constexpr bool isPolynomial() const { return true; }
+
     expression_type const& expression() const { return M_expr; }
     expression_type & expression()  { return M_expr; }
 
@@ -95,7 +98,7 @@ public:
         return (value_type)M_expr.evaluate();
     }
 
-    constexpr value_type evaluate( bool, WorldComm const& ) const
+    constexpr value_type evaluate( bool, worldcomm_ptr_t const& ) const
     {
         return (value_type)M_expr.evaluate();
     }

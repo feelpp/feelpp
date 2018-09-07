@@ -27,8 +27,8 @@
  \date 2011-07-17
  */
 
-#ifndef FEELPP_FLUIDMECHANICS_HPP
-#define FEELPP_FLUIDMECHANICS_HPP 1
+#ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP
+#define FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP 1
 
 
 #include <feel/feeldiscr/functionspace.hpp>
@@ -46,32 +46,25 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
-#include <feel/feelmodels/fluid/densityviscositymodel.hpp>
+#include <feel/feelmodels/fluid/fluidmechanicsmaterialproperties.hpp>
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 #include <feel/feelmodels/modelmesh/meshale.hpp>
 #endif
 
-#include <feel/feelmodels/thermodyn/thermodynamics.hpp>
-
-
+#include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
 
 namespace Feel
 {
 namespace FeelModels
 {
-enum class FluidMechanicsPostProcessFieldExported
-{
-    Velocity = 0, Pressure, Displacement, Pid, Vorticity, NormalStress, WallShearStress, Density, Viscosity, ALEMesh, LagrangeMultiplierPressureBC
-};
 
 template< typename ConvexType, typename BasisVelocityType,
           typename BasisPressureType = Lagrange< (BasisVelocityType::nOrder>1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete>,
-          typename BasisDVType=Lagrange<0, Scalar,Discontinuous/*,PointSetFekete*/>,
-          bool UsePeriodicity=false>
+          typename BasisDVType=Lagrange<0, Scalar,Discontinuous/*,PointSetFekete*/> >
 class FluidMechanics : public ModelNumerical,
-                       public boost::enable_shared_from_this< FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity> >,
+                       public std::enable_shared_from_this< FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType> >,
                        public MarkerManagementDirichletBC,
                        public MarkerManagementNeumannBC,
                        public MarkerManagementALEMeshBC,
@@ -81,8 +74,8 @@ class FluidMechanics : public ModelNumerical,
 public:
     typedef ModelNumerical super_type;
 
-    typedef FluidMechanics< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity > self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef FluidMechanics< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType > self_type;
+    typedef std::shared_ptr<self_type> self_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -92,7 +85,7 @@ public:
     static const uint16_type nOrderGeo = convex_type::nOrder;
     static const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // trace mesh
     typedef typename mesh_type::trace_mesh_type trace_mesh_type;
     typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
@@ -111,65 +104,61 @@ public:
     typedef bases<basis_fluid_u_type,basis_fluid_p_type> basis_fluid_type;
     //___________________________________________________________________________________//
     // function space
-    typedef FunctionSpace<mesh_type, basis_fluid_type, Periodicity< Periodic<>, NoPeriodicity > > space_fluid_periodic_type;
-    typedef FunctionSpace<mesh_type, basis_fluid_type> space_fluid_nonperiodic_type;
-    typedef typename mpl::if_< mpl::bool_<UsePeriodicity>,
-                               space_fluid_periodic_type,
-                               space_fluid_nonperiodic_type >::type space_fluid_type;
-    typedef boost::shared_ptr<space_fluid_type> space_fluid_ptrtype;
+    typedef FunctionSpace<mesh_type, basis_fluid_type> space_fluid_type;
+    typedef std::shared_ptr<space_fluid_type> space_fluid_ptrtype;
     typedef typename space_fluid_type::element_type element_fluid_type;
-    typedef boost::shared_ptr<element_fluid_type> element_fluid_ptrtype;
+    typedef std::shared_ptr<element_fluid_type> element_fluid_ptrtype;
     typedef typename space_fluid_type::element_external_storage_type element_fluid_external_storage_type;
     // subspace velocity
     typedef typename space_fluid_type::template sub_functionspace<0>::type space_fluid_velocity_type;
     typedef typename space_fluid_type::template sub_functionspace<0>::ptrtype space_fluid_velocity_ptrtype;
     typedef typename element_fluid_type::template sub_element<0>::type element_fluid_velocity_type;
-    typedef boost::shared_ptr<element_fluid_velocity_type> element_fluid_velocity_ptrtype;
+    typedef std::shared_ptr<element_fluid_velocity_type> element_fluid_velocity_ptrtype;
     typedef typename space_fluid_velocity_type::component_functionspace_type component_space_fluid_velocity_type;
 
     typedef typename space_fluid_velocity_type::element_type element_velocity_noview_type;
-    typedef boost::shared_ptr<element_velocity_noview_type> element_velocity_noview_ptrtype;
+    typedef std::shared_ptr<element_velocity_noview_type> element_velocity_noview_ptrtype;
     typedef typename component_space_fluid_velocity_type::element_type element_velocity_component_noview_type;
-    typedef boost::shared_ptr<element_velocity_component_noview_type> element_velocity_component_noview_ptrtype;
+    typedef std::shared_ptr<element_velocity_component_noview_type> element_velocity_component_noview_ptrtype;
 
     // subspace pressure
     typedef typename space_fluid_type::template sub_functionspace<1>::type space_fluid_pressure_type;
     typedef typename space_fluid_type::template sub_functionspace<1>::ptrtype space_fluid_pressure_ptrtype;
     typedef typename element_fluid_type::template sub_element<1>::type element_fluid_pressure_type;
-    typedef boost::shared_ptr<element_fluid_pressure_type> element_fluid_pressure_ptrtype;
+    typedef std::shared_ptr<element_fluid_pressure_type> element_fluid_pressure_ptrtype;
     // function space for lagrange multiplier which impose the mean pressure
     typedef FunctionSpace<mesh_type, bases<basis_l_type> > space_meanpressurelm_type;
-    typedef boost::shared_ptr<space_meanpressurelm_type> space_meanpressurelm_ptrtype;
+    typedef std::shared_ptr<space_meanpressurelm_type> space_meanpressurelm_ptrtype;
     // function space for Diriclet condition using lagrange multiplier
     typedef FunctionSpace<trace_mesh_type, bases<basis_fluid_u_type> > space_dirichletlm_velocity_type;
-    typedef boost::shared_ptr<space_dirichletlm_velocity_type> space_dirichletlm_velocity_ptrtype;
+    typedef std::shared_ptr<space_dirichletlm_velocity_type> space_dirichletlm_velocity_ptrtype;
     // function space for lagrange multiplier used in pressure bc
     typedef typename space_dirichletlm_velocity_type::component_functionspace_type space_trace_velocity_component_type;
-    typedef boost::shared_ptr<space_trace_velocity_component_type> space_trace_velocity_component_ptrtype;
+    typedef std::shared_ptr<space_trace_velocity_component_type> space_trace_velocity_component_ptrtype;
     typedef typename space_trace_velocity_component_type::element_type element_trace_velocity_component_type;
-    typedef boost::shared_ptr<element_trace_velocity_component_type> element_trace_velocity_component_ptrtype;
+    typedef std::shared_ptr<element_trace_velocity_component_type> element_trace_velocity_component_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     // ALE
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     typedef MeshALE<convex_type> mesh_ale_type;
-    typedef boost::shared_ptr<mesh_ale_type> mesh_ale_ptrtype;
+    typedef std::shared_ptr<mesh_ale_type> mesh_ale_ptrtype;
     // ref ALE mesh
     typedef typename mesh_ale_type::mesh_ref_type mesh_ref_type;
     typedef typename mesh_ale_type::mesh_ref_ptrtype mesh_ref_ptrtype;
     // mesh disp
     typedef typename mesh_ale_type::ale_map_functionspace_type space_mesh_disp_type;
     typedef typename mesh_ale_type::ale_map_element_type element_mesh_disp_type;
-    typedef boost::shared_ptr<element_mesh_disp_type> element_mesh_disp_ptrtype;
+    typedef std::shared_ptr<element_mesh_disp_type> element_mesh_disp_ptrtype;
     // mesh velocity (whole domain)
     typedef typename mesh_ale_type::ale_map_element_type element_meshvelocity_type;
-    typedef boost::shared_ptr<element_meshvelocity_type> element_meshvelocity_ptrtype;
+    typedef std::shared_ptr<element_meshvelocity_type> element_meshvelocity_ptrtype;
     // mesh velocity on FSI boundary
     typedef FunctionSpace<mesh_type, bases<basis_fluid_u_type> > space_meshvelocityonboundary_type;
-    typedef boost::shared_ptr<space_meshvelocityonboundary_type> space_meshvelocityonboundary_ptrtype;
+    typedef std::shared_ptr<space_meshvelocityonboundary_type> space_meshvelocityonboundary_ptrtype;
     typedef typename space_meshvelocityonboundary_type::element_type element_meshvelocityonboundary_type;
-    typedef boost::shared_ptr<element_meshvelocityonboundary_type> element_meshvelocityonboundary_ptrtype;
+    typedef std::shared_ptr<element_meshvelocityonboundary_type> element_meshvelocityonboundary_ptrtype;
     // save a ALE part of normal stress (usefull semi implicit)
     typedef typename mesh_ale_type::ale_map_functionspacedisc_type space_alemapdisc_type;
     typedef typename mesh_ale_type::ale_map_functionspacedisc_ptrtype space_alemapdisc_ptrtype;
@@ -177,9 +166,9 @@ public:
     typedef typename mesh_ale_type::ale_map_elementdisc_ptrtype element_alemapdisc_ptrtype;
     // case where structure displacement is scalar!
     typedef typename space_mesh_disp_type::component_functionspace_type space_mesh_disp_scalar_type;
-    typedef boost::shared_ptr<space_mesh_disp_scalar_type> space_mesh_disp_scalar_ptrtype;
+    typedef std::shared_ptr<space_mesh_disp_scalar_type> space_mesh_disp_scalar_ptrtype;
     typedef typename space_mesh_disp_scalar_type::element_type element_mesh_disp_scalar_type;
-    typedef boost::shared_ptr<element_mesh_disp_scalar_type> element_mesh_disp_scalar_ptrtype;
+    typedef std::shared_ptr<element_mesh_disp_scalar_type> element_mesh_disp_scalar_ptrtype;
 #endif
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -188,9 +177,9 @@ public:
     //typedef bases<Lagrange<nOrderVelocity-1+space_alemapdisc_type::basis_type::nOrder, Vectorial,Discontinuous,PointSetFekete> > basis_stress_type;
     typedef Lagrange<nOrderVelocity-1+mesh_type::nOrder, Vectorial,Discontinuous,PointSetFekete> basis_stress_type;
     typedef FunctionSpace<mesh_type, bases<basis_stress_type> > space_stress_type;
-    typedef boost::shared_ptr<space_stress_type> space_stress_ptrtype;
+    typedef std::shared_ptr<space_stress_type> space_stress_ptrtype;
     typedef typename space_stress_type::element_type element_stress_type;
-    typedef boost::shared_ptr<element_stress_type> element_stress_ptrtype;
+    typedef std::shared_ptr<element_stress_type> element_stress_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -199,9 +188,9 @@ public:
                                Lagrange<nOrderVelocity-1, Scalar,Discontinuous,PointSetFekete>,
                                Lagrange<nOrderVelocity-1, Vectorial,Discontinuous,PointSetFekete> >::type basis_vorticity_type;
     typedef FunctionSpace<mesh_type, bases<basis_vorticity_type> > space_vorticity_type;
-    typedef boost::shared_ptr<space_vorticity_type> space_vorticity_ptrtype;
+    typedef std::shared_ptr<space_vorticity_type> space_vorticity_ptrtype;
     typedef typename space_vorticity_type::element_type element_vorticity_type;
-    typedef boost::shared_ptr<element_vorticity_type> element_vorticity_ptrtype;
+    typedef std::shared_ptr<element_vorticity_type> element_vorticity_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -210,14 +199,14 @@ public:
     static const uint16_type nOrderDensityViscosity = BasisDVType::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_densityviscosity_type> > space_densityviscosity_type;
     // viscosity model desc
-    typedef DensityViscosityModel<space_densityviscosity_type> densityviscosity_model_type;
-    typedef boost::shared_ptr<densityviscosity_model_type> densityviscosity_model_ptrtype;
+    typedef FluidMechanicsMaterialProperties<space_densityviscosity_type> material_properties_type;
+    typedef std::shared_ptr<material_properties_type> material_properties_ptrtype;
 
     typedef bases<Lagrange<nOrderVelocity, Vectorial,Continuous,PointSetFekete> > basis_vectorial_PN_type;
     typedef FunctionSpace<mesh_type, basis_vectorial_PN_type> space_vectorial_PN_type;
-    typedef boost::shared_ptr<space_vectorial_PN_type> space_vectorial_PN_ptrtype;
+    typedef std::shared_ptr<space_vectorial_PN_type> space_vectorial_PN_ptrtype;
     typedef typename space_vectorial_PN_type::element_type element_vectorial_PN_type;
-    typedef boost::shared_ptr<element_vectorial_PN_type> element_vectorial_PN_ptrtype;
+    typedef std::shared_ptr<element_vectorial_PN_type> element_vectorial_PN_ptrtype;
     //___________________________________________________________________________________//
     // stabilization
     typedef StabilizationGLSParameterBase<mesh_type> stab_gls_parameter_type;
@@ -227,7 +216,7 @@ public:
     //___________________________________________________________________________________//
     // algebraic tools
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
     typedef typename model_algebraic_factory_type::graph_type graph_type;
     typedef typename model_algebraic_factory_type::graph_ptrtype graph_ptrtype;
     typedef typename model_algebraic_factory_type::indexsplit_type indexsplit_type;
@@ -237,7 +226,7 @@ public:
     //___________________________________________________________________________________//
     // time
     typedef Bdf<space_fluid_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
@@ -246,43 +235,43 @@ public:
     // fluid inlet
     typedef typename basis_fluid_u_type::component_basis_type basis_fluidinlet_type;
     typedef FunctionSpace<trace_mesh_type, bases<basis_fluidinlet_type> > space_fluidinlet_type;
-    typedef boost::shared_ptr<space_fluidinlet_type> space_fluidinlet_ptrtype;
+    typedef std::shared_ptr<space_fluidinlet_type> space_fluidinlet_ptrtype;
     typedef typename space_fluidinlet_type::element_type element_fluidinlet_type;
-    typedef boost::shared_ptr<element_fluidinlet_type> element_fluidinlet_ptrtype;
+    typedef std::shared_ptr<element_fluidinlet_type> element_fluidinlet_ptrtype;
     typedef OperatorInterpolation<space_fluidinlet_type, component_space_fluid_velocity_type,//typename space_fluid_velocity_type::component_functionspace_type,
                                   range_faces_type> op_interpolation_fluidinlet_type;
-    typedef boost::shared_ptr<op_interpolation_fluidinlet_type> op_interpolation_fluidinlet_ptrtype;
+    typedef std::shared_ptr<op_interpolation_fluidinlet_type> op_interpolation_fluidinlet_ptrtype;
     //___________________________________________________________________________________//
     // windkessel model
     typedef bases<Lagrange<0, Scalar,Continuous>,Lagrange<0, Scalar,Continuous> > basis_fluidoutlet_windkessel_type;
     typedef FunctionSpace<trace_mesh_type, basis_fluidoutlet_windkessel_type > space_fluidoutlet_windkessel_type;
-    typedef boost::shared_ptr<space_fluidoutlet_windkessel_type> space_fluidoutlet_windkessel_ptrtype;
+    typedef std::shared_ptr<space_fluidoutlet_windkessel_type> space_fluidoutlet_windkessel_ptrtype;
     typedef typename space_fluidoutlet_windkessel_type::element_type element_fluidoutlet_windkessel_type;
-    typedef boost::shared_ptr<element_fluidoutlet_windkessel_type> element_fluidoutlet_windkessel_ptrtype;
+    typedef std::shared_ptr<element_fluidoutlet_windkessel_type> element_fluidoutlet_windkessel_ptrtype;
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     typedef typename MeshALE<typename trace_mesh_type::shape_type>::ale_map_functionspace_type space_fluidoutlet_windkessel_mesh_disp_type;
-    typedef boost::shared_ptr<space_fluidoutlet_windkessel_mesh_disp_type> space_fluidoutlet_windkessel_mesh_disp_ptrtype;
+    typedef std::shared_ptr<space_fluidoutlet_windkessel_mesh_disp_type> space_fluidoutlet_windkessel_mesh_disp_ptrtype;
     typedef typename space_fluidoutlet_windkessel_mesh_disp_type::element_type element_fluidoutlet_windkessel_mesh_disp_type;
-    typedef boost::shared_ptr<element_fluidoutlet_windkessel_mesh_disp_type> element_fluidoutlet_windkessel_mesh_disp_ptrtype;
+    typedef std::shared_ptr<element_fluidoutlet_windkessel_mesh_disp_type> element_fluidoutlet_windkessel_mesh_disp_ptrtype;
     // typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
     //                      typename MeshTraits<trace_mesh_type>::element_const_iterator,
     //                      typename MeshTraits<trace_mesh_type>::element_const_iterator> range_fluidoutlet_windkessel_type;
     typedef OperatorInterpolation<space_mesh_disp_type,
                                   space_fluidoutlet_windkessel_mesh_disp_type/*,
                                                                               range_fluidoutlet_windkessel_type*/> op_interpolation_fluidoutlet_windkessel_meshdisp_type;
-    typedef boost::shared_ptr<op_interpolation_fluidoutlet_windkessel_meshdisp_type> op_interpolation_fluidoutlet_windkessel_meshdisp_ptrtype;
+    typedef std::shared_ptr<op_interpolation_fluidoutlet_windkessel_meshdisp_type> op_interpolation_fluidoutlet_windkessel_meshdisp_ptrtype;
 #endif
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     // export
     typedef Exporter<mesh_type,nOrderGeo> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     typedef Exporter<trace_mesh_type,nOrderGeo> export_trace_type;
-    typedef boost::shared_ptr<export_trace_type> export_trace_ptrtype;
+    typedef std::shared_ptr<export_trace_type> export_trace_ptrtype;
     //typedef Exporter<mesh_type,nOrderGeo> gmsh_export_type;
-    //typedef boost::shared_ptr<gmsh_export_type> gmsh_export_ptrtype;
+    //typedef std::shared_ptr<gmsh_export_type> gmsh_export_ptrtype;
     //___________________________________________________________________________________//
     // export ho
 #if 1 //defined(FEELPP_HAS_VTK)
@@ -292,20 +281,20 @@ public:
     typedef Mesh<Simplex<nDim,1,nDim> > mesh_visu_ho_type;
     //function space vectorial
     typedef FunctionSpace<mesh_visu_ho_type,bases<Lagrange<1,Vectorial,Continuous,PointSetFekete> > > space_vectorial_visu_ho_type;
-    typedef boost::shared_ptr<space_vectorial_visu_ho_type> space_vectorial_visu_ho_ptrtype;
+    typedef std::shared_ptr<space_vectorial_visu_ho_type> space_vectorial_visu_ho_ptrtype;
     typedef typename space_vectorial_visu_ho_type::element_type element_vectorial_visu_ho_type;
-    typedef boost::shared_ptr<element_vectorial_visu_ho_type> element_vectorial_visu_ho_ptrtype;
+    typedef std::shared_ptr<element_vectorial_visu_ho_type> element_vectorial_visu_ho_ptrtype;
     // function space scalar
     //typedef FunctionSpace<mesh_visu_ho_type,bases<Lagrange<1,Scalar,Continuous,PointSetFekete> > > space_scalar_visu_ho_type;
     typedef typename space_vectorial_visu_ho_type::component_functionspace_type space_scalar_visu_ho_type;
-    typedef boost::shared_ptr<space_scalar_visu_ho_type> space_scalar_visu_ho_ptrtype;
+    typedef std::shared_ptr<space_scalar_visu_ho_type> space_scalar_visu_ho_ptrtype;
     typedef typename space_scalar_visu_ho_type::element_type element_scalar_visu_ho_type;
-    typedef boost::shared_ptr<element_scalar_visu_ho_type> element_scalar_visu_ho_ptrtype;
+    typedef std::shared_ptr<element_scalar_visu_ho_type> element_scalar_visu_ho_ptrtype;
     // function space vectorial discontinuos
     typedef FunctionSpace<mesh_visu_ho_type,bases<Lagrange<1, Vectorial,Discontinuous,PointSetFekete> > > space_vectorialdisc_visu_ho_type;
-    typedef boost::shared_ptr<space_vectorialdisc_visu_ho_type> space_vectorialdisc_visu_ho_ptrtype;
+    typedef std::shared_ptr<space_vectorialdisc_visu_ho_type> space_vectorialdisc_visu_ho_ptrtype;
     typedef typename space_vectorialdisc_visu_ho_type::element_type element_vectorialdisc_visu_ho_type;
-    typedef boost::shared_ptr<element_vectorialdisc_visu_ho_type> element_vectorialdisc_visu_ho_ptrtype;
+    typedef std::shared_ptr<element_vectorialdisc_visu_ho_type> element_vectorialdisc_visu_ho_ptrtype;
     //___________________________________________________________________________________//
     //
     // typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
@@ -316,43 +305,37 @@ public:
     typedef OperatorInterpolation<space_fluid_velocity_type,
                                   space_vectorial_visu_ho_type/*,
                                                                range_visu_ho_type*/> op_interpolation_visu_ho_vectorial_type;
-    typedef boost::shared_ptr<op_interpolation_visu_ho_vectorial_type> op_interpolation_visu_ho_vectorial_ptrtype;
+    typedef std::shared_ptr<op_interpolation_visu_ho_vectorial_type> op_interpolation_visu_ho_vectorial_ptrtype;
 
     typedef OperatorInterpolation<space_fluid_pressure_type,
                                   space_scalar_visu_ho_type/*,
                                                             range_visu_ho_type*/> op_interpolation_visu_ho_scalar_type;
-    typedef boost::shared_ptr<op_interpolation_visu_ho_scalar_type> op_interpolation_visu_ho_scalar_ptrtype;
+    typedef std::shared_ptr<op_interpolation_visu_ho_scalar_type> op_interpolation_visu_ho_scalar_ptrtype;
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     typedef OperatorInterpolation<space_mesh_disp_type,
                                   space_vectorial_visu_ho_type/*,
                                                                range_visu_ho_type*/> op_interpolation_visu_ho_meshdisp_type;
-    typedef boost::shared_ptr<op_interpolation_visu_ho_meshdisp_type> op_interpolation_visu_ho_meshdisp_ptrtype;
+    typedef std::shared_ptr<op_interpolation_visu_ho_meshdisp_type> op_interpolation_visu_ho_meshdisp_ptrtype;
 #endif
 
     typedef OperatorInterpolation<space_stress_type,
                                   space_vectorialdisc_visu_ho_type/*,
                                                                    range_visu_ho_type*/> op_interpolation_visu_ho_vectorialdisc_type;
-    typedef boost::shared_ptr<op_interpolation_visu_ho_vectorialdisc_type> op_interpolation_visu_ho_vectorialdisc_ptrtype;
+    typedef std::shared_ptr<op_interpolation_visu_ho_vectorialdisc_type> op_interpolation_visu_ho_vectorialdisc_ptrtype;
     //___________________________________________________________________________________//
 
     typedef Exporter<mesh_visu_ho_type> export_ho_type;
-    typedef boost::shared_ptr<export_ho_type> export_ho_ptrtype;
+    typedef std::shared_ptr<export_ho_type> export_ho_ptrtype;
 #endif
 
     // context for evaluation
     typedef typename space_fluid_velocity_type::Context context_velocity_type;
-    typedef boost::shared_ptr<context_velocity_type> context_velocity_ptrtype;
+    typedef std::shared_ptr<context_velocity_type> context_velocity_ptrtype;
     typedef typename space_fluid_pressure_type::Context context_pressure_type;
-    typedef boost::shared_ptr<context_pressure_type> context_pressure_ptrtype;
+    typedef std::shared_ptr<context_pressure_type> context_pressure_ptrtype;
 
-
-    //___________________________________________________________________________________//
-    //___________________________________________________________________________________//
-    // thermo dynamics coupling
-    typedef FeelModels::ThermoDynamics< convex_type,
-                                        Lagrange<nOrderGeo, Scalar,Continuous,PointSetFekete> > thermodyn_model_type;
-    typedef boost::shared_ptr<thermodyn_model_type> thermodyn_model_ptrtype;
+    using force_type = Eigen::Matrix<typename super_type::value_type, nDim, 1, Eigen::ColMajor>;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -360,52 +343,54 @@ public:
     //___________________________________________________________________________________//
     // constructor
     FluidMechanics( std::string const& prefix,
-                        bool __buildMesh = true,
-                        WorldComm const& _worldComm = Environment::worldComm(),
-                        std::string const& subPrefix = "",
-                        std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                    bool __buildMesh = true,
+                    worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
+                    std::string const& subPrefix = "",
+                    ModelBaseRepository const& modelRep = ModelBaseRepository() );
     FluidMechanics( self_type const & M ) = default;
 
     static self_ptrtype New( std::string const& prefix,
                              bool buildMesh = true,
-                             WorldComm const& worldComm = Environment::worldComm(),
+                             worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
     //___________________________________________________________________________________//
 
     static std::string expandStringFromSpec( std::string const& expr );
 
-    void build();
-    void init( bool buildModelAlgebraicFactory=true );
-
-    void loadConfigBCFile();
-    void loadConfigPostProcess();
-    void loadConfigMeshFile( std::string const& geofilename );
+private :
     void loadParameterFromOptionsVm();
-
-    void createWorldsComm();
-    void createALE();
-    void createMesh();
+    void initMesh();
     void createFunctionSpaces();
+    void createALE();
+    void initBoundaryConditions();
+    void initFluidInlet();
+    void initFluidOutlet();
+    void initUserFunctions();
+    void initPostProcess();
     void createPostProcessExporters();
+public :
+    void init( bool buildModelAlgebraicFactory=true );
+    void initAlgebraicFactory();
+
     void createFunctionSpacesNormalStress();
     void createFunctionSpacesVorticity();
     void createFunctionSpacesSourceAdded();
-    void createBCFluidInlet();
 
     void loadMesh(mesh_ptrtype __mesh );
+    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
 
     void updateMarkedZonesInMesh();
 
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const;
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"FluidMechanicsMesh.path"); }
     //___________________________________________________________________________________//
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElementsAeroThermal() const { return M_rangeMeshElementsAeroThermal; }
 
     space_fluid_ptrtype const& functionSpace() const { return M_Xh; }
+    space_fluid_ptrtype const& spaceVelocityPressure() const { return M_Xh; }
     space_fluid_velocity_ptrtype const/*&*/ functionSpaceVelocity() const { return M_Xh->template functionSpace<0>(); }
     space_fluid_pressure_ptrtype const/*&*/ functionSpacePressure() const { return M_Xh->template functionSpace<1>(); }
 
@@ -456,7 +441,6 @@ public:
     model_algebraic_factory_ptrtype algebraicFactory() { return M_algebraicFactory; }
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
     virtual size_type nLocalDof() const;
-    std::map<std::string,size_type> const& startBlockIndexFieldsInMatrix() const { return M_startBlockIndexFieldsInMatrix; }
     void buildBlockVector();
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
@@ -466,26 +450,26 @@ public:
     // time step scheme
     bdf_ptrtype timeStepBDF() { return M_bdf_fluid; }
     bdf_ptrtype const& timeStepBDF() const { return M_bdf_fluid; }
-    boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
-    boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
+    std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
+    std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
     void updateTimeStepBDF();
     void initTimeStep();
     void updateTimeStep() { this->updateTimeStepBDF(); }
 
     // init/update user functions defined in json
-    void initUserFunctions();
     void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
-    // export post process results
-    void initPostProcess();
-    //void restartPostProcess();
-    bool hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
 
+    // post process
+    std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+    bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
+    void exportFields( double time );
+    bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
     void setDoExport(bool b);
     void exportMeasures( double time );
 private :
-    void exportResultsImpl( double time );
+    //void exportResultsImpl( double time );
     void exportResultsImplHO( double time );
 public :
     //___________________________________________________________________________________//
@@ -516,8 +500,7 @@ public :
     std::string const& solverName() const;
     void setSolverName( std::string const& type );
 
-    void setDynamicViscosityLaw( std::string const& type);
-    std::string const& dynamicViscosityLaw() const;
+    bool isStationaryModel() const;
 
     bool startBySolveNewtonian() const { return M_startBySolveNewtonian; }
     void startBySolveNewtonian( bool b ) { M_startBySolveNewtonian=b; }
@@ -530,48 +513,31 @@ public :
     void hasSolveStokesStationaryAtKickOff( bool b ) { M_hasSolveStokesStationaryAtKickOff=b; }
 
     //___________________________________________________________________________________//
-    // thermo dyn
-    thermodyn_model_ptrtype const& thermodynModel() const { return M_thermodynModel; }
-    //___________________________________________________________________________________//
     // fsi parameters
 
     bool useFSISemiImplicitScheme() const { return M_useFSISemiImplicitScheme; }
     void useFSISemiImplicitScheme(bool b) { M_useFSISemiImplicitScheme=b; }
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
-
-    double couplingFSI_Nitsche_gamma() const { return M_couplingFSI_Nitsche_gamma; }
-    void setCouplingFSI_Nitsche_gamma(double d) { M_couplingFSI_Nitsche_gamma=d; }
-    double couplingFSI_Nitsche_gamma0() const { return M_couplingFSI_Nitsche_gamma0; }
-    void setCouplingFSI_Nitsche_gamma0(double d) { M_couplingFSI_Nitsche_gamma0=d; }
-    double couplingFSI_Nitsche_alpha() const { return M_couplingFSI_Nitsche_alpha; }
-    void setCouplingFSI_Nitsche_alpha(double d) { M_couplingFSI_Nitsche_alpha=d; }
-
-    bool couplingFSI_RNG_useInterfaceOperator() const { return M_couplingFSI_RNG_useInterfaceOperator; }
-    void setCouplingFSI_RNG_useInterfaceOperator(bool b) { M_couplingFSI_RNG_useInterfaceOperator=b; }
-    vector_ptrtype const& couplingFSI_RNG_interfaceOperator() const { return M_couplingFSI_RNG_interfaceOperator; }
-    void setCouplingFSI_RNG_interfaceOperator(vector_ptrtype const& op ) { M_couplingFSI_RNG_interfaceOperator=op; }
-    bool couplingFSI_solidIs1dReduced() const { return M_couplingFSI_solidIs1dReduced; }
-    void setCouplingFSI_solidIs1dReduced(bool b) { M_couplingFSI_solidIs1dReduced=b; }
-    double couplingFSI_RNG_coeffForm2() const { return M_couplingFSI_RNG_coeffForm2; }
-    void setCouplingFSI_RNG_coeffForm2(double d) { M_couplingFSI_RNG_coeffForm2=d; }
-    element_meshvelocityonboundary_ptrtype const& couplingFSI_RNG_evalForm1() const { return M_couplingFSI_RNG_evalForm1; }
-    void setCouplingFSI_RNG_evalForm1( element_meshvelocityonboundary_ptrtype const& v) { M_couplingFSI_RNG_evalForm1=v; }
-    boost::shared_ptr<typename space_fluid_velocity_type::element_type> const& couplingFSI_RNG_evalForm1Bis() const { return M_couplingFSI_RNG_evalForm1Bis; }
-    void setCouplingFSI_RNG_evalForm1Bis( boost::shared_ptr<typename space_fluid_velocity_type::element_type> const& v) { M_couplingFSI_RNG_evalForm1Bis=v; }
-    sparse_matrix_ptrtype const& couplingFSI_RNG_matrix() const { return M_couplingFSI_RNG_matrix; }
-    void couplingFSI_RNG_matrix( sparse_matrix_ptrtype const& mat ) { M_couplingFSI_RNG_matrix=mat; }
-    void couplingFSI_RNG_updateForUse();
-    void couplingFSI_RNG_updateLinearPDE( vector_ptrtype& F) const;
-
     //___________________________________________________________________________________//
     // stabilization
     bool stabilizationGLS() const { return M_stabilizationGLS; }
     std::string const& stabilizationGLSType() const { return M_stabilizationGLSType; }
     stab_gls_parameter_ptrtype const& stabilizationGLSParameterConvectionDiffusion() const { return M_stabilizationGLSParameterConvectionDiffusion; }
     stab_gls_parameter_ptrtype const& stabilizationGLSParameterPressure() const { return M_stabilizationGLSParameterPressure; }
-    range_elements_type const& stabilizationGLSEltRangeConvectionDiffusion() const { return M_stabilizationGLSEltRangeConvectionDiffusion; }
-    range_elements_type const& stabilizationGLSEltRangePressure() const { return M_stabilizationGLSEltRangePressure; }
+    range_elements_type const& stabilizationGLSEltRangeConvectionDiffusion( std::string const& matName ) const
+        {
+            auto itFind = M_stabilizationGLSEltRangeConvectionDiffusion.find( matName );
+            CHECK( itFind != M_stabilizationGLSEltRangeConvectionDiffusion.end() ) << "not found with material matName";
+            return itFind->second;
+        }
+    range_elements_type const& stabilizationGLSEltRangePressure( std::string const& matName ) const
+        {
+            auto itFind = M_stabilizationGLSEltRangePressure.find( matName );
+            CHECK( itFind != M_stabilizationGLSEltRangePressure.end() ) << "not found with material matName";
+            return itFind->second;
+        }
+    void setStabilizationGLSDoAssembly( bool b) { M_stabilizationGLSDoAssembly = b; }
 
     bool applyCIPStabOnlyOnBoundaryFaces() const { return M_applyCIPStabOnlyOnBoundaryFaces; }
     void applyCIPStabOnlyOnBoundaryFaces(bool b) { M_applyCIPStabOnlyOnBoundaryFaces=b; }
@@ -601,31 +567,36 @@ public :
 
     //___________________________________________________________________________________//
     // physical parameters rho,mu,nu,...
-    densityviscosity_model_ptrtype & densityViscosityModel() { return M_densityViscosityModel; }
-    densityviscosity_model_ptrtype const& densityViscosityModel() const { return M_densityViscosityModel; }
+    material_properties_ptrtype & materialProperties() { return M_materialProperties; }
+    material_properties_ptrtype const& materialProperties() const { return M_materialProperties; }
 
     void updateRho(double rho)
     {
-        this->densityViscosityModel()->setCstDensity(rho);
+        this->materialProperties()->setCstDensity(rho);
     }
     void updateMu(double mu)
     {
-        this->densityViscosityModel()->setCstDynamicViscosity(mu);
+        this->materialProperties()->setCstDynamicViscosity(mu);
         M_pmmNeedUpdate = true;
     }
     template < typename ExprT >
     void updateRho(vf::Expr<ExprT> const& __expr)
     {
-        this->densityViscosityModel()->updateDensity( __expr );
+        this->materialProperties()->updateDensityField( __expr );
     }
     template < typename ExprT >
     void updateMu(vf::Expr<ExprT> const& __expr)
     {
-        this->densityViscosityModel()->updateDynamicViscosity( __expr );
+        this->materialProperties()->updateDynamicViscosityField( __expr );
         M_pmmNeedUpdate = true;
     }
     //___________________________________________________________________________________//
+    // symbols expression
+    constexpr auto symbolsExpr() const { return this->symbolsExpr( hana::int_<nDim>() ); }
+    //___________________________________________________________________________________//
     // boundary conditions + body forces
+    void updateParameterValues();
+
     map_vector_field<nDim,1,2> const& bcDirichlet() const { return M_bcDirichlet; }
     std::map<ComponentType,map_scalar_field<2> > const& bcDirichletComponents() const { return M_bcDirichletComponents; }
     map_scalar_field<2> const& bcNeumannScalar() const { return M_bcNeumannScalar; }
@@ -668,7 +639,6 @@ public :
     void updateFluidInletVelocity();
     //___________________________________________________________________________________//
     // fluid outlets bc
-    void initFluidOutlet();
     bool hasFluidOutlet() const { return !M_fluidOutletsBCType.empty(); }
     bool hasFluidOutletFree() const { return this->hasFluidOutlet("free"); }
     bool hasFluidOutletWindkessel() const { return this->hasFluidOutlet("windkessel"); }
@@ -706,10 +676,20 @@ public :
     trace_mesh_ptrtype const& fluidOutletWindkesselMesh() const { return M_fluidOutletWindkesselMesh; }
     space_fluidoutlet_windkessel_ptrtype const& fluidOutletWindkesselSpace() { return M_fluidOutletWindkesselSpace; }
 
+
+    
+    bool hasStrongDirichletBC() const
+        {
+            bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet() || this->hasMarkerPressureBC();
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+            hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
+#endif
+            return hasStrongDirichletBC;
+        }
     //___________________________________________________________________________________//
 
-    boost::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ const& velocityDiv() const { return M_velocityDiv; }
-    boost::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ velocityDiv() { return M_velocityDiv; }
+    std::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ const& velocityDiv() const { return M_velocityDiv; }
+    std::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ velocityDiv() { return M_velocityDiv; }
     bool velocityDivIsEqualToZero() const { return M_velocityDivIsEqualToZero; }
 
     //___________________________________________________________________________________//
@@ -771,7 +751,7 @@ public :
     double computeMeshArea( std::list<std::string> const& markers ) const;
 
     // compute measures : drag,lift,flow rate, mean pressure, mean div, norm div
-    Eigen::Matrix<typename super_type::value_type,nDim,1> computeForce( std::string const& markerName ) const;
+    force_type computeForce( std::string const& markerName ) const;
     double computeFlowRate( std::string const& marker, bool useExteriorNormal=true ) const;
     double computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal=true ) const;
     double computePressureSum() const;
@@ -795,22 +775,22 @@ public :
     std::vector<double> computeFlowRate(SetMeshSlicesType const & setMeshSlices,mpl::bool_<true> /**/);
 #else
     typedef Mesh<Simplex<1,1,nRealDim> > mesh_slice1d_type;
-    typedef boost::shared_ptr<mesh_slice1d_type> mesh_slice1d_ptrtype;
+    typedef std::shared_ptr<mesh_slice1d_type> mesh_slice1d_ptrtype;
     typedef typename mpl::at_c<typename space_fluid_velocity_type::bases_list,0>::type basis_slice_velocity_type;
     typedef FunctionSpace<mesh_slice1d_type, bases<basis_slice_velocity_type> > space_slice_velocity_type;
     typedef OperatorInterpolation<space_fluid_velocity_type,space_slice_velocity_type> op_interp_velocity_type;
-    typedef boost::shared_ptr<op_interp_velocity_type> op_interp_velocity_ptrtype;
+    typedef std::shared_ptr<op_interp_velocity_type> op_interp_velocity_ptrtype;
 
     typedef typename mpl::at_c<typename space_fluid_pressure_type::bases_list,0>::type basis_slice_pressure_type;
     typedef FunctionSpace<mesh_slice1d_type, bases<basis_slice_pressure_type> > space_slice_pressure_type;
     typedef OperatorInterpolation<space_fluid_pressure_type,space_slice_pressure_type> op_interp_pressure_type;
-    typedef boost::shared_ptr<op_interp_pressure_type> op_interp_pressure_ptrtype;
+    typedef std::shared_ptr<op_interp_pressure_type> op_interp_pressure_ptrtype;
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     typedef typename mpl::at_c<typename space_mesh_disp_type::bases_list,0>::type basis_slice_meshdisp_type;
     typedef FunctionSpace<mesh_slice1d_type, bases<basis_slice_meshdisp_type> > space_slice_meshdisp_type;
     typedef OperatorInterpolation<space_mesh_disp_type,space_slice_meshdisp_type> op_interp_meshdisp_type;
-    typedef boost::shared_ptr<op_interp_meshdisp_type> op_interp_meshdisp_ptrtype;
+    typedef std::shared_ptr<op_interp_meshdisp_type> op_interp_meshdisp_ptrtype;
 
     std::vector<double> computeAveragedPreassure( std::vector<mesh_slice1d_ptrtype> const& setMeshSlices,
                                                   std::vector<op_interp_pressure_ptrtype> const& opInterp,
@@ -833,6 +813,8 @@ public :
     void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
     void preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
     void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const;
     //___________________________________________________________________________________//
 
     void initInHousePreconditioner();
@@ -849,11 +831,18 @@ public :
 
     void updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianStabilisation( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
-    void updateResidualStabilisationGLS( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
-    void updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
+    template<typename DensityExprType, typename ViscosityExprType, typename... ExprT>
+    void updateResidualStabilisationGLS( DataUpdateResidual & data, element_fluid_external_storage_type const& U,
+                                         Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
+                                         std::string const& matName, const ExprT&... exprs ) const;
+    template<typename DensityExprType, typename ViscosityExprType, typename... ExprT>
+    void updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U,
+                                         Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
+                                         std::string const& matName, const ExprT&... exprs ) const;
     void updateJacobianWeakBC( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
     void updateResidualWeakBC( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
-    void updateJacobianStrongDirichletBC(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const;
 
     virtual void updateJacobianAdditional( DataUpdateJacobian & data ) const {}
     virtual void updateResidualAdditional( DataUpdateResidual & data ) const {}
@@ -862,8 +851,10 @@ public :
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
-    void updateLinearPDEStabilisationGLS( DataUpdateLinear & data ) const;
-    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
+    template<typename DensityExprType, typename ViscosityExprType, typename AdditionalRhsType = hana::tuple<>, typename AdditionalMatType = hana::tuple<> >
+    void updateLinearPDEStabilisationGLS( DataUpdateLinear & data, Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu, std::string const& matName,
+                                          AdditionalRhsType const& addRhsTuple = hana::make_tuple(), AdditionalMatType const& addMatTuple = hana::make_tuple() ) const;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
 
     void updatePicard( DataUpdateLinear & data ) const;
     double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
@@ -875,13 +866,29 @@ public :
 private :
     void updateBoundaryConditionsForUse();
 
+    constexpr auto symbolsExpr( hana::int_<2> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("fluid_Ux",idv(this->fieldVelocity())(0,0) ),
+                                          symbolExpr("fluid_Uy",idv(this->fieldVelocity())(1,0) ),
+                                          symbolExpr("fluid_P",idv(this->fieldPressure()) ),
+                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity()),mpl::int_<InnerProperties::SQRT>()) )
+                                          );
+        }
+    constexpr auto symbolsExpr( hana::int_<3> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("fluid_Ux",idv(this->fieldVelocity())(0,0) ),
+                                          symbolExpr("fluid_Uy",idv(this->fieldVelocity())(1,0) ),
+                                          symbolExpr("fluid_Uz",idv(this->fieldVelocity())(2,0) ),
+                                          symbolExpr("fluid_P",idv(this->fieldPressure()) ),
+                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity()),mpl::int_<InnerProperties::SQRT>()) )
+                                          );
+            }
+
 protected:
     virtual size_type initStartBlockIndexFieldsInMatrix();
     virtual int initBlockVector();
 
-    bool M_hasBuildFromMesh, M_isUpdatedForUse;
-    //----------------------------------------------------
-    
+    bool M_isUpdatedForUse;
     //----------------------------------------------------
     // mesh
     mesh_ptrtype M_mesh;
@@ -927,7 +934,7 @@ protected:
 #endif
     //----------------------------------------------------
     // physical properties/parameters and space
-    densityviscosity_model_ptrtype M_densityViscosityModel;
+    material_properties_ptrtype M_materialProperties;
     // boundary conditions + body forces
     map_vector_field<nDim,1,2> M_bcDirichlet;
     std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
@@ -940,34 +947,27 @@ protected:
     element_vectorial_PN_ptrtype M_SourceAdded;
     bool M_haveSourceAdded;
     //----------------------------------------------------
-    boost::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ M_velocityDiv;
+    std::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ M_velocityDiv;
     bool M_velocityDivIsEqualToZero;
     //----------------------------------------------------
     std::string M_modelName;
     std::string M_solverName;
 
     double M_dirichletBCnitscheGamma;
+
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
-    double M_couplingFSI_Nitsche_gamma,M_couplingFSI_Nitsche_gamma0, M_couplingFSI_Nitsche_alpha;
-    bool M_couplingFSI_RNG_useInterfaceOperator;
-    vector_ptrtype M_couplingFSI_RNG_interfaceOperator;
-    bool M_couplingFSI_solidIs1dReduced;
-    double M_couplingFSI_RNG_coeffForm2;
-    element_meshvelocityonboundary_ptrtype M_couplingFSI_RNG_evalForm1;
-    boost::shared_ptr<typename space_fluid_velocity_type::element_type> M_couplingFSI_RNG_evalForm1Bis;
-    sparse_matrix_ptrtype M_couplingFSI_RNG_matrix;
 
     bool M_startBySolveNewtonian, M_hasSolveNewtonianAtKickOff;
     bool M_startBySolveStokesStationary, M_hasSolveStokesStationaryAtKickOff;
     //----------------------------------------------------
     // stabilization
-    bool M_stabilizationGLS;
+    bool M_stabilizationGLS, M_stabilizationGLSDoAssembly;
     std::string M_stabilizationGLSType;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameterConvectionDiffusion;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameterPressure;
-    range_elements_type M_stabilizationGLSEltRangeConvectionDiffusion;
-    range_elements_type M_stabilizationGLSEltRangePressure;
+    std::map<std::string,range_elements_type> M_stabilizationGLSEltRangeConvectionDiffusion;
+    std::map<std::string,range_elements_type> M_stabilizationGLSEltRangePressure;
 
     bool M_applyCIPStabOnlyOnBoundaryFaces;
     // stabilisation available
@@ -989,7 +989,7 @@ protected:
     std::map<std::string,trace_mesh_ptrtype> M_fluidInletMesh;
     std::map<std::string,space_fluidinlet_ptrtype> M_fluidInletSpace;
     std::map<std::string,element_fluidinlet_ptrtype > M_fluidInletVelocity;
-    std::map<std::string,std::tuple<boost::shared_ptr<typename component_space_fluid_velocity_type::element_type>,
+    std::map<std::string,std::tuple<std::shared_ptr<typename component_space_fluid_velocity_type::element_type>,
                                     op_interpolation_fluidinlet_ptrtype > > M_fluidInletVelocityInterpolated;
     std::map<std::string,std::tuple<element_fluidinlet_ptrtype,double,double> > M_fluidInletVelocityRef;//marker->(uRef,maxURef,flowRateRef)
     //----------------------------------------------------
@@ -1010,7 +1010,7 @@ protected:
     bool M_useGravityForce;
     //----------------------------------------------------
     // post-process field exported
-    std::set<FluidMechanicsPostProcessFieldExported> M_postProcessFieldExported;
+    std::set<std::string> M_postProcessFieldExported;
     std::set<std::string> M_postProcessUserFieldExported;
 
     // exporter option
@@ -1046,13 +1046,14 @@ protected:
     // post-process measure forces (lift,drag) and flow rate
     std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
     std::vector< ModelMeasuresFlowRate > M_postProcessMeasuresFlowRate;
+    // post-process measure fields
+    std::map<std::string,std::string> M_postProcessMeasuresFields;
     //----------------------------------------------------
     //----------------------------------------------------
     // algebraic data/tools
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
-    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
     std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
     //----------------------------------------------------
     // overwrite assembly process : source terms
@@ -1061,13 +1062,8 @@ protected:
     typedef boost::function<void ( vector_ptrtype& R )> updateSourceTermResidual_function_type;
     updateSourceTermResidual_function_type M_overwritemethod_updateSourceTermResidual;
     //----------------------------------------------------
-    bool M_preconditionerAttachPMM;
+    bool M_preconditionerAttachPMM, M_preconditionerAttachPCD;
     mutable bool M_pmmNeedUpdate;
-    //----------------------------------------------------
-    bool M_useThermodynModel;
-    thermodyn_model_ptrtype M_thermodynModel;
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElementsAeroThermal;
-    double M_BoussinesqRefTemperature;
 
 }; // FluidMechanics
 
@@ -1268,7 +1264,8 @@ FLUIDMECHANICS_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMeshSlic
 } // namespace FeelModels
 } // namespace Feel
 
+#include <feel/feelmodels/fluid/fluidmechanicsupdatestabilisationgls.hpp>
 
-#endif /* FEELPP_FLUIDMECHANICS_HPP */
+#endif /* FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP */
 
 

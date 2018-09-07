@@ -13,17 +13,21 @@ namespace Feel
 {
 
 class FMU :
-        public boost::enable_shared_from_this<FMU>
+        public std::enable_shared_from_this<FMU>
 {
 public :
     typedef jm_callbacks callbacks_type;
-    typedef boost::shared_ptr<jm_callbacks> callbacks_ptrtype;
+    typedef std::shared_ptr<jm_callbacks> callbacks_ptrtype;
 
     typedef FmuModelBase fmumodel_type;
-    typedef boost::shared_ptr<fmumodel_type> fmumodel_ptrtype;
+    typedef std::shared_ptr<fmumodel_type> fmumodel_ptrtype;
 
     typedef SolverBase solver_type;
-    typedef boost::shared_ptr<solver_type> solver_ptrtype;
+    typedef std::shared_ptr<solver_type> solver_ptrtype;
+
+    typedef std::vector<std::string> var_list_type;
+    typedef std::shared_ptr<var_list_type> var_list_ptrtype;
+
 
     FMU( std::string prefix="" );
     ~FMU();
@@ -38,9 +42,9 @@ public :
     void setSolverTimeStep( double const& step );
 
     void printModelInfo();
-
-    double currentTime();
-
+    void addExportedVariables( std::vector<std::string> const& var_list );
+    void setExportedVariables( std::vector<std::string> const& var_list );
+    void setExportDirectory( std::string const& path );
 
     template <typename VariableType>
     void setValue( std::string var_name, VariableType value )
@@ -48,6 +52,8 @@ public :
         CHECK( M_model ) <<"FMU trying to access variable without model\n";
         M_model->setValue( var_name, value );
     }
+
+    double currentTime();
 
     template <typename VariableType>
     VariableType getValue( std::string var_name )
@@ -67,13 +73,16 @@ private :
 
 
 private :
-    std::string M_prefix, M_tmp_dir;
+    std::string M_prefix, M_tmp_dir, M_export_directory;
     bool M_verbose;
     callbacks_ptrtype M_callbacks;
     fmi_import_context_t* M_context;
 
     fmumodel_ptrtype M_model;
     solver_ptrtype M_solver;
+
+    var_list_ptrtype M_export_list;
+    double M_tinit, M_tfinal;
 };
 
 

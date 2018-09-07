@@ -164,9 +164,6 @@ const size_type mctx = vm::MEASURE;
         static const size_type context = VF_GD_CONTEXT( O );            \
         static const bool is_terminal = false;                          \
                                                                         \
-        static const uint16_type imorder = VF_GD_IMORDER(O);            \
-        static const bool imIsPoly = true;                              \
-                                                                        \
         template<typename Func>                                         \
             struct HasTestFunction                                      \
         {                                                               \
@@ -204,6 +201,8 @@ const size_type mctx = vm::MEASURE;
         typename Lambda<TheExpr...>::type                                  \
         operator()( TheExpr... e  ) { return this_type(); }         \
                                                                         \
+        constexpr uint16_type polynomialOrder() const { return VF_GD_IMORDER(O); } \
+        constexpr bool isPolynomial() const { return true; }            \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \

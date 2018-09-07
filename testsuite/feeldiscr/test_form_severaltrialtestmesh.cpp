@@ -24,7 +24,7 @@ using namespace Feel;
 using namespace Feel::vf;
 
 typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
+typedef std::shared_ptr<Application_type> Application_ptrtype;
 
 /*_________________________________________________*
  * Options
@@ -65,7 +65,7 @@ makeAbout()
 /*_________________________________________________*
  * Create mesh
  *_________________________________________________*/
-boost::shared_ptr<Mesh< Simplex<2,1,2> > >
+std::shared_ptr<Mesh< Simplex<2,1,2> > >
 createTheMesh( Application_ptrtype & theApp, mpl::int_<2> /**/ )
 {
     typedef Mesh< Simplex<2,1,2> > mesh_type;
@@ -92,7 +92,7 @@ createTheMesh( Application_ptrtype & theApp, mpl::int_<2> /**/ )
                                  _name ="omega_"+ mesh_type::shape_type::name() );
     return mesh;
 }
-boost::shared_ptr<Mesh< Simplex<3,1,3> > >
+std::shared_ptr<Mesh< Simplex<3,1,3> > >
 createTheMesh( Application_ptrtype & theApp, mpl::int_<3> /**/ )
 {
     typedef Mesh< Simplex<3,1,3> > mesh_type;
@@ -419,7 +419,7 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( test_form_severaltrialtestmesh::makeAbout(),
 BOOST_AUTO_TEST_SUITE( form_severaltrialtestmesh )
 
 typedef Feel::Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
+typedef std::shared_ptr<Application_type> Application_ptrtype;
 
 
 BOOST_AUTO_TEST_CASE( form_severaltrialtestmesh1 )
@@ -443,7 +443,7 @@ int
 main( int argc, char** argv )
 {
     typedef Feel::Application Application_type;
-    typedef boost::shared_ptr<Application_type> Application_ptrtype;
+    typedef std::shared_ptr<Application_type> Application_ptrtype;
     Feel::Environment env( argc,argv,
                            test_form_severaltrialtestmesh::makeAbout(),
                            test_form_severaltrialtestmesh::makeOptions() );

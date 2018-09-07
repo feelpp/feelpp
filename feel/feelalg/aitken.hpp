@@ -88,7 +88,7 @@ public:
     typedef Aitken<fs_type> self_type;
 
     typedef fs_type functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
 
@@ -761,7 +761,7 @@ Aitken<fs_type>::calculateParameter( mpl::int_<AITKEN_METHOD_1> /**/ )
 
 template <typename fs_type >
 void
-operator++( boost::shared_ptr<Aitken<fs_type> > & aitk )
+operator++( std::shared_ptr<Aitken<fs_type> > & aitk )
 {
     aitk->shiftRight();
 }
@@ -771,8 +771,8 @@ operator++( boost::shared_ptr<Aitken<fs_type> > & aitk )
 //-----------------------------------------------------------------------------------------//
 
 template<typename SpaceType>
-boost::shared_ptr<Aitken<SpaceType> >
-aitkenImpl( boost::shared_ptr<SpaceType> const& _space,
+std::shared_ptr<Aitken<SpaceType> >
+aitkenImpl( std::shared_ptr<SpaceType> const& _space,
             std::string _type,
             double _init_theta,
             double _tol,
@@ -790,7 +790,7 @@ aitkenImpl( boost::shared_ptr<SpaceType> const& _space,
     else
         CHECK( false ) << "invalid aitken type " << _type;
 
-    boost::shared_ptr<Aitken<SpaceType> > Aitk( new Aitken<SpaceType>( _space,myAitkenType,_init_theta,_tol,_minParam,_maxit ) );
+    std::shared_ptr<Aitken<SpaceType> > Aitk( new Aitken<SpaceType>( _space,myAitkenType,_init_theta,_tol,_minParam,_maxit ) );
     return Aitk;
 }
 
@@ -802,7 +802,7 @@ struct compute_aitken_return
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
 
     typedef Aitken<space_type> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 
@@ -811,7 +811,7 @@ BOOST_PARAMETER_FUNCTION(
     aitken,
     tag,
     ( required
-      ( space,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( space,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     )//required
     ( optional
       ( prefix,*,"" )
@@ -831,7 +831,7 @@ BOOST_PARAMETER_FUNCTION(
     aitkenPtr,
     tag,
     ( required
-      ( space,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( space,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     )//required
     ( optional
       ( prefix,*,"" )

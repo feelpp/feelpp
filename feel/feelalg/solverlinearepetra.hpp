@@ -54,7 +54,7 @@ namespace Feel
 {
 namespace trilinos
 {
-boost::shared_ptr<ML_Epetra::MultiLevelPreconditioner>
+std::shared_ptr<ML_Epetra::MultiLevelPreconditioner>
 createMLPreconditioner( Epetra_RowMatrix const& mat, po::variables_map const& vm )
 {
     // A is an Epetra_RowMatrix derived class object
@@ -67,7 +67,7 @@ createMLPreconditioner( Epetra_RowMatrix const& mat, po::variables_map const& vm
     MList.set( "aggregation: type", vm["aggregation-type"].as<std::string>() );
     MList.set( "coarse: type",vm["coarse-type"].as<std::string>() );
 
-    return boost::shared_ptr<ML_Epetra::MultiLevelPreconditioner>( new ML_Epetra::MultiLevelPreconditioner( mat,
+    return std::shared_ptr<ML_Epetra::MultiLevelPreconditioner>( new ML_Epetra::MultiLevelPreconditioner( mat,
             MList,
             true ) );
 }

@@ -1,0 +1,22 @@
+h=0.1;
+Point(1) = {0, 0, 0, h};
+Point(2) = {10, 0, 0, h};
+Point(3) = {10, 1, 0, h};
+Point(4) = {0, 1, 0, h};
+Point(5) = {1, 0, 0, h};
+Point(6) = {1, 1, 0, h};
+
+Line(1) = {1,5};
+Line(2) = {5,2};
+Line(3) = {2,3};
+Line(4) = {3,6};
+Line(5) = {6,4};
+Line(6) = {4,1};
+Line(7) = {5,6};
+Line Loop(8) = {1, 7, 5, 6};
+Line Loop(9) = {2, 3, 4, -7};
+Plane Surface(10) = {8};
+Plane Surface(11) = {9};
+Physical Line("Neumann") = {3};
+Physical Surface("rigid") = {10};
+Physical Surface("elastic") = {11};

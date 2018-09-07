@@ -98,7 +98,7 @@ public :
 
 
             tic();
-            auto v = integrate(_range=elements(mesh),_expr=_e1v,_quad=_Q<1>()).template evaluate<double,3,1>( x );
+            auto v = integrate(_range=elements(mesh),_expr=_e1v,_quad=_Q<1>()).evaluate( x );
             if ( Environment::numberOfProcessors() == 1 )
                 std::for_each( v.begin(), v.end(), 
                                [&n]( Eigen::Matrix<double,3,1> const& nn ) 
@@ -111,7 +111,7 @@ public :
             for( auto e : x )
             {
                 tic();
-                auto vv = integrate(_range=elements(mesh),_expr=vec(cst(e(0)),cst(e(1)),cst(e(2))),_quad=_Q<1>()).evaluate(false);
+                auto vv = integrate(_range=elements(mesh),_expr=vec(cst(e(0)),cst(e(1)),cst(e(2))),_quad=_Q<1>()).evaluate();
                 toc("integral vec(x,y,z)",FLAGS_v>0);
                 BOOST_CHECK_SMALL( (vv-v[i]).norm(), 1e-11);
                 ++i;
@@ -124,7 +124,7 @@ public :
             for( auto e : x )
             {
                 tic();
-                auto vv = integrate(_range=elements(mesh),_expr=cross(idv(u),vec(cst(e(0)),cst(e(1)),cst(e(2)))-P()),_quad=_Q<3>()).evaluate(false);
+                auto vv = integrate(_range=elements(mesh),_expr=cross(idv(u),vec(cst(e(0)),cst(e(1)),cst(e(2)))-P()),_quad=_Q<3>()).evaluate();
                 toc("integral u x ((x,y,z)-X) ",FLAGS_v>0);
                 BOOST_CHECK_SMALL( (v[i]-vv).norm(), 1e-10 );
                 ++i;
@@ -139,7 +139,7 @@ public :
             for( auto e : x )
             {
                 tic();
-                auto vv = integrate(_range=elements(mesh),_expr=cross(idv(u),vec(cst(e(0)),cst(e(1)),cst(e(2)))-P()),_quad=_Q<3>()).evaluate(false);
+                auto vv = integrate(_range=elements(mesh),_expr=cross(idv(u),vec(cst(e(0)),cst(e(1)),cst(e(2)))-P()),_quad=_Q<3>()).evaluate();
                 toc("integral u x ((x,y,z)-X) ",FLAGS_v>0);
                 BOOST_CHECK_SMALL( (v[i]-vv).norm(), 1e-10 );
                 ++i;

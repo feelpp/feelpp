@@ -181,11 +181,11 @@ private:
 typedef RegionTree region_tree_type;
 
 /**
-   \typedef boost::shared_ptr<RegionTree> region_tree_ptrtype;
+   \typedef std::shared_ptr<RegionTree> region_tree_ptrtype;
 
    pointer type for Region Tree.
  */
-typedef boost::shared_ptr<region_tree_type> region_tree_ptrtype;
+typedef std::shared_ptr<region_tree_type> region_tree_ptrtype;
 
 }
 #endif /* __RegionTree_H */

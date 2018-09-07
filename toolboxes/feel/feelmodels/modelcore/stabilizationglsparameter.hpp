@@ -8,7 +8,7 @@
 
 //#include <feel/feeldiscr/pch.hpp>
 //#include <feel/feeldiscr/pchv.hpp>
-#include <feel/feeldiscr/pdh.hpp>
+
 
 #include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 
@@ -29,41 +29,26 @@ public :
 
     static const uint16_type nOrder = OrderPoly;
     using space_t = Pdh_type<mesh_t,nOrder>;
-    using space_ptr_t = boost::shared_ptr<space_t>;
+    using space_ptr_t = std::shared_ptr<space_t>;
     using element_t = typename space_t::element_type;
     using element_ptr_t = typename space_t::element_ptrtype;
-#if 0
-    using space_P0_t = Pdh_type<mesh_t,0>;
-    using space_P0_ptr_t = boost::shared_ptr<space_P0_t>;
-    using element_P0_t = typename space_P0_t::element_type;
-#endif
 
     StabilizationGLSParameter( mesh_ptr_t const& mesh, std::string const& prefix )
         :
         super_type( mesh, prefix )
-        //M_Xh( Pdh<nOrder>(mesh) )
-#if 0
-        ,
-        M_spaceP0( Pdh<0>(mesh) ),
-        M_hSize( M_spaceP0, "hSize" ),
-        M_lambdaK( M_spaceP0, "lambdak" ),
-        M_sqrtLambdaK( M_spaceP0, "sqrtLambdaK"),
-        M_mK( M_spaceP0, "mk")
-#endif
         {}
 
+    virtual ~StabilizationGLSParameter() = default;
+    
     void init();
-
 
     template<bool HasConvectionExpr=true, bool HasCoeffDiffusionExpr=true, typename ExprConvectiontype, typename ExprCoeffDiffusionType, typename RangeType>
     void updateTau( ExprConvectiontype const& exprConvection, ExprCoeffDiffusionType const& exprCoeffDiffusion, RangeType const& RangeStab )
         {
-            auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr<HasConvectionExpr,HasCoeffDiffusionExpr>( *this, exprConvection, exprCoeffDiffusion );
-            M_fieldTau->on(_range=RangeStab,_expr=tau);
+            auto tau = Feel::FeelModels::stabilizationGLSParameterExpr<HasConvectionExpr,HasCoeffDiffusionExpr>( *this, exprConvection, exprCoeffDiffusion );
+            this->M_fieldTau->on(_range=RangeStab,_expr=tau);
         }
 
-    element_ptr_t const& fieldTauPtr() const { return M_fieldTau; }
-    element_t const& fieldTau() const { return *M_fieldTau; }
 
 #if 0
     template<typename ExprConvectiontype, typename ExprCoeffDiffusionType>
@@ -91,13 +76,8 @@ public :
 #endif
 
 private :
-    space_ptr_t M_Xh;
-    element_ptr_t M_fieldTau;
-    element_ptr_t M_fieldDelta;
-#if 0
-    space_P0_ptr_t M_spaceP0;
-    element_P0_t M_hSize, M_lambdaK, M_sqrtLambdaK, M_mK;
-#endif
+    space_ptr_t M_spaceEigenValuesProblem;
+
 }; // class StabilizationGLSParameter
 
 
@@ -106,20 +86,13 @@ void
 StabilizationGLSParameter<MeshType,OrderPoly>::init()
 {
     auto mesh = this->M_mesh;
-    if ( !M_Xh )
+
+    if ( !this->M_spaceTau )
     {
-        M_Xh = Pdh<nOrder>(mesh);
-        M_fieldTau = M_Xh->elementPtr();
+        this->M_spaceTau = super_type::space_tau_t::New(_mesh=mesh);
+        this->M_fieldTau = this->M_spaceTau->elementPtr();
     }
 
-#if 0
-    if ( this->M_hSizeMethod == "hmin" )
-        M_hSize.on(_range=elements(mesh), _expr=hMin() );
-    else if ( this->M_hSizeMethod == "h" )
-        M_hSize.on(_range=elements(mesh), _expr=h() );
-    else if ( this->M_hSizeMethod == "meas" )
-        M_hSize.on(_range=elements(mesh), _expr=pow(meas(),1./mesh_t::nDim) );
-#endif
     this->M_hSizeValues.clear();
     for ( auto const& eltWrap : allelements(mesh) )
     {
@@ -147,63 +120,58 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
         }
         else
         {
+            if ( !M_spaceEigenValuesProblem )
+                M_spaceEigenValuesProblem = Pdh<nOrder>(mesh);
 
-        auto Ph = M_Xh;
-        auto w = Ph->element();
 
-        auto matA = backend()->newMatrix(_test=Ph,_trial=Ph );
-        auto matB = backend()->newMatrix(_test=Ph,_trial=Ph );
-        auto fA = form2( _trial=Ph, _test=Ph, _matrix=matA );
-        fA = integrate( _range=elements(mesh),
-                        _expr=inner(laplacian(w),laplaciant(w)) );
-        matA->close();
-        auto fB = form2( _trial=Ph, _test=Ph, _matrix=matB );
-        fB = integrate( _range=elements(mesh),
-                        _expr=inner(grad(w),gradt(w)) );
-        if ( math::abs( this->M_penalLambdaK ) > 1e-12 )
-            fB += integrate( elements(mesh),
-                             this->M_penalLambdaK*inner(id(w),idt(w)) );
-        matB->close();
+            auto Ph = M_spaceEigenValuesProblem;
+            auto w = Ph->element();
 
-        Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> localEigenMatA(0,0);
-        Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> localEigenMatB(0,0);
+            auto matA = backend()->newMatrix(_test=Ph,_trial=Ph );
+            auto matB = backend()->newMatrix(_test=Ph,_trial=Ph );
+            auto fA = form2( _trial=Ph, _test=Ph, _matrix=matA );
+            fA = integrate( _range=elements(mesh),
+                            _expr=inner(laplacian(w),laplaciant(w)) );
+            matA->close();
+            auto fB = form2( _trial=Ph, _test=Ph, _matrix=matB );
+            fB = integrate( _range=elements(mesh),
+                            _expr=inner(grad(w),gradt(w)) );
+            if ( math::abs( this->M_penalLambdaK ) > 1e-12 )
+                fB += integrate( elements(mesh),
+                                 this->M_penalLambdaK*inner(id(w),idt(w)) );
+            matB->close();
 
-        for ( auto const& eltWrap : elements(this->M_mesh) )
-        {
-            auto const& elt = unwrap_ref( eltWrap );
-            auto extractIndices = Ph->dof()->getIndices( elt.id() );
-            int nLocalIndices = extractIndices.size();
-            if ( localEigenMatA.rows() != nLocalIndices)
+            Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> localEigenMatA(0,0);
+            Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> localEigenMatB(0,0);
+
+            for ( auto const& eltWrap : elements(this->M_mesh) )
             {
-                localEigenMatA.resize( nLocalIndices,nLocalIndices );
-                localEigenMatB.resize( nLocalIndices,nLocalIndices );
-            }
-            for ( int i=0;i<nLocalIndices;++i )
-            {
-                for ( int j=0;j<nLocalIndices;++j )
+                auto const& elt = unwrap_ref( eltWrap );
+                auto extractIndices = Ph->dof()->getIndices( elt.id() );
+                int nLocalIndices = extractIndices.size();
+                if ( localEigenMatA.rows() != nLocalIndices)
                 {
-                    localEigenMatA(i,j) = matA->operator()(extractIndices[i],extractIndices[j]);
-                    localEigenMatB(i,j) = matB->operator()(extractIndices[i],extractIndices[j]);
+                    localEigenMatA.resize( nLocalIndices,nLocalIndices );
+                    localEigenMatB.resize( nLocalIndices,nLocalIndices );
                 }
+                for ( int i=0;i<nLocalIndices;++i )
+                {
+                    for ( int j=0;j<nLocalIndices;++j )
+                    {
+                        localEigenMatA(i,j) = matA->operator()(extractIndices[i],extractIndices[j]);
+                        localEigenMatB(i,j) = matB->operator()(extractIndices[i],extractIndices[j]);
+                    }
+                }
+                Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> es( localEigenMatA,localEigenMatB );
+                Eigen::VectorXd eigen_vls= es.eigenvalues();
+                double lambda = eigen_vls.maxCoeff();
+                size_type eltId = elt.id();
+                this->M_lambdaKValues[eltId] = lambda;
+                this->M_sqrtLambdaKValues[eltId] = math::sqrt( lambda );
+                double currenthSize = this->hSize( eltId );
+                double cKValues = 1./(lambda*math::pow(currenthSize,2));
+                this->M_mKValues[elt.id()] = std::min( 1./3.,2*cKValues);
             }
-            Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> es( localEigenMatA,localEigenMatB );
-            Eigen::VectorXd eigen_vls= es.eigenvalues();
-            double lambda = eigen_vls.maxCoeff();
-            size_type eltId = elt.id();
-            this->M_lambdaKValues[eltId] = lambda;
-            this->M_sqrtLambdaKValues[eltId] = math::sqrt( lambda );
-            double currenthSize = this->hSize( eltId );
-            double cKValues = 1./(lambda*math::pow(currenthSize,2));
-            this->M_mKValues[elt.id()] = std::min( 1./3.,2*cKValues);
-#if 0
-            M_lambdaK.on( _range=idedelements( mesh,elt.id() ), _expr=cst(lambda) );
-#endif
-        }
-#if 0
-        M_sqrtLambdaK.on(_range=elements(mesh), _expr=sqrt(idv(M_lambdaK)) );
-        auto cK = cst(1.)/(idv(M_lambdaK)*pow(idv(M_hSize),2));
-        M_mK.on(_range=elements(mesh),_expr=min( cst(1./3.),2*cK ) );
-#endif
         }
     }
 }

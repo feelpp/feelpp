@@ -42,11 +42,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::DerivationMethodMap = boost::assign::list_of< type
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet( 
         std::string const& prefix,
-        WorldComm const& worldComm,
+        worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
-        std::string const& rootRepository ) 
+        ModelBaseRepository const& modelRep ) 
 :
-    super_type( prefix, worldComm, subPrefix, rootRepository ),
+    super_type( prefix, worldComm, subPrefix, modelRep ),
     M_doUpdateDirac(true),
     M_doUpdateHeaviside(true),
     M_doUpdateInterfaceElements(true),
@@ -62,7 +62,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateSubmeshDirac(true),
     M_doUpdateSubmeshOuter(true),
     M_doUpdateSubmeshInner(true),
-    M_advectionToolbox( new advection_toolbox_type( prefix, worldComm, subPrefix, rootRepository ) ),
+    M_advectionToolbox( new advection_toolbox_type( prefix, worldComm, subPrefix, modelRep ) ),
     M_doUpdateMarkers(true),
     M_doUpdateCauchyGreenTensor(true),
     M_doUpdateCauchyGreenInvariant1(true),
@@ -100,11 +100,11 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::self_ptrtype
 LEVELSET_CLASS_TEMPLATE_TYPE::New(
         std::string const& prefix,
-        WorldComm const& worldComm,
+        worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
-        std::string const& rootRepository )
+        ModelBaseRepository const& modelRep )
 {
-    self_ptrtype new_ls( new self_type(prefix, worldComm, subPrefix, rootRepository) );
+    self_ptrtype new_ls( new self_type(prefix, worldComm, subPrefix, modelRep ) );
     return new_ls;
 }
 
@@ -116,9 +116,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::build()
     // Create mesh
     this->createMesh();
     // Space manager
-    M_spaceManager = boost::make_shared<levelset_space_manager_type>( M_mesh );
+    M_spaceManager = std::make_shared<levelset_space_manager_type>( M_mesh );
     // Tool manager
-    M_toolManager = boost::make_shared<levelset_tool_manager_type>( M_spaceManager, this->prefix() );
+    M_toolManager = std::make_shared<levelset_tool_manager_type>( M_spaceManager, this->prefix() );
     // Build
     this->buildImpl();
 
@@ -131,9 +131,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh )
 {
     this->log("LevelSet", "build (from mesh)", "start");
     // Space manager
-    M_spaceManager = boost::make_shared<levelset_space_manager_type>( mesh );
+    M_spaceManager = std::make_shared<levelset_space_manager_type>( mesh );
     // Tool manager
-    M_toolManager = boost::make_shared<levelset_tool_manager_type>( M_spaceManager, this->prefix() );
+    M_toolManager = std::make_shared<levelset_tool_manager_type>( M_spaceManager, this->prefix() );
     // Build
     this->buildImpl();
 
@@ -478,14 +478,22 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
         hasMeasureToExport = true;
     }
 
-    if ( hasMeasureToExport )
+    //if ( hasMeasureToExport )
+    //{
+        //this->postProcessMeasuresIO().setParameter( "time", this->timeInitial() );
+        //// start or restart measure file
+        //if (!this->doRestart())
+            //this->postProcessMeasuresIO().start();
+        //else if ( !this->isStationary() )
+            //this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+    //}
+
+    if ( !this->isStationary() )
     {
-        this->postProcessMeasuresIO().setParameter( "time", this->timeInitial() );
-        // start or restart measure file
-        if (!this->doRestart())
-            this->postProcessMeasuresIO().start();
-        else if ( !this->isStationary() )
+        if ( this->doRestart() )
             this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+        else
+            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
     }
 
     //// User-defined fields
@@ -565,7 +573,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     {
         M_modGradPhiAdvection = modgradphi_advection_type::New(
                 prefixvm(this->prefix(), "modgradphi-advection"),
-                this->worldComm()
+                this->worldCommPtr()
                 );
         M_modGradPhiAdvection->setModelName( "Advection-Reaction" );
         M_modGradPhiAdvection->build( this->functionSpace() );
@@ -577,7 +585,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     {
         M_stretchAdvection = stretch_advection_type::New(
                 prefixvm(this->prefix(), "stretch-advection"),
-                this->worldComm()
+                this->worldCommPtr()
                 );
         M_stretchAdvection->setModelName( "Advection-Reaction" );
         M_stretchAdvection->build( this->functionSpace() );
@@ -589,7 +597,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     {
         M_backwardCharacteristicsAdvection = backwardcharacteristics_advection_type::New(
                 prefixvm(this->prefix(), "backward-characteristics-advection"),
-                this->worldComm()
+                this->worldCommPtr()
                 );
         M_backwardCharacteristicsAdvection->setModelName( "Advection" );
         M_backwardCharacteristicsAdvection->build( this->functionSpaceVectorial() );
@@ -640,7 +648,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
             {
                 thickness_heaviside =  doption( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj") );
             }
-            boost::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( thickness_heaviside );
+            std::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( thickness_heaviside );
         }
         break;
     }
@@ -984,21 +992,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
 {
     auto& modelPostProcess = this->modelProperties().postProcess();
 
-    auto physicalQuantities = modelPostProcess.pTree().get_child_optional("PhysicalQuantities");
-    if( physicalQuantities )
+    if ( auto physicalQuantities = modelPostProcess.pTree().get_child_optional("PhysicalQuantities") )
     {
         for( auto& i: *physicalQuantities )
         {
-            auto i_str = i.second.template get_value<std::string>();
-            modelPostProcess["PhysicalQuantities"].push_back( i_str  );
-            LOG(INFO) << "add to postprocess physical quantity " << i_str;
-        }
-    }
-
-    if ( modelPostProcess.find("PhysicalQuantities") != modelPostProcess.end() )
-    {
-        for ( auto const& o : modelPostProcess.find("PhysicalQuantities")->second )
-        {
+            auto o = i.second.template get_value<std::string>();
+            LOG(INFO) << "add to postprocess physical quantity " << o;
             if( o == "volume" || o == "all" )
                 this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Volume );
             if( o == "perimeter" || o == "all" )
@@ -1011,24 +1010,22 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
     }
 
     // Load Fields from JSON
-    if ( modelPostProcess.find("Fields") != modelPostProcess.end() )
+    for ( auto const& o :  modelPostProcess.exports().fields() )
     {
-        for( auto const& o : modelPostProcess.find("Fields")->second )
-        {
-            if( o == "gradphi" || o == "all" )
-                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::GradPhi );
-            if( o == "modgradphi" || o == "all" )
-                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
-            if( o == "advection-velocity" || o == "all" )
-                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::AdvectionVelocity );
-            if( o == "backwardcharacteristics" )
-                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::BackwardCharacteristics );
-            if( o == "cauchygreeninvariant1" )
-                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant1 );
-            if( o == "cauchygreeninvariant2" )
-                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant2 );
-        }
+        if( o == "gradphi" || o == "all" )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::GradPhi );
+        if( o == "modgradphi" || o == "all" )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+        if( o == "advection-velocity" || o == "all" )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::AdvectionVelocity );
+        if( o == "backwardcharacteristics" )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::BackwardCharacteristics );
+        if( o == "cauchygreeninvariant1" )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant1 );
+        if( o == "cauchygreeninvariant2" )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant2 );
     }
+
     // Overwrite with options from CFG
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_gradphi").c_str()) )
         if ( boption(_name="do_export_gradphi",_prefix=this->prefix()) )
@@ -1377,7 +1374,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherInterface() const
                 );
         M_smootherInterface = Feel::projector( 
                 spaceInterface, spaceInterface,
-                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldComm(), _rebuild=true), 
+                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldCommPtr(), _rebuild=true), 
                 DIFF,
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother"))/Order,
                 30);
@@ -1399,7 +1396,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherInterfaceVectorial() const
                 );
         M_smootherInterfaceVectorial = Feel::projector(
                 spaceInterfaceVectorial, spaceInterfaceVectorial,
-                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldComm(), _rebuild=true),
+                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldCommPtr(), _rebuild=true),
                 DIFF, 
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother-vec"))/Order,
                 30);
@@ -1716,7 +1713,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
 
     typedef boost::reference_wrapper<typename MeshTraits<mymesh_type>::element_type const> element_ref_type;
     typedef std::vector<element_ref_type> cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    std::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
     // Retrieve the elements touching the marked faces
     auto mfaces = markedfaces( this->mesh(), marker );
@@ -1763,7 +1760,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
 
     typedef boost::reference_wrapper<typename MeshTraits<mymesh_type>::element_type const> element_ref_type;
     typedef std::vector<element_ref_type> cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    std::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
     // Retrieve the elements touching the marked faces
     //auto mfaces_list = markedfaces( this->mesh(), marker );
@@ -2262,7 +2259,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
         } // switch M_fastMarchingInitializationMethod
 
         // Fast Marching Method
-        boost::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
+        std::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
                 M_useMarkerDiracAsMarkerDoneFM 
                 );
 
@@ -2383,7 +2380,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_type const& phiv,
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::string advectionStabilization = soption( _name="stabilization.method", _prefix=this->prefix() );
@@ -2438,7 +2435,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
     if ( this->M_useStretchAugmented )
         exportedFields = (exportedFields.empty())? "Stretch": exportedFields+" - Stretch";
 
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
            << "\n||---------------Info : LevelSet----------------||"
            << "\n||==============================================||"
@@ -2473,9 +2470,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n     -- vectorial smoother : " << vectorialSmootherParameters;
 
     *_ostr << "\n   Space Discretization";
-    if( this->hasGeofileStr() )
-    *_ostr << "\n     -- geo file name   : " << this->geofileStr();
-    *_ostr << "\n     -- mesh file name  : " << this->mshfileStr()
+    if( this->hasGeoFile() )
+    *_ostr << "\n     -- geo file name   : " << this->geoFile();
+    *_ostr << "\n     -- mesh file name  : " << this->meshFile()
            << "\n     -- nb elt in mesh  : " << this->mesh()->numGlobalElements()//numElements()
          //<< "\n     -- nb elt in mesh  : " << this->mesh()->numElements()
          //<< "\n     -- nb face in mesh : " << this->mesh()->numFaces()
@@ -2726,8 +2723,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time, bool save )
 
     if( save && hasMeasureToExport )
     {
-        this->postProcessMeasuresIO().setParameter( "time", time );
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
         this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
     }
 }
 

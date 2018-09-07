@@ -22,9 +22,9 @@ public:
     static const bool is_terminal = false;
 
     //static const uint16_type imorder = expr_levelsetphi_type::imorder;
-    static const uint16_type imorderDefault = 2*expr_levelsetphi_type::imorder;
-    static const uint16_type imorder = (IMOrder>=0) ? IMOrder: imorderDefault;
-    static const bool imIsPoly = false;
+    //static const uint16_type imorderDefault = 2*expr_levelsetphi_type::imorder;
+    //static const uint16_type imorder = (IMOrder>=0) ? IMOrder: imorderDefault;
+    //static const bool imIsPoly = false;
 
     template<typename Func>
     struct HasTestFunction
@@ -54,6 +54,13 @@ public:
         : M_levelsetPhiExpr( c.M_levelsetPhiExpr )
         , M_thicknessHeaviside( c.M_thicknessHeaviside )
     {}
+
+    //--------------------------------------------------------------------//
+    //! polynomial order
+    uint16_type polynomialOrder() const { return (IMOrder>=0) ? IMOrder : 2*M_levelsetPhiExpr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return false; }
 
     //--------------------------------------------------------------------//
     // Accessors

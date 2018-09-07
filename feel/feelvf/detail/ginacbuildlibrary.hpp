@@ -63,7 +63,7 @@ namespace detail
  */
 FEELPP_EXPORT void
 ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::string const& exprDesc, std::string const& filename,WorldComm const& world,
-                   boost::shared_ptr<GiNaC::FUNCP_CUBA> & cfun );
+                   std::shared_ptr<GiNaC::FUNCP_CUBA> & cfun );
 
 /**
  * @brief get a filename for ginac lib define by use a singleton counter
@@ -76,11 +76,11 @@ ginacGetDefaultFileName( std::string const& exprDesc, std::string const& dirLibE
 } // namespace vf
 
 class FEELPP_NO_EXPORT GinacExprManagerImpl :
-        public std::map<std::string, boost::shared_ptr<GiNaC::FUNCP_CUBA> > ,
+        public std::map<std::string, std::shared_ptr<GiNaC::FUNCP_CUBA> > ,
         public boost::noncopyable
 {
 public:
-    typedef boost::shared_ptr<GiNaC::FUNCP_CUBA> value_type;
+    typedef std::shared_ptr<GiNaC::FUNCP_CUBA> value_type;
     typedef std::string key_type;
     typedef std::map<key_type,value_type> ginac_expr_manager_type;
 };

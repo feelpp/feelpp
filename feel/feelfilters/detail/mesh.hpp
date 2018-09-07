@@ -47,7 +47,7 @@ struct mesh
 typedef typename mpl::if_<is_shared_ptr<_type>,
                           mpl::identity<typename _type::element_type>,
                           mpl::identity<_type> >::type::type type;
-typedef boost::shared_ptr<type> ptrtype;
+typedef std::shared_ptr<type> ptrtype;
 };
 
 } }

@@ -89,7 +89,7 @@ Partitioning<Dim>::run()
     std::vector<int> active( bComm.size(), true );
     WorldComm wComm(bComm,bComm,bComm,bComm.rank(),active);
     //wComm.showMe();
-    boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
+    std::shared_ptr<Mesh<Simplex<Dim>>> mesh;
     if(!excluded)
     {
         std::cout << "proc " << Environment::rank() 

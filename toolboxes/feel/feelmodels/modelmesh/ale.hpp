@@ -43,13 +43,13 @@ public :
     typedef ModelBase super_type;
 
     typedef ALE< Convex,Order> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     typedef Convex convex_type;
     static const uint16_type Dim = convex_type::nDim;
     static const uint16_type Order_low = convex_type::nOrder;
     typedef Mesh< convex_type > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef std::map< std::string, std::vector<flag_type> > flagSet_type;
 
@@ -60,9 +60,9 @@ protected :
     {
         typedef bases<Lagrange<i, Vectorial> > basis_type;
         typedef FunctionSpace< mesh_type, basis_type > type;
-        typedef boost::shared_ptr<type> ptrtype;
+        typedef std::shared_ptr<type> ptrtype;
         typedef typename type::element_type elt_type;
-        typedef boost::shared_ptr<elt_type> elt_ptrtype;
+        typedef std::shared_ptr<elt_type> elt_ptrtype;
 
     };
 
@@ -82,8 +82,9 @@ public:
      * constructor,copy,desctructor
      */
     ALE( mesh_ptrtype mesh, std::string prefix="",
-         WorldComm const& worldcomm = WorldComm(),
-         bool moveGhostEltFromExtendedStencil=false );
+         worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
+         bool moveGhostEltFromExtendedStencil=false,
+         ModelBaseRepository const& modelRep = ModelBaseRepository() );
     ALE( ALE const& tc );
     //~ALE();
 
@@ -91,8 +92,9 @@ public:
      * static builder
      */
     static self_ptrtype build(mesh_ptrtype mesh, std::string prefix="",
-                              WorldComm const& worldcomm = WorldComm(),
-                              bool moveGhostEltFromExtendedStencil=false );
+                              worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
+                              bool moveGhostEltFromExtendedStencil=false,
+                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     /**
      * Add the set of flags that mark the boundary

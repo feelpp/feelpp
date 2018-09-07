@@ -1265,7 +1265,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints( ext_
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
-    typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
+    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
     typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
 
@@ -1770,6 +1770,9 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
             DVLOG(2) << "[buildGhostInterProcessDofMap] (myRank:" <<  myRank << ") "
                     << "idEltInMyPartition: " << idEltInMyPartition << "\n";
 
+            auto const& theelt = mesh.element( idEltInMyPartition );
+            double dofPtCompareTol = std::max(1e-15,theelt.hMin()*1e-5);
+
             // prepare local dofs in element for localization process
             std::map<uint16_type,std::tuple<node_type, std::map<uint16_type,std::tuple<uint16_type,size_type> > > > mapLocalDofByCompToLocalDofAllCompWithNode;
             for ( auto const& ldof : this->localDof( idEltInMyPartition ) )
@@ -1821,7 +1824,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
                     {
-                        find2 = find2 && (std::abs( thedofPtInElt[d]-nodeDofRecv[d] )<1e-9);
+                        find2 = find2 && (std::abs( thedofPtInElt[d]-nodeDofRecv[d] )<dofPtCompareTol);
                     }
                     // if find else save local dof
                     if (find2)
@@ -2190,6 +2193,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
         {
             const size_type idEltToSearch = itEltRecv->template get<0>();
 
+            auto const& theelt = mesh.element( idEltToSearch );
+            double dofPtCompareTol = std::max(1e-15,theelt.hMin()*1e-5);
+
             // prepare local dofs in element for localization process
             std::map<uint16_type,std::tuple<node_type, std::map<uint16_type,std::tuple<uint16_type,size_type> > > > mapLocalDofByCompToLocalDofAllCompWithNode;
             for ( auto const& ldof : this->localDof( idEltToSearch ) )
@@ -2242,7 +2248,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
                     {
-                        find2 = find2 && (std::abs( thedofPtInElt[d]-nodeDofRecv[d] )<1e-9);
+                        find2 = find2 && (std::abs( thedofPtInElt[d]-nodeDofRecv[d] )<dofPtCompareTol);
                     }
                     // if find else save local dof
                     if (find2)

@@ -29,9 +29,9 @@ int main(int argc, char *argv[])
                            );
 
     using thermoelectric_type = ThermoElectricHDG<FEELPP_DIM, FEELPP_ORDER, FEELPP_ORDER>;
-    using thermoelectric_ptrtype = boost::shared_ptr<thermoelectric_type>;
+    using thermoelectric_ptrtype = std::shared_ptr<thermoelectric_type>;
 
-    auto te = boost::make_shared<thermoelectric_type>();
+    auto te = std::make_shared<thermoelectric_type>();
     te->run();
 
     return 0;

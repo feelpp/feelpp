@@ -2,14 +2,11 @@
 {
     "Name":"HL-31_H1",
     "ShortName":"HL-31_H1",
-    "Model":"ThermoElectric-linear",//"ThermoElectric-nonlinear" or "ThermoElectric-linear"
     "Materials":
     {
-        //"Cu":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
         "Cu":
         {
-            "name":"Cu",
-            "k11":"0.370",//[ W/(m*K) ]
+            "k":"0.370",//[ W/(m*K) ]
             //"Cp":"1000.005", //[ J/(kg*K) ]
             // "rho":"1.205", //[ kg/(m^3) ]
             "sigma":"53e3"
@@ -61,7 +58,13 @@
     },
     "PostProcess":
     {
-        "Fields":["temperature", "electric-potential"]
+        "use-model-name":1,
+        "thermo-electric":
+        {
+            "Exports":
+            {
+                "fields":["heat.temperature","electric.electric-potential","electric.current-density","electric.electric-field","heat.pid"]
+            }
+        }
     }
-
 }

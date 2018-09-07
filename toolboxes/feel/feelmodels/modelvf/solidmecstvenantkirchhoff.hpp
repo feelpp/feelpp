@@ -31,8 +31,6 @@
 
 namespace Feel
 {
-namespace vf
-{
 namespace FeelModels
 {
 /// \cond detail
@@ -76,10 +74,6 @@ public:
     static const bool is_terminal = true;
 
     static const uint16_type orderdisplacement = functionspace_type::basis_type::nOrder;
-    static const uint16_type imorder = mpl::if_<boost::is_same<SpecificExprType,mpl::int_<0> >,
-                                                mpl::int_<3*(orderdisplacement-1)>,
-                                                mpl::int_<4*(orderdisplacement-1)> >::type::value;
-    static const bool imIsPoly = true;
     //------------------------------------------------------------------------------//
     // lamecoeff functionspace
     typedef typename element_lamecoeff_type::functionspace_type functionspace_lamecoeff_type;
@@ -160,6 +154,12 @@ public:
      */
     //@{
 
+    //! polynomial order
+    uint16_type polynomialOrder() const { return (SpecificExprType::value == 0)? (3*(orderdisplacement-1)) : (4*(orderdisplacement-1)); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return true; }
+
     element_type const& e() const { return M_v; }
     element_lamecoeff_type const& coeffLame1() const { return M_coeffLame1; }
     element_lamecoeff_type const& coeffLame2() const { return M_coeffLame2; }
@@ -175,19 +175,19 @@ public:
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gmc_type::gm_type gm_type;
 
         // fe context
         typedef typename fe_type::PreCompute pc_type;
-        typedef boost::shared_ptr<pc_type> pc_ptrtype;
+        typedef std::shared_ptr<pc_type> pc_ptrtype;
         typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type;
-        typedef boost::shared_ptr<ctx_type> ctx_ptrtype;
+        typedef std::shared_ptr<ctx_type> ctx_ptrtype;
         // fe lamecoeff context
         typedef typename fe_lamecoeff_type::PreCompute pc_lamecoeff_type;
-        typedef boost::shared_ptr<pc_lamecoeff_type> pc_lamecoeff_ptrtype;
+        typedef std::shared_ptr<pc_lamecoeff_type> pc_lamecoeff_ptrtype;
         typedef typename fe_lamecoeff_type::template Context<context_lamecoeff, fe_lamecoeff_type, gm_type,geoelement_type,gmc_type::context> ctx_lamecoeff_type;
-        typedef boost::shared_ptr<ctx_lamecoeff_type> ctx_lamecoeff_ptrtype;
+        typedef std::shared_ptr<ctx_lamecoeff_type> ctx_lamecoeff_ptrtype;
 
 
         //----------------------------------------------------------------------------------------------------//
@@ -764,7 +764,7 @@ stressStVenantKirchhoffResidual( ElementType const& v, ElementLameCoeffType cons
 template<class ElementType, class ElementLameCoeffType>
 inline
 Expr< StressStVenantKirchhoff<ElementType,ElementLameCoeffType,mpl::int_<1> > >
-stressStVenantKirchhoffResidual( boost::shared_ptr<ElementType> const& v, ElementLameCoeffType const& lambda, ElementLameCoeffType const& mu )
+stressStVenantKirchhoffResidual( std::shared_ptr<ElementType> const& v, ElementLameCoeffType const& lambda, ElementLameCoeffType const& mu )
 {
     typedef StressStVenantKirchhoff<ElementType,ElementLameCoeffType, mpl::int_<1> > stressStVenantKirchhoff_t;
     return Expr< stressStVenantKirchhoff_t >(  stressStVenantKirchhoff_t( *v, lambda, mu ) );
@@ -782,6 +782,5 @@ stressStVenantKirchhoffJacobian( ElementType const& v, ElementLameCoeffType cons
 
 
 } // namespace FeelModels
-} // namespace vf
 } // namespace Feel
 #endif /* __SOLIDMECSTVENANTKIRCHHOFF_H */

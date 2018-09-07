@@ -18,7 +18,7 @@ runApplicationFSI()
     typedef FeelModels::SolidMechanics< Simplex<FEELPP_DIM,FEELPP_GEO_ORDER>,
                                         Lagrange<OrderDisp, Vectorial,Continuous,PointSetFekete> > model_solid_type;
     typedef FeelModels::FSI< model_fluid_type,model_solid_type> model_fsi_type;
-    boost::shared_ptr<model_fsi_type> FSImodel( new model_fsi_type("fsi") );
+    std::shared_ptr<model_fsi_type> FSImodel( new model_fsi_type("fsi") );
 
     FSImodel->init();
     FSImodel->printAndSaveInfo();
@@ -43,9 +43,9 @@ main( int argc, char** argv )
     using namespace Feel;
 
 	po::options_description fsioptions( "application fsi options" );
-    fsioptions.add( Feel::feelmodels_options("fsi") );
+    fsioptions.add( Feel::toolboxes_options("fsi") );
     fsioptions.add_options()
-        ("fe-approximation", Feel::po::value<std::string>()->default_value( "P2P1" ), "fe-approximation : P2P1,P1P1 ")
+        ("fe-approximation", Feel::po::value<std::string>()->default_value( "P2P1" ), "fe-approximation : P2P1,P2P1-P2 ")
         ;
 
 	Environment env( _argc=argc, _argv=argv,
@@ -56,12 +56,19 @@ main( int argc, char** argv )
 
 
     std::string feapprox = soption(_name="fe-approximation");
+#if FEELPP_GEO_ORDER == 1
     if ( feapprox == "P2P1" )
         runApplicationFSI<2,1>();
-    /*#if FEELPP_DIM == 2
+    else if ( feapprox == "P2P1-P2" )
+        runApplicationFSI<2,1,2>();
+#if 0//FEELPP_DIM == 2
     else if ( feapprox == "P1P1" )
         runApplicationFSI<1,1>();
-     #endif*/
+#endif
+#elif FEELPP_GEO_ORDER == 2
+    if ( true )
+        runApplicationFSI<2,1,2>();
+#endif
     else CHECK( false ) << "invalid feapprox " << feapprox;
 
     return 0;

@@ -40,9 +40,10 @@ namespace FeelModels
 {
 
 template < class Convex, int Order >
-ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, WorldComm const& worldcomm, bool moveGhostEltFromExtendedStencil )
+ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t const& worldcomm, bool moveGhostEltFromExtendedStencil,
+                        ModelBaseRepository const& modelRep )
     :
-    super_type( prefix/*prefixvm(prefix,"alemesh")*/, worldcomm,"","" )
+    super_type( prefix/*prefixvm(prefix,"alemesh")*/, worldcomm,"",modelRep )
     //super_type( mesh,prefix,worldcomm,moveGhostEltFromExtendedStencil ),
 {
     M_flagSet["fixed"].clear();
@@ -60,10 +61,11 @@ ALE<Convex,Order>::ALE( ALE const& tc )
 template< class Convex, int Order >
 typename ALE<Convex,Order>::self_ptrtype
 ALE<Convex,Order>::build( mesh_ptrtype mesh, std::string prefix,
-                          WorldComm const& worldcomm,
-                          bool moveGhostEltFromExtendedStencil )
+                          worldcomm_ptr_t const& worldcomm,
+                          bool moveGhostEltFromExtendedStencil,
+                          ModelBaseRepository const& modelRep)
 {
-    return self_ptrtype( new ALE_IMPL::ALE<Convex,Order>(mesh,prefix,worldcomm,moveGhostEltFromExtendedStencil ) );
+    return self_ptrtype( new ALE_IMPL::ALE<Convex,Order>(mesh,prefix,worldcomm,moveGhostEltFromExtendedStencil,modelRep ) );
 }
 
 

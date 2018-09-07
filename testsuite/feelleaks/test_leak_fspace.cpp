@@ -51,7 +51,7 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    boost::shared_ptr<Mesh<Simplex<2>>> aMesh;
+    std::shared_ptr<Mesh<Simplex<2>>> aMesh;
 #if defined(FEELPP_HAS_GPERFTOOLS)
     HeapLeakChecker check0("checker 0");
 #endif /* FEELPP_HAS_GPERFTOOLS */

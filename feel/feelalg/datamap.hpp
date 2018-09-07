@@ -32,7 +32,7 @@
 #include <vector>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/worldcomm.hpp>
+#include <feel/feelcore/commobject.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/set.hpp>
 #include <boost/serialization/map.hpp>
@@ -50,7 +50,7 @@ class DataMap;
 class FEELPP_EXPORT IndexSplit : public std::vector<std::vector<size_type> >
 {
     typedef IndexSplit self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
     typedef std::vector<std::vector<size_type> > super_type;
     typedef super_type container_type;
     typedef std::vector<size_type> subcontainer_type;
@@ -143,12 +143,13 @@ private :
  *  @author Christophe Prud'homme
  *  @see
  */
-class FEELPP_EXPORT DataMap
+class FEELPP_EXPORT DataMap : public CommObject
 {
 
 public:
+    using super = CommObject;
     typedef IndexSplit indexsplit_type;
-    typedef boost::shared_ptr<indexsplit_type> indexsplit_ptrtype;
+    typedef std::shared_ptr<indexsplit_type> indexsplit_ptrtype;
 
     typedef Eigen::Matrix<int, Eigen::Dynamic, 1>  localglobal_indices_type;
     typedef std::vector<localglobal_indices_type,Eigen::aligned_allocator<localglobal_indices_type> > vector_indices_type;
@@ -164,13 +165,13 @@ public:
      */
     //@{
 
-    DataMap( WorldComm const& _worldComm = Environment::worldComm() );
+    explicit DataMap( worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() );
 
     /**
      * \param n total size of the vector
      * \param n_local local size of the vector on the curent processor
      */
-    DataMap( size_type n, size_type n_local, WorldComm const& _worldComm = Environment::worldComm() );
+    DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() );
 
     /**
      * \param n total size of the vector
@@ -182,7 +183,7 @@ public:
     /**
      *
      */
-    DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, WorldComm const& _worldComm );
+    DataMap( std::vector<std::shared_ptr<DataMap> > const& listofdm, worldcomm_ptr_t const& _worldComm );
 
     DataMap( DataMap const & dm ) = default;
     DataMap( DataMap&& dm ) = default;
@@ -264,7 +265,7 @@ public:
      */
     size_type nMyDof () const
     {
-        return this->nDofOnProcessor ( M_worldComm.rank() );
+        return this->nDofOnProcessor ( this->worldComm().rank() );
     }
 
     /**
@@ -280,7 +281,7 @@ public:
 
     rank_type nProcessors() const
     {
-        return M_worldComm.size();
+        return this->worldComm().size();
     }
 
     /**
@@ -288,7 +289,7 @@ public:
      */
     size_type firstDof() const
     {
-        return this->firstDof( M_worldComm.rank() );
+        return this->firstDof( this->worldComm().rank() );
     }
     /**
      * @return the first dof index that is local to subdomain \p proc.
@@ -302,7 +303,7 @@ public:
 
     size_type firstDofGlobalCluster() const
     {
-        return this->firstDofGlobalCluster( M_worldComm.rank() );
+        return this->firstDofGlobalCluster( this->worldComm().rank() );
     }
 
     size_type firstDofGlobalCluster( rank_type proc ) const
@@ -322,7 +323,7 @@ public:
      */
     size_type lastDof() const
     {
-        return this->lastDof( M_worldComm.rank() );
+        return this->lastDof( this->worldComm().rank() );
     }
     /**
      * Returns the last dof index that is local to subdomain \p proc.
@@ -339,7 +340,7 @@ public:
      */
     size_type lastDofGlobalCluster() const
     {
-        return this->lastDofGlobalCluster( M_worldComm.rank() );
+        return this->lastDofGlobalCluster( this->worldComm().rank() );
     }
 
     size_type lastDofGlobalCluster( rank_type proc ) const
@@ -377,7 +378,7 @@ public:
     //! Returns local ID of global ID, return invalid_size_type_value if not found on this processor.
     size_type  lid( size_type GID ) const
     {
-        uint16_type pid = M_worldComm.rank();
+        uint16_type pid = this->worldComm().rank();
 
         if ( GID >= firstDof( pid ) &&
                 GID <= lastDof( pid ) )
@@ -389,7 +390,7 @@ public:
     //! Returns global ID of local ID, return -1 if not found on this processor.
     size_type gid( size_type LID ) const
     {
-        uint16_type pid = M_worldComm.rank();
+        uint16_type pid = this->worldComm().rank();
 
         if ( LID < ( lastDof( pid )-firstDof( pid ) + 1 ) )
             return firstDof( pid ) + LID;
@@ -418,19 +419,19 @@ public:
     //! Returns the maximum global ID across the entire map.
     size_type  maxAllGID() const
     {
-        return( lastDof( M_worldComm.size()-1 ) );
+        return( lastDof( this->worldComm().size()-1 ) );
     }
 
     //! Returns the maximum global ID owned by this processor.
     size_type  minMyGID() const
     {
-        return firstDof( M_worldComm.rank() );
+        return firstDof( this->worldComm().rank() );
     }
 
     //! Returns the maximum global ID owned by this processor.
     size_type  maxMyGID() const
     {
-        return lastDof( M_worldComm.rank() );
+        return lastDof( this->worldComm().rank() );
     };
 
     //!  The minimum local index value on the calling processor.
@@ -442,7 +443,7 @@ public:
     //! The maximum local index value on the calling processor.
     size_type  maxLID() const
     {
-        return lastDof( M_worldComm.rank() )-firstDof( M_worldComm.rank() );
+        return lastDof( this->worldComm().rank() )-firstDof( this->worldComm().rank() );
     };
 
     //! number of elements across all processors.
@@ -526,20 +527,7 @@ public:
      */
     void showMe( bool showAll=false, std::ostream& __out = std::cout ) const;
 
-    /**
-     * \return the mpi communicator
-     */
-    WorldComm const& worldComm() const
-    {
-        return M_worldComm;
-    }
-    /**
-     * \return the mpi communicator
-     */
-    WorldComm const& comm() const
-    {
-        return M_worldComm;
-    }
+    
 
     /**
      * \return the number of mapping (from functionspace id to container id with global process numbering)
@@ -548,8 +536,9 @@ public:
     /**
      * \return the mapping index which contains this global process id in container view
      */
-    int databaseIndexFromContainerId( size_type gpdof ) const
+    size_type databaseIndexFromContainerId( size_type gpdof ) const
         {
+#if 0
             size_type currentStartId = 0;
             for ( int tag=0;tag<this->numberOfDofIdToContainerId();++tag )
             {
@@ -559,6 +548,14 @@ public:
                 currentStartId+=nGpDof;
             }
             return 0;
+#endif
+            for ( int tag=0;tag<this->numberOfDofIdToContainerId();++tag )
+            {
+                auto it = std::find( M_dofIdToContainerId[tag].begin(), M_dofIdToContainerId[tag].end(), gpdof );
+                if ( it !=M_dofIdToContainerId[tag].end() )
+                    return tag;
+            }
+            return invalid_size_type_value;
         }
     /**
      * initialize the number of dofIdToContainerId mapping
@@ -591,6 +588,14 @@ public:
      */
     size_type dofIdToContainerId( int tag,size_type gpdof ) const { return M_dofIdToContainerId[tag][gpdof]; }
 
+    size_type containerIdToDofId( int tag, size_type gpdof ) const
+    {
+        size_type dof_id = invalid_size_type_value;
+        auto it = std::find( M_dofIdToContainerId[tag].begin(), M_dofIdToContainerId[tag].end(), gpdof );
+        if ( it !=M_dofIdToContainerId[tag].end() )
+            dof_id = std::distance( M_dofIdToContainerId[tag].begin(), it );
+        return dof_id;
+    }
     /**
      * \return the indexsplit description
      */
@@ -634,7 +639,7 @@ public:
 
 
     // build sub data map from an index set
-    boost::shared_ptr<DataMap> createSubDataMap( std::vector<size_type> const& idExtract,
+    std::shared_ptr<DataMap> createSubDataMap( std::vector<size_type> const& idExtract,
                                                  bool _checkAndFixInputRange=true ) const;
 
     //@}
@@ -716,11 +721,7 @@ protected:
      */
     std::map<size_type, std::set<rank_type> > M_activeDofSharedOnCluster;
 
-    /**
-     * Communicator
-     */
-    WorldComm M_worldComm;
-
+    
     /**
      * Index split ( differentiate multiphysic )
      */
@@ -734,7 +735,7 @@ private:
 
 using datamap_t = DataMap;
 
-using datamap_ptrtype = boost::shared_ptr<datamap_t>;
+using datamap_ptrtype = std::shared_ptr<datamap_t>;
 using datamap_ptr_t = datamap_ptrtype;
 
 } // Feel

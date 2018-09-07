@@ -14,7 +14,7 @@ foreach(_DIM 2 3)
           LEVELSET_PN_ORDER ${FEELPP_MODELS_LEVELSET_PN_ORDER}
           GEO_ORDER 1 
           )
-  set(FEELPP_MODELS_LIBRARIES_LEVELSET  ${FEELPP_MODELS_LIBRARIES_LEVELSET} ${LIBBASE_NAME}  )
+  set(FEELPP_MODELS_LIBRARIES_LEVELSET  ${FEELPP_MODELS_LIBRARIES_LEVELSET} ${LEVELSET_LIB_NAME}  )
   endforeach()
 endforeach()
 
@@ -29,9 +29,14 @@ endforeach()
       #PHI_ORDER ${_PHI_ORDER}
       #GEO_ORDER ${_PHI_ORDER}
       #)
-  #set(FEELPP_MODELS_LIBRARIES_LEVELSET  ${FEELPP_MODELS_LIBRARIES_LEVELSET} ${LIBBASE_NAME} )
+  #set(FEELPP_MODELS_LIBRARIES_LEVELSET  ${FEELPP_MODELS_LIBRARIES_LEVELSET} ${LEVELSET_LIB_NAME} )
   #endforeach()
 #endforeach()
 
-add_library(feelpp_model_levelset SHARED liblevelset.cpp )
-target_link_libraries(feelpp_model_levelset ${FEELPP_MODELS_LIBRARIES_LEVELSET})
+add_library(feelpp_toolbox_levelset_lib SHARED liblevelset.cpp )
+target_link_libraries(feelpp_toolbox_levelset_lib ${FEELPP_MODELS_LIBRARIES_LEVELSET})
+set_property(TARGET feelpp_toolbox_levelset_lib PROPERTY MACOSX_RPATH ON)
+install(TARGETS feelpp_toolbox_levelset_lib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
+
+FILE(GLOB files "*.hpp")
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/levelset COMPONENT Devel)

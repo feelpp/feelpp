@@ -79,17 +79,17 @@ makeAbout()
 template<int Dim, int Order>
 class Model:
     public Simget,
-    public boost::enable_shared_from_this< Model<Dim,Order> >
+    public std::enable_shared_from_this< Model<Dim,Order> >
 {
 
 public :
 
     typedef Mesh<Simplex<Dim> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename meta::Pch<mesh_type,Order>::type functionspace_type;
     typedef typename meta::Pch<mesh_type,Order>::ptrtype functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
 
     typedef Eigen::VectorXd vectorN_type;
     typedef Eigen::MatrixXd matrixN_type;
@@ -106,7 +106,7 @@ public :
         auto mesh=unitHypercube<Dim>();
         Xh = Pch<Order>( mesh );
 
-        auto RbSpace = RbSpacePch( this->shared_from_this()  );
+        auto RbSpace = RbSpacePch( Xh  );
 
         auto basis_x = vf::project( Xh , elements(mesh), Px() );
         auto basis_y = vf::project( Xh , elements(mesh), Py() );
@@ -388,7 +388,7 @@ BOOST_AUTO_TEST_SUITE( rbspace )
 
 BOOST_AUTO_TEST_CASE( test_1 )
 {
-    boost::shared_ptr<Model<2,1> > model ( new Model<2,1>() );
+    std::shared_ptr<Model<2,1> > model ( new Model<2,1>() );
     model->run();
 }
 
@@ -398,7 +398,7 @@ int main(int argc, char** argv )
 {
     Feel::Environment env( _argc=argc, _argv=argv,
                            _desc=feel_options() );
-    boost::shared_ptr<Model<2,1> > model ( new Model<2,1>() );
+    std::shared_ptr<Model<2,1> > model ( new Model<2,1>() );
     model->run();
 }
 #endif

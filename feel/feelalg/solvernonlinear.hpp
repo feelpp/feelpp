@@ -63,7 +63,7 @@ template<typename T> class MatrixSparse;
  *  @author Christophe Prud'homme
  */
 template <typename T>
-class SolverNonLinear
+class SolverNonLinear : public CommObject
 {
 public:
 
@@ -71,19 +71,19 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    using super = CommObject;
     typedef SolverNonLinear<T> self_type;
-    typedef boost::shared_ptr<SolverNonLinear<T> > self_ptrtype;
+    typedef std::shared_ptr<SolverNonLinear<T> > self_ptrtype;
     typedef self_type solvernonlinear_type;
-    typedef boost::shared_ptr<self_type> solvernonlinear_ptrtype;
+    typedef std::shared_ptr<self_type> solvernonlinear_ptrtype;
 
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
 
-    typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
+    typedef std::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
 
-    typedef boost::shared_ptr<Vector<value_type> > vector_ptrtype;
-    typedef boost::shared_ptr<MatrixSparse<value_type> > sparse_matrix_ptrtype;
+    typedef std::shared_ptr<Vector<value_type> > vector_ptrtype;
+    typedef std::shared_ptr<MatrixSparse<value_type> > sparse_matrix_ptrtype;
 
     typedef ublas::matrix<value_type> dense_matrix_type;
     typedef ublas::vector<value_type> dense_vector_type;
@@ -152,7 +152,7 @@ public:
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverNonLinear( std::string const& prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    SolverNonLinear( std::string const& prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     /**
      * copy constructor
@@ -170,17 +170,17 @@ public:
      * the \p variables_map \p vm and  \p prefix
      */
     static FEELPP_DEPRECATED solvernonlinear_ptrtype build( po::variables_map const& vm, std::string const& prefix = "",
-                                                            WorldComm const& worldComm = Environment::worldComm() );
+                                                            worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     static solvernonlinear_ptrtype build( std::string const& prefix = "",
-                                          WorldComm const& worldComm = Environment::worldComm() );
+                                          worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     static solvernonlinear_ptrtype build( std::string const& kind, std::string const& prefix = "",
-                                          WorldComm const& worldComm = Environment::worldComm() );
+                                          worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     /**
      * Builds a \p NonlinearSolver using the nonlinear solver package specified by
      * \p solver_package
      */
-    static FEELPP_DEPRECATED solvernonlinear_ptrtype build( SolverPackage solver_package, WorldComm const& worldComm = Environment::worldComm() );
+    static FEELPP_DEPRECATED solvernonlinear_ptrtype build( SolverPackage solver_package, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     /**
      * Initialize data structures if not done so already.
@@ -200,12 +200,6 @@ public:
     /** @name Accessors
      */
     //@{
-
-    /**
-     * \return the communicator
-     */
-    WorldComm const& comm() const { return M_worldComm; }
-    WorldComm const& worldComm() const { return M_worldComm; }
 
     /**
      * @returns true if the data structures are
@@ -365,11 +359,11 @@ public:
         M_preconditioner = preconditioner;
     }
 
-    void attachNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    void attachNullSpace( std::shared_ptr<NullSpace<value_type> > const& ns )
     {
         M_nullSpace = ns;
     }
-    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    void attachNearNullSpace( std::shared_ptr<NullSpace<value_type> > const& ns )
     {
         M_nearNullSpace = ns;
     }
@@ -610,8 +604,6 @@ protected:
 
     std::string M_prefix;
 
-    WorldComm M_worldComm;
-
     /**
      * Flag indicating if the data structures have been initialized.
      */
@@ -643,7 +635,7 @@ protected:
     /**
      * Null Space and Near Null Space
      */
-    boost::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
+    std::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
 
     /**
      * Enum the software that is used to perform the factorization
