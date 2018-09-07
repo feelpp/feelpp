@@ -70,7 +70,7 @@ makeAbout()
 void runTest0()
 {
     typedef Mesh<Simplex<3> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh;
     std::string filename = soption(_name="gmsh.filename");

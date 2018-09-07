@@ -49,9 +49,6 @@ public:
     static const size_type context = ExprT::context;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = ExprT::imorder;
-    static const bool imIsPoly = ExprT::imIsPoly;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -126,6 +123,12 @@ public:
      */
     //@{
 
+    //! polynomial order
+    uint16_type polynomialOrder() const { return 2*M_expr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_expr.isPolynomial(); }
+
     expression_type const& expression() const
     {
         return M_expr;
@@ -133,7 +136,7 @@ public:
 
     //@}
 
-    //template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > > >, typename Basis_j_t = Basis_i_t>
+    //template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,std::shared_ptr<vf::detail::gmc<0> > > >, typename Basis_j_t = Basis_i_t>
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {

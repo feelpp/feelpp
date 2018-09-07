@@ -1,7 +1,18 @@
 {
-    "Name": "Square3d",
-    "ShortName":"Square3d",
-    "Model":"Navier-Stokes",
+    "Name": "ShearedSphere3d",
+    "ShortName": "ShearedSphere3d",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
+    "Materials":
+    {
+        "OmegaFluid":
+        {
+            "rho":"1e-5",
+            "mu":"1"
+        }
+    },
     "BoundaryConditions":
     {
         "velocity":
@@ -37,7 +48,10 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","density", "viscosity", "pid"]
+        "Exports":
+        {
+            "fields":["velocity","pressure","density", "viscosity", "pid"]
+        }
     }
 
 }

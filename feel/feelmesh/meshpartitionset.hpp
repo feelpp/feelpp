@@ -33,7 +33,7 @@ class MeshPartitionSet
 {
 public:
     typedef MeshType mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef std::vector<boost::reference_wrapper<typename MeshTraits<mesh_type>::point_type const> > point_container_type;
     typedef typename point_container_type::const_iterator point_const_iterator;

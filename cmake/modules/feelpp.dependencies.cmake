@@ -159,7 +159,11 @@ MARK_AS_ADVANCED(FEELPP_ENABLE_MOVE_SEMANTICS)
 # enable instantiation
 MARK_AS_ADVANCED(FEELPP_ENABLE_INSTANTIATION_MODE)
 IF ( FEELPP_ENABLE_INSTANTIATION_MODE )
-  SET( FEELPP_INSTANTIATION_MODE 1 )
+  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    SET( FEELPP_INSTANTIATION_MODE 1 )
+  else()
+    SET( FEELPP_INSTANTIATION_MODE 1 )
+  endif()
 ENDIF()
 SET(FEELPP_MESH_MAX_ORDER "2" CACHE STRING "maximum geometrical order in templates to instantiate up to 5 in 2D and 4 in 3D" )
 
@@ -468,15 +472,18 @@ endif(FEELPP_ENABLE_HDF5)
 
 
 # XDMF
-find_package(XDMF QUIET)
-if (XDMF_FOUND)
+option( FEELPP_ENABLE_XDMF "Enable XDMF Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if ( FEELPP_ENABLE_XDMF )
+  find_package(XDMF QUIET)
+  if (XDMF_FOUND)
     INCLUDE_DIRECTORIES( ${XDMF_INCLUDE_DIRS} )
     set(FEELPP_LIBRARIES ${XDMF_LIBRARIES} ${FEELPP_LIBRARIES})
     set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} XDMF" )
     message(STATUS "Found Xdmf." )
-else()
+  else()
     message(STATUS "Could not find Xdmf." )
-endif (XDMF_FOUND)
+  endif (XDMF_FOUND)
+endif()
 
 # Python libs
 option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
@@ -503,7 +510,23 @@ if(FEELPP_ENABLE_PYTHON)
     SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonLibs/${PYTHON_VERSION}" )
     set( FEELPP_HAS_PYTHON 1 )
+    
+    # Check that sympy is available
+    include(FindPythonModules)
+    find_python_module(sympy 1.1 FEELPP_SYMPY_FOUND)
+    if ( FEELPP_SYMPY_FOUND )
+      set( FEELPP_HAS_SYMPY 1 )
+      message(STATUS "[feelpp] sympy (at least 1.1) has been found")
+    else()
+      message(STATUS "[feelpp] sympy (at least 1.1) has not been  found")
+    endif()
 
+
+    Find_Package(MPI4PY)
+    if ( MPI4PY_FOUND )
+      set( FEELPP_HAS_MPI4PY 1 )
+    endif()
+      
   endif()
 
 endif()
@@ -530,7 +553,7 @@ if(FEELPP_ENABLE_PYTHON_WRAPPING)
 endif()
 
 # Then we try to find rest of the Boost components
-FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization )
+FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization iostreams )
 if(Boost_FOUND)
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
     add_definitions(-DBOOST_RESULT_OF_USE_TR1)
@@ -677,12 +700,16 @@ endif()
 #
 # GLPK
 #
-FIND_PACKAGE(GLPK)
-if ( GLPK_FOUND )
-  set(FEELPP_HAS_GLPK_H 1)
-  INCLUDE_DIRECTORIES( ${GLPK_INCLUDE_DIR} )
-  SET(FEELPP_LIBRARIES ${GLPK_LIBRARIES} ${FEELPP_LIBRARIES})
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLPK" )
+option( FEELPP_ENABLE_GLPK "Enable GLPK Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if ( FEELPP_ENABLE_GLPK )
+  FIND_PACKAGE(GLPK)
+  if ( GLPK_FOUND )
+    set(FEELPP_HAS_GLPK 1)
+    set(FEELPP_HAS_GLPK_H 1)
+    INCLUDE_DIRECTORIES( ${GLPK_INCLUDE_DIR} )
+    SET(FEELPP_LIBRARIES ${GLPK_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLPK" )
+  endif()
 endif()
 
 # google perf tools
@@ -1006,7 +1033,8 @@ endif()
 #
 # VTK
 #
-option( FEELPP_ENABLE_VTK "Enable VTK Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+#option( FEELPP_ENABLE_VTK "Enable VTK Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option( FEELPP_ENABLE_VTK "Enable VTK Support" OFF )
 if ( FEELPP_ENABLE_VTK )
     # MESSAGE("Finding VTK:")
     # MESSAGE("PARAVIEW_DIR=$ENV{PARAVIEW_DIR}")
@@ -1298,7 +1326,7 @@ if( FEELPP_ENABLE_CLING_INTERPRETER )
   include(feelpp.module.cling.interpreter)
 endif()
 
-option( FEELPP_ENABLE_OMC "Enable OpemModelica in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option( FEELPP_ENABLE_OMC "Enable OpenModelica in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if( FEELPP_ENABLE_OMC )
   include( feelpp.module.omc )
 endif()
@@ -1306,6 +1334,21 @@ endif()
 option( FEELPP_ENABLE_FMILIB "Enable FMILib in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if( FEELPP_ENABLE_FMILIB )
   include( feelpp.module.fmilib )
+endif()
+
+option( FEELPP_ENABLE_LIBCURL "Enable libcurl in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if ( FEELPP_ENABLE_LIBCURL )
+  find_package( CURL )
+  #message( "CURL_FOUND=${CURL_FOUND}" )
+  #message( "CURL_INCLUDE_DIRS=${CURL_INCLUDE_DIRS}" )
+  #message( "CURL_LIBRARIES=${CURL_LIBRARIES}" )
+  #message( "CURL_VERSION_STRING=${CURL_VERSION_STRING}" )
+  if( CURL_FOUND )
+    include_directories( ${CURL_INCLUDE_DIRS} )
+    set( FEELPP_HAS_LIBCURL 1 )
+    set( FEELPP_LIBRARIES ${CURL_LIBRARIES} ${FEELPP_LIBRARIES} )
+    set( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} libcurl/${CURL_VERSION_STRING}" )
+  endif()
 endif()
 
 
@@ -1416,7 +1459,7 @@ set(FEELPP_BOOST_TEXT "
 set (Boost_MAJOR_VERSION \"${Boost_MAJOR_VERSION}\")
 set (Boost_MINOR_VERSION \"${Boost_MINOR_VERSION}\")
 ")
-foreach( _c date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization )
+foreach( _c date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization iostreams )
   string(TOUPPER ${_c} _BOOST_LIB)
   set(FEELPP_BOOST_TEXT
     "${FEELPP_BOOST_TEXT}

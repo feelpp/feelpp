@@ -1,7 +1,10 @@
 {
-    "Name": "VesicleRest3d",
-    "ShortName": "VesicleRest3d",
-    "Model": "Levelset",
+    "Name": "ShearedSphere3d",
+    "ShortName": "ShearedSphere3d",
+    "Models":
+    {
+        "equations":"Advection"
+    },
 
     "Parameters":
     {
@@ -33,7 +36,10 @@
     },
     "PostProcess":
     {
-        "Fields": ["modgradphi", "backwardcharacteristics", "cauchygreeninvariant1", "cauchygreeninvariant2"],
+        "Exports":
+        {
+            "fields": ["modgradphi", "backwardcharacteristics", "cauchygreeninvariant1", "cauchygreeninvariant2"]
+        },
         "PhysicalQuantities": ["volume", "perimeter"]
     }
 }

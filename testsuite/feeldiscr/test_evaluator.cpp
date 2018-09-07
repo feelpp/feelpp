@@ -46,7 +46,7 @@ template<typename T>
 void f( int nparts )
 {
     typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "simplex-%1%" )  % T::value ).str() ,
@@ -58,7 +58,7 @@ void f( int nparts )
                                         _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<1, Scalar> > > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     space_ptrtype P1h = space_type::New( mesh );
     using namespace vf;
     auto e1 = normLinf( _range=elements(mesh), _pset=_Q<5>(), _expr=sin(2*constants::pi<double>()*Px()) );

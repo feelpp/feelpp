@@ -74,6 +74,7 @@
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdivision-by-zero"
+#pragma clang diagnostic ignored "-Wexpansion-to-defined"
 #endif
 #include <boost/mpi.hpp>
 #if defined(__clang__)
@@ -127,6 +128,7 @@
 #include <feel/feelcore/info.hpp>
 #include <feel/feelcore/feelmacros.hpp>
 #include <feel/feelcore/feelassert.hpp>
+#include <feel/feelcore/feelmath.hpp>
 
 #include <feel/feelcore/flags.hpp>
 
@@ -170,6 +172,9 @@ using google::FATAL;
 using boost::format;
 
 using boost::unwrap_ref;
+
+bool filename_is_dot( fs::path const& p );
+bool filename_is_dot_dot( fs::path const& p );
 
 //! @cond
 namespace detail
@@ -391,6 +396,9 @@ typedef size_type dof_id_type;
 //! type for mpi rank ids
 typedef uint16_type rank_type;
 
+//! quadrature order type
+typedef uint16_type quad_order_type;
+
 #if defined( __APPLE__ )
 typedef unsigned int uint;
 #endif // __APPLE__
@@ -437,6 +445,11 @@ const rank_type invalid_rank_type_value = rank_type( -1 );
  * Invalid size type value
  */
 const size_type invalid_size_type_value = size_type( -1 );
+
+/**
+ * Quadrature order deduced from the expression to integrate
+ */
+const quad_order_type quad_order_from_expression = invalid_uint16_type_value;
 
 //@}
 

@@ -40,10 +40,6 @@ public:
     static const size_type context = 0;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = 0;
-    static const bool imIsPoly = true;
-
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -79,6 +75,12 @@ public:
     template<typename... TheExpr>
     typename Lambda<TheExpr...>::type
     operator()( TheExpr... e  ) { return this_type(); }
+
+    //! polynomial order
+    constexpr uint16_type polynomialOrder() const { return 0; }
+
+    //! expression is polynomial?
+    constexpr bool isPolynomial() const { return true; }
 
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>

@@ -18,13 +18,13 @@ public:
     // Class
     typedef FluidType super_type;
     typedef MultiFluid< FluidType, LevelSetType> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     typedef FluidType fluid_type;
-    typedef boost::shared_ptr<fluid_type> fluid_ptrtype;
+    typedef std::shared_ptr<fluid_type> fluid_ptrtype;
 
     typedef LevelSetType levelset_type;
-    typedef boost::shared_ptr<levelset_type> levelset_ptrtype;
+    typedef std::shared_ptr<levelset_type> levelset_ptrtype;
 
     //--------------------------------------------------------------------//
     // Mesh
@@ -33,7 +33,7 @@ public:
     static const uint16_type nOrderGeo = convex_type::nOrder;
     static const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //--------------------------------------------------------------------//
     // Function spaces
@@ -67,27 +67,27 @@ public:
     //--------------------------------------------------------------------//
     // Lagrange P1 iso-Pn
     typedef OperatorLagrangeP1<component_space_fluid_velocity_type> op_lagrangeP1_type;
-    typedef boost::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
+    typedef std::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
 
     //--------------------------------------------------------------------//
     // Density/viscosity
-    typedef typename fluid_type::densityviscosity_model_type densityviscosity_model_type;
-    typedef typename fluid_type::densityviscosity_model_ptrtype densityviscosity_model_ptrtype;
+    typedef typename fluid_type::material_properties_type material_properties_type;
+    typedef typename fluid_type::material_properties_ptrtype material_properties_ptrtype;
     //--------------------------------------------------------------------//
     // Interface forces model
     typedef InterfaceForcesModel<levelset_type, fluid_type> interfaceforces_model_type;
-    typedef boost::shared_ptr<interfaceforces_model_type> interfaceforces_model_ptrtype;
+    typedef std::shared_ptr<interfaceforces_model_type> interfaceforces_model_ptrtype;
     typedef Singleton<Feel::Factory<interfaceforces_model_type, std::string>> interfaceforces_factory_type;
 
     //--------------------------------------------------------------------//
     // Inextensibility
     typedef typename super_type::basis_fluid_p_type basis_fluid_p_type;
     typedef FunctionSpace< mesh_type, bases<basis_fluid_p_type> > space_inextensibilitylm_type;
-    typedef boost::shared_ptr<space_inextensibilitylm_type> space_inextensibilitylm_ptrtype;
+    typedef std::shared_ptr<space_inextensibilitylm_type> space_inextensibilitylm_ptrtype;
     //--------------------------------------------------------------------//
     // Exporter
     typedef Exporter<mesh_type, nOrderGeo> exporter_type;
-    typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
+    typedef std::shared_ptr<exporter_type> exporter_ptrtype;
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -97,16 +97,16 @@ public:
     // Constructor
     MultiFluid(
             std::string const& prefix,
-            WorldComm const& wc = Environment::worldComm(),
+            worldcomm_ptr_t const& wc = Environment::worldCommPtr(),
             std::string const& subPrefix = "",
-            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+            ModelBaseRepository const& modelRep = ModelBaseRepository() );
     MultiFluid( self_type const& M ) = default;
 
     static self_ptrtype New(
             std::string const& prefix,
-            WorldComm const& wc = Environment::worldComm(),
+            worldcomm_ptr_t const& wc = Environment::worldCommPtr(),
             std::string const& subPrefix = "",
-            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+            ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     static std::string expandStringFromSpec( std::string const& expr );
 
@@ -123,11 +123,11 @@ public:
     std::string const& fluidPrefix() const { return super_type::prefix(); }
     std::string globalLevelsetPrefix() const { return prefixvm( this->prefix(), "levelset"); }
 
-    boost::shared_ptr<std::ostringstream> getInfo() const override;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
 
     //--------------------------------------------------------------------//
-    boost::shared_ptr<self_type> shared_from_this() { return boost::static_pointer_cast<self_type>(super_type::shared_from_this()); }
-    boost::shared_ptr<self_type const> shared_from_this() const { return boost::static_pointer_cast<self_type const>(super_type::shared_from_this()); }
+    std::shared_ptr<self_type> shared_from_this() { return std::static_pointer_cast<self_type>(super_type::shared_from_this()); }
+    std::shared_ptr<self_type const> shared_from_this() const { return std::static_pointer_cast<self_type const>(super_type::shared_from_this()); }
 
     //--------------------------------------------------------------------//
     // Function spaces
@@ -149,7 +149,7 @@ public:
     element_levelset_ptrtype const& globalLevelsetElt() const;
 
     // Fluid density-viscosity model
-    densityviscosity_model_ptrtype const& fluidDensityViscosityModel( uint16_type n = 0 ) const;
+    material_properties_ptrtype const& fluidMaterialProperties( uint16_type n = 0 ) const;
 
     //--------------------------------------------------------------------//
     // Algebraic data
@@ -175,9 +175,9 @@ public:
 
     //--------------------------------------------------------------------//
     // Time step
-    //boost::shared_ptr<TSBase> timeStepBase() const { return M_fluid->timeStepBase(); }
-    boost::shared_ptr<TSBase> fluidTimeStepBase() const { return this->timeStepBase(); }
-    boost::shared_ptr<TSBase> levelsetTimeStepBase(uint16_type n) const { return this->levelsetModel(n)->timeStepBase(); }
+    //std::shared_ptr<TSBase> timeStepBase() const { return M_fluid->timeStepBase(); }
+    std::shared_ptr<TSBase> fluidTimeStepBase() const { return this->timeStepBase(); }
+    std::shared_ptr<TSBase> levelsetTimeStepBase(uint16_type n) const { return this->levelsetModel(n)->timeStepBase(); }
     void updateTime( double time );
     void updateTimeStep();
 
@@ -232,8 +232,8 @@ private:
 
     //--------------------------------------------------------------------//
     // Parameters
-    densityviscosity_model_ptrtype M_fluidDensityViscosityModel;
-    std::vector<densityviscosity_model_ptrtype> M_levelsetDensityViscosityModels;
+    material_properties_ptrtype M_fluidMaterialProperties;
+    std::vector<material_properties_ptrtype> M_levelsetsMaterialProperties;
     std::vector<std::map<std::string, interfaceforces_model_ptrtype>> M_levelsetInterfaceForcesModels;
     std::map<std::string, interfaceforces_model_ptrtype> M_additionalInterfaceForcesModel;
     //--------------------------------------------------------------------//

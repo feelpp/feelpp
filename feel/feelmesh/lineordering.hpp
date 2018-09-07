@@ -59,6 +59,37 @@ struct vertex
     }
 };
 
+template<uint16_type Order>
+struct point
+{
+    //static uint16_type f2p( uint16_type /*f*/, uint16_type /*p*/ ) { throw std::logic_error( "invalid call to line::f2p" ); return uint16_type(-1); }
+    static uint16_type f2p( uint16_type f, uint16_type /*p*/ )
+        {
+            return f;
+        }
+    static uint16_type f2e( uint16_type /*f*/, uint16_type /*e*/ )
+        {
+            throw std::logic_error( "invalid call to line::f2e" );
+            return uint16_type( -1 );
+        }
+
+    static uint16_type e2p( uint16_type /*e*/, uint16_type p )
+        {
+            return p;
+        }
+
+    static const uint16_type __e2p[11];
+
+    std::vector<uint16_type> entity( uint16_type /*topo_dim*/, uint16_type /*id*/ ) const
+        {
+            std::vector<uint16_type> __entity( 2 );
+            __entity[0] = 0;
+            __entity[1] = 1;
+            return __entity;
+        }
+};
+template<uint16_type Order> const uint16_type  point<Order>::__e2p[11] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+
 /**
  * \class line
  */

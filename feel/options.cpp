@@ -58,6 +58,8 @@ file_options( std::string const& appname )
         ( "mod-file", po::value<std::string>()->default_value(appname+".mod"), "specify model (.mod) file" )
         ( "result-file", po::value<std::string>()->default_value(appname+".res"), "specify .res file" )
         ( "response-file", po::value<std::string>()->default_value(appname), "can be specified with '@name', too" )
+        ( "case", po::value<std::string>(), "specify a case directory" )
+        ( "case.config-file", po::value<std::string>(), "specify the config-file in the case directory" )
         ;
     return file;
 }
@@ -123,10 +125,10 @@ po::options_description
 functions_options( std::string const& prefix )
 {
     po::options_description _options( "Functions " + prefix + " options" );
-    _options.add_options()
+    /*_options.add_options()
         ( prefixvm( prefix,"x" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "x coordinate value " )
         ( prefixvm( prefix,"y" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "y coordinate value " )
-        ( prefixvm( prefix,"z" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "z coordinate value " );
+     ( prefixvm( prefix,"z" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "z coordinate value " );*/
     std::vector<std::string> alphabet { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa", "lambda", "mu", "nu", "xi", "omicron", "pi", "rho", "sigma", "tau", "upsilon", "phi", "chi", "psi", "omega" };
     for(std::string& name : alphabet) {
         _options.add_options() ( prefixvm( prefix,"functions." + name ).c_str(), Feel::po::value<std::string>()->default_value( name.size() == 1 ? "0" : "1" ), name.c_str() );
@@ -351,6 +353,7 @@ po::options_description bdf_options( std::string const& prefix )
     ( prefixvm( prefix, "bdf.time-step" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "time step" )
     ( prefixvm( prefix, "bdf.strategy" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "strategy, 0=constant time steps, 1=adaptive time steps" )
     ( prefixvm( prefix, "bdf.steady" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "false: unsteady, true:steady" )
+    ( prefixvm( prefix, "bdf.reverse" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reverse time" )
     ( prefixvm( prefix, "bdf.restart" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart " )
     ( prefixvm( prefix, "bdf.restart.path" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "path where we reload old data" )
     ( prefixvm( prefix, "bdf.restart.at-last-save" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart with ti the last save " )
@@ -380,6 +383,7 @@ po::options_description ts_options( std::string const& prefix )
         ( prefixvm( prefix, "ts.time-step" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "time step" )
         //( prefixvm( prefix, "ts.strategy" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "strategy, 0=constant time steps, 1=adaptive time steps" )
         ( prefixvm( prefix, "ts.steady" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "false: unsteady, true:steady" )
+        ( prefixvm( prefix, "ts.reverse" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reverse time" )
         ( prefixvm( prefix, "ts.restart" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart " )
         ( prefixvm( prefix, "ts.restart.path" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "path where we reload old data" )
         ( prefixvm( prefix, "ts.restart.at-last-save" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart with ti the last save " )
@@ -466,7 +470,7 @@ deimOptions( std::string const& prefix )
         ( prefixvm( prefix, "deim.dimension-max" ).c_str(), Feel::po::value<int>()->default_value( 20 ), "Offline  max WN size" )
         ( prefixvm( prefix, "deim.default-sampling-size" ).c_str(), Feel::po::value<int>()->default_value( 50 ), "Offline  sampling size"  )
         ( prefixvm( prefix, "deim.default-sampling-mode" ).c_str(), Feel::po::value<std::string>()->default_value( "equidistribute" ), "DEIM Offline : random, log-random, log-equidistribute, equidistribute "  )
-        ( prefixvm( prefix, "deim.rebuild-db" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Rebuild the database from beginning if true"  )
+        ( prefixvm( prefix, "deim.rebuild-database" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Rebuild the database from beginning if true"  )
         ( prefixvm( prefix, "deim.greedy.rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "Asbolute Tolerance for greedy algorithm"  )
         ( prefixvm( prefix, "deim.greedy.atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-16 ), "Relative Tolerance for greedy algorithm"  )
         ( prefixvm( prefix, "deim.store-vectors" ).c_str(), Feel::po::value<bool>()->default_value(true ), "Store Vectors for the parameters in the trainset in DEIM"  )
@@ -688,7 +692,7 @@ crbOptions( std::string const& prefix )
         ;
 
     crboptions
-        .add( crbSCMOptions() );
+        .add( crbSCMOptions() ).add(deimOptions(prefix));
 
     return crboptions;
 }
@@ -698,12 +702,9 @@ crbOptions( std::string const& prefix )
 {
     Feel::po::options_description crboptions( "CRB Options" );
     crboptions.add_options()
-        ( "crb.saddlepoint.transpose",Feel::po::value<bool>()->default_value( true ), "automatically fill the null blocks with transposed if true. ex A01=A10 if true and A01=zero")
-        ( "crb.saddlepoint.add-false-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis, false version")
         ( "crb.saddlepoint.add-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis")
         ( "crb.saddlepoint.orthonormalize0",Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #0")
         ( "crb.saddlepoint.orthonormalize1",Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #1")
-        ( "crb.saddlepoint.test-residual",Feel::po::value<bool>()->default_value( 0 ), "test residual evaluation")
         ( "crb.saddlepoint.version",Feel::po::value<int>()->default_value( 1 ), "test residual evaluation")
         ;
 
@@ -930,6 +931,7 @@ checker_options( std::string const& prefix )
         ( prefixvm( prefix,"checker.tolerance.order" ).c_str(), Feel::po::value<double>()->default_value(1e-1), "tolerance for order check" )
         ( prefixvm( prefix,"checker.name" ).c_str(), Feel::po::value<std::string>()->default_value("checker"), "name of the test" )
         ( prefixvm( prefix,"checker.filename" ).c_str(), Feel::po::value<std::string>()->default_value("checker.json"), "name of the test" )
+        ( prefixvm( prefix,"checker.verbose" ).c_str(), Feel::po::value<bool>()->default_value(false), "checker prints more information" )
         ;
     return _options;
 }
@@ -945,10 +947,25 @@ fmu_options( std::string const& prefix )
 
         ( prefixvm( prefix,"fmu.solver.time-step" ).c_str(), Feel::po::value<double>()->default_value(0.1), "Time step for FMU Solver" )
         ( prefixvm( prefix,"fmu.solver.rtol" ).c_str(), Feel::po::value<double>()->default_value(1e-4), "Relative tolerance for FMU Solver" )
+
+        ( prefixvm( prefix,"fmu.exported-variables" ).c_str(), po::value<std::vector<std::string>>()->multitoken(), "List of variables which have to be exported" )
+        ( prefixvm( prefix,"fmu.export-directory" ).c_str(), po::value<std::string>()->default_value(""), "Location of the exported data. Default is the app directory." )
+
+        ( prefixvm( prefix,"fmu.time-initial" ).c_str(), Feel::po::value<double>()->default_value(-1), "inital time for the simulation. Default is taken from the model" )
+        ( prefixvm( prefix,"fmu.time-final" ).c_str(), Feel::po::value<double>()->default_value(-1), "Final time for the simulation. Default is taken from the model" )
         ;
     return _options;
 }
 
+po::options_description
+ptree_options( std::string const& prefix )
+{
+    po::options_description _options( "Ptree " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"json-editions" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of entries to modified in json. format= key:value " )
+        ;
+    return _options;
+}
 po::options_description
 feel_options( std::string const& prefix  )
 {
@@ -1034,6 +1051,7 @@ feel_options( std::string const& prefix  )
         .add (fit_options(prefix))
         .add (checker_options(prefix))
         .add( fmu_options(prefix) )
+        .add( ptree_options( prefix ) )
         ;
 
     return opt;

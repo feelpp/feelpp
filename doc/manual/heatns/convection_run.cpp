@@ -172,7 +172,7 @@ Convection::run()
 #endif
     //initialisation timer :
     double titi = 0;
-    boost::shared_ptr<export_type> exporter( export_type::New( this->vm(),
+    std::shared_ptr<export_type> exporter( export_type::New( this->vm(),
             ( boost::format( "%1%" )
               % this->about().appName() ).str() ) );
 

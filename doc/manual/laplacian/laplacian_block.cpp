@@ -1,12 +1,11 @@
 // -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
 #include <feel/feel.hpp>
-#include <feel/feelalg/vectorblock.hpp>
 
 namespace Feel
 {
 
-boost::shared_ptr<Mesh<Simplex<2> > >
+std::shared_ptr<Mesh<Simplex<2> > >
 createMeshLaplacianBlock()
 {
     GeoTool::Rectangle R( option(_name="gmsh.hsize").as<double>(),"Rectangle",
@@ -22,8 +21,8 @@ createMeshLaplacianBlock()
 }
 
 
-boost::shared_ptr<Mesh<Simplex<2> > >
-createSubMeshLaplacianBlock(boost::shared_ptr<Mesh<Simplex<2> > > mesh)
+std::shared_ptr<Mesh<Simplex<2> > >
+createSubMeshLaplacianBlock(std::shared_ptr<Mesh<Simplex<2> > > mesh)
 {
     auto P0d = Pdh<0>(mesh);
     double r=0.2;

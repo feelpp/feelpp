@@ -662,7 +662,7 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U )
         //else
         //timeStep->setMesh( M_Xh->mesh() );
         exporter->step( time )->add( "pid",
-                                     regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( M_velocity_oplagp1->dualImageSpace()->mesh() ) ) ) );
+                                     regionProcess( std::shared_ptr<p0_space_type>( new p0_space_type( M_velocity_oplagp1->dualImageSpace()->mesh() ) ) ) );
 
 
         exporter->step( time )->add( "velocity", u );

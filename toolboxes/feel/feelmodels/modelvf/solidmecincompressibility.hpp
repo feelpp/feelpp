@@ -34,8 +34,6 @@
 
 namespace Feel
 {
-namespace vf
-{
 namespace FeelModels
 {
 
@@ -58,17 +56,17 @@ struct tensorSolidMecPressureFormulationMultiplierBase : public tensorBase<Geo_t
     typedef typename super_type::shape_type shape;
     // fe disp context
     typedef typename expr_type::fe_disp_type::PreCompute pc_disp_type;
-    typedef boost::shared_ptr<pc_disp_type> pc_disp_ptrtype;
+    typedef std::shared_ptr<pc_disp_type> pc_disp_ptrtype;
     typedef typename expr_type::fe_disp_type::template Context<expr_type::context_disp, typename expr_type::fe_disp_type,
                                                                gm_type,geoelement_type,gmc_type::context> ctx_disp_type;
-    typedef boost::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
+    typedef std::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
 
     // fe pressure context
     typedef typename expr_type::fe_pressure_type::PreCompute pc_pressure_type;
-    typedef boost::shared_ptr<pc_pressure_type> pc_pressure_ptrtype;
+    typedef std::shared_ptr<pc_pressure_type> pc_pressure_ptrtype;
     typedef typename expr_type::fe_pressure_type::template Context<expr_type::context_pressure, typename expr_type::fe_pressure_type,
                                                                    gm_type,geoelement_type,gmc_type::context> ctx_pressure_type;
-    typedef boost::shared_ptr<ctx_pressure_type> ctx_pressure_ptrtype;
+    typedef std::shared_ptr<ctx_pressure_type> ctx_pressure_ptrtype;
 
     tensorSolidMecPressureFormulationMultiplierBase( expr_type const& expr,
                                                      Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -651,8 +649,6 @@ public:
     static const uint16_type orderdisplacement = functionspace_disp_type::basis_type::nOrder;
     static const uint16_type orderpressure = functionspace_pressure_type::basis_type::nOrder;
     static const uint16_type nDim = functionspace_disp_type::nDim;
-    static const uint16_type imorder = (orderdisplacement-1)*(nDim-1)+orderpressure;
-    static const bool imIsPoly = true;
     //------------------------------------------------------------------------------//
 
     template<typename Func>
@@ -688,6 +684,12 @@ public:
     ~SolidMecPressureFormulationMultiplier()
     {}
 
+    //! polynomial order
+    uint16_type polynomialOrder() const { return (orderdisplacement-1)*(nDim-1)+orderpressure; }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return true; }
+
     element_disp_type const& disp() const { return M_disp; }
     element_pressure_type const& pressure() const { return M_pressure; }
     mechprop_type const& mechanicalPropertiesDesc() const { return M_mechProp; }
@@ -699,7 +701,7 @@ public:
     {
         //typedef tensorBase<Geo_t,Basis_i_t,Basis_j_t,my_shape_type,value_type > tensorbase_type;
         typedef tensorSolidMecPressureFormulationMultiplierBase<Geo_t,Basis_i_t,Basis_j_t,self_type > tensorbase_type;
-        typedef boost::shared_ptr<tensorbase_type> tensorbase_ptrtype;
+        typedef std::shared_ptr<tensorbase_type> tensorbase_ptrtype;
 
         typedef typename tensorbase_type::value_type value_type;
         typedef typename tensorbase_type::shape_type shape;
@@ -817,10 +819,10 @@ struct tensorSolidMecPressureFormulationConstraintBase : public tensorBase<Geo_t
     typedef typename super_type::shape_type shape;
     // fe disp context
     typedef typename expr_type::fe_disp_type::PreCompute pc_disp_type;
-    typedef boost::shared_ptr<pc_disp_type> pc_disp_ptrtype;
+    typedef std::shared_ptr<pc_disp_type> pc_disp_ptrtype;
     typedef typename expr_type::fe_disp_type::template Context<expr_type::context_disp, typename expr_type::fe_disp_type,
                                                                gm_type,geoelement_type,gmc_type::context> ctx_disp_type;
-    typedef boost::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
+    typedef std::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
 
     tensorSolidMecPressureFormulationConstraintBase( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         :
@@ -1206,8 +1208,6 @@ public:
 
     static const uint16_type orderdisplacement = functionspace_disp_type::basis_type::nOrder;
     static const uint16_type nDim = functionspace_disp_type::nDim;
-    static const uint16_type imorder = (orderdisplacement-1)*nDim;
-    static const bool imIsPoly = true;
     //------------------------------------------------------------------------------//
 
     template<typename Func>
@@ -1240,6 +1240,12 @@ public:
     ~SolidMecPressureFormulationConstraint()
     {}
 
+        //! polynomial order
+    uint16_type polynomialOrder() const { return (orderdisplacement-1)*nDim; }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return true; }
+
     element_disp_type const& disp() const { return M_disp; }
     mechprop_type const& mechanicalPropertiesDesc() const { return M_mechProp; }
 
@@ -1250,7 +1256,7 @@ public:
     struct tensor
     {
         typedef tensorSolidMecPressureFormulationConstraintBase<Geo_t,Basis_i_t,Basis_j_t,self_type > tensorbase_type;
-        typedef boost::shared_ptr<tensorbase_type> tensorbase_ptrtype;
+        typedef std::shared_ptr<tensorbase_type> tensorbase_ptrtype;
 
         typedef typename tensorbase_type::value_type value_type;
         typedef typename tensorbase_type::shape_type shape;
@@ -1416,6 +1422,5 @@ solidMecPressureFormulationConstraintJacobian( ElementDispType const& v,
 }
 
 } // namespace FeelModels
-} // namespace vf
 } // namespace Feel
 #endif /* __SOLIDMECINCOMPRESSIBILITY_H */

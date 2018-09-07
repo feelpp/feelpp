@@ -178,13 +178,21 @@ set(ginaclib_public_parser_headers
 install(FILES ${ginaclib_public_parser_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/feelpp/ginac/parser" COMPONENT Devel)
 ## End Feel++ modification
 
+if ( PYTHONINTERP_FOUND )
+  set(GINAC_PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE} )
+else()
+  find_program(GINAC_PYTHON_EXECUTABLE NAMES python)
+  if ( NOT GINAC_PYTHON_EXECUTABLE )
+    message(FATAL_ERROR "[Ginac] not found python executable)")
+  endif()
+endif()
 
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/function.h
-	COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/function.py -o ${CMAKE_CURRENT_BINARY_DIR}/function.h ${CMAKE_CURRENT_SOURCE_DIR}/function.hppy
+	COMMAND ${GINAC_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/function.py -o ${CMAKE_CURRENT_BINARY_DIR}/function.h ${CMAKE_CURRENT_SOURCE_DIR}/function.hppy
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/function.hppy ${CMAKE_CURRENT_SOURCE_DIR}/function.py)
 
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/function.cpp
-	COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/function.py -o ${CMAKE_CURRENT_BINARY_DIR}/function.cpp ${CMAKE_CURRENT_SOURCE_DIR}/function.cppy
+	COMMAND ${GINAC_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/function.py -o ${CMAKE_CURRENT_BINARY_DIR}/function.cpp ${CMAKE_CURRENT_SOURCE_DIR}/function.cppy
 	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/function.h ${CMAKE_CURRENT_SOURCE_DIR}/function.cppy ${CMAKE_CURRENT_SOURCE_DIR}/function.py)

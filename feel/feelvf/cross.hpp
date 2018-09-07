@@ -46,9 +46,6 @@ public:
     static const size_type context = ExprL::context |  ExprR::context;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = ExprL::imorder+ExprR::imorder;
-    static const bool imIsPoly = ExprL::imIsPoly && ExprR::imIsPoly;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -141,6 +138,12 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_left_expr.polynomialOrder() + M_right_expr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_left_expr.isPolynomial() && M_right_expr.isPolynomial(); }
 
     left_expression_type const& left() const
     {

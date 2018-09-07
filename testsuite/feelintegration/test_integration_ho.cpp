@@ -111,7 +111,7 @@ template<typename T, int Dim = 2,int Order = 1>
 struct imesh
 {
     typedef Mesh<Simplex<Dim, Order>, T > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 template<typename T>
@@ -498,14 +498,14 @@ struct test_integration_sin
 
         // int ([-1,1],[-1,x]) 1 dx
         u = vf::project( Xh, elements( mesh ), constant( 1.0 ) );
-        double v3 = integrate( _range=elements( mesh ), _expr=cst( 1.0 ), _quad=_Q<15>(), _geomap=geomap  ).evaluate()( 0, 0 );
-        double v0 = integrate( _range=elements( mesh ), _expr=idv( u ), _quad=_Q<15>(), _geomap=geomap ).evaluate()( 0, 0 );
-        double v2 = integrate( _range=boundaryfaces( mesh ), _expr=idv( u ), _quad=_Q<15>(), _geomap=geomap  ).evaluate()( 0, 0 );
+        double v3 = integrate( _range=elements( mesh ), _expr=cst( 1.0 ), _quad=15, _geomap=geomap  ).evaluate()( 0, 0 );
+        double v0 = integrate( _range=elements( mesh ), _expr=idv( u ), _quad=15, _geomap=geomap ).evaluate()( 0, 0 );
+        double v2 = integrate( _range=boundaryfaces( mesh ), _expr=idv( u ), _quad=15, _geomap=geomap  ).evaluate()( 0, 0 );
         //double v0 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
         std::cout << "int( 1 )=" << v3 << "  (=pi) error= " << math::abs( v3 - M_PI ) << std::endl;
         std::cout << "int( u=1 )=" << v0 << "  (=pi) error= " << math::abs( v0 - M_PI ) << std::endl;
         std::cout << "int(boundary, 1 )=" << v2 << "  (=2*pi) error= " << math::abs( v2 - 2*M_PI ) << std::endl;
-        double v1 = integrate( _range=boundaryfaces( mesh ), _expr=trans( vec( cst( 1. ),cst( 1. ) ) )*N(), _quad=_Q<( Order-1 )*( Order-1 )>()  ).evaluate()( 0, 0 );
+        double v1 = integrate( _range=boundaryfaces( mesh ), _expr=trans( vec( cst( 1. ),cst( 1. ) ) )*N(), _quad=(Order-1 )*( Order-1 )  ).evaluate()( 0, 0 );
         std::cout << "int( 1 .N )=" << v1 << "  (=pi) error= " << math::abs( v1 ) << std::endl;
         BOOST_CHECK_SMALL( v1, 1e-12 );
         //BOOST_CHECK_SMALL( math::abs( v0 - M_PI ), 3*exp(-4*Order));

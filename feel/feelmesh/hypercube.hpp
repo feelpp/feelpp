@@ -61,10 +61,10 @@ class Hypercube  : public Convex<Dim,Order,RDim>, HypercubeBase
     template<uint16_type rdim>
     struct faces_t
     {
-        typedef mpl::vector<boost::none_t,
-                Hypercube<0, Order, rdim>,
-                Hypercube<1, Order, rdim>,
-                Hypercube<2, Order, rdim> > type;
+        typedef mpl::vector<Hypercube<0, Order, rdim>,
+                            Hypercube<0, Order, rdim>,
+                            Hypercube<1, Order, rdim>,
+                            Hypercube<2, Order, rdim> > type;
     };
     typedef mpl::vector<boost::none_t,Hypercube<1, Order,1>, Hypercube<1, Order, 2>, Hypercube<1, Order, 3>, boost::none_t > v_edges_t;
     typedef mpl::vector<Hypercube<1, Order>, Hypercube<2, Order>, Hypercube<3, Order>, Hypercube<4, Order>, boost::none_t > elements_t;
@@ -118,7 +118,7 @@ public:
                              >::type::value;
 
 
-    typedef mpl::vector<boost::none_t, details::line<orderSquare>, details::quad<orderSquare>, details::hexa<orderSquare> > map_entity_to_point_t;
+    typedef mpl::vector<details::point<orderSquare>, details::line<orderSquare>, details::quad<orderSquare>, details::hexa<orderSquare> > map_entity_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type edge_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type face_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type face_to_edge_t;

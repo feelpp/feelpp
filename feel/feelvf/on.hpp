@@ -150,8 +150,8 @@ public:
     static const size_type context = OnExpr::context|vm::POINT;
     static const size_type is_terminal = false;
 
-    static const uint16_type imorder = OnExpr::imorder;
-    static const bool imIsPoly = OnExpr::imIsPoly;
+    //static const uint16_type imorder = OnExpr::imorder;
+    //static const bool imIsPoly = OnExpr::imIsPoly;
 
     using on_type =  typename boost::tuples::template element<0, ElementRange>::type;
     using element_iterator =  typename boost::tuples::template element<1, ElementRange>::type;
@@ -270,8 +270,8 @@ public:
      *
      */
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __u,
-                   boost::shared_ptr<Elem2> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __u,
+                   std::shared_ptr<Elem2> const& __v,
                    FormType& __f ) const
     {
         typedef typename Elem::functionspace_type functionspace_type;
@@ -285,23 +285,23 @@ public:
 private:
 
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& /*__u*/,
-                   boost::shared_ptr<Elem2> const& /*__v*/,
+    void assemble( std::shared_ptr<Elem1> const& /*__u*/,
+                   std::shared_ptr<Elem2> const& /*__v*/,
                    FormType& /*__f*/, mpl::bool_<false>, on_type ) const {}
     
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __u,
-                   boost::shared_ptr<Elem2> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __u,
+                   std::shared_ptr<Elem2> const& __v,
                    FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_FACES> ) const;
 
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __u,
-                   boost::shared_ptr<Elem2> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __u,
+                   std::shared_ptr<Elem2> const& __v,
                    FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_EDGES> ) const;
     
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __u,
-                   boost::shared_ptr<Elem2> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __u,
+                   std::shared_ptr<Elem2> const& __v,
                    FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_POINTS> ) const;
 
 private:
@@ -320,8 +320,8 @@ private:
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
 template<typename Elem1, typename Elem2, typename FormType>
 void
-IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
-                                                                  boost::shared_ptr<Elem2> const& /*__v*/,
+IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_ptr<Elem1> const& /*__u*/,
+                                                                  std::shared_ptr<Elem2> const& /*__v*/,
                                                                   FormType& __form,
                                                                   mpl::bool_<true>,
                                                                   mpl::size_t<MESH_FACES>) const
@@ -351,12 +351,12 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     // geometric mapping context
     typedef typename element_type::functionspace_type::mesh_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef std::shared_ptr<gm_type> gm_ptrtype;
     //typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
     typedef typename mpl::if_< mpl::or_<is_hdiv_conforming<fe_type>, is_hcurl_conforming<fe_type> >,
                                typename gm_type::template Context<context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL, geoelement_type>,
                                typename gm_type::template Context<context, geoelement_type> >::type gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
     static const uint16_type nDim = geoshape_type::nDim;
@@ -366,7 +366,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     // basis
     typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
-    typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
+    typedef std::shared_ptr<fecontext_type> fecontext_ptrtype;
     //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
 
     // expression
@@ -612,8 +612,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
 template<typename Elem1, typename Elem2, typename FormType>
 void
-IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
-                                                                  boost::shared_ptr<Elem2> const& /*__v*/,
+IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_ptr<Elem1> const& /*__u*/,
+                                                                  std::shared_ptr<Elem2> const& /*__v*/,
                                                                   FormType& __form,
                                                                   mpl::bool_<true>,
                                                                   mpl::size_t<MESH_EDGES>) const
@@ -758,8 +758,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
 template<typename Elem1, typename Elem2, typename FormType>
 void
-IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
-                                                                  boost::shared_ptr<Elem2> const& /*__v*/,
+IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_ptr<Elem1> const& /*__u*/,
+                                                                  std::shared_ptr<Elem2> const& /*__v*/,
                                                                   FormType& __form,
                                                                   mpl::bool_<true>,
                                                                   mpl::size_t<MESH_POINTS>) const

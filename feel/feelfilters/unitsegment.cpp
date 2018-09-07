@@ -35,8 +35,10 @@
 
 namespace Feel {
 
-boost::shared_ptr<Mesh<Simplex<1> > >
-unitSegment( double h, std::string prefix, WorldComm const& wc )
+extern template class Mesh<Simplex<1>>;
+
+std::shared_ptr<Mesh<Simplex<1> > >
+unitSegment( double h, std::string prefix, worldcomm_ptr_t const& wc )
 {
     std::ostringstream ofs;
     if ( !prefix.empty() )
@@ -54,7 +56,7 @@ unitSegment( double h, std::string prefix, WorldComm const& wc )
                                         _h=h ) );
 #else
     LOG(WARNING) << "unitSegment: Feel++ was not built with Gmsh. This function will return a empty mesh.";
-    return boost::make_shared<Mesh<Simplex<1> > >();
+    return std::make_shared<Mesh<Simplex<1> > >();
 #endif
 }
 

@@ -74,6 +74,7 @@ extern "C"
 #include <feel/feelcore/utility.hpp>
 #include <feel/feeltiming/tic.hpp>
 #include <feel/options.hpp>
+#include <feel/feelcore/remotedata.hpp>
 
 #define stringize2(x) #x
 #define stringize(x) stringize2(x)
@@ -439,10 +440,9 @@ Environment::Environment( int argc, char** argv,
         M_env = std::make_unique<boost::mpi::environment>(argc, argv, false);
 #endif
     }
-
+    CHECK( M_env->initialized()) << "MPI environment failed to initialize properly.";
     S_argc = argc;
     S_argv = argv;
-    
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
@@ -451,9 +451,9 @@ Environment::Environment( int argc, char** argv,
     cerr.attachWorldComm( S_worldcomm );
     clog.attachWorldComm( S_worldcomm );
 
-    S_desc_app = boost::make_shared<po::options_description>( desc );
-    S_desc_lib = boost::make_shared<po::options_description>( desc_lib );
-    S_desc = boost::make_shared<po::options_description>();
+    S_desc_app = std::make_shared<po::options_description>( desc );
+    S_desc_lib = std::make_shared<po::options_description>( desc_lib );
+    S_desc = std::make_shared<po::options_description>();
     S_desc->add( *S_desc_app );
 
     // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
@@ -1173,11 +1173,11 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 {
     VLOG( 2 ) << " parsing options...\n";
 
-    boost::shared_ptr<po::parsed_options> parsed;
+    std::shared_ptr<po::parsed_options> parsed;
 
     if ( extra_parser )
     {
-        parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
+        parsed = std::shared_ptr<po::parsed_options>( new po::parsed_options( parser
                  .options( *S_desc )
                  .extra_parser( at_option_parser_2 )
                  .allow_unregistered()
@@ -1187,7 +1187,7 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 
     else
     {
-        parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
+        parsed = std::shared_ptr<po::parsed_options>( new po::parsed_options( parser
                  .options( *S_desc )
                  .allow_unregistered()
                  .run() ) );
@@ -1252,114 +1252,103 @@ Environment::doOptions( int argc, char** argv,
     //std::locale::global(std::locale(""));
     try
     {
-        S_commandLineParser = boost::shared_ptr<po::command_line_parser>( new po::command_line_parser( argc, argv ) );
+        S_commandLineParser = std::shared_ptr<po::command_line_parser>( new po::command_line_parser( argc, argv ) );
         parseAndStoreOptions( po::command_line_parser( argc, argv ), true );
         processGenericOptions();
 
         VLOG( 2 ) << "options parsed and stored in database";
 
-        /**
-         * parse config file if given to command line
-         */
-        if ( S_vm.count( "config-file" ) || S_vm.count( "config-files" ) )
+        std::vector<std::string> configFiles;
+
+        if ( S_vm.count( "case" ) )
         {
-            if ( S_vm.count( "config-files" ) )
+            std::vector<std::string> cfgsInCaseDir;
+            std::string caseDir = S_vm["case"].as<std::string>();
+            RemoteData rdTool( caseDir, worldCommPtr());
+            if ( rdTool.canDownload() )
             {
-                std::vector<std::string> configFiles = S_vm["config-files"].as<std::vector<std::string> >();
-                // reverse order (priorty for the last)
-                std::reverse(configFiles.begin(),configFiles.end());
-                for ( std::string const& cfgfile : configFiles )
+                auto downloadedFolder = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cases")).string() );
+                CHECK( downloadedFolder.size() == 1 ) << "download only one folder";
+                caseDir = downloadedFolder[0];
+            }
+
+            fs::path fscaseDir( caseDir );
+            CHECK( fs::is_directory( fscaseDir ) ) << "case must be a directory";
+            std::string dirName = fscaseDir.filename().string();
+            if ( Feel::filename_is_dot( fscaseDir.filename() ) )
+                dirName = fscaseDir.parent_path().filename().string();
+            std::string caseConfigFile = dirName + ".cfg";
+            if ( S_vm.count( "case.config-file" ) )
+                caseConfigFile = fs::path(S_vm["case.config-file"].as<std::string>()).filename().string();
+
+            fs::directory_iterator end_itr;
+            for ( fs::directory_iterator itr( fscaseDir ); itr != end_itr; ++itr )
+            {
+                if ( fs::is_regular_file( itr->path() ) && ( itr->path().extension() == ".cfg" ) )
                 {
-                    if ( !fs::exists( cfgfile ) ) continue;
-                    fs::path cfgAbsolutePath = fs::absolute( cfgfile );
-                    cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
-                    // LOG( INFO ) << "Reading " << cfgfile << "...";
-                    S_cfgdir = cfgAbsolutePath.parent_path();
-                    std::ifstream ifs( cfgAbsolutePath.string().c_str() );
-                    std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
-                    po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
-                    S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(), std::forward<std::istringstream>( iss ) ) );
+                    cfgsInCaseDir.push_back( itr->path().string() );
                 }
             }
-
-            if ( S_vm.count( "config-file" ) && fs::exists(  S_vm["config-file"].as<std::string>() ) )
+            if ( cfgsInCaseDir.size() == 1 )
+                configFiles.push_back( cfgsInCaseDir.front() );
+            else
             {
-                std::string cfgfile = S_vm["config-file"].as<std::string>();
-                fs::path cfgAbsolutePath = fs::absolute( cfgfile );
-                cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
-                // LOG( INFO ) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
-                S_cfgdir = cfgAbsolutePath.parent_path();
-                //std::ifstream ifs( cfgAbsolutePath.string().c_str() );
-                std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
-                po::store( parse_config_file( iss, *S_desc, true ), S_vm );
-                S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(),std::forward<std::istringstream>( iss ) ) );
-            }
-
-            po::notify( S_vm );
-        }
-
-        else
-        {
-            using namespace boost::assign;
-            std::vector<fs::path> prefixes = S_paths;
-#if 0
-            prefixes += boost::assign::list_of( fs::current_path() )
-                        ( fs::path ( Environment::localConfigRepository() ) )
-                        ( fs::path ( Environment::systemConfigRepository().get<0>() ) )
-                        ( fs::path ( "/usr/share/feel/config" ) )
-                        ( fs::path ( "/usr/local/share/feel/config" ) )
-                        ( fs::path ( "/opt/local/share/feel/config" ) );
-#endif
-            char* env;
-            env = getenv( "FEELPP_DIR" );
-
-            if ( env != NULL && env[0] != '\0' )
-            {
-                prefixes.push_back( fs::path( env ) );
-            }
-
-            VLOG( 2 ) << "try processing cfg files...\n";
-            std::string config_name;
-            bool found = false;
-            for( auto const& prefix: prefixes )
-            {
-                config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
-                VLOG( 2 ) << " Looking for " << config_name << "\n";
-
-                if ( fs::exists( config_name ) )
+                for ( std::string const& cfgFile : cfgsInCaseDir )
                 {
-                    found = true;
-                    break;
-                }
-
-                else
-                {
-                    // try with a prefix feel_
-                    config_name = ( boost::format( "%1%/feelpp_%2%.cfg" ) % prefix.string() % appName ).str();
-                    VLOG( 2 ) << " Looking for " << config_name << "\n";
-
-                    if ( fs::exists( config_name ) )
+                    if ( fs::path( cfgFile ).filename().string() == caseConfigFile )
                     {
-                        found = true;
+                        configFiles.push_back( cfgFile );
                         break;
                     }
                 }
             }
-
-            if ( found )
+        }
+         // parse config file if given to command line
+        if ( S_vm.count( "config-file" ) || S_vm.count( "config-files" ) )
+        {
+            std::vector<std::string> configFilesFromCmd;
+            if ( S_vm.count( "config-file" ) )
+                configFilesFromCmd.push_back( S_vm["config-file"].as<std::string>() );
+            if ( S_vm.count( "config-files" ) )
             {
-                LOG( INFO ) << "Reading  " << config_name << "...\n";
-                S_cfgdir = fs::absolute( config_name ).parent_path();
-                fs::path cfgAbsolutePath = fs::absolute( config_name );
-                //std::ifstream ifs( cfgAbsolutePath.string().c_str() );
-                std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
-                store( parse_config_file( iss, *S_desc, true ), S_vm );
-                LOG( INFO ) << "Reading  " << config_name << " done.\n";
-                //po::store(po::parse_command_line(argc, argv, desc), S_vm);
-                po::notify( S_vm );
-                S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(), std::forward<std::istringstream>( iss ) ) );
+                std::vector<std::string> configFilesOptVec = S_vm["config-files"].as<std::vector<std::string> >();
+                configFilesFromCmd.insert( configFilesFromCmd.end(), configFilesOptVec.begin(), configFilesOptVec.end() );
+            }
+            for ( std::string const& cfgFile : configFilesFromCmd )
+            {
+                RemoteData rdTool( cfgFile, worldCommPtr());
+                if ( rdTool.canDownload() )
+                {
+                    auto dowloadedData = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cfgs")).string() );
+                    for ( std::string const& data : dowloadedData )
+                        configFiles.push_back( data );
+                }
+                else
+                    configFiles.push_back( cfgFile );
             }
         }
+#if 0
+        std::cout << "CONFIG-FILES\n";
+        for ( std::string const& cfgFile : configFiles )
+            std::cout << cfgFile << "\n";
+#endif
+        // reverse order (priorty for the last)
+        std::reverse(configFiles.begin(),configFiles.end());
+        for ( std::string const& cfgfile : configFiles )
+        {
+            if ( !fs::exists( cfgfile ) ) continue;
+            fs::path cfgAbsolutePath = fs::absolute( cfgfile );
+            cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
+            // LOG( INFO ) << "Reading " << cfgfile << "...";
+            S_cfgdir = cfgAbsolutePath.parent_path();
+            std::ifstream ifs( cfgAbsolutePath.string().c_str() );
+            std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
+            po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
+            S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(), std::forward<std::istringstream>( iss ) ) );
+        }
+
+        po::notify( S_vm );
+
 
 
         /* handle the generation of onelab files after having processed */
@@ -1410,6 +1399,13 @@ Environment::doOptions( int argc, char** argv,
         } );
         LOG( WARNING ) << "\n"
                        << "Warning: the .cfg file or some options may not have been read properly\n";
+    }
+
+    catch ( pt::ptree_error & e )
+    {
+        LOG(ERROR) << "Error parsing the JSON file. Please check the JSON for syntax errors, missing commas..." << std::endl;
+        LOG(ERROR) << "We suggest using 'yamllint' or 'jsonlint' available in docker or singularity images to check json files." << std::endl;
+        throw;
     }
 
     // catches program_options exceptions
@@ -1626,34 +1622,38 @@ Environment::appRepository()
     return S_appdir.string();
 }
 std::string
+Environment::appRepositoryWithoutNumProc()
+{
+    return S_appdirWithoutNumProc.string();
+}
+std::string
 Environment::exprRepository()
 {
-    fs::path rep_path( S_appdir );
+    fs::path rep_path( S_appdirWithoutNumProc );
 
     std::string exprdir = "exprs";
     if ( S_vm.count( "subdir.expr" ) )
         exprdir = S_vm["subdir.expr"].as<std::string>();
     rep_path /= exprdir;
 
-    if ( !fs::exists( rep_path ) )
-        fs::create_directory( rep_path );
-
     return rep_path.string();
 }
 std::string
 Environment::logsRepository()
 {
-    if ( !fs::exists( S_appdir / "logs" ) )
-        fs::create_directory( S_appdir / "logs" );
     return (S_appdir / "logs").string();
 }
 
 std::string
 Environment::exportsRepository()
 {
-    if ( !fs::exists( S_appdir / "exports" ) )
-        fs::create_directory( S_appdir / "exports" );
     return (S_appdir / "exports").string();
+}
+
+std::string
+Environment::downloadsRepository()
+{
+    return (S_appdirWithoutNumProc / "downloads").string();
 }
 
 uuids::uuid
@@ -1705,7 +1705,7 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         }
     }
 
-    BOOST_FOREACH( std::string const& dir, dirs )
+    for ( std::string const& dir : dirs )
     {
         if ( !dir.empty() )
         {
@@ -1717,6 +1717,8 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         }
     }
 
+    S_appdirWithoutNumProc = rep_path;
+
     if ( add_subdir_np )
     {
         rep_path = rep_path / ( boost::format( "np_%1%" ) % Environment::numberOfProcessors() ).str();
@@ -1727,11 +1729,14 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         //LOG( INFO ) << "changing directory to " << rep_path << "\n";
     }
 
+    S_appdir = rep_path;
+
+    if ( worldcomm.isMasterRank() && !fs::exists( Environment::logsRepository() ) )
+        fs::create_directory( Environment::logsRepository() );
+
     // wait all process in order to be sure that the dir has been created by master process
     worldcomm.barrier();
 
-    S_appdir = rep_path;
-    
     // we change directory for now but that may change in the future
     ::chdir( S_appdir.string().c_str() );
 
@@ -1739,7 +1744,6 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
     cout << tc::red
          << " . " << Environment::about().appName() << " files are stored in " << tc::red << Environment::appRepository()
          << tc::reset << std::endl;
-    cout << " .. exports :"  << Environment::exportsRepository() << std::endl;
     cout << " .. logfiles :" << Environment::logsRepository() << std::endl;
 
     Environment::generateSummary( Environment::about().appName(), "start", true ); 
@@ -1770,7 +1774,6 @@ Environment::generateSummary( std::string fname, std::string stage, bool write )
     std::string today = to_simple_string(todayUtc);
     
     S_summary.put("application.date."s+stage,today);
-    S_summary.put("application.directories.exports",Environment::exportsRepository());
     S_summary.put("application.directories.logs",Environment::logsRepository());
     S_summary.put("application.directories.exprs",Environment::exprRepository());
 
@@ -1862,21 +1865,21 @@ Environment::stopLogging( bool remove )
     }
 }
 
-std::vector<WorldComm> const&
+worldscomm_ptr_t &
 Environment::worldsComm( int n )
 {
     CHECK( S_worldcomm ) << "Environment: worldcomm not allocated\n";
     return S_worldcomm->subWorlds( n );
 }
 
-std::vector<WorldComm> const&
+worldscomm_ptr_t &
 Environment::worldsCommSeq( int n )
 {
     CHECK( S_worldcommSeq ) << "Environment: worldcomm not allocated\n";
     return S_worldcommSeq->subWorlds( n );
 }
 
-std::vector<WorldComm> const&
+worldscomm_ptr_t &
 Environment::worldsCommGroupBySubspace( int n )
 {
 #if 0
@@ -1890,7 +1893,7 @@ Environment::worldsCommGroupBySubspace( int n )
 }
 
 
-WorldComm const&
+worldcomm_t &
 Environment::masterWorldComm( int n )
 {
     return S_worldcomm->masterWorld( n );
@@ -2310,18 +2313,18 @@ char** Environment::S_argv = 0;
 
 AboutData Environment::S_about;
 pt::ptree Environment::S_summary;
-boost::shared_ptr<po::command_line_parser> Environment::S_commandLineParser;
+std::shared_ptr<po::command_line_parser> Environment::S_commandLineParser;
 std::vector<std::tuple<std::string,std::istringstream> > Environment::S_configFiles;
 po::variables_map Environment::S_vm;
-boost::shared_ptr<po::options_description> Environment::S_desc;
-boost::shared_ptr<po::options_description> Environment::S_desc_app;
-boost::shared_ptr<po::options_description> Environment::S_desc_lib;
+std::shared_ptr<po::options_description> Environment::S_desc;
+std::shared_ptr<po::options_description> Environment::S_desc_app;
+std::shared_ptr<po::options_description> Environment::S_desc_lib;
 std::vector<std::string> Environment::S_to_pass_further;
 
 boost::signals2::signal<void()> Environment::S_deleteObservers;
 
-boost::shared_ptr<WorldComm> Environment::S_worldcomm;
-boost::shared_ptr<WorldComm> Environment::S_worldcommSeq;
+std::shared_ptr<WorldComm> Environment::S_worldcomm;
+std::shared_ptr<WorldComm> Environment::S_worldcommSeq;
 boost::uuids::random_generator Environment::S_generator;
 
 std::vector<fs::path> Environment::S_paths = { fs::current_path(),
@@ -2329,6 +2332,7 @@ std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemGeoRepository().get<0>()
                                              };
 fs::path Environment::S_appdir = fs::current_path();
+fs::path Environment::S_appdirWithoutNumProc;
 fs::path Environment::S_scratchdir;
 fs::path Environment::S_cfgdir;
 

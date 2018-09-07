@@ -157,7 +157,7 @@ public:
     using self_type = DofTable<MeshType, FEType, PeriodicityType, MortarType>;
     using doftable_type = self_type;
 
-    typedef boost::shared_ptr<FEType> fe_ptrtype;
+    typedef std::shared_ptr<FEType> fe_ptrtype;
     typedef MortarType mortar_type;
     static const bool is_mortar = mortar_type::is_mortar;
     typedef typename fe_type::SSpace::type mortar_fe_type;
@@ -334,6 +334,11 @@ public:
     typedef boost::tuple<size_type /*element id*/, uint16_type /*lid*/, uint16_type /*c*/, size_type /*gDof*/, uint16_type /*type*/> periodic_dof_type;
     typedef std::multimap<size_type /*gid*/, periodic_dof_type> periodic_dof_map_type;
 
+    //typedef typename std::vector<localglobal_indices_type,Eigen::aligned_allocator<localglobal_indices_type> > vector_indices_type;
+    using vector_indices_type = std::unordered_map<size_type,localglobal_indices_type,
+                                        std::hash<size_type>,std::equal_to<size_type>,
+                                        Eigen::aligned_allocator<std::pair<const size_type,localglobal_indices_type > > >;
+    
     DofTable( WorldComm const& _worldComm )
         :
         super( _worldComm )
@@ -1027,7 +1032,7 @@ public:
     /**
      * build the dof map
      */
-    void build( boost::shared_ptr<mesh_type>& M )
+    void build( std::shared_ptr<mesh_type>& M )
         {
             this->build( *M );
         }
@@ -1549,13 +1554,7 @@ private:
 
     /// a view of the dof container
     //dof_container_type M_dof_view;
-
-    //typedef typename std::vector<localglobal_indices_type,Eigen::aligned_allocator<localglobal_indices_type> > vector_indices_type;
-    typedef typename std::unordered_map<size_type,localglobal_indices_type,
-                                        std::hash<size_type>,std::equal_to<size_type>,
-                                        Eigen::aligned_allocator<std::pair<const size_type,localglobal_indices_type > > > vector_indices_type;
-
-
+    
     vector_indices_type M_locglob_indices;
     vector_indices_type M_locglob_signs;
     localglobal_indices_type M_locglob_nosigns;
@@ -2694,7 +2693,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
 
     DVLOG(2) << "[Dof::generateDofPoints] mortar case, generating dof coordinates\n";
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
-    typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
+    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
     typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
     typedef typename fe_type::template Context<vm::POINT, mortar_fe_type, gm_type, element_type> mfecontext_type;
@@ -2848,7 +2847,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
-    typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
+    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
 #if 0
     auto rangeElements = M.elementsWithProcessId( M.worldComm().localRank() );
@@ -2963,7 +2962,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoin
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
-    typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
+    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
     typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
 

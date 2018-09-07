@@ -94,7 +94,7 @@ public:
 
     MatrixEigenDense();
 
-    MatrixEigenDense( size_type r, size_type c, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixEigenDense( size_type r, size_type c, worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
     MatrixEigenDense( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
 
@@ -350,7 +350,7 @@ public:
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix( value_type v, MatrixSparse<value_type> const& _m );
+    void addMatrix( value_type v, MatrixSparse<value_type> const& _m, Feel::MatrixStructure matStruc = Feel::SAME_NONZERO_PATTERN );
 
 
     /**
@@ -432,7 +432,7 @@ public:
      */
     void sqrt( MatrixSparse<value_type>& _m ) const;
 
-    boost::shared_ptr<MatrixEigenDense<T>> sqrt() const;
+    std::shared_ptr<MatrixEigenDense<T>> sqrt() const;
 
     /**
      * Compute the eigenvalues of the current Sparse matrix,
@@ -466,7 +466,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
+    void updateBlockMat( std::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
 
 
     //@}

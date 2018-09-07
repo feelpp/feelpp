@@ -1,4 +1,4 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+###  CMakeLists.txt; coding: utf-8 ---
 
 #  Author(s):<christophe.prudhomme@feelpp.org>
 #       Date: 06 Feb 2015
@@ -38,7 +38,7 @@ enable_testing()
 if ( NOT TARGET check )
   add_custom_target(check)
 endif()
- 
+
 if ( NOT TARGET quickstart )
   add_custom_target(quickstart)
 endif()
@@ -82,9 +82,13 @@ add_dependencies(check ${QS_STOKES_2D} ${QS_STOKES_3D})
 #
 # Linear elasticity
 #
-feelpp_add_application( elasticity_2d SRCS qs_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ELASTICITY_2D INSTALL )
+feelpp_add_application( elasticity_2d SRCS qs_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ELASTICITY_2D INSTALL TESTS )
+feelpp_add_application( elasticity_pure_traction_2d SRCS qs_elasticity_pure_traction.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ELASTICITY_PURE_TRACTION_2D INSTALL )
 feelpp_add_application( elasticity_3d SRCS qs_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_ELASTICITY_3D INSTALL )
-
+feelpp_add_application( elasticity_pure_traction_3d SRCS qs_elasticity_pure_traction.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_ELASTICITY_PURE_TRACTION_3D INSTALL  )
+feelpp_add_testcase( elasticity PREFIX qs CATEGORY quickstart )
+add_dependencies(quickstart ${QS_ELASTICITY_2D} ${QS_ELASTICITY_3D})
+add_dependencies(check ${QS_ELASTICITY_2D} ${QS_ELASTICITY_3D})
 
 add_custom_target(install-quickstart
   DEPENDS
@@ -101,4 +105,3 @@ if ( NOT TARGET install-feelpp-base )
   else()
   add_dependencies(install-feelpp-base install-quickstart)
 endif()
-

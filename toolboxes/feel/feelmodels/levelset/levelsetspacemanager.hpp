@@ -54,7 +54,7 @@ public:
     static const uint16_type nOrderGeo = convex_type::nOrder;
     static const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
 
@@ -63,23 +63,29 @@ public:
     typedef PeriodicityType periodicity_type;
 
     //--------------------------------------------------------------------//
+    // Worldcomm
+    using worldcomm_type = WorldComm;
+    using worldcomm_ptrtype = std::shared_ptr<WorldComm>;
+    using worldscomm_ptrtype = std::vector<std::shared_ptr<WorldComm>>;
+
+    //--------------------------------------------------------------------//
     // Default scalar and vectorial spaces
     typedef BasisType basis_scalar_type;
     //typedef FunctionSpace< mesh_type, bases<basis_scalar_type>, Periodicity<periodicity_type> > space_scalar_type;
-    //typedef boost::shared_ptr<space_scalar_type> space_scalar_ptrtype;
+    //typedef std::shared_ptr<space_scalar_type> space_scalar_ptrtype;
     //typedef typename space_scalar_type::element_type element_scalar_type;
-    //typedef boost::shared_ptr<element_scalar_type> element_scalar_ptrtype;
+    //typedef std::shared_ptr<element_scalar_type> element_scalar_ptrtype;
 
     typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_type>::type basis_vectorial_type;
     typedef FunctionSpace<mesh_type, bases<basis_vectorial_type>, Periodicity<periodicity_type> > space_vectorial_type;
-    typedef boost::shared_ptr<space_vectorial_type> space_vectorial_ptrtype;
+    typedef std::shared_ptr<space_vectorial_type> space_vectorial_ptrtype;
     typedef typename space_vectorial_type::element_type element_vectorial_type;
-    typedef boost::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
+    typedef std::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
 
     typedef typename space_vectorial_type::component_functionspace_type space_scalar_type;
-    typedef boost::shared_ptr<space_scalar_type> space_scalar_ptrtype;
+    typedef std::shared_ptr<space_scalar_type> space_scalar_ptrtype;
     typedef typename space_scalar_type::element_type element_scalar_type;
-    typedef boost::shared_ptr<element_scalar_type> element_scalar_ptrtype;
+    typedef std::shared_ptr<element_scalar_type> element_scalar_ptrtype;
 
     typedef typename space_scalar_type::value_type value_type;
 
@@ -87,39 +93,39 @@ public:
     // PN (iso) spaces
     typedef BasisPnType basis_scalar_PN_type;
     typedef FunctionSpace< mesh_type, bases<basis_scalar_PN_type>, Periodicity<periodicity_type> > space_scalar_PN_type;
-    typedef boost::shared_ptr<space_scalar_PN_type> space_scalar_PN_ptrtype;
+    typedef std::shared_ptr<space_scalar_PN_type> space_scalar_PN_ptrtype;
     typedef typename space_scalar_PN_type::element_type element_scalar_PN_type;
-    typedef boost::shared_ptr<element_scalar_PN_type> element_scalar_PN_ptrtype;
+    typedef std::shared_ptr<element_scalar_PN_type> element_scalar_PN_ptrtype;
 
     typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_PN_type>::type basis_vectorial_PN_type;
     typedef FunctionSpace<mesh_type, bases<basis_vectorial_PN_type>, Periodicity<periodicity_type> > space_vectorial_PN_type;
-    typedef boost::shared_ptr<space_vectorial_PN_type> space_vectorial_PN_ptrtype;
+    typedef std::shared_ptr<space_vectorial_PN_type> space_vectorial_PN_ptrtype;
     typedef typename space_vectorial_PN_type::element_type element_vectorial_PN_type;
-    typedef boost::shared_ptr<element_vectorial_PN_type> element_vectorial_PN_ptrtype;
+    typedef std::shared_ptr<element_vectorial_PN_type> element_vectorial_PN_ptrtype;
 
     //--------------------------------------------------------------------//
     // High-order visu spaces
     typedef Lagrange<1, Scalar, Continuous, PointSetFekete> basis_scalar_hovisu_type;
     typedef FunctionSpace< mesh_type, bases<basis_scalar_hovisu_type> > space_scalar_hovisu_type;
-    typedef boost::shared_ptr<space_scalar_hovisu_type> space_scalar_hovisu_ptrtype;
+    typedef std::shared_ptr<space_scalar_hovisu_type> space_scalar_hovisu_ptrtype;
     typedef typename space_scalar_hovisu_type::element_type element_scalar_hovisu_type;
-    typedef boost::shared_ptr<element_scalar_hovisu_type> element_scalar_hovisu_ptrtype;
+    typedef std::shared_ptr<element_scalar_hovisu_type> element_scalar_hovisu_ptrtype;
 
     typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_hovisu_type>::type basis_vectorial_hovisu_type;
     typedef FunctionSpace<mesh_type, bases<basis_vectorial_hovisu_type> > space_vectorial_hovisu_type;
-    typedef boost::shared_ptr<space_vectorial_hovisu_type> space_vectorial_hovisu_ptrtype;
+    typedef std::shared_ptr<space_vectorial_hovisu_type> space_vectorial_hovisu_ptrtype;
     typedef typename space_vectorial_hovisu_type::element_type element_vectorial_hovisu_type;
-    typedef boost::shared_ptr<element_vectorial_hovisu_type> element_vectorial_hovisu_ptrtype;
+    typedef std::shared_ptr<element_vectorial_hovisu_type> element_vectorial_hovisu_ptrtype;
 
     //--------------------------------------------------------------------//
     // Lagrange P1isoPn operators
     typedef OperatorLagrangeP1<space_scalar_PN_type> op_lagrangeP1_type;
-    typedef boost::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
+    typedef std::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
 
     //--------------------------------------------------------------------//
     // Lagrange P1hovisu operators
     typedef OperatorLagrangeP1<space_scalar_hovisu_type> op_lagrangeP1_hovisu_type;
-    typedef boost::shared_ptr<op_lagrangeP1_hovisu_type> op_lagrangeP1_hovisu_ptrtype;
+    typedef std::shared_ptr<op_lagrangeP1_hovisu_type> op_lagrangeP1_hovisu_ptrtype;
 
     //--------------------------------------------------------------------//
     // isoPN interpolation operators
@@ -127,23 +133,23 @@ public:
         space_scalar_type, // from space
         space_scalar_PN_type // to space
         > op_interpolation_scalar_to_PN_type;
-    typedef boost::shared_ptr<op_interpolation_scalar_to_PN_type> op_interpolation_scalar_to_PN_ptrtype;
+    typedef std::shared_ptr<op_interpolation_scalar_to_PN_type> op_interpolation_scalar_to_PN_ptrtype;
     typedef OperatorInterpolation<
         space_scalar_PN_type, // from space
         space_scalar_type // to space
         > op_interpolation_scalar_from_PN_type;
-    typedef boost::shared_ptr<op_interpolation_scalar_from_PN_type> op_interpolation_scalar_from_PN_ptrtype;
+    typedef std::shared_ptr<op_interpolation_scalar_from_PN_type> op_interpolation_scalar_from_PN_ptrtype;
 
     typedef OperatorInterpolation<
         space_vectorial_type, // from space
         space_vectorial_PN_type // to space
         > op_interpolation_vectorial_to_PN_type;
-    typedef boost::shared_ptr<op_interpolation_vectorial_to_PN_type> op_interpolation_vectorial_to_PN_ptrtype;
+    typedef std::shared_ptr<op_interpolation_vectorial_to_PN_type> op_interpolation_vectorial_to_PN_ptrtype;
     typedef OperatorInterpolation<
         space_vectorial_PN_type, // from space
         space_vectorial_type // to space
         > op_interpolation_vectorial_from_PN_type;
-    typedef boost::shared_ptr<op_interpolation_vectorial_from_PN_type> op_interpolation_vectorial_from_PN_ptrtype;
+    typedef std::shared_ptr<op_interpolation_vectorial_from_PN_type> op_interpolation_vectorial_from_PN_ptrtype;
 
     //--------------------------------------------------------------------//
     // Hovisu interpolation operators
@@ -151,30 +157,30 @@ public:
         space_scalar_type, // from space
         space_scalar_hovisu_type // to space
         > op_interpolation_scalar_to_hovisu_type;
-    typedef boost::shared_ptr<op_interpolation_scalar_to_hovisu_type> op_interpolation_scalar_to_hovisu_ptrtype;
+    typedef std::shared_ptr<op_interpolation_scalar_to_hovisu_type> op_interpolation_scalar_to_hovisu_ptrtype;
 
     typedef OperatorInterpolation<
         space_vectorial_type, // from space
         space_vectorial_hovisu_type // to space
         > op_interpolation_vectorial_to_hovisu_type;
-    typedef boost::shared_ptr<op_interpolation_vectorial_to_hovisu_type> op_interpolation_vectorial_to_hovisu_ptrtype;
+    typedef std::shared_ptr<op_interpolation_vectorial_to_hovisu_type> op_interpolation_vectorial_to_hovisu_ptrtype;
 
     //--------------------------------------------------------------------//
     // Space markers P0
     typedef Lagrange<0, Scalar, Discontinuous> basis_markers_type;
     typedef FunctionSpace<mesh_type, bases<basis_markers_type>, value_type, Periodicity<NoPeriodicity> > space_markers_type;
-    typedef boost::shared_ptr<space_markers_type> space_markers_ptrtype;
+    typedef std::shared_ptr<space_markers_type> space_markers_ptrtype;
     typedef typename space_markers_type::element_type element_markers_type;
-    typedef boost::shared_ptr<element_markers_type> element_markers_ptrtype;
+    typedef std::shared_ptr<element_markers_type> element_markers_ptrtype;
 
     //--------------------------------------------------------------------//
     // Tensor2 symmetric function space
     //typedef Lagrange<Order, Tensor2Symm> basis_tensor2symm_type;
     typedef typename detail::ChangeBasisPolySet<Tensor2Symm, basis_scalar_type>::type basis_tensor2symm_type;
     typedef FunctionSpace<mesh_type, bases<basis_tensor2symm_type>, Periodicity<periodicity_type> > space_tensor2symm_type;
-    typedef boost::shared_ptr<space_tensor2symm_type> space_tensor2symm_ptrtype;
+    typedef std::shared_ptr<space_tensor2symm_type> space_tensor2symm_ptrtype;
     typedef typename space_tensor2symm_type::element_type element_tensor2symm_type;
-    typedef boost::shared_ptr<element_tensor2symm_type> element_tensor2symm_ptrtype;
+    typedef std::shared_ptr<element_tensor2symm_type> element_tensor2symm_ptrtype;
 
 public:
     LevelSetSpaceManager( 
@@ -230,7 +236,7 @@ public:
     op_interpolation_vectorial_to_hovisu_ptrtype const& opInterpolationVectorialToHovisu() const { return M_opInterpolationVectorialToHovisu; }
 
 private:
-    std::vector<WorldComm> const& worldsComm() const { return M_worldsComm; }
+    worldscomm_ptrtype const& worldsComm() const { return M_worldsComm; }
 
 private:
     std::string M_prefix;
@@ -247,7 +253,7 @@ private:
     range_elements_type M_rangeMeshHovisuElements;
     //--------------------------------------------------------------------//
     // WorldsComm
-    std::vector<WorldComm> M_worldsComm;
+    worldscomm_ptrtype M_worldsComm;
     // Extended doftable
     bool M_buildExtendedDofTable;
     // Periodicity
@@ -300,7 +306,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::LevelSetSpaceManager(
     M_prefix( prefix ),
     M_rootRepository( rootRepository ),
     M_mesh( mesh ),
-    M_worldsComm( std::vector<WorldComm>(1,mesh->worldComm()) ),
+    M_worldsComm( worldscomm_ptrtype(1,mesh->worldCommPtr()) ),
     M_buildExtendedDofTable( false ),
     M_functionSpaceCreated( false )
 {

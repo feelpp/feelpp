@@ -96,9 +96,9 @@ class Newmark : public TSBase
     typedef TSBase super;
 public:
     typedef Newmark<SpaceType> newmark_type;
-    typedef boost::shared_ptr<newmark_type> newmark_ptrtype;
+    typedef std::shared_ptr<newmark_type> newmark_ptrtype;
     typedef SpaceType space_type;
-    typedef boost::shared_ptr<space_type>  space_ptrtype;
+    typedef std::shared_ptr<space_type>  space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef typename space_type::element_ptrtype element_ptrtype;
     typedef typename space_type::return_type return_type;
@@ -528,11 +528,16 @@ Newmark<SpaceType>::saveCurrent()
 {
     if (!this->saveInFile()) return;
 
-    //int iterTranslate = M_iteration;// + 1;
-    //bool doSave= iterTranslate % this->saveFreq()==0;
-    //if ( !doSaveIteration(i) ) return;
-    if ( this->iteration() % this->saveFreq()>0 ) return;
-    //if (!doSave) return;
+    bool doSave=false;
+    int sizePreviousDisp = M_previousUnknown.size();
+    for ( uint8_type i = 0; i < sizePreviousDisp && !doSave; ++i )
+    {
+        int iterTranslate = this->iteration() + sizePreviousDisp-(i+1);
+        if ( (iterTranslate % this->saveFreq()) == 0 )
+            doSave=true;
+    }
+
+    if (!doSave) return;
 
     TSBaseMetadata tssaver( *this );
     tssaver.save();
@@ -761,10 +766,10 @@ Newmark<SpaceType>::updateFromDisp( typename space_type::template Element<value_
 
 
 BOOST_PARAMETER_FUNCTION(
-    ( boost::shared_ptr<Newmark<typename meta::remove_all<typename parameter::binding<Args, tag::space>::type>::type::element_type> > ),
+    ( std::shared_ptr<Newmark<typename meta::remove_all<typename parameter::binding<Args, tag::space>::type>::type::element_type> > ),
     newmark, tag,
     ( required
-      ( space,*( boost::is_convertible<mpl::_,boost::shared_ptr<Feel::FunctionSpaceBase> > ) ) )
+      ( space,*( boost::is_convertible<mpl::_,std::shared_ptr<Feel::FunctionSpaceBase> > ) ) )
     ( optional
       ( prefix,*,"" )
       ( name,*,"newmark" )
@@ -783,7 +788,7 @@ BOOST_PARAMETER_FUNCTION(
     ) )
 {
     typedef typename meta::remove_all<space_type>::type::element_type _space_type;
-    auto thenewmark = boost::shared_ptr<Newmark<_space_type> >( new Newmark<_space_type>( space,name,prefix ) );
+    auto thenewmark = std::shared_ptr<Newmark<_space_type> >( new Newmark<_space_type>( space,name,prefix ) );
     thenewmark->setTimeInitial( initial_time );
     thenewmark->setTimeFinal( final_time );
     thenewmark->setTimeStep( time_step );

@@ -1,7 +1,10 @@
 {
     "Name": "Drop3d",
     "ShortName": "Drop3d",
-    "Model": "Advection",
+    "Models":
+    {
+        "equations":"Advection"
+    },
 
     "Parameters":
     {

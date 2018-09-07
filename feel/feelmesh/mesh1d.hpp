@@ -39,10 +39,6 @@
 
 #include <boost/foreach.hpp>
 #include <boost/multi_array.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index_container.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -128,7 +124,7 @@ class Mesh1D
 
     typedef Mesh1D<Shape,T> self_type;
 
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     typedef typename element_type::vertex_permutation_type vertex_permutation_type;
     typedef typename element_type::edge_permutation_type edge_permutation_type;
@@ -144,7 +140,7 @@ class Mesh1D
     /**
      * default constructor
      */
-    Mesh1D( WorldComm const& worldComm = Environment::worldComm() )
+    explicit Mesh1D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         : super_visitable(),
           super( 1, nRealDim, worldComm ),
           super_elements( worldComm ),
@@ -196,7 +192,7 @@ class Mesh1D
     /**
      * \return \p true if all containers are empty, \p false otherwise
      */
-    bool isEmpty() const
+    bool isEmpty() const override
     {
         return ( super_elements::isEmpty() &&
                  super_points::isEmpty() &&
@@ -207,7 +203,7 @@ class Mesh1D
     //! @brief get the number of elements in the mesh
     //! @return the number of elements in the mesh
     //!
-    size_type numElements() const
+    size_type numElements() const override
     {
         return this->elements().size();
     }
@@ -240,7 +236,7 @@ class Mesh1D
     /**
      * \return the number of faces
      */
-    size_type numFaces() const
+    size_type numFaces() const override
     {
         return this->faces().size();
     }
@@ -252,7 +248,7 @@ class Mesh1D
     /**
      * \return the number of points
      */
-    size_type numPoints() const
+    size_type numPoints() const override
     {
         return this->points().size();
     }
@@ -269,9 +265,9 @@ class Mesh1D
      */
     //@{
 
-    virtual void setWorldComm( WorldComm const& _worldComm )
+    virtual void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
     {
-        this->setWorldCommMeshBase( _worldComm );
+        MeshBase::setWorldComm( _worldComm );
         this->setWorldCommElements( _worldComm );
         this->setWorldCommFaces( _worldComm );
         this->setWorldCommPoints( _worldComm );
@@ -281,7 +277,7 @@ class Mesh1D
      * clear out all data from the mesh, \p isEmpty() should return
      * \p true after a \p clear()
      */
-    virtual void clear()
+    virtual void clear() override
         {
             super_elements::clear();
             super_points::clear();
@@ -297,7 +293,7 @@ class Mesh1D
      * dummy  implementation
      * \see Mesh
      */
-    void renumber()
+    void renumber() override
     {
         FEELPP_ASSERT( 0 )
             .error( "invalid call" );
@@ -306,7 +302,7 @@ class Mesh1D
     /**
      * update permutation of entities of co-dimension 1
      */
-    void updateEntitiesCoDimensionOnePermutation()
+    void updateEntitiesCoDimensionOnePermutation() 
     {
         // no-op
     }
@@ -314,7 +310,7 @@ class Mesh1D
     /**
      * update the entities of co-dimension 2
      */
-    void updateEntitiesCoDimensionTwo()
+    void updateEntitiesCoDimensionTwo() override
     {
         // no-op
     }

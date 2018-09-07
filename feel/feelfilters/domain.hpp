@@ -67,7 +67,7 @@ BOOST_PARAMETER_FUNCTION(
       )
     ( optional
       ( prefix,(std::string), "" )
-      ( worldcomm,      *, Environment::worldComm() )
+      ( worldcomm,      (worldcomm_ptr_t), Environment::worldCommPtr() )
       ( shape,          *( boost::is_convertible<mpl::_,std::string> ),  soption(_prefix=prefix,_name="gmsh.domain.shape") )
       ( shear,          *( boost::is_arithmetic<mpl::_> )    ,  doption(_prefix=prefix,_name="gmsh.domain.shear") )
       ( recombine,      *( boost::is_integral<mpl::_> )    , boption(_prefix=prefix,_name="gmsh.domain.recombine") )
@@ -91,8 +91,8 @@ BOOST_PARAMETER_FUNCTION(
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex, worldcomm );
     gmsh_ptr->setPrefix( name );
-    gmsh_ptr->setGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ), 0 );
-    gmsh_ptr->setGeoParameters( geo_parameters );
+    //gmsh_ptr->addGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ) );
+    gmsh_ptr->addGeoParameters( geo_parameters );
     gmsh_ptr->setCharacteristicLength( h );
     gmsh_ptr->setAddMidPoint( addmidpoint );
     gmsh_ptr->usePhysicalNames( usenames );

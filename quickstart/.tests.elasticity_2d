@@ -1,0 +1,2 @@
+cantilever --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/cantilever/cantilever.cfg --gmsh.hsize=0.1 --functions.f={0,-9.81} --functions.g={0,0}
+

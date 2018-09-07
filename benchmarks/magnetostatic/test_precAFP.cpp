@@ -106,47 +106,47 @@ class TestPrecAFP : public Application
     //! Simplexes of order ORDER
     typedef Simplex<DIM> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! Hcurl space
     typedef Nedelec<0,NedelecKind::NED1 > curl_basis_type;
     typedef FunctionSpace<mesh_type, bases<curl_basis_type>> curl_space_type;
-    typedef boost::shared_ptr<curl_space_type> curl_space_ptrtype;
+    typedef std::shared_ptr<curl_space_type> curl_space_ptrtype;
     typedef typename curl_space_type::element_type curl_element_type;
 
     //! Pch space
     typedef Lagrange<1, Scalar> lag_basis_type; 
     typedef FunctionSpace<mesh_type, bases<lag_basis_type>> lag_space_type;
-    typedef boost::shared_ptr<lag_space_type> lag_space_ptrtype;
+    typedef std::shared_ptr<lag_space_type> lag_space_ptrtype;
     typedef typename lag_space_type::element_type lag_element_type;
 
     //! Pch 0 space
     typedef Lagrange<0, Scalar, Discontinuous> lag_0_basis_type;
     typedef FunctionSpace<mesh_type, bases<lag_0_basis_type>> lag_0_space_type;
-    typedef boost::shared_ptr<lag_0_space_type> lag_0_space_ptrtype;
+    typedef std::shared_ptr<lag_0_space_type> lag_0_space_ptrtype;
     typedef typename lag_0_space_type::element_type lag_0_element_type;
 
     //! Pchv space
     typedef Lagrange<1, Vectorial> lag_v_basis_type;
     typedef FunctionSpace<mesh_type, bases<lag_v_basis_type>> lag_v_space_type;
-    typedef boost::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
+    typedef std::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
     typedef typename lag_v_space_type::element_type lag_v_element_type;
 
     typedef FunctionSpace<mesh_type, bases<curl_basis_type,lag_basis_type>> comp_space_type;
-    typedef boost::shared_ptr<comp_space_type> comp_space_ptrtype;
+    typedef std::shared_ptr<comp_space_type> comp_space_ptrtype;
     typedef typename comp_space_type::element_type comp_element_type;
 
     //! Preconditioners
     typedef PreconditionerBlockMS<comp_space_type> preconditioner_type;
-    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+    typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
     //! The exporter factory
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     //! Backends factory
     typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef backend_type::solve_return_type solve_ret_type;
 
     public:
@@ -255,7 +255,7 @@ class TestPrecAFP : public Application
             //    _matrix = f2.matrixPtr(),
             //    _bc = model.boundaryConditions());
 
-            M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type>>(Xh, 
+            M_prec = std::make_shared<PreconditionerBlockMS<comp_space_type>>(Xh, 
                                                                                 model,
                                                                                 "ms",
                                                                                 f2.matrixPtr(), 0.1);

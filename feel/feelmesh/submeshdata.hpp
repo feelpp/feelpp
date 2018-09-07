@@ -56,7 +56,7 @@ public:
      */
     //@{
     typedef const MeshBase mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef boost::bimap< size_type, size_type > bm_type;
     //@}
 
@@ -64,7 +64,7 @@ public:
      */
     //@{
     template<typename MeshType>
-    SubMeshData( boost::shared_ptr<MeshType> m ) : mesh( m )
+    explicit SubMeshData( std::shared_ptr<MeshType> m ) : mesh( m )
         {}
 
     ~SubMeshData()

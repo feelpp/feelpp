@@ -76,7 +76,7 @@ makeMixedElasticityOptions( std::string prefix = "mixedelasticity" )
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")           
         ( prefixvm( prefix, "nullspace").c_str(), po::value<bool>()->default_value( false ), "add null space" )
         ;
-    mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
+    mpOptions.add( modelnumerical_options( prefix ) );
 	mpOptions.add ( backend_options( prefix+".sc" ) );
     return mpOptions;
 }
@@ -103,10 +103,10 @@ public:
     //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
-    typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
+    typedef typename std::shared_ptr<backend_type> backend_ptrtype ;
 
     typedef MixedElasticity<Dim,Order,G_Order,E_Order> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     using sparse_matrix_type = backend_type::sparse_matrix_type;
     using sparse_matrix_ptrtype = backend_type::sparse_matrix_ptrtype;
@@ -118,11 +118,11 @@ public:
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // The Lagrange multiplier lives in R^n-1
     typedef Simplex<Dim-1,G_Order,Dim> face_convex_type;
     typedef Mesh<face_convex_type> face_mesh_type;
-    typedef boost::shared_ptr<face_mesh_type> face_mesh_ptrtype;
+    typedef std::shared_ptr<face_mesh_type> face_mesh_ptrtype;
     
 
 // ---- //
@@ -154,8 +154,8 @@ public:
 
 
 
-	using op_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Wh_t, Pdhv_type<mesh_type,Order>>>;
-    using opv_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Vh_t, Pdhms_type<mesh_type,Order>>>;
+	using op_interp_ptrtype = std::shared_ptr<OperatorInterpolation<Wh_t, Pdhv_type<mesh_type,Order>>>;
+    using opv_interp_ptrtype = std::shared_ptr<OperatorInterpolation<Vh_t, Pdhms_type<mesh_type,Order>>>;
  
     //! Model properties type
     using model_prop_type = ModelProperties;
@@ -163,20 +163,20 @@ public:
 
     /* 
     using product_space_std = ProductSpaces<Vh_ptr_t,Wh_ptr_t,Mh_ptr_t>;
-	using product_space_ptrtype = boost::shared_ptr<product_space_std>;
+	using product_space_ptrtype = std::shared_ptr<product_space_std>;
     using bilinear_block_std = BlockBilinearForm<product_space_std>;
     */
 
     using product2_space_type = ProductSpaces2<Ch_ptr_t,Vh_ptr_t,Wh_ptr_t,Mh_ptr_t>;
-    using product2_space_ptrtype = boost::shared_ptr<product2_space_type>;
+    using product2_space_ptrtype = std::shared_ptr<product2_space_type>;
     using integral_boundary_list_type = std::vector<ExpressionStringAtMarker>;
     
     typedef Exporter<mesh_type,G_Order> exporter_type;
-    typedef boost::shared_ptr <exporter_type> exporter_ptrtype;
+    typedef std::shared_ptr <exporter_type> exporter_ptrtype;
     
     // typedef Newmark<space_mixedelasticity_type>  newmark_type;
     typedef Newmark <Wh_t> newmark_type;
-    typedef boost::shared_ptr<newmark_type> newmark_ptrtype;
+    typedef std::shared_ptr<newmark_type> newmark_ptrtype;
     
 //private:
 protected:
@@ -217,16 +217,16 @@ protected:
 public:
     
     // constructor
-    MixedElasticity( std::string const& prefix = "mixedelasticity",                   
-                    WorldComm const& _worldComm = Environment::worldComm(),
-                    std::string const& subPrefix = "",
-                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+    MixedElasticity( std::string const& prefix = "mixedelasticity",
+                     worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
+                     std::string const& subPrefix = "",
+                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
     
     MixedElasticity( self_type const& ME ) = default;
     static self_ptrtype New( std::string const& prefix = "mixedelasticity",
-                             WorldComm const& worldComm = Environment::worldComm(),
+                             worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() ); 
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
@@ -287,20 +287,20 @@ public:
     virtual void createTimeDiscretization() ;
     newmark_ptrtype timeStepNM() { return M_nm_mixedelasticity; }
     newmark_ptrtype const& timeStepNM() const { return M_nm_mixedelasticity; }
-    boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepNM(); }
-    boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepNM(); }
+    std::shared_ptr<TSBase> timeStepBase() { return this->timeStepNM(); }
+    std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepNM(); }
     virtual void updateTimeStepNM();
     virtual void initTimeStep();
     void updateTimeStep() { this->updateTimeStepNM(); }
 
 };
 
-    template<int Dim, int Order, int G_Order, int E_Order>
+template<int Dim, int Order, int G_Order, int E_Order>
 MixedElasticity<Dim, Order, G_Order, E_Order>::MixedElasticity( std::string const& prefix,
-        WorldComm const& worldComm,
-        std::string const& subPrefix,
-        std::string const& rootRepository )
-: super_type( prefix, worldComm, subPrefix, rootRepository ) 
+                                                                worldcomm_ptr_t const& worldComm,
+                                                                std::string const& subPrefix,
+                                                                ModelBaseRepository const& modelRep )
+    : super_type( prefix, worldComm, subPrefix, modelRep )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedElasticity","constructor", "start",
             this->worldComm(),this->verboseAllProc());
@@ -440,10 +440,10 @@ MixedElasticity<Dim,Order,G_Order, E_Order>::createTimeDiscretization()
 template<int Dim, int Order, int G_Order, int E_Order>
 typename MixedElasticity<Dim,Order, G_Order, E_Order>::self_ptrtype
 MixedElasticity<Dim,Order,G_Order,E_Order>::New( std::string const& prefix,
-                                         WorldComm const& worldComm, std::string const& subPrefix,
-                                         std::string const& rootRepository )
+                                                 worldcomm_ptr_t const& worldComm, std::string const& subPrefix,
+                                                 ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type> ( prefix,worldComm,subPrefix,rootRepository );
+    return std::make_shared<self_type> ( prefix,worldComm,subPrefix,modelRep );
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -665,10 +665,10 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::initSpaces()
     M_Ch = Pchv<0>( ibc_mesh, true ); 
     // M_Ch = Pchv<0>( M_mesh, true );
 
-    auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( M_integralCondition, M_Ch);
-    M_ps = boost::make_shared<product2_space_type>(product2(ibcSpaces,M_Vh,M_Wh,M_Mh));
+    auto ibcSpaces = std::make_shared<ProductSpace<Ch_ptr_t,true> >( M_integralCondition, M_Ch);
+    M_ps = std::make_shared<product2_space_type>(product2(ibcSpaces,M_Vh,M_Wh,M_Mh));
 
-	// M_ps = boost::make_shared<product_space_std>(product(M_Vh,M_Wh,M_Mh));
+	// M_ps = std::make_shared<product_space_std>(product(M_Vh,M_Wh,M_Mh));
 
     M_up = M_Vh->element( "u" ); // Strain
     M_pp = M_Wh->element( "p" ); // Displacement
@@ -848,7 +848,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
 	auto blf = blockform1(*M_ps, M_F);
 
 
-	boost::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(get_backend(),hdgNullSpace(M_Wh,mpl::int_<FEELPP_DIM>())) );
+	std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(get_backend(),hdgNullSpace(M_Wh,mpl::int_<FEELPP_DIM>())) );
 	get_backend()->attachNearNullSpace( myNullSpace );
     if ( boption(_name=prefixvm( this->prefix(), "nullspace").c_str()) )
 	    get_backend()->attachNearNullSpace( myNullSpace );
@@ -923,9 +923,9 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
     for( auto const& pairMat : M_modelProperties->materials() )
     {
 		auto material = pairMat.second;
-		auto lambda = expr(material.getScalar("lambda"));
+		auto lambda = material.getScalar("lambda");
 		Feel::cout << "Lambda: " << lambda << std::endl;
-		auto mu = expr(material.getScalar("mu"));
+		auto mu = material.getScalar("mu");
 		Feel::cout << "Mu: " << mu << std::endl;
 		auto c1 = cst(0.5)/mu; 
     	auto c2 = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu)); 
@@ -954,7 +954,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
     	for( auto const& pairMat : M_modelProperties->materials() )
     	{
 			auto material = pairMat.second;
-			auto rho = expr(material.getScalar("rho"));
+			auto rho = material.getScalar("rho");
 			// bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
         	//                              _expr = this->timeStepNM()->polySecondDerivCoefficient()*rho*inner(idt(u),id(w)) );
 			bbf( 1_c, 1_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),
@@ -1145,8 +1145,8 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 				    auto gradu_exact = grad( g );
 				    auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
 			        auto material = pairMat.second;
-				    auto lambda = expr(material.getScalar("lambda"));
-				    auto mu = expr(material.getScalar("mu"));
+				    auto lambda = material.getScalar("lambda");
+				    auto mu = material.getScalar("mu");
 				    auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
 
 	    			cout << "Neumann condition computed from displacement on " << marker << std::endl;
@@ -1182,7 +1182,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
     	for( auto const& pairMat : M_modelProperties->materials() )
     	{
 			auto material = pairMat.second;
-			auto rho = expr(material.getScalar("rho"));
+			auto rho = material.getScalar("rho");
 			auto u = this->timeStepNM()->previousUnknown(0);
 			auto u1 = this->timeStepNM()->previousUnknown(1);
 			auto dt = this-> timeStep();
@@ -1216,12 +1216,8 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
     }
     
      // Export computed solutions
-     auto postProcess = M_modelProperties->postProcess();
-     auto itField = postProcess.find( "Fields");
-     
-	 if ( itField != postProcess.end() )
      {
-         for ( auto const& field : (*itField).second )
+         for ( auto const& field : M_modelProperties->postProcess().exports().fields() )
          {
             if ( field == "stress" )
             {
@@ -1303,7 +1299,7 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                 {
                     auto marker = pairMat.first;
                     auto material = pairMat.second;
-                    auto kk = expr(material.getScalar( "scale_displacement" ) );
+                    auto kk = material.getScalar( "scale_displacement" );
 
                     scaled_displ.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_pp));
                 }
@@ -1320,7 +1316,7 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                 {
                     auto marker = pairMat.first;
                     auto material = pairMat.second;
-                    auto kk = expr(material.getScalar( "scale_stress" ) );
+                    auto kk = material.getScalar( "scale_stress" );
 
                     scaled_stress.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_up));
                 }
@@ -1431,8 +1427,8 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
 								for( auto const& pairMat : M_modelProperties->materials() )
 								{
 									auto material = pairMat.second;
-									auto lambda = expr(material.getScalar("lambda"));
-									auto mu = expr(material.getScalar("mu"));
+									auto lambda = material.getScalar("lambda");
+									auto mu = material.getScalar("mu");
 									auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
 
 									// EXPORT SIGMA EXACT

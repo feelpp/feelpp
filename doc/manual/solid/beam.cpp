@@ -68,14 +68,14 @@ public:
     /*mesh*/
     typedef Simplex<Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
     typedef bases<Lagrange<nOrder, Vectorial> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     /* export */
@@ -125,7 +125,7 @@ private:
     double bcCoeff;
     int M_bctype;
 
-    boost::shared_ptr<export_type> exporter;
+    std::shared_ptr<export_type> exporter;
 
     std::map<std::string,std::pair<mpi::timer,double> > timers;
 }; // Beam

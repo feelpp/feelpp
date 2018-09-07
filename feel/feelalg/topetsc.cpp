@@ -34,14 +34,14 @@ namespace Feel
 namespace detail
 {
 template<typename T>
-std::pair<VectorPetsc<T> *, boost::shared_ptr<VectorPetsc<T> > >
+std::pair<VectorPetsc<T> *, std::shared_ptr<VectorPetsc<T> > >
 toPETScPairPtr( Vector<T> & vec )
 {
     if ( !vec.closed() )
         const_cast<Vector<T>*>( &vec )->close();
 
     // vector need if the cases ublas or vector copy are used
-    boost::shared_ptr<VectorPetsc<T>> vec_petscClone;
+    std::shared_ptr<VectorPetsc<T>> vec_petscClone;
 
     // petsc vector
     VectorPetsc<T> * vec_petsc = dynamic_cast<VectorPetsc<T> *>( &vec );
@@ -79,14 +79,14 @@ toPETScPairPtr( Vector<T> & vec )
 }
 
 template<typename T>
-std::pair<const VectorPetsc<T> *, boost::shared_ptr<VectorPetsc<T> > >
+std::pair<const VectorPetsc<T> *, std::shared_ptr<VectorPetsc<T> > >
 toPETScPairPtr( Vector<T> const& vec, bool allowCopy )
 {
     if ( !vec.closed() )
         const_cast<Vector<T>*>( &vec )->close();
 
     // vector need if the cases ublas or vector copy are used
-    boost::shared_ptr<VectorPetsc<T>> vec_petscClone;
+    std::shared_ptr<VectorPetsc<T>> vec_petscClone;
 
     // petsc vector
     VectorPetsc<T> const* vec_petsc = dynamic_cast<VectorPetsc<T> const*>( &vec );
@@ -136,10 +136,10 @@ toPETScPairPtr( Vector<T> const& vec, bool allowCopy )
 
 // instantiation
 template
-std::pair<VectorPetsc<double> *, boost::shared_ptr<VectorPetsc<double> > >
+std::pair<VectorPetsc<double> *, std::shared_ptr<VectorPetsc<double> > >
 toPETScPairPtr( Vector<double> & vec );
 template
-std::pair<const VectorPetsc<double> *, boost::shared_ptr<VectorPetsc<double> > >
+std::pair<const VectorPetsc<double> *, std::shared_ptr<VectorPetsc<double> > >
 toPETScPairPtr( Vector<double> const& vec, bool allowCopy );
 
 } // namespace detail

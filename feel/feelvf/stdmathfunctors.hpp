@@ -81,7 +81,7 @@ sign( T const& x )
 # define VF_FUNC_DOMAIN(O)        BOOST_PP_TUPLE_ELEM(8, 4, O)
 # define VF_FUNC_IS_FLOATING(O )  BOOST_PP_TUPLE_ELEM(8, 5, O)
 # define VF_FUNC_IS_LOGICAL(O)    BOOST_PP_TUPLE_ELEM(8, 6, O)
-# define VF_FUNC_IS_POLYNOMIAL(O) BOOST_PP_TUPLE_ELEM(8, 7, O)
+# define VF_FUNC_POLYNOMIALORDER_SCALING(O) BOOST_PP_TUPLE_ELEM(8, 7, O)
 #
 # /* List of applicative unary functions. */
 # define VF_APPLICATIVE_UNARY_FUNCS \
@@ -101,10 +101,10 @@ sign( T const& x )
          ( exp  , __Exp__ , Feel::math::exp     ,"exponential"         , UnboundedDomain<value_type>()      , 1, 0, 2), \
          ( log  , __Log__ , Feel::math::log     ,"logarithm"           , PositiveDomain<value_type>()       , 1, 0, 2), \
          ( sqrt , __Sqrt__, Feel::math::sqrt    ,"square root"         , PositiveDomain<value_type>()       , 1, 0, 2), \
-         ( floor, __Floor__, std::floor         ,"floor"               , UnboundedDomain<value_type>()      , 1, 0, 2), \
-         ( ceil , __Ceil__, std::ceil           ,"ceil"                , UnboundedDomain<value_type>()      , 1, 0, 2), \
-         ( sign , __Sign__, details::sign       ,"sign"                , UnboundedDomain<value_type>()      , 1, 0, 0), \
-         ( chi  , __Chi__ ,                     ,"chi"                 , UnboundedDomain<value_type>()      , 0, 1, 0) \
+         ( floor, __Floor__, std::floor         ,"floor"               , UnboundedDomain<value_type>()      , 1, 0, 1), \
+         ( ceil , __Ceil__, std::ceil           ,"ceil"                , UnboundedDomain<value_type>()      , 1, 0, 1), \
+         ( sign , __Sign__, details::sign       ,"sign"                , UnboundedDomain<value_type>()      , 1, 0, 1), \
+         ( chi  , __Chi__ ,                     ,"chi"                 , UnboundedDomain<value_type>()      , 0, 1, 1) \
       ) \
    ) \
    /**/
@@ -160,14 +160,6 @@ sign( T const& x )
    /**/
 #endif
 
-# define VF_IM_IS_POLY(O)                                               \
-    BOOST_PP_IF( BOOST_PP_EQUAL( VF_FUNC_IS_POLYNOMIAL(O) , 0) ,        \
-                 0 ,                                                    \
-                 1   )                                                  \
-    /**/
-
-
-
 
 #define VF_UNARY_FUNCTIONS_CODE(O)                                      \
     template < typename ExprT1 >                                        \
@@ -177,9 +169,6 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
                                                                         \
         static const size_type context = ExprT1::context;               \
         static const bool is_terminal = false;                          \
-                                                                        \
-        static const uint16_type imorder = VF_FUNC_IS_POLYNOMIAL(O)*ExprT1::imorder;             \
-        static const bool imIsPoly = (VF_IM_IS_POLY(O) || (ExprT1::imorder==0)); \
                                                                         \
         template<typename Func>                                         \
             struct HasTestFunction                                      \
@@ -227,6 +216,10 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
                 }                                                       \
                                                                         \
         bool isSymetric() const { return false; }                       \
+                                                                        \
+        uint16_type polynomialOrder() const { return VF_FUNC_POLYNOMIALORDER_SCALING(O)*M_expr_1.polynomialOrder(); } \
+                                                                        \
+        bool isPolynomial() const { return  ( M_expr_1.isPolynomial() && ( M_expr_1.polynomialOrder() == 0 ) ); } \
                                                                         \
         void eval( int nx, value_type const* x, value_type* f ) const   \
         {                                                               \
@@ -374,9 +367,6 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         static const size_type context = ExprT1::context|ExprT2::context; \
         static const bool is_terminal = false;                          \
                                                                         \
-        static const uint16_type imorder = VF_FUNC_IS_POLYNOMIAL(O)*(ExprT1::imorder+ExprT2::imorder); \
-        static const bool imIsPoly = (VF_IM_IS_POLY(O) || (ExprT1::imorder==0 && ExprT2::imorder==0)); \
-                                                                        \
         template<typename Func>                                         \
             struct HasTestFunction                                      \
         {                                                               \
@@ -425,6 +415,10 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
                 }                                                       \
                                                                         \
         bool isSymetric() const { return false; }                       \
+                                                                        \
+        uint16_type polynomialOrder() const { return VF_FUNC_POLYNOMIALORDER_SCALING(O)*std::max(M_expr_1.polynomialOrder(),M_expr_2.polynomialOrder()); } \
+                                                                        \
+        bool isPolynomial() const { return  ( M_expr_1.isPolynomial() && M_expr_2.isPolynomial() && ( M_expr_1.polynomialOrder() == 0 ) && ( M_expr_2.polynomialOrder() == 0 ) ); } \
                                                                         \
         void eval( int nx, value_1_type const* x, value_2_type const* y, value_type* f ) const   \
         {                                                               \

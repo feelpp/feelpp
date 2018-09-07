@@ -109,7 +109,7 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::about(Feel::_name="test_matching",
 BOOST_AUTO_TEST_SUITE( matching )
 
 typedef Feel::Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
+typedef std::shared_ptr<Application_type> Application_ptrtype;
 
 BOOST_AUTO_TEST_CASE( matching )
 {

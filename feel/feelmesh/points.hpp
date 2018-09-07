@@ -31,6 +31,7 @@
 
 #include <unordered_map>
 
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelmesh/geoelement.hpp>
 
 namespace Feel
@@ -51,8 +52,8 @@ public:
     /** @name Typedefs
      */
     //@{
-
-    typedef GeoElement0D<nDim,SubFaceOfNone,T> point_type;
+    
+    typedef GeoElement0D<nDim,SubFaceOfNone<0>,T> point_type;
 
     typedef std::unordered_map<size_type,point_type> points_type;
 
@@ -74,16 +75,16 @@ public:
      */
     //@{
 
-    Points( WorldComm const& worldComm = Environment::worldComm() )
+    explicit Points( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
-        M_worldCommPoints( worldComm ),
+        M_worldComm( worldComm ),
         M_points(),
         M_needToOrderPoints( false )
     {}
 
     Points( Points const & f )
         :
-        M_worldCommPoints( f.M_worldCommPoints ),
+        M_worldComm( f.M_worldComm ),
         M_points( f.M_points ),
         M_needToOrderPoints( false )
     {
@@ -110,7 +111,7 @@ public:
     {
         if ( this != &e )
         {
-            M_worldCommPoints = e.M_worldCommPoints;
+            M_worldComm = e.M_worldComm;
             M_points = e.M_points;
             this->buildOrderedPoints();
         }
@@ -157,7 +158,12 @@ public:
         return itFindPt->isOnBoundary();
     }
 
-
+    point_type& point( size_type i ) 
+        {
+            auto itFindPt = M_points.find( i );
+            CHECK( itFindPt != M_points.end() ) << " point " << i << "does not found";
+            return itFindPt->second;
+        }
     point_type const& point( size_type i ) const
     {
         auto itFindPt = M_points.find( i );
@@ -470,12 +476,12 @@ public:
 
     WorldComm const& worldCommPoints() const
     {
-        return M_worldCommPoints;
+        return *M_worldComm;
     }
 
-    void setWorldCommPoints( WorldComm const& _worldComm )
+    void setWorldCommPoints( worldcomm_ptr_t const& _worldComm )
     {
-        M_worldCommPoints = _worldComm;
+        M_worldComm = _worldComm;
     }
 
     //@}
@@ -535,7 +541,7 @@ private:
         }
 
 private:
-    WorldComm M_worldCommPoints;
+    worldcomm_ptr_t M_worldComm;
 
     points_type M_points;
     ordered_points_reference_wrapper_type M_orderedPoints;

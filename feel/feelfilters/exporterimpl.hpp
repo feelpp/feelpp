@@ -73,11 +73,11 @@ template<typename MeshType, int N> class Exporterhdf5;
 #endif
 
 template<typename MeshType, int N>
-Exporter<MeshType, N>::Exporter( WorldComm const& worldComm )
+Exporter<MeshType, N>::Exporter( worldcomm_ptr_t const& worldComm )
     :
+    super( worldComm ),
     super1(),
     super2(),
-    M_worldComm( worldComm ),
     M_do_export( true ),
     M_use_single_transient_file( false ),
     M_type(),
@@ -92,11 +92,11 @@ Exporter<MeshType, N>::Exporter( WorldComm const& worldComm )
 }
 
 template<typename MeshType, int N>
-Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& __prefix, int __freq, WorldComm const& worldComm  )
+Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& __prefix, int __freq, worldcomm_ptr_t const& worldComm  )
     :
+    super( worldComm ),
     super1(),
     super2(),
-    M_worldComm( worldComm ),
     M_do_export( true ),
     M_use_single_transient_file( false ),
     M_type( __type ),
@@ -111,11 +111,11 @@ Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& _
 }
 
 template<typename MeshType, int N>
-Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const& exp_prefix, WorldComm const& worldComm )
+Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const& exp_prefix, worldcomm_ptr_t const& worldComm )
     :
+    super( worldComm ),
     super1(),
     super2(),
-    M_worldComm( worldComm ),
     M_do_export( true ),
     M_use_single_transient_file( false ),
     M_type(),
@@ -130,11 +130,11 @@ Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const&
 }
 
 template<typename MeshType, int N>
-Exporter<MeshType, N>::Exporter( std::string const& exp_prefix, WorldComm const& worldComm )
+Exporter<MeshType, N>::Exporter( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm )
     :
+    super( worldComm ),
     super1(),
     super2(),
-    M_worldComm( worldComm ),
     M_do_export( true ),
     M_use_single_transient_file( false ),
     M_type(),
@@ -151,9 +151,9 @@ Exporter<MeshType, N>::Exporter( std::string const& exp_prefix, WorldComm const&
 template<typename MeshType, int N>
 Exporter<MeshType, N>::Exporter( Exporter const & __ex )
     :
+    super( __ex ),
     super1(),
     super2(),
-    M_worldComm( __ex.M_worldComm ),
     M_do_export( __ex.M_do_export ),
     M_use_single_transient_file( __ex.M_use_single_transient_file ),
     M_type( __ex.M_type ),
@@ -172,8 +172,8 @@ Exporter<MeshType, N>::~Exporter()
 {}
 
 template<typename MeshType, int N>
-boost::shared_ptr<Exporter<MeshType, N> >
-Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix, WorldComm const& worldComm )
+std::shared_ptr<Exporter<MeshType, N> >
+Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix, worldcomm_ptr_t const& worldComm )
 {
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( exportername  );
 
@@ -205,21 +205,21 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
 
     exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
     exporter->setPrefix( prefix );
-    return boost::shared_ptr<Exporter<MeshType, N> >(exporter);
+    return std::shared_ptr<Exporter<MeshType, N> >(exporter);
 }
 
 template<typename MeshType, int N>
-boost::shared_ptr<Exporter<MeshType, N> >
-Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, WorldComm const& worldComm )
+std::shared_ptr<Exporter<MeshType, N> >
+Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, worldcomm_ptr_t const& worldComm )
 {
     return New( prefix, worldComm );
 }
 template<typename MeshType, int N>
-boost::shared_ptr<Exporter<MeshType, N> >
-Exporter<MeshType, N>::New( std::string prefix, WorldComm const& worldComm )
+std::shared_ptr<Exporter<MeshType, N> >
+Exporter<MeshType, N>::New( std::string prefix, worldcomm_ptr_t const& worldComm )
 {
     std::string estr = soption("exporter.format");
-    Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( estr  );
+    std::shared_ptr<Exporter<MeshType, N> > exporter;
 
     LOG(INFO) << "[Exporter] format :  " << estr << "\n";
     LOG(INFO) << "[Exporter] N      :  " << N << "\n";
@@ -227,37 +227,37 @@ Exporter<MeshType, N>::New( std::string prefix, WorldComm const& worldComm )
         LOG(WARNING) << "[Exporter] format " << estr << " is not available for mesh order > 1 - using gmsh exporter instead\n";
 
     if ( N == 1 && ( estr == "ensight"   ) )
-        exporter = new ExporterEnsight<MeshType, N>( prefix, worldComm );
+        exporter = std::make_shared<ExporterEnsight<MeshType, N>>( prefix, worldComm );
 #if defined(FEELPP_HAS_MPIIO)
     else if ( N == 1 && ( estr == "ensightgold"   ) )
-        exporter = new ExporterEnsightGold<MeshType, N>( prefix, worldComm );
+        exporter = std::make_shared<ExporterEnsightGold<MeshType, N>>( prefix, worldComm );
 #endif
     else if ( N == 1 && ( estr == "exodus"   ) )
-        exporter = new ExporterExodus<MeshType, N>( prefix, worldComm );
+        exporter = std::make_shared<ExporterExodus<MeshType, N>>( prefix, worldComm );
 #if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
     else if ( N == 1 && ( estr == "hdf5" ) )
-        exporter = new Exporterhdf5<MeshType, N> ( prefix, worldComm ) ;
+        exporter = std::make_shared<Exporterhdf5<MeshType, N>> ( prefix, worldComm ) ;
 #endif
 #if defined(FEELPP_HAS_VTK)
     else if ( N == 1 && ( estr == "vtk"  ) )
-        exporter = new ExporterVTK<MeshType, N>( prefix, worldComm );
+        exporter = std::make_shared<ExporterVTK<MeshType, N>>( prefix, worldComm );
 #endif
 #ifdef FEELPP_HAS_GMSH
     else if ( N > 1 || estr == "gmsh" )
-        exporter = new ExporterGmsh<MeshType,N>( prefix, worldComm );
+        exporter = std::make_shared<ExporterGmsh<MeshType,N>>( prefix, worldComm );
 #endif
     else // fallback
     {
         LOG(INFO) << "[Exporter] The exporter format " << estr << " Cannot be found. Falling back to Ensight exporter." << std::endl;
-        exporter = new ExporterEnsight<MeshType, N>( prefix, worldComm );
+        exporter = std::make_shared<ExporterEnsight<MeshType, N>>( prefix, worldComm );
     }
 
 
     exporter->setOptions();
     //std::cout << "[exporter::New] do export = " << exporter->doExport() << std::endl;
-    exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
+    exporter->addTimeSet( std::make_shared<timeset_type>( prefix ) );
     exporter->setPrefix( prefix );
-    return boost::shared_ptr<Exporter<MeshType, N> >( exporter );
+    return exporter;
 }
 
 template<typename MeshType, int N>

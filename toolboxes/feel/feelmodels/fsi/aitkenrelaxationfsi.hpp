@@ -47,19 +47,19 @@ class AitkenRelaxationFSI
 public :
     typedef AitkenRelaxationFSI<SolidType> self_type;
     typedef SolidType solid_type;
-    typedef boost::shared_ptr<solid_type> solid_ptrtype;
+    typedef std::shared_ptr<solid_type> solid_ptrtype;
 
     typedef typename solid_type::space_displacement_type space_disp_type;
     typedef typename solid_type::element_displacement_type element_disp_type;
     typedef typename solid_type::element_displacement_ptrtype element_disp_ptrtype;
     typedef Aitken<space_disp_type> aitken_type;
-    typedef boost::shared_ptr<aitken_type> aitken_ptrtype;
+    typedef std::shared_ptr<aitken_type> aitken_ptrtype;
 
     typedef typename solid_type::space_1dreduced_type space_disp_1dreduced_type;
     typedef typename solid_type::element_1dreduced_type element_disp_1dreduced_type;
     typedef typename solid_type::element_1dreduced_ptrtype element_disp_1dreduced_ptrtype;
     typedef Aitken<space_disp_1dreduced_type> aitken_1dreduced_type;
-    typedef boost::shared_ptr<aitken_1dreduced_type> aitken_1dreduced_ptrtype;
+    typedef std::shared_ptr<aitken_1dreduced_type> aitken_1dreduced_ptrtype;
 
     //-----------------------------------------------------------------------------------//
 
@@ -111,7 +111,7 @@ class FixPointConvergenceFSI
 public :
     typedef FixPointConvergenceFSI<SolidType> self_type;
     typedef SolidType solid_type;
-    typedef boost::shared_ptr<solid_type> solid_ptrtype;
+    typedef std::shared_ptr<solid_type> solid_ptrtype;
 
     typedef typename solid_type::space_displacement_type space_disp_type;
     typedef typename solid_type::element_displacement_type element_disp_type;

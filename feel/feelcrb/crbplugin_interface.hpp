@@ -95,42 +95,42 @@ public:
     //!
     //! @return the parameter space
     //!
-    virtual boost::shared_ptr<ParameterSpaceX> parameterSpace() const = 0;
+    virtual std::shared_ptr<ParameterSpaceX> parameterSpace() const = 0;
 
     //!
     //! @return the crb model
     //!
-    virtual boost::shared_ptr<CRBModelBase> crbmodel() const = 0;
+    virtual std::shared_ptr<CRBModelBase> crbmodel() const = 0;
 
     //!
     //! @return the meshes
     //!
-    virtual std::vector<boost::shared_ptr<MeshBase>> meshes() const = 0;
+    virtual std::vector<std::shared_ptr<MeshBase>> meshes() const = 0;
 
     //!
     //! @return the doftable with datamap
     //!
-    virtual std::pair<std::vector<boost::shared_ptr<DofTableBase>>,boost::shared_ptr<DataMap>> doftables() const = 0;
+    virtual std::pair<std::vector<std::shared_ptr<DofTableBase>>,std::shared_ptr<DataMap>> doftables() const = 0;
 
     //!
     //! @return an element of the fe space
     //!
-    virtual boost::shared_ptr<Vector<double>> feElement() const = 0;
+    virtual std::shared_ptr<Vector<double>> feElement() const = 0;
 
     //!
     //! @return a list of sub-element which compose the element of the fe space
     //!
-    virtual std::vector<boost::shared_ptr<Vector<double>> > feSubElements( boost::shared_ptr<Vector<double>> u ) const = 0;
+    virtual std::vector<std::shared_ptr<Vector<double>> > feSubElements( std::shared_ptr<Vector<double>> u ) const = 0;
 
     //!
     //! @return reduced basis functions primal
     //!
-    virtual std::vector<boost::shared_ptr<Vector<double>>> reducedBasisFunctionsPrimal() const = 0;
+    virtual std::vector<std::shared_ptr<Vector<double>>> reducedBasisFunctionsPrimal() const = 0;
 
     //!
     //! @return reduced basis functions dual
     //!
-    virtual std::vector<boost::shared_ptr<Vector<double>>> reducedBasisFunctionsDual() const = 0;
+    virtual std::vector<std::shared_ptr<Vector<double>>> reducedBasisFunctionsDual() const = 0;
 
     //!
     //! run the crb online code
@@ -196,7 +196,7 @@ protected:
 //!
 po::options_description crbPluginOptions( std::string const& prefix = "" );
 
-using crbpluginapi_create_t = boost::shared_ptr<CRBPluginAPI> ();
+using crbpluginapi_create_t = std::shared_ptr<CRBPluginAPI> ();
 using crbpluginapi_create_ft = boost::function<crbpluginapi_create_t>;
 
 //!
@@ -205,7 +205,7 @@ using crbpluginapi_create_ft = boost::function<crbpluginapi_create_t>;
 //! @param pluginlibname name of the plugin library
 //! @param dirname location of the plugin library
 //!
-boost::shared_ptr<CRBPluginAPI> factoryCRBPlugin( std::string const& n,
+std::shared_ptr<CRBPluginAPI> factoryCRBPlugin( std::string const& n,
                                                   std::string const& pluginlibname = "",
                                                   std::string const& dirname = Info::libdir()
                                                   );

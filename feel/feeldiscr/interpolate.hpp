@@ -50,7 +50,7 @@ enum { INTERPOLATE_DIFFERENT_MESH=0, INTERPOLATE_SAME_MESH = 1 };
  */
 template<typename SpaceType, typename FunctionType>
 void
-interpolate( boost::shared_ptr<SpaceType> const& space,
+interpolate( std::shared_ptr<SpaceType> const& space,
              FunctionType const& f,
              typename SpaceType::element_type& interp, int same_mesh = INTERPOLATE_DIFFERENT_MESH )
 {
@@ -67,18 +67,18 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     typedef typename domain_mesh_type::element_iterator domain_mesh_element_iterator;
     // geometric mapping context
     typedef typename mesh_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef std::shared_ptr<gm_type> gm_ptrtype;
     typedef typename gm_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, geoelement_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
     typedef typename domain_mesh_type::gm_type domain_gm_type;
-    typedef boost::shared_ptr<domain_gm_type> domain_gm_ptrtype;
+    typedef std::shared_ptr<domain_gm_type> domain_gm_ptrtype;
     typedef typename domain_gm_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, domain_geoelement_type> domain_gmc_type;
-    typedef boost::shared_ptr<domain_gmc_type> domain_gmc_ptrtype;
+    typedef std::shared_ptr<domain_gmc_type> domain_gmc_ptrtype;
 
     typedef typename FunctionType::functionspace_type::fe_type f_fe_type;
     typedef typename f_fe_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, f_fe_type, domain_gm_type, domain_geoelement_type,domain_gmc_type::context> f_fectx_type;
-    typedef boost::shared_ptr<f_fectx_type> f_fectx_ptrtype;
+    typedef std::shared_ptr<f_fectx_type> f_fectx_ptrtype;
 
     // dof
     typedef typename SpaceType::dof_type dof_type;

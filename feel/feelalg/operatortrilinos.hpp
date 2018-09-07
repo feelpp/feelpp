@@ -63,22 +63,22 @@ class OperatorMatrix : public Epetra_Operator
 public:
 
     typedef MatrixSparse<double> sparse_matrix_type;
-    typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
+    typedef std::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
 
     typedef MatrixEpetra epetra_sparse_matrix_type;
-    typedef boost::shared_ptr<epetra_sparse_matrix_type> epetra_sparse_matrix_ptrtype;
+    typedef std::shared_ptr<epetra_sparse_matrix_type> epetra_sparse_matrix_ptrtype;
 
     typedef Vector<double> vector_type;
-    typedef boost::shared_ptr<vector_type> vector_ptrtype;
+    typedef std::shared_ptr<vector_type> vector_ptrtype;
 
     typedef VectorEpetra<double> epetra_vector_type;
-    typedef boost::shared_ptr<epetra_vector_type> epetra_vector_ptrtype;
+    typedef std::shared_ptr<epetra_vector_type> epetra_vector_ptrtype;
 
     typedef Epetra_Operator prec_type;
-    typedef boost::shared_ptr<prec_type> prec_ptrtype;
+    typedef std::shared_ptr<prec_type> prec_ptrtype;
 
     typedef SolverLinearTrilinos<double> solver_type;
-    typedef boost::shared_ptr<solver_type> solver_ptrtype;
+    typedef std::shared_ptr<solver_type> solver_ptrtype;
 
     typedef Teuchos::ParameterList list_type;
 
@@ -290,7 +290,7 @@ class OperatorInverse : public Epetra_Operator
 {
 public:
 
-    typedef boost::shared_ptr<operator_type> operator_ptrtype;
+    typedef std::shared_ptr<operator_type> operator_ptrtype;
 
     // This constructor implements the F^-1 operator
     OperatorInverse( operator_ptrtype& F )
@@ -414,8 +414,8 @@ class OperatorCompose : public Epetra_Operator
 {
 public:
 
-    typedef boost::shared_ptr<op1_type> op1_ptrtype;
-    typedef boost::shared_ptr<op2_type> op2_ptrtype;
+    typedef std::shared_ptr<op1_type> op1_ptrtype;
+    typedef std::shared_ptr<op2_type> op2_ptrtype;
 
     // This constructor implements the (F o G) operator
 
@@ -566,7 +566,7 @@ class OperatorScale : public Epetra_Operator
 {
 public:
 
-    typedef boost::shared_ptr<op1_type> op1_ptrtype;
+    typedef std::shared_ptr<op1_type> op1_ptrtype;
 
     // This constructor implements the (\alpha F) operator
     OperatorScale()
@@ -720,13 +720,13 @@ class OperatorFree : public Epetra_Operator
 {
 public:
 
-    typedef boost::shared_ptr<operator_type> operator_ptrtype;
+    typedef std::shared_ptr<operator_type> operator_ptrtype;
 
     typedef Epetra_Operator prec_type;
-    typedef boost::shared_ptr<prec_type> prec_ptrtype;
+    typedef std::shared_ptr<prec_type> prec_ptrtype;
 
     typedef SolverLinearTrilinos<double> solver_type;
-    typedef boost::shared_ptr<solver_type> solver_ptrtype;
+    typedef std::shared_ptr<solver_type> solver_ptrtype;
 
     typedef solver_type::real_type real_type;
 

@@ -37,7 +37,7 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 #include <feel/feelalg/backend.hpp>
-#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/thch.hpp>
 #include <feel/feeldiscr/stencil.hpp>
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE( test_vector_ublas_operations )
     BOOST_TEST_MESSAGE( "test_vector_ublas_operations" );
     using namespace Feel;
     double tolCheck = 1e-9;
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto mesh = unitSquare();
     auto Vh1 = Pchv<2>( mesh );
     auto v1 = Vh1->element();
     v1.setConstant( 2 );
@@ -260,7 +260,7 @@ BOOST_AUTO_TEST_CASE( test_vector_ublas_extarray )
     BOOST_TEST_MESSAGE( "test_vector_ublas_extarray" );
     using namespace Feel;
     double tolCheck = 1e-9;
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto mesh = unitSquare();
     auto Vh = Pchv<2>( mesh );
     auto Wh = THch<2>( mesh );
     auto Xh = Wh->functionSpace<1>();
@@ -340,7 +340,7 @@ BOOST_AUTO_TEST_CASE( test_vector_petsc )
     BOOST_TEST_MESSAGE( "test_vector_petsc" );
     using namespace Feel;
     double tolCheck = 1e-9;
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto mesh = unitSquare();
     auto Vh1 = Pchv<2>( mesh );
     auto v_ublas1 = Vh1->element();
     size_type nDofVh1 = Vh1->nDof();
@@ -499,7 +499,7 @@ BOOST_AUTO_TEST_CASE( test_vector_petsc_extarray )
     BOOST_TEST_MESSAGE( "test_vector_petsc_extarray" );
     using namespace Feel;
     double tolCheck = 1e-9;
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto mesh = unitSquare();
     auto Vh1 = Pchv<2>( mesh );
     size_type nDofVh1 = Vh1->nDof();
     size_type nLocalDofWithGhostVh1 = Vh1->nLocalDofWithGhost();

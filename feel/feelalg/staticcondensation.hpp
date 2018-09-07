@@ -31,6 +31,9 @@
 
 #include <unordered_map>
 #include <Eigen/Core>
+#include <boost/hana/equal.hpp>
+#include <boost/hana/integral_constant.hpp>
+#include <boost/hana/length.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/feelio.hpp>
@@ -87,20 +90,20 @@ public:
 
     StaticCondensation() = default;
     template<typename E, typename M_ptrtype, typename V_ptrtype>
-    void condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
-                   std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 3>* = nullptr );
+    void condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
+                   std::enable_if_t<std::decay_t<E>::nspaces == 3>* = nullptr );
     
     template<typename E, typename M_ptrtype, typename V_ptrtype>
-    void condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
-                   std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 4>* = nullptr );
+    void condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
+                   std::enable_if_t<std::decay_t<E>::nspaces == 4>* = nullptr );
 
     template<typename E>
-    void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
-                     std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 3>* = nullptr );
+    void localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
+                     std::enable_if_t<std::decay_t<E>::nspaces == 3>* = nullptr );
     
     template<typename E>
-    void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
-                     std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 4>* = nullptr );
+    void localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
+                     std::enable_if_t<std::decay_t<E>::nspaces == 4>* = nullptr );
 
     void addLocalMatrix( int* rows, int nrows,
                          int* cols, int ncols,
@@ -115,7 +118,7 @@ public:
 
 
     template <typename Space1,typename Space2>
-    void syncLocalMatrix( boost::shared_ptr<Space1> const& rowSpace, boost::shared_ptr<Space2> const& colSpace )
+    void syncLocalMatrix( std::shared_ptr<Space1> const& rowSpace, std::shared_ptr<Space2> const& colSpace )
         {
             if ( rowSpace->worldComm().localSize() == 1 )
                 return;
@@ -441,7 +444,7 @@ private:
     block_index_t M_block_rowcol;
     int M_block_row;
     int M_dim4;
-    std::mutex mutex_add_v, mutex_add_m;;
+    std::mutex mutex_add_v, mutex_add_m;
 
 };
 
@@ -642,8 +645,8 @@ extractBlock( F0K_t const& F0K, size_type K,
 template<typename T>
 template<typename E, typename M_ptrtype, typename V_ptrtype>
 void
-StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
-                                 std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 3>* ) 
+StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
+                                 std::enable_if_t<std::decay_t<E>::nspaces == 3>* )
 {
     using Feel::cout;
 
@@ -790,8 +793,8 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
 template<typename T>
 template<typename E, typename M_ptrtype, typename V_ptrtype>
 void
-StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
-                                 std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 4>* ) 
+StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
+                                 std::enable_if_t<std::decay_t<E>::nspaces == 4>* ) 
 {
     using Feel::cout;
     auto& e1 = e(0_c);
@@ -1169,7 +1172,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
 template<typename T>
 template<typename E>
 void
-StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 3>* )  
+StaticCondensation<T>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces == 3>* )
 {
     using Feel::cout;
     auto& e1 = e(0_c);
@@ -1214,7 +1217,7 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
 template<typename T>
 template<typename E>
 void
-StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 4>*  )
+StaticCondensation<T>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces == 4>*  )
 {
     using Feel::cout;
     auto& e1 = e(0_c);
@@ -1290,3 +1293,6 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
 
 }
 #endif
+
+
+

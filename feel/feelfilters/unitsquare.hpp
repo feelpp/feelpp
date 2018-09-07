@@ -38,7 +38,7 @@ namespace Feel {
 /**
  * build a mesh of the unit square [0,1]^2 using triangles
  */
-boost::shared_ptr<Mesh<Simplex<2>>>
+std::shared_ptr<Mesh<Simplex<2>>>
 unitSquare( double h = option(_name="gmsh.hsize").as<double>(),
             PeriodicEntities pe = PeriodicEntities() );
 

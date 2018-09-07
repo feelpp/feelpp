@@ -46,35 +46,35 @@ namespace Feel
       typedef double value_type;
 
       typedef Backend<value_type> backend_type;
-      typedef boost::shared_ptr<backend_type> backend_ptrtype;
+      typedef std::shared_ptr<backend_type> backend_ptrtype;
       //** Mesh **
       typedef Mesh<Simplex<Dim>> mesh_type;
-      typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+      typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
       //** Basis **
       //Scalar
       typedef bases<Lagrange<Order,Scalar>> basis_type;
-      typedef boost::shared_ptr<basis_type> basis_ptrtype;
+      typedef std::shared_ptr<basis_type> basis_ptrtype;
 
       //Scalar P0
       typedef bases<Lagrange<0,Scalar,Discontinuous>> basis_pm1_type;
-      typedef boost::shared_ptr<basis_pm1_type> basis_pm1_ptrtype;
+      typedef std::shared_ptr<basis_pm1_type> basis_pm1_ptrtype;
 
       //Vectorial P0
       typedef bases<Lagrange<0,Vectorial,Discontinuous>> basis_pm1vec_type;
-      typedef boost::shared_ptr<basis_pm1vec_type> basis_pm1vec_ptrtype;
+      typedef std::shared_ptr<basis_pm1vec_type> basis_pm1vec_ptrtype;
 
       //Scalar space
       typedef FunctionSpace<mesh_type,basis_type> space_type;
-      typedef boost::shared_ptr<space_type> space_ptrtype;
+      typedef std::shared_ptr<space_type> space_ptrtype;
 
       //Scalar space P0
       typedef FunctionSpace<mesh_type,basis_pm1_type> space_pm1_type;
-      typedef boost::shared_ptr<space_pm1_type> space_pm1_ptrtype;
+      typedef std::shared_ptr<space_pm1_type> space_pm1_ptrtype;
 
       //Vectorial space P0
       typedef FunctionSpace<mesh_type,basis_pm1vec_type> space_pm1vec_type;
-      typedef boost::shared_ptr<space_pm1vec_type> space_pm1vec_ptrtype;
+      typedef std::shared_ptr<space_pm1vec_type> space_pm1vec_ptrtype;
 
       /**
        * Constructor

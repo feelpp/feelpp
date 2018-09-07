@@ -75,12 +75,12 @@ namespace py = boost::parameter::python;
 
 //definition of all methods we need for the wrapping and wich are create from a BOOST_PARAMETER_FUNCTION or a method with default value arguments  
 
-boost::shared_ptr<Exporter<Mesh<Simplex<3>>,1>> New1 (po::variables_map const& x,std::string y,WorldComm const& z) 
+std::shared_ptr<Exporter<Mesh<Simplex<3>>,1>> New1 (po::variables_map const& x,std::string y,WorldComm const& z) 
 {
     return Exporter<Mesh<Simplex<3>>,1>::New(x,y,z);
 }
 
-boost::shared_ptr<Exporter<Mesh<Simplex<3>>,1>> New2 () 
+std::shared_ptr<Exporter<Mesh<Simplex<3>>,1>> New2 () 
 {
     return Exporter<Mesh<Simplex<3>>,1>::New();
 }
@@ -88,7 +88,7 @@ boost::shared_ptr<Exporter<Mesh<Simplex<3>>,1>> New2 ()
 
 
     template<typename MeshType,int N>
-void expo_w ( boost::shared_ptr<MeshType> m)
+void expo_w ( std::shared_ptr<MeshType> m)
 {
     auto x=Exporter<MeshType,N>::New();
     x->setMesh(m);
@@ -97,7 +97,7 @@ void expo_w ( boost::shared_ptr<MeshType> m)
 }
 
 
-boost::shared_ptr<Mesh<Simplex<3>>> loadMesh_w (Mesh<Simplex<3>>* mesh)
+std::shared_ptr<Mesh<Simplex<3>>> loadMesh_w (Mesh<Simplex<3>>* mesh)
 {
     return loadMesh(_mesh=mesh);
 }

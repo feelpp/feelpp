@@ -87,7 +87,7 @@ makeAbout()
  */
 class linear:
     public Simget,
-    public boost::enable_shared_from_this<linear>
+    public std::enable_shared_from_this<linear>
 {
 public:
 
@@ -101,7 +101,7 @@ public:
     linear()
         :
         Simget(),
-        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) )
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldCommPtr() ) )
         {
         }
 
@@ -165,14 +165,14 @@ public:
     void run( const double*, long unsigned int, double*, long unsigned int ) {}
 private:
 
-    boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
+    std::shared_ptr<SolverNonLinear<double> > M_nlsolver;
 };
 
 
 
 class NL22:
     public Simget,
-    public boost::enable_shared_from_this<NL22>
+    public std::enable_shared_from_this<NL22>
 {
 public:
 
@@ -186,7 +186,7 @@ public:
     NL22( const vectorN_type& initial_guess , const vectorN_type & exact_solution)
         :
         Simget(),
-        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldCommPtr() ) ),
         M_initial_guess ( initial_guess ),
         M_exact_solution( exact_solution )
         {
@@ -243,7 +243,7 @@ public:
     void run( const double*, long unsigned int, double*, long unsigned int ) {}
 private:
 
-    boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
+    std::shared_ptr<SolverNonLinear<double> > M_nlsolver;
     vectorN_type M_initial_guess;
     vectorN_type M_exact_solution;
 };

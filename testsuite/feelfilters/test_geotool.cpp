@@ -16,7 +16,7 @@ namespace test_geotool
 {
 
 typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
+typedef std::shared_ptr<Application_type> Application_ptrtype;
 
 /*_________________________________________________*
  * Options

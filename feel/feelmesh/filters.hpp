@@ -186,7 +186,7 @@ decltype(auto)
 make_elements_wrapper()
 {
     using elt_wrapper_t = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
-    return boost::make_shared<elt_wrapper_t>();
+    return std::make_shared<elt_wrapper_t>();
 }
 #if 0
 /**
@@ -1280,7 +1280,7 @@ faces( MeshType const& imesh, EntityProcessType entity )
 {
     typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
     //typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > cont_range_type;
-    //boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    //std::shared_ptr<cont_range_type> myelts( new cont_range_type );
     auto const& mesh = Feel::unwrap_ptr( imesh );
     
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )

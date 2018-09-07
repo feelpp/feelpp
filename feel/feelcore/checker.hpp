@@ -42,14 +42,14 @@ class FEELPP_EXPORT hp
 {
 public:
     //!
-    //! 
+    //!
     //!
     hp( double h, int p );
 
     //!
-    //! 
     //!
-    Checks operator()( std::string const& solution, std::pair<std::string,double> const& r, double otol = 1e-1, double etol=1e-15 );
+    //!
+    Checks operator()( std::string const& solution, std::pair<std::string,double> const& r, double otol = 1e-1, double etol=1e-13 );
 private:
     struct FEELPP_NO_EXPORT data
     {
@@ -72,7 +72,7 @@ private:
                 exact(_exact)
             {}
         ~data() = default;
-            
+
         std::vector<double> hs;
         std::map<std::string,errors_t> errors;
         bool exact = false;
@@ -91,7 +91,7 @@ private:
 struct CheckerConvergenceFailed : public std::logic_error
 {
     CheckerConvergenceFailed() = delete;
-    
+
     CheckerConvergenceFailed( double expected, double got, double tol )
         :
         std::logic_error( "Checker convergence order  verification failed" ),
@@ -126,7 +126,7 @@ private:
 //! for PDE solve When solving PDEs, we want to check that we get
 //! proper convergence rates using a priori error estimates.
 //!
-//! The \c Checker class 
+//! The \c Checker class
 //!
 class FEELPP_EXPORT Checker
 {
@@ -140,16 +140,19 @@ public:
 
     bool check() const { return M_check; }
     void setCheck( bool c ) { M_check = c; }
-    
+    bool verbose() const { return M_verbose; }
+    void setVerbose( bool v ) { M_verbose = v; }
+
     std::string const& solution() const { return M_solution; }
     void setSolution( std::string const& s ) { M_solution = s; }
-    
+
     template<typename ErrorFn, typename ErrorLaw>
     int
-    runOnce( ErrorFn fn, ErrorLaw law, std::string metric = "||u-u_h_" );
+    runOnce( ErrorFn fn, ErrorLaw law, std::string metric = "||u-u_h||_" );
 
 private:
     bool M_check;
+    bool M_verbose;
     std::string M_solution;
     double M_etol, M_otol;
 };

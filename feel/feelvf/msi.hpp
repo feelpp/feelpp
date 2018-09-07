@@ -30,6 +30,7 @@
 #if defined( FEELPP_HAS_FFTW )
 #include <boost/multi_array.hpp>
 #include <feel/feeldiscr/multiscaleimage.hpp>
+
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/shape.hpp>
 #include <unsupported/Eigen/Splines>
@@ -49,9 +50,7 @@ namespace Feel
 {
 namespace vf
 {
-
-
-    /// \cond DETAIL
+/// \cond DETAIL
 namespace detail
 {
 /**
@@ -77,8 +76,6 @@ public:
 
     static const int Options = _Options;
 
-    static const uint16_type imorder = 0;
-    static const bool imIsPoly = true;
     static const bool is_terminal = true;
 
     typedef Feel::MultiScaleImage<T,Options> msi_type;
@@ -111,6 +108,7 @@ public:
     typedef value_type evaluate_type;
 
     using image_type = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
+
     //@}
 
     /** @name Constructors, destructor
@@ -154,6 +152,12 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return 0; }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return true; }
 
     //blitz::Array<value_type,2> ones() const { return M_values; }
 
@@ -231,6 +235,7 @@ public:
             update( geom );
             
         }
+
         void update( Geo_t const& geom)
         {
             M_gmc = fusion::at_key<key_type>( geom ).get();
@@ -321,8 +326,6 @@ msi( Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> const& f, in
 {
     return Expr<vf::detail::MSI<T,Options> >( vf::detail::MSI<T,Options>(f,level ));
 }
-
-
 
 } // vf
 } // Feel

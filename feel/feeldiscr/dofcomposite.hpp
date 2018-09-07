@@ -58,9 +58,9 @@ public:
      */
     //@{
 
-    DofComposite( WorldComm const& _worldComm = Environment::worldComm() ): super( _worldComm ) {}
-    DofComposite( size_type n, size_type n_local, WorldComm const& _worldComm = Environment::worldComm() ) : super( n, n_local, _worldComm ) {}
-    DofComposite( std::vector< datamap_ptrtype > const& subdm, WorldComm const& _worldComm ) : super( subdm, _worldComm ) {}
+    explicit DofComposite( worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() ): super( _worldComm ) {}
+    DofComposite( size_type n, size_type n_local, worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() ) : super( n, n_local, _worldComm ) {}
+    DofComposite( std::vector< datamap_ptrtype > const& subdm, worldcomm_ptr_t const& _worldComm ) : super( subdm, _worldComm ) {}
     DofComposite( DofComposite const & dc ) : super( dc ) {}
     ~DofComposite() {}
 
@@ -92,7 +92,7 @@ public:
     //@{
     
     std::pair<std::map<size_type,size_type>,std::map<size_type,size_type> >
-    pointIdToDofRelation(std::string fname="") const
+    pointIdToDofRelation( std::string const& fname="") const
     {
         return std::pair<std::map<size_type,size_type>,std::map<size_type,size_type> >();
     }
