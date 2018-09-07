@@ -39,6 +39,7 @@ int main(int argc, char**argv )
                    _about=about(_name="qs_laplacian",
                                 _author="Feel++ Consortium",
                                 _email="feelpp-devel@feelpp.org"));
+
     // end::env[]
 
     // tag::mesh_space[]
@@ -67,17 +68,17 @@ int main(int argc, char**argv )
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
                   _expr=f*id(v));
-    l+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_2*id(v));
-    l+=integrate(_range=markedfaces(mesh,"Neumann"), _expr=n*id(v));
+    l+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_2*id(v),_quad=4);
+    l+=integrate(_range=markedfaces(mesh,"Neumann"), _expr=n*id(v),_quad=_Q<3>());
     toc("l");
 
     tic();
     auto a = form2( _trial=Vh, _test=Vh);
     tic();
     a = integrate(_range=elements(mesh),
-                  _expr=mu*inner(gradt(u),grad(v)) );
+                  _expr=mu*inner(gradt(u),grad(v)),_quad=_Q<>(3) );
     toc("a");
-    a+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_1*idt(u)*id(v));
+    a+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_1*idt(u)*id(v),_quad=im(mesh,4));
     a+=on(_range=markedfaces(mesh,"Dirichlet"), _rhs=l, _element=u, _expr=g );
     //! if no markers Robin Neumann or Dirichlet are present in the mesh then
     //! impose Dirichlet boundary conditions over the entire boundary
@@ -116,7 +117,7 @@ int main(int argc, char**argv )
             double l2 = normL2(_range=elements(mesh), _expr=idv(u)-expr(solution) );
             toc("L2 error norm");
             tic();
-            double h1 = normH1(_range=elements(mesh), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-grad<2>(expr(solution)) );
+            double h1 = normH1(_range=elements(mesh), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-grad<FEELPP_DIM>(expr(solution)) );
             toc("H1 error norm");
             return { { "L2", l2 }, {  "H1", h1 } };
         };
@@ -126,6 +127,5 @@ int main(int argc, char**argv )
 
     // exit status = 0 means no error
     return !status;
-
 }
 // end::global[]

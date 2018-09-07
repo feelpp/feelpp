@@ -40,7 +40,7 @@ class OperatorPCD : public OperatorPCDBase<typename space_type::value_type>
 public:
 
     typedef OperatorPCD<space_type> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 
     typedef typename space_type::value_type value_type;
 
@@ -50,7 +50,7 @@ public:
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     typedef typename space_type::mesh_type mesh_type;
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
@@ -63,19 +63,19 @@ public:
     typedef typename pressure_space_type::element_type pressure_element_type;
 
     typedef OperatorMatrix<value_type> op_mat_type;
-    typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
+    typedef std::shared_ptr<op_mat_type> op_mat_ptrtype;
 
     typedef OperatorInverse<op_mat_type> op_inv_type;
-    typedef boost::shared_ptr<op_inv_type> op_inv_ptrtype;
+    typedef std::shared_ptr<op_inv_type> op_inv_ptrtype;
 
     typedef OperatorCompose<op_inv_type, op_mat_type> comp1_type;
-    typedef boost::shared_ptr<comp1_type> comp1_ptrtype;
+    typedef std::shared_ptr<comp1_type> comp1_ptrtype;
 
     typedef OperatorCompose<op_mat_type, comp1_type> comp2_type;
-    typedef boost::shared_ptr<comp2_type> comp2_ptrtype;
+    typedef std::shared_ptr<comp2_type> comp2_ptrtype;
 
     typedef OperatorBase<value_type> op_type;
-    typedef boost::shared_ptr<op_type> op_ptrtype;
+    typedef std::shared_ptr<op_type> op_ptrtype;
 
 
     static const uint16_type Dim = space_type::nDim;

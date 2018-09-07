@@ -118,13 +118,13 @@ class ImporterAcusimRawMesh : public Importer<MeshType>
     typedef typename super::face_type face_type;
     typedef typename super::element_type element_type;
 
-    ImporterAcusimRawMesh( WorldComm const& _worldcomm = Environment::worldComm() )
+    explicit ImporterAcusimRawMesh( worldcomm_ptr_t const& _worldcomm = Environment::worldCommPtr() )
         :
         super( ACUSIM, ASCII, _worldcomm )
     {
     }
 
-    ImporterAcusimRawMesh( std::string const& filename, WorldComm const& _worldcomm = Environment::worldComm() );
+    ImporterAcusimRawMesh( std::string const& filename, worldcomm_ptr_t const& _worldcomm = Environment::worldCommPtr() );
 
     ImporterAcusimRawMesh( ImporterAcusimRawMesh const& ) = default;
 
@@ -146,7 +146,7 @@ class ImporterAcusimRawMesh : public Importer<MeshType>
 };
 
 template <typename MeshType>
-ImporterAcusimRawMesh<MeshType>::ImporterAcusimRawMesh( std::string const& filename, WorldComm const& wc )
+ImporterAcusimRawMesh<MeshType>::ImporterAcusimRawMesh( std::string const& filename, worldcomm_ptr_t const& wc )
     :
     super( ACUSIM, ASCII, wc )
 {
@@ -163,7 +163,7 @@ ImporterAcusimRawMesh<MeshType>::ImporterAcusimRawMesh( std::string const& filen
             LOG( ERROR ) << "AcusimRawMesh coordinate not available";
         this->setFilenameNodes( ( pp / fs::path( *c_filename ) ).string() );
     }
-    if ( wc.isMasterRank() )
+    if ( wc->isMasterRank() )
         std::cout << ". loading AcusimRawMesh, coordinates " << this->filenameNodes() << "\n";
     std::string e_topology;
 
@@ -187,7 +187,7 @@ ImporterAcusimRawMesh<MeshType>::ImporterAcusimRawMesh( std::string const& filen
                 LOG( ERROR ) << "AcusimRawMesh element_set not available";
             auto p = std::make_pair( marker, ( pp / fs::path( *e_filename ) ).string() );
             M_filenamesElements.insert( p );
-            if ( wc.isMasterRank() )
+            if ( wc->isMasterRank() )
                 std::cout << "  .. element_set " << p.first << " - " << p.second << " (" << e_topology << ")\n";
         }
         else if ( s.first == "surface_set" )
@@ -212,7 +212,7 @@ ImporterAcusimRawMesh<MeshType>::ImporterAcusimRawMesh( std::string const& filen
                 LOG( ERROR ) << "AcusimRawMesh surface_set not available";
             auto p = std::make_pair( marker, ( pp / fs::path( *e_filename ) ).string() );
             M_filenamesFaces.insert( p );
-            if ( wc.isMasterRank() )
+            if ( wc->isMasterRank() )
                 std::cout << "  .. surface_set " << p.first << " - " << p.second << " (" << e_topology << ")\n";
         }
     }

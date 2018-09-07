@@ -82,7 +82,7 @@ public:
     /*mesh*/
     typedef Simplex<2> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
     typedef Lagrange<Order, Scalar> basis_scalar_type;
@@ -90,11 +90,11 @@ public:
     typedef Lagrange<Order, Vectorial> basis_vector_type;
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     typedef FunctionSpace<mesh_type, bases<basis_vector_type> > disp_space_type;
-    typedef boost::shared_ptr<disp_space_type> disp_space_ptrtype;
+    typedef std::shared_ptr<disp_space_type> disp_space_ptrtype;
     typedef typename disp_space_type::element_type disp_element_type;
 
 
@@ -135,7 +135,7 @@ private:
     double meshSize;
     double bcCoeff;
 
-    boost::shared_ptr<export_type> exporter;
+    std::shared_ptr<export_type> exporter;
 
 }; // LinElAxi
 

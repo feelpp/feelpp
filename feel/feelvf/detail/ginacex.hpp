@@ -24,10 +24,16 @@
 #ifndef FEELPP_DETAIL_GINACEX_HPP
 #define FEELPP_DETAIL_GINACEX_HPP 1
 
+#include <feel/feelvf/detail/ginacexvf.hpp>
+
+#if 0
+
 namespace Feel
 {
 namespace vf
 {
+
+
 /// \cond detail
 /**
  * @brief allow runtime ginac in expression
@@ -341,10 +347,11 @@ public:
 
 private:
     mutable expression_type  M_fun;
-    boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
+    std::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
     std::string M_filename;
     std::string M_exprDesc;
 };
+
 template<int Order>
 FEELPP_EXPORT std::ostream&
 operator<<( std::ostream& os, GinacEx<Order> const& e )
@@ -368,5 +375,7 @@ str( GinacEx<Order> const& e )
 
 } // vf
 } // feel
+
+#endif
 
 #endif /* FEELPP_DETAIL_GINACEX_HPP */

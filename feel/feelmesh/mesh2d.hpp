@@ -35,10 +35,6 @@
 #include <boost/foreach.hpp>
 #include <boost/mpl/print.hpp>
 #include <boost/multi_array.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index_container.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -124,7 +120,7 @@ class Mesh2D
     typedef typename edges_reference_wrapper_type::const_iterator edge_reference_wrapper_const_iterator;
 
     typedef Mesh2D<Shape,T> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     typedef typename element_type::edge_permutation_type edge_permutation_type;
     typedef typename element_type::face_permutation_type face_permutation_type;
@@ -139,7 +135,7 @@ class Mesh2D
     /**
      * default constructor
      */
-    Mesh2D( WorldComm const& worldComm = Environment::worldComm() )
+    explicit Mesh2D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         : super_visitable(),
           super( 2, nRealDim, worldComm ),
           super_elements( worldComm ),
@@ -179,7 +175,7 @@ class Mesh2D
     /**
      * \return \p true if all containers are empty, \p false otherwise
      */
-    bool isEmpty() const
+    bool isEmpty() const override
     {
         return ( super_elements::isEmpty() &&
                  super_points::isEmpty() &&
@@ -189,7 +185,7 @@ class Mesh2D
     /**
      * \return the number of elements
      */
-    size_type numElements() const
+    size_type numElements() const override
     {
         return this->elements().size();
     }
@@ -232,7 +228,7 @@ class Mesh2D
     /**
      * \return the number of faces
      */
-    size_type numFaces() const
+    size_type numFaces() const override
     {
         return this->faces().size();
     }
@@ -248,7 +244,7 @@ class Mesh2D
     /**
  * \return the number of points
  */
-    size_type numPoints() const
+    size_type numPoints() const override
     {
         return this->points().size();
     }
@@ -269,9 +265,9 @@ class Mesh2D
     face_iterator endEdge() { return this->endFace(); }
     faces_type edges() { return this->faces(); }
 
-    void setWorldComm( WorldComm const& _worldComm )
+    void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
     {
-        this->setWorldCommMeshBase( _worldComm );
+        MeshBase::setWorldComm( _worldComm );
         this->setWorldCommElements( _worldComm );
         this->setWorldCommFaces( _worldComm );
         this->setWorldCommPoints( _worldComm );
@@ -281,7 +277,7 @@ class Mesh2D
  * clear out all data from the mesh, \p isEmpty() should return
  * \p true after a \p clear()
  */
-    virtual void clear()
+    virtual void clear() override
     {
         VLOG( 1 ) << "Deleting Mesh2D...\n";
 
@@ -296,27 +292,26 @@ class Mesh2D
 
   protected:
     /**
- * dummy  implementation
- * \see Mesh
- */
-    void renumber()
+     * dummy  implementation
+     * \see Mesh
+     */
+    void renumber() override
     {
         FEELPP_ASSERT( 0 )
             .error( "invalid call" );
     }
 
     /**
- * update permutation of entities of co-dimension 1
- */
-
-    void updateEntitiesCoDimensionOnePermutation()
+     * update permutation of entities of co-dimension 1
+     */
+    void updateEntitiesCoDimensionOnePermutation() 
     {
         //updateEntitiesCoDimensionOnePermutation( mpl::bool_<Shape::nDim==Shape::nRealDim>() );
         updateEntitiesCoDimensionOnePermutation( mpl::bool_<true>() );
     }
 
     void
-        updateEntitiesCoDimensionOnePermutation( mpl::bool_<false> )
+    updateEntitiesCoDimensionOnePermutation( mpl::bool_<false> )
     {
     }
 
@@ -341,9 +336,9 @@ class Mesh2D
     }
 
     /**
- * update the entities of co-dimension 2
- */
-    void updateEntitiesCoDimensionTwo()
+     * update the entities of co-dimension 2
+     */
+    void updateEntitiesCoDimensionTwo() override
     {
         // no-op
     }

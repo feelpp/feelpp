@@ -53,9 +53,9 @@ public:
 
     /*mesh*/
     typedef Mesh<Simplex<nDim,geoOrder> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef Mesh<Simplex<nDim-1,geoOrder,nDim>> mesh_lag_type;
-    typedef boost::shared_ptr<mesh_lag_type> mesh_lag_ptrtype;
+    typedef std::shared_ptr<mesh_lag_type> mesh_lag_ptrtype;
 
     /*basis*/
     typedef Lagrange<uOrder, Vectorial> basis_u_type;
@@ -86,7 +86,7 @@ public:
 #else
     typedef FunctionSpace<mesh_type, basis_type> space_type;
 #endif
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     //# endmarker2 #
 

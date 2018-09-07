@@ -113,9 +113,9 @@ class Bdf : public TSBase
     typedef TSBase super;
 public:
     typedef Bdf<SpaceType> bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
     typedef SpaceType space_type;
-    typedef boost::shared_ptr<space_type>  space_ptrtype;
+    typedef std::shared_ptr<space_type>  space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef typename space_type::element_ptrtype element_ptrtype;
     typedef typename space_type::return_type return_type;
@@ -142,21 +142,8 @@ public:
      * @param name name of the BDF
      */
     Bdf( space_ptrtype const& space, std::string const& name );
-
     //! copy operator
-    Bdf( Bdf const& b )
-        :
-        super( b ),
-        M_order( b.M_order ),
-        M_strategyHighOrderStart( b.M_strategyHighOrderStart ),
-        M_order_cur( b.M_order_cur ),
-        M_last_iteration_since_order_change( b.M_last_iteration_since_order_change ),
-        M_iterations_between_order_change( b.M_iterations_between_order_change ),
-        M_space( b.M_space ),
-        M_unknowns( b.M_unknowns ),
-        M_alpha( b.M_alpha ),
-        M_beta( b.M_beta )
-    {}
+    Bdf( Bdf const& b );
 
     ~Bdf();
 
@@ -250,7 +237,6 @@ public:
     */
     double restart();
 
-
     /**
        Update the vectors of the previous time steps by shifting on the right
        the old values.
@@ -259,6 +245,9 @@ public:
     template<typename container_type>
     void shiftRight( typename space_type::template Element<value_type, container_type> const& u_curr );
 
+    /**
+     * Move to next time step (solution not shifted).
+     */
     double next() const
     {
         double tcur = super::next();
@@ -276,6 +265,9 @@ public:
         return tcur;
     }
 
+    /**
+     * Move to next time step with solution shift.
+     */
     template<typename container_type>
     double
     next( typename space_type::template Element<value_type, container_type> const& u_curr )
@@ -285,17 +277,18 @@ public:
         return this->next();
     }
 
-		/**
-		 * Return \f$ \alpha_i \f$
-		 */
+    /**
+     * Return \f$ \alpha_i \f$
+     */
     double polyCoefficient( int i ) const
     {
         CHECK( i >=0 && i < BDF_MAX_ORDER-1 ) <<  "[BDF] invalid index " << i;
         return M_beta[this->timeOrder()-1][i];
-    }  
-		/**
-		 * Return \f$ \frac{\alpha_i}{\Delta t} \f$
-		 */
+    }
+
+    /**
+     * Return \f$ \frac{\alpha_i}{\Delta t} \f$
+     */
     double polyDerivCoefficient( int i ) const
     {
         CHECK( i >=0 && i <= BDF_MAX_ORDER ) << "[BDF] invalid index " << i;
@@ -320,7 +313,7 @@ public:
     element_type const& prior() const { return *M_unknowns[0]; }
 
     element_type& prior() { return *M_unknowns[0]; }
-    
+
     template<typename container_type>
     void setUnknown( int i,  typename space_type::template Element<value_type, container_type> const& e )
     {
@@ -329,6 +322,7 @@ public:
 
     void showMe( std::ostream& __out = std::cout ) const;
 
+    //! Load current unknown in a file (hdf5, binary, ...)
     void loadCurrent();
 
     void print() const
@@ -345,7 +339,7 @@ public:
 private:
     void init();
 
-
+    //! Save current unknown in a file (hdf5, binary, ...)
     void saveCurrent();
 
     //! save/load Bdf metadata
@@ -394,7 +388,6 @@ private:
 
     //! extrapolation field and rhs part of bdf scheme
     element_ptrtype M_poly, M_polyDeriv;
-
 };
 
 template <typename SpaceType>
@@ -421,8 +414,6 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
         M_unknowns[__i]->zero();
     }
     computeCoefficients();
-
-
 }
 
 template <typename SpaceType>
@@ -430,6 +421,22 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
                      std::string const& name  )
     :
     bdf_type( __space, name, "" )
+{}
+
+//! copy operator
+template <typename SpaceType>
+Bdf<SpaceType>::Bdf( Bdf const& b )
+    :
+        super( b ),
+        M_order( b.M_order ),
+        M_strategyHighOrderStart( b.M_strategyHighOrderStart ),
+        M_order_cur( b.M_order_cur ),
+        M_last_iteration_since_order_change( b.M_last_iteration_since_order_change ),
+        M_iterations_between_order_change( b.M_iterations_between_order_change ),
+        M_space( b.M_space ),
+        M_unknowns( b.M_unknowns ),
+        M_alpha( b.M_alpha ),
+        M_beta( b.M_beta )
 {}
 
 template <typename SpaceType>
@@ -485,28 +492,46 @@ Bdf<SpaceType>::computeCoefficients()
         }
     }
 }
+
 template <typename SpaceType>
 void
 Bdf<SpaceType>::init()
 {
     if ( this->path().empty() )
+    {
         this->setPathSave( (boost::format("%3%bdf_o_%1%_dt_%2%")
                             %this->bdfOrder()
                             %this->timeStep()
                             %this->bdfPrefix()  ).str() );
-
+    }
+    // in super::init() M_iteration is set back to 0
     super::init();
 
     if ( this->isRestart() )
     {
         fs::path dirPath = ( this->restartPath().empty() )? this->path() : this->restartPath()/this->path();
 
-        for ( int p = 0; p < std::min( M_order, M_iteration+1 ); ++p )
+        const int niteration = this->iterationNumber();
+        int pmax = std::min( M_order, M_iteration+1 );
+
+        for ( int p = 0; p < pmax; ++p )
         {
+            int iteration = (M_iteration-p);
+            // Load files beginning at last iteration.
+            if( this->isReverseLoad() )
+                iteration = niteration - iteration;
+            CHECK( iteration >= 0 )
+                << "BDF init: negative iteration: "<< iteration
+                << "( niter:"<< niteration << ", iter:"<< M_iteration << ")";
+
             if ( fileFormat() == "hdf5")
             {
 #ifdef FEELPP_HAS_HDF5
-                M_unknowns[p]->loadHDF5( ( dirPath / (boost::format("%1%-%2%.h5")%M_name %(M_iteration-p)).str() ).string() );
+                fs::path fname =  dirPath / (boost::format("%1%-%2%.h5") % M_name % iteration).str();
+                VLOG(1) << "BDF HDF5 load solution iteration " << iteration
+                        << " time " << M_time
+                        << " from " << fname.string();
+                M_unknowns[p]->loadHDF5( fname.string() );
 #else
                 CHECK( false ) << "hdf5 not detected";
 #endif
@@ -516,9 +541,9 @@ Bdf<SpaceType>::init()
                 // create and open a character archive for output
                 std::ostringstream ostr;
                 if( M_rankProcInNameOfFiles )
-                    ostr << M_name << "-" << M_iteration-p<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+                    ostr << M_name << "-" << iteration <<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
                 else
-                    ostr << M_name << "-" << M_iteration-p;
+                    ostr << M_name << "-" << iteration;
                 DVLOG(2) << "[Bdf::init()] load file: " << ostr.str() << "\n";
 
                 fs::ifstream ifs;
@@ -714,11 +739,12 @@ Bdf<SpaceType>::saveCurrent()
     bdfsaver.save();
 
     {
+        int iteration = M_iteration;
 
         if ( this->fileFormat() == "hdf5")
         {
 #ifdef FEELPP_HAS_HDF5
-            M_unknowns[0]->saveHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %M_iteration).str() ).string() );
+            M_unknowns[0]->saveHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %iteration).str() ).string() );
 #else
             CHECK( false ) << "hdf5 not detected";
 #endif
@@ -728,9 +754,9 @@ Bdf<SpaceType>::saveCurrent()
             std::ostringstream ostr;
 
             if( M_rankProcInNameOfFiles )
-                ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+                ostr << M_name << "-" << iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
             else
-                ostr << M_name << "-" << M_iteration;
+                ostr << M_name << "-" << iteration;
             // load data from archive
             fs::ofstream ofs( M_path_save / ostr.str() );
             boost::archive::binary_oarchive oa( ofs );
@@ -740,6 +766,14 @@ Bdf<SpaceType>::saveCurrent()
     }
 }
 
+//! Load current unknown in a file (hdf5, binary, ...)
+//! The filename depends on the bdf name and the time iteration.
+//!
+//! Notes:
+//!     - that if bdf is set to `setReverse(true)`, the iteration 0 will be loaded.
+//!     - You might desire to read a bdf backward. Then you have to pass `setReverseLoad(true)`
+//!       to load existing unknowns from last iteration! It is require after a restart if time
+//!       loop sense changed.
 template <typename SpaceType>
 void
 Bdf<SpaceType>::loadCurrent()
@@ -748,11 +782,27 @@ Bdf<SpaceType>::loadCurrent()
     //bdfsaver.save();
 
     {
+        const int niteration = this->iterationNumber();
+        int iteration = M_iteration;
+        // Load files beginning at last iteration.
+        if( this->isReverseLoad() )
+            iteration = niteration - iteration + 1;
+        LOG(INFO) << "BDF iteration: "<< iteration << "( niter:"<< niteration << ", iter:"<< M_iteration << ")";
+        CHECK( iteration >= 0 )
+            << "BDF loadCurrent: negative iteration: "<< iteration
+            << "( niter:"<< niteration << ", iter:"<< M_iteration << ")";
 
         if ( this->fileFormat() == "hdf5")
         {
 #ifdef FEELPP_HAS_HDF5
-            M_unknowns[0]->loadHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %M_iteration).str() ).string() );
+            fs::path fname =  M_path_save / (boost::format("%1%-%2%.h5")%M_name %iteration).str();
+            LOG(INFO) << "BDF HDF5 load solution iteration " << iteration
+                      << " time " << M_time
+                      << " from " << fname.string();
+            if ( fs::exists( fname ) )
+                M_unknowns[0]->loadHDF5( fname.string() );
+            else
+                throw std::invalid_argument( fname.string() + " not found" );
 #else
             CHECK( false ) << "hdf5 not detected";
 #endif
@@ -763,9 +813,9 @@ Bdf<SpaceType>::loadCurrent()
             std::ostringstream ostr;
 
             if( M_rankProcInNameOfFiles )
-                ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+                ostr << M_name << "-" << iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
             else
-                ostr << M_name << "-" << M_iteration;
+                ostr << M_name << "-" << iteration;
 
             fs::ifstream ifs( M_path_save / ostr.str() );
 
@@ -792,7 +842,7 @@ Bdf<SpaceType>::shiftRight( typename space_type::template Element<value_type, co
     // u(t^{n}) coefficient is in M_unknowns[0]
     *M_unknowns[0] = __new_unk;
     int i = 0;
-    BOOST_FOREACH( boost::shared_ptr<element_type>& t, M_unknowns  )
+    BOOST_FOREACH( std::shared_ptr<element_type>& t, M_unknowns  )
     {
         DVLOG(2) << "[Bdf::shiftright] id: " << i << " l2norm = " << t->l2Norm() << "\n";
         ++i;
@@ -839,10 +889,10 @@ Bdf<SpaceType>::computePolyAndPolyDeriv()
 
 
 BOOST_PARAMETER_FUNCTION(
-    ( boost::shared_ptr<Bdf<typename meta::remove_all<typename parameter::binding<Args, tag::space>::type>::type::element_type> > ),
+    ( std::shared_ptr<Bdf<typename meta::remove_all<typename parameter::binding<Args, tag::space>::type>::type::element_type> > ),
     bdf, tag,
     ( required
-      ( space,*( boost::is_convertible<mpl::_,boost::shared_ptr<Feel::FunctionSpaceBase> > ) ) )
+      ( space,*( boost::is_convertible<mpl::_,std::shared_ptr<Feel::FunctionSpaceBase> > ) ) )
     ( optional
       ( prefix,*,"" )
       ( name,*,"bdf" )
@@ -852,6 +902,7 @@ BOOST_PARAMETER_FUNCTION(
       ( time_step,*( boost::is_floating_point<mpl::_> ), doption(_prefix=prefix,_name="bdf.time-step") )
       ( strategy,*( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="bdf.strategy") )
       ( steady,*( bool ), boption(_prefix=prefix,_name="bdf.steady") )
+      ( reverse,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.reverse") )
       ( restart,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.restart") )
       ( restart_path,*, soption(_prefix=prefix,_name="bdf.restart.path") )
       ( restart_at_last_save,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.restart.at-last-save") )
@@ -862,12 +913,13 @@ BOOST_PARAMETER_FUNCTION(
     ) )
 {
     typedef typename meta::remove_all<space_type>::type::element_type _space_type;
-    auto thebdf = boost::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>( space,name,prefix ) );
+    auto thebdf = std::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>( space,name,prefix ) );
     thebdf->setTimeInitial( initial_time );
     thebdf->setTimeFinal( final_time );
     thebdf->setTimeStep( time_step );
     thebdf->setOrder( order );
     thebdf->setSteady( steady );
+    thebdf->setReverse( reverse );
     thebdf->setRestart( restart );
     thebdf->setRestartPath( restart_path );
     thebdf->setRestartAtLastSave( restart_at_last_save );

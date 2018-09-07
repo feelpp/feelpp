@@ -1,11 +1,13 @@
 {
-    "Name": "Fluid Mechanics",
-    "ShortName":"Fluid",
-    "Model":"Navier-Stokes",
+    "Name": "Backward Facing Step 2d",
+    "ShortName":"backwardfacingstep2d",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
     "Materials":
     {
         "fluid":{
-            "name":"myFluidMat",
             "rho":"1",
             // "mu":"0.2"//Re=10
             "mu":"0.02"//Re=100
@@ -42,7 +44,10 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","pid"]
+        "Exports":
+        {
+            "fields":["velocity","pressure","pid"]
+        }
     }
 
 }

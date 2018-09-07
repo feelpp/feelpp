@@ -9,7 +9,7 @@
 
 template<typename DatabaseType,typename SpaceType>
 void
-runPOD( DatabaseType & myDb, boost::shared_ptr<SpaceType> const& space, std::string const& fieldPod )
+runPOD( DatabaseType & myDb, std::shared_ptr<SpaceType> const& space, std::string const& fieldPod )
 {
     using namespace Feel;
     bool useScalarProductL2 = soption(_name="scalar-product") == "L2";
@@ -41,7 +41,7 @@ runPOD( DatabaseType & myDb, boost::shared_ptr<SpaceType> const& space, std::str
     if ( myDb.worldComm().isMasterRank() )
         std::cout << "start build matrix pod of size : " << nTimeStep << "," << nTimeStep << "\n";
 
-    boost::shared_ptr<MatrixSparse<double>> scalarProductOperator;
+    std::shared_ptr<MatrixSparse<double>> scalarProductOperator;
     bool useScalarProductOperator = boption(_name="scalar-product.use-operator");
     if ( useScalarProductL2 && useScalarProductOperator )
     {

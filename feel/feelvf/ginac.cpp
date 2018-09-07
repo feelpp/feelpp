@@ -153,11 +153,16 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
     CHECK( fsize  > 0 ) << "bad expression format";
     std::string strexpr( fields[0] );
     std::vector<std::string> strsyms;
+#if 0
     if(fsize==1)
         strsyms.push_back("0"); // no symbols means constant expression
     else
         for( auto it=fields.begin()+1; it!=fields.end(); ++it )
             strsyms.push_back( *it );
+#else
+    for( auto it=fields.begin()+1; it!=fields.end(); ++it )
+        strsyms.push_back( *it );
+#endif
     std::vector<symbol> syms;
     std::for_each( strsyms.begin(), strsyms.end(),
                    [&syms] ( std::string const& sym ) { syms.push_back( symbol(sym) ); } );
@@ -456,9 +461,20 @@ laplacian( std::string const& s, std::vector<symbol> const& l, std::vector<symbo
 }
 matrix diff(ex const& f, symbol const& l, const int n)
 {
-    matrix ret(1,1);
-    ret(0,0)=f.diff( l,n );
-    return ret;
+    if ( is_a<lst>(f) )
+    {
+        std::vector<ex> g(f.nops());
+        for( int i = 0; i < f.nops(); ++i )
+            g[i] = f.op(i).diff( l, n );
+        matrix ret(f.nops(),1,g);
+        return ret;
+    }
+    else
+    {
+        matrix ret(1,1);
+        ret(0,0)=f.diff( l,n );
+        return ret;
+    }
 }
 
 
@@ -505,5 +521,79 @@ matrix substitute(matrix const &f, symbol const& s, ex const& g )
     }
     return ff;
 }
+
+int totalDegree( GiNaC::ex const& expr, std::vector<std::pair<GiNaC::symbol,int>> const& symbolsDegree )
+{
+    int res = 0;
+    for ( int sd=0;sd<symbolsDegree.size();++sd )
+    {
+        GiNaC::symbol symbDegree = symbolsDegree[sd].first;
+        int unitDegree = symbolsDegree[sd].second;
+        int mydegree = expr.degree( symbDegree )*unitDegree;
+        std::vector<std::pair<GiNaC::symbol,int>> newSymbolsDegree;
+        for (int k=0;k<symbolsDegree.size();++k)
+        {
+            if ( sd == k ) continue;
+            newSymbolsDegree.push_back( symbolsDegree[k] );
+        }
+        int coeffDegree = totalDegree( expr.lcoeff( symbDegree ), newSymbolsDegree );
+        res = std::max( res, mydegree + coeffDegree );
+    }
+    return res;
+}
+
+std::vector<std::pair< bool,double> >
+toNumericValues( ex const& expr )
+{
+    std::vector<std::pair< bool,double> > res;
+    if ( is_a<matrix>(expr) )
+    {
+        matrix m( ex_to<matrix>(expr) );
+        int ni = m.rows();
+        int nj = m.cols();
+        res.resize( ni*nj, std::make_pair( false, double(0.) ) );
+        for( int i = 0; i < ni; ++i )
+        {
+            for( int j = 0; j < nj; ++j )
+            {
+                GiNaC::ex funEvalf = m(i,j).evalf();
+                if ( GiNaC::is_a<GiNaC::numeric>(funEvalf) )
+                {
+                    GiNaC::numeric funNumeric = GiNaC::ex_to<GiNaC::numeric>(funEvalf);
+                    if ( funNumeric.is_real() )
+                        res[i*nj+j] = std::make_pair( true, funNumeric.to_double() );
+                }
+            }
+        }
+    }
+    else if ( is_a<lst>(expr) )
+    {
+        int no = expr.nops();
+        res.resize( no, std::make_pair( false, double(0.) ) );
+        for( int i = 0; i < no; ++i )
+        {
+            GiNaC::ex funEvalf = expr.op(i).evalf();
+            if ( GiNaC::is_a<GiNaC::numeric>(funEvalf) )
+            {
+                GiNaC::numeric funNumeric = GiNaC::ex_to<GiNaC::numeric>(funEvalf);
+                if ( funNumeric.is_real() )
+                    res[i] = std::make_pair( true, funNumeric.to_double() );
+            }
+        }
+    }
+    else
+    {
+        res.resize( 1, std::make_pair( false, double(0.) ) );
+        GiNaC::ex funEvalf = expr.evalf();
+        if ( GiNaC::is_a<GiNaC::numeric>(funEvalf) )
+        {
+            GiNaC::numeric funNumeric = GiNaC::ex_to<GiNaC::numeric>(funEvalf);
+            if ( funNumeric.is_real() )
+                res[0] = std::make_pair( true, funNumeric.to_double() );
+        }
+    }
+    return res;
+}
+
 
 }

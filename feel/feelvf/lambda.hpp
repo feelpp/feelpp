@@ -51,9 +51,6 @@ public:
     static const size_type context = 0;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = 0;
-    static const bool imIsPoly = false;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -84,6 +81,12 @@ public:
                                                     mpl::identity<TheExpr3>>::type>::type::type _type;
         typedef typename _type::expression_type type;
     };
+
+    //! polynomial order
+    constexpr uint16_type polynomialOrder() const { return 0; }
+
+    //! expression is polynomial?
+    constexpr bool isPolynomial() const { return false; }
 
     template<typename ExprT>
     typename Lambda<ExprT>::type
@@ -158,7 +161,7 @@ public:
         }
 
 
-    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,boost::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
+    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,std::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,std::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
         typedef LambdaExpr<I> expression_type;

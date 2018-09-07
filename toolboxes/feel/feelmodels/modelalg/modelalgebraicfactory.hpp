@@ -44,22 +44,22 @@ namespace FeelModels
         typedef ModelAlgebraicFactory self_type;
 
         typedef FeelModels::ModelAlgebraic model_type;
-        typedef boost::shared_ptr<model_type> model_ptrtype;
-        typedef boost::weak_ptr<model_type> model_weakptrtype;
+        typedef std::shared_ptr<model_type> model_ptrtype;
+        typedef std::weak_ptr<model_type> model_weakptrtype;
 
         typedef typename model_type::value_type value_type;
         typedef typename model_type::backend_type backend_type;
         typedef typename model_type::backend_ptrtype backend_ptrtype;
 
         typedef GraphCSR graph_type;
-        typedef boost::shared_ptr<graph_type> graph_ptrtype;
+        typedef std::shared_ptr<graph_type> graph_ptrtype;
 
         typedef typename model_type::vector_ptrtype vector_ptrtype;
         typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
         typedef typename sparse_matrix_ptrtype::element_type sparse_matrix_type;
 
         typedef Preconditioner<value_type> preconditioner_type;
-        typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+        typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
         typedef typename backend_type::solve_return_type solve_return_type;
         typedef typename backend_type::nl_solve_return_type nl_solve_return_type;
@@ -68,9 +68,10 @@ namespace FeelModels
         typedef model_type::indexsplit_ptrtype indexsplit_ptrtype;
 
 
-        typedef boost::function<void ( sparse_matrix_ptrtype& A,vector_ptrtype& F )> linearAssembly_function_type;
-        typedef boost::function<void ( vector_ptrtype const& U, sparse_matrix_ptrtype& J )> jacobianAssembly_function_type;
-        typedef boost::function<void ( vector_ptrtype const& U, vector_ptrtype& R )> residualAssembly_function_type;
+        typedef boost::function<void ( ModelAlgebraic::DataUpdateLinear& )> function_assembly_linear_type;
+        typedef boost::function<void ( ModelAlgebraic::DataUpdateJacobian& )> function_assembly_jacobian_type;
+        typedef boost::function<void ( ModelAlgebraic::DataUpdateResidual& )> function_assembly_residual_type;
+        typedef boost::function<void ( vector_ptrtype& )> function_newton_initial_guess_type;
 
         typedef typename backend_type::pre_solve_type pre_solve_type;
         typedef typename backend_type::post_solve_type post_solve_type;
@@ -91,7 +92,7 @@ namespace FeelModels
 
         template <typename SpaceType>
         void
-        initFromFunctionSpace(boost::shared_ptr<SpaceType> const& space )
+        initFromFunctionSpace(std::shared_ptr<SpaceType> const& space )
         {
 
             if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".MethodNum","initFromFunctionSpace", "start",
@@ -126,28 +127,32 @@ namespace FeelModels
                    graph_ptrtype const& graph,
                    indexsplit_ptrtype const& indexSplit);
 
-        boost::shared_ptr<std::ostringstream> getInfo() const;
+        std::shared_ptr<std::ostringstream> getInfo() const;
         void printInfo() const;
 
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
+        //! return the model used by the algebraic factory
         model_ptrtype
         model() const { return M_model.lock(); }
 
-        backend_ptrtype
-        backend() { return M_backend; }
-
+        //! return the backend
         backend_ptrtype const&
         backend() const { return M_backend; }
 
-        preconditioner_ptrtype
-        preconditionerTool() { return M_PrecondManage; }
+        //! return matrix used for assembly linear system or the jacobian
+        sparse_matrix_ptrtype matrix() const { return M_J; }
 
+        //! return vector used for assembly rhs in linear system or the residual
+        vector_ptrtype rhs() const { return M_R; }
+
+        //! return the preconditioner
         preconditioner_ptrtype const&
         preconditionerTool() const { return M_PrecondManage; }
 
+        //! return sparsity matrix graph
         graph_ptrtype const&
         sparsityMatrixGraph() const { CHECK(M_J) << "no matrix register"; return M_J->graph(); }
 
@@ -179,10 +184,14 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
-        linearAssembly_function_type addFunctionLinearPostAssembly;
-        linearAssembly_function_type addFunctionLinearPreAssemblyNonCst;
-        jacobianAssembly_function_type addFunctionJacobianPreAssembly;
-        residualAssembly_function_type addFunctionResidualPreAssembly;
+        void addFunctionLinearAssembly( function_assembly_linear_type const& func, std::string const& key = "" );
+        void addFunctionLinearPostAssembly( function_assembly_linear_type const& func, std::string const& key = "" );
+        void addFunctionNewtonInitialGuess( function_newton_initial_guess_type const& func, std::string const& key = "" );
+        void addFunctionJacobianAssembly( function_assembly_jacobian_type const& func, std::string const& key = "" );
+        void addFunctionResidualAssembly( function_assembly_residual_type const& func, std::string const& key = "" );
+        void addFunctionJacobianPostAssembly( function_assembly_jacobian_type const& func, std::string const& key = "" );
+        void addFunctionResidualPostAssembly( function_assembly_residual_type const& func, std::string const& key = "" );
+
     private :
 
         void
@@ -213,6 +222,14 @@ namespace FeelModels
         bool M_hasBuildLinearJacobian;
         bool M_hasBuildResidualCst;
         bool M_hasBuildLinearSystemCst;
+
+        std::map<std::string,function_assembly_linear_type> M_addFunctionLinearAssembly;
+        std::map<std::string,function_assembly_linear_type> M_addFunctionLinearPostAssembly;
+        std::map<std::string,function_newton_initial_guess_type> M_addFunctionNewtonInitialGuess;
+        std::map<std::string,function_assembly_jacobian_type> M_addFunctionJacobianAssembly;
+        std::map<std::string,function_assembly_residual_type> M_addFunctionResidualAssembly;
+        std::map<std::string,function_assembly_jacobian_type> M_addFunctionJacobianPostAssembly;
+        std::map<std::string,function_assembly_residual_type> M_addFunctionResidualPostAssembly;
     };
 
 

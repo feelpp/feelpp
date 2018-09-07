@@ -44,9 +44,9 @@
 namespace Feel
 {
 template <typename T>
-Backend<T>::Backend( WorldComm const& worldComm )
+Backend<T>::Backend( worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm(worldComm),
+    super(worldComm),
 #if defined( FEELPP_HAS_PETSC_H )
     M_backend    ( BACKEND_PETSC ),
 #endif
@@ -83,14 +83,14 @@ Backend<T>::Backend( WorldComm const& worldComm )
     M_showKSPMonitor( false ),
     M_showKSPConvergedReason( false )
 {
-    if ( M_worldComm.globalSize() > 1 )
+    if ( this->worldComm().globalSize() > 1 )
         M_pc = "gasm";
 }
 
 template <typename T>
-Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
+Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( worldComm ),
+    super( worldComm ),
     M_vm( vm ),
     M_prefix( prefix ),
     M_nlsolver( solvernonlinear_type::build( prefix, worldComm ) ),
@@ -142,7 +142,7 @@ Backend<T>::clear()
 }
 template <typename T>
 typename Backend<T>::backend_ptrtype
-Backend<T>::build( BackendType bt, WorldComm const& worldComm )
+Backend<T>::build( BackendType bt, worldcomm_ptr_t const&worldComm )
 {
     // Build the appropriate solver
     switch ( bt )
@@ -190,7 +190,7 @@ Backend<T>::build( BackendType bt, WorldComm const& worldComm )
 
 template <>
 typename Backend<std::complex<double>>::backend_ptrtype
-Backend<std::complex<double>>::build( BackendType bt, WorldComm const& worldComm )
+Backend<std::complex<double>>::build( BackendType bt, worldcomm_ptr_t const& worldComm )
 {
     // Build the appropriate solver
     switch ( bt )
@@ -218,14 +218,14 @@ Backend<std::complex<double>>::build( BackendType bt, WorldComm const& worldComm
 
 template <typename T>
 typename Backend<T>::backend_ptrtype
-Backend<T>::build( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
+Backend<T>::build( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     std::string kind = soption( _name="backend" );
     return build( kind, prefix, worldComm );
 }
 template <typename T>
 typename Backend<T>::backend_ptrtype
-Backend<T>::build( std::string const& kind, std::string const& prefix, WorldComm const& worldComm )
+Backend<T>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     if ( kind == "eigen")
         return backend_ptrtype( new BackendEigen<value_type>( Environment::vm(), prefix, worldComm ) );
@@ -248,7 +248,7 @@ Backend<T>::build( std::string const& kind, std::string const& prefix, WorldComm
 
 template <>
 typename Backend<std::complex<double>>::backend_ptrtype
-Backend<std::complex<double>>::build( std::string const& kind, std::string const& prefix, WorldComm const& worldComm )
+Backend<std::complex<double>>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     if ( kind == "eigen")
         return backend_ptrtype( new BackendEigen<value_type>( Environment::vm(), prefix, worldComm ) );
@@ -261,7 +261,7 @@ Backend<std::complex<double>>::build( std::string const& kind, std::string const
 
 template <typename T>
 typename Backend<T>::backend_ptrtype
-Backend<T>::build( BackendType bt, std::string const& prefix, WorldComm const& worldComm )
+Backend<T>::build( BackendType bt, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     return build( enumToKind( bt ), prefix, worldComm );
 }
@@ -534,7 +534,7 @@ Backend<T>::dot( vector_type const& x, vector_type const& y ) const
     }
 
     value_type globalres=localres;
-    mpi::all_reduce( M_worldComm.globalComm(), localres, globalres, std::plus<value_type>() );
+    mpi::all_reduce( this->worldComm().globalComm(), localres, globalres, std::plus<value_type>() );
     return globalres;
 }
 
@@ -550,7 +550,7 @@ Backend<std::complex<double>>::dot( vector_type const& x, vector_type const& y )
     }
     
     value_type globalres=localres;
-    mpi::all_reduce( M_worldComm.globalComm(), localres, globalres, std::plus<value_type>() );
+    mpi::all_reduce( this->worldComm().globalComm(), localres, globalres, std::plus<value_type>() );
     return globalres;
 }
 

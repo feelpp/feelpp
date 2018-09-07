@@ -1,29 +1,29 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
+
  This file is part of the Feel++ library
- 
+
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 15 Mar 2015
- 
+
  Copyright (C) 2015 Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/removecomments.hpp>
+#include <feel/feelcore/ptreetools.hpp>
 #include <feel/feelcore/utility.hpp>
 
 #include <feel/feelmodels/modelproperties.hpp>
@@ -33,9 +33,10 @@ namespace Feel {
 
 
 
-ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, WorldComm const& world )
+ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, WorldComm const& world, std::string const& prefix )
     :
     M_worldComm( world ),
+    M_prefix( prefix ),
     M_params( world ),
     M_mat( world ),
     M_bc( world, false ),
@@ -43,7 +44,7 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     M_postproc( world ),
     M_outputs( world )
 {
-    if ( !fs::exists( filename ) ) 
+    if ( !fs::exists( filename ) )
     {
         if ( Environment::isMasterRank() )
         {
@@ -64,9 +65,13 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
 
     auto json_str_wo_comments = removeComments(readFromFile(filename));
     LOG(INFO) << "json file without comment:" << json_str_wo_comments;
-    
+
+
     std::istringstream istr( json_str_wo_comments );
     pt::read_json(istr, M_p);
+
+    editPtreeFromOptions( M_p, M_prefix );
+
     try {
         M_name  = M_p.get<std::string>( "Name"  );
     }
@@ -76,20 +81,17 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
             std::cout << "Missing Name entry in model properties\n";
     }
     try {
-        M_model  = M_p.get<std::string>( "Model" );
-    }
-    catch ( pt::ptree_bad_path& e )
-    {
-        if ( Environment::isMasterRank() )
-            std::cout << "Missing Model entry in model properties\n";
-    }
-    try {
         M_shortname = M_p.get( "ShortName", M_name );
     }
     catch ( pt::ptree_bad_path& e )
     {
         if ( Environment::isMasterRank() )
             std::cout << "Missing ShortName entry in model properties - set it to the Name entry : " << M_name << "\n";
+    }
+    if ( auto mod = M_p.get_child_optional("Models") )
+    {
+        LOG(INFO) << "Model with model\n";
+        M_models.setPTree( *mod );
     }
     auto par = M_p.get_child_optional("Parameters");
     if ( par )
@@ -172,7 +174,6 @@ void ModelProperties::saveMD(std::ostream &os)
   os << " - Name **" << name()<< "**\n";
   os << " - shortName **" << shortName()<< "**\n";
   os << " - description **" << description()<< "**\n";
-  os << " - model **" << model()<< "**\n\n";
   M_params.saveMD(os);
   M_mat.saveMD(os);
   M_bc.saveMD(os);

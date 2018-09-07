@@ -39,10 +39,10 @@ int main(int argc, char** argv)
 
     using convex_type = Simplex<FEELPP_DIM>;
     using mesh_type = Mesh<convex_type>;
-    using mesh_ptrtype = boost::shared_ptr<mesh_type>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
     using face_convex_type = Simplex<FEELPP_DIM-1>;
     using face_mesh_type = Mesh<face_convex_type>;
-    using face_mesh_ptrtype = boost::shared_ptr<face_mesh_type>;
+    using face_mesh_ptrtype = std::shared_ptr<face_mesh_type>;
 
     auto mesh = loadMesh( new Mesh<Simplex<FEELPP_DIM> >);
     auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0);

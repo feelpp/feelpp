@@ -121,7 +121,7 @@ public:
     //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
 
     //! sparse matrix type associated with backend
@@ -138,7 +138,7 @@ public:
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! function space that holds piecewise constant (\f$P_0\f$) functions (e.g. to store material properties or partitioning
     typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar, Discontinuous> > > p0_space_type;
@@ -153,8 +153,8 @@ public:
     typedef FunctionSpace<mesh_type, v_basis_type> v_space_type;
     typedef FunctionSpace<mesh_type, p_basis_type> p_space_type;
     //! the approximation function space type (shared_ptr<> type)
-    typedef boost::shared_ptr<v_space_type> v_space_ptrtype;
-    typedef boost::shared_ptr<p_space_type> p_space_ptrtype;
+    typedef std::shared_ptr<v_space_type> v_space_ptrtype;
+    typedef std::shared_ptr<p_space_type> p_space_ptrtype;
     //! an element type of the approximation function space
     typedef typename v_space_type::element_type v_element_type;
     typedef typename p_space_type::element_type p_element_type;

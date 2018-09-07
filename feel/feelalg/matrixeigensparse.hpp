@@ -93,7 +93,7 @@ public:
 
     MatrixEigenSparse();
 
-    MatrixEigenSparse( size_type r, size_type c, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixEigenSparse( size_type r, size_type c, worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
     MatrixEigenSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
 
@@ -350,7 +350,7 @@ public:
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix( value_type v, MatrixSparse<value_type> const& _m );
+    void addMatrix( value_type v, MatrixSparse<value_type> const& _m, Feel::MatrixStructure matStruc = Feel::SAME_NONZERO_PATTERN );
 
     /**
      * Add the full matrix to the
@@ -404,7 +404,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
+    void updateBlockMat( std::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
 
     //@}
 

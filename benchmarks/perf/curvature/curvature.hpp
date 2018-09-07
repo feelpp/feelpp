@@ -57,30 +57,30 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*mesh*/
     typedef Entity<Dim,1,Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     // ---------------- P0 space -----------------
     typedef bases<Lagrange<0, Scalar, Discontinuous> > basisP0_type;
     typedef FunctionSpace<mesh_type, basisP0_type> spaceP0_type;
-    typedef boost::shared_ptr<spaceP0_type> spaceP0_ptrtype;
+    typedef std::shared_ptr<spaceP0_type> spaceP0_ptrtype;
     typedef typename spaceP0_type::element_type elementP0_type;
 
     // ---------------- P1 space -----------------
     typedef bases<Lagrange<1> > basisP1_type;
     typedef FunctionSpace<mesh_type, basisP1_type> spaceP1_type;
-    typedef boost::shared_ptr<spaceP1_type> spaceP1_ptrtype;
+    typedef std::shared_ptr<spaceP1_type> spaceP1_ptrtype;
     typedef typename spaceP1_type::element_type elementP1_type;
 
 
     // ---------------- P1 Vec space -----------------
     typedef bases<Lagrange<1, Vectorial> > basisP1_Vec_type;
     typedef FunctionSpace<mesh_type, basisP1_Vec_type> spaceP1_Vec_type;
-    typedef boost::shared_ptr<spaceP1_Vec_type> spaceP1_Vec_ptrtype;
+    typedef std::shared_ptr<spaceP1_Vec_type> spaceP1_Vec_ptrtype;
     typedef typename spaceP1_Vec_type::element_type elementP1_Vec_type;
 
 
@@ -96,11 +96,11 @@ public:
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     typedef FunctionSpace<mesh_type, basis_Vec_type> space_Vec_type;
-    typedef boost::shared_ptr<space_Vec_type> space_Vec_ptrtype;
+    typedef std::shared_ptr<space_Vec_type> space_Vec_ptrtype;
     typedef typename space_Vec_type::element_type element_Vec_type;
 
 
@@ -114,14 +114,14 @@ public:
                                   spaceP1_type, //espace arrivee
                                   range_visu_ho_type> op_inte_N_to_P1_type;
 
-    typedef boost::shared_ptr<op_inte_N_to_P1_type> op_inte_N_to_P1_ptrtype;
+    typedef std::shared_ptr<op_inte_N_to_P1_type> op_inte_N_to_P1_ptrtype;
 
     typedef OperatorInterpolation<space_Vec_type, //espace depart
                                   spaceP1_Vec_type, //espace arrivee
                                   range_visu_ho_type> op_inte_N_to_P1_Vec_type;
 
 
-    typedef boost::shared_ptr<op_inte_N_to_P1_Vec_type> op_inte_N_to_P1_Vec_ptrtype;
+    typedef std::shared_ptr<op_inte_N_to_P1_Vec_type> op_inte_N_to_P1_Vec_ptrtype;
 
     /* export */
     typedef Exporter<mesh_type> export_type;

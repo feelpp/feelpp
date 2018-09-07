@@ -21,7 +21,7 @@ public:
             mpl::identity<vf::detail::gmc<0> >,
             mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
     typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename gmc_type::gm_type gm_type;
 
     typedef typename expr_type::fe_normal_type fe_normal_type;
@@ -30,14 +30,14 @@ public:
 
     // fe normal context
     typedef typename fe_normal_type::PreCompute pc_normal_type;
-    typedef boost::shared_ptr<pc_normal_type> pc_normal_ptrtype;
+    typedef std::shared_ptr<pc_normal_type> pc_normal_ptrtype;
     typedef typename fe_normal_type::template Context<expr_type::context_normal, fe_normal_type, gm_type,geoelement_type,gmc_type::context> ctx_normal_type;
-    typedef boost::shared_ptr<ctx_normal_type> ctx_normal_ptrtype;
+    typedef std::shared_ptr<ctx_normal_type> ctx_normal_ptrtype;
     // fe curvature context
     typedef typename fe_curvature_type::PreCompute pc_curvature_type;
-    typedef boost::shared_ptr<pc_curvature_type> pc_curvature_ptrtype;
+    typedef std::shared_ptr<pc_curvature_type> pc_curvature_ptrtype;
     typedef typename fe_curvature_type::template Context<expr_type::context_curvature, fe_curvature_type, gm_type,geoelement_type,gmc_type::context> ctx_curvature_type;
-    typedef boost::shared_ptr<ctx_curvature_type> ctx_curvature_ptrtype;
+    typedef std::shared_ptr<ctx_curvature_type> ctx_curvature_ptrtype;
 
     // Shapes types
     // res shape
@@ -242,9 +242,9 @@ public:
     // fe modgradphi context
     typedef typename expr_type::fe_modgradphi_type fe_modgradphi_type;
     typedef typename fe_modgradphi_type::PreCompute pc_modgradphi_type;
-    typedef boost::shared_ptr<pc_modgradphi_type> pc_modgradphi_ptrtype;
+    typedef std::shared_ptr<pc_modgradphi_type> pc_modgradphi_ptrtype;
     typedef typename fe_modgradphi_type::template Context<expr_type::context_modgradphi, fe_modgradphi_type, gm_type,geoelement_type,gmc_type::context> ctx_modgradphi_type;
-    typedef boost::shared_ptr<ctx_modgradphi_type> ctx_modgradphi_ptrtype;
+    typedef std::shared_ptr<ctx_modgradphi_type> ctx_modgradphi_ptrtype;
 
     // array
     typedef typename super_type::loc_scalar_type loc_scalar_type;
@@ -413,6 +413,9 @@ public:
     ~HelfrichInnerDivImpl() = default;
 
     //------------------------------------------------------------------------------//
+    uint16_type polynomialOrder() const { return (IMOrder>=0)?IMOrder:imorderAuto; }
+    bool isPolynomial() const { return true; }
+    //------------------------------------------------------------------------------//
     element_normal_type const& normal() const { return M_normal; }
     element_curvature_type const& curvature() const { return M_curvature; }
     element_modgradphi_type const& modgradphi() const { return M_modgradphi; }
@@ -431,12 +434,12 @@ public:
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gmc_type::gm_type gm_type;
 
         // tensor base
         typedef tensorHelfrichInnerDivTensorBase<Geo_t, Basis_i_t, Basis_j_t, expr_type> tensorbase_type;
-        typedef boost::shared_ptr<tensorbase_type> tensorbase_ptrtype;
+        typedef std::shared_ptr<tensorbase_type> tensorbase_ptrtype;
         // shape
         typedef typename tensorbase_type::shape shape;
         typedef typename tensorbase_type::matrix_shape_type matrix_shape_type;

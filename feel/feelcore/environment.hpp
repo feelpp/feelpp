@@ -193,7 +193,7 @@ public:
      */
     //@{
     typedef WorldComm worldcomm_type;
-    typedef boost::shared_ptr<WorldComm> worldcomm_ptrtype;
+    typedef std::shared_ptr<WorldComm> worldcomm_ptrtype;
 
     //@}
 
@@ -321,7 +321,7 @@ public:
     /**
      * @return the shared_ptr WorldComm
      */
-    static boost::shared_ptr<WorldComm> worldCommPtr()
+    static std::shared_ptr<WorldComm> const& worldCommPtr()
         {
             return S_worldcomm;
         }
@@ -337,19 +337,23 @@ public:
     {
         return *S_worldcommSeq;
     }
+    static worldcomm_ptr_t& worldCommSeqPtr()
+    {
+        return S_worldcommSeq;
+    }
 
     /**
      * return n sub world communicators
      */
-    static std::vector<WorldComm> const&  worldsComm( int n );
-    static std::vector<WorldComm> const&  worldsCommSeq( int n );
+    static worldscomm_ptr_t &  worldsComm( int n );
+    static worldscomm_ptr_t &  worldsCommSeq( int n );
 
-    static std::vector<WorldComm> const&  worldsCommGroupBySubspace( int n );
+    static worldscomm_ptr_t &  worldsCommGroupBySubspace( int n );
 
     /**
      * return master world comm associated with a color map of size n
      */
-    static WorldComm const& masterWorldComm( int n );
+    static worldcomm_t & masterWorldComm( int n );
 
     /**
      * return number of processors
@@ -611,7 +615,11 @@ public:
     //! the application directory, application results are stored there
     //! the directory is controlled by changeRepository
     static std::string appRepository();
-    
+
+    //! the application directory without np, application results are stored there
+    //! the directory is controlled by changeRepository
+    static std::string appRepositoryWithoutNumProc();
+
     //! the expressions repository is typically a sub-directory of the \c
     //! appRepository() that contains the expressions generated using Ginac
     static std::string exprRepository();
@@ -622,6 +630,10 @@ public:
     //! the exports repository is a subdirectory of the \c appRepository
     //! containing the results exported during the application execution
     static std::string exportsRepository();
+
+    //! the downloads repository is a subdirectory of the \c appRepository
+    //! containing the files downloaded during the application execution
+    static std::string downloadsRepository();
 
     //!
     //! Generate a random UUID
@@ -638,7 +650,7 @@ public:
         ( required
           ( name,( std::string ) ) )
         ( optional
-          ( worldcomm, ( WorldComm ), Environment::worldComm() )
+          ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
           ( sub,( std::string ),"" )
           ( prefix,( std::string ),"" )
           ( vm, ( po::variables_map const& ), Environment::vm() )
@@ -734,7 +746,7 @@ public:
     }
     template<typename Observer>
     static void
-    addDeleteObserver( boost::shared_ptr<Observer> const& obs )
+    addDeleteObserver( std::shared_ptr<Observer> const& obs )
     {
         S_deleteObservers.connect( boost::bind( &Observer::operator(), obs ) );
     }
@@ -819,16 +831,17 @@ private:
     static std::vector<fs::path> S_paths;
 
     static fs::path S_appdir;
+    static fs::path S_appdirWithoutNumProc;
     static fs::path S_scratchdir;
     static fs::path S_cfgdir;
     static AboutData S_about;
     static pt::ptree S_summary;
-    static boost::shared_ptr<po::command_line_parser> S_commandLineParser;
+    static std::shared_ptr<po::command_line_parser> S_commandLineParser;
     static std::vector<std::tuple<std::string,std::istringstream> > S_configFiles;
     static po::variables_map S_vm;
-    static boost::shared_ptr<po::options_description> S_desc;
-    static boost::shared_ptr<po::options_description> S_desc_app;
-    static boost::shared_ptr<po::options_description> S_desc_lib;
+    static std::shared_ptr<po::options_description> S_desc;
+    static std::shared_ptr<po::options_description> S_desc_app;
+    static std::shared_ptr<po::options_description> S_desc_lib;
     static std::vector<std::string> S_to_pass_further;
 
     
@@ -846,8 +859,8 @@ private:
 
     static boost::signals2::signal<void()> S_deleteObservers;
 
-    static boost::shared_ptr<WorldComm> S_worldcomm;
-    static boost::shared_ptr<WorldComm> S_worldcommSeq;
+    static std::shared_ptr<WorldComm> S_worldcomm;
+    static std::shared_ptr<WorldComm> S_worldcommSeq;
 
 #if defined(FEELPP_HAS_HARTS)
     static hwloc_topology_t S_hwlocTopology;
@@ -861,11 +874,11 @@ private:
 };
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT po::variable_value ), option, tag,
+    ( po::variable_value ), option, tag,
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
       ( vm, ( po::variables_map const& ), Environment::vm() )
@@ -875,12 +888,12 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT double ),
+    ( double ),
     doption, tag,
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -892,7 +905,7 @@ BOOST_PARAMETER_FUNCTION(
         opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<double>();
     }
 
-    catch ( boost::bad_any_cast bac )
+    catch ( boost::bad_any_cast const& bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not a double" <<std::endl;
     }
@@ -901,12 +914,12 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT bool ),
+    ( bool ),
     boption, tag,
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -918,7 +931,7 @@ BOOST_PARAMETER_FUNCTION(
         opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<bool>();
     }
 
-    catch ( boost::bad_any_cast bac )
+    catch ( boost::bad_any_cast const& bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not a boolean" <<std::endl;
     }
@@ -927,12 +940,12 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT int ),
+    ( int ),
     ioption, tag,
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -944,7 +957,7 @@ BOOST_PARAMETER_FUNCTION(
         opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<int>();
     }
 
-    catch ( boost::bad_any_cast bac )
+    catch ( boost::bad_any_cast const& bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not an integer" <<std::endl;
     }
@@ -954,12 +967,12 @@ BOOST_PARAMETER_FUNCTION(
 
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT std::string ),
+    ( std::string ),
     soption, tag,
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -971,7 +984,7 @@ BOOST_PARAMETER_FUNCTION(
         opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::string>();
     }
 
-    catch ( boost::bad_any_cast bac )
+    catch ( boost::bad_any_cast const& bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not a string" <<std::endl;
     }
@@ -980,12 +993,12 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT std::vector<std::string> ),
+    ( std::vector<std::string> ),
     vsoption, tag,
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -997,7 +1010,7 @@ BOOST_PARAMETER_FUNCTION(
         opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::vector<std::string>>();
     }
 
-    catch ( boost::bad_any_cast bac )
+    catch ( boost::bad_any_cast const& bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not a string" <<std::endl;
     }
@@ -1006,12 +1019,12 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT std::vector<double> ),
+    ( std::vector<double> ),
     vdoption, tag,
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -1023,7 +1036,7 @@ BOOST_PARAMETER_FUNCTION(
         opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::vector<double>>();
     }
 
-    catch ( boost::bad_any_cast bac )
+    catch ( boost::bad_any_cast const& bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not a string" <<std::endl;
     }
@@ -1050,13 +1063,13 @@ struct FEELPP_EXPORT option
 //! @endcond
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT typename Feel::detail::option<Args>::type ),
+    ( typename Feel::detail::option<Args>::type ),
     optionT, tag,
     ( required
       ( name,( std::string ) )
       ( in_out( opt ),* ) )
     ( optional
-      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -1066,7 +1079,7 @@ BOOST_PARAMETER_FUNCTION(
         opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<typename Feel::detail::option<Args>::type>();
     }
 
-    catch ( boost::bad_any_cast bac )
+    catch ( boost::bad_any_cast const& bac )
     {
         CHECK( false ) <<"problem in conversion type of argument "<< name << " : check the option type"<<std::endl;
     }

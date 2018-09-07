@@ -19,12 +19,12 @@ int main(int argc, char** argv)
 	typedef Simplex<Dim> convex_type;
 	
 	typedef Mesh<convex_type> mesh_type;
-	typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+	typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
 	typedef bases<Lagrange<Order,Scalar,Continuous>> basis_type;
 
 	typedef FunctionSpace<mesh_type,basis_type,complex_type> space_type;
-	typedef boost::shared_ptr<space_type> space_ptrtype;
+	typedef std::shared_ptr<space_type> space_ptrtype;
 
 	auto f = expr( soption(_name="functions.f") );
 	auto g = expr( soption(_name="functions.g") );

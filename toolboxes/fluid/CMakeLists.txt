@@ -23,21 +23,14 @@
 #
 
 
-feelpp_add_application( fluid_2d SRCS main_fm.cpp
+feelpp_add_application( fluid SRCS main_fm.cpp
   LINK_LIBRARIES
-  feelpp_model_fluidmec2dP2P1G1
-  feelpp_model_fluidmec2dP2P1G2
-  #feelpp_model_fluidmec2dP1P1G1
-  DEFS FEELPP_DIM=2
+  feelpp_toolbox_fluid_lib_2dP2P1G1
+  feelpp_toolbox_fluid_lib_2dP2P1G2
+  feelpp_toolbox_fluid_lib_3dP2P1G1
+  feelpp_toolbox_fluid_lib_3dP2P1G2
+  #feelpp_toolbox_fluid_lib_2dP1P1G1
   INSTALL TESTS
-)
-
-feelpp_add_application( fluid_3d SRCS main_fm.cpp
-  LINK_LIBRARIES
-  feelpp_model_fluidmec3dP2P1G1
-  feelpp_model_fluidmec3dP2P1G2
-  DEFS FEELPP_DIM=3
-  INSTALL NO_TEST
 )
 
 feelpp_add_testcase(lid-driven-cavity CATEGORY CFD)

@@ -22,4 +22,14 @@
 #
 #
 
+feelpp_add_application( heatfluid SRCS main_heatfluid.cpp
+  LINK_LIBRARIES
+  #feelpp_toolbox_heatfluid_lib
+  feelpp_toolbox_heatfluid_lib_2dP1G1_2dP2P1G1
+  feelpp_toolbox_heatfluid_lib_3dP1G1_3dP2P1G1
+  INSTALL
+  )
+
 feelpp_add_testcase(NaturalConvection CATEGORY HeatFluid)
+feelpp_add_testcase(ForcedConvection CATEGORY HeatFluid)
+

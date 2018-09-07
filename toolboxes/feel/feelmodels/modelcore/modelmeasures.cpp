@@ -29,6 +29,8 @@
 
 #include <feel/feelmodels/modelcore/modelmeasures.hpp>
 
+#include <boost/algorithm/string.hpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -45,171 +47,128 @@ std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
 
 
 
-ModelMeasuresIO::ModelMeasuresIO( std::string const& pathFile, WorldComm const& worldComm )
+ModelMeasuresIO::ModelMeasuresIO( std::string const& pathFile, worldcomm_ptr_t const& worldComm )
     :
     M_worldComm( worldComm ),
-    M_pathFile( pathFile )
+    M_pathFile( pathFile ),
+    M_addNewDataIsLocked( false )
 {}
 
 void
 ModelMeasuresIO::clear()
 {
-    M_mapParameterData.clear();
-    M_mapMeasureData.clear();
+    M_dataNameToIndex.clear();
+    M_dataIndexToName.clear();
+    M_data.clear();
+    M_addNewDataIsLocked = false;
 }
 
 void
-ModelMeasuresIO::start()
+ModelMeasuresIO::writeHeader()
 {
-    if ( M_worldComm.isMasterRank() && !M_mapMeasureData.empty() )
+    if ( M_dataNameToIndex.empty() )
+        return;
+    if ( M_worldComm->isMasterRank() )
     {
         bool hasAlreadyWrited = false;
         std::ofstream fileWrited(M_pathFile, std::ios::out | std::ios::trunc);
-        for ( auto const& data : M_mapParameterData )
+        for ( auto const& dataName : M_dataIndexToName )
         {
-            int spacing = std::max(20, int(data.first.size()+2) );
+            int spacing = std::max(28, int(dataName.size()+2) );
             if ( hasAlreadyWrited )
                 fileWrited << ",";
-            fileWrited << std::setw( spacing ) << std::left << data.first;
-            hasAlreadyWrited = true;
-        }
-        for ( auto const& data : M_mapMeasureData )
-        {
-            int spacing = std::max(28, int(data.first.size()+2) );
-            if ( hasAlreadyWrited )
-                fileWrited << ",";
-            fileWrited << std::setw( spacing ) << std::right << data.first;
+            fileWrited << std::setw( spacing ) << std::right << dataName;
             hasAlreadyWrited = true;
         }
         fileWrited << std::endl;
         fileWrited.close();
     }
+    M_addNewDataIsLocked = true;
 }
 void
 ModelMeasuresIO::restart( std::string const& paramKey, double val )
 {
-    if ( M_worldComm.isMasterRank() && !M_mapMeasureData.empty() )
+    if ( M_worldComm->isMasterRank() && fs::exists( M_pathFile ) )
     {
         double ti = val;//this->timeInitial();
         std::ifstream fileI(M_pathFile, std::ios::in);
-        double timeLoaded=0;
-        double valueLoaded = 0.;
-
-        bool find=false;
         std::ostringstream buffer;
-        bool hasAlreadyWrited = false;
 
-            std::string measureTag;
-            for ( auto const& data : M_mapParameterData )
-            {
-                fileI >> measureTag; // e.g. load time
-                if ( measureTag == "," )
-                    fileI >> measureTag; // e.g. load time
-                measureTag.erase( std::remove(measureTag.begin(), measureTag.end(), ','), measureTag.end() );
+        std::string lineRead;
+        std::getline(fileI,lineRead);
+        std::vector<std::string> lineReadSplitted;
+        boost::split( lineReadSplitted, lineRead, boost::is_any_of(","), boost::token_compress_on );
+        uint16_type indexKey = invalid_uint16_type_value;
+        M_dataNameToIndex.clear();
+        M_data.resize( lineReadSplitted.size(), 0. );
+        M_dataIndexToName.resize( lineReadSplitted.size(), "" );
+        for ( uint16_type k=0;k<lineReadSplitted.size();++k )
+        {
+            std::string headerName = lineReadSplitted[k];
+            boost::trim(headerName);
+            if ( paramKey == headerName )
+                indexKey = k;
+            M_dataNameToIndex[headerName] = k;
+            M_dataIndexToName[k] = headerName;
+            //std::cout << "headerName="<<headerName<<"\n";
+        }
+        buffer << lineRead << std::endl;
 
-                int spacing = std::max(20, int(data.first.size()+2) );
-                if ( hasAlreadyWrited )
-                    buffer << ",";
-                buffer << std::setw(spacing) << std::left << measureTag;
-                hasAlreadyWrited=true;
-            }
-            for ( auto const& data : M_mapMeasureData )
-            {
-                fileI >> measureTag;
-                if ( measureTag == "," )
-                    fileI >> measureTag; // e.g. load time
-                measureTag.erase( std::remove(measureTag.begin(), measureTag.end(), ','), measureTag.end() );
+        while ( !fileI.eof() )
+        {
+            std::getline(fileI,lineRead);
 
-                int spacing = std::max(28, int(data.first.size()+2) );
-                if ( hasAlreadyWrited )
-                    buffer << ",";
-                buffer << std::setw(spacing) << std::right << measureTag;
-                hasAlreadyWrited=true;
-            }
-            buffer << std::endl;
+            buffer << lineRead << std::endl;
+            if ( indexKey == invalid_uint16_type_value )
+                continue;
 
-            while ( !fileI.eof() && !find )
-            {
-                hasAlreadyWrited = false;
+            lineReadSplitted.clear();
+            boost::split( lineReadSplitted, lineRead, boost::is_any_of(","), boost::token_compress_on );
+            std::string valueReadStr = lineReadSplitted[indexKey];
+            boost::trim( valueReadStr );
+            double valueRead = std::stod( valueReadStr );
+            if ( std::abs(valueRead-ti) < 1e-9 )
+                break;
+        }
 
-#if 0
-                for ( auto const& data : M_mapParameterData )
-                    if ( paramKey == M_mapParameterData.first )
-                        if ( (timeLoaded-1e-7) > ti ) { find=true;break; }
-                if ( find ) break;
-#endif
-                for ( auto const& data : M_mapParameterData )
-                {
-#if 1
-                    fileI >> measureTag;
-                    if ( measureTag == "," )
-                        fileI >> measureTag; // e.g. load time
-                    measureTag.erase( std::remove(measureTag.begin(), measureTag.end(), ','), measureTag.end() );
-                    valueLoaded = std::stod(measureTag);
-#else
-                    fileI >> valueLoaded;
-#endif
-                    //std::cout << "timeLoaded " << timeLoaded << " ti " << ti << "\n";
-                    int spacing = std::max(20, int(data.first.size()+2) );
-                    if ( hasAlreadyWrited )
-                        buffer << ",";
-                    buffer << std::setw(spacing) << std::left << std::setprecision( 9 ) << std::scientific << valueLoaded;
-                    hasAlreadyWrited = true;
-                    // check if last writing (e.g. time equality)
-                    if ( paramKey == data.first && !find )
-                        if ( std::abs(valueLoaded-ti) < 1e-9 )
-                            find=true;
-                }
-                for ( auto const& data : M_mapMeasureData )
-                {
-#if 1
-                    fileI >> measureTag;
-                    if ( measureTag == "," )
-                        fileI >> measureTag; // e.g. load time
-                    measureTag.erase( std::remove(measureTag.begin(), measureTag.end(), ','), measureTag.end() );
-                    valueLoaded = std::stod(measureTag);
-#else
-                    fileI >> valueLoaded;
-#endif
-
-                    int spacing = std::max(28, int(data.first.size()+2) );
-                    if ( hasAlreadyWrited )
-                        buffer << ",";
-                    buffer << std::setw(spacing) << std::right << std::setprecision( 16 ) << std::scientific << valueLoaded;
-                    hasAlreadyWrited = true;
-
-                }
-                buffer << std::endl;
-            }
-            fileI.close();
-            std::ofstream fileW(M_pathFile/*.c_str()*/, std::ios::out | std::ios::trunc);
-            fileW << buffer.str();
-            fileW.close();
+        fileI.close();
+        std::ofstream fileW(M_pathFile/*.c_str()*/, std::ios::out | std::ios::trunc);
+        fileW << buffer.str();
+        fileW.close();
     }
 
+    mpi::broadcast( M_worldComm->globalComm(), M_dataIndexToName, M_worldComm->masterRank() );
+
+    if ( !M_worldComm->isMasterRank() )
+    {
+        M_dataNameToIndex.clear();
+        M_data.resize( M_dataIndexToName.size() );
+        for (int k=0;k<M_dataIndexToName.size();++k )
+            M_dataNameToIndex[ M_dataIndexToName[k] ] = k;
+    }
+    M_addNewDataIsLocked = true;
 }
 
 void
 ModelMeasuresIO::exportMeasures()
 {
-    if ( M_worldComm.isMasterRank() && !M_mapMeasureData.empty() )
+    if ( M_dataNameToIndex.empty() )
+        return;
+    if ( !M_addNewDataIsLocked )
+        this->writeHeader();
+    if ( M_worldComm->isMasterRank() )
     {
         bool hasAlreadyWrited = false;
         std::ofstream fileWrited(M_pathFile, std::ios::out | std::ios::app);
-        for ( auto const& data : M_mapParameterData )
+        //for ( auto const& dataValue : M_data )
+        for ( int k=0;k<M_data.size();++k )
         {
-            int spacing = std::max(20, int(data.first.size()+2) );
+            double dataValue = M_data[k];
+            std::string const& dataName = M_dataIndexToName[k];
+            int spacing = std::max(28, int(dataName.size()+2) );
             if ( hasAlreadyWrited )
                 fileWrited << ",";
-            fileWrited << std::setw(spacing) << std::left << std::setprecision( 9 ) << std::scientific << data.second;
-            hasAlreadyWrited = true;
-        }
-        for ( auto const& data : M_mapMeasureData )
-        {
-            int spacing = std::max(28, int(data.first.size()+2) );
-            if ( hasAlreadyWrited )
-                fileWrited << ",";
-            fileWrited << std::setw(spacing) << std::right << std::setprecision( 16 ) << std::scientific << data.second;
+            fileWrited << std::setw(spacing) << std::right << std::setprecision( 16 ) << std::scientific << dataValue;
             hasAlreadyWrited = true;
         }
         fileWrited << std::endl;
@@ -219,12 +178,21 @@ ModelMeasuresIO::exportMeasures()
 void
 ModelMeasuresIO::setParameter(std::string const& key,double val)
 {
-    M_mapParameterData[key] = val;
+    this->setMeasure( key,val );
 }
 void
 ModelMeasuresIO::setMeasure(std::string const& key,double val)
 {
-    M_mapMeasureData[key] = val;
+    auto itFindKey = M_dataNameToIndex.find( key );
+    if ( itFindKey != M_dataNameToIndex.end() )
+        M_data[ itFindKey->second ] = val;
+    else if ( !M_addNewDataIsLocked )
+    {
+        M_dataNameToIndex[ key ] =  M_dataIndexToName.size();
+        M_dataIndexToName.push_back( key );
+        M_data.push_back( val );
+    }
+    else CHECK( false ) << "add new data is locked";
 
 }
 void
@@ -248,6 +216,13 @@ ModelMeasuresIO::setMeasureComp( std::string const& key,std::vector<double> cons
         this->setMeasure( key+"_z",values[2] );
 }
 
+double
+ModelMeasuresIO::measure( std::string const& key ) const
+{
+    CHECK( this->hasMeasure( key ) ) << "no measure with key " << key;
+    uint16_type k = M_dataNameToIndex.find( key )->second;
+    return M_data[k];
+}
 
 void
 ModelMeasuresEvaluatorContext::add( std::string const& field, int ctxId, std::string const& name )

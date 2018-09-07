@@ -63,7 +63,7 @@ public:
     typedef Feel::node<double>::type node_type;
 
     typedef Data data_type;
-    typedef boost::shared_ptr<data_type> data_ptrtype;
+    typedef std::shared_ptr<data_type> data_ptrtype;
 
     //@}
 

@@ -1,0 +1,30 @@
+steps:
+ - name: ':$TARGET, ${CXX}'
+   command: tools/scripts/buildkite/install-feelpp-lib.sh
+   agents:
+     docker: true
+     ubuntu: "16.04"
+ - wait
+ - name: ':$TARGET, $CXX,  feelpp-base :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh base
+   agents:
+     docker: true
+     ubuntu: "16.04"
+ - wait
+ - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh toolboxes
+   agents:
+     docker: true
+     ubuntu: "16.04"
+ - wait
+ - name: ':$TARGET $CXX, feelpp-crb :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh crb
+   agents:
+     docker: true
+     ubuntu: "16.04"
+ - wait
+ - name: ':$TARGET $CXX, feelpp-pyfeelpp :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh pyfeelpp
+   agents:
+     docker: true
+     ubuntu: "16.04"

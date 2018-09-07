@@ -42,7 +42,7 @@ public:
     // -- TYPEDEFS --
     typedef Space space_type;
 
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     typedef typename space_type::value_type value_type;

@@ -1,0 +1,9 @@
+{
+    "Field1":
+    {
+        "subfield":
+        {
+            "myvariable":"value1"
+        }
+    }
+}

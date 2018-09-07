@@ -45,23 +45,23 @@ namespace FeelModels
 
 template< typename MeshType, int Order >
 class HarmonicExtension : public ModelAlgebraic,
-                          public boost::enable_shared_from_this< HarmonicExtension<MeshType,Order> >
+                          public std::enable_shared_from_this< HarmonicExtension<MeshType,Order> >
 {
 public :
     typedef HarmonicExtension<MeshType,Order> self_type;
     typedef ModelAlgebraic super_type;
 
     typedef MeshType mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef bases<Lagrange<Order,Vectorial> > basis_type;
     typedef FunctionSpace<mesh_type,basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
 
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
     typedef super_type::backend_ptrtype backend_ptrtype;
     typedef super_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -72,19 +72,21 @@ public :
     typedef std::map< std::string, std::vector<flag_type> > flagSet_type;
 
     typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar,Discontinuous> > > space_P0_type;
-    typedef boost::shared_ptr<space_P0_type> space_P0_ptrtype;
+    typedef std::shared_ptr<space_P0_type> space_P0_ptrtype;
 
     HarmonicExtension(mesh_ptrtype mesh, backend_ptrtype const& backend,
                       std::string prefix="",
-                      WorldComm const& worldcomm = WorldComm(),
-                      bool useGhostEltFromExtendedStencil=false );
+                      worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
+                      bool useGhostEltFromExtendedStencil=false,
+                      ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     HarmonicExtension(space_ptrtype space, backend_ptrtype const& backend,
-                      std::string prefix="" );
+                      std::string prefix="",
+                      ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     void init();
 
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const;
 
     void updateLinearPDE( DataUpdateLinear & data ) const;
 

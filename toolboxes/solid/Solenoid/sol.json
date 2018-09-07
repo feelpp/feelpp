@@ -1,7 +1,10 @@
 {
     "Name": "Solid Mechanics ",
     "ShortName":"Solid",
-    "Model":"Elasticity",
+    "Models":
+    {
+        "equations":"Elasticity"
+    },
     "Materials":
     {
         "Omega":
@@ -44,6 +47,13 @@
                     "expr":"{x/sqrt(x^2+y^2)*5000*(10+20*(sqrt(x^2+y^2)-1)),y/sqrt(x^2+y^2)*5000*(10+20*(sqrt(x^2+y^2)-1)),0.0}:x:y:z"
                 }
             }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["displacement","Von-Mises","pid"]
         }
     }
 }

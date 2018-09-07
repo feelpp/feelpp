@@ -74,11 +74,6 @@ public:
 
     static const size_type context = ExprT::context;
     static const bool is_terminal = false;
-    //integration order
-    static const uint16_type imorder = ExprT::imorder;
-    //the expression is a polynomial type?
-    static const bool imIsPoly = ExprT::imIsPoly;
-
 
     template<typename Func>
     struct HasTestFunction
@@ -131,6 +126,12 @@ public:
     {}
 
     //@}
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_expr.isPolynomial(); }
 
     expression_type const& expression() const
     {
@@ -261,19 +262,12 @@ class IntegratorBase {};
   @see
 */
 template<typename ExprT>
-class Expr : public ExprBase //: public boost::enable_shared_from_this<Expr<ExprT> >
+class Expr : public ExprBase //: public std::enable_shared_from_this<Expr<ExprT> >
 {
 public:
 
     static const size_type context = ExprT::context;
     static const bool is_terminal = ExprT::is_terminal;
-
-    //integration order
-    static const uint16_type imorder = ExprT::imorder;
-    //the expression is a polynomial type?
-    static const bool imIsPoly = ExprT::imIsPoly;
-
-
 
     template<typename Func>
     struct HasTestFunction
@@ -301,7 +295,7 @@ public:
     typedef typename expression_type::value_type value_type;
     typedef typename expression_type::evaluate_type evaluate_type;
     typedef Expr<ExprT> this_type;
-    typedef boost::shared_ptr<this_type> this_ptrtype;
+    typedef std::shared_ptr<this_type> this_ptrtype;
     //@}
 
     /** @name Constructors, destructor
@@ -421,7 +415,7 @@ public:
         {
         }
 
-    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,boost::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
+    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,std::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,std::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
 
@@ -599,6 +593,12 @@ public:
         return M_expr;
     }
 
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_expr.isPolynomial(); }
+
     //@}
 
     /** @name  Mutators
@@ -612,8 +612,8 @@ public:
     //@{
 
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __u,
-                   boost::shared_ptr<Elem2> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __u,
+                   std::shared_ptr<Elem2> const& __v,
                    FormType& __f ) const
     {
         DVLOG(2) << "calling assemble(u,v)\n";
@@ -622,7 +622,7 @@ public:
     }
 
     template<typename Elem1, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __v,
+    void assemble( std::shared_ptr<Elem1> const& __v,
                    FormType& __f ) const
     {
         DVLOG(2) << "calling assemble(v)\n";
@@ -632,7 +632,7 @@ public:
 
     template<typename P0hType>
     typename P0hType::element_type
-    broken( boost::shared_ptr<P0hType>& P0h ) const
+    broken( std::shared_ptr<P0hType>& P0h ) const
     {
         return M_expr.broken( P0h );
     }
@@ -650,15 +650,15 @@ public:
         return M_expr.evaluate( mp );
     }
     evaluate_type
-    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
+    evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
     {
         return M_expr.evaluate( parallel,worldcomm );
     }
     template<typename T, int M, int N=1>
     decltype(auto)
-    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const
+    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v, bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
         {
-            return M_expr.evaluate( v );
+            return M_expr.evaluate( v, true, worldcomm );
         }
     typename expression_type::value_type
     evaluateAndSum() const
@@ -689,10 +689,10 @@ expr( ExprT const& exprt )
 }
 
 template <typename ExprT>
-boost::shared_ptr<Expr<ExprT> >
+std::shared_ptr<Expr<ExprT> >
 exprPtr( ExprT const& exprt )
 {
-    return boost::shared_ptr<Expr<ExprT> >( new Expr<ExprT>( exprt ) );
+    return std::shared_ptr<Expr<ExprT> >( new Expr<ExprT>( exprt ) );
 }
 
 template <typename ExprT>
@@ -739,7 +739,7 @@ struct ExpressionOrder
     typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
 
     static const uint16_type nOrderGeo = the_element_type::nOrder;
-
+#if 0
     static const bool is_polynomial = ExprT::imIsPoly;
 #if 0
     static const int value = boost::mpl::if_< boost::mpl::bool_< ExprT::imIsPoly > ,
@@ -750,10 +750,15 @@ struct ExpressionOrder
                      boost::mpl::int_<10> >::type::value;
 #else
     // this is a very rough approximation
-    static const int value = ( ExprT::imorder )?( ExprT::imorder*nOrderGeo ):( nOrderGeo );
-    static const int value_1 = ExprT::imorder+(the_element_type::is_hypercube?nOrderGeo:0);
+    static const uint16_type value = ( ExprT::imorder )?( ExprT::imorder*nOrderGeo ):( nOrderGeo );
+    static const uint16_type value_1 = ExprT::imorder+(the_element_type::is_hypercube?nOrderGeo:0);
 #endif
-
+#else
+    static bool isPolynomial( ExprT const& expr ) { return expr.isPolynomial(); }
+    static quad_order_type value( ExprT const& expr ) { return ( expr.polynomialOrder() )?( expr.polynomialOrder()*nOrderGeo ):( nOrderGeo ); }
+    static quad_order_type value_1( ExprT const& expr ) { return expr.polynomialOrder()+(the_element_type::is_hypercube?nOrderGeo:0); }
+#endif
+    ExpressionOrder() = default;
 };
 
 
@@ -776,8 +781,6 @@ public:
     static const size_type context = ExprT::context;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = ExprT::imorder;
-    static const bool imIsPoly = ExprT::imIsPoly;
     /** @name Typedefs
      */
     //@{
@@ -800,6 +803,12 @@ public:
     {}
 
     //@}
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_expr.isPolynomial(); }
 
     /** @name Operator overloads
      */
@@ -934,7 +943,7 @@ public:
     static const bool is_terminal = false;
 
     typedef Element element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
     typedef GElem<element_type, Type> this_type;
     typedef this_type self_type;
 
@@ -948,9 +957,6 @@ public:
     static const uint16_type nComponents1 = fe_type::nComponents1;
     static const uint16_type nComponents2 = fe_type::nComponents2;
     typedef std::map<size_type,std::vector<element_ptrtype> > basis_type;
-
-    static const uint16_type imorder = element_type::functionspace_type::basis_type::nOrder;
-    static const bool imIsPoly = true;
 
     template<typename Func>
     struct HasTestFunction
@@ -988,6 +994,12 @@ public:
         return M_basis;
     }
 
+    //! polynomial order
+    constexpr uint16_type polynomialOrder() const { return element_type::functionspace_type::basis_type::nOrder; }
+
+    //! expression is polynomial?
+    constexpr bool isPolynomial() const { return true; }
+
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -1005,9 +1017,9 @@ using key_type = key_t<Geo_t>;
                 mpl::identity<Shape<gmc_type::NDim, Vectorial, false> >,
                 mpl::identity<Shape<gmc_type::NDim, Tensor2, false> > >::type>::type::type shape;
         typedef typename fe_type::PreCompute pc_type;
-        typedef boost::shared_ptr<pc_type> pc_ptrtype;
+        typedef std::shared_ptr<pc_type> pc_ptrtype;
         typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type;
-        typedef boost::shared_ptr<ctx_type> ctx_ptrtype;
+        typedef std::shared_ptr<ctx_type> ctx_ptrtype;
 
         typedef typename expression_type::value_type value_type;
 
@@ -1124,7 +1136,7 @@ private:
 template<typename Elem>
 inline
 Expr< GElem<Elem,1> >
-basist( std::map<size_type,std::vector<boost::shared_ptr<Elem> > > const& v )
+basist( std::map<size_type,std::vector<std::shared_ptr<Elem> > > const& v )
 {
     typedef GElem<Elem,1> expr_t;
     return Expr< expr_t >(  expr_t( v ) );
@@ -1132,7 +1144,7 @@ basist( std::map<size_type,std::vector<boost::shared_ptr<Elem> > > const& v )
 template<typename Elem>
 inline
 Expr< GElem<Elem,0> >
-basis( std::map<size_type,std::vector<boost::shared_ptr<Elem> > > const& v )
+basis( std::map<size_type,std::vector<std::shared_ptr<Elem> > > const& v )
 {
     typedef GElem<Elem,0> expr_t;
     return Expr< expr_t >(  expr_t( v ) );

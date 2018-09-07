@@ -56,7 +56,7 @@ public :
     //@{
 
     typedef fs_type functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::trace_functionspace_type trace_functionspace_type;
     typedef typename trace_functionspace_type::element_type trace_element_type;
 
@@ -117,11 +117,11 @@ private :
  */
 
 template<typename self_type>
-boost::shared_ptr< OperatorTrace<self_type> >
-operatorTrace( boost::shared_ptr<self_type> const& domainspace )
+std::shared_ptr< OperatorTrace<self_type> >
+operatorTrace( std::shared_ptr<self_type> const& domainspace )
 {
     typedef OperatorTrace<self_type> Trace_type;
-    boost::shared_ptr<Trace_type> trace( new Trace_type( domainspace ) );
+    std::shared_ptr<Trace_type> trace( new Trace_type( domainspace ) );
     return trace;
 }
 

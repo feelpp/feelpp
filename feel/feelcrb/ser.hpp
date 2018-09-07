@@ -25,6 +25,8 @@
 #ifndef FEELPP_SER_HPP
 #define FEELPP_SER_HPP 1
 
+#include <boost/shared_ptr.hpp>
+
 namespace Feel{
 
 template <typename CRBType>
@@ -32,13 +34,13 @@ class SER
 {
 public :
     typedef CRBType crb_type;
-    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+    typedef std::shared_ptr<crb_type> crb_ptrtype;
 
     typedef typename crb_type::model_type crbmodel_type;
-    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
+    typedef std::shared_ptr<crbmodel_type> crbmodel_ptrtype;
 
     typedef typename crbmodel_type::model_type model_type;
-    typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef std::shared_ptr<model_type> model_ptrtype;
 
 
     SER( crb_ptrtype crb, crbmodel_ptrtype crbmodel );
@@ -75,9 +77,9 @@ SER<CRBType>::run()
     {
         if ( ser_level > 0 ) // create new crb and model
         {
-            auto model = boost::make_shared<crbmodel_type>( crb::stage::offline, ser_level );
-            auto crb = boost::make_shared<crb_type>( M_crbs.front()->name(), model,
-                                                     crb::stage::offline, (boost::format("ser%1%")%ser_level).str() );
+            auto model = std::make_shared<crbmodel_type>( crb::stage::offline, ser_level );
+            auto crb = crb_type::New( M_crbs.front()->name(), model,
+                                      crb::stage::offline, (boost::format("ser%1%")%ser_level).str() );
             M_models.push_back( model );
             M_crbs.push_back( crb );
         }
@@ -120,8 +122,9 @@ SER<CRBType>::run()
             tic();
             if( do_offline_eim && crb->offlineStep() ) //Continue to enrich EIM functionspace only is RB is not complete
             {
+                // Be careful if you have multiple EIMs to not overstep the bounds of the vectors when computing beqtQm (see #1130)
                 do_offline_eim = false; //re-init
-                for( auto eim_sc : eim_sc_vector )
+                for( auto const& eim_sc : eim_sc_vector )
                 {
                     //if ( ser_level > 0 )
                     eim_sc->setDBSubDirectory( (boost::format("eim_ser%1%")%ser_level).str() );
@@ -139,7 +142,7 @@ SER<CRBType>::run()
 
                     do_offline_eim = do_offline_eim || eim_sc->offlineStep();
                 }
-                for( auto eim_sd : eim_sd_vector )
+                for( auto const& eim_sd : eim_sd_vector )
                 {
                     //if ( ser_level > 0 )
                     eim_sd->setDBSubDirectory( (boost::format("eim_ser%1%")%ser_level).str() );
@@ -158,7 +161,7 @@ SER<CRBType>::run()
                     do_offline_eim = do_offline_eim || eim_sd->offlineStep();
                 }
 
-                for ( auto deim : deim_vector )
+                for ( auto const& deim : deim_vector )
                 {
                     deim->setRestart( false );
                     deim->setSerFrequency( ioption(_name="ser.eim-frequency") );
@@ -175,7 +178,7 @@ SER<CRBType>::run()
                     do_offline_eim = do_offline_eim || deim->offlineStep();
                 }
 
-                for ( auto mdeim : mdeim_vector )
+                for ( auto const& mdeim : mdeim_vector )
                 {
                     mdeim->setRestart( false );
                     mdeim->setSerFrequency( ioption(_name="ser.eim-frequency") );

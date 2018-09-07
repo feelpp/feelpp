@@ -56,7 +56,7 @@ BOOST_PARAMETER_FUNCTION(
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
       ( files_path, *( boost::is_convertible<mpl::_,std::string> ), Environment::localGeoRepository() )
       ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends") )
-      ( worldcomm,       (WorldComm), Environment::worldComm() ) )
+      ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() ) )
     )
 
 {
@@ -87,7 +87,7 @@ BOOST_PARAMETER_FUNCTION(
 
         gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile( filename_with_path ) );
 
-        if( worldcomm.globalRank() == worldcomm.masterRank() )
+        if( worldcomm->globalRank() == worldcomm->masterRank() )
         {
             fs::path cp = fs::current_path();
             std::vector<std::string> depends_on_files;
@@ -119,8 +119,8 @@ BOOST_PARAMETER_FUNCTION(
                              } );
         }
     }
-    gmsh_ptr->setGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ), 0 );
-    gmsh_ptr->setGeoParameters( geo_parameters );
+    //gmsh_ptr->addGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ) );
+    gmsh_ptr->addGeoParameters( geo_parameters );
 
     return gmsh_ptr;
 

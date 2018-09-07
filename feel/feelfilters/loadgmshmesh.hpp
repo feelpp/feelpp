@@ -62,11 +62,11 @@ BOOST_PARAMETER_FUNCTION(
       ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,		   *, boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions") )
-      ( worldcomm,       *, Environment::worldComm() )
+      ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() )
       ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition") )
       ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition") )
       ( rebuild_partitions_filename,	*, filename )
-      ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
+      ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm->globalSize() )
       ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity") )
@@ -100,7 +100,7 @@ BOOST_PARAMETER_FUNCTION(
     {
         filename_with_path = gmsh.refine( filename_with_path, refine );
     }
-    else if ( rebuild_partitions )
+    else if ( rebuild_partitions && partitions > 1 )
     {
         gmsh.rebuildPartitionMsh(filename_with_path,rebuild_partitions_filename);
         filename_with_path=rebuild_partitions_filename;
@@ -158,7 +158,7 @@ BOOST_PARAMETER_FUNCTION(
     toc("loadGMSHMesh.update", FLAGS_v>0);
 
     if ( straighten && _mesh_type::nOrder > 1 )
-        return straightenMesh( _mesh, worldcomm.subWorldComm() );
+        return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
 
     return _mesh;
 }

@@ -30,7 +30,7 @@
 #define FEELPP_FEELPPDATABASE_HPP 1
 
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/removecomments.hpp>
+#include <feel/feelcore/ptreetools.hpp>
 #include <feel/feelcore/utility.hpp>
 
 #include <feel/feelfilters/loadmesh.hpp>
@@ -65,7 +65,7 @@ class FeelppDatabase
 {
 public :
     using mesh_type = decay_type<MeshType>;
-    using mesh_ptrtype = boost::shared_ptr<mesh_type>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
     FeelppDatabase( WorldComm const& worldComm = Environment::worldComm() )
         :

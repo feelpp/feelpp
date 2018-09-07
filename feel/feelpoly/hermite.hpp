@@ -340,7 +340,7 @@ public:
             mpl::identity<boost::none_t>,
             mpl::identity< Hermite<N-1, O, Scalar, T, Convex,  Pts> > >::type::type face_basis_type;
 
-    typedef boost::shared_ptr<face_basis_type> face_basis_ptrtype;
+    typedef std::shared_ptr<face_basis_type> face_basis_ptrtype;
 
     typedef typename dual_space_type::convex_type convex_type;
     typedef typename dual_space_type::pointset_type pointset_type;
@@ -416,7 +416,7 @@ public:
      */
     //@{
     template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
-    static void transform( boost::shared_ptr<GMContext> gmc,  boost::shared_ptr<PC> const& pc,
+    static void transform( std::shared_ptr<GMContext> gmc,  std::shared_ptr<PC> const& pc,
                            Phi& phi_t,
                            GPhi& g_phi_t, const bool do_gradient,
                            HPhi& h_phi_t, const bool do_hessian

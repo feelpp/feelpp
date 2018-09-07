@@ -276,7 +276,7 @@ test2dTo2d()
 } // test2dTo2d
 
 template <uint16_type OrderGeo>
-boost::shared_ptr<Mesh<Simplex<2,OrderGeo> > >
+std::shared_ptr<Mesh<Simplex<2,OrderGeo> > >
 buildMeshSMD( mpl::int_<2> /**/)
 {
     typedef Mesh<Simplex<2,OrderGeo> > mesh_type;
@@ -292,7 +292,7 @@ buildMeshSMD( mpl::int_<2> /**/)
     return mesh;
 }
 template <uint16_type OrderGeo>
-boost::shared_ptr<Mesh<Simplex<3,OrderGeo> > >
+std::shared_ptr<Mesh<Simplex<3,OrderGeo> > >
 buildMeshSMD( mpl::int_<3> /**/)
 {
     typedef Mesh<Simplex<3,OrderGeo> > mesh_type;

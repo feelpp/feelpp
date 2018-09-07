@@ -50,13 +50,13 @@ public:
 
     typedef Space space_type;
 
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     typedef typename space_type::value_type value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
@@ -168,7 +168,7 @@ struct compute_functionalLinear_return
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
 
     typedef FsFunctionalLinear<space_type> type;
-    typedef boost::shared_ptr<FsFunctionalLinear<space_type> > ptrtype;
+    typedef std::shared_ptr<FsFunctionalLinear<space_type> > ptrtype;
 };
 }
 
@@ -177,7 +177,7 @@ BOOST_PARAMETER_FUNCTION(
     functionalLinear,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
-      ( space,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( space,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
       ( backend,        *, Backend<typename Feel::detail::compute_functionalLinear_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )

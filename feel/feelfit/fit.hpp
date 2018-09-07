@@ -44,11 +44,6 @@ public:
     // That is for optimisation
     // if not know: false
     static const bool is_terminal = false;//expression_type::is_terminal;
-    // im: integration method
-    // l'ordre polynomial de la représentaiton
-    static const uint16_type imorder = expression_type::imorder;
-    // ...
-    static const bool imIsPoly = expression_type::imIsPoly;
 
     using test_basis = typename expression_type::test_basis;
     using trial_basis = typename expression_type::trial_basis;
@@ -88,6 +83,11 @@ public:
 
     Interpolator const& interpolator() const { return *M_interpolator; }
 
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_expr.isPolynomial(); }
 
     // geo_t : transformation geométrique
     // basis_i_t : fonctions tests

@@ -57,7 +57,7 @@
 #include <feel/feelpoly/operations.hpp>
 #include <feel/feelpoly/functionals.hpp>
 #include <feel/feelpoly/functionals2.hpp>
-#include <feel/feelpoly/quadpoint.hpp>
+#include <feel/feelpoly/pointsetquadrature.hpp>
 #include <feel/feelpoly/fe.hpp>
 
 #include <feel/feelvf/vf.hpp>
@@ -198,7 +198,7 @@ public:
 #endif
 
         // curl(x) P_k \ P_{k-1}
-        IMGeneral<convex_type::nDim, 2*nOrder,value_type> im;
+        IMGeneral<convex_type::nDim, value_type> im( 2*nOrder );
         //VLOG(4) << "[Nedelec1stKindPset] im.points() = " << im.points() << std::endl;
         ublas::matrix<value_type> xPkc( nComponents*( dim_Pk-dim_Pkm1 ),Pk.coeff().size2() );
 
@@ -295,7 +295,7 @@ public:
 #endif
 
         // curl(x) P_k \ P_{k-1}
-        IMGeneral<convex_type::nDim, 2*nOrder,value_type> im;
+        IMGeneral<convex_type::nDim, value_type> im( 2*nOrder );
         VLOG(4) << "[Nedelec1stKindPset] im.points() = " << im.points() << std::endl;
         //ublas::matrix<value_type> xPkcV( nComponents*( dim_Pk-dim_Pkm1 ),Pk.coeff().size2() );
         ublas::matrix<value_type> xPkcV( nComponents*nComponents*dim_Pk,Pk.coeff().size2() );
@@ -1025,7 +1025,7 @@ class Nedelec
     :
     public HCurlPolynomialSet,
     public NedelecBase<N,O,Kind,T,TheTAG>::type,
-    public boost::enable_shared_from_this<Nedelec<N,O,Kind,T,TheTAG> >
+    public std::enable_shared_from_this<Nedelec<N,O,Kind,T,TheTAG> >
 {
 
 public:

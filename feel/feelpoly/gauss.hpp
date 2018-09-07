@@ -6,6 +6,7 @@
        Date: 2006-12-30
 
   Copyright (C) 2006 Universite Joseph Fourier (Grenoble)
+  Copyright (C) 2011-2017 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,15 +27,18 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-12-30
  */
-#ifndef __Gauss_H
-#define __Gauss_H 1
+#ifndef FEELPP_GAUSS_HPP
+#define FEELPP_GAUSS_HPP 1
 
+
+#include <feel/feelpoly/pointsetinterpolation.hpp>
+#include <feel/feelpoly/pointsetquadrature.hpp>
 #include <feel/feelpoly/expansions.hpp>
-#include <feel/feelpoly/quadpoint.hpp>
 
 namespace Feel
 {
 template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
+template<class Convex, typename T> class PointSetQuadrature;
 
 /*!
  * \class Gauss
@@ -51,15 +55,17 @@ template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint1
  * @author Christophe Prud'homme
  */
 template<class Convex, uint16_type Integration_Degree, typename T>
-class Gauss : public PointSetQuadrature<Convex, Integration_Degree, T>  {};
+class Gauss : public PointSetQuadrature<Convex, T>  {};
+
+/// \cond detail
 
 template< uint16_type Integration_Degree, typename T>
-class Gauss<Simplex<0,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<0,1> , Integration_Degree, T>
+class Gauss<Simplex<0,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<0,1> , T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<0,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<0,1> , T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -74,6 +80,7 @@ public :
     {
 
     }
+    Gauss( uint16_type o ) : super(){}
 
     ~Gauss() {}
 
@@ -82,12 +89,12 @@ public :
 
 /// \cond detail
 template< uint16_type Integration_Degree, typename T>
-class Gauss<Simplex<1,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<1,1> , Integration_Degree, T>
+class Gauss<Simplex<1,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<1,1> , T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<1,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<1,1> , T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -107,8 +114,8 @@ public :
         details::gaussjacobi<Npoints, T, ublas::vector<T>, ublas::vector<T> >( this->M_w, px );
         ublas::row( this->M_points, 0 ) = px;
 
-        boost::shared_ptr<GT_Lagrange<1,1,1,Simplex,T> > gm( new GT_Lagrange<1, 1, 1, Simplex, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<1,1,1,Simplex,T> > gm( new GT_Lagrange<1, 1, 1, Simplex, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Simplex<1, 1>, 1, 1>(), gm, face_qr );
 
@@ -123,12 +130,12 @@ public :
 /** Gauss Quadrature on a triangle **/
 
 template< uint16_type Integration_Degree, typename T>
-class Gauss<Simplex<2,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<2,1> , Integration_Degree, T>
+class Gauss<Simplex<2,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<2,1> , T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<2,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<2,1> , T> super;
     typedef typename super::return_type return_type;
 
     typedef typename super::node_type node_type;
@@ -187,8 +194,8 @@ public :
             }
         }
 
-        boost::shared_ptr<GT_Lagrange<2,1,2,Simplex,T> > gm( new GT_Lagrange<2, 1, 2, Simplex, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<2,1,2,Simplex,T> > gm( new GT_Lagrange<2, 1, 2, Simplex, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Simplex<2, 1>, 2, 1>(), gm, face_qr );
 
@@ -203,12 +210,12 @@ public :
 /** Gauss Quadrature on a tetrahedra **/
 
 template< uint16_type Integration_Degree, typename T>
-class Gauss<Simplex<3,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<3,1> , Integration_Degree, T>
+class Gauss<Simplex<3,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<3,1> , T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<3,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<3,1> , T> super;
 
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
@@ -260,8 +267,8 @@ public :
             }
         }
 
-        boost::shared_ptr<GT_Lagrange<3, 1, 3, Simplex, T> > gm( new GT_Lagrange<3, 1, 3, Simplex, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<3, 1, 3, Simplex, T> > gm( new GT_Lagrange<3, 1, 3, Simplex, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Simplex<3, 1>,3,1>(), gm, face_qr );
     }
@@ -276,12 +283,12 @@ public :
 template< uint16_type Integration_Degree, typename T>
 class Gauss<Hypercube<1,1>, Integration_Degree ,T >
     :
-public PointSetQuadrature<Hypercube<1,1>, Integration_Degree, T>
+public PointSetQuadrature<Hypercube<1,1>, T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<1,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<1,1>, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -319,8 +326,8 @@ public :
 #endif
 
 
-        boost::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<1, 1>, 1, 1>(), gm, face_qr );
 
@@ -335,12 +342,12 @@ public :
 template< uint16_type Integration_Degree, typename T>
 class Gauss<Hypercube<2,1>, Integration_Degree ,T >
     :
-public PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T>
+public PointSetQuadrature<Hypercube<2,1>, T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<2,1>, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -379,8 +386,8 @@ public :
         VLOG(1) << "[gauss<SP<2,1>] p = " << this->M_points << "\n";
         VLOG(1) << "[gauss<SP<2,1>] w = " << this->M_w << "\n";
 #endif
-        boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );
 
@@ -396,12 +403,12 @@ public :
 template< uint16_type Integration_Degree, typename T>
 class Gauss<Hypercube<3,1>, Integration_Degree ,T >
     :
-public PointSetQuadrature<Hypercube<3,1>, Integration_Degree, T>
+public PointSetQuadrature<Hypercube<3,1>, T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<3,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<3,1>, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -434,8 +441,8 @@ public :
             }
         }
 
-        boost::shared_ptr<GT_Lagrange<3, 1, 3, Hypercube, T> > gm( new GT_Lagrange<3, 1, 3, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<3, 1, 3, Hypercube, T> > gm( new GT_Lagrange<3, 1, 3, Hypercube, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<3, 1>,3,1>(), gm, face_qr );
 
@@ -450,12 +457,12 @@ public :
 template< uint16_type Integration_Degree, typename T>
 class Gauss<Hypercube<4,1>, Integration_Degree ,T >
     :
-public PointSetQuadrature<Hypercube<4,1>, Integration_Degree, T>
+public PointSetQuadrature<Hypercube<4,1>, T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<4,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<4,1>, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -502,12 +509,12 @@ public :
 template< uint16_type Integration_Degree, typename T>
 class Gauss<Hypercube<5,1>, Integration_Degree ,T >
     :
-public PointSetQuadrature<Hypercube<5,1>, Integration_Degree, T>
+public PointSetQuadrature<Hypercube<5,1>, T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<5,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<5,1>, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;

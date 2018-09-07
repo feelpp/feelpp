@@ -42,14 +42,14 @@ class ReinitializerFM
 public:
     typedef Reinitializer<FunctionSpaceType> super_type;
     typedef ReinitializerFM<FunctionSpaceType> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
     //--------------------------------------------------------------------//
     // Function spaces
     typedef FunctionSpaceType functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
 
     static const uint16_type nOrder = functionspace_type::fe_type::nOrder;
     typedef typename functionspace_type::mesh_type mesh_type;
@@ -78,7 +78,7 @@ public:
         Periodicity<NoPeriodicity>,
         mortars<NoMortar>
             > functionspace_reinitP1_type;
-    typedef boost::shared_ptr<functionspace_reinitP1_type> functionspace_reinitP1_ptrtype;
+    typedef std::shared_ptr<functionspace_reinitP1_type> functionspace_reinitP1_ptrtype;
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -145,11 +145,11 @@ private:
         functionspace_type // to space
         > op_interpolation_from_P1_type;
 
-    typedef boost::shared_ptr<op_interpolation_to_P1_type> op_interpolation_to_P1_ptrtype;
-    typedef boost::shared_ptr<op_interpolation_from_P1_type> op_interpolation_from_P1_ptrtype;
+    typedef std::shared_ptr<op_interpolation_to_P1_type> op_interpolation_to_P1_ptrtype;
+    typedef std::shared_ptr<op_interpolation_from_P1_type> op_interpolation_from_P1_ptrtype;
 
     typedef OperatorLagrangeP1<functionspace_type> op_lagrangeP1_type;
-    typedef boost::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
+    typedef std::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
 
     op_interpolation_to_P1_ptrtype M_opInterpolationToP1;
     op_interpolation_from_P1_ptrtype M_opInterpolationFromP1;
@@ -168,7 +168,7 @@ private:
     //typedef typename ReinitFunctionSpace<functionspace_type>::type reinitializerFMS_functionspace_type;
     
     typedef ReinitializerFMS< reinitializerFMS_functionspace_type, periodicity_type > reinitializerFMS_type;
-    typedef boost::shared_ptr<reinitializerFMS_type> reinitializerFMS_ptrtype;
+    typedef std::shared_ptr<reinitializerFMS_type> reinitializerFMS_ptrtype;
 
     reinitializerFMS_ptrtype M_reinitializerFMS;
     //--------------------------------------------------------------------//

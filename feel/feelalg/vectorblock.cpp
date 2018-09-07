@@ -82,31 +82,40 @@ template<typename T>
 typename BlocksBaseVector<T>::vector_ptrtype&
 BlocksBaseVector<T>::vectorMonolithic()
 {
-    boost::shared_ptr< VectorBlockBase<T> > vcast = boost::dynamic_pointer_cast< VectorBlockBase<T> >( M_vector );
-    return vcast->getVector();
+    CHECK( M_vector ) << "vector not initialized";
+    std::shared_ptr< VectorBlockBase<T> > vcast = std::dynamic_pointer_cast< VectorBlockBase<T> >( M_vector );
+    if ( vcast )
+        return vcast->getVector();
+    else
+        return M_vector;
 }
 template<typename T>
 typename BlocksBaseVector<T>::vector_ptrtype const&
 BlocksBaseVector<T>::vectorMonolithic() const
 {
-    boost::shared_ptr< VectorBlockBase<T> const > vcast = boost::dynamic_pointer_cast< VectorBlockBase<T> const >( M_vector );
-    return vcast->getVector();
+    CHECK( M_vector ) << "vector not initialized";
+    std::shared_ptr< VectorBlockBase<T> const > vcast = std::dynamic_pointer_cast< VectorBlockBase<T> const >( M_vector );
+    if ( vcast )
+        return vcast->getVector();
+    else
+        return M_vector;
 }
 
 template <typename T>
 void
-BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec, int blockId, bool closeVector ) const
+BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec, int dtId, bool closeVector ) const
 {
     auto const& dmVec = vec.map();
     auto const& dmSubVec = subvec.map();
     for ( int tag=0 ; tag<dmSubVec.numberOfDofIdToContainerId() ; ++tag )
     {
         auto const& basisGpToContainerGpSubVec = dmSubVec.dofIdToContainerId( tag );
-        CHECK( blockId+tag < dmVec.numberOfDofIdToContainerId() ) << "error "<<blockId+tag << " vs " << dmVec.numberOfDofIdToContainerId();
-        auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( blockId+tag );
+        CHECK( dtId+tag < dmVec.numberOfDofIdToContainerId() ) << "error "<<dtId+tag << " vs " << dmVec.numberOfDofIdToContainerId();
+        auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( dtId+tag );
         CHECK( basisGpToContainerGpSubVec.size() == basisGpToContainerGpVec.size() ) << " aii " << basisGpToContainerGpSubVec.size() << " vs " << basisGpToContainerGpVec.size();
         for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
-            vec( basisGpToContainerGpVec[k] ) = subvec( basisGpToContainerGpSubVec[k] );
+            vec.set( basisGpToContainerGpVec[k], subvec( basisGpToContainerGpSubVec[k] ) );
+            //vec( basisGpToContainerGpVec[k] ) = subvec( basisGpToContainerGpSubVec[k] );
     }
     if ( closeVector )
         vec.close();
@@ -126,8 +135,23 @@ BlocksBaseVector<T>::setSubVector( vector_type & subvec, vector_type const& vec 
         auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( basisIndexSubVec+tag );
         CHECK( basisGpToContainerGpSubVec.size() == basisGpToContainerGpVec.size() ) << " error " << basisGpToContainerGpSubVec.size() << " vs " << basisGpToContainerGpVec.size();
         for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
-            subvec( basisGpToContainerGpSubVec[k] ) = vec( basisGpToContainerGpVec[k] );
+            subvec.set( basisGpToContainerGpSubVec[k], vec( basisGpToContainerGpVec[k] ) );
     }
+    subvec.close();
+}
+
+template <typename T>
+void
+BlocksBaseVector<T>::updateVectorFromSubVectors( vector_type & vec ) const
+{
+    int nBlock = this->nRow();
+    for ( int k = 0, dtId = 0 ; k<nBlock ;++k )
+    {
+        vector_ptrtype subvec = this->operator()(k);
+        this->setVector( vec, *subvec, dtId, false );
+        dtId += subvec->map().numberOfDofIdToContainerId();
+    }
+    vec.close();
 }
 
 template <typename T>
@@ -136,18 +160,14 @@ BlocksBaseVector<T>::updateVectorFromSubVectors()
 {
     if ( !M_vector )
         return;
-    int nBlock = this->nRow();
-    for ( int k = 0 ; k<nBlock ;++k )
-        this->setVector( *M_vector, *(this->operator()(k)), k, false );
-    M_vector->close();
+    this->updateVectorFromSubVectors( *M_vector );
 }
-
 
 template class BlocksBaseVector<double>;
 
 
 template <typename T>
-VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & blockVec,
+VectorBlockBase<T>::VectorBlockBase( BlocksBaseVector<T> const & blockVec,
                                      backend_type &backend,
                                      bool copy_values )
     :
@@ -155,34 +175,26 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
 {
     auto nRow = blockVec.nRow();
 
-    boost::shared_ptr<DataMap> dm;
+    std::shared_ptr<DataMap> dm;
     if ( nRow == 1 )
     {
         dm = blockVec(0,0)->mapPtr();
     }
     else
     {
-        std::vector<boost::shared_ptr<DataMap> > listofdm;
+        std::vector<std::shared_ptr<DataMap> > listofdm;
         for ( uint16_type i=0 ; i<nRow; ++i )
             listofdm.push_back( blockVec(i,0)->mapPtr() );
-        dm.reset( new DataMap( listofdm, blockVec(0,0)->map().worldComm() ) );
+        dm.reset( new DataMap( listofdm, blockVec(0,0)->map().worldCommPtr() ) );
     }
     M_vec = backend.newVector( dm );
-
-    M_vec->zero();
+    this->setMap( M_vec->mapPtr() );
 
     if ( copy_values )
     {
-        size_type start_i = 0;//M_vec->map().firstDof();
-        for ( int i=0; i<nRow; ++i )
-        {
-            blockVec( i,0 )->close(); // not good but necessary here (TODO)
-            this->updateBlockVec( blockVec( i,0 ), start_i );
-            start_i += blockVec( i,0 )->map().numberOfDofIdToContainerId();
-            //start_i += blockVec( i,0 )->map().nLocalDofWithGhost();
-        }
+        blockVec.updateVectorFromSubVectors( *M_vec );
     }
-    this->setMap( M_vec->mapPtr() );
+
 }
 
 template <typename T>
@@ -205,7 +217,7 @@ VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
         for (int k=0;k<dofIdToContainerIdBlock.size();++k)
             M_vec->set( dofIdToContainerIdVec[k],m->operator()( dofIdToContainerIdBlock[k] ) );
     }
-    this->setMap( M_vec->mapPtr() );
+    //this->setMap( M_vec->mapPtr() );
 }
 
 template<typename T>

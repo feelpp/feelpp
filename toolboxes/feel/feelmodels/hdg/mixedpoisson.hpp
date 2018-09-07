@@ -46,7 +46,7 @@ makeMixedPoissonOptions( std::string prefix = "mixedpoisson" )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")
         ;
-    mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
+    mpOptions.add( modelnumerical_options( prefix ) );
     mpOptions.add ( backend_options( prefix+".sc" ) );
     return mpOptions;
 }
@@ -72,10 +72,10 @@ public:
     //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
-    typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
+    typedef typename std::shared_ptr<backend_type> backend_ptrtype ;
 
     typedef MixedPoisson<Dim,Order,G_Order,E_Order> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     using sparse_matrix_type = backend_type::sparse_matrix_type;
     using sparse_matrix_ptrtype = backend_type::sparse_matrix_ptrtype;
@@ -87,11 +87,11 @@ public:
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // The Lagrange multiplier lives in R^n-1
     typedef Simplex<Dim-1,G_Order,Dim> face_convex_type;
     typedef Mesh<face_convex_type> face_mesh_type;
-    typedef boost::shared_ptr<face_mesh_type> face_mesh_ptrtype;
+    typedef std::shared_ptr<face_mesh_type> face_mesh_ptrtype;
 
     // Vh
     using Vh_t = Pdhv_type<mesh_type,Order>;
@@ -125,13 +125,13 @@ public:
     using model_prop_ptrtype = std::shared_ptr<model_prop_type>;
 
     using product2_space_type = ProductSpaces2<Ch_ptr_t,Vh_ptr_t,Wh_ptr_t,Mh_ptr_t>;
-    using product2_space_ptrtype = boost::shared_ptr<product2_space_type>;
+    using product2_space_ptrtype = std::shared_ptr<product2_space_type>;
 
     typedef Exporter<mesh_type,G_Order> exporter_type;
-    typedef boost::shared_ptr <exporter_type> exporter_ptrtype;
+    typedef std::shared_ptr <exporter_type> exporter_ptrtype;
 
-    using op_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Wh_t, Pdh_type<mesh_type,Order>>>;
-    using opv_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Vh_t, Pdhv_type<mesh_type,Order>>>;
+    using op_interp_ptrtype = std::shared_ptr<OperatorInterpolation<Wh_t, Pdh_type<mesh_type,Order>>>;
+    using opv_interp_ptrtype = std::shared_ptr<OperatorInterpolation<Vh_t, Pdhv_type<mesh_type,Order>>>;
 
     using integral_boundary_list_type = std::vector<ExpressionStringAtMarker>;
 
@@ -142,7 +142,7 @@ public:
     // typedef Bdf<space_mixedpoisson_type>  bdf_type;
     typedef Bdf <Wh_t> bdf_type;
     // typedef Bdf<Pdh_type<mesh_type,Order>> bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
 
 //private:
@@ -182,15 +182,15 @@ public:
 
     // constructor
     MixedPoisson( std::string const& prefix = "mixedpoisson",
-                    WorldComm const& _worldComm = Environment::worldComm(),
-                    std::string const& subPrefix = "",
-                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                  worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
+                  std::string const& subPrefix = "",
+                  ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     MixedPoisson( self_type const& MP ) = default;
     static self_ptrtype New( std::string const& prefix = "mixedpoisson",
-                             WorldComm const& worldComm = Environment::worldComm(),
+                             worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
@@ -214,8 +214,8 @@ public:
     virtual void createTimeDiscretization() ;
     bdf_ptrtype timeStepBDF() { return M_bdf_mixedpoisson; }
     bdf_ptrtype const& timeStepBDF() const { return M_bdf_mixedpoisson; }
-    boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
-    boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
+    std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
+    std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
     virtual void updateTimeStepBDF();
     virtual void initTimeStep();
     void updateTimeStep() { this->updateTimeStepBDF(); }
@@ -265,10 +265,10 @@ public:
 
 template<int Dim, int Order, int G_Order, int E_Order>
 MixedPoisson<Dim, Order, G_Order, E_Order>::MixedPoisson( std::string const& prefix,
-                                                    WorldComm const& worldComm,
-                                                    std::string const& subPrefix,
-                                                    std::string const& rootRepository )
-    : super_type( prefix, worldComm, subPrefix, rootRepository ),
+                                                          worldcomm_ptr_t const& worldComm,
+                                                          std::string const& subPrefix,
+                                                          ModelBaseRepository const& modelRep )
+    : super_type( prefix, worldComm, subPrefix, modelRep ),
       M_useUserIBC(false)
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedPoisson","constructor", "start",
@@ -300,10 +300,10 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::MixedPoisson( std::string const& pre
 template<int Dim, int Order, int G_Order, int E_Order>
 typename MixedPoisson<Dim,Order, G_Order, E_Order>::self_ptrtype
 MixedPoisson<Dim,Order,G_Order, E_Order>::New( std::string const& prefix,
-                                         WorldComm const& worldComm, std::string const& subPrefix,
-                                         std::string const& rootRepository )
+                                               worldcomm_ptr_t const& worldComm, std::string const& subPrefix,
+                                               ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type> ( prefix,worldComm,subPrefix,rootRepository );
+    return std::make_shared<self_type> ( prefix,worldComm,subPrefix,modelRep );
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -465,7 +465,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initModel()
     else
         M_integralCondition = M_IBCList.size();
 
-    if ( boost::icontains(modelProperties().model(),"picard") )
+    if ( boost::icontains(modelProperties().models().model().equations(),"picard") )
         M_isPicard = true;
     else
         M_isPicard = false;
@@ -509,8 +509,8 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces()
     if ( M_integralCondition )
         Feel::cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
 
-    auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( M_integralCondition, M_Ch);
-    M_ps = boost::make_shared<product2_space_type>(product2(ibcSpaces,M_Vh,M_Wh,M_Mh));
+    auto ibcSpaces = std::make_shared<ProductSpace<Ch_ptr_t,true> >( M_integralCondition, M_Ch);
+    M_ps = std::make_shared<product2_space_type>(product2(ibcSpaces,M_Vh,M_Wh,M_Mh));
 
     M_up = M_Vh->element( "u" );
     M_pp = M_Wh->element( "p" );
@@ -1200,11 +1200,8 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::str
                 d = exAtMarker.data(0.1);
 
 			// Scale entries if necessary
-    		auto postProcess = modelProperties().postProcess();
-    		auto itField = postProcess.find( "Fields");
-    		if ( itField != postProcess.end() )
     		{
-        		for ( auto const& field : (*itField).second )
+                for ( auto const& field : modelProperties().postProcess().exports().fields() )
         		{
             		if ( field == "scaled_flux" )
 					{
@@ -1524,11 +1521,8 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
     }
 
     // Export computed solutions
-    auto postProcess = modelProperties().postProcess();
-    auto itField = postProcess.find( "Fields");
-    if ( itField != postProcess.end() )
     {
-        for ( auto const& field : (*itField).second )
+        for ( auto const& field : modelProperties().postProcess().exports().fields() )
         {
             if ( field == "flux" )
             {
@@ -1563,7 +1557,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                 {
                     auto marker = pairMat.first;
                     auto material = pairMat.second;
-                    auto kk = expr(material.getScalar( "scale_flux" ) );
+                    auto kk = material.getScalar( "scale_flux" );
 
                     scaled_flux.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_up));
 
@@ -1658,7 +1652,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                 {
                     auto marker = pairMat.first;
                     auto material = pairMat.second;
-                    auto kk = expr(material.getScalar( "scale_potential" ) );
+                    auto kk = material.getScalar( "scale_potential" );
 
                     scaled_potential.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_pp));
 
@@ -1674,7 +1668,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                     for( auto const& pairMat : modelProperties().materials() )
                     {
                         auto material = pairMat.second;
-                        auto kk_ibc = expr(material.getScalar( "scale_potential" ) ).evaluate();
+                        auto kk_ibc = material.getScalar( "scale_potential" ).evaluate();
                         scaled_ibc = scaled_ibc * kk_ibc;
                     }
 

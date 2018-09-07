@@ -41,15 +41,15 @@ public:
     static const uint16_type Order = 2;
     typedef double value_type;
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::vector_type vector_type;
     typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef bases<Lagrange<Order,Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef Exporter<mesh_type> export_type;
 
@@ -73,7 +73,7 @@ private:
     double meshSize;
     std::string shape;
     std::vector<int> flags;
-    boost::shared_ptr<SolverEigen<value_type> > eigen;
+    std::shared_ptr<SolverEigen<value_type> > eigen;
 }; // Grid
 
 template<int Dim> const uint16_type Grid<Dim>::Order;

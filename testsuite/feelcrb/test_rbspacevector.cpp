@@ -75,26 +75,26 @@ makeAbout()
 template<int Dim, int Order>
 class Model:
     public Simget,
-    public boost::enable_shared_from_this< Model<Dim,Order> >
+    public std::enable_shared_from_this< Model<Dim,Order> >
 {
 
 public :
 
     typedef Mesh<Simplex<Dim> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-#if 0 
-		typedef FunctionSpace<mesh_type,bases<Lagrange<Order, Vectorial> > > space_type;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+#if 0
+    typedef FunctionSpace<mesh_type,bases<Lagrange<Order, Vectorial> > > space_type;
     typedef space_type functionspace_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
 #else
-		typedef typename meta::Pchv<mesh_type,Order>::type functionspace_type;
+    typedef typename meta::Pchv<mesh_type,Order>::type functionspace_type;
     typedef functionspace_type space_type;
     typedef typename meta::Pchv<mesh_type,Order>::ptrtype functionspace_ptrtype;
     typedef functionspace_ptrtype space_ptrtype;
     typedef typename functionspace_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
 #endif
 
     Model()
@@ -107,8 +107,8 @@ public :
     {
         auto mesh=unitHypercube<Dim>();
         Xh = Pchv<Order>( mesh );
-        
-        auto RbSpace = RbSpacePchv<Order>( this->shared_from_this() );
+
+        auto RbSpace = RbSpacePchv<Order>( Xh );
         auto basis_x = vf::project( Xh , elements(mesh), vec( Px() , Px()*Px() ) );
         auto basis_y = vf::project( Xh , elements(mesh), vec( Py() , Py()*Px() ) );
         RbSpace->addPrimalBasisElement( basis_x );
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_SUITE( rbspace )
 
 BOOST_AUTO_TEST_CASE( test_1 )
 {
-    boost::shared_ptr<Model<2,2> > model ( new Model<2,2>() );
+    std::shared_ptr<Model<2,2> > model ( new Model<2,2>() );
     model->run();
 }
 

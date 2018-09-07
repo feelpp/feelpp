@@ -54,7 +54,7 @@ public:
     typedef OperatorLinear<DomainSpace, DualImageSpace> this_type;
     typedef Operator<DomainSpace, DualImageSpace> super_type;
     typedef OperatorLinear<DualImageSpace,DomainSpace> adjoint_type;
-    typedef boost::shared_ptr<adjoint_type> adjoint_ptrtype;
+    typedef std::shared_ptr<adjoint_type> adjoint_ptrtype;
 
     typedef typename super::domain_space_type domain_space_type;
     typedef typename super::dual_image_space_type  dual_image_space_type;
@@ -68,7 +68,7 @@ public:
     typedef typename backend_type::sparse_matrix_type matrix_type;
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
-    typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
+    typedef std::shared_ptr<matrix_type> matrix_ptrtype;
 
     template<typename T, typename Storage>
     struct domain_element: public super::domain_space_type::template Element<T,Storage> {};
@@ -393,7 +393,7 @@ public:
     template <typename T1 = typename domain_space_type::element_type,
              typename T2 = typename dual_image_space_type::element_type >
     T2
-    operator()( boost::shared_ptr<T1> de )
+    operator()( std::shared_ptr<T1> de )
     {
         T2 elt_image( this->dualImageSpace(),"oio" );
         this->apply( *de,elt_image );
@@ -535,14 +535,14 @@ public:
     }
 
     template<typename T>
-    OperatorLinear& add( T const& scalar, boost::shared_ptr<OperatorLinear> ol )
+    OperatorLinear& add( T const& scalar, std::shared_ptr<OperatorLinear> ol )
     {
         this->close();
         this->add( scalar, *ol );
         return *this;
     }
 
-    OperatorLinear& operator+( boost::shared_ptr<OperatorLinear> ol )
+    OperatorLinear& operator+( std::shared_ptr<OperatorLinear> ol )
     {
         this->close();
         this->add( 1.0, *ol );
@@ -584,7 +584,7 @@ struct compute_opLinear_return
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::domainSpace>::type>::type::element_type domain_space_type;
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::imageSpace>::type>::type::element_type image_space_type;
 
-    typedef boost::shared_ptr<OperatorLinear<domain_space_type, image_space_type> > type;
+    typedef std::shared_ptr<OperatorLinear<domain_space_type, image_space_type> > type;
 };
 
 BOOST_PARAMETER_FUNCTION(
@@ -592,8 +592,8 @@ BOOST_PARAMETER_FUNCTION(
     opLinear,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
       ( backend,        *, Backend<typename compute_opLinear_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
@@ -607,7 +607,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef OperatorLinear<typename compute_opLinear_return<Args>::domain_space_type,
             typename compute_opLinear_return<Args>::image_space_type> operatorlinear_type;
 
-    boost::shared_ptr<operatorlinear_type> opI( new operatorlinear_type( domainSpace,imageSpace,backend,pattern ) );
+    std::shared_ptr<operatorlinear_type> opI( new operatorlinear_type( domainSpace,imageSpace,backend,pattern ) );
 
     return opI;
 

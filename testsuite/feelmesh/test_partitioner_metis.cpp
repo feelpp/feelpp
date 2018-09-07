@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE( partitioner_metis2 )
     using namespace Feel;
     if ( Environment::isMasterRank() )
     {
-        auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>( Environment::worldCommSeq()),
+        auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>( Environment::worldCommSeqPtr()),
                              _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES) );
 
         int numPartition = std::min((int)4, (int)mesh->numElements() );

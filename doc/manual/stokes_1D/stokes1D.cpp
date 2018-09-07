@@ -138,13 +138,13 @@ int main(int argc, char**argv )
     
     //////////////////////////////
     
-    /*typedef boost::shared_ptr<Mesh<Simplex<1>>> mesh_ptrtype;
+    /*typedef std::shared_ptr<Mesh<Simplex<1>>> mesh_ptrtype;
     typedef Lagrange<2, Scalar> basis_u1_type;
     typedef Lagrange<2, Scalar> basis_u2_type;
     typedef Lagrange<1, Scalar> basis_p_type;
     typedef bases<basis_u1_type,basis_u2_type,basis_p_type> basis_type;
     typedef FunctionSpace<Mesh<Simplex<1>>, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     mesh_ptrtype mesh1d;
     space_ptrtype Xh1 ;*/
     //////////////////////////////

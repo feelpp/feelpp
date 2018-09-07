@@ -100,10 +100,10 @@ public:
     typedef super::graph_ptrtype graph_ptrtype;
 
     typedef Vector<value_type> vector_type;
-    typedef boost::shared_ptr<Vector<value_type> > vector_ptrtype;
+    typedef std::shared_ptr<Vector<value_type> > vector_ptrtype;
 
     typedef VectorEpetra<value_type> epetra_vector_type;
-    typedef boost::shared_ptr<epetra_vector_type> epetra_vector_ptrtype;
+    typedef std::shared_ptr<epetra_vector_type> epetra_vector_ptrtype;
 
     typedef MatrixEpetra epetra_sparse_matrix_type;
 
@@ -273,7 +273,7 @@ public:
         return M_bc_index;
     }
 
-    boost::shared_ptr<Epetra_FECrsMatrix> matrix()
+    std::shared_ptr<Epetra_FECrsMatrix> matrix()
     {
         return M_mat;
     }
@@ -574,7 +574,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
+    void updateBlockMat( std::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
 
 protected:
 
@@ -608,7 +608,7 @@ private:
     Epetra_Map M_dom_map;
     Epetra_Map M_range_map;
 
-    mutable boost::shared_ptr<Epetra_FECrsMatrix> M_mat;
+    mutable std::shared_ptr<Epetra_FECrsMatrix> M_mat;
 
     std::vector<size_type> M_bc_index;
 };
@@ -781,7 +781,7 @@ void MatrixEpetra::clear ()
 {
     if ( this->isInitialized() )
     {
-        M_mat = boost::shared_ptr<Epetra_FECrsMatrix>( new Epetra_FECrsMatrix( Copy, M_emap, M_col_emap, 50 ) );
+        M_mat = std::shared_ptr<Epetra_FECrsMatrix>( new Epetra_FECrsMatrix( Copy, M_emap, M_col_emap, 50 ) );
 
         this->setInitialized( false );
     }
@@ -1071,7 +1071,7 @@ MatrixEpetra::operator () ( const size_type i,
 
 inline
 void
-MatrixEpetra::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j )
+MatrixEpetra::updateBlockMat( std::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j )
 {
     LOG(ERROR) << "Invalid call to updateBlockMat, not yet implemented\n";
 }

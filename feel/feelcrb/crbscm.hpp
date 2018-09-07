@@ -85,7 +85,7 @@ public:
 
     typedef TruthModelType truth_model_type;
     typedef truth_model_type model_type;
-    typedef boost::shared_ptr<truth_model_type> truth_model_ptrtype;
+    typedef std::shared_ptr<truth_model_type> truth_model_ptrtype;
 
     typedef double value_type;
     typedef boost::tuple<double,double> bounds_type;
@@ -119,7 +119,7 @@ public:
     CRBSCM( std::string const& name = "defaultname_crbscm",
             std::string const& ext = "scma",
             bool scm_for_mass_matrix = false,
-            WorldComm const& worldComm = Environment::worldComm() )
+            worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         super( name, ext, worldComm ),
         M_is_initialized( false ),
@@ -1037,7 +1037,7 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
     if ( modesmin.empty() )
     {
         std::cout << "no eigenmode converged: increase --solvereigen-ncv\n";
-        return 0.;
+        return boost::make_tuple( 0., 0.);
     }
 
     double eigmin = modesmin.begin()->second.template get<0>();
@@ -1060,7 +1060,7 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
     if ( modesmax.empty() )
     {
         std::cout << "no eigenmode converged: increase --solvereigen-ncv\n";
-        return;
+        return boost::make_tuple( 0., 0.);
     }
 
     double eigmax = modesmax.rbegin()->second.template get<0>();
@@ -1143,10 +1143,10 @@ CRBSCM<TruthModelType>::lbSCM( parameter_type const& mu ,size_type K ,int indexm
     boost::mpi::timer ti;
 
     // value if K==0
-    if ( K <= 0 ) return 0.0;
+    if ( K <= 0 ) return boost::make_tuple(0., 0.);
 
     if ( indexmu >= 0 && ( M_C_alpha_lb[indexmu].find( K ) !=  M_C_alpha_lb[indexmu].end() ) )
-        return  M_C_alpha_lb[indexmu][K] ;
+        return  boost::make_tuple(M_C_alpha_lb[indexmu][K], 0.) ;
 
     //if ( K == std::max(size_type(0),M_C->size()-(size_type) ioption(_name="crb.scm.level") ) ) return 0.0;
     //int level = ioption(_name="crb.scm.level");

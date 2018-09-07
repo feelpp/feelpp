@@ -59,7 +59,7 @@ namespace Feel
 
 template <typename T>
 inline
-MatrixPetsc<T>::MatrixPetsc( WorldComm const& worldComm )
+MatrixPetsc<T>::MatrixPetsc( worldcomm_ptr_t const& worldComm )
     :
     super( worldComm ),
     M_destroy_mat_on_exit( true )
@@ -73,7 +73,7 @@ MatrixPetsc<T>::MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const
 {}
 template <typename T>
 inline
-MatrixPetsc<T>::MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm )
+MatrixPetsc<T>::MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, worldcomm_ptr_t const& worldComm )
     :
     super( dmRow,dmCol,worldComm ),
     M_destroy_mat_on_exit( true )
@@ -96,7 +96,11 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, IS& isrow, IS& i
     datamap_ptrtype dmcol( new datamap_type(ncol, ncol) );
     this->setMapRow(dmrow);
     this->setMapCol(dmcol);
+#if PETSC_VERSION_LESS_THAN( 3,8,0 )
     ierr = MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->M_mat);
+#else
+    ierr = MatCreateSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->M_mat);
+#endif
     CHKERRABORT( this->comm(),ierr );
     this->setInitialized( true );
     this->close();
@@ -142,7 +146,11 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, std::vector<int>
     datamap_ptrtype dmcol( new datamap_type(ncol, ncol) );
     this->setMapRow(dmrow);
     this->setMapCol(dmcol);
+#if PETSC_VERSION_LESS_THAN( 3,8,0 )
     ierr = MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->M_mat);
+#else
+    ierr = MatCreateSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->M_mat);
+#endif
     CHKERRABORT( this->comm(),ierr );
     this->setInitialized( true );
     this->close();
@@ -1337,7 +1345,7 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
 
 
 template <typename T>
-boost::shared_ptr<MatrixSparse<T> >
+std::shared_ptr<MatrixSparse<T> >
 MatrixPetsc<T>::createSubMatrix( std::vector<size_type> const& _rows,
                                  std::vector<size_type> const& _cols,
                                  bool useSameDataMap, bool checkAndFixRange ) const
@@ -1360,7 +1368,7 @@ MatrixPetsc<T>::createSubMatrix( std::vector<size_type> const& _rows,
     this->getSubMatrixPetsc( rows,cols,subMatPetsc );
 
     // build matrixsparse object
-    boost::shared_ptr<MatrixSparse<T> > subMat;
+    std::shared_ptr<MatrixSparse<T> > subMat;
     if ( this->comm().size()>1 )
         subMat.reset( new MatrixPetscMPI<T>( subMatPetsc,subMapRow,subMapCol,true,true ) );
     else
@@ -1378,12 +1386,12 @@ MatrixPetsc<T>::createSubMatrix( std::vector<size_type> const& _rows,
 
 template <typename T>
 void
-MatrixPetsc<T>::updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
+MatrixPetsc<T>::updateSubMatrix( std::shared_ptr<MatrixSparse<T> > & submatrix,
                                  std::vector<size_type> const& rows,
                                  std::vector<size_type> const& cols, bool doClose )
 {
     CHECK( submatrix ) << "submatrix is not init";
-    boost::shared_ptr<MatrixPetsc<T> > submatrixPetsc = boost::dynamic_pointer_cast<MatrixPetsc<T> >( submatrix );
+    std::shared_ptr<MatrixPetsc<T> > submatrixPetsc = std::dynamic_pointer_cast<MatrixPetsc<T> >( submatrix );
     this->getSubMatrixPetsc( rows,cols, submatrixPetsc->mat() , doClose );
 }
 
@@ -1457,10 +1465,17 @@ MatrixPetsc<T>::getSubMatrixPetsc( std::vector<size_type> const& rows,
     ierr = ISCreateGeneral(this->comm(),ncol,colMap,&iscol);
     CHKERRABORT( this->comm(),ierr );
 #endif
+#if PETSC_VERSION_LESS_THAN( 3,8,0 )
     if ( submat == NULL )
         ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &submat);
     else
         ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_REUSE_MATRIX, &submat);
+#else
+    if ( submat == NULL )
+        ierr = MatCreateSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &submat);
+    else
+        ierr = MatCreateSubMatrix(this->mat(), isrow, iscol, MAT_REUSE_MATRIX, &submat);
+#endif
     CHKERRABORT( this->comm(),ierr );
 
     ierr = PETSc::ISDestroy( isrow );
@@ -1480,7 +1495,7 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
                                  const std::vector<size_type>& cols ) const
 {
     //auto sub_graph = GraphCSR(rows.size()*cols.size(),0,rows.size()-1,0,cols.size()-1,this->comm());
-    auto sub_graph = graph_ptrtype(new graph_type(0,0,rows.size(),0,cols.size(),this->comm()));
+    auto sub_graph = graph_ptrtype(new graph_type(0,0,rows.size(),0,cols.size(),this->worldCommPtr()));
 
     MatrixPetsc<T>* A = dynamic_cast<MatrixPetsc<T>*> ( &submatrix );
     A->setGraph( sub_graph );
@@ -1510,7 +1525,11 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
     ierr = ISCreateGeneral(this->comm(),ncol,colMap,&iscol);
     CHKERRABORT( this->comm(),ierr );
 #endif
+#if PETSC_VERSION_LESS_THAN( 3,8,0 )
     ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &A->mat());
+#else
+    ierr = MatCreateSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &A->mat());
+#endif
     CHKERRABORT( this->comm(),ierr );
 
     PETSc::ISDestroy( isrow );
@@ -1522,7 +1541,7 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
 template <typename T>
 inline
 void
-MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> const&X_in )
+MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> const&X_in, Feel::MatrixStructure matStruc )
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
 
@@ -1550,7 +1569,7 @@ MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> const&X_in )
         ierr = MatAXPY( &a,  matPetscIn->M_mat, M_mat, MatStructure::SAME_NONZERO_PATTERN );
         // 2.3.x & newer
 #else
-        ierr = MatAXPY(M_mat, a, matPetscIn->M_mat, MatStructure::SAME_NONZERO_PATTERN);
+        ierr = MatAXPY(M_mat, a, matPetscIn->M_mat, PetscGetMatStructureEnum( matStruc ) /*MatStructure::SAME_NONZERO_PATTERN*/);
         //ierr = MatAXPY(M_mat, a, X->M_mat, MatStructure::SUBSET_NONZERO_PATTERN );
         //ierr = MatAXPY( M_mat, a, X->M_mat, MatStructure::DIFFERENT_NONZERO_PATTERN );
         //ierr = MatDuplicate(X->mat(),MAT_COPY_VALUES,&M_mat);
@@ -1847,10 +1866,10 @@ MatrixPetsc<T>::diagonal( Vector<value_type>& out ) const
     CHECK( false ) << "TODO other kind of vector";
 }
 template<typename T>
-boost::shared_ptr<Vector<T> >
+std::shared_ptr<Vector<T> >
 MatrixPetsc<T>::diagonal() const
 {
-    boost::shared_ptr<Vector<T> > vecRes;
+    std::shared_ptr<Vector<T> > vecRes;
     const MatrixPetscMPI<T>* matPetscMpi = dynamic_cast<const MatrixPetscMPI<T>*> ( this );
     if ( matPetscMpi )
         vecRes.reset( new VectorPetscMPI<T>( this->mapRowPtr() ) );
@@ -1934,15 +1953,15 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
 }
 
 template<typename T>
-boost::shared_ptr<MatrixSparse<T> >
+std::shared_ptr<MatrixSparse<T> >
 MatrixPetsc<T>::transpose( size_type options ) const
 {
-    boost::shared_ptr<MatrixSparse<T> > matRes;
+    std::shared_ptr<MatrixSparse<T> > matRes;
     const MatrixPetscMPI<T>* matPetscMpi = dynamic_cast<const MatrixPetscMPI<T>*> ( this );
     if ( matPetscMpi )
-        matRes.reset( new MatrixPetscMPI<T>( this->mapColPtr(),this->mapRowPtr(), this->comm() ) );
+        matRes = std::make_shared<MatrixPetscMPI<T>>( this->mapColPtr(),this->mapRowPtr(), this->worldCommPtr() );
     else
-        matRes.reset( new MatrixPetsc<T>( this->mapColPtr(),this->mapRowPtr(), this->comm() ) );
+        matRes = std::make_shared<MatrixPetsc<T>>( this->mapColPtr(),this->mapRowPtr(), this->worldCommPtr() );
 
     this->transpose( *matRes, options );
 
@@ -2099,11 +2118,11 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
     if ( vec_petsc_v && vec_petsc_u )
     {
         int ierr = 0;
-        boost::shared_ptr<VectorPetsc<value_type> > z;
+        std::shared_ptr<VectorPetsc<value_type> > z;
         if ( this->comm().size() > 1 )
-            z = boost::make_shared< VectorPetscMPI<value_type> >( __v.mapPtr() );
+            z = std::make_shared< VectorPetscMPI<value_type> >( __v.mapPtr() );
         else
-            z = boost::make_shared< VectorPetsc<value_type> >( __v.mapPtr() );
+            z = std::make_shared< VectorPetsc<value_type> >( __v.mapPtr() );
 
         if ( !transpose )
             ierr = MatMult( M_mat, vec_petsc_u->vec(), z->vec() );
@@ -2129,7 +2148,7 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
 
 template<typename T>
 void
-MatrixPetsc<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<T> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j )
+MatrixPetsc<T>::updateBlockMat( std::shared_ptr<MatrixSparse<T> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j )
 {
     if ( !m->closed() )
         m->close();
@@ -2138,7 +2157,7 @@ MatrixPetsc<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<T> > const& m, st
     auto const& mapColBlock = m->mapCol();
     this->setIsClosed( false );
 
-    auto blockMatrix = boost::dynamic_pointer_cast< MatrixPetsc<T> >( m );
+    auto blockMatrix = std::dynamic_pointer_cast< MatrixPetsc<T> >( m );
     CHECK( blockMatrix ) << "support only PetscMatrix";
 
     const size_type firstDofGcRowBlock = mapRowBlock.firstDofGlobalCluster();
@@ -2481,7 +2500,7 @@ void MatrixPetsc<T>::serialize(Archive & ar, const unsigned int version )
 
 template <typename T>
 inline
-MatrixPetscMPI<T>::MatrixPetscMPI( WorldComm const& worldComm )
+MatrixPetscMPI<T>::MatrixPetscMPI( worldcomm_ptr_t const& worldComm )
     :
     super( worldComm )
 {}
@@ -2493,7 +2512,7 @@ MatrixPetscMPI<T>::MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype
 {}
 template <typename T>
 inline
-MatrixPetscMPI<T>::MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm )
+MatrixPetscMPI<T>::MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, worldcomm_ptr_t const& worldComm )
     :
     super( dmRow,dmCol,worldComm )
 {}
@@ -2834,7 +2853,7 @@ MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
 }
 
 //----------------------------------------------------------------------------------------------------//
-
+#if 0
 template <typename T>
 inline
 void
@@ -2854,7 +2873,7 @@ MatrixPetscMPI<T>::addMatrix( const T a_in, MatrixSparse<T> const&X_in )
     super::addMatrix(a_in,X_in);
 #endif
 }
-
+#endif
 //----------------------------------------------------------------------------------------------------//
 
 template <typename T>

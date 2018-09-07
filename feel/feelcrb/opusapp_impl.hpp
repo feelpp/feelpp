@@ -57,7 +57,7 @@ OpusApp<ModelType,RM,Model>::run()
     tic();
     if( model->hasEim() && model->useSER() )
     {
-        M_ser = boost::make_shared<ser_type>( crb, model );
+        M_ser = std::make_shared<ser_type>( crb, model );
         M_ser->run();
     }
     this->loadDB();

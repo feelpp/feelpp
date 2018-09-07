@@ -48,11 +48,12 @@ public :
 
     typedef double value_type;
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef backend_type::vector_ptrtype vector_ptrtype;
 
+    typedef backend_type::graph_type graph_type;
     typedef backend_type::graph_ptrtype graph_ptrtype;
     typedef backend_type::indexsplit_type indexsplit_type;
     typedef backend_type::indexsplit_ptrtype indexsplit_ptrtype;
@@ -175,9 +176,9 @@ public :
 
 
     ModelAlgebraic( std::string _theprefix,
-                    WorldComm const& _worldComm=Environment::worldComm(),
+                    worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
                     std::string const& subPrefix="",
-                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                    ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     ModelAlgebraic( ModelAlgebraic const& app ) = default;
 
@@ -236,14 +237,18 @@ public :
 
     virtual void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
 
+    virtual BlocksBaseGraphCSR buildBlockMatrixGraph() const;
     virtual graph_ptrtype buildMatrixGraph() const;
 
     //----------------------------------------------------------------------------------//
 
     virtual void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     virtual void updateJacobian( DataUpdateJacobian & data ) const;
+    virtual void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
     virtual void updateResidual( DataUpdateResidual & data ) const;
+    virtual void updateResidualDofElimination( DataUpdateResidual & data ) const;
     virtual void updateLinearPDE( DataUpdateLinear & data ) const;
+    virtual void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
     virtual void updatePicard( DataUpdateLinear & data ) const;
     virtual double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
 
@@ -252,6 +257,8 @@ public :
     virtual void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     virtual void preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     virtual void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const {}
+    virtual void preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const {}
+    virtual void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     //----------------------------------------------------------------------------------//
 
 private :

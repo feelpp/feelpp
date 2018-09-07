@@ -57,7 +57,7 @@ class CRBElementsDB : public CRBDB
 public :
 
     typedef ModelType model_type;
-    typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef std::shared_ptr<model_type> model_ptrtype;
 
     //! element of the functionspace type
     typedef typename model_type::element_type element_type;
@@ -65,21 +65,21 @@ public :
 
     //! mesh type
     typedef typename model_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! function space type
     typedef typename model_type::space_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
-    typedef boost::shared_ptr<rbfunctionspace_type> rbfunctionspace_ptrtype;
+    typedef std::shared_ptr<rbfunctionspace_type> rbfunctionspace_ptrtype;
 
     typedef typename rbfunctionspace_type::rb_basis_type wn_type;
 
     //! constructors
     CRBElementsDB( std::string const& name = "defaultname_crbelementdb",
                    std::string const& ext = "elements",
-                   WorldComm const& worldComm = Environment::worldComm() )
+                   worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
     :
         super( name, ext, worldComm ),
         M_fileFormat( soption(_name="crb.db.format") ),
@@ -108,10 +108,9 @@ public :
                    std::string const& ext,
                    model_ptrtype const & model )
         :
-        CRBElementsDB( name, ext )
-        {
-            M_model = model;
-        }
+        CRBElementsDB( name, ext ),
+        M_model( model )
+        {}
 
     //! destructor
     ~CRBElementsDB()
@@ -339,9 +338,9 @@ struct SaveDatabaseCompositeByBlock
         M_ar & BOOST_SERIALIZATION_NVP( numberOfPrimalBasis );
         M_ar & BOOST_SERIALIZATION_NVP( numberOfDualBasis );
         for( size_type i=0; i<numberOfPrimalBasis; i++ )
-            M_ar & BOOST_SERIALIZATION_NVP( WN[i] );
+            M_ar & BOOST_SERIALIZATION_NVP( unwrap_ptr( WN[i] ) );
         for( size_type i=0; i<numberOfDualBasis; i++ )
-            M_ar & BOOST_SERIALIZATION_NVP( WNdu[i] );
+            M_ar & BOOST_SERIALIZATION_NVP( unwrap_ptr( WNdu[i] ) );
     }
     Archive & M_ar;
     RbSpaceType const& M_rbSpace;
@@ -380,6 +379,8 @@ struct LoadDatabaseCompositeByBlock
         size_type numberOfPrimalBasisLoaded = numberOfPrimalBasis;//std::min( numberOfPrimalBasis,M_N );
         size_type numberOfDualBasisLoaded = numberOfDualBasis;//std::min( numberOfDualBasis,M_N );
 
+        if ( subRbSpace->dimension() < numberOfPrimalBasisLoaded )
+            subRbSpace->setDimension( numberOfPrimalBasisLoaded );
         auto & WN = subRbSpace->primalRB();
         auto & WNdu = subRbSpace->dualRB();
         if ( WN.size() < numberOfPrimalBasisLoaded )
@@ -389,19 +390,20 @@ struct LoadDatabaseCompositeByBlock
 
         CHECK( subRbSpace->functionSpace() ) << "rbspace does not defined a fespace";
         auto Xh = subRbSpace->functionSpace();
-        auto temp = Xh->elementPtr();
 
         for( size_type i = 0 ; i < numberOfPrimalBasisLoaded ; i++ )
         {
-            temp->setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
-            M_ar & BOOST_SERIALIZATION_NVP( temp );
-            WN[i] = temp;
+            auto & wni = WN[i];
+            if ( !wni )
+                wni = Xh->elementPtr( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+            M_ar & BOOST_SERIALIZATION_NVP( unwrap_ptr( wni ) );
         }
         for( size_type i = 0 ; i < numberOfDualBasisLoaded ; i++ )
         {
-            temp->setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
-            M_ar & BOOST_SERIALIZATION_NVP( temp );
-            WNdu[i] = temp;
+            auto & wndui = WNdu[i];
+            if ( !wndui )
+                wndui = Xh->elementPtr( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+            M_ar & BOOST_SERIALIZATION_NVP( unwrap_ptr( wndui ) );
         }
     }
     Archive & M_ar;

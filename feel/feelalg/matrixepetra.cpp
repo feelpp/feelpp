@@ -132,12 +132,12 @@ MatrixEpetra::init ( const size_type m,
         //std::cout << "M_row_map " << M_emap << "\n";
         //std::cout << "M_col_map " << M_col_emap << "\n";
 
-        boost::shared_ptr<Epetra_Map> graph_map ( new Epetra_Map( M_emap ) );
+        std::shared_ptr<Epetra_Map> graph_map ( new Epetra_Map( M_emap ) );
 
 
         //find which map (between col and row map has more lines)
         if ( M_emap.MaxAllGID() < M_col_emap.MaxAllGID() )
-            graph_map = boost::shared_ptr<Epetra_Map>( new Epetra_Map( M_col_emap ) );
+            graph_map = std::shared_ptr<Epetra_Map>( new Epetra_Map( M_col_emap ) );
 
         std::vector<int> nnz( this->graph()->nNz().size() );
         std::copy( this->graph()->nNz().begin(), this->graph()->nNz().end(), nnz.begin() );
@@ -200,7 +200,7 @@ MatrixEpetra::init ( const size_type m,
         FEELPP_ASSERT( ierr == 0 )( ierr ).warn ( "[MatrixEpetra::init] GlobalAssemble failed" );
         DVLOG(2) << "Global assemble  ierr = " << ierr << "\n";
         //epetra_graph.Print( std::cout );
-        M_mat = boost::shared_ptr<Epetra_FECrsMatrix>( new Epetra_FECrsMatrix( Copy, epetra_graph ) );
+        M_mat = std::shared_ptr<Epetra_FECrsMatrix>( new Epetra_FECrsMatrix( Copy, epetra_graph ) );
 
         //M_mat->Print( std::cout );
         this->setInitialized( true );
