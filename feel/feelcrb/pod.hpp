@@ -94,7 +94,7 @@ public :
 
     typedef TruthModelType truth_model_type;
     typedef truth_model_type model_type;
-    typedef boost::shared_ptr<truth_model_type> truth_model_ptrtype;
+    typedef std::shared_ptr<truth_model_type> truth_model_ptrtype;
 
 
     typedef typename model_type::value_type value_type;
@@ -119,12 +119,12 @@ public :
 
     //! time discretization
     typedef Bdf<space_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     typedef typename model_type::rbfunctionspace_type::rb_basis_type wn_type;
 
@@ -137,7 +137,7 @@ public :
     typedef typename model_type::vector_ptrtype vector_ptrtype;
 
     typedef typename model_type::backend_type backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
 
     POD()

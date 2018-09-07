@@ -61,20 +61,20 @@ public:
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::indexsplit_ptrtype  indexsplit_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef typename space_type::template sub_functionspace<0>::type potential_space_type;
     typedef typename space_type::template sub_functionspace<1>::type lagrange_space_type;
-    typedef typename boost::shared_ptr<potential_space_type> potential_space_ptrtype;
-    typedef typename boost::shared_ptr<lagrange_space_type> lagrange_space_ptrtype;
+    typedef typename std::shared_ptr<potential_space_type> potential_space_ptrtype;
+    typedef typename std::shared_ptr<lagrange_space_type> lagrange_space_ptrtype;
 
     // Qh3
     typedef Lagrange<1,Vectorial> lag_v_type;
     typedef FunctionSpace<mesh_type, bases< lag_v_type >> lag_v_space_type;
-    typedef boost::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
+    typedef std::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
 
     // Potential
     typedef typename potential_space_type::element_type potential_element_type;
@@ -412,6 +412,7 @@ PreconditionerBlockMS<space_type>::initAMS( void )
                                    _prefix=M_prefix_11,
                                    _matrix=M_11
                                   );
+        backend(_name=M_prefix_11)->attachPreconditioner( prec );
         prec->setMatrix(M_11);
         prec->attachAuxiliarySparseMatrix("G",M_grad.matPtr());
         if(boption(M_prefix_11+".useEdge"))
@@ -486,7 +487,7 @@ template< typename space_type >
     struct blockms
 {
     typedef PreconditionerBlockMS<space_type> type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 }
 BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockms<

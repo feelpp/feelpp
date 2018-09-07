@@ -71,7 +71,7 @@ ModelOutput::ModelOutput( std::string name, pt::ptree const& p, WorldComm const&
 std::string ModelOutput::getString( std::string const& key ) const
 {
     try { return M_p.get<std::string>( key ); }
-    catch( pt::ptree_error e ) {
+    catch( pt::ptree_error const&e ) {
         LOG(ERROR) << "output " << M_name << ": key " << key << ": " << e.what() << std::endl;
         exit(1);
     }

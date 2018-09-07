@@ -36,7 +36,7 @@
 #endif
 
 typedef struct {
-    boost::shared_ptr<Feel::Preconditioner<double> > M_inHousePrec;
+    std::shared_ptr<Feel::Preconditioner<double> > M_inHousePrec;
 } PC_FEELPP;
 
 #undef __FUNCT__
@@ -53,10 +53,10 @@ static PetscErrorCode PCApply_FEELPP(PC pc,Vec x,Vec y)
 {
     PC_FEELPP         *pcfeelpp = (PC_FEELPP*)pc->data;
 
-    boost::shared_ptr<Feel::Preconditioner<double> > preconditioner = pcfeelpp->M_inHousePrec;
+    std::shared_ptr<Feel::Preconditioner<double> > preconditioner = pcfeelpp->M_inHousePrec;
     // convert petsc Vec into feelpp Vector
-    boost::shared_ptr<Feel::VectorPetsc<double> > x_vec;
-    boost::shared_ptr<Feel::VectorPetsc<double> > y_vec;
+    std::shared_ptr<Feel::VectorPetsc<double> > x_vec;
+    std::shared_ptr<Feel::VectorPetsc<double> > y_vec;
     if ( preconditioner->worldComm().localSize() > 1 )
     {
         CHECK ( preconditioner->matrix() ) << "matrix is not defined";
@@ -128,7 +128,7 @@ static PetscErrorCode PCView_FEELPP(PC pc,PetscViewer viewer)
 
 #undef __FUNCT__
 #define __FUNCT__ "PCSetPrecond_FEELPP"
-static PetscErrorCode PCSetPrecond_FEELPP(PC pc, boost::shared_ptr<Feel::Preconditioner<double> > const& pcInHouse )
+static PetscErrorCode PCSetPrecond_FEELPP(PC pc, std::shared_ptr<Feel::Preconditioner<double> > const& pcInHouse )
 {
     PC_FEELPP         *pcfeelpp = (PC_FEELPP*)pc->data;
     pcfeelpp->M_inHousePrec = pcInHouse;

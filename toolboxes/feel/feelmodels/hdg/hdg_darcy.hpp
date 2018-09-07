@@ -67,7 +67,7 @@ public:
     using potential_space_type = typename mpl::if_<is_shared_ptr<PotSpaceType>,
                                                   mpl::identity<typename PotSpaceType::element_type>,
                                                   mpl::identity<PotSpaceType>>::type::type;
-    using potential_space_ptrtype = boost::shared_ptr<potential_space_type>;
+    using potential_space_ptrtype = std::shared_ptr<potential_space_type>;
     using potential_type = typename potential_space_type::element_type;
     using potential_ptrtype = typename potential_space_type::element_ptrtype;
 
@@ -93,7 +93,7 @@ public:
     // mesh for the Lagrange multiplier
     typedef mpl::if_< mpl::bool_< mesh_type::shape_type::is_simplex >, Simplex<dim-1, convexOrder, dim> , Hypercube<dim-1, convexOrder, dim> > face_convex_type;
     typedef Mesh<face_convex_type> face_mesh_type;
-    typedef boost::shared_ptr<face_mesh_type> face_mesh_ptrtype;
+    typedef std::shared_ptr<face_mesh_type> face_mesh_ptrtype;
 
     using multiplier_space_type = Pdh_type<face_mesh_type, order>;
     using multiplier_space_ptrtype = Pdh_ptrtype<face_mesh_type, order>;
@@ -101,7 +101,7 @@ public:
     using multiplier_ptrtype = typename multiplier_space_type::element_ptrtype;
 
     // exporter
-    using exporter_ptrtype = boost::shared_ptr<Exporter<mesh_type>>;
+    using exporter_ptrtype = std::shared_ptr<Exporter<mesh_type>>;
 
     Darcy() = delete;
     Darcy( std::string name, potential_space_ptrtype Wh_ptr_t );

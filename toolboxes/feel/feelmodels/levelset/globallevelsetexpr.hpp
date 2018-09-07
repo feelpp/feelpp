@@ -13,7 +13,7 @@ public:
 
     //--------------------------------------------------------------------//
     typedef ElementLevelsetType element_levelset_type;
-    typedef boost::shared_ptr<element_levelset_type> element_levelset_ptrtype;
+    typedef std::shared_ptr<element_levelset_type> element_levelset_ptrtype;
     typedef typename element_levelset_type::functionspace_type functionspace_levelset_type;
     typedef typename functionspace_levelset_type::reference_element_type fe_levelset_type;
 
@@ -68,13 +68,13 @@ public:
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gmc_type::gm_type gm_type;
         // fe levelset context
         typedef typename fe_levelset_type::PreCompute pc_levelset_type;
-        typedef boost::shared_ptr<pc_levelset_type> pc_levelset_ptrtype;
+        typedef std::shared_ptr<pc_levelset_type> pc_levelset_ptrtype;
         typedef typename fe_levelset_type::template Context<expr_type::context_levelset, fe_levelset_type, gm_type, geoelement_type, gmc_type::context> ctx_levelset_type;
-        typedef boost::shared_ptr<ctx_levelset_type> ctx_levelset_ptrtype;
+        typedef std::shared_ptr<ctx_levelset_type> ctx_levelset_ptrtype;
 
         // shape
         typedef Shape<expr_type::nRealDim, Scalar, false, false> shape_type;
@@ -224,7 +224,7 @@ private:
 
 template<typename ElementLevelsetType>
 inline Expr< GlobalLevelsetImpl<ElementLevelsetType> >
-globalLevelsetExpr( std::vector< boost::shared_ptr<ElementLevelsetType> > const& levelsets )
+globalLevelsetExpr( std::vector< std::shared_ptr<ElementLevelsetType> > const& levelsets )
 {
     typedef GlobalLevelsetImpl<ElementLevelsetType> expr_globallevelset_type;
     return Expr<expr_globallevelset_type>( expr_globallevelset_type(levelsets) );

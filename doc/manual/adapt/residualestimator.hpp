@@ -78,7 +78,7 @@ public:
     //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
 
     //! sparse matrix type associated with backend
@@ -95,11 +95,11 @@ public:
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! function space that holds piecewise constant (\f$P_0\f$) functions (e.g. to store material properties or partitioning
     typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar,Discontinuous> > > p0_space_type;
-    typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
+    typedef std::shared_ptr<p0_space_type> p0_space_ptrtype;
     //! an element type of the \f$P_0\f$ discontinuous function space
     typedef typename p0_space_type::element_type p0_element_type;
 
@@ -107,7 +107,7 @@ public:
     //! the basis type of our approximation space
     typedef bases<Lagrange<1,Scalar> > p1_basis_type;
     typedef FunctionSpace<mesh_type, p1_basis_type> p1_space_type;
-    typedef boost::shared_ptr<p1_space_type> p1_space_ptrtype;
+    typedef std::shared_ptr<p1_space_type> p1_space_ptrtype;
     typedef typename p1_space_type::element_type p1_element_type;
 
 
@@ -117,14 +117,14 @@ public:
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     //! the approximation function space type (shared_ptr<> type)
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     //! an element type of the approximation function space
     typedef typename space_type::element_type element_type;
 
     //! the exporter factory type
     typedef Exporter<mesh_type,1> export_type;
     //! the exporter factory (shared_ptr<> type)
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     /**
      * Constructor

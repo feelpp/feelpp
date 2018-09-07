@@ -67,7 +67,7 @@ public:
     typedef typename super::element_type element_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;

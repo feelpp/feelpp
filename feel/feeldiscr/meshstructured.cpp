@@ -21,6 +21,9 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+#include <feel/feelconfig.h>
+
+
 #include <feel/feeldiscr/meshstructured.hpp>
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
@@ -32,7 +35,9 @@ typedef boost::geometry::model::polygon<poly_point_type> polygon_type;
 
 namespace Feel {
 
-MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<float> cx, holo3_image<float> cy, WorldComm const& wc = Environment::worldComm(), std::string pathPoly="",  bool withCoord = false, bool withPoly = false)
+MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<float> cx, holo3_image<float> cy,
+                                worldcomm_ptr_t const& wc = Environment::worldCommPtr(),
+                                std::string pathPoly="",  bool withCoord = false, bool withPoly = false)
     :
     super( wc ),
     M_nx( nx ),
@@ -43,8 +48,8 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
 {
     VLOG(1) << "nx x ny = " << nx << " x " << ny << "\t" << nx*ny << std::endl;
 
-    rank_type nProc = wc.localSize();
-    rank_type partId = wc.localRank();
+    rank_type nProc = wc->localSize();
+    rank_type partId = wc->localRank();
 
     // compute parallel distribution with column scheme partitioning
     size_type nTotalPointsByCol = M_ny + (nProc-1);
@@ -333,7 +338,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
 
 
 #if 0
-MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm const& wc )
+MeshStructured::MeshStructured( int nx, int ny, double pixelsize, worldcomm_ptr_t const& wc )
     :
     super( wc ),
     M_nx( nx ),
@@ -344,10 +349,10 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
     Feel::cout << "nx x ny = " << nx << " x " << ny << "\t" << nx*ny << std::endl;
     // origin at (0,0)
     node_type coords( 2 );
-    rank_type partId = wc.localRank();
-    std::vector<int> nbMsgToRecv(wc.godSize(),0);
+    rank_type partId = wc->localRank();
+    std::vector<int> nbMsgToRecv(wc->godSize(),0);
     //std::vector<int> nbMsgToRecv((M_nx-1)*(M_ny-1),0);
-    int procSize = wc.godSize();
+    int procSize = wc->godSize();
     // cx[rank] = first point Id of partition
     int cx[procSize+1];
     rank_type id;

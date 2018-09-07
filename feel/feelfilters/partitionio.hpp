@@ -121,9 +121,9 @@ public:
     //@{
     typedef MeshType mesh_type;
     typedef typename mesh_type::value_type value_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type meshparts_type;
-    typedef boost::shared_ptr<meshparts_type> meshparts_ptrtype;
+    typedef std::shared_ptr<meshparts_type> meshparts_ptrtype;
     typedef MeshPartitionSet<mesh_type> mesh_partitionset_type;
     typedef std::unique_ptr<mesh_partitionset_type> mesh_partitionset_ptrtype;
 

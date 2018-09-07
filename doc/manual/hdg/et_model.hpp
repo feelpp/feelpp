@@ -59,7 +59,7 @@ class ElectroThermal
 public:
     using convex_type = Simplex<Dim,1>;
     using mesh_type = Mesh<convex_type>;
-    using mesh_ptrtype = boost::shared_ptr<mesh_type>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
     using electro_type = MixedPoisson<Dim,Order>;
     using thermal_type = MixedPoisson<Dim,Order>;

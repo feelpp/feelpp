@@ -42,7 +42,7 @@ struct imesh
 {
     typedef Simplex<Dim, Order> convex_type;
     typedef Mesh<convex_type, T > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 template<typename value_type = double, int Dim=2>
@@ -52,7 +52,7 @@ struct test_submesh: public Application
     typedef typename imesh<value_type,Dim>::type mesh_type;
     typedef typename imesh<value_type,Dim>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<3, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     //typedef typename mesh_type::location_element_const_iterator location_element_const_iterator;
     typedef Backend<value_type> backend_type;
@@ -129,7 +129,7 @@ struct test_submesh: public Application
 
         backend->solve( _matrix=Di, _rhs=Fi, _solution=ui );
 
-        boost::shared_ptr<Exporter<mesh_type> > exporter( Exporter<mesh_type>::New( "gmsh", std::string( "submesh" )
+        std::shared_ptr<Exporter<mesh_type> > exporter( Exporter<mesh_type>::New( "gmsh", std::string( "submesh" )
                 + "_"
                 + mesh_type::shape_type::name() ) );
 
@@ -144,7 +144,7 @@ struct test_submesh: public Application
         BOOST_CHECK_CLOSE( D->energy( u, u ), Di->energy( ui, ui ), 5e-12 );
 #endif
     }
-    boost::shared_ptr<backend_type> backend;
+    std::shared_ptr<backend_type> backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;

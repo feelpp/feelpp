@@ -50,9 +50,6 @@ public:
     static const bool is_symetric = Part;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = ExprT::imorder;
-    static const bool imIsPoly = ExprT::imIsPoly;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -124,6 +121,12 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_expr.isPolynomial(); }
 
     expression_type const& expression() const
     {

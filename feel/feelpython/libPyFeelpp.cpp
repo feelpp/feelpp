@@ -83,7 +83,7 @@ namespace py = boost::parameter::python;
 //definition of all methods we need for the wrapping and wich are create from a BOOST_PARAMETER_FUNCTION or a method with default value arguments
  
     template<typename MeshType, int N>
-void expo_w ( boost::shared_ptr<MeshType> m)
+void expo_w ( std::shared_ptr<MeshType> m)
 {
     auto x = exporter( _mesh=m );
     x->addRegions();
@@ -91,7 +91,7 @@ void expo_w ( boost::shared_ptr<MeshType> m)
 }
 
 template<typename MeshType>
-boost::shared_ptr<MeshType> loadMesh_w (MeshType* mesh)
+std::shared_ptr<MeshType> loadMesh_w (MeshType* mesh)
 {
     return loadMesh(_mesh=mesh);
 }
@@ -103,7 +103,7 @@ template<int Order,
          int Tag = 0>
 
 typename meta::Pch<MeshType,Order,T,Pts,Tag>::ptrtype
-Pch_w( boost::shared_ptr<MeshType> mesh)
+Pch_w( std::shared_ptr<MeshType> mesh)
 {
     return Pch<Order,T,Pts,MeshType,Tag>(mesh);
 }
@@ -123,7 +123,7 @@ void def_wrapper (std::string s)
         f<<"Simplex"<<n;
         g<<"MeshS"<<n;
         class_<Feel::Simplex<n>>(f.str().c_str(),init<>());
-        class_<Feel::Mesh<Simplex<n>>,boost::shared_ptr<Feel::Mesh<Simplex<n>>>,boost::noncopyable>(g.str().c_str(),init<>())
+        class_<Feel::Mesh<Simplex<n>>,std::shared_ptr<Feel::Mesh<Simplex<n>>>,boost::noncopyable>(g.str().c_str(),init<>())
             .def("new",&Feel::Mesh<Simplex<n>>::New)
             .staticmethod("new");
 
@@ -137,7 +137,7 @@ void def_wrapper (std::string s)
         f<<"Hypercube"<<n;
         g<<"MeshH"<<n;   
         class_<Feel::Hypercube<n>>(f.str().c_str(),init<>());
-        class_<Feel::Mesh<Hypercube<n>>,boost::shared_ptr<Feel::Mesh<Hypercube<n>>>,boost::noncopyable>(g.str().c_str(),init<>())
+        class_<Feel::Mesh<Hypercube<n>>,std::shared_ptr<Feel::Mesh<Hypercube<n>>>,boost::noncopyable>(g.str().c_str(),init<>())
             .def("new",&Feel::Mesh<Hypercube<n>>::New)
             .staticmethod("new");
 
@@ -161,9 +161,9 @@ void def_wrapper_Pch ()
     h<<"PchS"<<n<<k;
     i<<"FunctSpaceS"<<n<<k;
     
-    class_<Feel::meta::Pch<Mesh<Simplex<n>>,k>,boost::shared_ptr<Feel::meta::Pch<Mesh<Simplex<n>>,k>>>(h.str().c_str(),no_init);
+    class_<Feel::meta::Pch<Mesh<Simplex<n>>,k>,std::shared_ptr<Feel::meta::Pch<Mesh<Simplex<n>>,k>>>(h.str().c_str(),no_init);
 
-    class_<Feel::FunctionSpace<Mesh<Simplex<n>>,Feel::bases<Feel::Lagrange<k,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>,boost::shared_ptr<Feel::FunctionSpace<Mesh<Simplex<n>>,Feel::bases<Feel::Lagrange<k,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>>,boost::python::bases<Feel::FunctionSpaceBase>>(i.str().c_str(),no_init);
+    class_<Feel::FunctionSpace<Mesh<Simplex<n>>,Feel::bases<Feel::Lagrange<k,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>,std::shared_ptr<Feel::FunctionSpace<Mesh<Simplex<n>>,Feel::bases<Feel::Lagrange<k,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>>,boost::python::bases<Feel::FunctionSpaceBase>>(i.str().c_str(),no_init);
 
     def(j.str().c_str(),Pch_w<k,double,PointSetEquiSpaced,Mesh<Simplex<n>>,0>);
 
@@ -173,9 +173,9 @@ void def_wrapper_Pch ()
     h<<"PchH"<<n<<k;
     i<<"FunctSpaceH"<<n<<k;
 
-    class_<Feel::meta::Pch<Mesh<Hypercube<n>>,k>,boost::shared_ptr<Feel::meta::Pch<Mesh<Hypercube<n>>,k>>>(h.str().c_str(),no_init);
+    class_<Feel::meta::Pch<Mesh<Hypercube<n>>,k>,std::shared_ptr<Feel::meta::Pch<Mesh<Hypercube<n>>,k>>>(h.str().c_str(),no_init);
 
-    class_<Feel::FunctionSpace<Mesh<Hypercube<n>>,Feel::bases<Feel::Lagrange<k,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>,boost::shared_ptr<Feel::FunctionSpace<Mesh<Hypercube<n>>,Feel::bases<Feel::Lagrange<k,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>>,boost::python::bases<Feel::FunctionSpaceBase>>(i.str().c_str(),no_init);
+    class_<Feel::FunctionSpace<Mesh<Hypercube<n>>,Feel::bases<Feel::Lagrange<k,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>,std::shared_ptr<Feel::FunctionSpace<Mesh<Hypercube<n>>,Feel::bases<Feel::Lagrange<k,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>>,boost::python::bases<Feel::FunctionSpaceBase>>(i.str().c_str(),no_init);
 
     def(j.str().c_str(),Pch_w<k,double,PointSetEquiSpaced,Mesh<Hypercube<n>>,0>);
 

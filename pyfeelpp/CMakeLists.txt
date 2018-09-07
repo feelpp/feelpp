@@ -55,13 +55,14 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   include(pybind11Tools)
 endif()
 
-#add_subdirectory(pyfeelpp)
-
 #
-# setup
+# setup for pyfeelpp-libfeelpp
 #
-set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
-set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
-configure_file(${SETUP_PY_IN} ${SETUP_PY})
+OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "Enable PyFeel++ for libfeelpp" ON  )
+if (FEELPP_ENABLE_PYFEELPP_LIBFEELPP)
+  set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
+  set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
+  configure_file(${SETUP_PY_IN} ${SETUP_PY})
+  install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install)")
+endif()
 
-install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install)")

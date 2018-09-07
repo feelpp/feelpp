@@ -117,7 +117,7 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -126,7 +126,7 @@ public:
     /*mesh*/
     typedef Simplex<3> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
     //# marker1 #,
@@ -144,12 +144,12 @@ public:
 
     typedef bases<basis_u_type> basis_type_U;
     typedef FunctionSpace<mesh_type, basis_type_U> space_type_U;
-    typedef boost::shared_ptr<space_type_U> space_ptrtype_U;
+    typedef std::shared_ptr<space_type_U> space_ptrtype_U;
 
     /*space*/
     //# marker2 #
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     //# endmarker2 #
 
     /* functions */
@@ -198,7 +198,7 @@ private:
     sparse_matrix_ptrtype M,D;
     vector_ptrtype F;
 
-    boost::shared_ptr<export_type> exporter;
+    std::shared_ptr<export_type> exporter;
 }; // Stokes
 
 

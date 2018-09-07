@@ -71,12 +71,12 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*mesh*/
     typedef Simplex<2> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
     //# marker1 #,
@@ -94,7 +94,7 @@ public:
     /*space*/
     //# marker2 #
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     //# endmarker2 #
 
     /* functions */
@@ -322,7 +322,7 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
     q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
 
-    boost::shared_ptr<export_type> exporter( export_type::New() );
+    std::shared_ptr<export_type> exporter( export_type::New() );
     if ( exporter->doExport() )
     {
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );

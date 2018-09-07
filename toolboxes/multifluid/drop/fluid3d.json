@@ -1,7 +1,18 @@
 {
     "Name": "Drop3d",
     "ShortName": "Drop3d",
-    "Model": "Navier-Stokes",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
+    "Materials":
+    {
+        "OmegaFluid":
+        {
+            "rho":1000,
+            "mu":10
+        }
+    },
 
     "BoundaryConditions":
     {

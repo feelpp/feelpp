@@ -32,7 +32,7 @@
 namespace Feel
 {
 template<typename MeshType, int N>
-ExporterVTK<MeshType,N>::ExporterVTK( WorldComm const& worldComm )
+ExporterVTK<MeshType,N>::ExporterVTK( worldcomm_ptr_t const& worldComm )
 :
 super( worldComm ),
 M_element_type()
@@ -41,7 +41,7 @@ M_element_type()
 }
 template<typename MeshType, int N>
 ExporterVTK<MeshType,N>::ExporterVTK( std::string const& __p, int freq,
-                                        WorldComm const& worldComm )
+                                        worldcomm_ptr_t const& worldComm )
     :
     super( "vtk", __p, freq, worldComm )
 {
@@ -49,7 +49,7 @@ ExporterVTK<MeshType,N>::ExporterVTK( std::string const& __p, int freq,
 }
 template<typename MeshType, int N>
 ExporterVTK<MeshType,N>::ExporterVTK( po::variables_map const& vm, std::string const& exp_prefix,
-                                        WorldComm const& worldComm )
+                                        worldcomm_ptr_t const& worldComm )
     :
     super( vm, exp_prefix, worldComm )
 {
@@ -58,7 +58,7 @@ ExporterVTK<MeshType,N>::ExporterVTK( po::variables_map const& vm, std::string c
 
 template<typename MeshType, int N>
 ExporterVTK<MeshType,N>::ExporterVTK( std::string const& exp_prefix,
-                                      WorldComm const& worldComm )
+                                      worldcomm_ptr_t const& worldComm )
     :
     super( exp_prefix, worldComm )
 {

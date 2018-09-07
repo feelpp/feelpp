@@ -76,7 +76,7 @@ public:
 
     //typedef CRBModel<OpusModelRB<2,1,2> > opusmodel_type;
     typedef CRBModel<Heat1D> opusmodel_type;
-    typedef boost::shared_ptr<opusmodel_type> opusmodel_ptrtype;
+    typedef std::shared_ptr<opusmodel_type> opusmodel_ptrtype;
 
     OpusAppEigs( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :

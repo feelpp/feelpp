@@ -144,7 +144,7 @@ public:
                     Environment::summary().put( "application.timers."s+n+".mean", mean(acc) );
                     Environment::summary().put( "application.timers."s+n+".stddev", sqrt(variance(acc)) );
                 }
-                catch( pt::ptree_bad_data d )
+                catch( pt::ptree_bad_data const& d )
                 {
                     std::cout << "d: " << d.what() << std::endl;
                 }

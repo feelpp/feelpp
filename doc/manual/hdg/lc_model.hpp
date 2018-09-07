@@ -78,7 +78,7 @@ public:
 
     
     typedef LaminaCribrosa<Dim,Order,G_Order,E_Order> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
     
    	static const uint16_type expr_order = Order + E_Order;
     
@@ -96,13 +96,13 @@ public:
     using Ch_element_vector_type = typename super_type::Ch_element_vector_type;   
 
     typedef Bdf <Ch_t> statevar_bdf_type;
-    typedef boost::shared_ptr<statevar_bdf_type> statevar_bdf_ptrtype;
+    typedef std::shared_ptr<statevar_bdf_type> statevar_bdf_ptrtype;
 
     using product2_space_type = typename super_type::product2_space_type;
     using integral_boundary_list_type = typename super_type::integral_boundary_list_type;
 
 	typedef boost::numeric::ublas::vector<value_type> state_vector_type;
-	typedef boost::shared_ptr<state_vector_type> state_vector_ptrtype;
+	typedef std::shared_ptr<state_vector_type> state_vector_ptrtype;
 
 private:
     
@@ -159,8 +159,8 @@ public:
     virtual void initTimeStep();    
     statevar_bdf_ptrtype timeStepBDF_statevar() { return M_bdf_statevariable; }
     statevar_bdf_ptrtype const& timeStepBDF_statevar() const { return M_bdf_statevariable; }
-    boost::shared_ptr<TSBase> timeStepBase_statevar() { return this->timeStepBDF_statevar(); }
-    boost::shared_ptr<TSBase> timeStepBase_statevar() const { return this->timeStepBDF_statevar(); }
+    std::shared_ptr<TSBase> timeStepBase_statevar() { return this->timeStepBDF_statevar(); }
+    std::shared_ptr<TSBase> timeStepBase_statevar() const { return this->timeStepBDF_statevar(); }
    
     // For the second step 
 	void odeForceTermEvaluation( double time );
@@ -176,7 +176,7 @@ LaminaCribrosa<Dim,Order,G_Order, E_Order>::New( std::string const& prefix,
                                          WorldComm const& worldComm, std::string const& subPrefix,
                                          std::string const& rootRepository )
 {
-    return boost::make_shared<self_type> ( prefix,worldComm,subPrefix,rootRepository );
+    return std::make_shared<self_type> ( prefix,worldComm,subPrefix,rootRepository );
 }
 
 
@@ -371,8 +371,8 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::initSpaces(){
 	if(M_0dCondition)
 	{
 		Feel::cout << "Number of 0d: " << M_0dCondition << std::endl;
-    	auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( this->integralCondition() + M_0dCondition, this->M_Ch);
-    	this->M_ps = boost::make_shared<product2_space_type>(product2(ibcSpaces,this->M_Vh,this->M_Wh,this->M_Mh));
+    	auto ibcSpaces = std::make_shared<ProductSpace<Ch_ptr_t,true> >( this->integralCondition() + M_0dCondition, this->M_Ch);
+    	this->M_ps = std::make_shared<product2_space_type>(product2(ibcSpaces,this->M_Vh,this->M_Wh,this->M_Mh));
 
 	    this->M_A_cst = this->M_backend->newBlockMatrix(_block=csrGraphBlocks(*(this->M_ps)));
     	this->M_A = this->M_backend->newBlockMatrix(_block=csrGraphBlocks(*(this->M_ps)));

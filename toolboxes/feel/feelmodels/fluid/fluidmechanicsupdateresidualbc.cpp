@@ -5,7 +5,7 @@
 
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
+//#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 
 
 namespace Feel
@@ -20,7 +20,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 {
     using namespace Feel::vf;
 
-    this->log("FluidMechanics","updateResidualModel", "start for " + this->densityViscosityModel()->dynamicViscosityLaw() );
+    this->log("FluidMechanics","updateResidualModel", "start" );
 
     boost::mpi::timer thetimer,thetimer2;
     const vector_ptrtype& XVec = data.currentSolution();
@@ -46,9 +46,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 
     auto Id = eye<nDim,nDim>();
     // dynamic viscosity
-    auto const& mu = this->densityViscosityModel()->fieldMu();
+    auto const& mu = this->materialProperties()->fieldMu();
     // density
-    auto const& rho = this->densityViscosityModel()->fieldRho();
+    auto const& rho = this->materialProperties()->fieldRho();
 
     //--------------------------------------------------------------------------------------------------//
     // Neumann boundary condition
@@ -119,9 +119,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
         } // explicit
         if ( this->hasFluidOutletWindkesselImplicit() )
         {
-            CHECK( this->startBlockIndexFieldsInMatrix().find("windkessel") != this->startBlockIndexFieldsInMatrix().end() )
-                << " start dof index for windkessel is not present\n";
-            size_type startBlockIndexWindkessel = this->startBlockIndexFieldsInMatrix().find("windkessel")->second;
+            CHECK( this->hasStartSubBlockSpaceIndex("windkessel") ) << " start dof index for windkessel is not present\n";
+            size_type startBlockIndexWindkessel = this->startSubBlockSpaceIndex("windkessel");
 
             if ( BuildCstPart || (!BuildCstPart && !UseJacobianLinearTerms) )
             {
@@ -289,9 +288,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
     // Dirichlet with Lagrange-mulitplier
     if (this->hasMarkerDirichletBClm())
     {
-        CHECK( this->startBlockIndexFieldsInMatrix().find("dirichletlm") != this->startBlockIndexFieldsInMatrix().end() )
-            << " start dof index for dirichletlm is not present\n";
-        size_type startBlockIndexDirichletLM = this->startBlockIndexFieldsInMatrix().find("dirichletlm")->second;
+        CHECK( this->hasStartSubBlockSpaceIndex("dirichletlm") ) << " start dof index for dirichletlm is not present\n";
+        size_type startBlockIndexDirichletLM = this->startSubBlockSpaceIndex("dirichletlm");
 
         if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
@@ -342,9 +340,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 
         if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
-            CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm1") != this->startBlockIndexFieldsInMatrix().end() )
-                << " start dof index for pressurelm1 is not present\n";
-            size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+            CHECK( this->hasStartSubBlockSpaceIndex("pressurelm1") ) << " start dof index for pressurelm1 is not present\n";
+            size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
 
             auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( XVec, rowStartInVector+startBlockIndexPressureLM1 );
 
@@ -377,9 +374,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                                _expr=-trans(cross(idv(u),N()))(0,2)*id(lambdaPressure1)*alpha,
                                _geomap=this->geomap() );
 
-                CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm2") != this->startBlockIndexFieldsInMatrix().end() )
-                    << " start dof index for pressurelm2 is not present\n";
-                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+                CHECK( this->hasStartSubBlockSpaceIndex("pressurelm2") ) << " start dof index for pressurelm2 is not present\n";
+                size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
 
                 auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( XVec, rowStartInVector+startBlockIndexPressureLM2 );
 
@@ -413,7 +409,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 
 
     //------------------------------------------------------------------------------------//
-#if defined( FEELPP_MODELS_HAS_MESHALE )
+#if 0// defined( FEELPP_MODELS_HAS_MESHALE )
     if ( this->isMoveDomain() && ( this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "robin-neumann-genuine" ||
                                    this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
                                    this->couplingFSIcondition() == "robin-neumann-generalized" || this->couplingFSIcondition() == "nitsche" ) )

@@ -34,6 +34,12 @@
 #define BOOST_PARAMETER_MAX_ARITY 10
 #endif
 
+
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 106700
+#include <contrib/boost/fusion/include/boost/fusion/container/vector/vector.hpp>
+#endif
+
 #include <boost/parameter.hpp>
 #include <boost/type_traits.hpp>
 #if 0
@@ -209,6 +215,8 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( strategy )
     BOOST_PARAMETER_NAME( steady )
     BOOST_PARAMETER_NAME( restart )
+    BOOST_PARAMETER_NAME( reverse )
+    BOOST_PARAMETER_NAME( reverse_load )
     BOOST_PARAMETER_NAME( restart_path )
     BOOST_PARAMETER_NAME( restart_at_last_save )
     BOOST_PARAMETER_NAME( rank_proc_in_files_name )
@@ -299,6 +307,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( mu )
     BOOST_PARAMETER_NAME( rho )
     BOOST_PARAMETER_NAME( alpha )
+    BOOST_PARAMETER_NAME( tag )
 } // Feel
 
 

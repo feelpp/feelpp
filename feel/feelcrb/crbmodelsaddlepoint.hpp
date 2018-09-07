@@ -46,7 +46,7 @@ class CRBModelSaddlePoint :
     typedef CRBModel<ModelType> super;
 public :
     typedef ModelType model_type;
-    typedef boost::shared_ptr<ModelType> model_ptrtype;
+    typedef std::shared_ptr<ModelType> model_ptrtype;
 
     typedef typename model_type::value_type value_type;
     typedef typename model_type::parameter_type parameter_type;
@@ -60,7 +60,7 @@ public :
     template <int T>
     using subspace_type = typename space_type::template sub_functionspace<T>::type;
     template <int T>
-    using subspace_ptrtype = boost::shared_ptr<subspace_type<T>>;
+    using subspace_ptrtype = std::shared_ptr<subspace_type<T>>;
     template<int T>
     using subelement_type = typename subspace_type<T>::element_type;
 

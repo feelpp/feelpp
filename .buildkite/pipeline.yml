@@ -1,53 +1,67 @@
 steps:
- - name: ':ubuntu: 16.04,clang-4.0'
+ - name: ':$TARGET, ${CXX}'
    command: tools/scripts/buildkite/install-feelpp-lib.sh
    agents:
      docker: true
      ubuntu: "16.04"
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:16.04
- # - name: ':mac: using homebrew :beer:'
- #   command: tools/scripts/buildkite/build-osx.sh
- #   branches: develop
- #   agents:
- #     osx: true
  - wait
- - name: ':ubuntu: 16.04,clang-4.0  feelpp-base :hammer:'
+ - name: ':$TARGET, $CXX, feelpp-base :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh base
    agents:
      docker: true
      ubuntu: "16.04"
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:16.04
  - wait
- - name: ':ubuntu: 16.04,clang-4.0 feelpp-toolboxes :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh toolboxes
+ - name: ':$TARGET, $CXX, feelpp-pyfeelpp :python: :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh pyfeelpp
    agents:
      docker: true
      ubuntu: "16.04"
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:16.04
  - wait
- - name: ':ubuntu: 16.04,clang-4.0 feelpp-crb :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh crb
-   agents:
-     docker: true
-     ubuntu: "16.04"
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:16.04
- - wait
- - command: tools/scripts/buildkite/release.sh  -- feelpp-libs feelpp-base feelpp-toolboxes feelpp-crb
+ - command: tools/scripts/buildkite/release.sh  -- feelpp-libs feelpp-base feelpp-pyfeelpp
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
      ubuntu: "16.04"
-   env:
-     TARGET: ubuntu:16.04
+ - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh toolboxes
+   agents:
+     docker: true
+     ubuntu: "16.04"
+ - wait
+ - name: ':$TARGET, $CXX, feelpp-pyfeelpp-toolboxes :python: :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh pyfeelpp-toolboxes
+   agents:
+     docker: true
+     ubuntu: "16.04"
+ - wait
+ - command: tools/scripts/buildkite/release.sh  -- feelpp-toolboxes feelpp-pyfeelpp-toolboxes
+   name: ":docker: push images to the hub :rocket:"
+   agents:
+     docker: true
+     ubuntu: "16.04"
+ - name: ':$TARGET, $CXX, feelpp-mor :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh mor
+   agents:
+     docker: true
+     ubuntu: "16.04"
+ - wait
+ - name: ':$TARGET, $CXX, feelpp-pyfeelpp-mor :python: :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh pyfeelpp-mor
+   agents:
+     docker: true
+     ubuntu: "16.04"
+ - wait
+ - command: tools/scripts/buildkite/release.sh  -- feelpp-mor feelpp-pyfeelpp-mor
+   name: ":docker: push images to the hub :rocket:"
+   agents:
+     docker: true
+     ubuntu: "16.04"
+ - wait
+ - trigger: "feelpp-singularity"
+   label: ":package: create Feel++ :singularity: containers"
+   async: true
+   build:
+     env:
+       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
+       PROJECT: "feelpp-pyfeelpp feelpp-toolboxes feelpp-pyfeelpp-toolboxes feelpp-mor feelpp-pyfeelpp-mor"
+       TAG: ${BUILDKITE_BRANCH}

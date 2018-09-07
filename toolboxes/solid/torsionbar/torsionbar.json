@@ -2,17 +2,24 @@
 {
     "Name": "Solid Mechanics ",
     "ShortName":"Solid",
-    "Model":"Hyper-Elasticity",
+    // tag::models[]
+    "Models":
+    {
+        "equations":"Hyper-Elasticity"
+    },
+    // end::models[]
+    // tag::materials[]
     "Materials":
     {
         "OmegaSolid":{
-            "name":"copper",
             //"E":"1.4e6",
             "E":"124e6",
             "nu":"0.33",
             "rho":"8920"
         }
     },
+    // end::materials[]
+    // tag::parameters[]
     "Parameters":
     {
         "rotation":
@@ -21,6 +28,8 @@
             "value":"3"
         }
     },
+    // end::parameters[]
+    // tag::boundaryconditions[]
     "BoundaryConditions":
     {
         "displacement_y":
@@ -61,13 +70,19 @@
             }
         }
     },
+    // end::boundaryconditions[]
+    // tag::postprocess[]
     "PostProcess":
     {
-        "Fields":["displacement","pressure","pid","Von-Mises"],
+        "Exports":
+        {
+            "fields":["displacement","pressure","pid","Von-Mises"]
+        },
         "Measures":
         {
             "VolumeVariation":""
         }
-
     }
+    // end::postprocess[]
+
 }

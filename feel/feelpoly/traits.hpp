@@ -90,7 +90,7 @@ symmetricIndex( uint16_type i, uint16_type j, uint16_type n)
         return  j + n*i - i*(i+1)/2;
     else
         return i + n*j - j*(j+1)/2;
-};
+}
 
 }
 

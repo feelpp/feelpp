@@ -43,7 +43,7 @@ MatrixEigenSparse<T>::MatrixEigenSparse()
     M_mat()
 {}
 template <typename T>
-MatrixEigenSparse<T>::MatrixEigenSparse( size_type r, size_type c, WorldComm const& worldComm )
+MatrixEigenSparse<T>::MatrixEigenSparse( size_type r, size_type c, worldcomm_ptr_t const& worldComm )
     :
     super(worldComm),
     M_is_initialized( false ),
@@ -204,7 +204,7 @@ MatrixEigenSparse<T>::energy( Vector<value_type> const& __v,
 
 template<typename T>
 void
-MatrixEigenSparse<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _m )
+MatrixEigenSparse<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _m, Feel::MatrixStructure matStruc )
 {
     MatrixEigenSparse<value_type> const* m = dynamic_cast<MatrixEigenSparse<value_type> const*>( &_m );
     FEELPP_ASSERT( m != 0 ).error( "invalid sparse matrix type, should be MatrixEigenSparse" );
@@ -220,7 +220,7 @@ MatrixEigenSparse<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _
 }
 template<typename T>
 void
-MatrixEigenSparse<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m,
+MatrixEigenSparse<T>::updateBlockMat( std::shared_ptr<MatrixSparse<value_type> > const& m,
                                       std::vector<size_type> const& start_i,
                                       std::vector<size_type> const& start_j )
 {

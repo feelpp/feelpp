@@ -51,8 +51,6 @@ public:
 
     static const size_type context = vm::POINT;
     static const bool is_terminal = false;
-    static const uint16_type imorder = Func::imorder;
-    static const bool imIsPoly = Func::imIsPoly;
 
     template<typename Funct>
     struct HasTestFunction
@@ -118,6 +116,12 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_fun.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_fun.isPolynomial(); }
 
     const expression_type& fun() const
     {

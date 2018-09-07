@@ -46,7 +46,7 @@ class TurekApp   : public Application
 public:
 
     typedef Data turek_type;
-    typedef boost::shared_ptr<turek_type> turek_ptrtype;
+    typedef std::shared_ptr<turek_type> turek_ptrtype;
 
     TurekApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :

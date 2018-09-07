@@ -373,12 +373,12 @@ public:
             mpl::identity<boost::none_t>,
             mpl::identity< Lagrange<Nm1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type face_basis_type;
 
-    typedef boost::shared_ptr<face_basis_type> face_basis_ptrtype;
+    typedef std::shared_ptr<face_basis_type> face_basis_ptrtype;
     typedef typename mpl::if_<mpl::less_equal<mpl::int_<nDim>, mpl::int_<2> >,
                               mpl::identity<boost::none_t>,
                               mpl::identity< Lagrange<Nm2, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type edge_basis_type;
 
-    typedef boost::shared_ptr<edge_basis_type> edge_basis_ptrtype;
+    typedef std::shared_ptr<edge_basis_type> edge_basis_ptrtype;
 
     typedef typename dual_space_type::convex_type convex_type;
     typedef typename dual_space_type::pointset_type pointset_type;

@@ -112,7 +112,7 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -123,7 +123,7 @@ public:
     /*mesh*/
     typedef Simplex<Dim, 1,RDim> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous > p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
@@ -133,12 +133,12 @@ public:
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     LaplacianV( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
@@ -431,7 +431,7 @@ LaplacianV<Dim, Order, RDim>::exportResults( element_type& U, element_type& E )
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 
         exporter->step( 0 )->add( "pid",
-                                  regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
+                                  regionProcess( std::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
         exporter->step( 0 )->add( "u", U );
         exporter->step( 0 )->add( "exact", E );
 

@@ -44,7 +44,7 @@ public:
     //--------------------------------------------------------------------//
     // Function space manager
     typedef LevelSetSpaceManager<ConvexType, BasisType, PeriodicityType, BasisPnType> levelset_space_manager_type;
-    typedef boost::shared_ptr<levelset_space_manager_type> levelset_space_manager_ptrtype;
+    typedef std::shared_ptr<levelset_space_manager_type> levelset_space_manager_ptrtype;
 
     typedef typename levelset_space_manager_type::value_type value_type;
     // Default scalar and vectorial spaces
@@ -58,17 +58,17 @@ public:
     //--------------------------------------------------------------------//
     // Backend
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     //--------------------------------------------------------------------//
     // Projectors: scalar
     typedef Projector<space_scalar_type, space_scalar_type> projector_scalar_type;
-    typedef boost::shared_ptr<projector_scalar_type> projector_scalar_ptrtype;
+    typedef std::shared_ptr<projector_scalar_type> projector_scalar_ptrtype;
     // Projectors: vectorial
     typedef Projector<space_vectorial_type, space_vectorial_type> projector_vectorial_type;
-    typedef boost::shared_ptr<projector_vectorial_type> projector_vectorial_ptrtype;
+    typedef std::shared_ptr<projector_vectorial_type> projector_vectorial_ptrtype;
     // Projectors: tensor2symm
     typedef Projector<space_tensor2symm_type, space_tensor2symm_type> projector_tensor2symm_type;
-    typedef boost::shared_ptr<projector_tensor2symm_type> projector_tensor2symm_ptrtype;
+    typedef std::shared_ptr<projector_tensor2symm_type> projector_tensor2symm_ptrtype;
 
 public:
     LevelSetToolManager( 
@@ -145,7 +145,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorL2Default()
         M_backendProjectorL2Scalar = backend_type::build(
                 soption( _prefix=backendName, _name="backend" ),
                 backendName,
-                this->functionSpaceManager()->functionSpaceScalar()->worldComm()
+                this->functionSpaceManager()->functionSpaceScalar()->worldCommPtr()
                 );
         M_projectorL2Scalar = projector(
                 this->functionSpaceManager()->functionSpaceScalar(),
@@ -159,7 +159,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorL2Default()
         M_backendProjectorL2Vectorial = backend_type::build(
                 soption( _prefix=backendName, _name="backend" ),
                 backendName,
-                this->functionSpaceManager()->functionSpaceVectorial()->worldComm()
+                this->functionSpaceManager()->functionSpaceVectorial()->worldCommPtr()
                 );
         M_projectorL2Vectorial = projector(
                 this->functionSpaceManager()->functionSpaceVectorial(),
@@ -179,7 +179,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMDefault()
         M_backendProjectorSMScalar = backend_type::build(
                 soption( _prefix=backendName, _name="backend" ),
                 backendName,
-                this->functionSpaceManager()->functionSpaceScalar()->worldComm()
+                this->functionSpaceManager()->functionSpaceScalar()->worldCommPtr()
                 );
         M_projectorSMScalar = projector(
                 this->functionSpaceManager()->functionSpaceScalar(),
@@ -194,7 +194,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMDefault()
         M_backendProjectorSMVectorial = backend_type::build(
                 soption( _prefix=backendName, _name="backend" ),
                 backendName,
-                this->functionSpaceManager()->functionSpaceVectorial()->worldComm()
+                this->functionSpaceManager()->functionSpaceVectorial()->worldCommPtr()
                 );
         M_projectorSMVectorial = projector(
                 this->functionSpaceManager()->functionSpaceVectorial(),
@@ -215,7 +215,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorL2Tensor2Symm()
         M_backendProjectorL2Tensor2Symm = backend_type::build(
                 soption( _prefix=backendName, _name="backend" ),
                 backendName,
-                this->functionSpaceManager()->functionSpaceTensor2Symm()->worldComm()
+                this->functionSpaceManager()->functionSpaceTensor2Symm()->worldCommPtr()
                 );
         M_projectorL2Tensor2Symm = projector(
                 this->functionSpaceManager()->functionSpaceTensor2Symm(),

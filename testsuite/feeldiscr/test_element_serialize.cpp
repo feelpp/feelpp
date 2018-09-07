@@ -100,7 +100,7 @@ public:
     typedef double value_type;
     typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef bases<Lagrange<Order,Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef typename space_type::element_type element_type;

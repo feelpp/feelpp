@@ -64,7 +64,7 @@ int main( int argc, char** argv )
                                         _h=hsize ),
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                                 _straighten=0 );
-    straightenMesh( mesh, Environment::worldComm(), false, true );
+    straightenMesh( mesh, Environment::worldCommPtr(), false, true );
 
     //std::cout << "read mesh\n" << std::endl;
 
@@ -85,21 +85,22 @@ int main( int argc, char** argv )
               << std::setprecision( 16 ) << std::scientific << integrate( _range=boundaryelements( mesh ), _quad=_Q<5>(), _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_OPT ).evaluate() << std::endl;
 
 
-    auto range = internalelements(mesh);
-    for( auto it = range.get<1>(), en = range.get<2>(); it != en; ++it )
+    //auto range = internalelements(mesh);
+    for( auto const& eltWrap : internalelements(mesh) )
     {
-        double elt1 = integrate( _range=idedelements( mesh, it->id() ), _quad=_Q<5>(), _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate()( 0, 0 );
-        double elt2 = integrate( _range=idedelements( mesh, it->id() ), _quad=_Q<5>(), _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_OPT ).evaluate()( 0, 0 );
-        double elt3 = integrate( _range=idedelements( mesh, it->id() ), _quad=_Q<5>(), _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate()( 0, 0 );
+        auto const& elt = unwrap_ref( eltWrap );
+        double elt1 = integrate( _range=idedelements( mesh, elt.id() ), _quad=_Q<5>(), _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate()( 0, 0 );
+        double elt2 = integrate( _range=idedelements( mesh, elt.id() ), _quad=_Q<5>(), _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_OPT ).evaluate()( 0, 0 );
+        double elt3 = integrate( _range=idedelements( mesh, elt.id() ), _quad=_Q<5>(), _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate()( 0, 0 );
         if ( math::abs( elt1-elt2 ) > 1e-13 )
         {
-            std::cout << "problem with element: " << it->id() << " elt1= " << elt1 << " elt2 = " << elt2 << " elt3 = " << elt3 << "\n";
-            auto meshe = createSubmesh( mesh, boost::make_tuple( mpl::int_<MESH_ELEMENTS>(), it, boost::next( it ) ) );
+            std::cout << "problem with element: " << elt.id() << " elt1= " << elt1 << " elt2 = " << elt2 << " elt3 = " << elt3 << "\n";
+            auto meshe = createSubmesh( mesh, idedelements( mesh, elt.id() ) );
             std::ostringstream os;
-            os << "elt-ho-" << it->id();
+            os << "elt-ho-" << elt.id();
             saveGMSHMesh( _mesh=meshe, _filename=os.str() );
-            //std::cout << "G=" << it->G() << "\n";
-            //std::cout << "V=" << it->vertices() << "\n";
+            //std::cout << "G=" << elt.G() << "\n";
+            //std::cout << "V=" << elt.vertices() << "\n";
         }
     }
 

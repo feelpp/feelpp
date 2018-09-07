@@ -1,0 +1,11 @@
+--- contrib/bamg/bamg-gmsh.cpp	2018-08-29 10:50:44.000000000 +0200
++++ contrib/bamg/bamg-gmsh.cpp	2011-12-23 08:00:59.000000000 +0100
+@@ -139,7 +139,7 @@
+    
+   for (i=0;i<tTh->nbe;i++)
+     {
++      int ii[]={static_cast<int>(tTh->Number(tTh->edges[i][0])),static_cast<int>(tTh->Number(tTh->edges[i][1]))};
+-      int ii[]={tTh->Number(tTh->edges[i][0]),tTh->Number(tTh->edges[i][1])};
+       assert(ii[0]>=0 && ii[0] <nv);
+       assert(ii[1]>=0 && ii[1] <nv);      
+       b_e[i].init(v,ii,tTh->edges[i].ref);

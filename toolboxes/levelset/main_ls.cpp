@@ -13,7 +13,7 @@ runLevelsetApplication()
     typedef Simplex<FEELPP_DIM,1> convex_type;
     typedef Lagrange<OrderLevelset, Scalar, Continuous, PointSetFekete> basis_type;
     //typedef FunctionSpace<Mesh<convex_type>, bases<typename FeelModels::detail::ChangeBasisPolySet<Vectorial, basis_type>::type>, Periodicity<NoPeriodicity>> space_advection_velocity_type;
-    typedef FunctionSpace<Mesh<convex_type>, bases<Lagrange<OrderLevelset, Vectorial, Continuous, PointSetFekete>>, double, Periodicity<NoPeriodicity>, mortars<NoMortar>> space_advection_velocity_type;
+    typedef FunctionSpace<Mesh<convex_type>, Feel::detail::bases<Lagrange<OrderLevelset, Vectorial, Continuous, PointSetFekete>>, double, Periodicity<NoPeriodicity>, mortars<NoMortar>> space_advection_velocity_type;
     typedef Lagrange<OrderLevelsetPN, Scalar, Continuous, PointSetFekete> basis_PN_type;
 
     typedef FeelModels::LevelSet<
@@ -44,7 +44,7 @@ runLevelsetApplication()
 
     bool exportDistToBoundary = boption( _name="export-dist-to-boundary" );
 
-    boost::shared_ptr<Exporter<typename model_type::mesh_type>> myExporter;
+    std::shared_ptr<Exporter<typename model_type::mesh_type>> myExporter;
 
     if( exportDistToBoundary )
     {
@@ -99,7 +99,7 @@ int main( int argc, char** argv )
     using namespace Feel;
 
     po::options_description levelsetoptions( "application levelset options" );
-    levelsetoptions.add( feelmodels_options( "levelset" ) );
+    levelsetoptions.add( toolboxes_options( "levelset" ) );
     levelsetoptions.add_options()
         ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P2, P1" )
         ("levelset.reinit-every", Feel::po::value<int>()->default_value( -1 ), "reinitialize levelset every n iterations" )

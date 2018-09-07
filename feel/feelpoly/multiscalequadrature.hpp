@@ -27,7 +27,7 @@
 #ifndef __TestMultiScale_H
 #define __TestMultiScale_H 1
 
-#include <feel/feelpoly/quadpoint.hpp>
+#include <feel/feelpoly/pointsetquadrature.hpp>
 
 
 
@@ -47,15 +47,15 @@ namespace Feel
  */
 
 template<class Convex, uint16_type Integration_Degree, typename T>
-class MultiScaleQuadrature : public PointSetQuadrature<Convex, Integration_Degree, T>  {};
+class MultiScaleQuadrature : public PointSetQuadrature<Convex, T>  {};
 
 template< uint16_type Integration_Degree, typename T>
-class MultiScaleQuadrature<Simplex<0,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<0,1> , Integration_Degree, T>
+class MultiScaleQuadrature<Simplex<0,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<0,1>,  T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<0,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<0,1> , T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -81,12 +81,12 @@ public :
 template< uint16_type Integration_Degree, typename T>
 class MultiScaleQuadrature<Hypercube<1,1>, Integration_Degree ,T >
     :
-public PointSetQuadrature<Hypercube<1,1>, Integration_Degree, T>
+public PointSetQuadrature<Hypercube<1,1>, T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<1,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<1,1>, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -118,8 +118,8 @@ public :
             tmp+=2./gridsize ;
         }
 
-        boost::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<1, 1>, 1, 1>(), gm, face_qr );
 
@@ -153,8 +153,8 @@ public :
 #endif
 
 
-        boost::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
+        std::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<1, 1>, 1, 1>(), gm, face_qr );
 
@@ -172,12 +172,12 @@ public :
 template< uint16_type Integration_Degree, typename T>
 class MultiScaleQuadrature<Hypercube<2,1>, Integration_Degree ,T >
     :
-public PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T>
+public PointSetQuadrature<Hypercube<2,1>, T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<2,1>, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -216,8 +216,8 @@ public :
             tmpy-=2./gridsize;
         }
         std::cout << "quadrature points:" << this->M_points << std::endl; 
-        boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type());
+        std::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type());
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );
 
@@ -257,8 +257,8 @@ public :
         VLOG(1) << "[gauss<SP<2,1>] p = " << this->M_points << "\n";
         VLOG(1) << "[gauss<SP<2,1>] w = " << this->M_w << "\n";
 #endif
-        boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type);
+        std::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
+        std::shared_ptr<face_quad_type> face_qr( new face_quad_type);
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );
 

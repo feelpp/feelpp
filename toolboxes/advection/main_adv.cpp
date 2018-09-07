@@ -93,7 +93,7 @@ main( int argc, char** argv )
 {
     using namespace Feel;
 	po::options_description advectionoptions( "application advection options" );
-    advectionoptions.add( feelmodels_options("advection") );
+    advectionoptions.add( toolboxes_options("advection") );
     advectionoptions.add_options()
         ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P2,P1 ")
         ("adv-type", Feel::po::value<std::string>()->default_value( "scalar" ), " advected field type : scalar, vectorial ")

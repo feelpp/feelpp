@@ -9,14 +9,17 @@ namespace FeelModels {
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 ADVECTION_CLASS_TEMPLATE_TYPE::Advection( 
         std::string const& prefix,
-        WorldComm const& worldComm,
+        worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
-        std::string const& rootRepository )
-: super_type( prefix, worldComm, subPrefix, rootRepository)
+        ModelBaseRepository const& modelRep )
+: super_type( prefix, worldComm, subPrefix, modelRep )
 {
     this->log("Advection","constructor", "start" );
 
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Advection.info") );
+    //-----------------------------------------------------------------------------//
+    if( !this->modelPropertiesPtr() )
+        this->setModelProperties( std::make_shared<ModelProperties>( "", this->repository().expr(), this->worldComm() ) );
     //-----------------------------------------------------------------------------//
     // load info from .bc file
     this->loadConfigBCFile();
@@ -33,11 +36,11 @@ ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 typename ADVECTION_CLASS_TEMPLATE_TYPE::self_ptrtype 
 ADVECTION_CLASS_TEMPLATE_TYPE::New( 
         std::string const& prefix,
-        WorldComm const& worldComm,
+        worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
-        std::string const& rootRepository )
+        ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type>( prefix, worldComm, subPrefix, rootRepository );
+    return std::make_shared<self_type>( prefix, worldComm, subPrefix, modelRep );
 }
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS

@@ -47,7 +47,7 @@ namespace lambda = boost::lambda;
  */
 template<typename SpaceType, typename Expr>
 typename SpaceType::element_type
-region( boost::shared_ptr<SpaceType> const& space,
+region( std::shared_ptr<SpaceType> const& space,
         Expr const& expr )
 {
     BOOST_STATIC_ASSERT( SpaceType::fe_type::nOrder == 0 );
@@ -84,7 +84,7 @@ struct Region
  */
 template<typename SpaceType, typename Expr>
 typename SpaceType::element_type
-regionv( boost::shared_ptr<SpaceType> const& space,
+regionv( std::shared_ptr<SpaceType> const& space,
          Expr const& expr )
 {
     BOOST_STATIC_ASSERT( SpaceType::fe_type::nOrder == 0 );
@@ -113,7 +113,7 @@ regionv( boost::shared_ptr<SpaceType> const& space,
  */
 template<typename SpaceType>
 typename SpaceType::element_type
-regionProcess( boost::shared_ptr<SpaceType> const& space )
+regionProcess( std::shared_ptr<SpaceType> const& space )
 {
     return region( space, lambda::bind( &SpaceType::mesh_type::element_type::processId, lambda::_1 ) );
 
@@ -126,7 +126,7 @@ struct RegionProcess : public Region
 {
     template<typename SpaceType>
     typename SpaceType::element_type
-    apply( boost::shared_ptr<SpaceType> const& space )
+    apply( std::shared_ptr<SpaceType> const& space )
     {
         return regionProcess( space );
     }
@@ -138,7 +138,7 @@ struct RegionProcess : public Region
  */
 template<typename SpaceType>
 typename SpaceType::element_type
-regionMarker( boost::shared_ptr<SpaceType> const& space )
+regionMarker( std::shared_ptr<SpaceType> const& space )
 {
     return region( space, lambda::bind( &SpaceType::mesh_type::element_type::marker, lambda::_1 ) );
 
@@ -150,7 +150,7 @@ struct RegionMarkre : public Region
 {
     template<typename SpaceType>
     typename SpaceType::element_type
-    apply( boost::shared_ptr<SpaceType> const& space )
+    apply( std::shared_ptr<SpaceType> const& space )
     {
         return regionMarker( space );
     }
@@ -162,7 +162,7 @@ struct RegionMarkre : public Region
  */
 template<typename SpaceType>
 typename SpaceType::element_type
-regionMarker2( boost::shared_ptr<SpaceType> const& space )
+regionMarker2( std::shared_ptr<SpaceType> const& space )
 {
     return region( space, lambda::bind( &SpaceType::mesh_type::element_type::marker2, lambda::_1 ) );
 
@@ -175,7 +175,7 @@ struct RegionMarker2 : public Region
 {
     template<typename SpaceType>
     typename SpaceType::element_type
-    apply( boost::shared_ptr<SpaceType> const& space )
+    apply( std::shared_ptr<SpaceType> const& space )
     {
         return regionMarker2( space );
     }
@@ -187,7 +187,7 @@ struct RegionMarker2 : public Region
  */
 template<typename SpaceType>
 typename SpaceType::element_type
-regionMarker3( boost::shared_ptr<SpaceType> const& space )
+regionMarker3( std::shared_ptr<SpaceType> const& space )
 {
     return region( space, lambda::bind( &SpaceType::mesh_type::element_type::marker3, lambda::_1 ) );
 
@@ -200,7 +200,7 @@ struct RegionMarker3 : public Region
 {
     template<typename SpaceType>
     typename SpaceType::element_type
-    apply( boost::shared_ptr<SpaceType> const& space )
+    apply( std::shared_ptr<SpaceType> const& space )
     {
         return regionMarker3( space );
     }

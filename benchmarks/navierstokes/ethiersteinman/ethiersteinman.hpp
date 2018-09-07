@@ -143,7 +143,7 @@ public:
 
     /* mesh */
     typedef Mesh<GeoEntity<ENTITY<Dim, 1,Dim> > > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptr_type;
+    typedef std::shared_ptr<mesh_type> mesh_ptr_type;
 
     /* bases */
     typedef fusion::vector<fem::Lagrange<Dim, uOrder,
@@ -164,10 +164,10 @@ public:
     typedef FunctionSpace<mesh_type, basis_u_type, value_type> space_u_type;
     typedef FunctionSpace<mesh_type, basis_p_type, value_type> space_p_type;
     typedef FunctionSpace<mesh_type, basis_i_type, value_type> space_i_type;
-    typedef boost::shared_ptr<space_U_type> space_U_ptrtype;
-    typedef boost::shared_ptr<space_u_type> space_u_ptrtype;
-    typedef boost::shared_ptr<space_p_type> space_p_ptrtype;
-    typedef boost::shared_ptr<space_i_type> space_i_ptrtype;
+    typedef std::shared_ptr<space_U_type> space_U_ptrtype;
+    typedef std::shared_ptr<space_u_type> space_u_ptrtype;
+    typedef std::shared_ptr<space_p_type> space_p_ptrtype;
+    typedef std::shared_ptr<space_i_type> space_i_ptrtype;
     typedef space_U_type::element_type element_U_type;
     typedef space_u_type::element_type element_u_type;
     typedef space_p_type::element_type element_p_type;
@@ -182,7 +182,7 @@ public:
 
     // linear algebra backends
     typedef BackendAdaptiveReusePC<BackendGmm<value_type> > backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     EthierSteinman( int argc, char** argv, AboutData const& ad );
 
@@ -290,7 +290,7 @@ private:
     double M_bcCoeffConv;
     double M_mu;
 
-    boost::shared_ptr<export_type> M_exporter;
+    std::shared_ptr<export_type> M_exporter;
 
     std::map<std::string,std::pair<boost::timer,double> > M_timers;
 

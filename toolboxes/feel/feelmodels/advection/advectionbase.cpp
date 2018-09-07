@@ -32,11 +32,11 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionStabMethodIdMap = {
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionBase( 
         std::string const& prefix,
-        WorldComm const& worldComm,
+        worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
-        std::string const& rootRepository )
+        ModelBaseRepository const& modelRep )
 :
-    super_type( prefix, worldComm, subPrefix, rootRepository ),
+    super_type( prefix, worldComm, subPrefix, modelRep ),
     M_isBuilt(false),
     M_isUpdatedForUse(false),
     M_diffusionReactionModel( new diffusionreaction_model_type( prefix ) ),
@@ -167,9 +167,21 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
     this->log("Advection","init", "start" );
     this->timerTool("Constructor").start();
 
+    if( this->modelName().empty() )
+    {
+        if( this->modelPropertiesPtr() )
+        {
+            std::string advection_model = this->modelProperties().models().model().equations();
+            this->setModelName( advection_model );
+        }
+        else
+        {
+            CHECK(false) << "You must set a model name before initializing.\n";
+        }
+    }
+
     if( !M_isBuilt )
         this->build();
-
 
     if ( this->hasAdvection() )
     {
@@ -258,11 +270,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_hasSourceAdded = false;
 
     // Model
-    std::string advection_model = this->modelProperties().model();
     if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
-        advection_model = soption(_name="model",_prefix=this->prefix());
-    if( !advection_model.empty() )
-        this->setModelName( advection_model );
+        this->setModelName( soption(_name="model",_prefix=this->prefix()) );
     // Solver
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
         this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
@@ -343,7 +352,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createAlgebraicData()
     this->timerTool("Constructor").start();
     
     // Backend
-    M_backend = backend_type::build( soption(_name="backend"), this->prefix(), M_Xh->worldComm() );
+    M_backend = backend_type::build( soption(_name="backend"), this->prefix(), M_Xh->worldCommPtr() );
 
     double tElapsed = this->timerTool("Constructor").stop("create");
     this->log("Advection","createAlgebraicData", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -395,7 +404,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createOthers()
     // Load the field velocity convection from a math expr
     if ( Environment::vm().count(prefixvm(this->prefix(),"advection-velocity").c_str()) )
     {
-        std::string pathGinacExpr = this->directoryLibSymbExpr() + "/advection-velocity";
+        std::string pathGinacExpr = this->repository().expr() + "/advection-velocity";
         M_exprAdvectionVelocity = expr<nDim,1>( soption(_prefix=this->prefix(),_name="advection-velocity"),
                                                                  this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
         //this->updateFieldVelocityConvection();

@@ -82,7 +82,7 @@ public:
 
     //! model type
     typedef ModelType model_type;
-    typedef boost::shared_ptr<ModelType> model_ptrtype;
+    typedef std::shared_ptr<ModelType> model_ptrtype;
 
     //! value_type
     typedef typename model_type::value_type value_type;
@@ -108,7 +108,7 @@ public:
     typedef typename model_type::element_ptrtype element_ptrtype;
 
     typedef typename model_type::backend_type backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename model_type::vector_ptrtype vector_ptrtype;
     typedef typename model_type::vector_type vector_type;
@@ -161,7 +161,7 @@ public:
 
     CRBModelTrilinear( crb::stage stage, int level = 0 )
         :
-        super( boost::make_shared<model_type>(), stage, level )
+        super( std::make_shared<model_type>(), stage, level )
         {
         }
 

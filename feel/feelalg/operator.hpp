@@ -46,8 +46,8 @@ class OperatorBase
     typedef T value_type;
     typedef typename Backend<value_type>::solve_return_type solve_return_type;
     typedef DataMap datamap_type;
-    typedef boost::shared_ptr<DataMap> datamap_ptrtype;
-    typedef boost::shared_ptr<Preconditioner<T>> pc_ptrtype;
+    typedef std::shared_ptr<DataMap> datamap_ptrtype;
+    typedef std::shared_ptr<Preconditioner<T>> pc_ptrtype;
 
 
     OperatorBase() 
@@ -188,10 +188,10 @@ public:
     typedef typename Backend<value_type>::solve_return_type solve_return_type;
     
     typedef MatrixSparse<value_type> sparse_matrix_type;
-    typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
+    typedef std::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
 
     typedef Vector<value_type> vector_type;
-    typedef boost::shared_ptr<vector_type> vector_ptrtype;
+    typedef std::shared_ptr<vector_type> vector_ptrtype;
 
     OperatorMatrix()
         :
@@ -303,10 +303,10 @@ private:
  * \return the Operator associated to the matrix \p M
  */
 template<typename MatrixType>
-boost::shared_ptr<OperatorMatrix<typename MatrixType::value_type>>
-op( boost::shared_ptr<MatrixType> M, std::string label, bool transpose = false )
+std::shared_ptr<OperatorMatrix<typename MatrixType::value_type>>
+op( std::shared_ptr<MatrixType> M, std::string label, bool transpose = false )
 {
-    return boost::make_shared<OperatorMatrix<typename MatrixType::value_type>>(M,label,transpose) ;
+    return std::make_shared<OperatorMatrix<typename MatrixType::value_type>>(M,label,transpose) ;
 }
 
 /**
@@ -318,7 +318,7 @@ class OperatorInverse : public OperatorBase<typename operator_type::value_type>
     typedef OperatorBase<typename operator_type::value_type> super;
 public:
 
-    typedef boost::shared_ptr<operator_type> operator_ptrtype;
+    typedef std::shared_ptr<operator_type> operator_ptrtype;
     typedef typename operator_type::value_type value_type;
 
     // This constructor implements the F^-1 operator
@@ -402,10 +402,10 @@ private:
  * \return the Operator associated to the matrix \p M
  */
 template<typename OpType>
-boost::shared_ptr<OperatorInverse<OpType>>
-inv( boost::shared_ptr<OpType>  M )
+std::shared_ptr<OperatorInverse<OpType>>
+inv( std::shared_ptr<OpType>  M )
 {
-    return boost::make_shared<OperatorInverse<OpType>>(M) ;
+    return std::make_shared<OperatorInverse<OpType>>(M) ;
 }
 
 
@@ -418,8 +418,8 @@ class OperatorCompose : public OperatorBase<typename op1_type::value_type>
     typedef OperatorBase<typename op1_type::value_type> super;
 public:
 
-    typedef boost::shared_ptr<op1_type> op1_ptrtype;
-    typedef boost::shared_ptr<op2_type> op2_ptrtype;
+    typedef std::shared_ptr<op1_type> op1_ptrtype;
+    typedef std::shared_ptr<op2_type> op2_ptrtype;
     typedef typename op2_type::value_type value_type;
     // This constructor implements the (F o G) operator
 
@@ -457,12 +457,12 @@ public:
 
     bool hasInverse() const
     {
-        return M_F->hasInverse() * M_G->hasInverse();
+        return M_F->hasInverse() && M_G->hasInverse();
     }
 
     bool hasApply() const
     {
-        return M_F->hasApply() * M_G->hasApply();
+        return M_F->hasApply() && M_G->hasApply();
     }
 
     int apply( const vector_type & X, vector_type & Y ) const
@@ -526,10 +526,10 @@ private:
  * \return the operator which is the composition of op1 with op2
  */
 template<typename Op1Type, typename Op2Type>
-boost::shared_ptr<OperatorCompose<Op1Type,Op2Type>>
-compose( boost::shared_ptr<Op1Type>  op1,  boost::shared_ptr<Op2Type>  op2  )
+std::shared_ptr<OperatorCompose<Op1Type,Op2Type>>
+compose( std::shared_ptr<Op1Type>  op1,  std::shared_ptr<Op2Type>  op2  )
 {
-    return boost::make_shared<OperatorCompose<Op1Type,Op2Type>>(op1,op2) ;
+    return std::make_shared<OperatorCompose<Op1Type,Op2Type>>(op1,op2) ;
 }
 
 /**
@@ -541,7 +541,7 @@ class OperatorScale : public OperatorBase<typename op1_type::value_type>
     typedef OperatorBase<typename op1_type::value_type> super;
 public:
 
-    typedef boost::shared_ptr<op1_type> op1_ptrtype;
+    typedef std::shared_ptr<op1_type> op1_ptrtype;
     typedef typename op1_type::value_type value_type;
 
 
@@ -651,10 +651,10 @@ private:
  * \return the operator which is the scaling of op by s
  */
 template<typename OpType>
-boost::shared_ptr<OperatorScale<OpType>>
-scale( boost::shared_ptr<OpType> M, typename OpType::value_type s )
+std::shared_ptr<OperatorScale<OpType>>
+scale( std::shared_ptr<OpType> M, typename OpType::value_type s )
 {
-    return boost::make_shared<OperatorScale<OpType>>(M,s) ;
+    return std::make_shared<OperatorScale<OpType>>(M,s) ;
 }
 
 
@@ -667,7 +667,7 @@ class OperatorDiag : public OperatorBase<typename op1_type::value_type>
     typedef OperatorBase<typename op1_type::value_type> super;
 public:
 
-    typedef boost::shared_ptr<op1_type> op1_ptrtype;
+    typedef std::shared_ptr<op1_type> op1_ptrtype;
     typedef typename op1_type::value_type value_type;
 
 
@@ -749,10 +749,10 @@ private:
  * \return the operator which is the scaling of op by s
  */
 template<typename OpType>
-boost::shared_ptr<OperatorDiag<OpType>>
-diag( boost::shared_ptr<OpType> M )
+std::shared_ptr<OperatorDiag<OpType>>
+diag( std::shared_ptr<OpType> M )
 {
-    return boost::make_shared<OperatorDiag<OpType>>(M) ;
+    return std::make_shared<OperatorDiag<OpType>>(M) ;
 }
 
 } // Feel

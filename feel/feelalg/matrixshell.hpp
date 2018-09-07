@@ -58,7 +58,7 @@ public:
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
     typedef Vector<T> vector_type;
-    typedef boost::shared_ptr<Vector<T> > vector_ptrtype;
+    typedef std::shared_ptr<Vector<T> > vector_ptrtype;
 
     //@}
 
@@ -111,7 +111,7 @@ public:
     //! copies the diagonal of the matrix into \p v.
     virtual void diagonal( vector_type& v ) const = 0;
 
-    void diagonal ( boost::shared_ptr<Vector<T> >& dest ) const
+    void diagonal ( std::shared_ptr<Vector<T> >& dest ) const
     {
         this->diagonal( *dest );
     }
@@ -123,8 +123,8 @@ public:
      * Multiplies the matrix with \p arg and stores the result in \p
      * dest.
      */
-    void multVector ( const boost::shared_ptr<Vector<T> >& arg,
-                      boost::shared_ptr<Vector<T> >& dest ) const
+    void multVector ( const std::shared_ptr<Vector<T> >& arg,
+                      std::shared_ptr<Vector<T> >& dest ) const
     {
         this->multVector( *arg, *dest );
     }
@@ -132,8 +132,8 @@ public:
     //! Multiplies the matrix with in and adds the result to out.
     virtual void multAddVector( vector_type const& in, vector_type& out ) const = 0;
 
-    void multAddVector ( const boost::shared_ptr<Vector<T> >& arg,
-                         boost::shared_ptr<Vector<T> >& dest ) const
+    void multAddVector ( const std::shared_ptr<Vector<T> >& arg,
+                         std::shared_ptr<Vector<T> >& dest ) const
     {
         this->multAddVector( *arg, *dest );
     }

@@ -847,12 +847,19 @@ template <typename T>
 void
 SolverEigenSlepc<T>::setSlepcEPSTarget()
 {
+    int ierr = 0;
     double target = doption("solvereigen.eps-target");
     if ( !isnan( target) )
     {
-        int ierr = 0;
         ierr = EPSSetTarget( M_eps, target);
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    }
+    else
+    {
+#if SLEPC_VERSION_GE(3,9,0)
+        ierr = EPSSetWhichEigenpairs ( M_eps, EPS_TARGET_MAGNITUDE );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+#endif
     }
 }
 

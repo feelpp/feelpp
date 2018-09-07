@@ -40,10 +40,10 @@
 #include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelmesh/ale.hpp>
-#if defined( FEELPP_MODELS_HAS_MESHALE_HARMONICEXTENSION )
+#if defined( FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION )
 #include <feel/feelmodels/modelmesh/harmonicextension.hpp>
 #endif
-#if defined( FEELPP_MODELS_HAS_MESHALE_WINSLOW )
+#if defined( FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW )
 #include <feel/feelmodels/modelmesh/winslow.hpp>
 #endif
 
@@ -74,7 +74,7 @@ public :
     static const uint16_type Order_low = convex_type::nOrder;
 
     typedef Mesh< convex_type > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     static const bool isEqualOrderAndOrderLow = boost::is_same<mpl::int_<Order>,mpl::int_<Order_low> >::type::value;
 
@@ -95,29 +95,30 @@ public :
 
     // Backend typedefs
     typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
     typedef Preconditioner<double> preconditioner_type;
-    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+    typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
 
-#if defined( FEELPP_MODELS_HAS_MESHALE_HARMONICEXTENSION )
+#if defined( FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION )
     typedef HarmonicExtension<mesh_type,Order_low> harmonicextension_type;
-    typedef boost::shared_ptr<harmonicextension_type> harmonicextension_ptrtype;
+    typedef std::shared_ptr<harmonicextension_type> harmonicextension_ptrtype;
 #endif
-#if defined( FEELPP_MODELS_HAS_MESHALE_WINSLOW )
-    typedef Winslow<mesh_type,Order_low+1 > winslow_type;
-    typedef boost::shared_ptr<winslow_type> winslow_ptrtype;
+#if defined( FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW )
+    typedef Winslow<mesh_type,Order_low/*+1*/ > winslow_type;
+    typedef std::shared_ptr<winslow_type> winslow_ptrtype;
 #endif
     /**
      * constructor
      *
      */
-    ALE( mesh_ptrtype mesh, std::string prefix="", WorldComm const& worldcomm = WorldComm(), bool moveGhostEltFromExtendedStencil=false );
+    ALE( mesh_ptrtype mesh, std::string prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(), bool moveGhostEltFromExtendedStencil=false,
+         ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     /**
      * copy constructor
@@ -131,7 +132,7 @@ public :
 
     void init();
 
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const;
 
     /**
      * verbose
@@ -194,10 +195,10 @@ private:
     void createALEHO( mpl::true_ );
     void createALEHO( mpl::false_ );
 
-#if defined( FEELPP_MODELS_HAS_MESHALE_HARMONICEXTENSION )
+#if defined( FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION )
     void createHarmonicExtension();
 #endif
-#if defined( FEELPP_MODELS_HAS_MESHALE_WINSLOW )
+#if defined( FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW )
     void createWinslow();
 #endif
 
@@ -270,10 +271,10 @@ private :
     std::string M_alemeshTypeName;
     bool M_doHoCorrection;
 
-#if defined( FEELPP_MODELS_HAS_MESHALE_HARMONICEXTENSION )
+#if defined( FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION )
     harmonicextension_ptrtype M_harmonicextensionFactory;
 #endif
-#if defined( FEELPP_MODELS_HAS_MESHALE_WINSLOW )
+#if defined( FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW )
     winslow_ptrtype M_winslowFactory;
 #endif
     bool M_isInitHarmonicExtension, M_isInitWinslow;

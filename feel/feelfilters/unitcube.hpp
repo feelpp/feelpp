@@ -37,7 +37,7 @@ namespace Feel {
 /**
  * build a mesh of the unit square [0,1]^3 using tetrahedrons
  */
-boost::shared_ptr<Mesh<Simplex<3>>>
+std::shared_ptr<Mesh<Simplex<3>>>
 unitCube( double h = option(_name="gmsh.hsize").as<double>() );
 
 }

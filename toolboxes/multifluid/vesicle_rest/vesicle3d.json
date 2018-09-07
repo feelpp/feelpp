@@ -1,7 +1,10 @@
 {
     "Name": "VesicleRest3d",
     "ShortName": "VesicleRest3d",
-
+    "Models":
+    {
+        "equations":"Advection"
+    },
     "Parameters":
     {
         "x0": "0.",
@@ -11,7 +14,6 @@
         "b0": "0.689445",
         "c0": "0.689445"
     },
-
     "InitialConditions":
     {
         "multifluid.levelset1":
@@ -27,7 +29,10 @@
     },
     "PostProcess":
     {
-        "Fields": ["gradphi", "modgradphi", "backwardcharacteristics", "cauchygreeninvariant1", "cauchygreeninvariant2"],
+        "Exports":
+        {
+            "fields": ["gradphi", "modgradphi", "backwardcharacteristics", "cauchygreeninvariant1", "cauchygreeninvariant2"]
+        },
         "PhysicalQuantities": ["volume", "perimeter"]
     }
 }

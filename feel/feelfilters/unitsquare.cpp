@@ -28,16 +28,22 @@
  */
 
 #include <feel/feelcore/feel.hpp>
+
 #include <feel/feeldiscr/mesh.hpp>
+
 #ifdef FEELPP_HAS_GMSH
 #include <feel/feelfilters/creategmshmesh.hpp>
 #endif
+
 #include <feel/feelfilters/domain.hpp>
+
 
 #ifdef FEELPP_HAS_GMSH
 namespace Feel {
 
-boost::shared_ptr<Mesh<Simplex<2> > >
+extern template class Mesh<Simplex<2>>;
+
+std::shared_ptr<Mesh<Simplex<2> > >
 unitSquare( double h, PeriodicEntities pe )
 {
     return createGMSHMesh(_mesh=new Mesh<Simplex<2> >,
