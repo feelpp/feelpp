@@ -11,7 +11,7 @@ fi
 if [ -d ${FEELPP_DIR}/share/feelpp/scripts/ ]; then 
     FEELPP_SCRIPTS_DIR=${FEELPP_DIR}/share/feelpp/scripts;
 else
-    FEELPP_SCRIPTS_DIR=tools/scripts/buildkite
+    FEELPP_SCRIPTS_DIR=feelpp/tools/scripts/buildkite
 fi
 
 function get_field(){
