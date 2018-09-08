@@ -15,38 +15,37 @@ BRANCHTAG=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')
 tag=$(tag_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
 echo "--- Building feelpp-${component}:${tag}"
 
-if [ "${component}" = "base" ] ; then
-    dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-libs:${tag}" > docker/feelpp-${component}/dockerfile.tmp
-elif [ "${component}" = "pyfeelpp" ] ; then
-    dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-libs:${tag}" > docker/feelpp-${component}/dockerfile.tmp
+image="feelpp-${component}"
+if [ "${component}" = "feelpp" ] ; then
+    image="feelpp"
+fi
+
+if [ "${component}" = "feelpp" ] ; then
+    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-env:${tag}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "toolboxes" ] ; then
-    dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-base:${tag}" > docker/feelpp-${component}/dockerfile.tmp
-elif [ "${component}" = "pyfeelpp-toolboxes" ] ; then
-    dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/feelpp-${component}/dockerfile.tmp    
+    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp:${tag}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "mor" ] ; then
-    dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/feelpp-${component}/dockerfile.tmp
-elif [ "${component}" = "pyfeelpp-mor" ] ; then
-    dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-mor:${tag}" > docker/feelpp-${component}/dockerfile.tmp
+    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
 else
-    dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/feelpp-${component}/dockerfile.tmp
+    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
 fi    
 docker build \
-       --tag=feelpp/feelpp-${component}:${tag} \
+       --tag=feelpp/${image}:${tag} \
        --build-arg=BUILD_JOBS=${JOBS}\
        --build-arg=BRANCH=${BUILDKITE_BRANCH}\
        --build-arg=CXX="${CXX}"\
        --build-arg=CC="${CC}" \
        --no-cache=true \
-       -f docker/feelpp-${component}/dockerfile.tmp \
-       docker/feelpp-${component}
+       -f docker/${image}/dockerfile.tmp \
+       docker/${image}
 
 
-echo "--- Tagging feelpp-${component}:${tag}"
+echo "--- Tagging ${image}:${tag}"
 extratags=$(extratags_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
 # add extra tags
 for tagalias in ${extratags[@]}; do
-    echo "Tagging feelpp/feelpp-${component}:$tag as feelpp/feelpp-${component}:$tagalias"
-    docker tag "feelpp/feelpp-${component}:$tag" "feelpp/feelpp-${component}:$tagalias"
+    echo "Tagging feelpp/${image}:$tag as feelpp/${image}:$tagalias"
+    docker tag "feelpp/${image}:$tag" "feelpp/${image}:$tagalias"
 done
 
     
