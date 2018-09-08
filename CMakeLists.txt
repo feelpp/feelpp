@@ -186,7 +186,6 @@ endif()
 
 include(feelpp.module.mor)
 if ( FEELPP_HAS_MOR )
-  add_custom_target(mor)
   add_subdirectory(mor)
 endif()
 

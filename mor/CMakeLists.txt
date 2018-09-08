@@ -35,15 +35,12 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   endif()
 endif()
 
-add_custom_target(mor)
 set(FEELPP_MOR_SOURCE_DIR ${PROJECT_SOURCE_DIR})
 set(FEELPP_MOR_BINARY_DIR ${PROJECT_BINARY_DIR})
 
 
 include_directories(${FEELPP_MOR_SOURCE_DIR})
 include_directories(${FEELPP_MOR_BINARY_DIR})
-
-OPTION(FEELPP_ENABLE_PYFEELPP_MOR "enable PyFeelpp for MOR" ON)
 
 OPTION(FEELPP_ENABLE_MOR_ALL "enable all MOR testcase" ON)
 
