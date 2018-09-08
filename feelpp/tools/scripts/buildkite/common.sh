@@ -46,7 +46,7 @@ tag_from_os() {
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    ${FEELPP_SCRIPTS_DIR}/list.sh $2 $3 | grep "${fromos}-${fromtag}"  | while read line ; do
+    ${FEELPP_SCRIPTS_DIR}/list.sh | grep "${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         image=${tokens[0]}
         printf "%s" "${image}"
