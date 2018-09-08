@@ -15,14 +15,14 @@ BRANCHTAG=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')
 tag=$(tag_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
 image="feelpp-${component}"
 if [ "${component}" = "feelpp" ] ; then
-    tag=$(tag_from_os $TARGET )
+#    tag=$(tag_from_os $TARGET $BRANCHTAG $FEELPP_VERSION)
     image="feelpp"
 fi
 echo "--- Building ${image}:${tag}"
 
 
 if [ "${component}" = "feelpp" ] ; then
-    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-env:${tag}" > docker/${image}/dockerfile.tmp
+    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-env:latest" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "toolboxes" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp:${tag}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "mor" ] ; then
