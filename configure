@@ -88,7 +88,10 @@ while [ -n "$1" ]; do
        export PROJECT_INSTALL_PREFIX
        ;;
    --root=*)
-       PROJECTSRCROOT=`echo $1 | sed "s,^--root=\(.*\),\1,"`
+       temp=`echo $1 | sed "s,^--root=\(.*\),\1,"`
+       if [ "x$temp" != "xfeelpp" ]; then
+           PROJECTSRCROOT=$temp
+       fi
        export PROJECTSRCROOT
        ;;   
    --mpi-dir=*)
