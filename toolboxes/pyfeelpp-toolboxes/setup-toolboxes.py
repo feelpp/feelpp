@@ -34,14 +34,12 @@ class CMakeBuild(build_ext):
     def build_extension(self, ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = [
+            '-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON',
             '-DCMAKE_CXX_COMPILER=@CMAKE_CXX_COMPILER@',
             '-DCMAKE_C_COMPILER=@CMAKE_C_COMPILER@',
             '-DCMAKE_INSTALL_PREFIX=@CMAKE_INSTALL_PREFIX@',
             '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
             '-DPYTHON_EXECUTABLE=' + sys.executable]
-
-        if @PYFEELPP_SETUP_HAS_PARAVIEW_CMAKE_ARGS@ == 1 :
-            cmake_args += @PYFEELPP_SETUP_PARAVIEW_CMAKE_ARGS@
 
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]

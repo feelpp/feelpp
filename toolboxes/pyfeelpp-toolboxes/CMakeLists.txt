@@ -21,45 +21,13 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
-project(pyfeelpp-toolboxes)
-
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
-  if(NOT FEELPP_FOUND)
-      message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
-  endif()
-endif()
-
-# additional cmake args can be necessary for paraview
-set(PYFEELPP_SETUP_HAS_PARAVIEW_CMAKE_ARGS 0)
-set(PYFEELPP_SETUP_PARAVIEW_CMAKE_ARGS "[]")
-if ( FEELPP_HAS_PARAVIEW AND PARAVIEW_ENABLE_QT_SUPPORT )
-  if (PARAVIEW_QT_VERSION VERSION_GREATER "4")
-    set(PYFEELPP_SETUP_HAS_PARAVIEW_CMAKE_ARGS 1)
-    set(PYFEELPP_SETUP_PARAVIEW_CMAKE_ARGS "['-DQt${PARAVIEW_QT_VERSION}_DIR=${Qt${PARAVIEW_QT_VERSION}_DIR}']")
-  else()
-    # TODO QT4
-  endif()
-endif()
-
-enable_testing()
-
-if ( NOT TARGET check )
-  add_custom_target(check)
-endif()
-
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  list(APPEND CMAKE_MODULE_PATH "$ENV{FEELPP_DIR}/share/cmake/pybind11")
-  list(APPEND CMAKE_MODULE_PATH "/usr/local/share/cmake/pybind11")
-  include(pybind11Tools)
-endif()
 
 #
 # setup pyfeelpp-toolboxes
 #
 OPTION(FEELPP_ENABLE_PYFEELPP_TOOLBOXES "Enable PyFeel++ for toolboxes" ON  )
 if (FEELPP_ENABLE_PYFEELPP_TOOLBOXES)
+  message(STATUS "Hola toolboxes" )
   set(SETUP_TOOLBOXES_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup-toolboxes.py")
   set(SETUP_TOOLBOXES_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup-toolboxes.py")
   configure_file(${SETUP_TOOLBOXES_PY_IN} ${SETUP_TOOLBOXES_PY})
