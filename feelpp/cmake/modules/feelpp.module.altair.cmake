@@ -42,7 +42,7 @@ if ( FEELPP_ENABLE_ACUSIM )
     if ( ACUSIM_BASE_DIR )
       
       set(ACUSIM_INCLUDE_DIR "${ACUSIM_BASE_DIR}/include")
-      include_directories(${ACUSIM_INCLUDE_DIR})
+      #include_directories(${ACUSIM_INCLUDE_DIR})
       
       set(ACUSIM_LIBRARY_DIR "${ACUSIM_BASE_DIR}/lib")
       FIND_LIBRARY(ACUSIM_ADB_LIBRARY NAMES adb PATHS ${ACUSIM_LIBRARY_DIR} NO_DEFAULT_PATH)
