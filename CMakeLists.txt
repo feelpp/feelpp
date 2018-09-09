@@ -105,8 +105,8 @@ endif()
 OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
-OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" ON)
-option(FEELPP_ENABLE_MOR "Enable MOR(Model Order Reduction) Applications in Feel++" ON)
+OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" OFF)
+option(FEELPP_ENABLE_MOR "Enable MOR(Model Order Reduction) Applications in Feel++" OFF)
 
 # enable PCH only for GCC as for now
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
