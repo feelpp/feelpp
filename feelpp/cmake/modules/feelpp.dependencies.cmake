@@ -472,10 +472,18 @@ endif(FEELPP_ENABLE_HDF5)
 
 
 # XDMF
-option( FEELPP_ENABLE_XDMF "Enable XDMF Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option( FEELPP_ENABLE_XDMF "Enable XDMF Support" OFF )
 if ( FEELPP_ENABLE_XDMF )
-  find_package(XDMF QUIET)
+  find_package(XDMF)
   if (XDMF_FOUND)
+    message(STATUS "[feelpp] Xdmf: includedirs : ${XDMF_INCLUDE_DIR} ")
+    if ( NOT TARGET XDMF::XDMF )
+      message(STATUS "build xdmf::xdmf" )
+      add_library( XDMF::XDMF ALIAS Xdmf )
+      set_target_properties(XDMF::XDMF PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${XDMF_INCLUDE_DIRS}"
+        )
+    endif()
     #INCLUDE_DIRECTORIES( ${XDMF_INCLUDE_DIRS} )
     set(FEELPP_LIBRARIES ${XDMF_LIBRARIES} ${FEELPP_LIBRARIES})
     set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} XDMF" )
