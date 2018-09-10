@@ -172,13 +172,13 @@ message(STATUS "[feelpp]: public libs ${INC_DIR_LIST}")
 if( FEELPP_ENABLE_PCH )
     add_precompiled_header( feelpp )
 endif()
-
+include(GNUInstallDirs)
 # Install feelpp
 install(TARGETS feelpp EXPORT FeelppTargets
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 install(EXPORT FeelppTargets
   FILE FeelppTargets.cmake
