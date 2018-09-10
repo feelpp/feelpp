@@ -8,7 +8,7 @@ foreach(TEST traits singleton factory debug context simget ${OTESTS} env removec
 
 endforeach()
 
-feelpp_add_test( range NO_FEELPP_LIBRARY )
+feelpp_add_test( range )
 
 
 # test scatter/gather: identified a bug in PETSc up to 3.5.1
