@@ -57,7 +57,6 @@ if( FEELPP_MODELS_HAS_MESHALE )
   set( FEELPP_MODELS_MESHALE_LIB_DEPENDS feelpp_modelalg feelpp_modelcore )
   target_link_libraries( feelpp_modelmeshale
     ${FEELPP_MODELS_MESHALE_LIB_DEPENDS}
-    ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES}
     )
   set_property(TARGET feelpp_modelmeshale PROPERTY MACOSX_RPATH ON)
   INSTALL(TARGETS feelpp_modelmeshale DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
