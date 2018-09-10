@@ -155,7 +155,7 @@ macro(feelpp_add_application)
   if ( FEELPP_APP_NO_FEELPP_LIBRARY )
       target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} )
   else()
-      target_link_libraries( ${execname} feelpp ${FEELPP_APP_LINK_LIBRARIES} )
+      target_link_libraries( ${execname} Feelpp::feelpp ${FEELPP_APP_LINK_LIBRARIES} )
   endif()
 
   # Use feel++ lib precompiled headers.

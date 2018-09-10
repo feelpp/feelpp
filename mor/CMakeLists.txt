@@ -42,7 +42,7 @@ set(FEELPP_MOR_BINARY_DIR ${PROJECT_BINARY_DIR})
 include_directories(${FEELPP_MOR_SOURCE_DIR})
 include_directories(${FEELPP_MOR_BINARY_DIR})
 
-OPTION(FEELPP_ENABLE_MOR_ALL "enable all MOR testcase" ON)
+OPTION(FEELPP_ENABLE_MOR_ALL "enable all MOR testcase" OFF)
 
 OPTION(FEELPP_ENABLE_MOR_EADS "enable EADS testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_HEAT1D "enable HEAT1D testcase" ${FEELPP_ENABLE_MOR_ALL})
@@ -70,7 +70,7 @@ INCLUDE(CTest)
 ENABLE_TESTING()
 
 add_subdirectory(onlinerun)
-add_subdirectory(pyfeelpp-mor)
+
 
 IF ( FEELPP_ENABLE_MOR_EADS )
   #add_subdirectory(eads)
@@ -90,10 +90,15 @@ IF ( FEELPP_ENABLE_MOR_HEAT1D )
 ENDIF()
 
 if ( FEELPP_ENABLE_MOR_LINEARELASTICITY )
-    add_subdirectory(linearelasticity3d)
+  add_subdirectory(linearelasticity3d)
 endif()
-add_subdirectory(thermalbuilding)
-add_subdirectory(opusheat)
+
+if ( FEELPP_ENABLE_MOR_THERMALBUILDING )
+  add_subdirectory(thermalbuilding)
+endif()
+if ( FEELPP_ENABLE_MOR_OPUSHEAT )
+  add_subdirectory(opusheat)
+endif()
 
 IF ( FEELPP_ENABLE_MOR_RBHEAT )
   #add_subdirectory(Rbheat)
@@ -156,11 +161,21 @@ ENDIF()
 
 
 
+if ( FEELPP_ENABLE_MOR_MINIMAL )
+  add_subdirectory(minimal)
+endif()
+if ( FEELPP_ENABLE_MOR_THERMOELECTRIC )
+  add_subdirectory(thermoelectric)
+endif()
+if ( FEELPP_ENABLE_MOR_BIOTSAVART )
+  add_subdirectory(biotsavart)
+endif()
 
-add_subdirectory(minimal)
-add_subdirectory(thermoelectric)
-add_subdirectory(biotsavart)
-
-
+add_subdirectory(pyfeelpp-mor)
 
 include(${FEELPP_MOR_SOURCE_DIR}/cmake/feelpp.mor.cmake)
+install(EXPORT feelpp-mor-export-targets
+  FILE feelpp-mor-export-targets.cmake
+  NAMESPACE Feelpp::
+  DESTINATION share/feelpp/mor/cmake/
+  )

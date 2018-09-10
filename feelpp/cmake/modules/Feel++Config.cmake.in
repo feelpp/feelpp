@@ -210,12 +210,12 @@ endif()
 
 foreach( _FEELPP_COMPONENTS ${Feel++_FIND_COMPONENTS})
   # CRB
-  if ( ${_FEELPP_COMPONENTS} MATCHES CRB )
-    if ( EXISTS ${FEELPP_INSTALL_DIR}/share/feelpp/crb/cmake/Feel++-CRBConfig.cmake )
-      include( ${FEELPP_INSTALL_DIR}/share/feelpp/crb/cmake/Feel++-CRBConfig.cmake )
-      message(STATUS "[Feel++] found component CRB")
+  if ( ${_FEELPP_COMPONENTS} MATCHES MOR )
+    if ( EXISTS ${FEELPP_INSTALL_DIR}/share/feelpp/mor/cmake/Feel++-MORConfig.cmake )
+      include( ${FEELPP_INSTALL_DIR}/share/feelpp/mor/cmake/Feel++-MORConfig.cmake )
+      message(STATUS "[Feel++] found component MOR")
     else()
-      message(WARNING "[Feel++] component CRB not found")
+      message(WARNING "[Feel++] component MOR not found")
     endif()
   endif()
   # Toolboxes
