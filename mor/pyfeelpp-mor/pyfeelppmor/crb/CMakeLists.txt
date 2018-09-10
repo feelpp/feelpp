@@ -1,9 +1,9 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 23 Jun 2017
+#       Date: 06 Aug 2018
 #
-#  Copyright (C) 2017 Feel++ Consortium
+#  Copyright (C) 2018 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,24 +22,14 @@
 #
 #
 cmake_minimum_required(VERSION 3.3)
-project(pyfeelpp-mor)
+project(crb)
 
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
+  find_package(Feel++ COMPONENTS MOR PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
   if(NOT FEELPP_FOUND)
       message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
   endif()
 endif()
 
-enable_testing()
-
-if ( NOT TARGET check )
-  add_custom_target(check)
-endif()
-
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  list(APPEND CMAKE_MODULE_PATH "$ENV{FEELPP_DIR}/share/cmake/pybind11")
-  list(APPEND CMAKE_MODULE_PATH "/usr/local/share/cmake/pybind11")
-  include(pybind11Tools)
-endif()
-
+pybind11_add_module(_crb  crb.cpp)
+target_link_libraries( _crb PRIVATE Feelpp::feelpp )

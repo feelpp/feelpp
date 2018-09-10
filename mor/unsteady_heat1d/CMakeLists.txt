@@ -22,6 +22,10 @@
 #
 #
 
+crb_add_library( unsteadyheat1d SRCS unsteadyheat1d.cpp EXEC CRB_LIB_UNSTEADYHEAT1D EXPORT feelpp-mor-export-targets )
+install(FILES unsteadyheat1d.hpp DESTINATION include/feelpp/mor/unsteadyheat1d COMPONENT Devel)
 
-crb_add_model(unsteadyHeat1d UnsteadyHeat1D HDRS unsteadyHeat1d.hpp CFG unsteadyHeat1d.cfg XML unsteadyHeat1d.xml SCRIPTS unsteadyHeat1d.m)
+crb_add_model(unsteadyHeat1d UnsteadyHeat1D HDRS unsteadyheat1d.hpp
+  LINK_LIBRARIES ${CRB_LIB_UNSTEADYHEAT1D}
+  CFG unsteadyHeat1d.cfg XML unsteadyHeat1d.xml SCRIPTS unsteadyHeat1d.m)
 

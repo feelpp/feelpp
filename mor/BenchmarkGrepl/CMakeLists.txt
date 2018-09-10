@@ -22,7 +22,7 @@
 #
 #
 add_library( feelpp-applications-crb-benchmarkgrepl-options SHARED benchmarkgrepl-options.cpp )
-target_link_libraries( feelpp-applications-crb-benchmarkgrepl-options feelpp )
+target_link_libraries( feelpp-applications-crb-benchmarkgrepl-options Feelpp::feelpp )
 INSTALL(TARGETS feelpp-applications-crb-benchmarkgrepl-options DESTINATION lib/ COMPONENT Libs)
 install(FILES benchmarkgrepl-options.hpp benchmarkgrepl-linear-elliptic.hpp benchmarkgrepl-nonlinear-elliptic.hpp DESTINATION include/feelpp/crb/BenchmarkGrepl COMPONENT Devel)
 set(FEELPP_CRB_BenchmarkGrepl_LIBRARIES  feelpp-applications-crb-benchmarkgrepl-options PARENT_SCOPE)

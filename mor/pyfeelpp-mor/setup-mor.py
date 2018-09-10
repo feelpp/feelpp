@@ -63,17 +63,17 @@ class CMakeBuild(build_ext):
         subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
 
 setup(
-    name='pyfeelpp-mor',
+    name='pyfeelppmor',
     version='@FEELPP_VERSION_STRING@',
     author='Christophe Prud\'homme',
     author_email='christophe.prudhomme@feelpp.org',
     description='PyFeel++-MOR: Python bindings for Feel++ for MOR(Model Order Reduction)',
     long_description='',
-    package_dir={ 'pyfeelpp-mor': '@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp-mor' },
-    packages=['pyfeelpp-mor.crb',
+    package_dir={ 'pyfeelppmor': '@CMAKE_CURRENT_SOURCE_DIR@/pyfeelppmor' },
+    packages=['pyfeelppmor.crb',
     ],
     install_requires=['pyfeelpp' ],
-    ext_modules=[CMakeExtension('_crb','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp-mor/crb'),
+    ext_modules=[CMakeExtension('_crb','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelppmor/crb'),
     ],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,

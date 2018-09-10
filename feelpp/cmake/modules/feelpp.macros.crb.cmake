@@ -110,7 +110,7 @@ endmacro(crb_add_executable)
 macro(crb_add_library)
 
   PARSE_ARGUMENTS(CRB_LIB
-    "SRCS;LINK_LIBRARIES;PROJECT;EXEC;MAN"
+    "SRCS;LINK_LIBRARIES;PROJECT;EXEC;MAN;EXPORT"
     "TEST"
     ${ARGN}
     )
@@ -132,13 +132,18 @@ macro(crb_add_library)
   endif()
   add_library(${execname}  SHARED  ${CRB_LIB_SRCS} )
   target_compile_options(${execname} PRIVATE -fvisibility=hidden)
-  target_link_libraries( ${execname} ${CRB_LIB_LINK_LIBRARIES} Feelpp::feelpp   )
+  target_include_directories( ${execname} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include/feelpp/mor/${CRB_LIB_NAME}>  )
+  target_link_libraries( ${execname} PUBLIC ${CRB_LIB_LINK_LIBRARIES} Feelpp::feelpp   )
   set_property(TARGET ${execname} PROPERTY LABELS crb)
-  INSTALL(TARGETS ${execname}  DESTINATION lib COMPONENT Libs)
+  INSTALL(TARGETS ${execname} EXPORT ${CRB_LIB_EXPORT}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/feelpp/mor/${CRB_LIB_NAME}
+    )
 
 endmacro(crb_add_library)
-
-
 #
 # crb_add_python_module
 #
@@ -201,7 +206,7 @@ macro(crb_add_model)
 
   if ( FEELPP_ENABLE_VERBOSE_CMAKE )
     MESSAGE("*** Arguments for Crb models ${CRB_MODEL_SHORT_NAME}(${CRB_MODEL_LONG_NAME})")
-    MESSAGE("    Headers: ${CRB_MODEL_HDRS}")
+    MESSAGE("  q  Headers: ${CRB_MODEL_HDRS}")
     MESSAGE("    Sources: ${CRB_MODEL_SRCS}")
     MESSAGE("    Defs file: ${CRB_MODEL_DEFS}")
     #MESSAGE("    Link libraries: ${CRB_MODEL_LINK_LIBRARIES}")
