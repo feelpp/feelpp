@@ -27,7 +27,6 @@
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
-#include <mpi4py/mpi4py.h>
 
 namespace py = pybind11;
 using namespace Feel;
@@ -36,8 +35,6 @@ PYBIND11_MODULE(_modelcore, m )
 {
     using namespace Feel;
     using namespace Feel::FeelModels;
-
-    if (import_mpi4py()<0) return ;
 
     std::string pyclass_name = std::string("ModelBaseRepository");
     py::class_<ModelBaseRepository>(m,pyclass_name.c_str())

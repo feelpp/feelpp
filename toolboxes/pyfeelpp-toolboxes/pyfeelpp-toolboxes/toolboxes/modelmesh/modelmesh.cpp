@@ -28,7 +28,6 @@
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelmesh/meshale.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
-#include <mpi4py/mpi4py.h>
 
 namespace py = pybind11;
 using namespace Feel;
@@ -88,8 +87,6 @@ PYBIND11_MODULE(_modelmesh, m )
 {
     using namespace Feel;
     using namespace Feel::FeelModels;
-
-    if (import_mpi4py()<0) return ;
 
     defToolbox<Simplex<2,1>>( m );
     defToolbox<Simplex<2,2>>( m );

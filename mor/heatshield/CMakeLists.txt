@@ -25,10 +25,10 @@ foreach(O 1 2 3)
 
     configure_file(heatshield.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/heatshield${O}.xml.in COPYONLY)
     configure_file(heatshield.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/heatshield${O}.cfg )
-    crb_add_model(heatshield${O} HeatShield CLASS HeatShield<${O}> HDRS heatshield.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heatshield${O}.cfg  XML heatshield${O}.xml )
+    crb_add_model(heatshield${O} HeatShield CLASS HeatShield<${O}> HDRS heatshield.hpp CFG heatshield${O}.cfg  XML heatshield${O}.xml )
 
     configure_file(heatshieldminimalversion.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/heatshieldminimalversion${O}.xml.in COPYONLY)
     configure_file(heatshieldminimalversion.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/heatshieldminimalversion${O}.cfg )
-    crb_add_model(heatshieldminimalversion${O} HeatShieldMinimalVersion CLASS HeatShieldMinimalVersion<${O}> HDRS heatshield-minimalversion.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heatshieldminimalversion${O}.cfg  GEO heatshield.geo XML heatshieldminimalversion${O}.xml )
+    crb_add_model(heatshieldminimalversion${O} HeatShieldMinimalVersion CLASS HeatShieldMinimalVersion<${O}> HDRS heatshield-minimalversion.hpp CFG heatshieldminimalversion${O}.cfg  GEO heatshield.geo XML heatshieldminimalversion${O}.xml )
 
 endforeach()

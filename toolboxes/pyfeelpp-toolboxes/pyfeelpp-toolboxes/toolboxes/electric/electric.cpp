@@ -25,7 +25,6 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/electric/electric.hpp>
-#include <mpi4py/mpi4py.h>
 
 namespace py = pybind11;
 using namespace Feel;
@@ -81,10 +80,6 @@ PYBIND11_MODULE(_electric, m )
 {
     using namespace Feel;
 
-    if (import_mpi4py()<0) return ;
-
-    
-    
     defSM<2,1>(m);
     defSM<2,2>(m);
     defSM<3,1>(m);
