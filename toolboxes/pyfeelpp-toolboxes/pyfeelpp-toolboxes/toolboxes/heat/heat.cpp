@@ -25,7 +25,6 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/heat/heat.hpp>
-#include <mpi4py/mpi4py.h>
 
 namespace py = pybind11;
 using namespace Feel;
@@ -78,10 +77,6 @@ void defSM(py::module &m)
 PYBIND11_MODULE(_heat, m )
 {
     using namespace Feel;
-
-    if (import_mpi4py()<0) return ;
-
-    
     
     defSM<2,1>(m);
     defSM<2,2>(m);

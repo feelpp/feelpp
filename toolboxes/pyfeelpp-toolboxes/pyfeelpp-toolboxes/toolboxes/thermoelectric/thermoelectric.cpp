@@ -25,7 +25,6 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/thermoelectric/thermoelectric.hpp>
-#include <mpi4py/mpi4py.h>
 
 namespace py = pybind11;
 using namespace Feel;
@@ -81,10 +80,6 @@ PYBIND11_MODULE(_thermoelectric, m )
 {
     using namespace Feel;
 
-    if (import_mpi4py()<0) return ;
-
-    
-    
     defToolbox<2,1>(m);
     defToolbox<2,2>(m);
     defToolbox<3,1>(m);

@@ -25,7 +25,6 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
-#include <mpi4py/mpi4py.h>
 
 namespace py = pybind11;
 using namespace Feel;
@@ -95,10 +94,6 @@ void defFM(py::module &m)
 PYBIND11_MODULE(_fluid, m )
 {
     using namespace Feel;
-
-    if (import_mpi4py()<0) return ;
-
-    
     
     defFM<2,2,1,1>(m);
     defFM<2,3,2,1>(m);
