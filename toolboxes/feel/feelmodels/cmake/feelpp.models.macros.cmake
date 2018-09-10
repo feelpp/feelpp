@@ -516,10 +516,8 @@ macro( genLibAdvection )
     # configure the lib
     set(ADVECTION_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/advection/${ADVECTION_LIB_VARIANTS})    
     set(ADVECTION_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/advection/advectionbase_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/advection/advection_inst.cpp )
     set(ADVECTION_CODEGEN_SOURCES
-      ${ADVECTION_LIB_DIR}/advectionbase_inst.cpp
       ${ADVECTION_LIB_DIR}/advection_inst.cpp )
     set(ADVECTION_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} ) 
     # generate the lib target
