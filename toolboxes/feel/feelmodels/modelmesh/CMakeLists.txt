@@ -18,12 +18,13 @@ target_include_directories(feelpp_modelmesh PUBLIC
 set_property(TARGET feelpp_modelmesh PROPERTY MACOSX_RPATH ON)
 if( FEELPP_ENABLE_PCH_MODELS )
     add_precompiled_header( feelpp_modelmesh )
-endif()
+  endif()
+  include(GNUInstallDirs)
 install(TARGETS feelpp_modelmesh EXPORT feelpp-toolboxes-targets
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 #######################################################
 # meshale lib
@@ -59,7 +60,13 @@ if( FEELPP_MODELS_HAS_MESHALE )
     ${FEELPP_MODELS_MESHALE_LIB_DEPENDS}
     )
   set_property(TARGET feelpp_modelmeshale PROPERTY MACOSX_RPATH ON)
-  INSTALL(TARGETS feelpp_modelmeshale DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
+  INSTALL(TARGETS feelpp_modelmeshale
+    EXPORT feelpp-toolboxes-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
   
 endif( FEELPP_MODELS_HAS_MESHALE )
 
