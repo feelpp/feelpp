@@ -20,12 +20,12 @@ set_property(TARGET feelpp_modelcore PROPERTY MACOSX_RPATH ON)
 if( FEELPP_ENABLE_PCH_MODELS )
   add_precompiled_header( feelpp_modelcore )
 endif()
-
+include(GNUInstallDirs)
 install(TARGETS feelpp_modelcore EXPORT feelpp-toolboxes-targets
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/modelcore COMPONENT Devel)
