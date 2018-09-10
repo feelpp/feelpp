@@ -1,5 +1,5 @@
 from pyfeelpp import core
-from pyfeelpp.toolboxes.modelcore import *
+from pyfeelpptoolboxes.modelcore import *
 from _electric import *
 
 _electrics={
