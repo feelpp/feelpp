@@ -25,7 +25,6 @@ runLevelsetApplication()
         > model_type;
     
     auto LS = model_type::New("levelset");
-    LS->build();
 
     double ls_x0 = 0.5, ls_y0 = 0.5, ls_z0 = 0.5;
     double ls_radius = 0.25;
