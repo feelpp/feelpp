@@ -70,7 +70,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     //M_periodicity(periodicityLS),
     M_reinitializerIsUpdatedForUse(false),
     M_hasReinitialized(false),
-    M_hasReinitializedSmooth(false),
     M_iterSinceReinit(0)
 {
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
@@ -108,54 +107,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::New(
     return new_ls;
 }
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void 
-LEVELSET_CLASS_TEMPLATE_TYPE::build()
-{
-    this->log("LevelSet", "build", "start");
-    // Create mesh
-    this->createMesh();
-    // Space manager
-    M_spaceManager = std::make_shared<levelset_space_manager_type>( M_mesh );
-    // Tool manager
-    M_toolManager = std::make_shared<levelset_tool_manager_type>( M_spaceManager, this->prefix() );
-    // Build
-    this->buildImpl();
-
-    this->log("LevelSet", "build", "finish");
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void 
-LEVELSET_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh )
-{
-    this->log("LevelSet", "build (from mesh)", "start");
-    // Space manager
-    M_spaceManager = std::make_shared<levelset_space_manager_type>( mesh );
-    // Tool manager
-    M_toolManager = std::make_shared<levelset_tool_manager_type>( M_spaceManager, this->prefix() );
-    // Build
-    this->buildImpl();
-
-    this->log("LevelSet", "build (from mesh)", "finish");
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void 
-LEVELSET_CLASS_TEMPLATE_TYPE::buildImpl()
-{
-    // Function spaces
-    this->createFunctionSpaces();
-    // Advection toolbox
-    M_advectionToolbox->build( this->functionSpace() );
-    M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
-    // Tools
-    this->createInterfaceQuantities();
-    this->createReinitialization();
-    this->createTools();
-    this->createExporters();
-}
-
 //----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -163,35 +114,41 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
 {
     this->log("LevelSet", "init", "start");
 
-    // Init levelset advection
+    // Mesh
+    if( !M_mesh )
+        this->createMesh();
+    // Space manager
+    if( !M_spaceManager )
+        M_spaceManager = std::make_shared<levelset_space_manager_type>( M_mesh );
+    // Tool manager
+    if( !M_toolManager )
+        M_toolManager = std::make_shared<levelset_tool_manager_type>( M_spaceManager, this->prefix() );
+    // Function spaces
+    this->createFunctionSpaces();
+    // Tools
+    this->createInterfaceQuantities();
+    this->createReinitialization();
+    this->createTools();
+    this->createExporters();
+    // Advection toolbox
+    M_advectionToolbox->setFunctionSpace( this->functionSpace() );
+    M_advectionToolbox->setFunctionSpaceAdvectionVelocity( this->functionSpaceAdvectionVelocity() );
+
+    // Initial value
     if( !this->doRestart() )
     {
         // Set levelset initial value
         this->initLevelsetValue();
     }
+    // Init advection toolbox
     M_advectionToolbox->init();
-    M_timeOrder = this->timeStepBDF()->timeOrder();
+    M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
+
     this->updateTime( M_advectionToolbox->currentTime() );
     if (this->doRestart())
         this->setTimeInitial( M_advectionToolbox->timeInitial() );
 
     M_initialVolume = this->volume();
-
-    // Init modGradPhi advection
-    if( M_useGradientAugmented )
-    {
-        M_modGradPhiAdvection->init();
-    }
-    // Init stretch advection
-    if( M_useStretchAugmented )
-    {
-        M_stretchAdvection->init();
-    }
-    // Init backward characteristics advection
-    if( M_useCauchyAugmented )
-    {
-        M_backwardCharacteristicsAdvection->init();
-    }
 
     // Init iterSinceReinit
     if( this->doRestart() )
@@ -216,7 +173,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
             M_vecIterSinceReinit.push_back( M_iterSinceReinit );
     }
     // Adjust BDF order with iterSinceReinit
-    if( M_iterSinceReinit < M_timeOrder )
+    if( M_iterSinceReinit < this->timeOrder() )
     {
         this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
     }
@@ -235,8 +192,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
 
     bool hasInitialValue = false;
 
-    auto phi_init = this->functionSpace()->element();
-    phi_init.setConstant( std::numeric_limits<value_type>::max() );
+    auto phi_init = this->functionSpace()->elementPtr();
+    phi_init->setConstant( std::numeric_limits<value_type>::max() );
 
     this->modelProperties().parameters().updateParameterValues();
     if( !this->M_icDirichlet.empty() )
@@ -247,18 +204,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
         {
             if( marker(iv).empty() )
             {
-                phi_init = vf::project(
-                        _space=this->functionSpace(),
-                        _range=this->rangeMeshElements(),
+                phi_init->on(
+                        _range=elements(phi_init->mesh()),
                         _expr=expression(iv),
                         _geomap=this->geomap()
                         );
             }
             else
             {
-                phi_init = vf::project(
-                        _space=this->functionSpace(),
-                        _range=markedelements(this->mesh(), marker(iv)),
+                phi_init->on(
+                        _range=markedelements(phi_init->mesh(), marker(iv)),
                         _expr=expression(iv),
                         _geomap=this->geomap()
                         );
@@ -277,19 +232,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
             auto gradPhiInit = this->projectorL2Vectorial()->derivate( idv(phi_init) );
             //auto modGradPhiInit = this->smoother()->project( sqrt( trans(idv(gradPhiInit))*idv(gradPhiInit) ) );
                 
-            phi_init = vf::project( 
+            *phi_init = vf::project( 
                 _space=this->functionSpace(),
-                _range=this->rangeMeshElements(),
+                _range=elements(this->functionSpace()->mesh()),
                 //_expr=idv(phi_init) / idv(modGradPhiInit)
                 _expr=idv(phi_init) / sqrt( trans(idv(gradPhiInit))*idv(gradPhiInit) )
                 );
             // Reinitialize phi_init
-            phi_init = this->reinitializerFM()->run( phi_init );
+            *phi_init = this->reinitializerFM()->run( *phi_init );
         }
         // Add shapes
         for( auto const& shape: M_icShapes )
         {
-            this->addShape( shape, phi_init );
+            this->addShape( shape, *phi_init );
         }
 
         hasInitialValue = true;
@@ -366,7 +321,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::addShape(
             auto R = shapeParams.dget("radius");
             phi = vf::project(
                     _space=this->functionSpace(),
-                    _range=this->rangeMeshElements(),
+                    _range=elements(this->functionSpace()->mesh()),
                     _expr=vf::min( idv(phi), sqrt(X*X+Y*Y+Z*Z)-R ),
                     _geomap=this->geomap()
                     );
@@ -392,7 +347,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::addShape(
             // Project
             phi = vf::project(
                     _space=this->functionSpace(),
-                    _range=elements(this->mesh()),
+                    _range=elements(this->functionSpace()->mesh()),
                     _expr=vf::min( idv(phi), sqrt(Xp*Xp+Yp*Yp*(A*A)/(B*B)+Zp*Zp*(A*A)/(C*C))-A ),
                     _geomap=this->geomap()
                     );
@@ -541,6 +496,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
         M_spaceMarkers = this->functionSpaceManager()->functionSpaceMarkers();
     }
 
+    if( !M_spaceAdvectionVelocity )
+        M_spaceAdvectionVelocity = space_advection_velocity_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+
     if( M_useCauchyAugmented )
     {
         this->functionSpaceManager()->createFunctionSpaceTensor2Symm();
@@ -576,9 +534,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
                 this->worldCommPtr()
                 );
         M_modGradPhiAdvection->setModelName( "Advection-Reaction" );
-        M_modGradPhiAdvection->build( this->functionSpace() );
-        M_modGradPhiAdvection->timeStepBDF()->setOrder( this->timeStepBDF()->bdfOrder() );
-
+        M_modGradPhiAdvection->setFunctionSpace( this->functionSpace() );
+        M_modGradPhiAdvection->setTimeOrder( this->timeOrder() );
+        M_modGradPhiAdvection->init();
         M_modGradPhiAdvection->getExporter()->setDoExport( boption( _name="do_export_modgradphi-advection", _prefix=this->prefix() ) );
     }
     if( M_useStretchAugmented )
@@ -588,9 +546,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
                 this->worldCommPtr()
                 );
         M_stretchAdvection->setModelName( "Advection-Reaction" );
-        M_stretchAdvection->build( this->functionSpace() );
-        M_stretchAdvection->timeStepBDF()->setOrder( this->timeStepBDF()->bdfOrder() );
-
+        M_stretchAdvection->setFunctionSpace( this->functionSpace() );
+        M_stretchAdvection->setTimeOrder( this->timeOrder() );
+        M_stretchAdvection->init();
         M_stretchAdvection->getExporter()->setDoExport( boption( _name="do_export_stretch-advection", _prefix=this->prefix() ) );
     }
     if( M_useCauchyAugmented )
@@ -600,9 +558,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
                 this->worldCommPtr()
                 );
         M_backwardCharacteristicsAdvection->setModelName( "Advection" );
-        M_backwardCharacteristicsAdvection->build( this->functionSpaceVectorial() );
-        M_backwardCharacteristicsAdvection->timeStepBDF()->setOrder( this->timeStepBDF()->bdfOrder() );
-
+        M_backwardCharacteristicsAdvection->setFunctionSpace( this->functionSpaceVectorial() );
+        M_backwardCharacteristicsAdvection->setTimeOrder( this->timeOrder() );
+        M_backwardCharacteristicsAdvection->init();
         M_backwardCharacteristicsAdvection->getExporter()->setDoExport( boption( _name="do_export_backward-characteristics-advection", _prefix=this->prefix() ) );
 
         M_leftCauchyGreenTensor_K.reset( new element_tensor2symm_type(this->functionSpaceTensor2Symm(), "LeftCauchyGreenTensor_K") );
@@ -632,6 +590,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
         {
             if( !M_reinitializer )
                 M_reinitializer = this->reinitializerFM();
+
+            std::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
+                    M_useMarkerDiracAsMarkerDoneFM 
+                    );
         }
         break;
         case LevelSetReinitMethod::HJ :
@@ -846,8 +808,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
         M_reinitMethod = LevelSetReinitMethod::HJ;
     else
         CHECK( false ) << reinitmethod << " is not a valid reinitialization method\n";
-
-    //M_useSmoothReinitialization = boption( _name="use-smooth-reinit", _prefix=this->prefix() );
 
     M_useMarkerDiracAsMarkerDoneFM = boption( _name="use-marker2-as-done", _prefix=prefixvm(this->prefix(), "reinit-fm") );
 
@@ -1930,7 +1890,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
 
     // Reset hasReinitialized
     M_hasReinitialized = false;
-    M_hasReinitializedSmooth = false;
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("LevelSet","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
@@ -1961,7 +1920,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
     this->updateTime( M_advectionToolbox->currentTime() );
 
-    if( M_iterSinceReinit < M_timeOrder )
+    if( M_iterSinceReinit < this->timeOrder() )
     {
         this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
         if( M_useGradientAugmented )
@@ -2190,24 +2149,50 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
 // Reinitialization
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
+LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 { 
     this->log("LevelSet", "reinitialize", "start");
     this->timerTool("Reinit").start();
 
-    if( !M_reinitializerIsUpdatedForUse )
-        this->createReinitialization();
-
     auto phi = this->phi();
+
+    if ( M_useMarkerDiracAsMarkerDoneFM )
+    {
+        this->mesh()->updateMarker2( *this->markerDirac() );
+    }
+
+    *phi = this->redistantiate( *phi );
+
+    if( M_useGradientAugmented && M_reinitGradientAugmented )
+    {
+        auto sol = M_modGradPhiAdvection->fieldSolutionPtr();
+        sol->setConstant(1.);
+    }
+    if( M_useStretchAugmented && M_reinitStretchAugmented )
+    {
+        auto R = this->interfaceRectangularFunction();
+        auto sol = M_stretchAdvection->fieldSolutionPtr();
+        *sol = vf::project(
+                _space=M_stretchAdvection->functionSpace(),
+                _range=elements(M_stretchAdvection->mesh()),
+                _expr = 1. + (idv(sol)-1.)*idv(R)
+                );
+    }
+
+    M_hasReinitialized = true;
+
+    double timeElapsed = this->timerTool("Reinit").stop();
+    this->log("LevelSet","reinitialize","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_type
+LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi ) const
+{ 
     auto phiReinit = this->functionSpace()->elementPtr();
 
     if ( M_reinitMethod == LevelSetReinitMethod::FM )
     {
-        if ( M_useMarkerDiracAsMarkerDoneFM )
-        {
-            this->mesh()->updateMarker2( *this->markerDirac() );
-        }
-
         switch (M_fastMarchingInitializationMethod)
         {
             case FastMarchingInitializationMethod::ILP :
@@ -2253,77 +2238,21 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
             break;
             case FastMarchingInitializationMethod::NONE :
             {
-                *phiReinit = *phi;
+                *phiReinit = phi;
             }
             break;
         } // switch M_fastMarchingInitializationMethod
-
-        // Fast Marching Method
-        std::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
-                M_useMarkerDiracAsMarkerDoneFM 
-                );
 
         LOG(INFO)<< "reinit with FMM done"<<std::endl;
     } // Fast Marching
 
     else if ( M_reinitMethod == LevelSetReinitMethod::HJ )
     {
-        *phiReinit = *phi;
+        *phiReinit = phi;
         // TODO
     } // Hamilton-Jacobi
 
-    //*phi = M_reinitializer->run( *phi );
-    if( useSmoothReinit )
-    {
-        *phiReinit = this->smoother()->project(
-                _expr=idv(*phiReinit)
-                );
-    }
-
-    *phi = M_reinitializer->run( *phiReinit );
-
-    //*phiReinit = M_reinitializer->run( *phiReinit );
-    //if( useSmoothReinit )
-    //{
-        ////auto R = this->interfaceRectangularFunction(phiReinit);
-        //auto R = this->interfaceRectangularFunction();
-        //*phi = vf::project(
-                //_space=this->functionSpace(),
-                //_range=this->rangeMeshElements(),
-                //_expr=idv(phi)*idv(R) + idv(phiReinit)*(1.-idv(R))
-                //);
-    //}
-    //else
-    //{
-        //*phi = *phiReinit;
-    //}
-
-    if( M_useGradientAugmented && M_reinitGradientAugmented )
-    {
-        auto sol = M_modGradPhiAdvection->fieldSolutionPtr();
-        sol->setConstant(1.);
-    }
-    if( M_useStretchAugmented && M_reinitStretchAugmented )
-    {
-        auto R = this->interfaceRectangularFunction();
-        auto sol = M_stretchAdvection->fieldSolutionPtr();
-        *sol = vf::project(
-                _space=M_stretchAdvection->functionSpace(),
-                _range=elements(M_stretchAdvection->mesh()),
-                _expr = 1. + (idv(sol)-1.)*idv(R)
-                );
-    }
-
-    if( useSmoothReinit )
-    {
-        M_hasReinitializedSmooth = true;
-        M_hasReinitialized = true;
-    }
-    else
-        M_hasReinitialized = true;
-
-    double timeElapsed = this->timerTool("Reinit").stop();
-    this->log("LevelSet","reinitialize","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    return M_reinitializer->run( *phiReinit );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -2358,17 +2287,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerHJ( bool buildOnTheFly )
 // Initial value
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_type const& phiv, bool doReinitialize)
+LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_ptrtype const& phiv, bool doReinitialize)
 {
     this->log("LevelSet", "setInitialValue", "start");
 
-    *this->phi() = phiv;
-
     if (doReinitialize)
     {
-        this->reinitialize();
-        // The initial reinitialization is not a "real" one
-        M_hasReinitialized = false;
+        auto phiRedist = phiv->functionSpace()->elementPtr();
+        *phiRedist = this->redistantiate( *phiv );
+        this->M_advectionToolbox->setInitialValue( phiRedist );
+    }
+    else
+    {
+        this->M_advectionToolbox->setInitialValue( phiv );
     }
 
     this->updateInterfaceQuantities();

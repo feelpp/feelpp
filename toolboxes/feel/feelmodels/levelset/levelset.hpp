@@ -60,15 +60,6 @@
 
 namespace Feel {
 
-    // LevelSet::build parameters
-    BOOST_PARAMETER_NAME(space_markers_extended_doftable)
-
-    BOOST_PARAMETER_NAME(space_manager)
-    BOOST_PARAMETER_NAME(tool_manager)
-    BOOST_PARAMETER_NAME(exporter_manager)
-    BOOST_PARAMETER_NAME(space_velocity)
-    BOOST_PARAMETER_NAME(reinitializer)
-
 namespace FeelModels {
 
 // time discretization of the advection equation
@@ -163,7 +154,7 @@ public:
 #endif
     //--------------------------------------------------------------------//
     // Advection toolbox
-    typedef Advection< space_levelset_type, FunctionSpaceAdvectionVelocityType > advection_toolbox_type;
+    typedef AdvDiffReac< space_levelset_type, FunctionSpaceAdvectionVelocityType > advection_toolbox_type;
     typedef std::shared_ptr<advection_toolbox_type> advection_toolbox_ptrtype;
     static_assert( advection_toolbox_type::is_scalar, "LevelSet function basis must be scalar" );
 
@@ -245,17 +236,17 @@ public:
     //--------------------------------------------------------------------//
     // ModGradPhi advection
     typedef basis_levelset_type basis_modgradphi_advection_type;
-    typedef Advection< space_levelset_type, space_advection_velocity_type > modgradphi_advection_type;
+    typedef AdvDiffReac< space_levelset_type, space_advection_velocity_type > modgradphi_advection_type;
     typedef std::shared_ptr<modgradphi_advection_type> modgradphi_advection_ptrtype;
     // Stretch advection
     typedef basis_levelset_type basis_stretch_advection_type;
-    typedef Advection< space_levelset_type, space_advection_velocity_type > stretch_advection_type;
+    typedef AdvDiffReac< space_levelset_type, space_advection_velocity_type > stretch_advection_type;
     typedef std::shared_ptr<stretch_advection_type> stretch_advection_ptrtype;
 
     //--------------------------------------------------------------------//
     // Backward characteristics advection
     typedef basis_vectorial_type basis_backwardcharacteristics_advection_type;
-    typedef Advection< space_vectorial_type, space_advection_velocity_type > backwardcharacteristics_advection_type;
+    typedef AdvDiffReac< space_vectorial_type, space_advection_velocity_type > backwardcharacteristics_advection_type;
     typedef std::shared_ptr<backwardcharacteristics_advection_type> backwardcharacteristics_advection_ptrtype;
     typedef typename backwardcharacteristics_advection_type::element_advection_type element_backwardcharacteristics_type;
     typedef std::shared_ptr<element_backwardcharacteristics_type> element_backwardcharacteristics_ptrtype;
@@ -290,62 +281,6 @@ public:
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-    void build();
-    void build( mesh_ptrtype const& mesh );
-
-    BOOST_PARAMETER_MEMBER_FUNCTION( 
-            (void), build, tag,
-            ( required
-              ( space_manager, (levelset_space_manager_ptrtype) )
-            )
-            ( optional
-              ( tool_manager, (levelset_tool_manager_ptrtype), levelset_tool_manager_ptrtype() )
-              ( exporter_manager, (exporter_manager_ptrtype), exporter_manager_ptrtype() )
-              ( space_velocity, (space_advection_velocity_ptrtype), space_advection_velocity_ptrtype() )
-              ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ), reinitializer_ptrtype() )
-            )
-            )
-    {
-        // Space manager
-        if( !space_manager )
-        {
-            return this->build();
-        }
-        M_spaceManager = space_manager;
-
-        // Tool manager
-        if( !tool_manager )
-            M_toolManager = std::make_shared<levelset_tool_manager_type>( M_spaceManager, this->prefix() );
-        else
-            M_toolManager = tool_manager;
-
-        // Function spaces
-        this->createFunctionSpaces();
-        // Advection toolbox
-        if( space_velocity )
-            M_advectionToolbox->build( this->functionSpace(), space_velocity );
-        else
-            M_advectionToolbox->build( this->functionSpace() );
-        M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
-        // createInterfaceQuantities
-        this->createInterfaceQuantities();
-        // createReinitialization
-        if( reinitializer )
-        {
-            M_reinitializer = reinitializer;
-        }
-        this->createReinitialization();
-
-        // createTools
-        this->createTools();
-
-        // Create exporters
-        if( exporter_manager )
-            M_exporter = exporter_manager;
-        else
-            this->createExporters();
-    }
-
     //--------------------------------------------------------------------//
     // Initialization
     void init();
@@ -374,7 +309,7 @@ public:
     space_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceVectorial; }
     space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const { return M_spaceTensor2Symm; }
 
-    space_advection_velocity_ptrtype const& functionSpaceAdvectionVelocity() const { return M_advectionToolbox->functionSpaceAdvectionVelocity(); }
+    space_advection_velocity_ptrtype const& functionSpaceAdvectionVelocity() const { return M_spaceAdvectionVelocity; }
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
 
@@ -481,7 +416,8 @@ public:
 
     //--------------------------------------------------------------------//
     // Reinitialization
-    void reinitialize( bool useSmoothReinit = false );
+    void reinitialize();
+    element_levelset_type redistantiate( element_levelset_type const& phi ) const;
 
     void setFastMarchingInitializationMethod( FastMarchingInitializationMethod m );
     FastMarchingInitializationMethod fastMarchingInitializationMethod() { return M_fastMarchingInitializationMethod; }
@@ -500,24 +436,16 @@ public:
 
     //--------------------------------------------------------------------//
     // Initial value
-    void setInitialValue(element_levelset_type const& phiv, bool doReinitialize);
-    void setInitialValue(element_levelset_type const& phiv)
-    {
-        this->setInitialValue(phiv, M_reinitInitialValue);
-    }
-    void setInitialValue(element_levelset_ptrtype const& phiv, bool doReinitialize) 
-    { 
-        this->setInitialValue(*phiv, doReinitialize);
-    }
+    void setInitialValue(element_levelset_ptrtype const& phiv, bool doReinitialize);
     void setInitialValue(element_levelset_ptrtype const& phiv)
     {
-        this->setInitialValue(*phiv, M_reinitInitialValue);
+        this->setInitialValue(phiv, M_reinitInitialValue);
     }
     template<typename ExprT>
     void setInitialValue(vf::Expr<ExprT> const& expr, bool doReinitialize)
     {
-        auto phi_init = this->functionSpace()->element();
-        phi_init.on( 
+        auto phi_init = this->functionSpace()->elementPtr();
+        phi_init->on( 
                 _range=this->rangeMeshElements(),
                 _expr=expr
                 );
@@ -657,6 +585,7 @@ private:
     space_vectorial_ptrtype M_spaceVectorial;
     space_markers_ptrtype M_spaceMarkers;
     space_tensor2symm_ptrtype M_spaceTensor2Symm;
+    space_advection_velocity_ptrtype M_spaceAdvectionVelocity;
 
     //--------------------------------------------------------------------//
     // Markers
@@ -700,7 +629,6 @@ private:
     bool M_doSmoothGradient;
     //--------------------------------------------------------------------//
     // Advection
-    int M_timeOrder;
 
     //--------------------------------------------------------------------//
     // Derivation methods
@@ -752,11 +680,9 @@ private:
     bool M_reinitInitialValue;
 
     bool M_hasReinitialized;
-    bool M_hasReinitializedSmooth;
     int M_iterSinceReinit;
     // Vector that stores the iterSinceReinit of each time-step
     std::vector<int> M_vecIterSinceReinit;
-    //bool M_useSmoothReinitialization;
 
     //--------------------------------------------------------------------//
     // Extension velocity
