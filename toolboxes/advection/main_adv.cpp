@@ -10,7 +10,7 @@ runScalarAdvectionApplication()
 {
     using namespace Feel;
 
-    typedef FeelModels::Advection< 
+    typedef FeelModels::AdvDiffReac< 
         FunctionSpace< 
             Mesh<Simplex<FEELPP_DIM,1>>, 
             bases<Lagrange<OrderAdvection, Scalar,Continuous,PointSetFekete>>, 
@@ -51,7 +51,7 @@ runVectorialAdvectionApplication()
 {
     using namespace Feel;
 
-    typedef FeelModels::Advection< 
+    typedef FeelModels::AdvDiffReac< 
         FunctionSpace< 
             Mesh<Simplex<FEELPP_DIM,1>>, 
             bases<Lagrange<OrderAdvection, Vectorial,Continuous,PointSetFekete>>, 

@@ -67,17 +67,16 @@ template<
     typename BasisDiffusionCoeffType = Lagrange<FunctionSpaceType::basis_type::nOrder, Scalar, Continuous, PointSetFekete>,
     typename BasisReactionCoeffType = Lagrange<FunctionSpaceType::basis_type::nOrder, Scalar, Continuous, PointSetFekete>
         >
-class Advection : 
+class AdvDiffReac : 
     public ModelNumerical,
     public MarkerManagementDirichletBC,
     public MarkerManagementNeumannBC,
-    public std::enable_shared_from_this< Advection<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType> >
-
+    public std::enable_shared_from_this< AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType> >
 {
 public :
     typedef ModelNumerical super_type;
 
-    typedef Advection< FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType > self_type;
+    typedef AdvDiffReac< FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType > self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
 
     // ADR types
@@ -216,13 +215,13 @@ public :
 
     //--------------------------------------------------------------------//
     // Constructor
-    Advection( 
+    AdvDiffReac( 
             std::string const& prefix,
             worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-    Advection( self_type const& A ) = default;
+    AdvDiffReac( self_type const& A ) = default;
 
     static self_ptrtype New( 
             std::string const& prefix,
@@ -265,6 +264,8 @@ public :
     void setInitialValue( bc_map_field_type const& icVal ) { M_icValue = icVal; }
     void setInitialValue( std::initializer_list<typename bc_map_field_type::value_type> icVal ) { M_icValue = icVal; }
     void setInitialValue( typename bc_map_field_type::mapped_type const& expr, std::string const& mark = "" ) { M_icValue[mark] = expr; }
+    element_advection_ptrtype const& initialValue() const { return M_initialValue; }
+    void setInitialValue( element_advection_ptrtype const& ival ) { M_initialValue = ival; }
 
     //--------------------------------------------------------------------//
     // Model and solver
@@ -460,6 +461,7 @@ protected:
     //map_scalar_fields<2> M_bcRobin;
     std::list<std::string> M_bcInflowMarkers;
     // Initial conditions
+    element_advection_ptrtype M_initialValue;
     bc_map_field_type M_icValue;
     // body forces
     bc_map_field_type M_sources;
@@ -482,7 +484,7 @@ protected:
     //std::string M_stabilizationGLSType;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
 
-};//Advection
+};//AdvDiffReac
 
 //----------------------------------------------------------------------------//
 // Advection velocity update
@@ -494,7 +496,7 @@ template<
         >
 template<typename ExprT>
 void
-Advection<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateAdvectionVelocity(
+AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateAdvectionVelocity(
         vf::Expr<ExprT> const& v_expr)
 {
     M_exprAdvectionVelocity.reset(); // remove symbolic expr
@@ -511,7 +513,7 @@ template<
         >
 template<typename ExprT>
 void 
-Advection<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateSourceAdded(
+AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateSourceAdded(
         vf::Expr<ExprT> const& f_expr)
 {
     if (!M_fieldSource)
