@@ -13,9 +13,9 @@ namespace FeelModels {
 
 //----------------------------------------------------------------------------//
 // Static member initialization
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 const std::map<std::string, AdvectionStabMethod> 
-ADVECTION_CLASS_TEMPLATE_TYPE::AdvectionStabMethodIdMap = {
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::AdvectionStabMethodIdMap = {
     {"NONE", AdvectionStabMethod::NONE},
     {"GALS", AdvectionStabMethod::GALS},
     {"gls", AdvectionStabMethod::GALS},
@@ -29,8 +29,8 @@ ADVECTION_CLASS_TEMPLATE_TYPE::AdvectionStabMethodIdMap = {
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Construction
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
-ADVECTION_CLASS_TEMPLATE_TYPE::Advection( 
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::AdvDiffReac( 
         std::string const& prefix,
         worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
@@ -42,8 +42,6 @@ ADVECTION_CLASS_TEMPLATE_TYPE::Advection(
     M_gamma1(std::pow(nOrder, -3.5))
 {
     this->loadParametersFromOptionsVm();
-    this->loadConfigICFile();
-    this->loadConfigBCFile();
 
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".AdvectionConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".AdvectionSolve.data";
@@ -51,9 +49,9 @@ ADVECTION_CLASS_TEMPLATE_TYPE::Advection(
     this->addTimerTool("Solve",nameFileSolve);
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
-typename ADVECTION_CLASS_TEMPLATE_TYPE::self_ptrtype 
-ADVECTION_CLASS_TEMPLATE_TYPE::New( 
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+typename ADVDIFFREAC_CLASS_TEMPLATE_TYPE::self_ptrtype 
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::New( 
         std::string const& prefix,
         worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
@@ -64,27 +62,28 @@ ADVECTION_CLASS_TEMPLATE_TYPE::New(
     
 //----------------------------------------------------------------------------//
 // Initialization
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
     if ( M_isUpdatedForUse ) return;
 
-    this->log("Advection","init", "start" );
+    this->log("AdvDiffReac","init", "start" );
     this->timerTool("Constructor").start();
+
+    if ( !this->modelPropertiesPtr() )
+        this->setModelProperties( std::make_shared<ModelProperties>( "", this->repository().expr(), this->worldComm() ) );
 
     if( this->modelName().empty() )
     {
-        if( this->modelPropertiesPtr() )
-        {
-            std::string advection_model = this->modelProperties().models().model().equations();
-            this->setModelName( advection_model );
-        }
-        else
-        {
-            CHECK(false) << "You must set a model name before initializing.\n";
-        }
+        std::string advection_model = this->modelProperties().models().model().equations();
+        this->setModelName( advection_model );
     }
+
+    // Initial value
+    this->loadConfigICFile();
+    // Boundary conditions
+    this->loadConfigBCFile();
 
     // Mesh
     if( !M_mesh)
@@ -142,15 +141,15 @@ ADVECTION_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
-    this->log("Advection","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
+    this->log("AdvDiffReac","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
 }
 
 //----------------------------------------------------------------------------//
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
-    this->log("Advection","loadParametersFromOptionsVm", "start");
+    this->log("AdvDiffReac","loadParametersFromOptionsVm", "start");
     
     M_hasSourceAdded = false;
 
@@ -172,7 +171,7 @@ ADVECTION_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_doExportReactionCoefficient = boption(_name="export-reaction", _prefix=this->prefix());
     M_doExportSourceField = boption(_name="export-source", _prefix=this->prefix());
     
-    this->log("Advection","loadParametersFromOptionsVm", "finish");
+    this->log("AdvDiffReac","loadParametersFromOptionsVm", "finish");
 }
 
 namespace detail {
@@ -201,17 +200,17 @@ map_vector_field<Dim, 1, 2> getBCFields(
 
 } // namespace detail
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::loadConfigICFile()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadConfigICFile()
 {
     this->M_icValue = detail::getBCFields<nDim, is_vectorial>(
             this->modelProperties().initialConditions(), this->prefix(), "InitialValue" );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 {
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
@@ -245,11 +244,11 @@ ADVECTION_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 }
 
 //----------------------------------------------------------------------------//
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::createMesh()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::createMesh()
 {
-    this->log("Advection","createMesh","start");
+    this->log("AdvDiffReac","createMesh","start");
     this->timerTool("Constructor").start();
     
     createMeshModel<mesh_type>(*this, M_mesh, this->fileNameMeshPath() );
@@ -257,23 +256,23 @@ ADVECTION_CLASS_TEMPLATE_TYPE::createMesh()
     M_isUpdatedForUse = false;
 
     double tElapsed = this->timerTool("Constructor").stop("create");
-    this->log("Advection","createMesh", (boost::format("finish in %1% s") %tElapsed).str() );
+    this->log("AdvDiffReac","createMesh", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 {
-    this->log("Advection","initFunctionSpaces","start");
+    this->log("AdvDiffReac","initFunctionSpaces","start");
     this->timerTool("Constructor").start();
     
-    // Advection function space
+    // AdvDiffReac function space
     if( !M_Xh )
     {
         std::vector<bool> extendedDT( space_advection_type::nSpaces, false );
         if( this->stabilizationMethod() == AdvectionStabMethod::CIP )
         {
-            this->log("Advection","initFunctionSpaces", "use buildDofTableMPIExtended on advection" );
+            this->log("AdvDiffReac","initFunctionSpaces", "use buildDofTableMPIExtended on advection" );
             extendedDT[0] = true;
         }
         M_Xh = space_advection_type::New( 
@@ -301,28 +300,28 @@ ADVECTION_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     }
 
     double tElapsed = this->timerTool("Constructor").stop("create");
-    this->log("Advection","initFunctionSpaces", (boost::format("finish in %1% s") %tElapsed).str() );
+    this->log("AdvDiffReac","initFunctionSpaces", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::initAlgebraicData()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initAlgebraicData()
 {
-    this->log("Advection","initAlgebraicData","start");
+    this->log("AdvDiffReac","initAlgebraicData","start");
     this->timerTool("Constructor").start();
     
     // Backend
     M_backend = backend_type::build( soption(_name="backend"), this->prefix(), M_Xh->worldCommPtr() );
 
     double tElapsed = this->timerTool("Constructor").stop("create");
-    this->log("Advection","initAlgebraicData", (boost::format("finish in %1% s") %tElapsed).str() );
+    this->log("AdvDiffReac","initAlgebraicData", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::initTimeDiscretization()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initTimeDiscretization()
 {
-    this->log("Advection","initTimeDiscretization", "start" );
+    this->log("AdvDiffReac","initTimeDiscretization", "start" );
     this->timerTool("Constructor").start();
 
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
@@ -332,7 +331,9 @@ ADVECTION_CLASS_TEMPLATE_TYPE::initTimeDiscretization()
     M_bdf = bdf( _vm=Environment::vm(), _space=M_Xh,
                        _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"phi"+suffixName)),
                        _prefix=this->prefix(),
-                       // don't use the advection.bdf {initial,final,step}time but the general bdf info, the order will be from advection.bdf
+                       // don't use the advection.bdf {initial,final,step}time but the general bdf info
+                       // the order will be from [prefix].bdf.order
+                       _order=this->timeOrder(),
                        _initial_time=this->timeInitial(),
                        _final_time=this->timeFinal(),
                        _time_step=this->timeStep(),
@@ -345,14 +346,14 @@ ADVECTION_CLASS_TEMPLATE_TYPE::initTimeDiscretization()
                                fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%M_bdf->bdfOrder()%this->timeStep() ).str() ) ) ).string() );
 
     double tElapsed = this->timerTool("Constructor").stop("createTimeDiscr");
-    this->log("Advection","initTimeDiscretization", (boost::format("finish in %1% s") %tElapsed).str() );
+    this->log("AdvDiffReac","initTimeDiscretization", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::initExporters()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initExporters()
 {
-    this->log("Advection","initExporters", "start");
+    this->log("AdvDiffReac","initExporters", "start");
     this->timerTool("Constructor").start();
 
     if( !M_exporter )
@@ -366,15 +367,13 @@ ADVECTION_CLASS_TEMPLATE_TYPE::initExporters()
     }
 
     double tElapsed = this->timerTool("Constructor").stop("initExporters");
-    this->log("Advection","initExporters",(boost::format("finish in %1% s")%tElapsed).str() );
+    this->log("AdvDiffReac","initExporters",(boost::format("finish in %1% s")%tElapsed).str() );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::initOthers()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initOthers()
 {
-    M_rangeMeshElements = elements(this->mesh());
-
     M_fieldSolution.reset( new element_advection_type(M_Xh, "phi") );
 
     // Advection velocity 
@@ -398,37 +397,43 @@ ADVECTION_CLASS_TEMPLATE_TYPE::initOthers()
     M_diffusionReactionModel->initFromMesh( this->mesh(), this->useExtendedDofTable() );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::initInitialValue()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initInitialValue()
 {
     this->modelProperties().parameters().updateParameterValues();
-    if( !this->M_icValue.empty() )
+    if( !M_initialValue )
     {
-        auto const& phi = this->fieldSolutionPtr();
-        this->M_icValue.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-        for( auto const& iv : this->M_icValue )
+        M_initialValue.reset( new element_advection_type(this->functionSpace(), "initialValue") );
+
+        if( !this->M_icValue.empty() )
         {
-            if( marker(iv).empty() )
+            this->M_icValue.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+            for( auto const& iv : this->M_icValue )
             {
-                phi->on( _range=elements(this->mesh()),
-                         _expr=expression(iv),
-                         _geomap=this->geomap() );
-            }
-            else
-            {
-                phi->on( _range=markedelements(this->mesh(), marker(iv)),
-                         _expr=expression(iv),
-                         _geomap=this->geomap() );
+                if( marker(iv).empty() )
+                {
+                    M_initialValue->on( _range=elements(this->mesh()),
+                            _expr=expression(iv),
+                            _geomap=this->geomap() );
+                }
+                else
+                {
+                    M_initialValue->on( _range=markedelements(this->mesh(), marker(iv)),
+                            _expr=expression(iv),
+                            _geomap=this->geomap() );
+                }
             }
         }
     }
+
+    *(this->fieldSolutionPtr()) = *M_initialValue;
 }
 
 //----------------------------------------------------------------------------//
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 int
-ADVECTION_CLASS_TEMPLATE_TYPE::buildBlockVectorSolution()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::buildBlockVectorSolution()
 {
     int nBlock = this->nBlockMatrixGraph();
     M_blockVectorSolution.resize(nBlock);
@@ -437,9 +442,9 @@ ADVECTION_CLASS_TEMPLATE_TYPE::buildBlockVectorSolution()
     return cptBlock;
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::buildVectorSolution()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::buildVectorSolution()
 {
     this->buildBlockVectorSolution();
     M_blockVectorSolution.buildVector( this->backend() );
@@ -447,11 +452,11 @@ ADVECTION_CLASS_TEMPLATE_TYPE::buildVectorSolution()
 
 //----------------------------------------------------------------------------//
 // Mesh
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype m )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype m )
 {
-    this->log("Advection","loadMesh", "start");
+    this->log("AdvDiffReac","loadMesh", "start");
     // create or reload mesh
     if ( this->doRestart() && !m )
     {
@@ -462,24 +467,25 @@ ADVECTION_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype m )
         M_mesh = m;
         M_isUpdatedForUse = false;
     }
-    this->log("Advection","loadMesh", "finish");
+    this->log("AdvDiffReac","loadMesh", "finish");
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::setMesh( mesh_ptrtype const& m )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::setMesh( mesh_ptrtype const& m )
 {
-    this->log("Advection","setMesh", "start");
+    this->log("AdvDiffReac","setMesh", "start");
     M_mesh = m;
+    M_rangeMeshElements = elements(M_mesh);
     M_isUpdatedForUse = false;
-    this->log("Advection","setMesh", "finish");
+    this->log("AdvDiffReac","setMesh", "finish");
 }
 
 //----------------------------------------------------------------------------//
 // Periodicity
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::setPeriodicity( periodicity_type const& p )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::setPeriodicity( periodicity_type const& p )
 {
     if( M_isUpdatedForUse )
        LOG(WARNING) << "Setting periodicity after initialization ! You need to init() again !";
@@ -487,9 +493,9 @@ ADVECTION_CLASS_TEMPLATE_TYPE::setPeriodicity( periodicity_type const& p )
 }
 //----------------------------------------------------------------------------//
 // Model and solver
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
 {
     if( type != M_modelName )
         this->setNeedToRebuildCstPart(true);
@@ -533,32 +539,32 @@ ADVECTION_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
         CHECK( false ) << "invalid modelName " << type << "\n";
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 bool
-ADVECTION_CLASS_TEMPLATE_TYPE::hasAdvection() const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::hasAdvection() const
 {
     return (this->modelName() == "Advection" || this->modelName() == "Advection-Diffusion" ||
             this->modelName() == "Advection-Reaction" || this->modelName() == "Advection-Diffusion-Reaction");
 }
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 bool
-ADVECTION_CLASS_TEMPLATE_TYPE::hasDiffusion() const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::hasDiffusion() const
 {
     return (this->modelName() == "Diffusion" || this->modelName() == "Advection-Diffusion" ||
             this->modelName() == "Diffusion-Reaction" || this->modelName() == "Advection-Diffusion-Reaction");
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 bool
-ADVECTION_CLASS_TEMPLATE_TYPE::hasReaction() const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::hasReaction() const
 {
     return (this->modelName() == "Reaction" || this->modelName() == "Advection-Reaction" ||
             this->modelName() == "Diffusion-Reaction" || this->modelName() == "Advection-Diffusion-Reaction");
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::setSolverName( std::string const& type )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::setSolverName( std::string const& type )
 {
     if( type != M_solverName )
         this->setNeedToRebuildCstPart(true);
@@ -581,29 +587,30 @@ ADVECTION_CLASS_TEMPLATE_TYPE::setSolverName( std::string const& type )
 
 //----------------------------------------------------------------------------//
 // Spaces
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::setFunctionSpace( space_advection_ptrtype space )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::setFunctionSpace( space_advection_ptrtype space )
 {
-    this->log("Advection","setFunctionSpace", "start");
+    this->log("AdvDiffReac","setFunctionSpace", "start");
     M_Xh = space;
+    this->setMesh(space->mesh());
     M_isUpdatedForUse = false;
-    this->log("Advection","setFunctionSpace", "finish");
+    this->log("AdvDiffReac","setFunctionSpace", "finish");
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::setFunctionSpaceAdvectionVelocity( space_advection_velocity_ptrtype space )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::setFunctionSpaceAdvectionVelocity( space_advection_velocity_ptrtype space )
 {
-    this->log("Advection","setFunctionSpace", "start");
+    this->log("AdvDiffReac","setFunctionSpace", "start");
     M_XhAdvectionVelocity = space;
     M_isUpdatedForUse = false;
-    this->log("Advection","setFunctionSpace", "finish");
+    this->log("AdvDiffReac","setFunctionSpace", "finish");
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 bool
-ADVECTION_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
 {
     if ( this->worldComm().localSize() == 1 ) return false;
     bool useExtendedDofTable=false;
@@ -616,9 +623,9 @@ ADVECTION_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Algebraic data
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 size_type
-ADVECTION_CLASS_TEMPLATE_TYPE::matrixPattern() const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::matrixPattern() const
 {
     size_type pat = size_type(Pattern::COUPLED);
 
@@ -630,19 +637,19 @@ ADVECTION_CLASS_TEMPLATE_TYPE::matrixPattern() const
     return pat;
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 int
-ADVECTION_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
     int nBlock = 1;
     return nBlock;
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 BlocksBaseGraphCSR
-ADVECTION_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 {
-    this->log("Advection","buildBlockMatrixGraph", "start" );
+    this->log("AdvDiffReac","buildBlockMatrixGraph", "start" );
     int nBlock = this->nBlockMatrixGraph();
 
     BlocksBaseGraphCSR blockGraph(nBlock,nBlock);
@@ -655,13 +662,13 @@ ADVECTION_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
             _close=(nBlock==1)
             )->graph();
 
-    this->log("Advection","buildBlockMatrixGraph", "finish" );
+    this->log("AdvDiffReac","buildBlockMatrixGraph", "finish" );
     return blockGraph;
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
-typename ADVECTION_CLASS_TEMPLATE_TYPE::graph_ptrtype
-ADVECTION_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+typename ADVDIFFREAC_CLASS_TEMPLATE_TYPE::graph_ptrtype
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 {
     auto blockGraph = this->buildBlockMatrixGraph();
     blockGraph.close();
@@ -672,9 +679,9 @@ ADVECTION_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
         return graph_ptrtype( new graph_type( blockGraph ) );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 size_type
-ADVECTION_CLASS_TEMPLATE_TYPE::nLocalDof() const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     auto res = this->functionSpace()->nLocalDofWithGhost();
     return res;
@@ -684,11 +691,11 @@ ADVECTION_CLASS_TEMPLATE_TYPE::nLocalDof() const
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Time scheme
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::updateTimeStepBDF() 
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateTimeStepBDF() 
 {
-    this->log("Advection","updateTimeStepBDF", "start" );
+    this->log("AdvDiffReac","updateTimeStepBDF", "start" );
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
@@ -707,19 +714,19 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
     {
         if (!this->rebuildCstPartInLinearSystem())
         {
-            this->log("Advection","updateTimeStepBDF", "do rebuildCstLinearPDE" );
+            this->log("AdvDiffReac","updateTimeStepBDF", "do rebuildCstLinearPDE" );
             M_algebraicFactory->rebuildCstLinearPDE(M_fieldSolution);
         }
     }
 
     this->timerTool("TimeStepping").stop("updateBdf");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
-    this->log("Advection","updateTimeStepBDF", "finish" );
+    this->log("AdvDiffReac","updateTimeStepBDF", "finish" );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::initTimeStep()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
     // start or restart time step scheme
     if (!this->doRestart())
@@ -742,7 +749,7 @@ ADVECTION_CLASS_TEMPLATE_TYPE::initTimeStep()
         // up current time
         this->updateTime( M_bdf->time() );
 
-        this->log("Advection","initTimeStep", "restart bdf/exporter done" );
+        this->log("AdvDiffReac","initTimeStep", "restart bdf/exporter done" );
     }
 }
 
@@ -750,9 +757,9 @@ ADVECTION_CLASS_TEMPLATE_TYPE::initTimeStep()
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Algebraic model updates
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
     using namespace Feel::vf;
 
@@ -774,7 +781,7 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
     //bool build_BoundaryNeumannTerm = BuildNonCstPart;
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("Advection","updateLinearPDE", "start"+sc );
+    this->log("AdvDiffReac","updateLinearPDE", "start"+sc );
     this->timerTool("Solve").start();
 
     auto mesh = this->mesh();
@@ -801,7 +808,7 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
                 );
 
         double timeElapsedAdvection = this->timerTool("Solve").stop();
-        this->log("Advection","updateLinearPDE","assembly advection terms in "+(boost::format("%1% s") %timeElapsedAdvection).str() );
+        this->log("AdvDiffReac","updateLinearPDE","assembly advection terms in "+(boost::format("%1% s") %timeElapsedAdvection).str() );
     }
 
     // Diffusion
@@ -818,7 +825,7 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
                 );
 
         double timeElapsedDiffusion = this->timerTool("Solve").stop();
-        this->log("Advection","updateLinearPDE","assembly diffusion terms in "+(boost::format("%1% s") %timeElapsedDiffusion).str() );
+        this->log("AdvDiffReac","updateLinearPDE","assembly diffusion terms in "+(boost::format("%1% s") %timeElapsedDiffusion).str() );
     }
 
     // Reaction
@@ -835,7 +842,7 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
                 );
 
         double timeElapsedReaction = this->timerTool("Solve").stop();
-        this->log("Advection","updateLinearPDE","assembly reaction terms in "+(boost::format("%1% s") %timeElapsedReaction).str() );
+        this->log("AdvDiffReac","updateLinearPDE","assembly reaction terms in "+(boost::format("%1% s") %timeElapsedReaction).str() );
     }
 
     // Transient terms
@@ -846,7 +853,7 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
         this->updateLinearPDETransient( A, F, BuildCstPart ); 
         
         double timeElapsedTransient = this->timerTool("Solve").stop();
-        this->log("Advection","updateLinearPDE","assembly transient terms in "+(boost::format("%1% s") %timeElapsedTransient).str() );
+        this->log("AdvDiffReac","updateLinearPDE","assembly transient terms in "+(boost::format("%1% s") %timeElapsedTransient).str() );
     }
 
     // Source term
@@ -872,17 +879,17 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
         this->updateBCStrongDirichletLinearPDE(A,F);
 
     double timeElapsed = this->timerTool("Solve").stop();
-    this->log("Advection","updateLinearPDE","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("AdvDiffReac","updateLinearPDE","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization( DataUpdateLinear & data ) const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization( DataUpdateLinear & data ) const
 {
     bool BuildCstPart = data.buildCstPart();
     bool BuildNonCstPart = !BuildCstPart;
     std::string sc=(BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("Advection","updateLinearPDEStabilization", "start"+sc );
+    this->log("AdvDiffReac","updateLinearPDEStabilization", "start"+sc );
     this->timerTool("Solve").start();
 
     uint16_type adrt = ADREnum::Advection;
@@ -949,23 +956,23 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization( DataUpdateLinear & 
     } //switch
 
     double timeElapsed = this->timerTool("Solve").stop();
-    this->log("Advection","updateLinearPDEStabilization","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("AdvDiffReac","updateLinearPDEStabilization","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const
 {
 // TODO
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
 {
     if ( this->M_bcDirichlet.empty() && this->M_bcInflowMarkers.empty() ) return;
 
-    this->log("Advection","updateBCStrongDirichletLinearPDE","start" );
+    this->log("AdvDiffReac","updateBCStrongDirichletLinearPDE","start" );
 
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
@@ -1008,12 +1015,12 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_pt
         }
     }
 
-    this->log("Advection","updateBCStrongDirichletLinearPDE","finish" );
+    this->log("AdvDiffReac","updateBCStrongDirichletLinearPDE","finish" );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( ModelAlgebraic::DataUpdateLinear & data ) const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( ModelAlgebraic::DataUpdateLinear & data ) const
 {
     if( this->M_sources.empty() ) return;
 
@@ -1036,16 +1043,16 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( ModelAlgebraic::DataUp
     }
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 bool
-ADVECTION_CLASS_TEMPLATE_TYPE::hasSourceTerm() const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::hasSourceTerm() const
 {
     return !this->M_sources.empty(); 
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::updateLinearPDETransient( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool BuildCstPart ) const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateLinearPDETransient( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool BuildCstPart ) const
 {
     auto const& mesh = this->mesh();
     auto const& space = this->functionSpace();
@@ -1081,24 +1088,24 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateLinearPDETransient( sparse_matrix_ptrtype& 
     }
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F ) const
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F ) const
 {
 }
 
 //----------------------------------------------------------------------------//
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity( element_advection_velocity_ptrtype const& u )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity( element_advection_velocity_ptrtype const& u )
 {
     M_exprAdvectionVelocity.reset(); // remove symbolic expr
     M_fieldAdvectionVelocity = u;
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity( element_advection_velocity_type const& u )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity( element_advection_velocity_type const& u )
 {
     M_exprAdvectionVelocity.reset(); // remove symbolic expr
     *M_fieldAdvectionVelocity = u;
@@ -1109,11 +1116,11 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity( element_advection_veloci
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Solve
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::solve()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::solve()
 {
-    this->log("Advection","solve", "start" );
+    this->log("AdvDiffReac","solve", "start" );
     this->timerTool("Solve").start();
 
     CHECK( M_isUpdatedForUse ) << "The advection toolbox must be properly initialized before using it.\n";
@@ -1131,16 +1138,16 @@ ADVECTION_CLASS_TEMPLATE_TYPE::solve()
     M_blockVectorSolution.localize();
 
     double tElapsed = this->timerTool("Solve").stop("solve");
-    this->log("Advection","solve", (boost::format("finish in %1% s")%tElapsed).str() );
+    this->log("AdvDiffReac","solve", (boost::format("finish in %1% s")%tElapsed).str() );
 }
 
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Export results
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::initPostProcess()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     if (this->doRestart() && this->restartPath().empty() )
     {
@@ -1148,34 +1155,34 @@ ADVECTION_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
     this->exportMeasuresImpl( time );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
 {
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::exportResults( double time )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     this->exportResultsImpl( time );
     this->exportMeasures( time );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 {
     if ( !M_exporter->doExport() ) return;
 
-    this->log("Advection","exportResults", "start");
+    this->log("AdvDiffReac","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
     M_exporter->step( time )->add( prefixvm(this->prefix(),"phi"),
@@ -1214,12 +1221,12 @@ ADVECTION_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
             this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
         this->timerTool("PostProcessing").save();
     }
-    this->log("Advection","exportResults", (boost::format("finish in %1% s")%tElapsed).str() );
+    this->log("AdvDiffReac","exportResults", (boost::format("finish in %1% s")%tElapsed).str() );
 }
 
-ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::addMarkerInflowBC( std::string const& markerName )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::addMarkerInflowBC( std::string const& markerName )
 {
     if( std::find(this->M_bcInflowMarkers.begin(), this->M_bcInflowMarkers.end(), markerName) == this->M_bcInflowMarkers.end() )
         this->M_bcInflowMarkers.push_back( markerName );

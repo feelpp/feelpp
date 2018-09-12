@@ -5,7 +5,7 @@
 namespace Feel {
 namespace FeelModels {
 
-ADVECTION_CLASS_INSTANTIATION
+ADVDIFFREAC_CLASS_INSTANTIATION
 
 }
 }
