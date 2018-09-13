@@ -28,6 +28,8 @@ namespace Observer
 {
 
 // Init static variable.
+uint16_t JournalWatcher::S_call_counter = 0;
+
 
 } // Observer namespace
 } // Feel namespace.
