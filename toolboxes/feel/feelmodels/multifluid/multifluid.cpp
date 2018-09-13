@@ -49,132 +49,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const& s )
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
-{
-    CHECK( M_nFluids >= 2 ) << "Multifluid must contain at least 2 fluids.\n";
-    uint16_type nLevelSets = M_nFluids - 1;
-
-    this->log("MultiFluid", "build", "start");
-
-    // Read mesh info from multifluid options
-    if ( Environment::vm().count( prefixvm(this->prefix(),"mesh.filename").c_str() ) )
-    {
-        std::string meshfile = Environment::expand( soption(_prefix=this->prefix(),_name="mesh.filename") );
-        if ( fs::path( meshfile ).extension() == ".geo" )
-            this->setGeoFile( meshfile );
-        else
-            this->setMeshFile( meshfile );
-    }
-
-    // Build inherited FluidMechanics
-    this->loadMesh( this->createMesh() );
-    // Init inherited FluidMechanics (to build spaces, algebraic data, ...)
-    super_type::init();
-
-    // Get levelset mesh
-    mesh_ptrtype mesh;
-    if( this->M_useLagrangeP1iso )
-    {
-        // Build Lagrange P1 iso-U mesh and build levelsets with it
-        M_opLagrangeP1iso = lagrangeP1( this->functionSpaceVelocity()->compSpace() );
-        mesh = this->M_opLagrangeP1iso->mesh(); 
-    }
-    else
-    {
-        // Else build from common mesh
-        mesh = this->mesh();
-    }
-    // Build levelsets space manager
-    M_levelsetSpaceManager = std::make_shared<levelset_space_manager_type>( mesh, this->globalLevelsetPrefix() );
-    // Temporary hack: ensures the defaults levelset spaces are built for interfaceForces
-    M_levelsetSpaceManager->createFunctionSpaceDefault();
-    // Build levelsets tool manager
-    M_levelsetToolManager = std::make_shared<levelset_tool_manager_type>( M_levelsetSpaceManager, this->globalLevelsetPrefix() );
-    // Update global levelset thickness interface
-    if( Environment::vm().count( prefixvm(this->globalLevelsetPrefix(),"thickness-interface").c_str() ) )
-        M_globalLevelsetThicknessInterface = doption( _name="thickness-interface", _prefix=this->globalLevelsetPrefix() );
-    else
-        M_globalLevelsetThicknessInterface = 1.5 * M_levelsetSpaceManager->mesh()->hAverage();
-
-    // Build levelsets exporter
-    //M_globalLevelsetExporter = exporter(
-            //_mesh=M_levelsetSpaceManager->mesh(),
-            //_name="ExportLS",
-            //_geo="static",
-            //_path=this->exporterPath()
-            //);
-    // Build levelsets
-    M_levelsets.resize( nLevelSets );
-    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
-    {
-        auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
-        M_levelsets[i].reset(
-                new levelset_type( levelset_prefix, this->worldCommPtr(), "", this->repository().rootWithoutNumProc() )
-                );
-        hana::eval_if( std::is_same<space_levelset_advection_velocity_type, space_fluid_velocity_type>{},
-                    [&](auto _) {
-                    Feel::cout << "Using fluid velocity function space\n";
-                        _(M_levelsets)[i]->build(
-                                _space_manager=M_levelsetSpaceManager,
-                                _tool_manager=M_levelsetToolManager,
-                                _space_velocity=this->functionSpaceVelocity()
-                                //_exporter_manager=M_globalLevelsetExporter
-                                //_reinitializer=M_globalLevelset->reinitializer()
-                                );
-                    },
-                    [&](auto _) {
-                        _(M_levelsets)[i]->build(
-                                _space_manager=M_levelsetSpaceManager,
-                                _tool_manager=M_levelsetToolManager
-                                //_exporter_manager=M_globalLevelsetExporter
-                                //_reinitializer=M_globalLevelset->reinitializer()
-                                );
-                    }
-                );
-        // Set global options if unspecified otherwise
-        if( !Environment::vm().count( prefixvm(levelset_prefix,"thickness-interface").c_str() ) )
-            M_levelsets[i]->setThicknessInterface( this->globalLevelsetThicknessInterface() );
-    }
-
-    // "Deep" copy FluidMechanics materialProperties
-    M_fluidMaterialProperties.reset( new material_properties_type( this->fluidPrefix() ) );
-    // Build levelsets materialProperties and interfaceForcesModels
-    M_levelsetsMaterialProperties.resize( nLevelSets );
-    M_levelsetInterfaceForcesModels.resize( nLevelSets );
-    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
-    {
-        auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
-
-        M_levelsetsMaterialProperties[i].reset(
-                new material_properties_type( levelset_prefix )
-                );
-
-        if( Environment::vm().count( prefixvm(levelset_prefix, "interface-forces-model").c_str() ) )
-        {
-            std::vector<std::string> interfaceForcesModels = Environment::vm()[prefixvm(levelset_prefix, "interface-forces-model").c_str()].template as<std::vector<std::string>>();
-            // Remove (unwanted) duplicates
-            std::sort( interfaceForcesModels.begin(), interfaceForcesModels.end() );
-            interfaceForcesModels.erase( std::unique(interfaceForcesModels.begin(), interfaceForcesModels.end()), interfaceForcesModels.end() );
-
-            for( uint16_type n = 0; n < interfaceForcesModels.size(); ++n )
-            {
-                std::string const forceName = interfaceForcesModels[n];
-                M_levelsetInterfaceForcesModels[i][forceName] = interfaceforces_factory_type::instance().createObject( 
-                        forceName
-                        );
-                M_levelsetInterfaceForcesModels[i][forceName]->build( levelset_prefix, M_levelsets[i], this->fluidModel() );
-            }
-
-            M_hasInterfaceForcesModel = true;
-        }
-    }
-    M_interfaceForces.reset( new element_levelset_vectorial_type(this->functionSpaceLevelsetVectorial(), "InterfaceForces") ); 
-
-    this->log("MultiFluid", "build", "finish");
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 typename MULTIFLUID_CLASS_TEMPLATE_TYPE::mesh_ptrtype
 MULTIFLUID_CLASS_TEMPLATE_TYPE::createMesh()
 {
@@ -274,13 +148,32 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
 {
+    CHECK( M_nFluids >= 2 ) << "Multifluid must contain at least 2 fluids.\n";
     this->log("MultiFluid", "init", "start");
 
-    // Initialize LevelSets
-    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    // Read mesh info from multifluid options
+    if ( Environment::vm().count( prefixvm(this->prefix(),"mesh.filename").c_str() ) )
     {
-        M_levelsets[i]->init();
+        std::string meshfile = Environment::expand( soption(_prefix=this->prefix(),_name="mesh.filename") );
+        if ( fs::path( meshfile ).extension() == ".geo" )
+            this->setGeoFile( meshfile );
+        else
+            this->setMeshFile( meshfile );
     }
+
+    // Build inherited FluidMechanics
+    this->loadMesh( this->createMesh() );
+    // Init inherited FluidMechanics (to build spaces, algebraic data, ...)
+    super_type::init();
+
+    // Init LevelSets
+    this->createLevelsets();
+
+    // "Deep" copy FluidMechanics materialProperties
+    M_fluidMaterialProperties.reset( new material_properties_type( this->fluidPrefix() ) );
+    // Create M_interfaceForces
+    M_interfaceForces.reset( new element_levelset_vectorial_type(this->functionSpaceLevelsetVectorial(), "InterfaceForces") ); 
+
     // Init FluidMechanics materialProperties
     M_fluidMaterialProperties->updateForUse( this->materialProperties()->dynamicViscositySpace(), this->modelProperties().materials() );
     // Init levelsets materialProperties and interfaceForcesModels
@@ -335,12 +228,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     }
 
     M_levelsetReinitEvery.resize(nLevelSets);
-    M_levelsetReinitSmoothEvery.resize(nLevelSets);
     for( uint16_type n = 0; n < nLevelSets; ++n )
     {
         auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(n+1)).str());
         M_levelsetReinitEvery[n] = ioption( _name="reinit-every", _prefix=levelset_prefix );
-        M_levelsetReinitSmoothEvery[n] = ioption( _name="reinit-smooth-every", _prefix=levelset_prefix );
     }
 }
 
@@ -612,9 +503,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveImpl()
         if( M_levelsetReinitEvery[n] > 0 
                 && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitEvery[n] == 0 )
             M_levelsets[n]->reinitialize();
-        else if( M_levelsetReinitSmoothEvery[n] > 0 
-                && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitSmoothEvery[n] == 0 )
-            M_levelsets[n]->reinitialize( true );
     }
 
     // Update global levelset
@@ -705,6 +593,96 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     }
 
     this->log("MultiFluid", "exportResults", "finish");
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::createLevelsets()
+{
+    this->log("MultiFluid", "createLevelsets", "start");
+    // Get levelset mesh
+    mesh_ptrtype mesh;
+    if( this->M_useLagrangeP1iso )
+    {
+        // Build Lagrange P1 iso-U mesh and build levelsets with it
+        M_opLagrangeP1iso = lagrangeP1( this->functionSpaceVelocity()->compSpace() );
+        mesh = this->M_opLagrangeP1iso->mesh(); 
+    }
+    else
+    {
+        // Else build from common mesh
+        mesh = this->mesh();
+    }
+    // Build levelsets space manager
+    M_levelsetSpaceManager = std::make_shared<levelset_space_manager_type>( mesh, this->globalLevelsetPrefix() );
+    // Temporary hack: ensures the defaults levelset spaces are built for interfaceForces
+    M_levelsetSpaceManager->createFunctionSpaceDefault();
+    // Build levelsets tool manager
+    M_levelsetToolManager = std::make_shared<levelset_tool_manager_type>( M_levelsetSpaceManager, this->globalLevelsetPrefix() );
+    // Update global levelset thickness interface
+    if( Environment::vm().count( prefixvm(this->globalLevelsetPrefix(),"thickness-interface").c_str() ) )
+        M_globalLevelsetThicknessInterface = doption( _name="thickness-interface", _prefix=this->globalLevelsetPrefix() );
+    else
+        M_globalLevelsetThicknessInterface = 1.5 * M_levelsetSpaceManager->mesh()->hAverage();
+
+    // Build levelsets exporter
+    //M_globalLevelsetExporter = exporter(
+            //_mesh=M_levelsetSpaceManager->mesh(),
+            //_name="ExportLS",
+            //_geo="static",
+            //_path=this->exporterPath()
+            //);
+    // Build levelsets
+    M_levelsets.resize( M_nFluids - 1 );
+    M_levelsetsMaterialProperties.resize( M_nFluids - 1 );
+    M_levelsetInterfaceForcesModels.resize( M_nFluids - 1 );
+    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    {
+        auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
+        M_levelsets[i].reset(
+                new levelset_type( levelset_prefix, this->worldCommPtr(), "", this->repository().rootWithoutNumProc() )
+                );
+        M_levelsets[i]->setFunctionSpaceManager( M_levelsetSpaceManager );
+        M_levelsets[i]->setToolManager( M_levelsetToolManager );
+        hana::eval_if( std::is_same<space_levelset_advection_velocity_type, space_fluid_velocity_type>{},
+                    [&](auto _) {
+                    Feel::cout << "Using fluid velocity function space\n";
+                        _(M_levelsets)[i]->setFunctionSpaceAdvectionVelocity( this->functionSpaceVelocity() );
+                    },
+                    [&] {}
+                );
+        // Set global options if unspecified otherwise
+        if( !Environment::vm().count( prefixvm(levelset_prefix,"thickness-interface").c_str() ) )
+            M_levelsets[i]->setThicknessInterface( this->globalLevelsetThicknessInterface() );
+        // Initialize LevelSets
+        M_levelsets[i]->init();
+
+        // Build levelsets materialProperties
+        M_levelsetsMaterialProperties[i].reset(
+                new material_properties_type( levelset_prefix )
+                );
+        // Build levelsets interfaceForcesModels
+        if( Environment::vm().count( prefixvm(levelset_prefix, "interface-forces-model").c_str() ) )
+        {
+            std::vector<std::string> interfaceForcesModels = Environment::vm()[prefixvm(levelset_prefix, "interface-forces-model").c_str()].template as<std::vector<std::string>>();
+            // Remove (unwanted) duplicates
+            std::sort( interfaceForcesModels.begin(), interfaceForcesModels.end() );
+            interfaceForcesModels.erase( std::unique(interfaceForcesModels.begin(), interfaceForcesModels.end()), interfaceForcesModels.end() );
+
+            for( uint16_type n = 0; n < interfaceForcesModels.size(); ++n )
+            {
+                std::string const forceName = interfaceForcesModels[n];
+                M_levelsetInterfaceForcesModels[i][forceName] = interfaceforces_factory_type::instance().createObject( 
+                        forceName
+                        );
+                M_levelsetInterfaceForcesModels[i][forceName]->build( levelset_prefix, M_levelsets[i], this->fluidModel() );
+            }
+
+            M_hasInterfaceForcesModel = true;
+        }
+    }
+
+    this->log("MultiFluid", "createLevelsets", "finish");
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS

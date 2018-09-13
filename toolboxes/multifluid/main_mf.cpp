@@ -3,7 +3,7 @@
 namespace Feel {
 
 // Warning: OrderPNLevelset must equal the FEELPP_MODELS_LEVELSET_PN_ORDER cmake variable or you must instantiate the appropriate lib
-template< uint16_type OrderVelocity, uint16_type OrderPressure, uint16_type OrderLevelset = 1, uint16_type OrderPNLevelset = 2>
+template< uint16_type OrderVelocity, uint16_type OrderPressure, uint16_type OrderLevelset = 1, uint16_type OrderPNLevelset = LEVELSET_PN_ORDER>
 void
 runApplicationMultiFluid()
 {
@@ -25,7 +25,6 @@ runApplicationMultiFluid()
     typedef FeelModels::MultiFluid< model_fluid_type, model_levelset_type > model_multifluid_type;
 
     auto MFModel = model_multifluid_type::New( "multifluid" );
-    MFModel->build();
 
     MFModel->init();
     MFModel->printAndSaveInfo();
