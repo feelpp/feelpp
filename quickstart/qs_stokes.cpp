@@ -46,6 +46,8 @@ stokes(SpacePtrType Vh)
     toc("Vh");
     // end::mesh_space[]
     
+    Environment::journalCheckpoint();
+
     // tag::forms[]
     tic();
     auto l = form1( _test=Vh );
