@@ -16,9 +16,6 @@
 [submodule "contrib/mongodb"]
 	path = contrib/mongocxx
 	url = https://github.com/feelpp/mongo-cxx-driver.git
-[submodule "contrib/kwsys.git"]
-	path = contrib/kwsys.git
-	url = https://github.com/feelpp/kwsys
 [submodule "contrib/kwsys"]
 	path = contrib/kwsys
 	url = https://github.com/feelpp/kwsys.git
