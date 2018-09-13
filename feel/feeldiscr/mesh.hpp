@@ -110,8 +110,6 @@ const size_type EXTRACTION_KEEP_ALL_IDS                   = ( EXTRACTION_KEEP_PO
                                                               EXTRACTION_KEEP_VOLUMES_IDS );
 const size_type EXTRACTION_KEEP_MESH_RELATION             = ( 1<<4 );
 
-static uint16_type MESH_INSTANCE_NUMBER = 0;
-static const std::string meshDefaultInstanceName() { return "mesh-" + std::to_string(MESH_INSTANCE_NUMBER); }
 }
 #include <feel/feeldiscr/createsubmesh.hpp>
 #include <feel/feeldiscr/localization.hpp>
@@ -305,7 +303,7 @@ public:
     //!  Default mesh constructor
     //!
     explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
-                   std::string const& name = meshDefaultInstanceName() );
+                   std::string const& name = "" );
 
     ~Mesh() {}
 
@@ -834,12 +832,6 @@ public:
      //!
     //! @{
 
-    //! Set mesh instance name.
-    void setInstanceName( std::string s )
-    {
-        M_instance_name = s;
-    }
-
     void setSubStructuring( bool s )
         {
             M_substructuring = s;
@@ -881,10 +873,6 @@ public:
     {
         return M_tool_localization;
     }
-
-    //! Get the name of the current mesh instance.
-    //! @return the name
-    std::string instanceName() const { return M_instance_name; }
 
     //!
      //!  @brief get the average h
@@ -1623,10 +1611,6 @@ private:
     FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type & elt, face_type const& face, mpl::false_ );
 
 private:
-
-    //! Mesh name.
-    std::string M_instance_name;
-    uint16_type M_instance_number;
 
     //! ! communicator
     size_type M_numGlobalElements, M_numGlobalFaces, M_numGlobalEdges, M_numGlobalPoints, M_numGlobalVertices;
@@ -2375,16 +2359,17 @@ const pt::ptree
 Mesh<Shape, T, Tag>::journalNotify() const
 {
     pt::ptree p;
-    p.put("mesh."+ instanceName() + ".shape", Shape::name() );
-    p.put("mesh."+ instanceName() + ".dim", dimension() );
-    p.put("mesh."+ instanceName() + ".order", nOrder );
-    p.put("mesh."+ instanceName() + ".h_min", hMin() );
-    p.put("mesh."+ instanceName() + ".h_max", hMax() );
-    p.put("mesh."+ instanceName() + ".h_average", hAverage() );
-    p.put("mesh."+ instanceName() + ".n_points", numGlobalPoints() );
-    p.put("mesh."+ instanceName() + ".n_edges", numGlobalEdges() );
-    p.put("mesh."+ instanceName() + ".n_faces", numGlobalFaces() );
-    p.put("mesh."+ instanceName() + ".n_vertices", numGlobalVertices() );
+    const std::string tag = journalWatcherInstanceName();
+    p.put("mesh."+ tag + ".shape", Shape::name() );
+    p.put("mesh."+ tag + ".dim", dimension() );
+    p.put("mesh."+ tag + ".order", nOrder );
+    p.put("mesh."+ tag + ".h_min", hMin() );
+    p.put("mesh."+ tag + ".h_max", hMax() );
+    p.put("mesh."+ tag + ".h_average", hAverage() );
+    p.put("mesh."+ tag + ".n_points", numGlobalPoints() );
+    p.put("mesh."+ tag + ".n_edges", numGlobalEdges() );
+    p.put("mesh."+ tag + ".n_faces", numGlobalFaces() );
+    p.put("mesh."+ tag + ".n_vertices", numGlobalVertices() );
     return p;
 }
 

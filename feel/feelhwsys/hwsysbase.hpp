@@ -28,9 +28,6 @@
 namespace Feel
 {
 
-static uint16_type HWSYS_INSTANCE_NUMBER = 0;
-static const std::string hwsysDefaultInstanceName() { return "hwsys-" + std::to_string(HWSYS_INSTANCE_NUMBER); }
-
 namespace Sys
 {
 
@@ -50,9 +47,8 @@ public:
     HwSysBase()
         : M_backend( "hwsys" )
     {
-        instanceName( hwsysDefaultInstanceName() );
-        HWSYS_INSTANCE_NUMBER++;
-        VLOG(2) << "[HwSys] constructor instance number " << M_instance_number << "\n" ;
+        journalWatcherName( "hwsys" );
+        VLOG(2) << "[HwSys] constructor instance number ";
     }
 
     //! Copy constructor.
@@ -72,16 +68,6 @@ public:
 
     //! Accessors
     //! @{
-
-    //! Get the name of the current mesh instance.
-    //! @return the name
-    std::string instanceName() const { return M_instance_name; }
-
-    const std::string& instanceName( std::string s ) 
-    {
-        M_instance_name=s;
-        return M_instance_name;
-    }
 
     // @}
     
@@ -144,8 +130,6 @@ private:
 
 protected:
 
-    std::string M_instance_name;
-    std::string M_instance_number;
     std::string M_backend;
 
     //! Operating System

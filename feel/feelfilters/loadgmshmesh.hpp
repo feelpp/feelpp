@@ -80,7 +80,7 @@ BOOST_PARAMETER_FUNCTION(
     _mesh_ptrtype _mesh( mesh );
     _mesh->setWorldComm( worldcomm );
     if( not name.empty() )
-        _mesh->setInstanceName( name );
+        _mesh->journalWatcherName( name, false );
 
     std::string filename_with_path = Environment::findFile( filename );
     if ( filename_with_path.empty() )

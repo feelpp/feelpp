@@ -56,7 +56,7 @@ public:
     //! @{
 
     //! Create a ptree from initializer list.
-    JournalFeed( init_type m )
+    explicit JournalFeed( init_type m )
     {
         if( JournalManager::journalAutoMode() )
             this->journalConnect();

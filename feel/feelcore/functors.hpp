@@ -30,14 +30,11 @@
 #define FEELPP_CORE_FUNCTORS_HPP 1
 
 #include <vector>
-#include <feel/feelcore/environment.hpp>
-#include <boost/property_tree/ptree.hpp>
 
 namespace Feel
 {
 namespace Functor
 {
-namespace pt = boost::property_tree;
 
 template<typename T, typename C>
 static inline void AvgMinMax(const T* const in, T* const inout, const int* const len, C* type)
