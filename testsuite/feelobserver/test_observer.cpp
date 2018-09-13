@@ -107,12 +107,12 @@ BOOST_AUTO_TEST_CASE( journal_basic )
     // Example how to retrieve a signal using signalhandler.
     // (The signals template arguments are required to cast into the proper signal.)
     const auto& sigptr = Object1::signalStatic< pt::ptree(), Observer::JournalMerge >( "journalManager" );
-    std::cout << "number of connected slot: " << sigptr->num_slots() << std::endl;
+    BOOST_TEST_MESSAGE( "number of connected slot: " << sigptr->num_slots() );
 
     p1.journalConnect();
     p2.journalConnect();
 
-    std::cout << "number of connected slot: " << sigptr->num_slots() << std::endl;
+    BOOST_TEST_MESSAGE( "number of connected slot: " << sigptr->num_slots() );
 
     // Merge p1, p2 simulation info property tree into one using a call from
     // the manager.
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE( journal_basic )
     auto c = t.get_child("c");
     auto d = c.get<int>("d");
     if( Environment::isMasterRank() )
-        std::cout << a << " " << b <<  " " << d << std::endl;
+        BOOST_TEST_MESSAGE( a << " " << b <<  " " << d );
 
     CHECK( a == 1 );
     CHECK( b == 2 );
@@ -145,9 +145,9 @@ BOOST_AUTO_TEST_CASE( journal_auto )
     
     // We retrieve a signal of Object1 called JournalManager (used for the feel++ journal
     // system). The signals template arguments are required to cast into the proper signal type.
-    const auto& sigptr = Object1::signalStatic< pt::ptree(), Observer::JournalMerge >( "journalManager" );
+    const auto& sigptr = Object1::journalSignal();
     int na = sigptr->num_slots();
-    std::cout << "Number of slots: " << na << std::endl;
+    BOOST_TEST_MESSAGE( "Number of slots: " << na );
 
     // The three objects are connected automatically via their constructor.
     std::shared_ptr<Object2> p1 = std::make_shared<Object2>( "p1" );
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE( journal_auto )
     if(1)
     {
       std::shared_ptr<Object2> p4 = std::make_shared<Object2>( "p4" );
-      std::cout << "Number of slots: " << sigptr->num_slots() << std::endl;
+      BOOST_TEST_MESSAGE( "Number of slots: " << sigptr->num_slots() );
     }
     // p4 is destructed here, thus disconnected from the journal by the destructor.
 
@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE( journal_auto )
 
     int nb = sigptr->num_slots();
 
-    std::cout << "Number of slots: " << sigptr->num_slots() << std::endl;
+    BOOST_TEST_MESSAGE( "Number of slots: " << sigptr->num_slots() );
 
     // Only p1 and p2 remains.
     CHECK( nb-na == 2 );

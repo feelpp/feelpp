@@ -34,6 +34,9 @@ BOOST_AUTO_TEST_SUITE( observers )
 BOOST_AUTO_TEST_CASE( journal_mesh )
 {
     tic();
+    const auto& sigptr = Environment::journalSignal();
+    int na = sigptr->num_slots();
+
     auto mesh1 = loadMesh( _mesh=new Mesh<Simplex<1,1>>, _name="Mesh1" );
     auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1>>, _name="Mesh2" );
     auto mesh3 = loadMesh( _mesh=new Mesh<Simplex<3,1>>, _name="Mesh3" );
@@ -43,7 +46,7 @@ BOOST_AUTO_TEST_CASE( journal_mesh )
     auto mesh5 = loadMesh( _mesh=new Mesh<Simplex<2,1>> );
 
     auto mesh6 = loadMesh( _mesh=new Mesh<Simplex<3,1>> );
-    mesh6->setInstanceName( "Mesh6" );
+    mesh6->journalWatcherName( "Mesh6", false);
     toc("loadMesh");
 
     // By default, mesh is watchable. You can connect the mesh
@@ -53,7 +56,7 @@ BOOST_AUTO_TEST_CASE( journal_mesh )
     // only mesh1 and mesh3 will be observed.
     mesh1->journalConnect();
     mesh2->journalConnect();
-    mesh3->journalConnect();
+    //mesh3 automatic connection.
     mesh4->journalConnect();
     mesh5->journalConnect();
     mesh6->journalConnect();
@@ -61,6 +64,8 @@ BOOST_AUTO_TEST_CASE( journal_mesh )
     // Mesh 2 won't be observed anymore.
     mesh2->journalDisconnect();
 
+    int nb = sigptr->num_slots();
+    CHECK( nb-na == 5 );
     // This create a checkpoint and save the result in a json file.
     Environment::journalFinalize();
 }
