@@ -58,15 +58,17 @@ public:
     //! A slot is created and and is connected to a JournalManager.
     //!
     //! \see JournalManager
-    JournalWatcher( bool force = false )
-        : M_journal_is_connected( false )
+    explicit JournalWatcher( bool force = false )
+        : M_journal_is_connected( false ),
+          M_name( "unknown" ),
+          M_number( S_call_counter )
     {
         slotNew< notify_type () >( "journalWatcher", std::bind( &JournalWatcher::journalNotify, this ) );
-        if( JournalManager::journalEnabled()
-            and JournalManager::journalAutoMode() )
+        if( JournalManager::journalAutoMode() )
         {
            journalConnect( force );
         }
+        S_call_counter++;
     }
 
     //! Default destructor.
@@ -76,7 +78,10 @@ public:
     {
         // store info in the global ptree (No MPI comm!).
         if( JournalManager::journalAutoPullAtDelete() )
+        {
+            VLOG(2) << "[JournalManager] Destructor call. Nofification send (signal exec)!";
             JournalManager::journalLocalPull();
+        }
         journalDisconnect();
     }
 
@@ -85,10 +90,34 @@ public:
     //! Getters
     //! @{
     //! Check if the object is connected to the journal.
-    //! \return true i
-    const bool journalIsConnected()
+    //! \return true 
+    bool journalIsConnected() const
     {
         return M_journal_is_connected;
+    }
+
+    //! Return the full instance name for this watched object.
+    //! The name is composed with the base name and a suffix index corresponding
+    //! to the nth call.
+    //! \param isauto If true, the instance name is suffixed by the call number
+    const std::string journalWatcherInstanceName() const
+    {
+        return M_name; 
+    }
+
+    //! @}
+
+    //! Setters
+    //! @{
+
+    //! Set journal watcher a name for the instance. If the journal is set
+    //! in autommatic mode, then a number will be added to this nam
+    //! \param automode If true, a index suffix is added to the name
+    void journalWatcherName( std::string const& name, bool automode = false )
+    {
+        M_name = name;
+        if( automode )
+            M_name += "-" + std::to_string( M_number );
     }
 
     //! @}
@@ -96,14 +125,16 @@ public:
     //! Misc
     //! @{
 
-    //! Connect the derived object to the simulation info manager.
+    //! Connect the derived object to the simulation info manager
     void journalConnect( bool force = false )
     {
+        DVLOG(2) << "[Journal] Connect: " << journalWatcherInstanceName();
         if( ( JournalManager::journalEnabled() and not journalIsConnected() )
             or force )
         {
             JournalManager::signalStaticConnect< notify_type (), JournalMerge >( "journalManager", *this, "journalWatcher" );
             M_journal_is_connected=true;
+            DVLOG(2) << "[Journal] " << journalWatcherInstanceName() << " Connected!";
         }
     }
 
@@ -111,30 +142,46 @@ public:
     //! The disconnection is safe.
     void journalDisconnect( bool force = false )
     {
+        DVLOG(2) << "[Journal] Disconnect: " << journalWatcherInstanceName();
         if( journalIsConnected()
             or force )
         {
             JournalManager::signalStaticDisconnect< notify_type (), JournalMerge >( "journalManager", *this, "journalWatcher" );
             M_journal_is_connected=false;
+            DVLOG(2) << "[Journal] " << journalWatcherInstanceName() << " Disconnected!";
         }
     }
 
-private:
-    //! Private Methods
+protected:
+    //! Protected Methods
     //! @{
 
     //! Watch child properties and notify the manager.
     //! Note: Only this class can call journalNotify!
     virtual const pt::ptree journalNotify() const
     {
+        LOG( WARNING ) << "journalNotify call from JournalWatcher base class!";
         pt::ptree p;
-        // return empty tree by default;
-        return p;
+        return p; // empty
     }
 
     //! @}
+
 private:
+    //! Private attributes
+    //! @{
+
     bool M_journal_is_connected;
+ 
+    // Unique instance name for the watched object.
+    std::string M_name;
+
+    // Counter for instance call of this object.
+    static uint16_t S_call_counter;
+    // Unique instance number for the watched object.
+    uint16_t M_number;
+
+    //! @}
 };
 
 

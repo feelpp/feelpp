@@ -55,6 +55,7 @@ namespace pt =  boost::property_tree;
 namespace mpi = boost::mpi;
 namespace uuids =  boost::uuids;
 
+
 //! JournalManagerBase handles all journalWatchers.
 //! The purpose of this class is to be inherited by class that manage the 
 //! journal system
@@ -124,7 +125,7 @@ public:
         //! \param b automatic mode true or false.
         static void journalAutoMode( bool b )
         {
-            S_journal_auto = b;
+            Options::automode = b;
         }
 
         //! Set the journal delete mode.
@@ -134,13 +135,13 @@ public:
         //! \return true if journal if delete pull is allowed.
         static void journalAutoPullAtDelete( bool m )
         {
-            S_journal_allow_destructor_call = m;
+            Options::allow_destructor_call = m;
         }
 
         //! Activate or deactivate the journal.
         static void journalEnable( bool m )
         {
-            S_journal_enabled = m;
+            Options::enable = m;
         }
 
         //! @}
@@ -158,14 +159,14 @@ public:
         //! \return true in automatic mode.
         static const bool journalAutoMode()
         {
-            return S_journal_auto;
+            return Options::automode;
         }
 
         //! Get the journal status.
         //! \return true if journal is enabled.
         static const bool journalEnabled()
         {
-            return S_journal_enabled;
+            return Options::enable;
         }
 
         //! Get the journal pull at delete status.
@@ -173,7 +174,7 @@ public:
         //! \return true if journal if delete pull is allowed.
         static const bool journalAutoPullAtDelete()
         {
-            return S_journal_allow_destructor_call;
+            return Options::allow_destructor_call;
         }
 
         //! Get the current checkpoint counter.
@@ -182,6 +183,14 @@ public:
         journalCurrentCheckpoint()
         {
             return S_journal_checkpoint;        
+        }
+        
+        //! Get the journal underlying static signal.
+        //! \return
+        static decltype(auto)
+        journalSignal()
+        {
+            return signalStatic< notify_type (), JournalMerge >( "journalManager" );
         }
 
         //! @}
@@ -281,7 +290,7 @@ public:
                            bool save = false,
                            const std::string& filename="" )
         {
-            if( S_journal_enabled )
+            if( journalEnabled() )
             {
                 S_journal_checkpoint++;
 
@@ -367,7 +376,7 @@ private:
         static void
         journalJSONSave( const std::string& filename = "" )
         {
-            if( S_journal_enabled )
+            if( journalEnabled() )
             {
                 if( not filename.empty() )
                     S_journal_filename = filename;
@@ -385,7 +394,7 @@ private:
         static void
         journalDBSave( const std::string& filename = "" )
         {
-            if( S_journal_enabled )
+            if( journalEnabled() )
             {
                 if( not filename.empty() )
                     S_journal_filename = filename;
@@ -431,27 +440,34 @@ private:
         static MongoConfig S_journal_db_config;
         //! @}
  
-        //! Journal automatic mode enable or disable.
-        static bool S_journal_enabled;
-
-        //! Journal automatic mode enable or disable.
-        static bool S_journal_auto;
-
-        //! Journal automatic mode enable or disable.
-        static bool S_journal_allow_destructor_call;
-
         //! checkpoint number
         static uint32_t S_journal_checkpoint;
+
+public:
+        // Options for the journal.
+        // These default options are setup via the Feel++ commandline options.
+        // See environment.
+        class Options 
+        {
+            public:
+                //! Journal automatic mode enable or disable.
+                static bool enable;
+                //! Journal automatic mode enable or disable.
+                static bool automode;
+                //! Journal automatic mode enable or disable.
+                static bool allow_destructor_call;
+        };
 };
 
 // Extern explicit instanciation.
 template<> std::string JournalManagerBase<>::S_journal_filename;
 template<> pt::ptree JournalManagerBase<>::S_journal_ptree;
 template<> MongoConfig JournalManagerBase<>::S_journal_db_config;
-template<> bool JournalManagerBase<>::S_journal_enabled;
-template<> bool JournalManagerBase<>::S_journal_auto;
-template<> bool JournalManagerBase<>::S_journal_allow_destructor_call;
 template<> uint32_t JournalManagerBase<>::S_journal_checkpoint;
+
+template<> bool JournalManagerBase<>::Options::enable;
+template<> bool JournalManagerBase<>::Options::automode; 
+template<> bool JournalManagerBase<>::Options::allow_destructor_call;
 
 // Manager class should be derived from this alias class.
 using JournalManager = JournalManagerBase<>;
