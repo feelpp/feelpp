@@ -303,6 +303,7 @@ public:
     //--------------------------------------------------------------------//
     // Spaces
     levelset_space_manager_ptrtype const& functionSpaceManager() const { return M_spaceManager; }
+    void setFunctionSpaceManager( levelset_space_manager_ptrtype const& manager ) { M_spaceManager = manager; }
 
     space_levelset_ptrtype const& functionSpace() const { return M_spaceLevelset; }
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
@@ -310,8 +311,9 @@ public:
     space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const { return M_spaceTensor2Symm; }
 
     space_advection_velocity_ptrtype const& functionSpaceAdvectionVelocity() const { return M_spaceAdvectionVelocity; }
+    void setFunctionSpaceAdvectionVelocity( space_advection_velocity_ptrtype const& space ) { M_spaceAdvectionVelocity = space; }
 
-    mesh_ptrtype const& mesh() const { return M_mesh; }
+    mesh_ptrtype const& mesh() const { return this->functionSpace()->mesh(); }
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
@@ -358,6 +360,7 @@ public:
     //--------------------------------------------------------------------//
     // Tools
     levelset_tool_manager_ptrtype const& toolManager() const { return M_toolManager; }
+    void setToolManager( levelset_tool_manager_ptrtype const& manager ) { M_toolManager = manager; }
 
     projector_levelset_ptrtype const& projectorL2() const { return M_projectorL2Scalar; }
     projector_levelset_vectorial_ptrtype const& projectorL2Vectorial() const { return M_projectorL2Vectorial; }
@@ -507,7 +510,6 @@ private:
     void loadConfigBCFile();
     void loadConfigPostProcess();
 
-    void createMesh();
     void createFunctionSpaces();
     void createInterfaceQuantities();
     void createReinitialization();
@@ -562,8 +564,6 @@ protected:
 private:
     //--------------------------------------------------------------------//
     // Meshes 
-    mesh_ptrtype M_mesh;
-
     mutable mesh_ptrtype M_submeshDirac;
     mutable bool M_doUpdateSubmeshDirac;
     mutable mesh_ptrtype M_submeshOuter;

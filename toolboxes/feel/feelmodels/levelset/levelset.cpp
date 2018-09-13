@@ -114,12 +114,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
 {
     this->log("LevelSet", "init", "start");
 
-    // Mesh
-    if( !M_mesh )
-        this->createMesh();
     // Space manager
     if( !M_spaceManager )
-        M_spaceManager = std::make_shared<levelset_space_manager_type>( M_mesh );
+    {
+        // Create advection toolbox mesh
+        M_advectionToolbox->createMesh();
+        M_spaceManager = std::make_shared<levelset_space_manager_type>( M_advectionToolbox->mesh() );
+    }
     // Tool manager
     if( !M_toolManager )
         M_toolManager = std::make_shared<levelset_tool_manager_type>( M_spaceManager, this->prefix() );
@@ -464,25 +465,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::createMesh()
-{
-    this->log("LevelSet","createMesh", "start");
-    this->timerTool("Constructor").start();
-
-    createMeshModel<mesh_type>(*this, M_mesh, this->fileNameMeshPath() );
-    CHECK( M_mesh ) << "mesh generation failed";
-
-    this->log("LevelSet", "createMesh", "finish");
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
 LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
     if( M_useSpaceIsoPN )
     {
         this->functionSpaceManager()->createFunctionSpaceIsoPN();
-        M_mesh = this->functionSpaceManager()->meshIsoPN();
         M_spaceLevelset = this->functionSpaceManager()->functionSpaceScalarIsoPN();
         M_spaceVectorial = this->functionSpaceManager()->functionSpaceVectorialIsoPN();
         M_spaceMarkers = this->functionSpaceManager()->functionSpaceMarkersIsoPN();
@@ -490,14 +477,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     else
     {
         this->functionSpaceManager()->createFunctionSpaceDefault();
-        M_mesh = this->functionSpaceManager()->mesh();
         M_spaceLevelset = this->functionSpaceManager()->functionSpaceScalar();
         M_spaceVectorial = this->functionSpaceManager()->functionSpaceVectorial();
         M_spaceMarkers = this->functionSpaceManager()->functionSpaceMarkers();
     }
 
     if( !M_spaceAdvectionVelocity )
-        M_spaceAdvectionVelocity = space_advection_velocity_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+        M_spaceAdvectionVelocity = space_advection_velocity_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
 
     if( M_useCauchyAugmented )
     {
