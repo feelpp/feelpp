@@ -97,7 +97,7 @@ BOOST_PARAMETER_FUNCTION(
     _mesh_ptrtype _mesh{ mesh };
     _mesh->setWorldComm( worldcomm );
     if( not name.empty() )
-        _mesh->setInstanceName( name );
+        _mesh->journalWatcherName( name, false );
 
     if ( worldcomm->isActive() )
     {

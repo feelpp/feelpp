@@ -4314,15 +4314,17 @@ public:
                    periodicity_type  periodicity = periodicity_type(),
                    worldscomm_ptr_t const& _worldsComm = Environment::worldsComm(nSpaces),
                    std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false),
-                   const std::string& name = functionSpaceDefaultInstanceName() )
+                   const std::string& name = "" )
         :
         super( _worldsComm[0]->clone() ),
         M_worldsComm( _worldsComm ),
         M_extendedDofTableComposite( extendedDofTable ),
         M_extendedDofTable( extendedDofTable[0] )
     {
-        FUNCTIONSPACE_INSTANCE_NUMBER++;
-        M_instance_name = name;
+        if( name.empty() )
+            journalWatcherName( "function_space", true );
+        else
+            journalWatcherName( name, false );
         if( not boption("journal.auto.functionspace") )
             this->journalDisconnect();
         this->init( mesh, meshSupport, mesh_components, periodicity );
@@ -4335,30 +4337,34 @@ public:
                    periodicity_type periodicity = periodicity_type(),
                    worldscomm_ptr_t const& _worldsComm = Environment::worldsComm(nSpaces),
                    std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false),
-                   const std::string& name = functionSpaceDefaultInstanceName() )
+                   const std::string& name = "" )
         :
         super( _worldsComm[0]->clone() ),
         M_worldsComm( _worldsComm ),
         M_extendedDofTableComposite( extendedDofTable ),
         M_extendedDofTable( extendedDofTable[0] )
     {
-        FUNCTIONSPACE_INSTANCE_NUMBER++;
-        M_instance_name = name;
+        if( name.empty() )
+            journalWatcherName( "function_space", true );
+        else
+            journalWatcherName( name, false );
         if( not boption("journal.auto.functionspace") )
             this->journalDisconnect();
         this->init( mesh, meshSupport, 0, dofindices, periodicity );
     }
 
     explicit FunctionSpace( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
-                            const std::string& name = functionSpaceDefaultInstanceName() )
+                            const std::string& name = "" )
         :
         super( worldcomm ),
         M_worldsComm( makeWorldsComm( nSpaces, worldcomm ) ),
         M_extendedDofTableComposite( std::vector<bool>(nSpaces,false) ),
         M_extendedDofTable( false )
     {
-       FUNCTIONSPACE_INSTANCE_NUMBER++;
-       M_instance_name = name;
+        if( name.empty() )
+            journalWatcherName( "function_space", true );
+        else
+            journalWatcherName( name, false );
        if( not boption("journal.auto.functionspace") )
            this->journalDisconnect();
     }
@@ -4500,8 +4506,6 @@ public:
     ~FunctionSpace()
         {
             VLOG(1) << "FunctionSpace Destructor...";
-            VLOG(1) << "Disconnect '" << M_instance_name << "' from journal.";
-            this->journalDisconnect();
             M_dof.reset();
             CHECK( M_dof.use_count() == 0 ) << "Invalid Dof Table shared_ptr";
             M_dofOnOff.reset();
@@ -5897,20 +5901,22 @@ const pt::ptree
 FunctionSpace<A0, A1, A2, A3, A4>::journalNotify() const
 {
     pt::ptree p;
-    std::string prefix = "function_space." + instanceName();
-    int k=0;
+    std::string prefix = "function_space." + journalWatcherInstanceName();
+//    int k=0;
+    // TODO write all mesh
 //   if( fusion::traits::is_sequence<decltype(mesh())>::value )
-        p.put( prefix + ".mesh", mesh<0>()->instanceName() );
+    p.put( prefix + ".mesh", mesh<0>()->journalWatcherInstanceName() );
 //        fusion::for_each( mesh(), [&]( auto x ) {
-//                p.put( prefix + ".mesh." + std::to_string(k++), x->instanceName() );
+//                p.put( prefix + ".mesh." + std::to_string(k++), x->journalWatcherInstanceName() );
 //        });
 //    else
-//        p.put( prefix + ".mesh", mesh()->instanceName() );
+//        p.put( prefix + ".mesh", mesh()->journalWatcherInstanceName() );
     p.put( prefix + ".component_number", qDim() );
     p.put( prefix + ".global_dof_number", nDof() );
     p.put( prefix + ".local_dof_number", nLocalDof() );
     p.put( prefix + ".basis.name", basisName() );
     p.put( prefix + ".basis.order", basisOrder() );
+
     return p;
 }
 

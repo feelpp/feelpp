@@ -35,10 +35,6 @@
 namespace Feel
 {
 
-// Incremented in child class constructors.
-static uint16_type FUNCTIONSPACE_INSTANCE_NUMBER = 0;
-static const std::string functionSpaceDefaultInstanceName() { return "function_space-" + std::to_string(FUNCTIONSPACE_INSTANCE_NUMBER); }
-
 /**
  * @class FunctionSpaceBase
  * @brief base class for FunctionSpace
@@ -99,18 +95,6 @@ public:
      */
     //@{
 
-    // Get unique instance name.
-    const std::string& instanceName() const
-    {
-        return M_instance_name;
-    }
-
-    // Get unique instance number.
-    const uint16_type& instanceNumber() const
-    {
-        return M_instance_number;
-    }
-
     //@}
 
     /** @name  Mutators
@@ -126,18 +110,14 @@ private:
     //! @{
 
     // Simulation info observer notifications.
-    virtual const pt::ptree journalNotify() const override = 0;
+    virtual const pt::ptree journalNotify() const override 
+    {
+        LOG( WARNING ) << "journalNotify call from FunctionSpaceBase class!";
+        pt::ptree p;
+        return p; // empty
+    };
 
     //! @}
-
-protected:
-
-    // Unique instance name.
-    std::string M_instance_name;
-    uint16_type M_instance_number;
-
-private:
-
 };
 
 }

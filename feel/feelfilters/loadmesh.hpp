@@ -135,7 +135,7 @@ BOOST_PARAMETER_FUNCTION(
                 CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
                 _mesh_ptrtype m( mesh );
                 if( not name.empty() )
-                    m->setInstanceName( name );
+                    m->journalWatcherName( name, false );
                 m->setWorldComm( worldcomm );
                 m->loadHDF5( json_fname );
                 return m;

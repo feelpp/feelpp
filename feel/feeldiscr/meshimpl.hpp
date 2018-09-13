@@ -148,8 +148,6 @@ Mesh<Shape, T, Tag>::Mesh( worldcomm_ptr_t const& worldComm,
                            const std::string& name )
     :
     super( worldComm ),
-    M_instance_name( name ),
-    M_instance_number( MESH_INSTANCE_NUMBER ),
     M_numGlobalElements( 0 ),
     M_gm( new gm_type ),
     M_gm1( Feel::meshdetail::initGm1<type>( M_gm, mpl::bool_<nOrder==1>() ) ),
@@ -159,12 +157,14 @@ Mesh<Shape, T, Tag>::Mesh( worldcomm_ptr_t const& worldComm,
     //M_part(),
     M_tool_localization( std::make_shared<Localization<self_type>>() )
 {
-    MESH_INSTANCE_NUMBER++;
+    if( name.empty() )
+        journalWatcherName( "mesh", true );
+    else // set unique name
+        journalWatcherName( name, false );
     VLOG(2) << "[Mesh] constructor called\n";
     CHECK( this->hasWorldComm() ) << "Invalid mesh worldComm";
     if( not boption("journal.auto.mesh") ) 
         this->journalDisconnect();
-    VLOG(2) << "[Mesh] constructor instance number " << M_instance_number << "\n" ;
 }
 template<typename Shape, typename T, int Tag>
 void
