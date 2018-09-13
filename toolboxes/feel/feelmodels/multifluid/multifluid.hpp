@@ -108,17 +108,15 @@ public:
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
+    void loadParametersFromOptionsVm();
+
     static std::string expandStringFromSpec( std::string const& expr );
 
     //--------------------------------------------------------------------//
     // Initialization
-    void build();
-    mesh_ptrtype createMesh();
-
     void init();
 
-    void loadParametersFromOptionsVm();
-
+    //--------------------------------------------------------------------//
     std::string const& prefix() const { return M_prefix; }
     std::string const& fluidPrefix() const { return super_type::prefix(); }
     std::string globalLevelsetPrefix() const { return prefixvm( this->prefix(), "levelset"); }
@@ -187,9 +185,15 @@ public:
     void exportResults() { this->exportResults( this->currentTime() ); }
 
 protected:
+    //--------------------------------------------------------------------//
+    // Initialization
+    mesh_ptrtype createMesh();
+    void createLevelsets();
+
     size_type initStartBlockIndexFieldsInMatrix() override;
     int initBlockVector() override;
 
+    //--------------------------------------------------------------------//
     void updateFluidDensityViscosity();
     void updateInterfaceForces();
     void solveFluid();
@@ -258,7 +262,6 @@ private:
     //--------------------------------------------------------------------//
     // Reinitialization
     std::vector<int> M_levelsetReinitEvery;
-    std::vector<int> M_levelsetReinitSmoothEvery;
 };
         
 
