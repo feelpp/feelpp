@@ -32,7 +32,7 @@
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 
-#include <testlagrange.hpp>
+#include "testlagrange.hpp"
 
 #if 1
 BOOST_AUTO_TEST_SUITE( lagrange_testsuite )

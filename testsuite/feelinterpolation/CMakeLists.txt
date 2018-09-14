@@ -12,7 +12,7 @@
 #
 set_directory_properties(PROPERTIES LABEL testinterpolation )
 
-feelpp_add_test( interpolation_type NO_FEELPP_LIBRARY)
+feelpp_add_test( interpolation_type )
 feelpp_add_test( form_interpolation NO_MPI_TEST )
 feelpp_add_test( interpolation NO_MPI_TEST   )
 feelpp_add_test( interpolation_op NO_MPI_TEST )
