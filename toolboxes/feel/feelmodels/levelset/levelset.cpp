@@ -2183,12 +2183,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi ) 
         {
             case FastMarchingInitializationMethod::ILP :
             {
-                auto const gradPhi = idv(this->gradPhi());
-                
                 *phiReinit = vf::project(
                         this->functionSpace(), 
                         this->rangeMeshElements(), 
-                        idv(phi)/ sqrt( trans(gradPhi) * gradPhi )
+                        idv(phi)/ sqrt( gradv(phi) * trans(gradv(phi)) )
                         );
             }
             break;
