@@ -2261,7 +2261,7 @@ public:
         //@{
 
         Element();
-        Element( Element&& ) = default;
+        Element( Element&& );
         Element( Element const& __e );
 
         friend class FunctionSpace<A0,A1,A2,A3,A4>;
@@ -2308,7 +2308,7 @@ public:
         /** @name Operator overloads
          */
         //@{
-        Element& operator=( Element && __e ) = default;
+        Element& operator=( Element && __e );
         Element& operator=( Element const& __e );
 #if 0
         template<typename ExprT>
