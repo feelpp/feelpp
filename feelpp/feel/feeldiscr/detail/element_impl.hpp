@@ -222,6 +222,34 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element const& __e 
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element && __e )
+    :
+    super( __e ),
+    M_functionspace( std::move(__e.M_functionspace) ),
+    M_name( std::move(__e.M_name) ),
+    M_start(0 ),
+    M_ct( ComponentType::NO_COMPONENT ),
+    M_ct2( ComponentType::NO_COMPONENT ),
+    M_containersOffProcess( boost::none )
+{
+    M_start = __e.M_start;
+    M_ct = __e.M_ct;
+    M_ct2 = __e.M_ct2;
+    M_containersOffProcess = __e.M_containersOffProcess;
+
+    super::operator=( __e );
+    this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
+
+    __e.M_functionspace = nullptr;
+    __e.M_start = 0;
+    __e.M_ct = ComponentType::NO_COMPONENT;
+    __e.M_ct2 = ComponentType::NO_COMPONENT;
+    __e.M_containersOffProcess = boost::none;
+}
+
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
                                                              std::string const& __name,
                                                              std::string const& __desc,
@@ -351,10 +379,16 @@ struct InitializeElement
         {
             // build view if not built or built with an empty space
             if ( !x.second || ( !x.second->functionSpace() ) )
-                x = std::make_pair(key_type(), std::shared_ptr<myelt_type>( new myelt_type( M_element->template elementImpl<key_type::value>( name ) ) ) );
+            {
+                auto e = M_element->template elementImpl<key_type::value>( name );
+                auto sp = std::make_shared<myelt_type>( e );
+                x = std::make_pair(key_type(), sp );
+            }
         }
         else if ( !x.second )
-            x = std::make_pair(key_type(), std::shared_ptr<myelt_type>( new myelt_type() ) );
+        {
+            x = std::make_pair(key_type(), nullptr );
+        }
     }
     ElementType * M_element;
 };
@@ -387,6 +421,33 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> c
 
         super::operator=( __e );
         this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
+    }
+
+    return *this;
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>&
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> && __e )
+{
+    if (  this != &__e )
+    {
+        M_functionspace = std::move(__e.M_functionspace);
+        M_name = std::move(__e.M_name);
+        M_start = __e.M_start;
+        M_ct = __e.M_ct;
+        M_ct2 = __e.M_ct2;
+        M_containersOffProcess = __e.M_containersOffProcess;
+
+        super::operator=( __e );
+        this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
+
+        __e.M_functionspace = nullptr;
+        __e.M_start = 0;
+        __e.M_ct = ComponentType::NO_COMPONENT;
+        __e.M_ct2 = ComponentType::NO_COMPONENT;
+        __e.M_containersOffProcess = boost::none;
     }
 
     return *this;
