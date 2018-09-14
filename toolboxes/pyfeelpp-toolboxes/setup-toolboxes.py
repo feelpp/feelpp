@@ -42,7 +42,7 @@ class CMakeBuild(build_ext):
             '-DPYTHON_EXECUTABLE=' + sys.executable]
 
         cfg = 'Debug' if self.debug else 'Release'
-        build_args = ['--config', 'Debug']
+        build_args = ['--config', cfg]
 
         if platform.system() == "Windows":
             cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(cfg.upper(), extdir)]
@@ -50,7 +50,7 @@ class CMakeBuild(build_ext):
                 cmake_args += ['-A', 'x64']
             build_args += ['--', '/m']
         else:
-            cmake_args += ['-DCMAKE_BUILD_TYPE=' + 'Debug']
+            cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
             build_args += ['--', '-j2']
 
         env = os.environ.copy()
@@ -74,10 +74,10 @@ setup(
     packages=['pyfeelpptoolboxes',
               'pyfeelpptoolboxes.modelcore','pyfeelpptoolboxes.modelmesh',
               #'pyfeelpptoolboxes.advection',
-              #'pyfeelpptoolboxes.fluid','pyfeelpptoolboxes.solid',
-              #'pyfeelpptoolboxes.electric',
+              'pyfeelpptoolboxes.fluid','pyfeelpptoolboxes.solid',
+              'pyfeelpptoolboxes.electric',
               'pyfeelpptoolboxes.heat',
-              #'pyfeelpptoolboxes.maxwell',
+              'pyfeelpptoolboxes.maxwell',
               #'pyfeelpptoolboxes.hdg',
               #'pyfeelpptoolboxes.levelset','pyfeelpptoolboxes.multifluid',
               #'pyfeelpptoolboxes.thermoelectric','pyfeelpptoolboxes.fsi',
@@ -87,11 +87,11 @@ setup(
     ext_modules=[CMakeExtension('_modelcore','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/modelcore'),
                  CMakeExtension('_modelmesh','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/modelmesh'),
                  #CMakeExtension('_advection','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/advection'),
-                 #CMakeExtension('_fluid','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/fluid'),
-                 #CMakeExtension('_solid','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/solid'),
-                 #CMakeExtension('_electric','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/electric'),
+                 CMakeExtension('_fluid','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/fluid'),
+                 CMakeExtension('_solid','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/solid'),
+                 CMakeExtension('_electric','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/electric'),
                  CMakeExtension('_heat','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/heat'),
-                 #CMakeExtension('_maxwell','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/maxwell'),
+                 CMakeExtension('_maxwell','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/maxwell'),
                  #CMakeExtension('_hdg','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/hdg'),
                  #CMakeExtension('_levelset','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/levelset'),
                  #CMakeExtension('_multifluid','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/multifluid'),
