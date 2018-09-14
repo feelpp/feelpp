@@ -207,15 +207,15 @@ public:
 			//std::cout << "ginac::compile_src_file fails (" << WEXITSTATUS(status) << ")\n";
 			// try the compiler in Feel++ source
 			namespace fs = boost::filesystem;
-			if ( fs::exists( fs::path( "@FEELPP_BUILD_DIR@/contrib/ginac/tools/ginac-excompiler" ) ) )
+			if ( fs::exists( fs::path( "@FEELPP_BUILD_DIR@/feelpp/contrib/ginac/tools/ginac-excompiler" ) ) )
 			{
-				std::string strcompile = "@FEELPP_BUILD_DIR@/contrib/ginac/tools/ginac-excompiler " + filename;
+				std::string strcompile = "@FEELPP_BUILD_DIR@/feelpp/contrib/ginac/tools/ginac-excompiler " + filename;
 
 				int status = system(strcompile.c_str());
 				if (status)
 				{
 					std::ostringstream ostr;
-					ostr << "contrib/ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
+					ostr << "feelpp/contrib/ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
 					throw std::runtime_error(ostr.str());
 				}
 				remove_src_file( filename, clean_up );
@@ -224,31 +224,31 @@ public:
 			else
 			{
 
-			std::vector<std::string> paths = { "/usr/bin/", "/usr/local/bin", "/opt/local/bin" };
-			std::vector<std::string> names = { "feelpp_excompiler", "ginac-excompiler" };
-			BOOST_FOREACH( std::string p, paths )
-			{
-				BOOST_FOREACH( std::string n, names )
-				{
-					fs::path exc = fs::path(p) / fs::path(n);
-					if ( fs::exists( exc ) )
-					{
-						std::string strcompile = exc.string() + " " + filename;
-						int status = system(strcompile.c_str());
-						if (status)
-						{
-							std::ostringstream ostr;
-							ostr << "ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
-							throw std::runtime_error(ostr.str());
-						}
-						remove_src_file( filename, clean_up );
-						return;
-					}
-				}
-			}
-			std::ostringstream ostr;
-			ostr << "ginac::compile_src_file " << filename << " WAS NOT COMPILED\n";
-			throw std::runtime_error(ostr.str());
+                std::vector<std::string> paths = { "/usr/bin/", "/usr/local/bin", "/opt/local/bin" };
+                std::vector<std::string> names = { "feelpp_excompiler", "ginac-excompiler" };
+                for( auto p: paths )
+                {
+                    for( auto n: names )
+                    {
+                        fs::path exc = fs::path(p) / fs::path(n);
+                        if ( fs::exists( exc ) )
+                        {
+                            std::string strcompile = exc.string() + " " + filename;
+                            int status = system(strcompile.c_str());
+                            if (status)
+                            {
+                                std::ostringstream ostr;
+                                ostr << "ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
+                                throw std::runtime_error(ostr.str());
+                            }
+                            remove_src_file( filename, clean_up );
+                            return;
+                        }
+                    }
+                }
+                std::ostringstream ostr;
+                ostr << "ginac::compile_src_file " << filename << " WAS NOT COMPILED\n";
+                throw std::runtime_error(ostr.str());
 			}
 		}
 	/**
