@@ -163,11 +163,15 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
 
     // Build inherited FluidMechanics
     this->loadMesh( this->createMesh() );
-    // Init inherited FluidMechanics (to build spaces, algebraic data, ...)
-    super_type::init();
 
+    // Init inherited FluidMechanics (to build spaces, algebraic data, ...)
+    // but don't build algebraic data
+    super_type::init( false, false );
     // Init LevelSets
     this->createLevelsets();
+    // Finally build algebraic data
+    this->buildBlockVector();
+    this->initAlgebraicFactory();
 
     // "Deep" copy FluidMechanics materialProperties
     M_fluidMaterialProperties.reset( new material_properties_type( this->fluidPrefix() ) );
@@ -186,7 +190,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
     // Update density-viscosity
     this->updateFluidDensityViscosity();
 
-    M_doRebuildMatrixVector = false;
+    if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
+        M_doRebuildMatrixVector = true;
+    else
+        M_doRebuildMatrixVector = false;
 
     this->log("MultiFluid", "init", "finish");
 }
@@ -305,9 +312,43 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::functionSpaceInextensibilityLM() const
     if( !M_spaceInextensibilityLM || M_doRebuildSpaceInextensibilityLM )
     {
         this->log("MultiFluid","buildFunctionSpaceInextensibilityLM", "start" );
+        // Compute appropriate elements range
+        auto dirac = vf::project( 
+                _space=this->functionSpacePressure(), _range=this->rangeMeshElements(),
+                _expr=idv(this->levelsetModel(0)->dirac()) 
+                );
+        auto it_elt = this->mesh()->beginOrderedElement();
+        auto en_elt = this->mesh()->endOrderedElement();
+
+        const rank_type pid = this->mesh()->worldCommElements().localRank();
+        const int ndofv = super_type::space_fluid_pressure_type::fe_type::nDof;
+        elements_reference_wrapper_ptrtype diracElts( new elements_reference_wrapper_type );
+
+        for (; it_elt!=en_elt; it_elt++)
+        {
+            auto const& elt = boost::unwrap_ref( *it_elt );
+            if ( elt.processId() != pid )
+                continue;
+            bool mark_elt = false;
+            for (int j=0; j<ndofv; j++)
+            {
+                if ( dirac.localToGlobal(elt.id(), j, 0) > 0. )
+                {
+                    mark_elt = true;
+                    break; //don't need to do the others dof
+                }
+            }
+            if( mark_elt )
+                diracElts->push_back( boost::cref(elt) );
+        }
+
+        M_rangeInextensibilityLM = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                diracElts->begin(), diracElts->end(), diracElts );
+
         // Lagrange-multiplier inextensibility space
         M_spaceInextensibilityLM = space_inextensibilitylm_type::New(
-                _mesh=this->levelsetModel(0)->submeshDirac(),
+                _mesh=this->mesh(),
+                _range=M_rangeInextensibilityLM,
                 _worldscomm=this->localNonCompositeWorldsComm()
                 );
         M_doRebuildSpaceInextensibilityLM = false;
