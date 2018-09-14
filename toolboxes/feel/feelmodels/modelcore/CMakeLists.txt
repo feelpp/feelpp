@@ -12,11 +12,20 @@ add_library(feelpp_modelcore
   modelbase.cpp modelalgebraic.cpp modelnumerical.cpp
   markermanagement.cpp modelmeasures.cpp
   )
-target_link_libraries(feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES})
+target_link_libraries(feelpp_modelcore Feelpp::feelpp)
+target_include_directories(feelpp_modelcore PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )
 set_property(TARGET feelpp_modelcore PROPERTY MACOSX_RPATH ON)
 if( FEELPP_ENABLE_PCH_MODELS )
-    add_precompiled_header( feelpp_modelcore )
+  add_precompiled_header( feelpp_modelcore )
 endif()
-INSTALL(TARGETS feelpp_modelcore DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
+include(GNUInstallDirs)
+install(TARGETS feelpp_modelcore EXPORT feelpp-toolboxes-targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/modelcore COMPONENT Devel)

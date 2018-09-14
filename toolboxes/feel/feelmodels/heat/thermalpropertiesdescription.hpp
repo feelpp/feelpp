@@ -68,6 +68,7 @@ public :
                 M_space = space_type::New(_mesh=mesh );
             else
                 M_space = space_type::New(_mesh=mesh,_range=markedelements(mesh,M_markers) );
+            
             M_fieldThermalConductivity = M_space->elementPtr( vf::cst( this->cstThermalConductivity() ) );
             M_fieldHeatCapacity = M_space->elementPtr( vf::cst( this->cstHeatCapacity() ) );
             M_fieldRho = M_space->elementPtr( vf::cst( this->cstRho() ) );
