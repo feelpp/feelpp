@@ -26,6 +26,7 @@
 # set the version of feel++
 ################################################################################
 
+if ( NOT FEELPP_VERSION_STRING )
 OPTION(FEELPP_ENABLE_GIT "enable Feel++ looking up for git information" OFF)
 SET(FEELPP_SCM "git")
 FIND_PACKAGE(Git)
@@ -79,3 +80,5 @@ set(FEELPP_VERSION "(((${FEELPP_VERSION_MAJOR}) << 16) | ((${FEELPP_VERSION_MINO
 set(FEELPP_VERSION_STRING "${FEELPP_VERSION_MAJOR}.${FEELPP_VERSION_MINOR}.${FEELPP_VERSION_MICRO}${FEELPP_VERSION_PRERELEASE}${FEELPP_VERSION_METADATA}")
 set(FEELPP_SHARED_VERSION "1.0.0" )
 set(FEELPP_SHARED_SOVERSION "1" )
+
+endif(NOT FEELPP_VERSION_STRING )

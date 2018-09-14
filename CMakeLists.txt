@@ -144,6 +144,9 @@ endif()
 
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/feelpp/cmake/modules ${FEELPP_HOME_DIR}/feelpp/cmake/machines )
 
+include(feelpp.dirs)
+include(feelpp.version)
+
 #
 # Enable testing
 #
