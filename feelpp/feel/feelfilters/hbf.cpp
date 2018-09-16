@@ -315,8 +315,8 @@ HbfFineToCoarse::operator()( holo3_image<float> const& u, std::string way )
             }
             if ((dof.second.first< M_rows/SizeElem) && (dof.second.second<M_cols/SizeElem))
                 x( dof.second.first, dof.second.second ) = tmp/(SizeElem*SizeElem);
-                //x( dof.second.first, dof.second.second ) = u(dof.first.first,dof.first.second );
-                tmp=0;
+            //x( dof.second.first, dof.second.second ) = u(dof.first.first,dof.first.second );
+            tmp=0;
          }
          return x;
     }
@@ -368,9 +368,9 @@ HbfFineToCoarse::integ( holo3_image<float> const& u, std::string way, double pix
             }
          }
          if ((dof.second.first< M_rows/SizeElem) && (dof.second.second<M_cols/SizeElem))
-            x( dof.second.first, dof.second.second ) = tmp/(SizeElem*SizeElem);
-            //x( dof.second.first, dof.second.second ) = u(dof.first.first,dof.first.second );
-            tmp=0;
+             x( dof.second.first, dof.second.second ) = tmp/(SizeElem*SizeElem);
+         //x( dof.second.first, dof.second.second ) = u(dof.first.first,dof.first.second );
+         tmp=0;
      }
      return x;
 }

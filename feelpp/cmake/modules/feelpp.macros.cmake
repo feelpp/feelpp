@@ -106,9 +106,9 @@ macro(feelpp_add_application)
     set(execname feelpp_${FEELPP_APP_PROJECT}_${FEELPP_APP_NAME})
   else( FEELPP_APP_PROJECT )
     if ( PROJECT_NAME AND
-        ( NOT PROJECT_NAME STREQUAL "Feel++" )
+        ( NOT PROJECT_NAME STREQUAL "Feelpp" )
         )
-
+      
       if ( PROJECT_SHORTNAME )
         #message(STATUS "project: ${PROJECT_NAME} shortname: ${PROJECT_SHORTNAME}")
         set(execname feelpp_${PROJECT_SHORTNAME}_${FEELPP_APP_NAME})
