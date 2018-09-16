@@ -12,7 +12,12 @@ if [ -d docker ]; then (cd docker; git pull) else git clone --depth=1 https://gi
 #tag=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
 #tag=$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
 BRANCHTAG=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')
-tag=$(tag_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
+tag_compiler=$(echo ${CC} | sed -e 's/-//g')
+if test "$tag_compiler" != "${tag_compiler%gcc*}"; then
+    tag=$(tag_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)-${tag_compiler}
+else
+    tag=$(tag_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
+fi
 image="feelpp-${component}"
 if [ "${component}" = "feelpp" ] ; then
 #    tag=$(tag_from_os $TARGET $BRANCHTAG $FEELPP_VERSION)
