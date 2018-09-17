@@ -62,6 +62,9 @@ endif()
 add_library(Feelpp::feelpp ALIAS feelpp )  # to match exported target
 set_target_properties(feelpp PROPERTIES OUTPUT_NAME "feelpp")
 #set_target_properties(feelpp PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
+if ( ${CMAKE_VERSION} VERSION_GREATER 3.7.2 )
+  target_compile_features(feelpp PUBLIC cxx_std_14)
+endif()
 set_property(TARGET feelpp PROPERTY LABELS feel++)
 target_include_directories(feelpp PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>
@@ -160,6 +163,17 @@ if ( GMSH_FOUND )
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/gmsh>
     $<INSTALL_INTERFACE:include/feelpp> )
+endif()
+if ( ParaView_FOUND )
+  target_include_directories( feelpp PUBLIC ${ParaView_INCLUDE_DIRS} ${VTK_INCLUDE_DIRS})
+  target_link_libraries( feelpp PUBLIC ${ParaView_LIBRARIES} ${VTK_LIBRARIES})
+elseif ( VTK_FOUND )
+  target_include_directories( feelpp PUBLIC ${VTK_INCLUDE_DIRS})
+  target_link_libraries( feelpp PUBLIC ${VTK_LIBRARIES})
+endif()
+if ( FEELPP_HAS_LIBXML2 )
+  target_include_directories( feelpp PUBLIC ${LIBXML2_INCLUDE_DIR} )
+  target_link_libraries( feelpp PUBLIC ${LIBXML2_LIBRARIES})
 endif()
 if ( FEELPP_HAS_ACUSIM )
   target_include_directories( feelpp    PUBLIC ${ACUSIM_INCLUDE_DIR})
