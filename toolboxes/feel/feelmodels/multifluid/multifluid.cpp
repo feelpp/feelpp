@@ -5,6 +5,7 @@
 
 #include <feel/feelmodels/levelset/globallevelsetexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetheavisideexpr.hpp>
+#include <feel/feelmodels/levelset/levelsetdeltaexpr.hpp>
 
 #include <feel/feelfilters/loadmesh.hpp>
 
@@ -20,7 +21,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
 : super_type( prefixvm(prefix,"fluid"), false, wc, subPrefix, modelRep )
 , M_prefix( prefix )
 , M_doUpdateGlobalLevelset( true )
-, M_doRebuildSpaceInextensibilityLM( true )
+, M_doUpdateInextensibilityLM( true )
 {
     //-----------------------------------------------------------------------------//
     // Load parameters
@@ -169,9 +170,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
     super_type::init( false, false );
     // Init LevelSets
     this->createLevelsets();
+    // Update inextensibility LM if needed
+    if( this->M_hasInextensibilityLM )
+        this->updateInextensibilityLM();
     // Finally build algebraic data
     this->buildBlockVector();
     this->initAlgebraicFactory();
+    // Do not request matrix/vector update since they were just updated
+    M_doRebuildMatrixVector = false;
 
     // "Deep" copy FluidMechanics materialProperties
     M_fluidMaterialProperties.reset( new material_properties_type( this->fluidPrefix() ) );
@@ -189,11 +195,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
     }
     // Update density-viscosity
     this->updateFluidDensityViscosity();
-
-    if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
-        M_doRebuildMatrixVector = true;
-    else
-        M_doRebuildMatrixVector = false;
 
     this->log("MultiFluid", "init", "finish");
 }
@@ -230,6 +231,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
         CHECK( M_inextensibilityMethod[n] == "penalty" || M_inextensibilityMethod[n] == "lagrange-multiplier" ) 
             << "invalid inextensiblity-method " << M_inextensibilityMethod[n]
             << ", should be \"penalty\" or \"lagrange-multiplier\"" << std::endl;
+
+        if( M_hasInextensibility[n] && M_inextensibilityMethod[n] == "lagrange-multiplier" )
+            M_hasInextensibilityLM = true;
 
         M_inextensibilityGamma[n] = doption( _name="inextensibility-gamma", _prefix=levelset_prefix );
     }
@@ -309,51 +313,7 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 typename MULTIFLUID_CLASS_TEMPLATE_TYPE::space_inextensibilitylm_ptrtype const&
 MULTIFLUID_CLASS_TEMPLATE_TYPE::functionSpaceInextensibilityLM() const
 {
-    if( !M_spaceInextensibilityLM || M_doRebuildSpaceInextensibilityLM )
-    {
-        this->log("MultiFluid","buildFunctionSpaceInextensibilityLM", "start" );
-        // Compute appropriate elements range
-        auto dirac = vf::project( 
-                _space=this->functionSpacePressure(), _range=this->rangeMeshElements(),
-                _expr=idv(this->levelsetModel(0)->dirac()) 
-                );
-        auto it_elt = this->mesh()->beginOrderedElement();
-        auto en_elt = this->mesh()->endOrderedElement();
-
-        const rank_type pid = this->mesh()->worldCommElements().localRank();
-        const int ndofv = super_type::space_fluid_pressure_type::fe_type::nDof;
-        elements_reference_wrapper_ptrtype diracElts( new elements_reference_wrapper_type );
-
-        for (; it_elt!=en_elt; it_elt++)
-        {
-            auto const& elt = boost::unwrap_ref( *it_elt );
-            if ( elt.processId() != pid )
-                continue;
-            bool mark_elt = false;
-            for (int j=0; j<ndofv; j++)
-            {
-                if ( dirac.localToGlobal(elt.id(), j, 0) > 0. )
-                {
-                    mark_elt = true;
-                    break; //don't need to do the others dof
-                }
-            }
-            if( mark_elt )
-                diracElts->push_back( boost::cref(elt) );
-        }
-
-        M_rangeInextensibilityLM = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                diracElts->begin(), diracElts->end(), diracElts );
-
-        // Lagrange-multiplier inextensibility space
-        M_spaceInextensibilityLM = space_inextensibilitylm_type::New(
-                _mesh=this->mesh(),
-                _range=M_rangeInextensibilityLM,
-                _worldscomm=this->localNonCompositeWorldsComm()
-                );
-        M_doRebuildSpaceInextensibilityLM = false;
-        this->log("MultiFluid","buildFunctionSpaceInextensibilityLM", "finish" );
-    }
+    CHECK( !M_doUpdateInextensibilityLM ) << "updateInextensibilityLM() must be called before using functionSpaceInextensibilityLM()\n";
     return M_spaceInextensibilityLM;
 }
 
@@ -448,6 +408,67 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::nLocalDof() const
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInextensibilityLM()
+{
+    this->log("MultiFluid", "updateInextensibilityLM", "start");
+    for( uint16_type n = 0; n < M_levelsets.size(); ++n )
+    {
+        if( this->hasInextensibility(n) )
+        {
+            if( this->inextensibilityMethod(n) == "lagrange-multiplier" )
+            {
+                M_inextensibleLevelsets.push_back( M_levelsets[n]->phi() );
+            }
+        }
+    }
+    // Compute inextensible levelsets elements range
+    auto inextensibleLevelsetsExpr = Feel::vf::FeelModels::globalLevelsetExpr( M_inextensibleLevelsets );
+    auto dirac = vf::project(
+            _space=this->functionSpacePressure(), _range=this->rangeMeshElements(),
+            _expr=Feel::FeelModels::levelsetDelta( inextensibleLevelsetsExpr, cst(M_globalLevelsetThicknessInterface) )
+            );
+    auto it_elt = this->mesh()->beginOrderedElement();
+    auto en_elt = this->mesh()->endOrderedElement();
+
+    const rank_type pid = this->mesh()->worldCommElements().localRank();
+    const int ndofv = super_type::space_fluid_pressure_type::fe_type::nDof;
+    elements_reference_wrapper_ptrtype diracElts( new elements_reference_wrapper_type );
+
+    for (; it_elt!=en_elt; it_elt++)
+    {
+        auto const& elt = boost::unwrap_ref( *it_elt );
+        if ( elt.processId() != pid )
+            continue;
+        bool mark_elt = true;
+        for (int j=0; j<ndofv; j++)
+        {
+            if ( dirac.localToGlobal(elt.id(), j, 0) < 1e-6 )
+            {
+                mark_elt = false;
+                break; //don't need to do the others dof
+            }
+        }
+        if( mark_elt )
+            diracElts->push_back( boost::cref(elt) );
+    }
+
+    M_rangeInextensibilityLM = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+            diracElts->begin(), diracElts->end(), diracElts );
+
+    // Lagrange-multiplier inextensibility space
+    M_spaceInextensibilityLM = space_inextensibilitylm_type::New(
+            _mesh=this->mesh(),
+            _range=M_rangeInextensibilityLM,
+            _worldscomm=this->localNonCompositeWorldsComm()
+            );
+
+    M_doUpdateInextensibilityLM = false;
+    M_doRebuildMatrixVector = true;
+    this->log("MultiFluid", "updateInextensibilityLM", "finish");
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 bool
 MULTIFLUID_CLASS_TEMPLATE_TYPE::hasInterfaceForces() const
 {
@@ -534,6 +555,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveImpl()
 {
     // Update density and viscosity
     this->updateFluidDensityViscosity();
+    // Update inextensibility LM if needed
+    if( M_doUpdateInextensibilityLM )
+        this->updateInextensibilityLM();
     // Solve fluid equations (with direct assembly of interface forces)
     this->solveFluid();
     // Advect levelsets
@@ -548,11 +572,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveImpl()
 
     // Update global levelset
     M_doUpdateGlobalLevelset = true;
-
-    if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
-    {
-        M_doRebuildMatrixVector = true;
-    }
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -872,6 +891,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveFluid()
         this->algebraicFactory()->reset( this->M_backend, graph, graph->mapRow().indexSplit() );
         // Rebuild solution vector
         this->buildBlockVector();
+
+        M_doRebuildMatrixVector = false;
     }
 
     super_type::solve();
@@ -897,7 +918,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::advectLevelsets()
 
     if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
     {
-        M_doRebuildSpaceInextensibilityLM = true;
+        M_doUpdateInextensibilityLM = true;
     }
 
     double timeElapsed = this->timerTool("Solve").stop();
@@ -984,7 +1005,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional( DataUpdateLinear & da
             {
                 auto N = this->M_levelsets[n]->N();
                 auto NxN = idv(N)*trans(idv(N));
-                auto D = this->M_levelsets[n]->D();
 
                 if( this->inextensibilityMethod(n) == "penalty" )
                 {
@@ -992,6 +1012,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional( DataUpdateLinear & da
 
                     if( BuildNonCstPart )
                     {
+                        auto D = this->M_levelsets[n]->D();
                         bilinearForm_PatternDefault += integrate(
                                 _range=elements(mesh),
                                 _expr=this->M_inextensibilityGamma[n]*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
@@ -1010,23 +1031,25 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional( DataUpdateLinear & da
                     this->timerTool("Solve").start();
 
                     size_type startBlockIndexInextensibilityLM = this->startSubBlockSpaceIndex("inextensibility-lm");
-                    auto submeshInextensibilityLM = this->levelsetModel(n)->submeshDirac();
                     auto lambda = this->functionSpaceInextensibilityLM()->element();
 
                     if( BuildNonCstPart )
                     {
+                        auto inextensibleLevelsetsExpr = Feel::vf::FeelModels::globalLevelsetExpr( M_inextensibleLevelsets );
+                        auto inextensibleLevelsetsDeltaExpr = Feel::FeelModels::levelsetDelta( inextensibleLevelsetsExpr, cst(M_globalLevelsetThicknessInterface) );
+
                         form2( _trial=this->functionSpaceInextensibilityLM(), _test=this->functionSpace(), _matrix=A,
                                _rowstart=rowStartInMatrix,
                                _colstart=colStartInMatrix+startBlockIndexInextensibilityLM ) +=
-                            integrate( _range=elements(submeshInextensibilityLM),
-                                       _expr=idt(lambda)*trace((Id-NxN)*grad(v))*idv(D),
+                            integrate( _range=this->M_rangeInextensibilityLM,
+                                       _expr=idt(lambda)*trace((Id-NxN)*grad(v))*inextensibleLevelsetsDeltaExpr,
                                        _geomap=this->geomap()
                                        );
                         form2( _trial=this->functionSpace(), _test=this->functionSpaceInextensibilityLM(), _matrix=A,
                                _rowstart=rowStartInMatrix+startBlockIndexInextensibilityLM,
                                _colstart=colStartInMatrix ) +=
-                            integrate( _range=elements(submeshInextensibilityLM),
-                                       _expr=id(lambda)*trace((Id-NxN)*gradt(u))*idv(D),
+                            integrate( _range=this->M_rangeInextensibilityLM,
+                                       _expr=id(lambda)*trace((Id-NxN)*gradt(u))*inextensibleLevelsetsDeltaExpr,
                                        _geomap=this->geomap()
                                        );
                     }
@@ -1150,23 +1173,25 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianAdditional( DataUpdateJacobian & d
                     this->timerTool("Solve").start();
 
                     size_type startBlockIndexInextensibilityLM = this->startSubBlockSpaceIndex("inextensibility-lm");
-                    auto submeshInextensibilityLM = this->levelsetModel(n)->submeshDirac();
                     auto lambda = this->functionSpaceInextensibilityLM()->element();
 
                     if( BuildNonCstPart )
                     {
+                        auto inextensibleLevelsetsExpr = Feel::vf::FeelModels::globalLevelsetExpr( M_inextensibleLevelsets );
+                        auto inextensibleLevelsetsDeltaExpr = Feel::FeelModels::levelsetDelta( inextensibleLevelsetsExpr, cst(M_globalLevelsetThicknessInterface) );
+
                         form2( _trial=this->functionSpaceInextensibilityLM(), _test=this->functionSpace(), _matrix=J,
                                _rowstart=rowStartInMatrix,
                                _colstart=colStartInMatrix+startBlockIndexInextensibilityLM ) +=
-                            integrate( _range=elements(submeshInextensibilityLM),
-                                       _expr=idt(lambda)*trace((Id-NxN)*grad(v))*idv(D),
+                            integrate( _range=this->M_rangeInextensibilityLM,
+                                       _expr=idt(lambda)*trace((Id-NxN)*grad(v))*inextensibleLevelsetsDeltaExpr,
                                        _geomap=this->geomap()
                                        );
                         form2( _trial=this->functionSpace(), _test=this->functionSpaceInextensibilityLM(), _matrix=J,
                                _rowstart=rowStartInMatrix+startBlockIndexInextensibilityLM,
                                _colstart=colStartInMatrix ) +=
-                            integrate( _range=elements(submeshInextensibilityLM),
-                                       _expr=id(lambda)*trace((Id-NxN)*gradt(u))*idv(D),
+                            integrate( _range=this->M_rangeInextensibilityLM,
+                                       _expr=id(lambda)*trace((Id-NxN)*gradt(u))*inextensibleLevelsetsDeltaExpr,
                                        _geomap=this->geomap()
                                        );
                     }
@@ -1289,21 +1314,23 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualAdditional( DataUpdateResidual & d
                     this->timerTool("Solve").start();
 
                     size_type startBlockIndexInextensibilityLM = this->startSubBlockSpaceIndex("inextensibility-lm");
-                    auto submeshInextensibilityLM = this->levelsetModel(n)->submeshDirac();
                     auto lambda = this->functionSpaceInextensibilityLM()->element(XVec,rowStartInVector+startBlockIndexInextensibilityLM);
 
                     if( BuildNonCstPart )
                     {
+                        auto inextensibleLevelsetsExpr = Feel::vf::FeelModels::globalLevelsetExpr( M_inextensibleLevelsets );
+                        auto inextensibleLevelsetsDeltaExpr = Feel::FeelModels::levelsetDelta( inextensibleLevelsetsExpr, cst(M_globalLevelsetThicknessInterface) );
+
                         form1( _test=this->functionSpace(), _vector=R,
                                _rowstart=rowStartInVector ) +=
-                            integrate( _range=elements(submeshInextensibilityLM),
-                                       _expr=idv(lambda)*trace((Id-NxN)*grad(v))*idv(D),
+                            integrate( _range=this->M_rangeInextensibilityLM,
+                                       _expr=idv(lambda)*trace((Id-NxN)*grad(v))*inextensibleLevelsetsDeltaExpr,
                                        _geomap=this->geomap()
                                        );
                         form1( _test=this->functionSpaceInextensibilityLM(), _vector=R,
                                _rowstart=rowStartInVector+startBlockIndexInextensibilityLM ) += 
-                            integrate( _range=elements(submeshInextensibilityLM),
-                                       _expr=id(lambda)*trace((Id-NxN)*gradv(u))*idv(D),
+                            integrate( _range=this->M_rangeInextensibilityLM,
+                                       _expr=id(lambda)*trace((Id-NxN)*gradv(u))*inextensibleLevelsetsDeltaExpr,
                                        _geomap=this->geomap()
                                        );
                     }
