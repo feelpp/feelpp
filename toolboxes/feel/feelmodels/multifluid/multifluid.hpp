@@ -172,6 +172,7 @@ public:
     //--------------------------------------------------------------------//
     bool hasInextensibility( uint16_type n = 0 ) const { return M_hasInextensibility.at(n); }
     std::string const& inextensibilityMethod( uint16_type n = 0 ) const { return M_inextensibilityMethod.at(n); }
+    void updateInextensibilityLM();
     //--------------------------------------------------------------------//
     bool hasInterfaceForces() const;
 
@@ -263,13 +264,15 @@ private:
 
     //--------------------------------------------------------------------//
     // Inextensibility
-    std::vector<bool> M_hasInextensibility;
     bool M_enableInextensibility;
+    std::vector<bool> M_hasInextensibility;
+    bool M_hasInextensibilityLM;
     std::vector<std::string> M_inextensibilityMethod;
+    std::vector<element_levelset_ptrtype> M_inextensibleLevelsets;
 
     mutable range_elements_type M_rangeInextensibilityLM;
     mutable space_inextensibilitylm_ptrtype M_spaceInextensibilityLM;
-    mutable bool M_doRebuildSpaceInextensibilityLM;
+    mutable bool M_doUpdateInextensibilityLM;
     // Penalty method gamma
     std::vector<double> M_inextensibilityGamma;
     //--------------------------------------------------------------------//
