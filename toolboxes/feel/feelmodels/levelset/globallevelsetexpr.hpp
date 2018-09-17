@@ -52,6 +52,13 @@ public:
     ~GlobalLevelsetImpl() = default;
 
     //--------------------------------------------------------------------//
+    //! polynomial order
+    uint16_type polynomialOrder() const { return imorder; }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return true; }
+
+    //--------------------------------------------------------------------//
     std::vector<element_levelset_ptrtype> const& levelsets() const { return M_levelsets; }
     element_levelset_ptrtype const& levelsets( size_type i ) const { return M_levelsets[i]; }
 
