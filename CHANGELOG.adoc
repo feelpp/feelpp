@@ -17,12 +17,15 @@ https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
 
 === Features
 
+* Massive reorganization of {feelpp}, {uri-issue}/1208[#1208]
+** enforce modern cmake in the process of the organization see , {uri-issue}/1212[#1212]
 * [**pyfeelpp**] python support for {feelpp}, see Epic {uri-issue}/930[#930]
 ** core: Environment, WorldComm, RemoteData, OptionsDescription, Info
 ** mesh: Mesh, ranges(elements and faces)
 ** discr: FunctionSpace, FunctionSpace::Element
 ** ts: TSBase
 ** exporter: Exporter
+* [**pyfeelpptoolboxes**] python support for {feelpp} toolboxes, see Epic {uri-issue}/930[#930]
 ** toolbox/modelcore: ModelBase, ModelAlgebraic, ModelNumerical
 ** toolboxes: fluid, solid, electric, heat
 ** toolboxes/fluid: FluidMechanics
@@ -32,6 +35,7 @@ https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
 * [**toolbox**] add pre/post solve interface with Linear/Picard solver
 
 === Fixes
+* [**feelpp**] improve support for g++-8
 * [**all**] boost::shared_ptr has been replaced by std::shared_ptr {uri-issue}/1202[#1202]
 * [**feel/**] Fix support of filename_is_dot and filename_is_dot_dot in boost filesystem with boost 1.61 and 1.62 see {uri-issue}/[#1191]
 * [**toolbox**] remove rho scaling in fluid incompressibilty equation (cherry pick from feature/ls)
