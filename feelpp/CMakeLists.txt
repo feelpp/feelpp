@@ -204,7 +204,7 @@ include( feelpp.dependencies )
 add_custom_target(contrib)
 
 add_subdirectory(contrib)
-
+set(FEELPP_ENABLED_OPTIONS ${FEELPP_ENABLED_OPTIONS} ${FEELPP_ENABLED_OPTIONS_CONTRIB} PARENT_SCOPE )
 
 
 if(NOT FEELPP_ENABLE_BUILD_STATIC)
