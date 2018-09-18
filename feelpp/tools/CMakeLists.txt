@@ -24,7 +24,9 @@
 
 add_subdirectory(remotedata)
 add_subdirectory( mesh )
-add_subdirectory( fmi )
+if ( FEELPP_HAS_FMILIB )
+  add_subdirectory( fmi )
+endif()
 add_subdirectory( databases )
 
 add_subdirectory(scripts)
