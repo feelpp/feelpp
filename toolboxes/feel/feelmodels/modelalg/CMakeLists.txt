@@ -1,6 +1,8 @@
 
 add_library( feelpp_modelalg SHARED
   modelalgebraicfactory.cpp )
+add_library(Feelpp::feelpp_modelalg ALIAS feelpp_modelalg )  # to match exported target
+set_target_properties(feelpp_modelalg PROPERTIES OUTPUT_NAME "feelpp_modelalg")
 target_link_libraries (feelpp_modelalg PUBLIC feelpp_modelcore )
 target_include_directories(feelpp_modelalg PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
