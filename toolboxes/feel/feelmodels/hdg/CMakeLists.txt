@@ -22,7 +22,7 @@
 #
 #
 add_library( feelpp_toolbox_hdg INTERFACE )
-
+add_library(Feelpp::feelpp_toolbox_hdg ALIAS feelpp_toolbox_hdg )  # to match exported target
 target_include_directories(feelpp_toolbox_hdg INTERFACE
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )

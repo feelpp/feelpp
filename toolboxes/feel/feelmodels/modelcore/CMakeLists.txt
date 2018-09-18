@@ -13,6 +13,8 @@ add_library(feelpp_modelcore
   markermanagement.cpp modelmeasures.cpp
   )
 target_link_libraries(feelpp_modelcore Feelpp::feelpp)
+add_library(Feelpp::feelpp_modelcore ALIAS feelpp_modelcore )  # to match exported target
+set_target_properties(feelpp_modelcore PROPERTIES OUTPUT_NAME "feelpp_modelcore")
 target_include_directories(feelpp_modelcore PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )

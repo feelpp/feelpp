@@ -12,6 +12,8 @@ add_library(
   ${FEELPP_MODELS_MESH_SRC}
 )
 target_link_libraries(feelpp_modelmesh PUBLIC feelpp_modelcore )
+add_library(Feelpp::feelpp_modelmesh ALIAS feelpp_modelmesh )  # to match exported target
+set_target_properties(feelpp_modelmesh PROPERTIES OUTPUT_NAME "feelpp_modelmesh")
 target_include_directories(feelpp_modelmesh PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )
