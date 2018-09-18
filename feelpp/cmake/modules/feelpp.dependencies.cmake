@@ -1150,7 +1150,7 @@ if ( FEELPP_ENABLE_VTK )
             #if ( NOT FEELPP_ENABLE_OPENGL )
                 #SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
             #endif()
-            INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
+            #INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
             MARK_AS_ADVANCED( VTK_DIR )
 
             # # On debian for vtk6 (actually not working since vtk6 is built with hdf5 serial)
