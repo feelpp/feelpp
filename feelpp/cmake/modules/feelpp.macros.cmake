@@ -709,7 +709,6 @@ include(feelpp.macros.crb)
 
 # OM cmake macros
 macro ( feelpp_add_fmu )
-  if ( FEELPP_HAS_OMC AND FEELPP_HAS_FMILIB )
     PARSE_ARGUMENTS( OM_MODEL
       "SRCS;CLASS;VERS;TYPE;CATEGORY" "" ${ARGN} )
 
@@ -744,11 +743,9 @@ macro ( feelpp_add_fmu )
       install( DIRECTORY ${OMWRAPPER_LIBDIR}
         DESTINATION share/feelpp/testcases/${OM_MODEL_CATEGORY} )
     endif()
-  endif()
 endmacro( feelpp_add_fmu )
 
 macro( feelpp_add_omc )
-  if ( FEELPP_HAS_OMC )
     PARSE_ARGUMENTS( OM_MODEL
       "SRCS;CLASS;CATEGORY" "" ${ARGN} )
 
@@ -786,7 +783,6 @@ macro( feelpp_add_omc )
     if( OM_MODEL_CATEGORY )
 
     endif()
-  endif()
 endmacro( feelpp_add_omc )
 
 
