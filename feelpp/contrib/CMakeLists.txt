@@ -41,7 +41,7 @@ if ( FEELPP_HAS_GFLAGS )
     )
   target_link_libraries(feelpp_contrib INTERFACE feelpp_gflags)
 
-  set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GFlags/Contrib" PARENT_SCOPE)
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GFlags/Contrib")
   
   # for GLog
   set(gflags_LIBRARIES feelpp_gflags)
@@ -61,7 +61,7 @@ if ( FEELPP_HAS_GLOG )
   #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/glog)
   list(INSERT FEELPP_LIBRARIES 0 feelpp_glog)
   #add_dependencies(contrib feelpp_glog)
-  set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLog/Contrib" PARENT_SCOPE)
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GLog/Contrib")
 endif()
 
 set( FEELPP_HAS_GINAC 1 )
@@ -113,9 +113,9 @@ if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/feel AND EXISTS ${CMA
   
   set( EIGEN3_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen/unsupported )
 
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/Contrib" )
+  SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Eigen3/Contrib" )
 elseif( EIGEN3_FOUND )
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/System" )
+  SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Eigen3/System" )
 else()
   find_path(EIGEN3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
     PATHS
@@ -157,7 +157,7 @@ if(FEELPP_ENABLE_METIS)
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/metis/include>
     $<INSTALL_INTERFACE:include/feelpp>)
   target_link_libraries(feelpp_contrib INTERFACE feelpp_metis)
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Metis/Contrib" )
+  SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Metis/Contrib" )
 endif( FEELPP_ENABLE_METIS )
 
 
@@ -192,7 +192,7 @@ if ( FEELPP_ENABLE_NLOPT )
     set(NLOPT_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/nlopt/api  ${FEELPP_BINARY_DIR}/contrib/nlopt/api)
     
     target_link_libraries(feelpp_contrib INTERFACE feelpp_nlopt )
-    SET( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt/Contrib")
+    SET( FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} NLOpt/Contrib")
     SET(FEELPP_HAS_NLOPT 1)
     list(INSERT FEELPP_LIBRARIES 0 feelpp_nlopt)
   endif( FEELPP_CONTRIB_PREPARE_SUCCEED )
@@ -216,7 +216,7 @@ if ( FEELPP_ENABLE_PYBIND11 )
     target_include_directories(feelpp_contrib INTERFACE
       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/pybind11/include>
       $<INSTALL_INTERFACE:include/feelpp/pybind11> )
-    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PyBind11" PARENT_SCOPE)
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} PyBind11/Contrib")
   endif()
 endif()
 
@@ -245,7 +245,7 @@ if ( FEELPP_ENABLE_MONGOCXX )
       include_directories(${LIBMONGOCXX_INCLUDE_DIRS} ${LIBBSONCXX_INCLUDE_DIRS})
       set(FEELPP_HAS_BSONCXX 1)
       set(FEELPP_HAS_MONGOCXX 1)
-      set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} MongoCXX" )
+      set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} MongoCXX/Contrib" )
       list(APPEND MONGO_LIBRARIES feelpp_mongocxx feelpp_bsoncxx ${LIBMONGOC_LIBRARIES} ${LIBBSON_LIBRARIES} )
       list(INSERT FEELPP_LIBRARIES 0 ${MONGO_LIBRARIES})
     endif()
@@ -274,3 +274,5 @@ endif()
 
 INSTALL(TARGETS feelpp_contrib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-contrib-export-targets)
 install(EXPORT feelpp-contrib-export-targets DESTINATION share/feelpp/feel/cmake/modules)
+
+set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB}" PARENT_SCOPE)
