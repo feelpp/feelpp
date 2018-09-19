@@ -180,9 +180,9 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
 
   # import paraview/vtk targets
   if ( FEELPP_HAS_PARAVIEW )
-    find_package(ParaView PATHS ${FEELPP_PARAVIEW_DIR} NO_DEFAULT_PATH )
+    find_dependency(ParaView PATHS ${FEELPP_PARAVIEW_DIR} NO_DEFAULT_PATH )
   elseif ( FEELPP_HAS_VTK )
-    find_package(VTK PATHS ${FEELPP_VTK_DIR} NO_DEFAULT_PATH )
+    find_dependency(VTK PATHS ${FEELPP_VTK_DIR} NO_DEFAULT_PATH )
   endif()
 
   if ( NOT TARGET Feelpp::feelpp )
