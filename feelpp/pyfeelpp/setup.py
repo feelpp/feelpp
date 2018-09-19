@@ -39,7 +39,8 @@ class CMakeBuild(build_ext):
             '-DCMAKE_C_COMPILER=@CMAKE_C_COMPILER@',
             '-DCMAKE_INSTALL_PREFIX=@CMAKE_INSTALL_PREFIX@',
             '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
-            '-DPYTHON_EXECUTABLE=' + sys.executable]
+            '-DPYTHON_EXECUTABLE=' + sys.executable,
+            '-DFEELPP_DIR=@FEELPP_DIR@']
 
         if @PYFEELPP_SETUP_HAS_PARAVIEW_CMAKE_ARGS@ == 1 :
             cmake_args += @PYFEELPP_SETUP_PARAVIEW_CMAKE_ARGS@
