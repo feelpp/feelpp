@@ -254,8 +254,9 @@ if ( FEELPP_ENABLE_MONGOCXX )
   endif()
 endif( FEELPP_ENABLE_MONGOCXX )
 
-
-add_subdirectory(gmsh)
+if ( FEELPP_HAS_GMSH )
+  add_subdirectory(gmsh)
+endif()
 
 #include(feelpp.module.mongocxx)
 #include(feelpp.module.hpddm)
