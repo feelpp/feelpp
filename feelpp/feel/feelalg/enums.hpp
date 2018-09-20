@@ -28,8 +28,8 @@
 
 #include <feel/feelcore/feel.hpp>
 
-#if FEELPP_HAS_PETSC
-    #include <feel/feelcore/feelpetsc.hpp>
+#if defined(FEELPP_HAS_PETSC)
+#include <feel/feelcore/feelpetsc.hpp>
 #endif
 
 namespace Feel
