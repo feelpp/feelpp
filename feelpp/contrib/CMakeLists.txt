@@ -22,7 +22,7 @@
 #
 #
 add_library(feelpp_contrib INTERFACE)
-
+add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
 set( FEELPP_HAS_GFLAGS 1 )
 set( FEELPP_HAS_GFLAGS 1 PARENT_SCOPE )
 add_subdirectory(gflags)
@@ -156,8 +156,9 @@ message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
 option( FEELPP_ENABLE_METIS "Enable Metis Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_METIS)
   add_subdirectory(metis)
-  SET(FEELPP_HAS_METIS 1)
-  SET(FEELPP_HAS_METIS 1 PARENT_SCOPE)
+  #SET(FEELPP_HAS_METIS 1)
+  #SET(FEELPP_HAS_METIS 1 PARENT_SCOPE)
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_METIS )
   TARGET_INCLUDE_DIRECTORIES(feelpp_contrib INTERFACE
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/metis/include>
     $<INSTALL_INTERFACE:include/feelpp/metis>)
