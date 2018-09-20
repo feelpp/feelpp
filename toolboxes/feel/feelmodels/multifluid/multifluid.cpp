@@ -21,7 +21,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
 : super_type( prefixvm(prefix,"fluid"), false, wc, subPrefix, modelRep )
 , M_prefix( prefix )
 , M_doUpdateGlobalLevelset( true )
-, M_doUpdateInextensibilityLM( true )
+, M_doUpdateInextensibilityLM( false )
 {
     //-----------------------------------------------------------------------------//
     // Load parameters
