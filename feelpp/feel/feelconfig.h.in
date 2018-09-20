@@ -58,19 +58,19 @@
 #cmakedefine GMSH_EXECUTABLE @GMSH_EXECUTABLE@
 
 /* Define to 1 if you have the Gmsh headers available. */
-#cmakedefine FEELPP_HAS_GMSH_H
+/*#cmakedefine FEELPP_HAS_GMSH_H*/
 
 /* Define to 1 if you have the Gmsh library available. */
-#cmakedefine FEELPP_HAS_GMSH_LIBRARY
+/*#cmakedefine FEELPP_HAS_GMSH_LIBRARY*/
 
 /* Define to 1 if you have the gperftools library available. */
 #cmakedefine FEELPP_HAS_GPERFTOOLS
 
 /* Define to 1 if you have METIS available. */
-#cmakedefine FEELPP_HAS_METIS
+/*#cmakedefine FEELPP_HAS_METIS*/
 
 /* Define to 1 if you have HDF5 available. */
-#cmakedefine FEELPP_HAS_HDF5
+/*#cmakedefine FEELPP_HAS_HDF5*/
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine FEELPP_HAS_INTTYPES_H
@@ -103,16 +103,16 @@
 #cmakedefine FEELPP_HAS_OPENMP
 
 /* Define to 1 if you have petsc. */
-#cmakedefine FEELPP_HAS_PETSC @FEELPP_HAS_PETSC@
+/*#cmakedefine FEELPP_HAS_PETSC @FEELPP_HAS_PETSC@*/
 
 /* Define to 1 if you have the <petsc.h> header file. */
-#cmakedefine FEELPP_HAS_PETSC_H @FEELPP_HAS_PETSC_H@
+/*#cmakedefine FEELPP_HAS_PETSC_H @FEELPP_HAS_PETSC_H@*/
 
 /* Define to 1 if you have slepc. */
-#cmakedefine FEELPP_HAS_SLEPC @FEELPP_HAS_SLEPC@
+/*#cmakedefine FEELPP_HAS_SLEPC @FEELPP_HAS_SLEPC@*/
 
 /* Define to 1 if you have the <slepc.h> header file. */
-#cmakedefine FEELPP_HAS_SLEPC_H @FEELPP_HAS_SLEPC_H@
+/*#cmakedefine FEELPP_HAS_SLEPC_H @FEELPP_HAS_SLEPC_H@*/
 
 /* Define to 1 if you have the <slu_Cnames.h> header file. */
 #cmakedefine FEELPP_HAS_SLU_CNAMES_H
