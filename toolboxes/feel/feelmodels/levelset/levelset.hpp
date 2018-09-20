@@ -626,7 +626,6 @@ private:
     // Normal, curvature
     mutable element_vectorial_ptrtype M_levelsetNormal;
     mutable element_levelset_ptrtype M_levelsetCurvature;
-    bool M_doSmoothGradient;
     //--------------------------------------------------------------------//
     // Advection
 

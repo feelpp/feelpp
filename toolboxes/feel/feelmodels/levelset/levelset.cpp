@@ -803,8 +803,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     M_reinitInitialValue = boption( _name="reinit-initial-value", _prefix=this->prefix() );
 
-    M_doSmoothGradient = boption( _name="smooth-gradient", _prefix=this->prefix() );
-
     const std::string gradPhiMethod = soption( _name="gradphi-method", _prefix=this->prefix() );
     CHECK(DerivationMethodMap.left.count(gradPhiMethod)) << gradPhiMethod <<" is not in the list of possible derivation methods\n";
     M_gradPhiMethod = DerivationMethodMap.left.at(gradPhiMethod);
@@ -2302,6 +2300,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
 
     std::string hdProjectionMethod = (this->M_useHeavisideDiracNodalProj)? "nodal": "L2";
 
+    const std::string gradphiMethod = DerivationMethodMap.right.at(this->M_gradPhiMethod);
     const std::string curvatureMethod = DerivationMethodMap.right.at(this->M_curvatureMethod);
 
     std::string reinitMethod;
@@ -2365,7 +2364,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- use regular phi (phi / |grad(phi)|) : " << std::boolalpha << this->M_useRegularPhi
            << "\n     -- Heaviside/Dirac projection method   : " << hdProjectionMethod
            << "\n     -- reinit initial value                : " << std::boolalpha << this->M_reinitInitialValue
-           << "\n     -- smooth gradient                     : " << std::boolalpha << this->M_doSmoothGradient
+           << "\n     -- gradphi projection                  : " << gradphiMethod
            << "\n     -- curvature projection                : " << curvatureMethod
            << "\n     -- use gradient augmented              : " << std::boolalpha << this->M_useGradientAugmented
            << "\n     -- use stretch augmented               : " << std::boolalpha << this->M_useStretchAugmented
