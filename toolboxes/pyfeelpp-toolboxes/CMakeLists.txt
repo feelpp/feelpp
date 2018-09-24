@@ -27,8 +27,9 @@
 #
 OPTION(FEELPP_ENABLE_PYFEELPP_TOOLBOXES "Enable PyFeel++ for toolboxes" ON  )
 if (FEELPP_ENABLE_PYFEELPP_TOOLBOXES)
-  message(STATUS "Hola toolboxes" )
+  message(STATUS "Enabling PyFeel++ Toolboxes" )
   # additional cmake args can be necessary for paraview
+  feelpp_get_compile_definition( Feelpp::feelpp FEELPP_HAS_PARAVIEW )
   set(PYFEELPP_SETUP_HAS_PARAVIEW_CMAKE_ARGS 0)
   set(PYFEELPP_SETUP_PARAVIEW_CMAKE_ARGS "[]")
   if ( FEELPP_HAS_PARAVIEW AND PARAVIEW_ENABLE_QT_SUPPORT )
