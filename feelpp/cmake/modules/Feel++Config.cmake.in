@@ -44,6 +44,8 @@ set(FEELPP_CXX_FLAGS "@CMAKE_CXX_FLAGS@")
 
 set(FEELPP_CMAKE_BUILD_TYPE @CMAKE_BUILD_TYPE@)
 
+
+
 set(FEELPP_CONTRIB_ENABLED_OPTIONS "@FEELPP_CONTRIB_ENABLED_OPTIONS@")
 set(FEELPP_ENABLED_OPTIONS "@FEELPP_ENABLED_OPTIONS@")
 # Feel++ mesh configuration
@@ -200,6 +202,21 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   MESSAGE(STATUS "[Feel++] version: ${FEELPP_VERSION_STRING}")
   MESSAGE(STATUS "[Feel++] loaded with configuration: ${FEELPP_CMAKE_BUILD_TYPE}")
   MESSAGE(STATUS "[Feel++] loaded with packages: ${FEELPP_ENABLED_OPTIONS}")
+
+  function(list_options varTarget )
+  get_property(CD TARGET ${varTarget} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
+  foreach( opts IN LISTS CD )
+    string( REGEX MATCH "FEELPP_HAS_[a-zA-Z0-9]+$" OPT ${opts} )
+    if ( OPT )
+      message( STATUS "Enabled option: ${OPT}" )
+      set(${OPT} 1 PARENT_SCOPE)
+    endif()
+  endforeach()
+endfunction()
+list_options(Feelpp::feelpp_contrib )
+list_options(Feelpp::feelpp )
+
+
 endif()
 
 
