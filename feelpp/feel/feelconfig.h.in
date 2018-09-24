@@ -19,13 +19,13 @@
 #cmakedefine FC_DUMMY_MAIN_EQ_F77
 
 /* Define to 1 if you have ACUSIM available. */
-#cmakedefine FEELPP_HAS_ACUSIM
+/*#cmakedefine FEELPP_HAS_ACUSIM*/
 
 /* Define to 1 if you have ANN available. */
-#cmakedefine FEELPP_HAS_ANN
+/*#cmakedefine FEELPP_HAS_ANN*/
 
 /* Define to 1 if you have the ANN headers are available. */
-#cmakedefine FEELPP_HAS_ANN_H
+/*#cmakedefine FEELPP_HAS_ANN_H*/
 
 /* define if Bamg is enabled */
 #cmakedefine FEELPP_HAS_BAMG
@@ -37,13 +37,13 @@
 #cmakedefine FEELPP_HAS_EIGEN_EIGEN
 
 /* Define to 1 if you have FFTW available. */
-#cmakedefine FEELPP_HAS_FFTW
+/*#cmakedefine FEELPP_HAS_FFTW*/
 
 /* Define to 1 if you have GINAC available. */
-#cmakedefine FEELPP_HAS_GINAC
+/*#cmakedefine FEELPP_HAS_GINAC*/
 
 /* Define to 1 if you have the GLPK headers available. */
-#cmakedefine FEELPP_HAS_GLPK_H
+/*#cmakedefine FEELPP_HAS_GLPK_H*/
 
 /* define the maximum polynomial order to instantiate */
 #cmakedefine FEELPP_INSTANTIATION_ORDER_MAX @FEELPP_INSTANTIATION_ORDER_MAX@
@@ -76,7 +76,7 @@
 #cmakedefine FEELPP_HAS_INTTYPES_H
 
 /* Define if the superlu library can be used. */
-#cmakedefine FEELPP_HAS_LIBXML2
+/*#cmakedefine FEELPP_HAS_LIBXML2*/
 
 /* Define if the superlu library can be used. */
 #cmakedefine FEELPP_HAS_LIBSUPERLU
@@ -160,13 +160,13 @@
 #cmakedefine FEELPP_HAS_IPOPT
 
 /* Define to 1 if you have nlopt. */
-#cmakedefine FEELPP_HAS_NLOPT
+/*#cmakedefine FEELPP_HAS_NLOPT*/
 
 /* Define to 1 if you have cereal. */
 #cmakedefine FEELPP_HAS_CEREAL
 
 /* Define to 1 if you have Python. */
-#cmakedefine FEELPP_HAS_PYTHON
+/*#cmakedefine FEELPP_HAS_PYTHON*/
 
 /* Define to 1 if you enabled Python wrapping. */
 #cmakedefine FEELPP_ENABLE_PYTHON_WRAPPING
@@ -175,7 +175,7 @@
 #cmakedefine FEELPP_HAS_BOOST_PYTHON
 
 /* Define to 1 if pybind11 is available. */
-#cmakedefine FEELPP_HAS_PYBIND11
+/*#cmakedefine FEELPP_HAS_PYBIND11*/
 
 /* Define to 1 if you have the <ufsparse/umfpack.h> header file. */
 #cmakedefine FEELPP_HAS_UFSPARSE_UMFPACK_H
@@ -193,16 +193,16 @@
 #cmakedefine FEELPP_HAS_UNISTD_H
 
 /* Define to 1 if you have VTK . */
-#cmakedefine FEELPP_HAS_VTK
+/*#cmakedefine FEELPP_HAS_VTK*/
 
 /* Define to 1 if you have ParaView . */
-#cmakedefine FEELPP_HAS_PARAVIEW
+/*#cmakedefine FEELPP_HAS_PARAVIEW*/
 
 /* Define to 1 if you the insitu part is enabled for VTK . */
-#cmakedefine FEELPP_VTK_INSITU_ENABLED
+/*#cmakedefine FEELPP_VTK_INSITU_ENABLED*/
 
 /* Define to 1 if you have the parallel component for VTK. */
-#cmakedefine VTK_HAS_PARALLEL
+/*#cmakedefine VTK_HAS_PARALLEL*/
 
 /* The path of installation */
 #cmakedefine INSTALL_PATH
@@ -259,6 +259,6 @@
 #define FEELPP_CONFIG_OPTIONS "${FEELPP_CONFIG_OPTIONS}"
 
 /* Define to 1 if you have libcurl support. */
-#cmakedefine FEELPP_HAS_LIBCURL
+/*#cmakedefine FEELPP_HAS_LIBCURL*/
 
 #endif

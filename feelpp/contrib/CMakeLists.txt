@@ -75,7 +75,7 @@ add_subdirectory(ginac)
 #
 find_package(CLN)
 
-target_compile_definitions(feelpp_contrib INTERFACE FEELP_HAS_GINAC IN_GINAC HAVE_LIBDL)
+target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GINAC IN_GINAC HAVE_LIBDL)
 
 #link_directories( ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
 
