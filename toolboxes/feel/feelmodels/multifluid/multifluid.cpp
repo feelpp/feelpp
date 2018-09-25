@@ -28,7 +28,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
     M_hasInterfaceForcesModel( false ),
     M_enableInextensibility( false ),
     M_hasInextensibilityLM( false ),
-    M_doUpdateInextensibilityLM( false ),
+    M_doUpdateInextensibilityLM( false )
 {
     //-----------------------------------------------------------------------------//
     // Load parameters
