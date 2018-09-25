@@ -18,10 +18,17 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
         worldcomm_ptr_t const& wc,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
-: super_type( prefixvm(prefix,"fluid"), false, wc, subPrefix, modelRep )
-, M_prefix( prefix )
-, M_doUpdateGlobalLevelset( true )
-, M_doUpdateInextensibilityLM( false )
+: 
+    super_type( prefixvm(prefix,"fluid"), false, wc, subPrefix, modelRep ),
+    M_prefix( prefix ),
+    M_useLagrangeP1iso( false ),
+    M_doUpdateGlobalLevelset( true ),
+    M_doRebuildMatrixVector( false ),
+    M_usePicardIterations( false ),
+    M_hasInterfaceForcesModel( false ),
+    M_enableInextensibility( false ),
+    M_hasInextensibilityLM( false ),
+    M_doUpdateInextensibilityLM( false ),
 {
     //-----------------------------------------------------------------------------//
     // Load parameters
