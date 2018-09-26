@@ -190,7 +190,7 @@ add_custom_target(contrib)
 
 add_subdirectory(contrib)
 set(FEELPP_ENABLED_OPTIONS ${FEELPP_ENABLED_OPTIONS} ${FEELPP_ENABLED_OPTIONS_CONTRIB} PARENT_SCOPE )
-
+feelpp_set_options( Feelpp::feelpp_contrib "Feel++" )
 
 if(NOT FEELPP_ENABLE_BUILD_STATIC)
 	set(CMAKE_C++_CREATE_SHARED_LIBRARY 1)
@@ -198,6 +198,9 @@ endif()
 
 # feel++ lib
 ADD_SUBDIRECTORY ( feel )
+
+# get feel++ environment of cmake variable (FEELPP_HAS_...)
+feelpp_get_environment()
 
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
 OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "enable PyFeel++" ON)
