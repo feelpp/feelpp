@@ -44,6 +44,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
@@ -1185,7 +1186,6 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( integration )
 
-#if 1
 BOOST_AUTO_TEST_CASE( test_integration_1 )
 {
     BOOST_TEST_MESSAGE( "Test integration Circle" );
@@ -1258,17 +1258,18 @@ BOOST_AUTO_TEST_CASE( test_integration_8 )
     BOOST_TEST_MESSAGE( "test_integration_8" );
     Feel::test_integration_matricial_functions<2,double> t;
     t();
-
 }
-#else
-BOOST_AUTO_TEST_CASE( test_integration_3 )
+
+BOOST_AUTO_TEST_CASE( test_integration_9 )
 {
-    BOOST_TEST_MESSAGE( "test_integration_3" );
-    Feel::test_integration_boundary<double> t;
-    t();
+    BOOST_TEST_MESSAGE( "test_integration_9" );
+    using namespace Feel;
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2,1>>);
+    double int1 = integrate(_range=elements(mesh),_expr=cst(1.),_quad=50).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( int1, mesh->measure(), 1e-8 );
 }
 
-#endif
+
 BOOST_AUTO_TEST_SUITE_END()
 
 

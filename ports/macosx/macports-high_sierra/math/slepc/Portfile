@@ -4,7 +4,7 @@ PortSystem          1.0
 PortGroup           mpi 1.0
 
 name                slepc
-version             3.9.0
+version             3.9.2
 revision            0
 categories          math science
 maintainers         sean
@@ -26,8 +26,8 @@ universal_variant   no
 
 master_sites        http://slepc.upv.es/download/distrib/
 
-checksums           rmd160  b49353450178abbf362dcc2d17a1a9f99d5d275a \
-                    sha256  1f3930db56b4065aaf214ea758ddff1a70bf19d45544cbdfd19d2787db4bfe0b
+checksums           rmd160  f79489e9ed2273c68280598a637c42c9fa075fb7 \
+                    sha256  247585b3f8c10bf50b9464cb8ef7b5f22bead6f96524384897a37ec4146eb03e
 
 mpi.setup
 mpi.enforce_variant petsc
@@ -39,6 +39,7 @@ depends_build-append \
                     port:sowing \
                     bin:python:python27
 
+configure.cmd python2.7 ./configure
 configure.args      --prefix=${prefix}/lib/slepc
 configure.env-append \
                     PETSC_DIR=${prefix}/lib/petsc
