@@ -265,11 +265,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
         }
         else
         {
-            auto gradPhi = this->gradPhi();
-            *(M_modGradPhiAdvection->fieldSolutionPtr()) = vf::project( 
-                    _space=this->functionSpace(),
-                    _range=this->rangeMeshElements(),
-                    _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) 
+            *(M_modGradPhiAdvection->fieldSolutionPtr()) = this->projectorL2()->project( 
+                    _expr=sqrt( gradv(phi_init)*trans(gradv(phi_init)) )
                     );
         }
     }
@@ -2181,11 +2178,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi ) 
         {
             case FastMarchingInitializationMethod::ILP :
             {
-                *phiReinit = vf::project(
-                        this->functionSpace(), 
-                        this->rangeMeshElements(), 
-                        idv(phi)/ sqrt( gradv(phi) * trans(gradv(phi)) )
-                        );
+                *phiReinit = this->projectorL2()->project( idv(phi) / sqrt( gradv(phi)*trans(gradv(phi)) ) );
             }
             break;
 
