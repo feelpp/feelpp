@@ -22,9 +22,10 @@
 #
 #
 add_library(feelpp_contrib INTERFACE)
-
+add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
 set( FEELPP_HAS_GFLAGS 1 )
 set( FEELPP_HAS_GFLAGS 1 PARENT_SCOPE )
+set( GFLAGS_IS_SUBPROJECT TRUE )
 add_subdirectory(gflags)
 if ( FEELPP_HAS_GFLAGS )
   set(GFLAGS_IS_SUBPROJECT TRUE)
@@ -35,6 +36,7 @@ if ( FEELPP_HAS_GFLAGS )
   #add_dependencies(contrib feelpp_gflags feelpp_gflags_shared feelpp_gflags_nothreads_shared)
   #target_include_directories(feelpp_gflags_nothreads_shared BEFORE PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/gflags/include ${CMAKE_CURRENT_BINARY_DIR}/gflags/include/gflags)
 
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_GFLAGS )
   target_include_directories(feelpp_contrib
     INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/feelpp/contrib/gflags/include>
@@ -53,6 +55,7 @@ set( FEELPP_HAS_GLOG 1 )
 set( FEELPP_HAS_GLOG 1 PARENT_SCOPE )
 add_subdirectory(glog)
 if ( FEELPP_HAS_GLOG )
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_GLOG )
   target_include_directories(feelpp_contrib INTERFACE
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/feelpp/contrib/glog/>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/glog/src>
@@ -66,36 +69,29 @@ if ( FEELPP_HAS_GLOG )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GLog/Contrib")
 endif()
 
-set( FEELPP_HAS_GINAC 1 )
-set( FEELPP_HAS_GINAC 1 PARENT_SCOPE )
 add_subdirectory(ginac)
-if ( FEELPP_HAS_GINAC )
-  #
-  # cln and ginac
-  #
-  find_package(CLN)
+#
+# cln and ginac
+#
+find_package(CLN)
 
-  target_compile_definitions(feelpp_contrib INTERFACE -DIN_GINAC -DHAVE_LIBDL)
+target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GINAC IN_GINAC HAVE_LIBDL)
 
-  #link_directories( ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
+#link_directories( ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
 
-  target_include_directories( feelpp_contrib BEFORE
-    INTERFACE
-    ${CLN_INCLUDE_DIR}
-    $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/ginac/>
-    $<BUILD_INTERFACE:${FEELPP_BUILD_DIR}/ginac/>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/contrib/ginac/ginac>
-    $<BUILD_INTERFACE:${FEELPP_BUILD_DIR}/contrib/ginac/ginac>
-    $<INSTALL_INTERFACE:include/feelpp>
-    $<INSTALL_INTERFACE:include/feelpp/ginac>
-    )
-  set(DL_LIBS ${CMAKE_DL_LIBS})
+target_include_directories( feelpp_contrib BEFORE
+  INTERFACE
+  ${CLN_INCLUDE_DIR}
+  $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/ginac/>
+  $<BUILD_INTERFACE:${FEELPP_BUILD_DIR}/ginac/>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/contrib/ginac/ginac>
+  $<BUILD_INTERFACE:${FEELPP_BUILD_DIR}/contrib/ginac/ginac>
+  $<INSTALL_INTERFACE:include/feelpp>
+  $<INSTALL_INTERFACE:include/feelpp/ginac>
+  )
+set(DL_LIBS ${CMAKE_DL_LIBS})
+target_link_libraries(feelpp_contrib INTERFACE feelpp_ginac)
 
-  target_link_libraries(feelpp_contrib INTERFACE feelpp_ginac)
-  #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ginac)
-  #add_dependencies(contrib feelpp_ginac ginsh)
-  list(INSERT FEELPP_LIBRARIES 0 feelpp_ginac)
-endif()
 
 
 #
@@ -127,11 +123,8 @@ else()
     )
 endif()
 
+target_compile_definitions(feelpp_contrib INTERFACE FEELP_HAS_EIGEN3 )
 target_link_libraries(feelpp_contrib INTERFACE eigen )
-get_property(INCD TARGET eigen PROPERTY INTERFACE_INCLUDE_DIRECTORIES )
-message(STATUS "incd1: ${INCD}")
-get_property(INCD TARGET feelpp_contrib PROPERTY INTERFACE_INCLUDE_DIRECTORIES )
-message(STATUS "incd2: ${INCD}")
 
 SET(FEELPP_HAS_EIGEN3 1)
 SET(FEELPP_HAS_EIGEN3 1 PARENT_SCOPE)
@@ -156,8 +149,9 @@ message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
 option( FEELPP_ENABLE_METIS "Enable Metis Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_METIS)
   add_subdirectory(metis)
-  SET(FEELPP_HAS_METIS 1)
-  SET(FEELPP_HAS_METIS 1 PARENT_SCOPE)
+  #SET(FEELPP_HAS_METIS 1)
+  #SET(FEELPP_HAS_METIS 1 PARENT_SCOPE)
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_METIS )
   TARGET_INCLUDE_DIRECTORIES(feelpp_contrib INTERFACE
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/metis/include>
     $<INSTALL_INTERFACE:include/feelpp/metis>)
@@ -196,12 +190,9 @@ if ( FEELPP_ENABLE_NLOPT )
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     add_subdirectory( nlopt )
     set(NLOPT_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/nlopt/api  ${FEELPP_BINARY_DIR}/contrib/nlopt/api)
-    
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_NLOPT )
     target_link_libraries(feelpp_contrib INTERFACE feelpp_nlopt )
     SET( FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} NLOpt/Contrib")
-    SET(FEELPP_HAS_NLOPT 1)
-    SET(FEELPP_HAS_NLOPT 1 PARENT_SCOPE)
-    list(INSERT FEELPP_LIBRARIES 0 feelpp_nlopt)
   endif( FEELPP_CONTRIB_PREPARE_SUCCEED )
 endif( FEELPP_ENABLE_NLOPT )
 
@@ -217,7 +208,7 @@ if ( FEELPP_ENABLE_PYBIND11 )
   feelppContribPrepare( pybind11 )
   if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
     add_subdirectory(pybind11)
-    set( FEELPP_HAS_PYBIND11 1 PARENT_SCOPE )
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11 )
     target_link_libraries(feelpp_contrib INTERFACE pybind11 )
     #target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11=1 )
     target_include_directories(feelpp_contrib INTERFACE
@@ -243,15 +234,14 @@ if ( FEELPP_ENABLE_MONGOCXX )
       set(BSONCXX_INLINE_NAMESPACE "")
       set(BSONCXX_HEADER_INSTALL_DIR "include/feelpp/bsoncxx/" CACHE INTERNAL "")
 
-      include_directories(${LIBBSON_INCLUDE_DIRS} ${LIBMONGOC_INCLUDE_DIRS})
+      target_include_directories(feelpp_contrib INTERFACE ${LIBBSON_INCLUDE_DIRS} ${LIBMONGOC_INCLUDE_DIRS})
       set(MONGOCXX_LIBRARIES "mongocxx_static ${LIBMONGOC_LIBRARIES} ${LIBBSON_LIBRARIES}")
       set(MONGOCXX_INCLUDE_DIRS "${LIBBSON_INCLUDE_DIRS} ${LIBMONGOC_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src     ${CMAKE_CURRENT_BINARY_DIR}/src")
       set(LIBBSON_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src")
       list(APPEND LIBBSONCXX_INCLUDE_DIRS ${FEELPP_SOURCE_DIR}/contrib/mongocxx/src ${FEELPP_BINARY_DIR}/contrib/mongocxx/src)
       list(APPEND LIBMONGOCXX_INCLUDE_DIRS ${FEELPP_SOURCE_DIR}/contrib/mongocxx/src ${FEELPP_BINARY_DIR}/contrib/mongocxx/src)
-      include_directories(${LIBMONGOCXX_INCLUDE_DIRS} ${LIBBSONCXX_INCLUDE_DIRS})
-      set(FEELPP_HAS_BSONCXX 1 PARENT_SCOPE)
-      set(FEELPP_HAS_MONGOCXX 1 PARENT_SCOPE)
+      target_include_directories(feelpp_contrib INTERFACE ${LIBMONGOCXX_INCLUDE_DIRS} ${LIBBSONCXX_INCLUDE_DIRS})
+      target_compile_definitions(feelpp_contrib FEELPP_HAS_BSONCXX FEELPP_HAS_MONGOCXX )
       set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} MongoCXX/Contrib" )
       list(APPEND MONGO_LIBRARIES feelpp_mongocxx feelpp_bsoncxx ${LIBMONGOC_LIBRARIES} ${LIBBSON_LIBRARIES} )
       list(INSERT FEELPP_LIBRARIES 0 ${MONGO_LIBRARIES})
@@ -281,6 +271,5 @@ endif()
 
 
 INSTALL(TARGETS feelpp_contrib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-contrib-export-targets)
-install(EXPORT feelpp-contrib-export-targets DESTINATION share/feelpp/feel/cmake/modules)
+install(EXPORT feelpp-contrib-export-targets NAMESPACE Feelpp:: DESTINATION share/feelpp/feel/cmake/modules)
 
-set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB}" PARENT_SCOPE)

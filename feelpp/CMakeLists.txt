@@ -69,21 +69,6 @@ else()
   SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0" CACHE STRING "Debug flags" FORCE)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-include(ProcessorCount)
-ProcessorCount(NProcs)
-IF(NOT CMAKE_NPROCS)
-  ##if(N GREATER 1)
-  math (EXPR NProcs2 '${NProcs}/2')
-  if(NProcs2 EQUAL 0)
-    set(NProcs2 1)
-  endif()
-  if(NProcs2 GREATER 6)
-    set(NProcs2 6)
-  endif()
-else()
-  set(NProcs2 "${CMAKE_NPROCS}")
-endif()
-message(STATUS "[feelpp] using ${NProcs2} cores out of ${NProcs} cores" )
 #  set(CTEST_BUILD_FLAGS -j${N2})
 #  set(ctest_test_args ${ctest_test_args} PARALLEL_LEVEL ${N2})
 
@@ -205,7 +190,7 @@ add_custom_target(contrib)
 
 add_subdirectory(contrib)
 set(FEELPP_ENABLED_OPTIONS ${FEELPP_ENABLED_OPTIONS} ${FEELPP_ENABLED_OPTIONS_CONTRIB} PARENT_SCOPE )
-
+feelpp_set_options( Feelpp::feelpp_contrib "Feel++" )
 
 if(NOT FEELPP_ENABLE_BUILD_STATIC)
 	set(CMAKE_C++_CREATE_SHARED_LIBRARY 1)
@@ -213,6 +198,9 @@ endif()
 
 # feel++ lib
 ADD_SUBDIRECTORY ( feel )
+
+# get feel++ environment of cmake variable (FEELPP_HAS_...)
+feelpp_get_environment()
 
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
 OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "enable PyFeel++" ON)
