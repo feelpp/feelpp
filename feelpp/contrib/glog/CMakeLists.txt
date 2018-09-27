@@ -19,7 +19,7 @@ set (GLOG_PATCH_VERSION 4)
 set (GLOG_VERSION
   ${GLOG_MAJOR_VERSION}.${GLOG_MINOR_VERSION}.${GLOG_PATCH_VERSION})
 
-set (CPACK_PACKAGE_NAME glog)
+set (CPACK_PACKAGE_NAME feelpp_glog)
 set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "")
 set (CPACK_PACKAGE_VERSION_MAJOR ${GLOG_MAJOR_VERSION})
 set (CPACK_PACKAGE_VERSION_MINOR ${GLOG_MINOR_VERSION})
@@ -559,15 +559,15 @@ if (0) # BUILD_TESTING)
 endif (0) #BUILD_TESTING)
 
 install (TARGETS feelpp_glog
-  EXPORT feelpp-contrib-export-targets
-  #EXPORT glog-targets
+  #EXPORT feelpp-contrib-export-targets
+  EXPORT glog-targets
   RUNTIME DESTINATION bin
   PUBLIC_HEADER DESTINATION include/feelpp/glog
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
 
 if (gflags_FOUND)
-  set (gflags_DEPENDENCY "find_dependency (gflags ${gflags_VERSION})")
+  set (feelpp_gflags_DEPENDENCY "find_dependency (feelpp_gflags ${gflags_VERSION})")
 endif (gflags_FOUND)
 
 configure_package_config_file (glog-config.cmake.in
@@ -578,12 +578,12 @@ configure_package_config_file (glog-config.cmake.in
 write_basic_package_version_file (glog-config-version.cmake VERSION
   ${GLOG_VERSION} COMPATIBILITY SameMajorVersion)
 
-#export (TARGETS glog NAMESPACE glog:: FILE glog-targets.cmake)
-#export (PACKAGE glog)
+export (TARGETS feelpp_glog NAMESPACE glog:: FILE glog-targets.cmake)
+export (PACKAGE feelpp_glog)
 
 install (FILES
   ${CMAKE_CURRENT_BINARY_DIR}/glog-config.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/glog-config-version.cmake
   DESTINATION share/feelpp/glog/cmake )
 
-#install (EXPORT glog-targets NAMESPACE glog:: DESTINATION lib/cmake/glog)
+install (EXPORT glog-targets NAMESPACE glog:: DESTINATION share/feelpp/glog/cmake)

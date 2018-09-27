@@ -10,7 +10,7 @@ endforeach()
 
 feelpp_add_test( range )
 
-
+feelpp_get_compile_definition(Feelpp::feelpp FEELPP_HAS_PETSC)
 # test scatter/gather: identified a bug in PETSc up to 3.5.1
 if(FEELPP_HAS_PETSC)
 feelpp_add_test(gatherscatter_boostmpi_petsc_datatype SRCS test_gatherscatter.cpp DEFS USE_BOOST_MPI=1 USE_PETSC=1 USE_DATATYPE=1  )
@@ -46,7 +46,9 @@ if ( FEELPP_HAS_NT2 )
   feelpp_add_test(nt2)
 endif()
 
+feelpp_get_compile_definition(Feelpp::feelpp FEELPP_HAS_HDF5)
 if ( FEELPP_HAS_HDF5 )
+  message(STATUS "compiling feelpp_test_hdf5...")
   feelpp_add_test(hdf5)
 endif()
 
