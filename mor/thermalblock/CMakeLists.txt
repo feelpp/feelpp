@@ -30,18 +30,18 @@
 #crb_add_executable(thermalblockpfem thermalblock.cpp thermalblockpfem.cpp thermalblockgeo.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblockpfem.cfg )
 #crb_add_executable(thermalblockcrb  thermalblock.cpp thermalblockcrb.cpp  thermalblockgeo.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblockcrb.cfg )
 
-crb_add_model(thermalblock ThermalBlock HDRS thermalblock.hpp  LINK_LIBRARIES ${FEELPP_LIBRARIES}
+crb_add_model(thermalblock ThermalBlock HDRS thermalblock.hpp  
   CFG thermalblock.cfg
   XML thermalblock.xml
   SCRIPTS thermalblock.m
   )
-crb_add_model(thermalblockfree ThermalBlockFree HDRS thermalblock-operatorsfree.hpp  LINK_LIBRARIES ${FEELPP_LIBRARIES}
+crb_add_model(thermalblockfree ThermalBlockFree HDRS thermalblock-operatorsfree.hpp  
   CFG thermalblockfree.cfg
   XML thermalblockfree.xml
   SCRIPTS thermalblockfree.m
   )
 crb_add_model(
-  thermalblockminimalversion ThermalBlockMinimalVersion HDRS thermalblock-minimalversion.hpp  LINK_LIBRARIES ${FEELPP_LIBRARIES} 
+  thermalblockminimalversion ThermalBlockMinimalVersion HDRS thermalblock-minimalversion.hpp  
   CFG thermalblockminimalversion.cfg 
   GEO thermalblock33.geo
   XML thermalblockminimalversion.xml

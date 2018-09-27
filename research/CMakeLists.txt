@@ -24,6 +24,7 @@
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 project( feel-research )
+feelpp_get_environment()
 
 separate_arguments(FEELPP_ENABLED_PROJECTS)
 FOREACH( project ${FEELPP_ENABLED_PROJECTS} )
