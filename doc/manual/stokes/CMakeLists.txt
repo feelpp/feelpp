@@ -22,9 +22,9 @@
 #
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-feelpp_add_application( doc_stokes SRCS stokes.cpp LABELS doc )
-feelpp_add_application( doc_stokes_curl SRCS stokes_curl.cpp LABELS doc GEO curvedtube.geo straighttube.geo CFG stokes_curl.cfg)
-feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LABELS doc DEFS FEELPP_USE_LM )
-feelpp_add_application( doc_stokes_periodic SRCS stokes_periodic.cpp LABELS doc NO_MPI_TEST )
-feelpp_add_application( doc_stokes_dirichletlm SRCS stokes_dirichletlm.cpp LABELS doc  )
-feelpp_add_application( doc_stokes_pressurelm SRCS stokes_pressurelm.cpp LABELS doc  )
+feelpp_add_application( stokes SRCS stokes.cpp LABELS doc )
+feelpp_add_application( stokes_curl SRCS stokes_curl.cpp LABELS doc GEO curvedtube.geo straighttube.geo CFG stokes_curl.cfg)
+feelpp_add_application( stokes_lm SRCS stokes.cpp LABELS doc DEFS FEELPP_USE_LM )
+feelpp_add_application( stokes_periodic SRCS stokes_periodic.cpp LABELS doc NO_MPI_TEST )
+feelpp_add_application( stokes_dirichletlm SRCS stokes_dirichletlm.cpp LABELS doc  )
+feelpp_add_application( stokes_pressurelm SRCS stokes_pressurelm.cpp LABELS doc  )

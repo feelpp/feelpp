@@ -67,8 +67,7 @@ int main(int argc, char**argv )
 
     using vec = std::vector<double>;
 
-    auto mesh = loadMesh( _mesh=new Mesh<Simplex<DIM>>,
-                          _filename="circle_incs.geo" );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<DIM>> );
 
     auto g = expr( soption(_name="functions.g") );
 

@@ -26,7 +26,7 @@
 
 #include <feel/feelcore/feel.hpp>
 
-#if defined( FEELPP_HAS_PETSC_H )
+#if defined( FEELPP_HAS_PETSC )
 #include <petsc.h>
 #include <petscerror.h>
 #if defined( FEELPP_HAS_SLEPC )

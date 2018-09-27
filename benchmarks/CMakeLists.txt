@@ -3,6 +3,7 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 project( benchmarks )
 
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
+feelpp_get_environment()
 
 add_custom_target(benchmarks)
 # set(petsc_SOLVER_OPTIONS "-ksp_monitor -pc_type asm -pc_asm_blocks 2" )
