@@ -29,7 +29,7 @@ IF ( ENABLE_INSTANTIATION_MODE )
 endif()
 
 set(FEELFILTERS_GMSH_SRCS "")
-if(FEELPP_HAS_GMSH_H AND FEELPP_HAS_GMSH_LIBRARY)
+if(FEELPP_HAS_GMSH AND FEELPP_HAS_GMSH_LIBRARY)
   set(FEELFILTERS_GMSH_SRCS gmshhypercubedomain.cpp gmshsimplexdomain.cpp gmshellipsoiddomain.cpp gmsh.cpp geotool.cpp)
 endif()
 
