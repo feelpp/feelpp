@@ -64,7 +64,7 @@ private:
     //--------------------------------------------------------------------//
     double M_helfrichBendingModulus;
     int M_forceImpl;
-    HelfrichInnerDivImplementation M_helfrichInnerDivExprImpl;
+    vf::FeelModels::HelfrichInnerDivImplementation M_helfrichInnerDivExprImpl;
 
 #ifdef DEBUG_HELFRICHFORCEMODEL
     typedef std::shared_ptr<Exporter<mesh_type, 1>> exporter_ptrtype;
@@ -101,9 +101,9 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::loadParametersFromOptionsV
     M_forceImpl = ioption( _name="helfrich-force-impl", _prefix=this->prefix() );
     std::string helfrichInnerDivExprImpl = soption( _name="helfrich-inner-div-impl", _prefix=this->prefix() );
     if( helfrichInnerDivExprImpl == "generic" )
-        M_helfrichInnerDivExprImpl = HelfrichInnerDivImplementation::GENERIC;
+        M_helfrichInnerDivExprImpl = vf::FeelModels::HelfrichInnerDivImplementation::GENERIC;
     else if( helfrichInnerDivExprImpl == "distance" )
-        M_helfrichInnerDivExprImpl = HelfrichInnerDivImplementation::DISTANCE;
+        M_helfrichInnerDivExprImpl = vf::FeelModels::HelfrichInnerDivImplementation::DISTANCE;
     else
         CHECK( false ) << helfrichInnerDivExprImpl << " is not a valid Helfrich inner div implementation\n";
 
