@@ -94,7 +94,7 @@
 #cmakedefine FEELPP_HAS_MONGOCXX
 
 /* Define to 1 if you have mongocxx support. */
-#cmakedefine FEELPP_HAS_KWSYS
+/*#cmakedefine FEELPP_HAS_KWSYS*/
 
 /* Define to 1 if you have mumps support. */
 #cmakedefine FEELPP_HAS_MUMPS
@@ -164,9 +164,6 @@
 
 /* Define to 1 if you have nlopt. */
 /*#cmakedefine FEELPP_HAS_NLOPT*/
-
-/* Define to 1 if you have kwsys. */
-#cmakedefine FEELPP_HAS_IPOPT
 
 /* Define to 1 if you have cereal. */
 #cmakedefine FEELPP_HAS_CEREAL
