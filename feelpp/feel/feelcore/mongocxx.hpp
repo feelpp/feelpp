@@ -28,6 +28,7 @@
 
 #if defined(FEELPP_HAS_MONGOCXX)
 #include <mongocxx/instance.hpp>
+#endif
 
 namespace Feel
 {
@@ -63,6 +64,8 @@ public:
     }
 };
 
+#if defined(FEELPP_HAS_MONGOCXX)
+
 //! Singleton to guaranty a MongoDB unique instance of the mongocxx::instance
 //! TODO mongocxx instance should be called only once. We should add a check
 //! provided by mongodb in case another library initialize the instance.
@@ -89,9 +92,10 @@ class MongoCxx
         static std::unique_ptr<mongocxx::instance> S_mongocxx_instance;
 };
 
+#endif // FEELPP_HAS_MONGOCXX
+
 } // Feel namespace
 
-#endif // FEELPP_HAS_MONGOCXX
 
 #endif // FEELPP_MONGODB_HPP
 
