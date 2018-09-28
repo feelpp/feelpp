@@ -38,7 +38,7 @@ checksums           rmd160  d682f35f9ce07e2f0c60d1932c5e0c66416efafb \
 #worksrcdir          trunk
 conflicts           gmsh-devel
 
-patchfiles     gmsh.patch patch-bamg.diff
+patchfiles     gmsh.patch patch-bamg.diff patch-bamg2.diff
 patch.dir      ${worksrcpath}
 
 #worksrcdir	build

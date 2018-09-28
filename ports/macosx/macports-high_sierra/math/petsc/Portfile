@@ -4,7 +4,7 @@ PortSystem          1.0
 PortGroup           bitbucket 1.0
 PortGroup           mpi 1.0
 
-bitbucket.setup     petsc petsc 3.9 v
+bitbucket.setup     petsc petsc 3.9.3 v
 revision            0
 categories          math science
 maintainers         sean
@@ -18,8 +18,8 @@ long_description    PETSc, pronounced PET-see (the S is silent), is a suite \
 platforms           darwin
 universal_variant   no
 
-checksums           rmd160  ef176ad5d405d9f0e3cb5be0abb3ca29423a45cd \
-                    sha256  47df48bcae0d288a9d7ae17f64ee8a821108a86e855697eebeb12cf3b51a4b80
+checksums           rmd160  d34d4c5e987ffeda3e72edf6cc89fcef4c2629e9 \
+                    sha256  f41ca153cfac7818c0d9444e88a014c1cf2f505ae8bd5fb2a561783751db6ee5
 
 mpi.setup
 

@@ -2,10 +2,13 @@
 {
     "Name": "Solid Mechanics ",
     "ShortName":"Solid",
+    // tag::models[]
     "Models":
     {
         "equations":"Hyper-Elasticity"
     },
+    // end::models[]
+    // tag::materials[]
     "Materials":
     {
         "OmegaSolid":{
@@ -15,6 +18,8 @@
             "rho":"8920"
         }
     },
+    // end::materials[]
+    // tag::parameters[]
     "Parameters":
     {
         "rotation":
@@ -23,6 +28,8 @@
             "value":"3"
         }
     },
+    // end::parameters[]
+    // tag::boundaryconditions[]
     "BoundaryConditions":
     {
         "displacement_y":
@@ -63,6 +70,8 @@
             }
         }
     },
+    // end::boundaryconditions[]
+    // tag::postprocess[]
     "PostProcess":
     {
         "Exports":
@@ -73,6 +82,7 @@
         {
             "VolumeVariation":""
         }
-
     }
+    // end::postprocess[]
+
 }
