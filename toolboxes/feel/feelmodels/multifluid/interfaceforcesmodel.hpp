@@ -68,6 +68,7 @@ private:
     std::string M_prefix;
     levelset_ptrtype M_levelset;
     fluidmechanics_ptrtype M_fluidmechanics;
+protected:
     // Cache last force value
     mutable element_ptrtype M_interfaceForce;
 };
