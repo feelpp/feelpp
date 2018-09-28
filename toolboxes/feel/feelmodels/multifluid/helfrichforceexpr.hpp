@@ -7,7 +7,7 @@ namespace FeelModels {
 
 enum class HelfrichInnerDivImplementation
 {
-    GENERIC
+    GENERIC, DISTANCE
 };
 
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ExprType>
@@ -45,6 +45,7 @@ public:
     typedef shape_type shape;
     typedef Eigen::Matrix<value_type,shape_type::M,shape_type::N> matrix_shape_type;
     typedef boost::multi_array<matrix_shape_type,1> array_shape_type;
+    typedef Eigen::Matrix<value_type,shape_type::M,1> vector_shape_type;
     // scalar
     typedef Shape<shape_type::nDim, Scalar, false, false> shape_scalar;
     typedef Eigen::Tensor<value_type,2> loc_scalar_type;
@@ -255,6 +256,7 @@ public:
     typedef typename super_type::array_vectorial_transpose_type array_vectorial_transpose_type;
     typedef typename super_type::matrix_shape_type matrix_shape_type;
     typedef typename super_type::array_shape_type array_shape_type;
+    typedef typename super_type::vector_shape_type vector_shape_type;
 
     tensorHelfrichInnerDivTensorGeneric( expr_type const& expr,
             Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -323,6 +325,15 @@ protected:
 
             loc_vectorial_type res = -(NdotGradModGradPhiK_modGradPhi + K2_2)*N + gradModGradPhiK_modGradPhi.shuffle(transpose_shuffle);
             this->locRes(q) = Eigen::Map<const matrix_shape_type>( res.data(), shape_type::M, shape_type::N );
+
+            //vector_shape_type N = Eigen::Map<const vector_shape_type>( this->locNormal(q).data(), shape_type::M, 1 );
+            //value_type const K = this->locCurvature(q)(0,0);
+            //value_type const K2_2 = 0.5*K*K;
+            //loc_vectorial_type locGradK = this->locGradCurvature(q).shuffle( transpose_shuffle );
+            //vector_shape_type gradK = Eigen::Map<const vector_shape_type>( locGradK.data(), shape_type::M, 1 );
+            //value_type NdotGradK = ( N.transpose() * gradK )(0);
+            //this->locRes(q) = - K2_2*N + (Eigen::Matrix<value_type, shape_type::M, shape_type::M>::Identity() - N*N.transpose()) * gradK;
+
         }
     }
 
@@ -331,6 +342,79 @@ private:
     ctx_modgradphi_ptrtype M_ctxModGradPhi;
     array_scalar_type M_locModGradPhi;
     array_vectorial_transpose_type M_locGradModGradPhi;
+};
+
+/**
+ * Distance-case (|gradPhi|=1) Helfrich force div argument:
+ * f = - K^2 / 2 + 1/|gradPhi| * (1-NxN) grad( |gradPhi|*K )
+ */
+template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ExprType>
+struct tensorHelfrichInnerDivTensorDistance
+: public tensorHelfrichInnerDivTensorBase<Geo_t, Basis_i_t, Basis_j_t, ExprType>
+{
+    typedef tensorHelfrichInnerDivTensorBase<Geo_t, Basis_i_t, Basis_j_t, ExprType> super_type;
+public:
+    typedef ExprType expr_type;
+    typedef typename super_type::geoelement_type geoelement_type;
+    typedef typename super_type::gmc_type gmc_type;
+    typedef typename super_type::gm_type gm_type;
+    typedef typename super_type::key_type key_type;
+    typedef typename super_type::value_type value_type;
+    typedef typename super_type::shape_type shape_type;
+
+    // fe modgradphi context
+    typedef typename expr_type::fe_modgradphi_type fe_modgradphi_type;
+    typedef typename fe_modgradphi_type::PreCompute pc_modgradphi_type;
+    typedef std::shared_ptr<pc_modgradphi_type> pc_modgradphi_ptrtype;
+    typedef typename fe_modgradphi_type::template Context<expr_type::context_modgradphi, fe_modgradphi_type, gm_type,geoelement_type,gmc_type::context> ctx_modgradphi_type;
+    typedef std::shared_ptr<ctx_modgradphi_type> ctx_modgradphi_ptrtype;
+
+    // array
+    typedef typename super_type::loc_scalar_type loc_scalar_type;
+    typedef typename super_type::array_scalar_type array_scalar_type;
+    typedef typename super_type::loc_vectorial_type loc_vectorial_type;
+    typedef typename super_type::array_vectorial_type array_vectorial_type;
+    typedef typename super_type::loc_vectorial_transpose_type loc_vectorial_transpose_type;
+    typedef typename super_type::array_vectorial_transpose_type array_vectorial_transpose_type;
+    typedef typename super_type::matrix_shape_type matrix_shape_type;
+    typedef typename super_type::array_shape_type array_shape_type;
+    typedef typename super_type::vector_shape_type vector_shape_type;
+
+    tensorHelfrichInnerDivTensorDistance( expr_type const& expr,
+            Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+        :
+            super_type( expr, geom, fev, feu )
+    {}
+    tensorHelfrichInnerDivTensorDistance( expr_type const& expr,
+            Geo_t const& geom, Basis_i_t const& fev )
+        :
+            super_type( expr, geom, fev )
+    {}
+    tensorHelfrichInnerDivTensorDistance( expr_type const& expr, Geo_t const& geom )
+        :
+            super_type( expr, geom )
+    {}
+
+    void update( Geo_t const& geom )
+    {
+        super_type::update( geom );
+
+        this->updateImpl();
+    }
+
+protected:
+    void updateImpl()
+    {
+        for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
+        {
+            vector_shape_type N = Eigen::Map<const vector_shape_type>( this->locNormal(q).data(), shape_type::M, 1 );
+            value_type const K = this->locCurvature(q)(0,0);
+            value_type const K2_2 = 0.5*K*K;
+            vector_shape_type gradK = Eigen::Map<const vector_shape_type>( this->locGradCurvature(q).data(), shape_type::M, 1 );
+            this->locRes(q) = - K2_2*N + (Eigen::Matrix<value_type, shape_type::M, shape_type::M>::Identity() - N*N.transpose()) * gradK;
+
+        }
+    }
 };
 
 template<typename ElementNormalType, typename ElementCurvatureType, typename ElementModGradPhiType, int IMOrder>
@@ -460,6 +544,11 @@ public:
                             new tensorHelfrichInnerDivTensorGeneric<Geo_t, Basis_i_t, Basis_j_t, expr_type>( expr, geom, fev, feu )
                             );
                     break;
+                case HelfrichInnerDivImplementation::DISTANCE:
+                    M_tensorbase.reset( 
+                            new tensorHelfrichInnerDivTensorDistance<Geo_t, Basis_i_t, Basis_j_t, expr_type>( expr, geom, fev, feu )
+                            );
+                    break;
             }
         }
         tensor( this_type const& expr,
@@ -472,6 +561,11 @@ public:
                             new tensorHelfrichInnerDivTensorGeneric<Geo_t, Basis_i_t, Basis_j_t, expr_type>( expr, geom, fev )
                             );
                     break;
+                case HelfrichInnerDivImplementation::DISTANCE:
+                    M_tensorbase.reset( 
+                            new tensorHelfrichInnerDivTensorDistance<Geo_t, Basis_i_t, Basis_j_t, expr_type>( expr, geom, fev )
+                            );
+                    break;
             }
         }
         tensor( this_type const& expr, Geo_t const& geom )
@@ -481,6 +575,11 @@ public:
                 case HelfrichInnerDivImplementation::GENERIC:
                     M_tensorbase.reset( 
                             new tensorHelfrichInnerDivTensorGeneric<Geo_t, Basis_i_t, Basis_j_t, expr_type>( expr, geom )
+                            );
+                    break;
+                case HelfrichInnerDivImplementation::DISTANCE:
+                    M_tensorbase.reset( 
+                            new tensorHelfrichInnerDivTensorDistance<Geo_t, Basis_i_t, Basis_j_t, expr_type>( expr, geom )
                             );
                     break;
             }
