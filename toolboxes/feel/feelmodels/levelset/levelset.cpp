@@ -596,6 +596,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
             std::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( thickness_heaviside );
         }
         break;
+        case LevelSetReinitMethod::RENORMALISATION :
+        // Nothing to do - Remove warning
+        break;
     }
 
     M_reinitializerIsUpdatedForUse = true;
@@ -789,6 +792,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
         M_reinitMethod = LevelSetReinitMethod::FM;
     else if( reinitmethod == "hj" )
         M_reinitMethod = LevelSetReinitMethod::HJ;
+    else if( reinitmethod == "renormalisation" )
+        M_reinitMethod = LevelSetReinitMethod::RENORMALISATION;
     else
         CHECK( false ) << reinitmethod << " is not a valid reinitialization method\n";
 
@@ -2219,15 +2224,21 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi ) 
         } // switch M_fastMarchingInitializationMethod
 
         LOG(INFO)<< "reinit with FMM done"<<std::endl;
+        return M_reinitializer->run( *phiReinit );
     } // Fast Marching
 
     else if ( M_reinitMethod == LevelSetReinitMethod::HJ )
     {
         *phiReinit = phi;
         // TODO
+        return M_reinitializer->run( *phiReinit );
     } // Hamilton-Jacobi
 
-    return M_reinitializer->run( *phiReinit );
+    else if( M_reinitMethod == LevelSetReinitMethod::RENORMALISATION )
+    {
+        return this->projectorL2()->project( idv(phi) / sqrt( gradv(phi)*trans(gradv(phi)) ) );
+    }
+
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS

@@ -69,7 +69,7 @@ enum LevelSetTimeDiscretization {BDF2, /*CN,*/ EU, CN_CONSERVATIVE};
  * FM -> Fast-Marching
  * HJ -> Hamilton-Jacobi
  */
-enum class LevelSetReinitMethod {FM, HJ};
+enum class LevelSetReinitMethod { FM, HJ, RENORMALISATION };
 
 enum class LevelSetMeasuresExported
 {
