@@ -4,8 +4,6 @@ steps:
    agents:
      docker: true
      ubuntu: "16.04"
-   env:
-     CTEST_FLAGS: -V -j2
  - wait
  - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-testsuite
    name: ":docker: push images to the hub :rocket:"
