@@ -303,7 +303,7 @@ BOOST_AUTO_TEST_CASE( crd_db_test1 )
     for(int i = 1; i < wnSize.size(); i++)
     {
         std::cout << "WN0:size=" << wnSize[0] << " ; WN" << i << ":size=" << wnSize[i] << std::endl;
-        BOOST_CHECK(wnSize[0] == wnSize[i]);
+        BOOST_CHECK_MESSAGE(std::abs(wnSize[0] - wnSize[i]) <= 1, "Basis sizes OK" );
     }
     std::cout << "Basis sizes OK" << std::endl;
 
