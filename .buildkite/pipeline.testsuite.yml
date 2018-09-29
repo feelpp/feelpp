@@ -1,20 +1,14 @@
 steps:
- - name: ':ubuntu: 16.10,clang-3.9 feelpp-testsuite :hammer:'
+ - name: ':$TARGET $CXX feelpp-testsuite :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh testsuite
    agents:
      docker: true
-     ubuntu: "16.10"
+     ubuntu: "16.04"
    env:
-     CXX: clang++-3.9
-     CC: clang-3.9
-     TARGET: ubuntu:16.10
-     CMAKE_FLAGS: -DFEELPP_DISABLE_COMPILE_FAILURE=ON
-     CTEST_FLAGS: -V -j3
+     CTEST_FLAGS: -V -j2
  - wait
  - command: tools/scripts/buildkite/release.sh  -- feelpp-testsuite
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
-     ubuntu: "16.10"
-   env:
-     TARGET: ubuntu:16.10
+     ubuntu: "16.04"
