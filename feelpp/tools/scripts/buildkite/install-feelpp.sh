@@ -28,7 +28,7 @@ echo "--- Building ${image}:${tag}"
 
 if [ "${component}" = "feelpp" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-env:latest" > docker/${image}/dockerfile.tmp
-elif [ "${component}" = "toolboxes" ] ; then
+elif [ "${component}" = "toolboxes" -o "${component}" = "testsuite" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp:${tag}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "mor" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
