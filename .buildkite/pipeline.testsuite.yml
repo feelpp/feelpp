@@ -1,13 +1,13 @@
 steps:
  - name: ':$TARGET $CXX feelpp-testsuite :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh testsuite
+   command: feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
    agents:
      docker: true
      ubuntu: "16.04"
    env:
      CTEST_FLAGS: -V -j2
  - wait
- - command: tools/scripts/buildkite/release.sh  -- feelpp-testsuite
+ - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-testsuite
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
