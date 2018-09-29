@@ -129,11 +129,11 @@ set(MPIEXEC_NUMPROC_FLAG "@MPIEXEC_NUMPROC_FLAG@")
 set(MPIEXEC_PREFLAGS "@MPIEXEC_PREFLAGS@")
 set(MPIEXEC_POSTFLAGS "@MPIEXEC_POSTFLAGS@")
 
-include(${CMAKE_CURRENT_LIST_DIR}/feelpp.boost.config.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/feelpp.compile.definition.config.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/feelpp.libraries.config.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/feelpp.include.config.cmake)
-string(REGEX REPLACE "-framework;([a-zA-Z]+);" "-framework \\1;" FEELPP_LIBRARIES "${FEELPP_LIBRARIES}")
+#include(${CMAKE_CURRENT_LIST_DIR}/feelpp.boost.config.cmake)
+#include(${CMAKE_CURRENT_LIST_DIR}/feelpp.compile.definition.config.cmake)
+#include(${CMAKE_CURRENT_LIST_DIR}/feelpp.libraries.config.cmake)
+#include(${CMAKE_CURRENT_LIST_DIR}/feelpp.include.config.cmake)
+#string(REGEX REPLACE "-framework;([a-zA-Z]+);" "-framework \\1;" FEELPP_LIBRARIES "${FEELPP_LIBRARIES}")
 
 # the variable FEELPP_DONT_SETUP_CMAKE allows the users to not setup the library
 # meaning that this file will will automatically use
