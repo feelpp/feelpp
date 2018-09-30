@@ -475,13 +475,6 @@ public:
     auto positionCOM() const;
     auto velocityCOM() const;
 
-    //--------------------------------------------------------------------//
-    // Utility functions
-    static reinitializer_ptrtype buildReinitializer( 
-            LevelSetReinitMethod method, 
-            space_levelset_ptrtype const& space,
-            std::string const& prefix = "" );
-
 protected:
     //--------------------------------------------------------------------//
     void buildImpl();
@@ -527,7 +520,8 @@ private:
     //--------------------------------------------------------------------//
     // Interface rectangular function
     element_levelset_type interfaceRectangularFunction() const { return this->interfaceRectangularFunction(this->phi()); }
-    element_levelset_type interfaceRectangularFunction( element_levelset_ptrtype const& p ) const;
+    element_levelset_type interfaceRectangularFunction( element_levelset_ptrtype const& p ) const { return this->interfaceRectangularFunction(*p); }
+    element_levelset_type interfaceRectangularFunction( element_levelset_type const& p ) const;
     //--------------------------------------------------------------------//
     // Export
     void exportResultsImpl( double time, bool save );

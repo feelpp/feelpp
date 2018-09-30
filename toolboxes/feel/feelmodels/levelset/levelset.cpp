@@ -356,7 +356,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::addShape(
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_type
-LEVELSET_CLASS_TEMPLATE_TYPE::interfaceRectangularFunction( element_levelset_ptrtype const& p ) const
+LEVELSET_CLASS_TEMPLATE_TYPE::interfaceRectangularFunction( element_levelset_type const& p ) const
 {
     //auto phi = idv(this->phi());
     auto phi = idv(p);
@@ -2224,21 +2224,27 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi ) 
         } // switch M_fastMarchingInitializationMethod
 
         LOG(INFO)<< "reinit with FMM done"<<std::endl;
-        return M_reinitializer->run( *phiReinit );
+        *phiReinit = M_reinitializer->run( *phiReinit );
     } // Fast Marching
 
     else if ( M_reinitMethod == LevelSetReinitMethod::HJ )
     {
-        *phiReinit = phi;
         // TODO
-        return M_reinitializer->run( *phiReinit );
+        *phiReinit = M_reinitializer->run( phi );
     } // Hamilton-Jacobi
 
     else if( M_reinitMethod == LevelSetReinitMethod::RENORMALISATION )
     {
-        return this->projectorL2()->project( idv(phi) / sqrt( gradv(phi)*trans(gradv(phi)) ) );
+        auto R = this->interfaceRectangularFunction( phi );
+        *phiReinit = this->projectorL2()->project( idv(phi) / sqrt( gradv(phi)*trans(gradv(phi)) ) );
+        *phiReinit = vf::project(
+                _space=this->functionSpace(),
+                _range=this->rangeMeshElements(),
+                _expr = idv(phi) + ( idv(phiReinit)-idv(phi) )*idv(R)
+                );
     }
-
+    
+    return *phiReinit;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
