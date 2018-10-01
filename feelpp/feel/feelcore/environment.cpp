@@ -1450,41 +1450,19 @@ Environment::finalized()
 std::string
 Environment::rootRepository()
 {
-    char * senv = ::getenv( "FEELPP_REPOSITORY" );
-
-    if ( senv != NULL && senv[0] != '\0' )
+    for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
     {
-        return std::string( senv );
+        char * senv = ::getenv( var.first.c_str() );
+        if ( senv != NULL && senv[0] != '\0' )
+        {
+            fs::path p{ senv };
+            if ( !var.second.empty() )
+                p /= var.second;
+            if ( !fs::is_directory( p ) )
+                continue;
+            return p.string();
+        }
     }
-
-    senv = ::getenv( "FEELPP_WORKDIR" );
-
-    if ( senv != NULL && senv[0] != '\0' )
-    {
-        return std::string( senv );
-    }
-
-    senv = ::getenv( "WORK" );
-
-    if ( senv != NULL && senv[0] != '\0' )
-    {
-        return std::string( senv )+"/feel";
-    }
-
-    senv = ::getenv( "WORKDIR" );
-
-    if ( senv != NULL && senv[0] != '\0' )
-    {
-        return std::string( senv )+"/feel";
-    }
-
-    senv = ::getenv( "HOME" );
-
-    if ( senv != NULL && senv[0] != '\0' )
-    {
-        return std::string( senv ) + "/feel";
-    }
-
     return std::string();
 }
 std::string
