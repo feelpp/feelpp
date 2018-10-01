@@ -3,6 +3,7 @@
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/levelset/reinitializer_hj.hpp>
 
+#include <feel/feelmodels/levelset/cauchygreentensorexpr.hpp>
 #include <feel/feelmodels/levelset/cauchygreeninvariantsexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetdeltaexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetheavisideexpr.hpp>
@@ -546,8 +547,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
         M_backwardCharacteristicsAdvection->init();
         M_backwardCharacteristicsAdvection->getExporter()->setDoExport( boption( _name="do_export_backward-characteristics-advection", _prefix=this->prefix() ) );
 
-        M_leftCauchyGreenTensor_K.reset( new element_tensor2symm_type(this->functionSpaceTensor2Symm(), "LeftCauchyGreenTensor_K") );
-        M_leftCauchyGreenTensor_KN.reset( new element_vectorial_type(this->functionSpaceVectorial(), "LeftCauchyGreenTensor_KN") );
         M_leftCauchyGreenTensor.reset( new element_tensor2symm_type(this->functionSpaceTensor2Symm(), "LeftCauchyGreenTensor") );
         M_cauchyGreenInvariant1.reset( new element_cauchygreen_invariant_type(this->functionSpace(), "CauchyGreenI1(TrC)") );
         M_cauchyGreenInvariant2.reset( new element_cauchygreen_invariant_type(this->functionSpace(), "CauchyGreenI2(TrCofC)") );
@@ -1912,87 +1911,42 @@ LEVELSET_CLASS_TEMPLATE_TYPE::leftCauchyGreenTensor() const
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+auto
+LEVELSET_CLASS_TEMPLATE_TYPE::leftCauchyGreenTensorExpr() const
+{
+    CHECK( this->M_useCauchyAugmented ) << this->prefix()+".use-cauchy-augmented option must be true to use Cauchy-Green tensor";
+
+    auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
+    auto const& N = this->N();
+
+    return Feel::vf::FeelModels::leftCauchyGreenTensorExpr( *Y, *N );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
 {
-    DCHECK( this->M_useCauchyAugmented ) << this->prefix()+".use-cauchy-augmented option must be true to use Cauchy-Green tensor";
+    CHECK( this->M_useCauchyAugmented ) << this->prefix()+".use-cauchy-augmented option must be true to use Cauchy-Green tensor";
 
     this->log("LevelSet", "updateLeftCauchyGreenTensor", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-#if 0
-    // Create interface projector L2
-    auto const interfaceElts = this->interfaceElements();
-    auto const spaceTensor2SymmInterface = self_type::space_tensor2symm_type::New( 
-            _mesh=this->mesh(),
-            _range=interfaceElts,
-            _worldscomm=this->worldsComm()
-            );
-    auto const projectorL2Tensor2SymmInterface = Feel::projector(
-            spaceTensor2SymmInterface, spaceTensor2SymmInterface,
-            backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm(), _rebuild=true )
-            );
-
-    auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
-    auto gradY = projectorL2Tensor2SymmInterface->project(
-            _expr=gradv(Y)
-            );
-    auto invGradY = this->functionSpaceTensor2Symm()->element();
-    invGradY.on(
-            _range=interfaceElts,
-            _expr=inv(idv(gradY))
-            );
-    // K = (gradY)^-1 (gradY)^-T
-    auto const& N = this->N();
-    M_leftCauchyGreenTensor_K->zero();
-    M_leftCauchyGreenTensor_K->on(
-            _range=interfaceElts,
-            _expr=idv(invGradY)*trans(idv(invGradY))
-            );
-    auto const& K = *M_leftCauchyGreenTensor_K;
-    M_leftCauchyGreenTensor_KN->zero();
-    M_leftCauchyGreenTensor_KN->on(
-            _range=interfaceElts,
-            _expr=idv(K)*idv(this->N())
-            );
-    auto const& KN = *M_leftCauchyGreenTensor_KN;
-    M_leftCauchyGreenTensor->zero();
-    M_leftCauchyGreenTensor->on(
-            _range=interfaceElts,
-            _expr=idv(K) - idv(KN)*trans(idv(KN))/(trans(idv(N))*idv(KN))
-            );
-#else
-    auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
-    auto gradY = this->projectorL2Tensor2Symm()->project(
-            _expr=gradv(Y)
-            );
-    auto invGradY = vf::project(
-            _space=this->functionSpaceTensor2Symm(),
-            _range=this->rangeMeshElements(),
-            _expr=inv(idv(gradY))
-            );
-    // K = (gradY)^-1 (gradY)^-T
-    auto const& N = this->N();
-    M_leftCauchyGreenTensor_K->on(
-            _range=this->rangeMeshElements(),
-            _expr=idv(invGradY)*trans(idv(invGradY))
-            );
-    auto const& K = *M_leftCauchyGreenTensor_K;
-    M_leftCauchyGreenTensor_KN->on(
-            _range=this->rangeMeshElements(),
-            _expr=idv(K)*idv(this->N())
-            );
-    auto const& KN = *M_leftCauchyGreenTensor_KN;
     M_leftCauchyGreenTensor->on(
             _range=this->rangeMeshElements(),
-            _expr=idv(K) - idv(KN)*trans(idv(KN))/(trans(idv(N))*idv(KN))
+            _expr=this->leftCauchyGreenTensorExpr()
             );
-#endif
 
     M_doUpdateCauchyGreenTensor = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
     this->log("LevelSet", "updateLeftCauchyGreenTensor", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+auto
+LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1Expr() const
+{
+    return Feel::vf::FeelModels::cauchyGreenInvariant1Expr( this->leftCauchyGreenTensorExpr() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -2022,7 +1976,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
         M_cauchyGreenInvariant1->zero();
         M_cauchyGreenInvariant1->on(
                 _range=this->interfaceElements(),
-                _expr=Feel::vf::FeelModels::cauchyGreenInvariant1Expr( A )
+                _expr=this->cauchyGreenInvariant1Expr()
                 );
 #endif
         M_doUpdateCauchyGreenInvariant1 = false;
@@ -2032,6 +1986,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
     }
 
     return M_cauchyGreenInvariant1;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+auto
+LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2Expr() const
+{
+    return 0.5*trace( this->leftCauchyGreenTensorExpr() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -2069,7 +2030,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
         M_cauchyGreenInvariant2->zero();
         M_cauchyGreenInvariant2->on(
                 _range=this->interfaceElements(),
-                _expr=0.5 * trA
+                _expr=this->cauchyGreenInvariant2Expr()
                 );
 #endif
         M_doUpdateCauchyGreenInvariant2 = false;
