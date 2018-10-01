@@ -40,8 +40,7 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 add_custom_target( testsuite )
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-#add_subdirectory(contrib)
+include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/..)
 
 option(FEELPP_DISABLE_COMPILE_FAILURE "disable compilation failure in testsuite" OFF)
 if (FEELPP_DISABLE_COMPILE_FAILURE )
