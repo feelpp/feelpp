@@ -993,32 +993,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant2 );
 }
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::reinitializer_ptrtype 
-LEVELSET_CLASS_TEMPLATE_TYPE::buildReinitializer( 
-        LevelSetReinitMethod method, 
-        space_levelset_ptrtype const& space,
-        std::string const& prefix )
-{
-    switch( method )
-    { 
-        case LevelSetReinitMethod::FM :
-        {
-            return reinitializer_ptrtype(
-                    new ReinitializerFM<space_levelset_type>( space, prefixvm(prefix, "reinit-fm") ) 
-                    );
-        }
-        break;
-        case LevelSetReinitMethod::HJ :
-        {
-            return reinitializer_ptrtype(
-                    new ReinitializerHJ<space_levelset_type>( space, prefixvm(prefix, "reinit-hj") )
-                    );
-        }
-        break;
-    }
-}
-
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
