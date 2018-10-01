@@ -4,6 +4,7 @@
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 #include <feel/feelmodels/levelset/levelset.hpp>
 #include <feel/feelmodels/multifluid/interfaceforcesmodel.hpp>
+#include <feel/feelmodels/levelset/globallevelsetexpr.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -155,7 +156,13 @@ public:
     uint16_type nLevelsets() const { return M_levelsets.size(); }
 
     // Global levelset
-    auto globalLevelsetExpr() const;
+    auto globalLevelsetExpr() const {
+        std::vector< element_levelset_ptrtype > levelsets;
+        std::transform( M_levelsets.begin(), M_levelsets.end(), std::back_inserter(levelsets),
+                [](levelset_ptrtype const& l) { return l->phi(); }
+                );
+        return Feel::FeelModels::globalLevelsetExpr( levelsets );
+    }
     element_levelset_ptrtype const& globalLevelsetElt() const;
 
     // Fluid density-viscosity model

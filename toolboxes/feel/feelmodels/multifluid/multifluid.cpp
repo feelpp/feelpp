@@ -3,7 +3,6 @@
 
 #include <feel/feelmodels/multifluid/multifluid.hpp>
 
-#include <feel/feelmodels/levelset/globallevelsetexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetheavisideexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetdeltaexpr.hpp>
 
@@ -325,17 +324,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::functionSpaceInextensibilityLM() const
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-auto
-MULTIFLUID_CLASS_TEMPLATE_TYPE::globalLevelsetExpr() const
-{
-    std::vector< element_levelset_ptrtype > levelsets;
-    std::transform( M_levelsets.begin(), M_levelsets.end(), std::back_inserter(levelsets),
-            [](levelset_ptrtype const& l) { return l->phi(); }
-            );
-    return Feel::vf::FeelModels::globalLevelsetExpr( levelsets );
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 typename MULTIFLUID_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
 MULTIFLUID_CLASS_TEMPLATE_TYPE::globalLevelsetElt() const
 {
@@ -430,7 +418,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInextensibilityLM()
         }
     }
     // Compute inextensible levelsets elements range
-    auto inextensibleLevelsetsExpr = Feel::vf::FeelModels::globalLevelsetExpr( M_inextensibleLevelsets );
+    auto inextensibleLevelsetsExpr = Feel::FeelModels::globalLevelsetExpr( M_inextensibleLevelsets );
     auto dirac = vf::project(
             _space=this->functionSpacePressure(), _range=this->rangeMeshElements(),
             _expr=Feel::FeelModels::levelsetDelta( inextensibleLevelsetsExpr, cst(M_globalLevelsetThicknessInterface) )
@@ -1042,7 +1030,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional( DataUpdateLinear & da
 
                     if( BuildNonCstPart )
                     {
-                        auto inextensibleLevelsetsExpr = Feel::vf::FeelModels::globalLevelsetExpr( M_inextensibleLevelsets );
+                        auto inextensibleLevelsetsExpr = Feel::FeelModels::globalLevelsetExpr( M_inextensibleLevelsets );
                         auto inextensibleLevelsetsDeltaExpr = Feel::FeelModels::levelsetDelta( inextensibleLevelsetsExpr, cst(M_globalLevelsetThicknessInterface) );
 
                         form2( _trial=this->functionSpaceInextensibilityLM(), _test=this->functionSpace(), _matrix=A,
@@ -1184,7 +1172,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianAdditional( DataUpdateJacobian & d
 
                     if( BuildNonCstPart )
                     {
-                        auto inextensibleLevelsetsExpr = Feel::vf::FeelModels::globalLevelsetExpr( M_inextensibleLevelsets );
+                        auto inextensibleLevelsetsExpr = Feel::FeelModels::globalLevelsetExpr( M_inextensibleLevelsets );
                         auto inextensibleLevelsetsDeltaExpr = Feel::FeelModels::levelsetDelta( inextensibleLevelsetsExpr, cst(M_globalLevelsetThicknessInterface) );
 
                         form2( _trial=this->functionSpaceInextensibilityLM(), _test=this->functionSpace(), _matrix=J,
@@ -1325,7 +1313,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualAdditional( DataUpdateResidual & d
 
                     if( BuildNonCstPart )
                     {
-                        auto inextensibleLevelsetsExpr = Feel::vf::FeelModels::globalLevelsetExpr( M_inextensibleLevelsets );
+                        auto inextensibleLevelsetsExpr = Feel::FeelModels::globalLevelsetExpr( M_inextensibleLevelsets );
                         auto inextensibleLevelsetsDeltaExpr = Feel::FeelModels::levelsetDelta( inextensibleLevelsetsExpr, cst(M_globalLevelsetThicknessInterface) );
 
                         form1( _test=this->functionSpace(), _vector=R,
