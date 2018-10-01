@@ -467,6 +467,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype m )
         M_mesh = m;
         M_isUpdatedForUse = false;
     }
+    M_rangeMeshElements = elements(M_mesh);
     this->log("AdvDiffReac","loadMesh", "finish");
 }
 
