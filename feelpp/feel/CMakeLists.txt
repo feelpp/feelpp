@@ -161,8 +161,13 @@ if (GSL_FOUND)
   target_include_directories( feelpp PUBLIC ${GSL_INCLUDE_DIRS} )
   target_link_libraries( feelpp PUBLIC ${GSL_LIBRARIES} )
 endif()
+
+# Gmsh
 if ( GMSH_FOUND )
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_GMSH FEELPP_HAS_GMSH_H FEELPP_HAS_GMSH_LIBRARY GMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
+  if ( FEELPP_ENABLE_MED )
+    target_compile_definitions( feelpp PUBLIC FEELPP_HAS_GMSH_HAS_MED )
+  endif()
   target_include_directories( feelpp PUBLIC ${GMSH_INCLUDE_DIR} )
   if ( GL2PS_LIBRARY )
     if ( GL_LIBRARY AND FEELPP_ENABLE_OPENGL )
@@ -171,13 +176,16 @@ if ( GMSH_FOUND )
       target_link_libraries( feelpp PUBLIC ${GL2PS_LIBRARY})
     endif()
   endif()
-  target_link_libraries( feelpp PUBLIC ${GMSH_LIBRARIES} )
+  # GMSH_EXTERNAL_LIBRARIES may contain the med / cgns libs if they have been found
+  target_link_libraries( feelpp PUBLIC ${GMSH_LIBRARIES} ${GMSH_EXTERNAL_LIBRARIES})
   
   target_include_directories( feelpp
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/gmsh>
     $<INSTALL_INTERFACE:include/feelpp> )
-endif()
+endif( GMSH_FOUND )
+
+# Paraview
 if ( ParaView_FOUND )
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_PARAVIEW FEELPP_HAS_VTK )
   target_compile_definitions( feelpp PUBLIC VTK_HAS_PARALLEL=${VTK_HAS_PARALLEL} )
