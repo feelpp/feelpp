@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
                         _spectrum="target_real",
 #else
                         _spectrum="smallest_magnitude",
-#ndif
+#endif
                         _nev=15,
                         _ncv=30,
                         _verbose=1
