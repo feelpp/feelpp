@@ -49,9 +49,10 @@ docker build \
        --tag=feelpp/${image}:${tag} \
        --build-arg=BUILD_JOBS=${JOBS}\
        --build-arg=BRANCH=${BUILDKITE_BRANCH}\
-       --build-arg=CXX="${CXX}"\
+       --build-arg=CXX="${CXX}" \
        --build-arg=CC="${CC}" \
-       --build-arg=CXX="${CMAKE_FLAGS}"\
+       --build-arg=CONFIGURE_FLAGS="${CONFIGURE_FLAGS}" \
+       --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}" \
        --no-cache=true \
        -f docker/${image}/dockerfile.tmp \
        docker/${image}
