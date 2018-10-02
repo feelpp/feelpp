@@ -18,6 +18,9 @@ if test "$tag_compiler" != "${tag_compiler%gcc*}"; then
 else
     tag=$(tag_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
 fi
+if test "$BUILDKITE_PIPELINE_SLUG" = "feelpp-debug"; then
+    tag=${tag}-debug
+fi
 image="feelpp-${component}"
 if [ "${component}" = "feelpp" ] ; then
 #    tag=$(tag_from_os $TARGET $BRANCHTAG $FEELPP_VERSION)
@@ -39,6 +42,7 @@ cat << EOF | buildkite-agent annotate --style "info"
 Building Feel++ ${component} with the following configuration
  * CXX=${CXX}
  * CC=${CXX}
+ * CONFIGURE_FLAGS=${CONFIGURE_FLAGS}
  * CMAKE_FLAGS=${CMAKE_FLAGS}
  * JOBS=${JOBS}        
  * BRANCH=${BUILDKITE_BRANCH}
