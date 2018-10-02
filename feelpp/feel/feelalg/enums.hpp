@@ -243,6 +243,9 @@ enum PositionOfSpectrum {LARGEST_MAGNITUDE=0,
                          SMALLEST_REAL,
                          LARGEST_IMAGINARY,
                          SMALLEST_IMAGINARY,
+                         TARGET_MAGNITUDE,
+                         TARGET_REAL,
+                         TARGET_IMAGINARY,
 
                          INVALID_Postion_of_Spectrum
                         };
