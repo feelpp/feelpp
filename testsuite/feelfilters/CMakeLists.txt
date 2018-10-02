@@ -7,9 +7,9 @@ foreach(TEST importergmsh importerarm geotool geotool2 exporter_sanitize gmsh)
 endforeach()
 
 
-if(FEELPP_ENABLE_MED)
+if(FEELPP_HAS_MED)
+  message(STATUS "[testsuite] feelpp_test_med enabled" )
   feelpp_add_test( med SRCS test_med.cpp CFG test_med.cfg MESH test_med.med NO_MPI_TEST)
 endif()
-# add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS ${TESTS} )
 
 feelpp_add_test( exporter_disc CLI "--exporter.element-spaces=P1")
