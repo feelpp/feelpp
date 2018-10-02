@@ -161,6 +161,8 @@ namespace FeelModels
         void
         attachNearNullSpace( NullSpace<value_type> const& nearNullSpace );
         void
+        attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace, std::string const& prefix );
+        void
         attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace );
 
 

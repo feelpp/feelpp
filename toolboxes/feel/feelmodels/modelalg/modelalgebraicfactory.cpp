@@ -197,12 +197,17 @@ namespace FeelModels
         this->backend()->attachNearNullSpace( myNearNullSpace );
     }
     void
-    ModelAlgebraicFactory::attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace )
+    ModelAlgebraicFactory::attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace, std::string const& prefix )
     {
         CHECK( this->backend() ) << "backend not init\n";
         CHECK( M_PrecondManage ) << "preconditioner not init\n";
         std::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(this->backend(),nearNullSpace) );
-        M_PrecondManage->attachNearNullSpace( k, myNearNullSpace );
+        M_PrecondManage->attachNearNullSpace( k, myNearNullSpace, prefix );
+    }
+    void
+    ModelAlgebraicFactory::attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace )
+    {
+        this->attachNearNullSpace( k, nearNullSpace, this->preconditionerTool()->name() );
     }
 
     void

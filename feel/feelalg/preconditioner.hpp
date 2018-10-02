@@ -224,11 +224,19 @@ public:
      */
     Side side() const { return M_side; }
 
-    bool hasNearNullSpace( std::set<int> const& splitIds ) const { return M_nearNullSpace.find(splitIds) != M_nearNullSpace.end(); }
+    bool hasNearNullSpace( std::set<int> const& splitIds ) const { return hasNearNullSpace( splitIds, this->name() ); }
+    bool hasNearNullSpace( std::set<int> const& splitIds, std::string const& prefix ) const { 
+        auto const& nnSpace = M_nearNullSpace.find(prefix);
+        return (nnSpace != M_nearNullSpace.end()) && (nnSpace->second.find(splitIds) != nnSpace->second.end());
+    }
     std::shared_ptr<NullSpace<value_type> > const& nearNullSpace( std::set<int> const& splitIds ) const
     {
-        CHECK( this->hasNearNullSpace( splitIds ) ) << " near null space not given for index split ";
-        return M_nearNullSpace.find(splitIds)->second;
+        return this->nearNullSpace( splitIds, this->name() );
+    }
+    std::shared_ptr<NullSpace<value_type> > const& nearNullSpace( std::set<int> const& splitIds, std::string const& prefix ) const
+    {
+        CHECK( this->hasNearNullSpace( splitIds, prefix ) ) << " near null space not given for index split ";
+        return M_nearNullSpace.find(prefix)->second.find(splitIds)->second;
     }
 
     bool hasAuxiliaryVector( std::string const& key ) const { return M_auxiliaryVector.find( key ) != M_auxiliaryVector.end(); }
@@ -300,11 +308,16 @@ public:
     void attachNearNullSpace( int k, std::shared_ptr<NullSpace<value_type> > const& nearNullSpace )
     {
         std::set<int> splitIds; splitIds.insert( k );
-        this->attachNearNullSpace( splitIds, nearNullSpace );
+        this->attachNearNullSpace( splitIds, nearNullSpace, this->name() );
     }
-    void attachNearNullSpace( std::set<int> const& splitIds, std::shared_ptr<NullSpace<value_type> > const& nearNullSpace )
+    void attachNearNullSpace( int k, std::shared_ptr<NullSpace<value_type> > const& nearNullSpace, std::string const& prefix )
     {
-        M_nearNullSpace[splitIds] = nearNullSpace;
+        std::set<int> splitIds; splitIds.insert( k );
+        this->attachNearNullSpace( splitIds, nearNullSpace, prefix );
+    }
+    void attachNearNullSpace( std::set<int> const& splitIds, std::shared_ptr<NullSpace<value_type> > const& nearNullSpace, std::string const& prefix )
+    {
+        M_nearNullSpace[prefix][splitIds] = nearNullSpace;
     }
 
     void attachAuxiliaryVector( std::string const& key,vector_ptrtype const& vec )
@@ -378,7 +391,7 @@ protected:
     /**
      *  Near Null Space for Field Split
      */
-    std::map<std::set<int>,std::shared_ptr<NullSpace<value_type> > >  M_nearNullSpace;
+    std::map<std::string, std::map<std::set<int>,std::shared_ptr<NullSpace<value_type> > > >  M_nearNullSpace;
 
     std::map<std::string,sparse_matrix_ptrtype> M_auxiliarySparseMatrix;
     std::map<std::string,vector_ptrtype> M_auxiliaryVector;
