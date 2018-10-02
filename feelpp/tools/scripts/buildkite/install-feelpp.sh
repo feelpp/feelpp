@@ -34,13 +34,24 @@ elif [ "${component}" = "mor" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
 else
     dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
-fi    
+fi
+cat << EOF | buildkite-agent annotate --style "info"
+Building Feel++ ${component} with the following configuration
+ * CXX=${CXX}
+ * CC=${CXX}
+ * CMAKE_FLAGS=${CMAKE_FLAGS}
+ * JOBS=${JOBS}        
+ * BRANCH=${BUILDKITE_BRANCH}
+
+Docker image: feelpp/${image}:${tag}
+EOF
 docker build \
        --tag=feelpp/${image}:${tag} \
        --build-arg=BUILD_JOBS=${JOBS}\
        --build-arg=BRANCH=${BUILDKITE_BRANCH}\
        --build-arg=CXX="${CXX}"\
        --build-arg=CC="${CC}" \
+       --build-arg=CXX="${CMAKE_FLAGS}"\
        --no-cache=true \
        -f docker/${image}/dockerfile.tmp \
        docker/${image}
