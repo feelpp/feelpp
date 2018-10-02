@@ -56,6 +56,9 @@ std::map<std::string, size_type> EigenMap = {
     {"smallest_real", SMALLEST_REAL },
     {"largest_imaginary", LARGEST_IMAGINARY },
     {"smallest_imaginary", SMALLEST_IMAGINARY },
+    {"target_magnitude", TARGET_MAGNITUDE },
+    {"target_real", TARGET_REAL },
+    {"target_imaginary", TARGET_IMAGINARY },
     // spectral transform type
     {"shift", SHIFT },
     {"shift_invert", SINVERT },

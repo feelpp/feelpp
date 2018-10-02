@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
                         _solver="krylovschur",
                         _problem="ghep",
                         _transform="shift_invert",
-                        _spectrum="smallest_magnitude",
+                        _spectrum=soption("solvereigen.spectrum"),
                         _nev=15,
                         _ncv=30,
                         _verbose=1

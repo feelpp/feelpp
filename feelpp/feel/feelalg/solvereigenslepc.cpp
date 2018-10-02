@@ -704,6 +704,21 @@ SolverEigenSlepc<T>:: setSlepcPositionOfSpectrum()
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         return;
 
+    case TARGET_MAGNITUDE:
+        ierr = EPSSetWhichEigenpairs ( M_eps, EPS_TARGET_MAGNITUDE );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
+
+    case TARGET_REAL:
+        ierr = EPSSetWhichEigenpairs ( M_eps, EPS_TARGET_REAL );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
+
+    case TARGET_IMAGINARY:
+        ierr = EPSSetWhichEigenpairs ( M_eps, EPS_TARGET_IMAGINARY );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
+
 
     default:
         std::cerr << "ERROR:  Unsupported SLEPc position of spectrum: "
