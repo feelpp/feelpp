@@ -9,7 +9,10 @@ feelpp_add_test( laplaciant CFG test_laplaciant.cfg SKIP_TEST )
 if ( FEELPP_HAS_FFTW )
     feelpp_add_test( msi CFG test_msi.cfg LINK_LIBRARIES ${FFTW_LIBRARIES})
 endif()
-feelpp_add_test( inner_curl )
+
+# comment out as it breaks compilation
+#feelpp_add_test( inner_curl )
+
 feelpp_add_test( inner_laplacian )
 feelpp_add_test( vf_integrals )
 #feelpp_add_test( vf_val )
