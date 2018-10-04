@@ -11,7 +11,7 @@ if ( FEELPP_HAS_FFTW )
 endif()
 
 # comment out as it breaks compilation
-#feelpp_add_test( inner_curl )
+feelpp_add_test( inner_curl )
 
 feelpp_add_test( inner_laplacian )
 feelpp_add_test( vf_integrals )
