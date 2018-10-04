@@ -881,9 +881,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveFluid()
                 _kind=soption( _name="backend", _prefix=this->fluidPrefix() ), 
                 _name=this->fluidPrefix(),
                 _rebuild=true,
-                _worldcomm=this->functionSpace()->worldCommPtr() 
+                _worldcomm=this->worldCommPtr() 
                 );
-        this->algebraicFactory()->reset( this->M_backend, graph, graph->mapRow().indexSplit() );
+        //this->algebraicFactory()->reset( this->M_backend, graph, graph->mapRow().indexSplit() );
+        this->initAlgebraicFactory();
         // Rebuild solution vector
         this->buildBlockVector();
 
