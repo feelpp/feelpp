@@ -23,6 +23,63 @@
 #
 add_custom_target(feelpp_mesh_data ALL)
 
+set( MESHES
+  medit/Cylref.mesh
+  medit/Box_with_a_sphere.mesh
+  medit/Cylref.geo
+  medit/Box_with_a_sphere.geo
+  med/Cylref.med
+  gmsh/lncmi_bitter/bitter_stl_be02.msh
+  gmsh/lncmi_bitter/bitter_stl_be02_2.msh
+  gmsh/lncmi_bitter/bitter_stl_be02-adapted.msh
+  gmsh/lncmi_bitter/bitter_stl_be02.geo
+  gmsh/lncmi_bitter/BE-02-01M.stp
+  gmsh/bean.geo
+  gmsh/cantilever.geo
+  gmsh/operatorlagrangep1/simplex-3d-lagrange-order2.msh
+  gmsh/operatorlagrangep1/hypercube-2d-lagrange-order2.msh
+  gmsh/operatorlagrangep1/simplex-2d-lagrange-order2.msh
+  gmsh/aorta/.gitignore
+  gmsh/aorta/aorta_centerlines.geo
+  gmsh/aorta/aorta2.stl
+  gmsh/ReferenceTriangle.geo
+  gmsh/pelvis/pelvis.stl
+  gmsh/pelvis/pelvis.geo
+  gmsh/magnetostatic/torus3d_quart_fer.geo
+  gmsh/magnetostatic/torus3d.geo
+  gmsh/magnetostatic/torus3d_quart.geo
+  gmsh/magnetostatic/torusaxi_quart_fer.geo
+  gmsh/magnetostatic/torusaxi.geo
+  gmsh/fda/fda_Re500_fine.geo
+  gmsh/fda/fda-2d.geo
+  gmsh/fda/fda_Re500_coarse.geo
+  gmsh/aneurism/aneurysm.geo
+  gmsh/aneurism/aneurysm.stl
+  gmsh/life.geo
+  gmsh/feelpp/feel3d-ns.geo
+  gmsh/feelpp/feel3d.geo
+  gmsh/feelpp/feel.geo
+  gmsh/feelpp/feel2d-ns.geo
+  gmsh/primitives/torus.geo
+  gmsh/primitives/rectangle.geo
+  gmsh/primitives/cylinder.geo
+  gmsh/one-elt-meshes-2d/one-elt-real-homo.msh
+  gmsh/one-elt-meshes-2d/one-elt-ref.msh
+  gmsh/one-elt-meshes-2d/one-elt-real-rot1.msh
+  gmsh/one-elt-meshes-2d/one-elt-real-rot2.msh
+  gmsh/one-elt-meshes-2d/two_elements_mesh.msh
+  gmsh/steps/step-elmann-2009.geo
+  gmsh/geom3D_conductor.geo
+  gmsh/tripod.geo
+  gmsh/marche.geo
+  gmsh/one-elt-meshes-3d/one-elt-ref-3d.msh
+  gmsh/one-elt-meshes-3d/one-elt-real-rotz.msh
+  gmsh/one-elt-meshes-3d/one-elt-real-rotx.msh
+  gmsh/one-elt-meshes-3d/one-elt-real-homo-3d.msh
+  gmsh/one-elt-meshes-3d/one-elt-real-roty.msh )
+
+install( FILES ${MESHES} DESTINATION share/feelpp/feel/geo )
+
 if (EXISTS $ENV{HOME})
   # create $ENV{HOME}/feel/geo if it does not exist already: this is the geometry
   # files repository
