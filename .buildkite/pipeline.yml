@@ -4,6 +4,12 @@ steps:
    agents:
      docker: true
      ubuntu: "16.04"
+   artifact_paths: Testing/junit-*.xml
+ - wait: ~
+   continue_on_failure: true
+ - plugins:
+     junit-annotate#v1.2.0:
+       artifacts: Testing/junit-*.xml
  - wait
  - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp
    name: ":docker: push images to the hub :rocket:"

@@ -44,6 +44,7 @@ Building Feel++ ${component} with the following configuration
  * CC=${CXX}
  * CONFIGURE_FLAGS=${CONFIGURE_FLAGS}
  * CMAKE_FLAGS=${CMAKE_FLAGS}
+ * CTEST_FLAGS=${CTEST_FLAGS}
  * JOBS=${JOBS}        
  * BRANCH=${BUILDKITE_BRANCH}
 
@@ -57,6 +58,10 @@ docker build \
        --build-arg=CC="${CC}" \
        --build-arg=CONFIGURE_FLAGS="${CONFIGURE_FLAGS}" \
        --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}" \
+       --build-arg=CTEST_FLAGS="${CTEST_FLAGS}" \
+       --build-arg=BUILDKITE_JOB_ID="${BUILDKITE_JOB_ID}"\
+       --build-arg=BUILDKITE_AGENT_ACCESS_TOKEN="${BUILDKITE_AGENT_ACCESS_TOKEN}" \
+       --build-arg=BUILDKITE_AGENT_ENDPOINT="${BUILDKITE_AGENT_ENDPOINT}" \
        --no-cache=true \
        -f docker/${image}/dockerfile.tmp \
        docker/${image}
