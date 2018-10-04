@@ -65,6 +65,7 @@ private:
     double M_helfrichBendingModulus;
     int M_forceImpl;
     vf::FeelModels::HelfrichInnerDivImplementation M_helfrichInnerDivExprImpl;
+    bool M_useIntegrationByParts;
 
 #ifdef DEBUG_HELFRICHFORCEMODEL
     typedef std::shared_ptr<Exporter<mesh_type, 1>> exporter_ptrtype;
@@ -107,6 +108,8 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::loadParametersFromOptionsV
     else
         CHECK( false ) << helfrichInnerDivExprImpl << " is not a valid Helfrich inner div implementation\n";
 
+    M_useIntegrationByParts = boption( _name="helfrich-force.use-integration-by-parts", _prefix=this->prefix() );
+
 #ifdef DEBUG_HELFRICHFORCEMODEL
     M_exporter = Feel::exporter(
             _mesh=this->levelset()->mesh(),
@@ -137,22 +140,33 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::updateFluidInterfaceForces
 
     if( BuildNonCstPart )
     {
-        auto phi = this->levelset()->phi();
-        auto N = this->levelset()->N();
-        auto K = this->levelset()->K();
-        auto gradPhi = this->levelset()->gradPhi();
-        auto modGradPhi = this->levelset()->modGradPhi();
-        auto D = this->levelset()->D();
+        if( M_useIntegrationByParts )
+        {
+            auto phi = this->levelset()->phi();
+            auto N = this->levelset()->N();
+            auto K = this->levelset()->K();
+            auto gradPhi = this->levelset()->gradPhi();
+            auto modGradPhi = this->levelset()->modGradPhi();
+            auto D = this->levelset()->D();
 
-        auto helfrichInnerDiv = Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl );
-        myLinearForm +=
-            integrate( _range=this->fluid()->rangeMeshElements(),
-                       _expr= -this->bendingModulus() * trans(helfrichInnerDiv) * (
-                           trans(gradv(D))*(trans(idv(N))*id(v))
-                           + idv(D)*( trans(gradv(N))*id(v)+trans(grad(v))*idv(N) )
-                           ),
-                       _geomap=this->fluid()->geomap() 
-                       );
+            auto helfrichInnerDiv = Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl );
+            myLinearForm +=
+                integrate( _range=this->fluid()->rangeMeshElements(),
+                        _expr= -this->bendingModulus() * trans(helfrichInnerDiv) * (
+                            trans(gradv(D))*(trans(idv(N))*id(v))
+                            + idv(D)*( trans(gradv(N))*id(v)+trans(grad(v))*idv(N) )
+                            ),
+                        _geomap=this->fluid()->geomap() 
+                        );
+        }
+        else
+        {
+            this->updateInterfaceForcesImpl( this->M_interfaceForce );
+            myLinearForm +=
+                integrate( _range=this->fluid()->rangeMeshElements(),
+                        _expr= trans(idv(*this->M_interfaceForce))*id(v),
+                        _geomap=this->fluid()->geomap() );
+        }
     }
 }
 
@@ -185,22 +199,33 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::updateFluidInterfaceForces
                                             _rowstart=this->fluid()->rowStartInVector() );
     if( BuildNonCstPart )
     {
-        auto phi = this->levelset()->phi();
-        auto N = this->levelset()->N();
-        auto K = this->levelset()->K();
-        auto gradPhi = this->levelset()->gradPhi();
-        auto modGradPhi = this->levelset()->modGradPhi();
-        auto D = this->levelset()->D();
+        if( M_useIntegrationByParts )
+        {
+            auto phi = this->levelset()->phi();
+            auto N = this->levelset()->N();
+            auto K = this->levelset()->K();
+            auto gradPhi = this->levelset()->gradPhi();
+            auto modGradPhi = this->levelset()->modGradPhi();
+            auto D = this->levelset()->D();
 
-        auto helfrichInnerDiv = Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl );
-        linearForm_PatternCoupled +=
-            integrate( _range=this->fluid()->rangeMeshElements(),
-                       _expr= this->bendingModulus() * trans(helfrichInnerDiv) * (
-                           trans(gradv(D))*(trans(idv(N))*id(v))
-                           + idv(D)*( trans(gradv(N))*id(v)+trans(grad(v))*idv(N) )
-                           ),
-                       _geomap=this->fluid()->geomap() 
-                       );
+            auto helfrichInnerDiv = Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl );
+            linearForm_PatternCoupled +=
+                integrate( _range=this->fluid()->rangeMeshElements(),
+                        _expr= this->bendingModulus() * trans(helfrichInnerDiv) * (
+                            trans(gradv(D))*(trans(idv(N))*id(v))
+                            + idv(D)*( trans(gradv(N))*id(v)+trans(grad(v))*idv(N) )
+                            ),
+                        _geomap=this->fluid()->geomap() 
+                        );
+        }
+        else
+        {
+            this->updateInterfaceForcesImpl( this->M_interfaceForce );
+            linearForm_PatternCoupled +=
+                integrate( _range=this->fluid()->rangeMeshElements(),
+                        _expr= -trans(idv(*this->M_interfaceForce))*id(v),
+                        _geomap=this->fluid()->geomap() );
+        }
     }
 }
 
@@ -230,6 +255,28 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
     switch (impl)
     {
         case 0:
+        {
+            auto phi = this->levelset()->phi();
+            auto N = this->levelset()->N();
+            auto K = this->levelset()->K();
+            auto gradPhi = this->levelset()->gradPhi();
+            auto modGradPhi = this->levelset()->modGradPhi();
+
+            auto helfrichInnerDiv = vf::project(
+                    _space=this->levelset()->functionSpaceVectorial(),
+                    _range=this->levelset()->rangeMeshElements(),
+                    _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
+                    );
+            auto Fb = vf::project(
+                    _space=this->levelset()->functionSpaceVectorial(),
+                    _range=this->levelset()->rangeMeshElements(),
+                    _expr=this->bendingModulus() * divv(helfrichInnerDiv) * idv(this->levelset()->D()) * idv(gradPhi)
+                    //_expr=this->bendingModulus() * divv(helfrichInnerDiv) * idv(this->levelset()->D()) * idv(N)
+                    );
+            *F = Fb;
+        }
+        break;
+        case 1:
         {
             auto phi = this->levelset()->phi();
             auto N = this->levelset()->N();
@@ -306,28 +353,6 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
                     "curvature_dirac", "curvature_dirac", curvD );
             M_exporter->save();
 #endif
-        }
-        break;
-        case 1:
-        {
-            auto phi = this->levelset()->phi();
-            auto N = this->levelset()->N();
-            auto K = this->levelset()->K();
-            auto gradPhi = this->levelset()->gradPhi();
-            auto modGradPhi = this->levelset()->modGradPhi();
-
-            auto helfrichInnerDiv = vf::project(
-                    _space=this->levelset()->functionSpaceVectorial(),
-                    _range=elements(this->levelset()->mesh()),
-                    _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
-                    );
-            auto Fb = vf::project(
-                    _space=this->levelset()->functionSpaceVectorial(),
-                    _range=elements(this->levelset()->mesh()),
-                    _expr=this->bendingModulus() * divv(helfrichInnerDiv) * idv(this->levelset()->D()) * idv(gradPhi)
-                    //_expr=this->bendingModulus() * divv(helfrichInnerDiv) * idv(this->levelset()->D()) * idv(N)
-                    );
-            *F = Fb;
         }
         break;
         default:
