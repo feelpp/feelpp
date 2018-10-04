@@ -1568,7 +1568,7 @@ Environment::systemGeoRepository()
     fs::path rep_path;
 
     rep_path = Info::prefix();
-    rep_path /= "share/feel/geo";
+    rep_path /= "share/feelpp/feel/geo";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
 
