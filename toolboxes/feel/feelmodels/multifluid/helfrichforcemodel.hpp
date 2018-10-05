@@ -300,13 +300,13 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
                             _range=this->levelset()->rangeMeshElements(),
                             _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
                             );
-                    auto Fb = this->levelset()->projectorL2Vectorial()->project(
-                            _expr= divv(helfrichInnerDiv) * idv(gradPhi)
+                    auto Fb_div = this->levelset()->projectorL2()->project(
+                            _expr= divv(helfrichInnerDiv) 
                             );
                     *F = vf::project(
                             _space=this->levelset()->functionSpaceVectorial(),
                             _range=this->levelset()->rangeMeshElements(),
-                            _expr=this->bendingModulus() * idv(Fb) * idv(this->levelset()->D())
+                            _expr=this->bendingModulus() * idv(Fb_div) * idv(gradPhi) * idv(this->levelset()->D())
                             );
                 }
                 break;
@@ -317,13 +317,13 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
                             _range=this->levelset()->rangeMeshElements(),
                             _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
                             );
-                    auto Fb = this->levelset()->smootherVectorial()->project(
-                            _expr=divv(helfrichInnerDiv) * idv(gradPhi)
+                    auto Fb_div = this->levelset()->smoother()->project(
+                            _expr=divv(helfrichInnerDiv) 
                             );
                     *F = vf::project(
                             _space=this->levelset()->functionSpaceVectorial(),
                             _range=this->levelset()->rangeMeshElements(),
-                            _expr=this->bendingModulus() * idv(Fb) * idv(this->levelset()->D())
+                            _expr=this->bendingModulus() * idv(Fb) * idv(gradPhi) * idv(this->levelset()->D())
                             );
                 }
                 break;
