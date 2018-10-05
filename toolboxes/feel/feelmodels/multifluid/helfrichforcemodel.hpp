@@ -323,7 +323,7 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
                     *F = vf::project(
                             _space=this->levelset()->functionSpaceVectorial(),
                             _range=this->levelset()->rangeMeshElements(),
-                            _expr=this->bendingModulus() * idv(Fb) * idv(gradPhi) * idv(this->levelset()->D())
+                            _expr=this->bendingModulus() * idv(Fb_div) * idv(gradPhi) * idv(this->levelset()->D())
                             );
                 }
                 break;
