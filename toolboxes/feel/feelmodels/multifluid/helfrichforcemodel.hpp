@@ -36,6 +36,10 @@ public:
 
     static const uint16_type Dim = levelset_type::nDim;
 
+    enum class ProjectionMethod {
+        NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION
+    };
+
     //--------------------------------------------------------------------//
     // Construction
     HelfrichForceModel() = default;
@@ -66,6 +70,7 @@ private:
     int M_forceImpl;
     vf::FeelModels::HelfrichInnerDivImplementation M_helfrichInnerDivExprImpl;
     bool M_useIntegrationByParts;
+    ProjectionMethod M_helfrichForceProjectionMethod;
 
 #ifdef DEBUG_HELFRICHFORCEMODEL
     typedef std::shared_ptr<Exporter<mesh_type, 1>> exporter_ptrtype;
@@ -109,6 +114,16 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::loadParametersFromOptionsV
         CHECK( false ) << helfrichInnerDivExprImpl << " is not a valid Helfrich inner div implementation\n";
 
     M_useIntegrationByParts = boption( _name="helfrich-force.use-integration-by-parts", _prefix=this->prefix() );
+
+    std::string const helfrichProjectionMethod = soption( _name="helfrich-force.projection-method", _prefix=this->prefix() );
+    if( helfrichProjectionMethod == "nodal-projection" )
+        M_helfrichForceProjectionMethod = ProjectionMethod::NODAL_PROJECTION;
+    else if( helfrichProjectionMethod == "l2-projection" )
+        M_helfrichForceProjectionMethod = ProjectionMethod::L2_PROJECTION;
+    else if( helfrichProjectionMethod == "smooth-projection" )
+        M_helfrichForceProjectionMethod = ProjectionMethod::SMOOTH_PROJECTION;
+    else
+        CHECK( false ) << helfrichProjectionMethod << " is not in the list of possible projection methods\n";
 
 #ifdef DEBUG_HELFRICHFORCEMODEL
     M_exporter = Feel::exporter(
@@ -262,18 +277,57 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
             auto gradPhi = this->levelset()->gradPhi();
             auto modGradPhi = this->levelset()->modGradPhi();
 
-            auto helfrichInnerDiv = vf::project(
-                    _space=this->levelset()->functionSpaceVectorial(),
-                    _range=this->levelset()->rangeMeshElements(),
-                    _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
-                    );
-            auto Fb = vf::project(
-                    _space=this->levelset()->functionSpaceVectorial(),
-                    _range=this->levelset()->rangeMeshElements(),
-                    _expr=this->bendingModulus() * divv(helfrichInnerDiv) * idv(this->levelset()->D()) * idv(gradPhi)
-                    //_expr=this->bendingModulus() * divv(helfrichInnerDiv) * idv(this->levelset()->D()) * idv(N)
-                    );
-            *F = Fb;
+            switch ( M_helfrichForceProjectionMethod )
+            {
+                case ProjectionMethod::NODAL_PROJECTION:
+                {
+                    auto helfrichInnerDiv = vf::project(
+                            _space=this->levelset()->functionSpaceVectorial(),
+                            _range=this->levelset()->rangeMeshElements(),
+                            _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
+                            );
+                    *F = vf::project(
+                            _space=this->levelset()->functionSpaceVectorial(),
+                            _range=this->levelset()->rangeMeshElements(),
+                            _expr=this->bendingModulus() * divv(helfrichInnerDiv) * idv(this->levelset()->D()) * idv(gradPhi)
+                            );
+                }
+                break;
+                case ProjectionMethod::L2_PROJECTION:
+                {
+                    auto helfrichInnerDiv = vf::project(
+                            _space=this->levelset()->functionSpaceVectorial(),
+                            _range=this->levelset()->rangeMeshElements(),
+                            _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
+                            );
+                    auto Fb = this->levelset()->projectorL2Vectorial()->project(
+                            _expr= divv(helfrichInnerDiv) * idv(gradPhi)
+                            );
+                    *F = vf::project(
+                            _space=this->levelset()->functionSpaceVectorial(),
+                            _range=this->levelset()->rangeMeshElements(),
+                            _expr=this->bendingModulus() * idv(Fb) * idv(this->levelset()->D())
+                            );
+                }
+                break;
+                case ProjectionMethod::SMOOTH_PROJECTION:
+                {
+                    auto helfrichInnerDiv = vf::project(
+                            _space=this->levelset()->functionSpaceVectorial(),
+                            _range=this->levelset()->rangeMeshElements(),
+                            _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
+                            );
+                    auto Fb = this->levelset()->smootherVectorial()->project(
+                            _expr=divv(helfrichInnerDiv) * idv(gradPhi)
+                            );
+                    *F = vf::project(
+                            _space=this->levelset()->functionSpaceVectorial(),
+                            _range=this->levelset()->rangeMeshElements(),
+                            _expr=this->bendingModulus() * idv(Fb) * idv(this->levelset()->D())
+                            );
+                }
+                break;
+            }
         }
         break;
         case 1:
