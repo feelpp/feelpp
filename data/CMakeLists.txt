@@ -87,48 +87,14 @@ if (EXISTS $ENV{HOME})
   # create $ENV{HOME}/feel/geo if it does not exist already: this is the geometry
   # files repository
   file(MAKE_DIRECTORY $ENV{HOME}/feel/geo)
-
-  message(STATUS "Copying geo/msh files to $ENV{HOME}/feel/geo")
-
-  foreach(exp "geo/*.geo" "geo/*.mesh" "geo/*.geo" "geo/*.stl" "geo/feelpp/feel.geo" )
-    FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/${exp}")
-    foreach(file ${files})
-      get_filename_component(filename ${file} NAME )
-      message(STATUS ${filename})
-
-      # Create a custom target so the geo files can be copied with make
-      add_custom_target(copy_home_mesh_data_${filename})
-      add_custom_command(TARGET copy_home_mesh_data_${filename}
-        COMMAND ${CMAKE_COMMAND} -E copy ${file} $ENV{HOME}/feel/geo )
-      add_dependencies(feelpp_mesh_data copy_home_mesh_data_${filename} )
-
-      # also copies the files by default
-      configure_file(${file} $ENV{HOME}/feel/geo/${filename} COPYONLY)
-    endforeach()
-  endforeach()
-endif(EXISTS $ENV{HOME})
-
+  message(STATUS "Copying geo/msh files to $ENV{HOME}/geo")
+  install( FILES ${MESHES} DESTINATION $ENV{HOME}/feel/geo) 
+endif()
 if (DEFINED ENV{FEELPP_WORKDIR})
   if (NOT EXISTS $ENV{FEELPP_WORKDIR})
     file(MAKE_DIRECTORY $ENV{FEELPP_WORKDIR}/geo)
   endif(NOT EXISTS $ENV{FEELPP_WORKDIR})
-
+  
   message(STATUS "Copying geo/msh files to FEELPP_WORKDIR=$ENV{FEELPP_WORKDIR}/geo")
-
-  foreach(exp "geo/*.geo" "geo/*.med" "geo/*.geo" "geo/*.mesh" "geo/*.geo" "geo/*.stl" "geo/feelpp/feel.geo" )
-    FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/${exp}")
-    foreach(file ${files})
-      get_filename_component(filename ${file} NAME )
-      message(STATUS ${filename})
-
-      # Create a custom target so the geo files can be copied with make
-      add_custom_target(copy_workdir_mesh_data_${filename})
-      add_custom_command(TARGET copy_workdir_mesh_data_${filename}
-          COMMAND ${CMAKE_COMMAND} -E copy  ${file} $ENV{FEELPP_WORKDIR}/geo )
-      add_dependencies(feelpp_mesh_data copy_workdir_mesh_data_${filename} )
-
-      # also copies the files by default
-      configure_file(${file}  $ENV{FEELPP_WORKDIR}/geo/${filename})
-    endforeach()
-  endforeach()
+  install( FILES ${MESHES} DESTINATION $ENV{FEELPP_WORKDIR}/geo) 
 endif (DEFINED ENV{FEELPP_WORKDIR})
