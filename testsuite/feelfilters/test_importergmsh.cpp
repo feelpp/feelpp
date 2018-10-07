@@ -47,6 +47,7 @@ using boost::unit_test::test_suite;
 #include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feelfilters/straightenmesh_impl.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/geo.hpp>
@@ -283,7 +284,9 @@ BOOST_AUTO_TEST_CASE( supportedgmshmesh_import )
     typedef Mesh<Simplex<3> > mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
-    std::vector<std::string> supported_formats = {".mesh"};
+    if ( Environment::isParallel() )
+      return;
+    std::vector<std::string> supported_formats{".mesh"};
 #ifdef FEELPP_HAS_GMSH_HAS_MED
     supported_formats.push_back(".med");
 #endif
@@ -292,11 +295,13 @@ BOOST_AUTO_TEST_CASE( supportedgmshmesh_import )
 #endif
     for (auto format: supported_formats)
       {
+	std::string filename{ std::string{"tripod"}+format };
+	if ( ! fs::exists( fs::path(Environment::findFile(filename) ) ) )
+	  throw std::logic_error( std::string( "file not found ") + filename );
 	mesh_ptrtype mesh,meshimp;
-	mesh = createGMSHMesh( _mesh=new mesh_type,
-			       _desc=convert2msh( "Cylref"+format ),
-			       _physical_are_elementary_regions=true,
-			       _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+	mesh = loadMesh( _mesh=new mesh_type,
+			 _filename=filename,
+			 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 	mesh->addMarkerName("inlet",1,2);
 	mesh->addMarkerName("outlet",2,2);
 	mesh->addMarkerName("wall",3,2);
@@ -329,10 +334,10 @@ BOOST_AUTO_TEST_CASE( supportedgmshmesh_import )
 	BOOST_CHECK_EQUAL( nelements( boundaryfaces( mesh ) ),  nelements( boundaryfaces( meshimp ) ) );
 	BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
 			   std::distance( meshimp->beginElement(), meshimp->endElement() ) );
-	BOOST_CHECK_EQUAL( integrate( elements( mesh ), cst( 1. ) ).evaluate(),
-			   integrate( elements( meshimp ), cst( 1. ) ).evaluate() );
-	BOOST_CHECK_EQUAL( integrate( boundaryfaces( mesh ), cst( 1. ) ).evaluate() ,
-			   integrate( boundaryfaces( meshimp ), cst( 1. ) ).evaluate() );
+	BOOST_CHECK_CLOSE( integrate( elements( mesh ), cst( 1. ) ).evaluate()(0,0),
+			   integrate( elements( meshimp ), cst( 1. ) ).evaluate()(0,0), 1e-6 );
+	BOOST_CHECK_CLOSE( integrate( boundaryfaces( mesh ), cst( 1. ) ).evaluate()(0,0) ,
+			   integrate( boundaryfaces( meshimp ), cst( 1. ) ).evaluate()(0,0), 1e-6 );
 
 	BOOST_TEST_MESSAGE( "[supportedgmshmesh_import] mesh format: " << format << " done.\n" );
       }
