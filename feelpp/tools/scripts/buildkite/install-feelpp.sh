@@ -51,6 +51,7 @@ Building Feel++ ${component} with the following configuration
 Docker image: feelpp/${image}:${tag}
 EOF
 docker build \
+       --pull \
        --tag=feelpp/${image}:${tag} \
        --build-arg=BUILD_JOBS=${JOBS}\
        --build-arg=BRANCH=${BUILDKITE_BRANCH}\
