@@ -351,6 +351,8 @@ public:
     element_vectorial_ptrtype const& N() const { return this->normal(); }
     element_levelset_ptrtype const& curvature() const;
     element_levelset_ptrtype const& K() const { return this->curvature(); }
+    element_vectorial_ptrtype const& distanceNormal() const;
+    element_levelset_ptrtype const& distanceCurvature() const;
 
     void updateInterfaceQuantities();
 
@@ -496,6 +498,8 @@ protected:
     void updatePhiPN();
 
     void updateDistance();
+    void updateDistanceNormal();
+    void updateDistanceCurvature();
 
     void updateMarkerDirac();
     void markerHeavisideImpl( element_markers_ptrtype const& marker, bool invert, double cut );
@@ -553,6 +557,8 @@ protected:
     mutable bool M_doUpdateModGradPhi;
     mutable bool M_doUpdatePhiPN;
     mutable bool M_doUpdateDistance;
+    mutable bool M_doUpdateDistanceNormal;
+    mutable bool M_doUpdateDistanceCurvature;
 
     //--------------------------------------------------------------------//
     // Levelset initial value
@@ -630,6 +636,8 @@ private:
     // Normal, curvature
     mutable element_vectorial_ptrtype M_levelsetNormal;
     mutable element_levelset_ptrtype M_levelsetCurvature;
+    mutable element_vectorial_ptrtype M_distanceNormal;
+    mutable element_levelset_ptrtype M_distanceCurvature;
     //--------------------------------------------------------------------//
     // Advection
 
