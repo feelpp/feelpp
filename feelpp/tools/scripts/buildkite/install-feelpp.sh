@@ -45,12 +45,13 @@ Building Feel++ ${component} with the following configuration
  * CONFIGURE_FLAGS=${CONFIGURE_FLAGS}
  * CMAKE_FLAGS=${CMAKE_FLAGS}
  * CTEST_FLAGS=${CTEST_FLAGS}
- * JOBS=${JOBS}        
+ * JOBS=${JOBS}
  * BRANCH=${BUILDKITE_BRANCH}
 
 Docker image: feelpp/${image}:${tag}
 EOF
 docker build \
+       --pull \
        --tag=feelpp/${image}:${tag} \
        --build-arg=BUILD_JOBS=${JOBS}\
        --build-arg=BRANCH=${BUILDKITE_BRANCH}\
@@ -74,7 +75,3 @@ for tagalias in ${extratags[@]}; do
     echo "Tagging feelpp/${image}:$tag as feelpp/${image}:$tagalias"
     docker tag "feelpp/${image}:$tag" "feelpp/${image}:$tagalias"
 done
-
-    
-
-
