@@ -69,7 +69,7 @@ enum LevelSetTimeDiscretization {BDF2, /*CN,*/ EU, CN_CONSERVATIVE};
  * FM -> Fast-Marching
  * HJ -> Hamilton-Jacobi
  */
-enum class LevelSetReinitMethod { FM, HJ, RENORMALISATION };
+enum class LevelSetDistanceMethod { NONE, FASTMARCHING, HAMILTONJACOBI, RENORMALISATION };
 
 enum class LevelSetMeasuresExported
 {
@@ -337,6 +337,8 @@ public:
     element_levelset_PN_ptrtype const& phiPN() const;
     element_vectorial_ptrtype const& gradPhi() const;
     element_levelset_ptrtype const& modGradPhi() const;
+    element_levelset_ptrtype const& distance() const;
+
     element_stretch_ptrtype const& stretch() const;
     element_backwardcharacteristics_ptrtype const& backwardCharacteristics() const;
 
@@ -423,7 +425,7 @@ public:
     //--------------------------------------------------------------------//
     // Reinitialization
     void reinitialize();
-    element_levelset_type redistantiate( element_levelset_type const& phi ) const;
+    element_levelset_type redistantiate( element_levelset_type const& phi, LevelSetDistanceMethod method ) const;
 
     void setFastMarchingInitializationMethod( FastMarchingInitializationMethod m );
     FastMarchingInitializationMethod fastMarchingInitializationMethod() { return M_fastMarchingInitializationMethod; }
@@ -493,6 +495,8 @@ protected:
 
     void updatePhiPN();
 
+    void updateDistance();
+
     void updateMarkerDirac();
     void markerHeavisideImpl( element_markers_ptrtype const& marker, bool invert, double cut );
     void updateMarkerCrossedElements();
@@ -548,6 +552,7 @@ protected:
     mutable bool M_doUpdateGradPhi;
     mutable bool M_doUpdateModGradPhi;
     mutable bool M_doUpdatePhiPN;
+    mutable bool M_doUpdateDistance;
 
     //--------------------------------------------------------------------//
     // Levelset initial value
@@ -617,6 +622,8 @@ private:
     mutable element_levelset_ptrtype M_levelsetModGradPhi;
     mutable element_levelset_ptrtype M_heaviside;
     mutable element_levelset_ptrtype M_dirac;
+    mutable element_levelset_ptrtype M_distance;
+
     mutable range_elements_type M_interfaceElements;
     mutable range_faces_type M_interfaceFaces;
     //--------------------------------------------------------------------//
@@ -660,13 +667,19 @@ private:
     mutable bool M_doUpdateCauchyGreenInvariant2;
 
     //--------------------------------------------------------------------//
+    // Redistantiation
+    static const std::map<std::string, LevelSetDistanceMethod> LevelSetDistanceMethodIdMap;
+
+    LevelSetDistanceMethod M_distanceMethod;
+
+    //--------------------------------------------------------------------//
     // Reinitialization
     reinitializer_ptrtype M_reinitializer;
     reinitializerFM_ptrtype M_reinitializerFM;
     reinitializerHJ_ptrtype M_reinitializerHJ;
     bool M_reinitializerIsUpdatedForUse;
 
-    LevelSetReinitMethod M_reinitMethod;
+    LevelSetDistanceMethod M_reinitMethod;
     FastMarchingInitializationMethod M_fastMarchingInitializationMethod;
     static const fastmarchinginitializationmethodidmap_type FastMarchingInitializationMethodIdMap;
     bool M_useMarkerDiracAsMarkerDoneFM;
