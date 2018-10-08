@@ -416,47 +416,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
     // Measures
-    bool hasMeasureToExport = false;
-
-    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Volume ) )
-    {
-        this->postProcessMeasuresIO().setMeasure( "volume", this->volume() );
-        hasMeasureToExport = true;
-    }
-    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Perimeter ) )
-    {
-        this->postProcessMeasuresIO().setMeasure( "perimeter", this->perimeter() );
-        hasMeasureToExport = true;
-    }
-    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Position_COM ) )
-    {
-        auto com = this->positionCOM();
-        std::vector<double> vecCOM = { com(0,0) };
-        if( nDim > 1 ) vecCOM.push_back( com(1,0) );
-        if( nDim > 2 ) vecCOM.push_back( com(2,0) );
-        this->postProcessMeasuresIO().setMeasureComp( "position_com", vecCOM );
-        hasMeasureToExport = true;
-    }
-    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Velocity_COM ) )
-    {
-        auto ucom = this->velocityCOM();
-        std::vector<double> vecUCOM = { ucom(0,0) };
-        if( nDim > 1 ) vecUCOM.push_back( ucom(1,0) );
-        if( nDim > 2 ) vecUCOM.push_back( ucom(2,0) );
-        this->postProcessMeasuresIO().setMeasureComp( "velocity_com", vecUCOM );
-        hasMeasureToExport = true;
-    }
-
-    //if ( hasMeasureToExport )
-    //{
-        //this->postProcessMeasuresIO().setParameter( "time", this->timeInitial() );
-        //// start or restart measure file
-        //if (!this->doRestart())
-            //this->postProcessMeasuresIO().start();
-        //else if ( !this->isStationary() )
-            //this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-    //}
-
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
