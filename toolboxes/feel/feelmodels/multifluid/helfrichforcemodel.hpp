@@ -271,10 +271,15 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
     {
         case 0:
         {
-            auto phi = this->levelset()->phi();
-            auto N = this->levelset()->N();
-            auto K = this->levelset()->K();
-            auto gradPhi = this->levelset()->gradPhi();
+            //auto phi = this->levelset()->phi();
+            //auto N = this->levelset()->N();
+            //auto K = this->levelset()->K();
+            //auto gradPhi = this->levelset()->gradPhi();
+            //auto modGradPhi = this->levelset()->modGradPhi();
+            auto phi = this->levelset()->distance();
+            auto N = this->levelset()->distanceNormal();
+            auto K = this->levelset()->distanceCurvature();
+            auto gradPhi = this->levelset()->distanceNormal();
             auto modGradPhi = this->levelset()->modGradPhi();
 
             switch ( M_helfrichForceProjectionMethod )
