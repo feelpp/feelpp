@@ -7,6 +7,7 @@
 #include <feel/feelfilters/unitsphere.hpp>
 #include <feel/feelfilters/unitcircle.hpp>
 #include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feelvf/vf.hpp>
 
 using namespace Feel;

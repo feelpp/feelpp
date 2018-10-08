@@ -86,9 +86,13 @@ runApplicationMaxwell()
                             idv(A_h)-idv(A_ex) );
         errRelA[2*i] = errA[2*i]/normA[2*i];
         normA[2*i+1] = normL2( Ah->template rangeElements<0>(),
-                               _expr=idv(A_h) + curlv(A_h) );
+                               _expr=idv(A_h) );
+        normA[2*i+1] += normL2( Ah->template rangeElements<0>(),
+                                _expr=curlv(A_h) );
         errA[2*i+1] = normL2( Ah->template rangeElements<0>(),
-                              _expr=idv(A_h)-idv(A_ex) + curlv(A_h)-curlv(A_ex) );
+                              _expr=idv(A_h)-idv(A_ex) );
+        errA[2*i+1] += normL2( Ah->template rangeElements<0>(),
+                               _expr=curlv(A_h)-curlv(A_ex) );
         errRelA[2*i+1] = errA[2*i+1]/normA[2*i+1];
         e->step(i)->add("A_h", "A_h", A_h);
         e->step(i)->add("A_ex", "A_ex", A_ex);
