@@ -16,6 +16,7 @@ steps:
    agents:
      docker: true
      ubuntu: "16.04"
+ - wait
  - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer:'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
    agents:
@@ -27,6 +28,7 @@ steps:
    agents:
      docker: true
      ubuntu: "16.04"
+ - wait
  - name: ':$TARGET, $CXX, feelpp-mor :hammer:'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh mor
    agents:
