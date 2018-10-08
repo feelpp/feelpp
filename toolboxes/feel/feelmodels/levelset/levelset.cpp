@@ -14,11 +14,22 @@
 namespace Feel {
 namespace FeelModels {
 
+//----------------------------------------------------------------------------//
+// Static member initialization
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 std::map<std::string, typename LEVELSET_CLASS_TEMPLATE_TYPE::ShapeType>
 LEVELSET_CLASS_TEMPLATE_TYPE::ShapeTypeMap = {
     {"sphere", ShapeType::SPHERE},
     {"ellipse", ShapeType::ELLIPSE}
+};
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+const std::map<std::string, LevelSetDistanceMethod> 
+LEVELSET_CLASS_TEMPLATE_TYPE::LevelSetDistanceMethodIdMap = {
+    {"none", LevelSetDistanceMethod::NONE},
+    {"fm", LevelSetDistanceMethod::FASTMARCHING},
+    {"hj", LevelSetDistanceMethod::HAMILTONJACOBI},
+    {"renormalisation", LevelSetDistanceMethod::RENORMALISATION}
 };
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -39,6 +50,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::DerivationMethodMap = boost::assign::list_of< type
     ( "smooth-projection", DerivationMethod::SMOOTH_PROJECTION )
     ( "pn-nodal-projection", DerivationMethod::PN_NODAL_PROJECTION )
 ;
+//----------------------------------------------------------------------------//
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet( 
@@ -60,6 +72,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateGradPhi(true),
     M_doUpdateModGradPhi(true),
     M_doUpdatePhiPN(true),
+    M_doUpdateDistance(true),
     M_doUpdateSubmeshDirac(true),
     M_doUpdateSubmeshOuter(true),
     M_doUpdateSubmeshInner(true),
@@ -568,7 +581,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
 {
     switch( M_reinitMethod )
     { 
-        case LevelSetReinitMethod::FM :
+        case LevelSetDistanceMethod::FASTMARCHING :
         {
             if( !M_reinitializer )
                 M_reinitializer = this->reinitializerFM();
@@ -578,7 +591,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
                     );
         }
         break;
-        case LevelSetReinitMethod::HJ :
+        case LevelSetDistanceMethod::HAMILTONJACOBI :
         {
             if( !M_reinitializer )
                 M_reinitializer = this->reinitializerHJ();
@@ -595,7 +608,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
             std::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( thickness_heaviside );
         }
         break;
-        case LevelSetReinitMethod::RENORMALISATION :
+        case LevelSetDistanceMethod::RENORMALISATION :
         // Nothing to do - Remove warning
         break;
     }
@@ -681,6 +694,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::modGradPhi() const
 
         return M_levelsetModGradPhi;
     }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::distance() const
+{
+    if( !M_distance )
+        M_distance.reset( new element_levelset_type(this->functionSpace(), "Distance") );
+
+    if( M_doUpdateDistance )
+       const_cast<self_type*>(this)->updateDistance(); 
+
+    return M_distance;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -787,14 +813,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_useHeavisideDiracNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
 
     std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );
-    if( reinitmethod == "fm" )
-        M_reinitMethod = LevelSetReinitMethod::FM;
-    else if( reinitmethod == "hj" )
-        M_reinitMethod = LevelSetReinitMethod::HJ;
-    else if( reinitmethod == "renormalisation" )
-        M_reinitMethod = LevelSetReinitMethod::RENORMALISATION;
-    else
-        CHECK( false ) << reinitmethod << " is not a valid reinitialization method\n";
+    CHECK( LevelSetDistanceMethodIdMap.count( reinitmethod ) ) << reinitmethod << " is not in the list of possible redistantiation methods\n";
+    M_reinitMethod = LevelSetDistanceMethodIdMap.at( reinitmethod );
+
+    std::string distancemethod = soption( _name="distance-method", _prefix=this->prefix() );
+    CHECK( LevelSetDistanceMethodIdMap.count( distancemethod ) ) << distancemethod << " is not in the list of possible redistantiation methods\n";
+    M_distanceMethod = LevelSetDistanceMethodIdMap.at( distancemethod );
 
     M_useMarkerDiracAsMarkerDoneFM = boption( _name="use-marker2-as-done", _prefix=prefixvm(this->prefix(), "reinit-fm") );
 
@@ -1274,6 +1298,21 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
     this->log("LevelSet", "updateCurvature", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateDistance()
+{
+    this->log("LevelSet", "updateDistance", "start");
+    this->timerTool("UpdateInterfaceData").start();
+
+    *M_distance = this->redistantiate( *this->phi(), M_distanceMethod );
+
+    M_doUpdateDistance = false;
+
+    double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
+    this->log("LevelSet", "updateDistance", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 //----------------------------------------------------------------------------//
@@ -2058,6 +2097,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
     M_doUpdateGradPhi = true;
     M_doUpdateModGradPhi = true;
     M_doUpdatePhiPN = true;
+    M_doUpdateDistance = true;
     M_doUpdateSubmeshDirac = true;
     M_doUpdateSubmeshOuter = true;
     M_doUpdateSubmeshInner = true;
@@ -2082,7 +2122,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
         this->mesh()->updateMarker2( *this->markerDirac() );
     }
 
-    *phi = this->redistantiate( *phi );
+    *phi = this->redistantiate( *phi, M_reinitMethod );
 
     if( M_useGradientAugmented && M_reinitGradientAugmented )
     {
@@ -2108,75 +2148,86 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_type
-LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi ) const
+LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, LevelSetDistanceMethod method ) const
 { 
     auto phiReinit = this->functionSpace()->elementPtr();
 
-    if ( M_reinitMethod == LevelSetReinitMethod::FM )
+    switch( method )
     {
-        switch (M_fastMarchingInitializationMethod)
+        case LevelSetDistanceMethod::NONE:
         {
-            case FastMarchingInitializationMethod::ILP :
+            *phiReinit = phi;
+        }
+        break;
+        case LevelSetDistanceMethod::FASTMARCHING:
+        {
+            switch (M_fastMarchingInitializationMethod)
             {
-                *phiReinit = this->projectorL2()->project( idv(phi) / sqrt( gradv(phi)*trans(gradv(phi)) ) );
-            }
-            break;
+                case FastMarchingInitializationMethod::ILP :
+                {
+                    *phiReinit = this->projectorL2()->project( idv(phi) / sqrt( gradv(phi)*trans(gradv(phi)) ) );
+                }
+                break;
 
-            case FastMarchingInitializationMethod::SMOOTHED_ILP :
-            {
-                // save the smoothed gradient magnitude of phi
-                //auto modgradphi = M_smootherFM->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
-                //auto gradPhi = idv(this->gradPhi());
-                auto gradPhi = trans(gradv(phi));
-                //auto modgradphi = M_smootherFM->project( sqrt( trans(gradPhi)*gradPhi ) );
-                auto modgradphi = this->smoother()->project( sqrt( trans(gradPhi)*gradPhi ) );
-                
-                *phiReinit = vf::project(
-                        this->functionSpace(), 
-                        this->rangeMeshElements(), 
-                        idv(phi)/idv(modgradphi) 
-                        );
-            }
-            break;
+                case FastMarchingInitializationMethod::SMOOTHED_ILP :
+                {
+                    // save the smoothed gradient magnitude of phi
+                    //auto modgradphi = M_smootherFM->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
+                    //auto gradPhi = idv(this->gradPhi());
+                    auto gradPhi = trans(gradv(phi));
+                    //auto modgradphi = M_smootherFM->project( sqrt( trans(gradPhi)*gradPhi ) );
+                    auto modgradphi = this->smoother()->project( sqrt( trans(gradPhi)*gradPhi ) );
 
-            case FastMarchingInitializationMethod::HJ_EQ :
-            {
-                CHECK(false) << "TODO\n";
-                //*phi = *explicitHJ(max_iter, dtau, tol);
-            }
-            break;
-            case FastMarchingInitializationMethod::IL_HJ_EQ :
-            {
-                CHECK(false) << "TODO\n";
-                //*phi = *explicitHJ(max_iter, dtau, tol);
-            }
-            break;
-            case FastMarchingInitializationMethod::NONE :
-            {
-                *phiReinit = phi;
-            }
-            break;
-        } // switch M_fastMarchingInitializationMethod
+                    *phiReinit = vf::project(
+                            this->functionSpace(), 
+                            this->rangeMeshElements(), 
+                            idv(phi)/idv(modgradphi) 
+                            );
+                }
+                break;
 
-        LOG(INFO)<< "reinit with FMM done"<<std::endl;
-        *phiReinit = M_reinitializer->run( *phiReinit );
-    } // Fast Marching
+                case FastMarchingInitializationMethod::HJ_EQ :
+                {
+                    CHECK(false) << "TODO\n";
+                    //*phi = *explicitHJ(max_iter, dtau, tol);
+                }
+                break;
+                case FastMarchingInitializationMethod::IL_HJ_EQ :
+                {
+                    CHECK(false) << "TODO\n";
+                    //*phi = *explicitHJ(max_iter, dtau, tol);
+                }
+                break;
+                case FastMarchingInitializationMethod::NONE :
+                {
+                    *phiReinit = phi;
+                }
+                break;
+            } // switch M_fastMarchingInitializationMethod
 
-    else if ( M_reinitMethod == LevelSetReinitMethod::HJ )
-    {
-        // TODO
-        *phiReinit = M_reinitializer->run( phi );
-    } // Hamilton-Jacobi
+            LOG(INFO)<< "reinit with FMM done"<<std::endl;
+            *phiReinit = M_reinitializer->run( *phiReinit );
+        } // Fast Marching
+        break;
 
-    else if( M_reinitMethod == LevelSetReinitMethod::RENORMALISATION )
-    {
-        auto R = this->interfaceRectangularFunction( phi );
-        *phiReinit = this->projectorL2()->project( idv(phi) / sqrt( gradv(phi)*trans(gradv(phi)) ) );
-        *phiReinit = vf::project(
-                _space=this->functionSpace(),
-                _range=this->rangeMeshElements(),
-                _expr = idv(phi) + ( idv(phiReinit)-idv(phi) )*idv(R)
-                );
+        case LevelSetDistanceMethod::HAMILTONJACOBI:
+        {
+            // TODO
+            *phiReinit = M_reinitializer->run( phi );
+        } // Hamilton-Jacobi
+        break;
+
+        case LevelSetDistanceMethod::RENORMALISATION:
+        {
+            auto R = this->interfaceRectangularFunction( phi );
+            *phiReinit = this->projectorL2()->project( idv(phi) / sqrt( gradv(phi)*trans(gradv(phi)) ) );
+            *phiReinit = vf::project(
+                    _space=this->functionSpace(),
+                    _range=this->rangeMeshElements(),
+                    _expr = idv(phi) + ( idv(phiReinit)-idv(phi) )*idv(R)
+                    );
+        }
+        break;
     }
     
     return *phiReinit;
@@ -2221,7 +2272,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_ptrtype const& ph
     if (doReinitialize)
     {
         auto phiRedist = phiv->functionSpace()->elementPtr();
-        *phiRedist = this->redistantiate( *phiv );
+        *phiRedist = this->redistantiate( *phiv, M_reinitMethod );
         this->M_advectionToolbox->setInitialValue( phiRedist );
     }
     else
