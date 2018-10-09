@@ -972,6 +972,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::GradPhi );
         if( o == "modgradphi" || o == "all" )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+        if( o == "distance" || o == "all" )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::Distance );
+        if( o == "distance-normal" || o == "all" )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::DistanceNormal );
+        if( o == "distance-curvature" || o == "all" )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::DistanceCurvature );
         if( o == "advection-velocity" || o == "all" )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::AdvectionVelocity );
         if( o == "backwardcharacteristics" )
@@ -989,6 +995,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_modgradphi").c_str()) )
         if ( boption(_name="do_export_modgradphi",_prefix=this->prefix()) )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_distance").c_str()) )
+        if ( boption(_name="do_export_distance",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::Distance );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_distancenormal").c_str()) )
+        if ( boption(_name="do_export_distancenormal",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::DistanceNormal );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_distancecurvature").c_str()) )
+        if ( boption(_name="do_export_distancecurvature",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::DistanceCurvature );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_advectionvelocity").c_str()) )
         if ( boption(_name="do_export_advectionvelocity",_prefix=this->prefix()) )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::AdvectionVelocity );
@@ -2419,6 +2434,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
         exportedFields = (exportedFields.empty())? "GradPhi": exportedFields+" - GradPhi";
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::ModGradPhi ) )
         exportedFields = (exportedFields.empty())? "ModGradPhi": exportedFields+" - ModGradPhi";
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::Distance ) )
+        exportedFields = (exportedFields.empty())? "Distance": exportedFields+" - Distance";
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::DistanceNormal ) )
+        exportedFields = (exportedFields.empty())? "DistanceNormal": exportedFields+" - DistanceNormal";
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::DistanceCurvature ) )
+        exportedFields = (exportedFields.empty())? "DistanceCurvature": exportedFields+" - DistanceCurvature";
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::AdvectionVelocity ) )
         exportedFields = (exportedFields.empty())? "AdvectionVelocity": exportedFields+" - AdvectionVelocity";
     if ( this->M_useStretchAugmented )
@@ -2623,6 +2644,24 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time, bool save )
         this->M_exporter->step( time )->add( prefixvm(this->prefix(),"ModGradPhi"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ModGradPhi")),
                                        *this->modGradPhi() );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::Distance ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Distance"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Distance")),
+                                       *this->distance() );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::DistanceNormal ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"DistanceNormal"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"DistanceNormal")),
+                                       *this->distanceNormal() );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::DistanceCurvature ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"DistanceCurvature"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"DistanceCurvature")),
+                                       *this->distanceCurvature() );
     }
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::AdvectionVelocity ) )
     {
