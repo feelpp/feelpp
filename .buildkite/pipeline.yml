@@ -17,6 +17,14 @@ steps:
      docker: true
      ubuntu: "16.04"
  - wait
+ - trigger: "feelpp-singularity"
+   label: ":package: create feelpp :singularity: containers"
+   async: true
+   build:
+     env:
+       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
+       PROJECT: "feelpp"
+       TAG: ${BUILDKITE_BRANCH}
  - trigger: "feelpp-testsuite"
    label: ":docker: compile and run the Feel++ testsuite :rocket:"
    async: true
