@@ -2314,11 +2314,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
         case LevelSetDistanceMethod::RENORMALISATION:
         {
             auto R = this->interfaceRectangularFunction( phi );
-            *phiReinit = this->projectorL2()->project( idv(phi) / sqrt( gradv(phi)*trans(gradv(phi)) ) );
+            auto const modGradPhi = this->projectorL2()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
+            //*phiReinit = this->projectorL2()->project( idv(phi) / sqrt( gradv(phi)*trans(gradv(phi)) ) );
             *phiReinit = vf::project(
                     _space=this->functionSpace(),
                     _range=this->rangeMeshElements(),
-                    _expr = idv(phi) + ( idv(phiReinit)-idv(phi) )*idv(R)
+                    //_expr = idv(phi) + ( idv(phiReinit)-idv(phi) )*idv(R)
+                    _expr = idv(phi) * ( 1. + ( 1./idv(modGradPhi)-1. )*idv(R) )
                     );
         }
         break;
