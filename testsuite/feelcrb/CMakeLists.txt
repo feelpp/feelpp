@@ -23,10 +23,10 @@
 #
 set_directory_properties(PROPERTIES LABEL testcrb )
 feelpp_add_test( eim NO_MPI_TEST )
-feelpp_add_test( eim_grepl TIMEOUT 120 NO_MPI_TEST )
+feelpp_add_test( eim_grepl TIMEOUT 200 NO_MPI_TEST )
 feelpp_add_test( eim_composite CFG test_eim_composite.cfg NO_MPI_TEST )
 
-feelpp_add_test( deim GEO test_deim.geo )
+feelpp_add_test( deim GEO test_deim.geo NO_MPI_TEST)
 
 feelpp_add_test( rbspace )
 feelpp_add_test( rbspacevector )
