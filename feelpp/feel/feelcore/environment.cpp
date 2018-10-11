@@ -1644,10 +1644,17 @@ Environment::randomUUID( bool parallel )
         std::string suuid = uuids::to_string(uuid);
         mpi::broadcast( Environment::worldComm().globalComm(), suuid, 0 );
         uuid = boost::lexical_cast<uuids::uuid>( suuid );
-        
     }
     return uuid;
 }
+
+uuids::uuid
+Environment::nameUUID( uuids::uuid const& dns_namespace_uuid, std::string const& name )
+{
+    boost::uuids::name_generator gen( dns_namespace_uuid );
+    return gen( name );
+}
+
 void
 Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfilename, bool add_subdir_np, WorldComm const& worldcomm, bool remove )
 {
