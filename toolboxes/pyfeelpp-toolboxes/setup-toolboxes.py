@@ -39,7 +39,9 @@ class CMakeBuild(build_ext):
             '-DCMAKE_C_COMPILER=@CMAKE_C_COMPILER@',
             '-DCMAKE_INSTALL_PREFIX=@CMAKE_INSTALL_PREFIX@',
             '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
-            '-DPYTHON_EXECUTABLE=' + sys.executable]
+            '-DPYTHON_EXECUTABLE=' + sys.executable,
+            '-DFEELPP_DIR=@FEELPP_DIR@',
+            '-DFEELPP_TOOLBOXES_DIR=@FEELPP_TOOLBOXES_DIR@']
 
         if @PYFEELPP_SETUP_HAS_PARAVIEW_CMAKE_ARGS@ == 1 :
             cmake_args += @PYFEELPP_SETUP_PARAVIEW_CMAKE_ARGS@
@@ -59,6 +61,8 @@ class CMakeBuild(build_ext):
         env = os.environ.copy()
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(env.get('CXXFLAGS', ''),
                                                               self.distribution.get_version())
+        env['PYTHONPATH'] = '@PYFEELPP_TOOLBOXES_PYTHONPATH@'
+
         self.build_temp=self.build_temp+"-"+ext.name
         print(self.build_temp)
         if not os.path.exists(self.build_temp):
