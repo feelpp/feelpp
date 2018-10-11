@@ -55,14 +55,6 @@
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelcrb/eim.hpp>
 
-#define FEELAPP( argc, argv, about, options )                           \
-    Feel::Application app( argc, argv, about, options );                \
-    if ( app.vm().count( "help" ) )                                     \
-    {                                                                   \
-        std::cout << app.optionsDescription() << "\n";                  \
-    }
-
-
 namespace Feel
 {
 inline
@@ -71,29 +63,12 @@ makeOptions()
 {
     po::options_description simgetoptions( "test_eim options" );
     simgetoptions.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+    ( "trainset-eim-size", Feel::po::value<int>()->default_value( 40 ), "EIM trainset is built using a equidistributed grid 40 * 40 by default")
     ( "chrono-online-step" , po::value<bool>()->default_value( false ), "give access to computational time during online step if true" )
     ( "n-eval", po::value<int>()->default_value( 10 ), "number of evaluations" )
     ( "cvg-study" , po::value<bool>()->default_value( false ), "run a convergence study if true" )
     ;
     return simgetoptions.add( eimOptions() ).add( crbSEROptions() );
-}
-
-
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "test_simget" ,
-                     "test_simget" ,
-                     "0.1",
-                     "SimGet tests",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2012 Université Joseph Fourier" );
-
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    return about;
-
 }
 
 /**
@@ -153,7 +128,8 @@ public:
             //specify how many elements we take in each direction
             std::vector<size_type> N(2);
             //40 elements in each direction
-            N[0]=40; N[1]=40;
+            int Ne = ioption(_name="trainset-eim-size");
+            N[0]=Ne; N[1]=Ne;
             Pset->equidistributeProduct( N );
             BOOST_TEST_MESSAGE( "Allocation done" );
             BOOST_TEST_MESSAGE( "pushing function to be empirically interpolated" );
@@ -176,7 +152,10 @@ public:
             return Dmu;
         }
     std::string modelName() const { return std::string("test_eim_grepl" );}
-    uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
+    uuids::uuid uuid() const
+        {
+            return Environment::nameUUID( boost::uuids::nil_uuid(), (boost::format("%1%_%2%")%this->modelName() %Environment::worldComm().localSize()).str() );
+        }
     space_ptrtype const& functionSpace() const { return Xh; }
 
     element_type solve( parameter_type const& mu )
@@ -252,7 +231,6 @@ public:
         }
     void run( const double*, long unsigned int, double*, long unsigned int ) {}
 private:
-    double meshSize;
     mesh_ptrtype mesh;
     space_ptrtype Xh;
     element_type u;
@@ -266,7 +244,7 @@ private:
 
 using namespace Feel;
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAboutDefault("test_eim_grepl"), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( eimsuite_grepl )
 
