@@ -317,9 +317,7 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
                 break;
                 case ProjectionMethod::SMOOTH_PROJECTION:
                 {
-                    auto helfrichInnerDiv = vf::project(
-                            _space=this->levelset()->functionSpaceVectorial(),
-                            _range=this->levelset()->rangeMeshElements(),
+                    auto helfrichInnerDiv = this->levelset()->smootherVectorial()->project(
                             _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
                             );
                     auto Fb_div = this->levelset()->smoother()->project(
