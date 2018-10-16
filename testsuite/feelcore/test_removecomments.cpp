@@ -23,7 +23,7 @@
  */
 
 #define BOOST_TEST_MODULE test_removecomments
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/ptreetools.hpp>
 

@@ -31,7 +31,7 @@
 // Boost.Test
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelpoly/im.hpp>

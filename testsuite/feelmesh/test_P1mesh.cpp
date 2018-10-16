@@ -1,6 +1,6 @@
 
 #define BOOST_TEST_MODULE test_P1mesh
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>

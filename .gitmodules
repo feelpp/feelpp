@@ -16,3 +16,6 @@
 [submodule "contrib/mongodb"]
 	path = feelpp/contrib/mongocxx
 	url = https://github.com/feelpp/mongo-cxx-driver.git
+[submodule "contrib/viewer"]
+	path = contrib/viewer
+	url = https://github.com/feelpp/viewer.git

@@ -2,7 +2,7 @@
 
 #if 1
 #define BOOST_TEST_MODULE test_twolaplaciansdistributed
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #else
 #define USE_BOOST_TEST 0
 #endif

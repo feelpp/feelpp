@@ -29,7 +29,7 @@
 
 // give a name to the testsuite
 #define BOOST_TEST_MODULE simget testsuite
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/application.hpp>

@@ -28,7 +28,7 @@
  */
 
 #define BOOST_TEST_MODULE upmarker_faces
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/pch.hpp>

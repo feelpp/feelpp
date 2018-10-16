@@ -28,7 +28,7 @@
  */
 
 #define BOOST_TEST_MODULE projector
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #if !defined(USE_BOOST_TEST)
 #include <feel/feelfilters/exporter.hpp>

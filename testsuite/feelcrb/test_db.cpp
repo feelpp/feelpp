@@ -29,7 +29,7 @@
 
 #define BOOST_TEST_MODULE crb db testsuite
 
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/application.hpp>

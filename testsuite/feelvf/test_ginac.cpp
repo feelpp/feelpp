@@ -28,7 +28,7 @@
 */
 
 #define BOOST_TEST_MODULE test_ginac
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <iostream>
 #include <string>

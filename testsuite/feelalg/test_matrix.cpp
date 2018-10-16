@@ -28,7 +28,7 @@
  */
 
 #define BOOST_TEST_MODULE matrix testsuite
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>

@@ -24,7 +24,7 @@
 //#define USE_BOOST_TEST 1
 
 #define BOOST_TEST_MODULE test_bdf2
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelts/bdf.hpp>

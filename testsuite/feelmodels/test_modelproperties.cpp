@@ -23,7 +23,7 @@
  */
 #define BOOST_TEST_MODULE model properties testsuite
 
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
