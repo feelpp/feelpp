@@ -25,7 +25,7 @@
 // give a name to the testsuite
 #define BOOST_TEST_MODULE function space on range testsuite
 
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/loadmesh.hpp>

@@ -23,7 +23,7 @@
 //!
 
 #define BOOST_TEST_MODULE gmsh
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/unitsquare.hpp>

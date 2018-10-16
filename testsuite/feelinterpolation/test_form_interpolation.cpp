@@ -29,7 +29,7 @@
 // give a name to the testsuite
 #define BOOST_TEST_MODULE form_interpolation testsuite
 
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 

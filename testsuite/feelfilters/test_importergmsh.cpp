@@ -34,7 +34,7 @@
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh filter testsuite
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #include <boost/mpl/list.hpp>
 
 #include <feel/feelcore/feel.hpp>
