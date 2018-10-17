@@ -6,12 +6,16 @@ FEELPP_DIR=${FEELPP_DIR:-/usr/local}
 if [ -d ${FEELPP_DIR}/share/feelpp/feel/cmake/modules/ ]; then 
     FEELPP_CMAKE_DIR=${FEELPP_DIR}/share/feelpp/feel/cmake/modules;
 else
-    FEELPP_CMAKE_DIR=feelpp/cmake/modules
+    # we are not in dockr anymore but on the host system
+    # release.sh in subprojects
+    FEELPP_CMAKE_DIR=cmake/modules
 fi
 if [ -d ${FEELPP_DIR}/share/feelpp/scripts/ ]; then 
     FEELPP_SCRIPTS_DIR=${FEELPP_DIR}/share/feelpp/scripts;
 else
-    FEELPP_SCRIPTS_DIR=feelpp/tools/scripts/buildkite
+    # we are not in dockr anymore but on the host system
+    # release.sh in subprojects
+    FEELPP_SCRIPTS_DIR=tools/scripts/buildkite
 fi
 
 function get_field(){
