@@ -508,7 +508,7 @@ interfaceforces_options(std::string const& prefix)
         (prefixvm(prefix,"helfrich-force-impl").c_str(), Feel::po::value<int>()->default_value(0), "Implementation of Helfrich force" )
         (prefixvm(prefix,"helfrich-inner-div-impl").c_str(), Feel::po::value<std::string>()->default_value("generic"), "Implementation of Helfrich inner div (generic, distance)" )
         (prefixvm(prefix,"helfrich-force.use-integration-by-parts").c_str(), Feel::po::value<bool>()->default_value(false), "Integrate by parts the div term in Helfrich force" )
-        (prefixvm(prefix,"helfrich-force.projection-method").c_str(), Feel::po::value<std::string>()->default_value("nodal"), "Projection method for Helfrich force (nodal-projection, l2-projection, smooth-projection)" )
+        (prefixvm(prefix,"helfrich-force.projection-method").c_str(), Feel::po::value<std::string>()->default_value("nodal-projection"), "Projection method for Helfrich force (nodal-projection, l2-projection, smooth-projection)" )
 
         (prefixvm(prefix,"inextensibility-force-coeff").c_str(), Feel::po::value<double>()->default_value(1), "Inextensibility force coefficient (Lambda)" )
         (prefixvm(prefix,"inextensibility-force-epsilon").c_str(), Feel::po::value<double>(), "Inextensibility force epsilon" )
