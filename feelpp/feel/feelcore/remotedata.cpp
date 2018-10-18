@@ -1267,6 +1267,11 @@ RemoteData::Girder::upload( std::vector<std::pair<std::string,std::string> > con
         for ( int k=0;k<dataToUpload.size();++k )
         {
             std::string dataPath = dataToUpload[k].first;
+            if ( !fs::exists( dataPath ) )
+            {
+                std::cout << "Warning in Girder upload, data path does not exist : " << dataPath << " \n";
+                continue;
+            }
             std::string parentId = dataToUpload[k].second;
             std::string parentFolderId = parentId;
             std::string parentFileId;
