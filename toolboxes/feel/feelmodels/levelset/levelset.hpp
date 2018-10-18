@@ -315,6 +315,7 @@ public:
     void setFunctionSpaceAdvectionVelocity( space_advection_velocity_ptrtype const& space ) { M_spaceAdvectionVelocity = space; }
 
     mesh_ptrtype const& mesh() const { return this->functionSpace()->mesh(); }
+    void setMesh( mesh_ptrtype const& m ) { this->M_advectionToolbox->setMesh( m ); }
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
