@@ -133,8 +133,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     // Space manager
     if( !M_spaceManager )
     {
-        // Create advection toolbox mesh
-        M_advectionToolbox->createMesh();
+        if( !M_advectionToolbox->mesh() )
+        {
+            // Create advection toolbox mesh
+            M_advectionToolbox->createMesh();
+        }
         M_spaceManager = std::make_shared<levelset_space_manager_type>( M_advectionToolbox->mesh() );
     }
     // Tool manager
