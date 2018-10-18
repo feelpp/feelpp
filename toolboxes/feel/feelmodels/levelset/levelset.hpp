@@ -317,6 +317,8 @@ public:
     mesh_ptrtype const& mesh() const { return this->functionSpace()->mesh(); }
     void setMesh( mesh_ptrtype const& m ) { this->M_advectionToolbox->setMesh( m ); }
 
+    bool useSpaceIsoPN() const { return M_useSpaceIsoPN; }
+
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
     mesh_ptrtype const& submeshDirac() const;
