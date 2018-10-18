@@ -73,11 +73,11 @@ feelpp_remotedata --download "girder:{file:5b1f8707b0e9570499f66bd0}" --data $HO
 
 === Upload mode
 
-* Upload file/folder on Girder
+* Upload file/folder on Girder (require an authentication)
 
 [source,shell]
 ----
-feelpp_remotedata --download "girder:{folder:<a folder id>}" --data $HOME/mydata
+feelpp_remotedata --upload "girder:{folder:<a folder id>}" --data $HOME/mydata
 ----
 
 
@@ -92,7 +92,68 @@ feelpp_remotedata --contents "girder:{file:5b1f8707b0e9570499f66bd0}"
 feelpp_remotedata --contents "girder:{folder:[5ac72871b0e9574027047894,5ad4b75db0e9574027047d70],file:5b1f8707b0e9570499f66bd0}"
 ----
 
+== REMOTE STORAGE DESCRIPTION
 
+=== Github
+
+|===
+| Option | Default value | Description
+
+| `owner` | feelpp | the github organization
+| `repo` | feelpp | the github repository in organization
+| `branch` | <default in github> | the branch in the git repository
+| `path` |  <root of repository> | the path in the git repository
+| `token` | <no default value> | an authentication token
+|===
+
+=== Girder
+
+|===
+| Option | Default value | Description
+
+| `url` | https://girder.math.unistra.fr | url of a Girder platform
+| `file` | <no default value> | one or several file id(s)
+| `api_key` | <no default value> | an authentication key
+|===
+
+
+== AUTHENTICATION
+
+=== Github
+You need to give a token for access to private repository or increase the for example. Two ways to specify the token :
+
+* Define the environment variable FEELPP_GITHUB_TOKEN.
++
+[source,shell]
+----
+export FEELPP_GITHUB_TOKEN=xxxxx
+----
+* Add token option in the github description.
++
+[source,shell]
+----
+github:{repo:feelpp,path:README.adoc,token:xxxx}
+----
+
+=== Girder
+You need to give an api key for access to private data or upload data. Two ways to specify the token :
+
+* Define the environment variable FEELPP_GIRDER_API_KEY.
++
+[source,shell]
+----
+export FEELPP_GIRDER_API_KEY=xxxxx
+----
+* Add api_key option in the girder description.
++
+[source,shell]
+----
+girder:{folder:5ac72871b0e9574027047894,api_key:xxxx}
+----
+
+Remark: another possibility for is to give directly the token generated from an api key (replace api_key by token).
+But it's quite difficult to get a token from the web interface of Girder, and you a responsible to delete the token.
+With the api key system, the remotedata apps generate and delete token automatically.
 
 
 == COPYING
