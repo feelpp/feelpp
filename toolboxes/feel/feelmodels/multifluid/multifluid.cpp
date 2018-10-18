@@ -701,8 +701,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::createLevelsets()
         M_levelsets[i]->setToolManager( M_levelsetToolManager );
         hana::eval_if( std::is_same<space_levelset_advection_velocity_type, space_fluid_velocity_type>{},
                     [&](auto _) {
-                    Feel::cout << "Using fluid velocity function space\n";
-                        _(M_levelsets)[i]->setFunctionSpaceAdvectionVelocity( this->functionSpaceVelocity() );
+                        if( _(M_levelsets)[i]->mesh() == this->functionSpaceVelocity()->mesh() )
+                        {
+                            Feel::cout << "Using fluid velocity function space\n";
+                            _(M_levelsets)[i]->setFunctionSpaceAdvectionVelocity( this->functionSpaceVelocity() );
+                        }
                     },
                     [&] {}
                 );
