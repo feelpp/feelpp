@@ -113,6 +113,7 @@ feelpp_remotedata --contents "girder:{folder:[5ac72871b0e9574027047894,5ad4b75db
 
 | `url` | https://girder.math.unistra.fr | url of a Girder platform
 | `file` | <no default value> | one or several file id(s)
+| `folder` | <no default value> | one or several folder id(s)
 | `api_key` | <no default value> | an authentication key
 |===
 
