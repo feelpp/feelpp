@@ -72,6 +72,27 @@ torus.geo  torus.h5  torus.json  torus.msh
 
 Now the file `torus.json` can be loaded in a Feel++ application distributed on 4 cores. 
 
+=== Generating multiple mesh partitioning
+
+Often we are interested in a set of partitioned meshes in order to do a speed-up study.
+`feelpp_mesh_partitioner` is the right tool for that. Let's consider a set of partitions stem:[\mathcal{P}=\{2, 4, 8, 16, 32 \}].
+
+[source,shell]
+----
+feelpp_mesh_partitioner --part 2 4 8 16 32  --ifile src/feelpp/data/gmsh/primitives/torus.geo --odir torus
+----
+
+You should have in the  directory `torus` (thanks to the `odir` option) 5 partitioned meshes
+
+[source,shell]
+----
+ls torus*
+torus_p16.h5    torus_p2.h5    torus_p32.h5    torus_p4.h5    torus_p8.h5
+torus_p16.json  torus_p2.json  torus_p32.json  torus_p4.json  torus_p8.json
+----
+
+NOTE: The mesh filenames contain the partition information.
+
 === Generating a mesh partitioning by markers
 1) partitioning of each marker present in the mesh :
 [source,shell]
