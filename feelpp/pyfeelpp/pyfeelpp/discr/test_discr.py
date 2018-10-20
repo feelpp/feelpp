@@ -5,8 +5,8 @@ e=core.Environment(sys.argv)
 
 from pyfeelpp import mesh,discr,vf
 geo={
-    '2':core.download( "github:{repo:feelpp,path:quickstart/laplacian/feelpp2d/feelpp2d.geo}", worldComm=core.Environment.worldCommPtr() )[0],
-    '3':core.download( "github:{repo:feelpp,path:quickstart/laplacian/feelpp3d/feelpp3d.geo}", worldComm=core.Environment.worldCommPtr() )[0]
+    '2':core.download( "github:{repo:feelpp,path:feelpp/quickstart/laplacian/feelpp2d/feelpp2d.geo}", worldComm=core.Environment.worldCommPtr() )[0],
+    '3':core.download( "github:{repo:feelpp,path:feelpp/quickstart/laplacian/feelpp3d/feelpp3d.geo}", worldComm=core.Environment.worldCommPtr() )[0]
 }
 
 def run( m, geo ):
