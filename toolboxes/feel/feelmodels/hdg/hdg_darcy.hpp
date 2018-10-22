@@ -337,10 +337,10 @@ Darcy<PotSpaceType>::addDirichlet()
     dirichlet_conditions.setParameterValues( props.parameters().toParameterValues() );
     for ( auto const& d : dirichlet_conditions )
     {
-        LOG(INFO) << " - dirichlet condition on " << marker(d) << " expr=" << expression(d) << "\n";
-        rhs3 += integrate(_range=markedfaces(mesh, marker(d)),
+        LOG(INFO) << " - dirichlet condition on " << name(d) << " expr=" << expression(d) << "\n";
+        rhs3 += integrate(_range=markedfaces(mesh, markers(d)),
                           _expr=id(l)*expression(d));
-        a33 += integrate(_range=markedfaces(mesh, marker(d)),
+        a33 += integrate(_range=markedfaces(mesh, markers(d)),
                          _expr=idt(phat) * id(l) );
 
     }
@@ -369,14 +369,14 @@ Darcy<PotSpaceType>::addNeumann()
     neumann_conditions.setParameterValues( props.parameters().toParameterValues() );
     for ( auto const& d : neumann_conditions )
     {
-        LOG(INFO) << " - Neumann condition on " << marker(d) << " expr=" << expression(d) << "\n";
-        rhs3 += integrate(_range=markedfaces(mesh, marker(d)),
+        LOG(INFO) << " - Neumann condition on " << name(d) << " expr=" << expression(d) << "\n";
+        rhs3 += integrate(_range=markedfaces(mesh, markers(d)),
                           _expr=id(l)*expression(d));
-        a31 += integrate(_range=markedfaces(mesh, marker(d)),
+        a31 += integrate(_range=markedfaces(mesh, markers(d)),
                          _expr=( id(l)*(trans(idt(u))*N()) ));
-        a32 += integrate(_range=markedfaces(mesh, marker(d)),
+        a32 += integrate(_range=markedfaces(mesh, markers(d)),
                          _expr=tau_constant * id(l) * ( pow(h(),tau_order)*idt(p) ) );
-        a33 += integrate(_range=markedfaces(mesh, marker(d)),
+        a33 += integrate(_range=markedfaces(mesh, markers(d)),
                          _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),tau_order) ) );
     }
 
