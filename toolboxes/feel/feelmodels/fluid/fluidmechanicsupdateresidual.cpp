@@ -214,7 +214,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         {
             for( auto const& d : this->M_volumicForcesProperties )
             {
-                auto rangeBodyForceUsed = ( marker(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),marker(d));
+                auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
                 linearForm_PatternCoupled +=
                     integrate( _range=rangeBodyForceUsed,
                                _expr= -inner( expression(d),id(v) ),
@@ -378,8 +378,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) 
         std::map<std::string, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapMarkerBCToEntitiesMeshMarker;
         for( auto const& d : M_bcDirichlet )
         {
-            mapMarkerBCToEntitiesMeshMarker[marker(d)] =
-                detail::distributeMarkerListOnSubEntity( mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+            mapMarkerBCToEntitiesMeshMarker[name(d)] =
+                detail::distributeMarkerListOnSubEntity( mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) );
         }
         std::map<std::pair<std::string,ComponentType>, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapCompMarkerBCToEntitiesMeshMarker;
         for ( auto const& bcDirComp : M_bcDirichletComponents )
@@ -387,15 +387,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) 
             ComponentType comp = bcDirComp.first;
             for( auto const& d : bcDirComp.second )
             {
-                mapCompMarkerBCToEntitiesMeshMarker[std::make_pair(marker(d),comp)] =
-                    detail::distributeMarkerListOnSubEntity(mesh, this->markerDirichletBCByNameId( "elimination",marker(d), comp )   );
+                mapCompMarkerBCToEntitiesMeshMarker[std::make_pair(name(d),comp)] =
+                    detail::distributeMarkerListOnSubEntity(mesh, this->markerDirichletBCByNameId( "elimination",name(d), comp )   );
             }
         }
 
         // strong Dirichlet bc with vectorial velocity
         for( auto const& d : M_bcDirichlet )
         {
-            auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( marker(d) );
+            auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
             if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
                 continue;
             auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
@@ -417,7 +417,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) 
             ComponentType comp = bcDirComp.first;
             for( auto const& d : bcDirComp.second )
             {
-                auto itFindMarker = mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) );
+                auto itFindMarker = mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(name(d),comp) );
                 if ( itFindMarker == mapCompMarkerBCToEntitiesMeshMarker.end() )
                     continue;
                 auto const& listMarkerFaces = std::get<0>( itFindMarker->second );

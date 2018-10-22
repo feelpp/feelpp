@@ -109,11 +109,22 @@ BoundaryConditions::setup()
                 if ( bcdatatype == "expression" )
                 {
                     std::string mat = c.second.get("material", "");
+                    std::list<std::string> markers;
+                    if ( auto meshMarkers = c.second.get_child_optional("markers") )
+                    {
+                        for( auto const& item : c.second.get_child("markers") )
+                            markers.push_back(item.second.template get_value<std::string>());
+                        if( markers.empty() )
+                            markers.push_back(c.second.template get<std::string>("markers") );
+                    }
+                    if( markers.empty() )
+                        if( !c.first.empty() ) // for volumic forces
+                            markers.push_back(c.first);
                     try
                     {
                         auto e= c.second.get<std::string>("expr");
                         LOG(INFO) << "adding boundary " << c.first << " with expression " << e << " to " << k;
-                        this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e, std::string(""), mat ) );
+                        this->operator[](t)[f.first].push_back( ExpressionStringAtMarker(std::make_tuple( bcdatatype, c.first, e, std::string(""), mat ), markers) );
                     }
                     catch( ... )
                     {
@@ -122,12 +133,12 @@ BoundaryConditions::setup()
                             auto e1= c.second.get<std::string>("expr1");
                             auto e2= c.second.get<std::string>("expr2");
                             LOG(INFO) << "adding boundary " << c.first << " with expressions " << e1 << " and " << e2 << " to " << k;
-                            this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e1, e2, mat ) );
+                            this->operator[](t)[f.first].push_back( ExpressionStringAtMarker(std::make_tuple( bcdatatype, c.first, e1, e2, mat ), markers) );
                         }
                         catch( ... )
                         {
                             LOG(INFO) << "adding boundary " << c.first << " without expression" << " to " << k;
-                            this->operator[]( t )[f.first].push_back( std::make_tuple( bcdatatype, c.first, std::string(""), std::string(""), mat ) );
+                            this->operator[]( t )[f.first].push_back( ExpressionStringAtMarker(std::make_tuple( bcdatatype, c.first, std::string(""), std::string(""), mat), markers ) );
                         }
                     }
                 }
@@ -146,9 +157,9 @@ BoundaryConditions::setup()
                 for( auto const& c : t.second )
                 {
                     if ( c.hasExpression2() )
-                        LOG(INFO) << "  . boundary  " << c.marker() << " expr : " << c.expression1() << " expr2:" << c.expression2() << "\n";
+                        LOG(INFO) << "  . boundary  " << c.name() << " expr : " << c.expression1() << " expr2:" << c.expression2() << "\n";
                     else
-                        LOG(INFO) << "  . boundary  " << c.marker() << " expr : " << c.expression() << "\n";
+                        LOG(INFO) << "  . boundary  " << c.name() << " expr : " << c.expression() << "\n";
                 }
                 
             }
@@ -172,7 +183,9 @@ BoundaryConditions::saveMD(std::ostream &os)
      os << "|<ul>";
      for(auto iiit = iit->second.begin(); iiit !=  iit->second.end(); iiit++)
      {
-       os << "<li>**" << iiit->marker()      << "**</li>";
+       os << "<li>**" << iiit->name()      << "**</li>";
+       for( auto const& m : iiit->markers() )
+           os << "<li>" << m << "</li>";
        os << "<li>" << iiit->expression()  << "</li>";
        os << "<li>" << iiit->expression1() << "</li>";
        os << "<li>" << iiit->expression2() << "</li>";
@@ -250,9 +263,8 @@ BoundaryConditions::markers( std::initializer_list< std::pair<std::string,std::s
         if ( itFindType == itFindField->second.end() )
             continue;
         for ( auto const& f : itFindType->second )
-        {
-            res.push_back( f.marker() );
-        }
+            for( auto const& m : f.markers() )
+                res.push_back(m);
     }
     return res;
 }

@@ -193,14 +193,14 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
     this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "Dirichlet" );
     for( auto const& d : this->M_bcDirichlet )
-        this->addMarkerDirichletBC("elimination", marker(d) );
+        this->addMarkerDirichletBC("elimination", name(d), markers(d) );
     this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "Neumann" );
     for( auto const& d : this->M_bcNeumann )
-        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,marker(d));
+        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,name(d),markers(d));
 
     this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "electric-potential", "Robin" );
     for( auto const& d : this->M_bcRobin )
-        this->addMarkerRobinBC( marker(d) );
+        this->addMarkerRobinBC( name(d),markers(d) );
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "VolumicForces" );
 
@@ -214,7 +214,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // strong Dirichlet bc on electric-potential from expression
     for( auto const& d : M_bcDirichlet )
     {
-        auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d) );
+        auto listMark = this->markerDirichletBCByNameId( "elimination",name(d) );
         electricPotentialMarkers.insert( listMark.begin(), listMark.end() );
     }
     auto meshMarkersElectricPotentialByEntities = detail::distributeMarkerListOnSubEntity( mesh, electricPotentialMarkers );
@@ -602,7 +602,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
     {
         for( auto const& d : this->M_volumicForcesProperties )
         {
-            auto rangeEltUsed = (marker(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),marker(d));
+            auto rangeEltUsed = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
             myLinearForm +=
                 integrate( _range=rangeEltUsed,
                            _expr= expression(d)*id(v),
@@ -630,7 +630,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) cons
     auto v = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
     for( auto const& d : M_bcDirichlet )
     {
-        v.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
+        v.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
              _expr=expression(d) );
     }
     // synchronize electric potential dof on interprocess
@@ -724,7 +724,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian &
     for( auto const& d : this->M_bcDirichlet )
     {
         bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
+            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
                 _element=v,_rhs=RBis,_expr=cst(0.) );
     }
 
@@ -750,7 +750,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( element_electricpotential_ex
         for( auto const& d : this->M_bcRobin )
         {
             bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
                            _expr= expression1(d)*idt(v)*id(v),
                            _geomap=this->geomap() );
         }
@@ -820,7 +820,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     {
         for( auto const& d : this->M_volumicForcesProperties )
         {
-            auto rangeEltUsed = (marker(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),marker(d));
+            auto rangeEltUsed = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
             myLinearForm +=
                 integrate( _range=rangeEltUsed,
                            _expr= -expression(d)*id(v),
@@ -874,7 +874,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( element_electricpotential_ex
         for( auto const& d : this->M_bcNeumann )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
+                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
                            _expr= -expression(d)*id(v),
                            _geomap=this->geomap() );
         }
@@ -884,14 +884,14 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( element_electricpotential_ex
         if ( !buildCstPart )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
                            _expr= expression1(d)*idv(v)*id(v),
                            _geomap=this->geomap() );
         }
         if ( buildCstPart )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
                            _expr= -expression1(d)*expression2(d)*id(v),
                            _geomap=this->geomap() );
         }
@@ -920,7 +920,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & 
     for( auto const& d : this->M_bcDirichlet )
     {
         bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
+            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
                 _element=v,_rhs=F,_expr=expression(d) );
     }
 
@@ -945,7 +945,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, v
         for( auto const& d : this->M_bcNeumann )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
+                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
                            _expr= expression(d)*id(v),
                            _geomap=this->geomap() );
         }
@@ -957,11 +957,11 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, v
         for( auto const& d : this->M_bcRobin )
         {
             bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
                            _expr= expression1(d)*idt(v)*id(v),
                            _geomap=this->geomap() );
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
                            _expr= expression1(d)*expression2(d)*id(v),
                            _geomap=this->geomap() );
         }

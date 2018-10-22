@@ -892,9 +892,9 @@ using scalar_field_expression=Expr<GinacEx<Order>>;
  * \endcode
  */
 template<int Order=2>
-struct map_scalar_field: public std::map<std::string,scalar_field_expression<Order>>
+struct map_scalar_field: public std::map<std::string,std::pair<scalar_field_expression<Order>,std::list<std::string> > >
 {
-    typedef std::map<std::string,scalar_field_expression<Order>> super;
+    typedef std::map<std::string,std::pair<scalar_field_expression<Order>,std::list<std::string> > > super;
     typedef super type;
     using value_type = typename super::value_type;
     map_scalar_field() = default;
@@ -906,7 +906,7 @@ struct map_scalar_field: public std::map<std::string,scalar_field_expression<Ord
     void setParameterValues( std::map<std::string,double> const& pv )
     {
         for( auto & f : *this )
-            f.second.setParameterValues( pv );
+            f.second.first.setParameterValues( pv );
     }
     
 };
@@ -914,9 +914,9 @@ struct map_scalar_field: public std::map<std::string,scalar_field_expression<Ord
 typedef std::map<std::string,Expr<GinacEx<2>>> map_scalar_field_type;
 
 template<int Order=2>
-struct map_scalar_fields: public std::map<std::string,std::vector<scalar_field_expression<Order>>>
+struct map_scalar_fields: public std::map<std::string,std::pair<std::vector<scalar_field_expression<Order>>, std::list<std::string> > >
 {
-    typedef std::map<std::string,std::vector<scalar_field_expression<Order>>> super;
+    typedef std::map<std::string,std::pair<std::vector<scalar_field_expression<Order>>, std::list<std::string> > > super;
     typedef super type;
     using value_type = typename super::value_type;
     map_scalar_fields() = default;
@@ -928,74 +928,98 @@ struct map_scalar_fields: public std::map<std::string,std::vector<scalar_field_e
     void setParameterValues( std::map<std::string,double> const& pv )
     {
         for( auto & f : *this )
-            for ( auto & g : f.second )
+            for ( auto & g : f.second.first )
                 g.setParameterValues( pv );
     }
 };
 
 template<int Order>
 std::string const&
-marker( std::pair<const std::string, scalar_field_expression<Order>> const& p  )
+name( std::pair<const std::string, std::pair<scalar_field_expression<Order>, std::list<std::string> >> const& p  )
 {
     return p.first;
 }
 template<int Order>
-scalar_field_expression<Order> const&
-expression( std::pair<const std::string, scalar_field_expression<Order>> const& p  ) 
+std::string const&
+FEELPP_DEPRECATED marker( std::pair<const std::string, std::pair<scalar_field_expression<Order>, std::list<std::string> >> const& p  )
 {
-    return p.second;
+    return p.first;
+}
+template<int Order>
+std::list<std::string> const&
+markers( std::pair<const std::string, std::pair<scalar_field_expression<Order>, std::list<std::string> >> const& p  )
+{
+    return p.second.second;
+}
+template<int Order>
+scalar_field_expression<Order> const&
+expression( std::pair<const std::string, std::pair<scalar_field_expression<Order>, std::list<std::string> >> const& p  )
+{
+    return p.second.first;
 }
 template<int Order>
 scalar_field_expression<Order>&
-expression( std::pair<const std::string, scalar_field_expression<Order>> & p  ) 
+expression( std::pair<const std::string, std::pair<scalar_field_expression<Order>, std::list<std::string> >> & p  )
 {
-    return p.second;
+    return p.second.first;
 }
 
 template<int Order>
 std::string const&
-marker( std::pair<const std::string, std::vector<scalar_field_expression<Order>>> const& p  )
+name( std::pair<const std::string, std::pair<std::vector<scalar_field_expression<Order>>, std::list<std::string> >> const& p  )
 {
     return p.first;
 }
 template<int Order>
-scalar_field_expression<Order> const&
-expression1( std::pair<const std::string, std::vector<scalar_field_expression<Order>>> const& p  ) 
+std::string const&
+FEELPP_DEPRECATED marker( std::pair<const std::string, std::pair<std::vector<scalar_field_expression<Order>>, std::list<std::string> >> const& p  )
 {
-    return p.second[0];
+    return p.first;
+}
+template<int Order>
+std::list<std::string> const&
+markers( std::pair<const std::string, std::pair<std::vector<scalar_field_expression<Order>>, std::list<std::string> >> const& p  )
+{
+    return p.second.second;
+}
+template<int Order>
+scalar_field_expression<Order> const&
+expression1( std::pair<const std::string, std::pair<std::vector<scalar_field_expression<Order>>, std::list<std::string> >> const& p  )
+{
+    return p.second.first[0];
 }
 template<int Order>
 scalar_field_expression<Order>&
-expression1( std::pair<const std::string, std::vector<scalar_field_expression<Order>>> & p  ) 
+expression1( std::pair<const std::string, std::pair<std::vector<scalar_field_expression<Order>>, std::list<std::string> >> & p  )
 {
-    return p.second[0];
+    return p.second.first[0];
 }
 
 template<int Order>
 scalar_field_expression<Order> const&
-expression2( std::pair<const std::string, std::vector<scalar_field_expression<Order>>> const& p  ) 
+expression2( std::pair<const std::string, std::pair<std::vector<scalar_field_expression<Order>>, std::list<std::string> >> const& p  )
 {
-    return p.second[1];
+    return p.second.first[1];
 }
 template<int Order>
 scalar_field_expression<Order>&
-expression2( std::pair<const std::string, std::vector<scalar_field_expression<Order>>> & p  ) 
+expression2( std::pair<const std::string, std::pair<std::vector<scalar_field_expression<Order>>, std::list<std::string> >> & p  )
 {
-    return p.second[1];
+    return p.second.first[1];
 }
 
 template<int Order>
 std::vector<scalar_field_expression<Order>> const&
-expression( std::pair<const std::string, std::vector<scalar_field_expression<Order>>> const& p  ) 
+expression( std::pair<const std::string, std::pair<std::vector<scalar_field_expression<Order>>, std::list<std::string> >> const& p  )
 {
-    return p.second;
+    return p.second.first;
 }
 
 template<int Order>
 std::vector<scalar_field_expression<Order>>&
-expression( std::pair<const std::string, std::vector<scalar_field_expression<Order>>> & p  ) 
+expression( std::pair<const std::string, std::pair<std::vector<scalar_field_expression<Order>>, std::list<std::string> >> & p  )
 {
-    return p.second;
+    return p.second.first;
 }
 
 
@@ -1009,7 +1033,7 @@ using matrix_field_expression=vector_field_expression<M,N,Order>;
  * defines a dictionary of vector fields
  * 
  * this data structure creates a dictionary of fields, it associates a string to
- * a Ginac Expr of rank 1. In the case of vector fields the size of the vector
+ * a Ginac Expr of rank 1 and a set of vector. In the case of vector fields the size of the vector
  * field must be given
  * 
  * \code
@@ -1019,9 +1043,9 @@ using matrix_field_expression=vector_field_expression<M,N,Order>;
  * \endcode
  */
 template<int M, int N=1, int Order=2>
-struct map_vector_field: public std::map<std::string,Expr<GinacMatrix<M,N,Order>>>
+struct map_vector_field: public std::map<std::string,std::pair<Expr<GinacMatrix<M,N,Order>>,std::list<std::string> > >
 {
-    typedef std::map<std::string,Expr<GinacMatrix<M,N,Order>>> super;
+    typedef std::map<std::string,std::pair<Expr<GinacMatrix<M,N,Order>>,std::list<std::string> > > super;
     typedef super type;
     using value_type = typename super::value_type;
     map_vector_field() = default;
@@ -1033,14 +1057,14 @@ struct map_vector_field: public std::map<std::string,Expr<GinacMatrix<M,N,Order>
     void setParameterValues( std::map<std::string,double> const& pv )
     {
         for( auto & f : *this )
-            f.second.setParameterValues( pv );
-    }    
+            f.second.first.setParameterValues( pv );
+    }
 };
 
 template<int M, int N=1, int Order=2>
-struct map_vector_fields: public std::map<std::string,std::vector<Expr<GinacMatrix<M,N,Order>>>>
+struct map_vector_fields: public std::map<std::string,std::pair<std::vector<Expr<GinacMatrix<M,N,Order>>>, std::list<std::string> > >
 {
-    typedef std::map<std::string,Expr<std::vector<GinacMatrix<M,N,Order>>>> super;
+    typedef std::map<std::string,std::pair<std::vector<Expr<GinacMatrix<M,N,Order>>>, std::list<std::string> > > super;
     typedef super type;
     using value_type = typename super::value_type;
     map_vector_fields() = default;
@@ -1052,7 +1076,7 @@ struct map_vector_fields: public std::map<std::string,std::vector<Expr<GinacMatr
     void setParameterValues( std::map<std::string,double> const& pv )
     {
         for( auto & f : *this )
-            for ( auto & g : f.second )
+            for ( auto & g : f.second.first )
                 g.setParameterValues( pv );
     }
 };
@@ -1065,52 +1089,76 @@ using map_matrix_field = map_vector_field<M,N,Order>;
 
 template<int M, int N, int Order>
 std::string const&
-marker( std::pair<const std::string, Expr<GinacMatrix<M,N,Order>>> const& p  )
+name( std::pair<const std::string, std::pair<Expr<GinacMatrix<M,N,Order>>,std::list<std::string>>> const& p  )
 {
     return p.first;
 }
-template<int M, int N, int Order>
-Expr<GinacMatrix<M,N,Order>> const&
-expression( std::pair<const std::string, Expr<GinacMatrix<M,N,Order>>> const& p  ) 
-{
-    return p.second;
-}
-template<int M, int N, int Order>
-Expr<GinacMatrix<M,N,Order>> &
-expression( std::pair<const std::string, Expr<GinacMatrix<M,N,Order>>> & p  ) 
-{
-    return p.second;
-}
-
 template<int M, int N, int Order>
 std::string const&
-marker( std::pair<const std::string, std::vector<Expr<GinacMatrix<M,N,Order>>>> const& p  )
+FEELPP_DEPRECATED marker( std::pair<const std::string, std::pair<Expr<GinacMatrix<M,N,Order>>,std::list<std::string>>> const& p  )
 {
     return p.first;
 }
 template<int M, int N, int Order>
-Expr<GinacMatrix<M,N,Order>> const&
-expression1( std::pair<const std::string, std::vector<Expr<GinacMatrix<M,N,Order>>>>  const& p  )
+std::list<std::string> const&
+markers( std::pair<const std::string, std::pair<Expr<GinacMatrix<M,N,Order>>,std::list<std::string>>> const& p  )
 {
-    return p.second[0];
-}
-template<int M, int N, int Order>
-Expr<GinacMatrix<M,N,Order>> &
-expression1( std::pair<const std::string, std::vector<Expr<GinacMatrix<M,N,Order>>>> & p  )
-{
-    return p.second[0];
+    return p.second.second;
 }
 template<int M, int N, int Order>
 Expr<GinacMatrix<M,N,Order>> const&
-expression2( std::pair<const std::string, std::vector<Expr<GinacMatrix<M,N,Order>>>> const& p  )
+expression( std::pair<const std::string, std::pair<Expr<GinacMatrix<M,N,Order>>,std::list<std::string>>> const& p  )
 {
-    return p.second[1];
+    return p.second.first;
 }
 template<int M, int N, int Order>
 Expr<GinacMatrix<M,N,Order>> &
-expression2( std::pair<const std::string, std::vector<Expr<GinacMatrix<M,N,Order>>>> & p  )
+expression( std::pair<const std::string, std::pair<Expr<GinacMatrix<M,N,Order>>,std::list<std::string>>> & p  )
 {
-    return p.second[1];
+    return p.second.first;
+}
+// Robin...
+template<int M, int N, int Order>
+std::string const&
+name( std::pair<const std::string, std::pair<std::vector<Expr<GinacMatrix<M,N,Order>>>,std::list<std::string> > > const& p  )
+{
+    return p.first;
+}
+template<int M, int N, int Order>
+std::string const&
+FEELPP_DEPRECATED marker( std::pair<const std::string, std::pair<std::vector<Expr<GinacMatrix<M,N,Order>>>,std::list<std::string>>> const& p  )
+{
+    return p.first;
+}
+template<int M, int N, int Order>
+std::list<std::string> const&
+markers( std::pair<const std::string, std::pair<std::vector<Expr<GinacMatrix<M,N,Order>>>,std::list<std::string>>> const& p  )
+{
+    return p.second.second;
+}
+template<int M, int N, int Order>
+Expr<GinacMatrix<M,N,Order>> const&
+expression1( std::pair<const std::string, std::pair<std::vector<Expr<GinacMatrix<M,N,Order>>>,std::list<std::string>>>  const& p  )
+{
+    return p.second.first[0];
+}
+template<int M, int N, int Order>
+Expr<GinacMatrix<M,N,Order>> &
+expression1( std::pair<const std::string, std::pair<std::vector<Expr<GinacMatrix<M,N,Order>>>,std::list<std::string>>> & p  )
+{
+    return p.second.first[0];
+}
+template<int M, int N, int Order>
+Expr<GinacMatrix<M,N,Order>> const&
+expression2( std::pair<const std::string, std::pair<std::vector<Expr<GinacMatrix<M,N,Order>>>,std::list<std::string>>> const& p  )
+{
+    return p.second.first[1];
+}
+template<int M, int N, int Order>
+Expr<GinacMatrix<M,N,Order>> &
+expression2( std::pair<const std::string, std::pair<std::vector<Expr<GinacMatrix<M,N,Order>>>,std::list<std::string>>> & p  )
+{
+    return p.second.first[1];
 }
 
 } // vf
