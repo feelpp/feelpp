@@ -211,7 +211,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
         M_useDisplacementPressureFormulation = true;
     M_mechanicalProperties->setUseDisplacementPressureFormulation(M_useDisplacementPressureFormulation);
 
-    std::string theSolidModel = this->modelProperties().models().model("fluid").equations();
+    std::string theSolidModel = this->modelProperties().models().model("solid").equations();
     if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
         theSolidModel = soption(_name="model",_prefix=this->prefix());
     this->pdeType( theSolidModel );
@@ -360,42 +360,42 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     std::string dirichletbcType = "elimination";//soption(_name="dirichletbc.type",_prefix=this->prefix());
     this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "Dirichlet" );
     for( auto const& d : this->M_bcDirichlet )
-        this->addMarkerDirichletBC( dirichletbcType, marker(d), ComponentType::NO_COMPONENT );
+        this->addMarkerDirichletBC( dirichletbcType, name(d), markers(d), ComponentType::NO_COMPONENT );
     for ( ComponentType comp : std::vector<ComponentType>( { ComponentType::X, ComponentType::Y, ComponentType::Z } ) )
     {
         std::string compTag = ( comp ==ComponentType::X )? "x" : (comp == ComponentType::Y )? "y" : "z";
         this->M_bcDirichletComponents[comp] = this->modelProperties().boundaryConditions().getScalarFields( (boost::format("displacement_%1%")%compTag).str(), "Dirichlet" );
         for( auto const& d : this->M_bcDirichletComponents.find(comp)->second )
-            this->addMarkerDirichletBC( dirichletbcType, marker(d), comp );
+            this->addMarkerDirichletBC( dirichletbcType, name(d), markers(d), comp );
     }
 
     this->M_bcNeumannScalar = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "Neumann_scalar" );
     for( auto const& d : this->M_bcNeumannScalar )
-        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,marker(d));
+        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,name(d),markers(d));
     this->M_bcNeumannVectorial = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "Neumann_vectorial" );
     for( auto const& d : this->M_bcNeumannVectorial )
-        this->addMarkerNeumannBC(NeumannBCShape::VECTORIAL,marker(d));
+        this->addMarkerNeumannBC(NeumannBCShape::VECTORIAL,name(d),markers(d));
     this->M_bcNeumannTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<nDim>( "displacement", "Neumann_tensor2" );
     for( auto const& d : this->M_bcNeumannTensor2 )
-        this->addMarkerNeumannBC(NeumannBCShape::TENSOR2,marker(d));
+        this->addMarkerNeumannBC(NeumannBCShape::TENSOR2,name(d),markers(d));
 
     this->M_bcInterfaceFSI = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "interface_fsi" );
     for( auto const& d : this->M_bcInterfaceFSI )
-        this->addMarkerFluidStructureInterfaceBC( marker(d) );
+        this->addMarkerFluidStructureInterfaceBC( markers(d) );
 
     this->M_bcRobin = this->modelProperties().boundaryConditions().template getVectorFieldsList<nDim>( "displacement", "robin" );
     for( auto const& d : this->M_bcRobin )
-        this->addMarkerRobinBC( marker(d) );
+        this->addMarkerRobinBC( name(d),markers(d) );
 
     this->M_bcNeumannEulerianFrameScalar = this->modelProperties().boundaryConditions().getScalarFields( { { "displacement", "Neumann_eulerian_scalar" },{ "displacement", "FollowerPressure" } } );
     for( auto const& d : this->M_bcNeumannEulerianFrameScalar )
-        this->addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape::SCALAR,marker(d));
+        this->addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape::SCALAR,name(d),markers(d));
     this->M_bcNeumannEulerianFrameVectorial = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "Neumann_eulerian_vectorial" );
     for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
-        this->addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape::VECTORIAL,marker(d));
+        this->addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape::VECTORIAL,name(d),markers(d));
     this->M_bcNeumannEulerianFrameTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<nDim>( "displacement", "Neumann_eulerian_tensor2" );
     for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
-        this->addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape::TENSOR2,marker(d));
+        this->addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape::TENSOR2,name(d),markers(d));
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "VolumicForces" );
 
@@ -508,7 +508,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     // function space for displacement
     if ( M_mechanicalProperties->isDefinedOnWholeMesh() )
     {
-        M_rangeMeshElements = elements(this->mesh());
+        M_rangeMeshElements = M_rangeMeshElements;
         M_XhDisplacement = space_displacement_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
     }
     else
@@ -882,12 +882,25 @@ NullSpace<double> getNullSpace( SpaceType const& space, mpl::int_<2> /**/ )
 template <typename SpaceType>
 NullSpace<double> getNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
 {
-    auto mode1 = space->element( oneX() );
-    auto mode2 = space->element( oneY() );
-    auto mode3 = space->element( oneZ() );
-    auto mode4 = space->element( vec(Py(),-Px(),cst(0.)) );
-    auto mode5 = space->element( vec(-Pz(),cst(0.),Px()) );
-    auto mode6 = space->element( vec(cst(0.),Pz(),-Py()) );
+    // auto mode1 = space->element( oneX() );
+    // auto mode2 = space->element( oneY() );
+    // auto mode3 = space->element( oneZ() );
+    // auto mode4 = space->element( vec(Py(),-Px(),cst(0.)) );
+    // auto mode5 = space->element( vec(-Pz(),cst(0.),Px()) );
+    // auto mode6 = space->element( vec(cst(0.),Pz(),-Py()) );
+    auto mode1 = space->element();
+    mode1.on( _range=space->template rangeElements<0>(), _expr=oneX() );
+    auto mode2 = space->element();
+    mode2.on( _range=space->template rangeElements<0>(), _expr=oneY() );
+    auto mode3 = space->element();
+    mode3.on( _range=space->template rangeElements<0>(), _expr=oneZ() );
+    auto mode4 = space->element();
+    mode4.on( _range=space->template rangeElements<0>(), _expr=vec(Py(),-Px(),cst(0.)) );
+    auto mode5 = space->element();
+    mode5.on( _range=space->template rangeElements<0>(), _expr=vec(-Pz(),cst(0.),Px()) );
+    auto mode6 = space->element();
+    mode6.on( _range=space->template rangeElements<0>(), _expr=vec(cst(0.),Pz(),-Py()) );
+
     NullSpace<double> userNullSpace( { mode1,mode2,mode3,mode4,mode5,mode6 } );
     return userNullSpace;
 }
@@ -1128,19 +1141,19 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSy
         if ( funcData.isScalar() )
         {
             CHECK( this->hasFieldUserScalar( funcName ) ) << "user function " << funcName << "not registered";
-            M_fieldsUserScalar[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionScalar() );
+            M_fieldsUserScalar[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionScalar() );
         }
         else if ( funcData.isVectorial2() )
         {
             if ( nDim != 2 ) continue;
             CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
-            M_fieldsUserVectorial[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionVectorial2() );
+            M_fieldsUserVectorial[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionVectorial2() );
         }
         else if ( funcData.isVectorial3() )
         {
             if ( nDim != 3 ) continue;
             CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
-            M_fieldsUserVectorial[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionVectorial3() );
+            M_fieldsUserVectorial[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionVectorial3() );
         }
     }
 }

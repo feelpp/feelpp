@@ -46,8 +46,9 @@ public :
 
     void clearMarkerDirichletBC();
 
-    void setMarkerDirichletBCByNameId( std::string type,std::string markerNameId,std::list<std::string> const& markers, ComponentType ct = ComponentType::NO_COMPONENT );
-    void addMarkerDirichletBC(std::string type,std::string markerNameId, ComponentType ct = ComponentType::NO_COMPONENT);
+    void setMarkerDirichletBCByNameId( std::string type,std::string name,std::list<std::string> const& markers, ComponentType ct = ComponentType::NO_COMPONENT );
+    void addMarkerDirichletBC(std::string type, std::string name, std::string marker, ComponentType ct = ComponentType::NO_COMPONENT);
+    void addMarkerDirichletBC(std::string type, std::string name, std::list<std::string> const& markers, ComponentType ct = ComponentType::NO_COMPONENT);
 
     bool hasMarkerDirichletBC( std::string type, ComponentType ct = ComponentType::NO_COMPONENT) const;
     bool hasMarkerDirichletBCelimination( ComponentType ct ) const;
@@ -84,8 +85,9 @@ public :
 
     void clearMarkerNeumannBC();
 
-    void setMarkerNeumannBC( NeumannBCShape shape, std::string markerNameId,std::list<std::string> const& markers );
-    void addMarkerNeumannBC( NeumannBCShape shape, std::string markerNameId);
+    void setMarkerNeumannBC( NeumannBCShape shape, std::string name,std::list<std::string> const& markers );
+    void addMarkerNeumannBC( NeumannBCShape shape, std::string name, std::string marker);
+    void addMarkerNeumannBC( NeumannBCShape shape, std::string name, std::list<std::string> markers);
 
     std::map<std::string,std::list<std::string> > const& markerNeumannBC( NeumannBCShape shape ) const;
     std::list<std::string> const& markerNeumannBC( NeumannBCShape shape, std::string markerNameId ) const;
@@ -107,8 +109,9 @@ public :
 
     void clearMarkerNeumannEulerianFrameBC();
 
-    void setMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId,std::list<std::string> const& markers );
-    void addMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId);
+    void setMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string name,std::list<std::string> const& markers );
+    void addMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string name, std::string marker);
+    void addMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string name, std::list<std::string> markers);
 
     std::map<std::string,std::list<std::string> > const& markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape ) const;
     std::list<std::string> const& markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId ) const;
@@ -130,6 +133,7 @@ public :
 
     void setMarkerALEMeshBC( std::string type, std::list<std::string> const& markers );
     void addMarkerALEMeshBC(std::string type, std::string markerName);
+    void addMarkerALEMeshBC( std::string type, std::list<std::string> const& markers );
 
     std::map<std::string,std::list<std::string> > const& markerALEMeshBC() const;
     std::list<std::string> const& markerALEMeshBC( std::string type ) const;
@@ -150,6 +154,7 @@ public :
     void clearMarkerSlipBC();
     void setMarkerSlipBC( std::list<std::string> const& markers );
     void addMarkerSlipBC( std::string markerName);
+    void addMarkerSlipBC( std::list<std::string> const& markers );
     std::list<std::string> const& markerSlipBC() const;
     std::string getInfoSlipBC() const;
 private :
@@ -164,8 +169,9 @@ public :
     MarkerManagementPressureBC();
     MarkerManagementPressureBC( MarkerManagementPressureBC const& op ) = default;
     void clearMarkerPressureBC();
-    void setMarkerPressureBC( std::string const& markerNameId, std::list<std::string> const& markers );
-    void addMarkerPressureBC( std::string const& markerName );
+    void setMarkerPressureBC( std::string const& name, std::list<std::string> const& markers );
+    void addMarkerPressureBC( std::string const& name, std::string const& marker );
+    void addMarkerPressureBC( std::string const& name, std::list<std::string> const& markers );
     std::list<std::string> const& markerPressureBC() const;
     std::list<std::string> const& markerPressureBC( std::string const& markerNameId ) const;
     bool hasMarkerPressureBC() const;
@@ -183,8 +189,9 @@ public :
     MarkerManagementRobinBC();
     MarkerManagementRobinBC( MarkerManagementRobinBC const& op ) = default;
     void clearMarkerRobinBC();
-    void setMarkerRobinBC( std::string const& markerNameId, std::list<std::string> const& markers );
-    void addMarkerRobinBC( std::string const& markerNameId );
+    void setMarkerRobinBC( std::string const& name, std::list<std::string> const& markers );
+    void addMarkerRobinBC( std::string const& name, std::string const& marker );
+    void addMarkerRobinBC( std::string const& name, std::list<std::string> const& markers );
     std::map<std::string,std::list<std::string> > const& markerRobinBC() const;
     std::list<std::string> const& markerRobinBC( std::string const& markerNameId ) const;
     std::string getInfoRobinBC() const;
@@ -202,6 +209,7 @@ public :
     void clearMarkerFluidStructureInterfaceBC();
     void setMarkerFluidStructureInterfaceBC( std::list<std::string> const& markers );
     void addMarkerFluidStructureInterfaceBC( std::string markerName );
+    void addMarkerFluidStructureInterfaceBC( std::list<std::string> const& markers );
     std::list<std::string> const& markerFluidStructureInterfaceBC() const;
     std::string getInfoFluidStructureInterfaceBC() const;
 private :

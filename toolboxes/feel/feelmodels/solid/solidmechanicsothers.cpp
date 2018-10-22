@@ -1028,13 +1028,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
         if ( !this->useDisplacementPressureFormulation() )
         {
             auto sigma = idv(coeffLame1)*trace(eps)*Id + 2*idv(coeffLame2)*eps;
-            M_fieldStressTensor->on(_range=elements(this->mesh()),_expr=sigma );
+            M_fieldStressTensor->on(_range=M_rangeMeshElements,_expr=sigma );
         }
         else
         {
             auto const& p = this->fieldPressure();
             auto sigma = idv(p)*Id + 2*idv(coeffLame2)*eps;
-            M_fieldStressTensor->on(_range=elements(this->mesh()),_expr=sigma );
+            M_fieldStressTensor->on(_range=M_rangeMeshElements,_expr=sigma );
         }
     }
     else if ( M_pdeType=="Hyper-Elasticity" )
@@ -1042,19 +1042,19 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
         auto sigma = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
         if ( !this->useDisplacementPressureFormulation() )
         {
-            M_fieldStressTensor->on(_range=elements(this->mesh()),_expr=sigma );
+            M_fieldStressTensor->on(_range=M_rangeMeshElements,_expr=sigma );
         }
         else
         {
             auto const& p = this->fieldPressure();
             auto sigmaWithPressure = Feel::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
-            M_fieldStressTensor->on(_range=elements(this->mesh()),_expr=sigmaWithPressure );
+            M_fieldStressTensor->on(_range=M_rangeMeshElements,_expr=sigmaWithPressure );
         }
 
 #if 0
         auto Id = eye<nDim,nDim>();
         auto sigma_dev = sigma-(1./3.)*trace(sigma)*Id;
-        M_fieldVonMisesCriterions->on(_range=elements(this->mesh()),
+        M_fieldVonMisesCriterions->on(_range=M_rangeMeshElements,
                                       _expr=sqrt((3./2.)*inner(sigma_dev,sigma_dev, mpl::int_<InnerProperties::IS_SAME>() )) );
 #endif
 
@@ -1066,7 +1066,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
     std::vector<double> eigenValuesSorted(nDim);
 
     auto dof = M_XhStressTensor->dof();
-    for ( auto const& eltWrap : elements(this->mesh()) )
+    for ( auto const& eltWrap : M_rangeMeshElements )
     {
         auto const& elt = boost::unwrap_ref( eltWrap );
         int nLocDofPerComp = dof->nLocalDof( true );
@@ -1185,7 +1185,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMaxDisp() const
     {
         auto u = this->fieldDisplacement();
         auto dispMagnOnBoundary = vf::project(_space=functionSpaceDisplacement()->compSpace(),
-                                              _range=elements(this->mesh()),
+                                              _range=M_rangeMeshElements,
                                               _expr=sqrt(trans(idv(u))*idv(u)) );
         res = dispMagnOnBoundary.max();
     }
@@ -1232,11 +1232,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeExtremumValue( std::string const& fie
         if ( markers.empty() )
         {
             if ( field == "displacement" )
-                fieldMagnitude->on(_range=elements(this->mesh()), _expr=norm2( idv(this->fieldDisplacement()) ) );
+                fieldMagnitude->on(_range=M_rangeMeshElements, _expr=norm2( idv(this->fieldDisplacement()) ) );
             else if ( field == "velocity" )
-                fieldMagnitude->on(_range=elements(this->mesh()), _expr=norm2( idv(this->fieldVelocity()) ) );
+                fieldMagnitude->on(_range=M_rangeMeshElements, _expr=norm2( idv(this->fieldVelocity()) ) );
             else if ( field == "acceleration" )
-                fieldMagnitude->on(_range=elements(this->mesh()), _expr=norm2( idv(this->fieldAcceleration()) ) );
+                fieldMagnitude->on(_range=M_rangeMeshElements, _expr=norm2( idv(this->fieldAcceleration()) ) );
         }
         else
         {
@@ -1365,7 +1365,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     // strong Dirichlet bc on displacement from expression
     for( auto const& d : M_bcDirichlet )
     {
-        auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d) );
+        auto listMark = this->markerDirichletBCByNameId( "elimination",name(d) );
         dispMarkers.insert( listMark.begin(), listMark.end() );
     }
     // strong Dirichlet bc on displacement component from expression
@@ -1374,7 +1374,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         ComponentType comp = bcDirComp.first;
         for( auto const& d : bcDirComp.second )
         {
-            auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d), comp );
+            auto listMark = this->markerDirichletBCByNameId( "elimination",name(d), comp );
             compDispMarkers[comp].insert( listMark.begin(), listMark.end() );
         }
     }
@@ -1505,7 +1505,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateMassMatrixLumped()
     // mass matrix of Vh
     auto massMatrix = this->backend()->newMatrix(_test=Vh,_trial=Vh);
     form2( _trial=Vh, _test=Vh,_matrix=massMatrix) =
-        integrate(_range=elements(mesh),
+        integrate(_range=M_rangeMeshElements,
                   _expr=idv(rho)*inner(idt(u),id(u)) );
     massMatrix->close();
 

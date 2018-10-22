@@ -28,20 +28,33 @@ MarkerManagementDirichletBC::clearMarkerDirichletBC()
 }
 
 void
-MarkerManagementDirichletBC::setMarkerDirichletBCByNameId( std::string type,std::string markerNameId,std::list<std::string> const& markers,
+MarkerManagementDirichletBC::setMarkerDirichletBCByNameId( std::string type, std::string name,
+                                                           std::list<std::string> const& markers,
                                                            ComponentType ct )
 {
     if ( markers.empty() ) return;
     //std::cout << "set type " << type<<"\n";
-    M_dirichletBCType[ct][type][markerNameId] = markers;
+    M_dirichletBCType[ct][type][name] = markers;
     this->updateForUseMarkerDirichletBC();
 }
 void
-MarkerManagementDirichletBC::addMarkerDirichletBC(std::string type,std::string markerNameId, ComponentType ct)
+MarkerManagementDirichletBC::addMarkerDirichletBC(std::string type, std::string name,
+                                                  std::string marker, ComponentType ct)
 {
-    if ( markerNameId.empty() ) return;
+    if ( name.empty() ) return;
     //std::cout << "add type " << type<<"\n";
-    M_dirichletBCType[ct][type][markerNameId].push_back(markerNameId);
+    M_dirichletBCType[ct][type][name].push_back(marker);
+    this->updateForUseMarkerDirichletBC();
+}
+void
+MarkerManagementDirichletBC::addMarkerDirichletBC(std::string type, std::string name,
+                                                  std::list<std::string> const& markers,
+                                                  ComponentType ct)
+{
+    if ( name.empty() ) return;
+    //std::cout << "add type " << type<<"\n";
+    for( auto const& m : markers )
+        M_dirichletBCType[ct][type][name].push_back(m);
     this->updateForUseMarkerDirichletBC();
 }
 
@@ -191,16 +204,22 @@ MarkerManagementNeumannBC::clearMarkerNeumannBC()
 }
 
 void
-MarkerManagementNeumannBC::setMarkerNeumannBC( NeumannBCShape shape, std::string markerNameId,std::list<std::string> const& markers )
+MarkerManagementNeumannBC::setMarkerNeumannBC( NeumannBCShape shape, std::string name,std::list<std::string> const& markers )
 {
     if ( markers.empty() ) return;
-    M_containerMarkers[shape][markerNameId] = markers;
+    M_containerMarkers[shape][name] = markers;
 }
 void
-MarkerManagementNeumannBC::addMarkerNeumannBC(NeumannBCShape shape,std::string markerNameId)
+MarkerManagementNeumannBC::addMarkerNeumannBC(NeumannBCShape shape,std::string name,std::string marker)
 {
-    if ( markerNameId.empty() ) return;
-    M_containerMarkers[shape][markerNameId].push_back(markerNameId);
+    if ( name.empty() ) return;
+    M_containerMarkers[shape][name].push_back(marker);
+}
+void
+MarkerManagementNeumannBC::addMarkerNeumannBC(NeumannBCShape shape,std::string name,std::list<std::string> markers)
+{
+    if ( name.empty() ) return;
+    M_containerMarkers[shape][name].merge(markers);
 }
 
 std::map<std::string,std::list<std::string> > const&
@@ -259,16 +278,22 @@ MarkerManagementNeumannEulerianFrameBC::clearMarkerNeumannEulerianFrameBC()
 }
 
 void
-MarkerManagementNeumannEulerianFrameBC::setMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId,std::list<std::string> const& markers )
+MarkerManagementNeumannEulerianFrameBC::setMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string name,std::list<std::string> const& markers )
 {
     if ( markers.empty() ) return;
-    M_containerMarkers[shape][markerNameId] = markers;
+    M_containerMarkers[shape][name] = markers;
 }
 void
-MarkerManagementNeumannEulerianFrameBC::addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape shape,std::string markerNameId)
+MarkerManagementNeumannEulerianFrameBC::addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape shape,std::string name,std::string marker)
 {
-    if ( markerNameId.empty() ) return;
-    M_containerMarkers[shape][markerNameId].push_back(markerNameId);
+    if ( name.empty() ) return;
+    M_containerMarkers[shape][name].push_back(marker);
+}
+void
+MarkerManagementNeumannEulerianFrameBC::addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape shape,std::string name,std::list<std::string> markers)
+{
+    if ( name.empty() ) return;
+    M_containerMarkers[shape][name].merge(markers);
 }
 
 std::map<std::string,std::list<std::string> > const&
@@ -339,6 +364,12 @@ MarkerManagementALEMeshBC::addMarkerALEMeshBC(std::string type, std::string mark
     if ( std::find( M_containerMarkers[type].begin(),M_containerMarkers[type].end(),markerName) == M_containerMarkers[type].end() )
         M_containerMarkers[type].push_back(markerName);
 }
+void
+MarkerManagementALEMeshBC::addMarkerALEMeshBC( std::string type, std::list<std::string> const& markers )
+{
+    CHECK( type == "fixed" || type == "moving" || type == "free" ) << "error ALE type " << type;
+    M_containerMarkers[type] = markers;
+}
 
 std::map<std::string,std::list<std::string> > const&
 MarkerManagementALEMeshBC::markerALEMeshBC() const
@@ -402,6 +433,11 @@ MarkerManagementSlipBC::addMarkerSlipBC( std::string markerName )
     if ( std::find( M_containerMarkers.begin(),M_containerMarkers.end(),markerName) == M_containerMarkers.end() )
         M_containerMarkers.push_back(markerName);
 }
+void
+MarkerManagementSlipBC::addMarkerSlipBC( std::list<std::string> const& markers )
+{
+    M_containerMarkers = markers;
+}
 std::list<std::string> const&
 MarkerManagementSlipBC::markerSlipBC() const
 {
@@ -441,10 +477,10 @@ MarkerManagementPressureBC::clearMarkerPressureBC()
     M_listMarkers.clear();
 }
 void
-MarkerManagementPressureBC::setMarkerPressureBC( std::string const& markerNameId, std::list<std::string> const& markers )
+MarkerManagementPressureBC::setMarkerPressureBC( std::string const& name, std::list<std::string> const& markers )
 {
-    if ( markerNameId.empty() ) return;
-    M_containerMarkers[markerNameId] = markers;
+    if ( name.empty() ) return;
+    M_containerMarkers[name] = markers;
     for ( std::string const& markerName : markers )
     {
         if ( std::find( M_listMarkers.begin(),M_listMarkers.end(),markerName) == M_listMarkers.end() )
@@ -452,12 +488,21 @@ MarkerManagementPressureBC::setMarkerPressureBC( std::string const& markerNameId
     }
 }
 void
-MarkerManagementPressureBC::addMarkerPressureBC( std::string const& markerName )
+MarkerManagementPressureBC::addMarkerPressureBC( std::string const& name,std::string const& marker )
 {
-    if ( markerName.empty() ) return;
-    M_containerMarkers[markerName].push_back(markerName);
-    if ( std::find( M_listMarkers.begin(),M_listMarkers.end(),markerName) == M_listMarkers.end() )
-        M_listMarkers.push_back( markerName );
+    if ( name.empty() ) return;
+    M_containerMarkers[name].push_back(marker);
+    if ( std::find( M_listMarkers.begin(),M_listMarkers.end(),name) == M_listMarkers.end() )
+        M_listMarkers.push_back( marker );
+}
+void
+MarkerManagementPressureBC::addMarkerPressureBC( std::string const& name,std::list<std::string> const& markers )
+{
+    if ( name.empty() ) return;
+    for(auto const& m : markers )
+        M_containerMarkers[name].push_back(m);
+    if ( std::find( M_listMarkers.begin(),M_listMarkers.end(),name) == M_listMarkers.end() )
+        M_listMarkers = markers;
 }
 std::list<std::string> const&
 MarkerManagementPressureBC::markerPressureBC() const
@@ -515,15 +560,22 @@ MarkerManagementRobinBC::clearMarkerRobinBC()
     M_containerMarkers.clear();
 }
 void
-MarkerManagementRobinBC::setMarkerRobinBC( std::string const& markerNameId, std::list<std::string> const& markers )
+MarkerManagementRobinBC::setMarkerRobinBC( std::string const& name, std::list<std::string> const& markers )
 {
-    M_containerMarkers[markerNameId] = markers;
+    M_containerMarkers[name] = markers;
 }
 void
-MarkerManagementRobinBC::addMarkerRobinBC( std::string const& markerNameId )
+MarkerManagementRobinBC::addMarkerRobinBC( std::string const& name, std::string const& marker )
 {
-    if ( markerNameId.empty() ) return;
-    M_containerMarkers[markerNameId].push_back(markerNameId);
+    if ( name.empty() ) return;
+    M_containerMarkers[name].push_back(marker);
+}
+void
+MarkerManagementRobinBC::addMarkerRobinBC( std::string const& name, std::list<std::string> const& markers )
+{
+    if ( name.empty() ) return;
+    for(auto const& m : markers )
+        M_containerMarkers[name].push_back(m);
 }
 std::map<std::string,std::list<std::string> > const&
 MarkerManagementRobinBC::markerRobinBC() const
@@ -582,6 +634,11 @@ MarkerManagementFluidStructureInterfaceBC::addMarkerFluidStructureInterfaceBC( s
 {
     if ( std::find( M_containerMarkers.begin(),M_containerMarkers.end(),markerName) == M_containerMarkers.end() )
         M_containerMarkers.push_back(markerName);
+}
+void
+MarkerManagementFluidStructureInterfaceBC::addMarkerFluidStructureInterfaceBC( std::list<std::string> const& markers )
+{
+    M_containerMarkers = markers;
 }
 std::list<std::string> const&
 MarkerManagementFluidStructureInterfaceBC::markerFluidStructureInterfaceBC() const

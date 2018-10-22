@@ -2294,7 +2294,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     // strong Dirichlet bc on velocity from expression
     for( auto const& d : M_bcDirichlet )
     {
-        auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d) );
+        auto listMark = this->markerDirichletBCByNameId( "elimination",name(d) );
         velocityMarkers.insert( listMark.begin(), listMark.end() );
     }
     // strong Dirichlet bc on velocity component from expression
@@ -2303,7 +2303,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         ComponentType comp = bcDirComp.first;
         for( auto const& d : bcDirComp.second )
         {
-            auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d), comp );
+            auto listMark = this->markerDirichletBCByNameId( "elimination",name(d), comp );
             compVelocityMarkers[comp].insert( listMark.begin(), listMark.end() );
         }
     }
