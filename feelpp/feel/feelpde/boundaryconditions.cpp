@@ -109,17 +109,17 @@ BoundaryConditions::setup()
                 if ( bcdatatype == "expression" )
                 {
                     std::string mat = c.second.get("material", "");
-                    std::list<std::string> markers;
+                    std::set<std::string> markers;
                     if ( auto meshMarkers = c.second.get_child_optional("markers") )
                     {
                         for( auto const& item : c.second.get_child("markers") )
-                            markers.push_back(item.second.template get_value<std::string>());
+                            markers.insert(item.second.template get_value<std::string>());
                         if( markers.empty() )
-                            markers.push_back(c.second.template get<std::string>("markers") );
+                            markers.insert(c.second.template get<std::string>("markers") );
                     }
                     if( markers.empty() )
                         if( !c.first.empty() ) // for volumic forces
-                            markers.push_back(c.first);
+                            markers.insert(c.first);
                     try
                     {
                         auto e= c.second.get<std::string>("expr");
@@ -242,16 +242,16 @@ BoundaryConditions::param( std::string const& field,std::string const& bc, std::
     return std::make_pair(false,defaultValue);
 }
 
-std::list<std::string>
+std::set<std::string>
 BoundaryConditions::markers( std::string const& field, std::string const& type ) const
 {
     return this->markers( { { field,type } } );
 }
 
-std::list<std::string>
+std::set<std::string>
 BoundaryConditions::markers( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
 {
-    std::list<std::string> res;
+    std::set<std::string> res;
     for ( auto const& key : listKeys )
     {
         std::string const& field = key.first;
@@ -264,7 +264,7 @@ BoundaryConditions::markers( std::initializer_list< std::pair<std::string,std::s
             continue;
         for ( auto const& f : itFindType->second )
             for( auto const& m : f.markers() )
-                res.push_back(m);
+                res.insert(m);
     }
     return res;
 }

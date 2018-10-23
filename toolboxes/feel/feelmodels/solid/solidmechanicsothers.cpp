@@ -1221,7 +1221,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMaxDispOnBoundary(std::string __marke
 #endif
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeExtremumValue( std::string const& field, std::list<std::string> const& markers, std::string const& type ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeExtremumValue( std::string const& field, std::set<std::string> const& markers, std::string const& type ) const
 {
     if(!this->isStandardModel()) return 0.;
     CHECK( type == "max" || type == "min" ) << "invalid type " << type;
@@ -1240,7 +1240,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeExtremumValue( std::string const& fie
         }
         else
         {
-            if ( this->mesh()->hasFaceMarker( markers.front() ) )
+            if ( this->mesh()->hasFaceMarker( *markers.begin() ) )
             {
                 for ( std::string const& marker : markers )
                     CHECK( this->mesh()->hasFaceMarker( marker ) ) << "marker list must be same type (here marker : " << marker << " must be a face marker)";
@@ -1383,8 +1383,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
 
     //-------------------------------------//
     // distribute mesh markers by entity
-    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > meshMarkersDispByEntities;
-    std::map<ComponentType, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > meshMarkersCompDispByEntities;
+    std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > meshMarkersDispByEntities;
+    std::map<ComponentType, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > meshMarkersCompDispByEntities;
     meshMarkersDispByEntities = detail::distributeMarkerListOnSubEntity( mesh, dispMarkers );
     for ( auto const& compMarkerPair : compDispMarkers )
     {
