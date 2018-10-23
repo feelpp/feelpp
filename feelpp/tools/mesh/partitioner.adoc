@@ -12,17 +12,14 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 
 == SYNOPSIS
 
+{manmanual} --part num [num2...] --ifile file [--dim d] [--shape s] [--order num] [--by-markers] [--by-markers-desc markers] [--ofile file] [--odir dir]
+
+== DESCRIPTION
+
 {manmanual} is a simple application which can generate a partitioned mesh and
 save it in a Feel++ specific `json+hdf5` file format.
 
 The generated mesh can then be loaded very efficiently in parallel.
-
-
-== DESCRIPTION
-
-
-
-== OPTIONS
 
 === Options
 
