@@ -1331,7 +1331,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::set<std::string> const& listMarkers )
 {
     this->log("FluidMechanics","updateNormalStressOnCurrentMesh", "start" );
 
@@ -1364,7 +1364,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::list<s
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::set<std::string> const& listMarkers )
 {
     if (this->useFSISemiImplicitScheme())
         this->updateNormalStressOnReferenceMeshOptSI( listMarkers );
@@ -1376,7 +1376,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::list
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( std::set<std::string> const& listMarkers )
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
@@ -1447,7 +1447,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( s
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrecompute( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrecompute( std::set<std::string> const& listMarkers )
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
@@ -1520,7 +1520,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrecompu
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( std::set<std::string> const& listMarkers )
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
@@ -1714,15 +1714,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMeshArea( std::string const& marker ) const
 {
-    return this->computeMeshArea( std::list<std::string>( { marker } ) );
+    return this->computeMeshArea( std::set<std::string>( { marker } ) );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMeshArea( std::list<std::string> const& markers ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMeshArea( std::set<std::string> const& markers ) const
 {
     double area = 0;
-    if ( markers.empty() || markers.front().empty() )
+    if ( markers.empty() || markers.begin()->empty() )
         area = integrate(_range=M_rangeMeshElements,//elements(this->mesh()),
                          _expr=cst(1.),
                          _geomap=this->geomap() ).evaluate()(0,0);
@@ -2316,8 +2316,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
 
     //-------------------------------------//
     // distribute mesh markers by entity
-    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > meshMarkersVelocityByEntities;
-    std::map<ComponentType, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > meshMarkersCompVelocityByEntities;
+    std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > meshMarkersVelocityByEntities;
+    std::map<ComponentType, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > meshMarkersCompVelocityByEntities;
     meshMarkersVelocityByEntities = detail::distributeMarkerListOnSubEntity( mesh, velocityMarkers );
     for ( auto const& compMarkerPair : compVelocityMarkers )
     {

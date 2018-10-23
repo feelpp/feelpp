@@ -396,13 +396,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
     auto const& u = this->fieldVelocity();
 
     // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
-    std::map<std::string, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapMarkerBCToEntitiesMeshMarker;
+    std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > mapMarkerBCToEntitiesMeshMarker;
     for( auto const& d : this->M_bcDirichlet )
     {
         mapMarkerBCToEntitiesMeshMarker[name(d)] =
             detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",name(d) ) );
     }
-    std::map<std::pair<std::string,ComponentType>, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapCompMarkerBCToEntitiesMeshMarker;
+    std::map<std::pair<std::string,ComponentType>, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > mapCompMarkerBCToEntitiesMeshMarker;
     for ( auto const& bcDirComp : this->M_bcDirichletComponents )
     {
         ComponentType comp = bcDirComp.first;

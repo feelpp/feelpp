@@ -93,8 +93,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
     auto epst = sym(gradt(u));//0.5*(gradt(u)+trans(gradt(u)));
     auto eps = sym(grad(u));
     //---------------------------------------------------------------------------------------//
-    // stress tenso
-    r
+    // stress tensor
 #if 0
     //#if (SOLIDMECHANICS_DIM==2) // cas plan
     double lll = 2*idv(coeffLame1)*idv(coeffLame2)/(idv(coeffLame1)+2*idv(coeffLame2));
