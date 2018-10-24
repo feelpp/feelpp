@@ -461,7 +461,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
             if ( curPath != fs::path(this->rootRepository()) )
             {
                 this->log("createMeshModel","", "change repository (temporary) for build mesh from geo : "+ this->rootRepository() );
-                bool hasChangedRep=true;
+                hasChangedRep=true;
                 Environment::changeRepository( _directory=boost::format(this->rootRepository()), _subdir=false );
             }
 
@@ -508,7 +508,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     // function space for displacement
     if ( M_mechanicalProperties->isDefinedOnWholeMesh() )
     {
-        M_rangeMeshElements = M_rangeMeshElements;
+        M_rangeMeshElements = elements(this->mesh());
         M_XhDisplacement = space_displacement_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
     }
     else
@@ -772,12 +772,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
 #if 1 //defined(FEELPP_HAS_VTK)
         std::shared_ptr<mesh_visu_ho_type> meshVisuHO;
         std::string hovisuSpaceUsed = soption(_name="hovisu.space-used",_prefix=this->prefix());
-        bool doLagP1parallel=false;
         if ( hovisuSpaceUsed == "displacement" )
         {
             //auto Xh_create_ho = space_create_ho_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
             auto Xh_create_ho = this->functionSpaceDisplacement()->compSpace();
 
+            bool doLagP1parallel=false;
             auto opLagP1 = lagrangeP1(_space=Xh_create_ho,
                                       _backend=M_backend,
                                       //_worldscomm=this->localNonCompositeWorldsComm(),
@@ -965,11 +965,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
         int nBlock = this->nBlockMatrixGraph();
         M_blockVectorSolution.resize( nBlock );
         M_blockVectorSolution(0) = this->fieldDisplacementPtr();
-        int cptBlock=1;
+
         if ( M_useDisplacementPressureFormulation )
         {
+            int cptBlock=1;
             M_blockVectorSolution(cptBlock) = M_fieldPressure;
-            ++cptBlock;
         }
         // init vector associated to the block
         M_blockVectorSolution.buildVector( this->backend() );
