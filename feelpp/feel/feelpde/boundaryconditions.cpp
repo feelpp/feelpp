@@ -89,6 +89,18 @@ BoundaryConditions::setup()
             for( auto const& c : f.second ) // condition
             {
                 auto bcdatatype  = c.second.get("type","expression");
+                std::set<std::string> markers;
+                if ( auto meshMarkers = c.second.get_child_optional("markers") )
+                {
+                    for( auto const& item : c.second.get_child("markers") )
+                        markers.insert(item.second.template get_value<std::string>());
+                    if( markers.empty() )
+                        markers.insert(c.second.template get<std::string>("markers") );
+                }
+                if( markers.empty() )
+                    if( !c.first.empty() ) // for volumic forces
+                        markers.insert(c.first);
+                int number = c.second.get("number", 1);
                 //std::cout << "bcdatatype = " << bcdatatype << std::endl;
                 if ( bcdatatype == "file" )
                 {
@@ -98,7 +110,7 @@ BoundaryConditions::setup()
                         auto abscissa= c.second.get<std::string>("abscissa");
                         auto ordinate= c.second.get<std::string>("ordinate");
                         LOG(INFO) << "adding boundary " << c.first << " with filename " << e << " to " << k;
-                        this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e, abscissa, ordinate ) );
+                        this->operator[](t)[f.first].push_back( ExpressionStringAtMarker(std::make_tuple( bcdatatype, c.first, e, abscissa, ordinate ), markers, number) );
                     }
                     catch( ... )
                     {
@@ -109,22 +121,11 @@ BoundaryConditions::setup()
                 if ( bcdatatype == "expression" )
                 {
                     std::string mat = c.second.get("material", "");
-                    std::set<std::string> markers;
-                    if ( auto meshMarkers = c.second.get_child_optional("markers") )
-                    {
-                        for( auto const& item : c.second.get_child("markers") )
-                            markers.insert(item.second.template get_value<std::string>());
-                        if( markers.empty() )
-                            markers.insert(c.second.template get<std::string>("markers") );
-                    }
-                    if( markers.empty() )
-                        if( !c.first.empty() ) // for volumic forces
-                            markers.insert(c.first);
                     try
                     {
                         auto e= c.second.get<std::string>("expr");
                         LOG(INFO) << "adding boundary " << c.first << " with expression " << e << " to " << k;
-                        this->operator[](t)[f.first].push_back( ExpressionStringAtMarker(std::make_tuple( bcdatatype, c.first, e, std::string(""), mat ), markers) );
+                        this->operator[](t)[f.first].push_back( ExpressionStringAtMarker(std::make_tuple( bcdatatype, c.first, e, std::string(""), mat ), markers, number) );
                     }
                     catch( ... )
                     {
@@ -133,12 +134,12 @@ BoundaryConditions::setup()
                             auto e1= c.second.get<std::string>("expr1");
                             auto e2= c.second.get<std::string>("expr2");
                             LOG(INFO) << "adding boundary " << c.first << " with expressions " << e1 << " and " << e2 << " to " << k;
-                            this->operator[](t)[f.first].push_back( ExpressionStringAtMarker(std::make_tuple( bcdatatype, c.first, e1, e2, mat ), markers) );
+                            this->operator[](t)[f.first].push_back( ExpressionStringAtMarker(std::make_tuple( bcdatatype, c.first, e1, e2, mat ), markers, number) );
                         }
                         catch( ... )
                         {
                             LOG(INFO) << "adding boundary " << c.first << " without expression" << " to " << k;
-                            this->operator[]( t )[f.first].push_back( ExpressionStringAtMarker(std::make_tuple( bcdatatype, c.first, std::string(""), std::string(""), mat), markers ) );
+                            this->operator[]( t )[f.first].push_back( ExpressionStringAtMarker(std::make_tuple( bcdatatype, c.first, std::string(""), std::string(""), mat), markers, number ) );
                         }
                     }
                 }

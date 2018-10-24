@@ -86,32 +86,6 @@ const uint16_type FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderGeo;
 
 
 
-namespace detailbc
-{
-std::set<std::string>
-generateMarkerBCList(BoundaryConditions const bc,std::string const& field,std::string const& bcname, std::string const& name, std::set<std::string> const& markers, std::string const& param="number" )
-{
-    std::set<std::string> markerList;
-
-    std::pair<bool,int> numberOfMarkerRead = bc.iparam( field/*"velocity"*/, bcname/*"Dirichlet"*/, name/*(d)*/, param/*"number"*/ );
-    int numberOfMarker = ( numberOfMarkerRead.first )? numberOfMarkerRead.second : 1;
-    if( numberOfMarker != 1 )
-    {
-        for( int k = 0; k < numberOfMarker; ++k )
-        {
-            for( auto const& m : markers )
-            {
-                std::string currentMarker = (boost::format("%1%%2%") % m % k).str();
-                markerList.insert(currentMarker);
-            }
-        }
-        return markerList;
-    }
-    else
-        return markers;
-}
-}
-
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -396,8 +370,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         std::string dirichletbcType = ( dirichletbcTypeRead.first )? dirichletbcTypeRead.second : soption(_name="dirichletbc.type",_prefix=this->prefix());
         CHECK( dirichletbcType=="elimination" || dirichletbcType=="nitsche" || dirichletbcType=="lm" ) << "invalid dirichletbc.type " << dirichletbcType;
 
-        std::set<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "velocity", "Dirichlet", name(d), markers(d) );
-        this->setMarkerDirichletBCByNameId( dirichletbcType, name(d), markerList,ComponentType::NO_COMPONENT );
+        this->setMarkerDirichletBCByNameId( dirichletbcType, name(d), markers(d),ComponentType::NO_COMPONENT );
 
         std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Dirichlet", name(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
@@ -415,8 +388,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
             std::string dirichletbcType = ( dirichletbcTypeRead.first )? dirichletbcTypeRead.second : soption(_name="dirichletbc.type",_prefix=this->prefix());
             CHECK( dirichletbcType=="elimination" || dirichletbcType=="nitsche" || dirichletbcType=="lm" ) << "invalid dirichletbc.type " << dirichletbcType;
 
-            std::set<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), bcDirichletCompField, bcDirichletCompKeyword, name(d), markers(d) );
-            this->setMarkerDirichletBCByNameId( dirichletbcType, name(d), markerList, comp );
+            this->setMarkerDirichletBCByNameId( dirichletbcType, name(d), markers(d), comp );
 
             std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( bcDirichletCompField, bcDirichletCompKeyword, name(d), "alemesh_bc" );
             std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
@@ -433,8 +405,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     this->M_bcNeumannScalar = this->modelProperties().boundaryConditions().getScalarFields( "velocity", "Neumann_scalar" );
     for( auto const& d : this->M_bcNeumannScalar )
     {
-        std::set<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "velocity", "Neumann_scalar", name(d), markers(d) );
-        this->setMarkerNeumannBC(NeumannBCShape::SCALAR,name(d),markerList);
+        this->setMarkerNeumannBC(NeumannBCShape::SCALAR,name(d),markers(d));
 
         std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Neumann_scalar", name(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
@@ -444,8 +415,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     this->M_bcNeumannVectorial = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "velocity", "Neumann_vectorial" );
     for( auto const& d : this->M_bcNeumannVectorial )
     {
-        std::set<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "velocity", "Neumann_vectorial", name(d),markers(d) );
-        this->setMarkerNeumannBC(NeumannBCShape::VECTORIAL,name(d),markerList);
+        this->setMarkerNeumannBC(NeumannBCShape::VECTORIAL,name(d),markers(d));
 
         std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Neumann_vectorial", name(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
@@ -455,8 +425,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     this->M_bcNeumannTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<nDim>( "velocity", "Neumann_tensor2" );
     for( auto const& d : this->M_bcNeumannTensor2 )
     {
-        std::set<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "velocity", "Neumann_tensor2", name(d),markers(d) );
-        this->setMarkerNeumannBC(NeumannBCShape::TENSOR2,name(d),markerList);
+        this->setMarkerNeumannBC(NeumannBCShape::TENSOR2,name(d),markers(d));
 
         std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Neumann_tensor2", name(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
@@ -467,8 +436,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     this->M_bcPressure = this->modelProperties().boundaryConditions().getScalarFields( "pressure", "Dirichlet" );
     for( auto const& d : this->M_bcPressure )
     {
-        std::set<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "pressure", "Dirichlet", name(d),markers(d) );
-        this->setMarkerPressureBC(name(d),markerList);
+        this->setMarkerPressureBC(name(d),markers(d));
 
         std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "pressure", "Dirichlet", name(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
@@ -510,12 +478,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
         std::tuple<std::string,double,double,double> windkesselParam = std::make_tuple(typeCouplingWindkesselOutlet,WindkesselRd,WindkesselRp,WindkesselCd);
 
-        std::set<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "fluid", "outlet", bcMarker, {{bcMarker}} );
-        for (std::string const& currentMarker : markerList )
-        {
-            this->M_fluidOutletsBCType.push_back(std::make_tuple(currentMarker,typeOutlet, windkesselParam ));
-            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
-        }
+        this->M_fluidOutletsBCType.push_back(std::make_tuple(bcMarker,typeOutlet, windkesselParam ));
+        this->addMarkerALEMeshBC(bcTypeMeshALE,bcMarker);
     }
     for( std::string const& bcMarker : this->modelProperties().boundaryConditions().markers("fluid", "inlet") )
     {
@@ -551,12 +515,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         else
             CHECK( false ) << "inlet expr not given";
 
-        std::set<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "fluid", "inlet", bcMarker, {{bcMarker}} );
-        for (std::string const& currentMarker : markerList )
-        {
-            this->M_fluidInletDesc.push_back(std::make_tuple(currentMarker,fullTypeInlet, expr<2>( exprFluidInlet,"",this->worldComm(),this->repository().expr() )) );
-            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
-        }
+        this->M_fluidInletDesc.push_back(std::make_tuple(bcMarker,fullTypeInlet, expr<2>( exprFluidInlet,"",this->worldComm(),this->repository().expr() )) );
+        this->addMarkerALEMeshBC(bcTypeMeshALE,bcMarker);
     }
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "fluid", "VolumicForces" );
