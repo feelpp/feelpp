@@ -152,6 +152,19 @@ BOOST_AUTO_TEST_CASE( test_parameters )
     }
 }
 
+BOOST_AUTO_TEST_CASE( test_bc )
+{
+    ModelProperties model_props( Environment::expand(soption("json_filename")) );
+    auto boundaryconditions = model_props.boundaryConditions();
+    for( auto const& dir : boundaryconditions["velocity"]["Dirichlet"] )
+    {
+        BOOST_CHECK_EQUAL( dir.markers().size(), 1 );
+    }
+    auto test = boundaryconditions["velocity"]["Robin"][0];
+    BOOST_CHECK_EQUAL( test.markers().size(), 10 );
+    BOOST_CHECK_EQUAL( test.material(), "mycopper" );
+}
+
 BOOST_AUTO_TEST_CASE( test_outputs )
 {
     ModelProperties model_props( Environment::expand(soption("json_filename")) );

@@ -74,6 +74,19 @@
                 {
                     "expr":"{0,0,0,0}" // outlet
                 }
+            },
+            "Robin":
+            {
+                "test":
+                {
+                    "markers":["mark%1%","mymarker","toto%2%","feelpp%1%_p%3%"],
+                    "indice1":"1:3",
+                    "indice2":"2:8:2",
+                    "indice3":["A","D"],
+                    "material":"mycopper",
+                    "expr1":"{1,2,3}",
+                    "expr2":"{x,y,z}:x:y:z"
+                }
             }
         }
     }, // BoundaryConditions
