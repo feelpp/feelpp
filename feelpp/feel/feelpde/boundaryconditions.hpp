@@ -44,7 +44,7 @@ public:
     typedef std::tuple<std::string,std::string,std::string,std::string,std::string> super;
     enum boundarycondition_t { EXPRESSION = 0, FILE = 1 };
 
-    ExpressionStringAtMarker( super && s, std::set<std::string> const& markers, int number = 1 )
+    ExpressionStringAtMarker( super && s, std::set<std::string> const& markers )
         :
         super( s),
         M_meshMarkers( markers ),
@@ -55,22 +55,6 @@ public:
                 M_type = FILE;
                 M_filename = Environment::expand( std::get<2>( *this ) );
                 M_data = loadXYFromCSV( M_filename, std::get<3>( *this ), std::get<4>( *this ) );
-            }
-            if( number != 1 )
-            {
-                std::set<std::string> markersWithArgs;
-                for( auto const& m : M_meshMarkers )
-                {
-                    if( m.find("%1%") != std::string::npos )
-                    {
-                        for( int k = 0; k < number; ++k )
-                        {
-                            std::string currentMarker = (boost::format(m) % k).str();
-                            markersWithArgs.insert(currentMarker);
-                        }
-                    }
-                }
-                M_meshMarkers = markersWithArgs;
             }
         }
     ExpressionStringAtMarker( super && s )
@@ -385,6 +369,7 @@ class BoundaryConditions
     }
   private:
     void setup();
+    std::set<std::string> setupMarkers( pt::ptree const& pt, std::string name = "" );
 
     template <typename CastType>
     std::pair<bool,CastType> param( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param, CastType const& defaultValue ) const;
