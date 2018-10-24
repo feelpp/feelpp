@@ -174,7 +174,7 @@ BoundaryConditions::setupMarkers( pt::ptree const& pt, std::string name )
 
     for( int k = 0; k < 10; ++k )
     {
-        std::string strK = (boost::format("indice%1%")%k).str();
+        std::string strK = (boost::format("index%1%")%k).str();
         std::vector<std::string> argK;
         if( auto indiceK = pt.get_child_optional(strK) )
         {
