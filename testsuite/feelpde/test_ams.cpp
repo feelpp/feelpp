@@ -63,9 +63,9 @@ BOOST_AUTO_TEST_CASE( test_0 )
       _expr = inner(expr<3,1>(soption("functions.j")),id(v)));
   for(auto it : m_dirichlet_u)
   {
-    LOG(INFO) << it.second << " on " << it.first << "\n";
+    LOG(INFO) << it.second.first << " on " << it.first << "\n";
   a += on(_range=markedfaces(mesh,it.first),
-      _expr=it.second,
+      _expr=it.second.first,
       _rhs=l,
       _element=u,
       _type="elimination_symmetric"

@@ -88,9 +88,9 @@ typedef typename comp_space_type::element_type comp_element_type;
    */
   for(auto it : m_dirichlet_u)
   {
-    LOG(INFO) << it.second << " on " << it.first << "\n";
+    LOG(INFO) << it.second.first << " on " << it.first << "\n";
   a += on(_range=markedfaces(mesh,it.first),
-      _expr=it.second,
+      _expr=it.second.first,
       _rhs=l,
       _element=u,
       _type="elimination_symmetric"
@@ -101,9 +101,9 @@ typedef typename comp_space_type::element_type comp_element_type;
    */
   for(auto it : m_dirichlet_p)
   {
-    LOG(INFO) << it.second << " on " << it.first << "\n";
+    LOG(INFO) << it.second.first << " on " << it.first << "\n";
   a += on(_range=markedfaces(mesh,it.first),
-      _expr=it.second,
+      _expr=it.second.first,
       _rhs=l,
       _element=p,
       _type="elimination_symmetric"
