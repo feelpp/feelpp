@@ -12,17 +12,14 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 
 == SYNOPSIS
 
+{manmanual} --part num [num2...] --ifile file [--dim d] [--shape s] [--order num] [--by-markers] [--by-markers-desc markers] [--ofile file] [--odir dir]
+
+== DESCRIPTION
+
 {manmanual} is a simple application which can generate a partitioned mesh and
 save it in a Feel++ specific `json+hdf5` file format.
 
 The generated mesh can then be loaded very efficiently in parallel.
-
-
-== DESCRIPTION
-
-
-
-== OPTIONS
 
 === Options
 
@@ -79,10 +76,10 @@ Often we are interested in a set of partitioned meshes in order to do a speed-up
 
 [source,shell]
 ----
-feelpp_mesh_partitioner --part 2 4 8 16 32  --ifile src/feelpp/data/gmsh/primitives/torus.geo --odir torus
+feelpp_mesh_partitioner --part 2 4 8 16 32  --ifile src/feelpp/data/gmsh/primitives/torus.geo --odir torus-mesh
 ----
 
-You should have in the  directory `torus` (thanks to the `odir` option) 5 partitioned meshes
+You should have in the  directory `torus-mesh` (thanks to the `odir` option) 5 partitioned meshes
 
 [source,shell]
 ----
@@ -92,6 +89,8 @@ torus_p16.json  torus_p2.json  torus_p32.json  torus_p4.json  torus_p8.json
 ----
 
 NOTE: The mesh filenames contain the partition information.
+
+NOTE: If you want a different prefix than `torus`, like `torus-coarse`, you can use the `--ifile torus-coarse` option and you will have a set of files named `torus-coarse_p*.*` in the `torus-mesh` directory.
 
 === Generating a mesh partitioning by markers
 1) partitioning of each marker present in the mesh :
