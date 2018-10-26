@@ -1258,6 +1258,7 @@ public:
 
     struct ComputeNormL2InCompositeCase
     {
+        typedef double result_type;
 
         ComputeNormL2InCompositeCase( element_type const composite_u1 ,
                                       element_type const composite_u2 )
@@ -1267,28 +1268,16 @@ public:
         {}
 
         template< typename T >
-        void
-        operator()( const T& t ) const
+        result_type
+        operator()( result_type const& r, const T& t ) const
         {
-            int i = T::value;
-            if( i == 0 )
-                M_vec.resize( 1 );
-            else
-                M_vec.conservativeResize( i+1 );
-
             auto u1 = M_composite_u1.template element< T::value >();
             auto u2 = M_composite_u2.template element< T::value >();
             double norm  = normL2(_range=u1.functionSpace()->template rangeElements< 0 >(),
                                   _expr=( idv(u1)-idv(u2) ) );
-            M_vec(i)= norm ;
+            return r + norm;
         }
-
-        double norm()
-        {
-            return M_vec.sum();
-        }
-
-        mutable vectorN_type M_vec;
+    private :
         element_type M_composite_u1;
         element_type M_composite_u2;
     };
@@ -1308,10 +1297,8 @@ public:
     double computeNormL2( element_type u1 , element_type u2 , mpl::bool_<true>)
     {
         //in that case we accumulate the norm of every components
-        ComputeNormL2InCompositeCase compute_normL2_in_composite_case( u1, u2 );
         index_vector_type index_vector;
-        fusion::for_each( index_vector, compute_normL2_in_composite_case );
-        return compute_normL2_in_composite_case.norm();
+        return fusion::fold( index_vector, double(0.), ComputeNormL2InCompositeCase( u1,u2 ) );
     }
 
 
@@ -2971,15 +2958,14 @@ struct PreAssembleMassMatrixInCompositeCase
     typedef OperatorLinearComposite<space_type, space_type> operatorcomposite_type;
     typedef std::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
 
-    PreAssembleMassMatrixInCompositeCase( element_type const u ,
-                                          element_type const v )
+    PreAssembleMassMatrixInCompositeCase( element_type const& u ,
+                                          element_type const& v,
+                                          operatorcomposite_ptrtype op_mass )
         :
         M_composite_u ( u ),
-        M_composite_v ( v )
-    {
-        auto Xh = M_composite_u.functionSpace();
-        op_mass = opLinearComposite( _imageSpace=Xh, _domainSpace=Xh );
-    }
+        M_composite_v ( v ),
+        M_op_mass( op_mass )
+        {}
 
     template< typename T >
     void
@@ -3001,18 +2987,13 @@ struct PreAssembleMassMatrixInCompositeCase
         int q=T::value;
         int m=0;
         auto tuple = boost::make_tuple( q , m );
-        op_mass->addElement( tuple , opfree );
+        M_op_mass->addElement( tuple , opfree );
     }
 
-
-    operatorcomposite_ptrtype opmass()
-    {
-        return op_mass;
-    }
-
-    element_type  M_composite_u;
-    element_type  M_composite_v;
-    operatorcomposite_ptrtype op_mass;
+private :
+    element_type const&  M_composite_u;
+    element_type const&  M_composite_v;
+    operatorcomposite_ptrtype M_op_mass;
 
 };
 
@@ -3039,8 +3020,8 @@ struct AssembleMassMatrixInCompositeCase
     typedef typename ModelType::element_ptrtype element_ptrtype;
 
 
-    AssembleMassMatrixInCompositeCase( element_type const u ,
-                                       element_type const v ,
+    AssembleMassMatrixInCompositeCase( element_type const& u ,
+                                       element_type const& v ,
                                        CRBModel<ModelType>* crb_model)
         :
         M_composite_u ( u ),
@@ -3065,9 +3046,9 @@ struct AssembleMassMatrixInCompositeCase
                        _expr=trans( idt( u ) )*vf::id( v ) );
 
     }
-
-    element_type  M_composite_u;
-    element_type  M_composite_v;
+private :
+    element_type const&  M_composite_u;
+    element_type const&  M_composite_v;
     mutable CRBModel<ModelType>* M_crb_model;
 };
 
@@ -3094,8 +3075,8 @@ struct AssembleInitialGuessVInCompositeCase
 
     typedef typename std::vector< std::vector < element_ptrtype > > initial_guess_type;
 
-    AssembleInitialGuessVInCompositeCase( element_type const v ,
-                                          initial_guess_type const initial_guess ,
+    AssembleInitialGuessVInCompositeCase( element_type const& v ,
+                                          initial_guess_type const& initial_guess ,
                                           std::shared_ptr<CRBModel<ModelType> > crb_model)
         :
         M_composite_v ( v ),
@@ -3125,9 +3106,9 @@ struct AssembleInitialGuessVInCompositeCase
             }
         }
     }
-
-    element_type  M_composite_v;
-    initial_guess_type  M_composite_initial_guess;
+private :
+    element_type const&  M_composite_v;
+    initial_guess_type const&  M_composite_initial_guess;
     mutable std::shared_ptr<CRBModel<ModelType> > M_crb_model;
 };
 
@@ -3180,12 +3161,9 @@ typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
 CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<true> , bool light_version ) const
 {
     auto Xh = M_model->functionSpace();
-
+    operatorcomposite_ptrtype op_mass = opLinearComposite( _imageSpace=Xh, _domainSpace=Xh );
     index_vector_type index_vector;
-    PreAssembleMassMatrixInCompositeCase<TruthModelType> preassemble_mass_matrix_in_composite_case ( M_u , M_v );
-    fusion::for_each( index_vector, preassemble_mass_matrix_in_composite_case );
-
-    auto op_mass = preassemble_mass_matrix_in_composite_case.opmass();
+    fusion::for_each( index_vector, PreAssembleMassMatrixInCompositeCase<TruthModelType>( M_u , M_v, op_mass ) );
     return op_mass;
 }
 
@@ -3225,8 +3203,7 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<true> )
     M_Mqm[0][0]=M_backend->newMatrix( _test=Xh , _trial=Xh );
 
     //M_Mqm[0][0]->printMatlab("mass_matrix_before.m");
-    AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( M_u , M_v , this );
-    fusion::for_each( index_vector, assemble_mass_matrix_in_composite_case );
+    fusion::for_each( index_vector, AssembleMassMatrixInCompositeCase<TruthModelType>( M_u , M_v , this ) );
 
     M_Mqm[0][0]->close();
 }
@@ -3264,8 +3241,7 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
     }
 
     index_vector_type index_vector;
-    AssembleInitialGuessVInCompositeCase<TruthModelType> assemble_initial_guess_v_in_composite_case ( M_v , initial_guess , this->shared_from_this());
-    fusion::for_each( index_vector, assemble_initial_guess_v_in_composite_case );
+    fusion::for_each( index_vector, AssembleInitialGuessVInCompositeCase<TruthModelType>( M_v , initial_guess , this->shared_from_this() ) );
 
     for(int q = 0; q < q_max; q++ )
     {
