@@ -35,15 +35,23 @@ class FEELPP_EXPORT ModelMarkers : public std::set<std::string>
 {
     using super_type = std::set<std::string>;
   public:
-    ModelMarkers( pt::ptree const& p );
-    ModelMarkers( std::string const& marker );
+    ModelMarkers() = default;
+    ModelMarkers( ModelMarkers const& ) = default;
+    ModelMarkers( ModelMarkers&& ) = default;
     ModelMarkers( super_type const& set)
         : super_type(set) {}
+    ModelMarkers( std::string const& marker );
+    ModelMarkers& operator=( ModelMarkers const& ) = default;
+    ModelMarkers& operator=( ModelMarkers&& ) = default;
+    void setPTree( pt::ptree const& p );
 
   private:
+    void generateMarkersList();
+    std::vector<std::string> getArguments( int k );
+    void generateMarkersListForIndex( int k, std::vector<std::string> argK );
+
     pt::ptree M_p;
 
-    void generateMarkersList();
 };
 
 }
