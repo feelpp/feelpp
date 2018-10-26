@@ -27,6 +27,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelvf/ginac.hpp>
+#include <feel/feelmodels/modelmarkers.hpp>
 
 namespace Feel {
 
@@ -57,7 +58,7 @@ class FEELPP_EXPORT ModelOutput
 
     std::string name() const { return M_name; }
     std::string type() const { return M_type; }
-    std::set<std::string> range() const { return M_range; }
+    std::set<std::string> markers() const { return M_markers; }
     int dim() const { return M_dim; }
     std::string getString( std::string const& key ) const;
 
@@ -68,7 +69,7 @@ class FEELPP_EXPORT ModelOutput
 
     std::string M_name;
     std::string M_type;
-    std::set<std::string> M_range;
+    ModelMarkers M_markers;
     int M_dim;
 };
 

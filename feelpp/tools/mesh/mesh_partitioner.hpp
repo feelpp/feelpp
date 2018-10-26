@@ -110,21 +110,24 @@ void partition( std::vector<int> const& nParts)
 
         for ( int nPartition : nParts )
         {
-
-            std::string outputFilenameWithoutExt = (boost::format("%1%_p%2%")%inputFilenameWithoutExt %nPartition ).str();
+            std::string outputFilenameWithoutExt = "";
+            if( Environment::vm().count("ofile") )
+            {
+                std::string ofile = fs::path( soption("ofile")).stem().string();
+                if( nParts.size() == 1 )
+                    outputFilenameWithoutExt = ofile;
+                else
+                    outputFilenameWithoutExt = (boost::format("%1%_p%2%")%ofile %nPartition ).str();
+            }
+            else
+                outputFilenameWithoutExt = (boost::format("%1%_p%2%")%inputFilenameWithoutExt %nPartition ).str();
             std::string outputFilenameWithExt = outputFilenameWithoutExt + ".json";
-            std::string outputPathMesh = ( fs::current_path() / fs::path(outputFilenameWithExt) ).string();
-            if ( Environment::vm().count("ofile") )
-            {
-                outputPathMesh = fs::system_complete( soption("ofile") ).string();
-                if ( fs::path(outputPathMesh).extension() != ".json" )
-                    outputPathMesh = outputPathMesh + ".json";
-            }
-            else if ( Environment::vm().count("odir") )
-            {
-                fs::path odir = fs::system_complete( soption("odir") ).string();
-                outputPathMesh = (odir / fs::path(outputFilenameWithExt) ).string();
-            }
+            fs::path outputDirPath;
+            if ( Environment::vm().count("odir") )
+                outputDirPath = fs::system_complete( soption("odir") );
+            else
+                outputDirPath = fs::current_path();
+            std::string outputPathMesh = ( outputDirPath / fs::path(outputFilenameWithExt) ).string();
 
             fs::path outputDir = fs::path(outputPathMesh).parent_path();
             if ( !fs::exists( outputDir ) )

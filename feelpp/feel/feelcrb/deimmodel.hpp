@@ -130,10 +130,9 @@ protected :
     //! Update the list of element containing the dofs in the \p index_list for composite spaces
     void updateEltsId( std::vector<int> const& index_list, mpl::true_ )
         {
-            UdpateEltsIdComposite builder( this->M_model->functionSpace(), index_list );
+            UdpateEltsIdComposite builder( this->M_model->functionSpace(), index_list, this->M_elts_ids );
             rangespace_type range;
             boost::fusion::for_each( range, builder );
-            this->M_elts_ids = builder.elts();
         }
 
 protected :
@@ -176,10 +175,10 @@ private :
 
     struct ExpansionByBlock
     {
-        ExpansionByBlock( self_type* deim, vectorN_type const& urb ) :
+        ExpansionByBlock( self_type* deim, vectorN_type const& urb, element_type & _U ) :
             m_deim( deim ),
             m_urb( urb ),
-            U( m_deim->model()->functionSpace() )
+            U( _U )
         {
             int size0 = m_deim->template subRb<0>().size();
             int size1 = m_deim->template subRb<1>().size();
@@ -209,21 +208,20 @@ private :
             u = Feel::expansion( m_deim->template subRb<T::value>(), coeff, Nwn ).container();
         }
 
-        element_type& field() { return U; }
-
     private :
         self_type* m_deim;
         vectorN_type m_urb;
         bool m_supremizer;
         int N;
-        mutable element_type U;
+        element_type & U;
     };
 
     struct UdpateEltsIdComposite
     {
-        UdpateEltsIdComposite( space_ptrtype const& Xh, std::vector<int> const& index ) :
+        UdpateEltsIdComposite( space_ptrtype const& Xh, std::vector<int> const& index,  std::set<int> & elts_ids ) :
             m_Xh( Xh ),
-            m_index( index )
+            m_index( index ),
+            m_elts_ids( elts_ids )
         {}
 
         template <typename T>
@@ -254,12 +252,10 @@ private :
             }
         }
 
-        std::set<int> elts() { return m_elts_ids; }
-
     private:
         space_ptrtype m_Xh;
         std::vector<int> m_index;
-        mutable std::set<int> m_elts_ids;
+        std::set<int> & m_elts_ids;
     };
 
 
@@ -412,9 +408,10 @@ DEIMModel<ModelType,TensorType>::deimExpansion( vectorN_type const& urb, mpl::tr
     BOOST_STATIC_ASSERT( space_type::is_composite );//<< "Use of CBR block but space is not composite\n";
 
     rangespace_type range;
-    auto builder = ExpansionByBlock( this, urb );
+    auto U =  this->model()->functionSpace();
+    auto builder = ExpansionByBlock( this, urb, U );
     boost::fusion::for_each( range, builder );
-    return builder.field();
+    return U;
 } // deimExpansion with block
 
 
