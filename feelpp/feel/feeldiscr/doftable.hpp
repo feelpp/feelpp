@@ -1004,7 +1004,7 @@ public:
      *
      * @return true if element dof have all been computed, false otherwise
      */
-    bool isElementDone( size_type elt, int c = 0 )
+    bool isElementDone( size_type elt, int c = 0 ) const
         {
             bool done = true;
             for( auto const& local_dof : this->localDofSet( elt ) )
