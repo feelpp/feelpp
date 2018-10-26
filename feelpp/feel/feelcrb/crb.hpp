@@ -704,7 +704,7 @@ public:
     struct ComputePhi
     {
 
-        ComputePhi( wn_type v)
+        ComputePhi( wn_type & v)
             :
             M_curs( 0 ),
             M_vect( v )
@@ -728,23 +728,22 @@ public:
                 ++M_curs;
             }
 
-        wn_type vectorPhi()
-            {
-                return M_vect;
-            }
+    private :
         mutable int M_curs;
-        mutable wn_type M_vect;
+        wn_type & M_vect;
     };
 
 
     struct ComputeIntegrals
     {
 
-        ComputeIntegrals( element_type const composite_e1 ,
-                          element_type const composite_e2 )
+        ComputeIntegrals( element_type const& composite_e1 ,
+                          element_type const& composite_e2,
+                          std::vector<double> & vect )
             :
             M_composite_e1 ( composite_e1 ),
-            M_composite_e2 ( composite_e2 )
+            M_composite_e2 ( composite_e2 ),
+            M_vect( vect )
             {}
 
         template< typename T >
@@ -759,24 +758,22 @@ public:
                 M_vect.push_back( integral );
             }
 
-        std::vector< double > vectorIntegrals()
-            {
-                return M_vect;
-            }
-
-        mutable std::vector< double > M_vect;
-        element_type M_composite_e1;
-        element_type M_composite_e2;
+    private :
+        std::vector<double> & M_vect;
+        element_type const& M_composite_e1;
+        element_type const& M_composite_e2;
     };
 
     struct ComputeIntegralsSquare
     {
 
-        ComputeIntegralsSquare( element_type const composite_e1 ,
-                                element_type const composite_e2 )
+        ComputeIntegralsSquare( element_type const& composite_e1 ,
+                                element_type const& composite_e2,
+                                vectorN_type & error )
             :
             M_composite_e1 ( composite_e1 ),
-            M_composite_e2 ( composite_e2 )
+            M_composite_e2 ( composite_e2 ),
+            M_error( error )
             {}
 
         template< typename T >
@@ -801,14 +798,10 @@ public:
                 M_error(i) = math::sqrt( integral ) ;
             }
 
-        vectorN_type vectorErrors()
-            {
-                return M_error;
-            }
-
-        mutable vectorN_type M_error;
-        element_type M_composite_e1;
-        element_type M_composite_e2;
+    private:
+        vectorN_type & M_error;
+        element_type const& M_composite_e1;
+        element_type const& M_composite_e2;
     };
 
     //@}
@@ -3375,11 +3368,7 @@ CRB<TruthModelType>::checkInitialGuess( const element_type expansion_uN , parame
     //using namespace Feel::vf;
     index_vector_type index_vector;
     const element_ptrtype initial_guess = M_model->assembleInitialGuess( mu );
-    ComputeIntegralsSquare compute_integrals_square( *initial_guess , expansion_uN );
-    fusion::for_each( index_vector , compute_integrals_square );
-    error.resize( functionspace_type::nSpaces );
-    error = compute_integrals_square.vectorErrors();
-
+    fusion::for_each( index_vector , ComputeIntegralsSquare( *initial_guess , expansion_uN, error ) );
 }
 
 
@@ -3415,10 +3404,8 @@ CRB<TruthModelType>::buildVarianceMatrixPhi( int const N , mpl::bool_<true> )
         //auto sub = subelements( M_WN[i] , s );
         auto sub = subelements( M_model->rBFunctionSpace()->primalBasisElement(i) , s );
         element_type global_element = M_model->functionSpace()->element();
-        wn_type v( nb_spaces , global_element);
-        ComputePhi compute_phi(v);
-        fusion::for_each( sub , compute_phi ) ;
-        auto vect = compute_phi.vectorPhi();
+        wn_type vect( nb_spaces , global_element);
+        fusion::for_each( sub , ComputePhi( vect ) );
 
         //now we want to have only one element_type (global_element)
         //which sum the contribution of each space
@@ -3434,22 +3421,20 @@ CRB<TruthModelType>::buildVarianceMatrixPhi( int const N , mpl::bool_<true> )
         M_variance_matrix_phi[space].conservativeResize( N , N );
 
 
+    std::vector<double> vectIntegrals;
     for(int i = 0; i < M_N; ++i)
     {
-
         for(int j = i+1; j < M_N; ++j)
         {
-            ComputeIntegrals compute_integrals( phi[i] , phi[j] );
-            fusion::for_each( index_vector , compute_integrals );
-            auto vect = compute_integrals.vectorIntegrals();
+            vectIntegrals.clear();
+            fusion::for_each( index_vector , ComputeIntegrals( phi[i] , phi[j], vectIntegrals ) );
             for(int space=0; space<nb_spaces; space++)
-                M_variance_matrix_phi[space](i,j)=vect[space];
+                M_variance_matrix_phi[space](i,j)=vectIntegrals[space];
         } //j
-        ComputeIntegrals compute_integrals ( phi[i] , phi[i] );
-        fusion::for_each( index_vector , compute_integrals );
-        auto vect = compute_integrals.vectorIntegrals();
+        vectIntegrals.clear();
+        fusion::for_each( index_vector, ComputeIntegrals(  phi[i] , phi[i], vectIntegrals ) );
         for(int space=0; space<nb_spaces; space++)
-            M_variance_matrix_phi[space](i,i)=vect[space];
+            M_variance_matrix_phi[space](i,i)=vectIntegrals[space];
     }// i
 
 }
