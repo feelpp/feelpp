@@ -30,6 +30,7 @@
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelfilters/loadcsv.hpp>
+#include <feel/feelmodels/modelmarkers.hpp>
 
 #include <boost/property_tree/ptree.hpp>
 
@@ -44,7 +45,7 @@ public:
     typedef std::tuple<std::string,std::string,std::string,std::string,std::string> super;
     enum boundarycondition_t { EXPRESSION = 0, FILE = 1 };
 
-    ExpressionStringAtMarker( super && s, std::set<std::string> const& markers )
+    ExpressionStringAtMarker( super && s, ModelMarkers const& markers )
         :
         super( s),
         M_meshMarkers( markers ),
@@ -124,7 +125,7 @@ public:
     double data( double time, double epsilon = 1e-7 ) const;
 private :
     
-    std::set<std::string> M_meshMarkers;
+    ModelMarkers M_meshMarkers;
     boundarycondition_t M_type;
     std::string M_filename;
     std::map<double,double> M_data;

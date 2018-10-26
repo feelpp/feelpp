@@ -26,9 +26,16 @@
 
 namespace Feel {
 
-ModelMarkers::ModelMarkers( pt::ptree const& p )
-    : M_p(p)
+ModelMarkers::ModelMarkers( std::string const& marker )
 {
+    this->insert(marker);
+}
+
+void
+ModelMarkers::setPTree( pt::ptree const& p )
+{
+    M_p = p;
+    this->clear();
     // markers = mark
     if( M_p.empty() )
         this->insert(M_p.template get_value<std::string>());
@@ -56,68 +63,74 @@ ModelMarkers::ModelMarkers( pt::ptree const& p )
     }
 }
 
-ModelMarkers::ModelMarkers( std::string const& marker )
-{
-    this->insert(marker);
-}
-
 void ModelMarkers::generateMarkersList()
 {
     for( int k = 0; k < 10; ++k )
     {
-        std::string strK = (boost::format("index%1%")%k).str();
-        std::vector<std::string> argK;
-        if( auto indiceK = M_p.get_child_optional(strK) )
-        {
-            // indexN = [ A, B ]
-            for( auto const& item : M_p.get_child(strK) )
-                argK.push_back(item.second.template get_value<std::string>());
-            // index N = start:end(:step)
-            if( argK.empty() )
-            {
-                std::string rangeK = M_p.template get<std::string>(strK);
-                boost::char_separator<char> sep(":");
-                boost::tokenizer<boost::char_separator<char> > kvlist( rangeK, sep);
-                int sizeRange = std::distance(kvlist.begin(),kvlist.end());
-                if( sizeRange != 2 && sizeRange != 3 )
-                {
-                    LOG(WARNING) << "range " << rangeK << " for markers has "
-                                 << sizeRange << " elements, should be 2 or 3";
-                    continue;
-                }
+        std::vector<std::string> argK = this->getArguments(k);
+        this->generateMarkersListForIndex(k, argK);
+    }
+}
 
-                std::vector<int> range;
-                for( auto const& r : kvlist )
-                    range.push_back(std::stoi(r));
-                if( sizeRange == 2 )
-                    range.push_back(1);
-                auto argKInt = boost::irange(range[0],range[1],range[2]);
-                for( auto const& i : argKInt )
-                    argK.push_back( std::to_string(i));
-            }
-        }
-
-        auto it = this->begin();
-        while( it != this->end() )
+std::vector<std::string>
+ModelMarkers::getArguments( int k )
+{
+    std::string strK = (boost::format("index%1%")%k).str();
+    std::vector<std::string> argK;
+    if( auto indiceK = M_p.get_child_optional(strK) )
+    {
+        // indexN = [ A, B ]
+        for( auto const& item : M_p.get_child(strK) )
+            argK.push_back(item.second.template get_value<std::string>());
+        // index N = start:end(:step)
+        if( argK.empty() )
         {
-            std::string m = *it;
-            auto pos = m.find("%"+std::to_string(k)+"%");
-            if( pos != std::string::npos )
+            std::string rangeK = M_p.template get<std::string>(strK);
+            boost::char_separator<char> sep(":");
+            boost::tokenizer<boost::char_separator<char> > kvlist( rangeK, sep);
+            int sizeRange = std::distance(kvlist.begin(),kvlist.end());
+            if( sizeRange != 2 && sizeRange != 3 )
             {
-                std::set<std::string> ms;
-                for( auto const& s : argK )
-                {
-                    std::string currentMarker = m;
-                    currentMarker.replace(pos, 3, s);
-                    ms.insert(currentMarker);
-                }
-                this->erase(it);
-                this->insert(ms.begin(),ms.end());
-                it = this->begin();
+                LOG(WARNING) << "range " << rangeK << " for markers has "
+                             << sizeRange << " elements, should be 2 or 3";
+                return argK;
             }
-            else
-                std::advance(it,1);
+
+            std::vector<int> range;
+            for( auto const& r : kvlist )
+                range.push_back(std::stoi(r));
+            if( sizeRange == 2 )
+                range.push_back(1);
+            auto argKInt = boost::irange(range[0],range[1],range[2]);
+            for( auto const& i : argKInt )
+                argK.push_back( std::to_string(i));
         }
+    }
+    return argK;
+}
+
+void ModelMarkers::generateMarkersListForIndex( int k, std::vector<std::string> argK )
+{
+    auto it = this->begin();
+    while( it != this->end() )
+    {
+        std::string m = *it;
+        auto pos = m.find("%"+std::to_string(k)+"%");
+        if( pos != std::string::npos )
+        {
+            std::set<std::string> ms;
+            for( auto const& s : argK )
+            {
+                std::string currentMarker = m;
+                currentMarker.replace(pos, 3, s);
+                ms.insert(currentMarker);
+            }
+            this->erase(it);
+            this->insert(ms.begin(),ms.end());
+            it = this->begin();
+        }
+        else
+            std::advance(it,1);
     }
 }
 

@@ -113,13 +113,13 @@
         "myoutput":
         {
             "type":"average",
-            "range":["marker1","marker2"],
+            "markers":["marker1","marker2"],
             "topodim":3
         },
         "flux":
         {
             "type":"flux",
-            "range":"face1",
+            "markers":"face1",
             "topodim":2
         }
     }

@@ -89,7 +89,9 @@ BoundaryConditions::setup()
             for( auto const& c : f.second ) // condition
             {
                 auto bcdatatype  = c.second.get("type","expression");
-                std::set<std::string> markers = this->setupMarkers( c.second, c.first );
+                ModelMarkers markers (c.first);
+                if( auto m = c.second.get_child_optional("markers") )
+                    markers.setPTree(*m);
                 //std::cout << "bcdatatype = " << bcdatatype << std::endl;
                 if ( bcdatatype == "file" )
                 {
