@@ -664,7 +664,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         auto const* mesh = M_u.functionSpace()->mesh().get();
         auto gm = mesh->gm();
         size_type eid = edgeForInit.elements().begin()->first;
-        size_type edgeid_in_element = edgeForInit.elements().begin()->second;
+        uint16_type edgeid_in_element = edgeForInit.elements().begin()->second;
         auto const& elt = mesh->element( eid );
         //auto geopc = gm->preComputeOnEdges([&__fe]( int f ){ return __fe->edgePoints(f); } );
         auto geopc = gm->preCompute( __fe->edgePoints(edgeid_in_element) );
@@ -695,8 +695,20 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                     continue;
                 }
 
-                size_type eid = theedge.elements().begin()->first;
-                size_type edgeid_in_element = theedge.elements().begin()->second;
+                eid = invalid_size_type_value;
+                for ( auto const& eltConnectedToEdge : theedge.elements() )
+                {
+                    size_type eltIdConnected = eltConnectedToEdge.first;
+                    if ( __dof->isElementDone( eltIdConnected ) )
+                    {
+                        eid = eltIdConnected;
+                        edgeid_in_element = eltConnectedToEdge.second;
+                        break;
+                    }
+                }
+                if ( eid == invalid_size_type_value )
+                    continue;
+
                 auto const& elt = mesh->element( eid );
                 geopc = gm->preCompute( __fe->edgePoints(edgeid_in_element) );
                 ////geopc = gm->preComputeAtEdges( __fe->edgePoints(ptid_in_element) );
@@ -831,9 +843,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         CHECK( findAPtToInit ) << "a point to initialize the Dirichlet constraint\n";
 
         auto const& thept = boost::unwrap_ref( *pt_it );
-            
+
         size_type eid = thept.elements().begin()->first;
-        size_type ptid_in_element = thept.elements().begin()->second;
+        uint16_type ptid_in_element = thept.elements().begin()->second;
 
         auto const& elt = mesh->element( eid );
         auto geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
@@ -849,7 +861,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
             pt_it = lit.template get<1>();
             pt_en = lit.template get<2>();
             DVLOG(2) << "point " << boost::unwrap_ref( *pt_it ).id() << " nb: " << std::distance(pt_it,pt_en);
-            
+
             if ( pt_it == pt_en )
                 continue;
 
@@ -858,9 +870,21 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                   ++pt_it )
             {
                 auto const& thept = boost::unwrap_ref( *pt_it );
-                
-                size_type eid = thept.elements().begin()->first;
-                size_type ptid_in_element = thept.elements().begin()->second;
+
+                eid = invalid_size_type_value;
+                for ( auto const& eltConnectedToPoint : thept.elements() )
+                {
+                    size_type eltIdConnected = eltConnectedToPoint.first;
+                    if ( dof->isElementDone( eltIdConnected ) )
+                    {
+                        eid = eltIdConnected;
+                        ptid_in_element = eltConnectedToPoint.second;
+                        break;
+                    }
+                }
+                if ( eid == invalid_size_type_value )
+                    continue;
+
                 auto const& elt = mesh->element( eid );
                 geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
                 ctx->update( elt, ptid_in_element, geopc, mpl::int_<0>() );
@@ -874,7 +898,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                     thedof = trialDofIdToContainerId[ thedof ];
 
                     double __value = IhLoc( c );
-                    
+
                     if ( std::find( dofs.begin(),
                                     dofs.end(),
                                     thedof ) != dofs.end() )
@@ -883,7 +907,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                     if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
                     {
                         DVLOG(3) << "Eliminating row " << thedof << " using value : " << __value << "\n";
-                        
                         dofs.push_back( thedof );
                         values.push_back(  __value );
                     }
