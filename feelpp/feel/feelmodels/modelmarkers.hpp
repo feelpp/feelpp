@@ -38,9 +38,9 @@ class FEELPP_EXPORT ModelMarkers : public std::set<std::string>
     ModelMarkers() = default;
     ModelMarkers( ModelMarkers const& ) = default;
     ModelMarkers( ModelMarkers&& ) = default;
-    ModelMarkers( super_type const& set)
+    explicit ModelMarkers( super_type const& set)
         : super_type(set) {}
-    ModelMarkers( std::string const& marker );
+    explicit ModelMarkers( std::string const& marker );
     ModelMarkers& operator=( ModelMarkers const& ) = default;
     ModelMarkers& operator=( ModelMarkers&& ) = default;
     void setPTree( pt::ptree const& p );
