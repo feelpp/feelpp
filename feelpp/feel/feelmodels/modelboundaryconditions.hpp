@@ -37,7 +37,7 @@ namespace pt = boost::property_tree;
 class FEELPP_EXPORT ModelBoundaryCondition
 {
     public:
-    ModelBoundaryCondition( WorldComm const& worldComm = Environment::worldComm() );
+    explicit ModelBoundaryCondition( WorldComm const& worldComm = Environment::worldComm() );
     ModelBoundaryCondition( ModelBoundaryCondition const& ) = default;
     ModelBoundaryCondition( ModelBoundaryCondition&& ) = default;
     ModelBoundaryCondition( pt::ptree const& p, std::string const& name,
@@ -69,8 +69,8 @@ class FEELPP_EXPORT ModelBoundaryCondition
     ModelExpression const& modelExpr2() const { return M_modelExpr2; }
 
     void setName(std::string const& name) { M_name = name; }
-    void setMarker(std::string const& marker) { M_markers = std::set<std::string>({{marker}}); }
-    void setMarkers(std::set<std::string> const& markers) { M_markers = markers; }
+    void setMarker(std::string const& marker) { M_markers = ModelMarkers(marker); }
+    void setMarkers(std::set<std::string> const& markers) { M_markers = ModelMarkers(markers); }
     void setMaterial(std::string const& material) { M_material = material; }
     void setExpr(std::string const& expr, WorldComm const& worldComm = Environment::worldComm(), std::string const& directoryLibExpr = "" ) { M_expr1 = expr; M_modelExpr1.setExpr(expr, worldComm, directoryLibExpr); }
     void setExpr1(std::string const& expr, WorldComm const& worldComm = Environment::worldComm(), std::string const& directoryLibExpr = "" ) { M_expr1 = expr; M_modelExpr1.setExpr(expr, worldComm, directoryLibExpr); }
@@ -111,7 +111,7 @@ private:
 class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::map<std::string,std::vector<ModelBoundaryCondition> > >
 {
   public:
-    ModelBoundaryConditions( WorldComm const& world = Environment::worldComm() );
+    explicit ModelBoundaryConditions( WorldComm const& world = Environment::worldComm() );
     virtual ~ModelBoundaryConditions() = default;
     void setPTree( pt::ptree const& p );
 private:

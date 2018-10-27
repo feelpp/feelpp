@@ -60,7 +60,7 @@ public:
         }
     ExpressionStringAtMarker( super && s )
         :
-        ExpressionStringAtMarker( std::move(s), {{std::get<1>(s)}} )
+        ExpressionStringAtMarker( std::move(s), ModelMarkers(std::get<1>(s)) )
         {}
 
     //! type of boundary condition : expression or data
@@ -120,7 +120,7 @@ public:
     
     std::set<std::string> const& meshMarkers() const { return M_meshMarkers; }
 
-    void setMeshMarkers( std::set<std::string> const& s ) { M_meshMarkers=s; }
+    void setMeshMarkers( std::set<std::string> const& s ) { M_meshMarkers=ModelMarkers(s); }
 
     double data( double time, double epsilon = 1e-7 ) const;
 private :
