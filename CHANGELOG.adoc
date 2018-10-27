@@ -33,8 +33,8 @@ https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
 * [**toolbox**] refactoring of gls stabilization in the `fluid` and `heat` toolboxes : now the `heatfluid` toolbox with natural convection can use Galerkin Least Square stabilization(gls).
 * [**toolbox**] implement Statistics post-process  {uri-toolbox-issue}/85[#85]
 * [**toolbox**] add pre/post solve interface with Linear/Picard solver
-* [**testsutie**] more than 400 tests run everyday successfully via buildkite
-* [**testsutie**] fix curl in 2D, it is the scalar curl now {uri-issue}/1227[#1227]
+* [**testsuite**] more than 400 tests run everyday successfully via buildkite
+* [**testsuite**] fix curl in 2D, it is the scalar curl now {uri-issue}/1227[#1227]
 
 === Fixes
 
@@ -45,6 +45,7 @@ https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
 * [**toolbox**] remove rho scaling in fluid incompressibilty equation (cherry pick from feature/ls)
 * [**all**] support boost from 1.61 to 1.67, see {uri-issue}/1147[#1147]
 * [**all**] support up to PETSc/SLEPc 3.9 see {uri-issue}/1166[#1166] and {uri-issue}/1139[#1139]
+* [**feelpp**] Crash with nodal projection by using a mesh range on Points or Edges in 3d see {uri-issue}/1250[#1250]
 
 [[v0.105.0-2018-06-20]]
 == v0.105.0
