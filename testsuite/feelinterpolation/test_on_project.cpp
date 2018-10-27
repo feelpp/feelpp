@@ -22,7 +22,7 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#define BOOST_TEST_MODULE test_on
+#define BOOST_TEST_MODULE test_on_dofs
 #include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelfilters/loadmesh.hpp>
@@ -32,106 +32,99 @@
 
 using namespace Feel;
 
-inline
-Feel::po::options_description
-makeOptions()
+template<int Dim, int PolyOrder=1>
+void runTestAssign()
 {
-    Feel::po::options_description opts( "Test Environment options" );
-    opts.add_options()
-        ( "d", Feel::po::value<double>()->default_value( 1 ), "Value" )
-    ;
-    return opts.add( Feel::feel_options() );
-}
-
-inline
-Feel::AboutData
-makeAbout()
-{
-    Feel::AboutData about( "test_on_project" ,
-                           "test_on_project" ,
-                           "0.1",
-                           "On keyword interpolation test",
-                           Feel::AboutData::License_LGPL,
-                           "Copyright (c) 2015 Feel++ Consortium" );
-
-    about.addAuthor( "Guillaume Dolle", "developer", "gdolle@unistra.fr", "" );
-    return about;
-}
-
-template<int DIM, int H_ORDER=1>
-class TestOnProject
-{
-public:
-    using mesh_type = Mesh< Simplex<DIM> >;
-    using mesh_ptrtype = std::shared_ptr< mesh_type >;
-
-    // Create a test on default cube geometry.
-    TestOnProject() :
-        M_mesh( loadMesh( _mesh=new mesh_type ) )
-    {}
-
     // Check the on keyword for different topological entities.
-    void test()
-    {
-        auto Xh = Pch<H_ORDER>(M_mesh);
 
-        auto p = Xh->element();
-        auto l = Xh->element();
-        auto s = Xh->element();
-        auto v = Xh->element();
+    using mesh_type = Mesh< Simplex<Dim> >;
+    auto mesh = loadMesh( _mesh=new mesh_type );
+    auto Xh = Pch<PolyOrder>(mesh);
+    auto p = Xh->element();
+    auto l = Xh->element();
+    auto s = Xh->element();
+    auto v = Xh->element();
 
-        size_type np = nelements( markedpoints( M_mesh,"P"),true );
-        BOOST_CHECK( np > 0 );
-        p.on( _range=markedpoints( M_mesh,"P"), _expr=cst(42.) );
-        sync( p );
-        double sump = p.sum();
-        BOOST_CHECK_SMALL( sump - 42, 1e-12 );
+    size_type np = nelements( markedpoints( mesh,"P"),true );
+    BOOST_CHECK( np > 0 );
+    p.on( _range=markedpoints( mesh,"P"), _expr=cst(42.) );
+    sync( p );
+    double sump = p.sum();
+    BOOST_CHECK_SMALL( sump - 42, 1e-12 );
 
-        size_type ne = nelements( markededges( M_mesh,"L"),true );
-        BOOST_CHECK( ne > 0 );
-        l.on( _range=markededges( M_mesh,"L"), _expr=cst(42.) );
-        sync( l );
-        double maxl = l.max();
-        BOOST_CHECK_SMALL( maxl - 42, 1e-12 );
+    size_type ne = nelements( markededges( mesh,"L"),true );
+    BOOST_CHECK( ne > 0 );
+    l.on( _range=markededges( mesh,"L"), _expr=cst(42.) );
+    sync( l );
+    double maxl = l.max();
+    BOOST_CHECK_SMALL( maxl - 42, 1e-12 );
 
-        s.on( _range=markedfaces( M_mesh,"S"), _expr=cst(42.) );
-        double ints = integrate(_range=markedfaces( M_mesh,"S"),_expr=idv(s) ).evaluate()(0,0);
-        BOOST_CHECK_SMALL( ints - 42, 1e-12 );
+    s.on( _range=markedfaces( mesh,"S"), _expr=cst(42.) );
+    double ints = integrate(_range=markedfaces( mesh,"S"),_expr=idv(s) ).evaluate()(0,0);
+    BOOST_CHECK_SMALL( ints - 42, 1e-12 );
 
-        v.on( _range=elements( M_mesh ), _expr=cst(42.) );
-        double intv = integrate(_range=elements( M_mesh ),_expr=idv(v) ).evaluate()(0,0);
-        BOOST_CHECK_SMALL( intv - 42*27, 1e-10 );
+    v.on( _range=elements( mesh ), _expr=cst(42.) );
+    double intv = integrate(_range=elements( mesh ),_expr=idv(v) ).evaluate()(0,0);
+    BOOST_CHECK_SMALL( intv - 42*27, 1e-10 );
 
 #if 0
-        auto e = exporter( _mesh=M_mesh );
-        e->add( "p", p);
-        e->add( "l", l);
-        e->add( "s", s);
-        e->add( "v", v);
-        e->save();
+    auto e = exporter( _mesh=mesh );
+    e->add( "p", p);
+    e->add( "l", l);
+    e->add( "s", s);
+    e->add( "v", v);
+    e->save();
 #endif
-    }
-
-private:
-    mesh_ptrtype M_mesh;
-};
-
-
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
-BOOST_AUTO_TEST_SUITE( on_project )
-
-BOOST_AUTO_TEST_CASE( test_3d )
-{
-    TestOnProject<3> top;
-    top.test();
 }
 
-// Not supported yet
-//BOOST_AUTO_TEST_CASE( test_2d )
-//{
-//    TestOnProject<2> top;
-//    top.test();
-//}
+
+template<int Dim, int PolyOrder=1>
+void runTestElimination()
+{
+    using mesh_type = Mesh< Simplex<Dim> >;
+    auto mesh = loadMesh( _mesh=new mesh_type );
+    auto Xh = Pch<PolyOrder>( mesh );
+
+    auto u = Xh->element();
+    auto mat = backend()->newMatrix(_test=Xh,_trial=Xh);
+    auto rhs = backend()->newVector( Xh );
+    auto l = form1( _test=Xh,_vector=rhs );
+    l = integrate(_range=elements(mesh),
+                  _expr=id(u));
+    auto a = form2( _trial=Xh, _test=Xh,_matrix=mat );
+    a = integrate(_range=elements(mesh),
+                  _expr=inner(gradt(u),grad(u)) );
+    a+=on(_range=markedfaces( mesh,"S"), _rhs=rhs, _element=u, _expr=cst(12.) );
+    a+=on(_range=markededges( mesh,"L"), _rhs=rhs, _element=u, _expr=cst(22.) );
+    a+=on(_range=markedpoints( mesh,"P"), _rhs=rhs, _element=u, _expr=cst(32.) );
+
+    backend(_rebuild=true)->solve(_matrix=mat,_rhs=rhs,_solution=u );
+
+#if 0
+    // not yet work because of idv(u) in markededges and markedpoints
+    // require to tell to the geomap that we manipulate edge or points
+    // can be tested by remove if ( fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value  ) in feel/feevf/operator.hpp line 781
+    auto err = Xh->element();
+    err.on( _range=markedfaces( mesh,"S"), _expr=abs(idv(u)-cst(12.)) );
+    err.on( _range=markededges( mesh,"L"), _expr=abs(idv(u)-cst(22.)) );
+    err.on( _range=markedpoints( mesh,"P"), _expr=abs(idv(u)-cst(32.)) );
+    BOOST_CHECK_SMALL( err.sum(), 1e-10 );
+#endif
+}
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_SUITE( test_on_dofs )
+
+BOOST_AUTO_TEST_CASE( assign_3d )
+{
+    runTestAssign<3>();
+}
+
+BOOST_AUTO_TEST_CASE( elimination_3d )
+{
+    runTestElimination<3>();
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 
