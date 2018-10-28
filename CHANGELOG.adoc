@@ -47,6 +47,7 @@ https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
 * [**all**] support boost from 1.61 to 1.67, see {uri-issue}/1147[#1147]
 * [**all**] support up to PETSc/SLEPc 3.9 see {uri-issue}/1166[#1166] and {uri-issue}/1139[#1139]
 * [**feelpp**] Crash with nodal projection by using a mesh range on Points or Edges in 3d see {uri-issue}/1250[#1250]
+* [**feelpp/tools/scripts/Paraview**] screenshot python script runs with both python2 and python3
 
 [[v0.105.0-2018-06-20]]
 == v0.105.0
