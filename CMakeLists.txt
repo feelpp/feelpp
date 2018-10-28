@@ -138,9 +138,9 @@ if ( NOT DEFINED FEELPP_INSTANTIATION_ORDER_MAX)
   set(FEELPP_INSTANTIATION_ORDER_MAX 3)
 endif()
 
-if (APPLE)
-  list(REMOVE_ITEM FEELPP_LIBRARIES /usr/lib/libstdc++.dylib)
-endif()
+# if (APPLE)
+#   list(REMOVE_ITEM FEELPP_LIBRARIES /usr/lib/libstdc++.dylib)
+# endif()
 
 include(ProcessorCount)
 ProcessorCount(NProcs)

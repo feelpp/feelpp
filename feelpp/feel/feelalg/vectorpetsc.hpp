@@ -725,33 +725,8 @@ public:
                      std::vector<size_type> const& rows,
                      bool init=true ) override;
 
-#if 0
-    /**
-     * Serialization for PETSc VECSEQ
-     */
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) const
-    {
-        value_type* array;
-        VecGetArray(this->vec(),&array);
-
-        int n             = this->localSize();
-        int N             = this->size();
-
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-        FEELPP_ASSERT( n==N ).error( "wrong vector type for serialization (!=VECSEQ)" );
-
-        for (int i=0; i<n; i++)
-            ar & array[i];
-
-        VecRestoreArray(this->vec(), &array);
-    }
-#endif
-
-    void save( std::string filename="default_archive_name", std::string format="binary" ) override;
-    void load( std::string filename="default_archive_name", std::string format="binary" ) override;
+    void save( std::string const& filename="default_archive_name", std::string const& format="binary" ) override;
+    void load( std::string const& filename="default_archive_name", std::string const& format="binary" ) override;
 
     //@}
 
@@ -760,35 +735,51 @@ private:
     template<class Archive>
     void save( Archive & ar, const unsigned int version ) const
     {
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+        CHECK( this->isInitialized() ) << "Vector not initialized";
+        if ( !this->closed() )
+            const_cast<VectorPetsc<T>*>( this )->close();
+
+        int ierr = 0;
 
         double * array;
-        VecGetArray(M_vec, &array);
+        ierr = VecGetArray(M_vec, &array);
+        CHKERRABORT( this->comm(),ierr );
 
-        int n = this->localSize();
+        size_type n = this->map().nLocalDofWithoutGhost();
+        ar << BOOST_SERIALIZATION_NVP( n );
+        ar << boost::serialization::make_array( array, n );
 
-        for(int i = 0; i < n; ++i)
-            ar & boost::serialization::make_nvp("arrayi", array[i] );
-
-        VecRestoreArray(M_vec, &array );
+        ierr = VecRestoreArray(M_vec, &array );
+        CHKERRABORT( this->comm(),ierr );
     }
 
     template<class Archive>
     void load( Archive & ar, const unsigned int version )
     {
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+        CHECK( this->isInitialized() ) << "Vector not initialized";
+        if ( !this->closed() )
+            this->close();
 
-        int n = this->mapPtr()->nLocalDof();
-        std::vector<int> ind(n);
-        std::iota( ind.begin(), ind.end(), 0);
+        int ierr = 0;
 
-        double* array = new double[n];
-        for(int i = 0; i < n; ++i)
-            ar & boost::serialization::make_nvp("arrayi", array[i] );
+        double * array;
+        ierr = VecGetArray(M_vec, &array);
+        CHKERRABORT( this->comm(),ierr );
 
-        this->setVector(ind.data(), n, array);
-        this->close();
-        delete[] array;
+        size_type n;
+        ar >> BOOST_SERIALIZATION_NVP( n );
+        CHECK( n == this->map().nLocalDofWithoutGhost() ) << "vector is not compatible with array serialized";
+        ar >>  boost::serialization::make_array( array, n );
+
+        ierr = VecRestoreArray(M_vec, &array );
+        CHKERRABORT( this->comm(),ierr );
+
+        if ( this->comm().size()>1 )
+        {
+            VectorPetscMPI<T>* vecOutPetscMPI = dynamic_cast<VectorPetscMPI<T>*>( &(*this) );
+            if ( vecOutPetscMPI )
+                vecOutPetscMPI->localize();
+        }
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -877,75 +868,75 @@ public:
     FEELPP_DEPRECATED
     void init( const size_type N,
                const size_type n_local,
-               const bool fast=false );
+               const bool fast=false ) override;
     /**
      * call init with datamap,
      */
-    void init( datamap_ptrtype const& dm );
+    void init( datamap_ptrtype const& dm ) override;
 
-    value_type operator() ( const size_type i ) const;
-    value_type& operator() ( const size_type i );
+    value_type operator() ( const size_type i ) const override;
+    value_type& operator() ( const size_type i ) override;
 
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<value_type>& operator= ( const Vector<value_type> &V );
+    Vector<value_type>& operator= ( const Vector<value_type> &V ) override;
     Vector<value_type>& operator= ( const VectorPetscMPI<value_type> &V );
 
     /**
      * \f$ v(i) = \mathrm{value} \forall i\f$
      */
-    virtual void set( const value_type& value );
+    virtual void set( const value_type& value ) override;
 
     /**
      * \f$ U(0-DIM)+=s\f$.
      * Addition of \p s to all components. Note
      * that \p s is a scalar and not a vector.
      */
-    virtual void add( const value_type& v_in );
+    virtual void add( const value_type& v_in ) override;
 
     /**
      * \f$ U+=a*V \f$ .
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    virtual void add( const value_type& a_in, const Vector<value_type>& v_in );
+    virtual void add( const value_type& a_in, const Vector<value_type>& v_in ) override;
 
     /**
      * v(i) = value (i is global process index)
      */
-    void set( size_type i, const value_type& value );
+    void set( size_type i, const value_type& value ) override;
 
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen] (i1,i2,... is global process index)
      */
-    void setVector( int* i, int n, value_type* v );
+    void setVector( int* i, int n, value_type* v ) override;
 
     /**
      * v(i) += value (i is global process index)
      */
-    void add( const size_type i, const value_type& value );
+    void add( const size_type i, const value_type& value ) override;
 
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen] (i1,i2,... is global process index)
      */
-    void addVector( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_size_type_value );
+    void addVector( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_size_type_value ) override;
 
     /**
      *  \f$v = x*y\f$: coefficient-wise multiplication
      */
-    virtual void pointwiseMult( Vector<T> const& x, Vector<T> const& y );
+    virtual void pointwiseMult( Vector<T> const& x, Vector<T> const& y ) override;
 
     /**
      *  \f$v = x/y\f$: coefficient-wise divide
      */
-    virtual void pointwiseDivide( Vector<T> const& x, Vector<T> const& y );
+    virtual void pointwiseDivide( Vector<T> const& x, Vector<T> const& y ) override;
 
     /**
      * Set all entries to zero. Equivalent to \p v = 0.
      */
-    virtual void zero();
-    void zero( size_type /*start*/,  size_type /*stop*/ )
+    virtual void zero() override;
+    void zero( size_type /*start*/,  size_type /*stop*/ ) override
     {
         this->zero();
     }
@@ -953,37 +944,28 @@ public:
     /**
      * Replaces each component of a vector by its reciprocal.
      */
-    virtual int reciprocal();
+    virtual int reciprocal() override;
 
     /**
      * @returns the \p VectorPetsc<T> to a pristine state.
      */
-    virtual void clear();
+    virtual void clear() override;
 
     /**
      * Update ghost values
      */
-    virtual void localize();
+    virtual void localize() override;
 
     /**
      * Call the assemble functions and update ghost values
      */
-    void close();
+    void close() override;
 
-    size_type firstLocalIndex() const;
-    size_type lastLocalIndex() const;
-    size_type localSize() const;
+    size_type firstLocalIndex() const override;
+    size_type lastLocalIndex() const override;
+    size_type localSize() const override;
 
     void duplicateFromOtherPartition( Vector<T> const& vecInput );
-
-private:
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version )
-    {
-        if ( Archive::is_saving::value && !this->closed() )
-            this->close();
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
-    }
 
 private :
 
