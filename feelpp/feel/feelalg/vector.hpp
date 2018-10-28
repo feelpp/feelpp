@@ -647,10 +647,10 @@ public:
             return res;
         }
 
-    virtual void save( std::string filename="default_archive_name", std::string format="binary" )
+    virtual void save( std::string const& filename="default_archive_name", std::string const& format="binary" )
     {}
 
-    virtual void load( std::string filename="default_archive_name", std::string format="binary" )
+    virtual void load( std::string const& filename="default_archive_name", std::string const& format="binary" )
     {}
 
 protected:
@@ -777,6 +777,7 @@ sync( Vector<T> & v, Feel::detail::syncOperator<T> const& opSync );
 
 } // Feel
 
+#if 0
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(Feel::Vector)
 
 namespace boost {
@@ -785,7 +786,7 @@ namespace boost {
     template<typename T, class Archive>
     FEELPP_EXPORT void save(Archive & ar, const Feel::Vector<T> & v, const unsigned int version)
     {
-        Feel::DataMap map = v.map();
+        Feel::DataMap const& map = v.map();
         ar & BOOST_SERIALIZATION_NVP(map);
     }
     template<typename T, class Archive>
@@ -803,6 +804,6 @@ namespace boost {
     }
     } // namespace serialization
 } // namespace boost
-
+#endif
 
 #endif  // #ifdef __numeric_vector_h__

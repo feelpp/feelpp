@@ -43,6 +43,7 @@ public:
     typedef Feel::vf::GiNaCBase super;
 
     typedef SymbolsExprType symbols_expression_type;
+    typedef typename symbols_expression_type::tuple_type symbols_expression_tuple_type;
 
     struct FunctorsVariadicExpr
     {
@@ -93,30 +94,30 @@ public:
 
     };
 
-    static const size_type context =  std::decay_t<decltype( hana::fold( symbols_expression_type{}, hana::integral_constant<size_type,vm::POINT|vm::JACOBIAN|vm::KB|vm::NORMAL>{}, typename FunctorsVariadicExpr::Context{} ) )>::value;
+    static const size_type context =  std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{}, hana::integral_constant<size_type,vm::POINT|vm::JACOBIAN|vm::KB|vm::NORMAL>{}, typename FunctorsVariadicExpr::Context{} ) )>::value;
     static const bool is_terminal = false;
 
     template<typename Funct>
     struct HasTestFunction
     {
-        static const bool result =  std::decay_t<decltype( hana::fold( symbols_expression_type{},
+        static const bool result =  std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{},
                                                                        hana::integral_constant<bool,false>{},
                                                                        typename FunctorsVariadicExpr::template HasTestFunction<Funct>{} ) )>::value;
     };
     template<typename Funct>
     struct HasTrialFunction
     {
-        static const bool result =  std::decay_t<decltype( hana::fold( symbols_expression_type{},
+        static const bool result =  std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{},
                                                                        hana::integral_constant<bool,false>{},
                                                                        typename FunctorsVariadicExpr::template HasTrialFunction<Funct>{} ) )>::value;
     };
 
     template<typename Funct>
-    static const bool has_test_basis = std::decay_t<decltype( hana::fold( symbols_expression_type{},
+    static const bool has_test_basis = std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{},
                                                                           hana::integral_constant<bool,false>{},
                                                                           typename FunctorsVariadicExpr::template HasTestBasis<Funct>{} ) )>::value;
     template<typename Funct>
-    static const bool has_trial_basis = std::decay_t<decltype( hana::fold( symbols_expression_type{},
+    static const bool has_trial_basis = std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{},
                                                                            hana::integral_constant<bool,false>{},
                                                                            typename FunctorsVariadicExpr::template HasTrialBasis<Funct>{} ) )>::value;
     using test_basis = std::nullptr_t; // TODO
@@ -329,7 +330,7 @@ public:
     const std::vector<uint16_type> indices() const
     {
         std::vector<uint16_type> indices_vec;
-        hana::for_each( M_expr, [&]( auto const& evec )
+        hana::for_each( M_expr.tupleExpr, [&]( auto const& evec )
                         {
                             for ( auto const& e : evec )
                                 indices_vec.push_back( this->index( e.first ) );
@@ -401,7 +402,7 @@ public:
                 }
         };
 
-        using tuple_tensor_expr_type = std::decay_t<decltype( hana::transform( symbols_expression_type{}, TransformExprToTensor{} ) ) >;
+        using tuple_tensor_expr_type = std::decay_t<decltype( hana::transform( symbols_expression_tuple_type{}, TransformExprToTensor{} ) ) >;
 
         //typedef typename expression_type::value_type value_type;
         typedef double value_type;
@@ -429,7 +430,7 @@ public:
             M_y( M_gmc->nPoints(), evaluate_type::Zero() ),
             M_x( expr.parameterValue() ),
             M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type::Zero() ),
-            M_t_expr( hana::transform( expr.symbolsExpression(), [&geom,&fev,&feu](auto const& t) { return TransformExprToTensor{}(t,geom,fev,feu); } ) ),
+            M_t_expr( hana::transform( expr.symbolsExpression().tupleExpr, [&geom,&fev,&feu](auto const& t) { return TransformExprToTensor{}(t,geom,fev,feu); } ) ),
             M_t_expr_index( expr.indices() )
             {}
 
@@ -444,7 +445,7 @@ public:
             M_y( M_gmc->nPoints(), evaluate_type::Zero() ),
             M_x( expr.parameterValue() ),
             M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type::Zero() ),
-            M_t_expr( hana::transform( expr.symbolsExpression(), [&geom,&fev](auto const& t) { return TransformExprToTensor{}(t,geom,fev); } ) ),
+            M_t_expr( hana::transform( expr.symbolsExpression().tupleExpr, [&geom,&fev](auto const& t) { return TransformExprToTensor{}(t,geom,fev); } ) ),
             M_t_expr_index( expr.indices() )
             {}
 
@@ -458,7 +459,7 @@ public:
             M_y( M_gmc->nPoints(), evaluate_type::Zero() ),
             M_x( expr.parameterValue() ),
             M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type::Zero() ),
-            M_t_expr( hana::transform( expr.symbolsExpression(), [&geom](auto const& t) { return TransformExprToTensor{}(t,geom); } ) ),
+            M_t_expr( hana::transform( expr.symbolsExpression().tupleExpr, [&geom](auto const& t) { return TransformExprToTensor{}(t,geom); } ) ),
             M_t_expr_index( expr.indices() )
             {}
 
@@ -645,7 +646,7 @@ private :
         for ( auto const& thesymbxyz : this->indexSymbolXYZ() )
             symbTotalDegree.push_back( std::make_pair( M_syms[thesymbxyz.second], 1 ) );
         bool symbExprArePolynomials = true;
-        hana::for_each( M_expr, [&]( auto const& evec )
+        hana::for_each( M_expr.tupleExpr, [&]( auto const& evec )
                         {
                             for ( auto const& e : evec )
                             {

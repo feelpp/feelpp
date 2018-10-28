@@ -36,6 +36,8 @@ int main( int argc, char** argv )
         ( "contents", po::value<std::string>(), "contents desc" )
 		;
 
+    fs::path initialCurrentPath = fs::current_path();
+
     Environment env( _argc=argc, _argv=argv,
                      _desc=rdoptions,
                      _about=about( _name="remotedata" ,
@@ -57,6 +59,8 @@ int main( int argc, char** argv )
             return 0;
         }
         std::string data = soption(_name="data");
+        if ( fs::path(data).is_relative() )
+            data = (initialCurrentPath/fs::path(data)).string();
         rd.upload( data );
     }
     else if ( Environment::vm().count("download") )

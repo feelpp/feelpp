@@ -715,7 +715,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                 if ( updateComponentAddElements )
                 {
                     edg.elements().clear();
-                    edg.addElement( vid );
+                    edg.addElement( vid, j );
                 }
 
                 // number of points on the edge is 2 (number of
