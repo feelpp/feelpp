@@ -819,11 +819,23 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_reinitInitialValue = boption( _name="reinit-initial-value", _prefix=this->prefix() );
 
     const std::string gradPhiMethod = soption( _name="gradphi-method", _prefix=this->prefix() );
-    CHECK(DerivationMethodMap.left.count(gradPhiMethod)) << gradPhiMethod <<" is not in the list of possible derivation methods\n";
+    CHECK(DerivationMethodMap.left.count(gradPhiMethod)) << gradPhiMethod <<" is not in the list of possible gradphi derivation methods\n";
     M_gradPhiMethod = DerivationMethodMap.left.at(gradPhiMethod);
 
+    if( Environment::vm( _name="modgradphi-method", _prefix=this->prefix() ).defaulted() &&
+        !Environment::vm( _name="gradphi-method", _prefix=this->prefix() ).defaulted() )
+    {
+        M_modGradPhiMethod = M_gradPhiMethod;
+    }
+    else
+    {
+        const std::string modGradPhiMethod = soption( _name="modgradphi-method", _prefix=this->prefix() );
+        CHECK(DerivationMethodMap.left.count(modGradPhiMethod)) << modGradPhiMethod <<" is not in the list of possible modgradphi derivation methods\n";
+        M_modGradPhiMethod = DerivationMethodMap.left.at(modGradPhiMethod);
+    }
+
     const std::string curvatureMethod = soption( _name="curvature-method", _prefix=this->prefix() );
-    CHECK(DerivationMethodMap.left.count(curvatureMethod)) << curvatureMethod <<" is not in the list of possible derivation methods\n";
+    CHECK(DerivationMethodMap.left.count(curvatureMethod)) << curvatureMethod <<" is not in the list of possible curvature derivation methods\n";
     M_curvatureMethod = DerivationMethodMap.left.at(curvatureMethod);
 
     M_useGradientAugmented = boption( _name="use-gradient-augmented", _prefix=this->prefix() );
@@ -1032,33 +1044,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
     this->log("LevelSet", "updateGradPhi", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    auto phi = this->phi();
-    switch( M_gradPhiMethod )
-    {
-        case DerivationMethod::NODAL_PROJECTION:
-            this->log("LevelSet", "updateGradPhi", "perform nodal projection");
-            M_levelsetGradPhi->on( _range=this->rangeMeshElements(), _expr=trans(gradv(phi)) );
-            break;
-        case DerivationMethod::L2_PROJECTION:
-            this->log("LevelSet", "updateGradPhi", "perform L2 projection");
-            //*M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
-            *M_levelsetGradPhi = this->projectorL2Vectorial()->derivate( idv(phi) );
-            break;
-        case DerivationMethod::SMOOTH_PROJECTION:
-            this->log("LevelSet", "updateGradPhi", "perform smooth projection");
-            *M_levelsetGradPhi = this->smootherVectorial()->project( trans(gradv(phi)) );
-            break;
-        case DerivationMethod::PN_NODAL_PROJECTION:
-            this->log("LevelSet", "updateGradPhi", "perform PN-nodal projection");
-            auto phiPN = this->phiPN();
-            auto gradPhiPN = vf::project(
-                    _space=this->functionSpaceManager()->functionSpaceVectorialPN(),
-                    _range=this->functionSpaceManager()->rangeMeshPNElements(),
-                    _expr=trans(gradv(phiPN))
-                    );
-            this->functionSpaceManager()->opInterpolationVectorialFromPN()->apply( gradPhiPN, *M_levelsetGradPhi );
-            break;
-    }
+    *M_levelsetGradPhi = this->grad( this->phi(), M_gradPhiMethod );
 
     M_doUpdateGradPhi = false;
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
@@ -1072,13 +1058,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateModGradPhi()
     this->log("LevelSet", "updateModGradPhi", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    auto gradPhi = this->gradPhi();
-    *M_levelsetModGradPhi = vf::project( 
-            _space=this->functionSpace(),
-            _range=this->rangeMeshElements(),
-            _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) 
-            );
-    //*M_levelsetModGradPhi = this->projectorL2()->project( _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) );
+    *M_levelsetModGradPhi = this->modGrad( this->phi(), M_modGradPhiMethod );
 
     M_doUpdateModGradPhi = false;
 
@@ -2204,6 +2184,73 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
 }
 
 //----------------------------------------------------------------------------//
+// Interface quantities helpers
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_vectorial_type
+LEVELSET_CLASS_TEMPLATE_TYPE::grad( element_levelset_type const& phi, DerivationMethod method ) const
+{
+    switch( method )
+    {
+        case DerivationMethod::NODAL_PROJECTION:
+            this->log("LevelSet", "grad", "perform nodal projection");
+            return vf::project( 
+                    _space=this->functionSpaceVectorial(),
+                    _range=this->rangeMeshElements(),
+                    _expr=trans(gradv(phi))
+                    );
+        case DerivationMethod::L2_PROJECTION:
+            this->log("LevelSet", "grad", "perform L2 projection");
+            //return this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
+            return this->projectorL2Vectorial()->derivate( idv(phi) );
+        case DerivationMethod::SMOOTH_PROJECTION:
+            this->log("LevelSet", "grad", "perform smooth projection");
+            return this->smootherVectorial()->project( trans(gradv(phi)) );
+        case DerivationMethod::PN_NODAL_PROJECTION:
+            this->log("LevelSet", "grad", "perform PN-nodal projection");
+            CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use PN_NODAL_PROJECTION \n";
+            auto phiPN = this->functionSpaceManager()->opInterpolationScalarToPN()->operator()( phi );
+            auto gradPhiPN = vf::project(
+                    _space=this->functionSpaceManager()->functionSpaceVectorialPN(),
+                    _range=this->functionSpaceManager()->rangeMeshPNElements(),
+                    _expr=trans(gradv(phiPN))
+                    );
+            return this->functionSpaceManager()->opInterpolationVectorialFromPN()->operator()( gradPhiPN );
+    }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_type
+LEVELSET_CLASS_TEMPLATE_TYPE::modGrad( element_levelset_type const& phi, DerivationMethod method ) const
+{
+    switch( method )
+    {
+        case DerivationMethod::NODAL_PROJECTION:
+            this->log("LevelSet", "modGrad", "perform nodal projection");
+            return vf::project( 
+                    _space=this->functionSpace(),
+                    _range=this->rangeMeshElements(),
+                    _expr=sqrt( gradv(phi)*trans(gradv(phi)) )
+                    );
+        case DerivationMethod::L2_PROJECTION:
+            this->log("LevelSet", "modGrad", "perform L2 projection");
+            return this->projectorL2()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
+        case DerivationMethod::SMOOTH_PROJECTION:
+            this->log("LevelSet", "modGrad", "perform smooth projection");
+            return this->smoother()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
+        case DerivationMethod::PN_NODAL_PROJECTION:
+            this->log("LevelSet", "modGrad", "perform PN-nodal projection");
+            CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use PN_NODAL_PROJECTION \n";
+            auto phiPN = this->functionSpaceManager()->opInterpolationScalarToPN()->operator()( phi );
+            auto modGradPhiPN = vf::project(
+                    _space=this->functionSpaceManager()->functionSpaceScalarPN(),
+                    _range=this->functionSpaceManager()->rangeMeshPNElements(),
+                    _expr=sqrt( gradv(phiPN)*trans(gradv(phiPN)) )
+                    );
+            return this->functionSpaceManager()->opInterpolationScalarFromPN()->operator()( modGradPhiPN );
+    }
+}
+
+//----------------------------------------------------------------------------//
 // Reinitialization
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -2394,7 +2441,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
 
     std::string hdProjectionMethod = (this->M_useHeavisideDiracNodalProj)? "nodal": "L2";
 
-    const std::string gradphiMethod = DerivationMethodMap.right.at(this->M_gradPhiMethod);
+    const std::string gradPhiMethod = DerivationMethodMap.right.at(this->M_gradPhiMethod);
+    const std::string modGradPhiMethod = DerivationMethodMap.right.at(this->M_modGradPhiMethod);
     const std::string curvatureMethod = DerivationMethodMap.right.at(this->M_curvatureMethod);
 
     std::string reinitMethod;
@@ -2464,7 +2512,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- use regular phi (phi / |grad(phi)|) : " << std::boolalpha << this->M_useRegularPhi
            << "\n     -- Heaviside/Dirac projection method   : " << hdProjectionMethod
            << "\n     -- reinit initial value                : " << std::boolalpha << this->M_reinitInitialValue
-           << "\n     -- gradphi projection                  : " << gradphiMethod
+           << "\n     -- gradphi projection                  : " << gradPhiMethod
+           << "\n     -- modgradphi projection               : " << modGradPhiMethod
            << "\n     -- curvature projection                : " << curvatureMethod
            << "\n     -- use gradient augmented              : " << std::boolalpha << this->M_useGradientAugmented
            << "\n     -- use stretch augmented               : " << std::boolalpha << this->M_useStretchAugmented
