@@ -366,6 +366,18 @@ public:
     int iterSinceReinit() const { return M_iterSinceReinit; }
 
     //--------------------------------------------------------------------//
+    // Interface quantities helpers
+    element_vectorial_type grad( element_levelset_type const& phi, DerivationMethod method ) const;
+    element_vectorial_type grad( element_levelset_ptrtype const& phi, DerivationMethod method ) const { return this->grad( *phi, method ); }
+    element_vectorial_type grad( element_levelset_type const& phi ) const { return this->grad(phi, M_gradPhiMethod); }
+    element_vectorial_type grad( element_levelset_ptrtype const& phi ) const { return this->grad(*phi); }
+
+    element_levelset_type modGrad( element_levelset_type const& phi, DerivationMethod method ) const;
+    element_levelset_type modGrad( element_levelset_ptrtype const& phi, DerivationMethod method ) const { return this->modGrad(*phi, method); }
+    element_levelset_type modGrad( element_levelset_type const& phi ) const { return this->modGrad(phi, M_modGradPhiMethod); }
+    element_levelset_type modGrad( element_levelset_ptrtype const& phi ) const { return this->modGrad(*phi); }
+
+    //--------------------------------------------------------------------//
     // Tools
     levelset_tool_manager_ptrtype const& toolManager() const { return M_toolManager; }
     void setToolManager( levelset_tool_manager_ptrtype const& manager ) { M_toolManager = manager; }
@@ -648,6 +660,7 @@ private:
     //--------------------------------------------------------------------//
     // Derivation methods
     DerivationMethod M_gradPhiMethod;
+    DerivationMethod M_modGradPhiMethod;
     DerivationMethod M_curvatureMethod;
 
     //--------------------------------------------------------------------//
