@@ -543,6 +543,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
 {
     switch( M_reinitMethod )
     { 
+        case LevelSetDistanceMethod::NONE :
+        {
+            // Nothing to do
+        }
+        break;
         case LevelSetDistanceMethod::FASTMARCHING :
         {
             if( !M_reinitializer )
