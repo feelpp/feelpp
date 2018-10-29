@@ -249,14 +249,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
         if( hasInitialValue )
         {
             // ILP on phi_init
-            auto gradPhiInit = this->projectorL2Vectorial()->derivate( idv(phi_init) );
-            //auto modGradPhiInit = this->smoother()->project( sqrt( trans(idv(gradPhiInit))*idv(gradPhiInit) ) );
+            auto const modGradPhiInit = this->modGrad( phi_init );
                 
             *phi_init = vf::project( 
                 _space=this->functionSpace(),
                 _range=elements(this->functionSpace()->mesh()),
-                //_expr=idv(phi_init) / idv(modGradPhiInit)
-                _expr=idv(phi_init) / sqrt( trans(idv(gradPhiInit))*idv(gradPhiInit) )
+                _expr=idv(phi_init) / idv(modGradPhiInit)
                 );
             // Reinitialize phi_init
             *phi_init = this->reinitializerFM()->run( *phi_init );
@@ -2309,24 +2307,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
             {
                 case FastMarchingInitializationMethod::ILP :
                 {
-                    *phiReinit = this->projectorL2()->project( idv(phi) / sqrt( gradv(phi)*trans(gradv(phi)) ) );
+                    auto const modGradPhi = this->modGrad( phi, DerivationMethod::L2_PROJECTION );
+                    phiReinit->on( _range=this->rangeMeshElements(), _expr=idv(phi)/idv(modGradPhi) );
                 }
                 break;
 
                 case FastMarchingInitializationMethod::SMOOTHED_ILP :
                 {
-                    // save the smoothed gradient magnitude of phi
-                    //auto modgradphi = M_smootherFM->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
-                    //auto gradPhi = idv(this->gradPhi());
-                    auto gradPhi = trans(gradv(phi));
-                    //auto modgradphi = M_smootherFM->project( sqrt( trans(gradPhi)*gradPhi ) );
-                    auto modgradphi = this->smoother()->project( sqrt( trans(gradPhi)*gradPhi ) );
-
-                    *phiReinit = vf::project(
-                            this->functionSpace(), 
-                            this->rangeMeshElements(), 
-                            idv(phi)/idv(modgradphi) 
-                            );
+                    auto const modGradPhi = this->modGrad( phi, DerivationMethod::SMOOTH_PROJECTION );
+                    phiReinit->on( _range=this->rangeMeshElements(), _expr=idv(phi)/idv(modGradPhi) );
                 }
                 break;
 
@@ -2364,9 +2353,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
         case LevelSetDistanceMethod::RENORMALISATION:
         {
             //auto R = this->interfaceRectangularFunction( phi );
-            auto const modGradPhi = this->projectorL2()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
-            *phiReinit = vf::project(
-                    _space=this->functionSpace(),
+            auto const modGradPhi = this->modGrad( phi );
+            phiReinit->on(
                     _range=this->rangeMeshElements(),
                     //_expr = idv(phi) * ( 1. + ( 1./idv(modGradPhi)-1. )*idv(R) )
                     _expr = idv(phi) / idv(modGradPhi)
