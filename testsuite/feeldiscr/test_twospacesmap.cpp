@@ -1,6 +1,6 @@
 #define BOOST_TEST_MODULE test_twospaces_map
 
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelfilters/unitcircle.hpp>
 #include <feel/feelvf/vf.hpp>

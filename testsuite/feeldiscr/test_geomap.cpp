@@ -29,7 +29,7 @@
    \date 2005-02-07
  */
 #define BOOST_TEST_MODULE geomap testsuite
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/debug.hpp>

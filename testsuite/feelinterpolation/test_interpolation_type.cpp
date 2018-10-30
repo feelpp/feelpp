@@ -23,7 +23,7 @@
  */
 #define BOOST_TEST_MODULE interpolation_type testsuite
 
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>

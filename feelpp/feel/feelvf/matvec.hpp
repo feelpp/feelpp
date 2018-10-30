@@ -539,8 +539,8 @@ struct evaluate_expression_gij
         ++M_current;
         return ret;
     }
-    const uint16_type& M_indexi;
-    const uint16_type& M_indexj;
+    const uint16_type M_indexi;
+    const uint16_type M_indexj;
     const uint16_type M_c1;
     const uint16_type M_c2;
     const uint16_type M_q;
@@ -601,7 +601,7 @@ struct evaluate_expression_gi
         return ret;
 
     }
-    const uint16_type& M_indexi;
+    const uint16_type M_indexi;
     const uint16_type M_c1;
     const uint16_type M_c2;
     const uint16_type M_q;

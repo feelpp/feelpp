@@ -6,7 +6,7 @@
 
 #define USE_BOOST_TEST 1
 #define BOOST_TEST_MODULE boostmpi
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 //____________________________________________________________________________//
 

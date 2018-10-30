@@ -1,8 +1,7 @@
 #ifndef TWOSPACESMAP_HPP
 #define TWOSPACESMAP_HPP
 
-#include <boost/shared_ptr.hpp>
-#include "feel/feeldiscr/functionspace.hpp"
+#include <feel/feeldiscr/functionspace.hpp>
 
 
 namespace Feel
@@ -173,9 +172,13 @@ private :
     {
         static const int n_spaces = space_type::nSpaces;
 
-        BuildForComposite( space_ptrtype _Xs, space_ptrtype _Xp, int s ) :
+        BuildForComposite( space_ptrtype _Xs, space_ptrtype _Xp, int s,
+                           std::vector<std::map<int,std::pair<int,int>>> & s_to_p_comp,
+                           std::vector<std::map<int,int>> & p_to_s_comp,
+                           std::map<int,std::pair<int,int>> & s_to_p,
+                           std::map<int,int> & p_to_s ) :
             compositeXs( _Xs ), compositeXp( _Xp ),
-            M_shift( s )
+            M_shift( s ), m_s_to_p_comp( s_to_p_comp ), m_p_to_s_comp( p_to_s_comp ), m_s_to_p( s_to_p ), m_p_to_s( p_to_s )
         {
             m_s_to_p_comp.resize( n_spaces );
             m_p_to_s_comp.resize( n_spaces );
@@ -247,19 +250,14 @@ private :
             }
         }
 
-        std::vector<std::map<int,std::pair<int,int>>> sToPComp() const { return m_s_to_p_comp; }
-        std::vector<std::map<int,int>> pToSComp() const  { return m_p_to_s_comp; }
-        std::map<int,std::pair<int,int>> sToP() const { return m_s_to_p; }
-        std::map<int,int> pToS() const { return m_p_to_s; }
-
     private :
         space_ptrtype compositeXs, compositeXp;
         int M_shift;
 
-        mutable std::vector<std::map<int,std::pair<int,int>>> m_s_to_p_comp;
-        mutable std::vector<std::map<int,int>> m_p_to_s_comp;
-        mutable std::map<int,std::pair<int,int>>  m_s_to_p;
-        mutable std::map<int,int> m_p_to_s;
+        std::vector<std::map<int,std::pair<int,int>>> & m_s_to_p_comp;
+        std::vector<std::map<int,int>> & m_p_to_s_comp;
+        std::map<int,std::pair<int,int>> &  m_s_to_p;
+        std::map<int,int> & m_p_to_s;
 
     };
 
@@ -359,13 +357,8 @@ void
 TwoSpacesMap<SpaceType>::build( mpl::true_ )
 {
     rangespace_type range;
-    auto builder = BuildForComposite( Xs, Xp, M_shift );
-    boost::fusion::for_each( range, builder );
-    M_s_to_p = builder.sToP();
-    M_p_to_s = builder.pToS();
-    M_s_to_p_comp = builder.sToPComp();
-    M_p_to_s_comp = builder.pToSComp();
-} // build composite
+    boost::fusion::for_each( range, BuildForComposite( Xs, Xp, M_shift, M_s_to_p_comp, M_p_to_s_comp, M_s_to_p, M_p_to_s ) );
+}
 
 
 

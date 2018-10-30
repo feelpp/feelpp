@@ -646,9 +646,12 @@ public:
     //! @param parallel if true generate the same uuid for all MPI process, if false it will be different
     //!
     static uuids::uuid randomUUID( bool parallel=true );
-    
+
+    //! Generate a UUID from a namespace UUID and a name.
+    static uuids::uuid nameUUID( uuids::uuid const& dns_namespace_uuid, std::string const& name );
+
     //! @}
-    
+
     BOOST_PARAMETER_MEMBER_FUNCTION(
         ( po::variable_value ), static vm, tag,
         ( required

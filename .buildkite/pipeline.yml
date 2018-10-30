@@ -4,12 +4,35 @@ steps:
    agents:
      docker: true
      ubuntu: "16.04"
+   artifact_paths: Testing/junit-*.xml
+ - wait: ~
+   continue_on_failure: true
+ - plugins:
+     junit-annotate#v1.2.0:
+       artifacts: Testing/junit-*.xml
  - wait
  - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
      ubuntu: "16.04"
+ - wait
+ - trigger: "feelpp-singularity"
+   label: ":package: create feelpp :singularity: containers"
+   async: true
+   build:
+     env:
+       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
+       PROJECT: "feelpp"
+       TAG: ${BUILDKITE_BRANCH}
+ - trigger: "feelpp-testsuite"
+   label: ":docker: compile and run the Feel++ testsuite :rocket:"
+   async: true
+   branches: "develop"
+   build:
+    message: "${BUILDKITE_MESSAGE}"
+    commit: "${BUILDKITE_COMMIT}"
+    branch: "${BUILDKITE_BRANCH}"
  - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer:'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
    agents:
@@ -21,6 +44,15 @@ steps:
    agents:
      docker: true
      ubuntu: "16.04"
+ - wait
+ - trigger: "feelpp-singularity"
+   label: ":package: create feelpp :singularity: containers"
+   async: true
+   build:
+     env:
+       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
+       PROJECT: "feelpp-toolboxes"
+       TAG: ${BUILDKITE_BRANCH}
  - name: ':$TARGET, $CXX, feelpp-mor :hammer:'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh mor
    agents:
@@ -39,5 +71,5 @@ steps:
    build:
      env:
        GIRDER_ID: "5a4fa90ab0e9571f842931e5"
-       PROJECT: "feelpp-toolboxes feelpp-mor"
+       PROJECT: "feelpp-mor"
        TAG: ${BUILDKITE_BRANCH}

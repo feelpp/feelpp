@@ -309,6 +309,7 @@ if ( FEELPP_HAS_GMSH )
   add_subdirectory(gmsh)
 endif()
 
+add_subdirectory( boost )
 #include(feelpp.module.mongocxx)
 #include(feelpp.module.hpddm)
 #include(feelpp.module.nlopt)

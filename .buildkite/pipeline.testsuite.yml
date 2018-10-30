@@ -1,20 +1,18 @@
 steps:
- - name: ':ubuntu: 16.10,clang-3.9 feelpp-testsuite :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh testsuite
+ - name: ':$TARGET $CXX feelpp-testsuite :hammer:'
+   command: feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
    agents:
      docker: true
-     ubuntu: "16.10"
-   env:
-     CXX: clang++-3.9
-     CC: clang-3.9
-     TARGET: ubuntu:16.10
-     CMAKE_FLAGS: -DFEELPP_DISABLE_COMPILE_FAILURE=ON
-     CTEST_FLAGS: -V -j3
+     ubuntu: "16.04"
+   artifact_paths: Testing/junit-*.xml
+ - wait: ~
+   continue_on_failure: true
+ - plugins:
+     junit-annotate#v1.2.0:
+       artifacts: Testing/junit-*.xml
  - wait
- - command: tools/scripts/buildkite/release.sh  -- feelpp-testsuite
+ - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-testsuite
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
-     ubuntu: "16.10"
-   env:
-     TARGET: ubuntu:16.10
+     ubuntu: "16.04"

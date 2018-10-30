@@ -1,6 +1,6 @@
 #define USE_BOOST_TEST 1
 #define BOOST_TEST_MODULE test_form_eigen
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>

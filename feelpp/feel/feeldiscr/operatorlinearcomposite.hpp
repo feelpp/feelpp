@@ -357,7 +357,7 @@ public :
         int q_max = M_operators1.size();
         FEELPP_ASSERT( q < q_max )( q_max )( q ).error( "OperatorLinearComposite has not enough elements" );
         //fill matrix
-        M_operators1.template at(q)->matPtr(matrix);
+        M_operators1.at(q)->matPtr(matrix);
     }
 
     void matrixPtr(int q , matrix_ptrtype& matrix) const
@@ -365,7 +365,7 @@ public :
         int q_max = M_operators1.size();
         FEELPP_ASSERT( q < q_max )( q_max )( q ).error( "OperatorLinearComposite has not enough elements" );
         //fill matrix
-        M_operators1.template at(q)->matPtr(matrix);
+        M_operators1.at(q)->matPtr(matrix);
     }
 
     //Access to a specific matrix
@@ -373,13 +373,13 @@ public :
     {
         //fill matrix
         auto tuple = boost::make_tuple(q,m);
-        M_operators2.template at(tuple)->matPtr(matrix);
+        M_operators2.at(tuple)->matPtr(matrix);
     }
 
     void matrixPtr(int q, int m , matrix_ptrtype& matrix) const
     {
         auto tuple = boost::make_tuple(q,m);
-        M_operators2.template at(tuple)->matPtr(matrix);
+        M_operators2.at(tuple)->matPtr(matrix);
     }
 
 
@@ -388,13 +388,13 @@ public :
     {
         int q_max = M_operators1.size();
         FEELPP_ASSERT( q < q_max )( q_max )( q ).error( "OperatorLinearComposite has not enough elements" );
-        return M_operators1.template at(q);
+        return M_operators1.at(q);
     }
 
     super_ptrtype & operatorlinear(int q, int m)
     {
         auto tuple = boost::make_tuple(q,m);
-        return M_operators2.template at(tuple);
+        return M_operators2.at(tuple);
     }
 
 

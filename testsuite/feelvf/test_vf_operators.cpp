@@ -28,7 +28,7 @@
  */
 
 #define BOOST_TEST_MODULE vf_operators testsuite
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feelvf/vf.hpp>

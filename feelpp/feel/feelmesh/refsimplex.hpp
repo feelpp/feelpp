@@ -1033,10 +1033,11 @@ private:
                          lambda::_1 = lambda::constant( zero ) ) );
 #endif
 
+        const uint16_type d = (nDim==0)?0:nDim-1;
         for ( uint16_type __n = 0; __n < numNormals; ++__n )
         {
             //const uint16_type ind_normal = reindex[nDim-1][__n];
-            const int ind_normal = reindex1[nDim-1][__n];
+            const int ind_normal = reindex1[d][__n];
             M_normals[ind_normal].resize( nDim );
             M_normals[ind_normal].clear();// = ublas::zero_vector<value_type>( nDim );
 

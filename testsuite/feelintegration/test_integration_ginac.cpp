@@ -30,7 +30,7 @@
 #include <boost/timer.hpp>
 
 //#define BOOST_TEST_MODULE ginac integration testsuite
-//#include <testsuite.hpp>
+//#include <feel/feelcore/testsuite.hpp>
 
 #include <boost/mpl/list.hpp>
 
