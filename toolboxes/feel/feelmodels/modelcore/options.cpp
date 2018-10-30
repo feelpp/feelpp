@@ -463,6 +463,7 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"use-space-iso-pn").c_str(), Feel::po::value<bool>()->default_value(false), "use isoPN spaces for the levelset")
 
         (prefixvm(prefix,"fix-volume").c_str(), Feel::po::value<bool>()->default_value(false), "correct levelset volume after each iteration (using phi->phi+(V-Vi)/L)")
+        (prefixvm(prefix,"fix-area").c_str(), Feel::po::value<bool>()->default_value(false), "correct levelset area after each iteration (using phi->phi+mu*(K-Kbar) with Kbar=int(K*delta)/L and mu=(L-L0)/int(K*(K-Kbar)))")
 
         (prefixvm(prefix,"use-extension-velocity").c_str(), Feel::po::value<bool>()->default_value(false), "use extension velocity which preserves the distance property when advecting the level set")
         (prefixvm(prefix,"extension-velocity.gamma").c_str(), Feel::po::value<double>()->default_value(10), "value for the gamma premultying Nitsche's term to impose the weak BC at the interface")
