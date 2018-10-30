@@ -22,7 +22,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #define BOOST_TEST_MODULE mongo test
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #include <feel/feelcore/mongocxx.hpp>
 
 BOOST_AUTO_TEST_CASE( test_mongo )
