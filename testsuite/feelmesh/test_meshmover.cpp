@@ -24,7 +24,7 @@
 
 #define BOOST_TEST_MODULE mesh mover testsuite
 
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelmesh/filters.hpp>

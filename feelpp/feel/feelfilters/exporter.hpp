@@ -458,6 +458,11 @@ public:
      */
     virtual void save() const = 0;
 
+    //!
+    //! serve results though a webserver
+    //!
+    virtual void serve() const;
+    
     /**
      * save in a file set of time which are been exported
      */

@@ -19,3 +19,6 @@
 [submodule "contrib/kwsys"]
 	path = feelpp/contrib/kwsys
 	url = https://github.com/feelpp/kwsys.git
+[submodule "contrib/viewer"]
+	path = contrib/viewer
+	url = https://github.com/feelpp/viewer.git

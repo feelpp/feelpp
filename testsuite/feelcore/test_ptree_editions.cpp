@@ -23,7 +23,7 @@
  */
 
 #define BOOST_TEST_MODULE test_ptree_editions
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <feel/feelcore/ptreetools.hpp>
 #include <feel/feelcore/utility.hpp>

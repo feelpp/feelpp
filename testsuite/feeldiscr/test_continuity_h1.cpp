@@ -28,7 +28,7 @@
  */
 
 #define BOOST_TEST_MODULE continuity testsuite
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <boost/mpl/list.hpp>
 

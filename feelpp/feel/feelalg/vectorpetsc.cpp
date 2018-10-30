@@ -892,13 +892,10 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
 }
 template <typename T>
 void
-VectorPetsc<T>::save( std::string filename, std::string format )
+VectorPetsc<T>::save( std::string const& filename, std::string const& format )
 {
-    if ( !this->closed() )
-        this->close();
-
-    filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
-    std::ofstream ofs( filename );
+    std::string fullfilename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %this->comm().rank() );
+    std::ofstream ofs( fullfilename );
     if (ofs)
     {
         if ( format=="binary" )
@@ -917,21 +914,19 @@ VectorPetsc<T>::save( std::string filename, std::string format )
             oa << *this;
         }
         else
-            Feel::cout << "VectorPetsc save() function : error with unknown format "
-                       << format <<std::endl;
+            CHECK( false ) << "VectorPetsc save() function : error with unknown format " << format;
     }
     else
     {
-        Feel::cout << "VectorPetsc save() function : error opening ofstream with name "
-                   << filename <<std::endl;
+        CHECK( false ) << "VectorPetsc save() function : error opening ofstream with name " << filename;
     }
 }
 template <typename T>
 void
-VectorPetsc<T>::load( std::string filename, std::string format ) 
+VectorPetsc<T>::load( std::string const& filename, std::string const& format )
 {
-    filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
-    std::ifstream ifs( filename );
+    std::string fullfilename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %this->comm().rank() );
+    std::ifstream ifs( fullfilename );
     if ( ifs )
     {
         if ( format=="binary" )
@@ -950,13 +945,11 @@ VectorPetsc<T>::load( std::string filename, std::string format )
             ia >> *this;
         }
         else
-            Feel::cout << "VectorPetsc save() function : error with unknown format "
-                       << format <<std::endl;
+            CHECK( false ) << "VectorPetsc save() function : error with unknown format " << format;
     }
     else
     {
-        Feel::cout << "VectorPetsc load() function : error opening ofstream with name "
-                   << filename <<std::endl;
+        CHECK( false ) << "VectorPetsc load() function : error opening ofstream with name "<< filename;
     }
 }
 

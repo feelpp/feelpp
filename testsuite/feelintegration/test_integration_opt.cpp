@@ -24,7 +24,7 @@
 
 #define BOOST_TEST_MODULE integration_opt testsuite
 
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 

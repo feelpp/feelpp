@@ -1520,41 +1520,19 @@ Environment::finalized()
 std::string
 Environment::rootRepository()
 {
-    char * senv = ::getenv( "FEELPP_REPOSITORY" );
-
-    if ( senv != NULL && senv[0] != '\0' )
+    for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
     {
-        return std::string( senv );
+        char * senv = ::getenv( var.first.c_str() );
+        if ( senv != NULL && senv[0] != '\0' )
+        {
+            fs::path p{ senv };
+            if ( !var.second.empty() )
+                p /= var.second;
+            if ( !fs::is_directory( p ) )
+                continue;
+            return p.string();
+        }
     }
-
-    senv = ::getenv( "FEELPP_WORKDIR" );
-
-    if ( senv != NULL && senv[0] != '\0' )
-    {
-        return std::string( senv );
-    }
-
-    senv = ::getenv( "WORK" );
-
-    if ( senv != NULL && senv[0] != '\0' )
-    {
-        return std::string( senv )+"/feel";
-    }
-
-    senv = ::getenv( "WORKDIR" );
-
-    if ( senv != NULL && senv[0] != '\0' )
-    {
-        return std::string( senv )+"/feel";
-    }
-
-    senv = ::getenv( "HOME" );
-
-    if ( senv != NULL && senv[0] != '\0' )
-    {
-        return std::string( senv ) + "/feel";
-    }
-
     return std::string();
 }
 std::string
@@ -1660,7 +1638,7 @@ Environment::systemGeoRepository()
     fs::path rep_path;
 
     rep_path = Info::prefix();
-    rep_path /= "share/feel/geo";
+    rep_path /= "share/feelpp/feel/geo";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
 
@@ -1736,10 +1714,17 @@ Environment::randomUUID( bool parallel )
         std::string suuid = uuids::to_string(uuid);
         mpi::broadcast( Environment::worldComm().globalComm(), suuid, 0 );
         uuid = boost::lexical_cast<uuids::uuid>( suuid );
-        
     }
     return uuid;
 }
+
+uuids::uuid
+Environment::nameUUID( uuids::uuid const& dns_namespace_uuid, std::string const& name )
+{
+    boost::uuids::name_generator gen( dns_namespace_uuid );
+    return gen( name );
+}
+
 void
 Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfilename, bool add_subdir_np, WorldComm const& worldcomm, bool remove )
 {

@@ -43,13 +43,18 @@ namespace crbplugin_details
 
 struct DofTablesComposite
 {
+    DofTablesComposite( std::vector<std::shared_ptr<DofTableBase>> & doftables )
+        :
+        M_doftables( doftables )
+        {}
+
     template <typename T>
     void operator()( std::shared_ptr<T> const& x ) const
         {
-            doftables.push_back( x->dof() );
+            M_doftables.push_back( x->dof() );
         }
-
-    mutable std::vector<std::shared_ptr<DofTableBase>> doftables;
+private :
+    std::vector<std::shared_ptr<DofTableBase>> & M_doftables;
 };
 
 template <typename SpaceType>
@@ -64,25 +69,28 @@ template <typename SpaceType>
 std::vector<std::shared_ptr<DofTableBase>>
 doftables( std::shared_ptr<SpaceType> const& space, typename std::enable_if< SpaceType::is_composite >::type* = nullptr )
 {
-    Feel::crbplugin_details::DofTablesComposite dtc;
-    boost::fusion::for_each( space->functionSpaces(),dtc );
-    return dtc.doftables;
+    std::vector<std::shared_ptr<DofTableBase>> dt;
+    boost::fusion::for_each( space->functionSpaces(), Feel::crbplugin_details::DofTablesComposite( dt ) );
+    return dt;
 }
 
 
 template <typename ElementType>
 struct SubElementsComposite
 {
-    explicit SubElementsComposite( std::shared_ptr<ElementType> const& _uFE ) : uFE( _uFE ) {}
+    explicit SubElementsComposite( std::shared_ptr<ElementType> const& uFE,
+                                   std::vector<std::shared_ptr<Vector<typename ElementType::value_type>> > & subelements )
+        :
+        M_uFE( uFE ), M_subelements( subelements ) {}
 
     template <typename T>
     void operator()( T const& t ) const
         {
-            subelements.push_back( uFE->template elementPtr<T::value>() );
+            M_subelements.push_back( M_uFE->template elementPtr<T::value>() );
         }
-
-    std::shared_ptr<ElementType> uFE;
-    mutable std::vector<std::shared_ptr<Vector<typename ElementType::value_type>> > subelements;
+private :
+    std::shared_ptr<ElementType> M_uFE;
+    std::vector<std::shared_ptr<Vector<typename ElementType::value_type>> > & M_subelements;
 };
 
 template <typename ElementType>
@@ -97,10 +105,10 @@ template <typename ElementType>
 std::vector<std::shared_ptr<Vector<typename ElementType::value_type>> >
 subelements( std::shared_ptr<ElementType> uFE, typename std::enable_if< ElementType::is_composite >::type* = nullptr )
 {
+    std::vector<std::shared_ptr<Vector<typename ElementType::value_type>> > subelements;
     mpl::range_c<int,0,ElementType::functionspace_type::nSpaces> keySpaces;
-    Feel::crbplugin_details::SubElementsComposite<ElementType> sec(uFE);
-    boost::fusion::for_each( keySpaces, sec );
-    return sec.subelements;
+    boost::fusion::for_each( keySpaces, Feel::crbplugin_details::SubElementsComposite<ElementType>(uFE, subelements ) );
+    return subelements;
 }
 }
 

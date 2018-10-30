@@ -1,6 +1,6 @@
 #define USE_BOOST_TEST 1
 #define BOOST_TEST_MODULE test_eigenmode
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
@@ -36,7 +36,11 @@ BOOST_AUTO_TEST_CASE( test_0 )
                         _solver="krylovschur",
                         _problem="ghep",
                         _transform="shift_invert",
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 9)
+                        _spectrum="target_real",
+#else
                         _spectrum="smallest_magnitude",
+#endif
                         _nev=15,
                         _ncv=30,
                         _verbose=1

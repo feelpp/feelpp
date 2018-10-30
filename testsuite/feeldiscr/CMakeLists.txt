@@ -14,7 +14,8 @@ feelpp_add_test( geomap )
 
 feelpp_add_test( spacefunc )
 
-feelpp_add_test( space_0d SKIP_TEST )
+# comment out as it breaks compilation and buildkite testuite pipeline 
+# feelpp_add_test( space_0d SKIP_TEST )
 
 
 feelpp_add_test( hdiv CFG test_hdiv.cfg NO_MPI_TEST)
@@ -94,5 +95,6 @@ feelpp_add_test( idelements)
 
 feelpp_add_test( twospacesmap )
 
+feelpp_add_test( on_dofs SRCS test_on_dofs GEO square_mmarked.geo CFG test_on_dofs.cfg )
 #! not functional yet
 # feelpp_add_test( element0D )

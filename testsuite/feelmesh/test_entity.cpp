@@ -30,7 +30,7 @@
 #define DO_TEST 1
 // Boost.Test
 #define BOOST_TEST_MAIN
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelmesh/simplex.hpp>

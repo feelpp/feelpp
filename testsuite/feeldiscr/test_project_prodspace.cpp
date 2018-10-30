@@ -29,7 +29,7 @@
  */
 #if 1
 #define BOOST_TEST_MODULE test_project_prodspace
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #endif
 
 #include <feel/feelcore/environment.hpp>
