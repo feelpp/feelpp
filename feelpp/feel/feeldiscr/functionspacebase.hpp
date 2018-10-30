@@ -60,7 +60,7 @@ public:
      */
     //@{
     using super = CommObject;
-
+    using super2 = Observer::JournalWatcher;
     //@}
 
     /** @name Constructors, destructor
@@ -68,7 +68,7 @@ public:
     //@{
 
     FunctionSpaceBase() : super( Environment::worldCommPtr() ) {}
-    explicit FunctionSpaceBase( worldcomm_ptr_t const& w ) : super( w ) {}
+    explicit FunctionSpaceBase( std::string const& name, worldcomm_ptr_t const& w ) : super( w ), super2( name ) {}
     FunctionSpaceBase( FunctionSpaceBase const& ) = default;
     FunctionSpaceBase( FunctionSpaceBase && ) = default;
     //! destructor

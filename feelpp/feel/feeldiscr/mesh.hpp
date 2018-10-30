@@ -174,6 +174,7 @@ class Mesh
                                                       typename mpl::if_<is_2d<GeoShape>,
                                                                         mpl::identity<Mesh2D<GeoShape,T> >,
                                                                         mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type;
+    using super2 = Observer::JournalWatcher;
 
 public:
 
@@ -302,8 +303,12 @@ public:
     //!
     //!  Default mesh constructor
     //!
-    explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
-                   std::string const& name = "" );
+    explicit Mesh( std::string const& name,
+                   worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+
+    explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+        :
+        Mesh( "",worldComm ) {}
 
     ~Mesh() {}
 
