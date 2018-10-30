@@ -91,7 +91,7 @@
 #cmakedefine FEELPP_HAS_MKL
 
 /* Define to 1 if you have mongocxx support. */
-#cmakedefine FEELPP_HAS_MONGOCXX
+/*#cmakedefine FEELPP_HAS_MONGOCXX*/
 
 /* Define to 1 if you have mongocxx support. */
 /*#cmakedefine FEELPP_HAS_KWSYS*/
