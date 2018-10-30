@@ -169,6 +169,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
         this->setTimeInitial( M_advectionToolbox->timeInitial() );
 
     M_initialVolume = this->volume();
+    M_initialPerimeter = this->perimeter();
 
     // Init iterSinceReinit
     if( this->doRestart() )
@@ -863,6 +864,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_doExportAdvection = boption(_name="do_export_advection", _prefix=this->prefix());
 
     M_fixVolume = boption( _name="fix-volume", _prefix=this->prefix() );
+    M_fixArea = boption( _name="fix-area", _prefix=this->prefix() );
 
     M_useExtensionVelocity = boption( _name="use-extension-velocity", _prefix=this->prefix() );
     M_extensionVelocityNitscheGamma = doption( _name="extension-velocity.gamma", _prefix=this->prefix() );
@@ -1959,6 +1961,25 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
         auto const& phi = this->phi();
         double lambda = ( this->volume() - this->M_initialVolume ) / this->perimeter();
         phi->add( lambda );
+        // Request update interface-related quantities again since phi has changed
+        // Note that updateInterfaceQuantities has lazy evaluation
+        this->updateInterfaceQuantities();
+    }
+    // Correct area if requested
+    if( this->M_fixArea )
+    {
+        auto const& phi = this->phi();
+        auto const& K = this->K();
+        auto const& D = this->D();
+        double L = this->perimeter();
+        double L0 = this->M_initialPerimeter;
+        double Kbar = integrate( _range=this->rangeMeshElements(), _expr=idv(K)*idv(D) ).evaluate()(0,0) / L;
+        double mu = (L-L0) / integrate( _range=this->rangeMeshElements(), _expr=idv(K)*(idv(K)-Kbar)*idv(D) ).evaluate()(0,0);
+        *phi = vf::project(
+            _space=this->functionSpace(),
+            _range=this->rangeMeshElements(),
+            _expr=idv(phi) + mu*(idv(K)-Kbar)
+            );
         // Request update interface-related quantities again since phi has changed
         // Note that updateInterfaceQuantities has lazy evaluation
         this->updateInterfaceQuantities();

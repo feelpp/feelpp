@@ -737,7 +737,9 @@ private:
     bool M_useHeavisideDiracNodalProj;
 
     bool M_fixVolume;
+    bool M_fixArea;
     double M_initialVolume;
+    double M_initialPerimeter;
 
     //LevelSetTimeDiscretization M_discrMethod;
 
