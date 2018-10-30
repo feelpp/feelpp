@@ -4349,17 +4349,11 @@ public:
                    std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false),
                    const std::string& name = "" )
         :
-        super( _worldsComm[0]->clone() ),
+        super( name, _worldsComm[0]->clone() ),
         M_worldsComm( _worldsComm ),
         M_extendedDofTableComposite( extendedDofTable ),
         M_extendedDofTable( extendedDofTable[0] )
     {
-        if( name.empty() )
-            journalWatcherName( "function_space", true );
-        else
-            journalWatcherName( name, false );
-        if( not boption("journal.auto.functionspace") )
-            this->journalDisconnect();
         this->init( mesh, meshSupport, mesh_components, periodicity );
     }
 
@@ -4372,35 +4366,22 @@ public:
                    std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false),
                    const std::string& name = "" )
         :
-        super( _worldsComm[0]->clone() ),
+        super( name, _worldsComm[0]->clone() ),
         M_worldsComm( _worldsComm ),
         M_extendedDofTableComposite( extendedDofTable ),
         M_extendedDofTable( extendedDofTable[0] )
     {
-        if( name.empty() )
-            journalWatcherName( "function_space", true );
-        else
-            journalWatcherName( name, false );
-        if( not boption("journal.auto.functionspace") )
-            this->journalDisconnect();
         this->init( mesh, meshSupport, 0, dofindices, periodicity );
     }
 
     explicit FunctionSpace( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
                             const std::string& name = "" )
         :
-        super( worldcomm ),
+        super( name, worldcomm ),
         M_worldsComm( makeWorldsComm( nSpaces, worldcomm ) ),
         M_extendedDofTableComposite( std::vector<bool>(nSpaces,false) ),
         M_extendedDofTable( false )
-    {
-        if( name.empty() )
-            journalWatcherName( "function_space", true );
-        else
-            journalWatcherName( name, false );
-       if( not boption("journal.auto.functionspace") )
-           this->journalDisconnect();
-    }
+    {}
     // template<typename... FSpaceList>
     // FunctionSpace( FSpaceList... space_list )
     //     :

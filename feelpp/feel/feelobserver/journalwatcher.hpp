@@ -58,16 +58,21 @@ public:
     //! A slot is created and and is connected to a JournalManager.
     //!
     //! \see JournalManager
-    explicit JournalWatcher( bool force = false )
-        : M_journal_is_connected( false ),
-          M_name( "unknown" ),
-          M_number( S_call_counter )
+    explicit JournalWatcher( std::string const& name = "", bool connect = JournalManager::journalAutoMode(), bool force = false )
+        :
+        M_journal_is_connected( false ),
+        M_name( name ),
+        M_number( S_call_counter )
     {
+        if ( M_name.empty() )
+            M_name += "object-" + std::to_string( M_number );
+
         slotNew< notify_type () >( "journalWatcher", std::bind( &JournalWatcher::journalNotify, this ) );
-        if( JournalManager::journalAutoMode() )
+        if( connect )
         {
-           journalConnect( force );
+            journalConnect( force );
         }
+
         S_call_counter++;
     }
 
@@ -76,6 +81,8 @@ public:
     //! destruction.
     virtual ~JournalWatcher()
     {
+        if ( !this->journalIsConnected() )
+            return;
         // store info in the global ptree (No MPI comm!).
         if( JournalManager::journalAutoPullAtDelete() )
         {
@@ -160,7 +167,7 @@ protected:
     //! Note: Only this class can call journalNotify!
     virtual const pt::ptree journalNotify() const
     {
-        LOG( WARNING ) << "journalNotify call from JournalWatcher base class!";
+        LOG( WARNING ) << "journalNotify call from JournalWatcher base class with name " << M_name;
         pt::ptree p;
         return p; // empty
     }

@@ -144,10 +144,10 @@ void print( MeshT * m )
 
 // Constructor.
 template<typename Shape, typename T, int Tag>
-Mesh<Shape, T, Tag>::Mesh( worldcomm_ptr_t const& worldComm,
-                           const std::string& name )
+Mesh<Shape, T, Tag>::Mesh( std::string const& name, worldcomm_ptr_t const& worldComm )
     :
     super( worldComm ),
+    super2( name ),
     M_numGlobalElements( 0 ),
     M_gm( new gm_type ),
     M_gm1( Feel::meshdetail::initGm1<type>( M_gm, mpl::bool_<nOrder==1>() ) ),
@@ -157,14 +157,8 @@ Mesh<Shape, T, Tag>::Mesh( worldcomm_ptr_t const& worldComm,
     //M_part(),
     M_tool_localization( std::make_shared<Localization<self_type>>() )
 {
-    if( name.empty() )
-        journalWatcherName( "mesh", true );
-    else // set unique name
-        journalWatcherName( name, false );
     VLOG(2) << "[Mesh] constructor called\n";
     CHECK( this->hasWorldComm() ) << "Invalid mesh worldComm";
-    if( not boption("journal.auto.mesh") ) 
-        this->journalDisconnect();
 }
 template<typename Shape, typename T, int Tag>
 void
