@@ -1850,7 +1850,7 @@ Environment::journalNotify() const
     p.put( "environment.directories.exprs", Environment::exprRepository() );
     p.put( "environment.directories.downloads", Environment::downloadsRepository() );
 #if BOOST_VERSION >= 106700
-    const std::stringstream mpi_version;
+    std::stringstream mpi_version;
     mpi_version << M_env->version().first << "."
                 << M_env->version().second;
     p.put( "environment.mpi.version", mpi_version.str() );
