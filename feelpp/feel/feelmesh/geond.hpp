@@ -434,6 +434,12 @@ public:
         return permutation_type();
     }
 
+    //! \return identity permutation of entity co-dim 1 (topological faces)
+    virtual typename super::template PermutationSubEntity<1>::type permutation( uint16_type /*i*/, mpl::int_<1> )  const
+    {
+        return typename super::template PermutationSubEntity<1>::type();
+    }
+
     //!
     //! @return points set with constness
     //!

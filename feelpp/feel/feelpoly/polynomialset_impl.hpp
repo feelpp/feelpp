@@ -25,9 +25,9 @@
 namespace Feel {
 
 template<typename Poly, template<uint16_type> class PolySetType>
-template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
+template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
+PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 resizeAndSet( rank_t<0> )
 {
     Eigen::Tensor<value_type,3> i_grad( 1, nRealDim, 1 );
@@ -53,9 +53,9 @@ resizeAndSet( rank_t<0> )
 }
 
 template<typename Poly, template<uint16_type> class PolySetType>
-template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
+template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
+PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 resizeAndSet( rank_t<1> )
 {
     Eigen::Tensor<value_type,3> i_grad( nComponents1, nRealDim, 1 );
@@ -93,9 +93,9 @@ resizeAndSet( rank_t<1> )
 }
 
 template<typename Poly, template<uint16_type> class PolySetType>
-template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
+template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
+PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 resizeAndSet( rank_t<2> )
 {
     Eigen::Tensor<value_type,3> i_grad( nComponents1, nComponents2, nRealDim );
@@ -116,9 +116,9 @@ resizeAndSet( rank_t<2> )
 }
 
 template<typename Poly, template<uint16_type> class PolySetType>
-template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
+template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
+PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 update( geometric_mapping_context_ptrtype const& __gmc,
         precompute_ptrtype const& __pc )
 {
@@ -188,9 +188,9 @@ update( geometric_mapping_context_ptrtype const& __gmc,
 }
 
 template<typename Poly, template<uint16_type> class PolySetType>
-template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
+template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
+PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
 {
     geometric_mapping_context_type* thegmc = __gmc.get();
@@ -278,9 +278,9 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
 }
 
 template<typename Poly, template<uint16_type> class PolySetType>
-template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
+template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
+PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
 {
     geometric_mapping_context_type* thegmc = __gmc.get();
@@ -449,9 +449,9 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
 }
 
 template<typename Poly, template<uint16_type> class PolySetType>
-template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
+template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
+PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
 {
     const uint16_type Q = do_optimization_p1?1:M_npoints;//__gmc->nPoints();//M_grad.size2();
