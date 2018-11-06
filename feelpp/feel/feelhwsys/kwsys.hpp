@@ -88,6 +88,8 @@ public:
         M_mem_host_used = std::to_string( info.GetHostMemoryUsed() );
         M_mem_proc_used = std::to_string( info.GetProcMemoryUsed() );
         M_load_avg = std::to_string( info.GetLoadAverage() );
+
+        this->updateInfo();
     }
 
     ~KWSys() override = default;

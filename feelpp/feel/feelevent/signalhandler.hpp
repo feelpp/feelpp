@@ -330,7 +330,7 @@ public:
 
     //! Print a list of static signal.
     //! Display stored signal from the static map.
-    void signalStaticShow() const
+    static void signalStaticShow()
     {
         std::cout << "STATIC SIGNALS:" << std::endl;
         std::cout << std::string(40,'-') << std::endl;

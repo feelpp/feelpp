@@ -44,43 +44,49 @@ namespace pt =  boost::property_tree;
 class JournalFeed
     : virtual public JournalWatcher
 {
+    using super = JournalWatcher;
 public:
     using value_type = boost::variant<std::string,int, double,
           std::vector<int>, 
           std::vector<double>,
           std::vector<std::string>>;
     using init_type = std::initializer_list< std::pair<std::string const, value_type> >;
-    using map_type = std::map< std::string const, value_type >;
+    using map_type = std::map< std::string /*const*/, value_type >;
 
 	//! Constructor.
     //! @{
+    JournalFeed() : super("") {}
 
     //! Create a ptree from initializer list.
-    explicit JournalFeed( init_type m )
+    explicit JournalFeed( init_type const& m )
+        :
+        JournalFeed( map_type(m) )
+        {}
+
+    //! Create a ptree from map.
+    explicit JournalFeed( map_type const& m )
+        :
+        super("")
     {
-        if( JournalManager::journalAutoMode() )
-            this->journalConnect();
+        pt::ptree pt;
         for( const auto& kv: m )
         {
-            // Visit initializer list value (variant) and transform the value into string.
+            // Visit map value (variant) and transform the value into string.
             const std::string s = boost::apply_visitor( JournalFeedVisitor(), kv.second );
-			M_p.put( kv.first, s );
+			pt.put( kv.first, s );
         }
+        this->setInformationObject( pt );
     }
 
     // @}
 
-    //! Destructor
-    ~JournalFeed()
-    {
-        this->journalDisconnect();
-    }
-
-    //! Add a watcher notification.
-    const pt::ptree journalNotify() const override
-    {
-        return M_p;
-    };
+    void add( std::string const& key, value_type val )
+        {
+            const std::string s = boost::apply_visitor( JournalFeedVisitor(), val );
+            pt::ptree pt;
+            pt.put( key, s );
+            this->addInformationObject( pt );
+        }
 
     //! Return a pointer to this object.
     const JournalFeed* operator()()
@@ -97,9 +103,9 @@ private:
                  template<class T1, class = std::allocator<T1> >
                      class container_type = std::vector >
 			const std::string operator()(const container_type<T0>& arg) const
-			{   
+			{
 				if( not arg.empty() )
-				{   
+				{
 					std::ostringstream oss;
 					std::copy(arg.begin(), arg.end()-1,
 							  std::ostream_iterator<T0>(oss, ","));
@@ -112,13 +118,10 @@ private:
 		// Default
 		template<typename T>
 			const std::string operator()(T const& arg ) const
-			{   
+			{
 				return boost::lexical_cast<std::string>(arg);
-			}   
+			}
 	};
-
-private:
-    pt::ptree M_p;
 
 }; // JournalFeed class.
 

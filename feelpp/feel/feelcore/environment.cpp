@@ -490,14 +490,15 @@ Environment::Environment( int argc, char** argv,
 
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
-    
+
     // Enable auto mode for all observers.
-    Environment::journalEnable( boption("journal") );
-    Environment::journalAutoMode( boption("journal.auto") );
-    Environment::journalAutoPullAtDelete( boption("journal.auto.pullatdelete") );
+    Environment::setJournalEnable( boption("journal") );
+    Environment::setJournalAutoMode( boption("journal.auto") );
+    Environment::setJournalAutoPullAtDelete( boption("journal.auto.pullatdelete") );
 
     // Force environment to connect to the journal.
-    this->journalConnect();
+    //this->journalConnect();
+    S_informationObject = std::make_unique<Observer::JournalWatcher>( std::bind( &Environment::updateInformationObject, this, std::placeholders::_1 ), "", "Environment" );
 
     S_timers = std::make_unique<TimerTable>();
 
@@ -518,7 +519,7 @@ Environment::Environment( int argc, char** argv,
 
 
     if( S_vm.count( "journal.filename" ) )
-        Environment::journalFilename( S_vm["journal.filename"].as<std::string>() );
+        Environment::setJournalFilename( soption(_name="journal.filename") );
 
 #if defined(FEELPP_HAS_MONGOCXX )
     MongoConfig journaldbconf;
@@ -757,9 +758,8 @@ Environment::~Environment()
         generateSummary( S_about.appName(), "end", true );
         S_timers.reset();
         S_hwSysInstance.reset(); // call deleter
-
-        // Journal manager must destruct object last!
-        Observer::JournalManagerBase<>::~JournalManagerBase<>();
+        S_informationObject.reset();
+        Observer::JournalManager::journalFinalize();
 
         // make sure everybody is here
         Environment::worldComm().barrier();
@@ -1838,53 +1838,51 @@ Environment::generateSummary( std::string fname, std::string stage, bool write )
 }
 
 
-const pt::ptree 
-Environment::journalNotify() const
+void
+Environment::updateInformationObject( pt::ptree & p )
 {
-    pt::ptree p;
-    p.put( "environment.application.name", Environment::about().appName() );
-    p.put( "environment.run.uuid", Environment::randomUUID() );
-    p.put( "environment.directories.app", Environment::appRepository() );
-    p.put( "environment.directories.export", Environment::exportsRepository() );
-    p.put( "environment.directories.logs", Environment::logsRepository() );
-    p.put( "environment.directories.exprs", Environment::exprRepository() );
-    p.put( "environment.directories.downloads", Environment::downloadsRepository() );
+    p.put( "application.name", Environment::about().appName() );
+    p.put( "run.uuid", Environment::randomUUID() );
+    p.put( "directories.app", Environment::appRepository() );
+    p.put( "directories.export", Environment::exportsRepository() );
+    p.put( "directories.logs", Environment::logsRepository() );
+    p.put( "directories.exprs", Environment::exprRepository() );
+    p.put( "directories.downloads", Environment::downloadsRepository() );
 #if BOOST_VERSION >= 106700
     std::stringstream mpi_version;
     mpi_version << M_env->version().first << "."
                 << M_env->version().second;
-    p.put( "environment.mpi.version", mpi_version.str() );
+    p.put( "mpi.version", mpi_version.str() );
 #else
-    p.put( "environment.mpi.version", "unknown" );
+    p.put( "mpi.version", "unknown" );
 #endif
-    p.put( "environment.mpi.number_processors", Environment::numberOfProcessors() );
-    p.put( "environment.mpi.is_parallel", Environment::isParallel() );
+    p.put( "mpi.number_processors", Environment::numberOfProcessors() );
+    p.put( "mpi.is_parallel", Environment::isParallel() );
     if ( S_vm.count( "case" ) )
     {
-       p.put( "environment.case.enabled", true );
+       p.put( "case.enabled", true );
        pt::ptree pcase;
        std::stringstream ss( S_vm["case.config-file"].as<std::string>() );
        boost::property_tree::read_json(ss, pcase);
-       p.push_back( pt::ptree::value_type("environment.case", pcase) );
+       p.push_back( pt::ptree::value_type("case", pcase) );
     }
     else
-       p.put( "environment.case.enabled", false );
+       p.put( "case.enabled", false );
     // Softwares
 #if defined ( FEELPP_HAS_PETSC_H )
-    p.put( "environment.software.petsc.version.major", PETSC_VERSION_MAJOR );
-    p.put( "environment.software.petsc.version.minor", PETSC_VERSION_MINOR );
-    p.put( "environment.software.petsc.version.subminor", PETSC_VERSION_SUBMINOR );
-    p.put( "environment.software.petsc.version.patch", PETSC_VERSION_PATCH );
-    p.put( "environment.software.petsc.version.release", PETSC_VERSION_RELEASE );
-    p.put( "environment.software.petsc.date.release", PETSC_RELEASE_DATE );
-    p.put( "environment.software.petsc.date.version", PETSC_VERSION_DATE );
+    p.put( "software.petsc.version.major", PETSC_VERSION_MAJOR );
+    p.put( "software.petsc.version.minor", PETSC_VERSION_MINOR );
+    p.put( "software.petsc.version.subminor", PETSC_VERSION_SUBMINOR );
+    p.put( "software.petsc.version.patch", PETSC_VERSION_PATCH );
+    p.put( "software.petsc.version.release", PETSC_VERSION_RELEASE );
+    p.put( "software.petsc.date.release", PETSC_RELEASE_DATE );
+    p.put( "software.petsc.date.version", PETSC_VERSION_DATE );
 #endif
 #if defined( OMPI_MPI_H )
-    p.put( "environment.software.openmpi.version.major", OMPI_MAJOR_VERSION );
-    p.put( "environment.software.openmpi.version.minor", OMPI_MINOR_VERSION );
-    p.put( "environment.software.openmpi.version.release", OMPI_RELEASE_VERSION );
+    p.put( "software.openmpi.version.major", OMPI_MAJOR_VERSION );
+    p.put( "software.openmpi.version.minor", OMPI_MINOR_VERSION );
+    p.put( "software.openmpi.version.release", OMPI_RELEASE_VERSION );
 #endif
-    return p;
 }
 
 
@@ -2460,4 +2458,5 @@ hwloc_topology_t Environment::S_hwlocTopology = NULL;
 std::unique_ptr<TimerTable> Environment::S_timers;
 std::unique_ptr<Sys::HwSysBase> Environment::S_hwSysInstance;
 
+std::unique_ptr<Observer::JournalWatcher> Environment::S_informationObject;
 }

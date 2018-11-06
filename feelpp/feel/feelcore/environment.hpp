@@ -181,8 +181,7 @@ FEELPP_EXPORT AboutData makeAboutDefault( std::string name );
 //! 
 class FEELPP_EXPORT Environment
 :   boost::noncopyable,
-    public Observer::JournalManager,
-    public Observer::JournalWatcher
+    public Observer::JournalManager
 {
 public:
     //!
@@ -767,17 +766,6 @@ public:
 
     static void clearSomeMemory();
 
-
-    //! Finalize feel++ operations
-    //! The environement, as journal manager, request to all connected watcher to
-    //! send their informations.
-    //! Note: Called by the Environment destructor.
-    static const void finalize()
-    {
-        Environment::journalFinalize();
-    }
-
-
     //!
     //!  \return the scratch directory
     //!
@@ -843,9 +831,8 @@ private:
     static FEELPP_NO_EXPORT void processGenericOptions();
     static FEELPP_NO_EXPORT void parseAndStoreOptions( po::command_line_parser parser, bool extra_parser = false );
 
-    //! Send a notification to the simulation info manager.
-    //! \see JournalWatcher JournalManager
-    const pt::ptree journalNotify() const override;
+    //! update information into ptree
+    void updateInformationObject( pt::ptree & p );
 
     //! @}
 
@@ -899,6 +886,8 @@ private:
 
     //! Hardware System information instance.
     static std::unique_ptr<Sys::HwSysBase> S_hwSysInstance;
+
+    static std::unique_ptr<Observer::JournalWatcher> S_informationObject;
 };
 
 BOOST_PARAMETER_FUNCTION(

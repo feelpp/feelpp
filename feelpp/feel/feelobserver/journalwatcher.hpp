@@ -46,11 +46,12 @@ public:
     // Type alias.
     using notify_type = pt::ptree;
 
+    using function_update_information_type = std::function<void ( pt::ptree & )>;
     //! Constructors
     //! @{
 
     //! Default constructor.
-    //! 
+    //!
     //! \param force Force the connection to the journal.
     //!
     //! When this constructor is called by a child class, the new child observer
@@ -58,19 +59,27 @@ public:
     //! A slot is created and and is connected to a JournalManager.
     //!
     //! \see JournalManager
-    explicit JournalWatcher( std::string const& name = "", bool connect = JournalManager::journalAutoMode(), bool force = false )
+    explicit JournalWatcher( std::string const& category = "", std::string const& name = "", bool connect = JournalManager::journalAutoMode(), bool force = false )
+        :
+        JournalWatcher( std::bind( &JournalWatcher::updateInformationObject, this, std::placeholders::_1 ), category, name, connect, force )
+        {}
+
+    explicit JournalWatcher( function_update_information_type const& func, std::string const& category = "", std::string const& name = "", bool connect = JournalManager::journalAutoMode(), bool force = false )
         :
         M_journal_is_connected( false ),
+        M_category( category ),
         M_name( name ),
-        M_number( S_call_counter )
+        M_number( S_call_counter ),
+        M_function_updateInformationObject( func )
     {
         if ( M_name.empty() )
             M_name += "object-" + std::to_string( M_number );
 
         slotNew< notify_type () >( "journalWatcher", std::bind( &JournalWatcher::journalNotify, this ) );
+
         if( connect )
         {
-            journalConnect( force );
+            this->journalConnect( force );
         }
 
         S_call_counter++;
@@ -81,23 +90,14 @@ public:
     //! destruction.
     virtual ~JournalWatcher()
     {
-        if ( !this->journalIsConnected() )
-            return;
-        // store info in the global ptree (No MPI comm!).
-        if( JournalManager::journalAutoPullAtDelete() )
-        {
-            VLOG(2) << "[JournalManager] Destructor call. Nofification send (signal exec)!";
-            JournalManager::journalLocalPull();
-        }
-        journalDisconnect();
+        this->journalFinalize();
     }
-
     //! @}
-    
+
     //! Getters
     //! @{
     //! Check if the object is connected to the journal.
-    //! \return true 
+    //! \return true
     bool journalIsConnected() const
     {
         return M_journal_is_connected;
@@ -107,9 +107,9 @@ public:
     //! The name is composed with the base name and a suffix index corresponding
     //! to the nth call.
     //! \param isauto If true, the instance name is suffixed by the call number
-    const std::string journalWatcherInstanceName() const
+    std::string const& journalWatcherInstanceName() const
     {
-        return M_name; 
+        return M_name;
     }
 
     //! @}
@@ -159,17 +159,72 @@ public:
         }
     }
 
+    //! set information object
+    void setInformationObject( pt::ptree const& informationObject )
+        {
+            M_informationObject = informationObject;
+        }
+    //! put information object
+    void putInformationObject( pt::ptree const& informationObject )
+        {
+            for( const auto& p : informationObject )
+                M_informationObject.put_child( p.first, p.second );
+        }
+    //! add information object
+    void addInformationObject( pt::ptree const& informationObject )
+        {
+            for( const auto& p : informationObject )
+                M_informationObject.add_child( p.first, p.second );
+        }
+
+    //! finalize journal publication
+    void journalFinalize()
+        {
+            if ( !JournalManager::journalEnabled() || !this->journalIsConnected() )
+                return;
+            // store info in the global ptree (No MPI comm!).
+            if(  JournalManager::journalAutoPullAtDelete() )
+            {
+                DVLOG(2) << "[JournalManager] Destructor call. Nofification send (signal exec)!";
+                JournalManager::journalLocalPull( this->journalNotify() );
+            }
+            this->journalDisconnect();
+        }
+
 protected:
     //! Protected Methods
     //! @{
 
+    void applyUpdateInformationObject()
+        {
+            //this->updateInformationObject( M_informationObject );
+            M_function_updateInformationObject( M_informationObject );
+        }
+    virtual void updateInformationObject( pt::ptree & p ) {}
+
     //! Watch child properties and notify the manager.
     //! Note: Only this class can call journalNotify!
-    virtual const pt::ptree journalNotify() const
+    virtual pt::ptree const/*&*/ journalNotify()
     {
-        LOG( WARNING ) << "journalNotify call from JournalWatcher base class with name " << M_name;
-        pt::ptree p;
-        return p; // empty
+        //this->updateInformationObject( M_informationObject );
+        this->applyUpdateInformationObject();
+
+        std::string prefix;
+        if ( !M_category.empty() && !M_name.empty() )
+            prefix = M_category + "." + M_name;
+        else if ( !M_category.empty() )
+            prefix = M_category;
+        else
+            prefix = M_name;
+
+        if ( prefix.empty() || M_informationObject.empty() )
+            return M_informationObject;
+        else
+        {
+            pt::ptree pt;
+            pt.put_child( prefix, M_informationObject );
+            return pt;
+        }
     }
 
     //! @}
@@ -179,15 +234,20 @@ private:
     //! @{
 
     bool M_journal_is_connected;
- 
-    // Unique instance name for the watched object.
+
+    //! category of object
+    std::string M_category;
+
+    //! Unique instance name for the watched object.
     std::string M_name;
 
-    // Counter for instance call of this object.
+    //! Counter for instance call of this object.
     static uint16_t S_call_counter;
-    // Unique instance number for the watched object.
+    //! Unique instance number for the watched object.
     uint16_t M_number;
 
+    function_update_information_type M_function_updateInformationObject;
+    pt::ptree M_informationObject;
     //! @}
 };
 

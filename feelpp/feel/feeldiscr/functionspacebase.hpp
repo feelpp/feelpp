@@ -67,8 +67,14 @@ public:
      */
     //@{
 
-    FunctionSpaceBase() : super( Environment::worldCommPtr() ) {}
-    explicit FunctionSpaceBase( std::string const& name, worldcomm_ptr_t const& w ) : super( w ), super2( name ) {}
+    FunctionSpaceBase()
+        :
+        super( Environment::worldCommPtr() ), super2( "FunctionSpace" )
+    {}
+    explicit FunctionSpaceBase( std::string const& name, worldcomm_ptr_t const& w )
+        :
+        super( w ), super2( "FunctionSpace", name )
+    {}
     FunctionSpaceBase( FunctionSpaceBase const& ) = default;
     FunctionSpaceBase( FunctionSpaceBase && ) = default;
     //! destructor
@@ -108,14 +114,6 @@ public:
 private:
     //! Private Methods
     //! @{
-
-    // Simulation info observer notifications.
-    virtual const pt::ptree journalNotify() const override 
-    {
-        LOG( WARNING ) << "journalNotify call from FunctionSpaceBase class!";
-        pt::ptree p;
-        return p; // empty
-    };
 
     //! @}
 };

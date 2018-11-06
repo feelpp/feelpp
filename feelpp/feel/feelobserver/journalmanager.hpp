@@ -116,14 +116,14 @@ public:
 
         //! Set JSON file name.
         //! \param name the file name.
-        static void journalFilename( const std::string& name )
+        static void setJournalFilename( const std::string& name )
         {
             S_journal_filename = name;
         }
-        
+
         //! Set the journal mode.
         //! \param b automatic mode true or false.
-        static void journalAutoMode( bool b )
+        static void setJournalAutoMode( bool b )
         {
             Options::automode = b;
         }
@@ -133,13 +133,13 @@ public:
         //! send their information before they are deleted.
         //! \param m pull at delete mode true or false
         //! \return true if journal if delete pull is allowed.
-        static void journalAutoPullAtDelete( bool m )
+        static void setJournalAutoPullAtDelete( bool m )
         {
             Options::allow_destructor_call = m;
         }
 
         //! Activate or deactivate the journal.
-        static void journalEnable( bool m )
+        static void setJournalEnable( bool m )
         {
             Options::enable = m;
         }
@@ -197,15 +197,22 @@ public:
 
         //! Journal gather/save.
         //! @{
+        static
+        notify_type const&
+        journalLocalPull(  pt::ptree const& pt )
+        {
+            ptMerge( S_journal_ptree, pt );
+            return S_journal_ptree;
+        }
 
         //! Fetch and merge notifications coming from all observed objects.
         //! The operation is performed locally to the process.
         //! \return The global journal property tree.
         //! \see JournalWatcher
         static const notify_type
-        journalLocalPull()
+        journalLocalPull( std::string const& signame = "journalManager" )
         {
-            const pt::ptree& pt_merged = signalStaticPull< notify_type (), JournalMerge >( "journalManager" );
+            const pt::ptree& pt_merged = signalStaticPull< notify_type (), JournalMerge >( signame );
             ptMerge( S_journal_ptree, pt_merged );
 
             return S_journal_ptree;
@@ -262,7 +269,7 @@ public:
             if( save )
             {
                 if( not filename.empty() )
-                    journalFilename( filename );
+                    setJournalFilename( filename );
 
                 if( Env::isMasterRank() )
                 {
@@ -308,10 +315,11 @@ public:
         }
 
         //! Create the journal.
-        static const void
+        static void
         journalFinalize()
         {
             journalCheckpoint( true, true );
+            setJournalEnable( false );
         }
 
         //! @}

@@ -1176,9 +1176,8 @@ private:
     //! Private Methods
     //! @{
 
-    //! Send a notification to the simulation info manager.
-    //! \see JournalWatcher JournalManager
-    const pt::ptree journalNotify() const override;
+    //! update informations for the current object
+    void updateInformationObject( pt::ptree & p ) override;
 
 #if defined(FEELPP_HAS_HDF5)
     //!
@@ -2357,25 +2356,21 @@ Mesh<Shape, T, Tag>::exportVTK( bool exportMarkers, std::string const& vtkFieldN
 }
 #endif // FEELPP_HAS_VTK
 
-//! Notification send to the simulation manager
-//! \return property tree with mesh properties
+//! Fill mesh properties in journal publication
 template<typename Shape, typename T, int Tag>
-const pt::ptree
-Mesh<Shape, T, Tag>::journalNotify() const
+void
+Mesh<Shape, T, Tag>::updateInformationObject( pt::ptree & p )
 {
-    pt::ptree p;
-    const std::string tag = journalWatcherInstanceName();
-    p.put("mesh."+ tag + ".shape", Shape::name() );
-    p.put("mesh."+ tag + ".dim", dimension() );
-    p.put("mesh."+ tag + ".order", nOrder );
-    p.put("mesh."+ tag + ".h_min", hMin() );
-    p.put("mesh."+ tag + ".h_max", hMax() );
-    p.put("mesh."+ tag + ".h_average", hAverage() );
-    p.put("mesh."+ tag + ".n_points", numGlobalPoints() );
-    p.put("mesh."+ tag + ".n_edges", numGlobalEdges() );
-    p.put("mesh."+ tag + ".n_faces", numGlobalFaces() );
-    p.put("mesh."+ tag + ".n_vertices", numGlobalVertices() );
-    return p;
+    p.put("shape", Shape::name() );
+    p.put("dim", dimension() );
+    p.put("order", nOrder );
+    p.put("h_min", hMin() );
+    p.put("h_max", hMax() );
+    p.put("h_average", hAverage() );
+    p.put("n_points", numGlobalPoints() );
+    p.put("n_edges", numGlobalEdges() );
+    p.put("n_faces", numGlobalFaces() );
+    p.put("n_vertices", numGlobalVertices() );
 }
 
 namespace detail
