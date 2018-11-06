@@ -69,19 +69,21 @@ class TimerData : public std::vector<double>
 class TimerTable : std::map<std::string, TimerData>,
     public Observer::JournalWatcher
 {
+    using super = std::map<std::string, TimerData>;
+    using super2 = Observer::JournalWatcher;
 public:
 
     //! Constructors
     //! @{
 
     //! Default constructor
-    TimerTable() = default;
+    TimerTable() : super2( "TimerTable" ) {}
 
 
     //! @}
 
     //! Destructor
-    ~TimerTable() override = default;
+    ~TimerTable() override { this->journalFinalize(); }
 
     //! Modifiers
     //! @{
@@ -273,16 +275,14 @@ private:
     //! Private Methods
     //! @{
 
-    //! Journal notification.
-    //! \see JournalWatcher
-    const pt::ptree journalNotify() const override
+    //! update information
+    void updateInformationObject( pt::ptree & p ) override
     {
         using namespace boost::accumulators;
         using namespace std::string_literals;
-        pt::ptree p;
-        std::map<double,TimerData, std::greater<double>> sortTotal;
 
-        const std::string category_name = "timers";
+        p.clear();
+        std::map<double,TimerData, std::greater<double>> sortTotal;
 
         // Get total time accumulating all timers.
         for( auto const& T: *this )
@@ -296,9 +296,7 @@ private:
             double tot = boost::accumulators::sum(acc);
             sortTotal[tot] = T.second;
 
-            const std::string& timer_name = T.second.instance_name;
-            const std::string& prefix = category_name + "." + timer_name;
-
+            const std::string& prefix = T.second.instance_name;
             p.put( prefix + ".message", T.second.msg );
             p.put( prefix + ".count", boost::accumulators::count(acc) );
             p.put( prefix + ".total", boost::accumulators::sum(acc) );
@@ -317,9 +315,7 @@ private:
                                           boost::accumulators::tag::max> > acc;
             for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
 
-            const std::string& timer_name = T.second.instance_name;
-            const std::string& prefix = category_name + "." + timer_name;
-
+            const std::string& prefix = T.second.instance_name;
             p.put( prefix + ".message", T.second.msg );
             p.put( prefix + ".count", boost::accumulators::count(acc) );
             p.put( prefix + ".total", boost::accumulators::sum(acc) );
@@ -328,8 +324,6 @@ private:
             p.put( prefix + ".mean", boost::accumulators::mean(acc) );
             p.put( prefix + ".std_dev", std::sqrt( boost::accumulators::variance(acc) ) );
         }
-
-        return p;
     }
 
     //! @}

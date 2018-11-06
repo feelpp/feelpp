@@ -5394,9 +5394,8 @@ private:
         mesh_ptrtype M_mesh;
     };
 
-    //! Send a notification to the simulation info manager.
-    //! \see JournalWatcher JournalManager
-    const pt::ptree journalNotify() const override;
+    //! update informations for the current object
+    void updateInformationObject( pt::ptree & p ) override;
 
 protected:
 
@@ -5525,7 +5524,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     M_dofOnOff = M_dof;
 
-
+    this->applyUpdateInformationObject();
 
     DVLOG(2) << "nb dim : " << qDim() << "\n";
     DVLOG(2) << "nb dof : " << nDof() << "\n";
@@ -5911,27 +5910,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
 
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-const pt::ptree
-FunctionSpace<A0, A1, A2, A3, A4>::journalNotify() const
+void
+FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p )
 {
-    pt::ptree p;
-    std::string prefix = "function_space." + journalWatcherInstanceName();
-//    int k=0;
-    // TODO write all mesh
-//   if( fusion::traits::is_sequence<decltype(mesh())>::value )
-    p.put( prefix + ".mesh", mesh<0>()->journalWatcherInstanceName() );
-//        fusion::for_each( mesh(), [&]( auto x ) {
-//                p.put( prefix + ".mesh." + std::to_string(k++), x->journalWatcherInstanceName() );
-//        });
-//    else
-//        p.put( prefix + ".mesh", mesh()->journalWatcherInstanceName() );
-    p.put( prefix + ".component_number", qDim() );
-    p.put( prefix + ".global_dof_number", nDof() );
-    p.put( prefix + ".local_dof_number", nLocalDof() );
-    p.put( prefix + ".basis.name", basisName() );
-    p.put( prefix + ".basis.order", basisOrder() );
-
-    return p;
+    p.put( "mesh", mesh<0>()->journalWatcherInstanceName() );
+    p.put( "component_number", qDim() );
+    p.put( "global_dof_number", nDof() );
+    p.put( "local_dof_number", nLocalDof() );
+    p.put( "basis.name", basisName() );
+    p.put( "basis.order", basisOrder() );
 }
 
 

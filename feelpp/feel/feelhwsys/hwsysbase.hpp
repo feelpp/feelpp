@@ -45,11 +45,10 @@ public:
 
     //! Default constructor.
     HwSysBase()
-        : M_backend( "hwsys" )
-    {
-        journalWatcherName( "hwsys" );
-        VLOG(2) << "[HwSys] constructor instance number ";
-    }
+        :
+        Observer::JournalWatcher( "HwSys"/*"hwsys"*/ ),
+        M_backend( "hwsys" )
+    {}
 
     //! Copy constructor.
     HwSysBase( HwSysBase& ) = default;
@@ -59,7 +58,7 @@ public:
 
     //! Assignement constructor.
     HwSysBase& operator=( HwSysBase& ) = default;
-    
+
     //! Assignement-move constructor.
     HwSysBase& operator=( HwSysBase&& ) = default;
 
@@ -70,14 +69,14 @@ public:
     //! @{
 
     // @}
-    
-private: 
+
+protected:
 
     //! Private Methods
     //! @{
-    
+
     //! Journal watcher notification.
-    const pt::ptree journalNotify() const override
+    void updateInfo()
     {
         pt::ptree p;
         const auto ccp = std::to_string( Observer::JournalManager::journalCurrentCheckpoint() );
@@ -122,10 +121,9 @@ private:
 			p.put( prefix + ".mem.used.checkpoint-" + ccp + ".proc", M_mem_proc_used );
 			p.put( prefix + ".mem.load_average", M_load_avg );
 		}
-
-        return p;
+        this->setInformationObject( p );
     }
-    
+
     //! @}
 
 protected:
