@@ -58,7 +58,7 @@ int main(int argc, char**argv )
     auto n = expr( soption(_name="functions.c"), "c" ); // Neumann expression
     auto solution = expr( checker().solution(), "solution" );
     auto g = checker().check()?solution:expr( soption(_name="functions.g"), "g" );
-    auto g_str = checker().check()? checker().solution():soption(_name="functions.g");
+
     // tag::v[]
     auto v = Vh->element( g, "g" );
     // end::v[]
@@ -89,7 +89,7 @@ int main(int argc, char**argv )
     toc("a");
     // end::forms[]
 
-    Environment::journalCheckpoint();
+    //Environment::journalCheckpoint();
 
     // tag::solve[]
     tic();
@@ -128,17 +128,6 @@ int main(int argc, char**argv )
 
     int status = checker().runOnce( norms, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
     // end::check[]
-
-    auto errors = norms( g_str );
-    // tag::journal[]
-    // Add an entry watcher functor for the journal system.
-    Observer::JournalFeed journal_entry{
-        {"error.norm.L2", errors.at("L2")},
-        {"error.norm.H1", errors.at("H1")}
-    };
-    // end::journal[]
-
-    Environment::finalize();
 
     // exit status = 0 means no error
     return !status;
