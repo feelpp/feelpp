@@ -55,12 +55,6 @@ using namespace Feel;
 // A Journal observer
 
 
-// Object1 is defined as the simulation info manager.
-class Object1
-: virtual public Observer::JournalManager
-{
-};
-
 // Object2 is an object to be watched.
 // Note: A journalNotify has to be defined with the notifications to be send
 // to the simulation info manager.
@@ -69,21 +63,15 @@ class Object2
 : virtual public Observer::JournalWatcher // observe the simulation
 {
     public:
-        Object2( std::string name = "default" ): M_name( name ) {}
+        Object2( std::string name = "" ) :
+            Observer::JournalWatcher( "Object2", name ) {}
 
-        // Notification for Journal observer.
-        const pt::ptree journalNotify() const
+    void updateInformationObject( pt::ptree & p ) override
         {
-            pt::ptree p;
-            p.put( M_name + ".a","1" );
-            p.put( M_name + ".b","2" );
-            p.put( M_name + ".c.d","3" );
-            return p;
+            p.put( "a","1" );
+            p.put( "b","2" );
+            p.put( "c.d","3" );
         }
-
-    private:
-        int M_val;
-        std::string M_name;
 };
 
 
@@ -93,20 +81,19 @@ BOOST_AUTO_TEST_SUITE( observers )
 
 BOOST_AUTO_TEST_CASE( journal_basic )
 {
-    Object1::journalAutoMode(false);
-    Object1 m;
+    Environment::setJournalAutoMode(false);
     Object2 p1( "p1" );
     Object2 p2( "p2" );
 
     // Example to show list of signals and list of slots.
     if( Environment::isMasterRank() )
     {
-        m.signalStaticShow();
+        Environment::signalStaticShow();
         p1.slotShow(); // non static.
     }
     // Example how to retrieve a signal using signalhandler.
     // (The signals template arguments are required to cast into the proper signal.)
-    const auto& sigptr = Object1::signalStatic< pt::ptree(), Observer::JournalMerge >( "journalManager" );
+    const auto& sigptr = Environment::signalStatic< pt::ptree(), Observer::JournalMerge >( "journalManager" );
     BOOST_TEST_MESSAGE( "number of connected slot: " << sigptr->num_slots() );
 
     p1.journalConnect();
@@ -118,14 +105,14 @@ BOOST_AUTO_TEST_CASE( journal_basic )
     // the manager.
 
     // Retrieve the merged property tree (no MPI).
-    const auto& res = Object1::journalPull(false);
+    const auto& res = Environment::journalPull(false);
     // This also works
     // m.journalPull();
 
     // Save into a json file.
-    Object1::journalSave();
+    Environment::journalSave();
 
-    auto t = res.get_child( "p1" );
+    auto t = res.get_child( "Object2.p1" );
     auto a = t.get<int>("a");
     auto b = t.get<int>("b");
     auto c = t.get_child("c");
@@ -133,19 +120,18 @@ BOOST_AUTO_TEST_CASE( journal_basic )
     if( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( a << " " << b <<  " " << d );
 
-    CHECK( a == 1 );
-    CHECK( b == 2 );
-    CHECK( d == 3 );
+    BOOST_CHECK( a == 1 );
+    BOOST_CHECK( b == 2 );
+    BOOST_CHECK( d == 3 );
 }
 
 BOOST_AUTO_TEST_CASE( journal_auto )
 {
-    // Object1 class is a journal manager with environment class (aside).
-    Object1::journalAutoMode(true);
-    
+    Environment::setJournalAutoMode(true);
+
     // We retrieve a signal of Object1 called JournalManager (used for the feel++ journal
     // system). The signals template arguments are required to cast into the proper signal type.
-    const auto& sigptr = Object1::journalSignal();
+    const auto& sigptr = Environment::journalSignal();
     int na = sigptr->num_slots();
     BOOST_TEST_MESSAGE( "Number of slots: " << na );
 
@@ -167,9 +153,9 @@ BOOST_AUTO_TEST_CASE( journal_auto )
     BOOST_TEST_MESSAGE( "Number of slots: " << sigptr->num_slots() );
 
     // Only p1 and p2 remains.
-    CHECK( nb-na == 2 );
+    BOOST_CHECK( nb-na == 2 );
 
-    Object1::journalFinalize();
+    //Environment::journalFinalize();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
