@@ -70,20 +70,19 @@ public:
 
     // @}
 
-protected:
+    //protected:
 
-    //! Private Methods
-    //! @{
+    virtual void updateCurrentState() {};
 
     //! Journal watcher notification.
-    void updateInfo()
+    void updateInformationObject( pt::ptree & p ) override
     {
-        pt::ptree p;
-        const auto ccp = std::to_string( Observer::JournalManager::journalCurrentCheckpoint() );
+        this->updateCurrentState();
+
 		if( not M_host_name.empty() )
 		{
+            const auto ccp = std::to_string( Observer::JournalManager::journalCurrentCheckpoint() );
             std::string prefix = M_host_name;
-
 		    p.put( prefix + ".backend", M_backend );
 			p.put( prefix + ".os.name", M_os_name );
 			p.put( prefix + ".is_linux", M_os_is_linux );
@@ -113,16 +112,18 @@ protected:
 			p.put( prefix + ".mem.total.virtual", M_mem_virtual_total );
 			p.put( prefix + ".mem.total.physical", M_mem_physical_total );
 			p.put( prefix + ".mem.total.host", M_mem_host_total );
-			p.put( prefix + ".mem.available.checkpoint-" + ccp + ".virtual", M_mem_virtual_avail );
-			p.put( prefix + ".mem.available.checkpoint-" + ccp + ".physical", M_mem_physical_avail );
-			p.put( prefix + ".mem.available.checkpoint-" + ccp + ".host", M_mem_host_avail );
-			p.put( prefix + ".mem.available.checkpoint-" + ccp + ".proc", M_mem_proc_avail );
+			p.put( prefix + ".mem.available.virtual", M_mem_virtual_avail );
+			p.put( prefix + ".mem.available.physical", M_mem_physical_avail );
+			p.put( prefix + ".mem.available.host", M_mem_host_avail );
+			p.put( prefix + ".mem.available.proc", M_mem_proc_avail );
 			p.put( prefix + ".mem.used.checkpoint-" + ccp + ".host", M_mem_host_used );
 			p.put( prefix + ".mem.used.checkpoint-" + ccp + ".proc", M_mem_proc_used );
 			p.put( prefix + ".mem.load_average", M_load_avg );
 		}
-        this->setInformationObject( p );
     }
+
+    //! Private Methods
+    //! @{
 
     //! @}
 
