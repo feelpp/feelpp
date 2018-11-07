@@ -43,7 +43,7 @@ JournalManager::JournalManager()
 #if defined(FEELPP_HAS_MONGOCXX )
     // Create mongo unique instance!
     Feel::MongoCxx::instance();
-#endif 
+#endif
     //M_journal_uuid = Env::randomUUID();
     std::time_t t = std::time(nullptr);
     const std::string tag = "journal.time";
@@ -62,23 +62,23 @@ JournalManager::journalSave( std::string filename )
 {
     if( filename.empty() )
         filename = journalFilename();
-
+#if 0
     pt::ptree ptGlobal;
     if ( Environment::isParallel() )
         mpi::reduce( Environment::worldComm(), S_journal_ptree, ptGlobal, ptMerge, Environment::masterRank() );
     else
         ptGlobal = S_journal_ptree;
+#endif
 
     if( Environment::isMasterRank() )
     {
-        journalJSONSave( filename, ptGlobal );
+        journalJSONSave( filename, S_journal_ptree );
         journalDBSave( filename );
     }
 }
 
 void
-JournalManager::journalCheckpoint( bool parallel,
-                                   bool save,
+JournalManager::journalCheckpoint( bool save,
                                    const std::string& filename )
 {
     if ( journalEnabled() )
