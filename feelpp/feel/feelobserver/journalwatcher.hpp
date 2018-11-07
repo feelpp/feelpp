@@ -59,12 +59,12 @@ public:
     //! A slot is created and and is connected to a JournalManager.
     //!
     //! \see JournalManager
-    explicit JournalWatcher( std::string const& category = "", std::string const& name = "", bool connect = JournalManager::journalAutoMode(), bool force = false )
+    explicit JournalWatcher( std::string const& category = "", std::string const& name = "", bool connect = JournalManager::journalAutoMode() )
         :
-        JournalWatcher( std::bind( &JournalWatcher::updateInformationObject, this, std::placeholders::_1 ), category, name, connect, force )
+        JournalWatcher( std::bind( &JournalWatcher::updateInformationObject, this, std::placeholders::_1 ), category, name, connect )
         {}
 
-    explicit JournalWatcher( function_update_information_type const& func, std::string const& category = "", std::string const& name = "", bool connect = JournalManager::journalAutoMode(), bool force = false )
+    explicit JournalWatcher( function_update_information_type const& func, std::string const& category = "", std::string const& name = "", bool connect = JournalManager::journalAutoMode() )
         :
         M_journal_is_connected( false ),
         M_category( category ),
@@ -78,9 +78,7 @@ public:
         slotNew< notify_type () >( "journalWatcher", std::bind( &JournalWatcher::journalNotify, this ) );
 
         if( connect )
-        {
-            this->journalConnect( force );
-        }
+            this->journalConnect();
 
         S_call_counter++;
     }
@@ -134,11 +132,10 @@ public:
     //! @{
 
     //! Connect the derived object to the simulation info manager
-    void journalConnect( bool force = false )
+    void journalConnect()
     {
         DVLOG(2) << "[Journal] Connect: " << journalWatcherInstanceName();
-        if( ( JournalManager::journalEnabled() and not journalIsConnected() )
-            or force )
+        if( JournalManager::journalEnabled() && !this->journalIsConnected())
         {
             JournalManager::signalStaticConnect< notify_type (), JournalMerge >( "journalManager", *this, "journalWatcher" );
             M_journal_is_connected=true;
@@ -148,11 +145,10 @@ public:
 
     //! Disconnect the derived object from the simulation info manager.
     //! The disconnection is safe.
-    void journalDisconnect( bool force = false )
+    void journalDisconnect()
     {
         DVLOG(2) << "[Journal] Disconnect: " << journalWatcherInstanceName();
-        if( journalIsConnected()
-            or force )
+        if( this->journalIsConnected() )
         {
             JournalManager::signalStaticDisconnect< notify_type (), JournalMerge >( "journalManager", *this, "journalWatcher" );
             M_journal_is_connected=false;
@@ -183,11 +179,11 @@ public:
         {
             if ( !JournalManager::journalEnabled() || !this->journalIsConnected() )
                 return;
-            // store info in the global ptree (No MPI comm!).
+            // store info in the global ptree
             if ( JournalManager::journalAutoPullAtDelete() )
             {
-                DVLOG(2) << "[JournalManager] Destructor call. Nofification send (signal exec)!";
-                JournalManager::journalLocalPull( this->journalNotify() );
+                DVLOG(2) << "[JournalManager] Destructor : send info to the journal";
+                JournalManager::journalPull( this->journalNotify() );
             }
             this->journalDisconnect();
         }
@@ -246,6 +242,7 @@ private:
     uint16_t M_number;
 
     function_update_information_type M_function_updateInformationObject;
+
     pt::ptree M_informationObject;
     //! @}
 };
