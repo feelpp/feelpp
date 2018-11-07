@@ -37,16 +37,15 @@ BOOST_AUTO_TEST_CASE( journal_mesh )
     const auto& sigptr = Environment::journalSignal();
     int na = sigptr->num_slots();
 
-    auto mesh1 = loadMesh( _mesh=new Mesh<Simplex<1,1>>, _name="Mesh1" );
-    auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1>>, _name="Mesh2" );
-    auto mesh3 = loadMesh( _mesh=new Mesh<Simplex<3,1>>, _name="Mesh3" );
+    auto mesh1 = loadMesh( _mesh=new Mesh<Simplex<1,1>>( "Mesh1" ) );
+    auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1>>( "Mesh2" ) );
+    auto mesh3 = loadMesh( _mesh=new Mesh<Simplex<3,1>>( "Mesh3" ) );
     // Mesh 4 and 5 have no name. It will be saved as "undefined", mesh5
     // overide info!
     auto mesh4 = loadMesh( _mesh=new Mesh<Simplex<2,1>> );
     auto mesh5 = loadMesh( _mesh=new Mesh<Simplex<2,1>> );
 
-    auto mesh6 = loadMesh( _mesh=new Mesh<Simplex<3,1>> );
-    mesh6->journalWatcherName( "Mesh6", false);
+    auto mesh6 = loadMesh( _mesh=new Mesh<Simplex<3,1>>( "Mesh6" ) );
     toc("loadMesh");
 
     // By default, mesh is watchable. You can connect the mesh

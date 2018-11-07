@@ -105,9 +105,7 @@ BOOST_AUTO_TEST_CASE( journal_basic )
     // the manager.
 
     // Retrieve the merged property tree (no MPI).
-    const auto& res = Environment::journalPull(false);
-    // This also works
-    // m.journalPull();
+    const auto& res = Environment::journalPull();
 
     // Save into a json file.
     Environment::journalSave();
