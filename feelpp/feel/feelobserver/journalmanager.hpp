@@ -25,7 +25,6 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelevent/events.hpp>
-#include <feel/feelobserver/functors/journalmerge.hpp>
 #include <feel/feelcore/mongocxx.hpp>
 
 #define FEELPP_DB_JOURNAL_VERSION "0.1.0"
@@ -35,8 +34,6 @@ namespace Feel
 
 namespace Observer
 {
-
-namespace pt =  boost::property_tree;
 
 //! JournalManager handles all journalWatchers.
 //! The purpose of this class is to be inherited by class that manage the
@@ -119,6 +116,11 @@ public:
             return S_journal_filename;
         }
 
+        static pt::ptree & journalData()
+        {
+            return S_journal_ptree;
+        }
+
         //! Get the current journal mode status.
         //! \return true in automatic mode.
         static const bool journalAutoMode()
@@ -154,7 +156,7 @@ public:
         static decltype(auto)
         journalSignal()
         {
-            return signalStatic< notify_type (), JournalMerge >( "journalManager" );
+            return signalStatic< void ( notify_type & ) >( "journalManager" );
         }
 
         //! @}
@@ -162,24 +164,14 @@ public:
         //! Journal gather/save.
         //! @{
 
-        //! Merge global property_tree form a ptree
-        //! \return The global journal property tree.
-        static
-        notify_type const&
-        journalPull( pt::ptree const& pt )
-        {
-            ptMerge( S_journal_ptree, pt );
-            return S_journal_ptree;
-        }
-
         //! Fetch and merge notifications coming from all observed objects.
         //! \return The global journal property tree.
         //! \see JournalWatcher
         static notify_type const&
-        journalPull( std::string const& signame = "journalManager" )
+        journalPull()
         {
-            const pt::ptree& pt_merged = signalStaticPull< notify_type (), JournalMerge >( signame );
-            ptMerge( S_journal_ptree, pt_merged );
+            auto thesig = signalStatic< void ( notify_type & ) >( "journalManager" );
+            (*thesig)( S_journal_ptree );
             return S_journal_ptree;
         }
 

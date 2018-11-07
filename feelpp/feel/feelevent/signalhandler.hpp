@@ -270,6 +270,7 @@ public:
             const auto& v = S_links[link];
             for( const auto& c : v )
                 c.disconnect();
+            S_links.erase( link );
         }
         else
         {
@@ -278,6 +279,7 @@ public:
             const auto& v = S_links[link];
             for( const auto& c : v )
                 c.disconnect();
+            S_links.erase( link );
         }
     }
 
@@ -306,6 +308,7 @@ public:
            const auto& v = S_links[link];
            for( const auto& c : v )
                c.disconnect();
+           S_links.erase( link );
        }
        else
        {
@@ -314,6 +317,7 @@ public:
            const auto& v = S_links[link];
            for( const auto& c : v )
                c.disconnect();
+           S_links.erase( link );
        }
     }
 
@@ -339,31 +343,13 @@ public:
         std::cout << std::string(40,'-') << std::endl;
     }
 
-    //! Fetch notifications coming from slots connected to a given signal.
-    template< typename... SignalArgs >
-    decltype(auto)
-    signalPull( std::string name )
-    {
-       const auto& sig = signal<SignalArgs...>( name );
-       return (*sig)();
-    }
-
-    //! Fetch notifications coming from slots connected to a given signal.
-    template< typename... SignalArgs >
-    static decltype(auto)
-    signalStaticPull( std::string name )
-    {
-       const auto& sig = signalStatic<SignalArgs...>( name );
-       return (*sig)();
-    }
-
 private:
 
     //! Store a signal into the map and return pointer
     //! to this stored signal.
     template< typename... Args >
     decltype(auto)
-    signalStore( std::string name,
+    signalStore( std::string const& name,
                  const sig_shared_ptr_type<Args...>& sig )
     {
         // Check that the sig does not exist in the static map.
@@ -377,7 +363,7 @@ private:
     //! to this stored signal.
     template< typename... Args >
     static decltype(auto)
-    signalStaticStore( std::string name,
+    signalStaticStore( std::string const& name,
                        const sig_shared_ptr_type<Args...>& sig )
     {
         // Check that the sig does not exist in the non static map.
