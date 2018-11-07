@@ -204,7 +204,7 @@ protected:
 
     //! Watch child properties and notify the manager.
     //! Note: Only this class can call journalNotify!
-    /*virtual*/ pt::ptree const journalNotify()
+    pt::ptree const journalNotify()
     {
         this->applyUpdateInformationObject();
 

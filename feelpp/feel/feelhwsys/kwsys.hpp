@@ -40,59 +40,62 @@ class KWSys
 public:
     KWSys()
     {
-        using namespace feelpp_kwsys;
-        SystemInformation info;
-        
         // Use KWSys.
         M_backend = "kwsys";
 
-        info.RunCPUCheck();
-        info.RunOSCheck();
-        info.RunMemoryCheck();
+        M_sysInfo.RunCPUCheck();
+        M_sysInfo.RunOSCheck();
+        M_sysInfo.RunMemoryCheck();
 
-        M_os_name = info.GetOSName();
-        M_os_is_linux = std::to_string( info.GetOSIsLinux() );
-        M_os_is_apple = std::to_string( info.GetOSIsApple() );
-        M_os_is_windows = std::to_string( info.GetOSIsWindows() );
-        M_os_release = info.GetOSRelease();
-        M_os_version = info.GetOSVersion();
-        M_os_platform = info.GetOSPlatform();
-        M_host_name = info.GetHostname();
-        M_domain_name = info.GetFullyQualifiedDomainName();
+        M_os_name = M_sysInfo.GetOSName();
+        M_os_is_linux = std::to_string( M_sysInfo.GetOSIsLinux() );
+        M_os_is_apple = std::to_string( M_sysInfo.GetOSIsApple() );
+        M_os_is_windows = std::to_string( M_sysInfo.GetOSIsWindows() );
+        M_os_release = M_sysInfo.GetOSRelease();
+        M_os_version = M_sysInfo.GetOSVersion();
+        M_os_platform = M_sysInfo.GetOSPlatform();
+        M_host_name = M_sysInfo.GetHostname();
+        M_domain_name = M_sysInfo.GetFullyQualifiedDomainName();
 
-        M_proc_is64bits = std::to_string( info.Is64Bits() );
-        M_proc_vendor_name = info.GetVendorString();
-        M_proc_vendor_id = info.GetVendorID();
-        M_proc_type_id = info.GetTypeID();
-        M_proc_family_id = info.GetFamilyID();
-        M_proc_model_id = info.GetModelID();
-        M_proc_extended_name = info.GetExtendedProcessorName();
-        M_proc_stepping_code = info.GetSteppingCode();
-        M_proc_serial_number = info.GetProcessorSerialNumber();
-        
-        M_proc_cache_size = std::to_string( info.GetProcessorCacheSize() );
-        M_proc_logical_per_physical = std::to_string( info.GetLogicalProcessorsPerPhysical() );
-        M_proc_clock_frequency = std::to_string( info.GetProcessorClockFrequency() );
-        M_proc_logical_cpu_number = std::to_string( info.GetNumberOfLogicalCPU() );
-        M_proc_physical_cpu_number = std::to_string( info.GetNumberOfPhysicalCPU() );
-        M_proc_cpu_id_support = std::to_string( info.DoesCPUSupportCPUID() );
-        M_proc_apic_id = std::to_string( info.GetProcessorAPICID() );
+        M_proc_is64bits = std::to_string( M_sysInfo.Is64Bits() );
+        M_proc_vendor_name = M_sysInfo.GetVendorString();
+        M_proc_vendor_id = M_sysInfo.GetVendorID();
+        M_proc_type_id = M_sysInfo.GetTypeID();
+        M_proc_family_id = M_sysInfo.GetFamilyID();
+        M_proc_model_id = M_sysInfo.GetModelID();
+        M_proc_extended_name = M_sysInfo.GetExtendedProcessorName();
+        M_proc_stepping_code = M_sysInfo.GetSteppingCode();
+        M_proc_serial_number = M_sysInfo.GetProcessorSerialNumber();
 
-        M_mem_virtual_total = std::to_string( info.GetTotalVirtualMemory() );
-        M_mem_virtual_avail = std::to_string( info.GetAvailableVirtualMemory() );
-        M_mem_physical_total = std::to_string( info.GetTotalPhysicalMemory() );
-        M_mem_physical_avail = std::to_string( info.GetAvailablePhysicalMemory() );
-        M_mem_host_total = std::to_string( info.GetHostMemoryTotal() );
-        M_mem_host_avail = std::to_string( info.GetHostMemoryAvailable("KWSHL") );
-        M_mem_proc_avail = std::to_string( info.GetProcMemoryAvailable("KWSHL", "KWSPL") );
-        M_mem_host_used = std::to_string( info.GetHostMemoryUsed() );
-        M_mem_proc_used = std::to_string( info.GetProcMemoryUsed() );
-        M_load_avg = std::to_string( info.GetLoadAverage() );
+        M_proc_cache_size = std::to_string( M_sysInfo.GetProcessorCacheSize() );
+        M_proc_logical_per_physical = std::to_string( M_sysInfo.GetLogicalProcessorsPerPhysical() );
+        M_proc_clock_frequency = std::to_string( M_sysInfo.GetProcessorClockFrequency() );
+        M_proc_logical_cpu_number = std::to_string( M_sysInfo.GetNumberOfLogicalCPU() );
+        M_proc_physical_cpu_number = std::to_string( M_sysInfo.GetNumberOfPhysicalCPU() );
+        M_proc_cpu_id_support = std::to_string( M_sysInfo.DoesCPUSupportCPUID() );
+        M_proc_apic_id = std::to_string( M_sysInfo.GetProcessorAPICID() );
 
-        this->updateInfo();
+        M_mem_virtual_total = std::to_string( M_sysInfo.GetTotalVirtualMemory() );
+        M_mem_virtual_avail = std::to_string( M_sysInfo.GetAvailableVirtualMemory() );
+        M_mem_physical_total = std::to_string( M_sysInfo.GetTotalPhysicalMemory() );
+        M_mem_physical_avail = std::to_string( M_sysInfo.GetAvailablePhysicalMemory() );
+        M_mem_host_total = std::to_string( M_sysInfo.GetHostMemoryTotal() );
+        M_mem_host_avail = std::to_string( M_sysInfo.GetHostMemoryAvailable("KWSHL") );
+        M_mem_proc_avail = std::to_string( M_sysInfo.GetProcMemoryAvailable("KWSHL", "KWSPL") );
+        M_mem_host_used = std::to_string( M_sysInfo.GetHostMemoryUsed() );
+        M_mem_proc_used = std::to_string( M_sysInfo.GetProcMemoryUsed() );
+        M_load_avg = std::to_string( M_sysInfo.GetLoadAverage() );
     }
 
     ~KWSys() override = default;
+
+    void updateCurrentState() override
+        {
+            M_mem_host_used = std::to_string( M_sysInfo.GetHostMemoryUsed() );
+            M_mem_proc_used = std::to_string( M_sysInfo.GetProcMemoryUsed() );
+        }
+private :
+    feelpp_kwsys::SystemInformation M_sysInfo;
 };
 
 

@@ -760,10 +760,11 @@ Environment::~Environment()
 
         stopLogging();
         generateSummary( S_about.appName(), "end", true );
+
+        Observer::JournalManager::journalFinalize();
         S_timers.reset();
         S_hwSysInstance.reset(); // call deleter
         S_informationObject.reset();
-        Observer::JournalManager::journalFinalize();
 
         // make sure everybody is here
         Environment::worldComm().barrier();
@@ -1889,7 +1890,10 @@ Environment::updateInformationObject( pt::ptree & p )
     p.put( "software.openmpi.version.release", OMPI_RELEASE_VERSION );
 #endif
     if ( S_hwSysInstance )
-        p.put_child( "hardware", S_hwSysInstance->informationObject() );
+    {
+        S_hwSysInstance->updateInformationObject( p );
+            //p.put_child( "hardware", S_hwSysInstance->informationObject() );
+    }
 }
 
 
