@@ -39,5 +39,7 @@ FEELPP_EXPORT std::string removeComments( std::string str_with_comments );
 
 FEELPP_EXPORT void editPtreeFromOptions( pt::ptree& p, std::string const& prefix="" );
 
+FEELPP_EXPORT void mergePtree( pt::ptree& pa, const pt::ptree& pb );
+
 }
 #endif

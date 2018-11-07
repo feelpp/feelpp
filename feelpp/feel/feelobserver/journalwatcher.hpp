@@ -23,10 +23,8 @@
 #ifndef FEELPP_JOURNALWATCHER_HPP
 #define FEELPP_JOURNALWATCHER_HPP 1
 
-#include <boost/property_tree/ptree.hpp>
 #include <feel/feelevent/events.hpp>
 #include <feel/feelobserver/journalmanager.hpp>
-#include <feel/feelobserver/functors/journalmerge.hpp>
 
 // All Feel++ observers are defined here.
 
@@ -75,9 +73,9 @@ public:
         if ( M_name.empty() )
             M_name += "object-" + std::to_string( M_number );
 
-        slotNew< notify_type () >( "journalWatcher", std::bind( &JournalWatcher::journalNotify, this ) );
+        slotNew< void ( notify_type & ) >( "journalWatcher", std::bind( &JournalWatcher::journalNotify, this, std::placeholders::_1 ) );
 
-        if( connect )
+        if ( connect )
             this->journalConnect();
 
         S_call_counter++;
@@ -137,7 +135,7 @@ public:
         DVLOG(2) << "[Journal] Connect: " << journalWatcherInstanceName();
         if( JournalManager::journalEnabled() && !this->journalIsConnected())
         {
-            JournalManager::signalStaticConnect< notify_type (), JournalMerge >( "journalManager", *this, "journalWatcher" );
+            JournalManager::signalStaticConnect< void ( notify_type & ) >( "journalManager", *this, "journalWatcher" );
             M_journal_is_connected=true;
             DVLOG(2) << "[Journal] " << journalWatcherInstanceName() << " Connected!";
         }
@@ -150,7 +148,7 @@ public:
         DVLOG(2) << "[Journal] Disconnect: " << journalWatcherInstanceName();
         if( this->journalIsConnected() )
         {
-            JournalManager::signalStaticDisconnect< notify_type (), JournalMerge >( "journalManager", *this, "journalWatcher" );
+            JournalManager::signalStaticDisconnect< void ( notify_type & ) >( "journalManager", *this, "journalWatcher" );
             M_journal_is_connected=false;
             DVLOG(2) << "[Journal] " << journalWatcherInstanceName() << " Disconnected!";
         }
@@ -183,7 +181,8 @@ public:
             if ( JournalManager::journalAutoPullAtDelete() )
             {
                 DVLOG(2) << "[JournalManager] Destructor : send info to the journal";
-                JournalManager::journalPull( this->journalNotify() );
+                //JournalManager::journalPull( this->journalNotify( JournalManager::journalData ) );
+                this->journalNotify( JournalManager::journalData() );
             }
             this->journalDisconnect();
         }
@@ -200,9 +199,12 @@ protected:
 
     //! Watch child properties and notify the manager.
     //! Note: Only this class can call journalNotify!
-    pt::ptree const journalNotify()
+    void journalNotify( notify_type & journalData )
     {
         this->applyUpdateInformationObject();
+
+        if ( M_informationObject.empty() )
+            return;
 
         std::string prefix;
         if ( !M_category.empty() && !M_name.empty() )
@@ -212,13 +214,14 @@ protected:
         else
             prefix = M_name;
 
-        if ( prefix.empty() || M_informationObject.empty() )
-            return M_informationObject;
+        if ( prefix.empty() )
+        {
+            for( const auto& lpt : M_informationObject )
+                journalData.put_child( lpt.first, lpt.second );
+        }
         else
         {
-            pt::ptree pt;
-            pt.put_child( prefix, M_informationObject );
-            return pt;
+            journalData.put_child( prefix, M_informationObject );
         }
     }
 

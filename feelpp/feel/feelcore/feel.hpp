@@ -94,6 +94,8 @@
 #include <boost/hana.hpp>
 #include <boost/ref.hpp>
 
+#include <boost/property_tree/ptree.hpp>
+
 #include <cmath>
 #include <numeric>
 #include <string>
@@ -154,6 +156,8 @@ namespace lambda = boost::lambda;
 namespace po = boost::program_options;
 namespace hana=boost::hana;
 using namespace boost::hana::literals;
+namespace pt =  boost::property_tree;
+
 
 // bring boost.mpi into Feel realm
 namespace mpi=boost::mpi;

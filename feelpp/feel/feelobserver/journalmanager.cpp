@@ -22,6 +22,7 @@
 
 #include <feel/feelobserver/journalmanager.hpp>
 
+#include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree_serialization.hpp>
 #include <feel/feelcore/environment.hpp>
 
@@ -52,7 +53,7 @@ JournalManager::JournalManager()
     S_journal_ptree.put( tag + ".gm", std::put_time(std::gmtime(&t), "%c %Z") );
     S_journal_ptree.put( tag + ".local", std::put_time(std::localtime(&t), "%c %Z") );
     // Create a signal for simulation info.
-    signalStaticNew< notify_type (), JournalMerge >( "journalManager" );
+    signalStaticNew< void ( notify_type& ) >( "journalManager" );
 }
 
 
