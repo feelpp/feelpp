@@ -112,6 +112,7 @@ public:
         return M_name;
     }
 
+    pt::ptree const& informationObject() const { return M_informationObject; }
     //! @}
 
     //! Setters
@@ -120,10 +121,10 @@ public:
     //! Set journal watcher a name for the instance. If the journal is set
     //! in autommatic mode, then a number will be added to this nam
     //! \param automode If true, a index suffix is added to the name
-    void journalWatcherName( std::string const& name, bool automode = false )
+    void setJournalWatcherName( std::string const& name, bool automode = false )
     {
         M_name = name;
-        if( automode )
+        if ( automode )
             M_name += "-" + std::to_string( M_number );
     }
 
@@ -183,7 +184,7 @@ public:
             if ( !JournalManager::journalEnabled() || !this->journalIsConnected() )
                 return;
             // store info in the global ptree (No MPI comm!).
-            if(  JournalManager::journalAutoPullAtDelete() )
+            if ( JournalManager::journalAutoPullAtDelete() )
             {
                 DVLOG(2) << "[JournalManager] Destructor call. Nofification send (signal exec)!";
                 JournalManager::journalLocalPull( this->journalNotify() );
@@ -197,16 +198,14 @@ protected:
 
     void applyUpdateInformationObject()
         {
-            //this->updateInformationObject( M_informationObject );
             M_function_updateInformationObject( M_informationObject );
         }
     virtual void updateInformationObject( pt::ptree & p ) {}
 
     //! Watch child properties and notify the manager.
     //! Note: Only this class can call journalNotify!
-    virtual pt::ptree const/*&*/ journalNotify()
+    /*virtual*/ pt::ptree const journalNotify()
     {
-        //this->updateInformationObject( M_informationObject );
         this->applyUpdateInformationObject();
 
         std::string prefix;

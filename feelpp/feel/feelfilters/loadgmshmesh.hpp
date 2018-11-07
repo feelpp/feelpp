@@ -57,7 +57,6 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( prefix,(std::string), "" )
-      ( name,(std::string), "" ) // Mesh object instance name (for db/json save).
       ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.scale") )
       ( straighten,          *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.straighten") )
       ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
@@ -79,8 +78,6 @@ BOOST_PARAMETER_FUNCTION(
 
     _mesh_ptrtype _mesh( mesh );
     _mesh->setWorldComm( worldcomm );
-    if( not name.empty() )
-        _mesh->journalWatcherName( name, false );
 
     std::string filename_with_path = Environment::findFile( filename );
     if ( filename_with_path.empty() )

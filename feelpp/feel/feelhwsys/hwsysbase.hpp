@@ -46,7 +46,7 @@ public:
     //! Default constructor.
     HwSysBase()
         :
-        Observer::JournalWatcher( "HwSys"/*"hwsys"*/ ),
+        Observer::JournalWatcher( "HwSys", "", false ),
         M_backend( "hwsys" )
     {}
 
@@ -82,7 +82,7 @@ protected:
         const auto ccp = std::to_string( Observer::JournalManager::journalCurrentCheckpoint() );
 		if( not M_host_name.empty() )
 		{
-            std::string prefix = "hardware." + M_host_name;
+            std::string prefix = M_host_name;
 
 		    p.put( prefix + ".backend", M_backend );
 			p.put( prefix + ".os.name", M_os_name );

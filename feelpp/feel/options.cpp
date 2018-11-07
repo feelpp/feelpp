@@ -942,7 +942,7 @@ journal_options( std::string const& prefix )
     po::options_description options( "Journal " + prefix + " options" );
     options.add_options()
         ( prefixvm( prefix,"journal" ).c_str(), Feel::po::value<bool>()->default_value(true), "Enable simulation info" )
-        ( prefixvm( prefix,"journal.filename" ).c_str(), Feel::po::value<std::string>()->default_value("journal"), "name of the json file" )
+        ( prefixvm( prefix,"journal.filename" ).c_str(), Feel::po::value<std::string>(), "name of the json file" )
         ( prefixvm( prefix,"journal.auto" ).c_str(), Feel::po::value<bool>()->default_value(true), "Generate the journal automatically based on the code." )
         ( prefixvm( prefix,"journal.auto.pullatdelete" ).c_str(), Feel::po::value<bool>()->default_value(true), "Watchers send their information before dying." )
         ( prefixvm( prefix,"journal.database" ).c_str(), Feel::po::value<bool>()->default_value(false), "Enable database usage" )

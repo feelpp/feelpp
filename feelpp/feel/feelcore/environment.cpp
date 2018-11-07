@@ -497,7 +497,6 @@ Environment::Environment( int argc, char** argv,
     Environment::setJournalAutoPullAtDelete( boption("journal.auto.pullatdelete") );
 
     // Force environment to connect to the journal.
-    //this->journalConnect();
     S_informationObject = std::make_unique<Observer::JournalWatcher>( std::bind( &Environment::updateInformationObject, this, std::placeholders::_1 ), "", "Environment" );
 
     S_timers = std::make_unique<TimerTable>();
@@ -517,9 +516,13 @@ Environment::Environment( int argc, char** argv,
         changeRepository( _directory=f,_subdir=createSubdir );
     }
 
-
     if( S_vm.count( "journal.filename" ) )
-        Environment::setJournalFilename( soption(_name="journal.filename") );
+    {
+        // TODO relative or absolute path
+        Environment::setJournalFilename( (fs::path( Environment::appRepository() )/fs::path(soption(_name="journal.filename"))).string() );
+    }
+    else
+        Environment::setJournalFilename( (fs::path( Environment::appRepository() )/fs::path("journal.json")).string() );
 
 #if defined(FEELPP_HAS_MONGOCXX )
     MongoConfig journaldbconf;
@@ -611,6 +614,7 @@ Environment::Environment( int argc, char** argv,
     Environment::initHwlocTopology();
 #endif
 
+    Environment::journalCheckpoint();
 }
 void
 Environment::clearSomeMemory()
@@ -1841,6 +1845,7 @@ Environment::generateSummary( std::string fname, std::string stage, bool write )
 void
 Environment::updateInformationObject( pt::ptree & p )
 {
+    //std::cout << "Environment::updateInformationObject\n";
     p.put( "application.name", Environment::about().appName() );
     p.put( "run.uuid", Environment::randomUUID() );
     p.put( "directories.app", Environment::appRepository() );
@@ -1883,6 +1888,8 @@ Environment::updateInformationObject( pt::ptree & p )
     p.put( "software.openmpi.version.minor", OMPI_MINOR_VERSION );
     p.put( "software.openmpi.version.release", OMPI_RELEASE_VERSION );
 #endif
+    if ( S_hwSysInstance )
+        p.put_child( "hardware", S_hwSysInstance->informationObject() );
 }
 
 
