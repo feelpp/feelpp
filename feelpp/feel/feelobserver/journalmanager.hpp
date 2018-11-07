@@ -23,30 +23,17 @@
 #ifndef FEELPP_JOURNALMANAGER_HPP
 #define FEELPP_JOURNALMANAGER_HPP 1
 
-#include <chrono>
-#include <ctime>
-#include <iomanip>
-#include <boost/mpi.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ptree_serialization.hpp>
-//#include <boost/uuid/uuid.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelevent/events.hpp>
 #include <feel/feelobserver/functors/journalmerge.hpp>
 #include <feel/feelcore/mongocxx.hpp>
-
-#if defined(FEELPP_HAS_MONGOCXX )
-#include <bsoncxx/json.hpp>
-#include <mongocxx/client.hpp>
-#include <mongocxx/stdx.hpp>
-#include <mongocxx/uri.hpp>
-#endif
 
 #define FEELPP_DB_JOURNAL_VERSION "0.1.0"
 
 namespace Feel
 {
 // Forward declaration.
-class Environment;
+//class Environment;
 
 namespace Observer
 {
@@ -56,7 +43,7 @@ namespace mpi = boost::mpi;
 //namespace uuids =  boost::uuids;
 
 
-//! JournalManagerBase handles all journalWatchers.
+//! JournalManager handles all journalWatchers.
 //! The purpose of this class is to be inherited by class that manage the
 //! journal system
 //!
@@ -68,15 +55,12 @@ namespace mpi = boost::mpi;
 //! members.
 //!
 //! \see JournalManager JournalWatcher Environment
-template< typename Env = Feel::Environment >
-class JournalManagerBase
-   : public Event::SignalHandler
+class JournalManager : public Event::SignalHandler
 {
 
 public:
         // Types alias.
         using notify_type = pt::ptree;
-        using env_type = Env;
 
         //! Constructor
         //! @{
@@ -86,28 +70,13 @@ public:
         //! 'journalManager'. journalWatcher object connect a specific slot to this
         //! signal.
         //! \see JournalWatcher
-        JournalManagerBase()
-        {
-#if defined(FEELPP_HAS_MONGOCXX )
-            // Create mongo unique instance!
-            Feel::MongoCxx::instance();
-#endif 
-            //M_journal_uuid = Env::randomUUID();
-            std::time_t t = std::time(nullptr);
-            const std::string tag = "journal.time";
-            S_journal_ptree.put( "journal.version", FEELPP_DB_JOURNAL_VERSION );
-            S_journal_ptree.put( tag + ".time_t", t );
-            S_journal_ptree.put( tag + ".gm", std::put_time(std::gmtime(&t), "%c %Z") );
-            S_journal_ptree.put( tag + ".local", std::put_time(std::localtime(&t), "%c %Z") );
-            // Create a signal for simulation info.
-            signalStaticNew< notify_type (), JournalMerge >( "journalManager" );
-        }
+        JournalManager();
 
         //! @}
 
         //! @{
         //! Destructor
-        virtual ~JournalManagerBase() = default;
+        virtual ~JournalManager() = default;
 
         //! @}
 
@@ -179,7 +148,7 @@ public:
 
         //! Get the current checkpoint counter.
         //! \return the counter value.
-        static const uint32_t
+        static const uint32_type
         journalCurrentCheckpoint()
         {
             return S_journal_checkpoint;
@@ -229,23 +198,7 @@ public:
 
         //! Save the global property tree into a json file.
         static void
-        journalSave( std::string filename = "" )
-        {
-            if( filename.empty() )
-                filename = journalFilename();
-
-            pt::ptree ptGlobal;
-            if ( Env::isParallel() )
-                mpi::reduce( Env::worldComm(), S_journal_ptree, ptGlobal, ptMerge, Env::masterRank() );
-            else
-                ptGlobal = S_journal_ptree;
-
-            if( Env::isMasterRank() )
-            {
-                journalJSONSave( filename, ptGlobal );
-                journalDBSave( filename );
-            }
-        }
+        journalSave( std::string filename = "" );
 
         //! Generate a checkpoint
         //! \param save enable intermediate save.
@@ -260,28 +213,10 @@ public:
         //! not recommended.
         //!
         //! \see journalCurrentCheckpoint
-        static const void
+        static void
         journalCheckpoint( bool parallel = true,
                            bool save = false,
-                           const std::string& filename="" )
-        {
-            if ( journalEnabled() )
-            {
-                S_journal_checkpoint++;
-
-                journalPull();
-
-                std::time_t t = std::time(nullptr);
-                const std::string tag = "journal.checkpoints.checkpoint-" + std::to_string( S_journal_checkpoint ) + ".time";
-                S_journal_ptree.put( "journal.checkpoints.number", S_journal_checkpoint);
-                S_journal_ptree.put( tag + ".time_t", t );
-                S_journal_ptree.put( tag + ".gm", std::put_time(std::gmtime(&t), "%c %Z") );
-                S_journal_ptree.put( tag + ".local", std::put_time(std::localtime(&t), "%c %Z") );
-
-                if ( save )
-                    journalSave( filename );
-            }
-        }
+                           const std::string& filename="" );
 
         //! Create the journal.
         static void
@@ -351,52 +286,14 @@ private:
 
         //! Save the global property tree into a json file.
         static void
-        journalJSONSave( const std::string& filename, pt::ptree const& pt )
-        {
-            if( !journalEnabled() )
-                return;
-
-            //std::cout << "[Observer: Journal] generate report (JSON).";
-            write_json( filename, pt );
-        }
+        journalJSONSave( const std::string& filename, pt::ptree const& pt );
 
         //! Save the json in a mongodb database.
         //! This function read a json file in a bson format. Then this bson entry
         //! is send in the mongodb database. The database has to be configured
         //! beforehand.
         static void
-        journalDBSave( const std::string& filename )
-        {
-            if( journalEnabled() )
-            {
-                auto vm =  Env::vm();
-                bool enable = vm["journal.database"].template as<bool>();
-                if( enable )
-                {
-#if defined(FEELPP_HAS_MONGOCXX )
-                    using bsoncxx::builder::stream::close_array;
-                    using bsoncxx::builder::stream::close_document;
-                    using bsoncxx::builder::stream::document;
-                    using bsoncxx::builder::stream::finalize;
-                    using bsoncxx::builder::stream::open_array;
-                    using bsoncxx::builder::stream::open_document;
-                    auto uri_str = S_journal_db_config();
-                    mongocxx::uri uri( uri_str );
-                    mongocxx::client client(uri);
-                    mongocxx::database journaldb = client[S_journal_db_config.name];
-                    auto journal = journaldb[S_journal_db_config.collection];
-                    //auto builder = bsoncxx::builder::stream::document{};
-                    std::ifstream json( filename );
-                    std::stringstream jsonbuff;
-                    jsonbuff << json.rdbuf();
-                    // TODO json is read from file. An improvement would be to extract to add
-                    // from_ptree method to avoid disk access.
-                    bsoncxx::document::value document = bsoncxx::from_json(jsonbuff.str());
-                    bsoncxx::stdx::optional<mongocxx::result::insert_one> result = journal.insert_one(document.view());
-#endif
-                }
-            }
-        }
+        journalDBSave( const std::string& filename );
 
         //! @}
 
@@ -412,7 +309,7 @@ private:
         //! @}
 
         //! checkpoint number
-        static uint32_t S_journal_checkpoint;
+        static uint32_type S_journal_checkpoint;
 
 public:
         // Options for the journal.
@@ -429,19 +326,6 @@ public:
                 static bool allow_destructor_call;
         };
 };
-
-// Extern explicit instanciation.
-template<> std::string JournalManagerBase<>::S_journal_filename;
-template<> pt::ptree JournalManagerBase<>::S_journal_ptree;
-template<> MongoConfig JournalManagerBase<>::S_journal_db_config;
-template<> uint32_t JournalManagerBase<>::S_journal_checkpoint;
-
-template<> bool JournalManagerBase<>::Options::enable;
-template<> bool JournalManagerBase<>::Options::automode;
-template<> bool JournalManagerBase<>::Options::allow_destructor_call;
-
-// Manager class should be derived from this alias class.
-using JournalManager = JournalManagerBase<>;
 
 } // Observer namespace.
 } // Feel namespace.
