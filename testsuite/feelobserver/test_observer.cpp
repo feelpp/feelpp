@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE( journal_basic )
     }
     // Example how to retrieve a signal using signalhandler.
     // (The signals template arguments are required to cast into the proper signal.)
-    const auto& sigptr = Environment::signalStatic< pt::ptree(), Observer::JournalMerge >( "journalManager" );
+    const auto& sigptr = Environment::signalStatic< void ( pt::ptree & ) >( "journalManager" );
     BOOST_TEST_MESSAGE( "number of connected slot: " << sigptr->num_slots() );
 
     p1.journalConnect();
