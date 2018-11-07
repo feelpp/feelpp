@@ -65,7 +65,6 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( prefix,(std::string), "" )
-      ( name,(std::string), "" ) // Mesh object instance name (for db/json save).
       ( filename, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.filename") )
       ( desc, *,std::shared_ptr<gmsh_type>() )  // geo() can't be used here as default !!
 
@@ -134,8 +133,6 @@ BOOST_PARAMETER_FUNCTION(
                 LOG(INFO) << " Loading mesh in format json+h5: " << json_fname;
                 CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
                 _mesh_ptrtype m( mesh );
-                if( not name.empty() )
-                    m->journalWatcherName( name, false );
                 m->setWorldComm( worldcomm );
                 m->loadHDF5( json_fname );
                 return m;
@@ -153,7 +150,6 @@ BOOST_PARAMETER_FUNCTION(
                                       _worldcomm=worldcomm  ) : desc;
         auto m = createGMSHMesh(
             _mesh=mesh,
-            _name=name,
             _desc= thedesc ,
             _h=h,
             _scale=scale,
@@ -194,7 +190,6 @@ BOOST_PARAMETER_FUNCTION(
         
         tic();
         auto m = loadGMSHMesh( _mesh=mesh,
-                               _name=name,
                                _filename=mesh_name.string(),
                                _straighten=straighten,
                                _refine=refine,
@@ -267,7 +262,6 @@ BOOST_PARAMETER_FUNCTION(
          << mesh_name << ".geo\n";
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
     auto m = createGMSHMesh(_mesh=mesh,
-                            _name=name,
                             _desc=domain( _name=mesh_name.string(), _h=h, _worldcomm=worldcomm ),
                             _h=h,
                             _refine=refine,

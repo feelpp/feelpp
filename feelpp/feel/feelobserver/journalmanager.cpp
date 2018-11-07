@@ -29,7 +29,7 @@ namespace Observer
 {
 
 // Init static variables.
-template<> std::string JournalManagerBase<>::S_journal_filename = "journal";
+template<> std::string JournalManagerBase<>::S_journal_filename = "journal.json";
 template<> pt::ptree JournalManagerBase<>::S_journal_ptree = {};
 template<> MongoConfig JournalManagerBase<>::S_journal_db_config = {};
 template<> uint32_t JournalManagerBase<>::S_journal_checkpoint = 0;

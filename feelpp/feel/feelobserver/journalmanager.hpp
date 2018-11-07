@@ -29,7 +29,7 @@
 #include <boost/mpi.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ptree_serialization.hpp>
-#include <boost/uuid/uuid.hpp>    
+//#include <boost/uuid/uuid.hpp>
 #include <feel/feelevent/events.hpp>
 #include <feel/feelobserver/functors/journalmerge.hpp>
 #include <feel/feelcore/mongocxx.hpp>
@@ -53,11 +53,11 @@ namespace Observer
 
 namespace pt =  boost::property_tree;
 namespace mpi = boost::mpi;
-namespace uuids =  boost::uuids;
+//namespace uuids =  boost::uuids;
 
 
 //! JournalManagerBase handles all journalWatchers.
-//! The purpose of this class is to be inherited by class that manage the 
+//! The purpose of this class is to be inherited by class that manage the
 //! journal system
 //!
 //! \note Journal manager class should inherit from this class
@@ -154,7 +154,7 @@ public:
         {
             return S_journal_filename;
         }
-        
+
         //! Get the current journal mode status.
         //! \return true in automatic mode.
         static const bool journalAutoMode()
@@ -182,9 +182,9 @@ public:
         static const uint32_t
         journalCurrentCheckpoint()
         {
-            return S_journal_checkpoint;        
+            return S_journal_checkpoint;
         }
-        
+
         //! Get the journal underlying static signal.
         //! \return
         static decltype(auto)
@@ -209,76 +209,44 @@ public:
         //! The operation is performed locally to the process.
         //! \return The global journal property tree.
         //! \see JournalWatcher
-        static const notify_type
+        static notify_type const&
         journalLocalPull( std::string const& signame = "journalManager" )
         {
             const pt::ptree& pt_merged = signalStaticPull< notify_type (), JournalMerge >( signame );
             ptMerge( S_journal_ptree, pt_merged );
-
-            return S_journal_ptree;
-        } 
-        
-        //! Fetch and merge global property_tree into the one owned by the
-        //! master rank. The operation is processed in parallel.
-        //!
-        //! \remark The signal is not executed in that case!
-        //!
-        //! \return The global journal property tree.
-        //!
-        //! \see JournalWatcher
-        //
-        // Note: TODO free/reset non master rank property_tree to save memory.
-        // Only updated information will be saved in the local ptree by the
-        // journalPull. It should improve/faster the ptree merge step.
-        static const notify_type
-        journalGlobalPull()
-        {
-            if( Env::isParallel() )
-            {
-                pt::ptree p;
-                mpi::reduce( Env::worldComm(), S_journal_ptree, p, ptMerge, Env::masterRank() );
-                S_journal_ptree = p;
-            }
-
             return S_journal_ptree;
         }
-        
-        //! Fetch and merge global property_tree into the one owned by the
-        //! master rank. The operation is processed in parallel if the flag
-        //! is set to true.
-        //!
-        //! \param parallel Boolean to enable or disable parallel merge.
-        //!
+
+        //! Fetch and merge global property_tree form each observer
         //! \return The global journal property tree.
-        //!
-        //! \see JournalLocalPull, JournalGlobalPull
-        static const notify_type
-        journalPull( bool parallel )
+        //! \see JournalLocalPull
+        static notify_type const&
+        journalPull()
         {
             journalLocalPull();
-            if( parallel )
-                journalGlobalPull();
-
             return S_journal_ptree;
         }
 
         //! Save the global property tree into a json file.
         static void
-        journalSave( bool save = true, const std::string& filename = "" )
+        journalSave( std::string filename = "" )
         {
-            if( save )
-            {
-                if( not filename.empty() )
-                    setJournalFilename( filename );
+            if( filename.empty() )
+                filename = journalFilename();
 
-                if( Env::isMasterRank() )
-                {
-                    journalJSONSave( S_journal_filename );
-                    journalDBSave( S_journal_filename );
-                }
+            pt::ptree ptGlobal;
+            if ( Env::isParallel() )
+                mpi::reduce( Env::worldComm(), S_journal_ptree, ptGlobal, ptMerge, Env::masterRank() );
+            else
+                ptGlobal = S_journal_ptree;
+
+            if( Env::isMasterRank() )
+            {
+                journalJSONSave( filename, ptGlobal );
+                journalDBSave( filename );
             }
         }
-        
+
         //! Generate a checkpoint
         //! \param save enable intermediate save.
         //! \param filename name of the intermediate file to save in.
@@ -290,18 +258,18 @@ public:
         //!
         //! Remark: Performing parallel operation during intermediate checkpoints is
         //! not recommended.
-        //! 
+        //!
         //! \see journalCurrentCheckpoint
         static const void
         journalCheckpoint( bool parallel = true,
                            bool save = false,
                            const std::string& filename="" )
         {
-            if( journalEnabled() )
+            if ( journalEnabled() )
             {
                 S_journal_checkpoint++;
 
-                journalPull( parallel );
+                journalPull();
 
                 std::time_t t = std::time(nullptr);
                 const std::string tag = "journal.checkpoints.checkpoint-" + std::to_string( S_journal_checkpoint ) + ".time";
@@ -310,7 +278,8 @@ public:
                 S_journal_ptree.put( tag + ".gm", std::put_time(std::gmtime(&t), "%c %Z") );
                 S_journal_ptree.put( tag + ".local", std::put_time(std::localtime(&t), "%c %Z") );
 
-                journalSave( save, filename );
+                if ( save )
+                    journalSave( filename );
             }
         }
 
@@ -323,10 +292,10 @@ public:
         }
 
         //! @}
-    
+
         //! Setters
         //! @{
-        
+
         //! Set the mongodb database name.
         static void journalSetDBName( const std::string& dbname = "feelpp")
         {
@@ -362,13 +331,13 @@ public:
         {
             S_journal_db_config.authsrc = authsrc;
         }
-        
+
         //! Set mongodb collection to use for the journal.
         static void journalSetDBCollection( const std::string& dbname = "journal")
         {
             S_journal_db_config.name = dbname;
         }
-        
+
         //! Set mongodb collection to use for the journal.
         static void journalDBConfig( const MongoConfig& mc )
         {
@@ -382,30 +351,24 @@ private:
 
         //! Save the global property tree into a json file.
         static void
-        journalJSONSave( const std::string& filename = "" )
+        journalJSONSave( const std::string& filename, pt::ptree const& pt )
         {
-            if( journalEnabled() )
-            {
-                if( not filename.empty() )
-                    S_journal_filename = filename;
+            if( !journalEnabled() )
+                return;
 
-                //std::cout << "[Observer: Journal] generate report (JSON).";
-                if( not S_journal_ptree.empty() )
-                    write_json( S_journal_filename + ".json", S_journal_ptree );
-            }
+            //std::cout << "[Observer: Journal] generate report (JSON).";
+            write_json( filename, pt );
         }
 
-        //! Save the json in a mongodb database. 
-        //! This function read a json file in a bson format. Then this bson entry 
+        //! Save the json in a mongodb database.
+        //! This function read a json file in a bson format. Then this bson entry
         //! is send in the mongodb database. The database has to be configured
         //! beforehand.
         static void
-        journalDBSave( const std::string& filename = "" )
+        journalDBSave( const std::string& filename )
         {
             if( journalEnabled() )
             {
-                if( not filename.empty() )
-                    S_journal_filename = filename;
                 auto vm =  Env::vm();
                 bool enable = vm["journal.database"].template as<bool>();
                 if( enable )
@@ -423,7 +386,7 @@ private:
                     mongocxx::database journaldb = client[S_journal_db_config.name];
                     auto journal = journaldb[S_journal_db_config.collection];
                     //auto builder = bsoncxx::builder::stream::document{};
-                    std::ifstream json( S_journal_filename + ".json");
+                    std::ifstream json( filename );
                     std::stringstream jsonbuff;
                     jsonbuff << json.rdbuf();
                     // TODO json is read from file. An improvement would be to extract to add
@@ -447,7 +410,7 @@ private:
         //! @{
         static MongoConfig S_journal_db_config;
         //! @}
- 
+
         //! checkpoint number
         static uint32_t S_journal_checkpoint;
 
@@ -455,7 +418,7 @@ public:
         // Options for the journal.
         // These default options are setup via the Feel++ commandline options.
         // See environment.
-        class Options 
+        class Options
         {
             public:
                 //! Journal automatic mode enable or disable.
@@ -474,7 +437,7 @@ template<> MongoConfig JournalManagerBase<>::S_journal_db_config;
 template<> uint32_t JournalManagerBase<>::S_journal_checkpoint;
 
 template<> bool JournalManagerBase<>::Options::enable;
-template<> bool JournalManagerBase<>::Options::automode; 
+template<> bool JournalManagerBase<>::Options::automode;
 template<> bool JournalManagerBase<>::Options::allow_destructor_call;
 
 // Manager class should be derived from this alias class.
