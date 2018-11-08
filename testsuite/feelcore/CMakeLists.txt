@@ -58,3 +58,6 @@ endif()
 
 feelpp_add_test(serialization)
 feelpp_add_test(ptree_editions CFG test_ptree_editions.cfg GEO test_ptree_editions.json )
+
+feelpp_add_test( observer )
+feelpp_add_test( observer_mesh )
