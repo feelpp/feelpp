@@ -170,8 +170,6 @@ private:
 } // Observer namespace.
 } // Feel namespace.
 
-#include <feel/feelobserver/detail/journalfeed.hpp>
-
 #endif // FEELPP_JOURNALWATCHER_HPP
 
 
