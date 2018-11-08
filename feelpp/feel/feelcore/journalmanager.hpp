@@ -37,251 +37,224 @@ namespace Feel
 class JournalManager : public Event::SignalHandler
 {
 public:
-        // Types alias.
-        using notify_type = pt::ptree;
+    // Types alias.
+    using notify_type = pt::ptree;
 
-        //! Constructor
-        //! @{
+    //! Constructor
+    //! @{
 
-        //! Default constructor
-        //! This constructor create a new signal waiting for called
-        //! 'journalManager'. journalWatcher object connect a specific slot to this
-        //! signal.
-        //! \see JournalWatcher
-        JournalManager();
+    //! Default constructor
+    //! This constructor create a new signal waiting for called
+    //! 'journalManager'. journalWatcher object connect a specific slot to this
+    //! signal.
+    //! \see JournalWatcher
+    JournalManager();
 
-        //! @}
+    //! @}
 
-        //! @{
-        //! Destructor
-        virtual ~JournalManager() = default;
+    //! @{
+    //! Destructor
+    virtual ~JournalManager() = default;
 
-        //! @}
+    //! @}
 
-        //! Setters
-        //! @{
+    //! Setters
+    //! @{
 
-        //! Set JSON file name.
-        //! \param name the file name.
-        static void setJournalFilename( const std::string& name )
+    //! Set JSON file name.
+    //! \param name the file name.
+    static void setJournalFilename( const std::string& name )
         {
             S_journal_filename = name;
         }
 
-        //! Set the journal mode.
-        //! \param b automatic mode true or false.
-        static void setJournalAutoMode( bool b )
+    //! Set the journal mode.
+    //! \param b automatic mode true or false.
+    static void setJournalAutoMode( bool b )
         {
-            Options::automode = b;
+            S_automode = b;
         }
 
-        //! Set the journal delete mode.
-        //! The journal manager allows its watchers to execute the signal and
-        //! send their information before they are deleted.
-        //! \param m pull at delete mode true or false
-        //! \return true if journal if delete pull is allowed.
-        static void setJournalAutoPullAtDelete( bool m )
+    //! Activate or deactivate the journal.
+    static void setJournalEnable( bool m )
         {
-            Options::allow_destructor_call = m;
+            S_enable = m;
         }
 
-        //! Activate or deactivate the journal.
-        static void setJournalEnable( bool m )
-        {
-            Options::enable = m;
-        }
+    //! @}
 
-        //! @}
+    //! Getters
+    //! @{
 
-        //! Getters
-        //! @{
-
-        //! Get the journal filename (no ext).
-        static const std::string& journalFilename()
+    //! Get the journal filename (no ext).
+    static const std::string& journalFilename()
         {
             return S_journal_filename;
         }
 
-        static pt::ptree & journalData()
+    static pt::ptree & journalData()
         {
             return S_journal_ptree;
         }
 
-        //! Get the current journal mode status.
-        //! \return true in automatic mode.
-        static const bool journalAutoMode()
+    //! Get the current journal mode status.
+    //! \return true in automatic mode.
+    static const bool journalAutoMode()
         {
-            return Options::automode;
+            return S_automode;
         }
 
-        //! Get the journal status.
-        //! \return true if journal is enabled.
-        static const bool journalEnabled()
+    //! Get the journal status.
+    //! \return true if journal is enabled.
+    static const bool journalEnabled()
         {
-            return Options::enable;
+            return S_enable;
         }
 
-        //! Get the journal pull at delete status.
-        //! The journal manager allows its watchers to execute the signal.
-        //! \return true if journal if delete pull is allowed.
-        static const bool journalAutoPullAtDelete()
-        {
-            return Options::allow_destructor_call;
-        }
-
-        //! Get the current checkpoint counter.
-        //! \return the counter value.
-        static const uint32_type
-        journalCurrentCheckpoint()
+    //! Get the current checkpoint counter.
+    //! \return the counter value.
+    static const uint32_type
+    journalCurrentCheckpoint()
         {
             return S_journal_checkpoint;
         }
 
-        //! Get the journal underlying static signal.
-        //! \return
-        static decltype(auto)
+    //! Get the journal underlying static signal.
+    //! \return
+    static decltype(auto)
         journalSignal()
         {
             return signalStatic< void ( notify_type & ) >( "journalManager" );
         }
 
-        //! @}
+    //! @}
 
-        //! Journal gather/save.
-        //! @{
+    //! Journal gather/save.
+    //! @{
 
-        //! Fetch and merge notifications coming from all observed objects.
-        //! \return The global journal property tree.
-        //! \see JournalWatcher
-        static notify_type const&
-        journalPull()
+    //! Fetch and merge notifications coming from all observed objects.
+    //! \return The global journal property tree.
+    //! \see JournalWatcher
+    static notify_type const&
+    journalPull()
         {
             auto thesig = signalStatic< void ( notify_type & ) >( "journalManager" );
             (*thesig)( S_journal_ptree );
             return S_journal_ptree;
         }
 
-        //! Save the global property tree into a json file.
-        static void
-        journalSave( std::string filename = "" );
+    //! Save the global property tree into a json file.
+    static void
+    journalSave( std::string filename = "" );
 
-        //! Generate a checkpoint
-        //! \param save enable intermediate save.
-        //! \param filename name of the intermediate file to save in.
-        //! The filename "journal" is overwritten by default. Use
-        //! journalCurrentCheckpoint to add an index to the files.
-        //!
-        //! \see journalCurrentCheckpoint
-        static void
-        journalCheckpoint( bool save = true, const std::string& filename="" );
+    //! Generate a checkpoint
+    //! \param save enable intermediate save.
+    //! \param filename name of the intermediate file to save in.
+    //! The filename "journal" is overwritten by default. Use
+    //! journalCurrentCheckpoint to add an index to the files.
+    //!
+    //! \see journalCurrentCheckpoint
+    static void
+    journalCheckpoint( bool save = true, const std::string& filename="" );
 
-        //! Create the journal.
-        static void
-        journalFinalize()
+    //! Create the journal.
+    static void
+    journalFinalize()
         {
             journalCheckpoint();
             setJournalEnable( false );
         }
 
-        //! @}
+    //! @}
 
-        //! Setters
-        //! @{
+    //! Setters
+    //! @{
 
-        //! Set the mongodb database name.
-        static void journalSetDBName( const std::string& dbname = "feelpp")
+    //! Set the mongodb database name.
+    static void journalSetDBName( const std::string& dbname = "feelpp")
         {
             S_journal_db_config.name = dbname;
         }
 
-        //! Set the mongodb host.
-        static void journalSetDBHost( const std::string&  host = "localhost")
+    //! Set the mongodb host.
+    static void journalSetDBHost( const std::string&  host = "localhost")
         {
             S_journal_db_config.host = host;
         }
 
-        //! Set the mongodb user name.
-        static void journalSetDBUsername( const std::string& user = "")
+    //! Set the mongodb user name.
+    static void journalSetDBUsername( const std::string& user = "")
         {
             S_journal_db_config.user = user;
         }
 
-        //! Set the mongodb user password.
-        static void journalSetDBPassword( const std::string& password = "")
+    //! Set the mongodb user password.
+    static void journalSetDBPassword( const std::string& password = "")
         {
             S_journal_db_config.password = password;
         }
 
-        //! Set the mongodb port.
-        static void journalSetDBPort( const std::string& port = "27017")
+    //! Set the mongodb port.
+    static void journalSetDBPort( const std::string& port = "27017")
         {
             S_journal_db_config.port = port;
         }
 
-        //! Set the collection used to authenticate.
-        static void journalSetDBAuthsrc( const std::string& authsrc = "admin")
+    //! Set the collection used to authenticate.
+    static void journalSetDBAuthsrc( const std::string& authsrc = "admin")
         {
             S_journal_db_config.authsrc = authsrc;
         }
 
-        //! Set mongodb collection to use for the journal.
-        static void journalSetDBCollection( const std::string& dbname = "journal")
+    //! Set mongodb collection to use for the journal.
+    static void journalSetDBCollection( const std::string& dbname = "journal")
         {
             S_journal_db_config.name = dbname;
         }
 
-        //! Set mongodb collection to use for the journal.
-        static void journalDBConfig( const MongoConfig& mc )
+    //! Set mongodb collection to use for the journal.
+    static void journalDBConfig( const MongoConfig& mc )
         {
             S_journal_db_config = mc;
         }
-        //! @}
+    //! @}
 
 private:
-        //! Private methods
-        //! @{
+    //! Private methods
+    //! @{
 
-        //! Save the global property tree into a json file.
-        static void
-        journalJSONSave( const std::string& filename, pt::ptree const& pt );
+    //! Save the global property tree into a json file.
+    static void
+    journalJSONSave( const std::string& filename, pt::ptree const& pt );
 
-        //! Save the json in a mongodb database.
-        //! This function read a json file in a bson format. Then this bson entry
-        //! is send in the mongodb database. The database has to be configured
-        //! beforehand.
-        static void
-        journalDBSave( const std::string& filename );
+    //! Save the json in a mongodb database.
+    //! This function read a json file in a bson format. Then this bson entry
+    //! is send in the mongodb database. The database has to be configured
+    //! beforehand.
+    static void
+    journalDBSave( const std::string& filename );
 
-        //! @}
+    //! @}
 
 private:
-        //! JSON filename.
-        static std::string S_journal_filename;
-        //! Global property tree.
-        static pt::ptree S_journal_ptree;
+    //! JSON filename.
+    static std::string S_journal_filename;
+    //! Global property tree.
+    static pt::ptree S_journal_ptree;
 
-        //! MongoDB specific attribute. These attributes are set via options.
-        //! @{
-        static MongoConfig S_journal_db_config;
-        //! @}
+    //! MongoDB specific attribute. These attributes are set via options.
+    //! @{
+    static MongoConfig S_journal_db_config;
+    //! @}
 
-        //! checkpoint number
-        static uint32_type S_journal_checkpoint;
+    //! checkpoint number
+    static uint32_type S_journal_checkpoint;
 
-public:
-        // Options for the journal.
-        // These default options are setup via the Feel++ commandline options.
-        // See environment.
-        class Options
-        {
-            public:
-                //! Journal automatic mode enable or disable.
-                static bool enable;
-                //! Journal automatic mode enable or disable.
-                static bool automode;
-                //! Journal automatic mode enable or disable.
-                static bool allow_destructor_call;
-        };
+    //! journal enable or disable
+    static bool S_enable;
+
+    //! connect automaticaly an observer to the journal if true
+    static bool S_automode;
 };
 
 } // Feel namespace.

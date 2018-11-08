@@ -83,13 +83,11 @@ JournalWatcher::journalFinalize()
 {
     if ( !JournalManager::journalEnabled() || !this->journalIsConnected() )
         return;
+
     // store info in the global ptree
-    if ( JournalManager::journalAutoPullAtDelete() )
-    {
-        DVLOG(2) << "[JournalManager] Destructor : send info to the journal";
-        //JournalManager::journalPull( this->journalNotify( JournalManager::journalData ) );
-        this->journalNotify( JournalManager::journalData() );
-    }
+    DVLOG(2) << "[JournalManager] Destructor : send info to the journal";
+    this->journalNotify( JournalManager::journalData() );
+
     this->journalDisconnect();
 }
 
