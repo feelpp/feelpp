@@ -31,6 +31,7 @@ namespace Feel
 Feel::po::options_description modelbase_options(std::string const& prefix);
 Feel::po::options_description modelalgebraic_options(std::string const& prefix);
 Feel::po::options_description modelnumerical_options(std::string const& prefix);
+Feel::po::options_description densityviscosity_options(std::string const& prefix);
 Feel::po::options_description fluidMechanics_options(std::string const& prefix="fluid");
 Feel::po::options_description solidMechanics_options(std::string const& prefix="struct");
 Feel::po::options_description alemesh_options(std::string const& prefix="fsi");

@@ -50,6 +50,17 @@ LEVELSET_CLASS_TEMPLATE_TYPE::DerivationMethodMap = boost::assign::list_of< type
     ( "smooth-projection", DerivationMethod::SMOOTH_PROJECTION )
     ( "pn-nodal-projection", DerivationMethod::PN_NODAL_PROJECTION )
 ;
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+const typename LEVELSET_CLASS_TEMPLATE_TYPE::curvaturemethod_maptype
+LEVELSET_CLASS_TEMPLATE_TYPE::CurvatureMethodMap = boost::assign::list_of< typename LEVELSET_CLASS_TEMPLATE_TYPE::curvaturemethod_maptype::relation >
+    ( "nodal-projection", CurvatureMethod::NODAL_PROJECTION )
+    ( "l2-projection", CurvatureMethod::L2_PROJECTION )
+    ( "smooth-projection", CurvatureMethod::SMOOTH_PROJECTION )
+    ( "pn-nodal-projection", CurvatureMethod::PN_NODAL_PROJECTION )
+    ( "diffusion-order1", CurvatureMethod::DIFFUSION_ORDER1 )
+    ( "diffusion-order2", CurvatureMethod::DIFFUSION_ORDER2 )
+;
 //----------------------------------------------------------------------------//
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -80,6 +91,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateSubmeshInner(true),
     M_advectionToolbox( new advection_toolbox_type( prefix, worldComm, subPrefix, modelRep ) ),
     M_doUpdateMarkers(true),
+    M_useCurvatureDiffusion(false),
     M_doUpdateCauchyGreenTensor(true),
     M_doUpdateCauchyGreenInvariant1(true),
     M_doUpdateCauchyGreenInvariant2(true),
@@ -601,6 +613,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createTools()
         this->toolManager()->createProjectorL2Tensor2Symm();
         M_projectorL2Tensor2Symm = this->toolManager()->projectorL2Tensor2Symm();
     }
+
+    if( this->useCurvatureDiffusion() )
+    {
+        this->toolManager()->createCurvatureDiffusion();
+    }
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -839,8 +856,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     }
 
     const std::string curvatureMethod = soption( _name="curvature-method", _prefix=this->prefix() );
-    CHECK(DerivationMethodMap.left.count(curvatureMethod)) << curvatureMethod <<" is not in the list of possible curvature derivation methods\n";
-    M_curvatureMethod = DerivationMethodMap.left.at(curvatureMethod);
+    CHECK(CurvatureMethodMap.left.count(curvatureMethod)) << curvatureMethod <<" is not in the list of possible curvature methods\n";
+    M_curvatureMethod = CurvatureMethodMap.left.at(curvatureMethod);
+
+    if( M_curvatureMethod == CurvatureMethod::DIFFUSION_ORDER1 
+            || M_curvatureMethod == CurvatureMethod::DIFFUSION_ORDER2 )
+        this->setUseCurvatureDiffusion( true );
 
     M_useGradientAugmented = boption( _name="use-gradient-augmented", _prefix=this->prefix() );
     M_reinitGradientAugmented = boption( _name="reinit-gradient-augmented", _prefix=this->prefix() );
@@ -1253,20 +1274,27 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
 
     switch( M_curvatureMethod )
     {
-        case DerivationMethod::NODAL_PROJECTION:
+        case CurvatureMethod::NODAL_PROJECTION:
+        {
             this->log("LevelSet", "updateCurvature", "perform nodal projection");
             M_levelsetCurvature->on( _range=this->rangeMeshElements(), _expr=divv(this->normal()) );
-            break;
-        case DerivationMethod::L2_PROJECTION:
+        }
+        break;
+        case CurvatureMethod::L2_PROJECTION:
+        {
             this->log("LevelSet", "updateCurvature", "perform L2 projection");
             //*M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
             *M_levelsetCurvature = this->projectorL2()->derivate( trans(idv(this->normal())) );
-            break;
-        case DerivationMethod::SMOOTH_PROJECTION:
+        }
+        break;
+        case CurvatureMethod::SMOOTH_PROJECTION:
+        {
             this->log("LevelSet", "updateCurvature", "perform smooth projection");
             *M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
-            break;
-        case DerivationMethod::PN_NODAL_PROJECTION:
+        }
+        break;
+        case CurvatureMethod::PN_NODAL_PROJECTION:
+        {
             this->log("LevelSet", "updateCurvature", "perform PN-nodal projection");
             auto phiPN = this->phiPN();
             auto normalPN = vf::project(
@@ -1281,7 +1309,18 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
                     );
 
             this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *M_levelsetCurvature );
-            break;
+        }
+        break;
+        case CurvatureMethod::DIFFUSION_ORDER1:
+        {
+            *M_levelsetCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder1( this->distance() );
+        }
+        break;
+        case CurvatureMethod::DIFFUSION_ORDER2:
+        {
+            *M_levelsetCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder2( this->distance() );
+        }
+        break;
     }
 
     M_doUpdateCurvature = false;
@@ -1357,20 +1396,27 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDistanceCurvature()
 
     switch( M_curvatureMethod )
     {
-        case DerivationMethod::NODAL_PROJECTION:
+        case CurvatureMethod::NODAL_PROJECTION:
+        {
             this->log("LevelSet", "updateDistanceCurvature", "perform nodal projection");
             M_distanceCurvature->on( _range=this->rangeMeshElements(), _expr=divv(this->distanceNormal()) );
-            break;
-        case DerivationMethod::L2_PROJECTION:
+        }
+        break;
+        case CurvatureMethod::L2_PROJECTION:
+        {
             this->log("LevelSet", "updateDistanceCurvature", "perform L2 projection");
             //*M_distanceCurvature = this->projectorL2()->project( _expr=divv(this->distanceNormal()) );
             *M_distanceCurvature = this->projectorL2()->derivate( trans(idv(this->distanceNormal())) );
-            break;
-        case DerivationMethod::SMOOTH_PROJECTION:
+        }
+        break;
+        case CurvatureMethod::SMOOTH_PROJECTION:
+        {
             this->log("LevelSet", "updateDistanceCurvature", "perform smooth projection");
             *M_distanceCurvature = this->smoother()->project( _expr=divv(this->distanceNormal()) );
-            break;
-        case DerivationMethod::PN_NODAL_PROJECTION:
+        }
+        break;
+        case CurvatureMethod::PN_NODAL_PROJECTION:
+        {
             this->log("LevelSet", "updateDistanceCurvature", "perform PN-nodal projection");
             CHECK( false ) << "TODO: updateDistanceCurvature with PN_NODAL_PROJECTION method\n";
             //auto phiPN = this->phiPN();
@@ -1386,7 +1432,18 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDistanceCurvature()
                     //);
 
             //this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *M_distanceCurvature );
-            break;
+        }
+        break;
+        case CurvatureMethod::DIFFUSION_ORDER1:
+        {
+            *M_distanceCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder1( this->distance() );
+        }
+        break;
+        case CurvatureMethod::DIFFUSION_ORDER2:
+        {
+            *M_distanceCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder2( this->distance() );
+        }
+        break;
     }
 
     M_doUpdateDistanceCurvature = false;
@@ -2457,7 +2514,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
 
     const std::string gradPhiMethod = DerivationMethodMap.right.at(this->M_gradPhiMethod);
     const std::string modGradPhiMethod = DerivationMethodMap.right.at(this->M_modGradPhiMethod);
-    const std::string curvatureMethod = DerivationMethodMap.right.at(this->M_curvatureMethod);
+    const std::string curvatureMethod = CurvatureMethodMap.right.at(this->M_curvatureMethod);
 
     std::string reinitMethod;
     std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );
@@ -2565,7 +2622,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- initial time : " << this->timeStepBase()->timeInitial()
            << "\n     -- final time   : " << this->timeStepBase()->timeFinal()
            << "\n     -- time step    : " << this->timeStepBase()->timeStep()
-           << "\n     -- order        : " << this->timeStepBDF()->timeOrder()
+           << "\n     -- order        : " << this->timeOrder()
            << "\n     -- restart mode : " << restartMode
            << "\n     -- save on disk : " << std::boolalpha << this->timeStepBase()->saveInFile();
     if ( this->timeStepBase()->saveFreq() )
