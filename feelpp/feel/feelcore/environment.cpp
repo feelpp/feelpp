@@ -1895,7 +1895,9 @@ Environment::updateInformationObject( pt::ptree & p )
     }
     if ( S_hwSysInstance )
     {
-        S_hwSysInstance->updateInformationObject( p );
+        pt::ptree ptHwSys;
+        S_hwSysInstance->updateInformationObject( ptHwSys );
+        p.put_child( "hardware", ptHwSys );
     }
 }
 
