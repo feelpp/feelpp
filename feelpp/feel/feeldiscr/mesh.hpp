@@ -2360,16 +2360,32 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateInformationObject( pt::ptree & p )
 {
+    if ( p.get_child_optional( "shape" ) )
+        return;
     p.put("shape", Shape::name() );
-    p.put("dim", dimension() );
-    p.put("order", nOrder );
-    p.put("h_min", hMin() );
-    p.put("h_max", hMax() );
-    p.put("h_average", hAverage() );
-    p.put("n_points", numGlobalPoints() );
-    p.put("n_edges", numGlobalEdges() );
-    p.put("n_faces", numGlobalFaces() );
-    p.put("n_vertices", numGlobalVertices() );
+    p.put("dim", this->dimension() );
+    p.put("order", this->nOrder );
+    p.put("real_dim", this->realDimension() );
+    p.put("h_min", this->hMin() );
+    p.put("h_max", this->hMax() );
+    p.put("h_average", this->hAverage() );
+    p.put("n_points", this->numGlobalPoints() );
+    if ( nOrder > 1 )
+        p.put("n_vertices", this->numGlobalVertices() );
+    if ( this->dimension() == 3 )
+        p.put("n_edges", this->numGlobalEdges() );
+    p.put("n_faces", this->numGlobalFaces() );
+    p.put("n_elements", this->numGlobalElements() );
+
+    rank_type nProc = MeshBase::worldComm().localSize();
+    p.put("n_partition", nProc );
+    if ( nProc > 1 )
+    {
+        pt::ptree ptTmp;
+        for ( rank_type p=0;p<nProc;++p )
+            ptTmp.push_back( std::make_pair("", pt::ptree( std::to_string( this->statNumElementsActive(p) ) ) ) );
+        p.put_child( "partitioning.n_elements", ptTmp );
+    }
 }
 
 namespace detail

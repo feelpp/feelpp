@@ -1895,9 +1895,15 @@ Environment::updateInformationObject( pt::ptree & p )
     }
     if ( S_hwSysInstance )
     {
-        pt::ptree ptHwSys;
-        S_hwSysInstance->updateInformationObject( ptHwSys );
-        p.put_child( "hardware", ptHwSys );
+        auto ptHwSysOpt = p.get_child_optional( "hardware" );
+        if ( ptHwSysOpt )
+            S_hwSysInstance->updateInformationObject( *ptHwSysOpt );
+        else
+        {
+            pt::ptree ptHwSys;
+            S_hwSysInstance->updateInformationObject( ptHwSys );
+            p.put_child( "hardware", ptHwSys );
+        }
     }
 }
 
