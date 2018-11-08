@@ -36,8 +36,8 @@ public:
 
     static const uint16_type Dim = levelset_type::nDim;
 
-    enum class ProjectionMethod {
-        NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION
+    enum class HelfrichMethod {
+        NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION, DIFFUSION
     };
 
     //--------------------------------------------------------------------//
@@ -70,7 +70,7 @@ private:
     int M_forceImpl;
     vf::FeelModels::HelfrichInnerDivImplementation M_helfrichInnerDivExprImpl;
     bool M_useIntegrationByParts;
-    ProjectionMethod M_helfrichForceProjectionMethod;
+    HelfrichMethod M_helfrichForceMethod;
 
 #ifdef DEBUG_HELFRICHFORCEMODEL
     typedef std::shared_ptr<Exporter<mesh_type, 1>> exporter_ptrtype;
@@ -85,6 +85,11 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::build( std::string const& 
 {
     super_type::build( prefix, ls, fm );
     this->loadParametersFromOptionsVm();
+    // Ensures levelset curvature diffusion is built if needed
+    if( M_helfrichForceMethod == HelfrichMethod::DIFFUSION )
+    {
+        this->levelset()->toolManager()->createCurvatureDiffusion();
+    }
 }
 
 template<typename LevelSetType, typename FluidMechanicsType>
@@ -117,11 +122,13 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::loadParametersFromOptionsV
 
     std::string const helfrichProjectionMethod = soption( _name="helfrich-force.projection-method", _prefix=this->prefix() );
     if( helfrichProjectionMethod == "nodal-projection" )
-        M_helfrichForceProjectionMethod = ProjectionMethod::NODAL_PROJECTION;
+        M_helfrichForceMethod = HelfrichMethod::NODAL_PROJECTION;
     else if( helfrichProjectionMethod == "l2-projection" )
-        M_helfrichForceProjectionMethod = ProjectionMethod::L2_PROJECTION;
+        M_helfrichForceMethod = HelfrichMethod::L2_PROJECTION;
     else if( helfrichProjectionMethod == "smooth-projection" )
-        M_helfrichForceProjectionMethod = ProjectionMethod::SMOOTH_PROJECTION;
+        M_helfrichForceMethod = HelfrichMethod::SMOOTH_PROJECTION;
+    else if( helfrichProjectionMethod == "diffusion" )
+        M_helfrichForceMethod = HelfrichMethod::DIFFUSION;
     else
         CHECK( false ) << helfrichProjectionMethod << " is not in the list of possible projection methods\n";
 
@@ -282,9 +289,9 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
             auto gradPhi = this->levelset()->distanceNormal();
             auto modGradPhi = this->levelset()->modGradPhi();
 
-            switch ( M_helfrichForceProjectionMethod )
+            switch ( M_helfrichForceMethod )
             {
-                case ProjectionMethod::NODAL_PROJECTION:
+                case HelfrichMethod::NODAL_PROJECTION:
                 {
                     auto helfrichInnerDiv = vf::project(
                             _space=this->levelset()->functionSpaceVectorial(),
@@ -298,7 +305,7 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
                             );
                 }
                 break;
-                case ProjectionMethod::L2_PROJECTION:
+                case HelfrichMethod::L2_PROJECTION:
                 {
                     auto helfrichInnerDiv = vf::project(
                             _space=this->levelset()->functionSpaceVectorial(),
@@ -315,11 +322,13 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
                             );
                 }
                 break;
-                case ProjectionMethod::SMOOTH_PROJECTION:
+                case HelfrichMethod::SMOOTH_PROJECTION:
                 {
+                    Feel::cout << "Before\n";
                     auto helfrichInnerDiv = this->levelset()->smootherVectorial()->project(
                             _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
                             );
+                    Feel::cout << "After\n";
                     auto Fb_div = this->levelset()->smoother()->project(
                             _expr=divv(helfrichInnerDiv) 
                             );
@@ -327,6 +336,16 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
                             _space=this->levelset()->functionSpaceVectorial(),
                             _range=this->levelset()->rangeMeshElements(),
                             _expr=this->bendingModulus() * idv(Fb_div) * idv(gradPhi) * idv(this->levelset()->D())
+                            );
+                }
+                break;
+                case HelfrichMethod::DIFFUSION:
+                {
+                    auto W = this->levelset()->toolManager()->curvatureDiffusion()->willmore( phi );
+                    *F = vf::project(
+                            _space=this->levelset()->functionSpaceVectorial(),
+                            _range=this->levelset()->rangeMeshElements(),
+                            _expr=this->bendingModulus()*idv(W)*idv(N)*idv(this->levelset()->D())
                             );
                 }
                 break;
