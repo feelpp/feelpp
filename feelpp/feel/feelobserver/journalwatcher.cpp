@@ -27,9 +27,104 @@ namespace Feel
 namespace Observer
 {
 
-// Init static variable.
-uint16_t JournalWatcher::S_call_counter = 0;
+JournalWatcher::JournalWatcher( std::string const& category, std::string const& name, bool connect )
+    :
+    JournalWatcher( std::bind( &JournalWatcher::updateInformationObject, this, std::placeholders::_1 ), category, name, true, connect )
+{}
 
+JournalWatcher::JournalWatcher( std::string const& category, bool useDefaultName, bool connect )
+    :
+    JournalWatcher( std::bind( &JournalWatcher::updateInformationObject, this, std::placeholders::_1 ), category, "", useDefaultName, connect )
+{}
+
+JournalWatcher::JournalWatcher( function_update_information_type const& func, std::string const& category, std::string const& name,
+                                bool useDefaultNameIfEmpty, bool connect )
+    :
+    M_journal_is_connected( false ),
+    M_category( category ),
+    M_name( name ),
+    M_function_updateInformationObject( func )
+{
+    if ( M_name.empty() && useDefaultNameIfEmpty )
+        M_name += "object-" + std::to_string( S_counterObjectByCategory[category] );
+
+    slotNew< void ( notify_type & ) >( "journalWatcher", std::bind( &JournalWatcher::journalNotify, this, std::placeholders::_1 ) );
+
+    if ( connect )
+        this->journalConnect();
+
+    S_counterObjectByCategory[category]++;
+}
+
+void
+JournalWatcher::journalConnect()
+{
+    DVLOG(2) << "[Journal] Connect: " << journalWatcherInstanceName();
+    if( JournalManager::journalEnabled() && !this->journalIsConnected())
+    {
+        JournalManager::signalStaticConnect< void ( notify_type & ) >( "journalManager", *this, "journalWatcher" );
+        M_journal_is_connected=true;
+        DVLOG(2) << "[Journal] " << journalWatcherInstanceName() << " Connected!";
+    }
+}
+
+void
+JournalWatcher::journalDisconnect()
+{
+    DVLOG(2) << "[Journal] Disconnect: " << journalWatcherInstanceName();
+    if( this->journalIsConnected() )
+    {
+        JournalManager::signalStaticDisconnect< void ( notify_type & ) >( "journalManager", *this, "journalWatcher" );
+        M_journal_is_connected=false;
+        DVLOG(2) << "[Journal] " << journalWatcherInstanceName() << " Disconnected!";
+    }
+}
+
+void
+JournalWatcher::journalFinalize()
+{
+    if ( !JournalManager::journalEnabled() || !this->journalIsConnected() )
+        return;
+    // store info in the global ptree
+    if ( JournalManager::journalAutoPullAtDelete() )
+    {
+        DVLOG(2) << "[JournalManager] Destructor : send info to the journal";
+        //JournalManager::journalPull( this->journalNotify( JournalManager::journalData ) );
+        this->journalNotify( JournalManager::journalData() );
+    }
+    this->journalDisconnect();
+}
+
+void
+JournalWatcher::journalNotify( notify_type & journalData )
+{
+    this->applyUpdateInformationObject();
+
+    if ( M_informationObject.empty() )
+        return;
+
+    std::string prefix;
+    if ( !M_category.empty() && !M_name.empty() )
+        prefix = M_category + "." + M_name;
+    else if ( !M_category.empty() )
+        prefix = M_category;
+    else
+        prefix = M_name;
+
+    if ( prefix.empty() )
+    {
+        for( const auto& lpt : M_informationObject )
+            journalData.put_child( lpt.first, lpt.second );
+    }
+    else
+    {
+        journalData.put_child( prefix, M_informationObject );
+    }
+}
+
+
+// Init static variable.
+std::map<std::string,uint16_type> JournalWatcher::S_counterObjectByCategory = {};
 
 } // Observer namespace
 } // Feel namespace.

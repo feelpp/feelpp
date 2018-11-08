@@ -497,7 +497,7 @@ Environment::Environment( int argc, char** argv,
     Environment::setJournalAutoPullAtDelete( boption("journal.auto.pullatdelete") );
 
     // Force environment to connect to the journal.
-    S_informationObject = std::make_unique<Observer::JournalWatcher>( std::bind( &Environment::updateInformationObject, this, std::placeholders::_1 ), "", "Environment" );
+    S_informationObject = std::make_unique<Observer::JournalWatcher>( std::bind( &Environment::updateInformationObject, this, std::placeholders::_1 ), "Environment", "", false );
 
     S_timers = std::make_unique<TimerTable>();
 
