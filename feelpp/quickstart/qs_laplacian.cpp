@@ -56,8 +56,9 @@ int main(int argc, char**argv )
     auto r_1 = expr( soption(_name="functions.a"), "a" ); // Robin left hand side expression
     auto r_2 = expr( soption(_name="functions.b"), "b" ); // Robin right hand side expression
     auto n = expr( soption(_name="functions.c"), "c" ); // Neumann expression
-    auto solution = expr( checker().solution(), "solution" );
-    auto g = checker().check()?solution:expr( soption(_name="functions.g"), "g" );
+    auto thechecker = checker("qs_laplacian");
+    auto solution = expr( thechecker.solution(), "solution" );
+    auto g = thechecker.check()?solution:expr( soption(_name="functions.g"), "g" );
 
     // tag::v[]
     auto v = Vh->element( g, "g" );
@@ -104,7 +105,7 @@ int main(int argc, char**argv )
     auto e = exporter( _mesh=mesh );
     e->addRegions();
     e->add( "uh", u );
-    if ( checker().check() )
+    if ( thechecker.check() )
     {
         v.on(_range=elements(mesh), _expr=solution );
         e->add( "solution", v );
@@ -126,7 +127,7 @@ int main(int argc, char**argv )
             return { { "L2", l2 }, {  "H1", h1 } };
         };
 
-    int status = checker().runOnce( norms, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
+    int status = thechecker.runOnce( norms, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
     // end::check[]
 
     // exit status = 0 means no error

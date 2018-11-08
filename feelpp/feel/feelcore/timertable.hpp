@@ -77,7 +77,7 @@ public:
     //! @{
 
     //! Default constructor
-    TimerTable() : super2( "TimerTable" ) {}
+    TimerTable() : super2( "TimerTable", false ) {}
 
 
     //! @}
