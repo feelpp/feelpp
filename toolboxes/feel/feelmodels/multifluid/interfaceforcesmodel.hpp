@@ -180,7 +180,7 @@ InterfaceForcesModel<LevelSetType, FluidMechanicsType>::updateFluidInterfaceForc
     auto linearForm_PatternCoupled = form1( _test=Xh, _vector=R,
                                             _pattern=size_type(Pattern::COUPLED),
                                             _rowstart=this->fluid()->rowStartInVector() );
-    if( BuildNonCstPart )
+    if( BuildCstPart )
     {
         this->updateInterfaceForcesImpl( M_interfaceForce );
         linearForm_PatternCoupled +=

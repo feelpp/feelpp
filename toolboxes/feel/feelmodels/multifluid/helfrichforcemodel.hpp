@@ -219,7 +219,7 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::updateFluidInterfaceForces
     auto linearForm_PatternCoupled = form1( _test=Xh, _vector=R,
                                             _pattern=size_type(Pattern::COUPLED),
                                             _rowstart=this->fluid()->rowStartInVector() );
-    if( BuildNonCstPart )
+    if( BuildCstPart )
     {
         if( M_useIntegrationByParts )
         {
@@ -324,11 +324,9 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
                 break;
                 case HelfrichMethod::SMOOTH_PROJECTION:
                 {
-                    Feel::cout << "Before\n";
                     auto helfrichInnerDiv = this->levelset()->smootherVectorial()->project(
                             _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
                             );
-                    Feel::cout << "After\n";
                     auto Fb_div = this->levelset()->smoother()->project(
                             _expr=divv(helfrichInnerDiv) 
                             );
