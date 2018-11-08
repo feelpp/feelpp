@@ -29,6 +29,8 @@
 #ifndef _LEVELSETTOOLMANAGER_HPP
 #define _LEVELSETTOOLMANAGER_HPP 1
 
+#include <feel/feelmodels/levelset/levelsetcurvaturediffusion.hpp>
+
 namespace Feel {
 namespace FeelModels {
 
@@ -69,6 +71,10 @@ public:
     // Projectors: tensor2symm
     typedef Projector<space_tensor2symm_type, space_tensor2symm_type> projector_tensor2symm_type;
     typedef std::shared_ptr<projector_tensor2symm_type> projector_tensor2symm_ptrtype;
+    //--------------------------------------------------------------------//
+    // Curvature diffusion method
+    typedef LevelSetCurvatureDiffusion<space_scalar_type> levelset_curvaturediffusion_type;
+    typedef std::shared_ptr<levelset_curvaturediffusion_type> levelset_curvaturediffusion_ptrtype;
 
 public:
     LevelSetToolManager( 
@@ -80,6 +86,8 @@ public:
     void createProjectorSMDefault();
     void createProjectorL2Tensor2Symm();
 
+    void createCurvatureDiffusion();
+
     levelset_space_manager_ptrtype const& functionSpaceManager() const { return M_spaceManager; }
 
     projector_scalar_ptrtype const& projectorL2Scalar() const { return M_projectorL2Scalar; }
@@ -88,6 +96,8 @@ public:
 
     projector_scalar_ptrtype const& projectorSMScalar() const { return M_projectorSMScalar; }
     projector_vectorial_ptrtype const& projectorSMVectorial() const { return M_projectorSMVectorial; }
+
+    levelset_curvaturediffusion_ptrtype const& curvatureDiffusion() const { return M_curvatureDiffusion; }
 
 private:
     std::string M_prefix;
@@ -111,6 +121,9 @@ private:
     double M_projectorSMVectorialCoeff;
     projector_scalar_ptrtype M_projectorSMScalar;
     projector_vectorial_ptrtype M_projectorSMVectorial;
+    //--------------------------------------------------------------------//
+    // Curvature diffusion method
+    levelset_curvaturediffusion_ptrtype M_curvatureDiffusion;
 
 };
 
@@ -199,7 +212,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMDefault()
         M_projectorSMVectorial = projector(
                 this->functionSpaceManager()->functionSpaceVectorial(),
                 this->functionSpaceManager()->functionSpaceVectorial(),
-                this->M_backendProjectorL2Vectorial,
+                this->M_backendProjectorSMVectorial,
                 DIFF, M_projectorSMVectorialCoeff, 30
                 );
     }
@@ -221,6 +234,19 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorL2Tensor2Symm()
                 this->functionSpaceManager()->functionSpaceTensor2Symm(),
                 this->functionSpaceManager()->functionSpaceTensor2Symm(),
                 this->M_backendProjectorL2Tensor2Symm
+                );
+    }
+}
+
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createCurvatureDiffusion()
+{
+    if( !M_curvatureDiffusion )
+    {
+        M_curvatureDiffusion = std::make_shared<levelset_curvaturediffusion_type>( 
+                this->functionSpaceManager()->functionSpaceScalar(), 
+                prefixvm( this->M_prefix, "curvature-diffusion" ) 
                 );
     }
 }

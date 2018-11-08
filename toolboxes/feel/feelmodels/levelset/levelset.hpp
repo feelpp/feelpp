@@ -234,6 +234,13 @@ public:
     typedef boost::bimap<std::string, DerivationMethod> derivationmethod_maptype;
     static const derivationmethod_maptype DerivationMethodMap;
 
+    enum class CurvatureMethod { 
+        NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION, PN_NODAL_PROJECTION,
+        DIFFUSION_ORDER1, DIFFUSION_ORDER2
+    };
+    typedef boost::bimap<std::string, CurvatureMethod> curvaturemethod_maptype;
+    static const curvaturemethod_maptype CurvatureMethodMap;
+
     //--------------------------------------------------------------------//
     // ModGradPhi advection
     typedef basis_levelset_type basis_modgradphi_advection_type;
@@ -390,6 +397,11 @@ public:
     projector_levelset_vectorial_ptrtype const& smootherVectorial() const { return M_projectorSMVectorial; }
     projector_levelset_ptrtype const& smootherInterface() const;
     projector_levelset_vectorial_ptrtype const& smootherInterfaceVectorial() const;
+
+    //--------------------------------------------------------------------//
+    // Curvature diffusion
+    bool useCurvatureDiffusion() const { return M_useCurvatureDiffusion; }
+    void setUseCurvatureDiffusion( bool b ) { M_useCurvatureDiffusion = b; }
 
     //--------------------------------------------------------------------//
     // Cauchy-Green tensor related quantities
@@ -661,7 +673,11 @@ private:
     // Derivation methods
     DerivationMethod M_gradPhiMethod;
     DerivationMethod M_modGradPhiMethod;
-    DerivationMethod M_curvatureMethod;
+    CurvatureMethod M_curvatureMethod;
+
+    //--------------------------------------------------------------------//
+    // Curvature diffusion
+    bool M_useCurvatureDiffusion;
 
     //--------------------------------------------------------------------//
     // ModGradPhi advection
