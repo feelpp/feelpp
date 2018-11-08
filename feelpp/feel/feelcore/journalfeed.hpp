@@ -27,22 +27,17 @@
 #include <initializer_list>
 #include <boost/variant.hpp> // C++17 to std.
 #include <boost/lexical_cast.hpp>
-#include <feel/feelobserver/journalwatcher.hpp>
+#include <feel/feelcore/journalwatcher.hpp>
 
 // All Feel++ observers are defined here.
 namespace Feel
 {
-namespace Observer
-{
-
-namespace pt =  boost::property_tree;
 
 // Feed the journal with map entries.
 // Example:
 //     To add two entries a, b in the ptree and Json.
 //     JournalFeel{{"a",1},{"b,2"}};
-class JournalFeed
-    : virtual public JournalWatcher
+class JournalFeed : virtual public JournalWatcher
 {
     using super = JournalWatcher;
 public:
@@ -125,8 +120,6 @@ private:
 
 }; // JournalFeed class.
 
-
-} // Observer namespace.
 } // Feel namespace.
 
 #endif // FEELPP_JOURNALFEED_HPP

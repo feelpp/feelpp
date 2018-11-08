@@ -29,7 +29,7 @@
 #ifndef __FunctionSpaceBase_H
 #define __FunctionSpaceBase_H 1
 
-#include <feel/feelobserver/observer.hpp>
+#include <feel/feelcore/journalwatcher.hpp>
 #include <feel/feelcore/commobject.hpp>
 
 namespace Feel
@@ -44,7 +44,7 @@ namespace Feel
  */
 class FEELPP_EXPORT FunctionSpaceBase
     : public CommObject,
-      public Observer::JournalWatcher
+      public JournalWatcher
 {
 public:
 
@@ -60,7 +60,7 @@ public:
      */
     //@{
     using super = CommObject;
-    using super2 = Observer::JournalWatcher;
+    using super2 = JournalWatcher;
     //@}
 
     /** @name Constructors, destructor

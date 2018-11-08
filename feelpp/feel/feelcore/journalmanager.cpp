@@ -20,7 +20,7 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-#include <feel/feelobserver/journalmanager.hpp>
+#include <feel/feelcore/journalmanager.hpp>
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree_serialization.hpp>
@@ -35,9 +35,6 @@
 
 namespace Feel
 {
-namespace Observer
-{
-
 
 JournalManager::JournalManager()
 {
@@ -154,7 +151,6 @@ bool JournalManager::Options::enable = false;
 bool JournalManager::Options::automode = false;
 bool JournalManager::Options::allow_destructor_call = false;
 
-} // Observer namespace
 } // Feel namespace.
 
 

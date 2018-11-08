@@ -39,6 +39,8 @@ set(SRC
   ptreetools.cpp
   checker.cpp
   remotedata.cpp
+  journalmanager.cpp
+  journalwatcher.cpp
   )
 if(FEELPP_HAS_MONGOCXX)
     set( SRC mongocxx.cpp ${SRC} )

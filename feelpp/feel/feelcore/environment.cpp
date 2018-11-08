@@ -497,7 +497,7 @@ Environment::Environment( int argc, char** argv,
     Environment::setJournalAutoPullAtDelete( boption("journal.auto.pullatdelete") );
 
     // Force environment to connect to the journal.
-    S_informationObject = std::make_unique<Observer::JournalWatcher>( std::bind( &Environment::updateInformationObject, this, std::placeholders::_1 ), "Environment", "", false );
+    S_informationObject = std::make_unique<JournalWatcher>( std::bind( &Environment::updateInformationObject, this, std::placeholders::_1 ), "Environment", "", false );
 
     S_timers = std::make_unique<TimerTable>();
 
@@ -761,7 +761,7 @@ Environment::~Environment()
         stopLogging();
         generateSummary( S_about.appName(), "end", true );
 
-        Observer::JournalManager::journalFinalize();
+        JournalManager::journalFinalize();
         S_timers.reset();
         S_hwSysInstance.reset(); // call deleter
         S_informationObject.reset();
@@ -2469,5 +2469,5 @@ hwloc_topology_t Environment::S_hwlocTopology = NULL;
 std::unique_ptr<TimerTable> Environment::S_timers;
 std::unique_ptr<Sys::HwSysBase> Environment::S_hwSysInstance;
 
-std::unique_ptr<Observer::JournalWatcher> Environment::S_informationObject;
+std::unique_ptr<JournalWatcher> Environment::S_informationObject;
 }

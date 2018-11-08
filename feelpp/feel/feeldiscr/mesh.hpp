@@ -50,7 +50,6 @@
 
 #include <feel/feelcore/context.hpp>
 
-#include <feel/feelobserver/observer.hpp>
 #include <feel/feelcore/functors.hpp>
 
 #include <feel/feelmesh/mesh0d.hpp>
@@ -165,7 +164,7 @@ class Mesh
                                                             mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type,
         public boost::addable<Mesh<GeoShape,T,Tag> >,
         public std::enable_shared_from_this< Mesh<GeoShape,T,Tag> >,
-        public Observer::JournalWatcher
+        public JournalWatcher
 {
     using super = typename mpl::if_<is_0d<GeoShape>,
                                     mpl::identity<Mesh0D<GeoShape,T> >,
@@ -174,7 +173,7 @@ class Mesh
                                                       typename mpl::if_<is_2d<GeoShape>,
                                                                         mpl::identity<Mesh2D<GeoShape,T> >,
                                                                         mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type;
-    using super2 = Observer::JournalWatcher;
+    using super2 = JournalWatcher;
 
 public:
 

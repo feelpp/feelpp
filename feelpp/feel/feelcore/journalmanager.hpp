@@ -32,24 +32,10 @@
 namespace Feel
 {
 
-namespace Observer
-{
-
-//! JournalManager handles all journalWatchers.
-//! The purpose of this class is to be inherited by class that manage the
-//! journal system
-//!
-//! \note Journal manager class should inherit from this class
-//!
-//! \remark Environment is the favored journal manager (child class). However,
-//! environment (child) is initialized after JournalManager (mother).
-//! Thus a  template parameter is defined in order to use environment static
-//! members.
-//!
+//! JournalManager that manage the  journal system handles all journalWatchers.
 //! \see JournalManager JournalWatcher Environment
 class JournalManager : public Event::SignalHandler
 {
-
 public:
         // Types alias.
         using notify_type = pt::ptree;
@@ -298,7 +284,6 @@ public:
         };
 };
 
-} // Observer namespace.
 } // Feel namespace.
 
 #endif // FEELPP_JOURNALMANAGER_HPP

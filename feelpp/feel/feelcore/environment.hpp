@@ -76,7 +76,7 @@
 #endif
 
 #include <feel/feelcore/mongocxx.hpp>
-#include <feel/feelobserver/journalmanager.hpp>
+#include <feel/feelcore/journalmanager.hpp>
 #include <feel/feelhwsys/hwsys.hpp>
 
 namespace Feel
@@ -181,7 +181,7 @@ FEELPP_EXPORT AboutData makeAboutDefault( std::string name );
 //! 
 class FEELPP_EXPORT Environment
 :   boost::noncopyable,
-    public Observer::JournalManager
+    public JournalManager
 {
 public:
     //!
@@ -887,7 +887,7 @@ private:
     //! Hardware System information instance.
     static std::unique_ptr<Sys::HwSysBase> S_hwSysInstance;
 
-    static std::unique_ptr<Observer::JournalWatcher> S_informationObject;
+    static std::unique_ptr<JournalWatcher> S_informationObject;
 };
 
 BOOST_PARAMETER_FUNCTION(
