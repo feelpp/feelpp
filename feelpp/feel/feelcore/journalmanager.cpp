@@ -147,9 +147,8 @@ pt::ptree JournalManager::S_journal_ptree = {};
 MongoConfig JournalManager::S_journal_db_config = {};
 uint32_type JournalManager::S_journal_checkpoint = 0;
 
-bool JournalManager::Options::enable = false;
-bool JournalManager::Options::automode = false;
-bool JournalManager::Options::allow_destructor_call = false;
+bool JournalManager::S_enable = false;
+bool JournalManager::S_automode = false;
 
 } // Feel namespace.
 

@@ -494,7 +494,6 @@ Environment::Environment( int argc, char** argv,
     // Enable auto mode for all observers.
     Environment::setJournalEnable( boption("journal") );
     Environment::setJournalAutoMode( boption("journal.auto") );
-    Environment::setJournalAutoPullAtDelete( boption("journal.auto.pullatdelete") );
 
     // Force environment to connect to the journal.
     S_informationObject = std::make_unique<JournalWatcher>( std::bind( &Environment::updateInformationObject, this, std::placeholders::_1 ), "Environment", "", false );
