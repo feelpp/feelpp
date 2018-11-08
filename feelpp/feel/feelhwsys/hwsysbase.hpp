@@ -23,7 +23,7 @@
 #ifndef FEELPP_HWSYSBASE_HPP
 #define FEELPP_HWSYSBASE_HPP 1
 
-#include <feel/feelobserver/journalwatcher.hpp>
+#include <feel/feelcore/journalwatcher.hpp>
 
 namespace Feel
 {
@@ -31,22 +31,19 @@ namespace Feel
 namespace Sys
 {
 
-namespace pt =  boost::property_tree;
-
 //! Hardware Sytem base class.
 //! This class gather information from the operating system such
 //! as memory, number of processors, distribution ...
 //! External libraries should have a specific header inheriting from
 //! this base class.
-class HwSysBase
-    : public Observer::JournalWatcher
+class HwSysBase : public JournalWatcher
 {
 public:
 
     //! Default constructor.
     HwSysBase()
         :
-        Observer::JournalWatcher( "HwSys", "", false ),
+        JournalWatcher( "HwSys", "", false ),
         M_backend( "hwsys" )
     {}
 
@@ -81,7 +78,7 @@ public:
 
 		if( not M_host_name.empty() )
 		{
-            const auto ccp = std::to_string( Observer::JournalManager::journalCurrentCheckpoint() );
+            const auto ccp = std::to_string( JournalManager::journalCurrentCheckpoint() );
             std::string prefix = M_host_name;
 		    p.put( prefix + ".backend", M_backend );
 			p.put( prefix + ".os.name", M_os_name );

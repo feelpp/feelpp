@@ -20,11 +20,9 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-#include <feel/feelobserver/journalwatcher.hpp>
+#include <feel/feelcore/journalwatcher.hpp>
 
 namespace Feel
-{
-namespace Observer
 {
 
 JournalWatcher::JournalWatcher( std::string const& category, std::string const& name, bool connect )
@@ -126,7 +124,6 @@ JournalWatcher::journalNotify( notify_type & journalData )
 // Init static variable.
 std::map<std::string,uint16_type> JournalWatcher::S_counterObjectByCategory = {};
 
-} // Observer namespace
 } // Feel namespace.
 
 

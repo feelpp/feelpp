@@ -24,17 +24,13 @@
 #define FEELPP_JOURNALWATCHER_HPP 1
 
 #include <feel/feelevent/events.hpp>
-#include <feel/feelobserver/journalmanager.hpp>
+#include <feel/feelcore/journalmanager.hpp>
 
 namespace Feel
 {
 
-namespace Observer
-{
-
 // Watcher
-class JournalWatcher
-    : public Event::SlotHandler
+class JournalWatcher : public Event::SlotHandler
 {
 public:
     // Type alias.
@@ -167,7 +163,6 @@ private:
 };
 
 
-} // Observer namespace.
 } // Feel namespace.
 
 #endif // FEELPP_JOURNALWATCHER_HPP

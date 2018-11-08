@@ -128,9 +128,9 @@ private:
 //!
 //! The \c Checker class
 //!
-class FEELPP_EXPORT Checker : public Observer::JournalWatcher
+class FEELPP_EXPORT Checker : public JournalWatcher
 {
-    using super = Observer::JournalWatcher;
+    using super = JournalWatcher;
 public:
     Checker( std::string const& name = "" );
     Checker( Checker const& c ) = default;

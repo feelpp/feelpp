@@ -40,7 +40,7 @@
 #include <boost/accumulators/statistics/max.hpp>
 #include <boost/algorithm/string/trim_all.hpp>
 
-#include <feel/feelobserver/journalwatcher.hpp>
+#include <feel/feelcore/journalwatcher.hpp>
 
 namespace Feel {
 
@@ -67,10 +67,10 @@ class TimerData : public std::vector<double>
 
 //! TimerTable is a map of timer.
 class TimerTable : std::map<std::string, TimerData>,
-    public Observer::JournalWatcher
+    public JournalWatcher
 {
     using super = std::map<std::string, TimerData>;
-    using super2 = Observer::JournalWatcher;
+    using super2 = JournalWatcher;
 public:
 
     //! Constructors
