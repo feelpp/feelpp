@@ -1845,53 +1845,57 @@ Environment::generateSummary( std::string fname, std::string stage, bool write )
 void
 Environment::updateInformationObject( pt::ptree & p )
 {
-    //std::cout << "Environment::updateInformationObject\n";
-    p.put( "application.name", Environment::about().appName() );
-    p.put( "run.uuid", Environment::randomUUID() );
-    p.put( "directories.app", Environment::appRepository() );
-    p.put( "directories.export", Environment::exportsRepository() );
-    p.put( "directories.logs", Environment::logsRepository() );
-    p.put( "directories.exprs", Environment::exprRepository() );
-    p.put( "directories.downloads", Environment::downloadsRepository() );
-#if BOOST_VERSION >= 106700
-    std::stringstream mpi_version;
-    mpi_version << M_env->version().first << "."
-                << M_env->version().second;
-    p.put( "mpi.version", mpi_version.str() );
-#else
-    p.put( "mpi.version", "unknown" );
-#endif
-    p.put( "mpi.number_processors", Environment::numberOfProcessors() );
-    p.put( "mpi.is_parallel", Environment::isParallel() );
-    if ( S_vm.count( "case" ) )
+    if ( !p.get_child_optional( "application" ) )
     {
-       p.put( "case.enabled", true );
-       pt::ptree pcase;
-       std::stringstream ss( S_vm["case.config-file"].as<std::string>() );
-       boost::property_tree::read_json(ss, pcase);
-       p.push_back( pt::ptree::value_type("case", pcase) );
-    }
-    else
-       p.put( "case.enabled", false );
-    // Softwares
-#if defined ( FEELPP_HAS_PETSC_H )
-    p.put( "software.petsc.version.major", PETSC_VERSION_MAJOR );
-    p.put( "software.petsc.version.minor", PETSC_VERSION_MINOR );
-    p.put( "software.petsc.version.subminor", PETSC_VERSION_SUBMINOR );
-    p.put( "software.petsc.version.patch", PETSC_VERSION_PATCH );
-    p.put( "software.petsc.version.release", PETSC_VERSION_RELEASE );
-    p.put( "software.petsc.date.release", PETSC_RELEASE_DATE );
-    p.put( "software.petsc.date.version", PETSC_VERSION_DATE );
+        p.put( "application.name", Environment::about().appName() );
+        p.put( "run.uuid", Environment::randomUUID() );
+        p.put( "run.directories.app", Environment::appRepository() );
+        p.put( "run.directories.export", Environment::exportsRepository() );
+        p.put( "run.directories.logs", Environment::logsRepository() );
+        p.put( "run.directories.exprs", Environment::exprRepository() );
+        p.put( "run.directories.downloads", Environment::downloadsRepository() );
+        p.put( "run.number_processors", Environment::numberOfProcessors() );
+
+        if ( S_vm.count( "case" ) )
+        {
+            p.put( "run.case", soption( _name="case" ) );
+            if ( S_vm.count( "case.config-file" ) )
+                p.put( "run.case.config-file", soption( _name="case.config-file" ) );
+        }
+        pt::ptree ptTmp;
+        for ( auto const& cfg : S_configFiles )
+            ptTmp.push_back( std::make_pair("", pt::ptree( std::get<0>( cfg ) ) ) );
+        p.put_child( "run.config-files", ptTmp );
+
+        // Softwares
+        p.put( "software.boost.version", BOOST_LIB_VERSION );
+#if BOOST_VERSION >= 106700
+        std::stringstream mpi_version;
+        mpi_version << M_env->version().first << "."
+                    << M_env->version().second;
+        p.put( "software.mpi.version", mpi_version.str() );
+#else
+        p.put( "software.mpi.version", "unknown" );
 #endif
 #if defined( OMPI_MPI_H )
-    p.put( "software.openmpi.version.major", OMPI_MAJOR_VERSION );
-    p.put( "software.openmpi.version.minor", OMPI_MINOR_VERSION );
-    p.put( "software.openmpi.version.release", OMPI_RELEASE_VERSION );
+        p.put( "software.mpi.library", "openmpi" );
+        p.put( "software.mpi.openmpi.version.major", OMPI_MAJOR_VERSION );
+        p.put( "software.mpi.openmpi.version.minor", OMPI_MINOR_VERSION );
+        p.put( "software.mpi.openmpi.version.release", OMPI_RELEASE_VERSION );
 #endif
+#if defined ( FEELPP_HAS_PETSC_H )
+        p.put( "software.petsc.version.major", PETSC_VERSION_MAJOR );
+        p.put( "software.petsc.version.minor", PETSC_VERSION_MINOR );
+        p.put( "software.petsc.version.subminor", PETSC_VERSION_SUBMINOR );
+        p.put( "software.petsc.version.patch", PETSC_VERSION_PATCH );
+        p.put( "software.petsc.version.release", PETSC_VERSION_RELEASE );
+        p.put( "software.petsc.date.release", PETSC_RELEASE_DATE );
+        p.put( "software.petsc.date.version", PETSC_VERSION_DATE );
+#endif
+    }
     if ( S_hwSysInstance )
     {
         S_hwSysInstance->updateInformationObject( p );
-            //p.put_child( "hardware", S_hwSysInstance->informationObject() );
     }
 }
 
