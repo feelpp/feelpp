@@ -23,7 +23,8 @@
 #define BOOST_TEST_MODULE test_observers
 #include <feel/feelcore/testsuite.hpp>
 
-#include <feel/feel.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 
 using namespace Feel;
 

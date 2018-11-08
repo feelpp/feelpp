@@ -28,7 +28,6 @@
 #include <feel/feelconfig.h>
 
 #include <feel/feelevent/events.hpp>
-#include <feel/feelobserver/observer.hpp>
 
 using namespace Feel;
 
@@ -60,11 +59,11 @@ using namespace Feel;
 // to the simulation info manager.
 // Note that a "typename" and a "name" key are mandatory
 class Object2
-: virtual public Observer::JournalWatcher // observe the simulation
+: virtual public JournalWatcher // observe the simulation
 {
     public:
         Object2( std::string name = "" ) :
-            Observer::JournalWatcher( "Object2", name ) {}
+            JournalWatcher( "Object2", name ) {}
 
     void updateInformationObject( pt::ptree & p ) override
         {
