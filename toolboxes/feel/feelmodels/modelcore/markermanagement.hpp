@@ -46,8 +46,9 @@ public :
 
     void clearMarkerDirichletBC();
 
-    void setMarkerDirichletBCByNameId( std::string type,std::string markerNameId,std::list<std::string> const& markers, ComponentType ct = ComponentType::NO_COMPONENT );
-    void addMarkerDirichletBC(std::string type,std::string markerNameId, ComponentType ct = ComponentType::NO_COMPONENT);
+    void setMarkerDirichletBCByNameId( std::string type,std::string name,std::set<std::string> const& markers, ComponentType ct = ComponentType::NO_COMPONENT );
+    void addMarkerDirichletBC(std::string type, std::string name, std::string marker, ComponentType ct = ComponentType::NO_COMPONENT);
+    void addMarkerDirichletBC(std::string type, std::string name, std::set<std::string> const& markers, ComponentType ct = ComponentType::NO_COMPONENT);
 
     bool hasMarkerDirichletBC( std::string type, ComponentType ct = ComponentType::NO_COMPONENT) const;
     bool hasMarkerDirichletBCelimination( ComponentType ct ) const;
@@ -57,20 +58,20 @@ public :
     bool hasMarkerDirichletBCnitsche() const;
     bool hasMarkerDirichletBClm() const;
 
-    std::map<std::string,std::list<std::string> > const& markerDirichletBCByType( ComponentType ct = ComponentType::NO_COMPONENT ) const;
-    std::list<std::string> const& markerDirichletBCByNameId(std::string type,std::string markerNameId, ComponentType ct = ComponentType::NO_COMPONENT ) const;
-    std::list<std::string> const& markerDirichletBCelimination( ComponentType ct = ComponentType::NO_COMPONENT ) const;
-    std::list<std::string> const& markerDirichletBCnitsche( ComponentType ct = ComponentType::NO_COMPONENT ) const;
-    std::list<std::string> const& markerDirichletBClm( ComponentType ct = ComponentType::NO_COMPONENT ) const;
+    std::map<std::string,std::set<std::string> > const& markerDirichletBCByType( ComponentType ct = ComponentType::NO_COMPONENT ) const;
+    std::set<std::string> const& markerDirichletBCByNameId(std::string type,std::string markerNameId, ComponentType ct = ComponentType::NO_COMPONENT ) const;
+    std::set<std::string> const& markerDirichletBCelimination( ComponentType ct = ComponentType::NO_COMPONENT ) const;
+    std::set<std::string> const& markerDirichletBCnitsche( ComponentType ct = ComponentType::NO_COMPONENT ) const;
+    std::set<std::string> const& markerDirichletBClm( ComponentType ct = ComponentType::NO_COMPONENT ) const;
 
     std::string getInfoDirichletBC() const;
 
 private :
     void updateForUseMarkerDirichletBC();
 
-    std::map<ComponentType,std::map<std::string,std::map<std::string,std::list<std::string> > > > M_dirichletBCType;
-    std::map<ComponentType,std::map<std::string,std::list<std::string> > > M_dirichletBCMarkersListByType;
-    std::list<std::string> M_listMarkerEmpty;
+    std::map<ComponentType,std::map<std::string,std::map<std::string,std::set<std::string> > > > M_dirichletBCType;
+    std::map<ComponentType,std::map<std::string,std::set<std::string> > > M_dirichletBCMarkersListByType;
+    std::set<std::string> M_listMarkerEmpty;
 };
 
 
@@ -84,17 +85,18 @@ public :
 
     void clearMarkerNeumannBC();
 
-    void setMarkerNeumannBC( NeumannBCShape shape, std::string markerNameId,std::list<std::string> const& markers );
-    void addMarkerNeumannBC( NeumannBCShape shape, std::string markerNameId);
+    void setMarkerNeumannBC( NeumannBCShape shape, std::string name,std::set<std::string> const& markers );
+    void addMarkerNeumannBC( NeumannBCShape shape, std::string name, std::string marker);
+    void addMarkerNeumannBC( NeumannBCShape shape, std::string name, std::set<std::string> markers);
 
-    std::map<std::string,std::list<std::string> > const& markerNeumannBC( NeumannBCShape shape ) const;
-    std::list<std::string> const& markerNeumannBC( NeumannBCShape shape, std::string markerNameId ) const;
+    std::map<std::string,std::set<std::string> > const& markerNeumannBC( NeumannBCShape shape ) const;
+    std::set<std::string> const& markerNeumannBC( NeumannBCShape shape, std::string markerNameId ) const;
 
     std::string getInfoNeumannBC() const;
 
 private :
-    std::map<NeumannBCShape,std::map<std::string,std::list<std::string> > > M_containerMarkers;
-    std::list<std::string> M_listMarkerEmpty;
+    std::map<NeumannBCShape,std::map<std::string,std::set<std::string> > > M_containerMarkers;
+    std::set<std::string> M_listMarkerEmpty;
 };
 
 class MarkerManagementNeumannEulerianFrameBC
@@ -107,16 +109,17 @@ public :
 
     void clearMarkerNeumannEulerianFrameBC();
 
-    void setMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId,std::list<std::string> const& markers );
-    void addMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId);
+    void setMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string name,std::set<std::string> const& markers );
+    void addMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string name, std::string marker);
+    void addMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string name, std::set<std::string> markers);
 
-    std::map<std::string,std::list<std::string> > const& markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape ) const;
-    std::list<std::string> const& markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId ) const;
+    std::map<std::string,std::set<std::string> > const& markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape ) const;
+    std::set<std::string> const& markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId ) const;
 
     std::string getInfoNeumannEulerianFrameBC() const;
 private :
-    std::map<NeumannEulerianFrameBCShape,std::map<std::string,std::list<std::string> > > M_containerMarkers;
-    std::list<std::string> M_listMarkerEmpty;
+    std::map<NeumannEulerianFrameBCShape,std::map<std::string,std::set<std::string> > > M_containerMarkers;
+    std::set<std::string> M_listMarkerEmpty;
 };
 
 class MarkerManagementALEMeshBC
@@ -128,17 +131,18 @@ public :
 
     void clearMarkerALEMeshBC();
 
-    void setMarkerALEMeshBC( std::string type, std::list<std::string> const& markers );
+    void setMarkerALEMeshBC( std::string type, std::set<std::string> const& markers );
     void addMarkerALEMeshBC(std::string type, std::string markerName);
+    void addMarkerALEMeshBC( std::string type, std::set<std::string> const& markers );
 
-    std::map<std::string,std::list<std::string> > const& markerALEMeshBC() const;
-    std::list<std::string> const& markerALEMeshBC( std::string type ) const;
+    std::map<std::string,std::set<std::string> > const& markerALEMeshBC() const;
+    std::set<std::string> const& markerALEMeshBC( std::string type ) const;
 
     std::string getInfoALEMeshBC() const;
 
 private :
-    std::map<std::string,std::list<std::string> > M_containerMarkers;
-    std::list<std::string> M_listMarkerEmpty;
+    std::map<std::string,std::set<std::string> > M_containerMarkers;
+    std::set<std::string> M_listMarkerEmpty;
 };
 
 class MarkerManagementSlipBC
@@ -148,13 +152,14 @@ public :
     MarkerManagementSlipBC();
     MarkerManagementSlipBC( MarkerManagementSlipBC const& op ) = default;
     void clearMarkerSlipBC();
-    void setMarkerSlipBC( std::list<std::string> const& markers );
+    void setMarkerSlipBC( std::set<std::string> const& markers );
     void addMarkerSlipBC( std::string markerName);
-    std::list<std::string> const& markerSlipBC() const;
+    void addMarkerSlipBC( std::set<std::string> const& markers );
+    std::set<std::string> const& markerSlipBC() const;
     std::string getInfoSlipBC() const;
 private :
-    std::list<std::string> M_containerMarkers;
-    std::list<std::string> M_listMarkerEmpty;
+    std::set<std::string> M_containerMarkers;
+    std::set<std::string> M_listMarkerEmpty;
 };
 
 class MarkerManagementPressureBC
@@ -164,16 +169,17 @@ public :
     MarkerManagementPressureBC();
     MarkerManagementPressureBC( MarkerManagementPressureBC const& op ) = default;
     void clearMarkerPressureBC();
-    void setMarkerPressureBC( std::string const& markerNameId, std::list<std::string> const& markers );
-    void addMarkerPressureBC( std::string const& markerName );
-    std::list<std::string> const& markerPressureBC() const;
-    std::list<std::string> const& markerPressureBC( std::string const& markerNameId ) const;
+    void setMarkerPressureBC( std::string const& name, std::set<std::string> const& markers );
+    void addMarkerPressureBC( std::string const& name, std::string const& marker );
+    void addMarkerPressureBC( std::string const& name, std::set<std::string> const& markers );
+    std::set<std::string> const& markerPressureBC() const;
+    std::set<std::string> const& markerPressureBC( std::string const& markerNameId ) const;
     bool hasMarkerPressureBC() const;
     std::string getInfoPressureBC() const;
 private :
-    std::map<std::string,std::list<std::string> > M_containerMarkers;
-    std::list<std::string> M_listMarkers;
-    std::list<std::string> M_listMarkerEmpty;
+    std::map<std::string,std::set<std::string> > M_containerMarkers;
+    std::set<std::string> M_listMarkers;
+    std::set<std::string> M_listMarkerEmpty;
 };
 
 class MarkerManagementRobinBC
@@ -183,14 +189,15 @@ public :
     MarkerManagementRobinBC();
     MarkerManagementRobinBC( MarkerManagementRobinBC const& op ) = default;
     void clearMarkerRobinBC();
-    void setMarkerRobinBC( std::string const& markerNameId, std::list<std::string> const& markers );
-    void addMarkerRobinBC( std::string const& markerNameId );
-    std::map<std::string,std::list<std::string> > const& markerRobinBC() const;
-    std::list<std::string> const& markerRobinBC( std::string const& markerNameId ) const;
+    void setMarkerRobinBC( std::string const& name, std::set<std::string> const& markers );
+    void addMarkerRobinBC( std::string const& name, std::string const& marker );
+    void addMarkerRobinBC( std::string const& name, std::set<std::string> const& markers );
+    std::map<std::string,std::set<std::string> > const& markerRobinBC() const;
+    std::set<std::string> const& markerRobinBC( std::string const& markerNameId ) const;
     std::string getInfoRobinBC() const;
 private :
-    std::map<std::string,std::list<std::string> > M_containerMarkers;
-    std::list<std::string> M_listMarkerEmpty;
+    std::map<std::string,std::set<std::string> > M_containerMarkers;
+    std::set<std::string> M_listMarkerEmpty;
 };
 
 class MarkerManagementFluidStructureInterfaceBC
@@ -200,13 +207,14 @@ public :
     MarkerManagementFluidStructureInterfaceBC();
     MarkerManagementFluidStructureInterfaceBC( MarkerManagementFluidStructureInterfaceBC const& op ) = default;
     void clearMarkerFluidStructureInterfaceBC();
-    void setMarkerFluidStructureInterfaceBC( std::list<std::string> const& markers );
+    void setMarkerFluidStructureInterfaceBC( std::set<std::string> const& markers );
     void addMarkerFluidStructureInterfaceBC( std::string markerName );
-    std::list<std::string> const& markerFluidStructureInterfaceBC() const;
+    void addMarkerFluidStructureInterfaceBC( std::set<std::string> const& markers );
+    std::set<std::string> const& markerFluidStructureInterfaceBC() const;
     std::string getInfoFluidStructureInterfaceBC() const;
 private :
-    std::list<std::string> M_containerMarkers;
-    std::list<std::string> M_listMarkerEmpty;
+    std::set<std::string> M_containerMarkers;
+    std::set<std::string> M_listMarkerEmpty;
 };
 
 
@@ -214,51 +222,51 @@ namespace detail
 {
 
 template <typename MeshType>
-std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> >
+std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> >
 distributeMarkerListOnSubEntity( std::shared_ptr<MeshType> const& mesh, std::set<std::string> const& listMarker )
 {
-    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > res;
+    std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > res;
     for ( std::string const& marker : listMarker )
     {
         if ( !mesh->hasMarker( marker ) ) continue;
 
         if ( mesh->hasFaceMarker( marker ) )
         {
-            std::get<0>( res ).push_back( marker );
+            std::get<0>( res ).insert( marker );
             //std::cout << "has face marker " << marker << "\n";
         }
         else if ( mesh->hasEdgeMarker( marker ) )
         {
-            std::get<1>( res ).push_back( marker );
+            std::get<1>( res ).insert( marker );
             //std::cout << "has edge marker " << marker << "\n";
         }
         else if ( mesh->hasPointMarker( marker ) )
         {
-            std::get<2>( res ).push_back( marker );
+            std::get<2>( res ).insert( marker );
             //std::cout << "has point marker " << marker << "\n";
         }
         else
         {
-            std::get<3>( res ).push_back( marker );
+            std::get<3>( res ).insert( marker );
             //std::cout << "has element marker " << marker << "\n";
         }
     }
     return res;
 }
 
-template <typename MeshType>
-std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> >
-distributeMarkerListOnSubEntity( std::shared_ptr<MeshType> const& mesh, std::list<std::string> const& listMarker )
-{
-    std::set<std::string> setOfMarkers(listMarker.begin(),listMarker.end());
-    return distributeMarkerListOnSubEntity( mesh,setOfMarkers );
-}
+// template <typename MeshType>
+// std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> >
+// distributeMarkerListOnSubEntity( std::shared_ptr<MeshType> const& mesh, std::set<std::string> const& listMarker )
+// {
+//     std::set<std::string> setOfMarkers(listMarker.begin(),listMarker.end());
+//     return distributeMarkerListOnSubEntity( mesh,setOfMarkers );
+// }
 
 template <typename MeshType>
-std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> >
-distributeMarkerListOnSubEntity( std::shared_ptr<MeshType> const& mesh, std::initializer_list< std::list<std::string> > const& listOflistMarker )
+std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> >
+distributeMarkerListOnSubEntity( std::shared_ptr<MeshType> const& mesh, std::initializer_list< std::set<std::string> > const& listOflistMarker )
 {
-    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > res;
+    std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > res;
     std::set<std::string> setOfMarkers;
     for ( auto const& listMarker : listOflistMarker )
     {
