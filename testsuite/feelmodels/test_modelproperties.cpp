@@ -180,6 +180,7 @@ BOOST_AUTO_TEST_CASE( test_bc )
     BOOST_CHECK_EQUAL( test.material(), "mycopper" );
 }
 
+#if 0 // TODO
 BOOST_AUTO_TEST_CASE( test_bc2 )
 {
     std::vector<std::set<std::string> > markers;
@@ -207,6 +208,7 @@ BOOST_AUTO_TEST_CASE( test_bc2 )
     auto test = boundaryconditions["velocity"]["Robin"][0];
     BOOST_CHECK_EQUAL( test.material(), "mycopper" );
 }
+#endif
 
 BOOST_AUTO_TEST_CASE( test_outputs )
 {
