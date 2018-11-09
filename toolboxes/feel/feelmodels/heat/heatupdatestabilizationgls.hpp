@@ -76,7 +76,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( Expr<Rho
         }
         for( auto const& d : this->bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? range : intersect( markedelements(mesh,marker(d)),range );
+            auto rangeBodyForceUsed = ( markers(d).empty() )? range : intersect( markedelements(mesh,markers(d)),range );
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=tau*expression(d)*stab_test,
@@ -112,7 +112,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( Expr<Rho
         }
         for( auto const& d : this->bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? range : intersect( markedelements(mesh,marker(d)), range );
+            auto rangeBodyForceUsed = ( markers(d).empty() )? range : intersect( markedelements(mesh,markers(d)), range );
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=tau*expression(d)*stab_test,
@@ -255,7 +255,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( Expr<RhoC
         }
         for( auto const& d : this->bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? range : intersect( markedelements(mesh,marker(d)), range );
+            auto rangeBodyForceUsed = ( markers(d).empty() )? range : intersect( markedelements(mesh,markers(d)), range );
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=-tau*expression(d)*stab_test,
@@ -285,7 +285,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( Expr<RhoC
         }
         for( auto const& d : this->bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? range : intersect( markedelements(mesh,marker(d)), range );
+            auto rangeBodyForceUsed = ( markers(d).empty() )? range : intersect( markedelements(mesh,markers(d)), range );
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=-tau*expression(d)*stab_test,

@@ -30,6 +30,7 @@
 #include <boost/property_tree/ptree.hpp>
 
 #include <feel/feelmodels/modelexpression.hpp>
+#include <feel/feelmodels/modelmarkers.hpp>
 
 namespace Feel {
 
@@ -200,7 +201,8 @@ private:
     pt::ptree M_p;
     std::string M_directoryLibExpr;
     std::string M_name, M_field;
-    std::set<std::string> M_types, M_markers;
+    std::set<std::string> M_types;
+    ModelMarkers M_markers;
     ModelExpression M_solution, M_gradSolution, M_expr, M_gradExpr;
     uint16_type M_quadOrder, M_quad1Order;
 };
@@ -251,7 +253,8 @@ private:
     pt::ptree M_p;
     std::string M_directoryLibExpr;
     std::string M_name, M_field;
-    std::set<std::string> M_types, M_markers;
+    std::set<std::string> M_types;
+    ModelMarkers M_markers;
     ModelExpression M_expr;
     uint16_type M_quadOrder, M_quad1Order;
 };

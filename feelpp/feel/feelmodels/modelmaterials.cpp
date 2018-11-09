@@ -41,7 +41,8 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, World
     M_worldComm( &worldComm ),
     M_name( name ),
     M_p( p ),
-    M_directoryLibExpr( directoryLibExpr )
+    M_directoryLibExpr( directoryLibExpr ),
+    M_meshMarkers( name )
 {
     if ( auto fnameOpt = p.get_optional<std::string>("filename") )
     {
@@ -61,15 +62,8 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, World
     }
 
 
-    if ( auto meshMarkers = M_p.get_child_optional("markers") )
-    {
-        for( auto const& item : M_p.get_child("markers") )
-            M_meshMarkers.insert(item.second.template get_value<std::string>());
-        if( M_meshMarkers.empty() )
-            M_meshMarkers.insert(M_p.get<std::string>("markers") );
-    }
-    else if ( !name.empty() )
-        M_meshMarkers.insert( name );
+    if ( auto markers = M_p.get_child_optional("markers") )
+        M_meshMarkers.setPTree(*markers);
 
     if ( auto physics = M_p.get_child_optional("physics") )
     {
