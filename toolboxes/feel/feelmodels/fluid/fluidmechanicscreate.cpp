@@ -374,7 +374,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
         std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Dirichlet", name(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
-        this->addMarkerALEMeshBC(bcTypeMeshALE,markerList );
+        this->addMarkerALEMeshBC(bcTypeMeshALE,markers(d) );
     }
     for ( ComponentType comp : std::vector<ComponentType>( { ComponentType::X, ComponentType::Y, ComponentType::Z } ) )
     {
@@ -392,7 +392,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
             std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( bcDirichletCompField, bcDirichletCompKeyword, name(d), "alemesh_bc" );
             std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
-            this->setMarkerALEMeshBC(bcTypeMeshALE,markerList);
+            this->setMarkerALEMeshBC(bcTypeMeshALE,markers(d));
         }
     }
 
@@ -409,8 +409,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
         std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Neumann_scalar", name(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
-        for (std::string const& currentMarker : markerList )
-            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
+        this->addMarkerALEMeshBC(bcTypeMeshALE,markers(d));
     }
     this->M_bcNeumannVectorial = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "velocity", "Neumann_vectorial" );
     for( auto const& d : this->M_bcNeumannVectorial )
@@ -419,8 +418,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
         std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Neumann_vectorial", name(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
-        for (std::string const& currentMarker : markerList )
-            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
+        this->addMarkerALEMeshBC(bcTypeMeshALE,markers(d));
     }
     this->M_bcNeumannTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<nDim>( "velocity", "Neumann_tensor2" );
     for( auto const& d : this->M_bcNeumannTensor2 )
@@ -429,8 +427,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
         std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Neumann_tensor2", name(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
-        for (std::string const& currentMarker : markerList )
-            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
+        this->addMarkerALEMeshBC(bcTypeMeshALE,markers(d));
     }
 
     this->M_bcPressure = this->modelProperties().boundaryConditions().getScalarFields( "pressure", "Dirichlet" );
@@ -440,8 +437,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
         std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "pressure", "Dirichlet", name(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
-        for (std::string const& currentMarker : markerList )
-            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
+        this->addMarkerALEMeshBC(bcTypeMeshALE,markers(d));
     }
     for( std::string const& bcMarker : this->modelProperties().boundaryConditions().markers("fluid", "slip") )
     {
