@@ -28,6 +28,7 @@
 #include <vector>
 #include <boost/property_tree/ptree.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
+#include <feel/feelmodels/modelmarkers.hpp>
 
 namespace Feel {
 
@@ -386,7 +387,7 @@ private:
     //! material physics
     std::set<std::string> M_physics;
     //! mesh markers
-    std::set<std::string> M_meshMarkers;
+    ModelMarkers M_meshMarkers;
 
 };
 

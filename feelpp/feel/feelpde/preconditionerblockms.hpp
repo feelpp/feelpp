@@ -310,8 +310,8 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
 
     for(auto const & it : m_weak_p)
     {
-        LOG(INFO) << "Applying (weak) " << it.second << " on " << it.first << " for "<<M_prefix_22<<"\n";
-        f2L += integrate(_range=markedfaces(M_Qh->mesh(),it.first),
+        LOG(INFO) << "Applying (weak) " << it.second.first << " on " << it.first << " for "<<M_prefix_22<<"\n";
+        f2L += integrate(_range=markedfaces(M_Qh->mesh(),it.second.second),
                          _expr=M_er*inner(trans(gradt(phi)),N())*id(phi)
                          + (doption(_prefix=M_prefix,_name="penaldir")/hFace())*idt(phi)*id(phi)
                          );
@@ -320,7 +320,7 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
     for(auto const & it : m_dirichlet_p)
     {
         LOG(INFO) << "Applying (on)" << it.second << " on " << it.first << " for "<<M_prefix_22<<"\n";
-        f2L += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type="elimination_symmetric");
+        f2L += on(_range=markedfaces(M_Qh->mesh(),it.second.second),_element=phi, _expr=it.second.first, _rhs=f1LQ, _type="elimination_symmetric");
     }
 
     init();
@@ -356,16 +356,16 @@ PreconditionerBlockMS<space_type>::init( void )
     auto f1A = form1(_test=M_Vh);
     for(auto const & it : m_weak_u )
     {
-        LOG(INFO) << "Applying (weak) " << it.second << " on " << it.first << " for "<<M_prefix_11<<"\n";
-        f2A += integrate(_range=markedfaces(M_Vh->mesh(),it.first),
+        LOG(INFO) << "Applying (weak) " << it.second.first << " on " << it.first << " for "<<M_prefix_11<<"\n";
+        f2A += integrate(_range=markedfaces(M_Vh->mesh(),it.second.second),
             _expr=-(1./M_relax)*trans(curlt_op(u))*(cross(N(),id(u)) )
             - (1./M_relax)*trans(curl_op(u))*(cross(N(),idt(u)) )
             + doption(_prefix=M_prefix,_name="penaldir")/(hFace()*M_relax)*inner(cross(idt(u),N()),cross(id(u),N())) );
     }
     for(auto const & it : m_dirichlet_u )
     {
-        LOG(INFO) << "Applying (on) " << it.second << " on " << it.first << " for "<<M_prefix_11<<"\n";
-        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type="elimination_symmetric");
+        LOG(INFO) << "Applying (on) " << it.second.first << " on " << it.first << " for "<<M_prefix_11<<"\n";
+        f2A += on(_range=markedfaces(M_Vh->mesh(),it.second.second), _expr=it.second.first,_rhs=f1A, _element=u, _type="elimination_symmetric");
     }
 
     /* 

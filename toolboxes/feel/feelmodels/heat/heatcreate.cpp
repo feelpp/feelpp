@@ -204,7 +204,7 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     auto initialSolution = this->modelProperties().initialConditions().getScalarFields( "temperature", "" );
     for( auto const& d : initialSolution )
     {
-        auto rangeElt = (marker(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),marker(d));
+        auto rangeElt = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
         this->fieldTemperaturePtr()->on(_range=rangeElt,_expr=expression(d),_geomap=this->geomap());
     }
     if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
@@ -495,14 +495,14 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
     this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Dirichlet" );
     for( auto const& d : this->M_bcDirichlet )
-        this->addMarkerDirichletBC("elimination", marker(d) );
+        this->addMarkerDirichletBC("elimination", name(d), markers(d) );
     this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Neumann" );
     for( auto const& d : this->M_bcNeumann )
-        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,marker(d));
+        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,name(d),markers(d));
 
     this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "temperature", "Robin" );
     for( auto const& d : this->M_bcRobin )
-        this->addMarkerRobinBC( marker(d) );
+        this->addMarkerRobinBC( name(d),markers(d) );
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
 
@@ -515,7 +515,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // strong Dirichlet bc on temperature from expression
     for( auto const& d : M_bcDirichlet )
     {
-        auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d) );
+        auto listMark = this->markerDirichletBCByNameId( "elimination",name(d) );
         temperatureMarkers.insert( listMark.begin(), listMark.end() );
     }
     auto meshMarkersTemperatureByEntities = detail::distributeMarkerListOnSubEntity( mesh, temperatureMarkers );
