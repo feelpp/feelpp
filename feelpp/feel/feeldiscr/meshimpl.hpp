@@ -294,7 +294,7 @@ Mesh<Shape, T, Tag>::updateForUse()
                 DCHECK( eltModified.isValid() ) << "Element " << eltModified << " with invalid point";
                 // first look if the element has a point with a marker
                 // if not we skip this element
-                if ( eltModified.hasPointWithMarker() && !eltModified.isGhostCell())
+                if ( eltModified.hasPointWithMarker() )
                 {
                     int index_pt = 0;
                     std::for_each( std::begin(eltModified.points()), std::end(eltModified.points()),

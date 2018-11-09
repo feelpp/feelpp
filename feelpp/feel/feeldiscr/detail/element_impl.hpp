@@ -2673,31 +2673,41 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     DVLOG(3) << "entity " << firstEntity.id() << " with hasMarker "
              << firstEntity.hasMarker() << " nb: " << std::distance(entity_it,entity_en);
     size_type eid = firstEntity.elements().begin()->first;
-    size_type ptid_in_element = firstEntity.elements().begin()->second;
+    uint16_type eid_in_element = firstEntity.elements().begin()->second;
     auto const& elt = mesh->element( eid );
-    auto geopc = gm->preCompute( __fe->edgePoints(ptid_in_element) );
+    auto geopc = gm->preCompute( __fe->edgePoints(eid_in_element) );
     auto ctx = gm->template context<context>( elt, geopc );
     auto expr_evaluator = ex.evaluator( vf::mapgmc(ctx) );
 
-     auto IhLoc = __fe->edgeLocalInterpolant();
+    auto IhLoc = __fe->edgeLocalInterpolant();
     for ( ; entity_it != entity_en; ++entity_it )
     {
-
         auto const& curEntity = boost::unwrap_ref(*entity_it);
-        auto entity_elt_info = curEntity.elements().begin();
-        ptid_in_element = entity_elt_info->second;
-        DVLOG(3) << "entity " << curEntity.id() << " element " << entity_elt_info->first << " id in element "
-                 << ptid_in_element<< " with hasMarker " << curEntity.hasMarker();
-        auto const& elt = mesh->element( entity_elt_info->first );
-        geopc = gm->preCompute( __fe->edgePoints(ptid_in_element) );
+        eid = invalid_size_type_value;
+        for ( auto const& eltConnectedToEdge : curEntity.elements() )
+        {
+            size_type eltIdConnected = eltConnectedToEdge.first;
+            if ( __dof->isElementDone( eltIdConnected ) )
+            {
+                eid = eltIdConnected;
+                eid_in_element = eltConnectedToEdge.second;
+                break;
+            }
+        }
+        if ( eid == invalid_size_type_value )
+            continue;
+        DVLOG(3) << "entity " << curEntity.id() << " element " << eid << " id in element "
+                 << eid_in_element<< " with hasMarker " << curEntity.hasMarker();
+        auto const& elt = mesh->element( eid );
+        geopc = gm->preCompute( __fe->edgePoints(eid_in_element) );
         ctx->update( elt, geopc );
 
         expr_evaluator.update( vf::mapgmc( ctx ) );
         __fe->edgeInterpolate( expr_evaluator, IhLoc );
         if ( accumulate )
-            this->plus_assign( curEntity, IhLoc );
+            this->plus_assign( curEntity, IhLoc, std::make_pair(eid,eid_in_element) );
         else
-            this->assign( curEntity, IhLoc );
+            this->assign( curEntity, IhLoc, std::make_pair(eid,eid_in_element) );
     } // entity_it
     LOG(INFO) << "onImpl on Mesh Edges done";
 
@@ -2736,7 +2746,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     google::FlushLogFiles(google::GLOG_INFO);
 
     size_type eid = firstPt.elements().begin()->first;
-    size_type ptid_in_element = firstPt.elements().begin()->second;
+    uint16_type ptid_in_element = firstPt.elements().begin()->second;
     auto const& elt = mesh->element( eid );
     auto geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
     auto ctx = gm->template context<context>( elt, geopc );
@@ -2751,18 +2761,30 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     {
         auto const& curPt = boost::unwrap_ref(*pt_it);
         DVLOG(3) << "point " << curPt.id() << " with hasMarker " << curPt.hasMarker();
-        auto pt_elt_info = curPt.elements().begin();
-        ptid_in_element = pt_elt_info->second;
-        auto const& elt = mesh->element( pt_elt_info->first );
+        eid = invalid_size_type_value;
+        for ( auto const& eltConnectedToPoint : curPt.elements() )
+        {
+            size_type eltIdConnected = eltConnectedToPoint.first;
+            if ( __dof->isElementDone( eltIdConnected ) )
+            {
+                eid = eltIdConnected;
+                ptid_in_element = eltConnectedToPoint.second;
+                break;
+            }
+        }
+        if ( eid == invalid_size_type_value )
+            continue;
+
+        auto const& elt = mesh->element( eid );
         geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
-        ctx->update( elt, pt_elt_info->first, geopc, mpl::int_<0>() );
+        ctx->update( elt, eid, geopc, mpl::int_<0>() );
 
         expr_evaluator.update( vf::mapgmc( ctx ) );
         __fe->vertexInterpolate( expr_evaluator, IhLoc );
         if ( accumulate )
-            this->plus_assign( curPt, IhLoc );
+            this->plus_assign( curPt, IhLoc, std::make_pair(eid,ptid_in_element) );
         else
-            this->assign( curPt, IhLoc );
+            this->assign( curPt, IhLoc, std::make_pair(eid,ptid_in_element) );
     } // pt_it
     LOG(INFO) << "onImpl on Mesh Points done";
 }
