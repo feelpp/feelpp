@@ -144,13 +144,9 @@ ModelPostprocessNorm::setup( std::string const& name )
             M_gradExpr.setExpr( "grad_expr", M_p, M_worldComm, M_directoryLibExpr );
     }
 
+    M_markers = ModelMarkers(M_name);
     if ( auto ptmarkers = M_p.get_child_optional("markers") )
-    {
-        for( auto const& item : M_p.get_child("markers") )
-            M_markers.insert(item.second.template get_value<std::string>());
-        if( M_markers.empty() )
-            M_markers.insert(M_p.get<std::string>("markers") );
-    }
+        M_markers.setPTree(*ptmarkers);
 
     if ( auto pttype = M_p.get_child_optional("type") )
     {
@@ -199,13 +195,9 @@ ModelPostprocessStatistics::setup( std::string const& name )
         M_expr.setExpr( "expr", M_p, M_worldComm, M_directoryLibExpr );
     }
 
+    M_markers = ModelMarkers(M_name);
     if ( auto ptmarkers = M_p.get_child_optional("markers") )
-    {
-        for( auto const& item : M_p.get_child("markers") )
-            M_markers.insert(item.second.template get_value<std::string>());
-        if( M_markers.empty() )
-            M_markers.insert(M_p.get<std::string>("markers") );
-    }
+        M_markers.setPTree(*ptmarkers);
 
     if ( auto pttype = M_p.get_child_optional("type") )
     {

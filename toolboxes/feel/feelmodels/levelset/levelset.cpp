@@ -185,7 +185,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
 
         for( auto const& iv : M_icDirichlet )
         {
-            if( marker(iv).empty() )
+            if( markers(iv).empty() )
             {
                 phi_init = vf::project(
                         _space=this->functionSpace(),
@@ -198,7 +198,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
             {
                 phi_init = vf::project(
                         _space=this->functionSpace(),
-                        _range=markedelements(this->mesh(), marker(iv)),
+                        _range=markedelements(this->mesh(), markers(iv)),
                         _expr=expression(iv),
                         _geomap=this->geomap()
                         );

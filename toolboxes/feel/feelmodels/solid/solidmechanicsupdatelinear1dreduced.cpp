@@ -24,7 +24,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlph
     bool BuildNonCstPart = !_buildCstPart;
     bool BuildCstPart = _buildCstPart;
 
-    auto mesh = M_mesh_1dReduced;
+    //auto mesh = M_mesh_1dReduced;
+    auto M_rangeMeshElements1dReduced = elements(M_mesh_1dReduced);
     auto Xh1 = M_Xh_1dReduced;
     auto u = Xh1->element(), v = Xh1->element();
 
@@ -69,14 +70,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlph
         if (BuildCstPart)
         {
             bilinearForm1dreduced +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements1dReduced,
                            _expr=this->timeStepNewmark1dReduced()->polySecondDerivCoefficient()*rho*epp*idt(u)*id(v) );
         }
 
         if (BuildNonCstPart)
         {
             linearForm1dreduced +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements1dReduced,
                            _expr=rho*epp*idv(M_newmark_displ_1dReduced->polyDeriv() )*id(v) );
         }
     }
@@ -85,7 +86,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlph
     if (BuildCstPart)
     {
         bilinearForm1dreduced +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements1dReduced,
                        _expr=(E*epp/((1-mu*mu)*R0*R0))*idt(u)*id(v) );
     }
     //---------------------------------------------------------------------------------------//
@@ -93,7 +94,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlph
     if (BuildCstPart)
     {
         bilinearForm1dreduced +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements1dReduced,
                        _expr=k*G*epp*dxt(u)*dx(v) );
     }
 
@@ -102,13 +103,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlph
     if (BuildCstPart)
     {
         bilinearForm1dreduced +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements1dReduced,
                        _expr=this->timeStepNewmark1dReduced()->polyFirstDerivCoefficient()*gammav*dxt(u)*dx(v) );
     }
     if (BuildNonCstPart)
     {
         linearForm1dreduced +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements1dReduced,
                        _expr=gammav*dxv(this->timeStepNewmark1dReduced()->polyFirstDeriv())*dx(v) );
     }
     //---------------------------------------------------------------------------------------//
@@ -116,7 +117,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlph
     if (BuildNonCstPart)
     {
         linearForm1dreduced +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements1dReduced,
                        _expr=idv(*M_stress_1dReduced)*id(v) );
     }
     //---------------------------------------------------------------------------------------//

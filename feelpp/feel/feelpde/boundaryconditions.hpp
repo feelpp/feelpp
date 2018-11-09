@@ -30,6 +30,7 @@
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelfilters/loadcsv.hpp>
+#include <feel/feelmodels/modelmarkers.hpp>
 
 #include <boost/property_tree/ptree.hpp>
 
@@ -43,14 +44,13 @@ class ExpressionStringAtMarker : public std::tuple<std::string,std::string,std::
 public:
     typedef std::tuple<std::string,std::string,std::string,std::string,std::string> super;
     enum boundarycondition_t { EXPRESSION = 0, FILE = 1 };
-    
-    ExpressionStringAtMarker( super && s )
+
+    ExpressionStringAtMarker( super && s, ModelMarkers const& markers )
         :
-        super( s ),
+        super( s),
+        M_meshMarkers( markers ),
         M_type( EXPRESSION )
-        
         {
-            M_meshMarkers.push_back( this->marker() );
             if ( typeStr() == "file" )
             {
                 M_type = FILE;
@@ -58,6 +58,10 @@ public:
                 M_data = loadXYFromCSV( M_filename, std::get<3>( *this ), std::get<4>( *this ) );
             }
         }
+    ExpressionStringAtMarker( super && s )
+        :
+        ExpressionStringAtMarker( std::move(s), ModelMarkers(std::get<1>(s)) )
+        {}
 
     //! type of boundary condition : expression or data
     std::string typeStr() const { return std::get<0>( *this ); }
@@ -72,10 +76,20 @@ public:
     bool isFile() const { return M_type == FILE; }
     
     /**
+     * @return the name
+     */
+    std::string const& name() const { return std::get<1>( *this ); }
+    
+    /**
      * @return the marker
      */
-    std::string const& marker() const { return std::get<1>( *this ); }
+    std::string const& marker() const { return *M_meshMarkers.begin(); }
     
+    /**
+     * @return the markers
+     */
+    std::set<std::string> const& markers() const { return M_meshMarkers; }
+
     /**
      * @return the expression
      */
@@ -104,14 +118,14 @@ public:
     std::string filename() const { LOG_IF( ERROR, !isFile() ) << "boundary condition is not given by a file"; return M_filename; }
     bool hasFilename() const { return isFile() && !M_filename.empty(); }
     
-    std::list<std::string> const& meshMarkers() const { return M_meshMarkers; }
+    std::set<std::string> const& meshMarkers() const { return M_meshMarkers; }
 
-    void setMeshMarkers( std::list<std::string> const& s ) { M_meshMarkers=s; }
+    void setMeshMarkers( std::set<std::string> const& s ) { M_meshMarkers=ModelMarkers(s); }
 
     double data( double time, double epsilon = 1e-7 ) const;
 private :
     
-    std::list<std::string> M_meshMarkers;
+    ModelMarkers M_meshMarkers;
     boundarycondition_t M_type;
     std::string M_filename;
     std::map<double,double> M_data;
@@ -199,8 +213,8 @@ class BoundaryConditions
     std::pair<bool,double> dparam( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param ) const;
     std::pair<bool,std::string> sparam( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param ) const;
 
-    std::list<std::string> markers( std::string const& field, std::string const& type ) const;
-    std::list<std::string> markers( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const;
+    std::set<std::string> markers( std::string const& field, std::string const& type ) const;
+    std::set<std::string> markers( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const;
 
     /**
      * retrieve scalar field \p field with boundary conditions of type \p type
@@ -227,8 +241,8 @@ class BoundaryConditions
         if ( itFindType == itFindField->second.end() ) return std::move(m_f);
         for ( auto f : itFindType->second )
         {
-            LOG(INFO) << "Building expr " << f.expression() << " for " << f.marker();
-            m_f[f.marker()] = expr<Order>( f.expression(), "", M_worldComm, M_directoryLibExpr );
+            LOG(INFO) << "Building expr " << f.expression() << " for " << f.name();
+            m_f[f.name()] = std::make_pair(expr<Order>( f.expression(), "", M_worldComm, M_directoryLibExpr ), f.markers());
         }
         return std::move(m_f);
     }
@@ -259,10 +273,12 @@ class BoundaryConditions
             for ( auto f : itFindType->second )
             {
                 CHECK( f.hasExpression1() && f.hasExpression2() ) << "Invalid call";
-                LOG(INFO) << "Building expr1 " << f.expression1() << " for " << f.marker();
-                m_f[f.marker()].push_back( expr<Order>( f.expression1(), "", M_worldComm, M_directoryLibExpr ) );
-                LOG(INFO) << "Building expr2 " << f.expression2() << " for " << f.marker();
-                m_f[f.marker()].push_back( expr<Order>( f.expression2(), "", M_worldComm, M_directoryLibExpr ) );
+                LOG(INFO) << "Building expr1 " << f.expression1() << " for " << f.name();
+                m_f[f.name()] = std::make_pair(std::vector<Expr<GinacEx<2>>>(1,expr<Order>( f.expression1(), "", M_worldComm, M_directoryLibExpr )), f.markers() );
+                // m_f[f.name()].push_back( std::make_pair(expr<Order>( f.expression1(), "", M_worldComm, M_directoryLibExpr ), f.markers()) );
+                LOG(INFO) << "Building expr2 " << f.expression2() << " for " << f.name();
+                m_f[f.name()].first.push_back(expr<Order>( f.expression2(), "", M_worldComm, M_directoryLibExpr ));
+                // m_f[f.name()].push_back( std::make_pair(expr<Order>( f.expression2(), "", M_worldComm, M_directoryLibExpr ), f.markers()) );
             }
             return std::move(m_f);
         }
@@ -288,8 +304,8 @@ class BoundaryConditions
         if ( itFindType == itFindField->second.end() ) return std::move(m_f);
         for ( auto f : itFindType->second )
         {
-            LOG(INFO) << "Building expr " << f.expression() << " for " << f.marker();
-            m_f[f.marker()] = expr<d,1,2>( f.expression(), "", M_worldComm, M_directoryLibExpr );
+            LOG(INFO) << "Building expr " << f.expression() << " for " << f.name();
+            m_f[f.name()] = std::make_pair(expr<d,1,2>( f.expression(), "", M_worldComm, M_directoryLibExpr ), f.markers());
         }
         return std::move(m_f);
     }
@@ -317,9 +333,11 @@ class BoundaryConditions
         for ( auto f : itFindType->second )
         {
             CHECK( f.hasExpression1() && f.hasExpression2() ) << "Invalid call";
-            LOG(INFO) << "Building expr " << f.expression() << " for " << f.marker();
-            m_f[f.marker()].push_back( expr<d,1,2>( f.expression1(), "", M_worldComm, M_directoryLibExpr ) );
-            m_f[f.marker()].push_back( expr<d,1,2>( f.expression2(), "", M_worldComm, M_directoryLibExpr ) );
+            LOG(INFO) << "Building expr " << f.expression() << " for " << f.name();
+            m_f[f.name()] = std::make_pair(std::vector<Expr<GinacMatrix<d,1,2>>>(1,expr<d,1,2>( f.expression1(), "", M_worldComm, M_directoryLibExpr )), f.markers() );
+            m_f[f.name()].first.push_back(expr<d,1,2>( f.expression2(), "", M_worldComm, M_directoryLibExpr ));
+            // m_f[f.marker()].push_back( expr<d,1,2>( f.expression1(), "", M_worldComm, M_directoryLibExpr ) );
+            // m_f[f.marker()].push_back( expr<d,1,2>( f.expression2(), "", M_worldComm, M_directoryLibExpr ) );
         }
         return std::move(m_f);
     }
@@ -345,13 +363,14 @@ class BoundaryConditions
         if ( itFindType == itFindField->second.end() ) return std::move(m_f);
         for ( auto f : itFindType->second )
         {
-            LOG(INFO) << "Building expr " << f.expression() << " for " << f.marker();
-            m_f[f.marker()] = expr<d,d,2>( f.expression(), "", M_worldComm, M_directoryLibExpr );
+            LOG(INFO) << "Building expr " << f.expression() << " for " << f.name();
+            m_f[f.name()] = std::make_pair(expr<d,d,2>( f.expression(), "", M_worldComm, M_directoryLibExpr ), f.markers());
         }
         return std::move(m_f);
     }
   private:
     void setup();
+    std::set<std::string> setupMarkers( pt::ptree const& pt, std::string name = "" );
 
     template <typename CastType>
     std::pair<bool,CastType> param( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param, CastType const& defaultValue ) const;

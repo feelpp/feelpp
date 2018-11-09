@@ -618,7 +618,7 @@ public :
     double dirichletBCnitscheGamma() const { return M_dirichletBCnitscheGamma; }
     void setDirichletBCnitscheGamma( double val) { M_dirichletBCnitscheGamma=val; }
 
-    std::list<std::string> const& markersNameMovingBoundary() const { return this->markerALEMeshBC("moving"); }
+    std::set<std::string> const& markersNameMovingBoundary() const { return this->markerALEMeshBC("moving"); }
     //___________________________________________________________________________________//
     // dirichlet with Lagrange multiplier
     trace_mesh_ptrtype const& meshDirichletLM() const { return M_meshDirichletLM; }
@@ -695,13 +695,13 @@ public :
     //___________________________________________________________________________________//
 
     // update normal stress in reference ALE mesh
-    void updateNormalStressOnCurrentMesh( std::list<std::string> const& listMarkers = std::list<std::string>() );
+    void updateNormalStressOnCurrentMesh( std::set<std::string> const& listMarkers = std::set<std::string>() );
     // update normal stress in reference ALE mesh
-    void updateNormalStressOnReferenceMesh( std::list<std::string> const& listMarkers = std::list<std::string>() );
+    void updateNormalStressOnReferenceMesh( std::set<std::string> const& listMarkers = std::set<std::string>() );
     // update normal stress (subfunctions)
-    void updateNormalStressOnReferenceMeshStandard( std::list<std::string> const& listMarkers );
-    void updateNormalStressOnReferenceMeshOptSI( std::list<std::string> const& listMarkers );
-    void updateNormalStressOnReferenceMeshOptPrecompute( std::list<std::string> const& listMarkers );
+    void updateNormalStressOnReferenceMeshStandard( std::set<std::string> const& listMarkers );
+    void updateNormalStressOnReferenceMeshOptSI( std::set<std::string> const& listMarkers );
+    void updateNormalStressOnReferenceMeshOptPrecompute( std::set<std::string> const& listMarkers );
 
     void updateWallShearStress();
     void updateVorticity();
@@ -748,7 +748,7 @@ public :
     //___________________________________________________________________________________//
 
     double computeMeshArea( std::string const& marker = "" ) const;
-    double computeMeshArea( std::list<std::string> const& markers ) const;
+    double computeMeshArea( std::set<std::string> const& markers ) const;
 
     // compute measures : drag,lift,flow rate, mean pressure, mean div, norm div
     force_type computeForce( std::string const& markerName ) const;
