@@ -117,7 +117,9 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
         if ( !directoryLibExpr.empty() )
             M_bc.setDirectoryLibExpr( directoryLibExpr );
         M_bc.setPTree( *bc );
+#if 0 // TODO
         M_bc2.setPTree( *bc );
+#endif
     }
     auto ic = M_p.get_child_optional("InitialConditions");
     if ( ic )
