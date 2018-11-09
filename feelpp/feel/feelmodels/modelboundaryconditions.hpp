@@ -47,16 +47,6 @@ class FEELPP_EXPORT ModelBoundaryCondition
     ModelBoundaryCondition& operator=( ModelBoundaryCondition const& ) = default;
     ModelBoundaryCondition& operator=( ModelBoundaryCondition && ) = default;
 
-    std::string name() { return M_name; }
-    std::string marker() { return *M_markers.begin(); }
-    std::set<std::string> markers() { return M_markers; }
-    std::string material() { return M_material; }
-    std::string expression() { return M_expr1; }
-    std::string expression1() { return M_expr1; }
-    std::string expression2() { return M_expr2; }
-    ModelExpression expr() { return M_modelExpr1; }
-    ModelExpression expr1() { return M_modelExpr1; }
-    ModelExpression expr2() { return M_modelExpr2; }
     std::string const& name() const { return M_name; }
     std::string const& marker() const { return *M_markers.begin(); }
     std::set<std::string> const& markers() const { return M_markers; }
