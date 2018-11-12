@@ -30,6 +30,9 @@ public:
     typedef typename space_type::element_type element_type;
     typedef typename space_type::element_ptrtype element_ptrtype;
 
+    typedef typename levelset_type::element_levelset_type element_scalar_type;
+    typedef typename levelset_type::element_levelset_ptrtype element_scalar_ptrtype;
+
     typedef typename fluidmechanics_type::DataUpdateJacobian DataUpdateJacobian;
     typedef typename fluidmechanics_type::DataUpdateResidual DataUpdateResidual;
     typedef typename fluidmechanics_type::DataUpdateLinear DataUpdateLinear;
@@ -64,6 +67,10 @@ public:
 private:
     void updateInterfaceForcesImpl( element_ptrtype & F ) const override;
     void addHelfrichForce( element_ptrtype & F, int impl ) const;
+
+    element_scalar_type curvatureDiffusionWillmore( mpl::int_<1> /*Dim*/ ) const {}
+    element_scalar_type curvatureDiffusionWillmore( mpl::int_<2> /*Dim*/ ) const;
+    element_scalar_type curvatureDiffusionWillmore( mpl::int_<3> /*Dim*/ ) const;
 
     //--------------------------------------------------------------------//
     double M_helfrichBendingModulus;
@@ -339,11 +346,15 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
                 break;
                 case HelfrichMethod::DIFFUSION:
                 {
-                    auto W = this->levelset()->toolManager()->curvatureDiffusion()->willmore( phi );
+                    /*
+                     * Rk: Helfrich's energy is $int kappa^2$ while Willmore's one is $int H^2 = int kappa^2 / (dim-1)^2$
+                     * so that Helfrich force is (dim-1)^2*Kb*W*N*delta
+                     */
+                    auto W = this->curvatureDiffusionWillmore( mpl::int_<Dim>() );
                     *F = vf::project(
                             _space=this->levelset()->functionSpaceVectorial(),
                             _range=this->levelset()->rangeMeshElements(),
-                            _expr=this->bendingModulus()*idv(W)*idv(N)*idv(this->levelset()->D())
+                            _expr=(Dim-1)*(Dim-1)*this->bendingModulus()*idv(W)*idv(N)*idv(this->levelset()->D())
                             );
                 }
                 break;
@@ -432,6 +443,59 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
         default:
             CHECK(false) << "Wrong force implementation\n";
     }
+}
+
+template<typename LevelSetType, typename FluidMechanicsType>
+typename HelfrichForceModel<LevelSetType, FluidMechanicsType>::element_scalar_type
+HelfrichForceModel<LevelSetType, FluidMechanicsType>::curvatureDiffusionWillmore( mpl::int_<2> /*Dim*/ ) const
+{
+    auto dist = this->levelset()->distance();
+    double dt = this->levelset()->toolManager()->curvatureDiffusion()->timeStep();
+    // Solve Galpha ( alpha=sqrt(2) )
+    auto Galpha = this->levelset()->toolManager()->curvatureDiffusion()->solveGalpha( dist );
+    // Solve Gbeta ( beta=1/sqrt(2) )
+    auto Gbeta = this->levelset()->toolManager()->curvatureDiffusion()->solveGbeta( dist );
+
+    // W = Lap_s H + H^3/2 = 2/dt^2 * (d - aGalpha - bGbeta) - H^3/2
+    // with a = -1 and b = 2
+    // Rk: in 2D, H=K
+    auto H_expr = idv(this->levelset()->distanceCurvature());
+    return vf::project( 
+            _space=this->levelset()->functionSpace(), _range=this->levelset()->rangeMeshElements(),
+            _expr=( idv(dist) + idv(Galpha) - 2*idv(Gbeta) ) * 2 / (dt*dt) - H_expr*H_expr*H_expr/2.
+            );
+}
+
+template<typename LevelSetType, typename FluidMechanicsType>
+typename HelfrichForceModel<LevelSetType, FluidMechanicsType>::element_scalar_type
+HelfrichForceModel<LevelSetType, FluidMechanicsType>::curvatureDiffusionWillmore( mpl::int_<3> /*Dim*/ ) const
+{
+    auto dist = this->levelset()->distance();
+    double dt = this->levelset()->toolManager()->curvatureDiffusion()->timeStep();
+    // Solve Galpha ( alpha=sqrt(2) )
+    auto Galpha = this->levelset()->toolManager()->curvatureDiffusion()->solveGalpha( dist );
+    // Solve Gbeta ( beta=1/sqrt(2) )
+    auto Gbeta = this->levelset()->toolManager()->curvatureDiffusion()->solveGbeta( dist );
+    // Solve Galpha*d^2
+    auto dist2 = vf::project( 
+            _space=this->levelset()->functionSpace(),
+            _range=this->levelset()->rangeMeshElements(),
+            _expr=idv(dist)*idv(dist)
+            );
+    auto G2alpha = this->levelset()->toolManager()->curvatureDiffusion()->solveGalpha( dist2 );
+    // Solve Gbeta*d^2
+    auto G2beta = this->levelset()->toolManager()->curvatureDiffusion()->solveGbeta( dist2 );
+
+    // W = Lap_s H + 2*H*(H^2-G) = ( (d-aGalpha-bGbeta)(1-Hd) + H/2 (d^2-aG2alpha-bG2beta) )/dt^2
+    // with a = -1 and b = 2
+    // Rk: in 3D, H=K/2
+    auto H_expr = idv(this->levelset()->distanceCurvature())/2.;
+    auto d_expr = idv(dist);
+    auto d2_expr = idv(dist2);
+    return vf::project( 
+            _space=this->levelset()->functionSpace(), _range=this->levelset()->rangeMeshElements(),
+            _expr=( (d_expr+idv(Galpha)-2*idv(Gbeta))*(1-H_expr*d_expr) + 0.5*H_expr*(d2_expr+idv(G2alpha)-2*idv(G2beta)) )/(dt*dt)
+            );
 }
 
 } // namespace FeelModels
