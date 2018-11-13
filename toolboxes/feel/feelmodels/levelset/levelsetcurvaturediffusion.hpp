@@ -125,7 +125,7 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::LevelSetCurvatureDiffusion( funct
         M_functionSpace( space ),
         M_rangeMeshElements( elements( space->mesh() ) ),
         M_rangeMeshBoundaryFaces( boundaryfaces( space->mesh() ) ),
-        M_backend( backend_type::build( soption( _name="backend", _prefix=prefix ) ) )
+        M_backend( backend_type::build( soption( _name="backend", _prefix=prefix ), prefix, space->worldCommPtr() ) )
 {
     if( Environment::vm( _name="time-step", _prefix=this->prefix() ).defaulted() )
         M_timeStep = std::pow( this->functionSpace()->mesh()->hAverage()/Order, 2);
