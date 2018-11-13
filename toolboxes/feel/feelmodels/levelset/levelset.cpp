@@ -1436,11 +1436,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDistanceCurvature()
         break;
         case CurvatureMethod::DIFFUSION_ORDER1:
         {
+            this->log("LevelSet", "updateDistanceCurvature", "perform diffusion order1");
             *M_distanceCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder1( this->distance() );
         }
         break;
         case CurvatureMethod::DIFFUSION_ORDER2:
         {
+            this->log("LevelSet", "updateDistanceCurvature", "perform diffusion order2");
             *M_distanceCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder2( this->distance() );
         }
         break;
