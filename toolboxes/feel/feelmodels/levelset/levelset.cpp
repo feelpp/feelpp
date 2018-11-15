@@ -1468,7 +1468,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherInterface() const
     {
         auto const spaceInterface = self_type::space_levelset_type::New( 
                 _mesh=this->mesh(),
-                _range=this->interfaceElements(),
+                _range=this->rangeDiracElements(),
                 _worldscomm=this->worldsComm()
                 );
         M_smootherInterface = Feel::projector( 
@@ -1490,7 +1490,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherInterfaceVectorial() const
     {
         auto const spaceInterfaceVectorial = self_type::space_vectorial_type::New( 
                 _mesh=this->mesh(),
-                _range=this->interfaceElements(),
+                _range=this->rangeDiracElements(),
                 _worldscomm=this->worldsComm()
                 );
         M_smootherInterfaceVectorial = Feel::projector(
@@ -1578,9 +1578,56 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerCrossedElements() const
     return M_markerCrossedElements;
 }
 
+//LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+//typename LEVELSET_CLASS_TEMPLATE_TYPE::range_elements_type
+//LEVELSET_CLASS_TEMPLATE_TYPE::interfaceElements() const
+//{
+    //if( this->M_doUpdateInterfaceElements )
+    //{
+        //mesh_ptrtype const& mesh = this->mesh();
+
+        //auto it_elt = mesh->beginOrderedElement();
+        //auto en_elt = mesh->endOrderedElement();
+
+        //const rank_type pid = mesh->worldCommElements().localRank();
+        //const int ndofv = space_levelset_type::fe_type::nDof;
+
+        //double thickness = 2*this->thicknessInterface();
+        //elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
+
+        //for (; it_elt!=en_elt; it_elt++)
+        //{
+            //auto const& elt = boost::unwrap_ref( *it_elt );
+            //if ( elt.processId() != pid )
+                //continue;
+            //bool mark_elt = false;
+            //for (int j=0; j<ndofv; j++)
+            //{
+                //if ( std::abs( this->phi()->localToGlobal(elt.id(), j, 0) ) <= thickness )
+                //{
+                    //mark_elt = true;
+                    //break; //don't need to do the others dof
+                //}
+            //}
+            //if( mark_elt )
+                //interfaceElts->push_back( boost::cref(elt) );
+        //}
+
+        //M_interfaceElements = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                //interfaceElts->begin(),
+                //interfaceElts->end(),
+                //interfaceElts
+                //);
+
+        //M_doUpdateInterfaceElements = false;
+    //}
+
+    //return M_interfaceElements;
+//}
+
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::range_elements_type
-LEVELSET_CLASS_TEMPLATE_TYPE::interfaceElements() const
+typename LEVELSET_CLASS_TEMPLATE_TYPE::range_elements_type const&
+LEVELSET_CLASS_TEMPLATE_TYPE::rangeInterfaceElements() const
 {
     if( this->M_doUpdateInterfaceElements )
     {
@@ -1592,7 +1639,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::interfaceElements() const
         const rank_type pid = mesh->worldCommElements().localRank();
         const int ndofv = space_levelset_type::fe_type::nDof;
 
-        double thickness = 2*this->thicknessInterface();
         elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
 
         for (; it_elt!=en_elt; it_elt++)
@@ -1601,12 +1647,29 @@ LEVELSET_CLASS_TEMPLATE_TYPE::interfaceElements() const
             if ( elt.processId() != pid )
                 continue;
             bool mark_elt = false;
+            bool hasPositivePhi = false;
+            bool hasNegativePhi = false;
             for (int j=0; j<ndofv; j++)
             {
-                if ( std::abs( this->phi()->localToGlobal(elt.id(), j, 0) ) <= thickness )
+                if ( this->phi()->localToGlobal(elt.id(), j, 0) < 0. )
                 {
-                    mark_elt = true;
-                    break; //don't need to do the others dof
+                    // phi < 0
+                    if( hasPositivePhi )
+                    {
+                        mark_elt = true;
+                        break; //don't need to do the others dof
+                    }
+                    hasNegativePhi = true;
+                }
+                if ( this->phi()->localToGlobal(elt.id(), j, 0) > 0. )
+                {
+                    // phi > 0
+                    if( hasNegativePhi )
+                    {
+                        mark_elt = true;
+                        break; //don't need to do the others dof
+                    }
+                    hasPositivePhi = true;
                 }
             }
             if( mark_elt )
@@ -1627,7 +1690,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::interfaceElements() const
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::range_elements_type
-LEVELSET_CLASS_TEMPLATE_TYPE::outerElementsRange( double cut )
+LEVELSET_CLASS_TEMPLATE_TYPE::rangeOuterElements( double cut ) const
 {
     mesh_ptrtype const& mesh = this->mesh();
 
@@ -2162,7 +2225,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
 #if 0
         M_cauchyGreenInvariant1->zero();
         M_cauchyGreenInvariant1->on(
-                _range=this->interfaceElements(),
+                _range=this->rangeDiracElements(),
                 _expr=trace(idv(this->leftCauchyGreenTensor()))
                 );
 #elif 0
@@ -2174,7 +2237,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
         auto A = idv(this->leftCauchyGreenTensor());
         M_cauchyGreenInvariant1->zero();
         M_cauchyGreenInvariant1->on(
-                _range=this->interfaceElements(),
+                _range=this->rangeDiracElements(),
                 _expr=this->cauchyGreenInvariant1Expr()
                 );
 #endif
@@ -2219,7 +2282,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
         auto const& KN = this->M_leftCauchyGreenTensor_KN;
         M_cauchyGreenInvariant2->zero();
         M_cauchyGreenInvariant2->on(
-                _range=this->interfaceElements(),
+                _range=this->rangeDiracElements(),
                 _expr=det(idv(K))/(trans(idv(N))*idv(KN))
                 );
 //#elif 1 // New implementation TrA / (2 sqrt(cofA))
@@ -2228,7 +2291,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
         auto trA = trace(A);
         M_cauchyGreenInvariant2->zero();
         M_cauchyGreenInvariant2->on(
-                _range=this->interfaceElements(),
+                _range=this->rangeDiracElements(),
                 _expr=this->cauchyGreenInvariant2Expr()
                 );
 #endif

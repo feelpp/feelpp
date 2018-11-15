@@ -184,7 +184,7 @@ HyperelasticForceModel<LevelSetType, FluidMechanicsType>::updateInterfaceForcesI
     F->zero();
     F->on(
         //_range=elements(this->levelset()->mesh()),
-        _range=this->levelset()->interfaceElements(),
+        _range=this->levelset()->rangeDiracElements(),
         _expr=idv(Fe)*idv(this->levelset()->D())
         );
 
