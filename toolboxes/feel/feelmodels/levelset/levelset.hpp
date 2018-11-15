@@ -424,10 +424,9 @@ public:
     //--------------------------------------------------------------------//
     // Ranges
     range_elements_type const& rangeMeshElements() const { return M_advectionToolbox->rangeMeshElements(); }
-
-    range_elements_type interfaceElements() const;
-    range_elements_type outerElementsRange( double cut );
-    range_elements_type outerElementsRange() { return outerElementsRange( -this->thicknessInterface() ); }
+    range_elements_type const& rangeInterfaceElements() const;
+    range_elements_type rangeOuterElements( double cut ) const;
+    range_elements_type rangeOuterElements() const { return rangeOuterElements( -this->thicknessInterface() ); }
     range_elements_type const& rangeDiracElements() const;
 
     range_faces_type rangeInterfaceFaces() const;
