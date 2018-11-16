@@ -54,6 +54,19 @@ JournalWatcher::JournalWatcher( function_update_information_type const& func, st
     S_counterObjectByCategory[category]++;
 }
 
+std::string
+JournalWatcher::journalSectionName() const
+{
+    std::string thename;
+    if ( !M_category.empty() && !M_name.empty() )
+        thename = M_category + "." + M_name;
+    else if ( !M_category.empty() )
+        thename = M_category;
+    else
+        thename = M_name;
+    return thename;
+}
+
 void
 JournalWatcher::journalConnect()
 {
@@ -99,14 +112,7 @@ JournalWatcher::journalNotify( notify_type & journalData )
     if ( M_informationObject.empty() )
         return;
 
-    std::string prefix;
-    if ( !M_category.empty() && !M_name.empty() )
-        prefix = M_category + "." + M_name;
-    else if ( !M_category.empty() )
-        prefix = M_category;
-    else
-        prefix = M_name;
-
+    std::string prefix = this->journalSectionName();
     if ( prefix.empty() )
     {
         for( const auto& lpt : M_informationObject )

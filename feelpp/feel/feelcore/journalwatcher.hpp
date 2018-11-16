@@ -83,6 +83,10 @@ public:
         return M_name;
     }
 
+    //! Return the section name into the journal
+    std::string journalSectionName() const;
+
+    //! Return the information into property tree
     pt::ptree const& informationObject() const { return M_informationObject; }
     //! @}
 
