@@ -2409,9 +2409,10 @@ CRB<TruthModelType>::offline()
     double delta_pr;
     double delta_du;
     size_type index = 0;
-
+    bool use_predefined_WNmu = false;
     int Nrestart = ioption(_name="crb.restart-from-N");
     int Frestart = ioption(_name="ser.rb-rebuild-freq");
+
 
 #if 0
     //we do affine decomposition here to then have access to Qa, mMax ect...
@@ -2466,7 +2467,6 @@ CRB<TruthModelType>::offline()
         M_coeff_pr_ini_online.resize(0);
         M_coeff_du_ini_online.resize(0);
 
-
         this->generateSuperSampling();
 
         if( this->worldComm().isMasterRank() )
@@ -2485,6 +2485,7 @@ CRB<TruthModelType>::offline()
         M_primal_apee_mu->clear();
         M_dual_apee_mu->clear();
 
+        use_predefined_WNmu = buildSampling();
         if( M_error_type == CRB_NO_RESIDUAL )
         {
             if( this->worldComm().isMasterRank() )
@@ -2535,6 +2536,8 @@ CRB<TruthModelType>::offline()
             M_model->rBFunctionSpace()->saveMesh( meshFilename );
         }
         M_model->copyAdditionalModelFiles( this->dbDirectory() );
+
+
 
     }//end of if( rebuild_database )
     else
@@ -2599,12 +2602,13 @@ CRB<TruthModelType>::offline()
 
     //bool reuse_prec = boption(_name="crb.reuse-prec") ;
 
-    bool use_predefined_WNmu = buildSampling();
+
 
     LOG(INFO) << "[CRB::offline] strategy "<< M_error_type <<"\n";
     if( this->worldComm().isMasterRank() )
         std::cout << "[CRB::offline] strategy "<< M_error_type <<std::endl;
 
+    use_predefined_WNmu = this->M_error_type==CRB_NO_RESIDUAL || boption("crb.use-predefined-WNmu");
     if( M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
     {
         //in this case it makes no sens to check the estimated error
@@ -2983,7 +2987,7 @@ CRB<TruthModelType>::offline()
         else if ( use_predefined_WNmu )
         {
             //remmber that in this case M_iter_max = sampling size
-            if( M_N < M_iter_max )
+            if( M_N < M_WNmu->size() )
             {
                 mu = M_WNmu->at( M_N );
                 M_current_mu = mu;
