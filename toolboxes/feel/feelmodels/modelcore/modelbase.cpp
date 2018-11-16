@@ -253,6 +253,7 @@ ModelBase::ModelBase( std::string const& prefix,
                       std::string const& subPrefix,
                       ModelBaseRepository const& modelRep )
     :
+    super_type( "Toolboxes", prefix ),
     M_worldComm(worldComm),
     M_worldsComm( {worldComm} ),
     M_localNonCompositeWorldsComm( { worldComm } ),
@@ -270,6 +271,7 @@ ModelBase::ModelBase( std::string const& prefix,
     M_timersSaveFileAll( boption(_name="timers.save-all",_prefix=this->prefix()) ),
     M_scalabilitySave( boption(_name="scalability-save",_prefix=this->prefix()) ),
     M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix()) ),
+    M_isUpdatedForUse( false ),
     M_upload( soption(_name="upload",_prefix=this->prefix()), this->repository().rootWithoutNumProc(), M_worldComm )
 {
     if (Environment::vm().count(prefixvm(this->prefix(),"scalability-path")))
@@ -364,6 +366,8 @@ ModelBase::printInfo() const
 void
 ModelBase::saveInfo() const
 {
+    Environment::journalCheckpoint();
+
     fs::path thepath = fs::path(this->rootRepository())/fs::path(this->filenameSaveInfo());
     if (this->worldComm().isMasterRank() )
     {
