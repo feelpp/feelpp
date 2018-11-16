@@ -5395,7 +5395,10 @@ private:
     };
 
     //! update informations for the current object
-    void updateInformationObject( pt::ptree & p ) override;
+    void updateInformationObject( pt::ptree & p ) override { this->updateInformationObject( p, mpl::bool_<is_composite>() ); }
+private :
+    void updateInformationObject( pt::ptree & p, mpl::true_ );
+    void updateInformationObject( pt::ptree & p, mpl::false_ );
 
 protected:
 
@@ -5441,8 +5444,23 @@ private:
 }; // FunctionSpace
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
+const bool FunctionSpace<A0,A1,A2,A3,A4>::is_scalar;
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+const bool FunctionSpace<A0,A1,A2,A3,A4>::is_vectorial;
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+const bool FunctionSpace<A0,A1,A2,A3,A4>::is_tensor2;
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 const bool FunctionSpace<A0,A1,A2,A3,A4>::is_tensor2symm;
 
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+const bool FunctionSpace<A0,A1,A2,A3,A4>::is_continuous;
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::nComponents;
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::nComponents1;
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::nComponents2;
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::nRealComponents;
 
@@ -5911,16 +5929,55 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p )
+FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::false_ )
 {
-    p.put( "mesh", mesh<0>()->journalWatcherInstanceName() );
-    p.put( "component_number", qDim() );
-    p.put( "global_dof_number", nDof() );
-    p.put( "local_dof_number", nLocalDof() );
+    p.put( "mesh", this->mesh()->journalSectionName() );
+
     p.put( "basis.name", basisName() );
     p.put( "basis.order", basisOrder() );
+    p.put( "basis.is_continuous", is_continuous );
+    p.put( "basis.nComponents", nComponents );
+    p.put( "basis.nComponents1", nComponents1 );
+    p.put( "basis.nComponents2", nComponents2 );
+    if ( is_tensor2symm )
+        p.put( "basis.nRealComponents", nRealComponents );
+
+    std::string shape;
+    if ( is_scalar )
+        shape = "scalar";
+    else if ( is_vectorial )
+        shape = "vectorial";
+    else if ( is_tensor2 )
+        shape = "tensor2";
+    else if ( is_tensor2symm )
+        shape = "tensor2symm";
+    p.put( "basis.shape", shape );
+
+    pt::ptree subPt;
+    subPt.put("nDof", this->nDof());
+    rank_type nProc = this->worldComm().localSize();
+    if ( nProc > 1 )
+    {
+        pt::ptree subPt2, subPt3;
+        for ( rank_type p=0;p<nProc;++p )
+        {
+            subPt2.push_back( std::make_pair("", pt::ptree( std::to_string( this->dof()->nLocalDofWithoutGhost( p ) ) ) ) );
+            subPt3.push_back( std::make_pair("", pt::ptree( std::to_string( this->dof()->nLocalGhosts( p ) ) ) ) );
+        }
+        subPt.put_child( "nLocalDofWithoutGhost", subPt2 );
+        subPt.put_child( "nLocalGhost", subPt3 );
+        subPt.put( "extended-doftable", this->dof()->buildDofTableMPIExtended() );
+        subPt.put( "nDofOnElement", this->dof()->nLocalDof() );
+    }
+    p.put_child( "doftable", subPt );
 }
 
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::true_ )
+{
+    // TODO
+}
 
 
 template<typename T,int M,int N>
