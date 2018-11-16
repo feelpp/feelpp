@@ -334,6 +334,48 @@ public :
             return ostr;
         }
 
+    void updateInformationObject( pt::ptree & p )
+        {
+            p.put( "number of materials", M_rangeMeshElementsByMaterial.size() );
+            for ( auto const& matRange : M_rangeMeshElementsByMaterial)
+            {
+                pt::ptree matPt;
+                std::string const& matName = matRange.first;
+                if ( this->rho( matName ).hasExpr() )
+                {
+                    if ( this->rho(matName).isConstant() )
+                        matPt.put( "rho", this->rho(matName).value() );
+                    else
+                        matPt.put( "rho", str( this->rho(matName).expr().expression() ) );
+                }
+                if ( this->thermalConductivity( matName ).hasExprScalar() || this->thermalConductivity( matName ).template hasExpr<nDim,nDim>() )
+                {
+                    auto const& thermalConductivity = this->thermalConductivity(matName);
+                    if ( thermalConductivity.isMatrix() )
+                        matPt.put( "thermal conductivity", str( thermalConductivity.template exprMatrix<nDim,nDim>().expression() ) );
+                    else if ( thermalConductivity.isConstant() )
+                        matPt.put( "thermal conductivity", thermalConductivity.value() );
+                    else
+                        matPt.put( "thermal conductivity", str( thermalConductivity.expr().expression() ) );
+                }
+                if ( this->heatCapacity( matName ).hasExpr() )
+                {
+                    if ( this->heatCapacity(matName).isConstant() )
+                        matPt.put( "heat capacity", this->heatCapacity(matName).value() );
+                    else
+                        matPt.put( "heat capacity", str( this->heatCapacity(matName).expr().expression() ) );
+                }
+                if ( this->thermalExpansion( matName ).hasExpr() )
+                {
+                    if ( this->thermalExpansion(matName).isConstant() )
+                        matPt.put( "thermal expansion", this->thermalExpansion(matName).value() );
+                    else
+                        matPt.put( "thermal expansion", str( this->thermalExpansion(matName).expr().expression() ) );
+                }
+                p.add_child( matName, matPt );
+            }
+        }
+
     bool hasThermalConductivityDependingOnSymbol( std::string const& symbolStr ) const
         {
             for ( auto const& conductivityData : M_thermalConductivityByMaterial )
