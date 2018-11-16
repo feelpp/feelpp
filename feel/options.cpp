@@ -656,7 +656,7 @@ crbOptions( std::string const& prefix )
         ( "crb.compute-stat",Feel::po::value<bool>()->default_value( true ), "compute statistics on the run if true")
         ( "crb.cvg-study",Feel::po::value<bool>()->default_value( false ), "convergence study if true")
         ( "crb.computational-time-neval",Feel::po::value<int>()->default_value( 0 )," number of evaluation to perform to have the computational time of crb online step" )
-
+        ( "crb.reload-last-sampling",Feel::po::value<bool>()->default_value( false ), "")
         ( "crb.run-on-WNmu",Feel::po::value<bool>()->default_value( false ), "use mu taken for build the reduced basis, so for steady problems we are very accurate")
         ( "crb.run-on-scm-parameters",Feel::po::value<bool>()->default_value( false ), "use mu taken during the SCM offline step ( for a(.,.;mu) ), so the coercivity constant is exact")
         ( "crb.script-mode",Feel::po::value<bool>()->default_value( false ), "disable error computation (need FEM computation) if true")
@@ -735,7 +735,13 @@ crbAeroOptions( std::string const& prefix )
         ( "crb.aero.use-psit",Feel::po::value<bool>()->default_value( false ), "")
         ( "crb.aero.psit.delta0",Feel::po::value<double>()->default_value( 1. ), "")
         ( "crb.aero.linear-solve",Feel::po::value<bool>()->default_value(false ), "")
+        ( "crb.aero.use-newton",Feel::po::value<bool>()->default_value(true ), "")
+        ( "crb.aero.init-online",Feel::po::value<bool>()->default_value(true ), "")
         ( "crb.aero.snes.rtol",Feel::po::value<double>()->default_value( 1e-8 ), "")
+        ( "crb.aero.online-continuation",Feel::po::value<int>()->default_value( 10 ), "")
+        ( "crb.aero.log-continuation",Feel::po::value<bool>()->default_value( true ), "")
+        ( "crb.aero.store-rb-sol",Feel::po::value<bool>()->default_value( false ), "")
+        ( "crb.aero.assemble-version",Feel::po::value<int>()->default_value( 1 ), "")
         ;
     crboptions.add( crbSaddlePointOptions(prefix,3) );
 
