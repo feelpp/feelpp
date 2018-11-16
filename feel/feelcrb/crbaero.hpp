@@ -68,7 +68,8 @@ protected:
         M_use_psit( boption("crb.aero.use-psit")),
         M_newton( boption("crb.aero.use-newton")),
         M_delta( doption("crb.aero.psit.delta0" ) ),
-        M_rez(-1)
+        M_rez(-1),
+        M_store_rb_sol( boption("crb.aero.store-rb-sol"))
         {
             CHECK( n_block==3 ) <<"CRBAero is supposed to work with a composite space u,p,T\n";
         }
@@ -195,6 +196,10 @@ private:
 
     mutable double timerJ, timerJtri, timerJnl, timerR, timerRtri, timerRnl, timerSolve, timerBeta, Niter;
     mutable int M_Niter;
+
+    bool M_store_rb_sol;
+    mutable std::map<std::string,std::vector<vectorN_type>> M_rb_sol;
+    mutable std::map<std::string,std::vector<bool>> M_sol_done;
 
     using super::n_block;
     using super::subN;
@@ -395,7 +400,19 @@ CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, st
     int sumN = N0+N1+N2;
     typename CRBAero<TruthModelType>::matrix_info_tuple out =  boost::make_tuple(0.,0.);
 
-    int number_of_neighbors = this->WNmuSize() - N+1;
+    if ( M_store_rb_sol && !this->M_check_cvg )
+    {
+        if ( M_sol_done[mu.toString()].size() )
+        {
+            if ( M_sol_done[mu.toString()][N-1] )
+            {
+                uN[0] = M_rb_sol[mu.toString()][N-1];
+                return out;
+            }
+        }
+    }
+
+    int number_of_neighbors = this->M_WNmu->size() - N+1;
     std::vector<int> index_vector;
     auto S = this->M_WNmu->searchNearestNeighbors( mu, number_of_neighbors, index_vector, false);
     int n_index=0;
@@ -408,7 +425,11 @@ CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, st
 
     auto mu_init = this->M_WNmu->at(index);
     auto u_init = this->projSol()[mu_init.toString()];
-    CHECK(u_init.size()==3) <<"u_init is empty\n";
+    if ( !(u_init.size()==3) )
+    {
+        Feel::cout << "u_init not stored for mu="<<mu_init.toString()<<std::endl;
+        u_init=this->projSol().begin()->second;
+    }
 
     auto u_prev = uN[0];
     int n0 = subN(0,N-1);
@@ -468,6 +489,17 @@ CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, st
     // if ( !this->M_last_online_converged )
     //     Feel::cout << "CRBAero: Online Solver failed to converge, rez="<<M_rez <<std::endl;
     timerSolve = t_solve.elapsed();
+    if ( M_store_rb_sol && !this->M_check_cvg )
+    {
+        if ( !M_sol_done[mu.toString()].size() )
+        {
+            M_sol_done[mu.toString()].resize(ioption("crb.dimension-max"));
+            M_rb_sol[mu.toString()].resize(ioption("crb.dimension-max"));
+        }
+        M_sol_done[mu.toString()][N-1]=true;
+        M_rb_sol[mu.toString()][N-1]=uN[0];
+    }
+
     return out;
 }
 
@@ -883,24 +915,41 @@ CRBAero<TruthModelType>::updateJacobianOnline( const map_dense_vector_type& X, m
     auto betaTri = this->M_model->computeBetaTri( mu );
     for ( int q=0; q<model->QTri(); q++ )
     {
-        for ( int k=0; k<N0; k++ )
+        if ( ioption("crb.aero.assemble-version")==1 )
         {
-            for ( int i=0; i<N0; i++ )
+            for ( int k=0; k<N0; k++ )
             {
-                J(k,i) += betaTri[q]*(blockTriqm(0,0)[q][k].row(i).head(N0)).dot(X.segment(0,N0));
-                J(k,i) += betaTri[q]*(blockTriqm(0,0)[q][k].col(i).head(N0)).dot(X.segment(0,N0));
+                J.block(k,0,1,N0) += betaTri[q]*((blockTriqm(0,0)[q][k].block(0,0,N0,N0))*(X.segment(0,N0))).transpose();
+                J.block(k,0,1,N0) += betaTri[q]*((blockTriqm(0,0)[q][k].block(0,0,N0,N0).transpose())*(X.segment(0,N0))).transpose();
             }
-        }
-        for ( int k=0; k<N2; k++ )
-        {
-            for( int i=0; i<N2; i++ )
+            for ( int k=0; k<N2; k++ )
             {
-                J(N0+N1+k,N0+N1+i) += betaTri[q]*(blockTriqm(2,0)[q][k].row(i).head(N0)).dot(X.segment(0,N0));
+                J.block(N0+N1+k,N0+N1,1,N2) += betaTri[q]*((blockTriqm(2,0)[q][k].block(0,0,N2,N0))*(X.segment(0,N0))).transpose();
+                J.block(N0+N1+k,0,1,N0) += betaTri[q]*((blockTriqm(2,0)[q][k].block(0,0,N2,N0).transpose())*(X.segment(N0+N1,N2))).transpose();
             }
 
-            for( int j=0; j<N0; j++ )
+        }
+        else
+        {
+            for ( int k=0; k<N0; k++ )
             {
-                J(N0+N1+k,j) += betaTri[q]*(blockTriqm(2,0)[q][k].col(j).head(N2)).dot(X.segment(N0+N1,N2));
+                for ( int i=0; i<N0; i++ )
+                {
+                    J(k,i) += betaTri[q]*(blockTriqm(0,0)[q][k].row(i).head(N0)).dot(X.segment(0,N0));
+                    J(k,i) += betaTri[q]*(blockTriqm(0,0)[q][k].col(i).head(N0)).dot(X.segment(0,N0));
+                }
+            }
+            for ( int k=0; k<N2; k++ )
+            {
+                for( int i=0; i<N2; i++ )
+                {
+                    J(N0+N1+k,N0+N1+i) += betaTri[q]*(blockTriqm(2,0)[q][k].row(i).head(N0)).dot(X.segment(0,N0));
+                }
+
+                for( int j=0; j<N0; j++ )
+                {
+                    J(N0+N1+k,j) += betaTri[q]*(blockTriqm(2,0)[q][k].col(j).head(N2)).dot(X.segment(N0+N1,N2));
+                }
             }
         }
     }
@@ -961,12 +1010,22 @@ CRBAero<TruthModelType>::updateResidualOnline( const map_dense_vector_type& X, m
     auto betaTri = this->M_model->computeBetaTri( mu );
     for ( int q=0; q<model->QTri(); q++ )
     {
-        for ( int k=0; k<N0; k++ )
-            for ( int i=0; i<N0; i++ )
-                temp(k,i) = (blockTriqm(0,0)[q][k].row(i).head(N0)).dot(X.segment(0,N0));
-        for ( int k=0; k<N2; k++ )
-            for ( int i=0; i<N2; i++ )
-                temp(N0+N1+k,N0+N1+i) = (blockTriqm(2,0)[q][k].row(i).head(N0)).dot(X.segment(0,N0));
+        if ( ioption("crb.aero.assemble-version")==1 )
+        {
+            for ( int k=0; k<N0; k++ )
+                temp.block(k,0,1,N0) = ((blockTriqm(0,0)[q][k].block(0,0,N0,N0))*(X.segment(0,N0))).transpose();
+            for ( int k=0; k<N2; k++ )
+                temp.block( N0+N1+k,N0+N1,1,N2) = ((blockTriqm(2,0)[q][k].block(0,0,N2,N0))*(X.segment(0,N0))).transpose();
+        }
+        else
+        {
+            for ( int k=0; k<N0; k++ )
+                for ( int i=0; i<N0; i++ )
+                    temp(k,i) = (blockTriqm(0,0)[q][k].row(i).head(N0)).dot(X.segment(0,N0));
+            for ( int k=0; k<N2; k++ )
+                for ( int i=0; i<N2; i++ )
+                    temp(N0+N1+k,N0+N1+i) = (blockTriqm(2,0)[q][k].row(i).head(N0)).dot(X.segment(0,N0));
+        }
         myR += betaTri[q]*temp*X;
     }
     R += myR;
