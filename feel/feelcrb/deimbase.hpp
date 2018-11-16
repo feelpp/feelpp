@@ -666,6 +666,8 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::reAssembleFromDb()
         Phi->scale( 1./max );
         M_bases.push_back( Phi );
         M_M++;
+        if ( M_M>=M_user_max)
+            break;
     }
     M_solutions.clear();
     rebuildMap();
