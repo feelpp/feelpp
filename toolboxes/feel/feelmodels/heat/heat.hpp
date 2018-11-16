@@ -164,6 +164,7 @@ class Heat : public ModelNumerical,
         //___________________________________________________________________________________//
 
         std::shared_ptr<std::ostringstream> getInfo() const;
+        void updateInformationObject( pt::ptree & p );
     private :
         void loadParameterFromOptionsVm();
         void initMesh();
