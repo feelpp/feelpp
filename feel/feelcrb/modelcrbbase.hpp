@@ -1366,6 +1366,8 @@ public :
     virtual int sizeOfLinearR() const
         { return -1; }
 
+    virtual bool hasZeroMeanPressure()
+        { return false; }
 
     void buildGinacBetaExpressions( parameter_type const& mu )
     {
