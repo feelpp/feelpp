@@ -59,6 +59,9 @@ public:
     bool isPolynomial() const { return true; }
 
     //--------------------------------------------------------------------//
+    bool useInterpWithConfLoc() const { return false; }
+
+    //--------------------------------------------------------------------//
     std::vector<element_levelset_ptrtype> const& levelsets() const { return M_levelsets; }
     element_levelset_ptrtype const& levelsets( size_type i ) const { return M_levelsets[i]; }
 
@@ -83,6 +86,10 @@ public:
         typedef typename fe_levelset_type::template Context<expr_type::context_levelset, fe_levelset_type, gm_type, geoelement_type, gmc_type::context> ctx_levelset_type;
         typedef std::shared_ptr<ctx_levelset_type> ctx_levelset_ptrtype;
 
+        typedef typename matrix_node<value_type>::type matrix_node_type;
+
+        static const bool isSameGeo = boost::is_same<typename gmc_type::element_type, geoelement_type>::value;
+
         // shape
         typedef Shape<expr_type::nRealDim, Scalar, false, false> shape_type;
         typedef Eigen::Matrix<value_type, shape_type::M, shape_type::N> matrix_shape_type;
@@ -104,10 +111,20 @@ public:
                 M_expr( expr ),
                 M_pcLevelset( new pc_levelset_type( expr.levelsets(0)->functionSpace()->fe(), fusion::at_key<key_type>(geom)->xRefs() ) ),
                 M_ctxLevelset( new ctx_levelset_type( expr.levelsets(0)->functionSpace()->fe(), fusion::at_key<key_type>(geom), M_pcLevelset ) ),
+                M_hasRelationMesh( expr.levelsets().size() ),
+                M_isSameMesh( expr.levelsets().size() ),
                 M_zeroLocScalar( shape_scalar::M, shape_scalar::N ),
                 M_locLevelsets( expr.levelsets().size(), array_scalar_type(expr.levelsets(0)->idExtents(*fusion::at_key<key_type>(geom))) ),
                 M_locRes( expr.levelsets(0)->idExtents(*fusion::at_key<key_type>(geom)) )
         {
+            for( size_type i = 0; i < expr.levelsets().size(); ++i )
+            {
+                M_hasRelationMesh[i] = fusion::at_key<key_type>(geom)->element().mesh()->isRelatedTo( expr.levelsets()[i]->functionSpace()->mesh() );
+                M_isSameMesh[i] = M_hasRelationMesh[i] && isSameGeo;
+                if( !M_isSameMesh[i] )
+                    expr.levelsets()[i]->functionSpace()->mesh()->tool_localization()->updateForUse();
+            }
+
             M_zeroLocScalar.setZero();
         }
         tensor( this_type const& expr,
@@ -116,10 +133,20 @@ public:
                 M_expr( expr ),
                 M_pcLevelset( new pc_levelset_type( expr.levelsets(0)->functionSpace()->fe(), fusion::at_key<key_type>(geom)->xRefs() ) ),
                 M_ctxLevelset( new ctx_levelset_type( expr.levelsets(0)->functionSpace()->fe(), fusion::at_key<key_type>(geom), M_pcLevelset ) ),
+                M_hasRelationMesh( expr.levelsets().size() ),
+                M_isSameMesh( expr.levelsets().size() ),
                 M_zeroLocScalar( shape_scalar::M, shape_scalar::N ),
                 M_locLevelsets( expr.levelsets().size(), array_scalar_type(expr.levelsets(0)->idExtents(*fusion::at_key<key_type>(geom))) ),
                 M_locRes( expr.levelsets(0)->idExtents(*fusion::at_key<key_type>(geom)) )
         {
+            for( size_type i = 0; i < expr.levelsets().size(); ++i )
+            {
+                M_hasRelationMesh[i] = fusion::at_key<key_type>(geom)->element().mesh()->isRelatedTo( expr.levelsets()[i]->functionSpace()->mesh() );
+                M_isSameMesh[i] = M_hasRelationMesh[i] && isSameGeo;
+                if( !M_isSameMesh[i] )
+                    expr.levelsets()[i]->functionSpace()->mesh()->tool_localization()->updateForUse();
+            }
+
             M_zeroLocScalar.setZero();
         }
         tensor( this_type const& expr, Geo_t const& geom )
@@ -127,10 +154,20 @@ public:
                 M_expr( expr ),
                 M_pcLevelset( new pc_levelset_type( expr.levelsets(0)->functionSpace()->fe(), fusion::at_key<key_type>(geom)->xRefs() ) ),
                 M_ctxLevelset( new ctx_levelset_type( expr.levelsets(0)->functionSpace()->fe(), fusion::at_key<key_type>(geom), M_pcLevelset ) ),
+                M_hasRelationMesh( expr.levelsets().size() ),
+                M_isSameMesh( expr.levelsets().size() ),
                 M_zeroLocScalar( shape_scalar::M, shape_scalar::N ),
                 M_locLevelsets( expr.levelsets().size(), array_scalar_type(expr.levelsets(0)->idExtents(*fusion::at_key<key_type>(geom))) ),
                 M_locRes( expr.levelsets(0)->idExtents(*fusion::at_key<key_type>(geom)) )
         {
+            for( size_type i = 0; i < expr.levelsets().size(); ++i )
+            {
+                M_hasRelationMesh[i] = fusion::at_key<key_type>(geom)->element().mesh()->isRelatedTo( expr.levelsets()[i]->functionSpace()->mesh() );
+                M_isSameMesh[i] = M_hasRelationMesh[i] && isSameGeo;
+                if( !M_isSameMesh[i] )
+                    expr.levelsets()[i]->functionSpace()->mesh()->tool_localization()->updateForUse();
+            }
+
             M_zeroLocScalar.setZero();
         }
 
@@ -150,34 +187,47 @@ public:
         void update( Geo_t const& geom )
         {
             // Get levelsets values
-            M_ctxLevelset->update( fusion::at_key<key_type>( geom ), M_pcLevelset );
+            this->updateCtxIfSameGeo( geom, mpl::bool_<isSameGeo>() );
             for( size_type i = 0; i < M_locLevelsets.size(); ++i )
             {
                 auto & locLevelset = M_locLevelsets[i];
                 std::fill( locLevelset.data(), locLevelset.data()+locLevelset.num_elements(), this->M_zeroLocScalar );
-                this->expr().levelsets(i)->id( *M_ctxLevelset, locLevelset );
-            }
-            // Compute results: min( phi_i )
-            auto const& gmc = fusion::at_key<key_type>( geom );
-            std::fill( M_locRes.data(), M_locRes.data()+M_locRes.num_elements(), matrix_shape_type::Zero() );
-            for( uint16_type q = 0; q < gmc->nPoints(); ++q )
-            {
-                M_locRes[q](0,0) = M_locLevelsets[0][q](0,0);
-                for( size_type i = 0; i < M_locLevelsets.size(); ++i )
+                if( M_isSameMesh[i] )
                 {
-                    if( M_locLevelsets[i][q](0,0) < M_locRes[q](0,0) )
-                        M_locRes[q](0,0) = M_locLevelsets[i][q](0,0);
+                    this->expr().levelsets(i)->id( *M_ctxLevelset, locLevelset );
+                }
+                else
+                {
+                    matrix_node_type ptsreal = this->expr().levelsets(i)->ptsInContext(*fusion::at_key<key_type>(geom), mpl::int_<1>());
+                    auto setOfPts = ( fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value ) ?
+                        fusion::at_key<key_type>( geom )->element().face( fusion::at_key<key_type>( geom )->faceId() ).vertices() :
+                        fusion::at_key<key_type>( geom )->element().vertices();
+                    this->expr().levelsets(i)->idInterpolate( ptsreal, locLevelset, this->expr().useInterpWithConfLoc(), setOfPts );
                 }
             }
+            // Compute results: min( phi_i )
+            this->updateGlobalLevelsetImpl( geom );
         }
         void update( Geo_t const& geom, uint16_type face )
         {
-            auto const& gmc = fusion::at_key<key_type>( geom );
-            if ( gmc->faceId() != invalid_uint16_type_value ) /*face case*/
+            // Get levelsets values
+            this->updateCtxFaceIfSameGeo( geom, mpl::bool_<isSameGeo>() );
+            for( size_type i = 0; i < M_locLevelsets.size(); ++i )
             {
-                M_pcLevelset->update( gmc->pc()->nodes() );
+                auto & locLevelset = M_locLevelsets[i];
+                std::fill( locLevelset.data(), locLevelset.data()+locLevelset.num_elements(), this->M_zeroLocScalar );
+                if( M_isSameMesh[i] )
+                {
+                    this->expr().levelsets(i)->id( *M_ctxLevelset, locLevelset );
+                }
+                else
+                {
+                    matrix_node_type ptsreal = this->expr().levelsets(i)->ptsInContext(*fusion::at_key<key_type>(geom), mpl::int_<2>());
+                    this->expr().levelsets(i)->idInterpolate( ptsreal, locLevelset, this->expr().useInterpWithConfLoc(), fusion::at_key<key_type>(geom)->element().face( fusion::at_key<key_type>(geom)->faceId() ).vertices() );
+                }
             }
-            this->update( geom );
+            // Compute results: min( phi_i )
+            this->updateGlobalLevelsetImpl( geom );
         }
 
         matrix_shape_type const&
@@ -212,12 +262,51 @@ public:
         {
             return M_locRes[q];
         }
+
+    private:
+        void updateCtxIfSameGeo(Geo_t const& geom, mpl::bool_<true> )
+        {   
+            if (fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value ) /*face case*/
+                M_pcLevelset->update(fusion::at_key<key_type>( geom )->pc()->nodes() );
+            M_ctxLevelset->update( fusion::at_key<key_type>( geom ),  M_pcLevelset );
+        }
+        void updateCtxIfSameGeo(Geo_t const& geom, mpl::bool_<false> )
+        {
+        }
+
+        void updateCtxFaceIfSameGeo(Geo_t const& geom, mpl::bool_<true> )
+        {
+            M_pcLevelset->update(fusion::at_key<key_type>( geom )->pc()->nodes() );
+            M_ctxLevelset->update( fusion::at_key<key_type>( geom ), M_pcLevelset );
+        }
+        void updateCtxFaceIfSameGeo(Geo_t const& geom, mpl::bool_<false> )
+        {
+        }
+
+        void updateGlobalLevelsetImpl( Geo_t const& geom )
+        {
+            // Compute results: min( phi_i )
+            auto const& gmc = fusion::at_key<key_type>( geom );
+            std::fill( M_locRes.data(), M_locRes.data()+M_locRes.num_elements(), matrix_shape_type::Zero() );
+            for( uint16_type q = 0; q < gmc->nPoints(); ++q )
+            {
+                M_locRes[q](0,0) = M_locLevelsets[0][q](0,0);
+                for( size_type i = 0; i < M_locLevelsets.size(); ++i )
+                {
+                    if( M_locLevelsets[i][q](0,0) < M_locRes[q](0,0) )
+                        M_locRes[q](0,0) = M_locLevelsets[i][q](0,0);
+                }
+            }
+        }
         
     private:
         expr_type const& M_expr;
 
         pc_levelset_ptrtype M_pcLevelset;
         ctx_levelset_ptrtype M_ctxLevelset;
+
+        std::vector<bool> M_hasRelationMesh;
+        std::vector<bool> M_isSameMesh;
 
         loc_scalar_type M_zeroLocScalar;
         std::vector<array_scalar_type> M_locLevelsets;
