@@ -1631,61 +1631,67 @@ LEVELSET_CLASS_TEMPLATE_TYPE::rangeInterfaceElements() const
 {
     if( this->M_doUpdateInterfaceElements )
     {
-        mesh_ptrtype const& mesh = this->mesh();
-
-        auto it_elt = mesh->beginOrderedElement();
-        auto en_elt = mesh->endOrderedElement();
-
-        const rank_type pid = mesh->worldCommElements().localRank();
-        const int ndofv = space_levelset_type::fe_type::nDof;
-
-        elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
-
-        for (; it_elt!=en_elt; it_elt++)
-        {
-            auto const& elt = boost::unwrap_ref( *it_elt );
-            if ( elt.processId() != pid )
-                continue;
-            bool mark_elt = false;
-            bool hasPositivePhi = false;
-            bool hasNegativePhi = false;
-            for (int j=0; j<ndofv; j++)
-            {
-                if ( this->phi()->localToGlobal(elt.id(), j, 0) < 0. )
-                {
-                    // phi < 0
-                    if( hasPositivePhi )
-                    {
-                        mark_elt = true;
-                        break; //don't need to do the others dof
-                    }
-                    hasNegativePhi = true;
-                }
-                if ( this->phi()->localToGlobal(elt.id(), j, 0) > 0. )
-                {
-                    // phi > 0
-                    if( hasNegativePhi )
-                    {
-                        mark_elt = true;
-                        break; //don't need to do the others dof
-                    }
-                    hasPositivePhi = true;
-                }
-            }
-            if( mark_elt )
-                interfaceElts->push_back( boost::cref(elt) );
-        }
-
-        M_interfaceElements = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                interfaceElts->begin(),
-                interfaceElts->end(),
-                interfaceElts
-                );
-
+        M_interfaceElements = this->rangeInterfaceElementsImpl( *this->phi() );
         M_doUpdateInterfaceElements = false;
     }
 
     return M_interfaceElements;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::range_elements_type
+LEVELSET_CLASS_TEMPLATE_TYPE::rangeInterfaceElementsImpl( element_levelset_type const& phi ) const
+{
+    mesh_ptrtype const& mesh = this->mesh();
+
+    auto it_elt = mesh->beginOrderedElement();
+    auto en_elt = mesh->endOrderedElement();
+
+    const rank_type pid = mesh->worldCommElements().localRank();
+    const int ndofv = space_levelset_type::fe_type::nDof;
+
+    elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
+
+    for (; it_elt!=en_elt; it_elt++)
+    {
+        auto const& elt = boost::unwrap_ref( *it_elt );
+        if ( elt.processId() != pid )
+            continue;
+        bool mark_elt = false;
+        bool hasPositivePhi = false;
+        bool hasNegativePhi = false;
+        for (int j=0; j<ndofv; j++)
+        {
+            if ( phi.localToGlobal(elt.id(), j, 0) < 0. )
+            {
+                // phi < 0
+                if( hasPositivePhi )
+                {
+                    mark_elt = true;
+                    break; //don't need to do the others dof
+                }
+                hasNegativePhi = true;
+            }
+            if ( phi.localToGlobal(elt.id(), j, 0) > 0. )
+            {
+                // phi > 0
+                if( hasNegativePhi )
+                {
+                    mark_elt = true;
+                    break; //don't need to do the others dof
+                }
+                hasPositivePhi = true;
+            }
+        }
+        if( mark_elt )
+            interfaceElts->push_back( boost::cref(elt) );
+    }
+
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+            interfaceElts->begin(),
+            interfaceElts->end(),
+            interfaceElts
+            );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -2458,14 +2464,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
                 case FastMarchingInitializationMethod::ILP :
                 {
                     auto const modGradPhi = this->modGrad( phi, DerivationMethod::L2_PROJECTION );
-                    phiReinit->on( _range=this->rangeMeshElements(), _expr=idv(phi)/idv(modGradPhi) );
+                    *phiReinit = phi;
+                    phiReinit->on( _range=this->rangeInterfaceElementsImpl(phi), _expr=idv(phi)/idv(modGradPhi) );
                 }
                 break;
 
                 case FastMarchingInitializationMethod::SMOOTHED_ILP :
                 {
                     auto const modGradPhi = this->modGrad( phi, DerivationMethod::SMOOTH_PROJECTION );
-                    phiReinit->on( _range=this->rangeMeshElements(), _expr=idv(phi)/idv(modGradPhi) );
+                    *phiReinit = phi;
+                    phiReinit->on( _range=this->rangeInterfaceElementsImpl(phi), _expr=idv(phi)/idv(modGradPhi) );
                 }
                 break;
 
