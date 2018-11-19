@@ -535,6 +535,8 @@ protected:
 
     void updateLeftCauchyGreenTensor();
 
+    range_elements_type rangeInterfaceElementsImpl( element_levelset_type const& phi ) const;
+
 private:
     void loadParametersFromOptionsVm();
     void loadConfigICFile();
