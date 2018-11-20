@@ -536,6 +536,7 @@ protected:
     void updateLeftCauchyGreenTensor();
 
     range_elements_type rangeInterfaceElementsImpl( element_levelset_type const& phi ) const;
+    range_elements_type rangeThickInterfaceElementsImpl( element_levelset_type const& phi, double thickness ) const;
 
 private:
     void loadParametersFromOptionsVm();
