@@ -1696,6 +1696,45 @@ LEVELSET_CLASS_TEMPLATE_TYPE::rangeInterfaceElementsImpl( element_levelset_type 
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::range_elements_type
+LEVELSET_CLASS_TEMPLATE_TYPE::rangeThickInterfaceElementsImpl( element_levelset_type const& phi, double thickness ) const
+{
+    mesh_ptrtype const& mesh = this->mesh();
+
+    auto it_elt = mesh->beginOrderedElement();
+    auto en_elt = mesh->endOrderedElement();
+
+    const rank_type pid = mesh->worldCommElements().localRank();
+    const int ndofv = space_levelset_type::fe_type::nDof;
+
+    elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
+
+    for (; it_elt!=en_elt; it_elt++)
+    {
+        auto const& elt = boost::unwrap_ref( *it_elt );
+        if ( elt.processId() != pid )
+            continue;
+        bool mark_elt = false;
+        for (int j=0; j<ndofv; j++)
+        {
+            if ( std::abs(phi.localToGlobal(elt.id(), j, 0)) <= thickness )
+            {
+                mark_elt = true;
+                break; //don't need to do the others dof
+            }
+        }
+        if( mark_elt )
+            interfaceElts->push_back( boost::cref(elt) );
+    }
+
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+            interfaceElts->begin(),
+            interfaceElts->end(),
+            interfaceElts
+            );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::range_elements_type
 LEVELSET_CLASS_TEMPLATE_TYPE::rangeOuterElements( double cut ) const
 {
     mesh_ptrtype const& mesh = this->mesh();
@@ -2465,7 +2504,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
                 {
                     auto const modGradPhi = this->modGrad( phi, DerivationMethod::L2_PROJECTION );
                     *phiReinit = phi;
-                    phiReinit->on( _range=this->rangeInterfaceElementsImpl(phi), _expr=idv(phi)/idv(modGradPhi) );
+                    phiReinit->on( 
+                            _range=this->rangeThickInterfaceElementsImpl(phi, this->thicknessInterface()), 
+                            _expr=idv(phi)/idv(modGradPhi) 
+                            );
                 }
                 break;
 
@@ -2473,7 +2515,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
                 {
                     auto const modGradPhi = this->modGrad( phi, DerivationMethod::SMOOTH_PROJECTION );
                     *phiReinit = phi;
-                    phiReinit->on( _range=this->rangeInterfaceElementsImpl(phi), _expr=idv(phi)/idv(modGradPhi) );
+                    phiReinit->on( 
+                            _range=this->rangeThickInterfaceElementsImpl(phi, this->thicknessInterface()), 
+                            _expr=idv(phi)/idv(modGradPhi) 
+                            );
                 }
                 break;
 
