@@ -112,8 +112,5 @@ int main(int argc, char**argv )
     e->add( "u", u );
     e->save();
     toc("Exporter");
-
-    Environment::finalize();
-
     return 0;
 }
