@@ -64,7 +64,9 @@
 #include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/about.hpp>
 #include <feel/feelcore/termcolor.hpp>
+#include <feel/feelcore/functors.hpp>
 #include <feel/options.hpp>
+
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
 #endif
@@ -73,9 +75,9 @@
 #include <hwloc.h>
 #endif
 
-#if defined(FEELPP_HAS_MONGOCXX )
-#include <mongocxx/instance.hpp>
-#endif
+#include <feel/feelcore/mongocxx.hpp>
+#include <feel/feelcore/journalmanager.hpp>
+#include <feel/feelhwsys/hwsys.hpp>
 
 namespace Feel
 {
@@ -177,16 +179,17 @@ FEELPP_EXPORT AboutData makeAboutDefault( std::string name );
 //! @author Christophe Prud'homme
 //! @see Application
 //! 
-class FEELPP_EXPORT Environment : boost::noncopyable
+class FEELPP_EXPORT Environment
+:   boost::noncopyable,
+    public JournalManager
 {
 public:
-    
-    //! 
+    //!
     //! @name Constants
-    //! 
+    //!
     //! @{
 
-    
+
     //! @}
 
     /** @name Typedefs
@@ -679,10 +682,15 @@ public:
      */
     static MemoryUsage logMemoryUsage( std::string const& message );
 
+    //! Return the timerstable pointer.
+//    static std::unique_ptr<TimerTable> timers();
+
     /**
      * add timer to a map of timers that can be shown using \c displayTimers()
      */
-    static void addTimer( std::string const& msg, std::pair<double,int> const& t );
+    static void addTimer( std::string const& msg,
+                          std::pair<double,int> const& t,
+                          std::string const& uiname );
 
     /**
      * display and save timers
@@ -727,8 +735,8 @@ public:
 
     //! @return the summry tree of the application
     static pt::ptree& summary() { return S_summary; }
-    
-    //! 
+
+    //!
     //! generate a summary of the execution of the application
     //! @param fname name of the filename to generate
     //! @param stage a string describing the stage at which the summary is generated/updated
@@ -739,8 +747,10 @@ public:
     //! Environment::generateSummary( about().appName(), "end", true ); // write to disk
     //! \endcode
     //!
+    //!
+    [[deprecated("is replaced by Feel++ journal from v0.106.0")]]
     static pt::ptree& generateSummary( std::string fname, std::string stage, bool write = true );
-    
+
     template<typename Observer>
     static void
     addDeleteObserver( Observer const& obs )
@@ -756,9 +766,9 @@ public:
 
     static void clearSomeMemory();
 
-    //! 
+    //!
     //!  \return the scratch directory
-    //! 
+    //!
     FEELPP_DEPRECATED static const fs::path& scratchDirectory()
     {
         return S_scratchdir;
@@ -790,8 +800,10 @@ public:
 
     //@}
 
-
 private:
+
+    //! Private Methods
+    //! @{
 
     //! change the directory where the results are stored
     static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np, WorldComm const& worldcomm, bool remove );
@@ -799,8 +811,6 @@ private:
 #if defined ( FEELPP_HAS_PETSC_H )
     FEELPP_NO_EXPORT void initPetsc( int * argc = 0, char *** argv = NULL );
 #endif
-
-
 
     //! process command-line/config-file options
     static FEELPP_NO_EXPORT void doOptions( int argc, char** argv,
@@ -820,6 +830,11 @@ private:
     static FEELPP_NO_EXPORT void generateOLFiles( int argc, char ** argv, std::string const& appName );
     static FEELPP_NO_EXPORT void processGenericOptions();
     static FEELPP_NO_EXPORT void parseAndStoreOptions( po::command_line_parser parser, bool extra_parser = false );
+
+    //! update information into ptree
+    void updateInformationObject( pt::ptree & p );
+
+    //! @}
 
 private:
     /// Whether this environment object called MPI_Init
@@ -847,7 +862,6 @@ private:
     static std::shared_ptr<po::options_description> S_desc_lib;
     static std::vector<std::string> S_to_pass_further;
 
-    
     static uuids::random_generator S_generator;
 
     /**
@@ -868,12 +882,12 @@ private:
 #if defined(FEELPP_HAS_HARTS)
     static hwloc_topology_t S_hwlocTopology;
 #endif
+    static std::unique_ptr<TimerTable> S_timers;
 
-    static TimerTable S_timers;
+    //! Hardware System information instance.
+    static std::unique_ptr<Sys::HwSysBase> S_hwSysInstance;
 
-#if defined(FEELPP_HAS_MONGOCXX )
-    static std::unique_ptr<mongocxx::instance> S_mongocxxInstance;
-#endif
+    static std::unique_ptr<JournalWatcher> S_informationObject;
 };
 
 BOOST_PARAMETER_FUNCTION(

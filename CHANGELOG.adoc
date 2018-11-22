@@ -37,6 +37,7 @@ https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
 * [**testsuite**] fix curl in 2D, it is the scalar curl now {uri-issue}/1227[#1227]
 * [**feelpp**] Support dofs elimination with on keyword for range of entity with same mesh dim see {uri-issue}/1252[#1252]
 * [**feelpp**,**toolboxes**] Add feature to handle multiple markers in boundary condition see {uri-issue}/1243[#1243]
+* [**feelpp**] Implement a first version of an automatic journal reporting see {uri-pull}/1222[#1222]
 
 === Fixes
 

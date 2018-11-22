@@ -142,11 +142,12 @@ void print( MeshT * m )
                    } );
 }
 
-
+// Constructor.
 template<typename Shape, typename T, int Tag>
-Mesh<Shape, T, Tag>::Mesh( worldcomm_ptr_t const& worldComm )
+Mesh<Shape, T, Tag>::Mesh( std::string const& name, worldcomm_ptr_t const& worldComm )
     :
-    super(worldComm),
+    super( worldComm ),
+    super2( "Mesh", name ),
     M_numGlobalElements( 0 ),
     M_gm( new gm_type ),
     M_gm1( Feel::meshdetail::initGm1<type>( M_gm, mpl::bool_<nOrder==1>() ) ),
@@ -386,6 +387,8 @@ Mesh<Shape, T, Tag>::updateForUse()
             toc("Mesh::updateForUse check",FLAGS_v>0);
             VLOG(1) << "[Mesh::updateForUse] check";
         }
+
+        this->applyUpdateInformationObject();
 
     } // isUpdatedForUse
 

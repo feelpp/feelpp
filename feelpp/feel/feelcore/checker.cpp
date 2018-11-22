@@ -156,10 +156,11 @@ hp::operator()( std::string const& solution, std::pair<std::string,double> const
 } // rate
 
 Checker
-checker( std::string const& p ) { return Checker{}; }
+checker( std::string const& name ) { return Checker{ name }; }
 
-Checker::Checker()
+Checker::Checker( std::string const& name )
     :
+    super( "Checker", name ),
     M_check( boption("checker.check") ),
     M_verbose( boption("checker.verbose" ) ),
     M_solution( soption("checker.solution" ) ),

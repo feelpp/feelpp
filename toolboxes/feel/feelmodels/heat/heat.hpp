@@ -163,7 +163,8 @@ class Heat : public ModelNumerical,
         void updateTimeStep() { this->updateBdf(); }
         //___________________________________________________________________________________//
 
-        std::shared_ptr<std::ostringstream> getInfo() const;
+        std::shared_ptr<std::ostringstream> getInfo() const override;
+        void updateInformationObject( pt::ptree & p ) override;
     private :
         void loadParameterFromOptionsVm();
         void initMesh();
@@ -193,7 +194,7 @@ class Heat : public ModelNumerical,
 
         void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
 
-        BlocksBaseGraphCSR buildBlockMatrixGraph() const;
+        BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
         int nBlockMatrixGraph() const { return 1; }
         void init( bool buildModelAlgebraicFactory=true );
         void updateForUseFunctionSpacesVelocityConvection();
@@ -215,28 +216,28 @@ class Heat : public ModelNumerical,
         // apply assembly and solver
         /*virtual*/ void solve();
 
-        void updateLinearPDE( DataUpdateLinear & data ) const;
+        void updateLinearPDE( DataUpdateLinear & data ) const override;
         //void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
         void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
-        void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
+        void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
         void updateLinearPDESourceTerm( vector_ptrtype& F, bool buildCstPart) const;
         template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
         void updateLinearPDEStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
                                               Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateLinear & data ) const;
 
         // non linear (newton)
-        void updateNewtonInitialGuess( vector_ptrtype& U ) const;
-        void updateJacobian( DataUpdateJacobian & data ) const;
+        void updateNewtonInitialGuess( vector_ptrtype& U ) const override;
+        void updateJacobian( DataUpdateJacobian & data ) const override;
         void updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool buildCstPart ) const;
-        void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
+        void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
         template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
         void updateJacobianStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
                                              Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateJacobian & data ) const;
-        void updateResidual( DataUpdateResidual & data ) const;
+        void updateResidual( DataUpdateResidual & data ) const override;
         void updateResidualSourceTerm( vector_ptrtype& R, bool buildCstPart ) const;
         void updateResidualNeumannBC( vector_ptrtype& R, bool buildCstPart ) const;
         void updateResidualRobinBC( element_temperature_external_storage_type const& u, vector_ptrtype& R, bool buildCstPart ) const;
-        void updateResidualDofElimination( DataUpdateResidual & data ) const;
+        void updateResidualDofElimination( DataUpdateResidual & data ) const override;
         template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
         void updateResidualStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
                                              Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateResidual & data ) const;
