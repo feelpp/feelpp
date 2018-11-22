@@ -178,6 +178,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( buildModelAlgebraicFactory )
         this->initAlgebraicFactory();
 
+    this->setIsUpdatedForUse( true );
+
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
     this->log("Electric","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
@@ -294,6 +296,63 @@ void
 ELECTRIC_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
     M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+}
+
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
+{
+    if ( !this->isUpdatedForUse() )
+        return;
+    if ( p.get_child_optional( "Prefix" ) )
+        return;
+
+    p.put( "Prefix", this->prefix() );
+    p.put( "Root Repository", this->rootRepository() );
+
+    // Physical Model
+    pt::ptree subPt, subPt2;
+    subPt.put( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
+    p.put_child( "Physical Model", subPt );
+
+    // Boundary Conditions
+    subPt.clear();
+    subPt2.clear();
+    this->updateInformationObjectDirichletBC( subPt2 );
+    for( const auto& ptIter : subPt2 )
+        subPt.put_child( ptIter.first, ptIter.second );
+    subPt2.clear();
+    this->updateInformationObjectNeumannBC( subPt2 );
+    for( const auto& ptIter : subPt2 )
+        subPt.put_child( ptIter.first, ptIter.second );
+    subPt2.clear();
+    this->updateInformationObjectRobinBC( subPt2 );
+    for( const auto& ptIter : subPt2 )
+        subPt.put_child( ptIter.first, ptIter.second );
+    p.put_child( "Boundary Conditions",subPt );
+
+#if 0
+    // Materials parameters
+    subPt.clear();
+    this->thermalProperties()->updateInformationObject( subPt );
+    p.put_child( "Materials parameters", subPt );
+#endif
+
+    // Mesh and FunctionSpace
+    subPt.clear();
+    subPt.put("filename", this->meshFile());
+    M_mesh->putInformationObject( subPt );
+    p.put( "Mesh",  M_mesh->journalSectionName() );
+    p.put( "FunctionSpace ElectricPotential",  M_XhElectricPotential->journalSectionName() );
+
+    // Algebraic Solver
+    if ( M_algebraicFactory )
+    {
+        subPt.clear();
+        M_algebraicFactory->updateInformationObject( subPt );
+        p.put_child( "Algebraic Solver", subPt );
+    }
+
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
