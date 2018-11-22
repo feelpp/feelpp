@@ -9,13 +9,16 @@
 	url = https://github.com/fangq/jsonlab.git
 [submodule "contrib/ipopt"]
 	path = feelpp/contrib/ipopt
-	url = https://github.com/feelpp/Ipopt.git
+	url = https://github.com/feelpp/ipopt.git
 [submodule "contrib/pybind11"]
 	path = feelpp/contrib/pybind11
 	url = https://github.com/feelpp/pybind11.git
 [submodule "contrib/mongodb"]
 	path = feelpp/contrib/mongocxx
 	url = https://github.com/feelpp/mongo-cxx-driver.git
+[submodule "contrib/kwsys"]
+	path = feelpp/contrib/kwsys
+	url = https://github.com/feelpp/kwsys.git
 [submodule "contrib/viewer"]
 	path = contrib/viewer
 	url = https://github.com/feelpp/viewer.git

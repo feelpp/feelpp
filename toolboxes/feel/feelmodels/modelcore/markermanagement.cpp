@@ -156,6 +156,34 @@ MarkerManagementDirichletBC::markerDirichletBClm( ComponentType ct ) const
 }
 
 
+void
+MarkerManagementDirichletBC::updateInformationObjectDirichletBC( pt::ptree & p )
+{
+    for ( auto const& bykindbase : M_dirichletBCType )
+    {
+        ComponentType ct = bykindbase.first;
+        std::string ctStr;
+        if ( ct==ComponentType::X ) ctStr = "[X]";
+        else if ( ct==ComponentType::Y ) ctStr = "[Y]";
+        else if ( ct==ComponentType::Z ) ctStr = "[Z]";
+        //for ( auto const& bykind : bykindbase.second/*M_dirichletBCType*/ )
+        //ComponentType ct = ComponentType::NO_COMPONENT;
+        if ( bykindbase.second.size()>0 )
+        {
+            for ( auto itBC = this->markerDirichletBCByType(ct).begin(), enBC = this->markerDirichletBCByType(ct).end() ; itBC!=enBC ; ++itBC )
+            {
+                std::ostringstream _ostr;
+                _ostr << "Dirichlet"<< ctStr <<" (" << itBC->first << ")";
+                pt::ptree ptTmp;
+                for ( auto itMark = itBC->second.begin(), enMark = itBC->second.end() ; itMark!= enMark ; ++itMark)
+                    ptTmp.push_back( std::make_pair("", pt::ptree( *itMark ) ) );
+                if ( !ptTmp.empty() )
+                    p.put_child( _ostr.str(), ptTmp );
+            }
+        }
+    }
+}
+
 std::string
 MarkerManagementDirichletBC::getInfoDirichletBC() const
 {
@@ -235,6 +263,27 @@ MarkerManagementNeumannBC::markerNeumannBC( NeumannBCShape shape,std::string mar
     return M_containerMarkers.find( shape )->second.find(markerNameId)->second;
 }
 
+void
+MarkerManagementNeumannBC::updateInformationObjectNeumannBC( pt::ptree & p )
+{
+   for ( auto const& markNeumanBase : M_containerMarkers )
+    {
+        std::string shapeStr = (markNeumanBase.first == NeumannBCShape::SCALAR )? "[scalar]":
+            (markNeumanBase.first == NeumannBCShape::VECTORIAL )? "[vectorial]":"[tensor2]";
+        std::ostringstream _ostr;
+        _ostr << "Neumann" << shapeStr;
+        pt::ptree ptTmp;
+        for ( auto const& markNeuman : markNeumanBase.second )
+        {
+            //if ( markNeuman.second.size() == 1 && *markNeuman.second.begin() == markNeuman.first ) continue;
+            for ( auto itMark = markNeuman.second.begin(), enMark = markNeuman.second.end() ; itMark!=enMark ; ++itMark )
+                ptTmp.push_back( std::make_pair("", pt::ptree( *itMark ) ) );
+        }
+        if ( !ptTmp.empty() )
+            p.put_child( _ostr.str(), ptTmp );
+    }
+}
+
 std::string
 MarkerManagementNeumannBC::getInfoNeumannBC() const
 {
@@ -307,6 +356,12 @@ MarkerManagementNeumannEulerianFrameBC::markerNeumannEulerianFrameBC( NeumannEul
 {
     CHECK( M_containerMarkers.find( shape ) != M_containerMarkers.end() ) << "invalid shape";
     return M_containerMarkers.find( shape )->second.find(markerNameId)->second;
+}
+
+void
+MarkerManagementNeumannEulerianFrameBC::updateInformationObjectNeumannEulerianFrameBC( pt::ptree & p )
+{
+    // TODO
 }
 
 std::string
@@ -385,6 +440,12 @@ MarkerManagementALEMeshBC::markerALEMeshBC( std::string type ) const
     return M_containerMarkers.find(type)->second;
 }
 
+void
+MarkerManagementALEMeshBC::updateInformationObjectALEMeshBC( pt::ptree & p )
+{
+    // TODO
+}
+
 std::string
 MarkerManagementALEMeshBC::getInfoALEMeshBC() const
 {
@@ -443,6 +504,13 @@ MarkerManagementSlipBC::markerSlipBC() const
 {
     return M_containerMarkers;
 }
+
+void
+MarkerManagementSlipBC::updateInformationObjectSlipBC( pt::ptree & p )
+{
+    // TODO
+}
+
 std::string
 MarkerManagementSlipBC::getInfoSlipBC() const
 {
@@ -523,6 +591,13 @@ MarkerManagementPressureBC::hasMarkerPressureBC() const
 {
     return !M_containerMarkers.empty();
 }
+
+void
+MarkerManagementPressureBC::updateInformationObjectPressureBC( pt::ptree & p )
+{
+    // TODO
+}
+
 std::string
 MarkerManagementPressureBC::getInfoPressureBC() const
 {
@@ -590,6 +665,12 @@ MarkerManagementRobinBC::markerRobinBC( std::string const& markerNameId ) const
     else
         return M_listMarkerEmpty;
 }
+
+void
+MarkerManagementRobinBC::updateInformationObjectRobinBC( pt::ptree & p )
+{
+    // TODO
+}
 std::string
 MarkerManagementRobinBC::getInfoRobinBC() const
 {
@@ -651,6 +732,14 @@ MarkerManagementFluidStructureInterfaceBC::getInfoFluidStructureInterfaceBC() co
     std::ostringstream _ostr;
     return _ostr.str();
 }
+
+void
+MarkerManagementFluidStructureInterfaceBC::updateInformationObjectFluidStructureInterfaceBC( pt::ptree & p )
+{
+    // TODO
+}
+
+
 
 } // namespace FeelModels
 } // namespace Feel

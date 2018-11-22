@@ -39,7 +39,12 @@ set(SRC
   ptreetools.cpp
   checker.cpp
   remotedata.cpp
+  journalmanager.cpp
+  journalwatcher.cpp
   )
+if(FEELPP_HAS_MONGOCXX)
+    set( SRC mongocxx.cpp ${SRC} )
+endif()
 if(FEELPP_HAS_HDF5)
     set(SRC hdf5.cpp ${SRC})
 endif()
