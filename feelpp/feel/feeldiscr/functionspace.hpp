@@ -5465,6 +5465,10 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::nRealComponents;
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
+const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::nSpaces;
+
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename T,  typename Cont>
 const bool FunctionSpace<A0,A1,A2,A3, A4>::Element<T,Cont>::is_scalar;
 
@@ -5637,7 +5641,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
     M_dof->setIndexSplitWithComponents( this->buildDofIndexSplitWithComponents() );
 #endif
     //M_dof->indexSplit().showMe();
-
+    this->applyUpdateInformationObject();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -5931,6 +5935,10 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::false_ )
 {
+    if ( p.get_child_optional( "mesh" ) )
+        return;
+
+    p.put( "nSpace", functionspace_type::nSpaces );
     p.put( "mesh", this->mesh()->journalSectionName() );
 
     p.put( "basis.name", basisName() );
@@ -5972,13 +5980,33 @@ FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::
     p.put_child( "doftable", subPt );
 }
 
+template<typename SpaceType>
+struct UpdateInformationObject
+{
+    UpdateInformationObject( SpaceType const& space, pt::ptree & p ) : M_space( space ), M_p( p ) {}
+    template<typename T>
+    void operator()( T const& t ) const
+        {
+            std::string jsname = boost::fusion::at_c<T::value>( M_space.functionSpaces() )->journalSectionName();
+            M_p.push_back( std::make_pair("", pt::ptree( jsname ) ) );
+        }
+    SpaceType const& M_space;
+    pt::ptree & M_p;
+};
+
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::true_ )
 {
-    // TODO
+    if ( p.get_child_optional( "nSpace" ) )
+        return;
+    pt::ptree subPt;
+    mpl::range_c<int,0,functionspace_type::nSpaces> keySpaces;
+    boost::fusion::for_each( keySpaces, UpdateInformationObject<functionspace_type>( *this, subPt ) );
+    p.put( "nSpace", functionspace_type::nSpaces );
+    p.put( "nDof", this->nDof());
+    p.put_child( "subfunctionspaces", subPt );
 }
-
 
 template<typename T,int M,int N>
 std::ostream&
