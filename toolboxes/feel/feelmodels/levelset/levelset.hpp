@@ -206,7 +206,7 @@ public:
     typedef std::shared_ptr<reinitializerHJ_type> reinitializerHJ_ptrtype;
 
     enum class FastMarchingInitializationMethod { 
-        NONE=0, ILP, SMOOTHED_ILP, HJ_EQ, IL_HJ_EQ
+        NONE=0, ILP_NODAL, ILP_L2, ILP_SMOOTH, HJ_EQ, IL_HJ_EQ
     };
 
     typedef boost::bimap<std::string, FastMarchingInitializationMethod> fastmarchinginitializationmethodidmap_type;

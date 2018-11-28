@@ -36,8 +36,10 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 const typename LEVELSET_CLASS_TEMPLATE_TYPE::fastmarchinginitializationmethodidmap_type
 LEVELSET_CLASS_TEMPLATE_TYPE::FastMarchingInitializationMethodIdMap = boost::assign::list_of< typename LEVELSET_CLASS_TEMPLATE_TYPE::fastmarchinginitializationmethodidmap_type::relation >
     ( "none", FastMarchingInitializationMethod::NONE )
-    ( "ilp", FastMarchingInitializationMethod::ILP )
-    ( "smoothed_ilp", FastMarchingInitializationMethod::SMOOTHED_ILP )
+    ( "ilp", FastMarchingInitializationMethod::ILP_L2 )
+    ( "ilp-l2", FastMarchingInitializationMethod::ILP_L2 )
+    ( "ilp-smooth", FastMarchingInitializationMethod::ILP_SMOOTH )
+    ( "ilp-nodal", FastMarchingInitializationMethod::ILP_NODAL )
     ( "hj", FastMarchingInitializationMethod::HJ_EQ )
     ( "il-hj", FastMarchingInitializationMethod::IL_HJ_EQ )
 ;
@@ -2500,23 +2502,32 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
         {
             switch (M_fastMarchingInitializationMethod)
             {
-                case FastMarchingInitializationMethod::ILP :
+                case FastMarchingInitializationMethod::ILP_NODAL :
+                {
+                    phiReinit->on( 
+                            _range=this->rangeMeshElements(), 
+                            _expr=idv(phi)/sqrt( inner( gradv(phi), gradv(phi) ) )
+                            );
+                }
+                break;
+
+                case FastMarchingInitializationMethod::ILP_L2 :
                 {
                     auto const modGradPhi = this->modGrad( phi, DerivationMethod::L2_PROJECTION );
-                    *phiReinit = phi;
+                    //*phiReinit = phi;
                     phiReinit->on( 
-                            _range=this->rangeThickInterfaceElementsImpl(phi, this->thicknessInterface()), 
+                            _range=this->rangeMeshElements(), 
                             _expr=idv(phi)/idv(modGradPhi) 
                             );
                 }
                 break;
 
-                case FastMarchingInitializationMethod::SMOOTHED_ILP :
+                case FastMarchingInitializationMethod::ILP_SMOOTH :
                 {
                     auto const modGradPhi = this->modGrad( phi, DerivationMethod::SMOOTH_PROJECTION );
-                    *phiReinit = phi;
+                    //*phiReinit = phi;
                     phiReinit->on( 
-                            _range=this->rangeThickInterfaceElementsImpl(phi, this->thicknessInterface()), 
+                            _range=this->rangeMeshElements(), 
                             _expr=idv(phi)/idv(modGradPhi) 
                             );
                 }
