@@ -441,7 +441,7 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"thickness-interface-rectangular-function").c_str(), Feel::po::value<double>(), "thickness of the interface rectangular function")
         (prefixvm(prefix,"distance-method").c_str(), Feel::po::value<std::string>()->default_value( "fm" ), "levelset distance computation method (none, fm: fast-marching, hj: hamilton-jacobi, renormalisation)")
         (prefixvm(prefix,"reinit-method").c_str(), Feel::po::value<std::string>()->default_value( "fm" ), "levelset reinitialization method (none, fm: fast-marching, hj: hamilton-jacobi, renormalisation)")
-        (prefixvm(prefix,"fm-initialization-method").c_str(), Feel::po::value<std::string>()->default_value("ilp"), "strategy to initialize the first elements before the fast marching:\nnone = do nothing\nilp = interface local projection by nodal (phi) and smooth (|grad phi|) projections, smoothing coeff given by option fm-smooth-coeff \nhj = Hamilton Jacoby equation (with parameters given in options)")
+        (prefixvm(prefix,"fm-initialization-method").c_str(), Feel::po::value<std::string>()->default_value("ilp"), "strategy to initialize the first elements before the fast marching:\nnone = do nothing\nilp-[nodal/l2/smooth] = interface local projection by nodal, L2 or smooth (|grad phi|) projections\nhj = Hamilton Jacoby equation (with parameters given in options)")
 
         (prefixvm(prefix,"reinit-initial-value").c_str(), Feel::po::value<bool>()->default_value( false ), "reinitialize levelset after setting initial value")
 
