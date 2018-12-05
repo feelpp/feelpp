@@ -271,23 +271,26 @@ OperatorPCD<space_type>::update( ExprRho const& expr_rho, ExprMu const& expr_mu,
         tic();
         for( auto dir : M_bcFlags[M_prefix]["Dirichlet"])
         {
-            LOG(INFO) << "Setting Robin condition on " << dir.marker();
-            if ( ebc.find( dir.marker() ) != ebc.end() )
+            for( auto const& marker : dir.markers() )
             {
-                if ( M_accel )
+                LOG(INFO) << "Setting Robin condition on " << marker;
+                if ( ebc.find( marker ) != ebc.end() )
                 {
-                    auto en = ebc.find(dir.marker())->second;
-                    en.setParameterValues( { { "t", tn } } );
-                    auto en1 = ebc.find(dir.marker())->second;
-                    en1.setParameterValues( { { "t", tn1 } } );
+                    if ( M_accel )
+                    {
+                        auto en = ebc.find(marker)->second.first;
+                        en.setParameterValues( { { "t", tn } } );
+                        auto en1 = ebc.find(marker)->second.first;
+                        en1.setParameterValues( { { "t", tn1 } } );
 
-                    form2_conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()),
-                                             _expr=-expr_rho*trans((en1-en)/time_step)*N()*idt(p)*id(p));
-                }
-                else
-                {
-                    form2_conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()),
-                                             _expr=-expr_rho*trans(ebc.find(dir.marker())->second)*N()*idt(p)*id(p));
+                        form2_conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()),
+                                                 _expr=-expr_rho*trans((en1-en)/time_step)*N()*idt(p)*id(p));
+                    }
+                    else
+                    {
+                        form2_conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()),
+                                                 _expr=-expr_rho*trans(ebc.find(marker)->second.first)*N()*idt(p)*id(p));
+                    }
                 }
             }
         }
@@ -358,7 +361,7 @@ OperatorPCD<space_type>::assembleDiffusion()
         LOG(INFO) << "blockns.pcd.diffusion is Laplacian";
         for( auto cond : M_bcFlags[M_prefix]["Neumann"])
         {
-            LOG(INFO) << "Diffusion Setting Dirichlet condition on pressure on " << cond.marker();
+            LOG(INFO) << "Diffusion Setting Dirichlet condition on pressure on " << cond.name();
             if ( M_pcdDiffusionLaplacianWeakDir )
                 d+= integrate( markedfaces(M_Qh->mesh(),cond.meshMarkers()),
                                _expr=-gradt(p)*N()*id(p)-grad(p)*N()*idt(p)+M_pcdDiffusionLaplacianWeakDirParameter*idt(p)*id(p)/hFace() );

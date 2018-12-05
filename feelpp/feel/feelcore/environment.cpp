@@ -269,7 +269,7 @@ fs::path scratchdir()
 
 
 
-
+//! Default constructor.
 Environment::Environment()
     :
 #if BOOST_VERSION >= 105500
@@ -283,6 +283,7 @@ Environment::Environment()
 
 
 
+//! Constructor
 Environment::Environment( int& argc, char**& argv )
     :
 #if BOOST_VERSION >= 105500
@@ -346,6 +347,7 @@ struct PythonArgs
 int PythonArgs::argc = 1;
 char** PythonArgs::argv = nullptr;
 
+// Constructor
 Environment::Environment( pybind11::list arg )
     :
 #if BOOST_VERSION >= 105500
@@ -355,6 +357,8 @@ Environment::Environment( pybind11::list arg )
 #endif
 {
 }
+
+// Constructor
 Environment::Environment( pybind11::list arg, po::options_description const& desc )
     :
 #if BOOST_VERSION >= 105500
@@ -413,7 +417,7 @@ Environment::initPetsc( int * argc, char *** argv )
 }
 #endif // FEELPP_HAS_PETSC_H
 
-
+// Constructor
 Environment::Environment( int argc, char** argv,
 #if BOOST_VERSION >= 105500
                           mpi::threading::level lvl,
@@ -456,6 +460,7 @@ Environment::Environment( int argc, char** argv,
     S_desc = std::make_shared<po::options_description>();
     S_desc->add( *S_desc_app );
 
+
     // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
     // otherwise we will have duplicated options
     std::vector<boost::shared_ptr<po::option_description>> opts = Environment::optionsDescriptionApplication().options();
@@ -482,13 +487,18 @@ Environment::Environment( int argc, char** argv,
 #if defined( FEELPP_HAS_GMSH_H )
     GmshInitialize();
 #endif
-#if defined(FEELPP_HAS_MONGOCXX )
-    if ( !S_mongocxxInstance )
-        S_mongocxxInstance = std::make_unique<mongocxx::instance>();
-#endif
 
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
+
+    // Enable auto mode for all observers.
+    Environment::setJournalEnable( boption("journal") );
+    Environment::setJournalAutoMode( boption("journal.auto") );
+
+    // Force environment to connect to the journal.
+    S_informationObject = std::make_unique<JournalWatcher>( std::bind( &Environment::updateInformationObject, this, std::placeholders::_1 ), "Environment", "", false );
+
+    S_timers = std::make_unique<TimerTable>();
 
     boost::gregorian::date today = boost::gregorian::day_clock::local_day();
     tic();
@@ -505,7 +515,66 @@ Environment::Environment( int argc, char** argv,
         changeRepository( _directory=f,_subdir=createSubdir );
     }
 
-    
+    if( S_vm.count( "journal.filename" ) )
+    {
+        // TODO relative or absolute path
+        Environment::setJournalFilename( (fs::path( Environment::appRepository() )/fs::path(soption(_name="journal.filename"))).string() );
+    }
+    else
+        Environment::setJournalFilename( (fs::path( Environment::appRepository() )/fs::path("journal.json")).string() );
+
+#if defined(FEELPP_HAS_MONGOCXX )
+    MongoConfig journaldbconf;
+    if( S_vm.count( "journal.database.name" ) )
+       journaldbconf.name = S_vm["journal.database.name"].as<std::string>();
+    if( S_vm.count( "journal.database.host" ) )
+       journaldbconf.host = S_vm["journal.database.host"].as<std::string>();
+    if( S_vm.count( "journal.database.port" ) )
+       journaldbconf.port = S_vm["journal.database.port"].as<std::string>();
+    if( S_vm.count( "journal.database.user" ) )
+    {
+       journaldbconf.user = S_vm["journal.database.user"].as<std::string>();
+    }
+    else
+    {
+        if( auto user = std::getenv( "FEELPP_DB_JOURNAL_USER" ) )
+            journaldbconf.user = user;
+    }
+
+    if( S_vm.count( "journal.database.password" ) )
+    {
+        std::string password = S_vm["journal.database.password"].as<std::string>();
+        if( S_vm["journal.database"].as<bool>() )
+        {
+            // TODO Fix in parallel
+            if( password == "?" )
+                password = askPassword("Enter your mongodb password:");
+            journaldbconf.password = password;
+        }
+    }
+    // Environment variable.
+    else
+    {
+        if( auto password = std::getenv( "FEELPP_DB_JOURNAL_PASSWORD" ) )
+            journaldbconf.password = password;
+    }
+    if( S_vm.count( "journal.database.authsrc" ) )
+        journaldbconf.authsrc = S_vm["journal.database.authsrc"].as<std::string>();
+    if( S_vm.count( "journal.database.collection" ) )
+        journaldbconf.collection = S_vm["journal.database.collection"].as<std::string>();
+    Environment::journalDBConfig( journaldbconf ); 
+    Feel::MongoCxx::instance();
+#endif
+
+    if ( not S_hwSysInstance )
+    {
+#if defined(FEELPP_HAS_KWSYS )
+        // Use kwsys library.
+        S_hwSysInstance = std::make_unique<Sys::KWSys>();
+#else
+        S_hwSysInstance = std::make_unique<Sys::HWSys>();
+#endif
+    }
 
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
@@ -513,8 +582,6 @@ Environment::Environment( int argc, char** argv,
     //VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(2);
 #endif
-
-
 
     // make sure that we pass the proper verbosity level to glog
     if ( S_vm.count( "v" ) )
@@ -546,6 +613,7 @@ Environment::Environment( int argc, char** argv,
     Environment::initHwlocTopology();
 #endif
 
+    Environment::journalCheckpoint();
 }
 void
 Environment::clearSomeMemory()
@@ -560,7 +628,7 @@ Environment::clearSomeMemory()
     Environment::logMemoryUsage( "Environment::clearSomeMemory after:" );
 }
 
-
+// Destructor.
 Environment::~Environment()
 {
     if ( boption( "display-stats" ) )
@@ -569,7 +637,7 @@ Environment::~Environment()
     double t = toc("env");
     cout << "[ Stopping Feel++ ] " << tc::green << "application " << S_about.appName()
          << " execution time " << t << "s" << tc::reset << std::endl;
-
+ 
 #if defined(FEELPP_HAS_HARTS)
     /* if we used hwloc, we free topology data */
     Environment::destroyHwlocTopology();
@@ -658,7 +726,7 @@ Environment::~Environment()
 
 #if defined(FEELPP_HAS_MONGOCXX )
     VLOG( 2 ) << "cleaning mongocxxInstance";
-    S_mongocxxInstance.reset();
+    MongoCxx::reset();
 #endif
 #if defined( FEELPP_HAS_GMSH_H )
     GmshFinalize();
@@ -691,6 +759,12 @@ Environment::~Environment()
 
         stopLogging();
         generateSummary( S_about.appName(), "end", true );
+
+        JournalManager::journalFinalize();
+        S_timers.reset();
+        S_hwSysInstance.reset(); // call deleter
+        S_informationObject.reset();
+
         // make sure everybody is here
         Environment::worldComm().barrier();
         if ( Environment::isMasterRank() && S_vm.count("rm") )
@@ -1155,7 +1229,7 @@ Environment::processGenericOptions()
             MPI_Finalize();
         }
 #if defined(FEELPP_HAS_MONGOCXX )
-        S_mongocxxInstance.reset();
+        MongoCxx::reset();
 #endif
         exit( 0 );
     }
@@ -1450,41 +1524,19 @@ Environment::finalized()
 std::string
 Environment::rootRepository()
 {
-    char * senv = ::getenv( "FEELPP_REPOSITORY" );
-
-    if ( senv != NULL && senv[0] != '\0' )
+    for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
     {
-        return std::string( senv );
+        char * senv = ::getenv( var.first.c_str() );
+        if ( senv != NULL && senv[0] != '\0' )
+        {
+            fs::path p{ senv };
+            if ( !var.second.empty() )
+                p /= var.second;
+            if ( !fs::is_directory( p ) )
+                continue;
+            return p.string();
+        }
     }
-
-    senv = ::getenv( "FEELPP_WORKDIR" );
-
-    if ( senv != NULL && senv[0] != '\0' )
-    {
-        return std::string( senv );
-    }
-
-    senv = ::getenv( "WORK" );
-
-    if ( senv != NULL && senv[0] != '\0' )
-    {
-        return std::string( senv )+"/feel";
-    }
-
-    senv = ::getenv( "WORKDIR" );
-
-    if ( senv != NULL && senv[0] != '\0' )
-    {
-        return std::string( senv )+"/feel";
-    }
-
-    senv = ::getenv( "HOME" );
-
-    if ( senv != NULL && senv[0] != '\0' )
-    {
-        return std::string( senv ) + "/feel";
-    }
-
     return std::string();
 }
 std::string
@@ -1590,7 +1642,7 @@ Environment::systemGeoRepository()
     fs::path rep_path;
 
     rep_path = Info::prefix();
-    rep_path /= "share/feel/geo";
+    rep_path /= "share/feelpp/feel/geo";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
 
@@ -1666,10 +1718,17 @@ Environment::randomUUID( bool parallel )
         std::string suuid = uuids::to_string(uuid);
         mpi::broadcast( Environment::worldComm().globalComm(), suuid, 0 );
         uuid = boost::lexical_cast<uuids::uuid>( suuid );
-        
     }
     return uuid;
 }
+
+uuids::uuid
+Environment::nameUUID( uuids::uuid const& dns_namespace_uuid, std::string const& name )
+{
+    boost::uuids::name_generator gen( dns_namespace_uuid );
+    return gen( name );
+}
+
 void
 Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfilename, bool add_subdir_np, WorldComm const& worldcomm, bool remove )
 {
@@ -1781,6 +1840,74 @@ Environment::generateSummary( std::string fname, std::string stage, bool write )
         pt::write_json(jsonfname, S_summary);
     return S_summary;
 }
+
+
+void
+Environment::updateInformationObject( pt::ptree & p )
+{
+    if ( !p.get_child_optional( "application" ) )
+    {
+        p.put( "application.name", Environment::about().appName() );
+        p.put( "run.uuid", Environment::randomUUID() );
+        p.put( "run.directories.app", Environment::appRepository() );
+        p.put( "run.directories.export", Environment::exportsRepository() );
+        p.put( "run.directories.logs", Environment::logsRepository() );
+        p.put( "run.directories.exprs", Environment::exprRepository() );
+        p.put( "run.directories.downloads", Environment::downloadsRepository() );
+        p.put( "run.number_processors", Environment::numberOfProcessors() );
+
+        if ( S_vm.count( "case" ) )
+        {
+            p.put( "run.case", soption( _name="case" ) );
+            if ( S_vm.count( "case.config-file" ) )
+                p.put( "run.case.config-file", soption( _name="case.config-file" ) );
+        }
+        pt::ptree ptTmp;
+        for ( auto const& cfg : S_configFiles )
+            ptTmp.push_back( std::make_pair("", pt::ptree( std::get<0>( cfg ) ) ) );
+        p.put_child( "run.config-files", ptTmp );
+
+        // Softwares
+        p.put( "software.boost.version", BOOST_LIB_VERSION );
+#if BOOST_VERSION >= 106700
+        std::stringstream mpi_version;
+        mpi_version << M_env->version().first << "."
+                    << M_env->version().second;
+        p.put( "software.mpi.version", mpi_version.str() );
+#else
+        p.put( "software.mpi.version", "unknown" );
+#endif
+#if defined( OMPI_MPI_H )
+        p.put( "software.mpi.library", "openmpi" );
+        p.put( "software.mpi.openmpi.version.major", OMPI_MAJOR_VERSION );
+        p.put( "software.mpi.openmpi.version.minor", OMPI_MINOR_VERSION );
+        p.put( "software.mpi.openmpi.version.release", OMPI_RELEASE_VERSION );
+#endif
+#if defined ( FEELPP_HAS_PETSC_H )
+        p.put( "software.petsc.version.major", PETSC_VERSION_MAJOR );
+        p.put( "software.petsc.version.minor", PETSC_VERSION_MINOR );
+        p.put( "software.petsc.version.subminor", PETSC_VERSION_SUBMINOR );
+        p.put( "software.petsc.version.patch", PETSC_VERSION_PATCH );
+        p.put( "software.petsc.version.release", PETSC_VERSION_RELEASE );
+        p.put( "software.petsc.date.release", PETSC_RELEASE_DATE );
+        p.put( "software.petsc.date.version", PETSC_VERSION_DATE );
+#endif
+    }
+    if ( S_hwSysInstance )
+    {
+        auto ptHwSysOpt = p.get_child_optional( "hardware" );
+        if ( ptHwSysOpt )
+            S_hwSysInstance->updateInformationObject( *ptHwSysOpt );
+        else
+        {
+            pt::ptree ptHwSys;
+            S_hwSysInstance->updateInformationObject( ptHwSys );
+            p.put_child( "hardware", ptHwSys );
+        }
+    }
+}
+
+
 #if 0
 po::variables_map
 Environment::vm( po::options_description const& desc )
@@ -2287,26 +2414,33 @@ Environment::expand( std::string const& expr )
     return res;
 }
 
+//std::unique_ptr<TimerTable>
+//Environment::timers()
+//{
+//    return S_timers;
+//}
+
 void
-Environment::addTimer( std::string const& msg, std::pair<double,int> const& t )
+Environment::addTimer( std::string const& msg,
+                       std::pair<double,int> const& t,
+                       std::string const& uiname = "" )
 {
-    S_timers.add( msg, t );
+    S_timers->add( msg, t, uiname );
 }
 
 void
 Environment::saveTimers( bool display )
 {
     //S_timers.save( Environment::about().appName(), display );
-    S_timers.save( display );
+    S_timers->save( display );
 }
 
 void
 Environment::saveTimersMD( std::ostream &os )
 {
     //S_timers.save( Environment::about().appName(), display );
-    S_timers.saveMD( os );
+    S_timers->saveMD( os );
 }
-
 
 int Environment::S_argc = 0;
 char** Environment::S_argv = 0;
@@ -2343,9 +2477,8 @@ std::vector<std::string> Environment::olAutoloadFiles;
 hwloc_topology_t Environment::S_hwlocTopology = NULL;
 #endif
 
-TimerTable Environment::S_timers;
+std::unique_ptr<TimerTable> Environment::S_timers;
+std::unique_ptr<Sys::HwSysBase> Environment::S_hwSysInstance;
 
-#if defined(FEELPP_HAS_MONGOCXX )
-std::unique_ptr<mongocxx::instance> Environment::S_mongocxxInstance;
-#endif
+std::unique_ptr<JournalWatcher> Environment::S_informationObject;
 }

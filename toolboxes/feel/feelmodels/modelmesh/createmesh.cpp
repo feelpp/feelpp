@@ -98,7 +98,7 @@ createMeshModel( ModelNumerical & model, std::shared_ptr<MeshType> & mesh, std::
             if ( rebuildPartition && meshFileExt != ".msh" )
                 CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
 
-            mesh = loadMesh(_mesh=new mesh_type( model.worldCommPtr() ),
+            mesh = loadMesh(_mesh=new mesh_type( model.prefix(), model.worldCommPtr() ),
                             _filename=model.meshFile(),
                             _worldcomm=model.worldCommPtr(),
                             _prefix=model.prefix(),
@@ -130,7 +130,8 @@ createMeshModel( ModelNumerical & model, std::shared_ptr<MeshType> & mesh, std::
                                         _worldcomm=model.worldCommPtr() );
             // allow to have a geo and msh file with a filename equal to prefix
             geodesc->setPrefix(model.prefix());
-            mesh = createGMSHMesh(_mesh=new mesh_type,_desc=geodesc,
+            mesh = createGMSHMesh(_mesh=new mesh_type( model.prefix(), model.worldCommPtr() ),
+                                  _desc=geodesc,
                                   _prefix=model.prefix(),_worldcomm=model.worldCommPtr(),
                                   _partitions=model.worldComm().localSize(),
                                   _directory=model.rootRepository() );

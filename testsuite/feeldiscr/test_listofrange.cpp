@@ -1,5 +1,5 @@
 #define BOOST_TEST_MODULE test_listofrange
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feeldiscr/pch.hpp>

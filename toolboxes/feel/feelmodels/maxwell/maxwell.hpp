@@ -190,18 +190,18 @@ public :
     void updateMagneticField();
 
     //___________________________________________________________________________________//
-    template<typename T, typename convex = convex_type>
-    auto vcurl(T f, std::enable_if_t<convex::nDim==3>* = nullptr) const -> decltype(curl(f)) { return curl(f); }
-    template<typename T, typename convex = convex_type>
-    auto vcurlt(T f, std::enable_if_t<convex::nDim==3>* = nullptr) const -> decltype(curlt(f)) { return curlt(f); }
-    template<typename T, typename convex = convex_type>
-    auto vcurlv(T f, std::enable_if_t<convex::nDim==3>* = nullptr) const -> decltype(curlv(f)) { return curlv(f); }
-    template<typename T, typename convex = convex_type>
-    auto vcurl(T f, std::enable_if_t<convex::nDim==2>* = nullptr) const -> decltype(curlx(f)) { return curlx(f); }
-    template<typename T, typename convex = convex_type>
-    auto vcurlt(T f, std::enable_if_t<convex::nDim==2>* = nullptr) const -> decltype(curlxt(f)) { return curlxt(f); }
-    template<typename T, typename convex = convex_type>
-    auto vcurlv(T f, std::enable_if_t<convex::nDim==2>* = nullptr) const -> decltype(curlxv(f)) { return curlxv(f); }
+    // template<typename T, typename convex = convex_type>
+    // auto vcurl(T f, std::enable_if_t<convex::nDim==3>* = nullptr) const -> decltype(curl(f)) { return curl(f); }
+    // template<typename T, typename convex = convex_type>
+    // auto vcurlt(T f, std::enable_if_t<convex::nDim==3>* = nullptr) const -> decltype(curlt(f)) { return curlt(f); }
+    // template<typename T, typename convex = convex_type>
+    // auto vcurlv(T f, std::enable_if_t<convex::nDim==3>* = nullptr) const -> decltype(curlv(f)) { return curlv(f); }
+    // template<typename T, typename convex = convex_type>
+    // auto vcurl(T f, std::enable_if_t<convex::nDim==2>* = nullptr) const -> decltype(curlx(f)) { return curlx(f); }
+    // template<typename T, typename convex = convex_type>
+    // auto vcurlt(T f, std::enable_if_t<convex::nDim==2>* = nullptr) const -> decltype(curlxt(f)) { return curlxt(f); }
+    // template<typename T, typename convex = convex_type>
+    // auto vcurlv(T f, std::enable_if_t<convex::nDim==2>* = nullptr) const -> decltype(curlxv(f)) { return curlxv(f); }
 
 private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;

@@ -129,4 +129,5 @@ autom4te.cache
 /applications/crb/thermalbuilding/thermalbuildingapp.cpp
 /contrib/paralution/
 pyfeelpp-env
-
+projects
+*bak

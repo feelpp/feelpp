@@ -36,6 +36,9 @@ straightenMesh<Mesh<Simplex<2,1,3>>>( std::shared_ptr<Mesh<Simplex<2,1,3>>>,
 template std::shared_ptr<Mesh<Hypercube<2,1>>>
 straightenMesh<Mesh<Hypercube<2,1>>>( std::shared_ptr<Mesh<Hypercube<2,1>>>, 
                                     worldcomm_ptr_t const& , bool, bool  );
+template std::shared_ptr<Mesh<Hypercube<2,1,3>>>
+straightenMesh<Mesh<Hypercube<2,1,3>>>( std::shared_ptr<Mesh<Hypercube<2,1,3>>>, 
+                                        worldcomm_ptr_t const& , bool, bool  );
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
 template std::shared_ptr<Mesh<Simplex<2,2>>>
 straightenMesh<Mesh<Simplex<2,2>>>( std::shared_ptr<Mesh<Simplex<2,2>>>, 

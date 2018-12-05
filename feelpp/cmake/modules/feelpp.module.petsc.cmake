@@ -10,7 +10,7 @@ if ( NOT PETSC_FOUND )
   return()
 endif()
 
-add_definitions( -DFEELPP_HAS_PETSC -DFEELPP_HAS_PETSC_H )
+#add_definitions( -DFEELPP_HAS_PETSC -DFEELPP_HAS_PETSC_H )
 set(FEELPP_HAS_PETSC 1)
 set(FEELPP_HAS_PETSC_H 1)
 

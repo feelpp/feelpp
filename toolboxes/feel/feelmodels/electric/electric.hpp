@@ -103,7 +103,8 @@ public:
               std::string const& subPrefix = "",
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ElectricMesh.path"); }
-    std::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
+    void updateInformationObject( pt::ptree & p ) override;
 
 private :
     void loadParameterFromOptionsVm();
@@ -114,7 +115,7 @@ public :
     void setMesh(mesh_ptrtype const& mesh) { M_mesh = mesh; }
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
-    BlocksBaseGraphCSR buildBlockMatrixGraph() const;
+    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     int nBlockMatrixGraph() const;
     void initAlgebraicFactory();
 
@@ -156,17 +157,14 @@ public :
     // apply assembly and solver
     void solve();
 
-    void updateLinearPDE( DataUpdateLinear & data ) const;
-    void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart ) const;
-    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
+    void updateLinearPDE( DataUpdateLinear & data ) const override;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
-    void updateNewtonInitialGuess( vector_ptrtype& U ) const;
-    void updateJacobian( DataUpdateJacobian & data ) const;
-    void updateJacobianWeakBC( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const;
-    void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
-    void updateResidual( DataUpdateResidual & data ) const;
-    void updateResidualWeakBC( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const;
-    void updateResidualDofElimination( DataUpdateResidual & data ) const;
+    void updateNewtonInitialGuess( vector_ptrtype& U ) const override;
+    void updateJacobian( DataUpdateJacobian & data ) const override;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
+    void updateResidual( DataUpdateResidual & data ) const override;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
 
     //___________________________________________________________________________________//
@@ -178,6 +176,10 @@ public :
         {
             M_fieldCurrentDensity->on(_range=range, _expr=expr );
         }
+private :
+    void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart ) const;
+    void updateJacobianWeakBC( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const;
+    void updateResidualWeakBC( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const;
 
 private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;

@@ -231,9 +231,10 @@ public:
     /**
      * @return the number of local ghosts
      */
-    size_type nLocalGhosts() const
+    size_type nLocalGhosts( const rank_type pid = invalid_rank_type_value ) const
     {
-        return nLocalDofWithGhost()-nLocalDofWithoutGhost();
+        rank_type thepid = ( pid == invalid_rank_type_value )? this->worldComm().rank() : pid;
+        return nLocalDofWithGhost( thepid )-nLocalDofWithoutGhost( thepid );
     }
 
     /**

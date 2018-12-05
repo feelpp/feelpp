@@ -4,3 +4,9 @@ steps:
    agents:
      docker: true
      ubuntu: "16.04"
+   artifact_paths: Testing/junit-*.xml
+ - wait: ~
+   continue_on_failure: true
+ - plugins:
+     junit-annotate#v1.2.0:
+       artifacts: Testing/junit-*.xml

@@ -128,10 +128,11 @@ private:
 //!
 //! The \c Checker class
 //!
-class FEELPP_EXPORT Checker
+class FEELPP_EXPORT Checker : public JournalWatcher
 {
+    using super = JournalWatcher;
 public:
-    Checker();
+    Checker( std::string const& name = "" );
     Checker( Checker const& c ) = default;
     Checker( Checker && c ) = default;
 
@@ -172,8 +173,10 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
 
     auto err = fn( M_solution );
     std::vector<bool> checkSucces;
+    pt::ptree pt;
     for( auto const& e : err )
     {
+        pt.put( e.first, e.second );
         //cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;
         checkSucces.push_back( false );
         //cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;
@@ -215,6 +218,7 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
             cout << tc::red << "Caught exception " << ex.what() << tc::reset << std::endl;
         }
     }
+    this->putInformationObject( pt );
     return ( std::find(checkSucces.begin(),checkSucces.end(), false ) == checkSucces.end() );
 }
 

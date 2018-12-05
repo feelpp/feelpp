@@ -694,13 +694,13 @@ void ThermoElectric::assemble()
             auto fAvgT = form1(_test=Xh);
             if( dim == 3 )
             {
-                auto range = markedelements(M_mesh, out.range());
+                auto range = markedelements(M_mesh, out.markers());
                 double area = integrate( range, cst(1.0) ).evaluate()(0,0) ;
                 fAvgT += integrate( range, id(phiT)/cst(area) );
             }
             else if( dim == 2 )
             {
-                auto range = markedfaces(M_mesh, out.range());
+                auto range = markedfaces(M_mesh, out.markers());
                 double area = integrate( range, cst(1.0) ).evaluate()(0,0) ;
                 fAvgT += integrate( range, id(phiT)/cst(area) );
             }
@@ -713,7 +713,7 @@ void ThermoElectric::assemble()
             for( int m = 0; m < eimSigma->mMax(); ++m )
             {
                 auto fI = form1(_test=Xh);
-                fI += integrate( markedfaces(M_mesh, out.range() ),
+                fI += integrate( markedfaces(M_mesh, out.markers() ),
                                  -idv(eimSigma->q(m))*grad(phiV)*N() );
                 M_Fqm[output][0][m] = fI.vectorPtr();
             }

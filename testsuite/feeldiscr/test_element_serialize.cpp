@@ -27,7 +27,7 @@
 */
 
 #define BOOST_TEST_MODULE test_element_serialize
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <fstream>
 

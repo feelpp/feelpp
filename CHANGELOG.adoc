@@ -33,14 +33,23 @@ https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
 * [**toolbox**] refactoring of gls stabilization in the `fluid` and `heat` toolboxes : now the `heatfluid` toolbox with natural convection can use Galerkin Least Square stabilization(gls).
 * [**toolbox**] implement Statistics post-process  {uri-toolbox-issue}/85[#85]
 * [**toolbox**] add pre/post solve interface with Linear/Picard solver
+* [**testsuite**] more than 400 tests run everyday successfully via buildkite
+* [**testsuite**] fix curl in 2D, it is the scalar curl now {uri-issue}/1227[#1227]
+* [**feelpp**] Support dofs elimination with on keyword for range of entity with same mesh dim see {uri-issue}/1252[#1252]
+* [**feelpp**,**toolboxes**] Add feature to handle multiple markers in boundary condition see {uri-issue}/1243[#1243]
+* [**feelpp**] Implement a first version of an automatic journal reporting see {uri-pull}/1222[#1222]
 
 === Fixes
+
 * [**feelpp**] improve support for g++-8
+* [**all**] port to clang++-7
 * [**all**] boost::shared_ptr has been replaced by std::shared_ptr {uri-issue}/1202[#1202]
 * [**feel/**] Fix support of filename_is_dot and filename_is_dot_dot in boost filesystem with boost 1.61 and 1.62 see {uri-issue}/[#1191]
 * [**toolbox**] remove rho scaling in fluid incompressibilty equation (cherry pick from feature/ls)
-* boost 1.67 is now supported, see {uri-issue}/1147[#1147]
-* fix support of PETSc 3.9 see {uri-issue}/1166[#1166] and {uri-issue}/1139[#1139]
+* [**all**] support boost from 1.61 to 1.67, see {uri-issue}/1147[#1147]
+* [**all**] support up to PETSc/SLEPc 3.9 see {uri-issue}/1166[#1166] and {uri-issue}/1139[#1139]
+* [**feelpp**] Crash with nodal projection by using a mesh range on Points or Edges in 3d see {uri-issue}/1250[#1250]
+* [**feelpp/tools/scripts/Paraview**] screenshot python script runs with both python2 and python3
 
 [[v0.105.0-2018-06-20]]
 == v0.105.0

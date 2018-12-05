@@ -1,6 +1,6 @@
 
 #define BOOST_TEST_MODULE test_fit_interpolator
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelfit/interpolator.hpp>
 

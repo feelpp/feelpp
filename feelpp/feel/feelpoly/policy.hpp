@@ -597,6 +597,15 @@ struct RankDown
             mpl::identity<Scalar<nDim> >,
             mpl::identity<_type> >::type::type type;
 };
+
+template<typename T>
+struct RankCurl
+{
+    static const uint16_type nDim = T::nDim;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
+                              RankSame<T>,RankDown<T> >::type::type type;
+};
+
 /**
  * Policy for orthogonal polynomial set which can be \p normalized or
  * not.  This can be used as a policy for orthogonal polynomial sets

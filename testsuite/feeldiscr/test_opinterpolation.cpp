@@ -24,7 +24,7 @@
 
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_opinterpolation
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #endif
 
 #include <feel/feel.hpp>

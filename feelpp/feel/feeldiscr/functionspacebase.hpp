@@ -29,6 +29,7 @@
 #ifndef __FunctionSpaceBase_H
 #define __FunctionSpaceBase_H 1
 
+#include <feel/feelcore/journalwatcher.hpp>
 #include <feel/feelcore/commobject.hpp>
 
 namespace Feel
@@ -41,7 +42,9 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-class FEELPP_EXPORT FunctionSpaceBase : public CommObject
+class FEELPP_EXPORT FunctionSpaceBase
+    : public CommObject,
+      public JournalWatcher
 {
 public:
 
@@ -57,15 +60,21 @@ public:
      */
     //@{
     using super = CommObject;
-
+    using super2 = JournalWatcher;
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
 
-    FunctionSpaceBase() : super( Environment::worldCommPtr() ) {}
-    explicit FunctionSpaceBase( worldcomm_ptr_t const& w ) : super( w ) {}
+    FunctionSpaceBase()
+        :
+        super( Environment::worldCommPtr() ), super2( "FunctionSpace" )
+    {}
+    explicit FunctionSpaceBase( std::string const& name, worldcomm_ptr_t const& w )
+        :
+        super( w ), super2( "FunctionSpace", name )
+    {}
     FunctionSpaceBase( FunctionSpaceBase const& ) = default;
     FunctionSpaceBase( FunctionSpaceBase && ) = default;
     //! destructor
@@ -92,32 +101,22 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
 
-
-    //@}
-
-    /** @name  Methods
-     */
-    //@{
-
-
     //@}
 
     class ElementBase {};
 
-protected:
-
 private:
- 
+    //! Private Methods
+    //! @{
+
+    //! @}
 };
-
-
 
 }
 #endif /* __FunctionSpaceBase_H */

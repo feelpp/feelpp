@@ -204,7 +204,7 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     auto initialSolution = this->modelProperties().initialConditions().getScalarFields( "temperature", "" );
     for( auto const& d : initialSolution )
     {
-        auto rangeElt = (marker(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),marker(d));
+        auto rangeElt = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
         this->fieldTemperaturePtr()->on(_range=rangeElt,_expr=expression(d),_geomap=this->geomap());
     }
     if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
@@ -241,6 +241,8 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // algebraic solver
     if ( buildModelAlgebraicFactory )
         this->initAlgebraicFactory();
+
+    this->setIsUpdatedForUse( true );
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
@@ -423,6 +425,70 @@ HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
+{
+    if ( !this->isUpdatedForUse() )
+        return;
+    if ( p.get_child_optional( "Prefix" ) )
+        return;
+    p.put( "Prefix", this->prefix() );
+    p.put( "Root Repository", this->rootRepository() );
+
+    // Physical Model
+    pt::ptree subPt, subPt2;
+    subPt.put( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
+    subPt.put( "velocity-convection",  std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" ) );
+    p.put_child( "Physical Model", subPt );
+
+    // Boundary Conditions
+    subPt.clear();
+    subPt2.clear();
+    this->updateInformationObjectDirichletBC( subPt2 );
+    for( const auto& ptIter : subPt2 )
+        subPt.put_child( ptIter.first, ptIter.second );
+    subPt2.clear();
+    this->updateInformationObjectNeumannBC( subPt2 );
+    for( const auto& ptIter : subPt2 )
+        subPt.put_child( ptIter.first, ptIter.second );
+    subPt2.clear();
+    this->updateInformationObjectRobinBC( subPt2 );
+    for( const auto& ptIter : subPt2 )
+        subPt.put_child( ptIter.first, ptIter.second );
+    p.put_child( "Boundary Conditions",subPt );
+
+    // Materials parameters
+    subPt.clear();
+    this->thermalProperties()->updateInformationObject( subPt );
+    p.put_child( "Materials parameters", subPt );
+
+    // Mesh and FunctionSpace
+    subPt.clear();
+    subPt.put("filename", this->meshFile());
+    M_mesh->putInformationObject( subPt );
+    p.put( "Mesh",  M_mesh->journalSectionName() );
+    p.put( "FunctionSpace Temperature",  M_Xh->journalSectionName() );
+    if ( this->fieldVelocityConvectionIsUsedAndOperational() )
+        p.put( "FunctionSpace Velocity Convection", M_XhVelocityConvection->journalSectionName() );
+    if ( M_stabilizationGLS )
+    {
+        subPt.clear();
+        subPt.put( "type", M_stabilizationGLSType );
+        if ( M_stabilizationGLSParameter )
+            subPt.put( "paramter method", M_stabilizationGLSParameter->method() );
+        p.put_child( "Finite element stabilization", subPt );
+    }
+
+    // Algebraic Solver
+    if ( M_algebraicFactory )
+    {
+        subPt.clear();
+        M_algebraicFactory->updateInformationObject( subPt );
+        p.put_child( "Algebraic Solver", subPt );
+    }
+}
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
 {
@@ -495,14 +561,14 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
     this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Dirichlet" );
     for( auto const& d : this->M_bcDirichlet )
-        this->addMarkerDirichletBC("elimination", marker(d) );
+        this->addMarkerDirichletBC("elimination", name(d), markers(d) );
     this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Neumann" );
     for( auto const& d : this->M_bcNeumann )
-        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,marker(d));
+        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,name(d),markers(d));
 
     this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "temperature", "Robin" );
     for( auto const& d : this->M_bcRobin )
-        this->addMarkerRobinBC( marker(d) );
+        this->addMarkerRobinBC( name(d),markers(d) );
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
 
@@ -515,7 +581,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // strong Dirichlet bc on temperature from expression
     for( auto const& d : M_bcDirichlet )
     {
-        auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d) );
+        auto listMark = this->markerDirichletBCByNameId( "elimination",name(d) );
         temperatureMarkers.insert( listMark.begin(), listMark.end() );
     }
     auto meshMarkersTemperatureByEntities = detail::distributeMarkerListOnSubEntity( mesh, temperatureMarkers );

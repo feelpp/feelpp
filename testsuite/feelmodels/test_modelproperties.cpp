@@ -23,7 +23,7 @@
  */
 #define BOOST_TEST_MODULE model properties testsuite
 
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
@@ -152,6 +152,64 @@ BOOST_AUTO_TEST_CASE( test_parameters )
     }
 }
 
+BOOST_AUTO_TEST_CASE( test_bc )
+{
+    std::vector<std::set<std::string> > markers;
+    markers.push_back({{"inflow"}});
+    markers.push_back({{"mark"}});
+    std::set<std::string> s;
+    s.insert("mark1");
+    s.insert("mark2");
+    markers.push_back(s);
+    markers.push_back({{"feelpp"}});
+    markers.push_back(std::set<std::string>({{"mark1","mark2","mymarker","toto2","toto4","toto6","feelpp1_pA","feelpp1_pD","feelpp2_pA","feelpp2_pD"}}));
+    ModelProperties model_props( Environment::expand(soption("json_filename")) );
+    auto boundaryconditions = model_props.boundaryConditions();
+    int i = 0;
+    for( auto const& type : boundaryconditions["velocity"] )
+    {
+        for( auto const& cond : type.second )
+        {
+            BOOST_CHECK_EQUAL( cond.markers().size(), markers[i].size() );
+            for( auto const& m : cond.markers() )
+                BOOST_CHECK( markers[i].find(m) != markers[i].end() );
+            ++i;
+        }
+    }
+    auto test = boundaryconditions["velocity"]["Robin"][0];
+    BOOST_CHECK_EQUAL( test.material(), "mycopper" );
+}
+
+#if 0 // TODO
+BOOST_AUTO_TEST_CASE( test_bc2 )
+{
+    std::vector<std::set<std::string> > markers;
+    markers.push_back({{"inflow"}});
+    markers.push_back({{"mark"}});
+    std::set<std::string> s;
+    s.insert("mark1");
+    s.insert("mark2");
+    markers.push_back(s);
+    markers.push_back({{"feelpp"}});
+    markers.push_back(std::set<std::string>({{"mark1","mark2","mymarker","toto2","toto4","toto6","feelpp1_pA","feelpp1_pD","feelpp2_pA","feelpp2_pD"}}));
+    ModelProperties model_props( Environment::expand(soption("json_filename")) );
+    auto boundaryconditions = model_props.boundaryConditions2();
+    int i = 0;
+    for( auto const& type : boundaryconditions["velocity"] )
+    {
+        for( auto const& cond : type.second )
+        {
+            BOOST_CHECK_EQUAL( cond.markers().size(), markers[i].size() );
+            for( auto const& m : cond.markers() )
+                BOOST_CHECK( markers[i].find(m) != markers[i].end() );
+            ++i;
+        }
+    }
+    auto test = boundaryconditions["velocity"]["Robin"][0];
+    BOOST_CHECK_EQUAL( test.material(), "mycopper" );
+}
+#endif
+
 BOOST_AUTO_TEST_CASE( test_outputs )
 {
     ModelProperties model_props( Environment::expand(soption("json_filename")) );
@@ -162,13 +220,13 @@ BOOST_AUTO_TEST_CASE( test_outputs )
         if( output.name() == "myoutput" )
         {
             BOOST_CHECK_EQUAL( output.type(), "average");
-            BOOST_CHECK_EQUAL( output.range().size(), 2);
+            BOOST_CHECK_EQUAL( output.markers().size(), 2);
             BOOST_CHECK_EQUAL( output.dim(), 3 );
         }
         else if( output.type() == "flux" )
         {
             BOOST_CHECK_EQUAL( output.type(), "flux");
-            BOOST_CHECK_EQUAL( output.range().size(), 1);
+            BOOST_CHECK_EQUAL( output.markers().size(), 1);
             BOOST_CHECK_EQUAL( output.dim(), 2 );
         }
 #if 0

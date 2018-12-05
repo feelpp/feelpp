@@ -1,0 +1,7 @@
+= Example of journal scripts.
+
+Several journal meta files are available in ./json
+These journal were generated for several mesh size, on 4 cores.
+
+The pack script show how to merge into one database file.
+The plot script show basics operation on the database

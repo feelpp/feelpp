@@ -299,7 +299,7 @@ Exporter<MeshType, N>::addPath( boost::format fmt )
     std::string fmtstr = fmt.str();
     boost::split( dirs, fmtstr, boost::is_any_of( "/" ) );
 
-    BOOST_FOREACH( std::string const& dir, dirs )
+    for( auto const& dir: dirs )
     {
         //DVLOG(2) << "[Application::Application] option: " << s << "\n";
         rep_path = rep_path / dir;
@@ -311,6 +311,17 @@ Exporter<MeshType, N>::addPath( boost::format fmt )
     M_path = rep_path.string();
 
     return this;
+}
+
+template<typename MeshType, int N>
+void
+Exporter<MeshType, N>::serve() const
+{
+
+#if 0
+    ./bin/startRenderingServer.js --pvpython /Applications/ParaView-5.5.0.app/Contents/bin/pvpython --data-directory-path data --data-load-signature-decoder b\
+        > in/decodeDataLoadSignature.js
+#endif
 }
 
 

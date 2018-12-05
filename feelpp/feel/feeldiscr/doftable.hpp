@@ -1004,7 +1004,7 @@ public:
      *
      * @return true if element dof have all been computed, false otherwise
      */
-    bool isElementDone( size_type elt, int c = 0 )
+    bool isElementDone( size_type elt, int c = 0 ) const
         {
             bool done = true;
             for( auto const& local_dof : this->localDofSet( elt ) )
@@ -2600,6 +2600,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
             for ( uint16_type i = 0; i < element_type::numTopologicalFaces; ++i )
             {
                 const face_type * faceit = elt.facePtr(i);
+                if( !faceit )
+                    continue;
                 size_type faceId = faceit->id();
                 auto itFindFace = facesInRangeElt.find( faceId );
                 if ( itFindFace != facesInRangeElt.end() )
