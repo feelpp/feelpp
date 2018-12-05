@@ -42,8 +42,8 @@ namespace FeelModels
 
 template<typename IteratorRange,typename SpaceP0Type,typename VectorType>
 void
-updateP0EltMarkerFromFaceRange( IteratorRange const& range, boost::shared_ptr<SpaceP0Type> const& XhP0,
-                                boost::shared_ptr<VectorType> & markEltVec )
+updateP0EltMarkerFromFaceRange( IteratorRange const& range, std::shared_ptr<SpaceP0Type> const& XhP0,
+                                std::shared_ptr<VectorType> & markEltVec )
 {
     for ( auto itr = range.template get<1>(), enr = range.template get<2>() ; itr!=enr ; ++itr )
     {
@@ -71,11 +71,11 @@ class MarkedMeshTool
 public :
 
     typedef MeshType mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar,Discontinuous> > > space_P0_type;
-    typedef boost::shared_ptr<space_P0_type> space_P0_ptrtype;
+    typedef std::shared_ptr<space_P0_type> space_P0_ptrtype;
     typedef typename space_P0_type::element_type element_P0_type;
-    typedef boost::shared_ptr<element_P0_type> element_P0_ptrtype;
+    typedef std::shared_ptr<element_P0_type> element_P0_ptrtype;
 
 
     MarkedMeshTool( mesh_ptrtype mesh )
@@ -97,7 +97,7 @@ public :
     buildSpaceP0()
     {
         M_XhP0 = space_P0_type::New(_mesh=M_mesh,
-                                    _worldscomm=std::vector<WorldComm>(1,M_mesh->worldComm()),
+                                    _worldscomm=makeWorldsComm(1,M_mesh->worldCommPtr()),
                                     _extended_doftable=std::vector<bool>(1,true) );
     }
 

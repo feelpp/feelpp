@@ -21,11 +21,18 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
-add_library(feelpp_model_hdg SHARED options.cpp  mixedelasticity.cpp mixedpoisson2d.cpp mixedpoisson3d.cpp ) #  poroelastic.cpp )
+add_library(feelpp_model_hdg SHARED options.cpp )
 target_link_libraries(feelpp_model_hdg feelpp_modelcore)
-set_property(TARGET feelpp_model_hdg PROPERTY MACOSX_RPATH ON)
-install(TARGETS feelpp_model_hdg DESTINATION lib/ COMPONENT Libs)
+
+target_include_directories(feelpp_toolbox_hdg INTERFACE
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )
+install(TARGETS feelpp_toolbox_hdg EXPORT feelpp-toolboxes-targets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+  )
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/hdg COMPONENT Devel)

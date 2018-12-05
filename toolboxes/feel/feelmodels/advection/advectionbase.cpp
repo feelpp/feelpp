@@ -32,7 +32,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionStabMethodIdMap = {
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionBase( 
         std::string const& prefix,
-        WorldComm const& worldComm,
+        worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 :
@@ -297,7 +297,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createAlgebraicData()
     this->timerTool("Constructor").start();
     
     // Backend
-    M_backend = backend_type::build( soption(_name="backend"), this->prefix(), M_Xh->worldComm() );
+    M_backend = backend_type::build( soption(_name="backend"), this->prefix(), M_Xh->worldCommPtr() );
 
     double tElapsed = this->timerTool("Constructor").stop("create");
     this->log("Advection","createAlgebraicData", (boost::format("finish in %1% s") %tElapsed).str() );

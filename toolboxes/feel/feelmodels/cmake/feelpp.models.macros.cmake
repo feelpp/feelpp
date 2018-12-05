@@ -91,7 +91,7 @@ macro( genLibHeat )
     set(HEAT_CODEGEN_SOURCES
       ${HEAT_LIB_DIR}/heatcreate_inst.cpp
       ${HEAT_LIB_DIR}/heatassembly_inst.cpp )
-    set(HEAT_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+    set(HEAT_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore  ) 
     # generate the lib target
     genLibBase(
       LIB_NAME ${HEAT_LIB_NAME}
@@ -135,7 +135,7 @@ macro( genLibElectric )
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electric_inst.cpp )
     set(ELECTRIC_CODEGEN_SOURCES
       ${ELECTRIC_LIB_DIR}/electric_inst.cpp )
-    set(ELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} )
+    set(ELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore  )
     # generate the lib target
     genLibBase(
       LIB_NAME ${ELECTRIC_LIB_NAME}
@@ -206,7 +206,7 @@ macro( genLibSolidMechanics )
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatejacobian_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdateresidual_inst.cpp
       )
-    set(SOLIDMECHANICS_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} ) 
+    set(SOLIDMECHANICS_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ) 
     # generate the lib target
     genLibBase(
       LIB_NAME ${SOLIDMECHANICS_LIB_NAME}
@@ -303,7 +303,6 @@ macro(genLibFluidMechanics)
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdateresidual_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdateresidualbc_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatestabilisation_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatestabilisationgls_inst.cpp
       )
     set(FLUIDMECHANICS_CODEGEN_SOURCES
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicscreate_inst.cpp
@@ -315,9 +314,8 @@ macro(genLibFluidMechanics)
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdateresidual_inst.cpp
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdateresidualbc_inst.cpp
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatestabilisation_inst.cpp
-      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatestabilisationgls_inst.cpp
       )
-    set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
+    set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
     if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
       set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelmeshale ${FLUIDMECHANICS_LIB_DEPENDS})
     endif()
@@ -523,7 +521,7 @@ macro( genLibAdvection )
     set(ADVECTION_CODEGEN_SOURCES
       ${ADVECTION_LIB_DIR}/advectionbase_inst.cpp
       ${ADVECTION_LIB_DIR}/advection_inst.cpp )
-    set(ADVECTION_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} ) 
+    set(ADVECTION_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore  ) 
     # generate the lib target
     genLibBase(
       LIB_NAME ${ADVECTION_LIB_NAME}
@@ -601,7 +599,7 @@ macro( genLibLevelset )
     set(LEVELSET_CODEGEN_SOURCES
       ${LEVELSET_LIB_DIR}/levelset_inst.cpp
       ${LEVELSET_LIB_DIR}/parameter_map.cpp )
-    set(LEVELSET_LIB_DEPENDS ${ADVECTION_SCALAR_LIB_NAME} ${ADVECTION_VECTORIAL_LIB_NAME} ${FEELPP_LIBRARIES} )
+    set(LEVELSET_LIB_DEPENDS ${ADVECTION_SCALAR_LIB_NAME} ${ADVECTION_VECTORIAL_LIB_NAME} feelpp_modelcore )
     # generate the lib target
     genLibBase(
       LIB_NAME ${LEVELSET_LIB_NAME}
@@ -720,7 +718,7 @@ macro( genLibThermoElectric )
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectric_inst.cpp )
     set(THERMOELECTRIC_CODEGEN_SOURCES
       ${THERMOELECTRIC_LIB_DIR}/thermoelectric_inst.cpp )
-    set(THERMOELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} )
+    set(THERMOELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
     set(THERMOELECTRIC_LIB_DEPENDS ${HEAT_LIB_NAME} ${ELECTRIC_LIB_NAME} ${THERMOELECTRIC_LIB_DEPENDS} )
     # generate the lib target
     genLibBase(
@@ -779,7 +777,7 @@ macro( genLibHeatFluid )
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluid_inst.cpp )
     set(HEATFLUID_CODEGEN_SOURCES
       ${HEATFLUID_LIB_DIR}/heatfluid_inst.cpp )
-    set(HEATFLUID_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} )
+    set(HEATFLUID_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
     set(HEATFLUID_LIB_DEPENDS ${HEAT_LIB_NAME} ${FLUIDMECHANICS_LIB_NAME} ${HEATFLUID_LIB_DEPENDS} )
     # generate the lib target
     genLibBase(
@@ -824,7 +822,7 @@ macro( genLibMaxwell )
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/maxwell/maxwell_inst.cpp )
     set(MAXWELL_CODEGEN_SOURCES
       ${MAXWELL_LIB_DIR}/maxwell_inst.cpp )
-    set(MAXWELL_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} )
+    set(MAXWELL_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
     # generate the lib target
     genLibBase(
       LIB_NAME ${MAXWELL_LIB_NAME}

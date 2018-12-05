@@ -45,10 +45,10 @@ class MixedPoisson : public ModelNumerical
     //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
-    typedef typename boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef typename std::shared_ptr<backend_type> backend_ptrtype ;
 
-    typedef MixedPoisson<Dim, Order, G_Order, E_Order> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef MixedPoisson<Dim,Order,G_Order,E_Order> self_type;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
     using sparse_matrix_type = backend_type::sparse_matrix_type;
     using sparse_matrix_ptrtype = backend_type::sparse_matrix_ptrtype;
@@ -60,11 +60,11 @@ class MixedPoisson : public ModelNumerical
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // The Lagrange multiplier lives in R^n-1
     typedef Simplex<Dim - 1, G_Order, Dim> face_convex_type;
     typedef Mesh<face_convex_type> face_mesh_type;
-    typedef boost::shared_ptr<face_mesh_type> face_mesh_ptrtype;
+    typedef std::shared_ptr<face_mesh_type> face_mesh_ptrtype;
 
     // Vh
     using Vh_t = Pdhv_type<mesh_type, Order>;
@@ -97,17 +97,14 @@ class MixedPoisson : public ModelNumerical
     using model_prop_type = ModelProperties;
     using model_prop_ptrtype = std::shared_ptr<model_prop_type>;
 
-    //using product_space_t = boost::shared_ptr<ProductSpace<Ch_ptr_t,true>>;
-    using product2_space_type = ProductSpaces2<Ch_ptr_t, Vh_ptr_t, Wh_ptr_t, Mh_ptr_t>;
-    using product2_space_ptrtype = boost::shared_ptr<product2_space_type>;
-    using block_bilinear_type = BlockBilinearForm<product2_space_type>;
-    using block_linear_type = BlockLinearForm<product2_space_type>;
+    using product2_space_type = ProductSpaces2<Ch_ptr_t,Vh_ptr_t,Wh_ptr_t,Mh_ptr_t>;
+    using product2_space_ptrtype = std::shared_ptr<product2_space_type>;
 
-    typedef Exporter<mesh_type, G_Order> exporter_type;
-    typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
+    typedef Exporter<mesh_type,G_Order> exporter_type;
+    typedef std::shared_ptr <exporter_type> exporter_ptrtype;
 
-    using op_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Wh_t, Pdh_type<mesh_type, Order>>>;
-    using opv_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Vh_t, Pdhv_type<mesh_type, Order>>>;
+    using op_interp_ptrtype = std::shared_ptr<OperatorInterpolation<Wh_t, Pdh_type<mesh_type,Order>>>;
+    using opv_interp_ptrtype = std::shared_ptr<OperatorInterpolation<Vh_t, Pdhv_type<mesh_type,Order>>>;
 
     using integral_boundary_list_type = std::vector<ExpressionStringAtMarker>;
 
@@ -118,7 +115,7 @@ class MixedPoisson : public ModelNumerical
     // typedef Bdf<space_mixedpoisson_type>  bdf_type;
     typedef Bdf<Wh_t> bdf_type;
     // typedef Bdf<Pdh_type<mesh_type,Order>> bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     //private:
   protected:
@@ -154,13 +151,13 @@ class MixedPoisson : public ModelNumerical
   public:
     // constructor
     MixedPoisson( std::string const& prefix = "mixedpoisson",
-                  WorldComm const& _worldComm = Environment::worldComm(),
+                  worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                   std::string const& subPrefix = "",
 	              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     MixedPoisson( self_type const& MP ) = default;
     static self_ptrtype New( std::string const& prefix = "mixedpoisson",
-                             WorldComm const& worldComm = Environment::worldComm(),
+                             worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
 							 ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
@@ -188,8 +185,8 @@ class MixedPoisson : public ModelNumerical
     virtual void createTimeDiscretization();
     bdf_ptrtype timeStepBDF() { return M_bdf_mixedpoisson; }
     bdf_ptrtype const& timeStepBDF() const { return M_bdf_mixedpoisson; }
-    boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
-    boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
+    std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
+    std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
     virtual void updateTimeStepBDF();
     virtual void initTimeStep();
     void updateTimeStep() { this->updateTimeStepBDF(); }
@@ -251,7 +248,7 @@ extern template class MixedPoisson<3, 3, 1, 4>;
 
 template <int Dim, int Order, int G_Order, int E_Order>
 MixedPoisson<Dim, Order, G_Order, E_Order>::MixedPoisson( std::string const& prefix,
-                                                          WorldComm const& worldComm,
+                                                          worldcomm_ptr_t const& worldComm,
                                                           std::string const& subPrefix,
                                                           ModelBaseRepository const& modelRep )
     : super_type( prefix, worldComm, subPrefix, modelRep ),
@@ -280,13 +277,14 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::MixedPoisson( std::string const& pre
                                                   this->worldComm(), this->verboseAllProc() );
 }
 
-template <int Dim, int Order, int G_Order, int E_Order>
-typename MixedPoisson<Dim, Order, G_Order, E_Order>::self_ptrtype
-MixedPoisson<Dim, Order, G_Order, E_Order>::New( std::string const& prefix,
-                                                 WorldComm const& worldComm, std::string const& subPrefix,
-                                                 ModelBaseRepository const& modelRep )
+
+template<int Dim, int Order, int G_Order, int E_Order>
+typename MixedPoisson<Dim,Order, G_Order, E_Order>::self_ptrtype
+MixedPoisson<Dim,Order,G_Order, E_Order>::New( std::string const& prefix,
+                                               worldcomm_ptr_t const& worldComm, std::string const& subPrefix,
+                                               ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type>( prefix, worldComm, subPrefix, modelRep );
+    return std::make_shared<self_type> ( prefix,worldComm,subPrefix,modelRep );
 }
 
 template <int Dim, int Order, int G_Order, int E_Order>
@@ -495,8 +493,8 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces()
     if ( M_integralCondition )
         Feel::cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
 
-    auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t, true>>( M_integralCondition, M_Ch );
-    M_ps = product2( ibcSpaces, M_Vh, M_Wh, M_Mh );
+    auto ibcSpaces = std::make_shared<ProductSpace<Ch_ptr_t,true> >( M_integralCondition, M_Ch);
+    M_ps = std::make_shared<product2_space_type>(product2(ibcSpaces,M_Vh,M_Wh,M_Mh));
 
     M_up = M_Vh->element( "u" );
     M_pp = M_Wh->element( "p" );

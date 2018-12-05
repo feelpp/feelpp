@@ -41,8 +41,8 @@ public:
             std::cerr << "Destructor\n";
         }
 };
-//boost::shared_ptr<A> f() { return new A; }
-boost::shared_ptr<A> g() { return boost::shared_ptr<A>(new A); }
+//std::shared_ptr<A> f() { return new A; }
+std::shared_ptr<A> g() { return std::shared_ptr<A>(new A); }
 
 int main(int argc, char**argv )
 {
@@ -61,7 +61,7 @@ int main(int argc, char**argv )
 #endif /* FEELPP_HAS_GPERFTOOLS */
 #if 1
     {
-    boost::shared_ptr<A> m( new A );
+    std::shared_ptr<A> m( new A );
     CHECK( m.use_count() == 1 ) << "Invalid shared_ptr, count: " << m.use_count();
     std::cout << "before\n";
     m.reset();
@@ -69,13 +69,13 @@ int main(int argc, char**argv )
     CHECK( m.use_count() == 0 ) << "Invalid shared_ptr, count: " << m.use_count();
     }
     {
-    boost::shared_ptr<A> m( g() );
+    std::shared_ptr<A> m( g() );
     CHECK( m.use_count() == 1 ) << "Invalid shared_ptr, count: " << m.use_count();
     m.reset();
     CHECK( m.use_count() == 0 ) << "Invalid shared_ptr, count: " << m.use_count();
     }
     {
-    boost::shared_ptr<A> m( g() );
+    std::shared_ptr<A> m( g() );
     CHECK( m.use_count() == 1 ) << "Invalid shared_ptr, count: " << m.use_count();
     m.reset();
     CHECK( m.use_count() == 0 ) << "Invalid shared_ptr, count: " << m.use_count();

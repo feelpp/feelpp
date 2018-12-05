@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE( onespace )
     Environment::worldComm().barrier();
 
     auto seqmesh = loadMesh( _mesh=new mesh_type,
-                             _filename="submesh.msh", _worldcomm= Environment::worldCommSeq() );
+                             _filename="submesh.msh", _worldcomm= Environment::worldCommSeqPtr() );
 
     auto Rh = space_type::New(_mesh=seqmesh );
     auto my_map = TwoSpacesMap<space_type>( Rh, Xh );
@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE( composite )
     Environment::worldComm().barrier();
 
     auto seqmesh = loadMesh( _mesh=new mesh_type,
-                             _filename="submesh.msh", _worldcomm= Environment::worldCommSeq() );
+                             _filename="submesh.msh", _worldcomm= Environment::worldCommSeqPtr() );
 
     auto Rh = space_type::New(_mesh=seqmesh );
 

@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE( parallel_to_seq )
     saveGMSHMesh(_mesh=newmesh, _filename="submesh.msh" );
     Environment::worldComm().barrier();
     auto seqmesh = loadMesh( _mesh=new mesh_type,
-                             _filename="submesh.msh", _worldcomm= Environment::worldCommSeq() );
+                             _filename="submesh.msh", _worldcomm= Environment::worldCommSeqPtr() );
 
 
     // build a map to find elt id from points ids

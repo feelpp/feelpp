@@ -7,8 +7,6 @@
 
 namespace Feel
 {
-namespace vf
-{
 namespace FeelModels
 {
 
@@ -38,8 +36,6 @@ public:
 
     static const uint16_type orderdisplacement = functionspace_disp_type::basis_type::nOrder;
     static const uint16_type nDim = functionspace_disp_type::nDim;
-    static const uint16_type imorder = (orderdisplacement-1)*(nDim-1);
-    static const bool imIsPoly = true;
 
     template<typename Func>
     struct HasTestFunction
@@ -66,6 +62,12 @@ public:
     ~SolidMecGeomapEulerian()
     {}
 
+    //! polynomial order
+    uint16_type polynomialOrder() const { return (orderdisplacement-1)*(nDim-1); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return true; }
+
     element_disp_type const& disp() const { return M_disp; }
 
     typedef Shape<nDim, Tensor2, false, false> my_shape_type;
@@ -88,9 +90,9 @@ public:
         struct is_zero { static const bool value = false; };
         // fe disp context
         typedef typename fe_disp_type::PreCompute pc_disp_type;
-        typedef boost::shared_ptr<pc_disp_type> pc_disp_ptrtype;
+        typedef std::shared_ptr<pc_disp_type> pc_disp_ptrtype;
         typedef typename fe_disp_type::template Context<context_disp, fe_disp_type,gm_type,geoelement_type,gmc_type::context> ctx_disp_type;
-        typedef boost::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
+        typedef std::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
 
         tensor( expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
@@ -381,6 +383,5 @@ solidMecGeomapEulerianJacobian( ElementDispType const& v )
 
 
 } // namespace FeelModels
-} // namespace vf
 } // namespace Feel
 #endif /* __SOLIDMECGEOMAPEULERIAN_H */

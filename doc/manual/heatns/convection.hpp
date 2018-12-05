@@ -97,10 +97,10 @@ public:
     // Definitions pour mesh
     typedef Simplex<CONVECTION_DIM> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef backend_type::vector_ptrtype vector_ptrtype;
@@ -122,7 +122,7 @@ public:
 
     typedef FunctionSpace<mesh_type, basis_t_type> t_space_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef typename element_type:: sub_element<0>::type element_0_type;
     typedef typename element_type:: sub_element<1>::type element_1_type;
@@ -132,9 +132,9 @@ public:
 #endif
 
     typedef OperatorLinear<space_type,space_type> oplin_type;
-    typedef boost::shared_ptr<oplin_type> oplin_ptrtype;
+    typedef std::shared_ptr<oplin_type> oplin_ptrtype;
     typedef FsFunctionalLinear<space_type> funlin_type;
-    typedef boost::shared_ptr<funlin_type> funlin_ptrtype;
+    typedef std::shared_ptr<funlin_type> funlin_ptrtype;
 
     // Definition pour les exportations
     typedef Exporter<mesh_type> export_type;
@@ -170,7 +170,7 @@ private:
     backend_ptrtype M_backend;
 
     space_ptrtype Xh;
-    boost::shared_ptr<OperatorLagrangeP1<typename space_type::sub_functionspace<2>::type::element_type> > P1h;
+    std::shared_ptr<OperatorLagrangeP1<typename space_type::sub_functionspace<2>::type::element_type> > P1h;
 
     oplin_ptrtype M_oplin;
     funlin_ptrtype M_lf;
@@ -183,7 +183,7 @@ private:
     //value_type dt;
 
     // Exporters
-    boost::shared_ptr<export_type> exporter;
+    std::shared_ptr<export_type> exporter;
 
     // Timers
     std::map<std::string,std::pair<boost::timer,double> > timers;

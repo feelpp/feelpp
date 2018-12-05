@@ -40,7 +40,7 @@ namespace FeelModels
 {
 
 template < class Convex, int Order >
-ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, WorldComm const& worldcomm, bool moveGhostEltFromExtendedStencil,
+ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t const& worldcomm, bool moveGhostEltFromExtendedStencil,
                         ModelBaseRepository const& modelRep )
     :
     super_type( prefix/*prefixvm(prefix,"alemesh")*/, worldcomm,"",modelRep )
@@ -61,7 +61,7 @@ ALE<Convex,Order>::ALE( ALE const& tc )
 template< class Convex, int Order >
 typename ALE<Convex,Order>::self_ptrtype
 ALE<Convex,Order>::build( mesh_ptrtype mesh, std::string prefix,
-                          WorldComm const& worldcomm,
+                          worldcomm_ptr_t const& worldcomm,
                           bool moveGhostEltFromExtendedStencil,
                           ModelBaseRepository const& modelRep)
 {

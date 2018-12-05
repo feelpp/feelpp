@@ -43,57 +43,57 @@ namespace FeelModels
 
 template< typename MeshType, int Order >
 class Winslow : public ModelAlgebraic,
-                public boost::enable_shared_from_this< Winslow<MeshType,Order> >
+                public std::enable_shared_from_this< Winslow<MeshType,Order> >
 {
 public :
     typedef Winslow<MeshType,Order> self_type;
     typedef ModelAlgebraic super_type;
 
     typedef MeshType mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
     typedef typename super_type::backend_ptrtype backend_ptrtype;
     typedef typename super_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename super_type::vector_ptrtype vector_ptrtype;
 
     typedef Preconditioner<double> preconditioner_type;
-    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+    typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
 
     typedef bases<Lagrange<Order,Vectorial> > basis_type;
     typedef FunctionSpace<mesh_type,basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
 
     typedef bases<Lagrange<Order-1,Scalar> > basis_scal_m1_type;
     typedef FunctionSpace<mesh_type,basis_scal_m1_type> space_scal_m1_type;
-    typedef boost::shared_ptr<space_scal_m1_type> space_scal_m1_ptrtype;
+    typedef std::shared_ptr<space_scal_m1_type> space_scal_m1_ptrtype;
     typedef typename space_scal_m1_type::element_type element_scal_m1_type;
 
     typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar,Discontinuous> > > space_p0_type;
-    typedef boost::shared_ptr<space_p0_type> space_p0_ptrtype;
+    typedef std::shared_ptr<space_p0_type> space_p0_ptrtype;
     typedef typename space_p0_type::element_type element_p0_type;
-    typedef boost::shared_ptr<element_p0_type> element_p0_ptrtype;
+    typedef std::shared_ptr<element_p0_type> element_p0_ptrtype;
 
     typedef FunctionSpace<mesh_type, bases<Lagrange<0,Tensor2,Discontinuous> > > space_p0_tensor2_type;
-    typedef boost::shared_ptr<space_p0_tensor2_type> space_p0_tensor2_ptrtype;
+    typedef std::shared_ptr<space_p0_tensor2_type> space_p0_tensor2_ptrtype;
     typedef typename space_p0_tensor2_type::element_type element_p0_tensor2_type;
-    typedef boost::shared_ptr<element_p0_tensor2_type> element_p0_tensor2_ptrtype;
+    typedef std::shared_ptr<element_p0_tensor2_type> element_p0_tensor2_ptrtype;
 
     typedef Projector<space_scal_m1_type,space_scal_m1_type> projector_scal_m1_type;
-    typedef boost::shared_ptr<projector_scal_m1_type> projector_scal_m1_ptrtype;
+    typedef std::shared_ptr<projector_scal_m1_type> projector_scal_m1_ptrtype;
 
     typedef std::map< std::string, std::vector<flag_type> > flagSet_type;
 
     typedef Exporter<mesh_type,mesh_type::nOrder> exporter_type;
-    typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
+    typedef std::shared_ptr<exporter_type> exporter_ptrtype;
 
     Winslow( mesh_ptrtype mesh, std::string const& prefix="",
-             WorldComm const& worldcomm = Environment::worldComm(), bool useGhostEltFromExtendedStencil=false,
+             worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(), bool useGhostEltFromExtendedStencil=false,
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     Winslow( space_ptrtype const& space, std::string const& prefix="",
@@ -101,7 +101,7 @@ public :
 
     void init();
 
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const;
 
 
     backend_ptrtype const& backend() const { return M_backend; }

@@ -36,7 +36,7 @@ namespace FeelModels
 {
 
 
-ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& _worldComm, std::string const& subPrefix,
+ModelNumerical::ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t const& _worldComm, std::string const& subPrefix,
                                 ModelBaseRepository const& modelRep )
         :
         super_type( _theprefix, _worldComm, subPrefix, modelRep ),
@@ -54,7 +54,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& 
         M_startBlockSpaceIndexMatrixCol(0),
         M_startBlockSpaceIndexVector(0),
         M_exporterPath( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) ),
-        M_postProcessMeasuresIO( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldComm() )
+        M_postProcessMeasuresIO( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldCommPtr() )
         //M_PsLogger( new PsLogger(prefixvm(this->prefix(),"PsLogger"),this->worldComm() ) )
     {
         //-----------------------------------------------------------------------//
@@ -65,7 +65,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& 
         if ( Environment::vm().count( prefixvm(this->prefix(),"mesh.filename").c_str() ) )
         {
             std::string meshfile = Environment::expand( soption(_prefix=this->prefix(),_name="mesh.filename") );
-            RemoteData rdTool( meshfile, this->worldComm() );
+            RemoteData rdTool( meshfile, this->worldCommPtr() );
             if ( rdTool.canDownload() )
             {
                 auto dowloadedData = rdTool.download( (fs::path(Environment::downloadsRepository())/fs::path(this->prefix())/fs::path("meshes")).string() );

@@ -47,10 +47,10 @@ class MixedPoissonElasticity
 	typedef double 						value_type;
 	typedef MixedPoisson<Dim,Order,G_Order,E_Order> 	mp_type;
 	typedef MixedElasticity<Dim,Order,G_Order,E_Order> 	me_type;
-	typedef boost::shared_ptr<mp_type>  mp_ptrtype;
-	typedef boost::shared_ptr<me_type>  me_ptrtype;
+	typedef std::shared_ptr<mp_type>  mp_ptrtype;
+	typedef std::shared_ptr<me_type>  me_ptrtype;
 	typedef MixedPoissonElasticity<Dim,Order,G_Order,E_Order> 	self_type;
-	typedef boost::shared_ptr<self_type> 		self_ptrtype;
+	typedef std::shared_ptr<self_type> 		self_ptrtype;
 	typedef typename mp_type::convex_type 		convex_type;
 	typedef typename mp_type::mesh_type			mesh_type;
 	typedef typename mp_type::mesh_ptrtype		mesh_ptrtype;
@@ -66,11 +66,11 @@ class MixedPoissonElasticity
 	using Wh_tPOI = Pdh_type<mesh_type,Order>;
 
 	
-	using op_interp_ptrtypeEL = boost::shared_ptr<OperatorInterpolation<Wh_tEL, Pdhv_type<mesh_type,Order>>>;
-	using opv_interp_ptrtypeEL = boost::shared_ptr<OperatorInterpolation<Vh_tEL, Pdhms_type<mesh_type,Order>>>;
+	using op_interp_ptrtypeEL = std::shared_ptr<OperatorInterpolation<Wh_tEL, Pdhv_type<mesh_type,Order>>>;
+	using opv_interp_ptrtypeEL = std::shared_ptr<OperatorInterpolation<Vh_tEL, Pdhms_type<mesh_type,Order>>>;
 
-	using op_interp_ptrtypePOI = boost::shared_ptr<OperatorInterpolation<Wh_tPOI, Pdh_type<mesh_type,Order>>>;
-	using opv_interp_ptrtypePOI = boost::shared_ptr<OperatorInterpolation<Vh_tPOI, Pdhv_type<mesh_type,Order>>>;
+	using op_interp_ptrtypePOI = std::shared_ptr<OperatorInterpolation<Wh_tPOI, Pdh_type<mesh_type,Order>>>;
+	using opv_interp_ptrtypePOI = std::shared_ptr<OperatorInterpolation<Vh_tPOI, Pdhv_type<mesh_type,Order>>>;
 
     
 	//! Model properties type
@@ -78,7 +78,7 @@ class MixedPoissonElasticity
     using model_prop_ptrtype = std::shared_ptr<model_prop_type>;
 
     typedef Exporter<mesh_type,1> exporter_type;
-    typedef boost::shared_ptr <exporter_type> exporter_ptrtype;
+    typedef std::shared_ptr <exporter_type> exporter_ptrtype;
     
 
  

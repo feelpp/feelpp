@@ -52,7 +52,7 @@ namespace FeelModels
 
 template< typename ConvexType, typename BasisTemperatureType>
 class Heat : public ModelNumerical,
-                     public boost::enable_shared_from_this< Heat<ConvexType,BasisTemperatureType> >,
+                     public std::enable_shared_from_this< Heat<ConvexType,BasisTemperatureType> >,
                      public MarkerManagementDirichletBC,
                      public MarkerManagementNeumannBC,
                      public MarkerManagementRobinBC
@@ -60,14 +60,14 @@ class Heat : public ModelNumerical,
     public:
         typedef ModelNumerical super_type;
         typedef Heat<ConvexType,BasisTemperatureType> self_type;
-        typedef boost::shared_ptr<self_type> self_ptrtype;
+        typedef std::shared_ptr<self_type> self_ptrtype;
         //___________________________________________________________________________________//
         // mesh
         typedef ConvexType convex_type;
         static const uint16_type nDim = convex_type::nDim;
         static const uint16_type nOrderGeo = convex_type::nOrder;
         typedef Mesh<convex_type> mesh_type;
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        typedef std::shared_ptr<mesh_type> mesh_ptrtype;
         // basis
         static const uint16_type nOrderTemperature = BasisTemperatureType::nOrder;
         static const uint16_type nOrderPoly = nOrderTemperature;
@@ -75,43 +75,43 @@ class Heat : public ModelNumerical,
         typedef Lagrange<nOrderPoly, Vectorial,Continuous,PointSetFekete> basis_velocityconvection_type;
         // function space temperature
         typedef FunctionSpace<mesh_type, bases<basis_temperature_type> > space_temperature_type;
-        typedef boost::shared_ptr<space_temperature_type> space_temperature_ptrtype;
+        typedef std::shared_ptr<space_temperature_type> space_temperature_ptrtype;
         typedef typename space_temperature_type::element_type element_temperature_type;
-        typedef boost::shared_ptr<element_temperature_type> element_temperature_ptrtype;
+        typedef std::shared_ptr<element_temperature_type> element_temperature_ptrtype;
         typedef typename space_temperature_type::element_external_storage_type element_temperature_external_storage_type;
         // function space velocity convection
         typedef FunctionSpace<mesh_type, bases<basis_velocityconvection_type> > space_velocityconvection_type;
-        typedef boost::shared_ptr<space_velocityconvection_type> space_velocityconvection_ptrtype;
+        typedef std::shared_ptr<space_velocityconvection_type> space_velocityconvection_ptrtype;
         typedef typename space_velocityconvection_type::element_type element_velocityconvection_type;
-        typedef boost::shared_ptr<element_velocityconvection_type> element_velocityconvection_ptrtype;
+        typedef std::shared_ptr<element_velocityconvection_type> element_velocityconvection_ptrtype;
         // mechanical properties desc
         typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_type;
         typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
-        typedef boost::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
+        typedef std::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
         typedef ThermalPropertiesDescription<space_scalar_P0_type> thermalproperties_type;
-        typedef boost::shared_ptr<thermalproperties_type> thermalproperties_ptrtype;
+        typedef std::shared_ptr<thermalproperties_type> thermalproperties_ptrtype;
         // time scheme
         typedef Bdf<space_temperature_type>  bdf_temperature_type;
-        typedef boost::shared_ptr<bdf_temperature_type> bdf_temperature_ptrtype;
+        typedef std::shared_ptr<bdf_temperature_type> bdf_temperature_ptrtype;
         // stabilization
         typedef StabilizationGLSParameterBase<mesh_type> stab_gls_parameter_type;
         typedef std::shared_ptr<stab_gls_parameter_type> stab_gls_parameter_ptrtype;
         // exporter
         typedef Exporter<mesh_type,nOrderGeo> export_type;
-        typedef boost::shared_ptr<export_type> export_ptrtype;
+        typedef std::shared_ptr<export_type> export_ptrtype;
 
         // algebraic solver
         typedef ModelAlgebraicFactory model_algebraic_factory_type;
-        typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+        typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
         // context for evaluation
         typedef typename space_temperature_type::Context context_temperature_type;
-        typedef boost::shared_ptr<context_temperature_type> context_temperature_ptrtype;
+        typedef std::shared_ptr<context_temperature_type> context_temperature_ptrtype;
 
 
         Heat( std::string const& prefix,
                       bool buildMesh = true,
-                      WorldComm const& worldComm = Environment::worldComm(),
+                      worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                       std::string const& subPrefix  = "",
                       ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
@@ -157,13 +157,13 @@ class Heat : public ModelNumerical,
         //___________________________________________________________________________________//
         // time step scheme
         bdf_temperature_ptrtype const& timeStepBdfTemperature() const { return M_bdfTemperature; }
-        boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfTemperature(); }
-        boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBdfTemperature(); }
+        std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfTemperature(); }
+        std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBdfTemperature(); }
         void updateBdf();
         void updateTimeStep() { this->updateBdf(); }
         //___________________________________________________________________________________//
 
-        boost::shared_ptr<std::ostringstream> getInfo() const;
+        std::shared_ptr<std::ostringstream> getInfo() const;
     private :
         void loadParameterFromOptionsVm();
         void initMesh();
@@ -216,21 +216,30 @@ class Heat : public ModelNumerical,
         /*virtual*/ void solve();
 
         void updateLinearPDE( DataUpdateLinear & data ) const;
-        void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
+        //void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
         void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
         void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
         void updateLinearPDESourceTerm( vector_ptrtype& F, bool buildCstPart) const;
+        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
+        void updateLinearPDEStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
+                                              Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateLinear & data ) const;
 
         // non linear (newton)
         void updateNewtonInitialGuess( vector_ptrtype& U ) const;
         void updateJacobian( DataUpdateJacobian & data ) const;
         void updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool buildCstPart ) const;
         void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
+        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
+        void updateJacobianStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
+                                             Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateJacobian & data ) const;
         void updateResidual( DataUpdateResidual & data ) const;
         void updateResidualSourceTerm( vector_ptrtype& R, bool buildCstPart ) const;
         void updateResidualNeumannBC( vector_ptrtype& R, bool buildCstPart ) const;
         void updateResidualRobinBC( element_temperature_external_storage_type const& u, vector_ptrtype& R, bool buildCstPart ) const;
         void updateResidualDofElimination( DataUpdateResidual & data ) const;
+        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
+        void updateResidualStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
+                                             Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateResidual & data ) const;
 
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
@@ -302,5 +311,7 @@ class Heat : public ModelNumerical,
 
 } // namespace FeelModels
 } // namespace Feel
+
+#include <feel/feelmodels/heat/heatupdatestabilizationgls.hpp>
 
 #endif /* FEELPP_TOOLBOXES_HEAT_HPP */

@@ -75,7 +75,7 @@ public:
 
     typedef Backend<value_type> backend_type;
 
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
 
@@ -85,7 +85,7 @@ public:
 
     typedef Mesh<convex_type> mesh_type;
 
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename mesh_type::trace_mesh_type trace_mesh_type;
 
@@ -99,13 +99,13 @@ public:
 
     typedef FunctionSpace<mesh_type, basis2_type> space2_type;
 
-    typedef boost::shared_ptr<space1_type> space1_ptrtype;
+    typedef std::shared_ptr<space1_type> space1_ptrtype;
 
-    typedef boost::shared_ptr<space2_type> space2_ptrtype;
+    typedef std::shared_ptr<space2_type> space2_ptrtype;
 
     typedef typename space1_type::trace_functionspace_type lagmult_space_type;
 
-    typedef typename boost::shared_ptr<lagmult_space_type> lagmult_space_ptrtype;
+    typedef typename std::shared_ptr<lagmult_space_type> lagmult_space_ptrtype;
 
     typedef typename space1_type::element_type element1_type;
 
@@ -115,11 +115,11 @@ public:
 
     typedef Exporter<mesh_type> export_type;
 
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     typedef Exporter<trace_mesh_type> trace_export_type;
 
-    typedef boost::shared_ptr<trace_export_type> trace_export_ptrtype;
+    typedef std::shared_ptr<trace_export_type> trace_export_ptrtype;
 
     /**
      * Constructor

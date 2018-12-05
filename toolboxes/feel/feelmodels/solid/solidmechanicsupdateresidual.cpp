@@ -88,12 +88,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         {
             if (!BuildCstPart)
             {
-                auto const FSv_neohookean = Feel::vf::FeelModels::solidMecFirstPiolaKirchhoffTensor<3*(nOrderDisplacement-1)>(u,*this->mechanicalProperties());
+                auto const FSv_neohookean = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<3*(nOrderDisplacement-1)>(u,*this->mechanicalProperties());
                 linearFormDisplacement +=
                     integrate( _range=elements(mesh),
                                //_expr= trace(val(Fv*Sv)*trans(grad(v))),
-                               //_expr=trace(Feel::vf::FeelModels::stressStVenantKirchhoff(u,coeffLame1,coeffLame2)*trans(grad(v))),
-                               //_expr=Feel::vf::FeelModels::stressStVenantKirchhoffResidual(u,coeffLame1,coeffLame2),// le dernier 
+                               //_expr=trace(Feel::FeelModels::stressStVenantKirchhoff(u,coeffLame1,coeffLame2)*trans(grad(v))),
+                               //_expr=Feel::FeelModels::stressStVenantKirchhoffResidual(u,coeffLame1,coeffLame2),// le dernier 
                                _expr= inner(FSv_neohookean,grad(v)),
                                _geomap=this->geomap() );
             }
@@ -102,7 +102,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         {
             if (!BuildCstPart)
             {
-                auto const FSv_neohookean = Feel::vf::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
+                auto const FSv_neohookean = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
                 linearFormDisplacement +=
                     integrate( _range=elements(mesh),
                                //_expr= trace(val(FSv_neohookean)*trans(grad(v))),
@@ -359,8 +359,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( elemen
         linearFormDisplacement +=
             integrate( _range=elements(mesh),
                        //_expr= trace(val(-idv(p)*trans(InvFv))*trans(grad(v))),
-                       //_expr=inner( -idv(p)*Feel::vf::FeelModels::solidMecIncompressibilityPressure(u,p,*this->mechanicalProperties()),grad(v) ),
-                       _expr=inner( /*-idv(p)**/Feel::vf::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()),grad(v) ),
+                       //_expr=inner( -idv(p)*Feel::FeelModels::solidMecIncompressibilityPressure(u,p,*this->mechanicalProperties()),grad(v) ),
+                       _expr=inner( /*-idv(p)**/Feel::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()),grad(v) ),
                        _geomap=this->geomap() );
     }
     else if (M_pdeType=="Elasticity-Large-Deformation" || M_pdeType=="Elasticity")
@@ -378,7 +378,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( elemen
         integrate( _range=elements(mesh),
                    //_expr=val(Fav22+Fav11+Fav11*Fav22-Fav21*Fav12)*id(q),
                    //_expr= detFvM1*id(q),
-                   _expr= Feel::vf::FeelModels::solidMecPressureFormulationConstraint(u,*this->mechanicalProperties())*id(q),
+                   _expr= Feel::FeelModels::solidMecPressureFormulationConstraint(u,*this->mechanicalProperties())*id(q),
                    _geomap=this->geomap() );
 
 
@@ -465,7 +465,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U 
     auto Xh = this->functionSpace();
     auto mesh = this->mesh();
 
-    if ( !Xh->worldsComm()[0].isActive()) // only on Displacement Proc
+    if ( !Xh->worldsComm()[0]->isActive()) // only on Displacement Proc
         return;
 
     auto u = Xh->element( U, this->rowStartInVector() );
@@ -609,21 +609,21 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureResidual( element_di
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)),
-                       _expr= -expression(d)*inner( Feel::vf::FeelModels::solidMecGeomapEulerian(u)*N(),id(u) ),
+                       _expr= -expression(d)*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*N(),id(u) ),
                        _geomap=this->geomap() );
     }
     for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)),
-                       _expr= -inner( Feel::vf::FeelModels::solidMecGeomapEulerian(u)*expression(d),id(u) ),
+                       _expr= -inner( Feel::FeelModels::solidMecGeomapEulerian(u)*expression(d),id(u) ),
                        _geomap=this->geomap() );
     }
     for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)),
-                       _expr= -inner( Feel::vf::FeelModels::solidMecGeomapEulerian(u)*expression(d)*N(),id(u) ),
+                       _expr= -inner( Feel::FeelModels::solidMecGeomapEulerian(u)*expression(d)*N(),id(u) ),
                        _geomap=this->geomap() );
     }
 }

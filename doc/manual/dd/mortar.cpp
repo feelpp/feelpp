@@ -67,9 +67,9 @@ public:
 
     typedef double value_type;
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef Mesh< Simplex<Dim,1,Dim> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename mesh_type::trace_mesh_type trace_mesh_type;
     typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
     typedef bases<Lagrange<Order1,Scalar> > basis1_type;
@@ -82,9 +82,9 @@ public:
     typedef typename space2_type::element_type element2_type;
     typedef typename lagmult_space_type::element_type trace_element_type;
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
     typedef Exporter<trace_mesh_type> trace_export_type;
-    typedef boost::shared_ptr<trace_export_type> trace_export_ptrtype;
+    typedef std::shared_ptr<trace_export_type> trace_export_ptrtype;
 
     /**
      * Constructor

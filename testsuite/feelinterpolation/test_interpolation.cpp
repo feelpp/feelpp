@@ -63,7 +63,7 @@ template<int Dim, int Order=1, int RDim=Dim>
 struct imesh
 {
   typedef Mesh<Simplex<Dim,Order,RDim>, double > type;
-  typedef boost::shared_ptr<type> ptrtype;
+  typedef std::shared_ptr<type> ptrtype;
 };
 
 template<int Dim, int Order, int RDim>
@@ -220,12 +220,12 @@ makeAbout()
 
 #if defined(USE_BOOST_TEST)
 #if 0
-    boost::shared_ptr<Feel::Application> mpiapp;
+    std::shared_ptr<Feel::Application> mpiapp;
     test_suite*
         init_unit_test_suite( int argc, char** argv )
     {
         //boost::mpi::environment( argc, argv );
-        mpiapp = boost::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
+        mpiapp = std::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
 
         test_suite* test = BOOST_TEST_SUITE( "Interpolation test suite" );
 
@@ -256,7 +256,7 @@ makeAbout()
     BOOST_AUTO_TEST_SUITE( interpolation_suite )
 
         typedef Feel::Application Application_type;
-    typedef boost::shared_ptr<Application_type> Application_ptrtype;
+    typedef std::shared_ptr<Application_type> Application_ptrtype;
 
     BOOST_AUTO_TEST_CASE( test_interpolation12 )
     {

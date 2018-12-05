@@ -40,12 +40,12 @@ namespace FeelModels
 MAXWELL_CLASS_TEMPLATE_DECLARATIONS
 MAXWELL_CLASS_TEMPLATE_TYPE::Maxwell( std::string const& prefix,
                                       bool buildMesh,
-                                      WorldComm const& worldComm,
+                                      worldcomm_ptr_t const& worldComm,
                                       std::string const& subPrefix,
                                       ModelBaseRepository const& modelRep )
     :
     super_type( prefix, worldComm, subPrefix, modelRep ),
-    M_maxwellProperties( boost::make_shared<maxwellproperties_type>( prefix ) ),
+    M_maxwellProperties( std::make_shared<maxwellproperties_type>( prefix ) ),
     M_epsilon( doption(_name="regularization-epsilon", _prefix=prefix) )
 {
     this->log("Maxwell","constructor", "start" );
@@ -151,7 +151,7 @@ MAXWELL_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->initPostProcess();
 
     // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
+    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
 
     size_type currentStartIndex = 0;// velocity and pressure before
     M_startBlockIndexFieldsInMatrix["potential-maxwell"] = currentStartIndex;
@@ -282,10 +282,10 @@ MAXWELL_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 }
 
 MAXWELL_CLASS_TEMPLATE_DECLARATIONS
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 MAXWELL_CLASS_TEMPLATE_TYPE::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"

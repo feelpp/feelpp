@@ -44,6 +44,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
@@ -64,8 +65,9 @@ struct f_Px
     typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 1;
-    static const bool imIsPoly = true;
+    uint16_type polynomialOrder() const { return 0; }
+    bool isPolynomial() const { return true; }
+
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
     {
         return x[0];
@@ -83,8 +85,8 @@ struct f_Nx
     typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 1;
-    static const bool imIsPoly = true;
+    uint16_type polynomialOrder() const { return 1; }
+    bool isPolynomial() const { return true; }
     template<int Dim>
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, eigen_vector_type<Dim,double> const& n ) const
     {
@@ -98,14 +100,13 @@ struct f_Ny
     typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 1;
-    static const bool imIsPoly = true;
-
     template<int Dim>
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, eigen_vector_type<Dim,double> const& n ) const
         {
             return n[1];
         }
+    uint16_type polynomialOrder() const { return 1; }
+    bool isPolynomial() const { return true; }
 };
 struct f_sinPx
 {
@@ -114,13 +115,13 @@ struct f_sinPx
     typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 2;
-    static const bool imIsPoly = false;
     template<int Dim>
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, eigen_vector_type<Dim,double> const& n ) const
         {
             return math::sin( x[0] );
         }
+    uint16_type polynomialOrder() const { return 2; }
+    bool isPolynomial() const { return false; }
 };
 
 #if 0
@@ -131,8 +132,8 @@ struct f_matheval
     typedef double value_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 2;
-    static const bool imIsPoly = false;
+    uint16_type polynomialOrder() const { return 2; }
+    bool isPolynomial() const { return false; }
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
     {
         /* introduce matheval function */
@@ -154,7 +155,7 @@ struct imesh
     static const uint16_type geoOrder = (FEELPP_MESH_MAX_ORDER > Order)? Order : FEELPP_MESH_MAX_ORDER;
     typedef Simplex<Dim, geoOrder> convex_type;
     typedef Mesh<convex_type, T > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 template<typename T>
@@ -191,7 +192,7 @@ struct test_integration_circle: public Application
     typedef typename imesh<value_type,2,4>::type mesh_type;
     typedef typename imesh<value_type,2,4>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<4, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef bases<Lagrange<4, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
@@ -315,7 +316,7 @@ struct test_integration_circle: public Application
 #endif /* USE_BOOST_TEST */
 
     }
-    boost::shared_ptr<Feel::Backend<double> > M_backend;
+    std::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -327,7 +328,7 @@ struct test_integration_simplex: public Application
     typedef typename imesh<value_type,2>::type mesh_type;
     typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef bases<Lagrange<2, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
@@ -465,7 +466,7 @@ struct test_integration_simplex: public Application
         BOOST_CHECK_CLOSE( divp2, unp2, eps );
 #endif
     }
-    boost::shared_ptr<Feel::Backend<double> > M_backend;
+    std::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -477,7 +478,7 @@ struct test_integration_domain: public Application
     typedef typename imesh<value_type,2>::type mesh_type;
     typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef bases<Lagrange<2, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
@@ -588,7 +589,7 @@ struct test_integration_domain: public Application
 #endif /* USE_BOOST_TEST */
 
     }
-    boost::shared_ptr<Feel::Backend<double> > M_backend;
+    std::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -601,7 +602,7 @@ struct test_integration_boundary: public Application
     typedef typename imesh<value_type,2>::type mesh_type;
     typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef bases<Lagrange<2, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
@@ -676,7 +677,7 @@ struct test_integration_boundary: public Application
 
 
     }
-    boost::shared_ptr<Feel::Backend<double> > M_backend;
+    std::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -689,7 +690,7 @@ struct test_integration_functions: public Application
     typedef typename imesh<value_type,2>::type mesh_type;
     typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<Order, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef bases<Lagrange<Order, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
@@ -830,7 +831,7 @@ struct test_integration_functions: public Application
 #endif /* USE_BOOST_TEST */
 #endif
     }
-    boost::shared_ptr<Feel::Backend<double> > M_backend;
+    std::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -843,7 +844,7 @@ struct test_integration_vectorial_functions: public Application
     typedef typename imesh<value_type,2>::type mesh_type;
     typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<Order, Vectorial> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     test_integration_vectorial_functions()
@@ -935,7 +936,7 @@ struct test_integration_vectorial_functions: public Application
         BOOST_CHECK_SMALL( int_ut, eps );
 #endif
     }
-    boost::shared_ptr<Feel::Backend<double> > M_backend;
+    std::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -1151,7 +1152,7 @@ struct test_integration_composite_functions: public Application
         BOOST_CHECK_CLOSE( vf,vv1+vv2+vv3, eps );
 #endif
     }
-    boost::shared_ptr<Feel::Backend<double> > M_backend;
+    std::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -1193,7 +1194,6 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( integration )
 
-#if 1
 BOOST_AUTO_TEST_CASE( test_integration_1 )
 {
     BOOST_TEST_MESSAGE( "Test integration Circle" );
@@ -1266,17 +1266,18 @@ BOOST_AUTO_TEST_CASE( test_integration_8 )
     BOOST_TEST_MESSAGE( "test_integration_8" );
     Feel::test_integration_matricial_functions<2,double> t;
     t();
-
 }
-#else
-BOOST_AUTO_TEST_CASE( test_integration_3 )
+
+BOOST_AUTO_TEST_CASE( test_integration_9 )
 {
-    BOOST_TEST_MESSAGE( "test_integration_3" );
-    Feel::test_integration_boundary<double> t;
-    t();
+    BOOST_TEST_MESSAGE( "test_integration_9" );
+    using namespace Feel;
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2,1>>);
+    double int1 = integrate(_range=elements(mesh),_expr=cst(1.),_quad=50).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( int1, mesh->measure(), 1e-8 );
 }
 
-#endif
+
 BOOST_AUTO_TEST_SUITE_END()
 
 

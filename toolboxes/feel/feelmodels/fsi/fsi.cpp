@@ -36,7 +36,7 @@ namespace FeelModels
 {
 
 template< class FluidType, class SolidType >
-FSI<FluidType,SolidType>::FSI(std::string const& prefix,WorldComm const& worldComm, std::string const& rootRepository )
+FSI<FluidType,SolidType>::FSI(std::string const& prefix,worldcomm_ptr_t const& worldComm, std::string const& rootRepository )
     :
     super_type( prefix, worldComm, "", self_type::expandStringFromSpec( rootRepository ) ),
     M_meshSize( doption(_name="hsize",_prefix=this->prefix()) ),
@@ -105,7 +105,7 @@ FSI<FluidType,SolidType>::createMesh()
 {
     this->log("FSI","createMesh","start");
 
-    FSIMesh<typename fluid_type::convex_type> fsimeshTool(this->prefix(),this->worldComm());
+    FSIMesh<typename fluid_type::convex_type> fsimeshTool(this->prefix(),this->worldCommPtr());
 
     int nPart = this->worldComm().size();//this->nPartitions();
 
@@ -202,7 +202,7 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
         submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
 
     typedef SubMeshData smd_type;
-    typedef boost::shared_ptr<smd_type> smd_ptrtype;
+    typedef std::shared_ptr<smd_type> smd_ptrtype;
     smd_ptrtype smd( new smd_type(FM->mesh()) );
     for ( auto const& ew : elements(submeshStruct) )
     {
@@ -268,7 +268,7 @@ FSI<FluidType,SolidType>::init()
     // fluid model build
     if ( !M_fluidModel )
     {
-        M_fluidModel = fluid_ptrtype( new fluid_type("fluid",false,this->worldComm(), "", this->repository() ) );
+        M_fluidModel = std::make_shared<fluid_type>("fluid",false,this->worldCommPtr(), "", this->repository() );
         if ( !M_mshfilepathFluidPartN.empty() )
             M_fluidModel->setMeshFile(M_mshfilepathFluidPartN.string());
 
@@ -281,7 +281,7 @@ FSI<FluidType,SolidType>::init()
     // solid model build
     if ( !M_solidModel )
     {
-        M_solidModel = solid_ptrtype( new solid_type("solid",false,this->worldComm(), "", this->repository() ) );
+        M_solidModel = std::make_shared<solid_type>("solid",false,this->worldCommPtr(), "", this->repository() );
         bool doExtractSubmesh = boption(_name="solid-mesh.extract-1d-from-fluid-mesh",_prefix=this->prefix() );
         if ( doExtractSubmesh )
         {
@@ -513,7 +513,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         for ( int k=1;k<nBlock;++k )
         {
             auto mapPtr = this->fluidModel()->blockVectorSolution()(k)->mapPtr();
-            graph_ptrtype zeroGraph = boost::make_shared<graph_type>( mapPtr,mapPtr );
+            graph_ptrtype zeroGraph = std::make_shared<graph_type>( mapPtr,mapPtr );
             zeroGraph->zero();
             myblockGraphTimeDerivative(k,k) = zeroGraph;
         }
@@ -539,7 +539,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         for ( int k=1;k<nBlock;++k )
         {
             auto mapPtr = this->fluidModel()->blockVectorSolution()(k)->mapPtr();
-            graph_ptrtype zeroGraph = boost::make_shared<graph_type>( mapPtr,dofStress );
+            graph_ptrtype zeroGraph = std::make_shared<graph_type>( mapPtr,dofStress );
             zeroGraph->zero();
             myblockGraph(k,0) = zeroGraph;
         }
@@ -1005,10 +1005,10 @@ FSI<FluidType,SolidType>::updateTimeStep()
 //---------------------------------------------------------------------------------------------------------//
 
 template< class FluidType, class SolidType >
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 FSI<FluidType,SolidType>::getInfo() const
 {
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << this->fluidModel()->getInfo()->str()
            << this->solidModel()->getInfo()->str();
     *_ostr << "\n||==============================================||"

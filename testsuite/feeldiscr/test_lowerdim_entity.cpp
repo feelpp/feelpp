@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( evaluate1, T, dim_types )
     BOOST_TEST_MESSAGE( "check 1 vf::sum and vf::evaluate for dim = " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
     typedef Mesh<Simplex<1,1,T::value> > sub_mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     const std::string shape="hypercube";
     mesh_ptrtype mesh2d = createGMSHMesh( _mesh=new mesh_type,
                                           _desc=domain( _name=( boost::format( "simplex-%1%" )  % T::value ).str() ,
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( evaluate1, T, dim_types )
         exact_perim = 2.+math::sqrt(2.);
 
     typedef FunctionSpace<sub_mesh_type,bases<Lagrange<1, Scalar> > > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     space_ptrtype P1h = space_type::New( mesh );
     double perim = integrate( _range=elements(mesh), _expr=cst(1.) ).evaluate()( 0, 0 );
     BOOST_CHECK_CLOSE( perim, exact_perim, 1e-10 );

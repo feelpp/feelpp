@@ -113,7 +113,7 @@ struct
 
         /*mesh*/
         typedef Mesh<GeoEntity<Simplex<Dim, 1> > > mesh_type;
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
         mesh_ptrtype mesh( new mesh_type );
 
@@ -121,7 +121,7 @@ struct
         mesh->accept( import );
 
         typedef FunctionSpace<mesh_type, FE, value_type > space_type;
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        std::shared_ptr<space_type> Xh( new space_type( mesh ) );
 
         typedef MatrixUBlas<value_type,ublas::column_major> csc_matrix_type;
         csc_matrix_type M;

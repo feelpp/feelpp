@@ -158,7 +158,7 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -167,7 +167,7 @@ public:
     /*mesh*/
     typedef Entity<Dim,Order,Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     template<typename Conti = Cont, template<uint16_type D> class FieldType = Scalar>
     struct space
@@ -217,7 +217,7 @@ private:
 
     GeomapStrategyType geomap;
 
-    boost::shared_ptr<export_type> exporter;
+    std::shared_ptr<export_type> exporter;
 }; // Advection
 
 template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity>

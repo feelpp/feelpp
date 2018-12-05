@@ -235,12 +235,6 @@ public :
             {
                 auto const& expr = mat.propertyExprScalar("mu");
                 M_newtonian.setExpr( expr );
-                //M_newtonian.setValue( 0 );//TODO
-            }
-            else
-            {
-                double value = mat.propertyConstant("mu");
-                M_newtonian.setValue( value );
             }
 
             pt::ptree const& pt = mat.pTree();
@@ -304,7 +298,7 @@ public :
     DynamicViscosityCarreauYasudaLaw const& carreauYasudaLaw() const { CHECK( this->hasCarreauYasudaLaw() ) << "no CarreauYasudaLaw";return *M_carreauYasudaLaw; }
     DynamicViscosityWalburnSchneckLaw const& walburnSchneckLaw() const { CHECK( this->hasWalburnSchneckLaw() ) << "no WalburnSchneckLaw";return *M_walburnSchneckLaw; }
 
-    void getInfo( boost::shared_ptr<std::ostringstream> ostr ) const
+    void getInfo( std::shared_ptr<std::ostringstream> ostr ) const
         {
             *ostr << "\n          + law : " << this->lawName();
             if ( this->isNewtonianLaw() )
@@ -378,11 +372,11 @@ class FluidMechanicsMaterialProperties
     typedef FluidMechanicsMaterialProperties<SpaceType> self_type;
 public :
     typedef SpaceType space_type;
-    typedef boost::shared_ptr<SpaceType> space_ptrtype;
+    typedef std::shared_ptr<SpaceType> space_ptrtype;
     typedef typename SpaceType::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     FluidMechanicsMaterialProperties( std::string const& prefix )
         :
@@ -403,7 +397,11 @@ public :
         }
 
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
-
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements( std::string const& matName ) const
+        {
+            CHECK( this->hasMaterial( matName ) ) << "no material " << matName;
+            return M_rangeMeshElementsByMaterial.find( matName )->second;
+        }
     bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
 
     space_ptrtype const& dynamicViscositySpace() const { return M_space; }
@@ -506,10 +504,10 @@ public :
 
 
 
-    boost::shared_ptr<std::ostringstream>
+    std::shared_ptr<std::ostringstream>
     getInfo() const
     {
-        boost::shared_ptr<std::ostringstream> ostr( new std::ostringstream() );
+        std::shared_ptr<std::ostringstream> ostr( new std::ostringstream() );
 
         *ostr << "\n   Materials parameters";
         *ostr << "\n     -- number of materials : " << M_rangeMeshElementsByMaterial.size();
@@ -603,20 +601,14 @@ public :
                 M_fieldDynamicViscosity->on(_range=range,_expr=expr);
             }
 
+            M_densityByMaterial[matName];
             if ( mat.hasPropertyExprScalar("rho") )
             {
                 auto const& expr = mat.propertyExprScalar("rho");
                 M_densityByMaterial[matName].setExpr( expr );
-                //M_densityByMaterial[matName].setValue( 0 );//TODO
                 M_fieldDensity->on(_range=range,_expr=expr);
             }
-            else
-            {
-                double value = mat.propertyConstant("rho");
-                M_densityByMaterial[matName].setValue( value );
-                M_fieldDensity->on(_range=range,_expr=cst(value));
-            }
-
+            else M_densityByMaterial[matName].setExpr( expr("0") );
         }
     }
 
