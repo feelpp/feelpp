@@ -63,11 +63,11 @@ runtest()
 
     typedef Simplex<3,orderGeo,3> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<  mesh_type > mesh_ptrtype;
+    typedef std::shared_ptr<  mesh_type > mesh_ptrtype;
 
     typedef bases<Lagrange</*2*/1+orderGeo,Vectorial,Continuous,PointSetFekete> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     //typedef typename space_type::element_type element_type;
 
     //-----------------------------------------------------------//
@@ -92,7 +92,7 @@ runtest()
     auto mesh=mesh_;
 
     if ( straighten )
-        mesh = straightenMesh( mesh_, Environment::worldComm(), false, true );
+        mesh = straightenMesh( mesh_, Environment::worldCommPtr(), false, true );
 
     //-----------------------------------------------------------//
 

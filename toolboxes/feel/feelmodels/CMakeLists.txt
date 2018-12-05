@@ -78,7 +78,7 @@ endif()
 if ( FEELPP_TOOLBOXES_ENABLE_HEAT AND FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
   add_subdirectory(heatfluid)
 endif()
-if ( FEELPP_TOOLBOXES_ENABLE_HDG )
+if ( FEELPP_TOOLBOXES_ENABLE_HDG  AND ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" ) )
   add_subdirectory(hdg)
 endif()
 if ( FEELPP_TOOLBOXES_ENABLE_MAXWELL )
@@ -88,4 +88,7 @@ endif()
 set( FEELPP_TOOLBOXES_CONFIG_FILE  ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/cmake/Feel++-ToolboxesConfig.cmake)
 configure_file(${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/cmake/Feel++-ToolboxesConfig.cmake.in ${FEELPP_TOOLBOXES_CONFIG_FILE} @ONLY)
 install(FILES ${FEELPP_TOOLBOXES_CONFIG_FILE} DESTINATION share/feelpp/toolboxes/cmake COMPONENT Devel)
-install(EXPORT feelpp-toolboxes-targets DESTINATION share/feelpp/toolboxes/cmake )
+
+install(EXPORT feelpp-toolboxes-targets
+  NAMESPACE Feelpp::
+  DESTINATION share/feelpp/toolboxes/cmake )

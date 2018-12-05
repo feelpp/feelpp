@@ -33,11 +33,11 @@ public:
     typedef boost::mpi::timer timer_type;
     //typedef boost::timer::cpu_timer timer_type;
 
-    TimerTool( std::string fileName = "timers.data", WorldComm const& worldComm = Environment::worldComm() );
+    TimerTool( std::string fileName = "timers.data", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     TimerTool( TimerTool const& e ) = default;
     ~TimerTool() = default;
     //TimerTool( TimerTool && e ) = default;
-
+    virtual ~TimerTool() = default;
     bool isActive() { return true; }
 
     void setReinitSaveFile( bool b );
@@ -69,7 +69,7 @@ private :
 
 private :
 
-    WorldComm M_worldComm;
+    std::shared_ptr<WorldComm> M_worldComm;
     //boost::timer M_timer;
     std::vector<bool> M_activeTimers;
     std::vector<timer_type> M_timer;
@@ -86,7 +86,7 @@ private :
 class TimerToolNull : public TimerToolBase
 {
 public:
-
+    virtual ~TimerToolNull() = default;
     bool isActive() { return false; }
 
     void start() {};

@@ -47,7 +47,7 @@ std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
 
 
 
-ModelMeasuresIO::ModelMeasuresIO( std::string const& pathFile, WorldComm const& worldComm )
+ModelMeasuresIO::ModelMeasuresIO( std::string const& pathFile, worldcomm_ptr_t const& worldComm )
     :
     M_worldComm( worldComm ),
     M_pathFile( pathFile ),
@@ -68,7 +68,7 @@ ModelMeasuresIO::writeHeader()
 {
     if ( M_dataNameToIndex.empty() )
         return;
-    if ( M_worldComm.isMasterRank() )
+    if ( M_worldComm->isMasterRank() )
     {
         bool hasAlreadyWrited = false;
         std::ofstream fileWrited(M_pathFile, std::ios::out | std::ios::trunc);
@@ -88,7 +88,7 @@ ModelMeasuresIO::writeHeader()
 void
 ModelMeasuresIO::restart( std::string const& paramKey, double val )
 {
-    if ( M_worldComm.isMasterRank() && fs::exists( M_pathFile ) )
+    if ( M_worldComm->isMasterRank() && fs::exists( M_pathFile ) )
     {
         double ti = val;//this->timeInitial();
         std::ifstream fileI(M_pathFile, std::ios::in);
@@ -137,9 +137,9 @@ ModelMeasuresIO::restart( std::string const& paramKey, double val )
         fileW.close();
     }
 
-    mpi::broadcast( M_worldComm.globalComm(), M_dataIndexToName, M_worldComm.masterRank() );
+    mpi::broadcast( M_worldComm->globalComm(), M_dataIndexToName, M_worldComm->masterRank() );
 
-    if ( !M_worldComm.isMasterRank() )
+    if ( !M_worldComm->isMasterRank() )
     {
         M_dataNameToIndex.clear();
         M_data.resize( M_dataIndexToName.size() );
@@ -156,7 +156,7 @@ ModelMeasuresIO::exportMeasures()
         return;
     if ( !M_addNewDataIsLocked )
         this->writeHeader();
-    if ( M_worldComm.isMasterRank() )
+    if ( M_worldComm->isMasterRank() )
     {
         bool hasAlreadyWrited = false;
         std::ofstream fileWrited(M_pathFile, std::ios::out | std::ios::app);
@@ -216,6 +216,13 @@ ModelMeasuresIO::setMeasureComp( std::string const& key,std::vector<double> cons
         this->setMeasure( key+"_z",values[2] );
 }
 
+double
+ModelMeasuresIO::measure( std::string const& key ) const
+{
+    CHECK( this->hasMeasure( key ) ) << "no measure with key " << key;
+    uint16_type k = M_dataNameToIndex.find( key )->second;
+    return M_data[k];
+}
 
 void
 ModelMeasuresEvaluatorContext::add( std::string const& field, int ctxId, std::string const& name )

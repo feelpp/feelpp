@@ -35,7 +35,7 @@ Bench1::run2d()
 {
     const int Dim = 2;
     typedef Mesh<Simplex<Dim> > mesh_type;
-    boost::shared_ptr<mesh_type> aMesh;
+    std::shared_ptr<mesh_type> aMesh;
 
     std::string shape = vm()["shape"].as<std::string>();
 

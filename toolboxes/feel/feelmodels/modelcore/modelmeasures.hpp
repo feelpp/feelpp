@@ -40,7 +40,7 @@ namespace FeelModels
 class ModelMeasuresIO
 {
 public :
-    ModelMeasuresIO( std::string const& pathFile, WorldComm const& worldComm /*= Environment::worldComm()*/ );
+    ModelMeasuresIO( std::string const& pathFile, worldcomm_ptr_t const& worldComm /*= Environment::worldComm()*/ );
     ModelMeasuresIO( ModelMeasuresIO const& ) = default;
     void clear();
     FEELPP_DEPRECATED void start() {}
@@ -51,13 +51,14 @@ public :
     void setMeasureComp( std::string const& key,std::vector<double> const& values );
     FEELPP_DEPRECATED bool hasParameter( std::string const& key ) const { return this->hasMeasure( key ); }
     bool hasMeasure( std::string const& key ) const { return M_dataNameToIndex.find( key ) != M_dataNameToIndex.end(); }
-
+    //! return measure from a key
+    double measure( std::string const& key ) const;
     std::string const& pathFile() const { return M_pathFile; }
     void setPathFile( std::string const& s ) { M_pathFile = s; }
 private :
     void writeHeader();
 private :
-    WorldComm const& M_worldComm;
+    std::shared_ptr<WorldComm> M_worldComm;
     std::string M_pathFile;
     std::map<std::string,uint16_type> M_dataNameToIndex;
     std::vector<std::string> M_dataIndexToName;

@@ -93,14 +93,14 @@ public:
     //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
-    typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
+    typedef typename std::shared_ptr<backend_type> backend_ptrtype ;
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order G_order
     typedef Simplex<Dim,1> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! the basis type of our approximation space
     typedef bases<Nedelec<OrderU,NedelecKind::NED1> > N_basis_type;
@@ -113,14 +113,14 @@ public:
     typedef FunctionSpace<mesh_type, N_basis_type> N_space_type;
 
     //! the approximation function space type (shared_ptr<> type)
-    typedef boost::shared_ptr<lagrange_space_s_type> lagrange_space_s_ptrtype;
-    typedef boost::shared_ptr<lagrange_space_v_type> lagrange_space_v_ptrtype;
-    typedef boost::shared_ptr<N_space_type> N_space_ptrtype;
+    typedef std::shared_ptr<lagrange_space_s_type> lagrange_space_s_ptrtype;
+    typedef std::shared_ptr<lagrange_space_v_type> lagrange_space_v_ptrtype;
+    typedef std::shared_ptr<N_space_type> N_space_ptrtype;
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     /**
      * Constructor

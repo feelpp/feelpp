@@ -66,14 +66,14 @@ public:
 
     typedef Simplex<2,1,2> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //-----------------------------------------------------------------------------------//
 
     // scalar basis
     typedef bases<Lagrange<5,Scalar> > basis_scalar_type;
     typedef FunctionSpace<mesh_type, basis_scalar_type> space_scalar_type;
-    typedef boost::shared_ptr<space_scalar_type> space_scalar_ptrtype;
+    typedef std::shared_ptr<space_scalar_type> space_scalar_ptrtype;
     typedef  space_scalar_type::element_type element_scalar_type;
 
     //-----------------------------------------------------------------------------------//
@@ -88,7 +88,7 @@ public:
     BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<0> >::type, basis_u_type::ChangeTag<0>::type> ) );
     BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<1> >::type, basis_p_type::ChangeTag<1>::type> ) );
     BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<2> >::type, basis_l_type::ChangeTag<2>::type> ) );
-    typedef boost::shared_ptr<space_mixed_type> space_mixed_ptrtype;
+    typedef std::shared_ptr<space_mixed_type> space_mixed_ptrtype;
     // functions
     typedef space_mixed_type::element_type element_mixed_type;
     typedef element_mixed_type::sub_element<0>::type element_mixed_0_type;
@@ -166,49 +166,49 @@ Test_AOI::run()
 
     //-----------------------------------------------------------------------------------//
 
-    BOOST_CHECK( cst( 1.0 ).imorder == 0 );
-    BOOST_CHECK( cos( cst( M_PI ) ).imorder == 0 );
+    BOOST_CHECK( cst( 1.0 ).polynomialOrder() == 0 );
+    BOOST_CHECK( cos( cst( M_PI ) ).polynomialOrder() == 0 );
 
     //-----------------------------------------------------------------------------------//
 
     const uint16_type us_order = element_scalar_type::functionspace_type::basis_type::nOrder;
-    BOOST_CHECK( id( us ).imorder == us_order );
-    BOOST_CHECK( grad( us ).imorder == us_order-1 );
-    BOOST_CHECK( hess( us ).imorder == us_order-2 );
-    BOOST_CHECK( ( id( us )+id( us ) ).imorder == us_order );
-    BOOST_CHECK( ( id( us )*id( us ) ).imorder == 2*us_order );
+    BOOST_CHECK( id( us ).polynomialOrder() == us_order );
+    BOOST_CHECK( grad( us ).polynomialOrder() == us_order-1 );
+    BOOST_CHECK( hess( us ).polynomialOrder() == us_order-2 );
+    BOOST_CHECK( ( id( us )+id( us ) ).polynomialOrder() == us_order );
+    BOOST_CHECK( ( id( us )*id( us ) ).polynomialOrder() == 2*us_order );
 
     //-----------------------------------------------------------------------------------//
 
     const uint16_type u_mixed_order = element_mixed_0_type::functionspace_type::basis_type::nOrder;
-    BOOST_CHECK( idt( u_mixed ).imorder == u_mixed_order );
-    BOOST_CHECK( gradt( u_mixed ).imorder == u_mixed_order-1 );
-    BOOST_CHECK( hesst( u_mixed ).imorder == u_mixed_order-2 );
-    BOOST_CHECK( ( idt( u_mixed )+idt( u_mixed ) ).imorder == u_mixed_order );
-    BOOST_CHECK( ( idt( u_mixed )*idt( u_mixed ) ).imorder == 2*u_mixed_order );
+    BOOST_CHECK( idt( u_mixed ).polynomialOrder() == u_mixed_order );
+    BOOST_CHECK( gradt( u_mixed ).polynomialOrder() == u_mixed_order-1 );
+    BOOST_CHECK( hesst( u_mixed ).polynomialOrder() == u_mixed_order-2 );
+    BOOST_CHECK( ( idt( u_mixed )+idt( u_mixed ) ).polynomialOrder() == u_mixed_order );
+    BOOST_CHECK( ( idt( u_mixed )*idt( u_mixed ) ).polynomialOrder() == 2*u_mixed_order );
 
     const uint16_type p_mixed_order = element_mixed_1_type::functionspace_type::basis_type::nOrder;
-    BOOST_CHECK( idt( p_mixed ).imorder == p_mixed_order );
-    BOOST_CHECK( gradt( p_mixed ).imorder == p_mixed_order-1 );
-    BOOST_CHECK( hesst( p_mixed ).imorder == p_mixed_order-2 );
-    BOOST_CHECK( ( idt( p_mixed )+idt( p_mixed ) ).imorder == p_mixed_order );
-    BOOST_CHECK( ( idt( p_mixed )*idt( p_mixed ) ).imorder == 2*p_mixed_order );
+    BOOST_CHECK( idt( p_mixed ).polynomialOrder() == p_mixed_order );
+    BOOST_CHECK( gradt( p_mixed ).polynomialOrder() == p_mixed_order-1 );
+    BOOST_CHECK( hesst( p_mixed ).polynomialOrder() == p_mixed_order-2 );
+    BOOST_CHECK( ( idt( p_mixed )+idt( p_mixed ) ).polynomialOrder() == p_mixed_order );
+    BOOST_CHECK( ( idt( p_mixed )*idt( p_mixed ) ).polynomialOrder() == 2*p_mixed_order );
 
     //-----------------------------------------------------------------------------------//
 
-    BOOST_CHECK( ( idt( us )+idt( p_mixed ) ).imorder == std::max( us_order,p_mixed_order ) );
-    BOOST_CHECK( ( idt( us )*idt( p_mixed ) ).imorder == us_order+p_mixed_order );
+    BOOST_CHECK( ( idt( us )+idt( p_mixed ) ).polynomialOrder() == std::max( us_order,p_mixed_order ) );
+    BOOST_CHECK( ( idt( us )*idt( p_mixed ) ).polynomialOrder() == us_order+p_mixed_order );
 
     //-----------------------------------------------------------------------------------//
 
-    BOOST_CHECK( vec( idv( us ),idv( p_mixed ) ).imorder == std::max( us_order,p_mixed_order ) );
+    BOOST_CHECK( vec( idv( us ),idv( p_mixed ) ).polynomialOrder() == std::max( us_order,p_mixed_order ) );
 
-    BOOST_CHECK( ( mat<2,2>( idv( us ),cst( 1 ),idv( us ),idv( p_mixed ) ) ).imorder == std::max( us_order,p_mixed_order ) );
+    BOOST_CHECK( ( mat<2,2>( idv( us ),cst( 1 ),idv( us ),idv( p_mixed ) ) ).polynomialOrder() == std::max( us_order,p_mixed_order ) );
 
     //-----------------------------------------------------------------------------------//
 
-    BOOST_CHECK( exp( Px() ).imorder == 2 );
-    BOOST_CHECK( chi( Px()>0.5 ).imorder == 0 );
+    BOOST_CHECK( exp( Px() ).polynomialOrder() == 2 );
+    BOOST_CHECK( chi( Px()>0.5 ).polynomialOrder() == 0 );
 
     //-----------------------------------------------------------------------------------//
 

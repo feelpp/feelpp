@@ -56,7 +56,7 @@ struct imesh
 {
     typedef Simplex<Dim, Order> convex_type;
     typedef Mesh<convex_type, T > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 template<typename value_type = double, int Dim=2>
@@ -66,7 +66,7 @@ struct test_integration_internal_faces_v: public Application
     typedef typename imesh<value_type,Dim>::type mesh_type;
     typedef typename imesh<value_type,Dim>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<3, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     test_integration_internal_faces_v()
@@ -112,7 +112,7 @@ struct test_integration_internal_faces_v: public Application
         BOOST_CHECK_SMALL( v1, eps );
         BOOST_TEST_MESSAGE( "int left(2*X^t) =" << v1l << "\n" );
         BOOST_TEST_MESSAGE( "int right(2*X^t) =" << v1r << "\n" );
-        BOOST_CHECK_CLOSE( v1l, -v1r, eps );
+        BOOST_CHECK_SMALL( v1l+v1r, eps );
 #else
         FEELPP_ASSERT( math::abs( v1-0.0 ) < eps )( v1 )( math::abs( v1-0.0 ) )( eps ).warn ( "v1 != 0" );
 #endif /* USE_BOOST_TEST */
@@ -181,7 +181,7 @@ struct test_integration_internal_faces_v: public Application
         BOOST_CHECK_CLOSE( 2*avgv_1, sumv_1, eps );
 
     }
-    boost::shared_ptr<Feel::Backend<double> > backend;
+    std::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -195,7 +195,7 @@ struct test_integration_internal_faces_lf : public Application
     typedef typename imesh<value_type,Dim>::type mesh_type;
     typedef typename imesh<value_type,Dim>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<3, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     test_integration_internal_faces_lf()
@@ -300,7 +300,7 @@ struct test_integration_internal_faces_lf : public Application
 #endif
 
     }
-    boost::shared_ptr<Feel::Backend<double> > backend;
+    std::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -364,11 +364,11 @@ BOOST_AUTO_TEST_SUITE_END()
 
 #if 0
 #if defined(USE_BOOST_TEST)
-boost::shared_ptr<Feel::Application> mpi;
+std::shared_ptr<Feel::Application> mpi;
 test_suite*
 init_unit_test_suite( int argc, char** argv )
 {
-    mpi = boost::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
+    mpi = std::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
 
     test_suite* test = BOOST_TEST_SUITE( "2D Generic finite element solver test suite" );
 

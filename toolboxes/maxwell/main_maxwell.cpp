@@ -9,7 +9,7 @@ runApplicationMaxwell()
 
     using model_type = FeelModels::Maxwell< Simplex<FEELPP_DIM,1> >;
 
-    boost::shared_ptr<model_type> maxwell( new model_type("maxwell") );
+    std::shared_ptr<model_type> maxwell( new model_type("maxwell") );
     maxwell->init();
     maxwell->printAndSaveInfo();
     maxwell->solve();

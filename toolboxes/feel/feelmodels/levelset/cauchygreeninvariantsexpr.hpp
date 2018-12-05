@@ -20,9 +20,6 @@ public:
     static const size_type context = expr_cauchygreentensor_type::context;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = expr_cauchygreentensor_type::imorder;
-    static const bool imIsPoly = expr_cauchygreentensor_type::imIsPoly;
-
     template<typename Func>
     struct HasTestFunction
     {
@@ -49,6 +46,12 @@ public:
     CauchyGreenInvariant1Expr( CauchyGreenInvariant1Expr const& c )
         : M_cauchyGreenTensorExpr( c.M_cauchyGreenTensorExpr )
     {}
+
+    //! polynomial order
+    uint16_type polynomialOrder() const { return M_cauchyGreenTensorExpr.polynomialOrder(); }
+
+    //! expression is polynomial?
+    bool isPolynomial() const { return M_cauchyGreenTensorExpr.isPolynomial(); }
 
     //--------------------------------------------------------------------//
     // Accessors

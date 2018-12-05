@@ -44,9 +44,9 @@ class DofRelationshipMap
 public :
 
     typedef SpaceType1 functionspace1_type;
-    typedef boost::shared_ptr<functionspace1_type> functionspace1_ptrtype;
+    typedef std::shared_ptr<functionspace1_type> functionspace1_ptrtype;
     typedef SpaceType2 functionspace2_type;
-    typedef boost::shared_ptr<functionspace2_type> functionspace2_ptrtype;
+    typedef std::shared_ptr<functionspace2_type> functionspace2_ptrtype;
 
     typedef typename functionspace1_type::mesh_type mesh1_type;
     typedef typename functionspace2_type::mesh_type mesh2_type;
@@ -742,10 +742,10 @@ DofRelationshipMap<SpaceType1,SpaceType2>::tableInternalDofEdge2Face6(boost::tup
 
 
 template< class SpaceType1,class SpaceType2 >
-boost::shared_ptr< DofRelationshipMap<SpaceType1,SpaceType2> >
-dofRelationshipMap( boost::shared_ptr<SpaceType1> Xh1, boost::shared_ptr<SpaceType2> Xh2 )
+std::shared_ptr< DofRelationshipMap<SpaceType1,SpaceType2> >
+dofRelationshipMap( std::shared_ptr<SpaceType1> Xh1, std::shared_ptr<SpaceType2> Xh2 )
 {
-    boost::shared_ptr< DofRelationshipMap<SpaceType1,SpaceType2> > drm( new DofRelationshipMap<SpaceType1,SpaceType2>(Xh1,Xh2) );
+    std::shared_ptr< DofRelationshipMap<SpaceType1,SpaceType2> > drm( new DofRelationshipMap<SpaceType1,SpaceType2>(Xh1,Xh2) );
     return drm;
 }
 

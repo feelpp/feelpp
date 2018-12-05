@@ -4,8 +4,43 @@
 :toc: left
 :toc-title: Releases
 :toclevels: 2
+:feelpp: Feel++
 :uri-issue: https://github.com/feelpp/feelpp/issues
 :uri-pull: https://github.com/feelpp/feelpp/pull
+:uri-toolbox-issue: https://github.com/feelpp/toolbox/issues
+
+[[v0.106.0-2018-07-20]]
+== v0.106.0
+https://github.com/feelpp/feelpp/tree/v0.106.0[v0.106.0] (2018-07-28)
+
+https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
+
+=== Features
+
+* Massive reorganization of {feelpp}, {uri-issue}/1208[#1208]
+** enforce modern cmake in the process of the organization see , {uri-issue}/1212[#1212]
+* [**pyfeelpp**] python support for {feelpp}, see Epic {uri-issue}/930[#930]
+** core: Environment, WorldComm, RemoteData, OptionsDescription, Info
+** mesh: Mesh, ranges(elements and faces)
+** discr: FunctionSpace, FunctionSpace::Element
+** ts: TSBase
+** exporter: Exporter
+* [**pyfeelpptoolboxes**] python support for {feelpp} toolboxes, see Epic {uri-issue}/930[#930]
+** toolbox/modelcore: ModelBase, ModelAlgebraic, ModelNumerical
+** toolboxes: fluid, solid, electric, heat
+** toolboxes/fluid: FluidMechanics
+** toolboxes/solid: SolidMechanics
+* [**toolbox**] refactoring of gls stabilization in the `fluid` and `heat` toolboxes : now the `heatfluid` toolbox with natural convection can use Galerkin Least Square stabilization(gls).
+* [**toolbox**] implement Statistics post-process  {uri-toolbox-issue}/85[#85]
+* [**toolbox**] add pre/post solve interface with Linear/Picard solver
+
+=== Fixes
+* [**feelpp**] improve support for g++-8
+* [**all**] boost::shared_ptr has been replaced by std::shared_ptr {uri-issue}/1202[#1202]
+* [**feel/**] Fix support of filename_is_dot and filename_is_dot_dot in boost filesystem with boost 1.61 and 1.62 see {uri-issue}/[#1191]
+* [**toolbox**] remove rho scaling in fluid incompressibilty equation (cherry pick from feature/ls)
+* boost 1.67 is now supported, see {uri-issue}/1147[#1147]
+* fix support of PETSc 3.9 see {uri-issue}/1166[#1166] and {uri-issue}/1139[#1139]
 
 [[v0.105.0-2018-06-20]]
 == v0.105.0

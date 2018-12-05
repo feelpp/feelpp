@@ -1,51 +1,37 @@
 steps:
- - name: ':ubuntu: 16.04,clang-4.0'
-   command: tools/scripts/buildkite/install-feelpp-lib.sh
+ - name: ':$TARGET, ${CXX}'
+   command: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
    agents:
      docker: true
      ubuntu: "16.04"
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:16.04
  - wait
- - name: ':ubuntu: 16.04,clang-4.0  feelpp-base :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh base
-   agents:
-     docker: true
-     ubuntu: "16.04"
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:16.04
- - wait
- - name: ':ubuntu: 16.04,clang-4.0 feelpp-toolboxes :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh toolboxes
-   agents:
-     docker: true
-     ubuntu: "16.04"
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:16.04
- - wait
- - name: ':ubuntu: 16.04,clang-4.0 feelpp-crb :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh crb
-   agents:
-     docker: true
-     ubuntu: "16.04"
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:16.04
- - wait
- - command: tools/scripts/buildkite/release.sh  -- feelpp-libs feelpp-base feelpp-toolboxes feelpp-crb
+ - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
      ubuntu: "16.04"
-   env:
-     TARGET: ubuntu:16.04
+ - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer:'
+   command: feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
+   agents:
+     docker: true
+     ubuntu: "16.04"
+ - wait
+ - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-toolboxes
+   name: ":docker: push images to the hub :rocket:"
+   agents:
+     docker: true
+     ubuntu: "16.04"
+ - name: ':$TARGET, $CXX, feelpp-mor :hammer:'
+   command: feelpp/tools/scripts/buildkite/install-feelpp.sh mor
+   agents:
+     docker: true
+     ubuntu: "16.04"
+ - wait
+ - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-mor
+   name: ":docker: push images to the hub :rocket:"
+   agents:
+     docker: true
+     ubuntu: "16.04"
  - wait
  - trigger: "feelpp-singularity"
    label: ":package: create Feel++ :singularity: containers"
@@ -53,5 +39,5 @@ steps:
    build:
      env:
        GIRDER_ID: "5a4fa90ab0e9571f842931e5"
-       PROJECT: "feelpp-toolboxes feelpp-crb"
+       PROJECT: "feelpp-toolboxes feelpp-mor"
        TAG: ${BUILDKITE_BRANCH}

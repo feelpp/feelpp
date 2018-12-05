@@ -291,7 +291,7 @@ public:
         /* Mesh */
 
         typedef Mesh<GeoEntity<Simplex<2, 1> > > mesh_type;
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        typedef std::shared_ptr<mesh_type> mesh_ptrtype;
         mesh_ptrtype mesh( new mesh_type );
 
         ImporterGmsh<mesh_type> import( fname );
@@ -311,7 +311,7 @@ public:
         //typedef fem::Lagrange<2, N, Scalar, Continuous, value_type, Simplex> basis_type;
 
         typedef FunctionSpace<mesh_type, basis_type, value_type > space_type;
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        std::shared_ptr<space_type> Xh( new space_type( mesh ) );
 
 
         S_dofs << Xh.get()->nDof() << std::endl;
@@ -523,8 +523,8 @@ public:
                 typedef Exporter<mesh_type> export_type;
                 typedef typename Exporter<mesh_type>::timeset_type timeset_type;
 
-                boost::shared_ptr<export_type> __ensight;
-                __ensight = boost::shared_ptr<export_type>( new ExporterEnsight<mesh_type>( ostr.str() ) );
+                std::shared_ptr<export_type> __ensight;
+                __ensight = std::shared_ptr<export_type>( new ExporterEnsight<mesh_type>( ostr.str() ) );
                 typename export_type::timeset_ptrtype __ts( new timeset_type( ostr.str(), true ) );
                 __ts->setTimeIncrement( 1.0 );
                 __ensight->addTimeSet( __ts );

@@ -74,7 +74,7 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -85,7 +85,7 @@ public:
     /*mesh*/
     typedef Entity<Dim, 1,Dim> entity_type;
     typedef Mesh<GeoEntity<entity_type> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef FunctionSpace<mesh_type, fusion::vector<fem::Lagrange<Dim, 0, Scalar, Discontinuous> > > p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
@@ -96,34 +96,34 @@ public:
 
 
     typedef FunctionSpace<mesh_type, basis_type, value_type> functionspace_type;
-    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef std::shared_ptr<element_type> element_ptrtype;
     typedef typename element_type::template sub_element<0>::type element_u_type;
     typedef typename element_type::template sub_element<1>::type element_v_type;
 
     typedef FunctionSpace<mesh_type, mpl::vector<basis_u_type>, value_type> displacement_functionspace_type;
-    typedef boost::shared_ptr<displacement_functionspace_type> displacement_functionspace_ptrtype;
+    typedef std::shared_ptr<displacement_functionspace_type> displacement_functionspace_ptrtype;
     typedef typename displacement_functionspace_type::element_type displacement_element_type;
-    typedef boost::shared_ptr<displacement_element_type> displacement_element_ptrtype;
+    typedef std::shared_ptr<displacement_element_type> displacement_element_ptrtype;
 
 
     typedef OperatorLinear<functionspace_type,functionspace_type> oplin_type;
-    typedef boost::shared_ptr<oplin_type> oplin_ptrtype;
+    typedef std::shared_ptr<oplin_type> oplin_ptrtype;
     typedef FsFunctionalLinear<functionspace_type> funlin_type;
-    typedef boost::shared_ptr<funlin_type> funlin_ptrtype;
+    typedef std::shared_ptr<funlin_type> funlin_ptrtype;
 
     typedef OperatorLinear<displacement_functionspace_type,displacement_functionspace_type> opdisplacement_type;
-    typedef boost::shared_ptr<opdisplacement_type> opdisplacement_ptrtype;
+    typedef std::shared_ptr<opdisplacement_type> opdisplacement_ptrtype;
     typedef FsFunctionalLinear<displacement_functionspace_type> fundisplacement_type;
-    typedef boost::shared_ptr<fundisplacement_type> fundisplacement_ptrtype;
+    typedef std::shared_ptr<fundisplacement_type> fundisplacement_ptrtype;
 
     typedef OperatorLagrangeP1<displacement_functionspace_type> displacement_oplagp1_type;
-    typedef boost::shared_ptr<displacement_oplagp1_type> displacement_oplagp1_ptrtype;
+    typedef std::shared_ptr<displacement_oplagp1_type> displacement_oplagp1_ptrtype;
 
     /* time */
     typedef Bdf<functionspace_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     /*quadrature*/
     //typedef IM_PK<Dim, imOrder, value_type> im_type;
@@ -131,7 +131,7 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
     typedef typename export_type::timeset_type timeset_type;
 
     StVenantKirchhoff( po::variables_map const& vm );

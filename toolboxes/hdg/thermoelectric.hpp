@@ -26,14 +26,14 @@ class ThermoElectricHDG
 {
 public:
     using thermo_type = FeelModels::MixedPoisson<Dim, OrderT>;
-    using thermo_ptrtype = boost::shared_ptr<thermo_type>;
+    using thermo_ptrtype = std::shared_ptr<thermo_type>;
     using temp_type = typename thermo_type::Wh_element_t;
     using temp_ptrtype = typename thermo_type::Wh_element_ptr_t;
     using tempflux_type = typename thermo_type::Vh_element_t;
     using tempflux_ptrtype = typename thermo_type::Vh_element_ptr_t;
 
     using electro_type = FeelModels::MixedPoisson<Dim, OrderV>;
-    using electro_ptrtype = boost::shared_ptr<electro_type>;
+    using electro_ptrtype = std::shared_ptr<electro_type>;
     using potential_type = typename electro_type::Wh_element_t;
     using potential_ptrtype = typename electro_type::Wh_element_ptr_t;
     using current_type = typename electro_type::Vh_element_t;

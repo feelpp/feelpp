@@ -102,7 +102,7 @@ public:
 
     typedef Application application_type;
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -111,7 +111,7 @@ public:
     /*mesh*/
     typedef Entity<Dim,1,Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
     //typedef mytag<fem::Lagrange<Dim, Order, Vectorial, Continuous, double, Entity>,0> basis_u_type;
@@ -119,7 +119,7 @@ public:
     typedef bases<basis_scalar_type,basis_scalar_type> basis_type;
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef typename element_type::template sub_element<0>::type element_0_type;
     typedef typename element_type::template sub_element<1>::type element_1_type;
@@ -164,7 +164,7 @@ private:
     double meshSize;
     double bcCoeff;
 
-    boost::shared_ptr<export_type> exporter;
+    std::shared_ptr<export_type> exporter;
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
     std::map<std::string,double> stats;

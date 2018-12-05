@@ -69,12 +69,12 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*mesh*/
     typedef Entity<Dim,1,Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
     //# marker1 #
@@ -84,11 +84,11 @@ public:
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     typedef FunctionSpace<mesh_type, Lagrange<0,Scalar,Discontinuous> > p0_space_type;
-    typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
+    typedef std::shared_ptr<p0_space_type> p0_space_ptrtype;
     typedef typename p0_space_type::element_type p0_element_type;
 
     /* export */
@@ -135,7 +135,7 @@ private:
     double mu;
     double penalbc;
 
-    boost::shared_ptr<export_type> exporter;
+    std::shared_ptr<export_type> exporter;
 }; // Tilted
 
 
@@ -156,7 +156,7 @@ Tilted<Dim, BasisU, Entity>::run()
 
     //! init backend
     M_backend = backend_type::build( soption("backend"));
-    exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( Environment::vm(),
+    exporter =  std::shared_ptr<export_type>( Exporter<mesh_type>::New( Environment::vm(),
                                                                           (boost::format( "%1%-%2%" ) % this->about().appName() % this->level() ).str() ) );
 
     boost::timer t;

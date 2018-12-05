@@ -32,7 +32,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::FastMarchingInitializationMethodIdMap = boost::ass
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet( 
         std::string const& prefix,
-        WorldComm const& worldComm,
+        worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep ) 
 :
@@ -87,7 +87,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::self_ptrtype
 LEVELSET_CLASS_TEMPLATE_TYPE::New(
         std::string const& prefix,
-        WorldComm const& worldComm,
+        worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 {
@@ -439,7 +439,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     {
         M_modGradPhiAdvection = modgradphi_advection_type::New(
                 prefixvm(this->prefix(), "modgradphi-advection"),
-                this->worldComm()
+                this->worldCommPtr()
                 );
         M_modGradPhiAdvection->setModelName( "Advection-Reaction" );
         M_modGradPhiAdvection->build( this->functionSpace() );
@@ -451,7 +451,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     {
         M_stretchAdvection = stretch_advection_type::New(
                 prefixvm(this->prefix(), "stretch-advection"),
-                this->worldComm()
+                this->worldCommPtr()
                 );
         M_stretchAdvection->setModelName( "Advection-Reaction" );
         M_stretchAdvection->build( this->functionSpace() );
@@ -463,7 +463,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     {
         M_backwardCharacteristicsAdvection = backwardcharacteristics_advection_type::New(
                 prefixvm(this->prefix(), "backward-characteristics-advection"),
-                this->worldComm()
+                this->worldCommPtr()
                 );
         M_backwardCharacteristicsAdvection->setModelName( "Advection" );
         M_backwardCharacteristicsAdvection->build( this->functionSpaceVectorial() );
@@ -514,7 +514,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
             {
                 thickness_heaviside =  doption( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj") );
             }
-            boost::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( thickness_heaviside );
+            std::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( thickness_heaviside );
         }
         break;
     }
@@ -526,13 +526,13 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 {
-    M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "projector-l2"), _worldcomm=this->worldComm()) );
-    M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "projector-l2-vec"), _worldcomm=this->worldComm()) );
+    M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "projector-l2"), _worldcomm=this->worldCommPtr()) );
+    M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "projector-l2-vec"), _worldcomm=this->worldCommPtr()) );
     if( M_useCauchyAugmented )
     {
         M_projectorL2Tensor2Symm = projector( 
                 this->functionSpaceTensor2Symm() , this->functionSpaceTensor2Symm(), 
-                backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
+                backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldCommPtr())
                 );
     }
 
@@ -1154,7 +1154,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smoother() const
     {
         M_smoother = projector( 
                 this->functionSpace() , this->functionSpace(), 
-                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldComm()), 
+                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldCommPtr()), 
                 DIFF, 
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother"))/Order,
                 30);
@@ -1169,7 +1169,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherVectorial() const
     if( !M_smootherVectorial )
         M_smootherVectorial = projector( 
                 this->functionSpaceVectorial() , this->functionSpaceVectorial(), 
-                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldComm()), 
+                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldCommPtr()), 
                 DIFF, 
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother-vec"))/Order,
                 30);
@@ -1189,7 +1189,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherInterface() const
                 );
         M_smootherInterface = Feel::projector( 
                 spaceInterface, spaceInterface,
-                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldComm(), _rebuild=true), 
+                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldCommPtr(), _rebuild=true), 
                 DIFF,
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother"))/Order,
                 30);
@@ -1211,7 +1211,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherInterfaceVectorial() const
                 );
         M_smootherInterfaceVectorial = Feel::projector(
                 spaceInterfaceVectorial, spaceInterfaceVectorial,
-                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldComm(), _rebuild=true),
+                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldCommPtr(), _rebuild=true),
                 DIFF, 
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother-vec"))/Order,
                 30);
@@ -1433,7 +1433,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
 
     typedef boost::reference_wrapper<typename MeshTraits<mymesh_type>::element_type const> element_ref_type;
     typedef std::vector<element_ref_type> cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    std::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
     // Retrieve the elements touching the marked faces
     auto mfaces = markedfaces( this->mesh(), marker );
@@ -1480,7 +1480,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
 
     typedef boost::reference_wrapper<typename MeshTraits<mymesh_type>::element_type const> element_ref_type;
     typedef std::vector<element_ref_type> cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    std::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
     // Retrieve the elements touching the marked faces
     //auto mfaces_list = markedfaces( this->mesh(), marker );
@@ -1955,7 +1955,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
         } // switch M_fastMarchingInitializationMethod
 
         // Fast Marching Method
-        boost::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
+        std::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
                 M_useMarkerDiracAsMarkerDoneFM 
                 );
 
@@ -2076,7 +2076,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_type const& phiv,
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-boost::shared_ptr<std::ostringstream>
+std::shared_ptr<std::ostringstream>
 LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::string advectionStabilization = soption( _name="stabilization.method", _prefix=this->prefix() );
@@ -2127,7 +2127,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
     if ( this->M_useStretchAugmented )
         exportedFields = (exportedFields.empty())? "Stretch": exportedFields+" - Stretch";
 
-    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
            << "\n||---------------Info : LevelSet----------------||"
            << "\n||==============================================||"

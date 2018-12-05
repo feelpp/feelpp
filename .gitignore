@@ -1,4 +1,5 @@
 build/
+*.bak
 *.aux
 *.cppbck
 *.hppbck
@@ -7,6 +8,7 @@ build/
 *.vim
 *.pch
 *.gch
+__pycache__
 /#CTestConfig.cmake#
 /#ctest.make#
 /.DS_Store
@@ -101,7 +103,7 @@ build/
 /research/hifimagnet
 /research/holo3
 /research/lncmi
-/research/onefeel1/
+x/research/onefeel1/
 /research/onefeel2/
 /research/pmp/
 /research/po
@@ -126,4 +128,5 @@ autom4te.cache
 /applications/crb/opusheat/opusheatapp.cpp
 /applications/crb/thermalbuilding/thermalbuildingapp.cpp
 /contrib/paralution/
+pyfeelpp-env
 

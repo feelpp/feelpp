@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( ginacint, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "check 1 ginac int  = " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "hypercube-%1%" )  % T::value ).str() ,
@@ -103,7 +103,7 @@ void ginacint()
 {
     using namespace Feel;
     typedef Mesh<Simplex<2,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "hypercube-%1%" )  % 2 ).str() ,
@@ -146,7 +146,7 @@ void ginacinthypercube()
 {
     using namespace Feel;
     typedef Mesh<Hypercube<2,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "hypercube-structured-%1%" )  % 2 ).str() ,
@@ -317,7 +317,7 @@ void poiseuille()
 {
     using namespace Feel;
     typedef Mesh<Simplex<2,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "hypercube-%1%" )  % 2 ).str() ,

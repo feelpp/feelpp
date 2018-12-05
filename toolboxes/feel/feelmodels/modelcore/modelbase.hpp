@@ -34,6 +34,7 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/pslogger.hpp>
 #include <feel/feelcore/worldcomm.hpp>
+#include <feel/feelcore/remotedata.hpp>
 
 #include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
 #include <feel/feelmodels/modelcore/log.hpp>
@@ -61,12 +62,47 @@ private :
     std::string M_exprRepository;
 };
 
+struct ModelBaseUpload
+{
+    ModelBaseUpload() = default;
+    ModelBaseUpload( std::string const& desc, std::string const& basePath, worldcomm_ptr_t const& worldComm );
+    ModelBaseUpload( ModelBaseUpload const& ) = default;
+    ModelBaseUpload( ModelBaseUpload && ) = default;
+
+    bool isOperational() const;
+
+    void upload( std::string const& dataPath ) const;
+    void createFolder( std::string const& folderPath, std::string const& parentId = "" ) const;
+
+    std::string relativePath( std::string const& s ) const;
+
+    void print() const;
+private :
+    void uploadPreProcess( std::string const& dataPath,
+                           std::vector<std::tuple<std::string,std::time_t,std::string>> & resNewFile,
+                           std::vector<std::tuple<std::string,std::time_t,std::string,std::string>> & resReplaceFile ) const;
+
+private :
+    std::shared_ptr<RemoteData> M_remoteData;
+    std::string M_basePath;
+    // [ folder path -> ( folder id , [ filename -> file id, last write time ] ) ]
+    mutable std::map<std::string,std::pair<std::string,std::map<std::string,std::pair<std::string,std::time_t>>>> M_treeDataStructure;
+};
 
 class ModelBase
 {
 public :
+    using worldcomm_t = WorldComm;
+    using worldcomm_ptr_t = std::shared_ptr<WorldComm>;
+    using worldscomm_ptr_t = std::vector<std::shared_ptr<WorldComm>>;
+    
+    //!
+    //! @param worldcomm communicator
+    //!
+    //! The worldcomm must be allocated via shared_ptr. The WorldComm can be retrieved via \c shared_from_this()
+    //!
     ModelBase( std::string const& prefix,
-               WorldComm const& worldComm = Environment::worldComm(),
+               worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
                ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
@@ -74,11 +110,16 @@ public :
     virtual ~ModelBase();
 
     // worldcomm
-    WorldComm const& worldComm() const;
-    std::vector<WorldComm> const& worldsComm() const;
-    void setWorldsComm(std::vector<WorldComm> const& _worldsComm);
-    std::vector<WorldComm> const& localNonCompositeWorldsComm() const;
-    void setLocalNonCompositeWorldsComm(std::vector<WorldComm> const& _worldsComm);
+    worldcomm_ptr_t const&  worldCommPtr() const;
+    worldcomm_ptr_t & worldCommPtr();
+    worldcomm_t & worldComm();
+    worldcomm_t const& worldComm() const;
+    worldscomm_ptr_t & worldsComm();
+    worldscomm_ptr_t const& worldsComm() const;
+    void setWorldsComm(worldscomm_ptr_t & _worldsComm);
+    worldscomm_ptr_t & localNonCompositeWorldsComm() ;
+    worldscomm_ptr_t const& localNonCompositeWorldsComm() const;
+    void setLocalNonCompositeWorldsComm( worldscomm_ptr_t & _worldsComm);
     virtual void createWorldsComm();
     // prefix
     std::string const& prefix() const;
@@ -93,7 +134,7 @@ public :
     // info
     std::string filenameSaveInfo() const;
     void setFilenameSaveInfo(std::string const& s);
-    virtual boost::shared_ptr<std::ostringstream> getInfo() const;
+    virtual std::shared_ptr<std::ostringstream> getInfo() const;
     virtual void printInfo() const;
     virtual void saveInfo() const;
     virtual void printAndSaveInfo() const;
@@ -108,12 +149,15 @@ public :
     void setScalabilityPath(std::string const& s);
     std::string scalabilityFilename() const;
     void setScalabilityFilename(std::string const& s);
+    // upload
+    ModelBaseUpload const& upload() const { return M_upload; }
+    void upload( std::string const& dataPath ) const;
 
 private :
     // worldcomm
-    WorldComm M_worldComm;
-    std::vector<WorldComm> M_worldsComm;
-    std::vector<WorldComm> M_localNonCompositeWorldsComm;
+    worldcomm_ptr_t M_worldComm;
+    worldscomm_ptr_t M_worldsComm;
+    worldscomm_ptr_t M_localNonCompositeWorldsComm;
     // prefix
     std::string M_prefix;
     std::string M_subPrefix;
@@ -131,6 +175,8 @@ private :
     bool M_scalabilitySave, M_scalabilityReinitSaveFile;
     std::string M_scalabilityPath;
     std::string M_scalabilityFilename;
+
+    ModelBaseUpload M_upload;
 };
 
 // null application

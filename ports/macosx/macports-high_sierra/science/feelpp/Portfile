@@ -9,9 +9,10 @@ PortSystem  1.0
 #PortGroup   cmake 1.0
 #PortGroup   active_variants 1.1
 PortGroup           mpi 1.0
+#PortGroup           python 1.0
 
 name                 feel++
-version              0.101.1
+version              0.105.0
 master_sites         https://github.com/feelpp/feelpp/releases/download/v${version}/
 distname             feelpp-${version}
 checksums            rmd160  f0064a2cd332fc88cc4a8d98b2c8ccdc2127c030 \
@@ -102,11 +103,7 @@ configure.args      -DCMAKE_INSTALL_PREFIX=${prefix}\
                     -DFEELPP_ENABLE_TESTS=OFF \
                     -DFEELPP_ENABLE_RESEARCH=OFF \
                     -DFEELPP_ENABLE_QUICKSTART=OFF \
-                    -DFEELPP_MODELS_ENABLE_THERMODYNAMICS=OFF \
-                    -DFEELPP_MODELS_ENABLE_SOLIDMECHANICS=OFF \
-                    -DFEELPP_MODELS_ENABLE_FLUIDMECHANICS=OFF \
-                    -DFEELPP_MODELS_ENABLE_FSI=OFF \
-                    -Wno-dev
+                    -DFEELPP_ENABLE_TOOLBOXES=OFF
 
 
 
@@ -123,6 +120,7 @@ depends_lib    \
     port:cln
 
 
+#python.default_version 36
 
 
 require_active_variants petsc atlas
@@ -155,6 +153,7 @@ mpi.enforce_variant   boost
 mpi.enforce_variant   gmsh
 mpi.enforce_variant   petsc
 mpi.enforce_variant   slepc
+compilers.enforce_c   cln
 mpi.setup 
 
 variant doc description {Add doc support} {
