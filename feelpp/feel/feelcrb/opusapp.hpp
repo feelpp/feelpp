@@ -510,10 +510,8 @@ private:
     }
     double l2Norm( element_type const& u, mpl::bool_<true>)
     {
-        ComputeNormL2InCompositeCase compute_normL2_in_composite_case( u );
         index_vector_type index_vector;
-        fusion::for_each( index_vector, compute_normL2_in_composite_case );
-        return compute_normL2_in_composite_case.norm();
+        return fusion::fold( index_vector, double(0.), ComputeNormL2InCompositeCase( u ) );
     }
     //double h1Norm( typename ModelType::parameter_type const& mu, int N )
     double h1Norm( element_type const& u )
@@ -539,34 +537,25 @@ private:
 
     struct ComputeNormL2InCompositeCase
     {
-        ComputeNormL2InCompositeCase( element_type const composite_u )
+        typedef double result_type;
+
+        ComputeNormL2InCompositeCase( element_type const& composite_u )
             :
             M_composite_u( composite_u )
             {}
 
         template< typename T >
-        void
-        operator()( const T& t ) const
+        result_type
+        operator()( result_type const& r,const T& t ) const
             {
-                int i = T::value;
-                if( i == 0 )
-                    M_vec.resize( 1 );
-                else
-                    M_vec.conservativeResize( i+1 );
-
                 auto u = M_composite_u.template element< T::value >();
                 auto mesh = u.functionSpace()->mesh();
                 double norm  = normL2(_range=elements( mesh ),_expr=( idv(u) ) );
-                M_vec(i)= norm ;
+                return r + norm;
             }
 
-        double norm()
-            {
-                return M_vec.sum();
-            }
-
-        mutable vectorN_type M_vec;
-        element_type M_composite_u;
+    private :
+        element_type const& M_composite_u;
     };
 
 

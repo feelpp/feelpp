@@ -22,7 +22,7 @@
 */
 
 #define BOOST_TEST_MODULE test_projtangent
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelts/bdf.hpp>

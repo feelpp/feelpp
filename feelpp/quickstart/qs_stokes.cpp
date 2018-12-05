@@ -29,7 +29,7 @@ int
 stokes(SpacePtrType Vh)
 {
     using namespace Feel;
-        
+
     // tag::mesh_space[]
     tic();
     auto mesh = Vh->mesh();
@@ -39,12 +39,13 @@ stokes(SpacePtrType Vh)
     auto v = U.template element<0>();
     auto q = U.template element<1>();
     auto mu = doption(_name="mu");
-    auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f"), "f" );
-    auto solution = expr<FEELPP_DIM,1>( checker().solution(), "solution" );
-    auto g = checker().check()?solution:expr<FEELPP_DIM,1>( soption(_name="functions.g"), "g" );
+    auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f") );
+    auto thechecker = checker("qs_stokes");
+    auto solution = expr<FEELPP_DIM,1>( thechecker.check()? thechecker.solution() : soption(_name="functions.g") );
+    auto g = solution;
     toc("Vh");
     // end::mesh_space[]
-    
+
     // tag::forms[]
     tic();
     auto l = form1( _test=Vh );
@@ -78,14 +79,14 @@ stokes(SpacePtrType Vh)
         a.solve(_rhs=l,_solution=U);
     toc("a.solve");
     // end::forms[]
-    
+
     // tag::export[]
     tic();
     auto e = exporter( _mesh=mesh );
     e->addRegions();
     e->add( "uh", u );
     e->add( "ph", p );
-    if ( checker().check() )
+    if ( thechecker.check() )
     {
         v.on(_range=elements(mesh), _expr=solution );
         e->add( "u", v );
@@ -93,7 +94,7 @@ stokes(SpacePtrType Vh)
     e->save();
     toc("Exporter");
     // end::export[]
-    
+
     // tag::check[]
     // compute l2 and h1 norm of u-u_h where u=solution
     auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
@@ -107,7 +108,7 @@ stokes(SpacePtrType Vh)
             toc("H1 error norm");
             return { { "L2", l2 }, {  "H1", h1 } };
         };
-    int status = checker().runOnce( norms, rate::hp( mesh->hMax(), Vh->template functionSpace<0>()->fe()->order() ) );
+    int status = thechecker.runOnce( norms, rate::hp( mesh->hMax(), Vh->template functionSpace<0>()->fe()->order() ) );
     // end::check[]
 
     return status;

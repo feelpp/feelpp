@@ -28,8 +28,8 @@
 
 #include <feel/feelcore/feel.hpp>
 
-#if FEELPP_HAS_PETSC
-    #include <feel/feelcore/feelpetsc.hpp>
+#if defined(FEELPP_HAS_PETSC)
+#include <feel/feelcore/feelpetsc.hpp>
 #endif
 
 namespace Feel
@@ -245,7 +245,11 @@ enum PositionOfSpectrum {LARGEST_MAGNITUDE=0,
                          SMALLEST_REAL,
                          LARGEST_IMAGINARY,
                          SMALLEST_IMAGINARY,
-
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 9)
+                         TARGET_MAGNITUDE,
+                         TARGET_REAL,
+                         TARGET_IMAGINARY,
+#endif
                          INVALID_Postion_of_Spectrum
                         };
 

@@ -1,6 +1,6 @@
 #define BOOST_TEST_MODULE deim testsuite
 
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/pch.hpp>

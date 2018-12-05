@@ -23,7 +23,7 @@
  */
 
 #define BOOST_TEST_MODULE range testsuite
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/range.hpp>
 

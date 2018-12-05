@@ -201,4 +201,26 @@ editPtreeFromOptions( pt::ptree& p, std::string const& prefix )
     }
 }
 
+FEELPP_EXPORT void
+mergePtree( pt::ptree& pa, const pt::ptree& pb )
+{
+    for( const auto& b: pb )
+    {
+        bool skip = false;
+        for( auto& a: pa )
+        {
+            if( a.first == b.first )
+            {
+                if( b.second.empty() )
+                    break;
+                mergePtree( a.second, b.second );
+                skip = true;
+            }
+        }
+        if( not skip)
+            pa.put_child( b.first, b.second );
+    }
+
+}
+
 } // Feel

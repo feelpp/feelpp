@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- mode: python -*-
+
 #### import the simple module from the paraview
 from paraview.simple import *
 
@@ -14,19 +17,19 @@ stateFile=options.stateFile;
 dataDir=options.dataDir;
 outputFile=options.outputFile;
 if stateFile == "" :
-    print "ERROR : option --state-file is required"
+    print("ERROR : option --state-file is required")
     sys.exit(1);
 if not os.path.isfile(stateFile):
-    print "ERROR : file "+stateFile+" does not exist"
+    print("ERROR : file "+stateFile+" does not exist")
     sys.exit(1);
 if dataDir == "" :
-    print "ERROR : option --data-dir is required"
+    print( "ERROR : option --data-dir is required")
     sys.exit(1);
 if not os.path.isdir(dataDir):
-    print "ERROR : directory "+dataDir+" does not exist"
+    print("ERROR : directory "+dataDir+" does not exist")
     sys.exit(1);
 if outputFile == "" :
-    print "ERROR : option --output-file is required"
+    print("ERROR : option --output-file is required")
     sys.exit(1);
 
 #### disable automatic camera reset on 'Show'
@@ -42,7 +45,7 @@ Delete(renderView1)
 del renderView1
 
 # load state
-print "LoadState start ...";
+print("LoadState start ...");
 LoadState(stateFile, #LoadStateDataFileOptions='Use File Names From State',
           LoadStateDataFileOptions='Search files under specified directory',
           #DataDirectory='/feel/',
@@ -50,7 +53,7 @@ LoadState(stateFile, #LoadStateDataFileOptions='Use File Names From State',
           #OnlyUseFilesInDataDirectory=1,
           #ExportcaseCaseFileName='/feel/applications/models/solid/cantilever/P1G1/np_1/solid.exports/Export.case'
 )
-print "LoadState done";
+print("LoadState done");
 
 
 # get active view
@@ -62,7 +65,7 @@ renderView1 = GetActiveViewOrCreate('RenderView')
 # renderView1.UseOffscreenRendering = 1
 
 # save screenshot
-print "SaveScreenshot start ...";
+print("SaveScreenshot start ...");
 SaveScreenshot(outputFile, renderView1,
                #ImageResolution=[2150, 1176],
                #ImageResolution=[renderView1.ViewSize[0], renderView1.ViewSize[1]],
@@ -72,4 +75,4 @@ SaveScreenshot(outputFile, renderView1,
                StereoMode='No change',
                TransparentBackground=0,
                ImageQuality=100)
-print "SaveScreenshot done";
+print("SaveScreenshot done");

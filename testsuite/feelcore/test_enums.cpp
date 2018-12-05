@@ -26,7 +26,7 @@
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE submesh testsuite
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/feel.hpp>
 

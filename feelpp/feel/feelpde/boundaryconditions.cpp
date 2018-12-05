@@ -89,6 +89,9 @@ BoundaryConditions::setup()
             for( auto const& c : f.second ) // condition
             {
                 auto bcdatatype  = c.second.get("type","expression");
+                ModelMarkers markers (c.first);
+                if( auto m = c.second.get_child_optional("markers") )
+                    markers.setPTree(*m);
                 //std::cout << "bcdatatype = " << bcdatatype << std::endl;
                 if ( bcdatatype == "file" )
                 {
@@ -98,7 +101,7 @@ BoundaryConditions::setup()
                         auto abscissa= c.second.get<std::string>("abscissa");
                         auto ordinate= c.second.get<std::string>("ordinate");
                         LOG(INFO) << "adding boundary " << c.first << " with filename " << e << " to " << k;
-                        this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e, abscissa, ordinate ) );
+                        this->operator[](t)[f.first].push_back( ExpressionStringAtMarker(std::make_tuple( bcdatatype, c.first, e, abscissa, ordinate ), markers) );
                     }
                     catch( ... )
                     {
@@ -113,7 +116,7 @@ BoundaryConditions::setup()
                     {
                         auto e= c.second.get<std::string>("expr");
                         LOG(INFO) << "adding boundary " << c.first << " with expression " << e << " to " << k;
-                        this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e, std::string(""), mat ) );
+                        this->operator[](t)[f.first].push_back( ExpressionStringAtMarker(std::make_tuple( bcdatatype, c.first, e, std::string(""), mat ), markers) );
                     }
                     catch( ... )
                     {
@@ -122,12 +125,12 @@ BoundaryConditions::setup()
                             auto e1= c.second.get<std::string>("expr1");
                             auto e2= c.second.get<std::string>("expr2");
                             LOG(INFO) << "adding boundary " << c.first << " with expressions " << e1 << " and " << e2 << " to " << k;
-                            this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e1, e2, mat ) );
+                            this->operator[](t)[f.first].push_back( ExpressionStringAtMarker(std::make_tuple( bcdatatype, c.first, e1, e2, mat ), markers) );
                         }
                         catch( ... )
                         {
                             LOG(INFO) << "adding boundary " << c.first << " without expression" << " to " << k;
-                            this->operator[]( t )[f.first].push_back( std::make_tuple( bcdatatype, c.first, std::string(""), std::string(""), mat ) );
+                            this->operator[]( t )[f.first].push_back( ExpressionStringAtMarker(std::make_tuple( bcdatatype, c.first, std::string(""), std::string(""), mat), markers ) );
                         }
                     }
                 }
@@ -146,16 +149,89 @@ BoundaryConditions::setup()
                 for( auto const& c : t.second )
                 {
                     if ( c.hasExpression2() )
-                        LOG(INFO) << "  . boundary  " << c.marker() << " expr : " << c.expression1() << " expr2:" << c.expression2() << "\n";
+                        LOG(INFO) << "  . boundary  " << c.name() << " expr : " << c.expression1() << " expr2:" << c.expression2() << "\n";
                     else
-                        LOG(INFO) << "  . boundary  " << c.marker() << " expr : " << c.expression() << "\n";
+                        LOG(INFO) << "  . boundary  " << c.name() << " expr : " << c.expression() << "\n";
                 }
                 
             }
         }
     }
 }
-    
+
+std::set<std::string>
+BoundaryConditions::setupMarkers( pt::ptree const& pt, std::string name )
+{
+    std::set<std::string> markers;
+    if ( auto meshMarkers = pt.get_child_optional("markers") )
+    {
+        for( auto const& item : pt.get_child("markers") )
+            markers.insert(item.second.template get_value<std::string>());
+        if( markers.empty() )
+            markers.insert(pt.template get<std::string>("markers") );
+    }
+    if( markers.empty() )
+        if( !name.empty() ) // for volumic forces
+            markers.insert(name);
+
+    for( int k = 0; k < 10; ++k )
+    {
+        std::string strK = (boost::format("index%1%")%k).str();
+        std::vector<std::string> argK;
+        if( auto indiceK = pt.get_child_optional(strK) )
+        {
+            // if we have an array
+            for( auto const& item : pt.get_child(strK) )
+                argK.push_back(item.second.template get_value<std::string>());
+            // if we have a range
+            if( argK.empty() )
+            {
+                std::string rangeK = pt.template get<std::string>(strK);
+                boost::char_separator<char> sep(":");
+                boost::tokenizer<boost::char_separator<char> > kvlist( rangeK, sep);
+                int sizeRange = std::distance(kvlist.begin(),kvlist.end());
+                // a range is start:end[:step]
+                if( sizeRange != 2 && sizeRange != 3 )
+                {
+                    LOG(WARNING) << "range " << k << " for boundary condition " << name
+                                 << " has " << sizeRange << " elements, should be 2 or 3";
+                    continue;
+                }
+
+                std::vector<int> range;
+                for( auto const& r : kvlist )
+                    range.push_back(std::stoi(r));
+                if( sizeRange == 2 )
+                    range.push_back(1);
+                auto argKInt = boost::irange(range[0],range[1],range[2]);
+                for( auto const& i : argKInt )
+                    argK.push_back( std::to_string(i));
+            }
+        }
+        auto it = markers.begin();
+        while( it != markers.end() )
+        {
+            std::string m = *it;
+            auto pos = m.find("%"+std::to_string(k)+"%");
+            if( pos != std::string::npos )
+            {
+                std::set<std::string> ms;
+                for( auto const& s : argK )
+                {
+                    std::string currentMarker = m;
+                    currentMarker.replace(pos, 3, s);
+                    ms.insert(currentMarker);
+                }
+                markers.erase(it);
+                markers.insert(ms.begin(),ms.end());
+                it = markers.begin();
+            }
+            else
+                std::advance(it,1);
+        }
+    }
+    return markers;
+}
 
 void
 BoundaryConditions::saveMD(std::ostream &os)
@@ -172,7 +248,9 @@ BoundaryConditions::saveMD(std::ostream &os)
      os << "|<ul>";
      for(auto iiit = iit->second.begin(); iiit !=  iit->second.end(); iiit++)
      {
-       os << "<li>**" << iiit->marker()      << "**</li>";
+       os << "<li>**" << iiit->name()      << "**</li>";
+       for( auto const& m : iiit->markers() )
+           os << "<li>" << m << "</li>";
        os << "<li>" << iiit->expression()  << "</li>";
        os << "<li>" << iiit->expression1() << "</li>";
        os << "<li>" << iiit->expression2() << "</li>";
@@ -229,16 +307,16 @@ BoundaryConditions::param( std::string const& field,std::string const& bc, std::
     return std::make_pair(false,defaultValue);
 }
 
-std::list<std::string>
+std::set<std::string>
 BoundaryConditions::markers( std::string const& field, std::string const& type ) const
 {
     return this->markers( { { field,type } } );
 }
 
-std::list<std::string>
+std::set<std::string>
 BoundaryConditions::markers( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
 {
-    std::list<std::string> res;
+    std::set<std::string> res;
     for ( auto const& key : listKeys )
     {
         std::string const& field = key.first;
@@ -250,9 +328,8 @@ BoundaryConditions::markers( std::initializer_list< std::pair<std::string,std::s
         if ( itFindType == itFindField->second.end() )
             continue;
         for ( auto const& f : itFindType->second )
-        {
-            res.push_back( f.marker() );
-        }
+            for( auto const& m : f.markers() )
+                res.insert(m);
     }
     return res;
 }

@@ -274,8 +274,10 @@ public :
                                        ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
                                        (grad_expr, *, ( vf::zero<domain_space_type::nComponents,domain_space_type::nDim>() ))
                                        (div_expr, *, cst(0.) )
-                                       (curl_expr, *,  ( vf::zero<  mpl::if_<mpl::equal_to<mpl::int_<domain_space_type::nComponents>, mpl::int_<1> >,
-                                                         mpl::int_<1>, mpl::int_<domain_space_type::nDim> >::type::value, 1>() ) )
+                                       (curl_expr, *, ( vf::zero< mpl::if_<mpl::equal_to<mpl::int_<domain_space_type::nComponents>, mpl::int_<1> >,
+                                                                           mpl::int_<1>,
+                                                                           typename mpl::if_<mpl::equal_to<mpl::int_<domain_space_type::nDim>, mpl::int_<3> >,
+                                                                                             mpl::int_<3>, mpl::int_<1> >::type >::type::value, 1>() ) )
                                        )
                                    )
     {

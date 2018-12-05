@@ -139,9 +139,26 @@ if ( NOT DEFINED FEELPP_INSTANTIATION_ORDER_MAX)
   set(FEELPP_INSTANTIATION_ORDER_MAX 3)
 endif()
 
-if (APPLE)
-  list(REMOVE_ITEM FEELPP_LIBRARIES /usr/lib/libstdc++.dylib)
+# if (APPLE)
+#   list(REMOVE_ITEM FEELPP_LIBRARIES /usr/lib/libstdc++.dylib)
+# endif()
+
+include(ProcessorCount)
+ProcessorCount(NProcs)
+IF(NOT CMAKE_NPROCS)
+  ##if(N GREATER 1)
+  math (EXPR NProcs2 '${NProcs}/2')
+  if(NProcs2 EQUAL 0)
+    set(NProcs2 1)
+  endif()
+  if(NProcs2 GREATER 6)
+    set(NProcs2 6)
+  endif()
+else()
+  set(NProcs2 "${CMAKE_NPROCS}")
 endif()
+message(STATUS "[feelpp] using ${NProcs2} cores out of ${NProcs} cores" )
+
 
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/feelpp/cmake/modules ${FEELPP_HOME_DIR}/feelpp/cmake/machines )
 

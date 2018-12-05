@@ -301,13 +301,13 @@ public:
     {
         int q_max = M_functionals1.size();
         FEELPP_ASSERT( q < q_max )( q_max )( q ).error( "FsFunctionalLinearComposite has not enough elements" );
-        return M_functionals1.template at(q);
+        return M_functionals1.at(q);
     }
 
     super_ptrtype& functionallinear( int q , int m)
     {
         auto tuple = boost::make_tuple( q , m );
-        return M_functionals2.template at(tuple);
+        return M_functionals2.at(tuple);
     }
 
 
@@ -317,7 +317,7 @@ public:
         int q_max = M_functionals1.size();
         FEELPP_ASSERT( q < q_max )( q_max )( q ).error( "FsFunctionalLinearComposite has not enough elements" );
         //auto vector = M_backend->newVector( this->space() );
-        M_functionals1.template at(q)->containerPtr(vector);
+        M_functionals1.at(q)->containerPtr(vector);
         //return vector;
     }
 
@@ -325,20 +325,20 @@ public:
     {
         int q_max = M_functionals1.size();
         FEELPP_ASSERT( q < q_max )( q_max )( q ).error( "FsFunctionalLinearComposite has not enough elements" );
-        M_functionals1.template at(q)->containerPtr(vector);
+        M_functionals1.at(q)->containerPtr(vector);
     }
 
     //Access to a specific vector
     void vecPtr( int q , int m , vector_ptrtype& vector )
     {
         auto tuple = boost::make_tuple( q , m );
-        M_functionals2.template at(tuple)->containerPtr(vector);
+        M_functionals2.at(tuple)->containerPtr(vector);
     }
 
     void vecPtr( int q , int m , vector_ptrtype& vector ) const
     {
         auto tuple = boost::make_tuple( q , m );
-        M_functionals2.template at(tuple)->containerPtr(vector);
+        M_functionals2.at(tuple)->containerPtr(vector);
     }
 
 

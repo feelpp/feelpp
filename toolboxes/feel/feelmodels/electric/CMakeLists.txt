@@ -30,6 +30,8 @@ foreach(_DIM 2 3)
 endforeach()
 
 add_library(feelpp_toolbox_electric_lib SHARED libelectric.cpp )
+add_library(Feelpp::feelpp_toolbox_electric_lib ALIAS feelpp_toolbox_electric_lib )  # to match exported target
+set_target_properties(feelpp_toolbox_electric_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_electric_lib")
 target_link_libraries(feelpp_toolbox_electric_lib ${FEELPP_MODELS_LIBRARIES_ELECTRIC})
 set_property(TARGET feelpp_toolbox_electric_lib PROPERTY MACOSX_RPATH ON)
 install(TARGETS feelpp_toolbox_electric_lib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)

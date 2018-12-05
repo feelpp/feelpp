@@ -27,8 +27,10 @@ project(pyfeelpp)
 if ( ${CMAKE_SOURCE_DIR}/ STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
   if(NOT FEELPP_FOUND)
-      message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+    message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
   endif()
+else()
+  set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
 endif()
 
 # additional cmake args can be necessary for paraview
@@ -59,6 +61,11 @@ if (FEELPP_ENABLE_PYFEELPP_LIBFEELPP)
   set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
   set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
   configure_file(${SETUP_PY_IN} ${SETUP_PY})
-  install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install)")
+  set(PYFEELPP_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages/)
+  install(DIRECTORY DESTINATION ${PYFEELPP_INSTALL_DIR})
+  install(
+    CODE "set(ENV{PYTHONPATH} \"${PYFEELPP_INSTALL_DIR}:$ENV{PYTHONPATH}\")"
+    CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install --prefix ${CMAKE_INSTALL_PREFIX} )"
+    )
 endif()
 

@@ -163,7 +163,8 @@ target_include_directories(feelpp_ginac
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
   $<INSTALL_INTERFACE:include/feelpp/>
   PRIVATE
-  ${MPI_CXX_INCLUDE_PATH})
+  ${MPI_CXX_INCLUDE_PATH}
+  ${Boost_INCLUDE_DIRS})
 
 if (NOT BUILD_SHARED_LIBS)
     set_target_properties(feelpp_ginac PROPERTIES OUTPUT_NAME "feelpp_ginac")

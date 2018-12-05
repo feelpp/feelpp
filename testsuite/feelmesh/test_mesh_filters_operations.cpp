@@ -28,7 +28,7 @@
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 
 #include <feel/feeldiscr/mesh.hpp>

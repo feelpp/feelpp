@@ -27,7 +27,7 @@
 */
 
 #define BOOST_TEST_MODULE test_sub_matrix
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>

@@ -24,7 +24,21 @@
 #ifndef FEELPP_UTILITY_HPP
 #define FEELPP_UTILITY_HPP 1
 
+#include <feel/feelcore/feelmacros.hpp>
 #include <string>
+
+// the following snippet of code detects the current OS and
+// defines the appropriate macro that is used to wrap some
+// platform specific things
+#if defined(_WIN32) || defined(_WIN64)
+#define FEELPP_OS_WINDOWS
+#elif defined(__APPLE__)
+#define FEELPP_OS_MACOS
+#elif defined(__unix__) || defined(__unix)
+#define FEELPP_OS_LINUX
+#else
+#error unsupported platform
+#endif
 
 namespace Feel {
 
@@ -34,6 +48,18 @@ namespace Feel {
  */
 FEELPP_EXPORT std::string readFromFile( std::string const& filename );
 
+
+//! Get a unique char (no return cariage requrired).
+//! This function is a custom getch.
+FEELPP_EXPORT int getOneChar();
+
+//! Ask the user to fill a password.
+//! The password is hidden with asterisks.
+//! \param message a message to display to the user
+//! \return The (clear) password in a string.
+//
+//! \note: This function is unix specific. 
+FEELPP_EXPORT std::string askPassword( std::string const& message );
 
 }
 #endif

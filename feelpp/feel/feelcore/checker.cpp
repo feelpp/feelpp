@@ -167,8 +167,9 @@ checker( std::string const& s, std::string const& p )
     return Checker{sol};
 }
 
-Checker::Checker()
+Checker::Checker( std::string const& name )
     :
+    super( "Checker", name ),
     M_check( boption("checker.check") ),
     M_verbose( boption("checker.verbose" ) ),
     M_solution( soption("checker.solution" ) ),

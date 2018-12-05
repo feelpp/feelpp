@@ -83,7 +83,7 @@ struct SymbolsExprTraits
     template<typename T1, typename... ExprT2>
     static constexpr auto apply2NonEmpty( hana::integral_constant<bool,false> )
         {
-            return hana::type_c<T1>;
+            return hana::type_c<typename T1::tuple_type>;
         }
     template<typename T1, typename... ExprT2>
     static constexpr auto apply2( hana::integral_constant<bool,true> )
@@ -107,7 +107,7 @@ struct SymbolsExprTraits
     template<typename T1, typename... ExprT2>
     static constexpr auto applyNonEmpty( hana::integral_constant<bool,false>, T1 const& t1, const ExprT2&... exprs )
         {
-            return t1;
+            return t1.tupleExpr;
         }
     template<typename... ExprT>
     static constexpr auto apply( hana::integral_constant<bool,false> )
@@ -130,26 +130,29 @@ struct SymbolsExprTraits
 
 //! collect SymbolExpr object and store it an hana::tuple
 template<typename... ExprT>
-struct SymbolsExpr : public decltype(SymbolsExprTraits::template apply2<ExprT...>() )::type
+struct SymbolsExpr
 {
-    using super_type = typename decltype(SymbolsExprTraits::template apply2<ExprT...>() )::type;
+    using tuple_type = typename decltype(SymbolsExprTraits::template apply2<ExprT...>() )::type;
     using feelpp_tag = SymbolsExprTag;
 
     //SymbolsExpr() = default;
     template<typename ...dummy,typename = typename std::enable_if< decltype(hana::length( hana::tuple<ExprT...,dummy...>{} ) )::value != 0 >::type >
     SymbolsExpr()
         :
-        super_type()
+        tupleExpr()
     {}
     SymbolsExpr( const ExprT&... exprs )
         :
-        super_type( SymbolsExprTraits::template apply( exprs... ) )
+        tupleExpr( SymbolsExprTraits::template apply( exprs... ) )
         {}
+
+    tuple_type tupleExpr;
 };
 template <>
-struct SymbolsExpr<> : public hana::tuple<>
+struct SymbolsExpr<>
 {
-    hana::basic_tuple<> storage_; // fix empty hana::tuple used hana::fold
+    using tuple_type = hana::tuple<>;
+    tuple_type tupleExpr;
 };
 
 //! build a SymbolsExpr object

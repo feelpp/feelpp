@@ -528,7 +528,7 @@ solvereigen_options( std::string const& prefix )
     // solver options
         ( ( _prefix+"solvereigen.solver" ).c_str(), Feel::po::value<std::string>()->default_value( "krylovschur" ), "type of eigenvalue solver. Choice: power,lapack,subspace,arnoldi,krylovschur,arpack" )
         ( ( _prefix+"solvereigen.problem" ).c_str(), Feel::po::value<std::string>()->default_value( "ghep" ), "type of eigenvalue problem. Choice: nhep, hep, gnhep, ghep, pgnhep" )
-        ( ( _prefix+"solvereigen.spectrum" ).c_str(), Feel::po::value<std::string>()->default_value( "largest_magnitude" ), "eigenvalue solver position in spectrum. Choice: largest_magnitude, smallest_magnitude, largest_real, smallest_real, largest_imaginary, smallest_imaginary" )
+        ( ( _prefix+"solvereigen.spectrum" ).c_str(), Feel::po::value<std::string>()->default_value( "largest_magnitude" ), "eigenvalue solver position in spectrum. Choice: largest_magnitude, smallest_magnitude, largest_real, smallest_real, largest_imaginary, smallest_imaginary, target_magnitude, target_real, target_imaginary" )
         ( ( _prefix+"solvereigen.transform" ).c_str(), Feel::po::value<std::string>()->default_value( "shift" ), "spectral transformation. Choice: shift, shift_invert, fold, cayley" )
         ( ( _prefix+"solvereigen.nev" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of requested eigenpairs" )
         ( ( _prefix+"solvereigen.ncv" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "dimension of the subspace" )
@@ -937,6 +937,26 @@ checker_options( std::string const& prefix )
 }
 
 po::options_description
+journal_options( std::string const& prefix )
+{
+    po::options_description options( "Journal " + prefix + " options" );
+    options.add_options()
+        ( prefixvm( prefix,"journal" ).c_str(), Feel::po::value<bool>()->default_value(true), "Enable simulation info" )
+        ( prefixvm( prefix,"journal.filename" ).c_str(), Feel::po::value<std::string>(), "name of the json file" )
+        ( prefixvm( prefix,"journal.auto" ).c_str(), Feel::po::value<bool>()->default_value(true), "Generate the journal automatically based on the code." )
+        ( prefixvm( prefix,"journal.database" ).c_str(), Feel::po::value<bool>()->default_value(false), "Enable database usage" )
+        ( prefixvm( prefix,"journal.database.name" ).c_str(), Feel::po::value<std::string>()->default_value("feelpp"), "Database name (MongoDB)" )
+        ( prefixvm( prefix,"journal.database.host" ).c_str(), Feel::po::value<std::string>()->default_value("localhost"), "Database host or IP (MongoDB)" )
+        ( prefixvm( prefix,"journal.database.port" ).c_str(), Feel::po::value<std::string>()->default_value("27017"), "Database port (MongoDB)" )
+        ( prefixvm( prefix,"journal.database.user" ).c_str(), Feel::po::value<std::string>()->default_value(""), "Database username (MongoDB)" )
+        ( prefixvm( prefix,"journal.database.password" ).c_str(), Feel::po::value<std::string>()->default_value(""), "Database password (MongoDB)" )
+        ( prefixvm( prefix,"journal.database.authsrc" ).c_str(), Feel::po::value<std::string>()->default_value("admin"), "Database authenticate source collection [admin] (MongoDB)" )
+        ( prefixvm( prefix,"journal.database.collection" ).c_str(), Feel::po::value<std::string>()->default_value("journal"), "Database journal collection [journal] (MongoDB)" )
+        ;
+    return options;
+}
+
+po::options_description
 fmu_options( std::string const& prefix )
 {
     po::options_description _options( "FMU " + prefix + " options" );
@@ -1047,9 +1067,10 @@ feel_options( std::string const& prefix  )
 #endif
         .add( aitken_options( prefix ) )
 
-        .add (msi_options(prefix))
-        .add (fit_options(prefix))
-        .add (checker_options(prefix))
+        .add( msi_options(prefix) )
+        .add( fit_options(prefix) )
+        .add( checker_options(prefix) )
+        .add( journal_options(prefix) )
         .add( fmu_options(prefix) )
         .add( ptree_options( prefix ) )
         ;
