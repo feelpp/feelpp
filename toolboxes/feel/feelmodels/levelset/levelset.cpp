@@ -2144,12 +2144,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
         auto const& D = this->D();
         double L = this->perimeter();
         double L0 = this->M_initialPerimeter;
-        double Kbar = integrate( _range=this->rangeMeshElements(), _expr=idv(K)*idv(D) ).evaluate()(0,0) / L;
-        double mu = (L-L0) / integrate( _range=this->rangeMeshElements(), _expr=idv(K)*(idv(K)-Kbar)*idv(D) ).evaluate()(0,0);
+        double Kbar = integrate( _range=this->rangeMeshElements(), _expr=idv(K)*idv(D)*idv(D) ).evaluate()(0,0) 
+            / integrate( _range=this->rangeMeshElements(), _expr=idv(D)*idv(D) ).evaluate()(0,0);
+        double mu = (L0-L) / integrate( _range=this->rangeMeshElements(), _expr=idv(K)*(idv(K)-Kbar)*idv(D)*idv(D) ).evaluate()(0,0);
         *phi = vf::project(
             _space=this->functionSpace(),
             _range=this->rangeMeshElements(),
-            _expr=idv(phi) + mu*(idv(K)-Kbar)
+            _expr=idv(phi) + mu*(idv(K)-Kbar)*idv(D)
             );
         // Request update interface-related quantities again since phi has changed
         // Note that updateInterfaceQuantities has lazy evaluation
