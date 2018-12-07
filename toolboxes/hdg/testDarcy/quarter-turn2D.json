@@ -7,7 +7,7 @@
         "omega":
         {
             "name":"copper",
-            "cond":"-1"
+            "cond":"1"
         }
     },
     "BoundaryConditions":
@@ -18,26 +18,29 @@
             {
                 "omega":
                 {
-                    "expr":"-sin(Pi*x)*sin(Pi*y):x:y"
+                    "expr":"0"
                 }
             },
-            "Neumann":
+            "Dirichlet":
             {
-                "top":
+                "in":
                 {
-                    "expr":"sin(Pi*x)/(2*Pi):x"
+                    "expr":"0"
                 },
-                "bottom":
+                "out":
                 {
-                    "expr":"-sin(Pi*x)/(2*Pi):x"
+                    "expr":"0.25"
+                }
+		},
+		"Neumann":
+		{
+                "ext":
+                {
+                    "expr":"0"
                 },
-                "left":
+                "int":
                 {
-                    "expr":"-sin(Pi*y)/(2*Pi):y"
-                },
-                "right":
-                {
-                    "expr":"sin(Pi*y)/(2*Pi):y"
+                    "expr":"0"
                 }
             }
         }

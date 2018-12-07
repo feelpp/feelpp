@@ -96,14 +96,19 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
     toc("assembleCstThermo");
 
     // first iteration
+#ifndef USE_SAME_MAT
     M_electro->copyCstPart();
+#endif
     M_electro->updateConductivityTerm( false );
     M_electro->assembleRhsBoundaryCond();
+    M_electro->assemblePotentialRHS( cst(0.), "");
     M_electro->solve();
     M_potential = M_electro->potentialField();
     M_current = M_electro->fluxField();
 
+#ifndef USE_SAME_MAT
     M_thermo->copyCstPart();
+#endif
     M_thermo->updateConductivityTerm( false );
     M_thermo->assembleRhsBoundaryCond();
     for( auto const& pairMat : electroMat )
@@ -122,14 +127,21 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
     current_type oldCurrent = M_electro->fluxSpace()->element();
     temp_type oldTemperature = M_thermo->potentialSpace()->element();
     tempflux_type oldTempflux = M_thermo->fluxSpace()->element();
+    double normV = normL2( elements(M_mesh), idv(M_potential) );
+    double normT = normL2( elements(M_mesh), idv(M_temperature) );
     double incrV = normL2( elements(M_mesh), idv(M_potential) - idv(oldPotential) );
     double incrT = normL2( elements(M_mesh), idv(M_temperature) - idv(oldTemperature) );
+    double relV = incrV/normV;
+    double relT = incrT/normT;
 
     double tol = doption( prefixvm( M_prefix, "tolerance") );
     int i = 0, itmax = ioption( prefixvm( M_prefix, "itmax") );
 
+    Feel::cout << "Picard with " << itmax << "iteration max and tolerance = " << tol << std::endl;
+
+
     // Picard loop
-    while( i++ < itmax && ( incrV > tol || incrT > tol ) )
+    while( i++ < itmax && ( relV > tol || relT > tol ) )
     {
         tic();
 
@@ -139,7 +151,13 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
         oldTempflux = M_tempflux;
 
         tic();
+#ifdef USE_SAME_MAT
+        M_electro->setCstMatrixToZero();
+        M_electro->setVectorToZero();
+        M_electro->assembleCstPart();
+#else
         M_electro->copyCstPart();
+#endif
         for( auto const& pairMat : electroMat )
         {
             std::string marker = pairMat.first;
@@ -153,6 +171,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
             M_electro->updateConductivityTerm( sigma, marker);
         }
         M_electro->assembleRhsBoundaryCond();
+        M_electro->assemblePotentialRHS( cst(0.), "");
         toc("assembleElectro");
         tic();
         M_electro->solve();
@@ -161,7 +180,13 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
         M_current = M_electro->fluxField();
 
         tic();
+#ifdef USE_SAME_MAT
+        M_thermo->setCstMatrixToZero();
+        M_thermo->setVectorToZero();
+        M_thermo->assembleCstPart();
+#else
         M_thermo->copyCstPart();
+#endif
         for( auto const& pairMat : thermoMat )
         {
             std::string marker = pairMat.first;
@@ -169,7 +194,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
             double alpha = mat.getDouble("alpha");
             double T0 = mat.getDouble("T0");
             double k0 = mat.getDouble(soption(prefixvm(M_prefixThermo,"conductivity_json")));
-            auto k = mat.getScalar(soption(prefixvm(M_prefixThermo,"conductivity_json")),
+            auto k = mat.getScalar(soption(prefixvm(M_prefixThermo,"conductivityNL_json")),
                                    {"T"}, {idv(M_temperature)},
                                    {{"k0",k0},{"T0",T0},{"alpha",alpha}});
             M_thermo->updateConductivityTerm( k, marker);
@@ -197,6 +222,14 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
 
         incrV = normL2( elements(M_mesh), idv(M_potential) - idv(oldPotential) );
         incrT = normL2( elements(M_mesh), idv(M_temperature) - idv(oldTemperature) );
+        normV = normL2( elements(M_mesh), idv(M_potential) );
+        normT = normL2( elements(M_mesh), idv(M_temperature) );
+        relV = incrV/normV;
+        relT = incrT/normT;
+
+        Feel::cout << "iteration " << i
+                   << "\n\tincrement on V = " << relV << " (absolute = " << incrV << ")"
+                   << "\n\tincrement on T = " << relT << " (absolute = " << incrT << ")" << std::endl;
 
         toc("loop");
     } // Picard loop
