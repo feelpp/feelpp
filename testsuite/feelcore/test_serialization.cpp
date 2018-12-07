@@ -9,7 +9,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
@@ -40,6 +40,15 @@ void runTestVector( std::string const& format )
     std::string file_name = "vector_archive";
     v1->save( file_name, format);
     v2->load( file_name, format );
+
+    bool isOk=true;
+    for (int k=0;k<Xh->nLocalDofWithGhost();++k )
+        if ( std::abs((*v1)(k)-(*v2)(k))>1e-9 )
+        {
+            isOk = false;
+            break;
+        }
+    BOOST_CHECK( isOk );
 
     v1->add(-1, v2);
     double err = v1->linftyNorm();

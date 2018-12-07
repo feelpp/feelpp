@@ -1,6 +1,6 @@
 #define BOOST_TEST_MODULE test_fmi
 
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelfmi/fmu.hpp>
 

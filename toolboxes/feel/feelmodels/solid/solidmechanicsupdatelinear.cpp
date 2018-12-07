@@ -120,14 +120,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
         if ( !this->useDisplacementPressureFormulation() )
         {
             form2( _test=Xh, _trial=Xh, _matrix=A )  +=
-                integrate (_range=elements(mesh),
+                integrate (_range=M_rangeMeshElements,
                            _expr= alpha_f*trace( sigmat*trans(grad(v))),
                            _geomap=this->geomap() );
         }
         else
         {
             form2( _test=Xh, _trial=Xh, _matrix=A )  +=
-                integrate (_range=elements(mesh),
+                integrate (_range=M_rangeMeshElements,
                            _expr= 2*idv(coeffLame2)*inner(epst,grad(v)),
                            _geomap=this->geomap() );
 
@@ -136,19 +136,19 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
             form2( _test=Xh, _trial=M_XhPressure, _matrix=A,
                    _rowstart=rowStartInMatrix,
                    _colstart=colStartInMatrix+startBlockIndexPressure ) +=
-                integrate (_range=elements(mesh),
+                integrate (_range=M_rangeMeshElements,
                            _expr= idt(p)*div(v),
                            _geomap=this->geomap() );
             form2( _test=M_XhPressure, _trial=Xh, _matrix=A,
                    _rowstart=rowStartInMatrix+startBlockIndexPressure,
                    _colstart=colStartInMatrix ) +=
-                integrate(_range=elements(mesh),
+                integrate(_range=M_rangeMeshElements,
                           _expr= id(p)*divt(u),
                           _geomap=this->geomap() );
             form2( _test=M_XhPressure, _trial=M_XhPressure, _matrix=A,
                    _rowstart=rowStartInMatrix+startBlockIndexPressure,
                    _colstart=colStartInMatrix+startBlockIndexPressure ) +=
-                integrate(_range=elements(mesh),
+                integrate(_range=M_rangeMeshElements,
                           _expr= -(cst(1.)/idv(coeffLame1))*idt(p)*id(p),
                           _geomap=this->geomap() );
         }
@@ -162,7 +162,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
             if ( !this->useMassMatrixLumped() )
             {
                 form2( _test=Xh, _trial=Xh, _matrix=A )  +=
-                    integrate( _range=elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr= this->timeStepNewmark()->polySecondDerivCoefficient()*idv(rho)*inner(idt(u),id(v)),
                                _geomap=this->geomap() );
             }
@@ -188,7 +188,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
             if ( !this->useMassMatrixLumped() )
             {
                 form1( _test=Xh, _vector=F ) +=
-                    integrate( _range=elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr= idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
                                _geomap=this->geomap() );
             }
@@ -328,7 +328,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
         auto const& u = this->fieldDisplacement();
         for( auto const& d : this->M_bcDirichlet )
         {
-            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",name(d) ) );
             auto const& listMarkerFaces = std::get<0>( ret );
             auto const& listMarkerEdges = std::get<1>( ret );
             auto const& listMarkerPoints = std::get<2>( ret );
@@ -353,7 +353,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
             ComponentType comp = bcDirComp.first;
             for( auto const& d : bcDirComp.second )
             {
-                auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d),comp ) );
+                auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",name(d),comp ) );
                 auto const& listMarkerFaces = std::get<0>( ret );
                 auto const& listMarkerEdges = std::get<1>( ret );
                 auto const& listMarkerPoints = std::get<2>( ret );
@@ -387,7 +387,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
         //WARNING : fixed at zero
         for( auto const& d : this->M_bcDirichlet )
             bilinearForm +=
-                on( _range=markedfaces(Xh->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
+                on( _range=markedfaces(Xh->mesh(),this->markerDirichletBCByNameId( "elimination",name(d) ) ),
                     _element=u, _rhs=F, _expr=cst(0.),
                     _prefix=this->prefix() );
     }
@@ -405,17 +405,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F 
 
     for( auto const& d : this->M_bcNeumannScalar )
         myLinearForm +=
-            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
                        _expr= expression(d)*inner( N(),id(v) ),
                         _geomap=this->geomap() );
     for( auto const& d : this->M_bcNeumannVectorial )
         myLinearForm +=
-            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,marker(d)) ),
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,name(d)) ),
                        _expr= inner( expression(d),id(v) ),
                        _geomap=this->geomap() );
     for( auto const& d : this->M_bcNeumannTensor2 )
         myLinearForm +=
-            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,marker(d)) ),
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,name(d)) ),
                        _expr= inner( expression(d)*N(),id(v) ),
                        _geomap=this->geomap() );
 }
@@ -438,11 +438,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinLinearPDE( sparse_matrix_ptrtyp
     for( auto const& d : this->M_bcRobin )
     {
         bilinearForm +=
-            integrate( _range=markedfaces(this->mesh(),marker(d)/*this->markerRobinBC()*/),
+            integrate( _range=markedfaces(this->mesh(),markers(d)/*this->markerRobinBC()*/),
                        _expr= expression1(d)(0,0)*inner( idt(u) ,id(u) ),
                        _geomap=this->geomap() );
         myLinearForm +=
-            integrate( _range=markedfaces(this->mesh(),marker(d)/*this->markerRobinBC()*/),
+            integrate( _range=markedfaces(this->mesh(),markers(d)/*this->markerRobinBC()*/),
                        _expr= inner( expression2(d) , id(u) ),
                        _geomap=this->geomap() );
 
@@ -461,17 +461,20 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F
 
     for( auto const& d : this->M_volumicForcesProperties )
     {
-        if ( marker(d).empty() )
+        Feel::cout << "Volumic forces" << std::endl;
+        if ( markers(d).empty() )
             myLinearForm +=
-                integrate( _range=elements(this->mesh()),
+                integrate( _range=M_rangeMeshElements,
                            _expr= inner( expression(d),id(v) ),
                            _geomap=this->geomap() );
         else
             myLinearForm +=
-                integrate( _range=markedelements(this->mesh(),marker(d)),
+                integrate( _range=markedelements(this->mesh(),markers(d)),
                            _expr= inner( expression(d),id(v) ),
                            _geomap=this->geomap() );
     }
+    auto norm = F->l2Norm();
+    Feel::cout << "norm = " << norm << std::endl;
 }
 
 

@@ -247,7 +247,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
         // bodyforces
         for( auto const& d : fluidmec.bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? rangeEltConvectionDiffusion : intersect(markedelements(mesh,marker(d)),rangeEltConvectionDiffusion);
+            auto rangeBodyForceUsed = ( markers(d).empty() )? rangeEltConvectionDiffusion : intersect(markedelements(mesh,markers(d)),rangeEltConvectionDiffusion);
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=tau*inner(expression(d),stab_test),
@@ -320,7 +320,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
         // bodyforces
         for( auto const& d : fluidmec.bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? rangeEltPressure : intersect(markedelements(mesh,marker(d)),rangeEltPressure);
+            auto rangeBodyForceUsed = ( markers(d).empty() )? rangeEltPressure : intersect(markedelements(mesh,markers(d)),rangeEltPressure);
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=tau*inner(expression(d),stab_test),
@@ -522,7 +522,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         // bodyforces
         for( auto const& d : fluidmec.bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? rangeEltConvectionDiffusion : intersect(markedelements(mesh,marker(d)),rangeEltConvectionDiffusion);
+            auto rangeBodyForceUsed = ( markers(d).empty() )? rangeEltConvectionDiffusion : intersect(markedelements(mesh,markers(d)),rangeEltConvectionDiffusion);
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=-tau*inner(expression(d),stab_test),
@@ -569,7 +569,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         // bodyforces
         for( auto const& d : fluidmec.bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? rangeEltPressure : intersect(markedelements(mesh,marker(d)),rangeEltPressure);
+            auto rangeBodyForceUsed = ( markers(d).empty() )? rangeEltPressure : intersect(markedelements(mesh,markers(d)),rangeEltPressure);
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=-tau*inner(expression(d),stab_test),

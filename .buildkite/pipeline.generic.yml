@@ -1,30 +1,12 @@
 steps:
  - name: ':$TARGET, ${CXX}'
-   command: tools/scripts/buildkite/install-feelpp-lib.sh
+   command: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
    agents:
      docker: true
      ubuntu: "16.04"
- - wait
- - name: ':$TARGET, $CXX,  feelpp-base :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh base
-   agents:
-     docker: true
-     ubuntu: "16.04"
- - wait
- - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh toolboxes
-   agents:
-     docker: true
-     ubuntu: "16.04"
- - wait
- - name: ':$TARGET $CXX, feelpp-crb :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh crb
-   agents:
-     docker: true
-     ubuntu: "16.04"
- - wait
- - name: ':$TARGET $CXX, feelpp-pyfeelpp :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh pyfeelpp
-   agents:
-     docker: true
-     ubuntu: "16.04"
+   artifact_paths: Testing/junit-*.xml
+ - wait: ~
+   continue_on_failure: true
+ - plugins:
+     junit-annotate#v1.2.0:
+       artifacts: Testing/junit-*.xml

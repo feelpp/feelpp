@@ -187,7 +187,7 @@ updateLinearPDEStabilizationGLS( AdvectionType const& adv, ModelAlgebraic::DataU
 
         for( auto const& d : adv.volumicSources() )
         {
-            auto rangeUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+            auto rangeUsed = ( markers(d).empty() )? elements(mesh) : markedelements(mesh,markers(d));
             linearForm += integrate( _range=rangeUsed,
                     _expr=coeff * inner(L_op, expression(d)),
                     _geomap=adv.geomap() );
@@ -219,7 +219,7 @@ updateLinearPDEStabilizationGLS( AdvectionType const& adv, ModelAlgebraic::DataU
 
         for( auto const& d : adv.volumicSources() )
         {
-            auto rangeUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+            auto rangeUsed = ( markers(d).empty() )? elements(mesh) : markedelements(mesh,markers(d));
             linearForm += integrate( _range=rangeUsed,
                     _expr=coeff * inner(L_op, expression(d)),
                     _geomap=adv.geomap() );
@@ -284,7 +284,7 @@ updateLinearPDEStabilizationSUPG( AdvectionType const& adv, ModelAlgebraic::Data
                 _geomap=adv.geomap() );
         for( auto const& d : adv.volumicSources() )
         {
-            auto rangeUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+            auto rangeUsed = ( markers(d).empty() )? elements(mesh) : markedelements(mesh,markers(d));
             linearForm += integrate( _range=rangeUsed,
                     _expr=coeff * inner(L_op, expression(d)),
                     _geomap=adv.geomap() );
@@ -316,7 +316,7 @@ updateLinearPDEStabilizationSUPG( AdvectionType const& adv, ModelAlgebraic::Data
 
         for( auto const& d : adv.volumicSources() )
         {
-            auto rangeUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+            auto rangeUsed = ( markers(d).empty() )? elements(mesh) : markedelements(mesh,markers(d));
             linearForm += integrate( _range=rangeUsed,
                     _expr=coeff * inner(L_op, expression(d)),
                     _geomap=adv.geomap() );
@@ -376,7 +376,7 @@ updateLinearPDEStabilizationSGS( AdvectionType const& adv, ModelAlgebraic::DataU
 
         for( auto const& d : adv.volumicSources() )
         {
-            auto rangeUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+            auto rangeUsed = ( markers(d).empty() )? elements(mesh) : markedelements(mesh,markers(d));
             linearForm += integrate( _range=rangeUsed,
                     _expr=coeff * inner(L_op, expression(d)),
                     _geomap=adv.geomap() );
@@ -412,7 +412,7 @@ updateLinearPDEStabilizationSGS( AdvectionType const& adv, ModelAlgebraic::DataU
 
         for( auto const& d : adv.volumicSources() )
         {
-            auto rangeUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+            auto rangeUsed = ( markers(d).empty() )? elements(mesh) : markedelements(mesh,markers(d));
             linearForm += integrate( _range=rangeUsed,
                     _expr=coeff * inner(L_op, expression(d)),
                     _geomap=adv.geomap() );

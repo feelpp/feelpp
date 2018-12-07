@@ -28,7 +28,7 @@
  */
 #define USE_BOOST_TEST 1
 #include <boost/plugin.hpp>
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 boost::unit_test::test_suite*
 init_unit_test_suite( int argc, char* argv[] )

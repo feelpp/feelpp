@@ -22,7 +22,7 @@
 #
 #
 add_library( feelpp-applications-crb-benchmarkgrepl-options SHARED benchmarkgrepl-options.cpp )
-target_link_libraries( feelpp-applications-crb-benchmarkgrepl-options ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
+target_link_libraries( feelpp-applications-crb-benchmarkgrepl-options Feelpp::feelpp )
 INSTALL(TARGETS feelpp-applications-crb-benchmarkgrepl-options DESTINATION lib/ COMPONENT Libs)
 install(FILES benchmarkgrepl-options.hpp benchmarkgrepl-linear-elliptic.hpp benchmarkgrepl-nonlinear-elliptic.hpp DESTINATION include/feelpp/crb/BenchmarkGrepl COMPONENT Devel)
 set(FEELPP_CRB_BenchmarkGrepl_LIBRARIES  feelpp-applications-crb-benchmarkgrepl-options PARENT_SCOPE)
@@ -65,6 +65,6 @@ foreach(O 1 2 3)
 endforeach()
 crb_add_model(
   benchmarkgrepl-nonlinear-parabolic3 BenchmarkGreplNonLinearParabolic CLASS BenchmarkGreplNonLinearParabolic<3> 
-  HDRS benchmarkgrepl-nonlinear-parabolic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-nonlinear-parabolic3.cfg XML benchmarkgrepl-nonlinear-parabolic3.xml )
+  HDRS benchmarkgrepl-nonlinear-parabolic.hpp  CFG benchmarkgrepl-nonlinear-parabolic3.cfg XML benchmarkgrepl-nonlinear-parabolic3.xml )
 
 feelpp_add_application(grepl_fem SRCS grepl_fem.cpp)

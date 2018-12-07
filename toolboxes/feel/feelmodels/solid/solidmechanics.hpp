@@ -578,7 +578,7 @@ public :
 
     void updateSubMeshDispFSIFromPrevious();
 
-    std::list<std::string> const& markerNameFSI() const { return this->markerFluidStructureInterfaceBC(); }
+    std::set<std::string> const& markerNameFSI() const { return this->markerFluidStructureInterfaceBC(); }
 
     void updateNormalStressFromStruct();
     void updateStressCriterions();
@@ -600,7 +600,7 @@ public :
 
     bool hasPostProcessFieldExported( SolidMechanicsPostProcessFieldExported const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
 
-    double computeExtremumValue( std::string const& field, std::list<std::string> const& markers, std::string const& type ) const;
+    double computeExtremumValue( std::string const& field, std::set<std::string> const& markers, std::string const& type ) const;
     double computeVolumeVariation( elements_reference_wrapper_t<mesh_type> const& rangeElt ) const;
 
 
