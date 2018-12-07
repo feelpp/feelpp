@@ -23,7 +23,7 @@
 //!
 //!
 #define BOOST_TEST_MODULE mesh
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #if !defined(USE_BOOST_TEST)
 #include <feel/feelfilters/exporter.hpp>

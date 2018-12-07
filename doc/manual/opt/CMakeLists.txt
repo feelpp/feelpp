@@ -21,14 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 if ( FEELPP_HAS_NLOPT )
-  feelpp_add_application( qs_nlopt SRCS qs_nlopt.cpp INCLUDE_IN_ALL  )
-  feelpp_add_application( laplacian_nlopt SRCS laplacian_nlopt.cpp
-                                          CFG laplacian_nlopt.cfg
-                                          GEO circle_incs.geo
-                                          INCLUDE_IN_ALL )
-
-  install(TARGETS feelpp_qs_nlopt DESTINATION bin/ COMPONENT Bin )
+  feelpp_add_application( opt_nlopt SRCS qs_nlopt.cpp INSTALL )
+  feelpp_add_application( opt_laplacian_nlopt SRCS laplacian_nlopt.cpp INSTALL )
 endif()

@@ -77,7 +77,8 @@ public:
                     std::string const& subPrefix = "",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ThermoElectricMesh.path"); }
-    std::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
+    void updateInformationObject( pt::ptree & p ) override;
 
 private :
     void loadParameterFromOptionsVm();
@@ -87,7 +88,7 @@ public :
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
 
-    BlocksBaseGraphCSR buildBlockMatrixGraph() const;
+    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     int nBlockMatrixGraph() const;
 
     void exportResults() { this->exportResults( this->currentTime() ); }
@@ -128,13 +129,13 @@ public :
 
     void updateLinearElectricDependingOnTemperature( DataUpdateLinear & data ) const;
 
-    void updateLinearPDE( DataUpdateLinear & data ) const;
+    void updateLinearPDE( DataUpdateLinear & data ) const override;
 
-    void updateNewtonInitialGuess( vector_ptrtype& U ) const;
-    void updateJacobian( DataUpdateJacobian & data ) const;
-    void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
-    void updateResidual( DataUpdateResidual & data ) const;
-    void updateResidualDofElimination( DataUpdateResidual & data ) const;
+    void updateNewtonInitialGuess( vector_ptrtype& U ) const override;
+    void updateJacobian( DataUpdateJacobian & data ) const override;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
+    void updateResidual( DataUpdateResidual & data ) const override;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
     //___________________________________________________________________________________//
     void updateCurrentDensity();

@@ -28,7 +28,7 @@
    \date 2015-04-25
  */
 #define BOOST_TEST_MODULE test_mortar2
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feeldiscr/stencil.hpp>

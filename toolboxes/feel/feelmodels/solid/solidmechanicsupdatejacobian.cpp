@@ -87,7 +87,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
             {
                 auto const dFS_neohookean = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobian<3*(nOrderDisplacement-1)>(u,*this->mechanicalProperties());
                 bilinearForm_PatternCoupled +=
-                    integrate (_range=elements(mesh),
+                    integrate (_range=M_rangeMeshElements,
                                //_expr= trace( (dF*val(Sv) + val(Fv)*dS)*trans(grad(v)) ),
                                //_expr=Feel::vf::FSI::stressStVenantKirchhoffJacobian(u,coeffLame1,coeffLame2), //le dernier
                                _expr= inner( dFS_neohookean, grad(v) ),
@@ -100,7 +100,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
             {
                 auto const dFS_neohookean = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobian<2*nOrderDisplacement>(u,*this->mechanicalProperties());
                 bilinearForm_PatternCoupled +=
-                    integrate (_range=elements(mesh),
+                    integrate (_range=M_rangeMeshElements,
                                //_expr= trace(idv(coeffLame2)*dF*trans(grad(v)) ),
                                _expr= inner( dFS_neohookean, grad(v) ),
                                _quad=_Q<2*nOrderDisplacement+1>(),
@@ -114,7 +114,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
             if (!BuildCstPart)
             {
                 bilinearForm_PatternCoupled +=
-                    integrate (_range=elements(mesh),
+                    integrate (_range=M_rangeMeshElements,
                                _expr= trace( (dF*val(Sv_mooneyrivlin) + val(Fv)*dS_mooneyrivlin)*trans(grad(v)) ),
                                _geomap=this->geomap() );
             }
@@ -125,7 +125,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     {
         if (!BuildCstPart)
             bilinearForm_PatternCoupled +=
-                integrate (_range=elements(mesh),
+                integrate (_range=M_rangeMeshElements,
                            _expr= trace( dS*trans(grad(v)) ),
                            _geomap=this->geomap() );
     }
@@ -133,7 +133,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     {
         if (BuildCstPart)
             bilinearForm_PatternCoupled +=
-                integrate (_range=elements(mesh),
+                integrate (_range=M_rangeMeshElements,
                            _expr= trace( dS_elastic*trans(grad(v)) ),
                            _geomap=this->geomap() );
     }
@@ -149,7 +149,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         if ( !this->useMassMatrixLumped() )
         {
             bilinearForm_PatternDefault +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= M_timeStepNewmark->polyDerivCoefficient()*idv(rho)*inner( idt(u),id(v) ),
                            _geomap=this->geomap() );
         }
@@ -287,7 +287,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
         form2( _test=M_XhDisplacement, _trial=M_XhPressure, _matrix=J,
                _rowstart=rowStartInMatrix,
                _colstart=colStartInMatrix+startBlockIndexPressure ) +=
-            integrate ( _range=elements(mesh),
+            integrate ( _range=M_rangeMeshElements,
                         _expr= inner(pFmtNLa,grad(v) ),
                         _geomap=this->geomap() );
 
@@ -296,7 +296,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
         form2( _test=M_XhDisplacement, _trial=M_XhDisplacement, _matrix=J,
                _rowstart=rowStartInMatrix,
                _colstart=colStartInMatrix ) +=
-            integrate ( _range=elements(mesh),
+            integrate ( _range=M_rangeMeshElements,
                         _expr= inner(pFmtNLb,grad(v) ),
                         _geomap=this->geomap() );
     }
@@ -305,7 +305,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
         form2( _test=M_XhDisplacement, _trial=M_XhPressure, _matrix=J,
                _rowstart=rowStartInMatrix,
                _colstart=colStartInMatrix+startBlockIndexPressure ) +=
-            integrate ( _range=elements(mesh),
+            integrate ( _range=M_rangeMeshElements,
                         _expr= -trace(alpha_f*idt(p)*Id*trans(grad(v))),
                         _geomap=this->geomap() );
     }
@@ -318,7 +318,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
     form2( _test=M_XhPressure, _trial=M_XhDisplacement, _matrix=J,
            _rowstart=rowStartInMatrix+startBlockIndexPressure,
            _colstart=colStartInMatrix ) +=
-        integrate( _range=elements(mesh),
+        integrate( _range=M_rangeMeshElements,
                    _expr=detJm1*id(q),
                    _geomap=this->geomap() );
 
@@ -328,7 +328,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
         form2( _test=M_XhPressure, _trial=M_XhPressure, _matrix=J,
                _rowstart=rowStartInMatrix+startBlockIndexPressure,
                _colstart=colStartInMatrix+startBlockIndexPressure ) +=
-            integrate(_range=elements(mesh),
+            integrate(_range=M_rangeMeshElements,
                       _expr= -(cst(1.)/idv(coeffLame1))*idt(p)*id(q),
                       _geomap=this->geomap() );
     }
@@ -338,7 +338,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
         form2( _test=M_XhPressure, _trial=M_XhPressure, _matrix=J,
                _rowstart=rowStartInMatrix+startBlockIndexPressure,
                _colstart=colStartInMatrix+startBlockIndexPressure ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= -(cst(1.)/kappa)*idt(p)*id(q),
                        _geomap=this->geomap() );
     }
@@ -373,7 +373,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianViscoElasticityTerms( element_
     double gammav=0.01;
 
     form2( M_XhDisplacement, M_XhDisplacement, J)  +=
-        integrate (_range=elements(mesh),
+        integrate (_range=M_rangeMeshElements,
                    _expr=gammav*M_bdf_displ_struct->polyDerivCoefficient(0)*trace( Et2*trans(grad(v)) ),
                    _geomap=this->geomap() );
 
@@ -401,7 +401,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matr
     auto const& u = this->fieldDisplacement();
     for( auto const& d : this->M_bcDirichlet )
     {
-        auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+        auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",name(d) ) );
         auto const& listMarkerFaces = std::get<0>( ret );
         auto const& listMarkerEdges = std::get<1>( ret );
         auto const& listMarkerPoints = std::get<2>( ret );
@@ -426,7 +426,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matr
         ComponentType comp = bcDirComp.first;
         for( auto const& d : bcDirComp.second )
         {
-            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d),comp ) );
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",name(d),comp ) );
             auto const& listMarkerFaces = std::get<0>( ret );
             auto const& listMarkerEdges = std::get<1>( ret );
             auto const& listMarkerPoints = std::get<2>( ret );
@@ -465,7 +465,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinJacobian( sparse_matrix_ptrtype
     // Warning : take only first component of expression1
     for( auto const& d : this->M_bcRobin )
         bilinearForm +=
-            integrate( _range=markedfaces(this->mesh(),marker(d)/*this->markerRobinBC()*/),
+            integrate( _range=markedfaces(this->mesh(),markers(d)/*this->markerRobinBC()*/),
                        _expr= expression1(d)(0,0)*inner( idt(u) ,id(u) ),
                        _geomap=this->geomap() );
 
@@ -485,21 +485,21 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureJacobian( element_di
     for( auto const& d : this->M_bcNeumannEulerianFrameScalar )
     {
         bilinearForm +=
-            integrate( _range=markedfaces(this->mesh(),marker(d)) ,
+            integrate( _range=markedfaces(this->mesh(),markers(d)) ,
                        _expr= -expression(d)*inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*N(),id(u) ),
                        _geomap=this->geomap() );
     }
     for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
     {
         bilinearForm +=
-            integrate( _range=markedfaces(this->mesh(),marker(d)) ,
+            integrate( _range=markedfaces(this->mesh(),markers(d)) ,
                        _expr= -inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d),id(u) ),
                        _geomap=this->geomap() );
     }
     for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
     {
         bilinearForm +=
-            integrate( _range=markedfaces(this->mesh(),marker(d)) ,
+            integrate( _range=markedfaces(this->mesh(),markers(d)) ,
                        _expr= -inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d)*N(),id(u) ),
                        _geomap=this->geomap() );
     }

@@ -220,14 +220,14 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     this->M_bcDirichlet = detail::getBCFields<nDim, is_vectorial>( 
             this->modelProperties().boundaryConditions(), this->prefix(), "Dirichlet");
     for( auto const& d : this->M_bcDirichlet )
-        this->addMarkerDirichletBC("elimination", marker(d) );
+        this->addMarkerDirichletBC("elimination", name(d), markers(d) );
 
     //this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "advection", "Neumann" );
     this->M_bcNeumann = detail::getBCFields<nDim, is_vectorial>(
             this->modelProperties().boundaryConditions(), this->prefix(), "Neumann"
             );
     for( auto const& d : this->M_bcNeumann )
-        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,marker(d));
+        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,name(d),markers(d));
 
     //this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "advection", "Robin" );
     //for( auto const& d : this->M_bcRobin )
@@ -411,7 +411,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initInitialValue()
             this->M_icValue.setParameterValues( this->modelProperties().parameters().toParameterValues() );
             for( auto const& iv : this->M_icValue )
             {
-                if( marker(iv).empty() )
+                if( markers(iv).empty() )
                 {
                     M_initialValue->on( _range=elements(this->mesh()),
                             _expr=expression(iv),
@@ -419,7 +419,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initInitialValue()
                 }
                 else
                 {
-                    M_initialValue->on( _range=markedelements(this->mesh(), marker(iv)),
+                    M_initialValue->on( _range=markedelements(this->mesh(), markers(iv)),
                             _expr=expression(iv),
                             _geomap=this->geomap() );
                 }
@@ -987,7 +987,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_
     for( auto const& d : this->M_bcDirichlet )
     {
         bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
+            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
                 _element=u,_rhs=F,_expr=expression(d) );
     }
 
@@ -1036,7 +1036,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( ModelAlgebraic::Data
     auto linearForm = form1( _test=space, _vector=F );
     for( auto const& d : this->M_sources )
     {
-        auto rangeUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+        auto rangeUsed = ( markers(d).empty() )? elements(mesh) : markedelements(mesh,markers(d));
         linearForm += integrate( _range=rangeUsed,
                                  _expr= inner(expression(d),id(v)),
                                  _geomap=this->geomap() );

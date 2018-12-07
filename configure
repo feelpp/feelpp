@@ -25,6 +25,10 @@ Options:
      --enable-python                 enable python 
      --enable-cling                  enable cling 
      --disable-cling                 disable cling (default)
+     --enable-toolboxes              enable Feel++ toolboxes and PyFeel++ toolboxes
+     --disable-toolboxes             disable Feel++ toolboxes and PyFeel++ toolboxes (by default)
+     --enable-mor                    enable Feel++ mor and PyFeel++ mor 
+     --disable-mor                   disable Feel++ mor and PyFeel++ mor (by default)
  -v, --verbose                       enable verbose output
  -h, --help                          help page
      --<package>-dir=PACKAGE_PATH    define <package> install directory
@@ -36,7 +40,7 @@ EOT
 
 _HAS_ERROR=no
 _WANT_HELP=no
-PROJECT_INSTALL_PREFIX=`pwd`
+PROJECT_INSTALL_PREFIX=$(dirname `pwd`)/install-$(basename `pwd`)
 PROJECT_STD_CPP=14
 PROJECT_MAX_ORDER=3
 PROJECTSRCROOT=`dirname $0`
@@ -66,6 +70,8 @@ _HAS_CONFIG=no
 _WANT_DEV_WARNINGS=
 _WANT_NUMERICS=TRUE
 _WANT_LOCAL_CONFIG=no
+_WANT_TOOLBOXES=no
+_WANT_MOR=no
 CXXFLAGS=
 CMAKEFLAGS=
 ENABLE_NUMA=TRUE
@@ -88,7 +94,10 @@ while [ -n "$1" ]; do
        export PROJECT_INSTALL_PREFIX
        ;;
    --root=*)
-       PROJECTSRCROOT=`echo $1 | sed "s,^--root=\(.*\),\1,"`
+       temp=`echo $1 | sed "s,^--root=\(.*\),\1,"`
+       if [ "x$temp" != "xfeelpp" ]; then
+           PROJECTSRCROOT=$temp
+       fi
        export PROJECTSRCROOT
        ;;   
    --mpi-dir=*)
@@ -167,6 +176,18 @@ while [ -n "$1" ]; do
    --disable-cling)
        _WANT_CLING=no
        ;;
+   --enable-toolboxes)
+       _WANT_TOOLBOXES=yes
+       ;;         
+   --disable-toolboxes)
+       _WANT_TOOLBOXES=no
+       ;;
+   --enable-mor)
+       _WANT_MOR=yes
+       ;;         
+   --disable-mor)
+       _WANT_MOR=no
+       ;;    
    --max-order=*)
            PROJECT_MAX_ORDER=`echo $1 | sed "s,^--max-order=\(.*\),\1,"`
            echo "using max polynomial order instantiate $PROJECT_MAX_ORDER..."
@@ -305,6 +326,20 @@ if [ "X${_WANT_CLING}" = "Xyes" ]; then
     echo "set(FEELPP_ENABLE_CLING ON CACHE PATH \"enable cling \" FORCE)" >> cmake.configure
 else
     echo "set(FEELPP_ENABLE_CLING OFF CACHE PATH \"disable cling \" FORCE)" >> cmake.configure
+fi
+
+# TOOLBOXES
+if [ "X${_WANT_TOOLBOXES}" = "Xyes" ]; then
+    echo "set(FEELPP_ENABLE_TOOLBOXES ON CACHE PATH \"enable Feel++ toolboxes \" FORCE)" >> cmake.configure
+else
+    echo "set(FEELPP_ENABLE_TOOLBOXES OFF CACHE PATH \"disable Feel++ toolboxes \" FORCE)" >> cmake.configure
+fi
+
+# MOR
+if [ "X${_WANT_MOR}" = "Xyes" ]; then
+    echo "set(FEELPP_ENABLE_MOR ON CACHE PATH \"enable Feel++ mor \" FORCE)" >> cmake.configure
+else
+    echo "set(FEELPP_ENABLE_MOR OFF CACHE PATH \"disable Feel++ mor \" FORCE)" >> cmake.configure
 fi
 
 if [ "X${CXXFLAGS}" != "X" ]; then

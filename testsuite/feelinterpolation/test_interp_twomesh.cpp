@@ -1,7 +1,7 @@
 
 #if 1
 #define BOOST_TEST_MODULE interp_twomesh tests
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #endif
 
 #include <feel/options.hpp>

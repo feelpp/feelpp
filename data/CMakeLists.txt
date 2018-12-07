@@ -23,52 +23,78 @@
 #
 add_custom_target(feelpp_mesh_data ALL)
 
+set( MESHES
+geo/Box_with_a_sphere.geo
+geo/Box_with_a_sphere.mesh
+geo/Cylref.geo
+geo/Cylref.med
+geo/Cylref.mesh
+geo/ReferenceTriangle.geo
+geo/aneurism/aneurysm.geo
+geo/aneurism/aneurysm.stl
+geo/aorta/.gitignore
+geo/aorta/aorta2.stl
+geo/aorta/aorta_centerlines.geo
+geo/bean.geo
+geo/cantilever.geo
+geo/fda/fda-2d.geo
+geo/fda/fda_Re500_coarse.geo
+geo/fda/fda_Re500_fine.geo
+geo/feelpp/feel.geo
+geo/feelpp/feel2d-ns.geo
+geo/feelpp/feel3d-ns.geo
+geo/feelpp/feel3d.geo
+geo/geom3D_conductor.geo
+geo/life.geo
+geo/lncmi_bitter/BE-02-01M.stp
+geo/lncmi_bitter/bitter_stl_be02-adapted.msh
+geo/lncmi_bitter/bitter_stl_be02.geo
+geo/lncmi_bitter/bitter_stl_be02.msh
+geo/lncmi_bitter/bitter_stl_be02_2.msh
+geo/magnetostatic/torus3d.geo
+geo/magnetostatic/torus3d_quart.geo
+geo/magnetostatic/torus3d_quart_fer.geo
+geo/magnetostatic/torusaxi.geo
+geo/magnetostatic/torusaxi_quart_fer.geo
+geo/marche.geo
+geo/one-elt-meshes-2d/one-elt-real-homo.msh
+geo/one-elt-meshes-2d/one-elt-real-rot1.msh
+geo/one-elt-meshes-2d/one-elt-real-rot2.msh
+geo/one-elt-meshes-2d/one-elt-ref.msh
+geo/one-elt-meshes-2d/two_elements_mesh.msh
+geo/one-elt-meshes-3d/one-elt-real-homo-3d.msh
+geo/one-elt-meshes-3d/one-elt-real-rotx.msh
+geo/one-elt-meshes-3d/one-elt-real-roty.msh
+geo/one-elt-meshes-3d/one-elt-real-rotz.msh
+geo/one-elt-meshes-3d/one-elt-ref-3d.msh
+geo/operatorlagrangep1/hypercube-2d-lagrange-order2.msh
+geo/operatorlagrangep1/simplex-2d-lagrange-order2.msh
+geo/operatorlagrangep1/simplex-3d-lagrange-order2.msh
+geo/pelvis/pelvis.geo
+geo/pelvis/pelvis.stl
+geo/primitives/cylinder.geo
+geo/primitives/rectangle.geo
+geo/primitives/torus.geo
+geo/steps/step-elmann-2009.geo
+geo/tripod.geo
+geo/tripod.med
+geo/tripod.mesh
+)
+
+install( FILES ${MESHES} DESTINATION share/feelpp/feel/geo )
+
 if (EXISTS $ENV{HOME})
   # create $ENV{HOME}/feel/geo if it does not exist already: this is the geometry
   # files repository
   file(MAKE_DIRECTORY $ENV{HOME}/feel/geo)
-
-  message(STATUS "Copying geo/msh files to $ENV{HOME}/feel/geo")
-
-  foreach(exp "medit/*.geo" "medit/*.mesh" "gmsh/*.geo" "gmsh/*.stl" "gmsh/feelpp/feel.geo" )
-    FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/${exp}")
-    foreach(file ${files})
-      get_filename_component(filename ${file} NAME )
-      message(STATUS ${filename})
-
-      # Create a custom target so the geo files can be copied with make
-      add_custom_target(copy_home_mesh_data_${filename})
-      add_custom_command(TARGET copy_home_mesh_data_${filename}
-        COMMAND ${CMAKE_COMMAND} -E copy ${file} $ENV{HOME}/feel/geo )
-      add_dependencies(feelpp_mesh_data copy_home_mesh_data_${filename} )
-
-      # also copies the files by default
-      configure_file(${file} $ENV{HOME}/feel/geo/${filename} COPYONLY)
-    endforeach()
-  endforeach()
-endif(EXISTS $ENV{HOME})
-
+  message(STATUS "Copying geo/msh files to $ENV{HOME}/geo")
+  install( FILES ${MESHES} DESTINATION $ENV{HOME}/feel/geo) 
+endif()
 if (DEFINED ENV{FEELPP_WORKDIR})
   if (NOT EXISTS $ENV{FEELPP_WORKDIR})
     file(MAKE_DIRECTORY $ENV{FEELPP_WORKDIR}/geo)
   endif(NOT EXISTS $ENV{FEELPP_WORKDIR})
-
+  
   message(STATUS "Copying geo/msh files to FEELPP_WORKDIR=$ENV{FEELPP_WORKDIR}/geo")
-
-  foreach(exp "med/*.geo" "med/*.med" "medit/*.geo" "medit/*.mesh" "gmsh/*.geo" "gmsh/*.stl" "gmsh/feelpp/feel.geo" )
-    FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/${exp}")
-    foreach(file ${files})
-      get_filename_component(filename ${file} NAME )
-      message(STATUS ${filename})
-
-      # Create a custom target so the geo files can be copied with make
-      add_custom_target(copy_workdir_mesh_data_${filename})
-      add_custom_command(TARGET copy_workdir_mesh_data_${filename}
-          COMMAND ${CMAKE_COMMAND} -E copy  ${file} $ENV{FEELPP_WORKDIR}/geo )
-      add_dependencies(feelpp_mesh_data copy_workdir_mesh_data_${filename} )
-
-      # also copies the files by default
-      configure_file(${file}  $ENV{FEELPP_WORKDIR}/geo/${filename})
-    endforeach()
-  endforeach()
+  install( FILES ${MESHES} DESTINATION $ENV{FEELPP_WORKDIR}/geo) 
 endif (DEFINED ENV{FEELPP_WORKDIR})

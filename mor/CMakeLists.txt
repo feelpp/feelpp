@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-project(MOR)
+project(mor)
 
 
 # with this it is possible to compile applications/MOR from an installed
@@ -35,18 +35,17 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   endif()
 endif()
 
-add_custom_target(MOR)
-set(FEELPP_MOR_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(FEELPP_MOR_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(FEELPP_MOR_SOURCE_DIR ${PROJECT_SOURCE_DIR})
+set(FEELPP_MOR_BINARY_DIR ${PROJECT_BINARY_DIR})
 
 
 include_directories(${FEELPP_MOR_SOURCE_DIR})
 include_directories(${FEELPP_MOR_BINARY_DIR})
 
-OPTION(FEELPP_ENABLE_MOR_ALL "enable all MOR testcase" ON)
+OPTION(FEELPP_ENABLE_MOR_ALL "enable all MOR testcase" OFF)
 
 OPTION(FEELPP_ENABLE_MOR_EADS "enable EADS testcase" ${FEELPP_ENABLE_MOR_ALL})
-OPTION(FEELPP_ENABLE_MOR_HEAT1D "enable HEAT1D testcase" ${FEELPP_ENABLE_MOR_ALL})
+OPTION(FEELPP_ENABLE_MOR_HEAT1D "enable HEAT1D testcase" ON )
 OPTION(FEELPP_ENABLE_MOR_HEAT2D "enable HEAT2D testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_HEAT3D "enable HEAT3D testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_LINEARELASTICITY "enable LINEARELASTICITY testcase" ${FEELPP_ENABLE_MOR_ALL})
@@ -64,8 +63,17 @@ OPTION(FEELPP_ENABLE_MOR_THERMALFIN "enable ThermalFin testcases" ${FEELPP_ENABL
 OPTION(FEELPP_ENABLE_MOR_EEG "enable EEG testcase" OFF)
 OPTION(FEELPP_ENABLE_MOR_CONVECTION "enable Convection testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_STOKESDEIM "enable stokes with deim testcase" ${FEELPP_ENABLE_MOR_ALL})
+OPTION(FEELPP_ENABLE_MOR_THERMOELECTRIC "enable thermoelectric testcase" ${FEELPP_ENABLE_MOR_ALL})
+OPTION(FEELPP_ENABLE_MOR_BIOTSAVART "enable biosavart testcase" ${FEELPP_ENABLE_MOR_ALL})
 
 set(FEELPP_MOR_LIBRARIES)
+
+INCLUDE(CTest)
+ENABLE_TESTING()
+
+add_subdirectory(onlinerun)
+
+
 IF ( FEELPP_ENABLE_MOR_EADS )
   #add_subdirectory(eads)
 ENDIF()
@@ -84,10 +92,15 @@ IF ( FEELPP_ENABLE_MOR_HEAT1D )
 ENDIF()
 
 if ( FEELPP_ENABLE_MOR_LINEARELASTICITY )
-    add_subdirectory(linearelasticity3d)
+  add_subdirectory(linearelasticity3d)
 endif()
-add_subdirectory(thermalbuilding)
-add_subdirectory(opusheat)
+
+if ( FEELPP_ENABLE_MOR_THERMALBUILDING )
+  add_subdirectory(thermalbuilding)
+endif()
+if ( FEELPP_ENABLE_MOR_OPUSHEAT )
+  add_subdirectory(opusheat)
+endif()
 
 IF ( FEELPP_ENABLE_MOR_RBHEAT )
   #add_subdirectory(Rbheat)
@@ -150,11 +163,21 @@ ENDIF()
 
 
 
-add_subdirectory(onlinerun)
-add_subdirectory(minimal)
-add_subdirectory(thermoelectric)
-add_subdirectory(biotsavart)
+if ( FEELPP_ENABLE_MOR_MINIMAL )
+  add_subdirectory(minimal)
+endif()
+if ( FEELPP_ENABLE_MOR_THERMOELECTRIC )
+  add_subdirectory(thermoelectric)
+endif()
+if ( FEELPP_ENABLE_MOR_BIOTSAVART )
+  add_subdirectory(biotsavart)
+endif()
 
-
+add_subdirectory(pyfeelpp-mor)
 
 include(${FEELPP_MOR_SOURCE_DIR}/cmake/feelpp.mor.cmake)
+install(EXPORT feelpp-mor-export-targets
+  FILE feelpp-mor-export-targets.cmake
+  NAMESPACE Feelpp::
+  DESTINATION share/feelpp/mor/cmake/
+  )

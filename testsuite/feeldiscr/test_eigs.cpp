@@ -27,7 +27,7 @@
 */
 
 #define BOOST_TEST_MODULE test_slepc
-#include <testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <fstream>
 
