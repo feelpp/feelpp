@@ -52,7 +52,7 @@
 #if defined( FEELPP_HAS_GMSH_H )
 class GModel;
 class Msg;
-#include <GModel.h>
+#include <gmsh/GModel.h>
 #endif
 
 // there is a macro called sign in Gmsh that conflicts with

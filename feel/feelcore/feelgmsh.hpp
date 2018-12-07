@@ -35,8 +35,8 @@
 #define HAVE_DLOPEN_WAS_DEFINED 1
 #undef HAVE_DLOPEN
 #endif
-#include <Gmsh.h>
-#include <GmshVersion.h>
+#include <gmsh/Gmsh.h>
+#include <gmsh/GmshVersion.h>
 #if !defined( HAVE_DLOPEN )
 #if defined( HAVE_DLOPEN_WAS_DEFINED )
 #define HAVE_DLOPEN 1

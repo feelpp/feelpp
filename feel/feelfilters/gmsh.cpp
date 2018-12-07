@@ -57,13 +57,13 @@
 
 #if defined( FEELPP_HAS_GMSH_H )
 
-#include <GmshConfig.h>
-#include <Gmsh.h>
-#include <GModel.h>
-//#include <Geo.h>
-#include <OpenFile.h>
-#include <GmshDefines.h>
-#include <Context.h>
+#include <gmsh/GmshConfig.h>
+#include <gmsh/Gmsh.h>
+#include <gmsh/GModel.h>
+//#include <gmsh/Geo.h>
+#include <gmsh/OpenFile.h>
+#include <gmsh/GmshDefines.h>
+#include <gmsh/Context.h>
 
 
 int PartitionMesh( GModel *const model, meshPartitionOptions &options );

@@ -59,15 +59,15 @@
 #include <fstream>
 
 #if defined( FEELPP_HAS_GMSH_H )
-#include <Gmsh.h>
-#include <GModel.h>
-#include <Context.h>
-#include <MElement.h>
-#include <OpenFile.h>
-#include <StringUtils.h>
-#include <Field.h>
-#include <PView.h>
-#include <PViewData.h>
+#include <gmsh/Gmsh.h>
+#include <gmsh/GModel.h>
+#include <gmsh/Context.h>
+#include <gmsh/MElement.h>
+#include <gmsh/OpenFile.h>
+#include <gmsh/StringUtils.h>
+#include <gmsh/Field.h>
+#include <gmsh/PView.h>
+#include <gmsh/PViewData.h>
 #endif
 
 namespace Feel

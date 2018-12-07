@@ -62,7 +62,7 @@ extern "C"
 #include <petscsys.h>
 #endif
 #if defined( FEELPP_HAS_GMSH_H )
-#include <Gmsh.h>
+#include <gmsh/Gmsh.h>
 #endif
 
 #include <feel/feelcore/environment.hpp>
