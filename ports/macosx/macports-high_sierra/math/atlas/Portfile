@@ -51,10 +51,10 @@ checksums           atlas${version}.tar.bz2 \
 
 worksrcdir          ATLAS
 
-default_variants +mpclang38
+default_variants +clang60
 
 
-variant gcc5        conflicts   gcc49 mpclang38 perf\
+variant gcc5        conflicts   gcc49 clang60 perf\
                     description {build using macports-gcc-5} {
 
     configure.compiler      macports-gcc-5
@@ -67,7 +67,7 @@ if {[variant_isset gcc5]} {
 
 }
 
-variant gcc49       conflicts   gcc5 mpclang38 perf\
+variant gcc49       conflicts   gcc5 clang60 perf\
                     description {build using macports-gcc-4.9} {
 
     configure.compiler      macports-gcc-4.9
@@ -80,15 +80,15 @@ if {[variant_isset gcc49]} {
 
 }
 
-variant mpclang38   conflicts   gcc49 gcc5 perf\
-                    description {use mp-clang-3.8 and gfortran} { 
+variant clang60   conflicts   gcc49 gcc5 perf\
+                    description {use clang-6.0 and gfortran} { 
 
-    configure.compiler      macports-clang-3.8
+    configure.compiler      macports-clang-6.0
 }
 
-if {[variant_isset mpclang38]} {
+if {[variant_isset clang60]} {
 
-    set use_clang   "38"
+    set use_clang   "60"
     set gcc_version 0
 }
 
@@ -155,7 +155,7 @@ if {(${os.major} > 10 && \
 # If none of the above variants is chosen, make gcc47 the default for
 # up to SSE4.2 (Core i1) capable processors, and XCode-clang for newer
 
-if {![variant_isset gcc49] && ![variant_isset gcc5] && ![variant_isset mpclang38]} {
+if {![variant_isset gcc49] && ![variant_isset gcc5] && ![variant_isset clang60]} {
 
     if {${has_avx} == "no"} {
     
@@ -172,8 +172,8 @@ if {![variant_isset gcc49] && ![variant_isset gcc5] && ![variant_isset mpclang38
             set use_clang       "XCode"
         } else {
             # Otherwise use Macports clang 3.7
-            default_variants    +mpclang38
-            set use_clang       "38"
+            default_variants    +mpclang60
+            set use_clang       "60"
         }
     }
 }

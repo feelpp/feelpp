@@ -134,6 +134,7 @@ variant superlu description {Build with SuperLU interface for a serial direct so
 variant mumps description {Build with MUMPS interface for a parallel direct solver} requires parmetis {
     depends_lib-append    port:mumps
     configure.args-append --with-scalapack-dir=${prefix} \
+                          --with-ptscotch-dir=${prefix} \
                           --with-mumps-dir=${prefix}
     mpi.enforce_variant   mumps
 }
