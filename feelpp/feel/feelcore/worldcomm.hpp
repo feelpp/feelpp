@@ -81,7 +81,7 @@ public:
     WorldComm( super const& );
 
     //! build a sub WorldComm from a \c color
-    WorldComm( int _color );
+    explicit WorldComm( int _color );
 
     //! Creates a sub WorldComm from a set of colors
     WorldComm( std::vector<int> const& _colorWorld );
