@@ -21,17 +21,51 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-add_library( feelpp_toolbox_hdg INTERFACE )
-add_library(Feelpp::feelpp_toolbox_hdg ALIAS feelpp_toolbox_hdg )  # to match exported target
-target_include_directories(feelpp_toolbox_hdg INTERFACE
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )
-install(TARGETS feelpp_toolbox_hdg EXPORT feelpp-toolboxes-targets
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
-  )
+
+foreach(_DIM 2 3)
+  math(EXPR _P_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}')
+  feelpp_max( MAX_ORDER 1 ${_P_ORDER})
+  message(STATUS "[feelpp] MIXEDPOISSON ${_DIM}D PNG1 N=1..${MAX_ORDER}")
+  foreach( _P_ORDER RANGE 1 ${MAX_ORDER} )
+    genLibMixedPoisson(
+      DIM     ${_DIM}
+      P_ORDER ${_P_ORDER}
+      GEO_ORDER 1
+      )
+    set(FEELPP_MODELS_LIBRARIES_MIXEDPOISSON ${FEELPP_MODELS_LIBRARIES_MIXEDPOISSON} ${MIXEDPOISSON_LIB_NAME} )
+  endforeach()
+endforeach()
+
+add_library(feelpp_toolbox_hdg_mixedpoisson_lib SHARED libmixedpoisson.cpp )
+add_library(feelpp::feelpp_toolbox_hdg_mixedpoisson_lib ALIAS feelpp_toolbox_hdg_mixedpoisson_lib )
+set_target_properties(feelpp_toolbox_hdg_mixedpoisson_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_hdg_mixedpoisson_lib" )
+target_link_libraries(feelpp_toolbox_hdg_mixedpoisson_lib ${FEELPP_MODELS_LIBRARIES_MIXEDPOISSON})
+set_property(TARGET feelpp_toolbox_hdg_mixedpoisson_lib PROPERTY MACOSX_RPATH ON)
+install(TARGETS feelpp_toolbox_hdg_mixedpoisson_lib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
+
+foreach(_DIM 2 3)
+  math(EXPR _P_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}')
+  feelpp_max( MAX_ORDER 1 ${_P_ORDER})
+  message(STATUS "[feelpp] MIXEDELASTICITY ${_DIM}D PNG1 N=1..${MAX_ORDER}")
+  foreach( _P_ORDER RANGE 1 ${MAX_ORDER} )
+    genLibMixedElasticity(
+      DIM     ${_DIM}
+      P_ORDER ${_P_ORDER}
+      GEO_ORDER 1
+      )
+    set(FEELPP_MODELS_LIBRARIES_MIXEDELASTICITY ${FEELPP_MODELS_LIBRARIES_MIXEDELASTICITY} ${MIXEDELASTICITY_LIB_NAME} )
+  endforeach()
+endforeach()
+
+message(STATUS "lib poisson : '${FEELPP_MODELS_LIBRARIES_MIXEDPOISSON}")
+message(STATUS "lib elasticity : '${FEELPP_MODELS_LIBRARIES_MIXEDELASTICITY}")
+
+add_library(feelpp_toolbox_hdg_mixedelasticity_lib SHARED libmixedelasticity.cpp )
+add_library(feelpp::feelpp_toolbox_hdg_mixedelasticity_lib ALIAS feelpp_toolbox_hdg_mixedelasticity_lib )
+set_target_properties(feelpp_toolbox_hdg_mixedelasticity_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_hdg_mixedelasticity_lib" )
+target_link_libraries(feelpp_toolbox_hdg_mixedelasticity_lib ${FEELPP_MODELS_LIBRARIES_MIXEDELASTICITY})
+set_property(TARGET feelpp_toolbox_hdg_mixedelasticity_lib PROPERTY MACOSX_RPATH ON)
+install(TARGETS feelpp_toolbox_hdg_mixedelasticity_lib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/hdg COMPONENT Devel)
