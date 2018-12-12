@@ -1,7 +1,7 @@
 
 # geo order 1
 foreach( _DIM 2 3)
-  math(EXPR _D_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}-1')
+  math(EXPR _D_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}-1")
   feelpp_max( MAX_ORDER 1 ${_D_ORDER})
   message(STATUS "[feelpp] SOLID ${_DIM}D PNG1 N=1..${MAX_ORDER}")
   foreach( _DISP_ORDER RANGE 1 ${MAX_ORDER} )
@@ -17,7 +17,7 @@ endforeach()
 
 # iso-parametric
 foreach( _DIM 2 3)
-  math(EXPR _D_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}-1')
+  math(EXPR _D_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}-1")
   feelpp_min( MAX_ORDER ${FEELPP_MESH_MAX_ORDER} ${_D_ORDER})
   message(STATUS "[feelpp] SOLID ${_DIM}D PNGN N=2..${MAX_ORDER}")
   foreach( _DISP_ORDER RANGE 2 ${MAX_ORDER} )
