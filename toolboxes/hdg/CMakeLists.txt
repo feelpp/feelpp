@@ -27,48 +27,28 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endif()
 
-foreach(D 2 3)
-    foreach(P RANGE 1 3 0) #3 
-        feelpp_add_application( mixed-poisson-model_${D}DP${P}
-                                SRCS mixedpoisson_main.cpp
-                                LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib
-                                DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P}
-                                INSTALL )
-  endforeach()
-endforeach()
+feelpp_add_application( mixed-poisson-model
+  SRCS mixedpoisson_main.cpp
+  LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib
+  INSTALL )
 
-foreach(D 3)
-  foreach(P RANGE 1 3 0) #3 
-	foreach (N 1)
-	  feelpp_add_application( mixed-elasticity-model_${D}DP${P}_G${N} 
-							SRCS mixedelasticity_main.cpp 
-							DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N}
-							INCLUDE_IN_ALL
-							LINK_LIBRARIES feelpp_toolbox_hdg_mixedelasticity_lib
-                            INSTALL )
-	endforeach()
-  endforeach()
-endforeach()
+feelpp_add_application( mixed-elasticity-model
+  SRCS mixedelasticity_main.cpp
+  INCLUDE_IN_ALL
+  LINK_LIBRARIES feelpp_toolbox_hdg_mixedelasticity_lib
+  INSTALL )
 
-foreach(D 2 3)
-  foreach(P RANGE 1 3) #3 
-    feelpp_add_application( thermoelectricHDG_${D}DP${P}
-                            SRCS thermoelectric.hpp thermoelectric_main.cpp
-                            DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P}
-                            LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib
-                            INSTALL
-                            )
-  endforeach()
-endforeach()
+feelpp_add_application( thermoelectricHDG
+  SRCS thermoelectric.hpp thermoelectric_main.cpp
+  LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib
+  INSTALL
+  )
 
-foreach(D 3)
-  foreach(P RANGE 1 1 1) #3 
-    feelpp_add_application( poroelasticHDG_${D}DP${P}
-                            SRCS poroelastic_main.cpp
-                            DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P}
-                            LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib feelpp_toolbox_hdg_mixedelasticity_lib
-                            INSTALL
-                            )
+feelpp_add_application( poroelasticHDG
+  SRCS poroelastic_main.cpp
+  LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib feelpp_toolbox_hdg_mixedelasticity_lib
+  INSTALL
+  )
   endforeach()
 endforeach()
 
