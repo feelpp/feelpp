@@ -5,7 +5,7 @@ foreach(_DIM 2 3)
   message(STATUS "[feelpp] HEATFLUID ${_DIM}D PNPN-1P1G1 N=2..${MAX_ORDER}")
   message(STATUS "[feelpp] HEATFLUID ${_DIM}D PNPN-1PNG1 N=2..${MAX_ORDER}")
   foreach( _U_ORDER RANGE 2 ${MAX_ORDER} )
-    math(EXPR _P_ORDER '${_U_ORDER}-1')
+    math(EXPR _P_ORDER "${_U_ORDER}-1")
     genLibHeatFluid(
       DIM     ${_DIM}
       T_ORDER 1
