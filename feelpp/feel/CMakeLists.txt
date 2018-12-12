@@ -185,7 +185,7 @@ if ( GMSH_FOUND )
   target_include_directories( feelpp
     PUBLIC
     $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/feelpp/contrib/gmsh>
-    $<INSTALL_INTERFACE:include/feelpp> )
+    $<INSTALL_INTERFACE:include/feelpp/gmsh> )
 endif( GMSH_FOUND )
 
 # Paraview
