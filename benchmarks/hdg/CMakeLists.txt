@@ -165,36 +165,20 @@ endforeach() # dim
 
 ###################################################
 
-foreach(D RANGE 2 3 1)
-  foreach(P RANGE 1 3 1) #3
-    foreach(N 1)#RANGE 1 2 1)
-      foreach(E 4)#RANGE 2 4 1)
-        feelpp_add_application( cvg_mixedpoisson_${D}DP${P}G${N}E${E}
-                                SRCS cvg_mixedpoisson_main.cpp cvg_mixedpoisson.hpp
-                                DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_EXP_ORDER=${E} USE_SAME_MAT=1
-                                # INCLUDE_IN_ALL
-                                LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib )
-      endforeach()
-    endforeach() 
-  endforeach()
-endforeach()
+feelpp_add_application( cvg_mixedpoisson
+  SRCS cvg_mixedpoisson_main.cpp cvg_mixedpoisson.hpp
+  DEFS USE_SAME_MAT=1
+  # INCLUDE_IN_ALL
+  LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib )
 
 
 ###################################################
 
-foreach(D RANGE 2 3 1)
-  foreach(P RANGE 1 3 1) #3
-    foreach(N 1)#RANGE 1 2 1)
-      foreach(E 4 )
-        feelpp_add_application( cvg_mixedelasticity_${D}DP${P}G${N}E${E}
-                                SRCS cvg_mixedelasticity_main.cpp cvg_mixedelasticity.hpp
-                                DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_EXP_ORDER=${E}
-                                # INCLUDE_IN_ALL
-                                LINK_LIBRARIES feelpp_toolbox_hdg_mixedelasticity_lib )
-      endforeach()
-    endforeach() 
-  endforeach()
-endforeach()
+feelpp_add_application( cvg_mixedelasticity
+  SRCS cvg_mixedelasticity_main.cpp cvg_mixedelasticity.hpp
+  DEFS
+  # INCLUDE_IN_ALL
+  LINK_LIBRARIES feelpp_toolbox_hdg_mixedelasticity_lib )
 
 feelpp_add_testcase(cvg-mp-tests)
 feelpp_add_testcase(cvg-el-tests)
