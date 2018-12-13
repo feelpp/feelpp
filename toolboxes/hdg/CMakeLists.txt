@@ -49,8 +49,8 @@ feelpp_add_application( hdg_poroelastic
   LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib feelpp_toolbox_hdg_mixedelasticity_lib
   INSTALL
   )
-  endforeach()
-endforeach()
+#  endforeach()
+#endforeach()
 
 feelpp_add_testcase(bitter CATEGORY hdg)
 #feelpp_add_testcase(eye2brain_level1 CATEGORY hdg)
