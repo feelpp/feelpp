@@ -27,24 +27,24 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endif()
 
-feelpp_add_application( mixed-poisson-model
+feelpp_add_application( hdg_poisson
   SRCS mixedpoisson_main.cpp
   LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib
   INSTALL )
 
-feelpp_add_application( mixed-elasticity-model
+feelpp_add_application( hdg_elasticity
   SRCS mixedelasticity_main.cpp
   INCLUDE_IN_ALL
   LINK_LIBRARIES feelpp_toolbox_hdg_mixedelasticity_lib
   INSTALL )
 
-feelpp_add_application( thermoelectricHDG
+feelpp_add_application( hdg_thermoelectric
   SRCS thermoelectric.hpp thermoelectric_main.cpp
   LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib
   INSTALL
   )
 
-feelpp_add_application( poroelasticHDG
+feelpp_add_application( hdg_poroelastic
   SRCS poroelastic_main.cpp
   LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib feelpp_toolbox_hdg_mixedelasticity_lib
   INSTALL
