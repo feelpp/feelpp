@@ -1,8 +1,3 @@
-# - Find Feel
-if (POLICY CMP0045)
-    # error on non-existent target in get_target_property
-    cmake_policy(SET CMP0045 OLD)
-endif()
 INCLUDE(feelpp.precompiled.headers)
 INCLUDE(ParseArguments)
 
