@@ -383,7 +383,7 @@ FSI<FluidType,SolidType>::transfertStress()
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertStress", "start",
                                                this->worldComm(),this->verboseAllProc());
 
-    M_fluidModel->updateNormalStressOnReferenceMesh(M_fluidModel->markersNameMovingBoundary());
+    M_fluidModel->updateNormalStressOnReferenceMesh();
 
     std::vector<int> saveActivities_stress = M_fluidModel->fieldNormalStressRefMesh().map().worldComm().activityOnWorld();
     if (M_fluidModel->worldComm().globalSize()>1  && !M_fluidModel->functionSpace()->hasEntriesForAllSpaces())

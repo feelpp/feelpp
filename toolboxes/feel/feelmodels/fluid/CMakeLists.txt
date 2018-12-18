@@ -4,7 +4,7 @@ foreach( _DIM 2 3)
   feelpp_max( MAX_ORDER 2 ${FEELPP_INSTANTIATION_ORDER_MAX})
   message(STATUS "[feelpp] FLUID ${_DIM}D PNPN-1G1 N=2..${MAX_ORDER}")
   foreach( _U_ORDER RANGE 2 ${MAX_ORDER} )
-    math(EXPR _P_ORDER '${_U_ORDER}-1')
+    math(EXPR _P_ORDER "${_U_ORDER}-1")
     genLibFluidMechanics(
       DIM ${_DIM}
       GEO_ORDER 1
@@ -21,7 +21,7 @@ foreach( _DIM 2 3)
   feelpp_min( MAX_ORDER ${FEELPP_MESH_MAX_ORDER} ${FEELPP_INSTANTIATION_ORDER_MAX})
   message(STATUS "[feelpp] FLUID ${_DIM}D PN+1PNGN N=2..${MAX_ORDER}")
   foreach( _P_ORDER RANGE 2 ${MAX_ORDER} )
-    math(EXPR _U_ORDER '${_P_ORDER}+1')
+    math(EXPR _U_ORDER "${_P_ORDER}+1")
     genLibFluidMechanics(
       DIM ${_DIM}
       GEO_ORDER ${_P_ORDER}

@@ -239,6 +239,8 @@ public:
 	virtual void assembleCstPart();
     virtual void assembleNonCstPart();
     void copyCstPart();
+    void setCstMatrixToZero();
+    void setVectorToZero();
 
     void assembleRHS();
     template<typename ExprT> void updateConductivityTerm( Expr<ExprT> expr, std::string marker = "");
@@ -588,7 +590,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleAll()
 template<int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::copyCstPart()
 {
-    M_F->zero();
+    this->setVectorToZero();
 
 #ifndef USE_SAME_MAT
 	M_A_cst->close();
@@ -597,6 +599,18 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::copyCstPart()
 	// copy constant parts of the matrix
     MatConvert(toPETSc(M_A_cst->getSparseMatrix())->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A->getSparseMatrix())->mat()));
 #endif
+}
+
+template<int Dim, int Order, int G_Order, int E_Order>
+void MixedPoisson<Dim, Order, G_Order, E_Order>::setCstMatrixToZero()
+{
+    M_A_cst->zero();
+}
+
+template<int Dim, int Order, int G_Order, int E_Order>
+void MixedPoisson<Dim, Order, G_Order, E_Order>::setVectorToZero()
+{
+    M_F->zero();
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -1306,15 +1320,15 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT> expr1, Ex
     // stabilisation parameter
     auto tau_constant = cst(doption(prefixvm(prefix(), "tau_constant")));
 
-    // <j.n,mu>_Gamma_R
-    bbf( 2_c, 0_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=( id(l)*(trans(idt(u))*N()) ));
-    // <tau p, mu>_Gamma_R
-    bbf( 2_c, 1_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
-    // <-tau phat, mu>_Gamma_R
-    bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
+    // // <j.n,mu>_Gamma_R
+    // bbf( 2_c, 0_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+    //                              _expr=( id(l)*(trans(idt(u))*N()) ));
+    // // <tau p, mu>_Gamma_R
+    // bbf( 2_c, 1_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+    //                              _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
+    // // <-tau phat, mu>_Gamma_R
+    // bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+    //                              _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
     // <g_R^1 phat, mu>_Gamma_R
     bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                  _expr=expr1*idt(phat) * id(l) );
