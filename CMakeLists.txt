@@ -41,7 +41,7 @@ endif()
 # CMake 3.5.2 warns about this policy introduced in 3.1
 # Use the old behavior for now to suppress warnings
 # for more info : cmake --help-policy CMP0053
-if ( ${CMAKE_VERSION} VERSION_GREATER 3.1 )
+if ( ${CMAKE_VERSION} VERSION_GREATER 3.1 AND ${CMAKE_VERSION} VERSION_LESS 3.6 )
     message(STATUS "[feelpp] use old policy CMP0053" )
     cmake_policy(SET CMP0053 OLD)
 endif()
@@ -146,7 +146,7 @@ include(ProcessorCount)
 ProcessorCount(NProcs)
 IF(NOT CMAKE_NPROCS)
   ##if(N GREATER 1)
-  math (EXPR NProcs2 '${NProcs}/2')
+  math (EXPR NProcs2 "${NProcs}/2")
   if(NProcs2 EQUAL 0)
     set(NProcs2 1)
   endif()

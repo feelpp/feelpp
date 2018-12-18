@@ -3,7 +3,7 @@ foreach( _DIM 2 3)
   feelpp_max( MAX_ORDER 2 ${FEELPP_INSTANTIATION_ORDER_MAX})
   message(STATUS "[feelpp] MULTIFLUID ${_DIM}D PN+1PNG1_PKG1 N=1..${MAX_ORDER} K=1..${MAX_ORDER}")
   foreach( _FLUID_U_ORDER RANGE 2 ${MAX_ORDER} )
-    math(EXPR _FLUID_P_ORDER '${_FLUID_U_ORDER}-1')
+    math(EXPR _FLUID_P_ORDER "${_FLUID_U_ORDER}-1")
     foreach( _LS_ORDER RANGE 1 ${MAX_ORDER} )
         genLibMultifluid(
             DIM ${_DIM}
