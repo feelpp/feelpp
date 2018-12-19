@@ -50,11 +50,11 @@ feelpp_add_application( hdg_poroelastic
   INSTALL
   )
 
-feelpp_add_application(
-  hdg_thermoelectricelasticity
-  SRCS thermoelectric-elasticity.hpp thermoelectric-elasticity_main.cpp
-  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
-  )
+#feelpp_add_application(
+#  hdg_thermoelectricelasticity
+#  SRCS thermoelectric-elasticity.hpp thermoelectric-elasticity_main.cpp
+#  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
+#  )
 
 feelpp_add_testcase(bitter CATEGORY hdg)
 #feelpp_add_testcase(eye2brain_level1 CATEGORY hdg)
