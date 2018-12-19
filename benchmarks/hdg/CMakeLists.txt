@@ -169,20 +169,20 @@ include_directories(${CMAKE_SOURCE_DIR}/toolboxes ${CMAKE_BINARY_DIR}/toolboxes)
 
 ###################################################
 
-feelpp_add_application( cvg_mixedpoisson
+feelpp_add_application( hdg_poisson_cvg
   SRCS cvg_mixedpoisson_main.cpp cvg_mixedpoisson.hpp
   DEFS USE_SAME_MAT=1
   # INCLUDE_IN_ALL
-  LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib )
+  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib )
 
 
 ###################################################
 
-feelpp_add_application( cvg_mixedelasticity
+feelpp_add_application( hdg_elasticity_cvg
   SRCS cvg_mixedelasticity_main.cpp cvg_mixedelasticity.hpp
   DEFS
   # INCLUDE_IN_ALL
-  LINK_LIBRARIES feelpp_toolbox_hdg_mixedelasticity_lib )
+  LINK_LIBRARIES feelpp_toolbox_hdg_elasticity_lib )
 
 feelpp_add_testcase(cvg-mp-tests)
 feelpp_add_testcase(cvg-el-tests)

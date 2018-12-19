@@ -29,25 +29,31 @@ endif()
 
 feelpp_add_application( hdg_poisson
   SRCS mixedpoisson_main.cpp
-  LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib
+  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
   INSTALL )
 
 feelpp_add_application( hdg_elasticity
   SRCS mixedelasticity_main.cpp
   INCLUDE_IN_ALL
-  LINK_LIBRARIES feelpp_toolbox_hdg_mixedelasticity_lib
+  LINK_LIBRARIES feelpp_toolbox_hdg_elasticity_lib
   INSTALL )
 
 feelpp_add_application( hdg_thermoelectric
   SRCS thermoelectric.hpp thermoelectric_main.cpp
-  LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib
+  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
   INSTALL
   )
 
 feelpp_add_application( hdg_poroelastic
   SRCS poroelastic_main.cpp
-  LINK_LIBRARIES feelpp_toolbox_hdg_mixedpoisson_lib feelpp_toolbox_hdg_mixedelasticity_lib
+  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
   INSTALL
+  )
+
+feelpp_add_application(
+  hdg_thermoelectricelasticity
+  SRCS thermoelectric-elasticity.hpp thermoelectric-elasticity_main.cpp
+  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
   )
 
 feelpp_add_testcase(bitter CATEGORY hdg)
