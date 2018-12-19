@@ -7,13 +7,13 @@ namespace FeelModels
 
 MIXEDELASTICITY_CLASS_TEMPLATE_DECLARATIONS
 MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::MixedElasticity( std::string const& prefix,
-                                                                worldcomm_ptr_t const& worldComm,
-                                                                std::string const& subPrefix,
-                                                                ModelBaseRepository const& modelRep )
+                                                      worldcomm_ptr_t const& worldComm,
+                                                      std::string const& subPrefix,
+                                                      ModelBaseRepository const& modelRep )
     : super_type( prefix, worldComm, subPrefix, modelRep )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedElasticity","constructor", "start",
-            this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"MixedElasticity.info") );
 
@@ -27,8 +27,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::MixedElasticity( std::string const& prefix,
         	M_backend = backend( _name="sc", _rebuild=true);
     	else
         	M_backend = backend( _name=prefixvm(prefix,"sc"), _rebuild=true);
-	} 
-	else	
+	}
+	else
 	{
     	if ( M_prefix.empty())
         	M_backend = backend( _rebuild=true);
@@ -66,7 +66,7 @@ void MixedElasticity<Dim,Order,G_Order, E_Order>::setIBCList( std::vector<std::s
 MIXEDELASTICITY_CLASS_TEMPLATE_DECLARATIONS
 void MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
-        // start or restart time step scheme
+    // start or restart time step scheme
     if (!this->doRestart())
     {
         // start time step
@@ -126,19 +126,19 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::createTimeDiscretization()
     auto dt = this->timeStep();
 
     if ( myFileFormat == "binary" )
-         suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
-	
+        suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+
 	M_nm_mixedelasticity = newmark( _vm=Environment::vm(), _space=M_Wh,
-                                      _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"newmark"+suffixName)),
-                                      _prefix="",
-                                      _initial_time=this->timeInitial(),
-									  _final_time=this->timeFinal(),
-									  _time_step=this->timeStep(),
-                                      _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
-                                      _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+                                    _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"newmark"+suffixName)),
+                                    _prefix="",
+                                    _initial_time=this->timeInitial(),
+                                    _final_time=this->timeFinal(),
+                                    _time_step=this->timeStep(),
+                                    _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
+                                    _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
     M_nm_mixedelasticity->setfileFormat( myFileFormat );
     M_nm_mixedelasticity->setPathSave( (fs::path(this->rootRepository()) /
-                                          fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
+                                        fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
 
 
 
@@ -150,8 +150,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::createTimeDiscretization()
 MIXEDELASTICITY_CLASS_TEMPLATE_DECLARATIONS
 typename MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::self_ptrtype
 MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::New( std::string const& prefix,
-                                                 worldcomm_ptr_t const& worldComm, std::string const& subPrefix,
-                                                 ModelBaseRepository const& modelRep )
+                                          worldcomm_ptr_t const& worldComm, std::string const& subPrefix,
+                                          ModelBaseRepository const& modelRep )
 {
     return std::make_shared<self_type> ( prefix,worldComm,subPrefix,modelRep );
 }
@@ -178,7 +178,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::init( mesh_ptrtype mesh, mesh_ptrtype meshV
 	if (!isStationary())
 	{
 		tic();
-		this->createTimeDiscretization();	
+		this->createTimeDiscretization();
         this->initTimeStep();
 		toc("time_discretization");
 	}
@@ -187,11 +187,11 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::init( mesh_ptrtype mesh, mesh_ptrtype meshV
     this->initExporter(meshVisu);
     M_timers["exporter"].push_back(toc("initExporter"));
 
-    	
+
     tic();
     this->assemble();
     M_timers["asbMatrix"].push_back(toc("assembleMatrix"));
-	
+
 
 }
 
@@ -207,9 +207,9 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initModel()
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Dirichlet" );
-       
- 
-	if ( itType != mapField.end() )
+
+
+        if ( itType != mapField.end() )
         {
             cout << "Dirichlet: ";
             for ( auto const& exAtMarker : (*itType).second )
@@ -222,7 +222,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initModel()
             }
             cout << std::endl;
         }
-        
+
         itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
         {
@@ -237,7 +237,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initModel()
             }
             cout << std::endl;
         }
-        
+
         itType = mapField.find( "Neumann_scalar" );
         if ( itType != mapField.end() )
         {
@@ -252,7 +252,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initModel()
             }
             cout << std::endl;
         }
-	 
+
         itType = mapField.find( "Neumann_exact" );
         if ( itType != mapField.end() )
         {
@@ -289,7 +289,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initModel()
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Dirichlet" );
-        
+
 	    if ( itType != mapField.end() )
         {
             cout << "Dirichlet: ";
@@ -313,7 +313,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initModel()
     itField = M_modelProperties->boundaryConditions().find( "stress");
     if ( itField != M_modelProperties->boundaryConditions().end() )
     {
-        auto mapField = (*itField).second; 
+        auto mapField = (*itField).second;
         auto itType = mapField.find( "Integral" );
 
         if ( itType != mapField.end() )
@@ -331,13 +331,13 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initModel()
             Feel::cout << std::endl;
         }
     }
-    
+
 
     if ( M_IBCList.empty() )
         M_integralCondition = 0;
     else
         M_integralCondition = M_IBCList.size();
-    
+
 
 }
 
@@ -349,13 +349,13 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initSpaces()
 
     // Mh only on the faces whitout integral condition
     auto complement_integral_bdy = complement(faces(M_mesh),[this]( auto const& e ) {
-        for( auto exAtMarker : this->M_IBCList)
-        {
-            if ( e.marker().value() == this->M_mesh->markerName( exAtMarker.marker() ) )
-            return true;
-        }
-        return false; 
-    });
+                                                                for( auto exAtMarker : this->M_IBCList)
+                                                                {
+                                                                    if ( e.marker().value() == this->M_mesh->markerName( exAtMarker.marker() ) )
+                                                                        return true;
+                                                                }
+                                                                return false;
+                                                            });
 
     auto face_mesh = createSubmesh( M_mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
 
@@ -371,8 +371,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initSpaces()
 		ibc_markers.push_back(M_IBCList[i].marker());
 	}
 
-    auto ibc_mesh = createSubmesh( M_mesh, markedfaces(M_mesh, ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );	
-    M_Ch = Pchv<0>( ibc_mesh, true ); 
+    auto ibc_mesh = createSubmesh( M_mesh, markedfaces(M_mesh, ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    M_Ch = Pchv<0>( ibc_mesh, true );
     // M_Ch = Pchv<0>( M_mesh, true );
 
     auto ibcSpaces = std::make_shared<ProductSpace<Ch_ptr_t,true> >( M_integralCondition, M_Ch);

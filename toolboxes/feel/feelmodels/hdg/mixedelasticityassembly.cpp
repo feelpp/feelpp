@@ -17,7 +17,7 @@ void MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleMatrixIBC( int i , std::string
     auto w = M_Wh->element( "w" );
     auto nu = M_Ch->element( "nu" );
     auto uI = M_Ch->element( "uI" );
-   
+
 
     auto H = M_M0h->element( "H" );
 
@@ -45,25 +45,25 @@ void MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleMatrixIBC( int i , std::string
         Feel::cout << "Integral on: " << marker << std::endl;
     }
 
-    
+
     // <lambda, v.n>_Gamma_I
     bbf( 0_c, 3_c, 0, i) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh, marker), _expr=-trans(idt(uI))*(id(v)*N()) );
-    
+
     // <lambda, tau w>_Gamma_I
     bbf( 1_c, 3_c, 1, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr= tau_constant * trans(idt(uI)) * pow(idv(H),M_tau_order)*id(w) );
-    
+
     // <sigma.n, m>_Gamma_I
     bbf( 3_c, 0_c, i, 0 ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr= inner(idt(v)*N(),id(nu)) );
-     
+
 
     // <tau u, m>_Gamma_I
     bbf( 3_c, 1_c, i, 1 ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                        _expr= tau_constant * pow(idv(H),M_tau_order)* inner(idt(u),id(nu)) ),
+                                       _expr= tau_constant * pow(idv(H),M_tau_order)* inner(idt(u),id(nu)) ),
 
-    // -<lambda2, m>_Gamma_I
-    bbf( 3_c, 3_c, i, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                        _expr=-tau_constant * pow(idv(H),M_tau_order) * inner(idt(uI),id(nu)) );
-    
+        // -<lambda2, m>_Gamma_I
+        bbf( 3_c, 3_c, i, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+                                           _expr=-tau_constant * pow(idv(H),M_tau_order) * inner(idt(uI),id(nu)) );
+
 
 
 }
@@ -76,12 +76,12 @@ void MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleRhsIBC( int i, std::string mar
 
     auto exAtMarker = M_IBCList[i];
     auto marker = exAtMarker.marker();
-    
+
     auto g = expr<Dim,1,expr_order>(exAtMarker.expression());
     if ( !this->isStationary() )
         g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
 
-    Feel::cout << "IBC condition: " << g << std::endl; 
+    Feel::cout << "IBC condition: " << g << std::endl;
 
     double meas = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
     Feel::cout << "Measure of the ibc: " << meas << std::endl;
@@ -96,13 +96,13 @@ void MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleRhsIBC( int i, std::string mar
 
 MIXEDELASTICITY_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initExporter( mesh_ptrtype meshVisu ) 
+MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initExporter( mesh_ptrtype meshVisu )
 {
-     std::string geoExportType="static"; //change_coords_only, change, static
-     M_exporter = exporter ( _mesh=meshVisu?meshVisu:this->mesh(),
-                             _name="Export",
-                             _geo=geoExportType,
-         		    		 _path=this->exporterPath() ); 
+    std::string geoExportType="static"; //change_coords_only, change, static
+    M_exporter = exporter ( _mesh=meshVisu?meshVisu:this->mesh(),
+                            _name="Export",
+                            _geo=geoExportType,
+                            _path=this->exporterPath() );
 }
 
 
@@ -115,14 +115,14 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assemble()
 	solve::strategy s = boption(prefixvm(prefix(), "use-sc"))?solve::strategy::static_condensation:solve::strategy::monolithic;
 
     auto U = M_ps -> element();
-    M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps)); 
+    M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
 	//M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s==solve::strategy::static_condensation)?Pattern::COUPLED:pattern), *M_backend, (s==solve::strategy::static_condensation)?false:true);
 
     M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
     //    M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     //M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
     toc("creating matrices and vectors");
-    
+
 
 }
 
@@ -166,10 +166,10 @@ MIXEDELASTICITY_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::solve()
 {
-    
+
     auto U = M_ps -> element();
 	auto bbf = blockform2(*M_ps, M_A_cst);
-    
+
 	auto blf = blockform1(*M_ps, M_F);
 
 
@@ -184,13 +184,13 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::solve()
         solver_string += "static condensation";
     else
         solver_string += "monolithic";
-    
+
     tic();
     tic();
     bbf.solve(_solution=U, _rhs=blf, _rebuild=false, _condense=boption(prefixvm(this->prefix(), "use-sc")), _name= this->prefix());
     M_timers["solver"].push_back(toc("solver"));
     toc(solver_string);
-    
+
     M_up = U(0_c);
     M_pp = U(1_c);
 
@@ -203,7 +203,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::solve()
 
     for( int i = 0; i < M_integralCondition; i++ )
         M_mup.push_back(U(3_c,i));
- 
+
 }
 
 
@@ -211,23 +211,23 @@ MIXEDELASTICITY_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
 {
-    auto tau_constant = cst(M_tau_constant); 
+    auto tau_constant = cst(M_tau_constant);
 
-    auto sigma = M_Vh->element( "sigma" ); 
-    auto v     = M_Vh->element( "v" ); 
-    auto u     = M_Wh->element( "u" ); 
-    auto w     = M_Wh->element( "w" ); 
-    auto uhat  = M_Mh->element( "uhat" ); 
-    auto m     = M_Mh->element( "m" ); 
-    auto H     = M_M0h->element( "H" ); 
+    auto sigma = M_Vh->element( "sigma" );
+    auto v     = M_Vh->element( "v" );
+    auto u     = M_Wh->element( "u" );
+    auto w     = M_Wh->element( "w" );
+    auto uhat  = M_Mh->element( "uhat" );
+    auto m     = M_Mh->element( "m" );
+    auto H     = M_M0h->element( "H" );
 
     auto gammaMinusIntegral = complement(boundaryfaces(M_mesh),[this]( auto const& e ) {
-        for( auto exAtMarker : this->M_IBCList)
-        {
-            if ( e.marker().value() == this->M_mesh->markerName( exAtMarker.marker() ) )
-                return true;
-        }
-        return false; });
+                                                                   for( auto exAtMarker : this->M_IBCList)
+                                                                   {
+                                                                       if ( e.marker().value() == this->M_mesh->markerName( exAtMarker.marker() ) )
+                                                                           return true;
+                                                                   }
+                                                                   return false; });
 
 
 
@@ -252,8 +252,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
 		Feel::cout << "Lambda: " << lambda << std::endl;
 		auto mu = material.getScalar("mu");
 		Feel::cout << "Mu: " << mu << std::endl;
-		auto c1 = cst(0.5)/mu; 
-    	auto c2 = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu)); 
+		auto c1 = cst(0.5)/mu;
+    	auto c2 = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu));
         Feel::cout << "c1: " << mean(_range=elements(M_mesh),_expr=c1) << std::endl;
         Feel::cout << "c2: " << mean(_range=elements(M_mesh),_expr=c2) << std::endl;
 
@@ -289,34 +289,34 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
 
     // begin dp: here we need to put the projection of u on the faces
     bbf( 1_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),_expr=-tau_constant *
-		    ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
-		      rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
+                                ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
+                                  rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
 
     bbf( 1_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=boundaryfaces(M_mesh),
-		    _expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
+                                _expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
 
     bbf( 1_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
-		    _expr=tau_constant *
-		    ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
-		      rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )));
+                                _expr=tau_constant *
+                                ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
+                                  rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )));
 
     bbf( 1_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=gammaMinusIntegral,
-		    _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
+                                _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
 
 
     bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
-		    _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
-				    rightfacet(idt(sigma)*N())) ) );
+                                _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
+                                                      rightfacet(idt(sigma)*N())) ) );
 
 
     // BC
     bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
-			    _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tau_order)*idt(u) )+
-				    rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
+                                _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tau_order)*idt(u) )+
+                                                                      rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
 
     bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
-    _expr=sc_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
-				    rightface( pow(idv(H),M_tau_order) )));
+                                _expr=sc_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
+                                                                                           rightface( pow(idv(H),M_tau_order) )));
 
     auto itField = M_modelProperties->boundaryConditions().find( "displacement");
     if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -333,12 +333,12 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
 					    					_expr=trans(idt(uhat)) * id(m) );
 		    }
 	    }
-	
+
     }
-    
+
 	itField = M_modelProperties->boundaryConditions().find( "stress");
     if ( itField != M_modelProperties->boundaryConditions().end() )
-    {	
+    {
 	    auto mapField = (*itField).second;
 	    auto itType = mapField.find( "Neumann" );
 	    if ( itType != mapField.end() )
@@ -348,13 +348,13 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
 			    std::string marker = exAtMarker.marker();
 		    	cout << "Neumann on " << marker << std::endl;
 			    bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker ),
-					    _expr=( trans(id(m))*(idt(sigma)*N()) ));
+                                            _expr=( trans(id(m))*(idt(sigma)*N()) ));
 
 			    bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
-					    _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
+                                            _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
 
-			    bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker), 
-					    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+			    bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
+                                            _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
 		    }
 	    }
 	    itType = mapField.find( "Neumann_scalar" );
@@ -365,13 +365,13 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
 			    std::string marker = exAtMarker.marker();
 		    	cout << "Neumann on " << marker << std::endl;
 			    bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker ),
-					    _expr=( trans(id(m))*(idt(sigma)*N()) ));
+                                            _expr=( trans(id(m))*(idt(sigma)*N()) ));
 
 			    bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
-					    _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
+                                            _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
 
-			    bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker), 
-					    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+			    bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
+                                            _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
 		    }
 	    }
 	    itType = mapField.find( "Neumann_exact" );
@@ -382,19 +382,19 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
 			    std::string marker = exAtMarker.marker();
 		    	cout << "Neumann on " << marker << std::endl;
 			    bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker ),
-					    _expr=( trans(id(m))*(idt(sigma)*N()) ));
+                                            _expr=( trans(id(m))*(idt(sigma)*N()) ));
 
 			    bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
-					    _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
+                                            _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
 
-			    bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker), 
-					    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+			    bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
+                                            _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
 		    }
 	    }
     }
 
 } // end assemble STD
-  
+
 
 MIXEDELASTICITY_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -403,9 +403,9 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 
     auto blf = blockform1( *M_ps, M_F );
 
-    auto w     = M_Wh->element( "w" ); 
-    auto m     = M_Mh->element( "m" ); 
-    
+    auto w     = M_Wh->element( "w" );
+    auto m     = M_Mh->element( "m" );
+
     // Building the RHS
 
     auto itField = M_modelProperties->boundaryConditions().find("stress");
@@ -413,7 +413,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find("SourceTerm");
-        
+
 		if ( itType != mapField.end() )
         {
             for ( auto const& exAtMarker : (*itType).second )
@@ -422,7 +422,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
 				blf( 1_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),
-                    			  	      _expr=trans(g)*id(w));
+                                        _expr=trans(g)*id(w));
             }
         }
 		itType = mapField.find("Neumann");
@@ -439,7 +439,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 					    				_expr=trans(id(m))* g );
             }
 		}
-        	
+
 		itType = mapField.find("Neumann_scalar");
 		if ( itType != mapField.end() )
 		{
@@ -453,8 +453,8 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 			    blf( 2_c ) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
 				    					_expr= inner(expr(g)*N(), id(m)) );
             }
-		}	
-	    
+		}
+
         itType = mapField.find("Neumann_exact");
 	    if ( itType != mapField.end() )
 	    {
@@ -464,7 +464,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 			    auto g = expr<Dim,1, expr_order>(exAtMarker.expression());
 			    if ( !this->isStationary() )
                     g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
-                 
+
 			    for( auto const& pairMat : M_modelProperties->materials() )
 			    {
 				    auto gradu_exact = grad( g );
@@ -479,8 +479,8 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
                 }
             }
 	    }
-    } 
-    
+    }
+
     itField = M_modelProperties->boundaryConditions().find("displacement");
     if (itField != M_modelProperties->boundaryConditions().end() )
     {
@@ -536,18 +536,18 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
     }
 	else if ( M_exporter->exporterGeometry() != EXPORTER_GEOMETRY_STATIC )
     {
-         LOG(INFO) << "exporting on computational mesh at time " << time;
-         M_exporter->step( time )->setMesh( M_mesh );
+        LOG(INFO) << "exporting on computational mesh at time " << time;
+        M_exporter->step( time )->setMesh( M_mesh );
     }
-    
-     // Export computed solutions
-     {
-         for ( auto const& field : M_modelProperties->postProcess().exports().fields() )
-         {
+
+    // Export computed solutions
+    {
+        for ( auto const& field : M_modelProperties->postProcess().exports().fields() )
+        {
             if ( field == "stress" )
             {
                 LOG(INFO) << "exporting stress at time " << time;
-		
+
                 // Exporting the stress component by component
                 auto Sh = Pch<Order> (M_mesh);
                 auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
@@ -563,7 +563,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                     M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXY"), SXY );
                 }
                 if (Dim > 2)
-                {            
+                {
                     auto SZZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::Z, Component::Z)) );
                     auto SYZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::Y, Component::Z)) );
                     auto SXZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::X, Component::Z)) );
@@ -573,8 +573,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                 }
 
          		// M_exporter->step(time)->add(prefixvm(M_prefix, "stress"), Idhv?(*Idhv)( M_up):M_up );
-         
-               if (M_integralCondition)
+
+                if (M_integralCondition)
                 {
 
                     for( auto exAtMarker : this->M_IBCList)
@@ -584,8 +584,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                         LOG(INFO) << "exporting integral flux at time "
                                   << time << " on marker " << marker;
                         auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                            _expr=trans(idv(M_up))*N());
-                    
+                                                    _expr=trans(idv(M_up))*N());
+
                         Feel::cout << "Force computed: " << std::endl;
                         for( auto i=0;i < Dim;i++ )
                         {
@@ -600,14 +600,14 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
 
             }
             else if ( M_mesh->hasFaceMarker(field) )
-            { 
+            {
                 auto marker = field;
             	LOG(INFO) << "exporting computed force on " << marker << " at time " << time;
                 std::vector<double> force_integral(Dim);
 
                 auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                             _expr=trans(idv(M_up))*N());
-                    
+
                 Feel::cout << "Force computed: " << std::endl;
                 for( auto i=0;i < Dim;i++ )
                 {
@@ -629,7 +629,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                     scaled_displ.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_pp));
                 }
 
-                M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"),Idh?(*Idh)( scaled_displ):scaled_displ ) ;    	
+                M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"),Idh?(*Idh)( scaled_displ):scaled_displ ) ;
 
 
 
@@ -645,7 +645,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
 
                     scaled_stress.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_up));
                 }
-                
+
                 // Exporting the scaled stress component by component
                 auto Sh = Pch<Order> (M_mesh);
                 auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
@@ -661,7 +661,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                     M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaXY"), SXY );
                 }
                 if (Dim > 2)
-                {            
+                {
                     auto SZZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::Z, Component::Z)) );
                     auto SYZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::Y, Component::Z)) );
                     auto SXZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::X, Component::Z)) );
@@ -669,7 +669,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                     M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaYZ"), SYZ );
                     M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaXZ"), SXZ );
                 }
-               
+
                 // Exporting scaled stress integral
                 if (M_integralCondition)
                 {
@@ -680,7 +680,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                         LOG(INFO) << "exporting scaled integral flux at time "
                                   << time << " on marker " << marker;
                         auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr=trans(idv(scaled_stress))*N());
-                    
+
                         Feel::cout << "Force computed: " << std::endl;
                         for( auto i=0;i < Dim;i++ )
                         {
@@ -698,23 +698,23 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
             else if ( field == "displacement" )
         	{
             	LOG(INFO) << "exporting displacement at time " << time;
-                M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"),Idh?(*Idh)( M_pp):M_pp ) ;    	
+                M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"),Idh?(*Idh)( M_pp):M_pp ) ;
                 // Projecting on L2 space for continuity.
                 auto Sh = Pch<Order> (M_mesh);
                 auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
 
-                auto UX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::X]) );     
-                M_exporter->step(time)->add(prefixvm(M_prefix, "UX"),UX ) ;  
-  	
+                auto UX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::X]) );
+                M_exporter->step(time)->add(prefixvm(M_prefix, "UX"),UX ) ;
+
                 if (Dim > 1)
                 {
                     auto UY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::Y]) );
-                    M_exporter->step(time)->add(prefixvm(M_prefix, "UY"),UY ) ;    	
+                    M_exporter->step(time)->add(prefixvm(M_prefix, "UY"),UY ) ;
                 }
                 if (Dim > 2)
-                {   
+                {
                     auto UZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::Z]) );
-                    M_exporter->step(time)->add(prefixvm(M_prefix, "UZ"),UZ ) ;    	
+                    M_exporter->step(time)->add(prefixvm(M_prefix, "UZ"),UZ ) ;
 	            }
 
 				auto itField = M_modelProperties->boundaryConditions().find("ExactSolution");
@@ -727,20 +727,20 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
  						for (auto const& exAtMarker : (*itType).second )
  						{
     		    			if (exAtMarker.isExpression() )
- 			    			{		
+ 			    			{
 								auto u_exact = expr<Dim,1,expr_order> (exAtMarker.expression());
 								if ( !this->isStationary() )
 								    u_exact.setParameterValues( { {"t", time } } );
 
 								auto export_uEX = project(_quad=_Q<expr_order>(), _space=M_Wh, _range=elements( M_mesh ), _expr=u_exact);
-								M_exporter->step(time)->add(prefixvm(M_prefix, "u_exact"), Idh?(*Idh)( export_uEX): export_uEX );		
-                                
+								M_exporter->step(time)->add(prefixvm(M_prefix, "u_exact"), Idh?(*Idh)( export_uEX): export_uEX );
+
 								auto l2err_u = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=u_exact - idv(M_pp) );
-							
+
                                 auto l2norm_uex = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=u_exact );
 								if (l2norm_uex < 1)
-									l2norm_uex = 1.0;	
-                                
+									l2norm_uex = 1.0;
+
 								cout << "----- Computed Errors -----" << std::endl;
 								// cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
 								cout << "||u-u_ex||_L2=\t" << l2err_u << std::endl;
@@ -757,14 +757,14 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
 									auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
 
 									// EXPORT SIGMA EXACT
-                                    auto export_sigmaEX = project(_quad=_Q<expr_order>(), _space=M_Vh, _range=elements(M_mesh), _expr=sigma_exact); 
-				
+                                    auto export_sigmaEX = project(_quad=_Q<expr_order>(), _space=M_Vh, _range=elements(M_mesh), _expr=sigma_exact);
+
                                     auto Sh = Pch<Order> (M_mesh);
                                     auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
-                                    
+
                                     auto SXX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::X, Component::X)) );
                                     M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXX"), SXX );
-                                    
+
                                     if (Dim > 1)
                                     {
                                         auto SYY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::Y, Component::Y)) );
@@ -787,28 +787,28 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
 									auto l2err_sigma = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=sigma_exact - idv(M_up) );
 									auto l2norm_sigmaex = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=sigma_exact );
 									if (l2norm_sigmaex < 1)
-										l2norm_sigmaex = 1.0;		
+										l2norm_sigmaex = 1.0;
 									cout << "||sigma-sigma_ex||_L2=\t" << l2err_sigma/l2norm_sigmaex << std::endl;
 									cout << "---------------------------" << std::endl;
 									// Export the errors
 									M_exporter -> step( time )->add(prefixvm(M_prefix, "sigma_error_L2"), l2err_sigma/l2norm_sigmaex );
-								} 
+								}
  							}
  		    			}
  					}
 				}
-             }
-         }
-     }
+            }
+        }
+    }
 
-     this->timerTool("PostProcessing").stop("exportResults");
-     if ( this->scalabilitySave() )
-     {
-         if ( !this->isStationary() )
-             this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
-         this->timerTool("PostProcessing").save();
-     }
-     this->log("MixedElasticity","exportResults", "finish");
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("MixedElasticity","exportResults", "finish");
 }
 
 MIXEDELASTICITY_CLASS_TEMPLATE_DECLARATIONS
@@ -826,28 +826,28 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::geometricTest( ){
             {
                 auto curvedForce = (integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,exAtMarker.marker()), _expr = idv(M_up)*N() )).evaluate();
                 auto forceF = (expr<Dim,1,expr_order> (exAtMarker.expression() )).evaluate();
-                /* 
-                Feel::cout << "Force F uploaded:\t" << forceF << std::endl;
-                Feel::cout << "Force F computed from M_up:\t" << curvedForce << std::endl; 
-                */
+                /*
+                 Feel::cout << "Force F uploaded:\t" << forceF << std::endl;
+                 Feel::cout << "Force F computed from M_up:\t" << curvedForce << std::endl;
+                 */
                 auto curveError = (curvedForce - forceF).cwiseAbs();
-    
-                Feel::cout << "Error for geometrical order:\t" << curveError << std::endl;  
+
+                Feel::cout << "Error for geometrical order:\t" << curveError << std::endl;
             }
         }
-        /* 
-        itType = mapField.find( "force_F_2" );
-        if (itType != mapField.end() )
-        {
-            for (auto const& exAtMarker : itType->second )
-            {
-                auto forceF_2 = expr<Dim,1,expr_order> (exAtMarker.expression() );
-                auto forceIntegral = (integrate( _range=markedfaces(M_mesh,exAtMarker.marker()), _expr = forceF_2 * N() )).evaluate();
-                Feel::cout << "Force F computed from input:\t" << forceIntegral << std::endl; 
-    
-            }
-        }
-        */
+        /*
+         itType = mapField.find( "force_F_2" );
+         if (itType != mapField.end() )
+         {
+         for (auto const& exAtMarker : itType->second )
+         {
+         auto forceF_2 = expr<Dim,1,expr_order> (exAtMarker.expression() );
+         auto forceIntegral = (integrate( _range=markedfaces(M_mesh,exAtMarker.marker()), _expr = forceF_2 * N() )).evaluate();
+         Feel::cout << "Force F computed from input:\t" << forceIntegral << std::endl;
+
+         }
+         }
+         */
     }
 }
 
@@ -869,19 +869,19 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportTimers()
         timers << fmt << std::endl;
         if (isStationary())
         {
-                for( auto const& pair : M_timers )
-                    fmt % pair.second;
-                timers << fmt << std::endl;
+            for( auto const& pair : M_timers )
+                fmt % pair.second;
+            timers << fmt << std::endl;
         }
 
-        /* 
-           //( for( int i = 0; this->timeStepBase()->isFinished() ; ++i )
-            {
-                for( auto const& pair : M_timers )
-                    fmt % pair.second[i];
-                timers << fmt << std::endl;
-        }*/
-        
+        /*
+         //( for( int i = 0; this->timeStepBase()->isFinished() ; ++i )
+         {
+         for( auto const& pair : M_timers )
+         fmt % pair.second[i];
+         timers << fmt << std::endl;
+         }*/
+
         timers.close();
     }
 }
