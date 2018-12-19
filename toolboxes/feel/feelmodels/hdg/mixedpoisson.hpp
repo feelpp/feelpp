@@ -140,7 +140,7 @@ public:
     typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
 
-//private:
+    //private:
 protected:
     mesh_ptrtype M_mesh;
 
@@ -365,49 +365,49 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsInterfaceCondition( Expr<
 }
 
 /*
-template<int Dim, int Order, int G_Order, int E_Order>
-template<typename ExprT>
-void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsRobin( Expr<ExprT> expr1, Expr<ExprT> expr2, std::string marker)
-{
-#ifdef USE_SAME_MAT
-    auto bbf = blockform2( *M_ps, M_A_cst);
-#else
-    auto bbf = blockform2( *M_ps, M_A);
-#endif
-    auto blf = blockform1( *M_ps, M_F );
-    auto u = M_Vh->element( "u" );
-    auto p = M_Wh->element( "p" );
-    auto phat = M_Mh->element( "phat" );
-    auto l = M_Mh->element( "lambda" );
-    auto H = M_M0h->element( "H" );
-    if ( ioption(prefixvm(prefix(), "hface") ) == 0 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
-    else if ( ioption(prefixvm(prefix(), "hface") ) == 1 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
-    else if ( ioption(prefixvm(prefix(), "hface") ) == 2 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
-    else
-        H.on( _range=elements(M_M0h->mesh()), _expr=h() );
-    // stabilisation parameter
-    auto tau_constant = cst(doption(prefixvm(prefix(), "tau_constant")));
+ template<int Dim, int Order, int G_Order, int E_Order>
+ template<typename ExprT>
+ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsRobin( Expr<ExprT> expr1, Expr<ExprT> expr2, std::string marker)
+ {
+ #ifdef USE_SAME_MAT
+ auto bbf = blockform2( *M_ps, M_A_cst);
+ #else
+ auto bbf = blockform2( *M_ps, M_A);
+ #endif
+ auto blf = blockform1( *M_ps, M_F );
+ auto u = M_Vh->element( "u" );
+ auto p = M_Wh->element( "p" );
+ auto phat = M_Mh->element( "phat" );
+ auto l = M_Mh->element( "lambda" );
+ auto H = M_M0h->element( "H" );
+ if ( ioption(prefixvm(prefix(), "hface") ) == 0 )
+ H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
+ else if ( ioption(prefixvm(prefix(), "hface") ) == 1 )
+ H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
+ else if ( ioption(prefixvm(prefix(), "hface") ) == 2 )
+ H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
+ else
+ H.on( _range=elements(M_M0h->mesh()), _expr=h() );
+ // stabilisation parameter
+ auto tau_constant = cst(doption(prefixvm(prefix(), "tau_constant")));
 
-    // <j.n,mu>_Gamma_R
-    bbf( 2_c, 0_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=( id(l)*(trans(idt(u))*N()) ));
-    // <tau p, mu>_Gamma_R
-    bbf( 2_c, 1_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
-    // <-tau phat, mu>_Gamma_R
-    bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
-    // <g_R^1 phat, mu>_Gamma_R
-    bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=expr1*idt(phat) * id(l) );
-    // <g_R^2,mu>_Gamma_R
-    blf(2_c) += integrate(_quad=_Q<expr_order>(),  _range=markedfaces(M_mesh, marker),
-                          _expr=id(l)*expr2);
-}
-*/
+ // <j.n,mu>_Gamma_R
+ bbf( 2_c, 0_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+ _expr=( id(l)*(trans(idt(u))*N()) ));
+ // <tau p, mu>_Gamma_R
+ bbf( 2_c, 1_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+ _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
+ // <-tau phat, mu>_Gamma_R
+ bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+ _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
+ // <g_R^1 phat, mu>_Gamma_R
+ bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+ _expr=expr1*idt(phat) * id(l) );
+ // <g_R^2,mu>_Gamma_R
+ blf(2_c) += integrate(_quad=_Q<expr_order>(),  _range=markedfaces(M_mesh, marker),
+ _expr=id(l)*expr2);
+ }
+ */
 
 template<int Dim, int Order, int G_Order, int E_Order>
 template<typename ExprT>
@@ -447,7 +447,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT> expr1, Ex
                                  _expr=expr1*idt(phat) * id(l) );
     // <g_R^2,mu>_Gamma_R
     blf(2_c) += integrate( _range=markedfaces(M_mesh, marker),
-                          _expr=id(l)*expr2);
+                           _expr=id(l)*expr2);
 }
 
 } // Namespace FeelModels

@@ -12,9 +12,9 @@ namespace FeelModels
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
-                                                          worldcomm_ptr_t const& worldComm,
-                                                          std::string const& subPrefix,
-                                                          ModelBaseRepository const& modelRep )
+                                                worldcomm_ptr_t const& worldComm,
+                                                std::string const& subPrefix,
+                                                ModelBaseRepository const& modelRep )
     : super_type( prefix, worldComm, subPrefix, modelRep ),
       M_useUserIBC(false)
 {
@@ -108,7 +108,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initModel()
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Dirichlet" );
 
-    if ( itType != mapField.end() )
+        if ( itType != mapField.end() )
         {
             Feel::cout << "Dirichlet: ";
             for ( auto const& exAtMarker : (*itType).second )
@@ -224,13 +224,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
 {
     // Mh only on the faces whitout integral condition
     auto complement_integral_bdy = complement(faces(M_mesh),[this]( auto const& ewrap ) {
-            auto const& e = unwrap_ref( ewrap );
-            for( auto exAtMarker : this->M_IBCList)
-            {
-                if ( e.hasMarker() && e.marker().value() == this->M_mesh->markerName( exAtMarker.marker() ) )
-                    return true;
-            }
-            return false; });
+                                                                auto const& e = unwrap_ref( ewrap );
+                                                                for( auto exAtMarker : this->M_IBCList)
+                                                                {
+                                                                    if ( e.hasMarker() && e.marker().value() == this->M_mesh->markerName( exAtMarker.marker() ) )
+                                                                        return true;
+                                                                }
+                                                                return false; });
 
     auto face_mesh = createSubmesh( M_mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
 
@@ -251,8 +251,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
     M_Ch = Pch<0>( ibc_mesh, true );
 
     Feel::cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
-         << "Wh<" << Order << "> : " << M_Wh->nDof() << std::endl
-         << "Mh<" << Order << "> : " << M_Mh->nDof() << std::endl;
+               << "Wh<" << Order << "> : " << M_Wh->nDof() << std::endl
+               << "Mh<" << Order << "> : " << M_Mh->nDof() << std::endl;
     if ( M_integralCondition )
         Feel::cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
 
@@ -291,4 +291,3 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initExporter( mesh_ptrtype meshVisu )
 
 } // namespace FeelModels
 } // namespace Feel
-

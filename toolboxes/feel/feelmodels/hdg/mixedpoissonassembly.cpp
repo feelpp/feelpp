@@ -109,14 +109,14 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleCstPart()
 
     auto gammaMinusIntegral = complement(boundaryfaces(M_mesh),
                                          [this]( auto const& ewrap ) {
-            auto const& e = unwrap_ref( ewrap );
-            for( auto exAtMarker : this->M_IBCList)
-            {
-                if ( e.hasMarker() && e.marker().value() == this->M_mesh->markerName( exAtMarker.marker() ) )
-                    return true;
-            }
-            return false;
-        });
+                                             auto const& e = unwrap_ref( ewrap );
+                                             for( auto exAtMarker : this->M_IBCList)
+                                             {
+                                                 if ( e.hasMarker() && e.marker().value() == this->M_mesh->markerName( exAtMarker.marker() ) )
+                                                     return true;
+                                             }
+                                             return false;
+                                         });
 
 
     // -(p,div(v))_Omega
@@ -401,13 +401,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsBoundaryCond()
                     if ( !this->isStationary() )
                         g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                     /*
-	                auto blf = blockform1( *M_ps, M_F );
-                    auto l = M_Mh->element( "lambda" );
+                     auto blf = blockform1( *M_ps, M_F );
+                     auto l = M_Mh->element( "lambda" );
 
-	                // <g_N,mu>_Gamma_N
-                    blf(2_c) += integrate(_range=markedfaces(M_mesh, marker),
-                                          _expr=trans(g)*N() * id(l));
-                    */
+                     // <g_N,mu>_Gamma_N
+                     blf(2_c) += integrate(_range=markedfaces(M_mesh, marker),
+                     _expr=trans(g)*N() * id(l));
+                     */
                     auto gn = inner(g,N());
                     this->assembleRhsNeumann( gn, marker);
                 }
@@ -437,25 +437,25 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsBoundaryCond()
             }
         }
 		/*
-        itType = mapField.find( "Robin" );
-        if ( itType != mapField.end() )
-        {
-            for ( auto const& exAtMarker : (*itType).second )
-            {
-                std::string marker = exAtMarker.marker();
-                auto g1 = expr<expr_order>(exAtMarker.expression1());
-                auto g2 = expr<expr_order>(exAtMarker.expression2());
+         itType = mapField.find( "Robin" );
+         if ( itType != mapField.end() )
+         {
+         for ( auto const& exAtMarker : (*itType).second )
+         {
+         std::string marker = exAtMarker.marker();
+         auto g1 = expr<expr_order>(exAtMarker.expression1());
+         auto g2 = expr<expr_order>(exAtMarker.expression2());
 
-				if ( !this->isStationary() )
-                {
-                    g1.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
-                    g2.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
-                }
+         if ( !this->isStationary() )
+         {
+         g1.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+         g2.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+         }
 
-                this->assembleRhsRobin(g1, g2, marker);
-            }
-        }
-		*/
+         this->assembleRhsRobin(g1, g2, marker);
+         }
+         }
+         */
 
     }
 
@@ -681,7 +681,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
-        // start or restart time step scheme
+    // start or restart time step scheme
     if (!this->doRestart())
     {
         // start time step
@@ -770,20 +770,20 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::createTimeDiscretization()
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
     std::string suffixName = "";
     if ( myFileFormat == "binary" )
-         suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+        suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
     M_bdf_mixedpoisson = bdf( _vm=Environment::vm(), _space=M_Wh ,
-                       _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"p"+suffixName)) ,
-                       _prefix="",
-                       _initial_time=this->timeInitial(),
-                       _final_time=this->timeFinal(),
-                       _time_step=this->timeStep(),
-                       _restart=this->doRestart(),
-                       _restart_path=this->restartPath(),
-                       _restart_at_last_save=this->restartAtLastSave(),
-                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+                              _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"p"+suffixName)) ,
+                              _prefix="",
+                              _initial_time=this->timeInitial(),
+                              _final_time=this->timeFinal(),
+                              _time_step=this->timeStep(),
+                              _restart=this->doRestart(),
+                              _restart_path=this->restartPath(),
+                              _restart_at_last_save=this->restartAtLastSave(),
+                              _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
     M_bdf_mixedpoisson->setfileFormat( myFileFormat );
     M_bdf_mixedpoisson->setPathSave( (fs::path(this->rootRepository()) /
-                               fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%M_bdf_mixedpoisson->bdfOrder()%this->timeStep() ).str() ) ) ).string() );
+                                      fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%M_bdf_mixedpoisson->bdfOrder()%this->timeStep() ).str() ) ) ).string() );
 
     double tElapsed = this->timerTool("Constructor").stop("createTimeDiscr");
     this->log("MixedPoisson","createTimeDiscretization", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -827,9 +827,9 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                         LOG(INFO) << "exporting integral flux at time "
                                   << time << " on marker " << marker;
                         j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                                _expr=trans(idv(M_up))*N()).evaluate()(0,0);
+                                               _expr=trans(idv(M_up))*N()).evaluate()(0,0);
                         meas = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                          _expr=cst(1.0)).evaluate()(0,0);
+                                         _expr=cst(1.0)).evaluate()(0,0);
                         Feel::cout << "Integral flux on " << marker << ": " << j_integral << std::endl;
                     }
                     M_exporter->step( time )->add(prefixvm(prefix(), "integralFlux"), j_integral);
@@ -863,7 +863,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                     double export_mup = M_mup[i].max();
 
 					LOG(INFO) << "exporting IBC potential " << i << " at time "
-                             << time << " value " << export_mup;
+                              << time << " value " << export_mup;
 
 					M_exporter->step( time )->add(prefixvm(prefix(), "cstPotential_1"), export_mup );
 
