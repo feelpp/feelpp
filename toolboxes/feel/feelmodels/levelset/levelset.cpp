@@ -237,21 +237,30 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
 
         for( auto const& iv : M_icDirichlet )
         {
-            if( markers(iv).empty() )
-            {
-                phi_init->on(
-                        _range=elements(phi_init->mesh()),
-                        _expr=expression(iv),
-                        _geomap=this->geomap()
-                        );
-            }
+            auto const& icMarkers = markers(iv);
+            if( icMarkers.empty() )
+                continue;
             else
             {
-                phi_init->on(
-                        _range=markedelements(phi_init->mesh(), markers(iv)),
-                        _expr=expression(iv),
-                        _geomap=this->geomap()
-                        );
+                for( std::string const& marker: icMarkers )
+                {
+                    if( marker.empty() )
+                    {
+                        phi_init->on(
+                                _range=elements(phi_init->mesh()),
+                                _expr=expression(iv),
+                                _geomap=this->geomap()
+                                );
+                    }
+                    else
+                    {
+                        phi_init->on(
+                                _range=markedelements(phi_init->mesh(), marker),
+                                _expr=expression(iv),
+                                _geomap=this->geomap()
+                                );
+                    }
+                }
             }
         }
 
