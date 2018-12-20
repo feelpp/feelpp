@@ -157,7 +157,7 @@ public :
     ModelBaseUpload const& upload() const { return M_upload; }
     void upload( std::string const& dataPath ) const;
 
-protected :
+private :
     // worldcomm
     worldcomm_ptr_t M_worldComm;
     worldscomm_ptr_t M_worldsComm;

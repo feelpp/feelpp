@@ -245,7 +245,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
     auto bbf = blockform2 ( *M_ps, M_A_cst );
 
 
-    for( auto const& pairMat : M_modelProperties->materials() )
+    for( auto const& pairMat : modelProperties().materials() )
     {
         auto material = pairMat.second;
         auto lambda = material.getScalar("lambda");
@@ -276,7 +276,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
     // ( d^2u/dt^2, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
         auto dt = this->timeStep();
-        for( auto const& pairMat : M_modelProperties->materials() )
+        for( auto const& pairMat : modelProperties().materials() )
         {
             auto material = pairMat.second;
             auto rho = material.getScalar("rho");
@@ -318,8 +318,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
                                 _expr=sc_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tauOrder) )+
                                                                                            rightface( pow(idv(H),M_tauOrder) )));
 
-    auto itField = M_modelProperties->boundaryConditions().find( "displacement");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
+    auto itField = modelProperties().boundaryConditions().find( "displacement");
+    if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Dirichlet" );
@@ -336,8 +336,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
 
     }
 
-    itField = M_modelProperties->boundaryConditions().find( "stress");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
+    itField = modelProperties().boundaryConditions().find( "stress");
+    if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Neumann" );
@@ -408,8 +408,8 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 
     // Building the RHS
 
-    auto itField = M_modelProperties->boundaryConditions().find("stress");
-    if (itField != M_modelProperties->boundaryConditions().end() )
+    auto itField = modelProperties().boundaryConditions().find("stress");
+    if (itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find("SourceTerm");
@@ -465,7 +465,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
                 if ( !this->isStationary() )
                     g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
 
-                for( auto const& pairMat : M_modelProperties->materials() )
+                for( auto const& pairMat : modelProperties().materials() )
                 {
                     auto gradu_exact = grad( g );
                     auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
@@ -481,8 +481,8 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
         }
     }
 
-    itField = M_modelProperties->boundaryConditions().find("displacement");
-    if (itField != M_modelProperties->boundaryConditions().end() )
+    itField = modelProperties().boundaryConditions().find("displacement");
+    if (itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find("Dirichlet");
@@ -504,7 +504,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
     // (u_old,w)_Omega
     if ( !this->isStationary() )
     {
-        for( auto const& pairMat : M_modelProperties->materials() )
+        for( auto const& pairMat : modelProperties().materials() )
         {
             auto material = pairMat.second;
             auto rho = material.getScalar("rho");
@@ -542,7 +542,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
 
     // Export computed solutions
     {
-        for ( auto const& field : M_modelProperties->postProcess().exports().fields() )
+        for ( auto const& field : modelProperties().postProcess().exports().fields() )
         {
             if ( field == "stress" )
             {
@@ -553,26 +553,26 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                 auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
 
                 auto SXX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::X, Component::X)) );
-                M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXX"), SXX );
+                M_exporter->step(time)->add(prefixvm(prefix(),"sigmaXX"), SXX );
 
                 if (Dim > 1)
                 {
                     auto SYY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::Y, Component::Y)) );
                     auto SXY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::X, Component::Y)) );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYY"), SYY );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXY"), SXY );
+                    M_exporter->step(time)->add(prefixvm(prefix(),"sigmaYY"), SYY );
+                    M_exporter->step(time)->add(prefixvm(prefix(),"sigmaXY"), SXY );
                 }
                 if (Dim > 2)
                 {
                     auto SZZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::Z, Component::Z)) );
                     auto SYZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::Y, Component::Z)) );
                     auto SXZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::X, Component::Z)) );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaZZ"), SZZ );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYZ"), SYZ );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXZ"), SXZ );
+                    M_exporter->step(time)->add(prefixvm(prefix(),"sigmaZZ"), SZZ );
+                    M_exporter->step(time)->add(prefixvm(prefix(),"sigmaYZ"), SYZ );
+                    M_exporter->step(time)->add(prefixvm(prefix(),"sigmaXZ"), SXZ );
                 }
 
-                // M_exporter->step(time)->add(prefixvm(M_prefix, "stress"), Idhv?(*Idhv)( M_up):M_up );
+                // M_exporter->step(time)->add(prefixvm(prefix(), "stress"), Idhv?(*Idhv)( M_up):M_up );
 
                 if (M_integralCondition)
                 {
@@ -620,7 +620,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
             else if ( field == "scaled_displacement" )
             {
                 auto scaled_displ = M_Wh->element("scaled_displacement");
-                for( auto const& pairMat : modelProperties()->materials() )
+                for( auto const& pairMat : modelProperties().materials() )
                 {
                     auto marker = pairMat.first;
                     auto material = pairMat.second;
@@ -629,7 +629,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                     scaled_displ.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_pp));
                 }
 
-                M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"),Idh?(*Idh)( scaled_displ):scaled_displ ) ;
+                M_exporter->step(time)->add(prefixvm(prefix(), "displacement"),Idh?(*Idh)( scaled_displ):scaled_displ ) ;
 
 
 
@@ -637,7 +637,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
             else if ( field == "scaled_stress" )
             {
                 auto scaled_stress = M_Vh->element("scaled_stress");
-                for( auto const& pairMat : modelProperties()->materials() )
+                for( auto const& pairMat : modelProperties().materials() )
                 {
                     auto marker = pairMat.first;
                     auto material = pairMat.second;
@@ -651,23 +651,23 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                 auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
 
                 auto SXX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::X, Component::X)) );
-                M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaXX"), SXX );
+                M_exporter->step(time)->add(prefixvm(prefix(),"scaled_sigmaXX"), SXX );
 
                 if (Dim > 1)
                 {
                     auto SYY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::Y, Component::Y)) );
                     auto SXY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::X, Component::Y)) );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaYY"), SYY );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaXY"), SXY );
+                    M_exporter->step(time)->add(prefixvm(prefix(),"scaled_sigmaYY"), SYY );
+                    M_exporter->step(time)->add(prefixvm(prefix(),"scaled_sigmaXY"), SXY );
                 }
                 if (Dim > 2)
                 {
                     auto SZZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::Z, Component::Z)) );
                     auto SYZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::Y, Component::Z)) );
                     auto SXZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::X, Component::Z)) );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaZZ"), SZZ );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaYZ"), SYZ );
-                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaXZ"), SXZ );
+                    M_exporter->step(time)->add(prefixvm(prefix(),"scaled_sigmaZZ"), SZZ );
+                    M_exporter->step(time)->add(prefixvm(prefix(),"scaled_sigmaYZ"), SYZ );
+                    M_exporter->step(time)->add(prefixvm(prefix(),"scaled_sigmaXZ"), SXZ );
                 }
 
                 // Exporting scaled stress integral
@@ -698,27 +698,27 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
             else if ( field == "displacement" )
             {
                 LOG(INFO) << "exporting displacement at time " << time;
-                M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"),Idh?(*Idh)( M_pp):M_pp ) ;
+                M_exporter->step(time)->add(prefixvm(prefix(), "displacement"),Idh?(*Idh)( M_pp):M_pp ) ;
                 // Projecting on L2 space for continuity.
                 auto Sh = Pch<Order> (M_mesh);
                 auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
 
                 auto UX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::X]) );
-                M_exporter->step(time)->add(prefixvm(M_prefix, "UX"),UX ) ;
+                M_exporter->step(time)->add(prefixvm(prefix(), "UX"),UX ) ;
 
                 if (Dim > 1)
                 {
                     auto UY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::Y]) );
-                    M_exporter->step(time)->add(prefixvm(M_prefix, "UY"),UY ) ;
+                    M_exporter->step(time)->add(prefixvm(prefix(), "UY"),UY ) ;
                 }
                 if (Dim > 2)
                 {
                     auto UZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::Z]) );
-                    M_exporter->step(time)->add(prefixvm(M_prefix, "UZ"),UZ ) ;
+                    M_exporter->step(time)->add(prefixvm(prefix(), "UZ"),UZ ) ;
                 }
 
-                auto itField = M_modelProperties->boundaryConditions().find("ExactSolution");
-                if ( itField != M_modelProperties->boundaryConditions().end() )
+                auto itField = modelProperties().boundaryConditions().find("ExactSolution");
+                if ( itField != modelProperties().boundaryConditions().end() )
                 {
                     auto mapField = (*itField).second;
                     auto itType = mapField.find( "u_exact" );
@@ -733,7 +733,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                                     u_exact.setParameterValues( { {"t", time } } );
 
                                 auto export_uEX = project(_quad=_Q<expr_order>(), _space=M_Wh, _range=elements( M_mesh ), _expr=u_exact);
-                                M_exporter->step(time)->add(prefixvm(M_prefix, "u_exact"), Idh?(*Idh)( export_uEX): export_uEX );
+                                M_exporter->step(time)->add(prefixvm(prefix(), "u_exact"), Idh?(*Idh)( export_uEX): export_uEX );
 
                                 auto l2err_u = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=u_exact - idv(M_pp) );
 
@@ -745,11 +745,11 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                                 // Feel::cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
                                 Feel::cout << "||u-u_ex||_L2=\t" << l2err_u << std::endl;
                                 // Export the errors
-                                M_exporter -> step( time )->add(prefixvm(M_prefix, "u_error_L2"), l2err_u/l2norm_uex );
+                                M_exporter -> step( time )->add(prefixvm(prefix(), "u_error_L2"), l2err_u/l2norm_uex );
                                 //------ Sigma  ------//
                                 auto gradu_exact = grad(u_exact);
                                 auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
-                                for( auto const& pairMat : M_modelProperties->materials() )
+                                for( auto const& pairMat : modelProperties().materials() )
                                 {
                                     auto material = pairMat.second;
                                     auto lambda = material.getScalar("lambda");
@@ -763,26 +763,26 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                                     auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
 
                                     auto SXX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::X, Component::X)) );
-                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXX"), SXX );
+                                    M_exporter->step(time)->add(prefixvm(prefix(),"s_exactXX"), SXX );
 
                                     if (Dim > 1)
                                     {
                                         auto SYY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::Y, Component::Y)) );
                                         auto SXY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::X, Component::Y)) );
-                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactYY"), SYY );
-                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXY"), SXY );
+                                        M_exporter->step(time)->add(prefixvm(prefix(),"s_exactYY"), SYY );
+                                        M_exporter->step(time)->add(prefixvm(prefix(),"s_exactXY"), SXY );
                                     }
                                     if (Dim > 2)
                                     {
                                         auto SYZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::Y, Component::Z)) );
                                         auto SXZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::X, Component::Z)) );
                                         auto SZZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::Z, Component::Z)) );
-                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactZZ"), SZZ );
-                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactYZ"), SYZ );
-                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXZ"), SXZ );
+                                        M_exporter->step(time)->add(prefixvm(prefix(),"s_exactZZ"), SZZ );
+                                        M_exporter->step(time)->add(prefixvm(prefix(),"s_exactYZ"), SYZ );
+                                        M_exporter->step(time)->add(prefixvm(prefix(),"s_exactXZ"), SXZ );
                                     }
 
-                                    // M_exporter->add(prefixvm(M_prefix, "sigma_exact"), Idhv?(*Idhv)( export_sigmaEX): export_sigmaEX );
+                                    // M_exporter->add(prefixvm(prefix(), "sigma_exact"), Idhv?(*Idhv)( export_sigmaEX): export_sigmaEX );
 
                                     auto l2err_sigma = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=sigma_exact - idv(M_up) );
                                     auto l2norm_sigmaex = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=sigma_exact );
@@ -791,7 +791,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                                     Feel::cout << "||sigma-sigma_ex||_L2=\t" << l2err_sigma/l2norm_sigmaex << std::endl;
                                     Feel::cout << "---------------------------" << std::endl;
                                     // Export the errors
-                                    M_exporter -> step( time )->add(prefixvm(M_prefix, "sigma_error_L2"), l2err_sigma/l2norm_sigmaex );
+                                    M_exporter -> step( time )->add(prefixvm(prefix(), "sigma_error_L2"), l2err_sigma/l2norm_sigmaex );
                                 }
                             }
                         }
@@ -815,8 +815,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::geometricTest( ){
 
-    auto itField = M_modelProperties -> boundaryConditions().find("GeometricalTest");
-    if ( itField != M_modelProperties -> boundaryConditions().end() )
+    auto itField = modelProperties().boundaryConditions().find("GeometricalTest");
+    if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = itField -> second;
         auto itType = mapField.find( "force_F" );

@@ -180,9 +180,6 @@ public:
 
     //private:
 protected:
-    model_prop_ptrtype M_modelProperties;
-    std::string M_prefix;
-
     mesh_ptrtype M_mesh;
 
     Vh_ptr_t M_Vh; // stress
@@ -241,8 +238,6 @@ public:
 
     Vh_element_t fluxField() const { return M_up; }
     Wh_element_t potentialField() const { return M_pp; }
-    model_prop_ptrtype modelProperties() { return M_modelProperties; }
-    model_prop_ptrtype modelProperties() const { return M_modelProperties; }
 
     integral_boundary_list_type integralBoundaryList() const { return M_IBCList; }
     int integralCondition() const { return M_integralCondition; }

@@ -166,7 +166,7 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Elasticity()
     // - <pI n, m>
     std::string marker = "";
 
-    for( auto const& pairMat : M_ElasticityModel->modelProperties()->materials() )
+    for( auto const& pairMat : M_ElasticityModel->modelProperties().materials() )
     {
         auto material = pairMat.second;
         marker = material.getString("special_neumann");

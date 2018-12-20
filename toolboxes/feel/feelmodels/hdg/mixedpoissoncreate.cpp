@@ -16,12 +16,12 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
                                                 std::string const& subPrefix,
                                                 ModelBaseRepository const& modelRep )
     : super_type( prefix, worldComm, subPrefix, modelRep ),
-      M_tauOrder(ioption( prefixvm(M_prefix, "tau_order") )),
-      M_tauCst(doption( prefixvm(M_prefix, "tau_constant") )),
-      M_hFace(ioption( prefixvm(M_prefix, "hface") )),
-      M_conductivityKey(soption( prefixvm(M_prefix, "conductivity_json")) ),
-      M_nlConductivityKey(soption( prefixvm(M_prefix,"conductivityNL_json")) ),
-      M_useSC(boption( prefixvm(M_prefix, "use-sc")) ),
+      M_tauOrder(ioption( prefixvm(this->prefix(), "tau_order") )),
+      M_tauCst(doption( prefixvm(this->prefix(), "tau_constant") )),
+      M_hFace(ioption( prefixvm(this->prefix(), "hface") )),
+      M_conductivityKey(soption( prefixvm(this->prefix(), "conductivity_json")) ),
+      M_nlConductivityKey(soption( prefixvm(this->prefix(),"conductivityNL_json")) ),
+      M_useSC(boption( prefixvm(this->prefix(), "use-sc")) ),
       M_useUserIBC(false)
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedPoisson","constructor", "start",
