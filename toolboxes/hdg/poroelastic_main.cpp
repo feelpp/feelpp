@@ -25,10 +25,10 @@ runApplicationPoroelastic()
     using namespace Feel;
 
     typedef FeelModels::MixedPoissonElasticity<nDim,OrderT> mpe_type;
-    
+
     auto mesh = loadMesh( _mesh=new typename mpe_type::mesh_type );
 
-	decltype( IPtr( _domainSpace=Pdh<OrderT>(mesh), _imageSpace=Pdh<OrderT>(mesh) ) ) Idh_poi ;
+    decltype( IPtr( _domainSpace=Pdh<OrderT>(mesh), _imageSpace=Pdh<OrderT>(mesh) ) ) Idh_poi ;
     decltype( IPtr( _domainSpace=Pdhv<OrderT>(mesh), _imageSpace=Pdhv<OrderT>(mesh) ) ) Idhv_poi;
 
     decltype( IPtr( _domainSpace=Pdhv<OrderT>(mesh), _imageSpace=Pdhv<OrderT>(mesh) ) ) Idh_el ;
@@ -44,7 +44,7 @@ runApplicationPoroelastic()
 
         help = unseparatedList[i];
         if ( help == ',' || i == unseparatedList.size()-1 )
-        {        
+        {
             if ( i ==  unseparatedList.size()-1)
                 nameSubmesh.push_back(help);
             listSubmesh.push_back(nameSubmesh);
@@ -56,53 +56,53 @@ runApplicationPoroelastic()
         }
     }
 
-		
-	if ( soption( "gmsh.submesh" ).empty() && soption("mixedelasticity.gmsh.submesh").empty() )
-	{
-		mpe_type MPE( mesh, mesh, mesh, mesh);
-		MPE.run( Idh_el, Idhv_el, Idh_poi, Idhv_poi );
-	}
-	else if ( soption( "gmsh.submesh" ).empty() )
+
+    if ( soption( "gmsh.submesh" ).empty() && soption("mixedelasticity.gmsh.submesh").empty() )
     {
-		Feel::cout << "Using submesh for Elasticity: " << soption("mixedelasticity.gmsh.submesh") << std::endl;
+        mpe_type MPE( mesh, mesh, mesh, mesh);
+        MPE.run( Idh_el, Idhv_el, Idh_poi, Idhv_poi );
+    }
+    else if ( soption( "gmsh.submesh" ).empty() )
+    {
+        Feel::cout << "Using submesh for Elasticity: " << soption("mixedelasticity.gmsh.submesh") << std::endl;
         auto cmeshElasticity = createSubmesh( mesh, markedelements(mesh,listSubmesh ), Environment::worldComm() );
-    	
+
         Idh_el = IPtr( _domainSpace=Pdhv<OrderT>(cmeshElasticity), _imageSpace=Pdhv<OrderT>(mesh) );
-		Idhv_el = IPtr( _domainSpace=Pdhms<OrderT>(cmeshElasticity), _imageSpace=Pdhms<OrderT>(mesh) );
-		
-		mpe_type MPE( mesh, cmeshElasticity, cmeshElasticity, mesh ); 
-		MPE.run( Idh_el, Idhv_el, Idh_poi, Idhv_poi );
+        Idhv_el = IPtr( _domainSpace=Pdhms<OrderT>(cmeshElasticity), _imageSpace=Pdhms<OrderT>(mesh) );
+
+        mpe_type MPE( mesh, cmeshElasticity, cmeshElasticity, mesh );
+        MPE.run( Idh_el, Idhv_el, Idh_poi, Idhv_poi );
 
     }
-	else if ( soption("mixedelasticity.gmsh.submesh").empty() )
+    else if ( soption("mixedelasticity.gmsh.submesh").empty() )
     {
-		Feel::cout << "Using submesh for Poisson: " << soption("gmsh.submesh") << std::endl;
+        Feel::cout << "Using submesh for Poisson: " << soption("gmsh.submesh") << std::endl;
         auto cmeshPoisson = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
 
-		Idh_poi = IPtr( _domainSpace=Pdh<OrderT>(cmeshPoisson), _imageSpace=Pdh<OrderT>(mesh) );
-    	Idhv_poi = IPtr( _domainSpace=Pdhv<OrderT>(cmeshPoisson), _imageSpace=Pdhv<OrderT>(mesh) );
-		
-        mpe_type MPE( cmeshPoisson, mesh, cmeshPoisson, mesh ); 
-		MPE.run( Idh_el, Idhv_el, Idh_poi, Idhv_poi );
-	} 
+        Idh_poi = IPtr( _domainSpace=Pdh<OrderT>(cmeshPoisson), _imageSpace=Pdh<OrderT>(mesh) );
+        Idhv_poi = IPtr( _domainSpace=Pdhv<OrderT>(cmeshPoisson), _imageSpace=Pdhv<OrderT>(mesh) );
+
+        mpe_type MPE( cmeshPoisson, mesh, cmeshPoisson, mesh );
+        MPE.run( Idh_el, Idhv_el, Idh_poi, Idhv_poi );
+    }
     else
     {
-		Feel::cout << "Using submesh for Poisson: " << soption("gmsh.submesh") << std::endl;
-		Feel::cout << "Using submesh for Elasticity: " << soption("mixedelasticity.gmsh.submesh") << std::endl;
-	    
+        Feel::cout << "Using submesh for Poisson: " << soption("gmsh.submesh") << std::endl;
+        Feel::cout << "Using submesh for Elasticity: " << soption("mixedelasticity.gmsh.submesh") << std::endl;
+
         auto cmeshPoisson = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
         auto cmeshElasticity = createSubmesh( mesh, markedelements(mesh,listSubmesh ), Environment::worldComm() );
 
-		Idh_poi = IPtr( _domainSpace=Pdh<OrderT>(cmeshPoisson), _imageSpace=Pdh<OrderT>(mesh) );
-    	Idhv_poi = IPtr( _domainSpace=Pdhv<OrderT>(cmeshPoisson), _imageSpace=Pdhv<OrderT>(mesh) );
+        Idh_poi = IPtr( _domainSpace=Pdh<OrderT>(cmeshPoisson), _imageSpace=Pdh<OrderT>(mesh) );
+        Idhv_poi = IPtr( _domainSpace=Pdhv<OrderT>(cmeshPoisson), _imageSpace=Pdhv<OrderT>(mesh) );
 
-    	Idh_el = IPtr( _domainSpace=Pdhv<OrderT>(cmeshElasticity), _imageSpace=Pdhv<OrderT>(mesh) );
-		Idhv_el = IPtr( _domainSpace=Pdhms<OrderT>(cmeshElasticity), _imageSpace=Pdhms<OrderT>(mesh) );
-		
+        Idh_el = IPtr( _domainSpace=Pdhv<OrderT>(cmeshElasticity), _imageSpace=Pdhv<OrderT>(mesh) );
+        Idhv_el = IPtr( _domainSpace=Pdhms<OrderT>(cmeshElasticity), _imageSpace=Pdhms<OrderT>(mesh) );
+
         auto meshCommon = (soption("gmsh.submesh")<soption("mixedelasticity.gmsh.submesh")) ? cmeshPoisson : cmeshElasticity ;
 
-		mpe_type MPE( cmeshPoisson, cmeshElasticity, meshCommon, mesh); 
-		MPE.run( Idh_el, Idhv_el, Idh_poi, Idhv_poi );
+        mpe_type MPE( cmeshPoisson, cmeshElasticity, meshCommon, mesh);
+        MPE.run( Idh_el, Idhv_el, Idh_poi, Idhv_poi );
     }
 
 }
@@ -142,13 +142,13 @@ int main(int argc, char *argv[])
 #endif
 
     hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension]( auto const& d )
-                    {
-                        constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
-                        std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
-                        constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
-                        if ( dimension == _dim && discretization == _discretization )
-                            runApplicationPoroelastic<_dim,_torder>();
-                    } );
+                                                                                         {
+                                                                                             constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                                                                                             std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
+                                                                                             constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
+                                                                                             if ( dimension == _dim && discretization == _discretization )
+                                                                                                 runApplicationPoroelastic<_dim,_torder>();
+                                                                                         } );
 
-	return 0;
+    return 0;
 }

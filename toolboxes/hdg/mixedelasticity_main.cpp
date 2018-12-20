@@ -29,7 +29,7 @@ runApplicationMixedElasticity()
 
     auto ME = me_type::New("mixedelasticity");
     auto mesh = loadMesh( _mesh=new typename me_type::mesh_type );
-    
+
     decltype( IPtr( _domainSpace=Pdhv<OrderT>(mesh), _imageSpace=Pdhv<OrderT>(mesh) ) ) Idh ;
     decltype( IPtr( _domainSpace=Pdhms<OrderT>(mesh), _imageSpace=Pdhms<OrderT>(mesh) ) ) Idhv;
 
@@ -44,7 +44,7 @@ runApplicationMixedElasticity()
 
         help = unseparatedList[i];
         if ( help == ',' || i == unseparatedList.size()-1 )
-        {        
+        {
             if ( i ==  unseparatedList.size()-1)
                 nameSubmesh.push_back(help);
             listSubmesh.push_back(nameSubmesh);
@@ -69,50 +69,50 @@ runApplicationMixedElasticity()
 
 
 
-/*	
-	if ( soption("gmsh.submesh").empty() )
-	{
-		ME -> init(mesh);
-	} 
-	else
-	{
-		Feel::cout << "Using submesh: " << soption("gmsh.submesh") << std::endl;
-		std::list<std::string> listSubmeshes;
-		listSubmeshes.push_back( soption("gmsh.submesh") );
-		if ( !soption("gmsh.submesh2").empty() )
-		{
-			Feel::cout << "Using submesh 2: " << soption("gmsh.submesh2") << std::endl;
-			listSubmeshes.push_back( soption("gmsh.submesh2") );
-		}
-		auto cmesh = createSubmesh( mesh, markedelements(mesh,listSubmeshes), Environment::worldComm() );
-		Idh = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
-    	Idhv = IPtr( _domainSpace=Pdhms<OrderT>(cmesh), _imageSpace=Pdhms<OrderT>(mesh) );
-    	ME -> init( cmesh, mesh );
-	}
-*/	 
-    
-	if ( ME -> isStationary() )
+    /*
+     if ( soption("gmsh.submesh").empty() )
+     {
+     ME -> init(mesh);
+     }
+     else
+     {
+     Feel::cout << "Using submesh: " << soption("gmsh.submesh") << std::endl;
+     std::list<std::string> listSubmeshes;
+     listSubmeshes.push_back( soption("gmsh.submesh") );
+     if ( !soption("gmsh.submesh2").empty() )
+     {
+     Feel::cout << "Using submesh 2: " << soption("gmsh.submesh2") << std::endl;
+     listSubmeshes.push_back( soption("gmsh.submesh2") );
+     }
+     auto cmesh = createSubmesh( mesh, markedelements(mesh,listSubmeshes), Environment::worldComm() );
+     Idh = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
+     Idhv = IPtr( _domainSpace=Pdhms<OrderT>(cmesh), _imageSpace=Pdhms<OrderT>(mesh) );
+     ME -> init( cmesh, mesh );
+     }
+     */
+
+    if ( ME -> isStationary() )
     {
-		ME->assembleCst();
-		ME->assembleNonCst();
+        ME->assembleCst();
+        ME->assembleNonCst();
         ME->solve();
         ME->exportResults( mesh );
-        ME->exportTimers(); 
+        ME->exportTimers();
     }
     else
     {
-		//ME->assembleCst();
-    	for ( ; !ME->timeStepBase()->isFinished() ; ME->updateTimeStep() )
+        //ME->assembleCst();
+        for ( ; !ME->timeStepBase()->isFinished() ; ME->updateTimeStep() )
         {
-        	Feel::cout << "============================================================\n";
-        	Feel::cout << "time simulation: " << ME->time() << "s \n";
-        	Feel::cout << "============================================================\n";
-			ME->assembleCst();
-			ME->assembleNonCst();
-        	ME->solve();
-        	ME->exportResults( mesh , Idh, Idhv );
+            Feel::cout << "============================================================\n";
+            Feel::cout << "time simulation: " << ME->time() << "s \n";
+            Feel::cout << "============================================================\n";
+            ME->assembleCst();
+            ME->assembleNonCst();
+            ME->solve();
+            ME->exportResults( mesh , Idh, Idhv );
         }
-     }
+    }
 
 #if 0
 
@@ -156,13 +156,13 @@ int main(int argc, char *argv[])
 #endif
 
     hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension]( auto const& d )
-                    {
-                        constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
-                        std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
-                        constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
-                        if ( dimension == _dim && discretization == _discretization )
-                            runApplicationMixedElasticity<_dim,_torder>();
-                    } );
+                                                                                         {
+                                                                                             constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                                                                                             std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
+                                                                                             constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
+                                                                                             if ( dimension == _dim && discretization == _discretization )
+                                                                                                 runApplicationMixedElasticity<_dim,_torder>();
+                                                                                         } );
 
 
     return 0;

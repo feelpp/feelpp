@@ -137,7 +137,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initModel()
             Feel::cout << std::endl;
         }
 
-		itType = mapField.find( "Neumann_exact" );
+        itType = mapField.find( "Neumann_exact" );
         if ( itType != mapField.end() )
         {
             Feel::cout << "Neumann computed from exact pressure:";
@@ -241,11 +241,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
     // M_Ch = Pch<0>( M_mesh, true );
     M_M0h = Pdh<0>( face_mesh );
 
-	std::vector<std::string> ibc_markers(M_integralCondition);
-	for( int i = 0; i < M_integralCondition; i++)
-	{
-		ibc_markers.push_back(M_IBCList[i].marker());
-	}
+    std::vector<std::string> ibc_markers(M_integralCondition);
+    for( int i = 0; i < M_integralCondition; i++)
+    {
+        ibc_markers.push_back(M_IBCList[i].marker());
+    }
 
     auto ibc_mesh = createSubmesh( M_mesh, markedfaces(M_mesh, ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
     M_Ch = Pch<0>( ibc_mesh, true );
@@ -262,13 +262,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
     M_up = M_Vh->element( "u" );
     M_pp = M_Wh->element( "p" );
 
-   	for( int i = 0; i < M_integralCondition; i++ )
-       	M_mup.push_back(M_Ch->element("mup"));
+    for( int i = 0; i < M_integralCondition; i++ )
+        M_mup.push_back(M_Ch->element("mup"));
 
-	solve::strategy s = boption(prefixvm(prefix(), "use-sc"))?solve::strategy::static_condensation:solve::strategy::monolithic;
+    solve::strategy s = boption(prefixvm(prefix(), "use-sc"))?solve::strategy::static_condensation:solve::strategy::monolithic;
 
 #if 0
-	M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
+    M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     M_A = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
 #else

@@ -38,17 +38,17 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
     M_up = U(0_c);
     M_pp = U(1_c);
 
-   	for( int i = 0; i < M_integralCondition; i++ )
-       	M_mup[i] = U(3_c,i);
+    for( int i = 0; i < M_integralCondition; i++ )
+        M_mup[i] = U(3_c,i);
 
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleAll()
 {
-	M_A_cst->zero();
-	M_F->zero();
-	this->assembleCstPart();
+    M_A_cst->zero();
+    M_F->zero();
+    this->assembleCstPart();
     this->assembleNonCstPart();
 }
 
@@ -58,10 +58,10 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::copyCstPart()
     this->setVectorToZero();
 
 #ifndef USE_SAME_MAT
-	M_A_cst->close();
+    M_A_cst->close();
     //M_A->zero();
     M_A->close();
-	// copy constant parts of the matrix
+    // copy constant parts of the matrix
     MatConvert(toPETSc(M_A_cst->getSparseMatrix())->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A->getSparseMatrix())->mat()));
 #endif
 }
@@ -210,13 +210,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateConductivityTerm( bool isNL)
         else
         {
             auto cond = material.getScalar(soption(prefixvm(prefix(),"conductivityNL_json")), "p", idv(M_pp));
-	        // (sigma(p)^-1 j, v)
+            // (sigma(p)^-1 j, v)
             bbf(0_c,0_c) += integrate(_quad=_Q<expr_order>(), _range=markedelements(M_mesh,marker),
                                       _expr=(trans(idt(u))*id(v))/cond );
         }
     }
 
-	// (1/delta_t p, w)_Omega  [only if it is not stationary]
+    // (1/delta_t p, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
         bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
                                      _expr = -(this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
@@ -231,10 +231,10 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRHS()
 {
     // (p_old,w)_Omega
     if ( !this->isStationary() )
-	{
-		auto bdf_poly = M_bdf_mixedpoisson->polyDeriv();
+    {
+        auto bdf_poly = M_bdf_mixedpoisson->polyDeriv();
         this->assemblePotentialRHS( idv(bdf_poly) , "");
-	}
+    }
 
     auto itField = modelProperties().boundaryConditions().find( "potential");
     if ( itField != modelProperties().boundaryConditions().end() )
@@ -301,7 +301,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleBoundaryCond()
             }
         }
 
-		itType = mapField.find( "Neumann_exact" );
+        itType = mapField.find( "Neumann_exact" );
         if ( itType != mapField.end() )
         {
             for ( auto const& exAtMarker : (*itType).second )
@@ -321,7 +321,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleBoundaryCond()
                 auto g1 = expr<expr_order>(exAtMarker.expression1());
                 auto g2 = expr<expr_order>(exAtMarker.expression2());
 
-				if ( !this->isStationary() )
+                if ( !this->isStationary() )
                 {
                     g1.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                     g2.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
@@ -357,8 +357,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsBoundaryCond()
                 if ( exAtMarker.isExpression() )
                 {
                     auto g = expr<expr_order>(exAtMarker.expression());
-                	if ( !this->isStationary() )
-                	    g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+                    if ( !this->isStationary() )
+                        g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                     this->assembleRhsDirichlet(g, marker);
                 } else if ( exAtMarker.isFile() )
                 {
@@ -420,23 +420,23 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsBoundaryCond()
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-				auto p_ex = expr<expr_order>(exAtMarker.expression());
+                auto p_ex = expr<expr_order>(exAtMarker.expression());
                 auto gradp_ex = expr(grad<Dim>(p_ex)) ;
                 if ( !this->isStationary() )
-                	gradp_ex.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+                    gradp_ex.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
 
                 for( auto const& pairMat : modelProperties().materials() )
                 {
-                	auto material = pairMat.second;
+                    auto material = pairMat.second;
                     auto K = material.getDouble( "k" );
 
-                	auto g = expr(-K* trans(gradp_ex)) ;
-                	auto gn = inner(g,N());
-                	this->assembleRhsNeumann( gn, marker);
+                    auto g = expr(-K* trans(gradp_ex)) ;
+                    auto gn = inner(g,N());
+                    this->assembleRhsNeumann( gn, marker);
                 }
             }
         }
-		/*
+        /*
          itType = mapField.find( "Robin" );
          if ( itType != mapField.end() )
          {
@@ -527,21 +527,21 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsIBC( int i, std::string marker
             else
                 d = exAtMarker.data(0.1);
 
-			// Scale entries if necessary
-    		{
+            // Scale entries if necessary
+            {
                 for ( auto const& field : modelProperties().postProcess().exports().fields() )
-        		{
-            		if ( field == "scaled_flux" )
-					{
-            			for( auto const& pairMat : modelProperties().materials() )
-            			{
-                			auto material = pairMat.second;
-                			double kk = material.getDouble( "scale_integral_file" );
-							d = kk*d;
-						}
-					}
-				}
-			}
+                {
+                    if ( field == "scaled_flux" )
+                    {
+                        for( auto const& pairMat : modelProperties().materials() )
+                        {
+                            auto material = pairMat.second;
+                            double kk = material.getDouble( "scale_integral_file" );
+                            d = kk*d;
+                        }
+                    }
+                }
+            }
             LOG(INFO) << "use g=" << d << std::endl;
             Feel::cout << "g=" << d << std::endl;
 
@@ -685,35 +685,35 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initTimeStep()
     if (!this->doRestart())
     {
         // start time step
-		auto itField = modelProperties().boundaryConditions().find("potential");
+        auto itField = modelProperties().boundaryConditions().find("potential");
         if ( itField != modelProperties().boundaryConditions().end() )
         {
-        	auto mapField = (*itField).second;
+            auto mapField = (*itField).second;
             auto itType = mapField.find( "InitialSolution" );
             if (itType != mapField.end() )
             {
-            	for (auto const& exAtMarker : (*itType).second )
+                for (auto const& exAtMarker : (*itType).second )
                 {
-                	if (exAtMarker.isExpression() )
+                    if (exAtMarker.isExpression() )
                     {
-                    	auto p_init = expr(exAtMarker.expression() );
-						auto marker = exAtMarker.marker();
+                        auto p_init = expr(exAtMarker.expression() );
+                        auto marker = exAtMarker.marker();
 
                         if ( !this->isStationary() )
-                        	p_init.setParameterValues( { {"t", this->time() } } );
-						M_pp = project( _space=M_Wh, _range=markedelements(M_mesh,marker), _expr=p_init );
-						if (M_integralCondition)
-						{
-							auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[0].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
-							auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[0].marker()), _expr=cst(1.0) ).evaluate()(0,0);
+                            p_init.setParameterValues( { {"t", this->time() } } );
+                        M_pp = project( _space=M_Wh, _range=markedelements(M_mesh,marker), _expr=p_init );
+                        if (M_integralCondition)
+                        {
+                            auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[0].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
+                            auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[0].marker()), _expr=cst(1.0) ).evaluate()(0,0);
 
-                    		Feel::cout << "Initial integral value of potential on "
-                      			       << M_IBCList[0].marker() << " : \t " << mup/meas << std::endl;
-						}
-					}
-				}
-			}
-		}
+                            Feel::cout << "Initial integral value of potential on "
+                                       << M_IBCList[0].marker() << " : \t " << mup/meas << std::endl;
+                        }
+                    }
+                }
+            }
+        }
 
         M_bdf_mixedpoisson -> start( M_pp );
         // up current time
@@ -862,10 +862,10 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                 {
                     double export_mup = M_mup[i].max();
 
-					LOG(INFO) << "exporting IBC potential " << i << " at time "
+                    LOG(INFO) << "exporting IBC potential " << i << " at time "
                               << time << " value " << export_mup;
 
-					M_exporter->step( time )->add(prefixvm(prefix(), "cstPotential_1"), export_mup );
+                    M_exporter->step( time )->add(prefixvm(prefix(), "cstPotential_1"), export_mup );
 
                     Feel::cout << "Integral value of potential(mup) on "
                                << M_IBCList[i].marker() << " : \t " << export_mup << std::endl;
@@ -900,15 +900,15 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                                     gradp_exact.setParameterValues( { {"t", time } } );
                                 auto u_exact = cst(-K)*trans(gradp_exact);//expr(-K* trans(gradp_exact)) ;
 
-								auto p_exactExport = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact );
-								auto u_exactExport = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
+                                auto p_exactExport = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact );
+                                auto u_exactExport = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
 
                                 M_exporter->step( time )->add(prefixvm(prefix(), "p_exact"), p_exactExport );
-								M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport );
+                                M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport );
 
                                 // auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - u_exact );
                                 auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - idv(u_exactExport) );
-								auto l2norm_uex = normL2( _range=elements(M_mesh), _expr= u_exact );
+                                auto l2norm_uex = normL2( _range=elements(M_mesh), _expr= u_exact );
 
                                 if (l2norm_uex < 1)
                                     l2norm_uex = 1.0;
@@ -921,7 +921,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
 
                                 Feel::cout << "----- Computed Errors -----" << std::endl;
                                 Feel::cout << "||p-p_ex||_L2=\t" << l2err_p/l2norm_pex << std::endl;
-			                    Feel::cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
+                                Feel::cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
                                 Feel::cout << "---------------------------" << std::endl;
 
                                 // Export the errors

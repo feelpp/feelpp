@@ -35,7 +35,7 @@ runApplicationMixedPoisson()
     else
     {
         Feel::cout << "Using submesh: " << soption("gmsh.submesh") << std::endl;
-		auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
+        auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
         Idh = IPtr( _domainSpace=Pdh<OrderT>(cmesh), _imageSpace=Pdh<OrderT>(mesh) );
         Idhv = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
         MP -> init( cmesh, mesh );
@@ -43,20 +43,20 @@ runApplicationMixedPoisson()
 
     if ( MP -> isStationary() )
     {
-		MP->assembleAll();
+        MP->assembleAll();
         MP->solve();
         MP->exportResults( mesh, Idh, Idhv );
     }
     else
     {
-		//MP->assembleCstPart();
+        //MP->assembleCstPart();
         for ( ; !MP->timeStepBase()->isFinished() ; MP->updateTimeStep() )
         {
             Feel::cout << "============================================================\n";
             Feel::cout << "time simulation: " << MP->time() << "s \n";
             Feel::cout << "============================================================\n";
-			// MP->assembleNonCstPart();
-			MP->assembleAll();
+            // MP->assembleNonCstPart();
+            MP->assembleAll();
             MP->solve();
             MP->exportResults( mesh, Idh, Idhv );
         }
@@ -100,13 +100,13 @@ int main(int argc, char *argv[])
 #endif
 
     hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension]( auto const& d )
-                    {
-                        constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
-                        std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
-                        constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
-                        if ( dimension == _dim && discretization == _discretization )
-                            runApplicationMixedPoisson<_dim,_torder>();
-                    } );
+                                                                                         {
+                                                                                             constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                                                                                             std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
+                                                                                             constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
+                                                                                             if ( dimension == _dim && discretization == _discretization )
+                                                                                                 runApplicationMixedPoisson<_dim,_torder>();
+                                                                                         } );
 
     return 0;
 }
