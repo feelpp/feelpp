@@ -11,12 +11,11 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::MixedElasticity( std::string const& prefix,
                                                       std::string const& subPrefix,
                                                       ModelBaseRepository const& modelRep )
     : super_type( prefix, worldComm, subPrefix, modelRep ),
-      M_prefix(prefix),
-      M_tauCst(doption (prefixvm(M_prefix, "tau_constant") )),
-      M_tauOrder(ioption( prefixvm(M_prefix, "tau_order") )),
-      M_hFace(ioption( prefixvm(M_prefix, "hface")) ),
-      M_useSC(boption(prefixvm(M_prefix, "use-sc"))),
-      M_nullspace(boption(prefixvm(M_prefix, "nullspace")) )
+      M_tauCst(doption (prefixvm(this->prefix(), "tau_constant") )),
+      M_tauOrder(ioption( prefixvm(this->prefix(), "tau_order") )),
+      M_hFace(ioption( prefixvm(this->prefix(), "hface")) ),
+      M_useSC(boption(prefixvm(this->prefix(), "use-sc"))),
+      M_nullspace(boption(prefixvm(this->prefix(), "nullspace")) )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedElasticity","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -24,17 +23,16 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::MixedElasticity( std::string const& prefix,
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"MixedElasticity.info") );
 
 
-    M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption( prefixvm(M_prefix, "model_json") ) ) );
     if (M_useSC)
     {
-        if ( M_prefix.empty())
+        if ( this->prefix().empty())
             M_backend = backend( _name="sc", _rebuild=true);
         else
             M_backend = backend( _name=prefixvm(prefix,"sc"), _rebuild=true);
     }
     else
     {
-        if ( M_prefix.empty())
+        if ( this->prefix().empty())
             M_backend = backend( _rebuild=true);
         else
             M_backend = backend( _name=prefix, _rebuild=true);
@@ -204,8 +202,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initModel()
 
     // initialize marker lists for each boundary condition type
     // Strain
-    auto itField = M_modelProperties->boundaryConditions().find( "stress");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
+    auto itField = modelProperties().boundaryConditions().find( "stress");
+    if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Dirichlet" );
@@ -286,8 +284,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initModel()
     }
 
     // Displacement
-    itField = M_modelProperties->boundaryConditions().find( "displacement");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
+    itField = modelProperties().boundaryConditions().find( "displacement");
+    if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Dirichlet" );
@@ -312,8 +310,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initModel()
     {
         M_IBCList.clear();
     }
-    itField = M_modelProperties->boundaryConditions().find( "stress");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
+    itField = modelProperties().boundaryConditions().find( "stress");
+    if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Integral" );
