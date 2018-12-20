@@ -21,17 +21,17 @@ void MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleMatrixIBC( int i , std::string
 
     auto H = M_M0h->element( "H" );
 
-    if ( ioption(prefixvm(prefix(), "hface") ) == 0 )
+    if ( M_hFace == 0 )
         H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
-    else if ( ioption(prefixvm(prefix(), "hface") ) == 1 )
+    else if ( M_hFace == 1 )
         H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
-    else if ( ioption(prefixvm(prefix(), "hface") ) == 2 )
+    else if ( M_hFace == 2 )
         H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
     else
         H.on( _range=elements(M_M0h->mesh()), _expr=h() );
 
     // stabilisation parameter
-    auto tau_constant = cst(doption(prefixvm(prefix(), "tau_constant")));
+    auto tau_constant = cst(M_tauCst);
 
     std::string marker;
     if ( !markerOpt.empty())
@@ -50,7 +50,7 @@ void MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleMatrixIBC( int i , std::string
     bbf( 0_c, 3_c, 0, i) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh, marker), _expr=-trans(idt(uI))*(id(v)*N()) );
 
     // <lambda, tau w>_Gamma_I
-    bbf( 1_c, 3_c, 1, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr= tau_constant * trans(idt(uI)) * pow(idv(H),M_tau_order)*id(w) );
+    bbf( 1_c, 3_c, 1, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr= tau_constant * trans(idt(uI)) * pow(idv(H),M_tauOrder)*id(w) );
 
     // <sigma.n, m>_Gamma_I
     bbf( 3_c, 0_c, i, 0 ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr= inner(idt(v)*N(),id(nu)) );
@@ -58,11 +58,11 @@ void MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleMatrixIBC( int i , std::string
 
     // <tau u, m>_Gamma_I
     bbf( 3_c, 1_c, i, 1 ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                       _expr= tau_constant * pow(idv(H),M_tau_order)* inner(idt(u),id(nu)) ),
+                                       _expr= tau_constant * pow(idv(H),M_tauOrder)* inner(idt(u),id(nu)) ),
 
         // -<lambda2, m>_Gamma_I
         bbf( 3_c, 3_c, i, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                           _expr=-tau_constant * pow(idv(H),M_tau_order) * inner(idt(uI),id(nu)) );
+                                           _expr=-tau_constant * pow(idv(H),M_tauOrder) * inner(idt(uI),id(nu)) );
 
 
 
@@ -112,7 +112,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assemble()
 {
 
     tic();
-    solve::strategy s = boption(prefixvm(prefix(), "use-sc"))?solve::strategy::static_condensation:solve::strategy::monolithic;
+    solve::strategy s = M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
 
     auto U = M_ps -> element();
     M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
@@ -175,19 +175,19 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::solve()
 
     std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(get_backend(),hdgNullSpace(M_Wh,mpl::int_<Dim>())) );
     get_backend()->attachNearNullSpace( myNullSpace );
-    if ( boption(_name=prefixvm( this->prefix(), "nullspace").c_str()) )
+    if ( M_nullspace )
         get_backend()->attachNearNullSpace( myNullSpace );
 
 
     std::string solver_string = "MixedElasticity : ";
-    if( boption(prefixvm(this->prefix(), "use-sc")) )
+    if( M_useSC )
         solver_string += "static condensation";
     else
         solver_string += "monolithic";
 
     tic();
     tic();
-    bbf.solve(_solution=U, _rhs=blf, _rebuild=false, _condense=boption(prefixvm(this->prefix(), "use-sc")), _name= this->prefix());
+    bbf.solve(_solution=U, _rhs=blf, _rebuild=false, _condense=M_useSC, _name= this->prefix());
     M_timers["solver"].push_back(toc("solver"));
     toc(solver_string);
 
@@ -211,7 +211,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
 {
-    auto tau_constant = cst(M_tau_constant);
+    auto tau_constant = cst(M_tauCst);
 
     auto sigma = M_Vh->element( "sigma" );
     auto v     = M_Vh->element( "v" );
@@ -231,16 +231,16 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
 
 
 
-    if ( ioption(prefixvm(M_prefix, "hface") ) == 0 )
+    if ( M_hFace == 0 )
         H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
-    else if ( ioption(prefixvm(M_prefix, "hface") ) == 1 )
+    else if ( M_hFace == 1 )
         H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
-    else if ( ioption(prefixvm(M_prefix, "hface") ) == 2 )
+    else if ( M_hFace == 2 )
         H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
     else
         H.on( _range=elements(M_M0h->mesh()), _expr=h() );
 
-    auto sc_param = boption(prefixvm(prefix(), "use-sc")) ? 0.5 : 1.0;
+    auto sc_param = M_useSC ? 0.5 : 1.0;
 
     auto bbf = blockform2 ( *M_ps, M_A_cst );
 
@@ -289,19 +289,19 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
 
     // begin dp: here we need to put the projection of u on the faces
     bbf( 1_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),_expr=-tau_constant *
-                                ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
-                                  rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
+                                ( leftfacet( pow(idv(H),M_tauOrder)*trans(idt(u)))*leftface(id(w)) +
+                                  rightfacet( pow(idv(H),M_tauOrder)*trans(idt(u)))*rightface(id(w) )));
 
     bbf( 1_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=boundaryfaces(M_mesh),
-                                _expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
+                                _expr=-(tau_constant * pow(idv(H),M_tauOrder)*trans(idt(u))*id(w)));
 
     bbf( 1_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
                                 _expr=tau_constant *
-                                ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
-                                  rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )));
+                                ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tauOrder)*id(w))+
+                                  rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tauOrder)*id(w) )));
 
     bbf( 1_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=gammaMinusIntegral,
-                                _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
+                                _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tauOrder)*id(w) );
 
 
     bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
@@ -311,12 +311,12 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
 
     // BC
     bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
-                                _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tau_order)*idt(u) )+
-                                                                      rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
+                                _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tauOrder)*idt(u) )+
+                                                                      rightfacet( pow(idv(H),M_tauOrder)*idt(u) )));
 
     bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
-                                _expr=sc_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
-                                                                                           rightface( pow(idv(H),M_tau_order) )));
+                                _expr=sc_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tauOrder) )+
+                                                                                           rightface( pow(idv(H),M_tauOrder) )));
 
     auto itField = M_modelProperties->boundaryConditions().find( "displacement");
     if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -351,10 +351,10 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
                                             _expr=( trans(id(m))*(idt(sigma)*N()) ));
 
                 bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
-                                            _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
+                                            _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tauOrder)*idt(u) ) );
 
                 bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
-                                            _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+                                            _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tauOrder) ) );
             }
         }
         itType = mapField.find( "Neumann_scalar" );
@@ -368,10 +368,10 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
                                             _expr=( trans(id(m))*(idt(sigma)*N()) ));
 
                 bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
-                                            _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
+                                            _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tauOrder)*idt(u) ) );
 
                 bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
-                                            _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+                                            _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tauOrder) ) );
             }
         }
         itType = mapField.find( "Neumann_exact" );
@@ -385,10 +385,10 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
                                             _expr=( trans(id(m))*(idt(sigma)*N()) ));
 
                 bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
-                                            _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
+                                            _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tauOrder)*idt(u) ) );
 
                 bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
-                                            _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+                                            _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tauOrder) ) );
             }
         }
     }

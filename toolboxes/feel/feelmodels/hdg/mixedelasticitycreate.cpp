@@ -10,7 +10,13 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::MixedElasticity( std::string const& prefix,
                                                       worldcomm_ptr_t const& worldComm,
                                                       std::string const& subPrefix,
                                                       ModelBaseRepository const& modelRep )
-    : super_type( prefix, worldComm, subPrefix, modelRep )
+    : super_type( prefix, worldComm, subPrefix, modelRep ),
+      M_prefix(prefix),
+      M_tauCst(doption (prefixvm(M_prefix, "tau_constant") )),
+      M_tauOrder(ioption( prefixvm(M_prefix, "tau_order") )),
+      M_hFace(ioption( prefixvm(M_prefix, "hface")) ),
+      M_useSC(boption(prefixvm(M_prefix, "use-sc"))),
+      M_nullspace(boption(prefixvm(M_prefix, "nullspace")) )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedElasticity","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -18,10 +24,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::MixedElasticity( std::string const& prefix,
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"MixedElasticity.info") );
 
 
-    M_prefix = prefix;
-
     M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption( prefixvm(M_prefix, "model_json") ) ) );
-    if (boption(prefixvm(this->prefix(), "use-sc")))
+    if (M_useSC)
     {
         if ( M_prefix.empty())
             M_backend = backend( _name="sc", _rebuild=true);
@@ -36,8 +40,6 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::MixedElasticity( std::string const& prefix,
             M_backend = backend( _name=prefix, _rebuild=true);
     }
 
-    M_tau_constant = doption (prefixvm(M_prefix, "tau_constant") );
-    M_tau_order = ioption( prefixvm(M_prefix, "tau_order") );
     M_useUserIBC = false;
 
     //-----------------------------------------------------------------------------//

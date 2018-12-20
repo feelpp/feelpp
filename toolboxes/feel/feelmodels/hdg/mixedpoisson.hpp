@@ -33,12 +33,9 @@ makeMixedPoissonOptions( std::string prefix = "mixedpoisson" )
         ( "gmsh.submesh", po::value<std::string>()->default_value( "" ), "submesh extraction" )
         ( prefixvm( prefix, "tau_constant").c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( prefixvm( prefix, "tau_order").c_str(), po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
-        ( prefixvm( prefix, "picard.itol").c_str(), po::value<double>()->default_value( 1e-4 ), "tolerance" )
-        ( prefixvm( prefix, "picard.itmax").c_str(), po::value<int>()->default_value( 10 ), "iterations max" )
         ( prefixvm( prefix, "hface").c_str(), po::value<int>()->default_value( 0 ), "hface" )
         ( prefixvm( prefix, "conductivity_json").c_str(), po::value<std::string>()->default_value( "cond" ), "key for conductivity in json" )
         ( prefixvm( prefix, "conductivityNL_json").c_str(), po::value<std::string>()->default_value( "condNL" ), "key for non linear conductivity in json (depends on potential p)" )
-        ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")
         ;
     mpOptions.add( modelnumerical_options( prefix ) );
@@ -165,7 +162,12 @@ protected:
     bdf_ptrtype M_bdf_mixedpoisson;
 
 
-    int M_tau_order;
+    int M_tauOrder;
+    double M_tauCst;
+    int M_hFace;
+    std::string M_conductivityKey;
+    std::string M_nlConductivityKey;
+    bool M_useSC;
 
     int M_integralCondition;
     int M_useUserIBC;
@@ -200,10 +202,22 @@ public:
     integral_boundary_list_type integralBoundaryList() const { return M_IBCList; }
     int integralCondition() const { return M_integralCondition; }
     void setIBCList(std::vector<std::string> markersIbc);
-    int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
     product2_space_ptrtype getPS() const { return M_ps; }
     condensed_vector_ptr_t<value_type> getF() { return M_F; }
+
+    int tauOrder() const { return M_tauOrder; }
+    void setTauOrder(int order) { M_tauOrder = order; }
+    double tauCst() const { return M_tauCst; }
+    void setTauCst(double cst) { M_tauCst = cst; }
+    int hFace() const { return M_hFace; }
+    void setHFace(int h) { M_hFace = h; }
+    std::string conductivityKey() const { return M_conductivityKey; }
+    void setConductivityKey(std::string key) { M_conductivityKey = key; }
+    std::string nlConductivityKey() const { return M_nlConductivityKey; }
+    void setNlConductivityKey(std::string key) { M_nlConductivityKey = key; }
+    bool useSC() const { return M_useSC; }
+    void setUseSC(bool sc) { M_useSC = sc; }
 
     // time step scheme
     virtual void createTimeDiscretization() ;

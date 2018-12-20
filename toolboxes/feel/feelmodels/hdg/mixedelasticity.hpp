@@ -201,8 +201,11 @@ protected:
     Wh_element_t M_pp; // displacement solution
     Ch_element_vector_type M_mup; // displacement solution on the IBC
 
-    double M_tau_constant;
-    int M_tau_order;
+    double M_tauCst;
+    int M_tauOrder;
+    int M_hFace;
+    bool M_useSC;
+    bool M_nullspace;
 
     int M_integralCondition;
     int M_useUserIBC;
@@ -246,7 +249,17 @@ public:
     void setIBCList(std::vector<std::string> markersIbc);
     product2_space_ptrtype getPS() const { return M_ps; }
 
-    int tau_order() const { return M_tau_order; }
+    int tauOrder() const { return M_tauOrder; }
+    void setTauOrder(int order) { M_tauOrder = order; }
+    double tauCst() const { return M_tauCst; }
+    void setTauCst(double cst) { M_tauCst = cst; }
+    int hFace() const { return M_hFace; }
+    void setHFace(int h) { M_hFace = h; }
+    bool useSC() const { return M_useSC; }
+    void setUseSC(bool sc) { M_useSC = sc; }
+    bool nullspace() const { return M_nullspace; }
+    void setNullSpace(bool nullspace) { M_nullspace = nullspace; }
+
     backend_ptrtype get_backend() { return M_backend; }
     condensed_vector_ptr_t<value_type> getF() {return M_F; }
     std::map<std::string, std::vector<double> > getTimers() {return M_timers; }
