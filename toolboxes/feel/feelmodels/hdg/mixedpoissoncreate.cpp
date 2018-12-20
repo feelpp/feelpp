@@ -16,6 +16,12 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
                                                 std::string const& subPrefix,
                                                 ModelBaseRepository const& modelRep )
     : super_type( prefix, worldComm, subPrefix, modelRep ),
+      M_tauOrder(ioption( prefixvm(M_prefix, "tau_order") )),
+      M_tauCst(doption( prefixvm(M_prefix, "tau_constant") )),
+      M_hFace(ioption( prefixvm(M_prefix, "hface") )),
+      M_conductivityKey(soption( prefixvm(M_prefix, "conductivity_json")) ),
+      M_nlConductivityKey(soption( prefixvm(M_prefix,"conductivityNL_json")) ),
+      M_useSC(boption( prefixvm(M_prefix, "use-sc")) ),
       M_useUserIBC(false)
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedPoisson","constructor", "start",
@@ -29,8 +35,6 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
         M_backend = backend( _rebuild=true);
     else
         M_backend = backend( _name=this->prefix(), _rebuild=true);
-
-    M_tau_order = ioption( prefixvm(this->prefix(), "tau_order") );
 
     //-----------------------------------------------------------------------------//
 
@@ -265,7 +269,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
     for( int i = 0; i < M_integralCondition; i++ )
         M_mup.push_back(M_Ch->element("mup"));
 
-    solve::strategy s = boption(prefixvm(prefix(), "use-sc"))?solve::strategy::static_condensation:solve::strategy::monolithic;
+    solve::strategy s = M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
 
 #if 0
     M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
