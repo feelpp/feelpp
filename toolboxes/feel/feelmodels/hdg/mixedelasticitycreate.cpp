@@ -21,20 +21,20 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::MixedElasticity( std::string const& prefix,
     M_prefix = prefix;
 
     M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption( prefixvm(M_prefix, "model_json") ) ) );
-	if (boption(prefixvm(this->prefix(), "use-sc")))
-	{
-    	if ( M_prefix.empty())
-        	M_backend = backend( _name="sc", _rebuild=true);
-    	else
-        	M_backend = backend( _name=prefixvm(prefix,"sc"), _rebuild=true);
-	}
-	else
-	{
-    	if ( M_prefix.empty())
-        	M_backend = backend( _rebuild=true);
-    	else
-        	M_backend = backend( _name=prefix, _rebuild=true);
-	}
+    if (boption(prefixvm(this->prefix(), "use-sc")))
+    {
+        if ( M_prefix.empty())
+            M_backend = backend( _name="sc", _rebuild=true);
+        else
+            M_backend = backend( _name=prefixvm(prefix,"sc"), _rebuild=true);
+    }
+    else
+    {
+        if ( M_prefix.empty())
+            M_backend = backend( _rebuild=true);
+        else
+            M_backend = backend( _name=prefix, _rebuild=true);
+    }
 
     M_tau_constant = doption (prefixvm(M_prefix, "tau_constant") );
     M_tau_order = ioption( prefixvm(M_prefix, "tau_order") );
@@ -101,7 +101,7 @@ void MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::updateTimeStepNM()
     // int previousTimeOrder = this->timeStepNM()->timeOrder();
 
     M_nm_mixedelasticity->next( M_pp );
-	this->timeStepNM()->updateFromDisp( M_pp );
+    this->timeStepNM()->updateFromDisp( M_pp );
 
     // int currentTimeOrder = this->timeStepNM()->timeOrder();
 
@@ -128,7 +128,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::createTimeDiscretization()
     if ( myFileFormat == "binary" )
         suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
 
-	M_nm_mixedelasticity = newmark( _vm=Environment::vm(), _space=M_Wh,
+    M_nm_mixedelasticity = newmark( _vm=Environment::vm(), _space=M_Wh,
                                     _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"newmark"+suffixName)),
                                     _prefix="",
                                     _initial_time=this->timeInitial(),
@@ -175,13 +175,13 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::init( mesh_ptrtype mesh, mesh_ptrtype meshV
     this->initSpaces();
     M_timers["spaces"].push_back(toc("initSpaces"));
 
-	if (!isStationary())
-	{
-		tic();
-		this->createTimeDiscretization();
+    if (!isStationary())
+    {
+        tic();
+        this->createTimeDiscretization();
         this->initTimeStep();
-		toc("time_discretization");
-	}
+        toc("time_discretization");
+    }
 
     tic();
     this->initExporter(meshVisu);
@@ -211,75 +211,75 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initModel()
 
         if ( itType != mapField.end() )
         {
-            cout << "Dirichlet: ";
+            Feel::cout << "Dirichlet: ";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    cout << " " << marker;
+                    Feel::cout << " " << marker;
                 else
-                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            cout << std::endl;
+            Feel::cout << std::endl;
         }
 
         itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
         {
-            cout << "Neumann:";
+            Feel::cout << "Neumann:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    cout << " " << marker;
+                    Feel::cout << " " << marker;
                 else
-                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            cout << std::endl;
+            Feel::cout << std::endl;
         }
 
         itType = mapField.find( "Neumann_scalar" );
         if ( itType != mapField.end() )
         {
-            cout << "Neumann scalar:";
+            Feel::cout << "Neumann scalar:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    cout << " " << marker;
+                    Feel::cout << " " << marker;
                 else
-                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            cout << std::endl;
+            Feel::cout << std::endl;
         }
 
         itType = mapField.find( "Neumann_exact" );
         if ( itType != mapField.end() )
         {
-            cout << "Neumann computed from displacement:";
+            Feel::cout << "Neumann computed from displacement:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    cout << " " << marker;
+                    Feel::cout << " " << marker;
                 else
-                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            cout << std::endl;
+            Feel::cout << std::endl;
         }
         itType = mapField.find( "Robin" );
         if ( itType != mapField.end() )
         {
-            cout << "Robin:";
+            Feel::cout << "Robin:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    cout << " " << marker;
+                    Feel::cout << " " << marker;
                 else
-                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            cout << std::endl;
+            Feel::cout << std::endl;
         }
     }
 
@@ -290,19 +290,19 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initModel()
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Dirichlet" );
 
-	    if ( itType != mapField.end() )
+        if ( itType != mapField.end() )
         {
-            cout << "Dirichlet: ";
+            Feel::cout << "Dirichlet: ";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    cout << " " << marker;
+                    Feel::cout << " " << marker;
                 else
-                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            cout << std::endl;
-	    }
+            Feel::cout << std::endl;
+        }
     }
 
 
@@ -365,11 +365,11 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initSpaces()
     M_Mh = Pdhv<Order>( face_mesh, true );
     M_M0h = Pdh<0>( face_mesh );
 
-	std::vector<std::string> ibc_markers(M_integralCondition);
-	for( int i = 0; i < M_integralCondition; i++)
-	{
-		ibc_markers.push_back(M_IBCList[i].marker());
-	}
+    std::vector<std::string> ibc_markers(M_integralCondition);
+    for( int i = 0; i < M_integralCondition; i++)
+    {
+        ibc_markers.push_back(M_IBCList[i].marker());
+    }
 
     auto ibc_mesh = createSubmesh( M_mesh, markedfaces(M_mesh, ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
     M_Ch = Pchv<0>( ibc_mesh, true );
@@ -378,16 +378,16 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initSpaces()
     auto ibcSpaces = std::make_shared<ProductSpace<Ch_ptr_t,true> >( M_integralCondition, M_Ch);
     M_ps = std::make_shared<product2_space_type>(product2(ibcSpaces,M_Vh,M_Wh,M_Mh));
 
-	// M_ps = std::make_shared<product_space_std>(product(M_Vh,M_Wh,M_Mh));
+    // M_ps = std::make_shared<product_space_std>(product(M_Vh,M_Wh,M_Mh));
 
     M_up = M_Vh->element( "u" ); // Strain
     M_pp = M_Wh->element( "p" ); // Displacement
 
-    cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
-         << "Wh<" << Order << "> : " << M_Wh->nDof() << std::endl
-         << "Mh<" << Order << "> : " << M_Mh->nDof() << std::endl;
+    Feel::cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
+               << "Wh<" << Order << "> : " << M_Wh->nDof() << std::endl
+               << "Mh<" << Order << "> : " << M_Mh->nDof() << std::endl;
     if ( M_integralCondition )
-        cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
+        Feel::cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
 }
 
 } // namespace Feel

@@ -56,7 +56,7 @@ makeMixedPoissonLibOptions( std::string prefix = "mixedpoisson" )
 }
 
 template<int Dim, int Order, int G_Order = 1, int E_Order = 4>
-class MixedPoisson    :	public ModelNumerical
+class MixedPoisson    : public ModelNumerical
 {
 public:
     typedef ModelNumerical super_type;
@@ -202,8 +202,8 @@ public:
     void setIBCList(std::vector<std::string> markersIbc);
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
-	product2_space_ptrtype getPS() const { return M_ps; }
-	condensed_vector_ptr_t<value_type> getF() { return M_F; }
+    product2_space_ptrtype getPS() const { return M_ps; }
+    condensed_vector_ptr_t<value_type> getF() { return M_F; }
 
     // time step scheme
     virtual void createTimeDiscretization() ;
@@ -231,7 +231,7 @@ public:
     virtual void initSpaces();
     virtual void initExporter( mesh_ptrtype meshVisu = nullptr );
     virtual void assembleAll();
-	virtual void assembleCstPart();
+    virtual void assembleCstPart();
     virtual void assembleNonCstPart();
     void copyCstPart();
     void setCstMatrixToZero();
@@ -254,9 +254,9 @@ public:
     // u.n + g1.p = g2
     template<typename ExprT> void assembleRobin( Expr<ExprT> expr1, Expr<ExprT> expr2, std::string marker);
     void assembleIBC(int i, std::string marker = "");
-	virtual void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
+    virtual void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
 
-	virtual void solve();
+    virtual void solve();
 
 };
 
@@ -281,7 +281,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::updateConductivityTerm(Expr<ExprT> e
     else
         bbf(0_c,0_c) += integrate(_quad=_Q<expr_order>(),  _range=markedelements(M_mesh, marker), _expr=inner(idt(u),id(v))/expr);
 
-	// (1/delta_t p, w)_Omega  [only if it is not stationary]
+    // (1/delta_t p, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
         bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
                                      _expr = -(this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
@@ -312,15 +312,15 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assemblePotentialRHS( Expr<Expr
     auto w = M_Wh->element();
 
     if ( marker.empty() )
-	{
+    {
         blf(1_c) += integrate(_quad=_Q<expr_order>(),  _range=elements(M_mesh),
                               _expr=-inner(expr,id(w)) );
     }
-	else
-	{
+    else
+    {
         blf(1_c) += integrate(_quad=_Q<expr_order>(),  _range=markedelements(M_mesh,marker),
                               _expr=-inner(expr,id(w)) );
-	}
+    }
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -342,10 +342,10 @@ void
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsNeumann( Expr<ExprT> expr, std::string marker)
 {
 
-	auto blf = blockform1( *M_ps, M_F );
+    auto blf = blockform1( *M_ps, M_F );
     auto l = M_Mh->element( "lambda" );
 
-	// <g_N,mu>_Gamma_N
+    // <g_N,mu>_Gamma_N
     blf(2_c) += integrate(_quad=_Q<expr_order>(),  _range=markedfaces(M_mesh, marker),
                           _expr=id(l)*expr);
 }
@@ -356,10 +356,10 @@ void
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsInterfaceCondition( Expr<ExprT> expr, std::string marker)
 {
 
-	auto blf = blockform1( *M_ps, M_F );
+    auto blf = blockform1( *M_ps, M_F );
     auto l = M_Mh->element( "lambda" );
 
-	// <g_interface,mu>_Gamma_N
+    // <g_interface,mu>_Gamma_N
     blf(2_c) += integrate(_quad=_Q<expr_order>(),  _range=markedelements(M_Mh->mesh(), marker),
                           _expr=id(l)*expr);
 }
