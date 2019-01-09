@@ -103,6 +103,10 @@ public:
     typedef std::shared_ptr<exporter_type> exporter_ptrtype;
 
     //--------------------------------------------------------------------//
+    // Measures
+    using force_type = Eigen::Matrix<typename super_type::value_type, nDim, 1, Eigen::ColMajor>;
+
+    //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
 public:
@@ -134,6 +138,8 @@ public:
     std::string const& fluidPrefix() const { return super_type::prefix(); }
     std::string globalLevelsetPrefix() const { return prefixvm( this->prefix(), "levelset"); }
 
+    static std::string levelsetName( uint16_type n ) { return (boost::format( "levelset%1%" ) %(n+1)).str(); }
+
     std::shared_ptr<std::ostringstream> getInfo() const override;
 
     //--------------------------------------------------------------------//
@@ -152,21 +158,23 @@ public:
     //--------------------------------------------------------------------//
     // Models
     fluid_ptrtype fluidModel() { return this->shared_from_this(); }
-    levelset_ptrtype const& levelsetModel(uint16_type n) const { return M_levelsets.at(n); }
+    std::map<std::string, levelset_ptrtype> levelsetModels() const { return M_levelsets; }
+    levelset_ptrtype const& levelsetModel(std::string const& name) const { return M_levelsets.at(name); }
     uint16_type nLevelsets() const { return M_levelsets.size(); }
 
     // Global levelset
     auto globalLevelsetExpr() const {
         std::vector< element_levelset_ptrtype > levelsets;
         std::transform( M_levelsets.begin(), M_levelsets.end(), std::back_inserter(levelsets),
-                [](levelset_ptrtype const& l) { return l->phi(); }
+                [](std::pair<std::string, levelset_ptrtype> const& l) { return l.second->phi(); }
                 );
         return Feel::FeelModels::globalLevelsetExpr( levelsets );
     }
     element_levelset_ptrtype const& globalLevelsetElt() const;
 
     // Fluid density-viscosity model
-    material_properties_ptrtype const& fluidMaterialProperties( uint16_type n = 0 ) const;
+    material_properties_ptrtype const& fluidMaterialProperties() const { return M_fluidMaterialProperties; }
+    material_properties_ptrtype const& levelsetMaterialProperties( std::string const& name ) const { return M_levelsetsMaterialProperties.at(name); }
 
     //--------------------------------------------------------------------//
     // Algebraic data
@@ -177,8 +185,9 @@ public:
     //--------------------------------------------------------------------//
     double globalLevelsetThicknessInterface() const { return M_globalLevelsetThicknessInterface; }
     //--------------------------------------------------------------------//
-    bool hasInextensibility( uint16_type n = 0 ) const { return M_hasInextensibility.at(n); }
-    std::string const& inextensibilityMethod( uint16_type n = 0 ) const { return M_inextensibilityMethod.at(n); }
+    bool hasInextensibility( std::string const& name ) const { return M_hasInextensibility.at(name); }
+    std::string const& inextensibilityMethod( std::string const& name ) const { return M_inextensibilityMethods.at(name); }
+    bool hasInextensibilityLM() const;
     void updateInextensibilityLM();
     //--------------------------------------------------------------------//
     bool hasInterfaceForces() const;
@@ -195,7 +204,7 @@ public:
     // Time step
     //std::shared_ptr<TSBase> timeStepBase() const { return M_fluid->timeStepBase(); }
     std::shared_ptr<TSBase> fluidTimeStepBase() const { return this->timeStepBase(); }
-    std::shared_ptr<TSBase> levelsetTimeStepBase(uint16_type n) const { return this->levelsetModel(n)->timeStepBase(); }
+    std::shared_ptr<TSBase> levelsetTimeStepBase( std::string const& name) const { return this->levelsetModel(name)->timeStepBase(); }
     void updateTime( double time );
     void updateTimeStep();
 
@@ -203,12 +212,16 @@ public:
     // Export
     void exportResults( double time ) { this->exportResultsImpl( time ); }
     void exportResults() { this->exportResults( this->currentTime() ); }
+    void exportMeasures( double time );
+    // Measures
+    force_type computeLevelsetForce( std::string const& name ) const;
 
 protected:
     //--------------------------------------------------------------------//
     // Initialization
     mesh_ptrtype createMesh();
     void createLevelsets();
+    void initPostProcess();
 
     size_type initStartBlockIndexFieldsInMatrix() override;
     int initBlockVector() override;
@@ -244,7 +257,7 @@ private:
     //mesh_ptrtype M_mesh;
     levelset_space_manager_ptrtype M_levelsetSpaceManager;
     levelset_tool_manager_ptrtype M_levelsetToolManager;
-    std::vector<levelset_ptrtype> M_levelsets;
+    std::map<std::string, levelset_ptrtype> M_levelsets;
     mutable element_levelset_ptrtype M_globalLevelsetElt;
     mutable bool M_doUpdateGlobalLevelset;
     exporter_ptrtype M_globalLevelsetExporter;
@@ -257,8 +270,8 @@ private:
     //--------------------------------------------------------------------//
     // Parameters
     material_properties_ptrtype M_fluidMaterialProperties;
-    std::vector<material_properties_ptrtype> M_levelsetsMaterialProperties;
-    std::vector<std::map<std::string, interfaceforces_model_ptrtype>> M_levelsetInterfaceForcesModels;
+    std::map<std::string, material_properties_ptrtype> M_levelsetsMaterialProperties;
+    std::map<std::string, std::map<std::string, interfaceforces_model_ptrtype>> M_levelsetInterfaceForcesModels;
     std::map<std::string, interfaceforces_model_ptrtype> M_additionalInterfaceForcesModel;
     //--------------------------------------------------------------------//
     // Global levelset parameters
@@ -272,19 +285,24 @@ private:
     //--------------------------------------------------------------------//
     // Inextensibility
     bool M_enableInextensibility;
-    std::vector<bool> M_hasInextensibility;
+    std::map<std::string, bool> M_hasInextensibility;
     bool M_hasInextensibilityLM;
-    std::vector<std::string> M_inextensibilityMethod;
+    std::map<std::string, std::string> M_inextensibilityMethods;
     std::vector<element_levelset_ptrtype> M_inextensibleLevelsets;
 
     mutable range_elements_type M_rangeInextensibilityLM;
     mutable space_inextensibilitylm_ptrtype M_spaceInextensibilityLM;
     mutable bool M_doUpdateInextensibilityLM;
     // Penalty method gamma
-    std::vector<double> M_inextensibilityGamma;
+    std::map<std::string, double> M_inextensibilityGamma;
     //--------------------------------------------------------------------//
     // Reinitialization
-    std::vector<int> M_levelsetReinitEvery;
+    std::map<std::string, int> M_levelsetReinitEvery;
+
+    //--------------------------------------------------------------------//
+    // Post-process
+    // levelset forces
+    std::vector< std::string > M_postProcessMeasuresLevelsetForces;
 };
         
 

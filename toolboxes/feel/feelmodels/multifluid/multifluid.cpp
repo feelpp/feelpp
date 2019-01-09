@@ -6,6 +6,8 @@
 #include <feel/feelmodels/levelset/levelsetheavisideexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetdeltaexpr.hpp>
 
+#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
+
 #include <feel/feelfilters/loadmesh.hpp>
 
 namespace Feel {
@@ -176,6 +178,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
     super_type::init( false, false );
     // Init LevelSets
     this->createLevelsets();
+    // Init post-process
+    this->initPostProcess();
     // Update inextensibility LM if needed
     if( this->M_hasInextensibilityLM )
         this->updateInextensibilityLM();
@@ -193,11 +197,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
     // Init FluidMechanics materialProperties
     M_fluidMaterialProperties->updateForUse( this->materialProperties()->dynamicViscositySpace(), this->modelProperties().materials() );
     // Init levelsets materialProperties and interfaceForcesModels
-    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    for( auto const& lsMaterialProperties: M_levelsetsMaterialProperties )
     {
-        auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
-
-        M_levelsetsMaterialProperties[i]->updateForUse(this->materialProperties()->dynamicViscositySpace(), M_levelsets[i]->modelProperties().materials() );
+        lsMaterialProperties.second->updateForUse(this->materialProperties()->dynamicViscositySpace(), M_levelsets[lsMaterialProperties.first]->modelProperties().materials() );
     }
     // Update density-viscosity
     this->updateFluidDensityViscosity();
@@ -222,33 +224,31 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     uint16_type nLevelSets = M_nFluids - 1;
 
-    M_hasInextensibility.resize(nLevelSets);
     M_enableInextensibility = false;
-    M_inextensibilityMethod.resize(nLevelSets); 
-    M_inextensibilityGamma.resize(nLevelSets); 
     for( uint16_type n = 0; n < nLevelSets; ++n )
     {
-        auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(n+1)).str());
+        std::string const lsName = levelsetName(n);
+        auto levelset_prefix = prefixvm(this->prefix(), lsName);
 
-        M_hasInextensibility[n] = boption( _name="enable-inextensibility", _prefix=levelset_prefix );
-        if( M_hasInextensibility[n] ) M_enableInextensibility = true;
+        M_hasInextensibility[lsName] = boption( _name="enable-inextensibility", _prefix=levelset_prefix );
+        if( M_hasInextensibility[lsName] ) M_enableInextensibility = true;
 
-        M_inextensibilityMethod[n] = soption( _name="inextensibility-method", _prefix=levelset_prefix );
-        CHECK( M_inextensibilityMethod[n] == "penalty" || M_inextensibilityMethod[n] == "lagrange-multiplier" ) 
-            << "invalid inextensiblity-method " << M_inextensibilityMethod[n]
+        M_inextensibilityMethods[lsName] = soption( _name="inextensibility-method", _prefix=levelset_prefix );
+        CHECK( M_inextensibilityMethods[lsName] == "penalty" || M_inextensibilityMethods[lsName] == "lagrange-multiplier" ) 
+            << "invalid inextensiblity-method " << M_inextensibilityMethods[lsName]
             << ", should be \"penalty\" or \"lagrange-multiplier\"" << std::endl;
 
-        if( M_hasInextensibility[n] && M_inextensibilityMethod[n] == "lagrange-multiplier" )
+        if( M_hasInextensibility[lsName] && M_inextensibilityMethods[lsName] == "lagrange-multiplier" )
             M_hasInextensibilityLM = true;
 
-        M_inextensibilityGamma[n] = doption( _name="inextensibility-gamma", _prefix=levelset_prefix );
+        M_inextensibilityGamma[lsName] = doption( _name="inextensibility-gamma", _prefix=levelset_prefix );
     }
 
-    M_levelsetReinitEvery.resize(nLevelSets);
     for( uint16_type n = 0; n < nLevelSets; ++n )
     {
-        auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(n+1)).str());
-        M_levelsetReinitEvery[n] = ioption( _name="reinit-every", _prefix=levelset_prefix );
+        std::string const lsName = levelsetName(n);
+        auto levelset_prefix = prefixvm(this->prefix(), lsName);
+        M_levelsetReinitEvery[lsName] = ioption( _name="reinit-every", _prefix=levelset_prefix );
     }
 }
 
@@ -273,38 +273,38 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n       * rho : " << this->M_fluidMaterialProperties->cstDensity()
            << "\n       * mu  : " << this->M_fluidMaterialProperties->cstMu();
     *_ostr << this->M_fluidMaterialProperties->getInfo()->str();
-    for( uint16_type i = 0; i < M_levelsetsMaterialProperties.size(); ++i )
+    for( auto const& lsMaterialProperty: M_levelsetsMaterialProperties )
     {
-    *_ostr << "\n     -- fluid " << i+1
-           << "\n       * rho : " << this->M_levelsetsMaterialProperties[i]->cstDensity()
-           << "\n       * mu  : " << this->M_levelsetsMaterialProperties[i]->cstMu();
-    *_ostr << this->M_levelsetsMaterialProperties[i]->getInfo()->str();
+    *_ostr << "\n     -- fluid " << "\"" << lsMaterialProperty.first << "\""
+           << "\n       * rho : " << lsMaterialProperty.second->cstDensity()
+           << "\n       * mu  : " << lsMaterialProperty.second->cstMu();
+    *_ostr << lsMaterialProperty.second->getInfo()->str();
     }
 
     *_ostr << "\n   Level Sets Parameters";
-    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    for( auto const& lsReinitEvery: M_levelsetReinitEvery )
     {
-    *_ostr << "\n     -- level set " << i
-           << "\n       * reinit every : " << this->M_levelsetReinitEvery[i];
+    *_ostr << "\n     -- level set " << "\"" << lsReinitEvery.first << "\""
+           << "\n       * reinit every : " << lsReinitEvery.second;
     }
 
     *_ostr << "\n   Forces Parameters";
     *_ostr << "\n     -- has interface forces : " << std::boolalpha << this->M_hasInterfaceForcesModel;
     if( this->M_hasInterfaceForcesModel )
     {
-        for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+        for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
         {
-    *_ostr << "\n     -- level set " << i;
-            for( auto const& force: M_levelsetInterfaceForcesModels[i] )
+    *_ostr << "\n     -- level set " << "\"" << lsInterfaceForces.first << "\"";
+            for( auto const& force: lsInterfaceForces.second )
     *_ostr << "\n       * force model : " << force.second->getInfo()->str();
         }
     }
 
     *_ostr << "\n";
     *_ostr << super_type::getInfo()->str();
-    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    for( auto const& levelset: M_levelsets )
     {
-    *_ostr << M_levelsets[i]->getInfo()->str();
+    *_ostr << levelset.second->getInfo()->str();
     }
 
     *_ostr << "\n||==============================================||"
@@ -341,20 +341,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::globalLevelsetElt() const
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-typename MULTIFLUID_CLASS_TEMPLATE_TYPE::material_properties_ptrtype const&
-MULTIFLUID_CLASS_TEMPLATE_TYPE::fluidMaterialProperties( uint16_type n ) const
-{
-    if( n == 0 )
-        return M_fluidMaterialProperties;
-    else
-        return M_levelsetsMaterialProperties.at(n-1);
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 int
 MULTIFLUID_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
-    if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
+    if( this->hasInextensibilityLM() )
         return super_type::nBlockMatrixGraph() + 1;
     else
         return super_type::nBlockMatrixGraph();
@@ -369,7 +359,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
     int indexBlock = super_type::nBlockMatrixGraph();
 
-    if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
+    if( this->hasInextensibilityLM() )
     {
         this->log("MultiFluid","buildBlockMatrixGraph", "start build lagrange-multiplier" );
         // Matrix stencil
@@ -395,11 +385,30 @@ size_type
 MULTIFLUID_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     auto res = super_type::nLocalDof();
-    if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
+    if( this->hasInextensibilityLM() )
     {
         res += this->functionSpaceInextensibilityLM()->nLocalDofWithGhost();
     }
     return res;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+bool
+MULTIFLUID_CLASS_TEMPLATE_TYPE::hasInextensibilityLM() const
+{
+    bool hasInextensibilityLM = false;
+    if( this->M_enableInextensibility )
+    {
+        for( auto const& inextmethod: M_inextensibilityMethods )
+        {
+            if( inextmethod.second == "lagrange-multiplier" )
+            {
+                hasInextensibilityLM = true;
+                break;
+            }
+        }
+    }
+    return hasInextensibilityLM;
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -408,13 +417,13 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInextensibilityLM()
 {
     this->log("MultiFluid", "updateInextensibilityLM", "start");
     M_inextensibleLevelsets.clear();
-    for( uint16_type n = 0; n < M_levelsets.size(); ++n )
+    for( auto const& ls: M_levelsets )
     {
-        if( this->hasInextensibility(n) )
+        if( this->hasInextensibility(ls.first) )
         {
-            if( this->inextensibilityMethod(n) == "lagrange-multiplier" )
+            if( this->inextensibilityMethod(ls.first) == "lagrange-multiplier" )
             {
-                M_inextensibleLevelsets.push_back( M_levelsets[n]->phi() );
+                M_inextensibleLevelsets.push_back( ls.second->phi() );
             }
         }
     }
@@ -563,11 +572,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveImpl()
     // Advect levelsets
     this->advectLevelsets();
     // Reinitialize
-    for( uint16_type n = 0; n < M_levelsets.size(); ++n )
+    for( auto const& ls: M_levelsets )
     {
-        if( M_levelsetReinitEvery[n] > 0 
-                && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitEvery[n] == 0 )
-            M_levelsets[n]->reinitialize();
+        if( M_levelsetReinitEvery.at(ls.first) > 0 
+                && (ls.second->iterSinceReinit()+1) % M_levelsetReinitEvery.at(ls.first) == 0 )
+            ls.second->reinitialize();
     }
 
     // Update global levelset
@@ -579,9 +588,9 @@ void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::updateTime( double time )
 {
     // Levelsets
-    for( uint16_type i = 0; i < M_levelsets.size(); ++i)
+    for( auto const& ls: M_levelsets)
     {
-        M_levelsets[i]->updateTime(time);
+        ls.second->updateTime(time);
     }
     // This
     super_type::updateTime(time);
@@ -595,9 +604,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
     // Fluid
     super_type::updateTimeStep();
     // Levelsets
-    for( uint16_type i = 0; i < M_levelsets.size(); ++i)
+    for( auto const& ls: M_levelsets)
     {
-        M_levelsets[i]->updateTimeStep();
+        ls.second->updateTimeStep();
     }
 
     this->log("MultiFluid", "updateTimeStep", "finish");
@@ -610,10 +619,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     this->log("MultiFluid","exportResults", "start");
 
     // Export forces
-    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
     {
-        auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
-        for( auto const& force: M_levelsetInterfaceForcesModels[i] )
+        std::string const lsName = lsInterfaceForces.first;
+        auto levelset_prefix = prefixvm(this->prefix(), lsName);
+        for( auto const& force: lsInterfaceForces.second )
         {
             this->M_exporter->step(time)->add( prefixvm(levelset_prefix, force.first),
                     prefixvm(levelset_prefix, force.first),
@@ -627,6 +637,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                 force.second->lastInterfaceForce() );
     }
 
+    // Export measures
+    this->exportMeasures( time );
     // Export fluid
     super_type::exportResults(time);
     // Export global levelsets
@@ -641,19 +653,51 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                     _path=this->exporterPath()
                     );
         }
-        M_globalLevelsetExporter->step( time )->add( 
+        M_globalLevelsetExporter->step( time )->add(
                 prefixvm(this->prefix(),"GlobalLevelset.Phi"),
                 prefixvm(this->prefix(),prefixvm(this->subPrefix(),"GlobalLevelset.Phi")),
                 *this->globalLevelsetElt()
                 );
         M_globalLevelsetExporter->save();
     }
-    for( uint16_type i = 0; i < M_levelsets.size(); ++i)
+    for( auto const& ls: M_levelsets)
     {
-        M_levelsets[i]->exportResults(time);
+        ls.second->exportResults(time);
     }
 
     this->log("MultiFluid", "exportResults", "finish");
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
+{
+    // Levelset forces
+    for( std::string const& levelsetName: M_postProcessMeasuresLevelsetForces )
+    {
+        auto measuredLevelsetForce = this->computeLevelsetForce( levelsetName );
+        std::vector<double> vecMeasuredLevelsetForce = { measuredLevelsetForce(0,0) };
+        if( nDim > 1 ) vecMeasuredLevelsetForce.push_back( measuredLevelsetForce(1,0) );
+        if( nDim > 2 ) vecMeasuredLevelsetForce.push_back( measuredLevelsetForce(2,0) );
+        this->postProcessMeasuresIO().setMeasureComp( levelsetName + ".force", vecMeasuredLevelsetForce );
+    }
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+typename MULTIFLUID_CLASS_TEMPLATE_TYPE::force_type
+MULTIFLUID_CLASS_TEMPLATE_TYPE::computeLevelsetForce( std::string const& name ) const
+{
+    auto solFluid = this->fieldVelocityPressurePtr();
+    auto u = solFluid->template element<0>();
+    auto p = solFluid->template element<1>();
+    std::string matName = this->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
+    auto sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor<2*super_type::nOrderVelocity>(u,p,*this->materialProperties(),matName,true);
+
+    auto N = this->levelsetModel(name)->N();
+    auto D = this->levelsetModel(name)->D();
+    return integrate(_range=elements(this->mesh()),
+                     _expr= - sigmav * idv(N) * idv(D),
+                     _geomap=this->geomap() ).evaluate();
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -694,35 +738,35 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::createLevelsets()
             //_path=this->exporterPath()
             //);
     // Build levelsets
-    M_levelsets.resize( M_nFluids - 1 );
-    M_levelsetsMaterialProperties.resize( M_nFluids - 1 );
-    M_levelsetInterfaceForcesModels.resize( M_nFluids - 1 );
-    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    uint16_type nLevelsets = M_nFluids - 1;
+    for( uint16_type i = 0; i < nLevelsets; ++i )
     {
-        auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
-        M_levelsets[i].reset(
+        std::string const lsName = levelsetName(i);
+        auto levelset_prefix = prefixvm(this->prefix(), lsName);
+        auto & levelset = M_levelsets[lsName];
+        levelset.reset(
                 new levelset_type( levelset_prefix, this->worldCommPtr(), "", this->repository().rootWithoutNumProc() )
                 );
-        M_levelsets[i]->setFunctionSpaceManager( M_levelsetSpaceManager );
-        M_levelsets[i]->setToolManager( M_levelsetToolManager );
+        levelset->setFunctionSpaceManager( M_levelsetSpaceManager );
+        levelset->setToolManager( M_levelsetToolManager );
         hana::eval_if( std::is_same<space_levelset_advection_velocity_type, space_fluid_velocity_type>{},
                     [&](auto _) {
-                        if( !M_useLagrangeP1iso && !_(M_levelsets)[i]->useSpaceIsoPN() )
+                        if( !M_useLagrangeP1iso && !_(levelset)->useSpaceIsoPN() )
                         {
                             Feel::cout << "Using fluid velocity function space\n";
-                            _(M_levelsets)[i]->setFunctionSpaceAdvectionVelocity( this->functionSpaceVelocity() );
+                            _(levelset)->setFunctionSpaceAdvectionVelocity( this->functionSpaceVelocity() );
                         }
                     },
                     [&] {}
                 );
         // Set global options if unspecified otherwise
         if( !Environment::vm().count( prefixvm(levelset_prefix,"thickness-interface").c_str() ) )
-            M_levelsets[i]->setThicknessInterface( this->globalLevelsetThicknessInterface() );
+            levelset->setThicknessInterface( this->globalLevelsetThicknessInterface() );
         // Initialize LevelSets
-        M_levelsets[i]->init();
+        levelset->init();
 
         // Build levelsets materialProperties
-        M_levelsetsMaterialProperties[i].reset(
+        M_levelsetsMaterialProperties[lsName].reset(
                 new material_properties_type( levelset_prefix )
                 );
         // Build levelsets interfaceForcesModels
@@ -736,10 +780,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::createLevelsets()
             for( uint16_type n = 0; n < interfaceForcesModels.size(); ++n )
             {
                 std::string const forceName = interfaceForcesModels[n];
-                M_levelsetInterfaceForcesModels[i][forceName] = interfaceforces_factory_type::instance().createObject( 
+                M_levelsetInterfaceForcesModels[lsName][forceName] = interfaceforces_factory_type::instance().createObject( 
                         forceName
                         );
-                M_levelsetInterfaceForcesModels[i][forceName]->build( levelset_prefix, M_levelsets[i], this->fluidModel() );
+                M_levelsetInterfaceForcesModels[lsName][forceName]->build( levelset_prefix, M_levelsets[lsName], this->fluidModel() );
             }
 
             M_hasInterfaceForcesModel = true;
@@ -750,12 +794,53 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::createLevelsets()
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
+{
+    std::string modelName = "multifluid";
+    pt::ptree ptree = this->modelProperties().postProcess().pTree( modelName );
+    std::string ppTypeMeasures = "Measures";
+    for( auto const& ptreeLevel0 : ptree )
+    {
+        std::string ptreeLevel0Name = ptreeLevel0.first;
+        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
+        for( auto const& ptreeLevel1 : ptreeLevel0.second )
+        {
+            std::string ptreeLevel1Name = ptreeLevel1.first;
+            if ( ptreeLevel1Name == "LevelsetForces" )
+            {
+                // get list of marker
+                std::set<std::string> levelsetNames;
+                std::string levelsetNameUnique = ptreeLevel1.second.template get_value<std::string>();
+                if ( levelsetNameUnique.empty() )
+                {
+                    for (auto const& ptreeMarker : ptreeLevel1.second )
+                    {
+                        std::string levelsetName = ptreeMarker.second.template get_value<std::string>();
+                        levelsetNames.insert( levelsetName );
+                    }
+                }
+                else
+                {
+                    levelsetNames.insert( levelsetNameUnique );
+                }
+                // save forces measure for each levelset
+                for ( std::string const& levelsetName : levelsetNames )
+                {
+                    M_postProcessMeasuresLevelsetForces.push_back( levelsetName );
+                }
+            }
+        }
+    }
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 size_type
 MULTIFLUID_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
 {
     size_type currentStartIndex = super_type::initStartBlockIndexFieldsInMatrix();
 
-    if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
+    if( this->hasInextensibilityLM() )
     {
         // Add inextensibility LM block index
         this->setStartSubBlockSpaceIndex( "inextensibility-lm", currentStartIndex++ );
@@ -769,7 +854,7 @@ int
 MULTIFLUID_CLASS_TEMPLATE_TYPE::initBlockVector()
 {
     int currentBlockIndex = super_type::initBlockVector();
-    if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
+    if( this->hasInextensibilityLM() )
     {
         this->M_blockVectorSolution(currentBlockIndex) = this->backend()->newVector( this->functionSpaceInextensibilityLM() );
         ++currentBlockIndex;
@@ -802,21 +887,21 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
             idv(M_fluidMaterialProperties->fieldMu())*globalH
             );
 
-    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    for( auto const& ls: M_levelsets )
     {
         auto Hi = Feel::FeelModels::levelsetHeaviside( 
-                idv( M_levelsets[i]->phi() ),
+                idv( ls.second->phi() ),
                 cst( this->globalLevelsetThicknessInterface() )
                 );
         rho += vf::project( 
                 this->materialProperties()->dynamicViscositySpace(),
                 elements(this->mesh()),
-                idv(M_levelsetsMaterialProperties[i]->fieldRho())*(1. - Hi)
+                idv(M_levelsetsMaterialProperties[ls.first]->fieldRho())*(1. - Hi)
                 );
         mu += vf::project( 
                 this->materialProperties()->dynamicViscositySpace(),
                 elements(this->mesh()),
-                idv(M_levelsetsMaterialProperties[i]->fieldMu())*(1. - Hi)
+                idv(M_levelsetsMaterialProperties[ls.first]->fieldMu())*(1. - Hi)
                 );
     }
 
@@ -841,9 +926,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
     if( M_hasInterfaceForcesModel )
     {
         this->timerTool("Solve").start();
-        for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+        for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
         {
-            for( auto const& force: M_levelsetInterfaceForcesModels[i] )
+            for( auto const& force: lsInterfaceForces.second )
             {
                 if( force.second )
                 {
@@ -916,12 +1001,12 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::advectLevelsets()
 
     auto const& u = this->fieldVelocity();
     
-    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    for( auto const& ls: M_levelsets )
     {
-        M_levelsets[i]->advect( idv(u) );
+        ls.second->advect( idv(u) );
     }
 
-    if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
+    if( this->hasInextensibilityLM() )
     {
         M_doUpdateInextensibilityLM = true;
     }
@@ -953,9 +1038,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional( DataUpdateLinear & da
         if( M_hasInterfaceForcesModel )
         {
             this->timerTool("Solve").start();
-            for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+            for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
             {
-                for( auto const& force: M_levelsetInterfaceForcesModels[i] )
+                for( auto const& force: lsInterfaceForces.second )
                 {
                     if( force.second )
                     {
@@ -1004,23 +1089,24 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional( DataUpdateLinear & da
                 _colstart=colStartInMatrix 
                 );
 
-        for( uint16_type n = 0; n < M_levelsets.size(); ++n )
+        for( auto const& ls: M_levelsets )
         {
-            if( this->hasInextensibility(n) )
+            std::string const& lsName = ls.first;
+            if( this->hasInextensibility(lsName) )
             {
-                auto N = this->M_levelsets[n]->N();
+                auto N = ls.second->N();
                 auto NxN = idv(N)*trans(idv(N));
 
-                if( this->inextensibilityMethod(n) == "penalty" )
+                if( this->inextensibilityMethod(lsName) == "penalty" )
                 {
                     this->timerTool("Solve").start();
 
                     if( BuildNonCstPart )
                     {
-                        auto D = this->M_levelsets[n]->D();
+                        auto D = ls.second->D();
                         bilinearForm_PatternDefault += integrate(
                                 _range=elements(mesh),
-                                _expr=this->M_inextensibilityGamma[n]*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
+                                _expr=this->M_inextensibilityGamma.at(lsName)*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
                                 _geomap=this->geomap()
                                 );
                     }
@@ -1030,7 +1116,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional( DataUpdateLinear & da
                             "assembly inextensibility (penalty) in "+(boost::format("%1% s") 
                                 %timeElapsedInextensibility_Penalty).str() );
                 }
-                if( this->inextensibilityMethod(n) == "lagrange-multiplier" )
+                if( this->inextensibilityMethod(lsName) == "lagrange-multiplier" )
                 {
                     CHECK( this->hasStartSubBlockSpaceIndex("inextensibility-lm") ) << " start dof index for inextensibility-lm is not present\n";
                     this->timerTool("Solve").start();
@@ -1100,9 +1186,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianAdditional( DataUpdateJacobian & d
         if( M_hasInterfaceForcesModel )
         {
             this->timerTool("Solve").start();
-            for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+            for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
             {
-                for( auto const& force: M_levelsetInterfaceForcesModels[i] )
+                for( auto const& force: lsInterfaceForces.second )
                 {
                     if( force.second )
                     {
@@ -1151,15 +1237,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianAdditional( DataUpdateJacobian & d
         auto v = U.template element<0>();
         auto Id = vf::Id<nDim, nDim>();
 
-        for( uint16_type n = 0; n < M_levelsets.size(); ++n )
+        for( auto const& ls: M_levelsets )
         {
-            if( this->hasInextensibility(n) )
+            std::string const& lsName = ls.first;
+            if( this->hasInextensibility(lsName) )
             {
-                auto N = this->M_levelsets[n]->N();
+                auto N = ls.second->N();
                 auto NxN = idv(N)*trans(idv(N));
-                auto D = this->M_levelsets[n]->D();
+                auto D = ls.second->D();
 
-                if( this->inextensibilityMethod(n) == "penalty" )
+                if( this->inextensibilityMethod(lsName) == "penalty" )
                 {
                     this->timerTool("Solve").start();
 
@@ -1167,7 +1254,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianAdditional( DataUpdateJacobian & d
                     {
                         bilinearForm_PatternCoupled += integrate(
                                 _range=elements(mesh),
-                                _expr=this->M_inextensibilityGamma[n]*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
+                                _expr=this->M_inextensibilityGamma.at(lsName)*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
                                 _geomap=this->geomap()
                                 );
                     }
@@ -1177,7 +1264,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianAdditional( DataUpdateJacobian & d
                             "assembly inextensibility (penalty) in "+(boost::format("%1% s") 
                                 %timeElapsedInextensibility_Penalty).str() );
                 }
-                if( this->inextensibilityMethod(n) == "lagrange-multiplier" )
+                if( this->inextensibilityMethod(lsName) == "lagrange-multiplier" )
                 {
                     CHECK( this->hasStartSubBlockSpaceIndex("inextensibility-lm") ) << " start dof index for inextensibility-lm is not present\n";
                     this->timerTool("Solve").start();
@@ -1247,9 +1334,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualAdditional( DataUpdateResidual & d
         if( M_hasInterfaceForcesModel )
         {
             this->timerTool("Solve").start();
-            for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+            for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
             {
-                for( auto const& force: M_levelsetInterfaceForcesModels[i] )
+                for( auto const& force: lsInterfaceForces.second )
                 {
                     if( force.second )
                     {
@@ -1297,15 +1384,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualAdditional( DataUpdateResidual & d
         auto v = U.template element<0>();
         auto Id = vf::Id<nDim, nDim>();
 
-        for( uint16_type n = 0; n < M_levelsets.size(); ++n )
+        for( auto const& ls: M_levelsets )
         {
-            if( this->hasInextensibility(n) )
+            std::string const& lsName = ls.first;
+            if( this->hasInextensibility(lsName) )
             {
-                auto N = this->M_levelsets[n]->N();
+                auto N = ls.second->N();
                 auto NxN = idv(N)*trans(idv(N));
-                auto D = this->M_levelsets[n]->D();
+                auto D = ls.second->D();
 
-                if( this->inextensibilityMethod(n) == "penalty" )
+                if( this->inextensibilityMethod(lsName) == "penalty" )
                 {
                     this->timerTool("Solve").start();
 
@@ -1313,7 +1401,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualAdditional( DataUpdateResidual & d
                     {
                         linearForm_PatternCoupled += integrate(
                                 _range=elements(mesh),
-                                _expr=this->M_inextensibilityGamma[n]*trace((Id-NxN)*gradv(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
+                                _expr=this->M_inextensibilityGamma.at(lsName)*trace((Id-NxN)*gradv(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
                                 _geomap=this->geomap()
                                 );
                     }
@@ -1323,7 +1411,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualAdditional( DataUpdateResidual & d
                             "assembly inextensibility (penalty) in "+(boost::format("%1% s") 
                                 %timeElapsedInextensibility_Penalty).str() );
                 }
-                if( this->inextensibilityMethod(n) == "lagrange-multiplier" )
+                if( this->inextensibilityMethod(lsName) == "lagrange-multiplier" )
                 {
                     CHECK( this->hasStartSubBlockSpaceIndex("inextensibility-lm") ) << " start dof index for inextensibility-lm is not present\n";
                     this->timerTool("Solve").start();
