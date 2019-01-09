@@ -51,6 +51,7 @@
 #include <feel/feelcore/context.hpp>
 
 #include <feel/feelcore/functors.hpp>
+
 #include <feel/feelmesh/mesh0d.hpp>
 #include <feel/feelmesh/mesh1d.hpp>
 #include <feel/feelmesh/mesh2d.hpp>
@@ -107,6 +108,7 @@ const size_type EXTRACTION_KEEP_ALL_IDS                   = ( EXTRACTION_KEEP_PO
                                                               EXTRACTION_KEEP_FACES_IDS |
                                                               EXTRACTION_KEEP_VOLUMES_IDS );
 const size_type EXTRACTION_KEEP_MESH_RELATION             = ( 1<<4 );
+
 }
 #include <feel/feeldiscr/createsubmesh.hpp>
 #include <feel/feeldiscr/localization.hpp>
@@ -161,7 +163,8 @@ class Mesh
                                                             mpl::identity<Mesh2D<GeoShape,T> >,
                                                             mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type,
         public boost::addable<Mesh<GeoShape,T,Tag> >,
-        public std::enable_shared_from_this< Mesh<GeoShape,T,Tag> >
+        public std::enable_shared_from_this< Mesh<GeoShape,T,Tag> >,
+        public JournalWatcher
 {
     using super = typename mpl::if_<is_0d<GeoShape>,
                                     mpl::identity<Mesh0D<GeoShape,T> >,
@@ -170,8 +173,9 @@ class Mesh
                                                       typename mpl::if_<is_2d<GeoShape>,
                                                                         mpl::identity<Mesh2D<GeoShape,T> >,
                                                                         mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type;
-public:
+    using super2 = JournalWatcher;
 
+public:
 
     //!  @name Constants
      //!
@@ -293,13 +297,17 @@ public:
     typedef typename trace_trace_mesh<Tag>::type trace_trace_mesh_type;
     typedef typename trace_trace_mesh<Tag>::ptrtype trace_trace_mesh_ptrtype;
 
-
-    //! @}
+    //@}
 
     //!
-     //!  Default mesh constructor
-     //!
-    explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    //!  Default mesh constructor
+    //!
+    explicit Mesh( std::string const& name,
+                   worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+
+    explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+        :
+        Mesh( "",worldComm ) {}
 
     ~Mesh() {}
 
@@ -1135,6 +1143,7 @@ public:
      //!
     void recv( int p, int tag );
 
+    FEELPP_DEPRECATED
     void saveMD(std::ostream &out)
     {
       out << "| Shape              |" << Shape << "|\n";
@@ -1161,14 +1170,22 @@ public:
     void saveHDF5( std::string const& filename ) { ioHDF5( IOStatus::isSaving, filename ); }
 #endif
 
-
 private:
+
+    //! Private Methods
+    //! @{
+
+    //! update informations for the current object
+    void updateInformationObject( pt::ptree & p ) override;
+
 #if defined(FEELPP_HAS_HDF5)
     //!
     //!  save mesh in hdf5
     //!
     void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 #endif
+
+    //! @}
 public:
     //!
      //!  encode the mesh data structure into a tighter data structure and to avoid
@@ -1498,10 +1515,10 @@ public:
      //!
     boost::signals2::signal<void ( MESH_CHANGES )> meshChanged;
 
-    template<typename Observer>
-    void addObserver( Observer& obs )
+    template<typename meshObserver>
+    void addObserver( meshObserver& obs )
     {
-				LOG(INFO) << "Observer attached ! \n";
+        LOG(INFO) << "Observer attached ! \n";
         meshChanged.connect( obs );
     }
 #endif // __INTEL_COMPILER
@@ -2338,7 +2355,38 @@ Mesh<Shape, T, Tag>::exportVTK( bool exportMarkers, std::string const& vtkFieldN
 }
 #endif // FEELPP_HAS_VTK
 
+//! Fill mesh properties in journal publication
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateInformationObject( pt::ptree & p )
+{
+    if ( p.get_child_optional( "shape" ) )
+        return;
+    p.put("shape", Shape::name() );
+    p.put("dim", this->dimension() );
+    p.put("order", this->nOrder );
+    p.put("real_dim", this->realDimension() );
+    p.put("h_min", this->hMin() );
+    p.put("h_max", this->hMax() );
+    p.put("h_average", this->hAverage() );
+    p.put("n_points", this->numGlobalPoints() );
+    if ( nOrder > 1 )
+        p.put("n_vertices", this->numGlobalVertices() );
+    if ( this->dimension() == 3 )
+        p.put("n_edges", this->numGlobalEdges() );
+    p.put("n_faces", this->numGlobalFaces() );
+    p.put("n_elements", this->numGlobalElements() );
 
+    rank_type nProc = MeshBase::worldComm().localSize();
+    p.put("n_partition", nProc );
+    if ( nProc > 1 )
+    {
+        pt::ptree ptTmp;
+        for ( rank_type p=0;p<nProc;++p )
+            ptTmp.push_back( std::make_pair("", pt::ptree( std::to_string( this->statNumElementsActive(p) ) ) ) );
+        p.put_child( "partitioning.n_elements", ptTmp );
+    }
+}
 
 namespace detail
 {

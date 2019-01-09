@@ -22,19 +22,20 @@
 #
 #
 
-
 #
 # MONGOCXX
 #
 option( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" ON )
+set(BSON_MIN_VERSION_REQUIRED "1.3" CACHE INTERNAL "")
+set(MONGOC_MIN_VERSION_REQUIRED "1.3" CACHE INTERNAL "")
 
 if ( FEELPP_ENABLE_MONGOCXX )
   feelppContribPrepare( mongocxx )
 
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${FEELPP_SOURCE_DIR}/contrib/mongocxx/cmake")
-    find_package(LibBSON 1.5 )
-    find_package(LibMongoC 1.5 )
+    find_package(LibBSON ${BSON_MIN_VERSION_REQUIRED})
+    find_package(LibMongoC ${MONGOC_MIN_VERSION_REQUIRED} )
     if ( LIBBSON_FOUND AND LIBMONGOC_FOUND )
       message(STATUS "[feelpp] found LibBSON and LibMongoC")
       set(BSONCXX_INLINE_NAMESPACE "")
@@ -54,8 +55,14 @@ if ( FEELPP_ENABLE_MONGOCXX )
       #set(FEELPP_LIBRARIES "${MONGOCXX_LIBRARIES} ${FEELPP_LIBRARIES}")
       list(APPEND MONGO_LIBRARIES feelpp_mongocxx feelpp_bsoncxx ${LIBMONGOC_LIBRARIES} ${LIBBSON_LIBRARIES} )
       list(INSERT FEELPP_LIBRARIES 0 ${MONGO_LIBRARIES})
+    else()
+        if( NOT LIBBSON_FOUND )
+            message(WARNING "BSON library was not found on your system!")
+        endif()
+        if( NOT LIBBSON_FOUND )
+            message(WARNING "MONGODB library was not found on your system!")
+        endif()
+        message(WARNING "MONGOCXX dependencies missing. Either install it or set FEELPP_ENABLE_MONGOCXX to OFF.")
     endif()
-  else()
-      message(WARNING "MongoCXX was not found on your system. Either install it or set FEELPP_ENABLE_MONGOCXX to OFF.")
   endif()
 endif()

@@ -2,7 +2,7 @@ set_directory_properties(PROPERTIES LABEL testcore )
 IF ( TBB_FOUND )
   SET( OTESTS tbb )
 ENDIF()
-foreach(TEST traits singleton factory debug context simget ${OTESTS} env removecomments feelio boostmpi enums)
+foreach(TEST traits singleton factory debug context simget ${OTESTS} env removecomments feelio boostmpi enums mongo)
 
   feelpp_add_test( ${TEST} )
 
@@ -58,3 +58,6 @@ endif()
 
 feelpp_add_test(serialization)
 feelpp_add_test(ptree_editions CFG test_ptree_editions.cfg GEO test_ptree_editions.json )
+
+feelpp_add_test( observer )
+feelpp_add_test( observer_mesh )

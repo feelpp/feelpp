@@ -25,7 +25,7 @@ CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
 CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 
 
-SET(DIRS core timing math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models fmi )
+SET(DIRS core timing math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models fmi hwsys event)
 foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
 endforeach()
@@ -82,6 +82,9 @@ endif()
 if ( MPI_FOUND )
   target_include_directories( feelpp PUBLIC ${MPI_INCLUDE_PATH} )
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_MPI FEELPP_HAS_MPI_H )
+  if ( FEELPP_HAS_MPIIO )
+    target_compile_definitions( feelpp PUBLIC FEELPP_HAS_MPIIO )
+  endif()
   target_link_libraries( feelpp PRIVATE ${MPI_LIBRARIES} )
   set_property( TARGET feelpp PROPERTY MPI_CXX_COMPILER ${MPI_CXX_COMPILER} )
   set_property( TARGET feelpp PROPERTY MPIEXEC ${MPIEXEC} )
@@ -181,8 +184,8 @@ if ( GMSH_FOUND )
   
   target_include_directories( feelpp
     PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/gmsh>
-    $<INSTALL_INTERFACE:include/feelpp> )
+    $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/feelpp/contrib/gmsh>
+    $<INSTALL_INTERFACE:include/feelpp/gmsh> )
 endif( GMSH_FOUND )
 
 # Paraview

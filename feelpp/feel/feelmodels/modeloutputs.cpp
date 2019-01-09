@@ -38,7 +38,8 @@ ModelOutput::ModelOutput( std::string name, pt::ptree const& p, WorldComm const&
     M_worldComm( &worldComm ),
     M_p( p ),
     M_directoryLibExpr( directoryLibExpr ),
-    M_name( name )
+    M_name( name ),
+    M_markers( name )
 {
     try {
         M_type  = M_p.get<std::string>( "type"  );
@@ -47,17 +48,12 @@ ModelOutput::ModelOutput( std::string name, pt::ptree const& p, WorldComm const&
     {
         LOG(WARNING) << "Missing type entry in output " << M_name << "\n";
     }
-    if( auto range = p.get_child_optional("range") )
-    {
-        for( auto const& item : p.get_child("range") )
-            M_range.insert(item.second.template get_value<std::string>());
-        if( M_range.empty() )
-            M_range.insert(p.get<std::string>("range") );
-    }
+
+    if( auto markers = p.get_child_optional("markers") )
+        M_markers.setPTree(*markers);
     else
-    {
         LOG(WARNING) << "Output " << M_name << " does not have any range\n";
-    }
+
     if( auto t = p.get_optional<int>("topodim") )
     {
         M_dim = *t;
@@ -83,7 +79,7 @@ std::ostream& operator<<( std::ostream& os, ModelOutput const& o )
        << "[ type: " << o.type()
        << ", dim: " << o.dim()
        << ", range: [";
-    for( auto const& r : o.range() )
+    for( auto const& r : o.markers() )
     {
         os << r << " ";
     }

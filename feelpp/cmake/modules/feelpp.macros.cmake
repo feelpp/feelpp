@@ -1,8 +1,3 @@
-# - Find Feel
-if (POLICY CMP0045)
-    # error on non-existent target in get_target_property
-    cmake_policy(SET CMP0045 OLD)
-endif()
 INCLUDE(feelpp.precompiled.headers)
 INCLUDE(ParseArguments)
 
@@ -914,7 +909,7 @@ endfunction()
 function(feelpp_set_options varTarget project )
   get_property(CD TARGET ${varTarget} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
   foreach( opts IN LISTS CD )
-    string( REGEX MATCH "FEELPP_HAS_[a-zA-Z0-9]+$" OPT ${opts} )
+    string( REGEX MATCH "FEELPP_HAS_[a-zA-Z0-9_]+$" OPT ${opts} )
     if ( OPT )
       if ( NOT project STREQUAL "" )
         message( STATUS "[${project}] Enabled option: ${OPT}" )

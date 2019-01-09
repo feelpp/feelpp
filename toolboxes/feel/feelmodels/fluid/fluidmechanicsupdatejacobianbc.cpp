@@ -360,7 +360,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJaco
 
     for( auto const& d : this->M_bcDirichlet )
     {
-        auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+        auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",name(d) ) );
         auto const& listMarkerFaces = std::get<0>( ret );
         auto const& listMarkerEdges = std::get<1>( ret );
         auto const& listMarkerPoints = std::get<2>( ret );
@@ -386,7 +386,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJaco
             auto bilinearFormComp = form2( _test=this->functionSpaceVelocity(),_trial=this->functionSpaceVelocity(),_matrix=J,
                                            _rowstart=this->rowStartInMatrix(),
                                            _colstart=this->colStartInMatrix() );
-            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d),comp ) );
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",name(d),comp ) );
             auto const& listMarkerFaces = std::get<0>( ret );
             auto const& listMarkerEdges = std::get<1>( ret );
             auto const& listMarkerPoints = std::get<2>( ret );

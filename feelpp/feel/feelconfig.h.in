@@ -91,7 +91,10 @@
 #cmakedefine FEELPP_HAS_MKL
 
 /* Define to 1 if you have mongocxx support. */
-#cmakedefine FEELPP_HAS_MONGOCXX
+/*#cmakedefine FEELPP_HAS_MONGOCXX*/
+
+/* Define to 1 if you have mongocxx support. */
+/*#cmakedefine FEELPP_HAS_KWSYS*/
 
 /* Define to 1 if you have mumps support. */
 #cmakedefine FEELPP_HAS_MUMPS
@@ -245,9 +248,6 @@
 
 /* Define if support for mpi class instantiation is enabled) */
 #cmakedefine FEELPP_ENABLE_MPI_MODE
-
-/* Define if we have support for MPI IO */
-#cmakedefine FEELPP_HAS_MPIIO
 
 /* Define sized types for MPI standards older than 2.2 version */
 #cmakedefine FEELPP_MPI_INT32 @FEELPP_MPI_INT32@
