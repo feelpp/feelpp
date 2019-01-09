@@ -144,6 +144,11 @@ po::options_description fit_options( std::string const& prefix="" );
 //!
 po::options_description checker_options( std::string const& prefix="" );
 
+//!
+//! Journal observer class options (benchmark system).
+//!
+po::options_description journal_options( std::string const& prefix="" );
+
 //! ptree options
 po::options_description ptree_options( std::string const& prefix="" );
 }

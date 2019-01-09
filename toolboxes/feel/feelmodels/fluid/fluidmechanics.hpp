@@ -618,7 +618,7 @@ public :
     double dirichletBCnitscheGamma() const { return M_dirichletBCnitscheGamma; }
     void setDirichletBCnitscheGamma( double val) { M_dirichletBCnitscheGamma=val; }
 
-    std::list<std::string> const& markersNameMovingBoundary() const { return this->markerALEMeshBC("moving"); }
+    std::set<std::string> const& markersNameMovingBoundary() const { return this->markerALEMeshBC("moving"); }
     //___________________________________________________________________________________//
     // dirichlet with Lagrange multiplier
     trace_mesh_ptrtype const& meshDirichletLM() const { return M_meshDirichletLM; }
@@ -695,13 +695,15 @@ public :
     //___________________________________________________________________________________//
 
     // update normal stress in reference ALE mesh
-    void updateNormalStressOnCurrentMesh( std::list<std::string> const& listMarkers = std::list<std::string>() );
+    void updateNormalStressOnCurrentMesh( std::set<std::string> const& listMarkers = std::set<std::string>() );
     // update normal stress in reference ALE mesh
-    void updateNormalStressOnReferenceMesh( std::list<std::string> const& listMarkers = std::list<std::string>() );
+    void updateNormalStressOnReferenceMesh();
+private :
     // update normal stress (subfunctions)
-    void updateNormalStressOnReferenceMeshStandard( std::list<std::string> const& listMarkers );
-    void updateNormalStressOnReferenceMeshOptSI( std::list<std::string> const& listMarkers );
-    void updateNormalStressOnReferenceMeshOptPrecompute( std::list<std::string> const& listMarkers );
+    void updateNormalStressOnReferenceMeshStandard( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces );
+    void updateNormalStressOnReferenceMeshOptSI( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces );
+public :
+    void updateNormalStressOnReferenceMeshOptPrecompute( faces_reference_wrapper_t<mesh_type> const& rangeFaces );
 
     void updateWallShearStress();
     void updateVorticity();
@@ -748,7 +750,7 @@ public :
     //___________________________________________________________________________________//
 
     double computeMeshArea( std::string const& marker = "" ) const;
-    double computeMeshArea( std::list<std::string> const& markers ) const;
+    double computeMeshArea( std::set<std::string> const& markers ) const;
 
     // compute measures : drag,lift,flow rate, mean pressure, mean div, norm div
     force_type computeForce( std::string const& markerName ) const;
@@ -942,7 +944,10 @@ protected:
     map_vector_field<nDim,1,2> M_bcNeumannVectorial;
     map_matrix_field<nDim,nDim,2> M_bcNeumannTensor2;
     map_vector_field<nDim,1,2> M_volumicForcesProperties;
-    //----------------------------------------------------
+    //---------------------------------------------------
+    // range of mesh faces by material : (type -> ( matName -> ( faces range ) )
+    std::map<std::string,std::map<std::string,faces_reference_wrapper_t<mesh_type>>> M_rangeMeshFacesByMaterial;
+    //---------------------------------------------------
     space_vectorial_PN_ptrtype M_XhSourceAdded;
     element_vectorial_PN_ptrtype M_SourceAdded;
     bool M_haveSourceAdded;

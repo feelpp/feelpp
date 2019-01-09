@@ -35,6 +35,7 @@ namespace Feel
 {
 namespace Functor
 {
+
 template<typename T, typename C>
 static inline void AvgMinMax(const T* const in, T* const inout, const int* const len, C* type)
 {
@@ -44,6 +45,7 @@ static inline void AvgMinMax(const T* const in, T* const inout, const int* const
         inout[2 + 3 * i] = std::max(in[2 + 3 * i], inout[2 + 3 * i]);
     }
 }
+
 } // Functor
 } // Feel
 

@@ -403,8 +403,8 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
     if ( M_fluidModel->doRestart() )
     {
         if ( M_fluidModel->useFSISemiImplicitScheme() )
-            M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute(M_fluidModel->markersNameMovingBoundary());
-        M_fluidModel->updateNormalStressOnReferenceMesh(M_fluidModel->markersNameMovingBoundary());
+            M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute(markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()));
+        M_fluidModel->updateNormalStressOnReferenceMesh();
     }
 
     if ( M_solidModel->isStandardModel() )

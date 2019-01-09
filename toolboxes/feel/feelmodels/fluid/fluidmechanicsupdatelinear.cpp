@@ -307,7 +307,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         {
             for( auto const& d : this->M_volumicForcesProperties )
             {
-                auto rangeBodyForceUsed = ( marker(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),marker(d));
+                auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
                 myLinearForm +=
                     integrate( _range=rangeBodyForceUsed,
                                _expr= inner( expression(d),id(v) ),
@@ -396,27 +396,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
     auto const& u = this->fieldVelocity();
 
     // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
-    std::map<std::string, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapMarkerBCToEntitiesMeshMarker;
+    std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > mapMarkerBCToEntitiesMeshMarker;
     for( auto const& d : this->M_bcDirichlet )
     {
-        mapMarkerBCToEntitiesMeshMarker[marker(d)] =
-            detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+        mapMarkerBCToEntitiesMeshMarker[name(d)] =
+            detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",name(d) ) );
     }
-    std::map<std::pair<std::string,ComponentType>, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapCompMarkerBCToEntitiesMeshMarker;
+    std::map<std::pair<std::string,ComponentType>, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > mapCompMarkerBCToEntitiesMeshMarker;
     for ( auto const& bcDirComp : this->M_bcDirichletComponents )
     {
         ComponentType comp = bcDirComp.first;
         for( auto const& d : bcDirComp.second )
         {
-            mapCompMarkerBCToEntitiesMeshMarker[std::make_pair(marker(d),comp)] =
-                detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d),comp ) );
+            mapCompMarkerBCToEntitiesMeshMarker[std::make_pair(name(d),comp)] =
+                detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",name(d),comp ) );
         }
     }
 
     // apply strong Dirichle bc on velocity field
     for( auto const& d : this->M_bcDirichlet )
     {
-        auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( marker(d) );
+        auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
         if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
             continue;
         auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
@@ -441,7 +441,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
         ComponentType comp = bcDirComp.first;
         for( auto const& d : bcDirComp.second )
         {
-            auto itFindMarker = mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) );
+            auto itFindMarker = mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(name(d),comp) );
             if ( itFindMarker == mapCompMarkerBCToEntitiesMeshMarker.end() )
                 continue;
             auto const& listMarkerFaces = std::get<0>( itFindMarker->second );

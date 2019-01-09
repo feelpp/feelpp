@@ -32,6 +32,8 @@
 
 #include <feel/feelcore/core.hpp>
 
+#include <feel/feelevent/events.hpp>
+
 #include <feel/feelalg/alg.hpp>
 
 #include <feel/feelpoly/poly.hpp>

@@ -24,6 +24,7 @@
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
+#include <feel/feelmodels/modelcore/rangedistributionbymaterialname.hpp>
 
 namespace Feel
 {
@@ -1331,7 +1332,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::set<std::string> const& listMarkers )
 {
     this->log("FluidMechanics","updateNormalStressOnCurrentMesh", "start" );
 
@@ -1364,80 +1365,51 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::list<s
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh()
 {
-    if (this->useFSISemiImplicitScheme())
-        this->updateNormalStressOnReferenceMeshOptSI( listMarkers );
-    else
-        this->updateNormalStressOnReferenceMeshStandard( listMarkers );
+    this->meshALE()->revertReferenceMesh( false );
+
+    M_fieldNormalStressRefMesh->zero();
+
+    auto itFindRange = M_rangeMeshFacesByMaterial.find( "moving-boundary" );
+    CHECK( itFindRange != M_rangeMeshFacesByMaterial.end() ) << "not find range moving-boundary";
+    for ( auto const& rangeFacesMat : itFindRange->second )
+    {
+        std::string matName = rangeFacesMat.first;
+        auto const& rangeFaces = rangeFacesMat.second;
+        if ( this->useFSISemiImplicitScheme() && M_saveALEPartNormalStress )
+            this->updateNormalStressOnReferenceMeshOptSI( matName,rangeFaces );
+        else
+            this->updateNormalStressOnReferenceMeshStandard( matName,rangeFaces );
+    }
+
+    this->meshALE()->revertMovingMesh( false );
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces )
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-    using namespace Feel::vf;
-
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshStandard", "start" );
 
     // current solution
     auto const& u = this->fieldVelocity();
     auto const& p = this->fieldPressure();
-
-    //Tenseur des deformations
-    auto defv = sym(gradv(u));
-    //Identity Matrix
+    // identity Matrix
     auto const Id = eye<nDim,nDim>();
-    // Tenseur des contraintes (trial)
-    auto Sigmav = -idv(p)*Id + 2*idv(this->materialProperties()->fieldMu())*defv;
-
-    // Deformation tensor
+    // deformation tensor
     auto Fa = Id+gradv(*M_meshALE->displacement());
-
-#if 0
-#if (FLUIDMECHANICS_DIM==2)
-    auto Fa11 = Fa(0,0);
-    auto Fa12 = Fa(0,1);
-    auto Fa21 = Fa(1,0);
-    auto Fa22 = Fa(1,1);
-    //sans le determinant devant car il s annule avec un terme apres
-    auto InvFa = mat<2,2>( Fa22,-Fa12,-Fa21,Fa11);
-#endif
-#if (FLUIDMECHANICS_DIM==3)
-    auto Fa11 = Fa(0,0);
-    auto Fa12 = Fa(0,1);
-    auto Fa13 = Fa(0,2);
-    auto Fa21 = Fa(1,0);
-    auto Fa22 = Fa(1,1);
-    auto Fa23 = Fa(1,2);
-    auto Fa31 = Fa(2,0);
-    auto Fa32 = Fa(2,1);
-    auto Fa33 = Fa(2,2);
-    //sans le determinant devant car il s annule avec un terme apres
-    auto InvFa = mat<3,3>( Fa22*Fa33-Fa23*Fa32 , Fa13*Fa32-Fa12*Fa33 , Fa12*Fa23-Fa13*Fa22,
-                           Fa23*Fa31-Fa21*Fa33 , Fa11*Fa33-Fa13*Fa31 , Fa13*Fa21-Fa11*Fa23,
-                           Fa21*Fa32-Fa22*Fa31 , Fa12*Fa31-Fa11*Fa32 , Fa11*Fa22-Fa12*Fa21
-                           );
-#endif
-#else
     auto InvFa = det(Fa)*inv(Fa);
-#endif
-    this->meshALE()->revertReferenceMesh( false );
 
-    M_fieldNormalStressRefMesh->zero();
-    if ( listMarkers.empty() )
-        M_fieldNormalStressRefMesh->on(_range=boundaryfaces(this->mesh()),
-                                       _expr=val(Sigmav*trans(InvFa)*N()),
-                                       _geomap=this->geomap() );
-    else
-        M_fieldNormalStressRefMesh->on(_range=markedfaces(this->mesh(),listMarkers/*this->markersNameMovingBoundary()*/),
-                                       _expr=val(Sigmav*trans(InvFa)*N()),
-                                       _geomap=this->geomap() );
+    // stress tensor : -p*Id + 2*mu*D(u)
+    auto const Sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,true);
 
-    this->meshALE()->revertMovingMesh( false );
+    M_fieldNormalStressRefMesh->on(_range=rangeFaces,
+                                   _expr=val(Sigmav*trans(InvFa)*N()),
+                                   _geomap=this->geomap() );
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshStandard", "finish" );
 #endif
@@ -1447,68 +1419,29 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( s
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrecompute( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrecompute( faces_reference_wrapper_t<mesh_type> const& rangeFaces )
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptPrecompute", "start" );
 
-    //Identity Matrix
+    // identity Matrix
     auto const Id = eye<nDim,nDim>();
-    // Deformation tensor
+    // deformation tensor
     auto Fa = Id+gradv(*M_meshALE->displacement());
-#if 0
-#if (FLUIDMECHANICS_DIM==2)
-    auto Fa11 = Fa(0,0);
-    auto Fa12 = Fa(0,1);
-    auto Fa21 = Fa(1,0);
-    auto Fa22 = Fa(1,1);
-    //sans le determinant devant car il s annule avec un terme apres
-    auto InvFa = mat<2,2>( Fa22,-Fa12,-Fa21,Fa11);
-#endif
-#if (FLUIDMECHANICS_DIM==3)
-    auto Fa11 = Fa(0,0);
-    auto Fa12 = Fa(0,1);
-    auto Fa13 = Fa(0,2);
-    auto Fa21 = Fa(1,0);
-    auto Fa22 = Fa(1,1);
-    auto Fa23 = Fa(1,2);
-    auto Fa31 = Fa(2,0);
-    auto Fa32 = Fa(2,1);
-    auto Fa33 = Fa(2,2);
-    //sans le determinant devant car il s annule avec un terme apres
-    auto InvFa = mat<3,3>( Fa22*Fa33-Fa23*Fa32 , Fa13*Fa32-Fa12*Fa33 , Fa12*Fa23-Fa13*Fa22,
-                           Fa23*Fa31-Fa21*Fa33 , Fa11*Fa33-Fa13*Fa31 , Fa13*Fa21-Fa11*Fa23,
-                           Fa21*Fa32-Fa22*Fa31 , Fa12*Fa31-Fa11*Fa32 , Fa11*Fa22-Fa12*Fa21
-                           );
-#endif
-#else
     auto InvFa = det(Fa)*inv(Fa);
-#endif
 
-
-
-    if (!M_saveALEPartNormalStress) M_saveALEPartNormalStress = M_XhMeshALEmapDisc->elementPtr();
+    if ( !M_saveALEPartNormalStress )
+        M_saveALEPartNormalStress = M_XhMeshALEmapDisc->elementPtr();
 
     this->meshALE()->revertReferenceMesh( false );
 
-
     M_saveALEPartNormalStress->zero();
-    if ( listMarkers.empty() )
-        M_saveALEPartNormalStress->on(_range=boundaryfaces(this->mesh()),
-                                      _expr=val(trans(InvFa)*N()),
-                                      _geomap=this->geomap() );
-    else
-        M_saveALEPartNormalStress->on(_range=markedfaces(this->mesh(),listMarkers/*this->markersNameMovingBoundary()*/),
-                                      _expr=val(trans(InvFa)*N()),
-                                      _geomap=this->geomap() );
-#if 0
-    *M_saveALEPartNormalStress = vf::project(_space=M_XhMeshALEmapDisc,
-                                             _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                             _expr=val(trans(InvFa)*N()),
-                                             _geomap=this->geomap() );
-#endif
+
+    M_saveALEPartNormalStress->on(_range=rangeFaces,
+                                  _expr=val(trans(InvFa)*N()),
+                                  _geomap=this->geomap() );
 
     this->meshALE()->revertMovingMesh( false );
 
@@ -1520,50 +1453,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrecompu
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces )
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-    using namespace Feel::vf;
-
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptSI", "start" );
 
     // current solution
     auto const& u = this->fieldVelocity();
     auto const& p = this->fieldPressure();
+    // stress tensor : -p*Id + 2*mu*D(u)
+    auto const Sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,true);
 
-    //Tenseur des deformations
-    auto defv = sym(gradv(u));
-    //Identity Matrix
-    auto const Id = eye<nDim,nDim>();
-    // Tenseur des contraintes (trial)
-    auto Sigmav = -idv(p)*Id + 2*idv(this->materialProperties()->fieldMu())*defv;
-
-    this->meshALE()->revertReferenceMesh();
-
-    if ( M_saveALEPartNormalStress )
-    {
-        if ( listMarkers.empty() )
-            M_fieldNormalStressRefMesh->on(_range=boundaryfaces(this->mesh()),
-                                           _expr=val(Sigmav*idv(M_saveALEPartNormalStress)),
-                                           _geomap=this->geomap() );
-        else
-            M_fieldNormalStressRefMesh->on(_range=markedfaces(this->mesh(),listMarkers/*this->markersNameMovingBoundary()*/),
-                                           _expr=val(Sigmav*idv(M_saveALEPartNormalStress)),
-                                           _geomap=this->geomap() );
-    }
-    else
-    {
-        if ( listMarkers.empty() )
-            M_fieldNormalStressRefMesh->on(_range=boundaryfaces(this->mesh()),
-                                      _expr=Sigmav*N(),
-                                      _geomap=this->geomap() );
-        else
-            M_fieldNormalStressRefMesh->on(_range=markedfaces(this->mesh(),listMarkers/*this->markersNameMovingBoundary()*/),
-                                           _expr=Sigmav*N(),
-                                           _geomap=this->geomap() );
-    }
-
-    this->meshALE()->revertMovingMesh();
+    M_fieldNormalStressRefMesh->on(_range=rangeFaces,
+                                   _expr=val(Sigmav*idv(M_saveALEPartNormalStress)),
+                                   _geomap=this->geomap() );
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptSI", "finish" );
 #endif
@@ -1657,7 +1560,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
     if (this->useFSISemiImplicitScheme())
     {
         //this->meshALE()->revertReferenceMesh();
-        this->updateNormalStressOnReferenceMeshOptPrecompute(this->markersNameMovingBoundary());
+        this->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(this->mesh(),this->markersNameMovingBoundary()) );
         //this->meshALE()->revertMovingMesh();
     }
 
@@ -1714,15 +1617,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMeshArea( std::string const& marker ) const
 {
-    return this->computeMeshArea( std::list<std::string>( { marker } ) );
+    return this->computeMeshArea( std::set<std::string>( { marker } ) );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMeshArea( std::list<std::string> const& markers ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMeshArea( std::set<std::string> const& markers ) const
 {
     double area = 0;
-    if ( markers.empty() || markers.front().empty() )
+    if ( markers.empty() || markers.begin()->empty() )
         area = integrate(_range=M_rangeMeshElements,//elements(this->mesh()),
                          _expr=cst(1.),
                          _geomap=this->geomap() ).evaluate()(0,0);
@@ -2294,7 +2197,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     // strong Dirichlet bc on velocity from expression
     for( auto const& d : M_bcDirichlet )
     {
-        auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d) );
+        auto listMark = this->markerDirichletBCByNameId( "elimination",name(d) );
         velocityMarkers.insert( listMark.begin(), listMark.end() );
     }
     // strong Dirichlet bc on velocity component from expression
@@ -2303,7 +2206,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         ComponentType comp = bcDirComp.first;
         for( auto const& d : bcDirComp.second )
         {
-            auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d), comp );
+            auto listMark = this->markerDirichletBCByNameId( "elimination",name(d), comp );
             compVelocityMarkers[comp].insert( listMark.begin(), listMark.end() );
         }
     }
@@ -2316,8 +2219,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
 
     //-------------------------------------//
     // distribute mesh markers by entity
-    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > meshMarkersVelocityByEntities;
-    std::map<ComponentType, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > meshMarkersCompVelocityByEntities;
+    std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > meshMarkersVelocityByEntities;
+    std::map<ComponentType, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > meshMarkersCompVelocityByEntities;
     meshMarkersVelocityByEntities = detail::distributeMarkerListOnSubEntity( mesh, velocityMarkers );
     for ( auto const& compMarkerPair : compVelocityMarkers )
     {
@@ -2444,6 +2347,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         }
     }
 #endif
+
+
+    // update rangeDistributionByMaterialName
+    if ( this->isMoveDomain() )
+    {
+        RangeDistributionByMaterialName<mesh_type> rangeDistributionByMaterialName;
+        rangeDistributionByMaterialName.init( this->materialProperties()->rangeMeshElementsByMaterial() );
+        rangeDistributionByMaterialName.update( "moving-boundary", markedfaces(mesh,this->markersNameMovingBoundary()) );
+        M_rangeMeshFacesByMaterial[ "moving-boundary"] = rangeDistributionByMaterialName.rangeMeshFacesByMaterial( "moving-boundary" );
+    }
 }
 
 

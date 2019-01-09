@@ -274,6 +274,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         }
     }
 
+    this->setIsUpdatedForUse( true );
+
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
     this->log("ThermoElectric","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
@@ -311,7 +313,48 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("ThermoElectric","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
+{
+    if ( !this->isUpdatedForUse() )
+        return;
+    if ( p.get_child_optional( "Prefix" ) )
+        return;
 
+    p.put( "Prefix", this->prefix() );
+    p.put( "Root Repository", this->rootRepository() );
+
+    p.put( "toolbox-heat", M_heatModel->journalSectionName() );
+    p.put( "toolbox-electric", M_electricModel->journalSectionName() );
+
+    // Numerical Solver
+    pt::ptree subPt;
+    subPt.put( "solver", M_solverName );
+    p.put_child( "Numerical Solver", subPt );
+
+    // Exporter
+    subPt.clear();
+    subPt.put( "type",M_exporter->type() );
+    subPt.put( "freq save",M_exporter->freq() );
+    pt::ptree subPt2;
+    for ( std::string const& fieldName : M_postProcessFieldExportedHeat )
+        subPt2.push_back( std::make_pair("", pt::ptree( fieldName ) ) );
+    subPt.put_child( "fields [heat]", subPt2 );
+    subPt2.clear();
+    for ( std::string const& fieldName : M_postProcessFieldExportedElectric )
+        subPt2.push_back( std::make_pair("", pt::ptree( fieldName ) ) );
+    subPt.put_child( "fields [electric]", subPt2 );
+    p.put_child( "Exporter", subPt );
+
+    // Algebraic Solver
+    if ( M_algebraicFactoryMonolithic )
+    {
+        subPt.clear();
+        M_algebraicFactoryMonolithic->updateInformationObject( subPt );
+        p.put_child( "Algebraic Solver", subPt );
+    }
+}
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>

@@ -89,8 +89,9 @@ private :
     mutable std::map<std::string,std::pair<std::string,std::map<std::string,std::pair<std::string,std::time_t>>>> M_treeDataStructure;
 };
 
-class ModelBase
+class ModelBase : public JournalWatcher
 {
+    using super_type = JournalWatcher;
 public :
     using worldcomm_t = WorldComm;
     using worldcomm_ptr_t = std::shared_ptr<WorldComm>;
@@ -149,6 +150,9 @@ public :
     void setScalabilityPath(std::string const& s);
     std::string scalabilityFilename() const;
     void setScalabilityFilename(std::string const& s);
+    //
+    bool isUpdatedForUse() const { return M_isUpdatedForUse; }
+    void setIsUpdatedForUse( bool b ) { M_isUpdatedForUse = b; }
     // upload
     ModelBaseUpload const& upload() const { return M_upload; }
     void upload( std::string const& dataPath ) const;
@@ -175,7 +179,9 @@ private :
     bool M_scalabilitySave, M_scalabilityReinitSaveFile;
     std::string M_scalabilityPath;
     std::string M_scalabilityFilename;
-
+    //
+    bool M_isUpdatedForUse;
+    // upload data tools
     ModelBaseUpload M_upload;
 };
 
