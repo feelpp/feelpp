@@ -149,14 +149,25 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         matrix_shape_type & locRes( uint16_type q ) { return M_locRes[q]; }
         matrix_shape_type const& locRes( uint16_type q ) const { return M_locRes[q]; }
 
-        /*virtual*/ void update( Geo_t const& geom )
+        /*virtual*/ void updateCommon( Geo_t const& geom, bool upGradVelocity = true )
         {
-            M_ctxVelocity->update( fusion::at_key<key_type>( geom ),  (pc_velocity_ptrtype const&) M_pcVelocity );
-            std::fill( M_locGradVelocity.data(), M_locGradVelocity.data()+M_locGradVelocity.num_elements(), this->M_zeroLocTensor2 );
-            this->expr().velocity().grad( *M_ctxVelocity, M_locGradVelocity );
+            this->setGmc( geom );
+
+            bool faceEval = this->gmc()->faceId() != invalid_uint16_type_value;
+
+            if ( upGradVelocity )
+            {
+                if ( faceEval )
+                    M_pcVelocity->update( this->gmc()->pc()->nodes() );
+                M_ctxVelocity->update( fusion::at_key<key_type>( geom ),  (pc_velocity_ptrtype const&) M_pcVelocity );
+                std::fill( M_locGradVelocity.data(), M_locGradVelocity.data()+M_locGradVelocity.num_elements(), this->M_zeroLocTensor2 );
+                this->expr().velocity().grad( *M_ctxVelocity, M_locGradVelocity );
+            }
 
             if ( this->expr().withPressureTerm() )
             {
+                if ( faceEval )
+                    M_pcPressure->update( this->gmc()->pc()->nodes() );
                 M_ctxPressure->update( fusion::at_key<key_type>( geom ),  (pc_pressure_ptrtype const&) M_pcPressure );
                 std::fill( M_locPressure.data(), M_locPressure.data()+M_locPressure.num_elements(), this->M_zeroLocScalar );
                 this->expr().pressure().id( *M_ctxPressure, M_locPressure );
@@ -165,16 +176,33 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             //std::fill( M_locRes.data(), M_locRes.data()+M_locRes.num_elements(), loc_res_type::Zero() );
             //update(mpl::int_<gmc_type::nDim>(), mpl::int_<SpecificExprType::value>() );
         }
-        void update( Geo_t const& geom, uint16_type face )
+        void updateCommon( Geo_t const& geom, uint16_type face, bool upGradVelocity = true  )
         {
             //CHECK(false) << "not implemented";
+            this->setGmc( geom );
+
             if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
             {
-                M_pcVelocity->update( this->gmc()->pc()->nodes() );
+                if ( upGradVelocity )
+                    M_pcVelocity->update( this->gmc()->pc()->nodes() );
                 if ( this->expr().withPressureTerm() )
                     M_pcPressure->update( this->gmc()->pc()->nodes() );
             }
-            this->update( geom );
+            //this->update( geom, upGradVelocity );
+            if ( upGradVelocity )
+            {
+                M_ctxVelocity->update( fusion::at_key<key_type>( geom ),  (pc_velocity_ptrtype const&) M_pcVelocity );
+                std::fill( M_locGradVelocity.data(), M_locGradVelocity.data()+M_locGradVelocity.num_elements(), this->M_zeroLocTensor2 );
+                this->expr().velocity().grad( *M_ctxVelocity, M_locGradVelocity );
+            }
+
+            if ( this->expr().withPressureTerm() )
+            {
+                M_ctxPressure->update( fusion::at_key<key_type>( geom ),  (pc_pressure_ptrtype const&) M_pcPressure );
+                std::fill( M_locPressure.data(), M_locPressure.data()+M_locPressure.num_elements(), this->M_zeroLocScalar );
+                this->expr().pressure().id( *M_ctxPressure, M_locPressure );
+            }
+
         }
 
 
@@ -300,11 +328,22 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             M_locMuP0( this->expr().viscosityModelDesc().fieldMu().idExtents(*this->gmc()) )
         {}
 
-        void update( Geo_t const& geom )
+        void update( Geo_t const& geom ) override
         {
-            if ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL )
-                super_type::update( geom );
+            super_type::updateCommon( geom, expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL );
+            this->updateImpl();
+        }
 
+        void update( Geo_t const& geom, uint16_type face ) override
+        {
+            super_type::updateCommon( geom, face, expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL );
+            this->updateImpl();
+        }
+
+        void updateImpl()
+        {
+            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+                M_pcMuP0->update( this->gmc()->pc()->nodes() );
             M_ctxMuP0->update( this->gmc(),  (pc_muP0_ptrtype const&) M_pcMuP0 );
             std::fill( M_locMuP0.data(), M_locMuP0.data()+M_locMuP0.num_elements(), this->M_zeroLocScalar );
             this->expr().viscosityModelDesc().fieldMu().id( *M_ctxMuP0, M_locMuP0 );
@@ -380,7 +419,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         using super_type::evalijq; // fix clang warning
 
         Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
         {
             return evalijq( i,j,q,
                             mpl::bool_< expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN >(),
@@ -481,13 +520,18 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             M_muExprTensor( this->expr().dynamicViscosity().newtonian().expr().evaluator( geom ) )
         {}
 
-        void update( Geo_t const& geom )
+        void update( Geo_t const& geom ) override
         {
-            if ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL )
-                super_type::update( geom );
-
+            super_type::updateCommon( geom, expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL );
             M_muExprTensor.update( geom );
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type::Zero() );
+            updateImpl( mpl::int_<gmc_type::nDim>()/*, expr_type::specific_expr_type()*/ );
+        }
 
+        void update( Geo_t const& geom, uint16_type face ) override
+        {
+            super_type::updateCommon( geom, face, expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL );
+            M_muExprTensor.update( geom, face );
             std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type::Zero() );
             updateImpl( mpl::int_<gmc_type::nDim>()/*, expr_type::specific_expr_type()*/ );
         }
@@ -559,7 +603,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         using super_type::evalijq; // fix clang warning
 
         Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
         {
             return evalijq( i,j,q,
                             mpl::bool_< expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN >(),
@@ -665,14 +709,23 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             M_muIsInInterval( this->gmc()->xRefs().size2() )
         {}
 
-        void update( Geo_t const& geom )
+        void update( Geo_t const& geom ) override
         {
-            super_type::update( geom );
+            super_type::updateCommon( geom );
 
             std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
             M_muIsInInterval.resize( this->locRes().num_elements() );
             updateImpl( mpl::int_<expr_type::nRealDim>() );
         }
+        void update( Geo_t const& geom, uint16_type face ) override
+        {
+            super_type::updateCommon( geom, face );
+
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+            M_muIsInInterval.resize( this->locRes().num_elements() );
+            updateImpl( mpl::int_<expr_type::nRealDim>() );
+        }
+
         void updateImpl( mpl::int_<2> /**/ )
         {
             const bool withPressure = this->expr().withPressureTerm();
@@ -795,7 +848,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         using super_type::evalijq; // fix clang warning
 
         Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
         {
             return evalijq( i,j,q,
                             mpl::bool_< expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN >(),
@@ -945,13 +998,21 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] )
         {}
 
-        void update( Geo_t const& geom )
+        void update( Geo_t const& geom ) override
         {
-            super_type::update( geom );
+            super_type::updateCommon( geom );
 
             std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type::Zero() );
             updateImpl( mpl::int_<expr_type::nRealDim>() );
         }
+        void update( Geo_t const& geom, uint16_type face ) override
+        {
+            super_type::updateCommon( geom, face );
+
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type::Zero() );
+            updateImpl( mpl::int_<expr_type::nRealDim>() );
+        }
+
         void updateImpl( mpl::int_<2> /**/ )
         {
             const bool withPressure = this->expr().withPressureTerm();
@@ -1057,7 +1118,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         using super_type::evalijq; // fix clang warning
 
         Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
         {
             return evalijq( i,j,q,
                             mpl::bool_< expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN >(),
@@ -1189,13 +1250,22 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] )
         {}
 
-        void update( Geo_t const& geom )
+        void update( Geo_t const& geom ) override
         {
-            super_type::update( geom );
+            super_type::updateCommon( geom );
 
             std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type::Zero() );
             updateImpl( mpl::int_<expr_type::nRealDim>() );
         }
+
+        void update( Geo_t const& geom, uint16_type face ) override
+        {
+            super_type::updateCommon( geom, face );
+
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type::Zero() );
+            updateImpl( mpl::int_<expr_type::nRealDim>() );
+        }
+
         void updateImpl( mpl::int_<2> /**/ )
         {
             const bool withPressure = this->expr().withPressureTerm();
@@ -1311,7 +1381,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             }
         }
         Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
         {
             //return evalijq( i,j,q,mpl::int_<expr_type::nRealDim>() );
             return evalijq( i,j,q,
