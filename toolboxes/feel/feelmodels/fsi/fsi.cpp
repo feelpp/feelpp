@@ -67,7 +67,8 @@ FSI<FluidType,SolidType>::FSI(std::string const& prefix,worldcomm_ptr_t const& w
     M_couplingNitscheFamily_gamma( doption(_name="coupling-nitsche-family.gamma",_prefix=this->prefix()) ),
     M_couplingNitscheFamily_gamma0( doption(_name="coupling-nitsche-family.gamma0",_prefix=this->prefix()) ),
     M_couplingNitscheFamily_alpha( doption(_name="coupling-nitsche-family.alpha",_prefix=this->prefix()) ),
-    M_coulingRNG_usePrecomputeBC( boption(_name="coupling-robin-neumann-generalized.use-precompute-bc",_prefix=this->prefix()) )
+    M_coulingRNG_usePrecomputeBC( boption(_name="coupling-robin-neumann-generalized.use-precompute-bc",_prefix=this->prefix()) ),
+    M_coulingRNG_strategyTimeStepCompatibility( soption(_name="coupling-robin-neumann-generalized.strategy-time-step-compatibility",_prefix=this->prefix()) )
 {
     this->log("FSI","constructor","start");
 
