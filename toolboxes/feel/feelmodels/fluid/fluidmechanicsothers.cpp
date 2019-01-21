@@ -1383,6 +1383,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh()
             this->updateNormalStressOnReferenceMeshStandard( matName,rangeFaces );
     }
 
+#if 1
+    // TODO : store this information
+    if ( this->worldComm().globalSize() > 1 )
+    {
+        std::set<size_type> thedofMovingBoundary;
+        for ( auto const& faceWrap : markedfaces(M_mesh,this->markersNameMovingBoundary() ) )
+        {
+            auto const& face = unwrap_ref( faceWrap );
+            auto facedof = M_fieldNormalStressRefMesh->functionSpace()->dof()->faceLocalDof( face.id() );
+            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            {
+                thedofMovingBoundary.insert( it->index() );
+            }
+        }
+        sync(*M_fieldNormalStressRefMesh, "=",thedofMovingBoundary);
+    }
+#endif
+
     this->meshALE()->revertMovingMesh( false );
 }
 
