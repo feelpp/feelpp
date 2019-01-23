@@ -51,7 +51,7 @@ macro(feelpp_add_testcase )
     TARGET ${target}
     POST_BUILD
     COMMAND rsync
-    ARGS -aLv
+    ARGS -aLv --exclude='*~'
     ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
     ${CMAKE_CURRENT_BINARY_DIR}/
     COMMENT "Syncing testcase ${testcase} in ${CMAKE_CURRENT_BINARY_DIR} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}"
