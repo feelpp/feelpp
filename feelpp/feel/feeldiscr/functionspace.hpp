@@ -2808,9 +2808,9 @@ public:
                 }
             }
 
-        void assign( geoface_type const& e, local_interpolant_type const& Ihloc )
+        void assign( geoface_type const& e, uint16_type faceConnectionId, local_interpolant_type const& Ihloc )
         {
-            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
+            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element( faceConnectionId ).id() );
             for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
                 size_type index = ldof.index();
@@ -2826,9 +2826,9 @@ public:
                 super::operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
-        void plus_assign( geoface_type const& e, local_interpolant_type const& Ihloc )
+        void plus_assign( geoface_type const& e, uint16_type faceConnectionId, local_interpolant_type const& Ihloc )
          {
-            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
+             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element( faceConnectionId ).id() );
             for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
                 size_type index = ldof.index();

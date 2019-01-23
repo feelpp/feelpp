@@ -2579,6 +2579,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             auto const& elt0 = curFace.element( 0 );
             if ( !__dof->meshSupport()->hasElement( elt0.id() ) || ( !hasDofTableMPIExtended && elt0.isGhostCell() ) )
             {
+                if ( !curFace.isConnectedTo1() )
+                    continue;
                 auto const& elt1 = curFace.element( 1 );
                 if ( !__dof->meshSupport()->hasElement( elt1.id() ) || ( !hasDofTableMPIExtended && elt1.isGhostCell() ) )
                     continue;
@@ -2600,11 +2602,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << curFace.G() << "\n";
 
 
+#if 0
         std::pair<size_type,size_type> range_dof( std::make_pair( this->start(),
                 this->functionSpace()->nDof() ) );
         DVLOG(2)  << "[projector] dof start = " << range_dof.first << "\n";
         DVLOG(2)  << "[projector] dof range = " << range_dof.second << "\n";
-
+#endif
         switch ( geomap_strategy )
         {
         default:
@@ -2636,9 +2639,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         break;
         }
         if ( accumulate )
-            this->plus_assign( curFace, IhLoc );
+            this->plus_assign( curFace, faceConnectionId, IhLoc );
         else
-            this->assign( curFace, IhLoc );
+            this->assign( curFace, faceConnectionId, IhLoc );
     } // face_it
 
 }
