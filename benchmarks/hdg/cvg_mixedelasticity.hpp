@@ -88,8 +88,8 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::ConvergenceElasticityTest(
     M_model = mixed_elasticity_type::New("mixedelasticity");
     M_u_exact = expr<Dim,1,expr_order>(soption("cvg.u_exact"));
 
-    auto itField = M_model->modelProperties()->boundaryConditions().find("ExactSolution");
-    if ( itField != M_model->modelProperties()->boundaryConditions().end() )
+    auto itField = M_model->modelProperties().boundaryConditions().find("ExactSolution");
+    if ( itField != M_model->modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "u_exact" );
@@ -112,8 +112,8 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::ConvergenceElasticityTest(
     // Feel::cout << "grad_u_exact      : " << grad<Dim,expr_order>(M_p_exact) << std::endl;
 	*/	
     std::string bc_type = "Dir";
-    itField = M_model->modelProperties()->boundaryConditions().find("stress");
-    if (itField != M_model->modelProperties()->boundaryConditions().end() && bc_type != "Ibc")
+    itField = M_model->modelProperties().boundaryConditions().find("stress");
+    if (itField != M_model->modelProperties().boundaryConditions().end() && bc_type != "Ibc")
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find("Neumann");
@@ -125,8 +125,8 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::ConvergenceElasticityTest(
             bc_type = "Neu"; 
     }
     
-    itField = M_model->modelProperties()->boundaryConditions().find("stress");
-    if (itField != M_model->modelProperties()->boundaryConditions().end() && bc_type != "Ibc")
+    itField = M_model->modelProperties().boundaryConditions().find("stress");
+    if (itField != M_model->modelProperties().boundaryConditions().end() && bc_type != "Ibc")
     {
         auto mapField = (*itField).second; 
         auto itType = mapField.find("Integral");
@@ -198,7 +198,7 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
 		{
 			double mu = 1;
 			double lambda = 1;
-			for( auto const& pairMat : M_model->modelProperties()->materials() )
+			for( auto const& pairMat : M_model->modelProperties().materials() )
 			{
 				auto material = pairMat.second;
 				lambda = material.getDouble("lambda");
@@ -280,8 +280,8 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
 	// COMPUTE THE ERROR IN 2D FOR A CURVED LINE TO VERIFY GEOMETRICAL ORDER 
     if (Dim == 2)
     {
-        auto itField = M_model->modelProperties()->boundaryConditions().find("GeometricalTest");
-        if ( itField != M_model->modelProperties()->boundaryConditions().end() )
+        auto itField = M_model->modelProperties().boundaryConditions().find("GeometricalTest");
+        if ( itField != M_model->modelProperties().boundaryConditions().end() )
         {
 			auto mapField = itField -> second;
             auto itType = mapField.find( "force_F" );
