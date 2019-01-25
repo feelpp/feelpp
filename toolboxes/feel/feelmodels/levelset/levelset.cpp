@@ -754,6 +754,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::heaviside() const
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::levelset_delta_expr_type
+LEVELSET_CLASS_TEMPLATE_TYPE::diracExpr() const
+{
+    return levelsetDelta(
+            _element=*this->phi(),
+            _thickness=this->thicknessInterface(),
+            _use_adaptive_thickness=this->M_useAdaptiveThicknessInterface,
+            _use_local_redist=this->M_useRegularPhi,
+            _use_distance_impl=false
+            );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::dirac() const
 {
@@ -1112,85 +1125,53 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
 
     auto eps0 = this->thicknessInterface();
 
-    if( M_useAdaptiveThicknessInterface )
-    {
-        auto gradPhi = this->gradPhi();
-        auto gradPhiX = vf::project(
-                _space=this->functionSpace(),
-                _range=this->rangeMeshElements(),
-                _expr=idv(gradPhi->comp(Component::X))
-                );
-        auto gradPhiY = vf::project(
-                _space=this->functionSpace(),
-                _range=this->rangeMeshElements(),
-                _expr=idv(gradPhi->comp(Component::Y))
-                );
-#if FEELPP_DIM == 3
-        auto gradPhiZ = vf::project(
-                _space=this->functionSpace(),
-                _range=this->rangeMeshElements(),
-                _expr=idv(gradPhi->comp(Component::Z))
-                );
-#endif
-        auto eps_elt = this->functionSpace()->element();
-        eps_elt = vf::project(
-                _space=this->functionSpace(),
-                _range=this->rangeMeshElements(),
-                _expr=(vf::abs(idv(gradPhiX))+vf::abs(idv(gradPhiY))
-#if FEELPP_DIM == 3
-                    + vf::abs(idv(gradPhiZ))
-#endif
-                    )*cst(eps0)/idv(this->modGradPhi())
-                );
+    //if( M_useAdaptiveThicknessInterface )
+    //{
+        //auto gradPhi = this->gradPhi();
+        //auto gradPhiX = vf::project(
+                //_space=this->functionSpace(),
+                //_range=this->rangeMeshElements(),
+                //_expr=idv(gradPhi->comp(Component::X))
+                //);
+        //auto gradPhiY = vf::project(
+                //_space=this->functionSpace(),
+                //_range=this->rangeMeshElements(),
+                //_expr=idv(gradPhi->comp(Component::Y))
+                //);
+//#if FEELPP_DIM == 3
+        //auto gradPhiZ = vf::project(
+                //_space=this->functionSpace(),
+                //_range=this->rangeMeshElements(),
+                //_expr=idv(gradPhi->comp(Component::Z))
+                //);
+//#endif
+        //auto eps_elt = this->functionSpace()->element();
+        //eps_elt = vf::project(
+                //_space=this->functionSpace(),
+                //_range=this->rangeMeshElements(),
+                //_expr=(vf::abs(idv(gradPhiX))+vf::abs(idv(gradPhiY))
+//#if FEELPP_DIM == 3
+                    //+ vf::abs(idv(gradPhiZ))
+//#endif
+                    //)*cst(eps0)/idv(this->modGradPhi())
+                //);
 
-        auto eps = idv(eps_elt);
-        if (M_useRegularPhi)
-        {
-            //auto psi = idv(this->phi()) / sqrt( gradv(this->phi()) * trans(gradv(this->phi())) );
-            auto psi = idv(this->phi()) / idv(this->modGradPhi());
+        //auto eps = idv(eps_elt);
+        //auto psi = idv(this->phi());
 
-            if ( M_useHeavisideDiracNodalProj )
-                *M_dirac = vf::project( this->functionSpace(), this->rangeMeshElements(),
-                        Feel::FeelModels::levelsetDelta(psi, eps) );
-            else
-                *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps) );
-        }
-        else
-        {
-            auto psi = idv(this->phi());
+        //if ( M_useHeavisideDiracNodalProj )
+            //*M_dirac = vf::project( this->functionSpace(), this->rangeMeshElements(),
+                    //Feel::FeelModels::levelsetDelta(psi, eps) );
+        //else
+            //*M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps) );
+    //}
+    auto const& psi = *this->phi();
 
-            if ( M_useHeavisideDiracNodalProj )
-                *M_dirac = vf::project( this->functionSpace(), this->rangeMeshElements(),
-                        Feel::FeelModels::levelsetDelta(psi, eps) );
-            else
-                *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps) );
-        }
-    }
+    if ( M_useHeavisideDiracNodalProj )
+        *M_dirac = vf::project( this->functionSpace(), this->rangeMeshElements(),
+                this->diracExpr() );
     else
-    {
-        auto eps = cst(eps0);
-        if (M_useRegularPhi)
-        {
-            //auto psi = idv(this->phi()) / sqrt( gradv(this->phi()) * trans(gradv(this->phi())) );
-            auto psi = idv(this->phi()) / idv(this->modGradPhi());
-
-            if ( M_useHeavisideDiracNodalProj )
-                *M_dirac = vf::project( this->functionSpace(), this->rangeMeshElements(),
-                        Feel::FeelModels::levelsetDelta(psi, eps) );
-            else
-                *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps) );
-        }
-        else
-        {
-            auto psi = idv(this->phi());
-
-            if ( M_useHeavisideDiracNodalProj )
-                *M_dirac = vf::project( this->functionSpace(), this->rangeMeshElements(),
-                        Feel::FeelModels::levelsetDelta(psi, eps) );
-            else
-                *M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps) );
-        }
-    }
+        *M_dirac = M_projectorL2Scalar->project( this->diracExpr() );
 
     M_doUpdateDirac = false;
 

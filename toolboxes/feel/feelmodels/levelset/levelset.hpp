@@ -154,6 +154,9 @@ public:
     typedef std::shared_ptr< mesh_adaptation_type > mesh_adaptation_ptrtype;
 #endif
     //--------------------------------------------------------------------//
+    // Heaviside and Dirac expressions
+    typedef Expr< LevelsetDeltaExpr<element_levelset_type> > levelset_delta_expr_type;
+    //--------------------------------------------------------------------//
     // Advection toolbox
     typedef AdvDiffReac< space_levelset_type, FunctionSpaceAdvectionVelocityType > advection_toolbox_type;
     typedef std::shared_ptr<advection_toolbox_type> advection_toolbox_ptrtype;
@@ -355,6 +358,7 @@ public:
 
     element_levelset_ptrtype const& heaviside() const;
     element_levelset_ptrtype const& H() const { return this->heaviside(); }
+    levelset_delta_expr_type diracExpr() const;
     element_levelset_ptrtype const& dirac() const;
     element_levelset_ptrtype const& D() const { return this->dirac(); }
 
