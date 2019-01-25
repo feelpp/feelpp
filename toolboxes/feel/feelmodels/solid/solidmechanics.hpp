@@ -155,7 +155,9 @@ public:
     // newmark or savets(bdf) class
     typedef Newmark<space_displacement_type> newmark_displacement_type;
     typedef std::shared_ptr<newmark_displacement_type> newmark_displacement_ptrtype;
-    typedef Bdf<space_pressure_type>  savets_pressure_type;
+    typedef Bdf<space_displacement_type> bdf_displacement_type;
+    typedef std::shared_ptr<bdf_displacement_type> bdf_displacement_ptrtype;
+    typedef Bdf<space_pressure_type> savets_pressure_type;
     typedef std::shared_ptr<savets_pressure_type> savets_pressure_ptrtype;
     //___________________________________________________________________________________//
     // functionspace for rho,coefflame1,coefflame2
@@ -389,19 +391,35 @@ public :
                      !M_bcDirichletComponents.find(Component::Z)->second.empty() );
         }
 
+    std::string const& timeStepping() const { return M_timeStepping; }
+
     std::shared_ptr<TSBase> timeStepBase()
     {
-        if (this->isStandardModel())
-            return this->timeStepNewmark();
-        else// if (this->is1dReducedModel())
-            return this->timeStepNewmark1dReduced();
+        if ( M_timeStepping == "Newmark" )
+        {
+            if (this->isStandardModel())
+                return this->timeStepNewmark();
+            else// if (this->is1dReducedModel())
+                return this->timeStepNewmark1dReduced();
+        }
+        else
+        {
+            return this->timeStepBdfDisplacement();
+        }
     }
     std::shared_ptr<TSBase> timeStepBase() const
     {
-        if (this->isStandardModel())
-            return this->timeStepNewmark();
-        else// if (this->is1dReducedModel())
-            return this->timeStepNewmark1dReduced();
+        if ( M_timeStepping == "Newmark" )
+        {
+            if (this->isStandardModel())
+                return this->timeStepNewmark();
+            else// if (this->is1dReducedModel())
+                return this->timeStepNewmark1dReduced();
+        }
+        else
+        {
+            return this->timeStepBdfDisplacement();
+        }
     }
     void initTimeStep();
     void updateTimeStep();
@@ -457,15 +475,17 @@ public :
     newmark_displacement_ptrtype & timeStepNewmark() { return M_timeStepNewmark; }
     newmark_displacement_ptrtype const& timeStepNewmark() const { return M_timeStepNewmark; }
     savets_pressure_ptrtype const& timeStepSavetsPressure() const { CHECK( M_savetsPressure ) << "savets pressure not define"; return M_savetsPressure; }
+    bdf_displacement_ptrtype timeStepBdfDisplacement() const { return M_timeStepBdfDisplacement; }
+    bdf_displacement_ptrtype timeStepBdfVelocity() const { return M_timeStepBdfVelocity; }
 
-    element_displacement_ptrtype & fieldVelocityPtr() { return M_timeStepNewmark->currentVelocityPtr(); }
-    element_displacement_ptrtype const& fieldVelocityPtr() const { return M_timeStepNewmark->currentVelocityPtr(); }
-    element_displacement_type & fieldVelocity() { return M_timeStepNewmark->currentVelocity(); }
-    element_displacement_type const& fieldVelocity() const { return M_timeStepNewmark->currentVelocity(); }
+    element_displacement_ptrtype & fieldVelocityPtr() { return M_fieldVelocity; }
+    element_displacement_ptrtype const& fieldVelocityPtr() const { return M_fieldVelocity; }
+    element_displacement_type & fieldVelocity() { return *M_fieldVelocity;; }
+    element_displacement_type const& fieldVelocity() const { return *M_fieldVelocity; }
 
-    element_displacement_type & fieldAcceleration() { return M_timeStepNewmark->currentAcceleration(); }
-    element_displacement_type const& fieldAcceleration() const { return M_timeStepNewmark->currentAcceleration(); }
-    element_displacement_ptrtype const& fieldAccelerationPtr() const { return M_timeStepNewmark->currentAccelerationPtr(); }
+    element_displacement_type & fieldAcceleration() { return *M_fieldAcceleration; }
+    element_displacement_type const& fieldAcceleration() const { return *M_fieldAcceleration; }
+    element_displacement_ptrtype const& fieldAccelerationPtr() const { return M_fieldAcceleration; }
 
     element_normal_stress_ptrtype & fieldNormalStressFromFluidPtr() { return M_fieldNormalStressFromFluid; }
     element_normal_stress_ptrtype const& fieldNormalStressFromFluidPtr() const { return M_fieldNormalStressFromFluid; }
@@ -512,7 +532,7 @@ public :
     int nBlockMatrixGraph() const;
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    void updateBlockVectorSolution();
+    //void updateBlockVectorSolution();
 
     model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
@@ -695,7 +715,7 @@ protected:
     MeshMover<typename mesh_type::trace_mesh_type> M_meshMoverTrace;
     // function space
     space_displacement_ptrtype M_XhDisplacement;
-    element_displacement_ptrtype M_fieldDisplacement;
+    element_displacement_ptrtype M_fieldDisplacement, M_fieldVelocity, M_fieldAcceleration;
     space_pressure_ptrtype M_XhPressure;
     element_pressure_ptrtype M_fieldPressure;
     space_constraint_vec_ptrtype M_XhConstraintVec;
@@ -792,12 +812,17 @@ protected:
     // others
     //-------------------------------------------//
 
+    bool M_timeSteppingUseMixedFormulation;
+    std::string M_timeStepping;
     //generalised-alpha parameters
     double M_genAlpha_rho;
     double M_genAlpha_alpha_m;
     double M_genAlpha_alpha_f;
     double M_genAlpha_gamma;
     double M_genAlpha_beta;
+
+
+    bdf_displacement_ptrtype M_timeStepBdfDisplacement, M_timeStepBdfVelocity;
 
     // fsi
     bool M_useFSISemiImplicitScheme;

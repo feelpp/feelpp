@@ -57,7 +57,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
     if (isStandardModel()) {nElt=M_mesh->numGlobalElements(); nDof=M_XhDisplacement->nDof();}
     else {nElt=M_mesh_1dReduced->numGlobalElements(); nDof=M_Xh_1dReduced->nDof();}
 
-    std::string SchemaTimeType = soption(_name="time-schema",_prefix=this->prefix());
     std::string ResartMode;
     if (this->doRestart()) ResartMode = "Yes";
     else ResartMode = "No";
@@ -152,8 +151,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- initial time : " << this->timeStepBase()->timeInitial()
            << "\n     -- final time   : " << this->timeStepBase()->timeFinal()
            << "\n     -- time step    : " << this->timeStepBase()->timeStep()
-           << "\n     -- type : " << SchemaTimeType;
-    if ( SchemaTimeType == "Newmark" )
+           << "\n     -- type : " << M_timeStepping;
+    if ( M_timeStepping == "Newmark" )
     {
         if (this->isStandardModel())
             *_ostr << " ( gamma="<< this->timeStepNewmark()->gamma() <<", beta="<< this->timeStepNewmark()->beta() << " )";
@@ -229,6 +228,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     int nBlock = 1;
     if ( M_useDisplacementPressureFormulation )
         ++nBlock;
+    if ( M_timeSteppingUseMixedFormulation )
+        ++nBlock;
     return nBlock;
 }
 
@@ -259,6 +260,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         ++indexBlock;
     }
 
+    if ( M_timeSteppingUseMixedFormulation )
+    {
+        myblockGraph(indexBlock,0) = stencil(_test=M_XhDisplacement,_trial=M_XhDisplacement,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(0,indexBlock) = stencil(_test=M_XhDisplacement,_trial=M_XhDisplacement,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(indexBlock,indexBlock) = stencil(_test=M_XhDisplacement,_trial=M_XhDisplacement,
+                                                      _diag_is_nonzero=false,_close=false)->graph();
+        ++indexBlock;
+    }
+
     myblockGraph.close();
 
     this->log("SolidMechanics","buildBlockMatrixGraph", "finish" );
@@ -282,7 +294,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
         return graph_ptrtype();
     }
 }
-
+#if 0
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
@@ -303,7 +315,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
         // nothing because do in solve (TODO mv here)
     }
 }
-
+#endif
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -357,12 +369,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportFieldsImpl( double time )
         }
         if ( this->hasPostProcessFieldExported( SolidMechanicsPostProcessFieldExported::Velocity ) )
         {
-            M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity"), this->timeStepNewmark()->currentVelocity() );
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity"), this->fieldVelocity() );
             hasFieldToExport = true;
         }
         if ( this->hasPostProcessFieldExported( SolidMechanicsPostProcessFieldExported::Acceleration ) )
         {
-            M_exporter->step( time )->add( prefixvm(this->prefix(),"acceleration"), this->timeStepNewmark()->currentAcceleration() );
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"acceleration"), this->fieldAcceleration() );
             hasFieldToExport = true;
         }
         if ( this->hasPostProcessFieldExported( SolidMechanicsPostProcessFieldExported::NormalStress ) )
@@ -778,21 +790,32 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
-    if (this->isStandardModel())
+    if ( M_timeStepping == "Newmark" )
     {
-        // next time step
-        M_timeStepNewmark->next( *M_fieldDisplacement );
-        if ( M_useDisplacementPressureFormulation ) M_savetsPressure->next(*M_fieldPressure);
-        // up current time
-        this->updateTime( M_timeStepNewmark->time() );
+        if (this->isStandardModel())
+        {
+            // next time step
+            M_timeStepNewmark->next( *M_fieldDisplacement );
+            // up current time
+            this->updateTime( M_timeStepNewmark->time() );
+        }
+        else if (this->is1dReducedModel())
+        {
+            // next time step
+            M_newmark_displ_1dReduced->next( *M_disp_1dReduced );
+            // up current time
+            this->updateTime( M_newmark_displ_1dReduced->time() );
+        }
     }
-    else if (this->is1dReducedModel())
+    else
     {
-        // next time step
-        M_newmark_displ_1dReduced->next( *M_disp_1dReduced );
-        // up current time
-        this->updateTime( M_newmark_displ_1dReduced->time() );
+        M_timeStepBdfDisplacement->next( *M_fieldDisplacement );
+        M_timeStepBdfVelocity->next( *M_fieldVelocity );
+        this->updateTime( M_timeStepBdfDisplacement->time() );
     }
+
+    if ( this->isStandardModel() && M_useDisplacementPressureFormulation )
+        M_savetsPressure->next(*M_fieldPressure);
 
     // update user functions which depend of time only
     this->updateUserFunctions(true);
@@ -871,7 +894,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
     this->M_bcRobin.setParameterValues( paramValues );
     this->M_volumicForcesProperties.setParameterValues( paramValues );
 
-    this->updateBlockVectorSolution();
+    //this->updateBlockVectorSolution();
+    M_blockVectorSolution.updateVectorFromSubVectors();
     if (M_pdeType=="Elasticity")
     {
         if (M_pdeSolver=="LinearSystem")
@@ -915,7 +939,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
         M_blockVectorSolution.localize();
 
 
-    if ( upVelAcc )
+    if ( upVelAcc && M_timeStepping == "Newmark" )
         this->updateVelocity();
 
     double tElapsed = this->timerTool("Solve").stop("solve");
@@ -935,6 +959,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVelocity()
 {
+    if ( M_timeStepping != "Newmark" )
+        return;
+
     this->log("SolidMechanics","updateVelocityAndAcceleration", "start" );
 
     if (this->isStandardModel())
@@ -955,13 +982,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
 {
-    using namespace Feel::vf;
-
     if ( !M_XhNormalStress )
         this->createAdditionalFunctionSpacesNormalStress();
 
     auto const& u = this->fieldDisplacement();
     auto range = boundaryfaces(this->mesh());
+    //auto range = markedfaces(this->mesh(),this->markerNameFSI());
+
 
     if ( M_pdeType=="Elasticity" )
     {
@@ -974,14 +1001,16 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
         {
             auto sigma = idv(coeffLame1)*trace(eps)*Id + 2*idv(coeffLame2)*eps;
             M_fieldNormalStressFromStruct->on( _range=range,
-                                               _expr=sigma*vf::N() );
+                                               _expr=sigma*N(),
+                                               _geomap=this->geomap() );
         }
         else
         {
             auto const& p = this->fieldPressure();
             auto sigma = idv(p)*Id + 2*idv(coeffLame2)*eps;
             M_fieldNormalStressFromStruct->on( _range=range,
-                                               _expr=sigma*vf::N() );
+                                               _expr=sigma*N(),
+                                               _geomap=this->geomap() );
         }
     }
     else if ( M_pdeType=="Elasticity-Large-Deformation" )
@@ -994,14 +1023,16 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
         if ( !this->useDisplacementPressureFormulation() )
         {
             M_fieldNormalStressFromStruct->on( _range=range,
-                                               _expr=sigma*vf::N() );
+                                               _expr=sigma*N(),
+                                               _geomap=this->geomap() );
         }
         else
         {
             auto const& p = this->fieldPressure();
             auto sigmaWithPressure = Feel::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
             M_fieldNormalStressFromStruct->on( _range=range,
-                                               _expr=sigmaWithPressure*vf::N() );
+                                               _expr=sigmaWithPressure*N(),
+                                               _geomap=this->geomap() );
         }
     }
 }
