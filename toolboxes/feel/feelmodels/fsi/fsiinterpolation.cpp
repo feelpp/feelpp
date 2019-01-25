@@ -857,9 +857,65 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
 
 }
 #else
+
 template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI )
+{
+    if ( this->solidModel()->timeStepping() == "Newmark" )
+        this->transfertRobinNeumannGeneralizedS2F_BdfNewmark( iterationFSI );
+    else
+        this->transfertRobinNeumannGeneralizedS2F_BdfBdf( iterationFSI );
+}
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F_BdfBdf( int iterationFSI )
+{
+   if ( this->solidModel()->isStandardModel())
+    {
+        auto fieldToTransfert = M_solidModel->fieldVelocity().functionSpace()->elementPtr();
+        double dt = this->solidModel()->timeStepBdfDisplacement()->timeStep();
+        if ( iterationFSI == 0 )
+        {
+            fieldToTransfert->add( -2, this->solidModel()->timeStepBdfVelocity/*timeStepBdfDisplacement*/()->unknown(0) );
+            fieldToTransfert->add( 1, this->solidModel()->timeStepBdfVelocity/*timeStepBdfDisplacement*/()->unknown(1) );
+            fieldToTransfert->scale( 1./dt );
+        }
+        else
+        {
+            //fieldToTransfert->add( -2, this->solidModel()->fieldVelocity() );
+            //fieldToTransfert->add( 1, this->solidModel()->timeStepBdfVelocity()->unknown(0) );
+            fieldToTransfert->add( -1, this->solidModel()->fieldVelocity() );
+            fieldToTransfert->scale( 1./dt );
+            //for ( uint8_type i = 0; i < this->timeOrder(); ++i )
+            //M_polyDeriv->add( this->polyDerivCoefficient( i+1 ), *M_unknowns[i] );
+        }
+
+        M_couplingRNG_coeffForm2 = 1./dt;
+
+        // transfer solid to fluid
+        if (M_interfaceFSIisConforme)
+        {
+            CHECK( M_opVelocity2dTo2dconf ) << "interpolation operator not build";
+            M_opVelocity2dTo2dconf->apply( *fieldToTransfert, *this->couplingRNG_evalForm1() );
+        }
+        else
+        {
+            CHECK( M_opVelocity2dTo2dnonconf ) << "interpolation operator not build";
+            M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert, *this->couplingRNG_evalForm1() );
+        }
+    }
+   else if ( this->solidModel()->is1dReducedModel() )
+   {
+       CHECK( false ) << "TODO";
+   }
+}
+
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F_BdfNewmark( int iterationFSI )
 {
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertRobinNeumannGeneralizedS2F", "start",
                                                this->worldComm(),this->verboseAllProc());
