@@ -55,13 +55,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     //auto f = SOLIDMECHANICS_VOLUME_FORCE(this->shared_from_this());
     //#endif
     //auto bcDef = SOLIDMECHANICS_BC(this->shared_from_this());
-
+#if 0
     double alpha_f=M_genAlpha_alpha_f;
     double alpha_m=M_genAlpha_alpha_m;
     //std::cout << "alpha_f " << alpha_f << "alpha_m " <<alpha_m <<"\n";
     double gamma=0.5+alpha_m-alpha_f;
     double beta=0.25*(1+alpha_m-alpha_f)*(1+alpha_m-alpha_f);
-
+#endif
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -70,11 +70,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     auto const& rho = this->mechanicalProperties()->fieldRho();
     //Identity Matrix
     auto Id = eye<nDim,nDim>();
-    auto Fv = Id + alpha_f*gradv(u);
-    auto Ev = alpha_f*sym(gradv(u)) + alpha_f*alpha_f*0.5*trans(gradv(u))*gradv(u);
+    auto Fv = Id + gradv(u);
+    auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
     auto Sv = idv(coeffLame1)*trace(Ev)*Id + 2*idv(coeffLame2)*Ev;
     //case elastic
-    auto Ev_elastic = alpha_f*sym(gradv(u));
+    auto Ev_elastic = sym(gradv(u));
     auto Sv_elastic = idv(coeffLame1)*trace(Ev_elastic)*Id + 2*idv(coeffLame2)*Ev_elastic;
 
     //--------------------------------------------------------------------------------------------------//
@@ -125,7 +125,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         if (!BuildCstPart && !UseJacobianLinearTerms)
             linearFormDisplacement +=
                 integrate( _range=M_rangeMeshElements,
-                           _expr= trace( Sv_elastic*trans(grad(v))),
+                           _expr= inner( Sv_elastic,grad(v) ),
                            _geomap=this->geomap() );
     }
     double timeElapsedBis = this->timerTool("Solve").stop();
@@ -158,60 +158,115 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     // discretisation acceleration term
     if (!this->isStationary())
     {
-        if (!BuildCstPart && !UseJacobianLinearTerms)
+        if ( M_timeStepping == "Newmark" )
         {
-            if ( !this->useMassMatrixLumped() )
+            if (!BuildCstPart && !UseJacobianLinearTerms)
             {
-                linearFormDisplacement +=
-                    integrate( _range=M_rangeMeshElements,
-                               _expr= M_timeStepNewmark->polySecondDerivCoefficient()*idv(rho)*inner(idv(u),id(v)),
-                               _geomap=this->geomap() );
-            }
-            else
-            {
-                if ( this->massMatrixLumped()->size1() == R->size() )
+                if ( !this->useMassMatrixLumped() )
                 {
-                    auto myvec = this->backend()->newVector(M_XhDisplacement);
-                    *myvec = u;
-                    myvec->scale(M_timeStepNewmark->polySecondDerivCoefficient());
-                    R->close();
-                    R->addVector( myvec, this->massMatrixLumped() );
+                    linearFormDisplacement +=
+                        integrate( _range=M_rangeMeshElements,
+                                   _expr= M_timeStepNewmark->polySecondDerivCoefficient()*idv(rho)*inner(idv(u),id(v)),
+                                   _geomap=this->geomap() );
+                }
+                else
+                {
+                    if ( this->massMatrixLumped()->size1() == R->size() )
+                    {
+                        auto myvec = this->backend()->newVector(M_XhDisplacement);
+                        *myvec = u;
+                        myvec->scale(M_timeStepNewmark->polySecondDerivCoefficient());
+                        R->close();
+                        R->addVector( myvec, this->massMatrixLumped() );
+                    }
+                    else
+                    {
+                        CHECK( false ) << "TODO";
+                    }
+                }
+            }
+            if (BuildCstPart)
+            {
+                auto polySecondDerivDisp = M_timeStepNewmark->polySecondDeriv();
+                if ( !this->useMassMatrixLumped() )
+                {
+                    linearFormDisplacement +=
+                        integrate( _range=M_rangeMeshElements,
+                                   _expr= -idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
+                                   _geomap=this->geomap() );
+                }
+                else
+                {
+                    if ( this->massMatrixLumped()->size1() == R->size() )
+                    {
+                        auto myvec = this->backend()->newVector(M_XhDisplacement);
+                        *myvec = polySecondDerivDisp;
+                        myvec->scale(-1.0);
+                        R->close();
+                        R->addVector( myvec, this->massMatrixLumped() );
+                    }
+                    else
+                    {
+                        R->close();
+                        auto uAddResidual = M_XhDisplacement->element( R, rowStartInVector );
+                        auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
+                        uAddResidual.add(-1.0, element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                    }
+                }
+            }
+        } // Newmark
+        else
+        {
+            CHECK( this->hasStartSubBlockSpaceIndex( "velocity" ) ) << "no SubBlockSpaceIndex velocity";
+            size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+            //std::cout << "RESIDUAL bdf\n";
+            if (!BuildCstPart && !UseJacobianLinearTerms)
+            {
+                auto const curVel = M_XhDisplacement->element(X, rowStartInVector+startBlockIndexVelocity);
+                if ( !this->useMassMatrixLumped() )
+                {
+                    linearFormDisplacement +=
+                        integrate( _range=M_rangeMeshElements,
+                                   _expr= M_timeStepBdfVelocity->polyDerivCoefficient(0)*idv(rho)*inner(idv(curVel),id(v)),
+                                   _geomap=this->geomap() );
                 }
                 else
                 {
                     CHECK( false ) << "TODO";
                 }
-            }
-        }
-        if (BuildCstPart)
-        {
-            auto polySecondDerivDisp = M_timeStepNewmark->polySecondDeriv();
-            if ( !this->useMassMatrixLumped() )
-            {
-                linearFormDisplacement +=
+
+                form1( _test=M_XhDisplacement, _vector=R,
+                       _rowstart=rowStartInVector+startBlockIndexVelocity ) +=
                     integrate( _range=M_rangeMeshElements,
-                               _expr= -idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
+                               _expr= idv(rho)*inner(M_timeStepBdfDisplacement->polyDerivCoefficient(0)*idv(u)-idv(curVel),id(v)),
                                _geomap=this->geomap() );
             }
-            else
+
+            if ( BuildCstPart )
             {
-                if ( this->massMatrixLumped()->size1() == R->size() )
+                auto rhsTimeStepVelocity = M_timeStepBdfVelocity->polyDeriv();
+                if ( !this->useMassMatrixLumped() )
                 {
-                    auto myvec = this->backend()->newVector(M_XhDisplacement);
-                    *myvec = polySecondDerivDisp;
-                    myvec->scale(-1.0);
-                    R->close();
-                    R->addVector( myvec, this->massMatrixLumped() );
+                    linearFormDisplacement +=
+                        integrate( _range=M_rangeMeshElements,
+                                   _expr= -idv(rho)*inner(idv(rhsTimeStepVelocity),id(v)),
+                                   _geomap=this->geomap() );
                 }
                 else
                 {
                     R->close();
-                    auto uAddResidual = M_XhDisplacement->element( R, rowStartInVector );
+                    auto uAddRhs = M_XhDisplacement->element( R, rowStartInVector );
                     auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
-                    uAddResidual.add(-1.0, element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                    uAddRhs.add( -1., element_product( uDiagMassMatrixLumped, rhsTimeStepVelocity ) );
                 }
+                auto rhsTimeStepDisplacement = M_timeStepBdfDisplacement->polyDeriv();
+                form1( _test=M_XhDisplacement, _vector=R,
+                       _rowstart=rowStartInVector+startBlockIndexVelocity ) +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr= -idv(rho)*inner(idv(rhsTimeStepDisplacement),id(v)),
+                               _geomap=this->geomap() );
             }
-        }
+        } // BDF
     }
     //--------------------------------------------------------------------------------------------------//
     // neumann bc
@@ -224,76 +279,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     {
         this->updateBCFollowerPressureResidual( u,R );
     }
-
-    //--------------------------------------------------------------------------------------------------//
-#if 0
-    // fsi bc
-    if (this->markerNameFSI().size()>0)
-    {
-        // neumann boundary condition with normal stress (fsi boundary condition)
-        if (BuildCstPart_BoundaryParoiMobile)
-        {
-            linearFormDisplacement +=
-                integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                           _expr= alpha_f*trans(idv(*M_fieldNormalStressFromFluid))*id(v),
-                           _geomap=this->geomap() );
-        }
-
-        if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
-             this->couplingFSIcondition() == "nitsche" )
-        {
-            double gammaRobinFSI = this->gammaNitschFSI();
-            double muFluid = this->muFluidFSI();
-#if 0
-            // integrate on ref with variables change
-            auto Fa = eye<nDim,nDim>() + gradv(this->timeStepNewmark()->previousUnknown());
-            auto Ja = det(Fa);
-            auto Ba = inv(Fa);
-            auto variablechange = Ja*norm2( Ba*N() );
-            if (!BuildCstPart)
-            {
-                linearFormDisplacement +=
-                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                               _expr= variablechange*gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idv(u),id(v))/hFace(),
-                               _geomap=this->geomap() );
-            }
-            if (!BuildCstPart )
-            {
-                auto robinFSIRhs = idv(this->timeStepNewmark()->polyFirstDeriv() ) + idv(this->velocityInterfaceFromFluid());
-                linearFormDisplacement +=
-                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                               _expr= -variablechange*gammaRobinFSI*muFluid*inner( robinFSIRhs,id(v) )/hFace(),
-                               _geomap=this->geomap() );
-            }
-
-#else
-            MeshMover<mesh_type> mymesh_mover;
-            mesh_ptrtype mymesh = this->mesh();
-            mymesh_mover.apply( mymesh, this->timeStepNewmark()->previousUnknown() );
-
-            if (!BuildCstPart)
-            {
-                linearFormDisplacement +=
-                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                               _expr= gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idv(u),id(v))/hFace(),
-                               _geomap=this->geomap() );
-            }
-            if (!BuildCstPart )
-            {
-                auto robinFSIRhs = idv(this->timeStepNewmark()->polyFirstDeriv() ) + idv(this->fieldVelocityInterfaceFromFluid());
-                linearFormDisplacement +=
-                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                               _expr= -gammaRobinFSI*muFluid*inner( robinFSIRhs,id(v) )/hFace(),
-                               _geomap=this->geomap() );
-            }
-
-            auto dispInv = this->fieldDisplacement().functionSpace()->element(-idv(this->timeStepNewmark()->previousUnknown()));
-            mymesh_mover.apply( mymesh, dispInv );
-#endif
-        } // robin-robin fsi
-
-    }
-#endif
 
     //--------------------------------------------------------------------------------------------------//
     // robin boundary condition (used in wavePressure3d as external tissue for arterial wall)
