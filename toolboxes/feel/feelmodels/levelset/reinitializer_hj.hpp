@@ -231,8 +231,8 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
     {
         LOG(INFO) << "iter reinit : " << i << std::endl;
 
-        auto phi_reinit = M_advectionHJ->fieldSolutionPtr();
-        auto phi_reinito = M_advectionHJ->timeStepBDF()->unknowns()[1];
+        auto const& phi_reinit = M_advectionHJ->fieldSolutionPtr();
+        auto const& phi_reinito = M_advectionHJ->timeStepBDF()->unknowns()[1];
 
         auto gradPhiReinit = M_projectorL2Vec->project( _expr=trans(gradv(phi_reinit)) );
 #if 1
@@ -308,7 +308,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
 
             //auto modGradPhiReinit = vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit)));
             auto modGradPhiReinit = vf::sqrt( trans(idv(gradPhiReinit))*idv(gradPhiReinit) );
-            auto Delta = Feel::FeelModels::levelsetDelta( idv(phi_reinit), cst(M_thicknessHeaviside) );
+            auto Delta = Feel::FeelModels::levelsetDelta( *phi_reinit, M_thicknessHeaviside );
             auto spaceP0 = this->functionSpaceP0();
             auto LambdaNum = integrate(
                     _range=elements(mesh),
