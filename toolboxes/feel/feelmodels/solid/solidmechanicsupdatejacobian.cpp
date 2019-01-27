@@ -29,8 +29,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     this->log("SolidMechanics","updateJacobian", "start"+sc);
     this->timerTool("Solve").start();
 
-    //boost::mpi::timer thetimer,thetimerBis;
-
     //--------------------------------------------------------------------------------------------------//
 
     mesh_ptrtype mesh = M_XhDisplacement->mesh();
@@ -51,12 +49,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     auto const& v = this->fieldDisplacement();
 
     //--------------------------------------------------------------------------------------------------//
-
+#if 0
     double alpha_f=M_genAlpha_alpha_f;
     double alpha_m=M_genAlpha_alpha_m;
     double gamma=0.5+alpha_m-alpha_f;
     double beta=0.25*(1+alpha_m-alpha_f)*(1+alpha_m-alpha_f);
-
+#endif
     //--------------------------------------------------------------------------------------------------//
 
     auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
@@ -64,14 +62,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     auto const& rho = this->mechanicalProperties()->fieldRho();
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
-    auto Fv = Id + alpha_f*gradv(u);
-    auto dF = alpha_f*gradt(u);
-    auto Ev = alpha_f*sym(gradv(u)) + alpha_f*alpha_f*0.5*trans(gradv(u))*gradv(u);
-    auto dE = alpha_f*sym(gradt(u)) + alpha_f*alpha_f*0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
+    auto Fv = Id + gradv(u);
+    auto dF = gradt(u);
+    auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
+    auto dE = sym(gradt(u)) + 0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
     auto Sv = idv(coeffLame1)*trace(Ev)*Id + 2*idv(coeffLame2)*Ev;
     auto dS = idv(coeffLame1)*trace(dE)*Id + 2*idv(coeffLame2)*dE;
     //case elastic
-    auto dE_elastic = alpha_f*sym(gradt(u));
+    auto dE_elastic = sym(gradt(u));
     auto dS_elastic = idv(coeffLame1)*trace(dE_elastic)*Id + 2*idv(coeffLame2)*dE_elastic;
 
     //--------------------------------------------------------------------------------------------------//
@@ -126,7 +124,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         if (!BuildCstPart)
             bilinearForm_PatternCoupled +=
                 integrate (_range=M_rangeMeshElements,
-                           _expr= trace( dS*trans(grad(v)) ),
+                           _expr= inner( dS, grad(v) ),
                            _geomap=this->geomap() );
     }
     else if (M_pdeType=="Elasticity")
@@ -134,7 +132,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         if (BuildCstPart)
             bilinearForm_PatternCoupled +=
                 integrate (_range=M_rangeMeshElements,
-                           _expr= trace( dS_elastic*trans(grad(v)) ),
+                           _expr= inner( dS_elastic, grad(v) ),
                            _geomap=this->geomap() );
     }
 
@@ -144,30 +142,75 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     //--------------------------------------------------------------------------------------------------//
     // discretisation acceleration term
-    if (BuildCstPart && !this->isStationary())
+    if ( !this->isStationary() )
     {
-        if ( !this->useMassMatrixLumped() )
+        if ( M_timeStepping == "Newmark" )
         {
-            bilinearForm_PatternDefault +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= M_timeStepNewmark->polyDerivCoefficient()*idv(rho)*inner( idt(u),id(v) ),
-                           _geomap=this->geomap() );
-        }
-        else
-        {
-            J->close();
-            double thecoeff = M_timeStepNewmark->polyDerivCoefficient();
-            if ( this->massMatrixLumped()->size1() == J->size1() )
-                J->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
-            else
+            if ( BuildCstPart )
             {
-                auto vecAddDiagJ = this->backend()->newVector( J->mapRowPtr() );
-                auto uAddDiagJ = M_XhDisplacement->element( vecAddDiagJ, rowStartInVector );
-                uAddDiagJ = *M_vecDiagMassMatrixLumped;
-                uAddDiagJ.scale( thecoeff );
-                J->addDiagonal( vecAddDiagJ );
+                if ( !this->useMassMatrixLumped() )
+                {
+                    bilinearForm_PatternDefault +=
+                        integrate( _range=M_rangeMeshElements,
+                                   _expr= M_timeStepNewmark->polyDerivCoefficient()*idv(rho)*inner( idt(u),id(v) ),
+                                   _geomap=this->geomap() );
+                }
+                else
+                {
+                    J->close();
+                    double thecoeff = M_timeStepNewmark->polyDerivCoefficient();
+                    if ( this->massMatrixLumped()->size1() == J->size1() )
+                        J->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
+                    else
+                    {
+                        auto vecAddDiagJ = this->backend()->newVector( J->mapRowPtr() );
+                        auto uAddDiagJ = M_XhDisplacement->element( vecAddDiagJ, rowStartInVector );
+                        uAddDiagJ = *M_vecDiagMassMatrixLumped;
+                        uAddDiagJ.scale( thecoeff );
+                        J->addDiagonal( vecAddDiagJ );
+                    }
+                }
             }
-        }
+        } // Newmark
+        else // bdf
+        {
+            if ( BuildCstPart )
+            {
+                CHECK( this->hasStartSubBlockSpaceIndex( "velocity" ) ) << "no SubBlockSpaceIndex velocity";
+                size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+
+                if ( !this->useMassMatrixLumped() )
+                {
+                    form2( _test=M_XhDisplacement, _trial=M_XhDisplacement, _matrix=J,
+                           _rowstart=rowStartInMatrix,
+                           _colstart=colStartInMatrix+startBlockIndexVelocity ) +=
+                        integrate( _range=M_rangeMeshElements,
+                                   _expr= M_timeStepBdfVelocity->polyDerivCoefficient(0)*idv(rho)*inner(idt(u),id(v)),
+                                   _geomap=this->geomap() );
+                }
+                else
+                {
+                    double thecoeff = M_timeStepBdfVelocity->polyDerivCoefficient(0);
+                    for ( size_type i=0;i<M_XhDisplacement->nLocalDofWithoutGhost();++i)
+                        J->add( J->mapRowPtr()->dofIdToContainerId(rowStartInMatrix)[i],
+                                J->mapColPtr()->dofIdToContainerId(rowStartInMatrix+startBlockIndexVelocity)[i],
+                                thecoeff*M_vecDiagMassMatrixLumped->operator()(i) );
+
+                }
+                form2( _test=M_XhDisplacement, _trial=M_XhDisplacement, _matrix=J,
+                       _rowstart=rowStartInMatrix+startBlockIndexVelocity,
+                       _colstart=colStartInMatrix ) +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr= M_timeStepBdfDisplacement->polyDerivCoefficient(0)*idv(rho)*inner(idt(u),id(v)),
+                               _geomap=this->geomap() );
+                form2( _test=M_XhDisplacement, _trial=M_XhDisplacement, _matrix=J,
+                       _rowstart=rowStartInMatrix+startBlockIndexVelocity,
+                       _colstart=colStartInMatrix+startBlockIndexVelocity ) +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr= -idv(rho)*inner(idt(u),id(v)),
+                               _geomap=this->geomap() );
+            }
+        } // BDF
     }
     //--------------------------------------------------------------------------------------------------//
     // incompressibility terms
@@ -198,42 +241,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         this->updateBCRobinJacobian( J );
     }
     //--------------------------------------------------------------------------------------------------//
-#if 0
-    // fsi coupling using a robin boundary condition
-    if (this->markerNameFSI().size()>0 && ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
-                                            this->couplingFSIcondition() == "nitsche" ) )
-    {
-        double gammaRobinFSI = this->gammaNitschFSI();
-        double muFluid = this->muFluidFSI();
-        if ( !BuildCstPart)
-        {
-#if 0
-            // integrate on ref with variables change
-            auto Fa = eye<nDim,nDim>() + gradv(this->timeStepNewmark()->previousUnknown());
-            auto Ja = det(Fa);
-            auto Ba = inv(Fa);
-            auto variablechange = Ja*norm2( Ba*N() );
-            bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                           _expr= variablechange*gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
-                           _geomap=this->geomap() );
-
-#else
-            MeshMover<mesh_type> mymesh_mover;
-            mesh_ptrtype mymesh = this->mesh();
-            mymesh_mover.apply( mymesh, this->timeStepNewmark()->previousUnknown() );
-
-            bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                           _expr= gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
-                           _geomap=this->geomap() );
-
-            auto dispInv = this->fieldDisplacement().functionSpace()->element(-idv(this->timeStepNewmark()->previousUnknown()));
-            mymesh_mover.apply( mymesh, dispInv );
-#endif
-        }
-    }
-#endif
     //--------------------------------------------------------------------------------------------------//
     // strong Dirichlet bc
     if ( this->hasMarkerDirichletBCelimination() && !BuildCstPart && _doBCStrongDirichlet)
