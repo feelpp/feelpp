@@ -309,10 +309,16 @@ public:
         }
         void update( Geo_t const& geom )
         {
+            this->setGmc( geom );
             std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), loc_type::Zero() );
             //std::fill( M_locId.data(), M_locId.data()+M_locId.num_elements(), loc_id_type::Zero() );
             std::fill( M_locGrad.data(), M_locGrad.data()+M_locGrad.num_elements(), loc_grad_type::Zero() );
 
+            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+            {
+                M_pc->update( this->gmc()->pc()->nodes() );
+                M_pcLameCoeff->update( this->gmc()->pc()->nodes() );
+            }
             M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&) M_pc );
             M_ctxLameCoeff->update( fusion::at_key<key_type>( geom ),  (pc_lamecoeff_ptrtype const&) M_pcLameCoeff );
 #if 1

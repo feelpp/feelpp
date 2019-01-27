@@ -581,10 +581,18 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
 
         CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
         std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
+#if 0
         auto const& dynamicViscosity = M_fluidModel->materialProperties()->dynamicViscosity(matName);
         CHECK( dynamicViscosity.isNewtonianLaw() && dynamicViscosity.newtonian().isConstant() ) << "TODO";
         double muFluid = dynamicViscosity.newtonian().value();
+#endif
 
+        
+        auto muFluid = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(/*uCur*/M_solidModel->fieldVelocityInterfaceFromFluid(),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
+                                                                                         *M_fluidModel->materialProperties(),matName,true);
+
+
+        
 #if 0
             MeshMover<mesh_type> mymesh_mover;
             mesh_ptrtype mymesh = this->mesh();
@@ -647,12 +655,17 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
 
     CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
     std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
+#if 0
     auto const& dynamicViscosity = M_fluidModel->materialProperties()->dynamicViscosity(matName);
     CHECK( dynamicViscosity.isNewtonianLaw() && dynamicViscosity.newtonian().isConstant() ) << "TODO";
     double muFluid = dynamicViscosity.newtonian().value();
+#endif
 
     if ( buildCstPart )
     {
+        auto muFluid = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(/*uCur*/M_solidModel->fieldVelocityInterfaceFromFluid(),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
+                                                                                         *M_fluidModel->materialProperties(),matName,true);
+
 #if 0
         MeshMover<typename solid_type::mesh_type> mymesh_mover;
         mymesh_mover.apply( mesh, M_solidModel->timeStepNewmark()->previousUnknown() );
@@ -714,9 +727,14 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
 
         CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
         std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
+#if 0
         auto const& dynamicViscosity = M_fluidModel->materialProperties()->dynamicViscosity(matName);
         CHECK( dynamicViscosity.isNewtonianLaw() && dynamicViscosity.newtonian().isConstant() ) << "TODO";
         double muFluid = dynamicViscosity.newtonian().value();
+#endif
+
+        auto muFluid = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(/*uCur*/M_solidModel->fieldVelocityInterfaceFromFluid(),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
+                                                                                         *M_fluidModel->materialProperties(),matName,true);
 
 #if 0
         MeshMover<typename solid_type::mesh_type> mymesh_mover;
