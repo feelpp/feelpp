@@ -132,14 +132,13 @@ class FEELPP_EXPORT Checker : public JournalWatcher
 {
     using super = JournalWatcher;
 public:
-    Checker( std::string const& name = "" );
+    explicit Checker( std::string const& name = "" );
     Checker( Checker const& c ) = default;
     Checker( Checker && c ) = default;
 
     //!
     //! use @param s as solution to check the numerical results
     //!
-    explicit Checker( std::string const& s );
     Checker & operator=( Checker const& c ) = default;
     Checker & operator=( Checker && c ) = default;
     ~Checker() = default;
