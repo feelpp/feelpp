@@ -192,14 +192,19 @@ struct tensorSolidMecPressureFormulationMultiplierClassic : public tensorSolidMe
 
     void update( Geo_t const& geom )
     {
+        this->setGmc( geom );
         std::fill( this->M_locRes.data(), this->M_locRes.data()+this->M_locRes.num_elements(), super_type::matrix_shape_type::Zero() );
         std::fill( this->M_locGradDisplacement.data(), this->M_locGradDisplacement.data()+this->M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*super_type::loc_tensor2_type::Zero()*/ );
         std::fill( this->M_locIdPressure.data(), this->M_locIdPressure.data()+this->M_locIdPressure.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
 
+        if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+            this->M_pcDisp->update( this->gmc()->pc()->nodes() );
         this->M_ctxDisp->update( this->gmc(),  (typename super_type::pc_disp_ptrtype const&) this->M_pcDisp );
         this->M_expr.disp().grad( *this->M_ctxDisp, this->M_locGradDisplacement );
         if ( SpecificExprType::value != ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_PRES )
         {
+            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+                this->M_pcPressure->update( this->gmc()->pc()->nodes() );
             this->M_ctxPressure->update( this->gmc(),  (typename super_type::pc_pressure_ptrtype const&) this->M_pcPressure );
             this->M_expr.pressure().id( *this->M_ctxPressure, this->M_locIdPressure );
         }
@@ -474,12 +479,17 @@ struct tensorSolidMecPressureFormulationMultiplierStVenantKirchhoff : public ten
 
     void update( Geo_t const& geom )
     {
+        this->setGmc( geom );
         std::fill( this->M_locRes.data(), this->M_locRes.data()+this->M_locRes.num_elements(), super_type::matrix_shape_type::Zero() );
         std::fill( this->M_locGradDisplacement.data(), this->M_locGradDisplacement.data()+this->M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*super_type::loc_tensor2_type::Zero()*/ );
         std::fill( this->M_locIdPressure.data(), this->M_locIdPressure.data()+this->M_locIdPressure.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
 
+        if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+            this->M_pcDisp->update( this->gmc()->pc()->nodes() );
         this->M_ctxDisp->update( this->gmc(),  (typename super_type::pc_disp_ptrtype const&) this->M_pcDisp );
         this->M_expr.disp().grad( *this->M_ctxDisp, this->M_locGradDisplacement );
+        if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+            this->M_pcPressure->update( this->gmc()->pc()->nodes() );
         this->M_ctxPressure->update( this->gmc(),  (typename super_type::pc_pressure_ptrtype const&) this->M_pcPressure );
         this->M_expr.pressure().id( *this->M_ctxPressure, this->M_locIdPressure );
         updateImpl( mpl::int_<SpecificExprType::value>() );
@@ -925,8 +935,11 @@ struct tensorSolidMecPressureFormulationConstraintClassic : public tensorSolidMe
 
     void update( Geo_t const& geom )
     {
+        this->setGmc( geom );
         std::fill( this->M_locRes.data(), this->M_locRes.data()+this->M_locRes.num_elements(), super_type::matrix_shape_type::Zero() );
         std::fill( this->M_locGradDisplacement.data(), this->M_locGradDisplacement.data()+this->M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*super_type::loc_tensor2_type::Zero()*/ );
+        if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+            this->M_pcDisp->update( this->gmc()->pc()->nodes() );
         this->M_ctxDisp->update( this->gmc(),  (typename super_type::pc_disp_ptrtype const&) this->M_pcDisp );
         this->M_expr.disp().grad( *this->M_ctxDisp, this->M_locGradDisplacement );
 
@@ -1058,8 +1071,11 @@ struct tensorSolidMecPressureFormulationConstraintStVenantKirchhoff : public ten
 
     void update( Geo_t const& geom )
     {
+        this->setGmc( geom );
         std::fill( this->M_locRes.data(), this->M_locRes.data()+this->M_locRes.num_elements(), super_type::matrix_shape_type::Zero() );
         std::fill( this->M_locGradDisplacement.data(), this->M_locGradDisplacement.data()+this->M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*super_type::loc_tensor2_type::Zero()*/ );
+        if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+            this->M_pcDisp->update( this->gmc()->pc()->nodes() );
         this->M_ctxDisp->update( this->gmc(),  (typename super_type::pc_disp_ptrtype const&) this->M_pcDisp );
         this->M_expr.disp().grad( *this->M_ctxDisp, this->M_locGradDisplacement );
         updateImpl( mpl::int_<SpecificExprType::value>() );

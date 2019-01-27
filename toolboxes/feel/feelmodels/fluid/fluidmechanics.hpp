@@ -697,11 +697,13 @@ public :
     // update normal stress in reference ALE mesh
     void updateNormalStressOnCurrentMesh( std::set<std::string> const& listMarkers = std::set<std::string>() );
     // update normal stress in reference ALE mesh
-    void updateNormalStressOnReferenceMesh( std::set<std::string> const& listMarkers = std::set<std::string>() );
+    void updateNormalStressOnReferenceMesh();
+private :
     // update normal stress (subfunctions)
-    void updateNormalStressOnReferenceMeshStandard( std::set<std::string> const& listMarkers );
-    void updateNormalStressOnReferenceMeshOptSI( std::set<std::string> const& listMarkers );
-    void updateNormalStressOnReferenceMeshOptPrecompute( std::set<std::string> const& listMarkers );
+    void updateNormalStressOnReferenceMeshStandard( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces );
+    void updateNormalStressOnReferenceMeshOptSI( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces );
+public :
+    void updateNormalStressOnReferenceMeshOptPrecompute( faces_reference_wrapper_t<mesh_type> const& rangeFaces );
 
     void updateWallShearStress();
     void updateVorticity();
@@ -942,7 +944,10 @@ protected:
     map_vector_field<nDim,1,2> M_bcNeumannVectorial;
     map_matrix_field<nDim,nDim,2> M_bcNeumannTensor2;
     map_vector_field<nDim,1,2> M_volumicForcesProperties;
-    //----------------------------------------------------
+    //---------------------------------------------------
+    // range of mesh faces by material : (type -> ( matName -> ( faces range ) )
+    std::map<std::string,std::map<std::string,faces_reference_wrapper_t<mesh_type>>> M_rangeMeshFacesByMaterial;
+    //---------------------------------------------------
     space_vectorial_PN_ptrtype M_XhSourceAdded;
     element_vectorial_PN_ptrtype M_SourceAdded;
     bool M_haveSourceAdded;

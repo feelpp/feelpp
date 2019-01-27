@@ -252,9 +252,6 @@
 /* Define if support for mpi class instantiation is enabled) */
 #cmakedefine FEELPP_ENABLE_MPI_MODE
 
-/* Define if we have support for MPI IO */
-#cmakedefine FEELPP_HAS_MPIIO
-
 /* Define sized types for MPI standards older than 2.2 version */
 #cmakedefine FEELPP_MPI_INT32 @FEELPP_MPI_INT32@
 #cmakedefine FEELPP_MPI_INT64 @FEELPP_MPI_INT64@

@@ -99,9 +99,12 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
     toc("assembleCstThermo");
 
     // first iteration
+#ifndef USE_SAME_MAT
+    M_electro->copyCstPart();
+#endif
     M_electro->updateConductivityTerm( false );
     M_electro->assembleRhsBoundaryCond();
-    M_electro->assembleRHS();
+    M_electro->assemblePotentialRHS( cst(0.), "");
     M_electro->solve();
     M_potential = M_electro->potentialField();
     M_current = M_electro->fluxField();
@@ -109,6 +112,9 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
     double normC = normL2(elements(M_mesh), idv(M_current) );
     Feel::cout << "norm potential = " << normP << "\tnorm current = " << normC << std::endl;
 
+#ifndef USE_SAME_MAT
+    M_thermo->copyCstPart();
+#endif
     M_thermo->updateConductivityTerm( false );
     M_thermo->assembleRhsBoundaryCond();
     for( auto const& pairMat : electroMat )
@@ -144,27 +150,22 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
     potential_type oldPotential = M_electro->potentialSpace()->element();
     current_type oldCurrent = M_electro->fluxSpace()->element();
     temp_type oldTemperature = M_thermo->potentialSpace()->element();
-    tempflux_type oldTempFlux = M_thermo->fluxSpace()->element();
-    double incrV = 1;
-    double incrT = 1;
-    double incrJ = 1;
-    double incrQ = 1;
+    tempflux_type oldTempflux = M_thermo->fluxSpace()->element();
+    double normV = normL2( elements(M_mesh), idv(M_potential) );
+    double normT = normL2( elements(M_mesh), idv(M_temperature) );
+    double incrV = normL2( elements(M_mesh), idv(M_potential) - idv(oldPotential) );
+    double incrT = normL2( elements(M_mesh), idv(M_temperature) - idv(oldTemperature) );
+    double relV = incrV/normV;
+    double relT = incrT/normT;
 
     double tol = doption( prefixvm( M_prefix, "tolerance") );
     int i = 0, itmax = ioption( prefixvm( M_prefix, "itmax") );
 
-    auto eV = exporter( _mesh=M_mesh, _name="electro" );
-    auto eT = exporter( _mesh=M_mesh, _name="thermo" );
+    Feel::cout << "Picard with " << itmax << "iteration max and tolerance = " << tol << std::endl;
 
-    eV->step(i)->add("potential", M_potential);
-    eV->step(i)->add("current", M_current);
-    eV->step(i)->add("sigma", sigmaF);
-    eT->step(i)->add("temperature", M_temperature);
-    eT->step(i)->add("tempFlux", M_tempFlux);
-    eT->step(i)->add("k", kF);
 
     // Picard loop
-    while( i++ < itmax && ( incrV > tol || incrT > tol ) )
+    while( i++ < itmax && ( relV > tol || relT > tol ) )
     {
         tic();
 
@@ -174,10 +175,13 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
         oldTempFlux = M_tempFlux;
 
         tic();
-        M_electro->setZero();
+#ifdef USE_SAME_MAT
+        M_electro->setCstMatrixToZero();
+        M_electro->setVectorToZero();
         M_electro->assembleCstPart();
-
-        M_electro->assembleRHS();
+#else
+        M_electro->copyCstPart();
+#endif
         for( auto const& pairMat : electroMat )
         {
             std::string marker = pairMat.first;
@@ -192,6 +196,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
             sigmaF.on( _range=markedelements(M_electro->mesh(), marker), _expr=sigma );
         }
         M_electro->assembleRhsBoundaryCond();
+        M_electro->assemblePotentialRHS( cst(0.), "");
         toc("assembleElectro");
         tic();
         M_electro->solve();
@@ -200,9 +205,13 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
         M_current = M_electro->fluxField();
 
         tic();
-        M_thermo->setZero();
+#ifdef USE_SAME_MAT
+        M_thermo->setCstMatrixToZero();
+        M_thermo->setVectorToZero();
         M_thermo->assembleCstPart();
-
+#else
+        M_thermo->copyCstPart();
+#endif
         for( auto const& pairMat : thermoMat )
         {
             std::string marker = pairMat.first;
@@ -262,11 +271,16 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
         incrJ = errJ/normJ;
         incrQ = errQ/normQ;
 
-        Feel::cout << "Picard[" << i << "] increment norm V: " << incrV
-                   << " increment norm J: " << incrJ << std::endl;
-        Feel::cout << "Picard[" << i << "] increment norm T: " << incrT
-                   << " increment norm Q: " << incrQ << std::endl;
-        toc("increment");
+        incrV = normL2( elements(M_mesh), idv(M_potential) - idv(oldPotential) );
+        incrT = normL2( elements(M_mesh), idv(M_temperature) - idv(oldTemperature) );
+        normV = normL2( elements(M_mesh), idv(M_potential) );
+        normT = normL2( elements(M_mesh), idv(M_temperature) );
+        relV = incrV/normV;
+        relT = incrT/normT;
+
+        Feel::cout << "iteration " << i
+                   << "\n\tincrement on V = " << relV << " (absolute = " << incrV << ")"
+                   << "\n\tincrement on T = " << relT << " (absolute = " << incrT << ")" << std::endl;
 
         toc("loop");
     } // Picard loop

@@ -7,7 +7,7 @@
         "omega":
         {
             "name":"copper",
-            "alpha":"3.35e-3",
+            "alpha":"3.5e-3",
             "T0":"293",
             "sigma0":"58e+3",
             "k0":"0.38",
@@ -23,23 +23,23 @@
             {
                 "Channel0":
                 {
-                    "expr1":"0.01",
-                    "expr2":"0.01*Tw:Tw"
+                    "expr1":"0.08",
+                    "expr2":"0.08*293"
                 },
                 "Channel1":
                 {
-                    "expr1":"0.01",
-                    "expr2":"0.01*Tw:Tw"
+                    "expr1":"0.08",
+                    "expr2":"0.08*293"
                 },
                 "TieRods":
                 {
-                    "expr1":"0.055",
-                    "expr2":"0.055*Tw::Tw"
+                    "expr1":"0.08",
+                    "expr2":"0.08*293"
                 },
                 "CoolingHoles":
                 {
-                    "expr1":"0.055",
-                    "expr2":"0.055*Tw:Tw"
+                    "expr1":"0.08",
+                    "expr2":"0.08*293"
                 }
             },
             "Neumann":
