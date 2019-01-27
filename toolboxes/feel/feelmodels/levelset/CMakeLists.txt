@@ -1,7 +1,7 @@
 
 # geo order 1 (non-periodic)
 foreach(_DIM 2 3)
-  math(EXPR _PHI_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}-1')
+  math(EXPR _PHI_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}-1")
   feelpp_max( MAX_ORDER 1 ${_PHI_ORDER})
   message(STATUS "[feelpp] LEVELSET ${_DIM}D PNG1 N=1..${MAX_ORDER}")
   foreach( _PHI_ORDER RANGE 1 ${MAX_ORDER} )

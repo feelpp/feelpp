@@ -224,7 +224,7 @@ solidMechanics_options(std::string const& prefix)
          Feel::po::value< std::string >()->default_value("default"), "default, molecular-theory, molecular-theory-simo1985")
         (prefixvm(prefix,"formulation").c_str(), Feel::po::value<std::string>()->default_value( "displacement" ), "displacement,displacement-pressure")
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "struct solver")
-        (prefixvm(prefix,"time-schema").c_str(), Feel::po::value< std::string >()->default_value("Newmark"), "time integration schema : Newmark, Generalized-Alpha")
+        (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("Newmark"), "time integration schema : Newmark, Generalized-Alpha")
         (prefixvm(prefix,"time-rho").c_str(), Feel::po::value< double >()->default_value(0.8), " Generalized-Alpha parameter")
         (prefixvm(prefix,"time-initial.displacement.files.directory").c_str(), Feel::po::value<std::string>(), "initial displacemen")
         (prefixvm(prefix,"time-initial.displacement.files.format").c_str(), Feel::po::value<std::string>()->default_value( "hdf5" ), "intial displacement file format")
@@ -288,11 +288,12 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"coupling-nitsche-family.alpha").c_str(), Feel::po::value<double>()->default_value( 1 ), "nitsche parameters")
         (prefixvm(prefix,"coupling-nitsche-family.use-aitken").c_str(), Feel::po::value<bool>()->default_value( false ), "use-aitken")
         // coupling-robin-neumann-generalized
-        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-mass-matrix-lumped-in-solid").c_str(), Feel::po::value<bool>()->default_value( true ),"use-mass-matrix-lumped-in-solid")
+        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-mass-matrix-lumped-in-solid").c_str(), Feel::po::value<bool>()->default_value( true ),"use-mass-matrix-lumped-in-solid") 
+        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-operator-constant").c_str(), Feel::po::value<double>(),"use-operator-constant")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-operator-proportional-to-identity").c_str(), Feel::po::value<bool>()->default_value( false ),"use-operator-proportional-to-identity")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-aitken").c_str(), Feel::po::value<bool>()->default_value( false ), "use-aitken")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-precompute-bc").c_str(), Feel::po::value<bool>()->default_value( true ),"use-precompute-bc")
-
+        (prefixvm(prefix,"coupling-robin-neumann-generalized.strategy-time-step-compatibility").c_str(), Feel::po::value<std::string>()->default_value( "default" ),"strategy-time-step-compatibility")
 
         (prefixvm(prefix,"transfert-velocity-F2S.use-extrapolation").c_str(), Feel::po::value<bool>()->default_value( true ), "transfert-velocity-F2S.use-extrapolation")
         ;

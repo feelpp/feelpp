@@ -234,6 +234,9 @@ private :
     void transfertStress();
     void transfertVelocity( bool useExtrap=false);
     void transfertRobinNeumannGeneralizedS2F( int iterationFSI );
+    void transfertRobinNeumannGeneralizedS2F_BdfNewmark( int iterationFSI );
+    void transfertRobinNeumannGeneralizedS2F_BdfBdf( int iterationFSI );
+
 
     void transfertStressS2F();
     void transfertVelocityF2S( int iterationFSI, bool _useExtrapolation );
@@ -324,6 +327,7 @@ private :
     sparse_matrix_ptrtype M_coulingRNG_matrixTimeDerivative, M_coulingRNG_matrixStress;
     vector_ptrtype M_coulingRNG_vectorTimeDerivative,  M_coulingRNG_vectorStress;
     bool M_coulingRNG_usePrecomputeBC;
+    std::string M_coulingRNG_strategyTimeStepCompatibility;
 
     op_interpolation2dTo2dnonconf_disp_ptrtype M_opDisp2dTo2dnonconf;
     op_interpolation2dTo2dconf_disp_ptrtype M_opDisp2dTo2dconf;

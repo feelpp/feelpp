@@ -427,7 +427,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
         auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
         if ( !listMarkerEdges.empty() )
             bilinearForm +=
-                on( _range=markedfaces( mesh, listMarkerEdges ),
+                on( _range=markededges( mesh, listMarkerEdges ),
                     _element=u, _rhs=F, _expr=expression(d) );
         auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
         if ( !listMarkerPoints.empty() )
@@ -453,7 +453,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
             auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
             if ( !listMarkerEdges.empty() )
                 bilinearFormComp +=
-                    on( _range=markedfaces( this->mesh(), listMarkerEdges ),
+                    on( _range=markededges( this->mesh(), listMarkerEdges ),
                         _element=this->M_Solution->template element<0>()[comp], //u[comp],
                         _rhs=F, _expr=expression(d) );
             auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
