@@ -156,6 +156,10 @@ public:
     //mesh_ptrtype const& mesh() const { return M_mesh; }
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"MultiFluidMesh.path"); }
     //--------------------------------------------------------------------//
+    // Operator Lagrange P1
+    bool useLagrangeP1iso() const { return M_useLagrangeP1iso; }
+    op_lagrangeP1_ptrtype opLagrangeP1() const { return M_opLagrangeP1iso; }
+    //--------------------------------------------------------------------//
     // Models
     fluid_ptrtype fluidModel() { return this->shared_from_this(); }
     std::map<std::string, levelset_ptrtype> levelsetModels() const { return M_levelsets; }
