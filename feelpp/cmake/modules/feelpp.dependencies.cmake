@@ -561,7 +561,7 @@ if(FEELPP_ENABLE_PYTHON_WRAPPING)
 endif()
 
 # Then we try to find rest of the Boost components
-FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization iostreams )
+FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED date_time filesystem system program_options unit_test_framework ${FEELPP_BOOST_MPI} regex serialization iostreams )
 if(Boost_FOUND)
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
     #add_definitions(-DBOOST_RESULT_OF_USE_TR1)
