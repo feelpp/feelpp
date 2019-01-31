@@ -139,13 +139,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildStandardModel( mesh_ptrtype mesh )
         this->createMesh();
     //-----------------------------------------------------------------------------//
     // functionSpaces and elements
-    this->createFunctionSpaces();
+    //this->createFunctionSpaces();
     //-----------------------------------------------------------------------------//
     // time schema
-    this->createTimeDiscretisation();
+    //this->createTimeDiscretisation();
     //-----------------------------------------------------------------------------//
     // exporters
-    this->createExporters();
+    //this->createExporters();
     //-----------------------------------------------------------------------------//
     M_hasBuildFromMesh = true;
     this->log("SolidMechanics","buildStandardModel", "finish" );
@@ -187,11 +187,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::build1dReducedModel( mesh_1dreduced_ptrtype 
     else
         this->createMesh1dReduced();
     //-----------------------------------------------------------------------------//
-    this->createFunctionSpaces1dReduced();
+    //this->createFunctionSpaces1dReduced();
     //-----------------------------------------------------------------------------//
-    this->createTimeDiscretisation1dReduced();
+    //this->createTimeDiscretisation1dReduced();
     //-----------------------------------------------------------------------------//
-    this->createExporters1dReduced();
+    //this->createExporters1dReduced();
     //-----------------------------------------------------------------------------//
     M_hasBuildFromMesh1dReduced = true;
     this->log("SolidMechanics","build1dReducedModel", "finish" );
@@ -225,43 +225,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_isHOVisu = nOrderGeo > 1;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
         M_isHOVisu = boption(_name="hovisu",_prefix=this->prefix());
-
-    // overwrite export field options in json if given in cfg
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_displacement").c_str()) )
-        if ( boption(_name="do_export_displacement",_prefix=this->prefix()) )
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Displacement );
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_velocity").c_str()) )
-        if ( boption(_name="do_export_velocity",_prefix=this->prefix()) )
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Velocity );
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_acceleration").c_str()) )
-        if ( boption(_name="do_export_acceleration",_prefix=this->prefix()) )
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Acceleration );
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_normalstress").c_str()) )
-        if ( boption(_name="do_export_normalstress",_prefix=this->prefix()) )
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::NormalStress );
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_pressure").c_str()) )
-        if ( boption(_name="do_export_pressure",_prefix=this->prefix()) )
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pressure );
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_material_properties").c_str()) )
-        if ( boption(_name="do_export_material_properties",_prefix=this->prefix()) )
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::MaterialProperties );
-    //if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_velocityinterfacefromfluid").c_str()) )
-    //    M_doExportVelocityInterfaceFromFluid = boption(_name="do_export_velocityinterfacefromfluid",_prefix=this->prefix());
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_all").c_str()) )
-        if ( boption(_name="do_export_all",_prefix=this->prefix()) )
-        {
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Displacement );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Velocity );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Acceleration );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::NormalStress );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pressure );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::MaterialProperties );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::FSI );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pid );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::VonMises );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Tresca );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::PrincipalStresses );
-        }
 
     //time schema parameters
     M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
@@ -500,11 +463,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
 //---------------------------------------------------------------------------------------------------//
 //---------------------------------------------------------------------------------------------------//
 
+
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 {
-    this->log("SolidMechanics","createFunctionSpaces", "start" );
+    if ( this->is1dReducedModel() )
+    {
+        this->initFunctionSpaces1dReduced();
+        return;
+    }
+
+    this->log("SolidMechanics","initFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -551,16 +521,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_XhDisplacement->worldCommPtr() );
 
     this->timerTool("Constructor").stop("createSpaces");
-    this->log("SolidMechanics","createFunctionSpaces", "finish" );
+    this->log("SolidMechanics","initFunctionSpaces", "finish" );
+
 }
-
-//---------------------------------------------------------------------------------------------------//
-
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces1dReduced()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces1dReduced()
 {
-    this->log("SolidMechanics","createFunctionSpaces1dReduced", "start" );
+    this->log("SolidMechanics","initFunctionSpaces1dReduced", "start" );
 
     // function space and elements
     M_Xh_vect_1dReduced = space_vect_1dreduced_type::New(_mesh=M_mesh_1dReduced,
@@ -577,7 +545,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces1dReduced()
     // backend : use worldComm of Xh_1dReduced
     M_backend_1dReduced = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh_1dReduced->worldCommPtr() );
 
-    this->log("SolidMechanics","createFunctionSpaces1dReduced", "finish" );
+    this->log("SolidMechanics","initFunctionSpaces1dReduced", "finish" );
 }
 
 
@@ -849,6 +817,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
                                             _backend=M_backend,
                                             _type=InterpolationNonConforme(false) );
 
+#if 0
         if ( this->hasPostProcessFieldExported( SolidMechanicsPostProcessFieldExported::NormalStress ) )
         {
             this->createAdditionalFunctionSpacesNormalStress();
@@ -859,7 +828,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
                                                 _backend=M_backend,
                                                 _type=InterpolationNonConforme(false) );
         }
-
+#endif
         if ( M_useDisplacementPressureFormulation )
         {
             //M_XhScalarVisuHO = space_scalar_visu_ho_type::New(_mesh=opLagP1->mesh(), _worldscomm=this->localNonCompositeWorldsComm());
@@ -979,6 +948,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
          (this->is1dReducedModel() && !M_hasBuildFromMesh1dReduced ) )
         this->build();
 
+    this->initFunctionSpaces();
+
     if ( this->markerNameFSI().size()>0 )
         this->createAdditionalFunctionSpacesFSI();
 
@@ -1070,6 +1041,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     // update timediscr and exporters
     if (this->isStandardModel())
     {
+        this->createTimeDiscretisation();
+
         if ( !this->doRestart() )
         {
             if ( Environment::vm().count(prefixvm(this->prefix(),"time-initial.displacement.files.directory").c_str()) )
@@ -1128,6 +1101,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     else if (this->is1dReducedModel())
     {
         CHECK( M_timeStepping == "Newmark" ) << "only Newmark";
+
+        this->createTimeDiscretisation1dReduced();
+
         if ( !this->doRestart() )
         {
             // start time step
@@ -1232,6 +1208,45 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSy
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+std::set<std::string>
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
+{
+    std::set<std::string> res;
+    for ( auto const& o : ifields )
+    {
+        if ( o == prefixvm(prefix,"displacement") || o == prefixvm(prefix,"all") )
+            res.insert( "displacement" );
+        if ( o == prefixvm(prefix,"velocity") || o == prefixvm(prefix,"all") )
+            res.insert( "velocity" );
+        if ( o == prefixvm(prefix,"acceleration") || o == prefixvm(prefix,"all") )
+            res.insert( "acceleration" );
+        if ( o == prefixvm(prefix,"normal-stress") || o == prefixvm(prefix,"all") )
+            res.insert( "normal-stress" );
+        if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
+            res.insert( "pid" );
+        if ( o == prefixvm(prefix,"pressure") || o == prefixvm(prefix,"all") )
+            res.insert( "pressure" );
+        if ( o == prefixvm(prefix,"material-properties") || o == prefixvm(prefix,"all") )
+            res.insert( "material-properties" );
+        //if ( o == prefixvm(prefix,"fsi") || o == prefixvm(prefix,"all") )
+        //res.insert( "fsi" );
+        if ( o == prefixvm(prefix,"Von-Mises") || o == prefixvm(prefix,"all") )
+            res.insert( "Von-Mises" );
+        if ( o == prefixvm(prefix,"Tresca") || o == prefixvm(prefix,"all") )
+            res.insert( "Tresca" );
+        if ( o == prefixvm(prefix,"principal-stresses") || o == prefixvm(prefix,"all") )
+            res.insert( "principal-stresses" );
+
+        // add user functions
+        if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
+            res.insert( o );
+    }
+    return res;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
@@ -1242,43 +1257,25 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    for ( auto const& o : this->modelProperties().postProcess().exports( modelName ).fields() )
-    {
-        if ( o == "displacement" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Displacement );
-        if ( o == "velocity" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Velocity );
-        if ( o == "acceleration" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Acceleration );
-        if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::NormalStress );
-        if ( o == "pressure" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pressure );
-        if ( o == "material-properties" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::MaterialProperties );
-        if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pid );
-        if ( o == "fsi" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::FSI );
-        if ( o == "Von-Mises" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::VonMises );
-        if ( o == "Tresca" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Tresca );
-        if ( o == "principal-stresses" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::PrincipalStresses );
-
-        // add user functions
-        if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
-            M_postProcessUserFieldExported.insert( o );
-    }
+    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
     // clean doExport with fields not available
     if ( !M_useDisplacementPressureFormulation )
-        M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::Pressure );
+        M_postProcessFieldExported.erase( "pressure" );
     if ( this->is1dReducedModel() )
-        M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::NormalStress );
-#if 0
-    if ( !this->fieldVelocityInterfaceFromFluidPtr() )
-        M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::FSI );
-#endif
+        M_postProcessFieldExported.erase( "normal-stress" );
 
-    if (this->isStandardModel())
-        this->createExporters();
-    else  if (this->is1dReducedModel())
-        this->createExporters1dReduced();
+    // init exporter
+    if ( !M_postProcessFieldExported.empty() )
+    {
+        if (this->isStandardModel())
+            this->createExporters();
+        else  if (this->is1dReducedModel())
+            this->createExporters1dReduced();
 
-    // restart exporter
-    if (this->doRestart())
-        this->restartExporters( this->timeInitial() );
-
+        // restart exporter
+        if (this->doRestart())
+            this->restartExporters( this->timeInitial() );
+    }
 
     auto const& ptree = this->modelProperties().postProcess().pTree( modelName );
 
@@ -1363,6 +1360,37 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
 }
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::restartExporters( double time )
+{
+    // restart exporter
+    if (this->doRestart() && this->restartPath().empty())
+    {
+        if ( this->isStandardModel() )
+        {
+            if (!M_isHOVisu)
+            {
+                if ( M_exporter && M_exporter->doExport() )
+                    M_exporter->restart(this->timeInitial());
+            }
+            else
+            {
+#if 1 // defined(FEELPP_HAS_VTK)
+                if ( M_exporter_ho && M_exporter_ho->doExport() )
+                    M_exporter_ho->restart(this->timeInitial());
+                #endif
+            }
+        }
+        else
+        {
+            if ( M_exporter_1dReduced && M_exporter_1dReduced->doExport() )
+                M_exporter_1dReduced->restart(this->timeInitial());
+        }
+    }
+}
+
 
 } //FeelModels
 

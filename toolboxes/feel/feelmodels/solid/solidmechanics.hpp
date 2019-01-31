@@ -54,10 +54,6 @@ namespace Feel
 {
 namespace FeelModels
 {
-enum class SolidMechanicsPostProcessFieldExported
-{
-    Displacement=0, Velocity, Acceleration, NormalStress, Pressure, MaterialProperties, Pid, VonMises, Tresca, PrincipalStresses, FSI
-};
 
 template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechProp=false >
 class SolidMechanics : public ModelNumerical,
@@ -328,7 +324,7 @@ public:
     //protected :
     void build(mesh_ptrtype mesh );
     void build( mesh_1dreduced_ptrtype mesh );
-protected :
+private :
     void buildStandardModel( mesh_ptrtype mesh = mesh_ptrtype() );
     void build1dReducedModel( mesh_1dreduced_ptrtype mesh = mesh_1dreduced_ptrtype() );
 
@@ -338,10 +334,11 @@ protected :
     void loadParameterFromOptionsVm();
     void createWorldsComm();
 
+    void initFunctionSpaces();
+    void initFunctionSpaces1dReduced();
+
     void createMesh();
     void createMesh1dReduced();
-    void createFunctionSpaces();
-    void createFunctionSpaces1dReduced();
     void createTimeDiscretisation();
     void createTimeDiscretisation1dReduced();
     void createExporters();
@@ -428,17 +425,22 @@ public :
     void initUserFunctions();
     void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
 
+    // post process
     void initPostProcess();
+    std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+    bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
+    void exportFields( double time );
+    bool updateExportedFields( exporter_ptrtype exporter, std::set<std::string> const& fields, double time );
+    bool updateExportedFields1dReduced( exporter_1dreduced_ptrtype exporter, std::set<std::string> const& fields, double time );
     void exportMeasures( double time );
-private :
-    void exportFieldsImpl( double time );
-    void exportFieldsImplHO( double time );
-public :
     void restartExporters() { this->restartExporters( this->timeInitial() ); }
     void restartExporters( double time );
-
+private :
+    //void exportFieldsImpl( double time );
+    void exportFieldsImplHO( double time );
+public :
 
     void predictorDispl();
 
@@ -618,8 +620,6 @@ public :
     // post processing computation
     //-----------------------------------------------------------------------------------//
 
-    bool hasPostProcessFieldExported( SolidMechanicsPostProcessFieldExported const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
-
     double computeExtremumValue( std::string const& field, std::set<std::string> const& markers, std::string const& type ) const;
     double computeVolumeVariation( elements_reference_wrapper_t<mesh_type> const& rangeElt ) const;
 
@@ -753,8 +753,7 @@ protected:
     element_tracemesh_disp_ptrtype M_fieldSubMeshDispFSI;
 
     // post-process
-    std::set<SolidMechanicsPostProcessFieldExported> M_postProcessFieldExported;
-    std::set<std::string> M_postProcessUserFieldExported;
+    std::set<std::string> M_postProcessFieldExported;
 
     // exporter
     exporter_ptrtype M_exporter;
