@@ -589,8 +589,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI()
 {
     if ( this->isStandardModel() )
         this->createAdditionalFunctionSpacesFSIStandard();
-    else
-        this->createAdditionalFunctionSpacesFSI1dReduced();
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -625,24 +623,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSIStandard()
     }
 
     this->log("SolidMechanics","createAdditionalFunctionSpacesFSIStandard", "finish" );
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI1dReduced()
-{
-    if ( M_XhStressVect_1dReduced ) return;
-    this->log("SolidMechanics","createAdditionalFunctionSpacesFSI1dReduced", "start" );
-
-    // normal stress as source term
-    M_XhStressVect_1dReduced = space_stress_vect_1dreduced_type::New(_mesh=M_mesh_1dReduced,
-                                                                       _worldscomm=makeWorldsComm(1,M_mesh_1dReduced->worldCommPtr()));
-    M_stress_1dReduced.reset( new element_stress_scal_1dreduced_type( M_XhStressVect_1dReduced->compSpace(), "structure stress" ));
-    M_stress_vect_1dReduced.reset(new element_stress_vect_1dreduced_type( M_XhStressVect_1dReduced, "stress 1d vect displacement" ));
-
-    this->log("SolidMechanics","createAdditionalFunctionSpacesFSI1dReduced", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//

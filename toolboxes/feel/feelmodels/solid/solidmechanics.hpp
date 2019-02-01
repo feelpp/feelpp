@@ -248,7 +248,6 @@ public:
     // basis
     //typedef bases<Lagrange<nOrder, Scalar,Continuous,PointSetFekete> > basis_1dreduced_type;
     typedef bases<Lagrange<nOrder, Vectorial,Continuous,PointSetFekete> > basis_vect_1dreduced_type;
-    typedef bases<Lagrange<nOrder+1, Vectorial,Discontinuous,PointSetFekete> > basis_stress_vect_1dreduced_type;
     //___________________________________________________________________________________//
     // function space
     typedef FunctionSpace<mesh_1dreduced_type, basis_vect_1dreduced_type> space_vect_1dreduced_type;
@@ -260,16 +259,6 @@ public:
     typedef typename space_vect_1dreduced_type::component_functionspace_ptrtype space_1dreduced_ptrtype;
     typedef typename space_1dreduced_type::element_type element_1dreduced_type;
     typedef std::shared_ptr<element_1dreduced_type> element_1dreduced_ptrtype;
-
-    typedef FunctionSpace<mesh_1dreduced_type, basis_stress_vect_1dreduced_type> space_stress_vect_1dreduced_type;
-    typedef std::shared_ptr<space_stress_vect_1dreduced_type> space_stress_vect_1dreduced_ptrtype;
-    typedef typename space_stress_vect_1dreduced_type::element_type element_stress_vect_1dreduced_type;
-    typedef std::shared_ptr<element_stress_vect_1dreduced_type> element_stress_vect_1dreduced_ptrtype;
-
-    typedef typename space_stress_vect_1dreduced_type::component_functionspace_type space_stress_scal_1dreduced_type;
-    typedef typename space_stress_vect_1dreduced_type::component_functionspace_ptrtype space_stress_scal_1dreduced_ptrtype;
-    typedef typename space_stress_scal_1dreduced_type::element_type element_stress_scal_1dreduced_type;
-    typedef std::shared_ptr<element_stress_scal_1dreduced_type> element_stress_scal_1dreduced_ptrtype;
     //___________________________________________________________________________________//
     // time step newmark
     typedef Newmark<space_1dreduced_type>  newmark_1dreduced_type;
@@ -348,7 +337,6 @@ private :
     void createAdditionalFunctionSpacesStressTensor();
     void createAdditionalFunctionSpacesFSI();
     void createAdditionalFunctionSpacesFSIStandard();
-    void createAdditionalFunctionSpacesFSI1dReduced();
 
 public :
 
@@ -560,10 +548,6 @@ public :
     element_vect_1dreduced_type const & fieldDisplacementVect1dReduced() const { return *M_disp_vect_1dReduced; }
     element_vect_1dreduced_ptrtype const & fieldDisplacementVect1dReducedPtr() const { return M_disp_vect_1dReduced; }
 
-    element_stress_scal_1dreduced_type & fieldStressScal1dReduced() { return *M_stress_1dReduced; }
-    element_stress_vect_1dreduced_type & fieldStressVect1dReduced() { return *M_stress_vect_1dReduced; }
-    element_stress_vect_1dreduced_type const& fieldStressVect1dReduced() const { return *M_stress_vect_1dReduced; }
-    element_stress_vect_1dreduced_type const& fieldStressVect1dReducedPtr() const { return *M_stress_vect_1dReduced; }
     element_1dreduced_type & fieldVelocityScal1dReduced() { return *M_velocity_1dReduced; }
     element_1dreduced_type const& fieldVelocityScal1dReduced() const { return *M_velocity_1dReduced; }
     element_vect_1dreduced_type & fieldVelocityVect1dReduced() { return *M_velocity_vect_1dReduced; }
@@ -574,6 +558,7 @@ public :
     newmark_1dreduced_ptrtype const& timeStepNewmark1dReduced() const { return M_newmark_displ_1dReduced; }
 
     backend_ptrtype const& backend1dReduced() const { return M_backend_1dReduced; }
+    model_algebraic_factory_ptrtype algebraicFactory1dReduced() const { return M_algebraicFactory_1dReduced; }
 
     double thickness1dReduced() const { return M_thickness_1dReduced; }
     double radius1dReduced() const { return M_radius_1dReduced; }
@@ -611,7 +596,6 @@ public :
     //usefull for 1d reduced model
     void updateInterfaceDispFrom1dDisp();
     void updateInterfaceVelocityFrom1dVelocity();
-    void updateInterfaceScalStressDispFromVectStress();
 
     element_vect_1dreduced_ptrtype
     extendVelocity1dReducedVectorial( element_1dreduced_type const& vel1d ) const;
@@ -783,18 +767,14 @@ protected:
     mesh_1dreduced_ptrtype M_mesh_1dReduced;
     // function space
     space_1dreduced_ptrtype M_Xh_1dReduced;
-    space_stress_vect_1dreduced_ptrtype M_XhStressVect_1dReduced;
     //element disp,vel,acc
     element_1dreduced_ptrtype M_disp_1dReduced;
     element_1dreduced_ptrtype M_velocity_1dReduced;
     element_1dreduced_ptrtype M_acceleration_1dReduced;
-    // normal stress space
-    element_stress_scal_1dreduced_ptrtype M_stress_1dReduced;
     // vectorial 1d_reduced space
     space_vect_1dreduced_ptrtype M_Xh_vect_1dReduced;
     element_vect_1dreduced_ptrtype M_disp_vect_1dReduced;
     element_vect_1dreduced_ptrtype M_velocity_vect_1dReduced;
-    element_stress_vect_1dreduced_ptrtype M_stress_vect_1dReduced;
     // time discretisation
     newmark_1dreduced_ptrtype M_newmark_displ_1dReduced;
     // backend

@@ -810,5 +810,35 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
 
 }
 
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateLinearPDE_Solid1dReduced( DataUpdateLinear & data ) const
+{
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
+
+    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
+    this->log("FSI","updateLinearPDE_Solid1dReduced", "start"+sc );
+
+    if ( buildNonCstPart )
+    {
+        auto mesh = M_solidModel->mesh();
+        auto Xh = M_solidModel->functionSpace1dReduced();
+        auto const& v = M_solidModel->fieldDisplacementScal1dReduced();
+        auto linearForm = form1( _test=Xh, _vector=F,
+                                 _rowstart=M_solidModel->rowStartInVector() );
+        auto rangeMeshElements1dReduced = elements(M_solidModel->mesh1dReduced());
+
+        linearForm +=
+            integrate( _range=rangeMeshElements1dReduced,
+                       _expr=idv(*M_fieldNormalStressFromFluidScalar_solid1dReduced)*id(v) );
+    }
+
+    this->log("FSI","updateLinearPDE_Solid1dReduced", "finish"+sc );
+}
+
+
 } // namespace FeelModels
 } // namespace Feel

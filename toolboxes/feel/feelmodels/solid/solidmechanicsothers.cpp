@@ -433,19 +433,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields1dReduced( exporter_1dre
         exporter->step( time )->add( prefixvm(this->prefix(),"1d-reduced-acceleration"), this->timeStepNewmark1dReduced()->currentAcceleration() );
         hasFieldToExport = true;
     }
-    if ( fields.find( "normal-stress" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"1d-reduced-stress"),*M_stress_1dReduced );
-        hasFieldToExport = true;
-    }
-#if 0
-    if ( false )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"1d-reduced-stressvec"),*M_stress_vect_1dReduced);
-        exporter->step( time )->add( prefixvm(this->prefix(),"1d-reduced-stress"),*M_stress_1dReduced);
-        hasFieldToExport = true;
-    }
-#endif
     return hasFieldToExport;
 }
 
@@ -1297,7 +1284,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInterfaceDispFrom1dDisp()
 }
 
 //---------------------------------------------------------------------------------------------------//
-
+#if 0
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInterfaceScalStressDispFromVectStress()
@@ -1305,7 +1292,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInterfaceScalStressDispFromVectStress(
     M_stress_1dReduced->on( _range=elements(M_mesh_1dReduced),
                             _expr=-inner(idv(M_stress_vect_1dReduced),oneY()) );
 }
-
+#endif
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
