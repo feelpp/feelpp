@@ -178,11 +178,19 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 int
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
-    int nBlock = 1;
-    if ( M_useDisplacementPressureFormulation )
+    int nBlock = 0;
+    if ( this->isStandardModel() )
+    {
         ++nBlock;
-    if ( M_timeSteppingUseMixedFormulation )
+        if ( M_useDisplacementPressureFormulation )
+            ++nBlock;
+        if ( M_timeSteppingUseMixedFormulation )
+            ++nBlock;
+    }
+    else if ( this->is1dReducedModel() )
+    {
         ++nBlock;
+    }
     return nBlock;
 }
 
@@ -230,22 +238,43 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     return myblockGraph;
 }
 
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+BlocksBaseGraphCSR
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph1dReduced() const
+{
+    this->log("SolidMechanics","buildBlockMatrixGraph1dReduced", "start" );
+    int nBlock = this->nBlockMatrixGraph();
+
+    BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
+    int indexBlock=0;
+    myblockGraph(indexBlock,indexBlock) =stencil(_test=this->functionSpace1dReduced(),_trial=this->functionSpace1dReduced(),
+                                                 _diag_is_nonzero=(nBlock==1),
+                                                 _close=(nBlock==1) )->graph();
+    ++indexBlock;
+
+    myblockGraph.close();
+
+    this->log("SolidMechanics","buildBlockMatrixGraph1dReduced", "finish" );
+    return myblockGraph;
+}
+
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::graph_ptrtype
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 {
-    if (this->isStandardModel())
-    {
-        auto blockGraph = this->buildBlockMatrixGraph();
-        if ( blockGraph.nRow() == 1 && blockGraph.nCol() == 1 )
-            return blockGraph(0,0);
-        else
-            return graph_ptrtype( new graph_type( blockGraph ) );
-    }
-    else //if (this->is1dReducedModel())
-    {
+    BlocksBaseGraphCSR blockGraph;
+    if ( this->isStandardModel() )
+        blockGraph = this->buildBlockMatrixGraph();
+    else if (this->is1dReducedModel())
+        blockGraph = buildBlockMatrixGraph1dReduced();
+
+    if (  blockGraph.nRow() == 0 || blockGraph.nCol() == 0 )
         return graph_ptrtype();
-    }
+    else if ( blockGraph.nRow() == 1 && blockGraph.nCol() == 1 )
+        return blockGraph(0,0);
+    else
+        return graph_ptrtype( new graph_type( blockGraph ) );
 }
 //---------------------------------------------------------------------------------------------------//
 
@@ -844,52 +873,52 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
     this->M_bcRobin.setParameterValues( paramValues );
     this->M_volumicForcesProperties.setParameterValues( paramValues );
 
-    //this->updateBlockVectorSolution();
-    M_blockVectorSolution.updateVectorFromSubVectors();
-    if (M_pdeType=="Elasticity")
+    if ( this->isStandardModel() )
     {
-        if (M_pdeSolver=="LinearSystem")
+        M_blockVectorSolution.updateVectorFromSubVectors();
+        if (M_pdeType=="Elasticity")
         {
-            M_algebraicFactory->solveLinear( M_blockVectorSolution.vectorMonolithic() );
+            if (M_pdeSolver=="LinearSystem")
+            {
+                M_algebraicFactory->solveLinear( M_blockVectorSolution.vectorMonolithic() );
+            }
+            else if (M_pdeSolver == "Newton")
+            {
+                M_algebraicFactory->solveNewton( M_blockVectorSolution.vectorMonolithic() );
+            }
         }
-        else if (M_pdeSolver == "Newton")
+        else if ( M_pdeType=="Hyper-Elasticity" || M_pdeType=="Elasticity-Large-Deformation" )
         {
-            M_algebraicFactory->solveNewton( M_blockVectorSolution.vectorMonolithic() );
+            if (M_pdeSolver=="LinearSystem")
+            {
+                CHECK(false) <<" M_pdeType " << M_pdeType << "can not be used with LinearSystem\n";
+            }
+            else if (M_pdeSolver == "Newton")
+            {
+                M_algebraicFactory->solveNewton( M_blockVectorSolution.vectorMonolithic() );
+            }
         }
-    }
-    else if ( M_pdeType=="Hyper-Elasticity" || M_pdeType=="Elasticity-Large-Deformation" )
-    {
-        if (M_pdeSolver=="LinearSystem")
-        {
-            CHECK(false) <<" M_pdeType " << M_pdeType << "can not be used with LinearSystem\n";
-        }
-        else if (M_pdeSolver == "Newton")
-        {
-            M_algebraicFactory->solveNewton( M_blockVectorSolution.vectorMonolithic() );
-        }
-    }
-    else if (M_pdeType=="Generalised-String")
-    {
-        auto Uvec = this->backend1dReduced()->newVector( M_Xh_1dReduced );
-        *Uvec = *M_disp_1dReduced;
-        //Uvec->close();
-        if (M_pdeSolver=="LinearSystem")
-        {
-            M_algebraicFactory_1dReduced->solveLinear(Uvec);
-        }
-        else if (M_pdeSolver == "Newton")
-        {
-            CHECK(false) <<" M_pdeType " << M_pdeType << "can not be used with Newton\n";
-        }
-        Uvec->close();
-        *M_disp_1dReduced=*Uvec;
-    }
-
-    if (this->isStandardModel())
         M_blockVectorSolution.localize();
+    }
+    else if ( this->is1dReducedModel() )
+    {
+        M_blockVectorSolution_1dReduced.updateVectorFromSubVectors();
+        if (M_pdeType=="Generalised-String")
+        {
+            if (M_pdeSolver=="LinearSystem")
+            {
+                M_algebraicFactory_1dReduced->solveLinear( M_blockVectorSolution_1dReduced.vectorMonolithic() );
+            }
+            else if (M_pdeSolver == "Newton")
+            {
+                CHECK(false) <<" M_pdeType " << M_pdeType << "can not be used with Newton\n";
+            }
+        }
+        M_blockVectorSolution_1dReduced.localize();
+    }
 
 
-    if ( upVelAcc && !this->isStationary() && M_timeStepping == "Newmark" )
+    if ( upVelAcc && !this->isStationary() )
         this->updateVelocity();
 
     double tElapsed = this->timerTool("Solve").stop("solve");
@@ -1314,7 +1343,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::extendVelocity1dReducedVectorial( element_1d
 }
 
 //---------------------------------------------------------------------------------------------------//
-
+#if 0
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSubMeshDispFSIFromPrevious()
@@ -1324,7 +1353,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSubMeshDispFSIFromPrevious()
                               _expr=idv(this->timeStepNewmark()->previousUnknown()) );
     M_meshMoverTrace.apply( subfsimesh,*M_fieldSubMeshDispFSI );
 }
-
+#endif
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
