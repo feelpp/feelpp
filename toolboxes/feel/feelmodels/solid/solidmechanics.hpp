@@ -335,8 +335,6 @@ private :
 
     void createAdditionalFunctionSpacesNormalStress();
     void createAdditionalFunctionSpacesStressTensor();
-    void createAdditionalFunctionSpacesFSI();
-    void createAdditionalFunctionSpacesFSIStandard();
 
 public :
 
@@ -477,13 +475,8 @@ public :
     element_displacement_type const& fieldAcceleration() const { return *M_fieldAcceleration; }
     element_displacement_ptrtype const& fieldAccelerationPtr() const { return M_fieldAcceleration; }
 
-    element_normal_stress_ptrtype & fieldNormalStressFromFluidPtr() { return M_fieldNormalStressFromFluid; }
-    element_normal_stress_ptrtype const& fieldNormalStressFromFluidPtr() const { return M_fieldNormalStressFromFluid; }
     element_normal_stress_ptrtype & fieldNormalStressFromStructPtr() { return M_fieldNormalStressFromStruct; }
     element_normal_stress_ptrtype const& fieldNormalStressFromStructPtr() const { return M_fieldNormalStressFromStruct; }
-    element_vectorial_ptrtype & fieldVelocityInterfaceFromFluidPtr() { return M_fieldVelocityInterfaceFromFluid; }
-    element_vectorial_ptrtype const& fieldVelocityInterfaceFromFluidPtr() const { return M_fieldVelocityInterfaceFromFluid; }
-    element_vectorial_type const& fieldVelocityInterfaceFromFluid() const { return *M_fieldVelocityInterfaceFromFluid; }
 
     // stress tensor ( tensor2 )
     element_stress_tensor_ptrtype const& fieldStressTensorPtr() const { return M_fieldStressTensor; }
@@ -544,6 +537,7 @@ public :
 
     element_1dreduced_type & fieldDisplacementScal1dReduced() { return *M_disp_1dReduced; }
     element_1dreduced_type const & fieldDisplacementScal1dReduced() const { return *M_disp_1dReduced; }
+    element_1dreduced_ptrtype fieldDisplacementScal1dReducedPtr() const { return M_disp_1dReduced; }
     element_vect_1dreduced_type & fieldDisplacementVect1dReduced() { return *M_disp_vect_1dReduced; }
     element_vect_1dreduced_type const & fieldDisplacementVect1dReduced() const { return *M_disp_vect_1dReduced; }
     element_vect_1dreduced_ptrtype const & fieldDisplacementVect1dReducedPtr() const { return M_disp_vect_1dReduced; }
@@ -559,6 +553,7 @@ public :
 
     backend_ptrtype const& backend1dReduced() const { return M_backend_1dReduced; }
     model_algebraic_factory_ptrtype algebraicFactory1dReduced() const { return M_algebraicFactory_1dReduced; }
+    BlocksBaseGraphCSR buildBlockMatrixGraph1dReduced() const;
 
     double thickness1dReduced() const { return M_thickness_1dReduced; }
     double radius1dReduced() const { return M_radius_1dReduced; }
@@ -582,8 +577,6 @@ public :
     void useFSISemiImplicitScheme(bool b) { M_useFSISemiImplicitScheme=b; }
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
-
-    void updateSubMeshDispFSIFromPrevious();
 
     std::set<std::string> const& markerNameFSI() const { return this->markerFluidStructureInterfaceBC(); }
 
@@ -671,7 +664,7 @@ protected:
     bool M_is1dReducedModel;
     bool M_isStandardModel;
 
-    bool M_hasBuildFromMesh,M_hasBuildFromMesh1dReduced, M_isUpdatedForUse;
+    bool M_hasBuildFromMesh,M_hasBuildFromMesh1dReduced;
 
 
     //model parameters
@@ -704,12 +697,10 @@ protected:
     element_pressure_ptrtype M_fieldPressure;
     space_constraint_vec_ptrtype M_XhConstraintVec;
     element_constraint_vec_ptrtype M_fieldConstraintVec;
-    //space_displacement_ptrtype M_XhVectorial;
     element_vectorial_ptrtype U_displ_struct_prestress;
-    element_vectorial_ptrtype M_fieldVelocityInterfaceFromFluid;
     // normal stress space
     space_normal_stress_ptrtype M_XhNormalStress;
-    element_normal_stress_ptrtype M_fieldNormalStressFromFluid;
+    //element_normal_stress_ptrtype M_fieldNormalStressFromFluid;
     element_normal_stress_ptrtype M_fieldNormalStressFromStruct;
     // stress tensor space
     space_stress_tensor_ptrtype M_XhStressTensor;
@@ -733,8 +724,8 @@ protected:
     vector_ptrtype M_vecDiagMassMatrixLumped;
 
     // trace mesh
-    space_tracemesh_disp_ptrtype M_XhSubMeshDispFSI;
-    element_tracemesh_disp_ptrtype M_fieldSubMeshDispFSI;
+    //space_tracemesh_disp_ptrtype M_XhSubMeshDispFSI;
+    //element_tracemesh_disp_ptrtype M_fieldSubMeshDispFSI;
 
     // post-process
     std::set<std::string> M_postProcessFieldExported;
@@ -781,6 +772,7 @@ protected:
     backend_ptrtype M_backend_1dReduced;
     // algebraic solver ( assembly+solver )
     model_algebraic_factory_ptrtype M_algebraicFactory_1dReduced;
+    BlocksBaseVector<double> M_blockVectorSolution_1dReduced;
     // exporter
     exporter_1dreduced_ptrtype M_exporter_1dReduced;
 
@@ -806,7 +798,7 @@ protected:
     // fsi
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
-    std::shared_ptr<typename mesh_type::trace_mesh_type> M_fsiSubmesh;
+    //std::shared_ptr<typename mesh_type::trace_mesh_type> M_fsiSubmesh;
 
     // fields defined in json
     std::map<std::string,element_displacement_scalar_ptrtype> M_fieldsUserScalar;

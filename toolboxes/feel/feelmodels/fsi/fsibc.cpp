@@ -570,7 +570,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
     {
         linearForm +=
             integrate( _range=rangeFSI,
-                       _expr= -inner( idv(M_solidModel->fieldNormalStressFromFluidPtr()),id(u) ),
+                       _expr= -inner( idv(this->fieldNormalStressFromFluidPtr_solid()),id(u) ),
                        _geomap=this->geomap() );
     }
 
@@ -587,7 +587,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
         double muFluid = dynamicViscosity.newtonian().value();
 #endif
 
-        auto muFluid = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(/*uCur*/M_solidModel->fieldVelocityInterfaceFromFluid(),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
+        auto muFluid = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(/*uCur*/this->fieldVelocityInterfaceFromFluid_solid(),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
                                                                                          *M_fluidModel->materialProperties(),matName,true);
 
 
@@ -608,7 +608,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
             }
             if ( buildNonCstPart )
             {
-                auto robinFSIRhs = idv(M_solidModel->timeStepNewmark()->polyFirstDeriv() ) + idv(M_solidModel->fieldVelocityInterfaceFromFluid());
+                auto robinFSIRhs = idv(M_solidModel->timeStepNewmark()->polyFirstDeriv() ) + idv(this->fieldVelocityInterfaceFromFluid_solid());
                 linearForm +=
                     integrate( _range=rangeFSI,
                                _expr= gammaRobinFSI*muFluid*inner( robinFSIRhs, id(u))/hFace(),
@@ -630,7 +630,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
             }
             if ( buildNonCstPart )
             {
-                auto robinFSIRhs = idv(M_solidModel->fieldVelocityInterfaceFromFluid());
+                auto robinFSIRhs = idv(this->fieldVelocityInterfaceFromFluid_solid());
                 linearForm +=
                     integrate( _range=rangeFSI,
                                _expr= gammaRobinFSI*muFluid*inner( robinFSIRhs, id(u))/hFace(),
@@ -686,7 +686,7 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
 
     if ( buildCstPart )
     {
-        auto muFluid = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(/*uCur*/M_solidModel->fieldVelocityInterfaceFromFluid(),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
+        auto muFluid = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(/*uCur*/this->fieldVelocityInterfaceFromFluid_solid(),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
                                                                                          *M_fluidModel->materialProperties(),matName,true);
         auto rangeFSI = markedfaces(mesh,M_solidModel->markerNameFSI());
 
@@ -745,7 +745,7 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
     {
         linearForm +=
             integrate( _range=rangeFSI,
-                       _expr= trans(idv(M_solidModel->fieldNormalStressFromFluidPtr()))*id(u),
+                       _expr= trans(idv(this->fieldNormalStressFromFluidPtr_solid()))*id(u),
                        _geomap=this->geomap() );
     }
 
@@ -762,7 +762,7 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
         double muFluid = dynamicViscosity.newtonian().value();
 #endif
 
-        auto muFluid = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(/*uCur*/M_solidModel->fieldVelocityInterfaceFromFluid(),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
+        auto muFluid = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(/*uCur*/this->fieldVelocityInterfaceFromFluid_solid(),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
                                                                                          *M_fluidModel->materialProperties(),matName,true);
 
         if ( buildNonCstPart && !useJacobianLinearTerms )
@@ -788,7 +788,7 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
         {
             if ( this->solidModel()->timeStepping() == "Newmark" )
             {
-                auto robinFSIRhs = idv(M_solidModel->timeStepNewmark()->polyFirstDeriv() ) + idv(M_solidModel->fieldVelocityInterfaceFromFluid());
+                auto robinFSIRhs = idv(M_solidModel->timeStepNewmark()->polyFirstDeriv() ) + idv(this->fieldVelocityInterfaceFromFluid_solid());
                 linearForm +=
                     integrate( _range=rangeFSI,
                                _expr= -gammaRobinFSI*muFluid*inner( robinFSIRhs,id(u) )/hFace(),
@@ -796,7 +796,7 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
             }
             else
             {
-                auto robinFSIRhs = idv(M_solidModel->fieldVelocityInterfaceFromFluid());
+                auto robinFSIRhs = idv(this->fieldVelocityInterfaceFromFluid_solid());
                 linearForm +=
                     integrate( _range=rangeFSI,
                                _expr= -gammaRobinFSI*muFluid*inner( robinFSIRhs,id(u) )/hFace(),

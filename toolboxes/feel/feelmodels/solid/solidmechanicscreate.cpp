@@ -24,7 +24,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
                                                     ModelBaseRepository const& modelRep )
     :
     super_type( prefix, worldComm, subPrefix, modelRep ),
-    M_hasBuildFromMesh( false ), M_hasBuildFromMesh1dReduced( false ), M_isUpdatedForUse( false ),
+    M_hasBuildFromMesh( false ), M_hasBuildFromMesh1dReduced( false ),
     M_mechanicalProperties( new mechanicalproperties_type( prefix ) )
 {
     this->log("SolidMechanics","constructor", "start" );
@@ -138,15 +138,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildStandardModel( mesh_ptrtype mesh )
     else
         this->createMesh();
     //-----------------------------------------------------------------------------//
-    // functionSpaces and elements
-    //this->createFunctionSpaces();
-    //-----------------------------------------------------------------------------//
-    // time schema
-    //this->createTimeDiscretisation();
-    //-----------------------------------------------------------------------------//
-    // exporters
-    //this->createExporters();
-    //-----------------------------------------------------------------------------//
     M_hasBuildFromMesh = true;
     this->log("SolidMechanics","buildStandardModel", "finish" );
 }
@@ -186,12 +177,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::build1dReducedModel( mesh_1dreduced_ptrtype 
         M_mesh_1dReduced = mesh;
     else
         this->createMesh1dReduced();
-    //-----------------------------------------------------------------------------//
-    //this->createFunctionSpaces1dReduced();
-    //-----------------------------------------------------------------------------//
-    //this->createTimeDiscretisation1dReduced();
-    //-----------------------------------------------------------------------------//
-    //this->createExporters1dReduced();
     //-----------------------------------------------------------------------------//
     M_hasBuildFromMesh1dReduced = true;
     this->log("SolidMechanics","build1dReducedModel", "finish" );
@@ -508,8 +493,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     }
     if ( M_timeSteppingUseMixedFormulation )
         M_fieldVelocity.reset( new element_displacement_type( M_XhDisplacement, "velocity" ));
-    //subfunctionspace vectorial
-    //M_XhVectorial = M_Xh;
 
     //--------------------------------------------------------//
     // pre-stress ( not functional )
@@ -579,50 +562,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesStressTensor()
     for (int d=0;d<M_fieldsPrincipalStresses.size();++d)
         if( !M_fieldsPrincipalStresses[d] )
             M_fieldsPrincipalStresses[d].reset( new element_stress_scal_type( M_XhStressTensor->compSpace() ) );
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI()
-{
-    if ( this->isStandardModel() )
-        this->createAdditionalFunctionSpacesFSIStandard();
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSIStandard()
-{
-    this->log("SolidMechanics","createAdditionalFunctionSpacesFSIStandard", "start" );
-
-    //--------------------------------------------------------//
-    // function space for normal stress
-    if ( !M_XhNormalStress )
-        this->createAdditionalFunctionSpacesNormalStress();
-    if ( !M_fieldNormalStressFromFluid )
-        M_fieldNormalStressFromFluid.reset(new element_normal_stress_type( M_XhNormalStress, "normalStressBoundaryFromFluid" ));
-
-    //--------------------------------------------------------//
-    if ( !M_fieldVelocityInterfaceFromFluid && ( this->couplingFSIcondition() == "robin-neumann" ||
-                                                 this->couplingFSIcondition() == "robin-robin" ||
-                                                 this->couplingFSIcondition() == "robin-robin-genuine" ||
-                                                 this->couplingFSIcondition() == "nitsche" ) )
-        M_fieldVelocityInterfaceFromFluid.reset( new element_vectorial_type( M_XhDisplacement, "velocityInterfaceFromFluid" ));
-
-
-    if ( !M_XhSubMeshDispFSI && ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
-                                  this->couplingFSIcondition() == "nitsche" ) )
-    {
-        auto subfsimesh = createSubmesh(this->mesh(),markedfaces(this->mesh(),this->markerNameFSI()) );
-        M_XhSubMeshDispFSI = space_tracemesh_disp_type::New( _mesh=subfsimesh, _worldscomm=this->localNonCompositeWorldsComm() );
-        M_fieldSubMeshDispFSI.reset( new element_tracemesh_disp_type(M_XhSubMeshDispFSI) );
-    }
-
-    this->log("SolidMechanics","createAdditionalFunctionSpacesFSIStandard", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -919,7 +858,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 {
-    if ( M_isUpdatedForUse ) return;
+    if ( this->isUpdatedForUse() ) return;
 
     this->log("SolidMechanics","init", "start" );
     this->timerTool("Constructor").start();
@@ -930,10 +869,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
     this->initFunctionSpaces();
 
-    if ( this->markerNameFSI().size()>0 )
-        this->createAdditionalFunctionSpacesFSI();
-
-    //-------------------------------------------------//
     // start or restart time step scheme
     if ( !this->isStationary() )
         this->initTimeStep();
@@ -971,6 +906,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
         // init vector associated to the block
         M_blockVectorSolution.buildVector( this->backend() );
     }
+    else if ( this->is1dReducedModel() )
+    {
+        size_type currentStartIndex = 0;
+        this->setStartSubBlockSpaceIndex( "displacement-1dreduced", currentStartIndex++ );
+        int nBlock = this->nBlockMatrixGraph();
+        M_blockVectorSolution_1dReduced.resize( nBlock );
+        int cptBlock = 0;
+        M_blockVectorSolution_1dReduced(cptBlock++) = this->fieldDisplacementScal1dReducedPtr();
+        // init vector associated to the block
+        M_blockVectorSolution_1dReduced.buildVector( this->backend1dReduced() );
+    }
 
     // update algebraic model
     if (buildAlgebraicFactory)
@@ -1001,11 +947,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
         else if (this->is1dReducedModel())
         {
             M_algebraicFactory_1dReduced.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend1dReduced()) );
-            M_algebraicFactory_1dReduced->initFromFunctionSpace( this->functionSpace1dReduced() );
         }
     }
 
-    M_isUpdatedForUse = true;
+    this->setIsUpdatedForUse( true );
 
     this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
@@ -1208,8 +1153,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::stri
             res.insert( "pressure" );
         if ( o == prefixvm(prefix,"material-properties") || o == prefixvm(prefix,"all") )
             res.insert( "material-properties" );
-        //if ( o == prefixvm(prefix,"fsi") || o == prefixvm(prefix,"all") )
-        //res.insert( "fsi" );
         if ( o == prefixvm(prefix,"Von-Mises") || o == prefixvm(prefix,"all") )
             res.insert( "Von-Mises" );
         if ( o == prefixvm(prefix,"Tresca") || o == prefixvm(prefix,"all") )
