@@ -2554,6 +2554,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     bool hasMeshSupportPartial = __dof->hasMeshSupport() && __dof->meshSupport()->isPartialSupport();
     bool hasDofTableMPIExtended = __dof->buildDofTableMPIExtended();
 
+#if 0
     size_type nbFaceDof = invalid_size_type_value;
 
     if ( !fe_type::is_modal )
@@ -2565,19 +2566,21 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
 
     DVLOG(2)  << "[projector::operator(MESH_FACES)] nbFaceDof = " << nbFaceDof << "\n";
-
+#endif
     auto IhLoc = __fe->faceLocalInterpolant();
     for ( ; __face_it != __face_en; ++__face_it )
     {
         face_type const& curFace = boost::unwrap_ref(*__face_it);
 
-        uint16_type __face_id = curFace.pos_first();
+        __face_id = curFace.pos_first();
         uint16_type faceConnectionId = 0;
         if ( hasMeshSupportPartial )
         {
             auto const& elt0 = curFace.element( 0 );
             if ( !__dof->meshSupport()->hasElement( elt0.id() ) || ( !hasDofTableMPIExtended && elt0.isGhostCell() ) )
             {
+                if ( !curFace.isConnectedTo1() )
+                    continue;
                 auto const& elt1 = curFace.element( 1 );
                 if ( !__dof->meshSupport()->hasElement( elt1.id() ) || ( !hasDofTableMPIExtended && elt1.isGhostCell() ) )
                     continue;
@@ -2599,11 +2602,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << curFace.G() << "\n";
 
 
+#if 0
         std::pair<size_type,size_type> range_dof( std::make_pair( this->start(),
                 this->functionSpace()->nDof() ) );
         DVLOG(2)  << "[projector] dof start = " << range_dof.first << "\n";
         DVLOG(2)  << "[projector] dof range = " << range_dof.second << "\n";
-
+#endif
         switch ( geomap_strategy )
         {
         default:
@@ -2635,9 +2639,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         break;
         }
         if ( accumulate )
-            this->plus_assign( curFace, IhLoc );
+            this->plus_assign( curFace, faceConnectionId, IhLoc );
         else
-            this->assign( curFace, IhLoc );
+            this->assign( curFace, faceConnectionId, IhLoc );
     } // face_it
 
 }
@@ -2675,8 +2679,22 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     size_type eid = firstEntity.elements().begin()->first;
     uint16_type eid_in_element = firstEntity.elements().begin()->second;
     auto const& elt = mesh->element( eid );
-    auto geopc = gm->preCompute( __fe->edgePoints(eid_in_element) );
-    auto ctx = gm->template context<context>( elt, geopc );
+    //auto geopc = gm->preCompute( __fe->edgePoints(eid_in_element) );
+    //auto ctx = gm->template context<context,2>( elt, geopc );
+    typedef Element<Y,Cont> element_type;
+    typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
+    typedef typename geoelement_type::template PermutationSubEntity<2>::type permutation_type;
+    typedef typename geoelement_type::gm_type::precompute_ptrtype geopc_ptrtype;
+    std::vector<std::map<permutation_type, geopc_ptrtype> > geopc( geoelement_type::numEdges );
+    for ( uint16_type __f = 0; __f < geoelement_type::numEdges; ++__f )
+    {
+        for ( permutation_type __p( permutation_type::IDENTITY ); __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+        {
+            geopc[__f][__p] = gm->preCompute( __fe->edgePoints(__f) );
+        }
+    }
+    auto ctx = gm->template context<context,2>( elt, geopc, eid_in_element );
+
     auto expr_evaluator = ex.evaluator( vf::mapgmc(ctx) );
 
     auto IhLoc = __fe->edgeLocalInterpolant();
@@ -2699,8 +2717,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         DVLOG(3) << "entity " << curEntity.id() << " element " << eid << " id in element "
                  << eid_in_element<< " with hasMarker " << curEntity.hasMarker();
         auto const& elt = mesh->element( eid );
-        geopc = gm->preCompute( __fe->edgePoints(eid_in_element) );
-        ctx->update( elt, geopc );
+        ctx->update( elt, eid_in_element );
 
         expr_evaluator.update( vf::mapgmc( ctx ) );
         __fe->edgeInterpolate( expr_evaluator, IhLoc );
@@ -2748,8 +2765,23 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     size_type eid = firstPt.elements().begin()->first;
     uint16_type ptid_in_element = firstPt.elements().begin()->second;
     auto const& elt = mesh->element( eid );
-    auto geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
-    auto ctx = gm->template context<context>( elt, geopc );
+    //auto geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
+    //auto ctx = gm->template context<context>( elt, geopc );
+
+    typedef Element<Y,Cont> element_type;
+    typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
+    typedef typename geoelement_type::template PermutationSubEntity<geoelement_type::nDim>::type permutation_type;
+    typedef typename geoelement_type::gm_type::precompute_ptrtype geopc_ptrtype;
+    std::vector<std::map<permutation_type, geopc_ptrtype> > geopc( geoelement_type::numVertices );
+    for ( uint16_type __f = 0; __f < geoelement_type::numVertices; ++__f )
+    {
+        for ( permutation_type __p( permutation_type::IDENTITY ); __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+        {
+            geopc[__f][__p] = gm->preCompute( __fe->vertexPoints(__f) );
+        }
+    }
+    auto ctx = gm->template context<context,geoelement_type::nDim>( elt, geopc, ptid_in_element );
+
     //t_expr_type expr( ex, mapgmc(ctx) );
     auto expr_evaluator = ex.evaluator( vf::mapgmc(ctx) );
 
@@ -2776,8 +2808,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             continue;
 
         auto const& elt = mesh->element( eid );
-        geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
-        ctx->update( elt, eid, geopc, mpl::int_<0>() );
+        //geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
+        //ctx->update( elt, eid, geopc, mpl::int_<0>() );
+        ctx->update( elt, ptid_in_element );
 
         expr_evaluator.update( vf::mapgmc( ctx ) );
         __fe->vertexInterpolate( expr_evaluator, IhLoc );
