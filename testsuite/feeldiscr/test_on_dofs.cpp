@@ -28,7 +28,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelvf/vf.hpp>
-//#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
 using namespace Feel;
 
@@ -86,30 +86,43 @@ void runTestElimination()
     auto Xh = Pch<PolyOrder>( mesh );
 
     auto u = Xh->element();
+    auto g = Xh->element();
+    g.on(_range=elements(mesh),_expr=Px()+Py());
+
     auto mat = backend()->newMatrix(_test=Xh,_trial=Xh);
     auto rhs = backend()->newVector( Xh );
     auto l = form1( _test=Xh,_vector=rhs );
-    l = integrate(_range=elements(mesh),
-                  _expr=id(u));
+    //l = integrate(_range=elements(mesh),
+    //              _expr=id(u));
     auto a = form2( _trial=Xh, _test=Xh,_matrix=mat );
-    a = integrate(_range=elements(mesh),
-                  _expr=inner(gradt(u),grad(u)) );
-    a+=on(_range=markedfaces( mesh,"S"), _rhs=rhs, _element=u, _expr=cst(12.) );
-    a+=on(_range=markededges( mesh,"L"), _rhs=rhs, _element=u, _expr=cst(22.) );
-    a+=on(_range=markedpoints( mesh,"P"), _rhs=rhs, _element=u, _expr=cst(32.) );
+    //a = integrate(_range=elements(mesh),
+    //_expr=inner(gradt(u),grad(u)) );
+    a+=on(_range=elements( mesh ), _rhs=rhs, _element=u, _expr=idv(g)*cst(2.) );
+    a+=on(_range=markedfaces( mesh,"S"), _rhs=rhs, _element=u, _expr=idv(g)*cst(12.) );
+    a+=on(_range=markededges( mesh,"L"), _rhs=rhs, _element=u, _expr=idv(g)*cst(22.) );
+    a+=on(_range=markedpoints( mesh,"P"), _rhs=rhs, _element=u, _expr=idv(g)*cst(32.) );
 
     backend(_rebuild=true)->solve(_matrix=mat,_rhs=rhs,_solution=u );
 
-#if 0
-    // not yet work because of idv(u) in markededges and markedpoints
-    // require to tell to the geomap that we manipulate edge or points
-    // can be tested by remove if ( fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value  ) in feel/feevf/operator.hpp line 781
     auto err = Xh->element();
-    err.on( _range=markedfaces( mesh,"S"), _expr=abs(idv(u)-cst(12.)) );
-    err.on( _range=markededges( mesh,"L"), _expr=abs(idv(u)-cst(22.)) );
-    err.on( _range=markedpoints( mesh,"P"), _expr=abs(idv(u)-cst(32.)) );
+
+    err.on( _range=elements( mesh ), _expr=abs(idv(u)-idv(g)*cst(2.)) );
+    auto dofsOnElt = err.functionSpace()->dofs( elements( mesh), ComponentType::NO_COMPONENT, true );
+    sync(err, "=", dofsOnElt); // useless here but just a check
+
+    err.on( _range=markedfaces( mesh,"S"), _expr=abs(idv(u)-idv(g)*cst(12.)) );
+    auto dofsOnFace = err.functionSpace()->dofs( markedfaces( mesh,"S"), ComponentType::NO_COMPONENT, true );
+    sync(err, "=", dofsOnFace);
+
+    err.on( _range=markededges( mesh,"L"), _expr=abs(idv(u)-idv(g)*cst(22.)) );
+    auto dofsOnEdge = err.functionSpace()->dofs( markededges( mesh,"L"), ComponentType::NO_COMPONENT, true );
+    sync(err, "=", dofsOnEdge);
+
+    err.on( _range=markedpoints( mesh,"P"), _expr=abs(idv(u)-idv(g)*cst(32.)) );
+    auto dofsOnPoint = err.functionSpace()->dofs( markedpoints( mesh,"P"), ComponentType::NO_COMPONENT, true );
+    sync(err, "=", dofsOnPoint);
+
     BOOST_CHECK_SMALL( err.sum(), 1e-10 );
-#endif
 }
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
