@@ -59,7 +59,7 @@ stokes(SpacePtrType Vh)
     auto sigmat = -idt(p)*Id + 2*mu*deft;
     tic();
     a = integrate(_range=elements(mesh),
-                  _expr=inner( mu*gradt(u), grad(v) ) );
+                  _expr=inner( 2*mu*deft(u), grad(v) ) );
     a += integrate(_range=elements(mesh),
                    _expr=-idt(p)*div(v) );
     a += integrate(_range=elements(mesh),
