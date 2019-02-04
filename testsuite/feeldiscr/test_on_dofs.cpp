@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_SUITE( test_on_dofs )
 BOOST_AUTO_TEST_CASE( assign_3d )
 {
     runTestAssign<3>();
-    runTestAssignMeshRelated<3>();
+    runTestAssignMeshRelated<3,4>();
 }
 
 BOOST_AUTO_TEST_CASE( elimination_3d )
