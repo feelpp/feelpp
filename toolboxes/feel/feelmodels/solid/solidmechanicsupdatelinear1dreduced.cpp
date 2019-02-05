@@ -11,8 +11,6 @@ void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlpha( DataUpdateLinear & data ) const
 {
 #if (SOLIDMECHANICS_DIM==2)
-    using namespace Feel::vf;
-
     this->log( "SolidMechanics","updateLinearGeneralisedStringGeneralisedAlpha","start");
 
     sparse_matrix_ptrtype& A = data.matrix();
@@ -113,13 +111,15 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlph
                        _expr=gammav*dxv(this->timeStepNewmark1dReduced()->polyFirstDeriv())*dx(v) );
     }
     //---------------------------------------------------------------------------------------//
-    // fluid stress
+    // source term
+#if 0
     if (BuildNonCstPart)
     {
         linearForm1dreduced +=
             integrate( _range=M_rangeMeshElements1dReduced,
                        _expr=idv(*M_stress_1dReduced)*id(v) );
     }
+#endif
     //---------------------------------------------------------------------------------------//
     // dirichlet bc
     if (this->hasMarkerDirichletBCelimination() && BuildNonCstPart && _doBCStrongDirichlet)

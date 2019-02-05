@@ -336,6 +336,26 @@ FSI<FluidType,SolidType>::init()
     // if ( this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" ||
     //      this->fsiCouplingBoundaryCondition()=="nitsche" )
     //     M_solidModel->createAdditionalFunctionSpacesFSI();
+    if ( M_solidModel->isStandardModel() )
+    {
+        //M_spaceNormalStressFromFluid_solid = space_solid_normalstressfromfluid_type::New( _mesh=M_solidModel->mesh() );
+        auto subfsimesh = createSubmesh(this->solidModel()->mesh(),markedfaces(this->solidModel()->mesh(),this->solidModel()->markerNameFSI()) );
+        M_spaceNormalStressFromFluid_solid = space_solid_normalstressfromfluid_type::New( _mesh=subfsimesh );
+        M_fieldNormalStressFromFluid_solid.reset(new element_solid_normalstressfromfluid_type( M_spaceNormalStressFromFluid_solid ) );
+        if ( this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
+             this->fsiCouplingBoundaryCondition() == "robin-robin" ||
+             this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
+             this->fsiCouplingBoundaryCondition() == "nitsche" )
+            M_fieldVelocityInterfaceFromFluid_solid.reset( new typename solid_type::element_vectorial_type( M_solidModel->functionSpaceDisplacement() ) );
+    }
+    else if ( M_solidModel->is1dReducedModel() )
+    {
+        // normal stress as source term
+        M_spaceNormalStressFromFluid_solid1dReduced = space_solid1dreduced_normalstressfromfluid_vect_type::New(_mesh=M_solidModel->mesh1dReduced() );
+        M_fieldNormalStressFromFluidScalar_solid1dReduced.reset( new element_solid1dreduced_normalstressfromfluid_scal_type( M_spaceNormalStressFromFluid_solid1dReduced->compSpace() ) );
+        M_fieldNormalStressFromFluidVectorial_solid1dReduced.reset( new element_solid1dreduced_normalstressfromfluid_vect_type( M_spaceNormalStressFromFluid_solid1dReduced ) );
+    }
+
 
     // save if reuse prec option at the begining
     M_reusePrecOptFluid = M_fluidModel->backend()->reusePrec();
@@ -390,6 +410,11 @@ FSI<FluidType,SolidType>::init()
                                                                                     boost::ref( *this ), _1 ) );
         M_solidModel->algebraicFactory()->addFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Solid,
                                                                                     boost::ref( *this ), _1 ) );
+    }
+    else if ( M_solidModel->is1dReducedModel() )
+    {
+        M_solidModel->algebraicFactory1dReduced()->addFunctionLinearAssembly( boost::bind( &self_type::updateLinearPDE_Solid1dReduced,
+                                                                                           boost::ref( *this ), _1 ) );
     }
     this->log("FSI","init","finish");
 }
