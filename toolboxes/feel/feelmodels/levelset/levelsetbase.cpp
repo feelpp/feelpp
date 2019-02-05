@@ -196,11 +196,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initLevelsetValue()
 {
     this->log("LevelSet", "initLevelsetValue", "start");
 
-    if( M_initialPhi ) // user-provided initial value
-    {
-        *M_phi = *M_initialPhi;
-    }
-    else // look for JSON initial values
+    if( !M_initialPhi ) // look for JSON initial values
     {
         bool hasInitialValue = false;
 
@@ -271,12 +267,18 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initLevelsetValue()
 
         if( hasInitialValue ) // has JSON-provided initial value
         {
-            *M_phi = *phi_init;
+            this->setInitialValue( phi_init );
         }
-        else // no initial value
-        {
-            M_phi->zero();
-        }
+    }
+
+    // Synchronize with current phi
+    if( M_initialPhi ) // user-provided initial value
+    {
+        *M_phi = *M_initialPhi;
+    }
+    else // no initial value
+    {
+        M_phi->zero();
     }
 
     this->updateInterfaceQuantities();
