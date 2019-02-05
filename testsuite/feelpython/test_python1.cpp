@@ -26,8 +26,8 @@
 #include <iostream>
 #include <sstream>
 #define BOOST_TEST_MODULE submesh testsuite
-#include <testsuite.hpp>
-#include <feel/feelpython/python.hpp>
+#include <feel/feelcore/testsuite.hpp>
+#include <feel/feelpython/pyexpr.hpp>
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -65,7 +65,8 @@ BOOST_AUTO_TEST_CASE( t2 )
          << "div_kgrad_f=toginac(div(k*grad(f,[x,y,z]),[x,y,z]),[x,y,z]);\n"
          << "print('div(k*grad(f))=', div_kgrad_f)\n";
 
-    auto m = Feel::python( ostr.str().c_str(), {"kgrad_f","div_kgrad_f"} );
+    std::map<std::string,std::string> locals;
+    auto m = Feel::pyexpr( ostr.str(), {"kgrad_f","div_kgrad_f"}, locals );
 
     BOOST_CHECK_EQUAL( m.at("kgrad_f"), "{8*x,0,0,0,8*y,0,0,0,8*z}:x:y:z" );
     BOOST_CHECK_EQUAL( m.at("div_kgrad_f"), "{8,8,8}:x:y:z" );

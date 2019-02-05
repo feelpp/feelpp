@@ -178,7 +178,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
 
 
 
-        typename f_fectx_type::id_type m_id( basis_type::nComponents1, basis_type::nComponents2);
+        typename f_fectx_type::id_type m_id;
         for ( ; it != en; ++ it )
         {
             domain_geoelement_type const& curElt = boost::unwrap_ref(*it);
@@ -288,7 +288,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
         std::vector<boost::tuple<size_type,uint16_type > > itab;
 
         size_type first_dof = space->dof()->firstDof();
-        typename f_fectx_type::id_type m_id( SpaceType::nComponents1, SpaceType::nComponents2 );
+        typename f_fectx_type::id_type m_id;
         for ( ; it != en; ++ it )
         {
             domain_geoelement_type const& curElt = boost::unwrap_ref(*it);
