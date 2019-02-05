@@ -125,6 +125,18 @@ public:
     typedef typename levelset_space_manager_type::space_scalar_PN_ptrtype space_levelset_PN_ptrtype;
     typedef typename space_levelset_PN_type::element_type element_levelset_PN_type;
     typedef std::shared_ptr<element_levelset_PN_type> element_levelset_PN_ptrtype;
+    // scalar
+    typedef typename levelset_space_manager_type::basis_scalar_type basis_scalar_type;
+    typedef typename levelset_space_manager_type::space_scalar_type space_scalar_type;
+    typedef typename levelset_space_manager_type::space_scalar_ptrtype space_scalar_ptrtype;
+    typedef typename space_scalar_type::element_type element_scalar_type;
+    typedef std::shared_ptr<element_scalar_type> element_scalar_ptrtype;
+    // scalar PN
+    typedef typename levelset_space_manager_type::basis_scalar_PN_type basis_scalar_PN_type;
+    typedef typename levelset_space_manager_type::space_scalar_PN_type space_scalar_PN_type;
+    typedef typename levelset_space_manager_type::space_scalar_PN_ptrtype space_scalar_PN_ptrtype;
+    typedef typename space_scalar_PN_type::element_type element_scalar_PN_type;
+    typedef std::shared_ptr<element_scalar_PN_type> element_scalar_PN_ptrtype;
     // vectorial
     typedef typename levelset_space_manager_type::basis_vectorial_type basis_vectorial_type;
     typedef typename levelset_space_manager_type::space_vectorial_type space_vectorial_type;
