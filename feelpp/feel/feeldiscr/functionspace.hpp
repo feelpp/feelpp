@@ -4287,6 +4287,10 @@ public:
 
         template<typename IteratorType, typename ExprType>
         FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_FACES>  );
+        template<typename IteratorType, typename ExprType>
+        FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_FACES>, mpl::true_  );
+        template<typename IteratorType, typename ExprType>
+        FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_FACES>, mpl::false_  );
 
         template<typename IteratorType, typename ExprType>
         FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_EDGES>  );

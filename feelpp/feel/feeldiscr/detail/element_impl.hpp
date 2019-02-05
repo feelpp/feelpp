@@ -2447,6 +2447,26 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                                                             bool verbose,
                                                             mpl::int_<MESH_FACES> )
 {
+    typedef typename boost::unwrap_reference<typename IteratorType::value_type>::type::GeoShape range_geoshape_type;
+    typedef Element<Y,Cont> element_type;
+    typedef typename element_type::functionspace_type::mesh_type::face_type::GeoShape fe_geoshape_type;
+
+    this->onImpl( r, ex, prefix, geomap_strategy, accumulate, verbose, mpl::int_<MESH_FACES>(),
+                  mpl::bool_< std::is_same<range_geoshape_type,fe_geoshape_type>::value >() );
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename IteratorType,  typename ExprType>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
+                                                            ExprType const& ex,
+                                                            std::string const& prefix,
+                                                            GeomapStrategyType geomap_strategy,
+                                                            bool accumulate,
+                                                            bool verbose,
+                                                            mpl::int_<MESH_FACES>, mpl::true_ )
+{
     typedef ExprType expression_type;
     typedef Element<Y,Cont> element_type;
 
@@ -2645,6 +2665,137 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     } // face_it
 
 }
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename IteratorType,  typename ExprType>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
+                                                            ExprType const& ex,
+                                                            std::string const& prefix,
+                                                            GeomapStrategyType geomap_strategy,
+                                                            bool accumulate,
+                                                            bool verbose,
+                                                            mpl::int_<MESH_FACES>, mpl::false_ )
+{
+    typedef Element<Y,Cont> element_type;
+
+    typedef typename boost::unwrap_reference<typename IteratorType::value_type>::type _range_face_type;
+    typedef typename boost::remove_const< typename boost::remove_reference<_range_face_type>::type >::type range_face_type;
+    typedef typename range_face_type::super2::template Element<range_face_type>::type range_geoelement_type;
+    typedef typename range_geoelement_type::gm_type range_gm_type;
+    typedef std::shared_ptr<range_gm_type> range_gm_ptrtype;
+    typedef typename range_geoelement_type::permutation_type range_permutation_type;
+    typedef typename range_gm_type::precompute_ptrtype range_geopc_ptrtype;
+    typedef typename range_gm_type::precompute_type range_geopc_type;
+
+    typedef typename element_type::functionspace_type::basis_type::template ChangeDim<range_geoelement_type::nDim>::type fe_range_dim_type;
+
+    auto __face_it = r.first;
+    auto const __face_en = r.second;
+
+    if ( __face_it == __face_en )
+        return;
+
+    auto const* dof = this->functionSpace()->dof().get();
+    auto const* fe = this->functionSpace()->fe().get();
+    auto meshFe = this->functionSpace()->mesh();
+    auto gmFe = this->functionSpace()->mesh()->gm();
+
+    auto const& firstFace = boost::unwrap_ref(*__face_it);
+
+    const bool feMeshIsSubmesh = meshFe->isSubMeshFrom( firstFace.mesh() );
+    CHECK ( feMeshIsSubmesh ) << "only implemented for ; fe is submesh";
+
+    auto const& eltConnectedToFirstFace = firstFace.element( 0 );
+    uint16_type fid_in_element = firstFace.pos_first();
+
+
+    range_gm_ptrtype gmRange = eltConnectedToFirstFace.gm();
+    if ( !gmRange )
+        gmRange.reset( new range_gm_type );
+
+    fe_range_dim_type feRangeDim;
+
+    std::vector<std::map<range_permutation_type, range_geopc_ptrtype> > geopcRange( range_geoelement_type::numTopologicalFaces );
+
+    for ( uint16_type __f = 0; __f < range_geoelement_type::numTopologicalFaces; ++__f )
+    {
+        for ( range_permutation_type __p( range_permutation_type::IDENTITY );
+              __p < range_permutation_type( range_permutation_type::N_PERMUTATIONS ); ++__p )
+        {
+            geopcRange[__f][__p] = range_geopc_ptrtype(  new range_geopc_type( gmRange, feRangeDim.points( __f ) ) );
+        }
+    }
+
+    const size_type context = mpl::if_< mpl::or_<mpl::bool_<is_hdiv_conforming>, mpl::bool_<is_hcurl_conforming> >,
+                                        mpl::int_<ExprType::context|vm::POINT|vm::JACOBIAN>,
+                                        mpl::int_<ExprType::context|vm::POINT> >::type::value;
+    auto gmcRange = gmRange->template context<context,1>( eltConnectedToFirstFace, geopcRange, fid_in_element );
+    auto expr_evaluator = ex.evaluatorWithPermutation( vf::mapgmc(gmcRange) );
+
+    // geomap context on fe (allow to get relation between geomap context on face range )
+    size_type eltIdRelatedToFace = meshFe->meshToSubMesh( firstFace.id() );
+    auto const& firstEltRelatedToFace =  this->mesh()->element( eltIdRelatedToFace );
+    auto geopcFe = gmFe->preCompute( fe->points() );
+    auto gmcFe = gmFe->template context<vm::POINT>( firstEltRelatedToFace, geopcFe );
+
+    CHECK( gmcFe->nPoints() == gmcRange->nPoints() ) << "should be have same number of point : " << gmcFe->nPoints() << " vs " << gmcRange->nPoints();
+    uint16_type nPointsGmc = gmcFe->nPoints();
+    std::vector<uint16_type> mapBetweenGmc( nPointsGmc, invalid_uint16_type_value );
+
+    auto IhLoc = fe->localInterpolant();
+    for ( ; __face_it != __face_en; ++__face_it )
+    {
+        auto const& curFace = boost::unwrap_ref(*__face_it);
+        fid_in_element = curFace.pos_first();
+        uint16_type faceConnectionId = 0;
+        gmcRange->update( curFace.element( faceConnectionId ), fid_in_element );
+        expr_evaluator.update( vf::mapgmc( gmcRange ) );
+
+        // get dof relation between fe and face in range
+        eltIdRelatedToFace = meshFe->meshToSubMesh( curFace.id() );
+        auto const& curEltRelatedToFace =  meshFe->element( eltIdRelatedToFace );
+        gmcFe->update( curEltRelatedToFace );
+        double dofPtCompareTol = std::max(1e-15,curEltRelatedToFace.hMin()*1e-5);
+        for ( int q = 0 ; q < nPointsGmc ; ++q )
+        {
+            mapBetweenGmc[q] = invalid_uint16_type_value;
+            auto const& gmcPtFe = gmcFe->xReal(q);
+            for ( int q2 = 0 ; q2 < nPointsGmc ; ++q2 )
+            {
+                auto const& gmcPtRange = gmcRange->xReal(q2);
+
+                bool findDof = true;
+                for (uint16_type d=0;d< element_type::functionspace_type::mesh_type::nRealDim;++d)
+                {
+                    findDof = findDof && (std::abs( gmcPtFe[d]-gmcPtRange[d] )<dofPtCompareTol);
+                }
+                if ( findDof )
+                {
+                    //std::cout << "eltId " << curEltRelatedToFace.id() << " :  " << q << "-"<<q2<<"\n";
+                    mapBetweenGmc[q] = q2;
+                    break;
+                }
+            }
+            CHECK( mapBetweenGmc[q] != invalid_uint16_type_value ) << "not found dof relation";
+        }
+
+        // given permutation to tensor expression
+        expr_evaluator.setPermutation( mapBetweenGmc );
+        // get interpolated value by using the permtutations
+        fe->interpolate( expr_evaluator, IhLoc );
+
+        // assign value at dofs
+        if ( accumulate )
+            this->plus_assign( curEltRelatedToFace, IhLoc );
+        else
+            this->assign( curEltRelatedToFace, IhLoc );
+
+    }
+}
+
+
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
