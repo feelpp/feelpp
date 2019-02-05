@@ -70,6 +70,7 @@ public:
     range_faces_type rangeMeshBoundaryFaces() const { return M_rangeMeshBoundaryFaces; }
 
     double timeStep() const { return M_timeStep; }
+    void setTimeStep( double dt ) { M_timeStep = dt; }
 
     element_type solveGalpha( element_type const& phi ) const;
     element_type solveGalpha( element_ptrtype const& phi ) const { return this->solveGalpha( *phi ); }
