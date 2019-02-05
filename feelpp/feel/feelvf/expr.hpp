@@ -415,7 +415,18 @@ public:
         {
         }
 
-    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,std::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,std::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
+    template<typename ExprTT>
+    explicit Expr( ExprTT const& )
+        {
+            
+        }
+    template<typename ExprTT>
+    ExprT operator=( ExprTT const& e )
+        {
+            
+        }
+    
+    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,boost::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
 
@@ -496,7 +507,7 @@ public:
             return M_tensor_expr.evalij( i, j );
         }
 
-        Eigen::Matrix<value_type, shape::M, shape::N> const&
+        Eigen::Map<const Eigen::Matrix<value_type, shape::M,shape::N>>
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             return M_tensor_expr.evalijq( i, j, q );
@@ -522,7 +533,7 @@ public:
         {
             return M_tensor_expr.evaliq( i, c1, c2, q );
         }
-        Eigen::Matrix<value_type, shape::M, shape::N> const&
+        Eigen::Map<const Eigen::Matrix<value_type, shape::M,shape::N>>
         evaliq( uint16_type i, uint16_type q ) const
         {
             return M_tensor_expr.evaliq( i, q );
@@ -534,7 +545,7 @@ public:
             value_type e = M_tensor_expr.evalq( c1, c2, q );
             return e;
         }
-        Eigen::Matrix<value_type, shape::M, shape::N> const&
+        Eigen::Map<const Eigen::Matrix<value_type, shape::M,shape::N>>
         evalq( uint16_type q ) const
         {
             return M_tensor_expr.evalq( q );
@@ -680,6 +691,7 @@ private:
 
     mutable expression_type  M_expr;
 };
+
 
 template <typename ExprT>
 Expr<ExprT>

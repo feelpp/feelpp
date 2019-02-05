@@ -35,13 +35,12 @@
 
 #include <boost/static_assert.hpp>
 
-#include <boost/version.hpp>
-#if BOOST_VERSION >= 106700
+#include <boost/version.hpp>                                                    
+#if BOOST_VERSION >= 106700                                                     
 #include <contrib/boost/fusion/include/boost/fusion/container/vector/vector.hpp>
-#else
+#else                                       
 #include <boost/fusion/container/vector.hpp>
 #endif
-
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/transform.hpp>
@@ -116,7 +115,7 @@ struct ID
 {
     friend class boost::serialization::access;
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,N>> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename  array_type::index_range range;
 
@@ -148,7 +147,6 @@ struct ID
     {
         for(int k = 0;k < M_id.shape()[0]; k++ )
         {
-            M_id[k].resize( M, N );
             M_id[k].setZero();
         }
         elem.id_( context, M_id );
@@ -212,7 +210,8 @@ struct DD
 {
     typedef T value_type;
     friend class boost::serialization::access;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,N>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -233,7 +232,6 @@ struct DD
     {
         for(int k = 0;k < M_grad.shape()[0]; k++ )
         {
-            M_grad[k].resize(M,N);
             M_grad[k].setZero();
         }
         elem.grad_( context, M_grad );
@@ -274,11 +272,81 @@ struct DD
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 };
+
+template<typename T,int M>
+struct SymmetricDD
+{
+    typedef T value_type;
+    friend class boost::serialization::access;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,M>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
+    typedef boost::multi_array<m_type,1> array_type;
+    typedef typename array_type::index_range range;
+    struct result
+    {
+
+        typedef array_type type;
+    };
+
+    SymmetricDD()
+        :
+        M_grad()
+    {}
+
+    template<typename Elem, typename ContextType>
+    SymmetricDD( Elem const& elem, ContextType const & context )
+        :
+        M_grad( elem.gradExtents( context ) )
+    {
+        for(int k = 0;k < M_grad.shape()[0]; k++ )
+        {
+            M_grad[k].setZero();
+        }
+        elem.symmetricGradient( context, M_grad );
+    }
+
+    m_type const& operator[]( uint16_type q  ) const
+    {
+        return M_grad[q];
+    }
+    value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
+    {
+        return M_grad[q]( c1,c2 );
+    }
+    array_type M_grad;
+
+    template<class Archive>
+    void save( Archive & ar, const unsigned int /*version*/ ) const
+    {
+        size_type e1 = M_grad.shape()[0];
+        DVLOG(2) << "saving in archive e1= " << e1 << "\n";
+        ar  & e1;
+        DVLOG(2) << "saving in archive array of size = " << M_grad.num_elements() << "\n";
+        ar  & boost::serialization::make_array( M_grad.data(), M_grad.num_elements() );
+        DVLOG(2) << "saving in archive done\n";
+    }
+    template<class Archive>
+    void load( Archive & ar, const unsigned int /*version*/ )
+    {
+        size_type e1, e2, e3;
+        ar  & e1;
+        DVLOG(2) << "loading from archive e1= " << e1 << "\n";
+        M_grad.resize( boost::extents[e1] );
+        DVLOG(2) << "loading from archive array of size = " << M_grad.num_elements() << "\n";
+        ar  & boost::serialization::make_array( M_grad.data(), M_grad.num_elements() );
+        DVLOG(2) << "loading from archive done\n";
+        DVLOG(2) << "creating view interpolation context done\n";
+    }
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+
+};
+
 template<typename T,int N, int M, int P>
 struct D
 {
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,P>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
 
@@ -300,7 +368,7 @@ struct D
     {
         for(int k = 0;k < M_grad.shape()[0]; k++ )
         {
-            M_grad[k].resize(M,P);
+            //M_grad[k].resize(M,P);
             M_grad[k].setZero();
         }
         elem.d_( N, context, M_grad );
@@ -321,7 +389,8 @@ template<typename T, int D = 1>
 struct Div
 {
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<D,1>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -342,7 +411,7 @@ struct Div
     {
         for(int k = 0;k < M_div.shape()[0]; k++ )
         {
-            M_div[k].resize(D,1);
+            //M_div[k].resize(D,1);
             M_div[k].setZero();
         }
         elem.div_( context, M_div );
@@ -362,7 +431,8 @@ template<typename T, int N, int D>
 struct Curl
 {
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<D,1>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -383,7 +453,7 @@ struct Curl
     {
         for(int k = 0;k < M_curl.shape()[0]; k++ )
         {
-            M_curl[k].resize(D,1);
+            //M_curl[k].resize(D,1);
             M_curl[k].setZero();
         }
         init( elem, context, boost::is_same<mpl::int_<N>, mpl::int_<-1> >() );
@@ -433,7 +503,8 @@ struct H
 {
     friend class boost::serialization::access;
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,N>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename  array_type::index_range range;
 
@@ -455,7 +526,7 @@ struct H
     {
         for(int k = 0;k < M_hess.shape()[0]; k++ )
         {
-            M_hess[k].resize(M,N);
+            //M_hess[k].resize(M,N);
             M_hess[k].setZero();
         }
         elem.hess_( context, M_hess );
@@ -1213,7 +1284,6 @@ struct BasisOrder
 template<typename SpaceType>
 struct createWorldsComm
 {
-    
     typedef typename SpaceType::mesh_ptrtype mesh_ptrtype;
     typedef typename SpaceType::meshes_list meshes_list;
     static const bool useMeshesList = !boost::is_base_of<MeshBase, meshes_list >::value;
@@ -2602,6 +2672,40 @@ public:
 
             return *this;
         }
+
+        using p0dh_t =  FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous>>>;
+        using p0dh_element_t =  typename FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous>>>::template Element<value_type>;
+        
+        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        Element& plusAssign( elt_t const& _e, const value_type sign = 1. )
+            {
+                if ( this->mesh()  != _e.mesh() )
+                    throw std::logic_error("Invalid mesh, they should be the same");
+                for ( auto const& rangeElt : elements( this->mesh() ) )
+                {
+                    auto const& meshElt = boost::unwrap_ref( rangeElt );
+                    size_type e = meshElt.id();
+                    auto p0_eid = _e.functionSpace()->dof()->localDof( e ).first->second.index();
+                    auto _v = _e.operator[](p0_eid);
+                    for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                    {
+                        size_type index = ldof.second.index();
+                        super::operator[]( index ) += sign*_v;
+                    }
+                }
+                return *this;
+            }
+        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        Element& operator+=( elt_t const& _e )
+            {
+                return plusAssign( _e );
+            }
+        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        Element& operator-=( elt_t const& _e )
+            {
+                return plusAssign( _e, -1. );
+            }
+        
         Element& operator-=( Element const& _e )
         {
             for ( size_type i=0; i < _e.nLocalDof(); ++i )
@@ -2767,20 +2871,12 @@ public:
             {
                 // we assume here that we are in CG
                 // TODO : adapt to DG and loop over all element to which the point belongs to
-                // TODO : check if the doftable is computed for this eid
                 size_type eid = e.elements().begin()->first;
                 uint16_type edgeid_in_element = e.elements().begin()->second;
-                this->assign( e, Ihloc, std::make_pair( eid,edgeid_in_element ) );
-            }
-        template<typename EltType>
-        void assign( EltType const& e, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo,
-                     typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
-            {
-                size_type eid = eltsInfo.first;
-                uint16_type edgeid_in_element = eltsInfo.second;
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
                 {
+
                     size_type index= ldof.index();
                     //super::operator[]( index ) = s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
                     super::operator[]( index ) = Ihloc( ldof.localDofInFace() );
@@ -2791,15 +2887,8 @@ public:
             {
                 // we assume here that we are in CG
                 // TODO : adapt to DG and loop over all element to which the point belongs to
-                // TODO : check if the doftable is computed for this eid
                 size_type eid = p.elements().begin()->first;
                 uint16_type ptid_in_element = p.elements().begin()->second;
-                this->assign( p, Ihloc, std::make_pair( eid, ptid_in_element ) );
-            }
-        void assign( geopoint_type const& p, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo )
-            {
-                size_type eid = eltsInfo.first;
-                uint16_type ptid_in_element = eltsInfo.second;
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( int c = 0; c < (is_product?nComponents:1); ++c )
                 {
@@ -2835,24 +2924,14 @@ public:
                 super::operator[]( index ) += s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
-
         template<typename EltType>
         void plus_assign( EltType const& e, local_interpolant_type const& Ihloc,
                      typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
         {
             // we assume here that we are in CG
             // TODO : adapt to DG and loop over all element to which the point belongs to
-            // TODO : check if the doftable is computed for this eid
             size_type eid = e.elements().begin()->first;
             uint16_type edgeid_in_element = e.elements().begin()->second;
-            this->plus_assign( e, Ihloc, std::make_pair( eid,edgeid_in_element ) );
-        }
-        template<typename EltType>
-        void plus_assign( EltType const& e, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo,
-                     typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
-        {
-            size_type eid = eltsInfo.first;
-            uint16_type edgeid_in_element = eltsInfo.second;
             auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
             for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
             {
@@ -2860,21 +2939,12 @@ public:
                 super::operator[]( index ) += s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
             }
         }
-
         void plus_assign( geopoint_type const& p, local_interpolant_type const& Ihloc )
             {
                 // we assume here that we are in CG
                 // TODO : adapt to DG and loop over all element to which the point belongs to
-                // TODO : check if the doftable is computed for this eid
                 size_type eid = p.elements().begin()->first;
                 uint16_type ptid_in_element = p.elements().begin()->second;
-                this->plus_assign( p, Ihloc, std::make_pair( eid,ptid_in_element ) );
-            }
-
-        void plus_assign( geopoint_type const& p, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo )
-            {
-                size_type eid = eltsInfo.first;
-                uint16_type ptid_in_element = eltsInfo.second;
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( int c = 0; c < (is_product?nComponents:1); ++c )
                 {
@@ -2882,7 +2952,6 @@ public:
                     super::operator[]( index ) += s(ptid_in_element)*Ihloc( c );
                 }
             }
-
         //@}
 
         /** @name Accessors
@@ -2897,12 +2966,16 @@ public:
         typedef Eigen::Matrix<value_type,nComponents2,1> _div_type;
         typedef Eigen::Matrix<value_type,nRealDim,1> _curl_type;
 #else
-        typedef Eigen::Tensor<value_type,2> _id_type;
-        typedef Eigen::Tensor<value_type,2> _grad_type;
-        typedef Eigen::Tensor<value_type,2> _dn_type;
-        typedef Eigen::Tensor<value_type,2> _hess_type;
-        typedef Eigen::Tensor<value_type,2> _div_type;
-        typedef Eigen::Tensor<value_type,2> _curl_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nComponents2>> _id_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nRealDim>> _grad_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nComponents2>> _dn_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nRealDim,nRealDim>> _hess_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents2,1>> _div_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nRealDim,1>> _curl_type;
+        //typedef Eigen::Tensor<value_type,2> _dn_type;
+        //typedef Eigen::Tensor<value_type,2> _hess_type;
+        //typedef Eigen::Tensor<value_type,2> _div_type;
+        //typedef Eigen::Tensor<value_type,2> _curl_type;
 #endif
         typedef boost::multi_array<_id_type,1> id_array_type;
         typedef boost::multi_array<_grad_type,1> grad_array_type;
@@ -3123,7 +3196,7 @@ public:
             shape[0] = 1;
 
             id_array_type v( shape );
-            _id_type idzero( ncdof, 1 );
+            _id_type idzero;
             std::fill( v.data(), v.data()+v.num_elements(), idzero.constant(0.));
 
             if( context.size() > 0 )
@@ -3323,6 +3396,12 @@ public:
         {
             grad_( context, v );
         }
+
+        //!
+        //! compute Symmetric Gradient only in the vectorial case
+        //!
+        template<typename ContextType,typename EType = this_type>
+        void symmetricGradient( ContextType const & context, grad_array_type& v, std::enable_if_t<EType::is_vectorial>* = nullptr ) const;
 
         void
         gradInterpolate( matrix_node_type __ptsReal, grad_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
@@ -4141,22 +4220,70 @@ public:
                 m.printMatlab( fname );
             }
 
+        //!
+        //! compute the element wise mean value of an element
+        //!
+        p0dh_element_t ewiseMean( std::shared_ptr<p0dh_t> & P0dh ) const
+            {
+                p0dh_element_t v = P0dh->element();
+                v.zero();
+                typename basis_type::points_type p(mesh_type::nDim,1);
+                auto basispc = this->functionSpace()->basis()->preCompute( this->functionSpace()->basis(), p );
+                auto gmpc = this->mesh()->gm()->preCompute( this->mesh()->gm(), p );
+                auto range_elts = elements( this->mesh() );
+                auto elt_beg = begin( range_elts );
+                auto elt_end = end( range_elts );
+                if ( elt_beg != elt_end )
+                {
+                    auto gmc = this->mesh()->gm()->template context<vm::JACOBIAN>( boost::unwrap_ref(*elt_beg), gmpc );
+                    for ( auto const& rangeElt : elements( this->mesh() ) )
+                    {
+                        auto const& meshElt = boost::unwrap_ref( rangeElt );
+                        size_type e = meshElt.id();
+                        gmc->update( meshElt );
+                        auto p0_eid = v.functionSpace()->dof()->localDof( e ).first->second.index();
+                        for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                        {
+                            size_type index = ldof.second.index();
+                            v.operator[](p0_eid) += basispc->firstMoment(ldof.first.localDof())*super::operator[]( index );
+                        }
+                        v.operator[](p0_eid) *= gmc->J(0)/meshElt.measure();
+                    }
+                }
+                return v;
+            }
 
         BOOST_PARAMETER_MEMBER_FUNCTION( (void),
                                          on,
                                          tag,
                                          ( required
-                                           ( range, *  )
                                            ( expr,   * )
                                              ) // 4. one required parameter, and
 
                                          ( optional
+                                           ( range, *, elements(this->mesh())  )
                                            ( prefix,   ( std::string ), "" )
                                            ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
                                            ( accumulate,     *( boost::is_integral<mpl::_> ), false )
                                            ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
             {
                 return onImpl( range, expr, prefix, geomap, accumulate, verbose );
+            }
+
+        BOOST_PARAMETER_MEMBER_FUNCTION( (void),
+                                         plus,
+                                         tag,
+                                         ( required
+                                           ( expr,   * )
+                                           ) // 4. one required parameter, and
+
+                                         ( optional
+                                           ( range, *, elements(this->mesh())  )
+                                           ( prefix,   ( std::string ), "" )
+                                           ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
+                                           ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
+            {
+                return onImpl( range, expr, prefix, geomap, true, verbose );
             }
 
 
@@ -4261,13 +4388,14 @@ public:
 
 
         }
-    public:
+    private:
+
         template<typename RangeType, typename ExprType>
         FEELPP_NO_EXPORT void onImpl( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate = true, bool verbose = false )
         {
             onImplBase( r, e, prefix, geomap_strategy, accumulate, verbose, boost::is_std_list<RangeType>()  );
         }
-    private:
+
         template<typename RangeType, typename ExprType>
         FEELPP_NO_EXPORT void onImplBase( RangeType const& rList, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::true_ )
         {
@@ -4574,6 +4702,7 @@ public:
     /** @name Accessors
      */
     //@{
+
 
     /*
      * Get the real point matrix in a context
@@ -5280,6 +5409,7 @@ public:
      */
     //@{
 
+
     //@}
 
     /** @name  Methods
@@ -5313,6 +5443,7 @@ public:
         DVLOG(2) << "copying FunctionSpace\n";
     }
 
+protected:
 
 private:
 

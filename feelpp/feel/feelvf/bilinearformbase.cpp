@@ -34,8 +34,8 @@ namespace Feel {
 template<typename T>
 BilinearFormBase<T>::BilinearFormBase( BilinearFormBase const& __vf )
     :
+    super( __vf ),
     M_name( __vf.M_name ),
-    M_wc( __vf.M_wc ),
     M_pattern( __vf.M_pattern ),
     M_matrix( __vf.M_matrix ),
     M_lb( __vf.M_lb ),

@@ -45,9 +45,10 @@ namespace Feel
 //! handle algebraic representation and multithreading
 //!
 template<typename T=double>
-class BilinearFormBase
+class BilinearFormBase : public CommObject
 {
 public:
+    using super = CommObject;
     using list_block_type = Feel::vf::list_block_type;
     using value_type = T;
     using pre_solve_type = typename Backend<value_type>::pre_solve_type;
@@ -55,14 +56,14 @@ public:
 
     //typedef ublas::compressed_matrix<value_type, ublas::row_major> csr_matrix_type;
     typedef MatrixSparse<value_type> matrix_type;
-    typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
+    typedef std::shared_ptr<matrix_type> matrix_ptrtype;
     static const bool is_row_major = true;//matrix_type::is_row_major;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::bool_<is_row_major>, mpl::bool_<true> >,
                               mpl::identity<ublas::row_major>,
                               mpl::identity<ublas::column_major> >::type::type layout_type;
 
-
+    
     template<typename FE1,  typename FE2>
     BilinearFormBase( std::string name,
                       FE1 const& Xh,
@@ -407,13 +408,13 @@ public:
                                          ) )
         {
             this->close();
-            return backend( _name=name, _kind=kind, _rebuild=rebuild,
-                            _worldcomm=M_wc )->solve( _matrix=this->matrixPtr(),
-                                                      _rhs=rhs.vectorPtr(),
-                                                      _solution=solution,
-                                                      _pre=pre,
-                                                      _post=post
-                                                      );
+            return Feel::backend( _name=name, _kind=kind, _rebuild=rebuild,
+                                  _worldcomm=this->worldCommPtr() )->solve( _matrix=this->matrixPtr(),
+                                                            _rhs=rhs.vectorPtr(),
+                                                            _solution=solution,
+                                                            _pre=pre,
+                                                            _post=post
+                                                            );
         }
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
@@ -441,7 +442,6 @@ public:
 
 protected:
     std::string M_name;
-    WorldComm M_wc;
     size_type M_pattern;
 
     matrix_ptrtype M_matrix;
@@ -477,8 +477,7 @@ BilinearFormBase<T>::BilinearFormBase( std::string name,
                                        value_type threshold,
                                        size_type graph_hints )
 :
-    M_name( name ),
-    M_wc( Xh->worldComm() ),
+    super( Xh->worldCommPtr() ),
     M_pattern( graph_hints ),
     M_matrix( __M ),
     M_lb{},
@@ -518,8 +517,8 @@ BilinearFormBase<T>::BilinearFormBase( std::string name,
                                        value_type threshold,
                                        size_type graph_hints )
 :
+    super( Xh->worldCommPtr() ),
     M_name( name ),
-    M_wc( Xh->worldComm() ),
     M_pattern( graph_hints ),
     M_matrix( __M ),
     M_lb( __lb ),
