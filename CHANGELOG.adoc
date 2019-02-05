@@ -92,14 +92,15 @@ https://github.com/feelpp/feelpp/compare/v0.104.0...v0.105.0[Full Changelog]
 * [**feel/**] Fixes docker build of feelpp projects due to git-lfs {uri-issue}/1183[#1186]
 
 [[v0.104.1-2018-05-xx]]
-== v0.104.1 (unreleased)
-// https://github.com/feelpp/feelpp/tree/v0.104.1[v0.104.1] (2018-05-xx)
+== v0.104.1
+https://github.com/feelpp/feelpp/tree/v0.104.1[v0.104.1] (2018-06-20)
 
 https://github.com/feelpp/feelpp/compare/v0.104.0...v0.104.1[Full Changelog]
 
 === Features
 
 * [**quickstart/**] Add cantilever example for quickstart elasticity code in 2D
+* [**quickstart/**] Fix Laplacian example in 3D
 
 === Fixes
 
