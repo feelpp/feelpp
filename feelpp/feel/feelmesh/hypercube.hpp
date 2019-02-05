@@ -141,6 +141,18 @@ public:
             mpl::identity<face_permutation_type>,
             mpl::identity<no_permutation> >::type>::type::type permutation_type;
 
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
+            mpl::identity<mpl::vector<edge_permutation_type, vertex_permutation_type, vertex_permutation_type> >,
+            typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
+            mpl::identity<mpl::vector<face_permutation_type, edge_permutation_type, vertex_permutation_type> >,
+            mpl::identity<mpl::vector<vertex_permutation_type, vertex_permutation_type, vertex_permutation_type> > >::type>::type::type permutation_by_subentity_type;
+
+    template<int N>
+    struct PermutationSubEntity
+    {
+        typedef typename mpl::at_c<permutation_by_subentity_type,N-1>::type type;
+    };
+
     template<uint16_type shape_dim, uint16_type O = Order,  uint16_type R=nDim>
     struct shape
     {

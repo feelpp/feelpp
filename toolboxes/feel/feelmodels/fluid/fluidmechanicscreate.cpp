@@ -716,9 +716,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesNormalStress()
     if ( M_XhNormalBoundaryStress ) return;
 
     if ( M_materialProperties->isDefinedOnWholeMesh() )
-        M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+        M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _range=boundaryelements(M_mesh) );
     else
-        M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(), _range=M_rangeMeshElements );
+        M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _range=M_rangeMeshElements );// TODO define boundaryelements in MeshSupport // intersect(boundaryelements(M_mesh),M_rangeMeshElements) );
     M_fieldNormalStress.reset(new element_stress_type(M_XhNormalBoundaryStress));
     M_fieldNormalStressRefMesh.reset(new element_stress_type(M_XhNormalBoundaryStress));
 #if defined( FEELPP_MODELS_HAS_MESHALE )

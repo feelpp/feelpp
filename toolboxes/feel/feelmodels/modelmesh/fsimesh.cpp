@@ -67,6 +67,7 @@ FSIMesh<ConvexType>::buildFSIMeshFromMsh()
     {
         std::cout << "[FSIMesh] : load fsi mesh ....\n";
         auto meshFSI = loadMesh( _mesh=new mesh_type(this->worldComm().subWorldCommSeqPtr()),
+                                 _prefix=this->prefix(),
                                  _filename=this->mshPathFSI().string(),
                                  _straighten=false,
                                  _worldcomm=this->worldComm().subWorldCommSeqPtr(),
