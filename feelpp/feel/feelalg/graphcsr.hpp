@@ -137,11 +137,11 @@ public:
 
     size_type nRows() const
     {
-        return M_last_row_entry_on_proc[this->worldComm().globalRank()]+1;
+        return M_mapRow->nDof();
     }
     size_type nCols() const
     {
-        return M_last_col_entry_on_proc[this->worldComm().globalRank()]+1;
+        return M_mapCol->nDof();
     }
 
     /**
@@ -149,7 +149,7 @@ public:
      */
     size_type firstRowEntryOnProc() const
     {
-        return M_first_row_entry_on_proc[this->worldComm().globalRank()];
+        return M_mapRow->firstDofGlobalCluster();
     }
 
     /**
@@ -157,14 +157,14 @@ public:
      */
     size_type lastRowEntryOnProc() const
     {
-        return M_last_row_entry_on_proc[this->worldComm().globalRank()];
+        return M_mapRow->lastDofGlobalCluster();
     }
     /**
      * \return the first entry index on proc
      */
     size_type firstColEntryOnProc() const
     {
-        return M_first_col_entry_on_proc[this->worldComm().globalRank()];
+        return M_mapCol->firstDofGlobalCluster();
     }
 
     /**
@@ -172,7 +172,7 @@ public:
      */
     size_type lastColEntryOnProc() const
     {
-        return M_last_col_entry_on_proc[this->worldComm().globalRank()];
+        return M_mapCol->lastDofGlobalCluster();
     }
 
     /**
@@ -307,25 +307,6 @@ public:
      */
     //@{
 
-
-    void setFirstRowEntryOnProc( size_type entry )
-    {
-        M_first_row_entry_on_proc[this->worldComm().globalRank()] = entry;
-    }
-    void setFirstColEntryOnProc( size_type entry )
-    {
-        M_first_col_entry_on_proc[this->worldComm().globalRank()] = entry;
-    }
-
-    void setLastRowEntryOnProc( size_type entry )
-    {
-        M_last_row_entry_on_proc[this->worldComm().globalRank()] = entry;
-    }
-    void setLastColEntryOnProc( size_type entry )
-    {
-        M_last_col_entry_on_proc[this->worldComm().globalRank()] = entry;
-    }
-
     datamap_type const& mapRow() const { return *M_mapRow; }
     datamap_type const& mapCol() const { return *M_mapCol; }
     datamap_ptrtype const& mapRowPtr() const { return M_mapRow; }
@@ -402,10 +383,6 @@ private :
         ar & BOOST_SERIALIZATION_NVP(map_col);
 
         ar & BOOST_SERIALIZATION_NVP(M_is_closed);
-        ar & BOOST_SERIALIZATION_NVP(M_first_row_entry_on_proc);
-        ar & BOOST_SERIALIZATION_NVP(M_last_row_entry_on_proc );
-        ar & BOOST_SERIALIZATION_NVP(M_first_col_entry_on_proc);
-        ar & BOOST_SERIALIZATION_NVP(M_last_col_entry_on_proc );
         ar & BOOST_SERIALIZATION_NVP(M_max_nnz);
         ar & BOOST_SERIALIZATION_NVP(M_n_total_nz);
         ar & BOOST_SERIALIZATION_NVP(M_n_nz);
@@ -426,10 +403,6 @@ private :
         ar & BOOST_SERIALIZATION_NVP(map_col);
 
         ar & BOOST_SERIALIZATION_NVP(M_is_closed);
-        ar & BOOST_SERIALIZATION_NVP(M_first_row_entry_on_proc);
-        ar & BOOST_SERIALIZATION_NVP(M_last_row_entry_on_proc );
-        ar & BOOST_SERIALIZATION_NVP(M_first_col_entry_on_proc);
-        ar & BOOST_SERIALIZATION_NVP(M_last_col_entry_on_proc );
         ar & BOOST_SERIALIZATION_NVP(M_max_nnz);
         ar & BOOST_SERIALIZATION_NVP(M_n_total_nz);
         ar & BOOST_SERIALIZATION_NVP(M_n_nz);
@@ -450,10 +423,6 @@ protected:
 private:
     bool M_is_closed;
 
-    std::vector<size_type> M_first_row_entry_on_proc;
-    std::vector<size_type> M_last_row_entry_on_proc;
-    std::vector<size_type> M_first_col_entry_on_proc;
-    std::vector<size_type> M_last_col_entry_on_proc;
     size_type M_max_nnz;
     nz_type M_n_total_nz;
     nz_type M_n_nz;
