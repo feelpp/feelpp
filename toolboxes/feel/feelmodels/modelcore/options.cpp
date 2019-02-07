@@ -225,7 +225,10 @@ solidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"formulation").c_str(), Feel::po::value<std::string>()->default_value( "displacement" ), "displacement,displacement-pressure")
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "struct solver")
         (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("Newmark"), "time integration schema : Newmark, Generalized-Alpha")
-        (prefixvm(prefix,"time-rho").c_str(), Feel::po::value< double >()->default_value(0.8), " Generalized-Alpha parameter")
+        (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+
+        //(prefixvm(prefix,"time-rho").c_str(), Feel::po::value< double >()->default_value(0.8), " Generalized-Alpha parameter")
+
         (prefixvm(prefix,"time-initial.displacement.files.directory").c_str(), Feel::po::value<std::string>(), "initial displacemen")
         (prefixvm(prefix,"time-initial.displacement.files.format").c_str(), Feel::po::value<std::string>()->default_value( "hdf5" ), "intial displacement file format")
 
