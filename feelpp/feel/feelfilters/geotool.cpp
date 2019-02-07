@@ -33,7 +33,7 @@
 #include <feel/feelfilters/geotoolshape.cpp>
 
 #if defined( FEELPP_HAS_GMSH_H )
-#include <gmsh/GmshConfig.h>
+#include <GmshConfig.h>
 #endif
 
 namespace Feel
