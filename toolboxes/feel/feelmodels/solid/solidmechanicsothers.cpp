@@ -110,6 +110,15 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
             else if (this->is1dReducedModel())
                 *_ostr << " ( gamma="<< this->timeStepNewmark1dReduced()->gamma() <<", beta="<< this->timeStepNewmark1dReduced()->beta() << " )";
         }
+        else if ( M_timeStepping == "BDF" )
+        {
+            if (this->isStandardModel())
+                *_ostr << " ( order=" << M_timeStepBdfDisplacement->timeOrder() << " )";
+        }
+        else if ( M_timeStepping == "Theta" )
+        {
+            *_ostr << " ( theta=" << M_timeStepThetaValue << " )";
+        }
         *_ostr << "\n     -- restart mode : " << ResartMode
                << "\n     -- save on disk : " << std::boolalpha << this->timeStepBase()->saveInFile();
         if ( this->timeStepBase()->saveFreq() )
@@ -788,6 +797,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     }
     else
     {
+
+        if ( M_timeStepping == "Theta" )
+            this->updateTimeStepThetaSchemePreviousContrib();
         M_timeStepBdfDisplacement->next( *M_fieldDisplacement );
         M_timeStepBdfVelocity->next( *M_fieldVelocity );
         this->updateTime( M_timeStepBdfDisplacement->time() );
@@ -809,25 +821,50 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepThetaSchemePreviousContrib()
+{
+    M_timeStepThetaSchemePreviousContrib->zero();
+    M_blockVectorSolution.updateVectorFromSubVectors();
+    ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(),
+                                                     M_timeStepThetaSchemePreviousContrib, true, false );
+    dataResidual.addInfo( "Theta-Time-Stepping-Previous-Contrib" );
+    this->updateResidual( dataResidual );
+    dataResidual.setBuildCstPart( false );
+    this->updateResidual( dataResidual );
+    M_timeStepThetaSchemePreviousContrib->close();
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::predictorDispl()
 {
     this->log("SolidMechanics","predictorDispl", "start" );
 
     if (isStandardModel())
     {
-        //std::string mytype = soption(_name="predictor-disp-type",_prefix=this->prefix());
-        double dt = M_timeStepNewmark->timeStep();
-        if (M_timeStepNewmark->iteration() == 1) //order 1: \tilde{u} = u_n + dt* \dot{u}_n
+        if ( M_timeStepping == "Newmark" )
         {
-            //this->fieldDisplacement().add(M_timeStepNewmark->timeStep(),M_timeStepNewmark->currentVelocity());
-            this->fieldDisplacement().add( dt, M_timeStepNewmark->previousVelocity(0));
+            //std::string mytype = soption(_name="predictor-disp-type",_prefix=this->prefix());
+            double dt = M_timeStepNewmark->timeStep();
+            if (M_timeStepNewmark->iteration() == 1) //order 1: \tilde{u} = u_n + dt* \dot{u}_n
+            {
+                //this->fieldDisplacement().add(M_timeStepNewmark->timeStep(),M_timeStepNewmark->currentVelocity());
+                this->fieldDisplacement().add( dt, M_timeStepNewmark->previousVelocity(0));
+            }
+            else //order 2: \tilde{u} = u_n + dt*( (3/2)*\dot{u}_n-(1/2)*\dot{u}_{n-1}
+            {
+                //this->fieldDisplacement().add((3./2.)*M_timeStepNewmark->timeStep(), M_timeStepNewmark->currentVelocity() );
+                //this->fieldDisplacement().add((-1./2.)*M_timeStepNewmark->timeStep(), M_timeStepNewmark->previousVelocity());
+                this->fieldDisplacement().add( (3./2.)*dt, M_timeStepNewmark->previousVelocity(0) );
+                this->fieldDisplacement().add( (-1./2.)*dt, M_timeStepNewmark->previousVelocity(1) );
+            }
         }
-        else //order 2: \tilde{u} = u_n + dt*( (3/2)*\dot{u}_n-(1/2)*\dot{u}_{n-1}
+        else
         {
-            //this->fieldDisplacement().add((3./2.)*M_timeStepNewmark->timeStep(), M_timeStepNewmark->currentVelocity() );
-            //this->fieldDisplacement().add((-1./2.)*M_timeStepNewmark->timeStep(), M_timeStepNewmark->previousVelocity());
-            this->fieldDisplacement().add( (3./2.)*dt, M_timeStepNewmark->previousVelocity(0) );
-            this->fieldDisplacement().add( (-1./2.)*dt, M_timeStepNewmark->previousVelocity(1) );
+            *M_fieldDisplacement = M_timeStepBdfDisplacement->poly();
+            *M_fieldVelocity = M_timeStepBdfVelocity->poly();
         }
     }
     else

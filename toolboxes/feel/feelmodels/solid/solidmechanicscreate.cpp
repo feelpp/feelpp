@@ -223,13 +223,16 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     }
     else if ( M_timeStepping == "Generalized-Alpha" )
     {
+#if 0
         M_genAlpha_rho=doption(_name="time-rho",_prefix=this->prefix());
         M_genAlpha_alpha_m=(2.- M_genAlpha_rho)/(1.+M_genAlpha_rho);
         M_genAlpha_alpha_f=1./(1.+M_genAlpha_rho);
+#endif
     }
-    else if ( M_timeStepping == "BDF" )
+    else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
     {
         M_timeSteppingUseMixedFormulation = true;
+        M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
     }
     else CHECK( false ) << "time stepping not supported : " << M_timeStepping << "\n";
 
@@ -598,7 +601,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
         M_fieldVelocity = M_timeStepNewmark->currentVelocityPtr();
         M_fieldAcceleration = M_timeStepNewmark->currentAccelerationPtr();
     }
-    else
+    else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
     {
         M_timeStepBdfDisplacement = bdf( _space=M_XhDisplacement,
                                          _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"bdf_displacement"+suffixName)),
@@ -905,6 +908,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
         // init vector associated to the block
         M_blockVectorSolution.buildVector( this->backend() );
+
+        if ( M_timeStepping == "Theta" )
+        {
+            M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
+            this->updateTimeStepThetaSchemePreviousContrib();
+        }
     }
     else if ( this->is1dReducedModel() )
     {
@@ -942,6 +951,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
                     M_algebraicFactory->attachNearNullSpace( 0,userNullSpace ); // for block disp in fieldsplit
                     M_algebraicFactory->attachNearNullSpace( userNullSpaceFull ); // for multigrid on full system
                 }
+            }
+
+            if ( M_timeStepping == "Theta" )
+            {
+                M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+                M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
             }
         }
         else if (this->is1dReducedModel())

@@ -321,7 +321,7 @@ private :
     void loadConfigMeshFile(std::string const& geofilename) { CHECK( false ) << "not allow"; }
     void loadConfigMeshFile1dReduced(std::string const& geofilename) { CHECK( false ) << "not allow"; }
     void loadParameterFromOptionsVm();
-    void createWorldsComm();
+    void createWorldsComm() override;
 
     void initFunctionSpaces();
     void initFunctionSpaces1dReduced();
@@ -345,7 +345,7 @@ public :
     void init( bool buildAlgebraicFactory = true );
     void solve( bool upVelAcc=true );
 
-    std::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
 
     void pdeType(std::string __type);
     void pdeSolver(std::string __type);
@@ -426,11 +426,13 @@ public :
 private :
     //void exportFieldsImpl( double time );
     void exportFieldsImplHO( double time );
+
+    void updateTimeStepThetaSchemePreviousContrib();
 public :
 
     void predictorDispl();
 
-    block_pattern_type blockPattern() const;
+    block_pattern_type blockPattern() const override;
 
     backend_ptrtype const& backend() const
     {
@@ -510,8 +512,8 @@ public :
     //backend_ptrtype backend() { return M_backend; }
     backend_ptrtype const& backendStandard() const { return M_backend; }
 
-    BlocksBaseGraphCSR buildBlockMatrixGraph() const;
-    graph_ptrtype buildMatrixGraph() const;
+    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
+    graph_ptrtype buildMatrixGraph() const override;
     int nBlockMatrixGraph() const;
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
@@ -606,36 +608,35 @@ public :
     //-----------------------------------------------------------------------------------//
     //-----------------------------------------------------------------------------------//
 
-    // assembly methods
-    void updateNewtonInitialGuess(vector_ptrtype& U) const;
-    void updateJacobian( DataUpdateJacobian & data ) const;
-    void updateResidual( DataUpdateResidual & data ) const;
+    // assembly methods for linear system
+    void updateLinearPDE( DataUpdateLinear & data ) const override;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
-    void updateLinearPDE( DataUpdateLinear & data ) const;
-    void updateLinearGeneralisedStringGeneralisedAlpha( DataUpdateLinear & data ) const;
-    void updateLinearElasticityGeneralisedAlpha( DataUpdateLinear & data ) const;
-    void updateLinearElasticityAxiSymGeneralisedAlpha( DataUpdateLinear & data ) const {};
+    // assembly methods for nonlinear system
+    void updateNewtonInitialGuess(vector_ptrtype& U) const override;
+    void updateJacobian( DataUpdateJacobian & data ) const override;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
+    void updateResidual( DataUpdateResidual & data ) const override;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const override;
+private :
+    void updateLinearGeneralizedString( DataUpdateLinear & data ) const;
+    void updateLinearElasticityAxiSym( DataUpdateLinear & data ) const {};
+    void updateBCNeumannLinearPDE( vector_ptrtype& F, double timeSteppingScaling ) const;
+    void updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F, double timeSteppingScaling ) const;
+    void updateSourceTermLinearPDE( vector_ptrtype& F, double timeSteppingScaling ) const;
 
     void updateJacobianIncompressibilityTerms( element_displacement_external_storage_type const& u, element_pressure_external_storage_type const& p, sparse_matrix_ptrtype& J) const;
     void updateResidualIncompressibilityTerms( element_displacement_external_storage_type const& u, element_pressure_external_storage_type const& p, vector_ptrtype& R) const;
-
     void updateJacobianViscoElasticityTerms( element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const;
     void updateResidualViscoElasticityTerms( element_displacement_external_storage_type const& u, vector_ptrtype& R) const;
 
+    void updateBCNeumannResidual( vector_ptrtype& R, double timeSteppingScaling ) const;
+    void updateBCRobinResidual( element_displacement_external_storage_type const& u, vector_ptrtype& R, double timeSteppingScaling ) const;
+    void updateBCFollowerPressureResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R, double timeSteppingScaling ) const;
+    void updateSourceTermResidual( vector_ptrtype& R, double timeSteppingScaling ) const;
 
-    void updateBCNeumannResidual( vector_ptrtype& R ) const;
-    void updateBCRobinResidual( element_displacement_external_storage_type const& u, vector_ptrtype& R ) const;
-    void updateBCFollowerPressureResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R ) const;
-    void updateSourceTermResidual( vector_ptrtype& R ) const;
-
-    void updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J, vector_ptrtype& RBis ) const;
-    void updateBCFollowerPressureJacobian(element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const;
-    void updateBCRobinJacobian( sparse_matrix_ptrtype& J) const;
-
-    void updateBCDirichletStrongLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
-    void updateBCNeumannLinearPDE( vector_ptrtype& F ) const;
-    void updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
-    void updateSourceTermLinearPDE( vector_ptrtype& F ) const;
+    void updateBCFollowerPressureJacobian(element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J, double timeSteppingScaling ) const;
+    void updateBCRobinJacobian( sparse_matrix_ptrtype& J, double timeSteppingScaling ) const;
 
 private :
     void updateBoundaryConditionsForUse();
@@ -794,6 +795,8 @@ protected:
 
 
     bdf_displacement_ptrtype M_timeStepBdfDisplacement, M_timeStepBdfVelocity;
+    double M_timeStepThetaValue;
+    vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
     // fsi
     bool M_useFSISemiImplicitScheme;
