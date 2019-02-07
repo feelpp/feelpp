@@ -662,6 +662,64 @@ private:
 
 }; //class LevelSetBase
 
+//----------------------------------------------------------------------------//
+// Static member initialization
+#define LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS \
+    template< typename ConvexType, typename BasisType, typename PeriodicityType, typename BasisPnType > \
+        /**/
+#define LEVELSETBASE_CLASS_TEMPLATE_TYPE \
+    LevelSetBase<ConvexType, BasisType, PeriodicityType, BasisPnType> \
+        /**/
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+std::map<std::string, typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::ShapeType>
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::ShapeTypeMap = {
+    {"sphere", ShapeType::SPHERE},
+    {"ellipse", ShapeType::ELLIPSE}
+};
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+const std::map<std::string, LevelSetDistanceMethod> 
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetDistanceMethodIdMap = {
+    {"none", LevelSetDistanceMethod::NONE},
+    {"fm", LevelSetDistanceMethod::FASTMARCHING},
+    {"hj", LevelSetDistanceMethod::HAMILTONJACOBI},
+    {"renormalisation", LevelSetDistanceMethod::RENORMALISATION}
+};
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::fastmarchinginitializationmethodidmap_type
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::FastMarchingInitializationMethodIdMap = boost::assign::list_of< typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::fastmarchinginitializationmethodidmap_type::relation >
+    ( "none", FastMarchingInitializationMethod::NONE )
+    ( "ilp", FastMarchingInitializationMethod::ILP_L2 )
+    ( "ilp-l2", FastMarchingInitializationMethod::ILP_L2 )
+    ( "ilp-smooth", FastMarchingInitializationMethod::ILP_SMOOTH )
+    ( "ilp-nodal", FastMarchingInitializationMethod::ILP_NODAL )
+    ( "hj", FastMarchingInitializationMethod::HJ_EQ )
+    ( "il-hj", FastMarchingInitializationMethod::IL_HJ_EQ )
+;
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::derivationmethod_maptype
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::DerivationMethodMap = boost::assign::list_of< typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::derivationmethod_maptype::relation >
+    ( "nodal-projection", DerivationMethod::NODAL_PROJECTION )
+    ( "l2-projection", DerivationMethod::L2_PROJECTION )
+    ( "smooth-projection", DerivationMethod::SMOOTH_PROJECTION )
+    ( "pn-nodal-projection", DerivationMethod::PN_NODAL_PROJECTION )
+;
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::curvaturemethod_maptype
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::CurvatureMethodMap = boost::assign::list_of< typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::curvaturemethod_maptype::relation >
+    ( "nodal-projection", CurvatureMethod::NODAL_PROJECTION )
+    ( "l2-projection", CurvatureMethod::L2_PROJECTION )
+    ( "smooth-projection", CurvatureMethod::SMOOTH_PROJECTION )
+    ( "pn-nodal-projection", CurvatureMethod::PN_NODAL_PROJECTION )
+    ( "diffusion-order1", CurvatureMethod::DIFFUSION_ORDER1 )
+    ( "diffusion-order2", CurvatureMethod::DIFFUSION_ORDER2 )
+;
+
+//----------------------------------------------------------------------------//
+
 
 } // namespace FeelModels
 } // namespace Feel
