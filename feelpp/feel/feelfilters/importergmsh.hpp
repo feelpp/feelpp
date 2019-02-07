@@ -46,16 +46,16 @@
 #include <boost/algorithm/string/trim.hpp>
 
 #if defined( FEELPP_HAS_GMSH_H )
-#include <gmsh/GModel.h>
-#include <gmsh/MElement.h>
-#include <gmsh/MVertex.h>
-#include <gmsh/MEdge.h>
-#include <gmsh/MPoint.h>
-#include <gmsh/MLine.h>
-#include <gmsh/MTriangle.h>
-#include <gmsh/MQuadrangle.h>
-#include <gmsh/MTetrahedron.h>
-#include <gmsh/MHexahedron.h>
+#include <GModel.h>
+#include <MElement.h>
+#include <MVertex.h>
+#include <MEdge.h>
+#include <MPoint.h>
+#include <MLine.h>
+#include <MTriangle.h>
+#include <MQuadrangle.h>
+#include <MTetrahedron.h>
+#include <MHexahedron.h>
 #endif
 // there is a macro called sign in Gmsh that conflicts with
 // at least one member function sign() from DofTable.
