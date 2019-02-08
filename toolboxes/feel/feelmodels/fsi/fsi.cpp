@@ -279,6 +279,15 @@ FSI<FluidType,SolidType>::init()
         M_fluidModel->init( false );
     }
 
+    // revert fluid reference mesh if restart
+    if ( this->fluidModel()->doRestart() )
+    {
+        this->fluidModel()->meshALE()->revertReferenceMesh();
+        // need to rebuild this dof point because updated in meshale after restart
+        this->fluidModel()->meshALE()->displacement()->functionSpace()->rebuildDofPoints();
+        //this->fluidModel()->functionSpaceVelocity()->rebuildDofPoints();
+    }
+
     // solid model build
     if ( !M_solidModel )
     {
@@ -288,11 +297,11 @@ FSI<FluidType,SolidType>::init()
         {
             CHECK( !M_fluidModel->markersNameMovingBoundary().empty() ) << "no marker moving boundary in fluid model";
 
-            if ( M_fluidModel->doRestart() )
-                M_fluidModel->meshALE()->revertReferenceMesh();
+            //if ( M_fluidModel->doRestart() )
+            //M_fluidModel->meshALE()->revertReferenceMesh();
             auto submeshStruct = detail::createMeshStruct1dFromFluidMesh<fluid_type,solid_type>( M_fluidModel );
-            if ( M_fluidModel->doRestart() )
-                M_fluidModel->meshALE()->revertMovingMesh();
+            //if ( M_fluidModel->doRestart() )
+            //M_fluidModel->meshALE()->revertMovingMesh();
 
             // TODO ( save 1d mesh and reload )
             if ( M_fluidModel->doRestart() )
@@ -332,10 +341,11 @@ FSI<FluidType,SolidType>::init()
         M_solidModel->useFSISemiImplicitScheme(true);
     }
 
-    // // create other space : TODO need to be improve!!
-    // if ( this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" ||
-    //      this->fsiCouplingBoundaryCondition()=="nitsche" )
-    //     M_solidModel->createAdditionalFunctionSpacesFSI();
+
+    auto submeshfsi_fluid = createSubmesh( this->fluidModel()->mesh(),markedfaces( this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()) );
+    M_spaceNormalStress_fluid = fluid_type::space_normalstress_type::New(_mesh=submeshfsi_fluid );
+    M_fieldNormalStressRefMesh_fluid.reset( new typename fluid_type::element_normalstress_type( M_spaceNormalStress_fluid ) );
+
     if ( M_solidModel->isStandardModel() )
     {
         //M_spaceNormalStressFromFluid_solid = space_solid_normalstressfromfluid_type::New( _mesh=M_solidModel->mesh() );
@@ -365,9 +375,6 @@ FSI<FluidType,SolidType>::init()
     M_reuseJacOptSolid = M_solidModel->backend()->reuseJac();
     M_reuseJacRebuildAtFirstNewtonStepOptSolid = M_solidModel->backend()->reuseJacRebuildAtFirstNewtonStep();
     //-------------------------------------------------------------------------//
-    // call init
-    // M_fluidModel->init();
-    // M_solidModel->init();
     this->updateTime( this->timeStepBase()->time() );
     //-------------------------------------------------------------------------//
     // init interpolation tool
@@ -392,6 +399,14 @@ FSI<FluidType,SolidType>::init()
     {
         this->initCouplingRobinNeumannGeneralized();
     }
+    //-------------------------------------------------------------------------//
+
+    if ( this->fluidModel()->doRestart() )
+    {
+        this->fluidModel()->meshALE()->revertMovingMesh();
+        this->fluidModel()->meshALE()->displacement()->functionSpace()->rebuildDofPoints();
+    }
+
     //-------------------------------------------------------------------------//
 
     M_fluidModel->algebraicFactory()->addFunctionLinearAssembly( boost::bind( &self_type::updateLinearPDE_Fluid,
@@ -432,7 +447,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
     {
         if ( M_fluidModel->useFSISemiImplicitScheme() )
             M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute(markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()));
-        M_fluidModel->updateNormalStressOnReferenceMesh();
+        M_fluidModel->updateNormalStressOnReferenceMesh( M_fieldNormalStressRefMesh_fluid );
     }
 
     if ( this->solidModel()->isStandardModel() )
@@ -577,9 +592,6 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
 
     if ( M_coulingRNG_usePrecomputeBC )
     {
-        if ( M_fluidModel->doRestart() )
-            this->fluidModel()->meshALE()->revertReferenceMesh();
-
         // create matrix which represent time derivative  bc operator
         auto dmFullFluidSpace = this->fluidModel()->algebraicFactory()->sparsityMatrixGraph()->mapRowPtr();
         M_coulingRNG_vectorTimeDerivative = this->fluidModel()->backend()->newVector( dmFullFluidSpace );
@@ -626,7 +638,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         }
 
         // create matrix which represent stress bc operator
-        auto VhStress = this->fluidModel()->fieldNormalStressRefMeshPtr()->functionSpace();
+        auto VhStress = M_spaceNormalStress_fluid;//this->fluidModel()->fieldNormalStressRefMeshPtr()->functionSpace();
         M_coulingRNG_vectorStress = this->fluidModel()->backend()->newVector( VhStress );
         auto dofStress = VhStress->dof();
         BlocksBaseGraphCSR myblockGraph(nBlock,1);
@@ -647,11 +659,8 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         // assembly stress matrix
         form2(_test=VhFluid,_trial=VhStress,_matrix=M_coulingRNG_matrixStress ) +=
             integrate( _range=rangeFSIFluid,
-                       _expr= inner( idt(this->fluidModel()->fieldNormalStressRefMeshPtr()),id(u)),
+                       _expr= inner( idt(M_fieldNormalStressRefMesh_fluid),id(u)),
                        _geomap=this->geomap() );
-
-        if ( M_fluidModel->doRestart() )
-            this->fluidModel()->meshALE()->revertMovingMesh();
     }
 
 }

@@ -175,11 +175,11 @@ public:
     //___________________________________________________________________________________//
     // function space stress
     //typedef bases<Lagrange<nOrderVelocity-1+space_alemapdisc_type::basis_type::nOrder, Vectorial,Discontinuous,PointSetFekete> > basis_stress_type;
-    typedef Lagrange<nOrderVelocity-1+mesh_type::nOrder, Vectorial,Discontinuous,PointSetFekete> basis_stress_type;
-    typedef FunctionSpace<mesh_type, bases<basis_stress_type> > space_stress_type;
-    typedef std::shared_ptr<space_stress_type> space_stress_ptrtype;
-    typedef typename space_stress_type::element_type element_stress_type;
-    typedef std::shared_ptr<element_stress_type> element_stress_ptrtype;
+    typedef Lagrange<nOrderVelocity-1+mesh_type::nOrder, Vectorial,Discontinuous,PointSetFekete> basis_normalstress_type;
+    typedef FunctionSpace<trace_mesh_type, bases<basis_normalstress_type> > space_normalstress_type;
+    typedef std::shared_ptr<space_normalstress_type> space_normalstress_ptrtype;
+    typedef typename space_normalstress_type::element_type element_normalstress_type;
+    typedef std::shared_ptr<element_normalstress_type> element_normalstress_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -319,10 +319,12 @@ public:
     typedef std::shared_ptr<op_interpolation_visu_ho_meshdisp_type> op_interpolation_visu_ho_meshdisp_ptrtype;
 #endif
 
-    typedef OperatorInterpolation<space_stress_type,
+#if 0
+    typedef OperatorInterpolation<space_normalstress_type,
                                   space_vectorialdisc_visu_ho_type/*,
                                                                    range_visu_ho_type*/> op_interpolation_visu_ho_vectorialdisc_type;
     typedef std::shared_ptr<op_interpolation_visu_ho_vectorialdisc_type> op_interpolation_visu_ho_vectorialdisc_ptrtype;
+#endif
     //___________________________________________________________________________________//
 
     typedef Exporter<mesh_visu_ho_type> export_ho_type;
@@ -403,12 +405,12 @@ public :
     element_fluid_pressure_type & fieldPressure() { return M_Solution->template element<1>(); }
     element_fluid_pressure_type const& fieldPressure() const { return M_Solution->template element<1>(); }
 
-    element_stress_ptrtype & fieldNormalStressPtr() { return M_fieldNormalStress; }
-    element_stress_type const& fieldNormalStress() const { return *M_fieldNormalStress; }
-    element_stress_ptrtype & fieldNormalStressRefMeshPtr() { return M_fieldNormalStressRefMesh; }
-    element_stress_type const& fieldNormalStressRefMesh() const { return *M_fieldNormalStressRefMesh; }
-    element_stress_ptrtype & fieldWallShearStressPtr() { return M_fieldWallShearStress; }
-    element_stress_type const& fieldWallShearStress() const { return *M_fieldWallShearStress; }
+    element_normalstress_ptrtype & fieldNormalStressPtr() { return M_fieldNormalStress; }
+    element_normalstress_type const& fieldNormalStress() const { return *M_fieldNormalStress; }
+    element_normalstress_ptrtype & fieldNormalStressRefMeshPtr() { return M_fieldNormalStressRefMesh; }
+    element_normalstress_type const& fieldNormalStressRefMesh() const { return *M_fieldNormalStressRefMesh; }
+    element_normalstress_ptrtype & fieldWallShearStressPtr() { return M_fieldWallShearStress; }
+    element_normalstress_type const& fieldWallShearStress() const { return *M_fieldWallShearStress; }
 
     element_vorticity_ptrtype const& fieldVorticityPtr() const { return M_fieldVorticity; }
     element_vorticity_ptrtype & fieldVorticityPtr() { return M_fieldVorticity; }
@@ -487,8 +489,8 @@ public :
     element_meshvelocityonboundary_type const & meshVelocity2() const { return *M_meshVelocityInterface; }
     element_meshvelocityonboundary_ptrtype const & meshVelocity2Ptr() const { return M_meshVelocityInterface; }
 
-    element_stress_ptrtype normalStressFromStruct() { return M_normalStressFromStruct; }
-    element_stress_ptrtype const& normalStressFromStruct() const { return M_normalStressFromStruct; }
+    //element_stress_ptrtype normalStressFromStruct() { return M_normalStressFromStruct; }
+    //element_stress_ptrtype const& normalStressFromStruct() const { return M_normalStressFromStruct; }
 #endif
     //element_fluid_velocity_scalar_type & meshVelocityScalOnInterface() { return *M_meshVelocityScalarOnInterface; }
     //___________________________________________________________________________________//
@@ -697,11 +699,11 @@ public :
     // update normal stress in reference ALE mesh
     void updateNormalStressOnCurrentMesh( std::set<std::string> const& listMarkers = std::set<std::string>() );
     // update normal stress in reference ALE mesh
-    void updateNormalStressOnReferenceMesh();
+    void updateNormalStressOnReferenceMesh( element_normalstress_ptrtype & fieldToUpdate );
 private :
     // update normal stress (subfunctions)
-    void updateNormalStressOnReferenceMeshStandard( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces );
-    void updateNormalStressOnReferenceMeshOptSI( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces );
+    void updateNormalStressOnReferenceMeshStandard( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces, element_normalstress_ptrtype & fieldToUpdate );
+    void updateNormalStressOnReferenceMeshOptSI( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces, element_normalstress_ptrtype & fieldToUpdate );
 public :
     void updateNormalStressOnReferenceMeshOptPrecompute( faces_reference_wrapper_t<mesh_type> const& rangeFaces );
 
@@ -912,9 +914,9 @@ protected:
     bdf_ptrtype M_bdf_fluid;
     //----------------------------------------------------
     // normak boundary stress ans WSS
-    space_stress_ptrtype M_XhNormalBoundaryStress;
-    element_stress_ptrtype M_fieldNormalStress, M_fieldNormalStressRefMesh;
-    element_stress_ptrtype M_fieldWallShearStress;
+    space_normalstress_ptrtype M_XhNormalBoundaryStress;
+    element_normalstress_ptrtype M_fieldNormalStress, M_fieldNormalStressRefMesh;
+    element_normalstress_ptrtype M_fieldWallShearStress;
     // vorticity space
     space_vorticity_ptrtype M_XhVorticity;
     element_vorticity_ptrtype M_fieldVorticity;
@@ -929,7 +931,7 @@ protected:
     element_mesh_disp_ptrtype M_meshDisplacementOnInterface;
     space_meshvelocityonboundary_ptrtype M_XhMeshVelocityInterface;
     element_meshvelocityonboundary_ptrtype M_meshVelocityInterface;
-    element_stress_ptrtype M_normalStressFromStruct;
+    //element_stress_ptrtype M_normalStressFromStruct;
     space_alemapdisc_ptrtype M_XhMeshALEmapDisc;
     element_alemapdisc_ptrtype M_saveALEPartNormalStress;
     std::set<size_type> M_dofsVelocityInterfaceOnMovingBoundary;
@@ -1034,8 +1036,8 @@ protected:
     element_vectorial_visu_ho_ptrtype M_velocityVisuHO;
     element_scalar_visu_ho_ptrtype M_pressureVisuHO;
     element_vectorial_visu_ho_ptrtype M_meshdispVisuHO;
-    element_vectorialdisc_visu_ho_ptrtype M_normalStressVisuHO;
-    element_vectorialdisc_visu_ho_ptrtype M_fieldWallShearStressVisuHO;
+    //element_vectorialdisc_visu_ho_ptrtype M_normalStressVisuHO;
+    //element_vectorialdisc_visu_ho_ptrtype M_fieldWallShearStressVisuHO;
 
     op_interpolation_visu_ho_vectorial_ptrtype M_opIvelocity;
     op_interpolation_visu_ho_scalar_ptrtype M_opIpressure;
@@ -1043,7 +1045,7 @@ protected:
     op_interpolation_visu_ho_meshdisp_ptrtype M_opImeshdisp;
     MeshMover<mesh_visu_ho_type> M_meshmover_visu_ho;
 #endif
-    op_interpolation_visu_ho_vectorialdisc_ptrtype M_opIstress;
+    //op_interpolation_visu_ho_vectorialdisc_ptrtype M_opIstress;
 #endif
     // post-process measure at point
     context_velocity_ptrtype M_postProcessMeasuresContextVelocity;
