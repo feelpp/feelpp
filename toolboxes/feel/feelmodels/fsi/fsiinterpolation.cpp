@@ -7,12 +7,6 @@ void
 FSI<FluidType,SolidType>::initInterpolation()
 {
 
-    if ( this->fluidModel()->doRestart() )
-    {
-        this->fluidModel()->meshALE()->revertReferenceMesh();
-        // need to rebuild this dof point because updated in meshale after restart
-        this->fluidModel()->meshALE()->displacement()->functionSpace()->rebuildDofPoints();
-    }
 
     boost::mpi::timer btime;double thet;
     if (this->solidModel()->isStandardModel())
@@ -85,13 +79,6 @@ FSI<FluidType,SolidType>::initInterpolation()
                                                        this->worldComm(),this->verboseAllProc());
         }
         //---------------------------------------------//
-    }
-
-
-    if ( this->fluidModel()->doRestart() )
-    {
-        this->fluidModel()->meshALE()->revertMovingMesh();
-        this->fluidModel()->meshALE()->displacement()->functionSpace()->rebuildDofPoints();
     }
 
 }
@@ -169,8 +156,8 @@ FSI<FluidType,SolidType>::initStressInterpolation()
     {
         if (this->verbose() && this->fluidModel()->worldComm().isMasterRank())
             std::cout << "initStressInterpolation() CONFORME" << std::endl;
-        M_opStress2dTo2dconf = opInterpolation(_domainSpace=this->fluidModel()->fieldNormalStressRefMesh().functionSpace(),
-                                               _imageSpace=this->fieldNormalStressFromFluidPtr_solid()->functionSpace(),
+        M_opStress2dTo2dconf = opInterpolation(_domainSpace=M_spaceNormalStress_fluid,
+                                               _imageSpace=M_spaceNormalStressFromFluid_solid,
                                                //_range=markedfaces(this->solidModel()->mesh(),this->solidModel()->markerNameFSI()),
                                                _range=elements(M_spaceNormalStressFromFluid_solid->mesh()),
                                                _type=InterpolationConforme(),
@@ -180,8 +167,8 @@ FSI<FluidType,SolidType>::initStressInterpolation()
     {
         if (this->verbose() && this->fluidModel()->worldComm().isMasterRank())
             std::cout << "initStressInterpolation() NONCONFORME" << std::endl;
-        M_opStress2dTo2dnonconf = opInterpolation(_domainSpace=this->fluidModel()->fieldNormalStressRefMesh().functionSpace(),
-                                                  _imageSpace=this->fieldNormalStressFromFluidPtr_solid()->functionSpace(),
+        M_opStress2dTo2dnonconf = opInterpolation(_domainSpace=M_spaceNormalStress_fluid,
+                                                  _imageSpace=M_spaceNormalStressFromFluid_solid,
                                                   //_range=markedfaces(this->solidModel()->mesh(),this->solidModel()->markerNameFSI()),
                                                   _range=elements(M_spaceNormalStressFromFluid_solid->mesh()),
                                                   _type=InterpolationNonConforme(true,true,true,15),
@@ -199,8 +186,8 @@ FSI<FluidType,SolidType>::initStress1dToNdInterpolation()
     {
         if (this->verbose() && this->fluidModel()->worldComm().isMasterRank())
             std::cout << "initStress1dToNdInterpolation() CONFORME" << std::endl;
-        M_opStress1dToNdconf = opInterpolation(_domainSpace=M_fluidModel->fieldNormalStressRefMesh().functionSpace(),
-                                               _imageSpace=M_fieldNormalStressFromFluidVectorial_solid1dReduced->functionSpace(),
+        M_opStress1dToNdconf = opInterpolation(_domainSpace=M_spaceNormalStress_fluid,
+                                               _imageSpace=M_spaceNormalStressFromFluid_solid1dReduced,
                                                _range=elements(M_solidModel->mesh1dReduced()),
                                                _type=InterpolationConforme(),
                                                _backend=M_fluidModel->backend() );
@@ -210,8 +197,8 @@ FSI<FluidType,SolidType>::initStress1dToNdInterpolation()
     {
         if (this->verbose() && this->fluidModel()->worldComm().isMasterRank())
             std::cout << "initStress1dToNdInterpolation() NONCONFORME" << std::endl;
-        M_opStress1dToNdnonconf = opInterpolation(_domainSpace=M_fluidModel->fieldNormalStressRefMesh().functionSpace(),
-                                                  _imageSpace=M_fieldNormalStressFromFluidVectorial_solid1dReduced->functionSpace(),
+        M_opStress1dToNdnonconf = opInterpolation(_domainSpace=M_spaceNormalStress_fluid,
+                                                  _imageSpace=M_spaceNormalStressFromFluid_solid1dReduced,
                                                   _range=elements(M_solidModel->mesh1dReduced()),
                                                   _type=InterpolationNonConforme(),
                                                   _backend=M_fluidModel->backend() );
@@ -314,11 +301,15 @@ template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::initStressInterpolationS2F()
 {
+#if 0
     M_opStress2dTo2dconfS2F = opInterpolation(_domainSpace=this->solidModel()->fieldNormalStressFromStructPtr()->functionSpace(),
                                               _imageSpace=this->fluidModel()->normalStressFromStruct()->functionSpace(),
                                               _range=markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()),
                                               _type=InterpolationConforme(),
                                               _backend=this->fluidModel()->backend() );
+#else
+    CHECK( false ) << "not implemented";
+#endif
 }
 
 //-----------------------------------------------------------------------------------//
@@ -379,20 +370,21 @@ FSI<FluidType,SolidType>::transfertStress()
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertStress", "start",
                                                this->worldComm(),this->verboseAllProc());
 
-    M_fluidModel->updateNormalStressOnReferenceMesh();
+    M_fieldNormalStressRefMesh_fluid->zero();
+    M_fluidModel->updateNormalStressOnReferenceMesh( M_fieldNormalStressRefMesh_fluid );
 
     if (M_solidModel->isStandardModel())
     {
         if (M_interfaceFSIisConforme)
         {
             CHECK( M_opStress2dTo2dconf ) << "interpolation operator not build";
-            M_opStress2dTo2dconf->apply( *(M_fluidModel->fieldNormalStressRefMeshPtr()), *(this->fieldNormalStressFromFluidPtr_solid()) );
+            M_opStress2dTo2dconf->apply( *M_fieldNormalStressRefMesh_fluid, *M_fieldNormalStressFromFluid_solid );
         }
         else
         {
 #if 1
             CHECK( M_opStress2dTo2dnonconf ) << "interpolation operator not build";
-            M_opStress2dTo2dnonconf->apply( *(M_fluidModel->fieldNormalStressRefMeshPtr()), *(this->fieldNormalStressFromFluidPtr_solid()) );
+            M_opStress2dTo2dnonconf->apply( *M_fieldNormalStressRefMesh_fluid, *M_fieldNormalStressFromFluid_solid );
 #else
             //auto FluidPhysicalName = M_fluid->getMarkerNameFSI().front();
             auto mysubmesh = createSubmesh(this->fluidModel()->mesh(),markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()/*FluidPhysicalName*/));
@@ -441,12 +433,12 @@ FSI<FluidType,SolidType>::transfertStress()
         if (M_interfaceFSIisConforme)
         {
             CHECK( M_opStress1dToNdconf )  << "interpolation operator not build";
-            M_opStress1dToNdconf->apply(*(M_fluidModel->fieldNormalStressRefMeshPtr()), *M_fieldNormalStressFromFluidVectorial_solid1dReduced );
+            M_opStress1dToNdconf->apply(*M_fieldNormalStressRefMesh_fluid, *M_fieldNormalStressFromFluidVectorial_solid1dReduced );
         }
         else
         {
             CHECK( M_opStress1dToNdnonconf )  << "interpolation operator not build";
-            M_opStress1dToNdnonconf->apply(*(M_fluidModel->fieldNormalStressRefMeshPtr()), *M_fieldNormalStressFromFluidVectorial_solid1dReduced );
+            M_opStress1dToNdnonconf->apply(*M_fieldNormalStressRefMesh_fluid, *M_fieldNormalStressFromFluidVectorial_solid1dReduced );
         }
 #if 0
         M_solidModel->updateInterfaceScalStressDispFromVectStress();
@@ -1061,12 +1053,14 @@ FSI<FluidType,SolidType>::transfertStressS2F()
 {
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertStressS2F", "start",
                                                this->worldComm(),this->verboseAllProc());
-
+#if 0
     this->solidModel()->updateNormalStressFromStruct();
     CHECK( M_opStress2dTo2dconfS2F ) << "interpolation operator not build";
     M_opStress2dTo2dconfS2F->apply(*this->solidModel()->fieldNormalStressFromStructPtr(),
                                    *this->fluidModel()->normalStressFromStruct());
-
+#else
+    CHECK( false ) << "not implemented";
+#endif
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertStressS2F", "finish",
                                                this->worldComm(),this->verboseAllProc());
 }
