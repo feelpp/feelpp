@@ -2288,7 +2288,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::perimeter() const
 {
     double perimeter = integrate(
             _range=this->rangeDiracElements(),
-            _expr=idv(this->dirac())
+            _expr=this->diracExpr()
             ).evaluate()(0,0);
 
     return perimeter;
