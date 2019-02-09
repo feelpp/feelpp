@@ -1330,7 +1330,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // kdtree parameter
     locTool->kdtree()->nbNearNeighbor(this->interpolationType().nbNearNeighborInKdTree());
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
-    if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
+    //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
     //locTool->kdtree()->nbNearNeighbor(3);
     //locTool->kdtree()->nbNearNeighbor(this->domainSpace()->mesh()->numElements());
@@ -2004,7 +2004,7 @@ OperatorInterpolation<DomainSpaceType,
 
     auto locTool = this->domainSpace()->mesh()->tool_localization();
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
-    if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
+    //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
     matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
@@ -2246,7 +2246,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     // localisation tool with matrix node
     auto locTool = this->domainSpace()->mesh()->tool_localization();
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
-    if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
+    //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
     matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
@@ -2709,7 +2709,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     // localisation tool with matrix node
     auto locTool = this->domainSpace()->mesh()->tool_localization();
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
-    if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
+    //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
     matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
