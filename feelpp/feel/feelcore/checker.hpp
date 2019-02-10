@@ -169,7 +169,8 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
 {
     if ( !M_check )
         return true;
-
+    cout << "================================================================================\n"
+         << "[Checker] " << this->journalWatcherInstanceName() << "\n";
     auto err = fn( M_solution );
     std::vector<bool> checkSucces;
     pt::ptree pt;
@@ -201,6 +202,7 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
         {
             cout << tc::red
                  << "Checker convergence order verification failed for " << metric << e.first << std::endl
+                 << " Solution " << M_solution << std::endl	
                  << " Computed order " << ex.computedOrder() << std::endl
                  << " Expected order " << ex.expectedOrder() << std::endl
                  << " Tolerance " << ex.tolerance()  << tc::reset << std::endl;
@@ -209,12 +211,14 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
         {
             cout << tc::red
                  << "Checker exact verification failed for " << metric << e.first << std::endl
+                 << " Solution " << M_solution << std::endl	
                  << " Computed error " << ex.computedError() << std::endl
                  << " Tolerance " << ex.tolerance()  << tc::reset << std::endl;
         }
         catch( std::exception const& ex )
         {
-            cout << tc::red << "Caught exception " << ex.what() << tc::reset << std::endl;
+            cout << tc::red << "Checker Caught exception " << ex.what() << tc::reset << std::endl
+                 << " Solution " << M_solution << std::endl;
         }
     }
     this->putInformationObject( pt );
