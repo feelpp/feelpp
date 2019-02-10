@@ -560,6 +560,10 @@ public:
     {
         return permutation_type();
     }
+    permutation_type permutation( uint16_type i, mpl::int_<1> ) const
+        {
+            return permutation_type();
+        }
     double h() const
     {
         // FIXME: should be computed once for all in constructor

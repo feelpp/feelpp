@@ -142,6 +142,8 @@ public :
             Context c( ctx );
             if ( c.test( EXTRACTION_KEEP_MESH_RELATION ) )
                 m->setSubMeshData( this->subMeshData() );
+            if ( c.test( EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT ) )
+                 m->removeMarkerNameWithoutEntity();
             return m;
         }
 

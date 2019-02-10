@@ -21,7 +21,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     const vector_ptrtype& X = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
     bool BuildCstPart = data.buildCstPart();
     bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
@@ -55,6 +54,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     double gamma=0.5+alpha_m-alpha_f;
     double beta=0.25*(1+alpha_m-alpha_f)*(1+alpha_m-alpha_f);
 #endif
+
+    double timeSteppingScaling = 1.;
+    if ( !this->isStationary() && M_timeStepping == "Theta" )
+        timeSteppingScaling = M_timeStepThetaValue;
     //--------------------------------------------------------------------------------------------------//
 
     auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
@@ -88,7 +91,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                     integrate (_range=M_rangeMeshElements,
                                //_expr= trace( (dF*val(Sv) + val(Fv)*dS)*trans(grad(v)) ),
                                //_expr=Feel::vf::FSI::stressStVenantKirchhoffJacobian(u,coeffLame1,coeffLame2), //le dernier
-                               _expr= inner( dFS_neohookean, grad(v) ),
+                               _expr= timeSteppingScaling*inner( dFS_neohookean, grad(v) ),
                                _geomap=this->geomap() );
             }
         }
@@ -100,7 +103,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                 bilinearForm_PatternCoupled +=
                     integrate (_range=M_rangeMeshElements,
                                //_expr= trace(idv(coeffLame2)*dF*trans(grad(v)) ),
-                               _expr= inner( dFS_neohookean, grad(v) ),
+                               _expr= timeSteppingScaling*inner( dFS_neohookean, grad(v) ),
                                _quad=_Q<2*nOrderDisplacement+1>(),
                                _geomap=this->geomap() );
             }
@@ -124,7 +127,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         if (!BuildCstPart)
             bilinearForm_PatternCoupled +=
                 integrate (_range=M_rangeMeshElements,
-                           _expr= inner( dS, grad(v) ),
+                           _expr= timeSteppingScaling*inner( dS, grad(v) ),
                            _geomap=this->geomap() );
     }
     else if (M_pdeType=="Elasticity")
@@ -132,7 +135,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         if (BuildCstPart)
             bilinearForm_PatternCoupled +=
                 integrate (_range=M_rangeMeshElements,
-                           _expr= inner( dS_elastic, grad(v) ),
+                           _expr= timeSteppingScaling*inner( dS_elastic, grad(v) ),
                            _geomap=this->geomap() );
     }
 
@@ -207,7 +210,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                        _rowstart=rowStartInMatrix+startBlockIndexVelocity,
                        _colstart=colStartInMatrix+startBlockIndexVelocity ) +=
                     integrate( _range=M_rangeMeshElements,
-                               _expr= -idv(rho)*inner(idt(u),id(v)),
+                               _expr= -timeSteppingScaling*idv(rho)*inner(idt(u),id(v)),
                                _geomap=this->geomap() );
             }
         } // BDF
@@ -232,22 +235,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     // follower pressure bc
     if ( !BuildCstPart )
     {
-        this->updateBCFollowerPressureJacobian(u,J);
+        this->updateBCFollowerPressureJacobian( u, J, timeSteppingScaling );
     }
     //--------------------------------------------------------------------------------------------------//
-    // robin boundary condition (used in wavePressure3d as external tissue for arterial wall)
-    if ( this->markerRobinBC().size() > 0 && !BuildCstPart )
+    // robin bc
+    if ( !BuildCstPart )
     {
-        this->updateBCRobinJacobian( J );
+        this->updateBCRobinJacobian( J, timeSteppingScaling );
     }
-    //--------------------------------------------------------------------------------------------------//
-    //--------------------------------------------------------------------------------------------------//
-    // strong Dirichlet bc
-    if ( this->hasMarkerDirichletBCelimination() && !BuildCstPart && _doBCStrongDirichlet)
-    {
-        this->updateBCDirichletStrongJacobian( J, RBis );
-    }
-
     //--------------------------------------------------------------------------------------------------//
 
     double timeElapsed = this->timerTool("Solve").stop();
@@ -396,9 +391,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianViscoElasticityTerms( element_
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J, vector_ptrtype& RBis ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
 {
-    if ( !this->hasDirichletBC() ) return;
+    if ( !this->hasMarkerDirichletBCelimination() ) return;
+
+    sparse_matrix_ptrtype& J = data.jacobian();
+    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
 
     //auto RBis = this->backend()->newVector( J->mapRowPtr() );
     auto bilinearForm_PatternCoupled = form2( _test=this->functionSpace(),_trial=this->functionSpace(),_matrix=J,
@@ -459,7 +457,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matr
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinJacobian( sparse_matrix_ptrtype& J) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinJacobian( sparse_matrix_ptrtype& J, double timeSteppingScaling ) const
 {
     if ( this->M_bcRobin.empty() ) return;
 
@@ -473,14 +471,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinJacobian( sparse_matrix_ptrtype
     for( auto const& d : this->M_bcRobin )
         bilinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)/*this->markerRobinBC()*/),
-                       _expr= expression1(d)(0,0)*inner( idt(u) ,id(u) ),
+                       _expr= timeSteppingScaling*expression1(d)(0,0)*inner( idt(u) ,id(u) ),
                        _geomap=this->geomap() );
 
 }
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureJacobian( element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureJacobian( element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J, double timeSteppingScaling ) const
 {
     if ( this->M_bcNeumannEulerianFrameScalar.empty() && this->M_bcNeumannEulerianFrameVectorial.empty() && this->M_bcNeumannEulerianFrameTensor2.empty() ) return;
 
@@ -493,21 +491,21 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureJacobian( element_di
     {
         bilinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)) ,
-                       _expr= -expression(d)*inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*N(),id(u) ),
+                       _expr= -timeSteppingScaling*expression(d)*inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*N(),id(u) ),
                        _geomap=this->geomap() );
     }
     for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
     {
         bilinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)) ,
-                       _expr= -inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d),id(u) ),
+                       _expr= -timeSteppingScaling*inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d),id(u) ),
                        _geomap=this->geomap() );
     }
     for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
     {
         bilinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)) ,
-                       _expr= -inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d)*N(),id(u) ),
+                       _expr= -timeSteppingScaling*inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d)*N(),id(u) ),
                        _geomap=this->geomap() );
     }
 }

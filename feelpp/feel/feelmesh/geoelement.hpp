@@ -1011,6 +1011,10 @@ public:
         //FEELPP_ASSERT( i < numLocalVertices )( i )( numLocalVertices ).error( "invalid local vertex index" );
         //return M_vertex_permutation[i];
     }
+    vertex_permutation_type permutation( uint16_type, mpl::int_<1> ) const
+    {
+        return vertex_permutation_type();
+    }
 
 private:
 
@@ -1314,6 +1318,15 @@ public:
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges << " in element id " << this->id();
         return M_edge_permutation[i];
+    }
+
+    edge_permutation_type permutation( uint16_type i, mpl::int_<1> ) const
+    {
+        return this->edgePermutation( i );
+    }
+    vertex_permutation_type permutation( uint16_type, mpl::int_<2> ) const
+    {
+        return vertex_permutation_type();
     }
 
     /**
@@ -1679,6 +1692,18 @@ public:
         FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
         FEELPP_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid face (null pointer)" );
         return M_face_permutation[i];
+    }
+    face_permutation_type permutation( uint16_type i, mpl::int_<1> ) const
+    {
+        return this->facePermutation( i );
+    }
+    edge_permutation_type permutation( uint16_type i, mpl::int_<2> ) const
+    {
+        return this->edgePermutation( i );
+    }
+    vertex_permutation_type permutation( uint16_type, mpl::int_<3> ) const
+    {
+        return vertex_permutation_type();
     }
 
     /**
