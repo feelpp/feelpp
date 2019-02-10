@@ -77,11 +77,11 @@ int hdg_laplacian()
 
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
-
+    
     auto K = expr(soption("k"));
     auto lambda = cst(1.)/K;
     
-#if defined(FEELPP_HAS_SYMPY )
+#if defined(FEELPP_HAS_SYMPY_1 )
 
     std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}};
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals );
@@ -121,7 +121,10 @@ int hdg_laplacian()
     auto Xh = Pdh<0>(face_mesh);
     auto uf = Xh->element(cst(1.));
     auto cgXh = Pch<OrderP>(mesh);
-    
+
+    cout << "Exact potential if applicable: " << p_exact_str << "\n"
+         << "Exact flux if applicable: " << u_exact_str << "\n";
+
     cout << "#elts: " << mesh->numGlobalElements() << std::endl
          << "#faces: " << mesh->numGlobalFaces() << std::endl
          << "#facesMh: " << face_mesh->numGlobalElements() << std::endl
@@ -201,7 +204,7 @@ int hdg_laplacian()
                           _expr=id(l)*un_exact );
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                           _expr=id(l)*p_exact);
-
+    
     toc("rhs",true);
     tic();
     //
@@ -392,9 +395,9 @@ int hdg_laplacian()
     int status = checker().runOnce( {norms_p,norms_u},
                                     { rate::hp( mesh->hMax(), Vh->fe()->order() ), rate::hp( mesh->hMax(), Vh->fe()->order() ) } );
 #else
-    int status1 = checker(p_exact_str).runOnce( norms_p, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-    int status2 = checker(u_exact_str).runOnce( norms_u, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-    int status3 = checker(p_exact_str).runOnce( norms_ppp, rate::hp( mesh->hMax(), Vh->fe()->order()+1 ) );
+    int status1 = checker("L2 Convergence potential",p_exact_str).runOnce( norms_p, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
+    int status2 = checker("L2 Convergence flux",u_exact_str).runOnce( norms_u, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
+    int status3 = checker("L2 Convergence post-processed potential",p_exact_str).runOnce( norms_ppp, rate::hp( mesh->hMax(), Vh->fe()->order()+1 ) );
 #endif
 
     
