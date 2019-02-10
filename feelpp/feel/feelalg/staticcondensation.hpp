@@ -911,8 +911,8 @@ struct Condenser
                         AinvB.emplace( K, _AinvB );
                         AinvF.emplace( K, _AinvF );
 
-                        S.addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
-                        V.addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
+                        S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
+                        V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
                     }
                 }
                 return;
@@ -1093,8 +1093,8 @@ StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& r
             tic();
             auto dofs = e3.dofs(dK.first->second.faces1());
 
-            S.addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
-            V.addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
+            S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
+            V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
             toc("sc.condense.globalassembly", FLAGS_v>0);
         } // else
         toc("sc.condense.sequential", FLAGS_v>0);
@@ -1669,7 +1669,7 @@ StaticCondensation<T>::localSolve( std::shared_ptr<StaticCondensation<T>> const&
 #endif        
     {
         tic();
-        Eigen::VectorXd pK( N );
+        Eigen::VectorXd pK( N ), zK{Eigen::VectorXd::Zero(N)};
 
         
         for( auto const& elt : A00K )
@@ -1678,9 +1678,14 @@ StaticCondensation<T>::localSolve( std::shared_ptr<StaticCondensation<T>> const&
             size_type K = key.first;
             
             auto const& A = elt.second;
-            auto const& F = F0K.at( K );
-            pK = A.ldlt().solve(F);
-            e1.assignE( K, pK );
+            if ( F0K.count(K) )
+            {
+                auto const& F = F0K.at( K );
+                pK = A.ldlt().solve(F);
+                e1.assignE( K, pK );
+            }
+            else
+                e1.assignE( K, zK );
         }
         toc("local.localsolve.sequential",FLAGS_v>0);
     }

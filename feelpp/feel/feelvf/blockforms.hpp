@@ -333,7 +333,8 @@ public :
             auto sc = M_matrix->sc();
             tic();
             cout << " . starting local Solve" << std::endl;
-            sc->localSolve ( rhs.vectorPtr()->sc(), solution);
+            auto vsc = rhs.vectorPtr()->sc();
+            sc->localSolve ( vsc, solution);
             cout << " . local Solve done" << std::endl;
             toc("blockform.local.localsolve",FLAGS_v>0);
             typename Backend<double>::solve_return_type r;
@@ -397,7 +398,7 @@ public :
                        bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,3>,
                        std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
         {
-#if 0
+#if 1
             auto& e3 = solution(2_c);
             auto& e2 = solution(1_c);
             auto& e1 = solution(0_c);
@@ -417,13 +418,15 @@ public :
             cout << " . Condensation done" << std::endl;
             tic();
             cout << " . starting Solve" << std::endl;
+            auto U = psS.element();
 
-            auto r = backend(_name=prefixvm(name,"sc"),_rebuild=rebuild)->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
-
+            auto r = S.solve( _solution=U, _rhs=V, _name=prefixvm(name,"sc"),_rebuild=rebuild );//, _condense=true );
+            //auto r = backend(_name=prefixvm(name,"sc"),_rebuild=rebuild)->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
+            solution(2_c)=U(0_c);
             cout << " . Solve done" << std::endl;
             toc("blockform.sc.solve", FLAGS_v>0);
 
-#if 0
+#if 1
             S.matrixPtr()->printMatlab("S.m");
             V.vectorPtr()->printMatlab("g.m");
             e3.printMatlab("phat1.m");
@@ -722,7 +725,7 @@ public :
         }
     product_space_t functionSpace() const { return M_ps; }
 
-    condensed_vector_ptrtype vectorPtr() const { return M_vector; }
+    condensed_vector_ptrtype const& vectorPtr() const { return M_vector; }
     condensed_vector_ptrtype vectorPtr() { return M_vector; }
 
     /**
