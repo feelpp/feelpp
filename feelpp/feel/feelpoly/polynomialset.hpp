@@ -1359,7 +1359,7 @@ public:
         return __geopc;
     }
 
-    template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g = context_v>
+    template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g = context_v, int SubEntityCoDim = 1>
     class Context
     {
     public:
@@ -1405,7 +1405,7 @@ public:
         typedef typename reference_element_type::value_type value_type;
 
         typedef ElementType geometric_element_type;
-        typedef typename Geo_t::template Context<context_g, ElementType> geometric_mapping_context_type;
+        typedef typename Geo_t::template Context<context_g, ElementType,SubEntityCoDim> geometric_mapping_context_type;
         typedef std::shared_ptr<geometric_mapping_context_type> geometric_mapping_context_ptrtype;
 
         typedef typename node<value_type>::type node_type;

@@ -248,6 +248,20 @@ namespace FeelModels
         M_addFunctionResidualPostAssembly[ keyUsed ] = func;
     }
 
+
+    void
+    ModelAlgebraicFactory::addVectorLinearRhsAssembly( vector_ptrtype const& vec, double scaling, std::string const& key, bool cstPart )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addVectorLinearRhsAssembly.size()).str() : key;
+        M_addVectorLinearRhsAssembly[ keyUsed ] = std::make_tuple( vec, scaling, cstPart );
+    }
+    void
+    ModelAlgebraicFactory::addVectorResidualAssembly( vector_ptrtype const& vec, double scaling, std::string const& key, bool cstPart )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addVectorResidualAssembly.size()).str() : key;
+        M_addVectorResidualAssembly[ keyUsed ] = std::make_tuple( vec, scaling, cstPart );
+    }
+
     //---------------------------------------------------------------------------------------------------------------//
     //---------------------------------------------------------------------------------------------------------------//
     //---------------------------------------------------------------------------------------------------------------//
@@ -394,6 +408,10 @@ namespace FeelModels
             this->model()->updateLinearPDE( dataLinearCst );
             for ( auto const& func : M_addFunctionLinearAssembly )
                 func.second( dataLinearCst );
+            M_CstR->close();
+            for ( auto const& av : M_addVectorLinearRhsAssembly )
+                if ( std::get<2>( av.second ) )
+                    M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
             M_hasBuildLinearSystemCst = true;
         }
         else if ( this->model()->rebuildCstPartInLinearSystem() || this->model()->needToRebuildCstPart() ||
@@ -406,6 +424,10 @@ namespace FeelModels
             this->model()->updateLinearPDE( dataLinearCst );
             for ( auto const& func : M_addFunctionLinearAssembly )
                 func.second( dataLinearCst );
+            M_CstR->close();
+            for ( auto const& av : M_addVectorLinearRhsAssembly )
+                if ( std::get<2>( av.second ) )
+                    M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
         }
         this->model()->setNeedToRebuildCstPart(false);
 
@@ -431,6 +453,12 @@ namespace FeelModels
         for ( auto const& func : M_addFunctionLinearAssembly )
             func.second( dataLinearNonCst );
         this->model()->updateLinearPDE( dataLinearNonCst );
+
+        M_R->close();
+        // add maybe vector to rhs
+        for ( auto const& av : M_addVectorLinearRhsAssembly )
+            if ( !std::get<2>( av.second ) )
+                M_R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
 
         // dof elimination
         this->model()->updateLinearPDEDofElimination( dataLinearNonCst );
@@ -561,6 +589,10 @@ namespace FeelModels
             model->updateResidual( dataResidualCst );
             for ( auto const& func : M_addFunctionResidualAssembly )
                 func.second( dataResidualCst );
+            R->close();
+            for ( auto const& av : M_addVectorResidualAssembly )
+                if ( std::get<2>( av.second ) )
+                    R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
         }
 
         bool doOptimization = this->model()->useLinearJacobianInResidual() && this->model()->useCstMatrix();
@@ -574,8 +606,13 @@ namespace FeelModels
             func.second( dataResidualNonCst );
         model->updateResidual( dataResidualNonCst );
 
-        // dof elimination
         R->close();
+
+        for ( auto const& av : M_addVectorResidualAssembly )
+            if ( !std::get<2>( av.second ) )
+                R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
+
+        // dof elimination
         model->updateResidualDofElimination( dataResidualNonCst );
 
         for ( auto const& func : M_addFunctionResidualPostAssembly )
@@ -646,6 +683,9 @@ namespace FeelModels
                 for ( auto const& func : M_addFunctionResidualAssembly )
                     func.second( dataResidualCst );
                 M_CstR->close();
+                for ( auto const& av : M_addVectorResidualAssembly )
+                    if ( std::get<2>( av.second ) )
+                        M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
                 M_hasBuildResidualCst = true;
             }
             else if (model->rebuildCstPartInResidual() || model->needToRebuildCstPart() ) // first if is not an option (just optimisation with fsi semi-implicit)
@@ -657,6 +697,9 @@ namespace FeelModels
                 for ( auto const& func : M_addFunctionResidualAssembly )
                     func.second( dataResidualCst );
                 M_CstR->close();
+                for ( auto const& av : M_addVectorResidualAssembly )
+                    if ( std::get<2>( av.second ) )
+                        M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
             }
         }
         model->setNeedToRebuildCstPart(false);

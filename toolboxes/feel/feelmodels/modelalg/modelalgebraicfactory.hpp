@@ -194,6 +194,9 @@ namespace FeelModels
         void addFunctionJacobianPostAssembly( function_assembly_jacobian_type const& func, std::string const& key = "" );
         void addFunctionResidualPostAssembly( function_assembly_residual_type const& func, std::string const& key = "" );
 
+        void addVectorLinearRhsAssembly( vector_ptrtype const& vec, double scaling = 1.0, std::string const& key = "", bool cstPart = false );
+        void addVectorResidualAssembly( vector_ptrtype const& vec, double scaling = 1.0, std::string const& key = "", bool cstPart = false );
+
     private :
 
         void
@@ -232,6 +235,9 @@ namespace FeelModels
         std::map<std::string,function_assembly_residual_type> M_addFunctionResidualAssembly;
         std::map<std::string,function_assembly_jacobian_type> M_addFunctionJacobianPostAssembly;
         std::map<std::string,function_assembly_residual_type> M_addFunctionResidualPostAssembly;
+
+        std::map<std::string, std::tuple<vector_ptrtype,double,bool>> M_addVectorLinearRhsAssembly;
+        std::map<std::string, std::tuple<vector_ptrtype,double,bool>> M_addVectorResidualAssembly;
     };
 
 

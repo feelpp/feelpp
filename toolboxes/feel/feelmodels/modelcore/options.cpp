@@ -225,7 +225,10 @@ solidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"formulation").c_str(), Feel::po::value<std::string>()->default_value( "displacement" ), "displacement,displacement-pressure")
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "struct solver")
         (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("Newmark"), "time integration schema : Newmark, Generalized-Alpha")
-        (prefixvm(prefix,"time-rho").c_str(), Feel::po::value< double >()->default_value(0.8), " Generalized-Alpha parameter")
+        (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+
+        //(prefixvm(prefix,"time-rho").c_str(), Feel::po::value< double >()->default_value(0.8), " Generalized-Alpha parameter")
+
         (prefixvm(prefix,"time-initial.displacement.files.directory").c_str(), Feel::po::value<std::string>(), "initial displacemen")
         (prefixvm(prefix,"time-initial.displacement.files.format").c_str(), Feel::po::value<std::string>()->default_value( "hdf5" ), "intial displacement file format")
 
@@ -235,14 +238,6 @@ solidMechanics_options(std::string const& prefix)
 
         (prefixvm(prefix,"hovisu").c_str(), Feel::po::value<bool>(), "true or false for high order visualisation")
         (prefixvm(prefix,"hovisu.space-used").c_str(), Feel::po::value<std::string>()->default_value( "displacement" ), "displacement, pressure, p1 ")
-        (prefixvm(prefix,"do_export_displacement").c_str(), Feel::po::value<bool>(), "doExportDisplacement")
-        (prefixvm(prefix,"do_export_velocity").c_str(), Feel::po::value<bool>(), "doExportVelocity")
-        (prefixvm(prefix,"do_export_acceleration").c_str(), Feel::po::value<bool>(), "doExportAcceleration")
-        (prefixvm(prefix,"do_export_normalstress").c_str(), Feel::po::value<bool>(), "doExportNormalStress")
-        (prefixvm(prefix,"do_export_pressure").c_str(), Feel::po::value<bool>(), "doExportPressure")
-        (prefixvm(prefix,"do_export_material_properties").c_str(), Feel::po::value<bool>(), "doExportMaterialsProp")
-        (prefixvm(prefix,"do_export_velocityinterfacefromfluid").c_str(), Feel::po::value<bool>(), "doExportVelocityInterfaceFromFluid")
-        (prefixvm(prefix,"do_export_all").c_str(), Feel::po::value<bool>(), "doExportAll")
 
         (prefixvm(prefix,"use-null-space").c_str(), Feel::po::value<bool>()->default_value( false ), "use-null-space")
         (prefixvm(prefix,"use-near-null-space").c_str(), Feel::po::value<bool>()->default_value( true ), "use-near-null-space")

@@ -656,7 +656,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
                                         _range=elements(M_XhScalarVisuHO->mesh()),
                                         _backend=M_backend,
                                         _type=InterpolationNonConforme(false,true,false,15) );
-
+#if 0
         if ( this->hasPostProcessFieldExported( "normal-stress" ) ||
              this->hasPostProcessFieldExported( "wall-shear-stress" ) )
         {
@@ -671,7 +671,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
                                           _backend=M_backend,
                                           _type=InterpolationNonConforme(false,true,false,15) );
         }
-
+#endif
         this->log("FluidMechanics","createPostProcessExporters", "step2 done" );
 
         if (M_isMoveDomain )
@@ -716,15 +716,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesNormalStress()
     if ( M_XhNormalBoundaryStress ) return;
 
     if ( M_materialProperties->isDefinedOnWholeMesh() )
-        M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+    {
+        auto submesh = createSubmesh(M_mesh,boundaryfaces(M_mesh));
+        M_XhNormalBoundaryStress = space_normalstress_type::New( _mesh=submesh );
+        //M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _range=boundaryelements(M_mesh) );
+    }
     else
-        M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(), _range=M_rangeMeshElements );
-    M_fieldNormalStress.reset(new element_stress_type(M_XhNormalBoundaryStress));
-    M_fieldNormalStressRefMesh.reset(new element_stress_type(M_XhNormalBoundaryStress));
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    M_normalStressFromStruct.reset(new element_stress_type(M_XhNormalBoundaryStress));
-#endif
-    M_fieldWallShearStress.reset(new element_stress_type(M_XhNormalBoundaryStress));
+    {
+        this->functionSpaceVelocity()->dof()->meshSupport()->updateBoundaryInternalFaces();
+        auto submesh = createSubmesh(M_mesh,this->functionSpaceVelocity()->dof()->meshSupport()->rangeBoundaryFaces()); // not very nice, need to store the meshsupport
+        M_XhNormalBoundaryStress = space_normalstress_type::New( _mesh=submesh );
+        //M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _range=M_rangeMeshElements );// TODO define boundaryelements in MeshSupport // intersect(boundaryelements(M_mesh),M_rangeMeshElements) );
+    }
+    M_fieldNormalStress.reset(new element_normalstress_type(M_XhNormalBoundaryStress));
+    M_fieldNormalStressRefMesh.reset(new element_normalstress_type(M_XhNormalBoundaryStress));
+    //#if defined( FEELPP_MODELS_HAS_MESHALE )
+    //M_normalStressFromStruct.reset(new element_stress_type(M_XhNormalBoundaryStress));
+    //#endif
+    M_fieldWallShearStress.reset(new element_normalstress_type(M_XhNormalBoundaryStress));
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -1019,9 +1028,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                 M_fluidOutletWindkesselMeshMover.apply( M_fluidOutletWindkesselMesh, *M_fluidOutletWindkesselMeshDisp );
             }
         }
-
-        // space usefull to tranfert sigma*N()
-        this->createFunctionSpacesNormalStress();
 
         this->log("FluidMechanics","init", "meshALE done" );
 #endif
@@ -1430,10 +1436,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::stri
             res.insert( "pressure" );
         if ( o == prefixvm(prefix,"vorticity") || o == prefixvm(prefix,"all") )
             res.insert( "vorticity" );
+#if 0
         if ( o == prefixvm(prefix,"normal-stress") || o == prefixvm(prefix,"all") )
             res.insert( "normal-stress" );
         if ( o == prefixvm(prefix,"wall-shear-stress") || o == prefixvm(prefix,"all") )
             res.insert( "wall-shear-stress" );
+#endif
         if ( o == prefixvm(prefix,"density") || o == prefixvm(prefix,"all") )
             res.insert( "density" );
         if ( o == prefixvm(prefix,"viscosity") || o == prefixvm(prefix,"all") )
