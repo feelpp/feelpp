@@ -468,6 +468,30 @@ void serialize( Archive & ar,
 
 
 //
+// Eigen::TensorFixedSize
+//
+template<typename T, int M, int N, typename Archive>
+void save( Archive & ar,
+           const Eigen::TensorFixedSize<T,Eigen::Sizes<M,N>> & t,
+           const unsigned int file_version )
+{
+    int m = t.dimension(0);
+    int n = t.dimension(1);
+    ar << BOOST_SERIALIZATION_NVP( m );
+    ar << BOOST_SERIALIZATION_NVP( n );
+    ar << boost::serialization::make_array( t.data(),
+                                            t.size() );
+}
+template<typename T, int M,  int N, class Archive>
+void serialize( Archive & ar,
+                Eigen::TensorFixedSize<T,Eigen::Sizes<M,N>>& t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
+
+
+//
 // boost::tuple<T1,T2>
 //
 
