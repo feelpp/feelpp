@@ -37,7 +37,6 @@ public:
     TimerTool( TimerTool const& e ) = default;
     ~TimerTool() = default;
     //TimerTool( TimerTool && e ) = default;
-    virtual ~TimerTool() = default;
     bool isActive() { return true; }
 
     void setReinitSaveFile( bool b );
