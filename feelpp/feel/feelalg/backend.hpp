@@ -200,6 +200,7 @@ public:
 
     using pre_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
     using post_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
+    using update_nlsolve_type = std::function<void(int,vector_ptrtype,vector_ptrtype)>;
     //@}
 
     /** @name Constructors, destructor
@@ -1223,6 +1224,7 @@ public:
                                        ( transpose,( bool ), false )
                                        ( pre, (pre_solve_type), pre_solve_type() )
                                        ( post, (post_solve_type), post_solve_type() )
+                                       ( update, (update_nlsolve_type), update_nlsolve_type() )
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
@@ -1307,6 +1309,7 @@ public:
         }
         this->nlSolver()->setPreSolve( pre );
         this->nlSolver()->setPostSolve( post );
+        this->nlSolver()->setUpdateIteration( update );
 
         //if ( reuse_prec == false && reuse_jac == false )
         //    ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );

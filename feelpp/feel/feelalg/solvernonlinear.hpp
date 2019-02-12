@@ -118,6 +118,7 @@ public:
 
     using pre_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
     using post_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
+    using update_iteration_type = std::function<void(int,vector_ptrtype,vector_ptrtype)>;
 
     class NLSolveData : public boost::tuple<bool,size_type,value_type>
     {
@@ -448,12 +449,27 @@ public:
      * set the post solve function
      */
     void setPostSolve( post_solve_type post ) { M_post_solve = post; }
-    
+
     /**
      * call the post solve function with \p x as the rhs and \p y as the solution
      */
     void postSolve(vector_ptrtype x, vector_ptrtype y) { return M_post_solve(x,y); }
-    
+
+    /**
+     * set the update function
+     */
+    void setUpdateIteration( update_iteration_type up ) { M_update_it = up; }
+
+    /**
+     * call the update function with \p step the iteration number, \p x as the residual and \p y as the solution
+     */
+    void updateIteration( int step, vector_ptrtype x, vector_ptrtype y ) { return M_update_it( step,x,y ); }
+
+    /**
+     * \return updateIteration function
+     */
+    update_iteration_type updateIteration() { return M_update_it; }
+
     //@}
 
 
@@ -698,6 +714,11 @@ protected:
      * post solve function
      */
     post_solve_type M_post_solve;
+
+    /**
+     * update function
+     */
+    update_iteration_type M_update_it;
 
 };
 
