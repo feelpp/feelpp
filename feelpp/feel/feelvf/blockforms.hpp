@@ -426,7 +426,7 @@ public :
             cout << " . Solve done" << std::endl;
             toc("blockform.sc.solve", FLAGS_v>0);
 
-#if 1
+#if 0
             S.matrixPtr()->printMatlab("S.m");
             V.vectorPtr()->printMatlab("g.m");
             e3.printMatlab("phat1.m");
