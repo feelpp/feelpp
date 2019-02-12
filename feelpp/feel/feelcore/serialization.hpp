@@ -482,6 +482,20 @@ void save( Archive & ar,
     ar << boost::serialization::make_array( t.data(),
                                             t.size() );
 }
+template<typename T, int M, int N, typename Archive>
+void load( Archive & ar,
+           Eigen::TensorFixedSize<T,Eigen::Sizes<M,N>> & t,
+           const unsigned int file_version )
+{
+    int m;
+    int n;
+    ar >> BOOST_SERIALIZATION_NVP( m );
+    ar >> BOOST_SERIALIZATION_NVP( n );
+    DCHECK( m == t.dimension(0) ) << "invalid nulmber of rows: " << m << " should be " << t.dimension(0);
+    DCHECK( n == t.dimension(1) ) << "invalid nulmber of cols: " << n << " should be " << t.dimension(1);
+    ar >> boost::serialization::make_array( t.data(),
+                                            t.size() );
+}
 template<typename T, int M,  int N, class Archive>
 void serialize( Archive & ar,
                 Eigen::TensorFixedSize<T,Eigen::Sizes<M,N>>& t,
