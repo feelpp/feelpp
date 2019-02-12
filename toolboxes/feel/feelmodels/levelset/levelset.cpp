@@ -98,7 +98,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
 
     this->updateTime( M_advectionToolbox->currentTime() );
     if (this->doRestart())
+    {
         this->setTimeInitial( M_advectionToolbox->timeInitial() );
+        this->restartPostProcess();
+    }
 
     // Init iterSinceReinit
     if( this->doRestart() )
@@ -180,38 +183,25 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initInitialValues()
     this->log("LevelSet", "initInitialValues", "finish");
 }
 
-//LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-//void
-//LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
-//{
-    //if (this->doRestart() && this->restartPath().empty() )
-    //{
-        //if ( M_exporter->doExport() ) M_exporter->restart(this->timeInitial());
-    //}
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::restartPostProcess()
+{
+    if ( this->restartPath().empty() )
+    {
+        if ( M_exporter->doExport() ) this->exporter()->restart( this->timeInitial() );
+    }
 
-    //this->modelProperties().parameters().updateParameterValues();
-    //auto paramValues = this->modelProperties().parameters().toParameterValues();
-    //this->modelProperties().postProcess().setParameterValues( paramValues );
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    //// Measures
-    //if ( !this->isStationary() )
-    //{
-        //if ( this->doRestart() )
-            //this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        //else
-            //this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
-    //}
-
-    ////// User-defined fields
-    ////if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
-    ////{
-        ////for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
-        ////{
-            ////if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
-                ////M_postProcessUserFieldExported.insert( o );
-        ////}
-    ////}
-//}
+    // Measures
+    if ( !this->isStationary() )
+    {
+        this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+    }
+}
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
