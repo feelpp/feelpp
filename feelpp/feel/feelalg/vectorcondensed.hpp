@@ -126,7 +126,7 @@ public:
             }
             else
                 super::addVector( rows, nrows, data, K, K2 );
-            toc("Vector::addVector",FLAGS_v>0);
+            toc("Vector::addVector",FLAGS_v>2);
         }
 
     sc_ptrtype sc() { getFuture();return M_sc; }

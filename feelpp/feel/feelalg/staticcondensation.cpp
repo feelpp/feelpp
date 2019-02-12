@@ -30,12 +30,12 @@ namespace Feel {
 
 template<typename T>
 void StaticCondensation<T>::addLocalMatrix ( int* rows, int nrows,
-                                          int* cols, int ncols,
-                                          value_type* data,
+                                             int* cols, int ncols,
+                                             value_type* data,
                                              size_type K, size_type K2  )
 {
     std::lock_guard<std::mutex> guard(mutex_add_m);
-    tic();
+    //tic();
     if ( K == invalid_size_type_value ) return;
     if ( K2 == invalid_size_type_value ) return;
     auto key = std::make_pair(K,K2);
@@ -58,7 +58,7 @@ void StaticCondensation<T>::addLocalMatrix ( int* rows, int nrows,
     //LOG(INFO) << "ROWS=" << raw_index_map_t( rows, nrows );
     //LOG(INFO) << "COLS=" << raw_index_map_t( cols, ncols );
 #endif
-    toc("sc.addLocalMatrix",FLAGS_v>0);
+    //toc("sc.addLocalMatrix",FLAGS_v>0);
 }
 
 template<typename T>
@@ -67,7 +67,7 @@ void StaticCondensation<T>::addLocalVector ( int* rows, int nrows,
                                              size_type K, size_type K2  )
 {
     std::lock_guard<std::mutex> guard(mutex_add_v);
-    tic();
+    //tic();
     if ( K == invalid_size_type_value ) return;
     auto entry = this->M_local_vectors[this->M_block_row].find(K);
     if ( entry == this->M_local_vectors[this->M_block_row].end() )
@@ -85,7 +85,7 @@ void StaticCondensation<T>::addLocalVector ( int* rows, int nrows,
     // cout << "F add entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
     this->M_local_vrows[this->M_block_row][K] = raw_index_map_t( rows, nrows );
 #endif
-    toc("sc.addLocalVector",FLAGS_v>0);
+    //toc("sc.addLocalVector",FLAGS_v>0);
 }
 
 template class StaticCondensation<double>;

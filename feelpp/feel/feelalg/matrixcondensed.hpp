@@ -123,7 +123,7 @@ public:
                 M_sc->addLocalMatrix( rows, nrows, cols, ncols, data, K, K2 );
             else
                 super::addMatrix( rows, nrows, cols, ncols, data );
-            toc("addMatrix",FLAGS_v>0);
+            toc("addMatrix",FLAGS_v>2);
         }
     sc_ptrtype sc() { return M_sc; }
     sc_ptrtype const& sc() const { return M_sc; }
