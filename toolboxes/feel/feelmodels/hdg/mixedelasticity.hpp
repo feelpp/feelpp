@@ -27,9 +27,6 @@
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/projector.hpp>
 
-#include <feel/feelmodels/hdg/options.hpp>
-
-
 // #define USE_SAME_MATH 1
 
 namespace Feel {
@@ -93,13 +90,6 @@ makeMixedElasticityLibOptions( std::string prefix = "mixedelasticity" )
     return mpLibOptions;
 }
 
-//!
-//! MixedElasticity Toolbox class using HDG formulation
-//!
-//! @code
-//! 
-//! @endcode
-//!
 template<int Dim, int Order, int G_Order = 1, int E_Order = 4>
 class MixedElasticity    :	public ModelNumerical
 {
@@ -181,9 +171,6 @@ public:
     using product2_space_ptrtype = std::shared_ptr<product2_space_type>;
     using integral_boundary_list_type = std::vector<ExpressionStringAtMarker>;
 
-    using block_bilinear_type = BlockBilinearForm<product2_space_type>;
-    using block_linear_type = BlockLinearForm<product2_space_type>;
-
     typedef Exporter<mesh_type,G_Order> exporter_type;
     typedef std::shared_ptr <exporter_type> exporter_ptrtype;
 
@@ -204,9 +191,8 @@ protected:
 	product2_space_ptrtype M_ps;
 
     backend_ptrtype M_backend;
-	block_bilinear_type M_a;
-	block_linear_type M_rhs;
-
+    condensed_matrix_ptr_t<value_type> M_A_cst;
+    condensed_vector_ptr_t<value_type> M_F;
 
     Vh_element_t M_up; // stress solution
     Wh_element_t M_pp; // displacement solution
@@ -240,7 +226,7 @@ public:
     static self_ptrtype New( std::string const& prefix = "mixedelasticity",
                              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
-							 ModelBaseRepository const& modelRep = ModelBaseRepository() );
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
@@ -270,8 +256,7 @@ public:
     void setNullSpace(bool nullspace) { M_nullspace = nullspace; }
 
     backend_ptrtype get_backend() { return M_backend; }
-	block_bilinear_type get_a() { return M_a; }
-	block_linear_type get_rhs() { return M_rhs; }
+    condensed_vector_ptr_t<value_type> getF() {return M_F; }
     std::map<std::string, std::vector<double> > getTimers() {return M_timers; }
 
     // Exporter
@@ -300,7 +285,6 @@ public:
 
 	void assembleCst();
 	void assembleNonCst();
-	void assembleAll();
 
     void geometricTest();
 

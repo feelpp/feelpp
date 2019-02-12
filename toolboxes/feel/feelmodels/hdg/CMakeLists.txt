@@ -1,9 +1,9 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 25 Nov 2017
+#       Date: 05 Sep 2018
 #
-#  Copyright (C) 2017 Feel++ Consortium
+#  Copyright (C) 2018 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify

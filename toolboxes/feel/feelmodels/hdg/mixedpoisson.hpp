@@ -9,25 +9,24 @@
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
-#include <feel/feeldiscr/pch.hpp>
-#include <feel/feeldiscr/pchv.hpp>
-#include <feel/feeldiscr/pdh.hpp>
-#include <feel/feeldiscr/pdhv.hpp>
-#include <feel/feeldiscr/product.hpp>
-#include <feel/feeldiscr/stencil.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelts/bdf.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
-#include <feel/feelts/bdf.hpp>
+#include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
-#include <feel/feelvf/vf.hpp>
-
-#include <feel/feelmodels/hdg/options.hpp>
 
 #define USE_SAME_MAT 1
 
-namespace Feel
+namespace Feel {
+
+namespace FeelModels {
+
+inline
+po::options_description
+makeMixedPoissonOptions( std::string prefix = "mixedpoisson" )
 {
     po::options_description mpOptions( "Mixed Poisson HDG options");
     mpOptions.add_options()
@@ -44,16 +43,22 @@ namespace Feel
     return mpOptions;
 }
 
-namespace FeelModels
+inline po::options_description
+makeMixedPoissonLibOptions( std::string prefix = "mixedpoisson" )
 {
+    po::options_description mpLibOptions( "Mixed Poisson HDG Lib options");
+    // if ( !prefix.empty() )
+    //     mpLibOptions.add( backend_options( prefix ) );
+    return mpLibOptions;
+}
 
-template <int Dim, int Order, int G_Order = 1, int E_Order = 4>
-class MixedPoisson : public ModelNumerical
+template<int Dim, int Order, int G_Order = 1, int E_Order = 4>
+class MixedPoisson    : public ModelNumerical
 {
-  public:
+public:
     typedef ModelNumerical super_type;
 
-    static const uint16_type expr_order = Order + E_Order;
+    static const uint16_type expr_order = Order+E_Order;
     //! numerical type is double
     typedef double value_type;
     //! linear algebra backend factory
@@ -70,40 +75,40 @@ class MixedPoisson : public ModelNumerical
     using vector_ptrtype = backend_type::vector_ptrtype;
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order G_order
-    typedef Simplex<Dim, G_Order> convex_type;
+    typedef Simplex<Dim,G_Order> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // The Lagrange multiplier lives in R^n-1
-    typedef Simplex<Dim - 1, G_Order, Dim> face_convex_type;
+    typedef Simplex<Dim-1,G_Order,Dim> face_convex_type;
     typedef Mesh<face_convex_type> face_mesh_type;
     typedef std::shared_ptr<face_mesh_type> face_mesh_ptrtype;
 
     // Vh
-    using Vh_t = Pdhv_type<mesh_type, Order>;
-    using Vh_ptr_t = Pdhv_ptrtype<mesh_type, Order>;
+    using Vh_t = Pdhv_type<mesh_type,Order>;
+    using Vh_ptr_t = Pdhv_ptrtype<mesh_type,Order>;
     using Vh_element_t = typename Vh_t::element_type;
     using Vh_element_ptr_t = typename Vh_t::element_ptrtype;
     // Wh
-    using Wh_t = Pdh_type<mesh_type, Order>;
-    using Wh_ptr_t = Pdh_ptrtype<mesh_type, Order>;
+    using Wh_t = Pdh_type<mesh_type,Order>;
+    using Wh_ptr_t = Pdh_ptrtype<mesh_type,Order>;
     using Wh_element_t = typename Wh_t::element_type;
     using Wh_element_ptr_t = typename Wh_t::element_ptrtype;
     // Mh
-    using Mh_t = Pdh_type<face_mesh_type, Order>;
-    using Mh_ptr_t = Pdh_ptrtype<face_mesh_type, Order>;
+    using Mh_t = Pdh_type<face_mesh_type,Order>;
+    using Mh_ptr_t = Pdh_ptrtype<face_mesh_type,Order>;
     using Mh_element_t = typename Mh_t::element_type;
     using Mh_element_ptr_t = typename Mh_t::element_ptrtype;
     // Ch
-    using Ch_t = Pch_type<face_mesh_type, 0>;
-    using Ch_ptr_t = Pch_ptrtype<face_mesh_type, 0>;
+    using Ch_t = Pch_type<face_mesh_type,0>;
+    using Ch_ptr_t = Pch_ptrtype<face_mesh_type,0>;
     using Ch_element_t = typename Ch_t::element_type;
     using Ch_element_ptr_t = typename Ch_t::element_ptrtype;
     using Ch_element_vector_type = std::vector<Ch_element_t>;
     // M0h
-    using M0h_t = Pdh_type<face_mesh_type, 0>;
-    using M0h_ptr_t = Pdh_ptrtype<face_mesh_type, 0>;
+    using M0h_t = Pdh_type<face_mesh_type,0>;
+    using M0h_ptr_t = Pdh_ptrtype<face_mesh_type,0>;
     using M0h_element_t = typename M0h_t::element_type;
     using M0h_element_ptr_t = typename M0h_t::element_ptrtype;
 
@@ -127,7 +132,7 @@ class MixedPoisson : public ModelNumerical
     // typedef FunctionSpace<mesh_type, bases<basis_scalar_type>> space_mixedpoisson_type;
 
     // typedef Bdf<space_mixedpoisson_type>  bdf_type;
-    typedef Bdf<Wh_t> bdf_type;
+    typedef Bdf <Wh_t> bdf_type;
     // typedef Bdf<Pdh_type<mesh_type,Order>> bdf_type;
     typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
@@ -141,15 +146,16 @@ protected:
     Mh_ptr_t M_Mh; // potential trace
     Ch_ptr_t M_Ch; // Lagrange multiplier
     M0h_ptr_t M_M0h;
-    product2_space_type M_ps;
+    product2_space_ptrtype M_ps;
 
     backend_ptrtype M_backend;
-    block_bilinear_type M_a;
-    block_linear_type M_rhs;
+    condensed_matrix_ptr_t<value_type> M_A_cst;
+    condensed_matrix_ptr_t<value_type> M_A;
+    condensed_vector_ptr_t<value_type> M_F;
     vector_ptrtype M_U;
 
-    Vh_element_t M_up;            // flux solution
-    Wh_element_t M_pp;            // potential solution
+    Vh_element_t M_up; // flux solution
+    Wh_element_t M_pp; // potential solution
     Ch_element_vector_type M_mup; // potential solution on the integral boundary conditions
 
     // time discretization
@@ -169,18 +175,19 @@ protected:
 
     bool M_isPicard;
 
-  public:
+public:
+
     // constructor
     MixedPoisson( std::string const& prefix = "mixedpoisson",
                   worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                   std::string const& subPrefix = "",
-	              ModelBaseRepository const& modelRep = ModelBaseRepository() );
+                  ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     MixedPoisson( self_type const& MP ) = default;
     static self_ptrtype New( std::string const& prefix = "mixedpoisson",
                              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
-							 ModelBaseRepository const& modelRep = ModelBaseRepository() );
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
@@ -188,7 +195,7 @@ protected:
     Wh_ptr_t potentialSpace() const { return M_Wh; }
     Mh_ptr_t traceSpace() const { return M_Mh; }
     M0h_ptr_t traceSpaceOrder0() const { return M_M0h; }
-    Ch_ptr_t constantSpace() const { return M_Ch; }
+    Ch_ptr_t constantSpace() const {return M_Ch;}
 
     Vh_element_t fluxField() const { return M_up; }
     Wh_element_t potentialField() const { return M_pp; }
@@ -213,7 +220,7 @@ protected:
     void setUseSC(bool sc) { M_useSC = sc; }
 
     // time step scheme
-    virtual void createTimeDiscretization();
+    virtual void createTimeDiscretization() ;
     bdf_ptrtype timeStepBDF() { return M_bdf_mixedpoisson; }
     bdf_ptrtype const& timeStepBDF() const { return M_bdf_mixedpoisson; }
     std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
@@ -224,15 +231,15 @@ protected:
 
     // Exporter
     virtual void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr )
-    {
-        this->exportResults( this->currentTime(), mesh );
-        M_exporter->save();
-    }
-    void exportResults( double Time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr );
+        {
+            this->exportResults (this->currentTime(), mesh );
+            M_exporter -> save();
+        }
+    void exportResults ( double Time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  ) ;
     exporter_ptrtype M_exporter;
     exporter_ptrtype exporterMP() { return M_exporter; }
 
-    void init( mesh_ptrtype mesh = nullptr, mesh_ptrtype meshVisu = nullptr );
+    void init( mesh_ptrtype mesh = nullptr, mesh_ptrtype meshVisu = nullptr);
 
     virtual void initModel();
     virtual void initSpaces();
@@ -277,36 +284,45 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::updateConductivityTerm(Expr<ExprT> e
     auto p = M_Wh->element( "p" );
     auto w = M_Wh->element( "w" );
 
+#ifdef USE_SAME_MAT
+    auto bbf = blockform2( *M_ps, M_A_cst);
+#else
+    auto bbf = blockform2( *M_ps, M_A);
+#endif
+
     if ( marker.empty() )
-        a( 0_c, 0_c ) += integrate( _quad = _Q<expr_order>(), _range = elements( M_mesh ), _expr = inner( idt( u ), id( v ) ) / expr );
+        bbf(0_c,0_c) += integrate(_quad=_Q<expr_order>(),  _range=elements(M_mesh), _expr=inner(idt(u),id(v))/expr);
     else
-        a( 0_c, 0_c ) += integrate( _quad = _Q<expr_order>(), _range = markedelements( M_mesh, marker ), _expr = inner( idt( u ), id( v ) ) / expr );
+        bbf(0_c,0_c) += integrate(_quad=_Q<expr_order>(),  _range=markedelements(M_mesh, marker), _expr=inner(idt(u),id(v))/expr);
 
     // (1/delta_t p, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
         bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
                                      _expr = -(this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
     }
+
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
 template<typename ExprT>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleFluxRHS( Expr<ExprT> expr, std::string marker)
 {
+    auto blf = blockform1( *M_ps, M_F );
     auto v = M_Vh->element();
 
     if ( marker.empty() )
-        rhs( 0_c ) += integrate( _quad = _Q<expr_order>(), _range = elements( M_mesh ),
-                                   _expr = inner( expr, id( v ) ) );
+        blf(0_c) += integrate(_quad=_Q<expr_order>(),  _range=elements(M_mesh),
+                              _expr=inner(expr,id(v)) );
     else
-        rhs( 0_c ) += integrate( _quad = _Q<expr_order>(), _range = markedelements( M_mesh, marker ),
-                                   _expr = inner( expr, id( v ) ) );
+        blf(0_c) += integrate(_quad=_Q<expr_order>(),  _range=markedelements(M_mesh,marker),
+                              _expr=inner(expr,id(v)) );
 }
 
-template <int Dim, int Order, int G_Order, int E_Order>
-template <typename ExprT, typename T>
-void MixedPoisson<Dim, Order, G_Order, E_Order>::assemblePotentialRHS( BlockLinearForm<T> rhs, Expr<ExprT> expr, std::string marker )
+template<int Dim, int Order, int G_Order, int E_Order>
+template<typename ExprT>
+void MixedPoisson<Dim, Order, G_Order, E_Order>::assemblePotentialRHS( Expr<ExprT> expr, std::string marker)
 {
+    auto blf = blockform1( *M_ps, M_F );
     auto w = M_Wh->element();
 
     if ( marker.empty() )
@@ -326,16 +342,18 @@ template<typename ExprT>
 void
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsDirichlet( Expr<ExprT> expr, std::string marker)
 {
+    auto blf = blockform1( *M_ps, M_F );
     auto l = M_Mh->element( "lambda" );
 
     // <g_D, mu>_Gamma_D
-    rhs( 2_c ) += integrate( _quad = _Q<expr_order>(), _range = markedfaces( M_mesh, marker ),
-                               _expr = id( l ) * expr );
+    blf(2_c) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+                          _expr=id(l)*expr);
 }
 
-template <int Dim, int Order, int G_Order, int E_Order>
-template <typename ExprT, typename T>
-void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsNeumann( BlockLinearForm<T> rhs, Expr<ExprT> expr, std::string marker )
+template<int Dim, int Order, int G_Order, int E_Order>
+template<typename ExprT>
+void
+MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsNeumann( Expr<ExprT> expr, std::string marker)
 {
 
     auto blf = blockform1( *M_ps, M_F );
@@ -346,9 +364,10 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsNeumann( BlockLinear
                           _expr=id(l)*expr);
 }
 
-template <int Dim, int Order, int G_Order, int E_Order>
-template <typename ExprT, typename T>
-void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsInterfaceCondition( BlockLinearForm<T> rhs, Expr<ExprT> expr, std::string marker )
+template<int Dim, int Order, int G_Order, int E_Order>
+template<typename ExprT>
+void
+MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsInterfaceCondition( Expr<ExprT> expr, std::string marker)
 {
 
     auto blf = blockform1( *M_ps, M_F );
@@ -404,16 +423,29 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsInterfaceCondition( 
  }
  */
 
-template <int Dim, int Order, int G_Order, int E_Order>
-template <typename ExprT>
-void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT> expr1, std::string marker )
+template<int Dim, int Order, int G_Order, int E_Order>
+template<typename ExprT>
+void
+MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT> expr1, Expr<ExprT> expr2, std::string marker)
 {
+    auto bbf = blockform2( *M_ps, M_A_cst);
+
+    auto blf = blockform1( *M_ps, M_F );
     auto u = M_Vh->element( "u" );
     auto p = M_Wh->element( "p" );
     auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
+    auto H = M_M0h->element( "H" );
+    if ( ioption(prefixvm(prefix(), "hface") ) == 0 )
+        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
+    else if ( ioption(prefixvm(prefix(), "hface") ) == 1 )
+        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
+    else if ( ioption(prefixvm(prefix(), "hface") ) == 2 )
+        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
+    else
+        H.on( _range=elements(M_M0h->mesh()), _expr=h() );
     // stabilisation parameter
-    auto tau_constant = cst( doption( prefixvm( prefix(), "tau_constant" ) ) );
+    auto tau_constant = cst(doption(prefixvm(prefix(), "tau_constant")));
 
     // // <j.n,mu>_Gamma_R
     // bbf( 2_c, 0_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),

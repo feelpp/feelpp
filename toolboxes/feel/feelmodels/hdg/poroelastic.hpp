@@ -17,16 +17,15 @@
 //! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 //!
 //! @file
-//! @author Lorenzo Sala
-//! @date 25 Nov 2017
-//! @copyright 2017 Feel++ Consortium
+//! @author Lorenzo Sala <sala@unistra.fr>
+//! @date 12 Feb 2019
+//! @copyright 2019 Feel++ Consortium
 //!
 
 
 #ifndef _POROELASTIC_HPP
 #define _POROELASTIC_HPP
 
-#include <feel/feelmodels/hdg/options.hpp>
 #include <feel/feelmodels/hdg/mixedpoisson.hpp>
 #include <feel/feelmodels/hdg/mixedelasticity.hpp>
 
@@ -153,17 +152,6 @@ public:
 
 }; // end class declaration
 
-#if !defined( FEELPP_MODELS_HDG_NOEXTERN )
-extern template class MixedPoissonElasticity<2,0,1,4>;
-extern template class MixedPoissonElasticity<2,1,1,4>;
-extern template class MixedPoissonElasticity<2,2,1,4>;
-extern template class MixedPoissonElasticity<2,3,1,4>;
-
-extern template class MixedPoissonElasticity<3,0,1,4>;
-extern template class MixedPoissonElasticity<3,1,1,4>;
-extern template class MixedPoissonElasticity<3,2,1,4>;
-extern template class MixedPoissonElasticity<3,3,1,4>;
-#endif
 
 template <int Dim, int Order,int G_Order, int E_Order>
 void
@@ -210,7 +198,7 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Elasticity()
     }
 
     if (!marker.empty())
-        rhs( 2_c ) += integrate( _range=markedfaces(M_mesh,marker),
+        blf( 2_c ) += integrate( _range=markedfaces(M_mesh,marker),
                                  _expr= - inner( idv(pressure)*eye<Dim,Dim>() * N(), id(m)) );
 
 }

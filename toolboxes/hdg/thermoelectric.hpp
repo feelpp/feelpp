@@ -49,7 +49,7 @@ private:
     std::string M_prefixThermo;
     thermo_ptrtype M_thermo;
     temp_type M_temperature;
-    tempflux_type M_tempFlux;
+    tempflux_type M_tempflux;
 
     std::string M_prefixElectro;
     electro_ptrtype M_electro;
@@ -73,11 +73,11 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::ThermoElectricHDG( std::string prefix,
     M_prefixElectro(prefixElectro)
 {
     tic();
-    M_electro = electro_type::New(M_prefixElectro);
     M_thermo = thermo_type::New(M_prefixThermo);
+    M_electro = electro_type::New(M_prefixElectro);
     M_mesh = loadMesh( new mesh_type );
-    M_electro->init( M_mesh );
     M_thermo->init( M_mesh );
+    M_electro->init( M_mesh );
     toc("init");
 }
 
@@ -87,9 +87,6 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
 {
     auto electroMat = M_electro->modelProperties().materials();
     auto thermoMat = M_thermo->modelProperties().materials();
-
-    auto sigmaF = M_electro->potentialSpace()->element();
-    auto kF = M_thermo->potentialSpace()->element();
 
     tic();
     M_electro->assembleCstPart();
@@ -108,9 +105,6 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
     M_electro->solve();
     M_potential = M_electro->potentialField();
     M_current = M_electro->fluxField();
-    double normP = normL2(elements(M_mesh), idv(M_potential) );
-    double normC = normL2(elements(M_mesh), idv(M_current) );
-    Feel::cout << "norm potential = " << normP << "\tnorm current = " << normC << std::endl;
 
 #ifndef USE_SAME_MAT
     M_thermo->copyCstPart();
@@ -127,25 +121,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
     }
     M_thermo->solve();
     M_temperature = M_thermo->potentialField();
-    M_tempFlux = M_thermo->fluxField();
-    double normT = normL2(elements(M_mesh), idv(M_temperature) );
-    double normQ = normL2(elements(M_mesh), idv(M_tempFlux) );
-    Feel::cout << "norm temperature = " << normT << "\tnorm tempFlux = " << normQ << std::endl;
-
-    for( auto const& pairMat : electroMat )
-    {
-        std::string marker = pairMat.first;
-        auto mat = pairMat.second;
-        auto cond = mat.getScalar(soption(prefixvm(M_prefixElectro,"conductivity_json")));
-        sigmaF.on( _range=markedelements(M_electro->mesh(), marker), _expr=cond );
-    }
-    for( auto const& pairMat : thermoMat )
-    {
-        std::string marker = pairMat.first;
-        auto mat = pairMat.second;
-        auto cond = mat.getScalar(soption(prefixvm(M_prefixThermo,"conductivity_json")));
-        kF.on( _range=markedelements(M_thermo->mesh(), marker), _expr=cond );
-    }
+    M_tempflux = M_thermo->fluxField();
 
     potential_type oldPotential = M_electro->potentialSpace()->element();
     current_type oldCurrent = M_electro->fluxSpace()->element();
@@ -172,7 +148,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
         oldPotential = M_potential;
         oldCurrent = M_current;
         oldTemperature = M_temperature;
-        oldTempFlux = M_tempFlux;
+        oldTempflux = M_tempflux;
 
         tic();
 #ifdef USE_SAME_MAT
@@ -193,7 +169,6 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
                                        {"T"}, {idv(M_temperature)},
                                        {{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
             M_electro->updateConductivityTerm( sigma, marker);
-            sigmaF.on( _range=markedelements(M_electro->mesh(), marker), _expr=sigma );
         }
         M_electro->assembleRhsBoundaryCond();
         M_electro->assemblePotentialRHS( cst(0.), "");
@@ -223,7 +198,6 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
                                    {"T"}, {idv(M_temperature)},
                                    {{"k0",k0},{"T0",T0},{"alpha",alpha}});
             M_thermo->updateConductivityTerm( k, marker);
-            kF.on( _range=markedelements(M_thermo->mesh(), marker), _expr=k );
         }
         M_thermo->assembleRhsBoundaryCond();
         for( auto const& pairMat : electroMat )
@@ -244,32 +218,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
         M_thermo->solve();
         toc("solveThermo");
         M_temperature = M_thermo->potentialField();
-        M_tempFlux = M_thermo->fluxField();
-
-        tic();
-        eV->step(i)->add("potential", M_potential);
-        eV->step(i)->add("current", M_current);
-        eV->step(i)->add("sigma", sigmaF);
-        eT->step(i)->add("temperature", M_temperature);
-        eT->step(i)->add("tempFlux", M_tempFlux);
-        eT->step(i)->add("k", kF);
-        eV->save();
-        eT->save();
-        toc("export");
-
-        tic();
-        double normV = normL2(elements(M_mesh), idv(oldPotential) );
-        double normT = normL2(elements(M_mesh), idv(oldTemperature) );
-        double errV = normL2( elements(M_mesh), idv(M_potential) - idv(oldPotential) );
-        double errT = normL2( elements(M_mesh), idv(M_temperature) - idv(oldTemperature) );
-        double normJ = normL2(elements(M_mesh), idv(oldCurrent) );
-        double normQ = normL2(elements(M_mesh), idv(oldTempFlux) );
-        double errJ = normL2( elements(M_mesh), idv(M_current) - idv(oldCurrent) );
-        double errQ = normL2( elements(M_mesh), idv(M_tempFlux) - idv(oldTempFlux) );
-        incrV = errV/normV;
-        incrT = errT/normT;
-        incrJ = errJ/normJ;
-        incrQ = errQ/normQ;
+        M_tempflux = M_thermo->fluxField();
 
         incrV = normL2( elements(M_mesh), idv(M_potential) - idv(oldPotential) );
         incrT = normL2( elements(M_mesh), idv(M_temperature) - idv(oldTemperature) );
@@ -285,4 +234,10 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
         toc("loop");
     } // Picard loop
 
+    auto e = exporter( M_mesh );
+    e->add("potential", M_potential);
+    e->add("current", M_current);
+    e->add("temperature", M_temperature);
+    e->add("tempflux", M_tempflux);
+    e->save();
 }
