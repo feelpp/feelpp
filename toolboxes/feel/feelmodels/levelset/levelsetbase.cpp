@@ -96,7 +96,7 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::init()
 {
-    this->log("LevelSet", "init", "start");
+    this->log("LevelSetBase", "init", "start");
 
     // Mesh and space manager
     if( !M_spaceManager )
@@ -136,14 +136,14 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::init()
     // Init post-process
     this->initPostProcess();
 
-    this->log("LevelSet", "init", "finish");
+    this->log("LevelSetBase", "init", "finish");
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::initLevelsetValue()
 {
-    this->log("LevelSet", "initLevelsetValue", "start");
+    this->log("LevelSetBase", "initLevelsetValue", "start");
 
     if( !M_initialPhi ) // look for JSON initial values
     {
@@ -232,7 +232,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initLevelsetValue()
 
     this->updateInterfaceQuantities();
 
-    this->log("LevelSet", "initLevelsetValue", "finish");
+    this->log("LevelSetBase", "initLevelsetValue", "finish");
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -325,10 +325,11 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    if (this->doRestart() && this->restartPath().empty() )
-    {
-        if ( M_exporter->doExport() ) M_exporter->restart(this->timeInitial());
-    }
+    //if (this->doRestart() && this->restartPath().empty() )
+    //{
+        //this->log("LevelSetBase", "initPostProcess", "restart exporter");
+        //if ( M_exporter->doExport() ) M_exporter->restart(this->timeInitial());
+    //}
 
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -337,21 +338,12 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     // Measures
     if ( !this->isStationary() )
     {
-        if ( this->doRestart() )
-            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        else
+        //if ( this->doRestart() )
+            //this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+        //else
+        if( !this->doRestart() )
             this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
     }
-
-    //// User-defined fields
-    //if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
-    //{
-        //for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
-        //{
-            //if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
-                //M_postProcessUserFieldExported.insert( o );
-        //}
-    //}
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -821,21 +813,21 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateGradPhi()
 {
-    this->log("LevelSet", "updateGradPhi", "start");
+    this->log("LevelSetBase", "updateGradPhi", "start");
     this->timerTool("UpdateInterfaceData").start();
 
     *M_levelsetGradPhi = this->grad( this->phiElt(), M_gradPhiMethod );
 
     M_doUpdateGradPhi = false;
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
-    this->log("LevelSet", "updateGradPhi", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("LevelSetBase", "updateGradPhi", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateModGradPhi()
 {
-    this->log("LevelSet", "updateModGradPhi", "start");
+    this->log("LevelSetBase", "updateModGradPhi", "start");
     this->timerTool("UpdateInterfaceData").start();
 
     *M_levelsetModGradPhi = this->modGrad( this->phiElt(), M_modGradPhiMethod );
@@ -843,14 +835,14 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateModGradPhi()
     M_doUpdateModGradPhi = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
-    this->log("LevelSet", "updateModGradPhi", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("LevelSetBase", "updateModGradPhi", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDirac()
 {
-    this->log("LevelSet", "updateDirac", "start");
+    this->log("LevelSetBase", "updateDirac", "start");
     this->timerTool("UpdateInterfaceData").start();
 
     auto eps0 = this->thicknessInterface();
@@ -906,14 +898,14 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDirac()
     M_doUpdateDirac = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
-    this->log("LevelSet", "updateDirac", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("LevelSetBase", "updateDirac", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateHeaviside()
 { 
-    this->log("LevelSet", "updateHeaviside", "start");
+    this->log("LevelSetBase", "updateHeaviside", "start");
     this->timerTool("UpdateInterfaceData").start();
 
     auto eps = this->thicknessInterface();
@@ -942,14 +934,14 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateHeaviside()
     M_doUpdateHeaviside = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
-    this->log("LevelSet", "updateHeaviside", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("LevelSetBase", "updateHeaviside", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::updatePhiPN()
 {
-    this->log("LevelSet", "updatePhiPN", "start");
+    this->log("LevelSetBase", "updatePhiPN", "start");
     this->timerTool("UpdateInterfaceData").start();
 
     auto const& phi = this->phiElt();
@@ -961,14 +953,14 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updatePhiPN()
     M_doUpdatePhiPN = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
-    this->log("LevelSet", "updatePhiPN", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("LevelSetBase", "updatePhiPN", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateNormal()
 {
-    this->log("LevelSet", "updateNormal", "start");
+    this->log("LevelSetBase", "updateNormal", "start");
     this->timerTool("UpdateInterfaceData").start();
 
     //auto const& phi = this->phiElt();
@@ -984,40 +976,40 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateNormal()
     M_doUpdateNormal = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
-    this->log("LevelSet", "updateNormal", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("LevelSetBase", "updateNormal", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
 {
-    this->log("LevelSet", "updateCurvature", "start");
+    this->log("LevelSetBase", "updateCurvature", "start");
     this->timerTool("UpdateInterfaceData").start();
 
     switch( M_curvatureMethod )
     {
         case CurvatureMethod::NODAL_PROJECTION:
         {
-            this->log("LevelSet", "updateCurvature", "perform nodal projection");
+            this->log("LevelSetBase", "updateCurvature", "perform nodal projection");
             M_levelsetCurvature->on( _range=this->rangeMeshElements(), _expr=divv(this->normal()) );
         }
         break;
         case CurvatureMethod::L2_PROJECTION:
         {
-            this->log("LevelSet", "updateCurvature", "perform L2 projection");
+            this->log("LevelSetBase", "updateCurvature", "perform L2 projection");
             //*M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
             *M_levelsetCurvature = this->projectorL2()->derivate( trans(idv(this->normal())) );
         }
         break;
         case CurvatureMethod::SMOOTH_PROJECTION:
         {
-            this->log("LevelSet", "updateCurvature", "perform smooth projection");
+            this->log("LevelSetBase", "updateCurvature", "perform smooth projection");
             *M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
         }
         break;
         case CurvatureMethod::PN_NODAL_PROJECTION:
         {
-            this->log("LevelSet", "updateCurvature", "perform PN-nodal projection");
+            this->log("LevelSetBase", "updateCurvature", "perform PN-nodal projection");
             auto phiPN = this->phiPN();
             auto normalPN = vf::project(
                     _space=this->functionSpaceManager()->functionSpaceVectorialPN(),
@@ -1035,13 +1027,13 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
         break;
         case CurvatureMethod::DIFFUSION_ORDER1:
         {
-            this->log("LevelSet", "updateCurvature", "perform diffusion order1");
+            this->log("LevelSetBase", "updateCurvature", "perform diffusion order1");
             *M_levelsetCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder1( this->distance() );
         }
         break;
         case CurvatureMethod::DIFFUSION_ORDER2:
         {
-            this->log("LevelSet", "updateCurvature", "perform diffusion order2");
+            this->log("LevelSetBase", "updateCurvature", "perform diffusion order2");
             *M_levelsetCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder2( this->distance() );
         }
         break;
@@ -1050,14 +1042,14 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
     M_doUpdateCurvature = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
-    this->log("LevelSet", "updateCurvature", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("LevelSetBase", "updateCurvature", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistance()
 {
-    this->log("LevelSet", "updateDistance", "start");
+    this->log("LevelSetBase", "updateDistance", "start");
     this->timerTool("UpdateInterfaceData").start();
 
     *M_distance = this->redistantiate( this->phiElt(), M_distanceMethod );
@@ -1065,14 +1057,14 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistance()
     M_doUpdateDistance = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
-    this->log("LevelSet", "updateDistance", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("LevelSetBase", "updateDistance", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceNormal()
 {
-    this->log("LevelSet", "updateDistanceNormal", "start");
+    this->log("LevelSetBase", "updateDistanceNormal", "start");
     this->timerTool("UpdateInterfaceData").start();
 
     auto const& phi = this->distance();
@@ -1081,19 +1073,19 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceNormal()
     switch( M_gradPhiMethod )
     {
         case DerivationMethod::NODAL_PROJECTION:
-            this->log("LevelSet", "updateDistanceNormal", "perform nodal projection");
+            this->log("LevelSetBase", "updateDistanceNormal", "perform nodal projection");
             M_distanceNormal->on( _range=this->rangeMeshElements(), _expr=N_expr );
             break;
         case DerivationMethod::L2_PROJECTION:
-            this->log("LevelSet", "updateDistanceNormal", "perform L2 projection");
+            this->log("LevelSetBase", "updateDistanceNormal", "perform L2 projection");
             *M_distanceNormal = this->projectorL2Vectorial()->project( N_expr );
             break;
         case DerivationMethod::SMOOTH_PROJECTION:
-            this->log("LevelSet", "updateDistanceNormal", "perform smooth projection");
+            this->log("LevelSetBase", "updateDistanceNormal", "perform smooth projection");
             *M_distanceNormal = this->smootherVectorial()->project( N_expr );
             break;
         case DerivationMethod::PN_NODAL_PROJECTION:
-            this->log("LevelSet", "updateDistanceNormal", "perform PN-nodal projection");
+            this->log("LevelSetBase", "updateDistanceNormal", "perform PN-nodal projection");
             CHECK( false ) << "TODO: updateDistanceNormal with PN_NODAL_PROJECTION method\n";
             //auto phiPN = this->phiPN();
             //auto gradPhiPN = vf::project(
@@ -1108,40 +1100,40 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceNormal()
     M_doUpdateDistanceNormal = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
-    this->log("LevelSet", "updateDistanceNormal", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("LevelSetBase", "updateDistanceNormal", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceCurvature()
 {
-    this->log("LevelSet", "updateDistanceCurvature", "start");
+    this->log("LevelSetBase", "updateDistanceCurvature", "start");
     this->timerTool("UpdateInterfaceData").start();
 
     switch( M_curvatureMethod )
     {
         case CurvatureMethod::NODAL_PROJECTION:
         {
-            this->log("LevelSet", "updateDistanceCurvature", "perform nodal projection");
+            this->log("LevelSetBase", "updateDistanceCurvature", "perform nodal projection");
             M_distanceCurvature->on( _range=this->rangeMeshElements(), _expr=divv(this->distanceNormal()) );
         }
         break;
         case CurvatureMethod::L2_PROJECTION:
         {
-            this->log("LevelSet", "updateDistanceCurvature", "perform L2 projection");
+            this->log("LevelSetBase", "updateDistanceCurvature", "perform L2 projection");
             //*M_distanceCurvature = this->projectorL2()->project( _expr=divv(this->distanceNormal()) );
             *M_distanceCurvature = this->projectorL2()->derivate( trans(idv(this->distanceNormal())) );
         }
         break;
         case CurvatureMethod::SMOOTH_PROJECTION:
         {
-            this->log("LevelSet", "updateDistanceCurvature", "perform smooth projection");
+            this->log("LevelSetBase", "updateDistanceCurvature", "perform smooth projection");
             *M_distanceCurvature = this->smoother()->project( _expr=divv(this->distanceNormal()) );
         }
         break;
         case CurvatureMethod::PN_NODAL_PROJECTION:
         {
-            this->log("LevelSet", "updateDistanceCurvature", "perform PN-nodal projection");
+            this->log("LevelSetBase", "updateDistanceCurvature", "perform PN-nodal projection");
             CHECK( false ) << "TODO: updateDistanceCurvature with PN_NODAL_PROJECTION method\n";
             //auto phiPN = this->phiPN();
             //auto normalPN = vf::project(
@@ -1160,13 +1152,13 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceCurvature()
         break;
         case CurvatureMethod::DIFFUSION_ORDER1:
         {
-            this->log("LevelSet", "updateDistanceCurvature", "perform diffusion order1");
+            this->log("LevelSetBase", "updateDistanceCurvature", "perform diffusion order1");
             *M_distanceCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder1( this->distance() );
         }
         break;
         case CurvatureMethod::DIFFUSION_ORDER2:
         {
-            this->log("LevelSet", "updateDistanceCurvature", "perform diffusion order2");
+            this->log("LevelSetBase", "updateDistanceCurvature", "perform diffusion order2");
             *M_distanceCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder2( this->distance() );
         }
         break;
@@ -1175,7 +1167,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceCurvature()
     M_doUpdateDistanceCurvature = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
-    this->log("LevelSet", "updateDistanceCurvature", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("LevelSetBase", "updateDistanceCurvature", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 //----------------------------------------------------------------------------//
@@ -1716,21 +1708,21 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::grad( element_levelset_type const& phi, Deriva
     switch( method )
     {
         case DerivationMethod::NODAL_PROJECTION:
-            this->log("LevelSet", "grad", "perform nodal projection");
+            this->log("LevelSetBase", "grad", "perform nodal projection");
             return vf::project( 
                     _space=this->functionSpaceVectorial(),
                     _range=this->rangeMeshElements(),
                     _expr=trans(gradv(phi))
                     );
         case DerivationMethod::L2_PROJECTION:
-            this->log("LevelSet", "grad", "perform L2 projection");
+            this->log("LevelSetBase", "grad", "perform L2 projection");
             //return this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
             return this->projectorL2Vectorial()->derivate( idv(phi) );
         case DerivationMethod::SMOOTH_PROJECTION:
-            this->log("LevelSet", "grad", "perform smooth projection");
+            this->log("LevelSetBase", "grad", "perform smooth projection");
             return this->smootherVectorial()->project( trans(gradv(phi)) );
         case DerivationMethod::PN_NODAL_PROJECTION:
-            this->log("LevelSet", "grad", "perform PN-nodal projection");
+            this->log("LevelSetBase", "grad", "perform PN-nodal projection");
             CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use PN_NODAL_PROJECTION \n";
             auto phiPN = this->functionSpaceManager()->opInterpolationScalarToPN()->operator()( phi );
             auto gradPhiPN = vf::project(
@@ -1749,20 +1741,20 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::modGrad( element_levelset_type const& phi, Der
     switch( method )
     {
         case DerivationMethod::NODAL_PROJECTION:
-            this->log("LevelSet", "modGrad", "perform nodal projection");
+            this->log("LevelSetBase", "modGrad", "perform nodal projection");
             return vf::project( 
                     _space=this->functionSpace(),
                     _range=this->rangeMeshElements(),
                     _expr=sqrt( gradv(phi)*trans(gradv(phi)) )
                     );
         case DerivationMethod::L2_PROJECTION:
-            this->log("LevelSet", "modGrad", "perform L2 projection");
+            this->log("LevelSetBase", "modGrad", "perform L2 projection");
             return this->projectorL2()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
         case DerivationMethod::SMOOTH_PROJECTION:
-            this->log("LevelSet", "modGrad", "perform smooth projection");
+            this->log("LevelSetBase", "modGrad", "perform smooth projection");
             return this->smoother()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
         case DerivationMethod::PN_NODAL_PROJECTION:
-            this->log("LevelSet", "modGrad", "perform PN-nodal projection");
+            this->log("LevelSetBase", "modGrad", "perform PN-nodal projection");
             CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use PN_NODAL_PROJECTION \n";
             auto phiPN = this->functionSpaceManager()->opInterpolationScalarToPN()->operator()( phi );
             auto modGradPhiPN = vf::project(
@@ -1780,7 +1772,7 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::reinitialize()
 { 
-    this->log("LevelSet", "reinitialize", "start");
+    this->log("LevelSetBase", "reinitialize", "start");
     this->timerTool("Reinit").start();
 
     auto phi = this->phiPtr();
@@ -1795,7 +1787,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::reinitialize()
     M_hasReinitialized = true;
 
     double timeElapsed = this->timerTool("Reinit").stop();
-    this->log("LevelSet","reinitialize","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("LevelSetBase","reinitialize","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -1927,7 +1919,7 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_ptrtype const& phiv, bool doReinitialize)
 {
-    this->log("LevelSet", "setInitialValue", "start");
+    this->log("LevelSetBase", "setInitialValue", "start");
 
     if( !M_initialPhi )
         M_initialPhi.reset( new element_levelset_type(this->functionSpace(), "InitialPhi") );
@@ -1942,7 +1934,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_ptrtype const
         *M_initialPhi = *phiv;
     }
 
-    this->log("LevelSet", "setInitialValue", "finish");
+    this->log("LevelSetBase", "setInitialValue", "finish");
 }
 
 //----------------------------------------------------------------------------//
@@ -2149,7 +2141,7 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 bool
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time, bool save )
 {
-    this->log("LevelSet","exportResults", "start");
+    this->log("LevelSetBase","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
     if ( !this->M_exporter->doExport() ) return false;
@@ -2212,7 +2204,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time, bool save )
     return hasResultToExport;
 
     double tElapsed = this->timerTool("PostProcessing").stop("exportResults");
-    this->log("LevelSet","exportResults", (boost::format("finish in %1% s")%tElapsed).str() );
+    this->log("LevelSetBase","exportResults", (boost::format("finish in %1% s")%tElapsed).str() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS

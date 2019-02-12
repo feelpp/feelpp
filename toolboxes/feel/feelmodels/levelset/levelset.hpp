@@ -279,7 +279,7 @@ public:
     // Initialization
     void init();
     void initInitialValues();
-    void initPostProcess();
+    void restartPostProcess();
 
     //std::shared_ptr<std::ostringstream> getInfo() const;
 
