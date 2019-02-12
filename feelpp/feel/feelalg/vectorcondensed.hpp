@@ -183,7 +183,7 @@ template< class T, class... Args >
 condensed_vector_ptr_t<T>
 makeSharedVectorCondensed( Args&&... args )
 {
-    return boost::make_shared<VectorCondensed<T>>( args... );
+    return std::make_shared<VectorCondensed<T>>( args... );
 }
 
 #if !defined(FEELPP_VECTORCONDENSED_NOEXTERN)
