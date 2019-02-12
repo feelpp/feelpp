@@ -764,10 +764,12 @@ public:
         }
         auto pcf = gm1->preComputeOnFaces( gm1, ctxPtsOnRefFaces );
         auto ctx = gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *this, pcf, 0 );
+        em_matrix_col_type<value_type> ns( _normals.data().begin(), _normals.size1(), _normals.size2() );
         for ( uint16_type f = 0; f < numTopologicalFaces; ++f )
         {
             ctx->update( *this, f );
-            ublas::column( _normals, f ) = ctx->unitNormal( 0 );
+            ns.col(f) = ctx->unitNormal( 0 );
+            //ublas::column( _normals, f ) = ctx->unitNormal( 0 );
         }
         return _normals;
     }
@@ -792,7 +794,11 @@ public:
         auto pcf =  gm1->preComputeOnFaces( gm1, baryOnFace );
         auto ctx = gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *this, pcf, f );
         ctx->update( *this, f );
-        return ctx->unitNormal( 0 );
+        
+        node_type n( nRealDim );
+        em_node_type<value_type> en( n.data().begin(), n.size() );
+        en = ctx->unitNormal( 0 );
+        return n;
     }
 
     /**
