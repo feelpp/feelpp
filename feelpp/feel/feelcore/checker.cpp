@@ -160,7 +160,6 @@ hp::operator()( std::string const& solution, std::pair<std::string,double> const
 Checker
 checker( std::string const& s, std::string const& p )
 {
-    Feel::cout << "name=" << s << " solution=" << p << std::endl;
     if ( p.empty() && soption("checker.solution" ).empty() )
         throw std::logic_error("Invalid setup of Checker system, no solution provided");
     auto sol = p.empty()?soption("checker.solution" ):p;
