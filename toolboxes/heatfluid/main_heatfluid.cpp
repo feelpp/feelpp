@@ -62,7 +62,8 @@ main( int argc, char** argv )
 
     auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
 
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1-P2P1", hana::make_tuple( hana::int_c<1>,hana::int_c<2>,hana::int_c<1>) ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1-P1P1", hana::make_tuple( hana::int_c<1>,hana::int_c<1>,hana::int_c<1>) ),
+                                             hana::make_tuple("P1-P2P1", hana::make_tuple( hana::int_c<1>,hana::int_c<2>,hana::int_c<1>) ) );
 
     hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension]( auto const& d )
                     {
