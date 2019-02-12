@@ -68,8 +68,16 @@ public :
         DataUpdateBase( DataUpdateBase && ) = default;
         void addInfo( std::string const& info ) { M_infos.insert( info ); }
         bool hasInfo( std::string const& info ) const { return M_infos.find( info ) != M_infos.end(); }
+        void addDoubleInfo( std::string const& info, double val ) { M_doubleInfos[info] = val; }
+        bool hasDoubleInfo( std::string const& info ) const { return M_doubleInfos.find( info ) != M_doubleInfos.end(); }
+        double doubleInfo( std::string const& info ) const
+            {
+                CHECK( this->hasDoubleInfo( info ) ) << "double info "<< info << "is missing";
+                return M_doubleInfos.find(info)->second;
+            }
     private :
         std::set<std::string> M_infos;
+        std::map<std::string,double> M_doubleInfos;
     };
 
     class DataUpdateLinear : public DataUpdateBase
@@ -281,6 +289,7 @@ public :
     virtual void preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     virtual void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     //----------------------------------------------------------------------------------//
+    virtual void updateIterationNewton( int step, vector_ptrtype residual, vector_ptrtype sol ) const {}
 
 private :
     // verbose
