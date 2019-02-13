@@ -539,10 +539,11 @@ csrGraphBlocks( PS&& ps,
     BlocksBaseGraphCSR g( s, s );
 
     int n = 0;
-    auto cp = hana::cartesian_product( hana::make_tuple( ps, ps ) );
-    int nstatic = hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(hana::back(ps))>>{},
+    auto pst = ps.tupleSpaces();
+    auto cp = hana::cartesian_product( hana::make_tuple( pst, pst ) );
+    int nstatic = hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(hana::back(pst))>>{},
                             [s] (auto&& x ) { return s-hana::back(std::forward<decltype(x)>(x))->numberOfSpaces()+1; },
-                            [s] (auto&& x ) { return s; } )( ps );
+                            [s] (auto&& x ) { return s; } )( pst );
     hana::for_each( cp, [&]( auto const& e )
                     {
                         int r = n/nstatic;

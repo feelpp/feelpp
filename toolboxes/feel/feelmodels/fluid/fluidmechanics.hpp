@@ -600,7 +600,9 @@ public :
     void updateParameterValues();
 
     map_vector_field<nDim,1,2> const& bcDirichlet() const { return M_bcDirichlet; }
+    map_vector_field<nDim,1,2>& bcDirichlet() { return M_bcDirichlet; }
     std::map<ComponentType,map_scalar_field<2> > const& bcDirichletComponents() const { return M_bcDirichletComponents; }
+    std::map<ComponentType,map_scalar_field<2> > & bcDirichletComponents() { return M_bcDirichletComponents; }
     map_scalar_field<2> const& bcNeumannScalar() const { return M_bcNeumannScalar; }
     map_scalar_field<2> const& bcPressure() const { return M_bcPressure; }
     map_vector_field<nDim,1,2> const& bcNeumannVectorial() const { return M_bcNeumannVectorial; }
