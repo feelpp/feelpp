@@ -75,6 +75,7 @@ namespace FeelModels
 
         typedef typename backend_type::pre_solve_type pre_solve_type;
         typedef typename backend_type::post_solve_type post_solve_type;
+        typedef typename backend_type::update_nlsolve_type update_nlsolve_type;
 
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
@@ -197,6 +198,8 @@ namespace FeelModels
         void addVectorLinearRhsAssembly( vector_ptrtype const& vec, double scaling = 1.0, std::string const& key = "", bool cstPart = false );
         void addVectorResidualAssembly( vector_ptrtype const& vec, double scaling = 1.0, std::string const& key = "", bool cstPart = false );
 
+        void updateIterationNewton( int step, vector_ptrtype residual, vector_ptrtype sol );
+
     private :
 
         void
@@ -238,6 +241,12 @@ namespace FeelModels
 
         std::map<std::string, std::tuple<vector_ptrtype,double,bool>> M_addVectorLinearRhsAssembly;
         std::map<std::string, std::tuple<vector_ptrtype,double,bool>> M_addVectorResidualAssembly;
+
+        bool M_usePseudoTransientContinuation;
+        std::vector<std::pair<double,double> > M_pseudoTransientContinuationDeltaAndResidual;
+        double M_pseudoTransientContinuationDelta0, M_pseudoTransientContinuationDeltaMax;
+        std::string M_pseudoTransientContinuationSerVariant;
+        vector_ptrtype M_pseudoTransientContinuationPreviousSolution;
     };
 
 
