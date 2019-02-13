@@ -35,12 +35,13 @@
 
 #include <boost/static_assert.hpp>
 
-#include <boost/version.hpp>                                                    
-#if BOOST_VERSION >= 106700                                                     
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 106700
 #include <contrib/boost/fusion/include/boost/fusion/container/vector/vector.hpp>
-#else                                       
+#else
 #include <boost/fusion/container/vector.hpp>
 #endif
+
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/transform.hpp>
@@ -1284,6 +1285,7 @@ struct BasisOrder
 template<typename SpaceType>
 struct createWorldsComm
 {
+    
     typedef typename SpaceType::mesh_ptrtype mesh_ptrtype;
     typedef typename SpaceType::meshes_list meshes_list;
     static const bool useMeshesList = !boost::is_base_of<MeshBase, meshes_list >::value;
@@ -2871,12 +2873,20 @@ public:
             {
                 // we assume here that we are in CG
                 // TODO : adapt to DG and loop over all element to which the point belongs to
+                // TODO : check if the doftable is computed for this eid
                 size_type eid = e.elements().begin()->first;
                 uint16_type edgeid_in_element = e.elements().begin()->second;
+                this->assign( e, Ihloc, std::make_pair( eid,edgeid_in_element ) );
+            }
+        template<typename EltType>
+        void assign( EltType const& e, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo,
+                     typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
+            {
+                size_type eid = eltsInfo.first;
+                uint16_type edgeid_in_element = eltsInfo.second;
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
                 {
-
                     size_type index= ldof.index();
                     //super::operator[]( index ) = s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
                     super::operator[]( index ) = Ihloc( ldof.localDofInFace() );
@@ -2887,8 +2897,15 @@ public:
             {
                 // we assume here that we are in CG
                 // TODO : adapt to DG and loop over all element to which the point belongs to
+                // TODO : check if the doftable is computed for this eid
                 size_type eid = p.elements().begin()->first;
                 uint16_type ptid_in_element = p.elements().begin()->second;
+                this->assign( p, Ihloc, std::make_pair( eid, ptid_in_element ) );
+            }
+        void assign( geopoint_type const& p, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo )
+            {
+                size_type eid = eltsInfo.first;
+                uint16_type ptid_in_element = eltsInfo.second;
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( int c = 0; c < (is_product?nComponents:1); ++c )
                 {
@@ -2924,14 +2941,24 @@ public:
                 super::operator[]( index ) += s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
+
         template<typename EltType>
         void plus_assign( EltType const& e, local_interpolant_type const& Ihloc,
                      typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
         {
             // we assume here that we are in CG
             // TODO : adapt to DG and loop over all element to which the point belongs to
+            // TODO : check if the doftable is computed for this eid
             size_type eid = e.elements().begin()->first;
             uint16_type edgeid_in_element = e.elements().begin()->second;
+            this->plus_assign( e, Ihloc, std::make_pair( eid,edgeid_in_element ) );
+        }
+        template<typename EltType>
+        void plus_assign( EltType const& e, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo,
+                     typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
+        {
+            size_type eid = eltsInfo.first;
+            uint16_type edgeid_in_element = eltsInfo.second;
             auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
             for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
             {
@@ -2939,12 +2966,21 @@ public:
                 super::operator[]( index ) += s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
             }
         }
+
         void plus_assign( geopoint_type const& p, local_interpolant_type const& Ihloc )
             {
                 // we assume here that we are in CG
                 // TODO : adapt to DG and loop over all element to which the point belongs to
+                // TODO : check if the doftable is computed for this eid
                 size_type eid = p.elements().begin()->first;
                 uint16_type ptid_in_element = p.elements().begin()->second;
+                this->plus_assign( p, Ihloc, std::make_pair( eid,ptid_in_element ) );
+            }
+
+        void plus_assign( geopoint_type const& p, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo )
+            {
+                size_type eid = eltsInfo.first;
+                uint16_type ptid_in_element = eltsInfo.second;
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( int c = 0; c < (is_product?nComponents:1); ++c )
                 {
@@ -2952,6 +2988,7 @@ public:
                     super::operator[]( index ) += s(ptid_in_element)*Ihloc( c );
                 }
             }
+
         //@}
 
         /** @name Accessors
@@ -4388,14 +4425,13 @@ public:
 
 
         }
-    private:
-
+    public:
         template<typename RangeType, typename ExprType>
         FEELPP_NO_EXPORT void onImpl( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate = true, bool verbose = false )
         {
             onImplBase( r, e, prefix, geomap_strategy, accumulate, verbose, boost::is_std_list<RangeType>()  );
         }
-
+    private:
         template<typename RangeType, typename ExprType>
         FEELPP_NO_EXPORT void onImplBase( RangeType const& rList, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::true_ )
         {
@@ -4706,7 +4742,6 @@ public:
     /** @name Accessors
      */
     //@{
-
 
     /*
      * Get the real point matrix in a context
@@ -5426,7 +5461,6 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
@@ -5460,7 +5494,6 @@ public:
         DVLOG(2) << "copying FunctionSpace\n";
     }
 
-protected:
 
 private:
 
