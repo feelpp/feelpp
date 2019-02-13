@@ -118,6 +118,13 @@ public :
         M_ps(std::forward<T>(ps)),
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), backend(), false ) )
         {}
+
+    template<typename T>
+    BlockBilinearForm( T&& ps, std::enable_if_t<std::is_base_of<ProductSpaceBase,decay_type<T>>::value>* = nullptr)
+        :
+        M_ps(std::forward<T>(ps)),
+        M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), backend(), false ) )
+        {}    
     
     template<typename T,typename BackendT>
     BlockBilinearForm( T&& ps, BackendT&& b,
@@ -328,7 +335,6 @@ public :
     solveImplLocal( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
                     bool rebuild, pre_solve_type pre, post_solve_type post,
                     std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
-                    //std::enable_if_t<hana::Foldable<PS_t>::value && !std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )q
         {
             auto sc = M_matrix->sc();
             tic();
@@ -337,6 +343,15 @@ public :
             sc->localSolve ( vsc, solution);
             cout << " . local Solve done" << std::endl;
             toc("blockform.local.localsolve",FLAGS_v>0);
+            typename Backend<double>::solve_return_type r;
+            return r;
+        }
+    template <typename PS_t, typename Solution_t, typename Rhs_t>
+    typename Backend<double>::solve_return_type
+    solveImplLocal( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
+                    bool rebuild, pre_solve_type pre, post_solve_type post,
+                    std::enable_if_t<std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+        {
             typename Backend<double>::solve_return_type r;
             return r;
         }
@@ -653,6 +668,12 @@ public :
         M_ps(std::forward<T>(ps)),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
         {}
+    template<typename T>
+    BlockLinearForm(T&& ps, std::enable_if_t<std::is_base_of<ProductSpaceBase,decay_type<T>>::value>* = nullptr)
+        :
+        M_ps(std::forward<T>(ps)),
+        M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
+        {}    
     template<typename T, typename BackendT>
     BlockLinearForm(T&& ps, BackendT&& b, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr )
         :

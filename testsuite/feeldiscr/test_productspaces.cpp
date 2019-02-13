@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE( test3 )
     backend(_rebuild=true);
     int n = int(doption("parameters.n"));
     if ( n <= 0 || n >= 10 ) return;
-    auto ps = ProductSpace<Pch_ptrtype<Mesh<Simplex<2>>,1>, true>( n, mesh );
+    ProductSpace<Pch_ptrtype<Mesh<Simplex<2>>,1>, true> ps( n, mesh );
     BOOST_CHECK_EQUAL( ps.numberOfSpaces(), n );
     cout << tc::red << "number of spaces " << tc::reset << ps.numberOfSpaces() << std::endl;
 
