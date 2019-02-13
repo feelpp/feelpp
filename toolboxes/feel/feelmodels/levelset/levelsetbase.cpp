@@ -779,6 +779,14 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::GradPhi );
         if( o == "modgradphi" || o == "all" )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+        if( o == "dirac" || o == "all" )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::Dirac );
+        if( o == "heaviside" || o == "all" )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::Heaviside );
+        if( o == "normal" || o == "all" )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::Normal );
+        if( o == "curvature" || o == "all" )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::Curvature );
         if( o == "distance" || o == "all" )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::Distance );
         if( o == "distance-normal" || o == "all" )
@@ -794,6 +802,18 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_modgradphi").c_str()) )
         if ( boption(_name="do_export_modgradphi",_prefix=this->prefix()) )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_dirac").c_str()) )
+        if ( boption(_name="do_export_dirac",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::Dirac );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_heaviside").c_str()) )
+        if ( boption(_name="do_export_heaviside",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::Heaviside );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_normal").c_str()) )
+        if ( boption(_name="do_export_normal",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::Normal );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_curvature").c_str()) )
+        if ( boption(_name="do_export_curvature",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::Curvature );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_distance").c_str()) )
         if ( boption(_name="do_export_distance",_prefix=this->prefix()) )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::Distance );
@@ -1991,6 +2011,14 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::getInfo() const
         exportedFields = (exportedFields.empty())? "GradPhi": exportedFields+" - GradPhi";
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::ModGradPhi ) )
         exportedFields = (exportedFields.empty())? "ModGradPhi": exportedFields+" - ModGradPhi";
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::Dirac ) )
+        exportedFields = (exportedFields.empty())? "Dirac": exportedFields+" - Dirac";
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::Heaviside ) )
+        exportedFields = (exportedFields.empty())? "Heaviside": exportedFields+" - Heaviside";
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::Normal ) )
+        exportedFields = (exportedFields.empty())? "Normal": exportedFields+" - Normal";
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::Curvature ) )
+        exportedFields = (exportedFields.empty())? "Curvature": exportedFields+" - Curvature";
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::Distance ) )
         exportedFields = (exportedFields.empty())? "Distance": exportedFields+" - Distance";
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::DistanceNormal ) )
@@ -2151,21 +2179,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time, bool save )
     this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Phi"),
                                          prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Phi")),
                                          this->phiElt() );
-    this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Dirac"),
-                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Dirac")),
-                                   *this->dirac() );
-
-    this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Heaviside"),
-                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Heaviside")),
-                                   *this->heaviside() );
-
-    this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Normal"),
-                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Normal")),
-                                   *this->normal() );
-
-    this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Curvature"),
-                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Curvature")),
-                                   *this->curvature() );
 
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::GradPhi ) )
     {
@@ -2178,6 +2191,30 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time, bool save )
         this->M_exporter->step( time )->add( prefixvm(this->prefix(),"ModGradPhi"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ModGradPhi")),
                                        *this->modGradPhi() );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::Dirac ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Dirac"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Dirac")),
+                                       *this->dirac() );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::Heaviside ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Heaviside"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Heaviside")),
+                                       *this->heaviside() );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::Normal ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Normal"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Normal")),
+                                       *this->normal() );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::Curvature ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Curvature"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Curvature")),
+                                       *this->curvature() );
     }
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::Distance ) )
     {
