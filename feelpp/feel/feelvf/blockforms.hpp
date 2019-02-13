@@ -327,7 +327,8 @@ public :
     typename Backend<double>::solve_return_type
     solveImplLocal( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
                     bool rebuild, pre_solve_type pre, post_solve_type post,
-                    std::enable_if_t<hana::Foldable<PS_t>::value && !std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+                    std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+                    //std::enable_if_t<hana::Foldable<PS_t>::value && !std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )q
         {
             auto sc = M_matrix->sc();
             tic();
