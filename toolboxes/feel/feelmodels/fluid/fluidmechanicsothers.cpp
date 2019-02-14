@@ -471,6 +471,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
                                      this->fieldVorticity() );
         hasFieldToExport = true;
     }
+#if 0
     if ( fields.find( "normal-stress" ) != fields.end() )
     {
         this->updateNormalStressOnCurrentMesh();
@@ -486,6 +487,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
                                      prefixvm(this->prefix(),prefixvm(this->subPrefix(),"wallshearstress")),
                                      this->fieldWallShearStress() );
     }
+#endif
     if ( fields.find( "density" ) != fields.end() )
     {
         exporter->step( time )->add( prefixvm(this->prefix(),"density"),
@@ -495,10 +497,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
     }
     if ( fields.find( "viscosity" ) != fields.end() )
     {
-        if ( !M_XhNormalBoundaryStress ) this->createFunctionSpacesNormalStress();
+        //if ( !M_XhNormalBoundaryStress ) this->createFunctionSpacesNormalStress();
         auto uCur = M_Solution->template element<0>();
         auto pCur = M_Solution->template element<1>();
-        auto viscosityField = M_XhNormalBoundaryStress->compSpace()->element();
+        auto viscosityField = this->materialProperties()->dynamicViscositySpace()->element();
         for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
         {
             std::string const& matName = rangeData.first;
@@ -687,6 +689,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 #endif // HAS_MESHALE
     }
 
+#if 0
     if ( this->hasPostProcessFieldExported( "normal-stress" ) )
     {
         this->updateNormalStressOnCurrentMesh();
@@ -701,7 +704,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
         M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"wallshearstress_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"wallshearstress")), *M_fieldWallShearStressVisuHO );
         hasFieldToExport = true;
     }
-
+#endif
     if ( hasFieldToExport )
         M_exporter_ho->save();
 
@@ -1365,11 +1368,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::set<st
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( element_normalstress_ptrtype & fieldToUpdate )
 {
-    this->meshALE()->revertReferenceMesh( false );
+    bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
+    if ( !meshIsOnRefAtBegin )
+        this->meshALE()->revertReferenceMesh( false );
 
-    M_fieldNormalStressRefMesh->zero();
+    //M_fieldNormalStressRefMesh->zero();
 
     auto itFindRange = M_rangeMeshFacesByMaterial.find( "moving-boundary" );
     CHECK( itFindRange != M_rangeMeshFacesByMaterial.end() ) << "not find range moving-boundary";
@@ -1378,15 +1383,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh()
         std::string matName = rangeFacesMat.first;
         auto const& rangeFaces = rangeFacesMat.second;
         if ( this->useFSISemiImplicitScheme() && M_saveALEPartNormalStress )
-            this->updateNormalStressOnReferenceMeshOptSI( matName,rangeFaces );
+            this->updateNormalStressOnReferenceMeshOptSI( matName,rangeFaces, fieldToUpdate );
         else
-            this->updateNormalStressOnReferenceMeshStandard( matName,rangeFaces );
+            this->updateNormalStressOnReferenceMeshStandard( matName,rangeFaces, fieldToUpdate );
     }
 
-#if 1
+#if 0
     // TODO : store this information
     if ( this->worldComm().globalSize() > 1 )
     {
+        //M_fieldNormalStressRefMesh->functionSpace()->dofs( markedpoints( mesh,"P"), ComponentType::NO_COMPONENT, true );
+
         std::set<size_type> thedofMovingBoundary;
         for ( auto const& faceWrap : markedfaces(M_mesh,this->markersNameMovingBoundary() ) )
         {
@@ -1401,14 +1408,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh()
     }
 #endif
 
-    this->meshALE()->revertMovingMesh( false );
+    if ( !meshIsOnRefAtBegin )
+        this->meshALE()->revertMovingMesh( false );
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces, element_normalstress_ptrtype & fieldToUpdate )
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshStandard", "start" );
@@ -1425,9 +1433,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( s
     // stress tensor : -p*Id + 2*mu*D(u)
     auto const Sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,true);
 
-    M_fieldNormalStressRefMesh->on(_range=rangeFaces,
-                                   _expr=val(Sigmav*trans(InvFa)*N()),
-                                   _geomap=this->geomap() );
+    fieldToUpdate->on(_range=rangeFaces,
+                      _expr=Sigmav*trans(InvFa)*N(),
+                      _geomap=this->geomap() );
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshStandard", "finish" );
 #endif
@@ -1444,6 +1452,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrecompu
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptPrecompute", "start" );
 
+    bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
+    if ( !meshIsOnRefAtBegin )
+        this->meshALE()->revertReferenceMesh( false );
+
     // identity Matrix
     auto const Id = eye<nDim,nDim>();
     // deformation tensor
@@ -1453,15 +1465,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrecompu
     if ( !M_saveALEPartNormalStress )
         M_saveALEPartNormalStress = M_XhMeshALEmapDisc->elementPtr();
 
-    this->meshALE()->revertReferenceMesh( false );
-
     M_saveALEPartNormalStress->zero();
 
     M_saveALEPartNormalStress->on(_range=rangeFaces,
-                                  _expr=val(trans(InvFa)*N()),
+                                  _expr=trans(InvFa)*N(),
                                   _geomap=this->geomap() );
 
-    this->meshALE()->revertMovingMesh( false );
+    if ( !meshIsOnRefAtBegin )
+        this->meshALE()->revertMovingMesh( false );
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptPrecompute", "finish" );
 #endif
@@ -1471,7 +1482,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrecompu
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces,  element_normalstress_ptrtype & fieldToUpdate )
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptSI", "start" );
@@ -1482,9 +1493,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( std:
     // stress tensor : -p*Id + 2*mu*D(u)
     auto const Sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,true);
 
-    M_fieldNormalStressRefMesh->on(_range=rangeFaces,
-                                   _expr=val(Sigmav*idv(M_saveALEPartNormalStress)),
-                                   _geomap=this->geomap() );
+    fieldToUpdate->on(_range=rangeFaces,
+                      _expr=Sigmav*idv(M_saveALEPartNormalStress),
+                      _geomap=this->geomap() );
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptSI", "finish" );
 #endif

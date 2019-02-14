@@ -177,7 +177,7 @@ public:
 
 
 template<typename... SpaceList>
-class ProductSpaces : public  hana::tuple<SpaceList...>, ProductSpacesBase
+class ProductSpaces : public  ProductSpacesBase
 {
 public:
 #if 0
@@ -186,19 +186,35 @@ public:
                                     mpl::identity<hana::tuple<SpaceList...,ProductSpace<T,true>>>
                                     >::type::type ;//hana::if_(is_void(T),,>);
 #else
-    using super = hana::tuple<SpaceList...>;
+    using tuple_spaces_type = hana::tuple<SpaceList...>;
 #endif
     //using value_type = typename decay_type<decltype(super[0_c])>::value_type;
     using value_type = double;
     using functionspace_type = ProductSpaces<SpaceList...>;
 
-    ProductSpaces( SpaceList... l ) : super( l... ){}
-    constexpr int numberOfSpaces() const { return hana::size( *this ); }
+    ProductSpaces( SpaceList... l ) : M_tupleSpaces( l... ){}
+    constexpr int numberOfSpaces() const { return hana::size( M_tupleSpaces ); }
+
+    tuple_spaces_type const& tupleSpaces() const { return M_tupleSpaces; }
+    tuple_spaces_type & tupleSpaces() { return M_tupleSpaces; }
 
     //! \return the total number of degrees of freedom
-    size_type nDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nDof(); } ); }
+    size_type nDof() const { return hana::fold_left( M_tupleSpaces, 0, [&](size_type s, auto& e ) { return s + e->nDof(); } ); }
     //! \return the number of degrees of freedom owned by the process
-    size_type nLocalDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nLocalDof(); } ); }
+    size_type nLocalDof() const { return hana::fold_left( M_tupleSpaces, 0, [&](size_type s, auto& e ) { return s + e->nLocalDof(); } ); }
+
+    template<typename N>
+    decltype(auto)
+        operator[]( N const& n1 ) const
+        {
+            return M_tupleSpaces[n1];
+        }
+    template<typename N>
+    decltype(auto)
+        operator[]( N const& n1 )
+        {
+            return M_tupleSpaces[n1];
+        }
 
 
     class Element : public BlocksBaseVector<double>, FunctionSpaceBase::ElementBase
@@ -251,17 +267,20 @@ public:
     Element element() { Element u( *this ); return u; }
     using element_type = Element;
     using element_ptrtype = std::shared_ptr<element_type>;
+
+private :
+    tuple_spaces_type M_tupleSpaces;
 };
 
 template<typename T,typename... SpaceList>
-class ProductSpaces2 : public  hana::tuple<SpaceList...,std::shared_ptr<ProductSpace<T,true>>>, ProductSpacesBase
+class ProductSpaces2 : public ProductSpacesBase
 {
 public:
 
-    using super = typename mpl::if_<mpl::is_void_<T>,
-                                    mpl::identity<hana::tuple<SpaceList...>>,
-                                    mpl::identity<hana::tuple<SpaceList...,std::shared_ptr<ProductSpace<T,true>>>>
-                                    >::type::type ;//hana::if_(is_void(T),,>);
+    using tuple_spaces_type = typename mpl::if_<mpl::is_void_<T>,
+                                                mpl::identity<hana::tuple<SpaceList...>>,
+                                                mpl::identity<hana::tuple<SpaceList...,std::shared_ptr<ProductSpace<T,true>>>>
+                                                >::type::type ;//hana::if_(is_void(T),,>);
 
     //using value_type = typename decay_type<decltype(super[0_c])>::value_type;
     using value_type = double;
@@ -270,14 +289,30 @@ public:
     using mesh_ptrtype = typename decay_type<T>::mesh_ptrtype;
 
     ProductSpaces2() = default;
-    ProductSpaces2( std::shared_ptr<ProductSpace<T,true>> const& p, SpaceList... l ) : super( l..., p) {}
+    ProductSpaces2( std::shared_ptr<ProductSpace<T,true>> const& p, SpaceList... l ) : M_tupleSpaces( l..., p) {}
     
-    int numberOfSpaces() const { return int(hana::size( *this ))+hana::back(*this)->numberOfSpaces()-1; }
+    int numberOfSpaces() const { return int(hana::size( M_tupleSpaces ))+hana::back( M_tupleSpaces )->numberOfSpaces()-1; }
+
+    tuple_spaces_type const& tupleSpaces() const { return M_tupleSpaces; }
+    tuple_spaces_type & tupleSpaces() { return M_tupleSpaces; }
 
     //! \return the total number of degrees of freedom
     //size_type nDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nDof(); } ); }
     //! \return the number of degrees of freedom owned by the process
     //size_type nLocalDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nLocalDof(); } ); }
+
+    template<typename N>
+    decltype(auto)
+        operator[]( N const& n1 ) const
+        {
+            return M_tupleSpaces[n1];
+        }
+    template<typename N>
+    decltype(auto)
+        operator[]( N const& n1 )
+        {
+            return M_tupleSpaces[n1];
+        }
 
     class Element : public BlocksBaseVector<double>, FunctionSpaceBase::ElementBase
     {
@@ -370,6 +405,9 @@ public:
     std::shared_ptr<Element> elementPtr() { return std::make_shared<Element>( *this );  }
     using element_type = Element;
     using element_ptrtype = std::shared_ptr<element_type>;
+
+private :
+    tuple_spaces_type M_tupleSpaces;
 };
 
 template<typename PS>

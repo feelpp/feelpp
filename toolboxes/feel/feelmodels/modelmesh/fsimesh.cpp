@@ -190,7 +190,9 @@ FSIMesh<ConvexType>::buildSubMesh( mesh_ptrtype const& fsimesh )
 
     // create fluid submesh
     std::list<std::string> myFluidMarkers( this->markersNameFluidVolume().begin(),this->markersNameFluidVolume().end() );
-    auto fluidMesh_temp = createSubmesh(fsimesh,markedelements(fsimesh,myFluidMarkers),0,size_type(MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES));
+    auto fluidMesh_temp = createSubmesh(fsimesh,markedelements(fsimesh,myFluidMarkers),
+                                        size_type(EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),
+                                        size_type(MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES));
     std::cout << "fluid mesh -> numGlobalElements : " << fluidMesh_temp->numGlobalElements() << "\n";
     std::cout << "fluid mesh -> save sequential mesh in : " << this->mshPathFluidPart1() << "\n";
     fs::path meshesdirectoriesFluid = this->mshPathFluidPart1().parent_path();
@@ -203,7 +205,9 @@ FSIMesh<ConvexType>::buildSubMesh( mesh_ptrtype const& fsimesh )
 #endif
     // create struct submesh
     std::list<std::string> mySolidMarkers( this->markersNameSolidVolume().begin(),this->markersNameSolidVolume().end() );
-    auto solidMesh_temp = createSubmesh(fsimesh,markedelements(fsimesh,mySolidMarkers),0,size_type(MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES));
+    auto solidMesh_temp = createSubmesh(fsimesh,markedelements(fsimesh,mySolidMarkers),
+                                        size_type(EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),
+                                        size_type(MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES));
     std::cout << "solid mesh -> numGlobalElements : " << solidMesh_temp->numGlobalElements()<<"\n";
     std::cout << "solid mesh -> save sequential mesh in : " << this->mshPathSolidPart1() << "\n";
     fs::path meshesdirectoriesSolid = this->mshPathSolidPart1().parent_path();

@@ -34,15 +34,18 @@ namespace Feel
 namespace FeelModels
 {
 
-    ModelAlgebraicFactory::ModelAlgebraicFactory(model_ptrtype const& __app, backend_ptrtype const& __backend)
+    ModelAlgebraicFactory::ModelAlgebraicFactory(model_ptrtype const& model, backend_ptrtype const& __backend)
         :
-        M_model(__app),
+        M_model(model),
         M_backend( __backend ),
         M_hasBuildLinearJacobian(false),
         M_hasBuildResidualCst(false),
-        M_hasBuildLinearSystemCst(false)
+        M_hasBuildLinearSystemCst(false),
+        M_usePseudoTransientContinuation( boption(_prefix=model->prefix(),_name="pseudo-transient-continuation") ),
+        M_pseudoTransientContinuationDelta0( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.delta0") ),
+        M_pseudoTransientContinuationDeltaMax( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.delta-max") ),
+        M_pseudoTransientContinuationSerVariant( soption(_prefix=model->prefix(),_name="pseudo-transient-continuation.ser-variant") )
     {
-        auto model = this->model();
         model->timerTool("Constructor").start();
         auto graph = model->buildMatrixGraph();
         model->timerTool("Constructor").elapsed("graph");
@@ -61,16 +64,20 @@ namespace FeelModels
 
     //---------------------------------------------------------------------------------------------------------------//
 
-    ModelAlgebraicFactory::ModelAlgebraicFactory(model_ptrtype const& __app,
+    ModelAlgebraicFactory::ModelAlgebraicFactory(model_ptrtype const& model,
                            backend_ptrtype const& __backend,
                            graph_ptrtype const& graph,
                            indexsplit_ptrtype const& indexSplit )
         :
-        M_model(__app),
+        M_model(model),
         M_backend(__backend ),
         M_hasBuildLinearJacobian(false),
         M_hasBuildResidualCst(false),
-        M_hasBuildLinearSystemCst(false)
+        M_hasBuildLinearSystemCst(false),
+        M_usePseudoTransientContinuation( boption(_prefix=model->prefix(),_name="pseudo-transient-continuation") ),
+        M_pseudoTransientContinuationDelta0( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.delta0") ),
+        M_pseudoTransientContinuationDeltaMax( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.delta-max") ),
+        M_pseudoTransientContinuationSerVariant( soption(_prefix=model->prefix(),_name="pseudo-transient-continuation.ser-variant") )
     {
         if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".MethodNum","constructor1", "start",
                                                             this->model()->worldComm(),this->model()->verboseAllProc());
@@ -146,10 +153,15 @@ namespace FeelModels
                                          _prefix=M_backend->prefix() );
 
         // necessary to use the nonlinear solver
-        M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian,
-                                                       boost::ref( *this ), _1, _2/*, M_R*/ );
-        M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual,
-                                                       boost::ref( *this ), _1, _2 );
+        M_backend->nlSolver()->jacobian = std::bind( &self_type::updateJacobian,
+                                                     std::ref( *this ), std::placeholders::_1, std::placeholders::_2/*, M_R*/ );
+        M_backend->nlSolver()->residual = std::bind( &self_type::updateResidual,
+                                                     std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
+
+        if ( M_usePseudoTransientContinuation && M_pseudoTransientContinuationSerVariant == "solution" )
+        {
+            M_pseudoTransientContinuationPreviousSolution = M_backend->newVector( M_J->mapColPtr() );
+        }
 
     }
     //---------------------------------------------------------------------------------------------------------------//
@@ -246,6 +258,20 @@ namespace FeelModels
     {
         std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionResidualPostAssembly.size()).str() : key;
         M_addFunctionResidualPostAssembly[ keyUsed ] = func;
+    }
+
+
+    void
+    ModelAlgebraicFactory::addVectorLinearRhsAssembly( vector_ptrtype const& vec, double scaling, std::string const& key, bool cstPart )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addVectorLinearRhsAssembly.size()).str() : key;
+        M_addVectorLinearRhsAssembly[ keyUsed ] = std::make_tuple( vec, scaling, cstPart );
+    }
+    void
+    ModelAlgebraicFactory::addVectorResidualAssembly( vector_ptrtype const& vec, double scaling, std::string const& key, bool cstPart )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addVectorResidualAssembly.size()).str() : key;
+        M_addVectorResidualAssembly[ keyUsed ] = std::make_tuple( vec, scaling, cstPart );
     }
 
     //---------------------------------------------------------------------------------------------------------------//
@@ -394,6 +420,10 @@ namespace FeelModels
             this->model()->updateLinearPDE( dataLinearCst );
             for ( auto const& func : M_addFunctionLinearAssembly )
                 func.second( dataLinearCst );
+            M_CstR->close();
+            for ( auto const& av : M_addVectorLinearRhsAssembly )
+                if ( std::get<2>( av.second ) )
+                    M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
             M_hasBuildLinearSystemCst = true;
         }
         else if ( this->model()->rebuildCstPartInLinearSystem() || this->model()->needToRebuildCstPart() ||
@@ -406,6 +436,10 @@ namespace FeelModels
             this->model()->updateLinearPDE( dataLinearCst );
             for ( auto const& func : M_addFunctionLinearAssembly )
                 func.second( dataLinearCst );
+            M_CstR->close();
+            for ( auto const& av : M_addVectorLinearRhsAssembly )
+                if ( std::get<2>( av.second ) )
+                    M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
         }
         this->model()->setNeedToRebuildCstPart(false);
 
@@ -431,6 +465,12 @@ namespace FeelModels
         for ( auto const& func : M_addFunctionLinearAssembly )
             func.second( dataLinearNonCst );
         this->model()->updateLinearPDE( dataLinearNonCst );
+
+        M_R->close();
+        // add maybe vector to rhs
+        for ( auto const& av : M_addVectorLinearRhsAssembly )
+            if ( !std::get<2>( av.second ) )
+                M_R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
 
         // dof elimination
         this->model()->updateLinearPDEDofElimination( dataLinearNonCst );
@@ -525,6 +565,12 @@ namespace FeelModels
         }
 
         ModelAlgebraic::DataUpdateJacobian dataJacobianNonCst(X,J,R,false, M_Extended,false);
+        if ( M_usePseudoTransientContinuation )
+        {
+            dataJacobianNonCst.addInfo( "use-pseudo-transient-continuation" );
+            CHECK( !M_pseudoTransientContinuationDeltaAndResidual.empty() ) << "must have at least one value";
+            dataJacobianNonCst.addDoubleInfo( "pseudo-transient-continuation.delta", M_pseudoTransientContinuationDeltaAndResidual.back().first );
+        }
         // apply before addFunctionJacobianAssembly because due to Strong dirichlet
         for ( auto const& func : M_addFunctionJacobianAssembly )
             func.second( dataJacobianNonCst );
@@ -561,6 +607,10 @@ namespace FeelModels
             model->updateResidual( dataResidualCst );
             for ( auto const& func : M_addFunctionResidualAssembly )
                 func.second( dataResidualCst );
+            R->close();
+            for ( auto const& av : M_addVectorResidualAssembly )
+                if ( std::get<2>( av.second ) )
+                    R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
         }
 
         bool doOptimization = this->model()->useLinearJacobianInResidual() && this->model()->useCstMatrix();
@@ -574,8 +624,13 @@ namespace FeelModels
             func.second( dataResidualNonCst );
         model->updateResidual( dataResidualNonCst );
 
-        // dof elimination
         R->close();
+
+        for ( auto const& av : M_addVectorResidualAssembly )
+            if ( !std::get<2>( av.second ) )
+                R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
+
+        // dof elimination
         model->updateResidualDofElimination( dataResidualNonCst );
 
         for ( auto const& func : M_addFunctionResidualPostAssembly )
@@ -597,6 +652,8 @@ namespace FeelModels
             Feel::FeelModels::Log( model->prefix()+".ModelAlgebraicFactory","NonLinearSolverNewton", "start",
                                    model->worldComm(),model->verboseAllProc() );
 
+        if ( M_usePseudoTransientContinuation )
+            M_pseudoTransientContinuationDeltaAndResidual.clear();
         //---------------------------------------------------------------------//
         //---------------------------------------------------------------------//
         //---------------------------------------------------------------------//
@@ -646,6 +703,9 @@ namespace FeelModels
                 for ( auto const& func : M_addFunctionResidualAssembly )
                     func.second( dataResidualCst );
                 M_CstR->close();
+                for ( auto const& av : M_addVectorResidualAssembly )
+                    if ( std::get<2>( av.second ) )
+                        M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
                 M_hasBuildResidualCst = true;
             }
             else if (model->rebuildCstPartInResidual() || model->needToRebuildCstPart() ) // first if is not an option (just optimisation with fsi semi-implicit)
@@ -657,6 +717,9 @@ namespace FeelModels
                 for ( auto const& func : M_addFunctionResidualAssembly )
                     func.second( dataResidualCst );
                 M_CstR->close();
+                for ( auto const& av : M_addVectorResidualAssembly )
+                    if ( std::get<2>( av.second ) )
+                        M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
             }
         }
         model->setNeedToRebuildCstPart(false);
@@ -664,16 +727,18 @@ namespace FeelModels
         model->timerTool("Solve").elapsed("algebraic-residual");
         model->timerTool("Solve").restart();
         //---------------------------------------------------------------------//
-        
+
         pre_solve_type pre_solve = std::bind(&model_type::preSolveNewton, model, std::placeholders::_1, std::placeholders::_2);
         post_solve_type post_solve = std::bind(&model_type::postSolveNewton, model, std::placeholders::_1, std::placeholders::_2);
-        
+        update_nlsolve_type update_nlsolve = std::bind(&self_type::updateIterationNewton, std::ref( *this ), std::placeholders::_1, std::placeholders::_2,std::placeholders::_3 );
+
         auto const solveStat = M_backend->nlSolve( _jacobian=M_J,
                                                    _solution=U,
                                                    _residual=M_R,
                                                    _prec=M_PrecondManage,
                                                    _pre=pre_solve,
-                                                   _post=post_solve);
+                                                   _post=post_solve,
+                                                   _update=update_nlsolve );
         if ( false )
             Feel::FeelModels::Log(model->prefix()+".ModelAlgebraicFactory","NonLinearSolverNewton",
                                   "solver stat :\n" +
@@ -910,6 +975,42 @@ namespace FeelModels
                                   this->model()->worldComm(),this->model()->verboseSolverTimerAllProc());
 
     }
+
+void
+ModelAlgebraicFactory::updateIterationNewton( int step, vector_ptrtype residual, vector_ptrtype sol )
+{
+    this->model()->updateIterationNewton( step, residual, sol );
+
+    if ( M_usePseudoTransientContinuation )
+    {
+        bool useResidualNorm = M_pseudoTransientContinuationSerVariant == "residual";
+        if ( useResidualNorm )
+        {
+            double resNorm = residual->l2Norm();
+            if ( step == 0 )
+                M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair(M_pseudoTransientContinuationDelta0,resNorm ) );
+            else
+            {
+                double curDelta = M_pseudoTransientContinuationDeltaAndResidual.back().first*M_pseudoTransientContinuationDeltaAndResidual.back().second/resNorm;
+                double newDelta = std::min( curDelta, M_pseudoTransientContinuationDeltaMax );
+                M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair(newDelta,resNorm ) );
+            }
+        }
+        else
+        {
+            if ( step == 0 )
+                M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair(M_pseudoTransientContinuationDelta0,0. ) );
+            else
+            {
+                M_pseudoTransientContinuationPreviousSolution->add( -1.,sol );
+                double diffNorm = M_pseudoTransientContinuationPreviousSolution->l2Norm();
+                double curDelta = M_pseudoTransientContinuationDeltaAndResidual.back().first/diffNorm;
+                double newDelta = std::min( curDelta, M_pseudoTransientContinuationDeltaMax );
+            }
+            *M_pseudoTransientContinuationPreviousSolution = *sol;
+        }
+    }
+}
 
 
 } // namespace FeelModels

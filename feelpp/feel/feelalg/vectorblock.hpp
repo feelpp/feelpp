@@ -77,7 +77,7 @@ public :
         M_backend( b )
         {
             int n = 0;
-            hana::for_each( ps, [&]( auto const& e )
+            hana::for_each( ps.tupleSpaces(), [&]( auto const& e )
                             {
 
                                 hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(e)>>{},
@@ -489,7 +489,7 @@ blockVector( PS && ps, backend_ptrtype b = backend(),
     BlocksBaseVector<double> g( size, b );
 
     int n = 0;
-    hana::for_each( ps, [&]( auto const& e )
+    hana::for_each( ps.tupleSpaces(), [&]( auto const& e )
                     {
 
                         hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(e)>>{},
@@ -526,12 +526,12 @@ BlocksBaseVector<double>
 blockElement( PS && ps, backend_ptrtype b = backend(),
               std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
-    const int size = hana::size(ps);
+    const int size = hana::size(ps.tupleSpaces());
     //BlocksBaseVector<typename decay_type<PS>::value_type> g( size, backend() );
     BlocksBaseVector<double> g( size, b );
 
     int n = 0;
-    hana::for_each( ps, [&]( auto const& e )
+    hana::for_each( ps.tupleSpaces(), [&]( auto const& e )
                     {
                         cout << "creating vector element (" << n  << ")\n";
                         g(n,0) = e->elementPtr();
