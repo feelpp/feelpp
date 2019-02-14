@@ -137,7 +137,7 @@ Eigen::Map<const Eigen::Matrix<ValueType,ShapeM*ShapeP,ShapeN>>  convertEigenMat
           ( OpGrad , grad , grad , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankUp,true,-1,1 ), \
           ( OpSymmGrad , symm_grad , symmetricGradient , 1, 0, 0, vm::JACOBIAN|vm::KB|vm::GRAD|vm::SYMM , RankUp,true,-1,1 ), \
           ( OpDiv  , div  , div  , 1, 0, 0, vm::DIV|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
-          ( OpCurl , curl , curl , 1, 0, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankSame,false,-1,1 ), \
+          ( OpCurl , curl , curl , 1, 0, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankCurl,false,-1,1 ), \
           ( OpCurlX, curlx, curlx, 1, 1, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
           ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
           ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
@@ -706,36 +706,36 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
             private:                                                    \
                                                                         \
-                    result_type                                         \
-                    evaliq_( uint16_type /*i*/,                       \
-                             uint16_type /*c1*/, uint16_type /*c2*/,    \
-                             int /*q*/,                                 \
-                             mpl::bool_<false> ) const                  \
+                result_type                                             \
+                    evaliq_( uint16_type /*i*/,                         \
+                    uint16_type /*c1*/, uint16_type /*c2*/,             \
+                    int /*q*/,                                          \
+                    mpl::bool_<false> ) const                           \
                 {                                                       \
                     return 0;                                           \
                 }                                                       \
-                    ret_type                                            \
-                        evaliq_( uint16_type /*i*/,                     \
-                             int /*q*/,                                 \
-                             mpl::bool_<false> ) const                  \
+                ret_type                                                \
+                    evaliq_( uint16_type /*i*/,                         \
+                    int /*q*/,                                          \
+                    mpl::bool_<false> ) const                           \
                 {                                                       \
                     return ret_type(M_zero.data());                     \
                 }                                                       \
                                                                         \
-                    ret_type                                            \
-                        evaliq_( uint16_type i, uint16_type q, mpl::bool_<true> ) const \
-                    {                                                   \
-                        return evaliq__( i, q, mpl::bool_<true>(), mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
-                    }                                                   \
-                    result_type                                         \
+                ret_type                                                \
+                    evaliq_( uint16_type i, uint16_type q, mpl::bool_<true> ) const \
+                {                                                       \
+                    return evaliq__( i, q, mpl::bool_<true>(), mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
+                }                                                           \
+                result_type                                             \
                     evaliq_( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true> ) const \
                 {                                                       \
                     return evaliq__( i, c1, c2, q, mpl::bool_<true>(), mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
                 }                                                       \
                                                                         \
-                    ret_type                                            \
-                        evaliq__( uint16_type /*i*/,  uint16_type q,    \
-                                  mpl::bool_<true>, mpl::bool_<true> ) const \
+                ret_type                                                \
+                    evaliq__( uint16_type /*i*/,  uint16_type q,        \
+                    mpl::bool_<true>, mpl::bool_<true> ) const          \
                     {                                                   \
                         return Feel::vf::detail::convertEigenMatrixTensor( M_loc[q]); \
                         /*return M_returnEigenMatrix;*/                 \
@@ -881,6 +881,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
 // Generate the code
 //
 BOOST_PP_LIST_FOR_EACH_PRODUCT(
+
     VF_ARRAY_OPERATOR, 2, (
         VF_OPERATORS, VF_OPERATORS_TYPE ) )
 /// \endcond

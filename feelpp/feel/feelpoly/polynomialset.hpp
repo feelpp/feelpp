@@ -2031,6 +2031,18 @@ public:
                 return M_curl[i][q]( c1 );
             }
 
+        value_type curlx( uint16_type i, uint32_type q ) const
+            {
+                return curlx( i, q, do_optimization_p1_t() );
+            }
+        value_type curlx( uint16_type i, uint32_type q, optimization_p1_t ) const
+            {
+                return M_curl[i][0](0);
+            }
+        value_type curlx( uint16_type i, uint32_type q, no_optimization_p1_t ) const
+            {
+                return M_curl[i][q](0);
+            }
 
         value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
