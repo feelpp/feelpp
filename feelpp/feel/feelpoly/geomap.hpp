@@ -543,9 +543,9 @@ class GeoMap
     }
 
     std::vector<bool> M_cached;
-    std::unordered_map<uint32_type,double> M_J;
+    std::unordered_map<uint32_type,value_type> M_J;
     using element_face_pair_t = std::pair<uint32_type,uint16_type>;
-    std::unordered_map<element_face_pair_t,double,boost::hash<element_face_pair_t>> M_JFace, M_n_norm;
+    std::unordered_map<element_face_pair_t,value_type,boost::hash<element_face_pair_t>> M_JFace, M_n_norm;
     using allocator_vector_n_t = Eigen::aligned_allocator<std::pair<const element_face_pair_t, eigen_vector_n_type> >;
     std::unordered_map<element_face_pair_t,eigen_vector_n_type,boost::hash<element_face_pair_t>, std::equal_to<element_face_pair_t>, allocator_vector_n_t> M_un_real;
     std::unordered_map<element_face_pair_t,int,boost::hash<element_face_pair_t>> M_permutation_element_face_neighbor;
@@ -595,11 +595,11 @@ class GeoMap
         ( e ).error( "invalid cache" );
         M_cached[e] = v;
     }
-    double J( int e ) const
+    value_type J( int e ) const
     {
         return M_J.at(e);
     }
-    void setJacobian( int e, double v ) 
+    void setJacobian( int e, value_type v ) 
         {
             M_J[e]=v;
         }
@@ -607,7 +607,7 @@ class GeoMap
         {
             return M_J.count(e);
         }
-    double jacobianAtFace( int e, int f ) const
+    value_type jacobianAtFace( int e, int f ) const
         {
             return M_JFace.at({e,f});
         }
@@ -627,7 +627,7 @@ class GeoMap
     bool cache( int e,
                 eigen_matrix_type<nRealDim,nDim,value_type>& K,
                 eigen_matrix_type<nRealDim,nDim,value_type>& B,
-                double& J,
+                value_type& J,
                 std::enable_if_t<!G::is_linear || (nDim!=nRealDim)>* = nullptr )
         {
             return false;
@@ -636,7 +636,7 @@ class GeoMap
     bool cache( int e,
                 eigen_matrix_type<nRealDim,nDim,value_type>& K,
                 eigen_matrix_type<nRealDim,nDim,value_type>& B,
-                double& J,
+                value_type& J,
                 std::enable_if_t<G::is_linear && (nDim==nRealDim)>* = nullptr )
         {
             if ( M_K.count(e) == 0 ) return false;
@@ -649,7 +649,7 @@ class GeoMap
     void updateCache( int e,
                       eigen_matrix_type<nRealDim,nDim,value_type> const& K,
                       eigen_matrix_type<nRealDim,nDim,value_type> const& B,
-                      double const& J,
+                      value_type const& J,
                       std::enable_if_t<!G::is_linear || (nDim!=nRealDim)>* = nullptr )
         {
         }
@@ -657,7 +657,7 @@ class GeoMap
     void updateCache( int e,
                       eigen_matrix_type<nRealDim,nDim,value_type> const& K,
                       eigen_matrix_type<nRealDim,nDim,value_type> const & B,
-                      double const& J,
+                      value_type const& J,
                       std::enable_if_t<G::is_linear && (nDim==nRealDim)>* = nullptr )
         {
             //if ( M_K.count(e) > 0 ) return false;
@@ -665,7 +665,7 @@ class GeoMap
             M_B[e] = B;
             M_J[e] = J;
         }
-    void addJ( int e, double v )
+    void addJ( int e, value_type v )
     {
         FEELPP_ASSERT( this->isCacheValid() )
         ( e ).error( "invalid cache" );
@@ -676,11 +676,11 @@ class GeoMap
         {
             return M_JFace.count({e,f});
         }
-    void setJacobianAtFace( int e, int f, double v )
+    void setJacobianAtFace( int e, int f, value_type v )
         {
             M_JFace[{e,f}] = v;
         }
-    double normalNormAtFace( int e, int f ) const
+    value_type normalNormAtFace( int e, int f ) const
         {
             return M_n_norm.at({e,f});
         }
@@ -688,7 +688,7 @@ class GeoMap
         {
             return M_n_norm.count({e,f});
         }
-    void setNormalNormAtFace( int e, int f, double v )
+    void setNormalNormAtFace( int e, int f, value_type v )
         {
             M_n_norm[{e,f}] = v;
         }
