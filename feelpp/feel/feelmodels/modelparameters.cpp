@@ -80,21 +80,51 @@ ModelParameters::setup()
         else
         {
             std::string name = t;
-            double val = 0.;
-            double min = 0.;
-            double max = 0.;
             if( boost::optional<std::string> n = f.get_optional<std::string>("name") )
                 name = *n;
-            if( boost::optional<double> d = f.get_optional<double>("min") )
-                min = *d;
-            if( boost::optional<double> d = f.get_optional<double>("max") )
-                max = *d;
-            if( boost::optional<double> d = f.get_optional<double>("value") )
-                this->operator[](t) = ModelParameter( name, *d, min, max );
-            else if ( boost::optional<std::string> s = f.get_optional<std::string>("value") )
-                this->operator[](t) = ModelParameter( name, *s, M_directoryLibExpr, M_worldComm, min, max );
-            else
-                this->operator[](t) = ModelParameter( name, 0., min, max );
+            std::string type = "expression";
+            if( boost::optional<std::string> n = f.get_optional<std::string>("type") )
+                type = *n;
+            if ( type == "expression" || type == "value" )
+            {
+                double val = 0.;
+                double min = 0.;
+                double max = 0.;
+                if( boost::optional<double> d = f.get_optional<double>("min") )
+                    min = *d;
+                if( boost::optional<double> d = f.get_optional<double>("max") )
+                    max = *d;
+                if( boost::optional<double> d = f.get_optional<double>("value") )
+                    this->operator[](t) = ModelParameter( name, *d, min, max );
+                else if ( boost::optional<std::string> s = f.get_optional<std::string>("value") )
+                    this->operator[](t) = ModelParameter( name, *s, M_directoryLibExpr, M_worldComm, min, max );
+                else
+                    this->operator[](t) = ModelParameter( name, 0., min, max );
+            }
+            else if ( type == "fit" )
+            {
+                std::string filename;
+                if( boost::optional<std::string> d = f.get_optional<std::string>("filename") )
+                    filename = *d;
+                else
+                    CHECK( false ) << "filename is required with fit type";
+                std::string exprStr;
+                if( boost::optional<std::string> d = f.get_optional<std::string>("expr") )
+                    exprStr = *d;
+                else
+                    CHECK( false ) << "expr is required with fit type";
+                std::string interpType = "Akima";
+                if( boost::optional<std::string> d = f.get_optional<std::string>("interpolation") )
+                    interpType = *d;
+
+                auto itFindType = InterpolationTypeMap.find( interpType );
+                CHECK( itFindType != InterpolationTypeMap.end() ) << "invalid interpolator type " << type;
+                InterpolationType interpolatorEnumType = itFindType->second;
+
+
+                std::shared_ptr<Interpolator> interpolator = Interpolator::New( /*interpType*/interpolatorEnumType, filename, M_worldComm );
+                this->operator[](t) = ModelParameter( name, interpolator, exprStr, M_directoryLibExpr, M_worldComm );
+            }
         }
     }
 }
@@ -145,7 +175,8 @@ ModelParameters::toParameterValues() const
 {
     std::map<std::string,double> pv;
     for( auto const& p : *this )
-        pv[p.first]=p.second.value();
+        if ( p.second.type() != "fit" )
+            pv[p.first]=p.second.value();
     return pv;
 }
 
