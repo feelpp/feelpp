@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
 
     auto UU = Vh->element();
     auto uu =UU.template element<0>();
-    uu.on(elements(mesh), trans(h));
+    uu.on(_range=elements(mesh), _expr=trans(h));
     auto ex = exporter(mesh);
     ex->add("u", u);
     ex->add("p", p);
