@@ -32,10 +32,16 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     bool BuildNonCstPart = !_buildCstPart;
     bool BuildCstPart = _buildCstPart;
-    bool BuildCstPart_BoundaryParoiMobile = BuildCstPart;
-    if (this->useFSISemiImplicitScheme() )
+
+
+    double timeSteppingScaling = 1.;
+    bool timeSteppingThetaAssemblePreviousContrib = data.hasInfo( "Theta-Time-Stepping-Previous-Contrib" );
+    if ( !this->isStationary() && M_timeStepping == "Theta" )
     {
-        BuildCstPart_BoundaryParoiMobile=BuildNonCstPart;
+        if ( timeSteppingThetaAssemblePreviousContrib )
+            timeSteppingScaling = 1. - M_timeStepThetaValue;
+        else
+            timeSteppingScaling = M_timeStepThetaValue;
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -94,7 +100,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                                //_expr= trace(val(Fv*Sv)*trans(grad(v))),
                                //_expr=trace(Feel::FeelModels::stressStVenantKirchhoff(u,coeffLame1,coeffLame2)*trans(grad(v))),
                                //_expr=Feel::FeelModels::stressStVenantKirchhoffResidual(u,coeffLame1,coeffLame2),// le dernier 
-                               _expr= inner(FSv_neohookean,grad(v)),
+                               _expr= timeSteppingScaling*inner(FSv_neohookean,grad(v)),
                                _geomap=this->geomap() );
             }
         }
@@ -106,7 +112,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                 linearFormDisplacement +=
                     integrate( _range=M_rangeMeshElements,
                                //_expr= trace(val(FSv_neohookean)*trans(grad(v))),
-                               _expr= inner(FSv_neohookean,grad(v)),
+                               _expr= timeSteppingScaling*inner(FSv_neohookean,grad(v)),
                                _quad=_Q<2*nOrderDisplacement+1>(),
                                _geomap=this->geomap() );
             }
@@ -117,7 +123,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         if (!BuildCstPart)
             linearFormDisplacement +=
                 integrate( _range=M_rangeMeshElements,
-                           _expr= trace(Sv*trans(grad(v))),
+                           _expr= timeSteppingScaling*inner(Sv,grad(v)),
                            _geomap=this->geomap() );
     }
     else if (M_pdeType=="Elasticity")
@@ -125,7 +131,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         if (!BuildCstPart && !UseJacobianLinearTerms)
             linearFormDisplacement +=
                 integrate( _range=M_rangeMeshElements,
-                           _expr= inner( Sv_elastic,grad(v) ),
+                           _expr= timeSteppingScaling*inner( Sv_elastic,grad(v) ),
                            _geomap=this->geomap() );
     }
     double timeElapsedBis = this->timerTool("Solve").stop();
@@ -152,7 +158,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     // source term
     if (BuildCstPart)
     {
-        this->updateSourceTermResidual( R );
+        this->updateSourceTermResidual( R, timeSteppingScaling );
     }
     //--------------------------------------------------------------------------------------------------//
     // discretisation acceleration term
@@ -220,7 +226,19 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             CHECK( this->hasStartSubBlockSpaceIndex( "velocity" ) ) << "no SubBlockSpaceIndex velocity";
             size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
             //std::cout << "RESIDUAL bdf\n";
-            if (!BuildCstPart && !UseJacobianLinearTerms)
+            if ( timeSteppingThetaAssemblePreviousContrib )
+            {
+                if ( !BuildCstPart )
+                {
+                    auto const curVel = M_XhDisplacement->element(X, rowStartInVector+startBlockIndexVelocity);
+                    form1( _test=M_XhDisplacement, _vector=R,
+                           _rowstart=rowStartInVector+startBlockIndexVelocity ) +=
+                        integrate( _range=M_rangeMeshElements,
+                                   _expr= -timeSteppingScaling*idv(rho)*inner(idv(curVel),id(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+            else if (!BuildCstPart && !UseJacobianLinearTerms)
             {
                 auto const curVel = M_XhDisplacement->element(X, rowStartInVector+startBlockIndexVelocity);
                 if ( !this->useMassMatrixLumped() )
@@ -238,11 +256,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                 form1( _test=M_XhDisplacement, _vector=R,
                        _rowstart=rowStartInVector+startBlockIndexVelocity ) +=
                     integrate( _range=M_rangeMeshElements,
-                               _expr= idv(rho)*inner(M_timeStepBdfDisplacement->polyDerivCoefficient(0)*idv(u)-idv(curVel),id(v)),
+                               _expr= idv(rho)*inner(M_timeStepBdfDisplacement->polyDerivCoefficient(0)*idv(u)-timeSteppingScaling*idv(curVel),id(v)),
                                _geomap=this->geomap() );
             }
 
-            if ( BuildCstPart )
+            if ( BuildCstPart && !timeSteppingThetaAssemblePreviousContrib )
             {
                 auto rhsTimeStepVelocity = M_timeStepBdfVelocity->polyDeriv();
                 if ( !this->useMassMatrixLumped() )
@@ -272,34 +290,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     // neumann bc
     if (BuildCstPart)
     {
-        this->updateBCNeumannResidual( R );
+        this->updateBCNeumannResidual( R, timeSteppingScaling );
     }
     // follower pressure bc
     if (!BuildCstPart)
     {
-        this->updateBCFollowerPressureResidual( u,R );
+        this->updateBCFollowerPressureResidual( u,R, timeSteppingScaling );
     }
-
-    //--------------------------------------------------------------------------------------------------//
-    // robin boundary condition (used in wavePressure3d as external tissue for arterial wall)
-    //if ( this->markerRobinBC().size() > 0 && !BuildCstPart && !UseJacobianLinearTerms)
-    if ( this->markerRobinBC().size() > 0 && !BuildCstPart )// && !UseJacobianLinearTerms)
+    // robin bc
+    if ( !BuildCstPart )// && !UseJacobianLinearTerms)
     {
-        this->updateBCRobinResidual( u, R );
-    }
-    //--------------------------------------------------------------------------------------------------//
-    // dirichlet condition by elimination
-    if (this->hasMarkerDirichletBCelimination() && !BuildCstPart)
-    {
-        //this->updateBCDirichletStrongResidual( R );
-        R->close();
-
-        auto resFeViewDisp = M_XhDisplacement->element(R,rowStartInVector);
-        auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("displacement");
-        auto const& dofsWithValueImposedDisp = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
-        for ( size_type thedof : dofsWithValueImposedDisp )
-            resFeViewDisp.set( thedof,0. );
-        sync( resFeViewDisp, "=", dofsWithValueImposedDisp );
+        this->updateBCRobinResidual( u, R, timeSteppingScaling );
     }
 
     double timeElapsed = this->timerTool("Solve").stop();
@@ -506,7 +507,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U 
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual(vector_ptrtype& R) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual( vector_ptrtype& R, double timeSteppingScaling ) const
 {
     if ( this->M_bcNeumannScalar.empty() && this->M_bcNeumannVectorial.empty() && this->M_bcNeumannTensor2.empty() ) return;
 
@@ -517,17 +518,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual(vector_ptrtype& R) c
     for( auto const& d : this->M_bcNeumannScalar )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                       _expr= -expression(d)*inner( N(),id(v) ),
+                       _expr= -timeSteppingScaling*expression(d)*inner( N(),id(v) ),
                        _geomap=this->geomap() );
     for( auto const& d : this->M_bcNeumannVectorial )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,name(d)) ),
-                       _expr= -inner( expression(d),id(v) ),
+                       _expr= -timeSteppingScaling*inner( expression(d),id(v) ),
                        _geomap=this->geomap() );
     for( auto const& d : this->M_bcNeumannTensor2 )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,name(d)) ),
-                       _expr= -inner( expression(d)*N(),id(v) ),
+                       _expr= -timeSteppingScaling*inner( expression(d)*N(),id(v) ),
                        _geomap=this->geomap() );
 }
 
@@ -535,7 +536,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual(vector_ptrtype& R) c
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R, double timeSteppingScaling ) const
 {
 
     if ( this->M_bcRobin.empty() ) return;
@@ -547,7 +548,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinResidual(element_displacement_e
     for( auto const& d : this->M_bcRobin )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)/*this->markerRobinBC()*/),
-                       _expr= inner( expression1(d)(0,0)*idv(u) - expression2(d) ,id(u) ),
+                       _expr= timeSteppingScaling*inner( expression1(d)(0,0)*idv(u) - expression2(d) ,id(u) ),
                        _geomap=this->geomap() );
 
 }
@@ -557,9 +558,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinResidual(element_displacement_e
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermResidual( vector_ptrtype& R ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermResidual( vector_ptrtype& R, double timeSteppingScaling ) const
 {
-
     if ( this->M_volumicForcesProperties.empty() ) return;
 
     auto myLinearForm = form1( _test=this->functionSpaceDisplacement(), _vector=R,
@@ -568,23 +568,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermResidual( vector_ptrtype& R 
 
     for( auto const& d : this->M_volumicForcesProperties )
     {
-        if ( markers(d).empty() )
-            myLinearForm +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= -inner( expression(d),id(v) ),
-                           _geomap=this->geomap() );
-        else
-            myLinearForm +=
-                integrate( _range=markedelements(this->mesh(),markers(d)),
-                           _expr= -inner( expression(d),id(v) ),
-                           _geomap=this->geomap() );
+        auto rangeBodyForceUsed = markers(d).empty()? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
+        myLinearForm +=
+            integrate( _range=rangeBodyForceUsed,
+                       _expr= -timeSteppingScaling*inner( expression(d),id(v) ),
+                       _geomap=this->geomap() );
     }
 }
 
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureResidual( element_displacement_external_storage_type const& u, vector_ptrtype& R ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureResidual( element_displacement_external_storage_type const& u, vector_ptrtype& R, double timeSteppingScaling ) const
 {
     if ( this->M_bcNeumannEulerianFrameScalar.empty() && this->M_bcNeumannEulerianFrameVectorial.empty() && this->M_bcNeumannEulerianFrameTensor2.empty() ) return;
 
@@ -594,23 +589,44 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureResidual( element_di
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)),
-                       _expr= -expression(d)*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*N(),id(u) ),
+                       _expr= -timeSteppingScaling*expression(d)*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*N(),id(u) ),
                        _geomap=this->geomap() );
     }
     for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)),
-                       _expr= -inner( Feel::FeelModels::solidMecGeomapEulerian(u)*expression(d),id(u) ),
+                       _expr= -timeSteppingScaling*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*expression(d),id(u) ),
                        _geomap=this->geomap() );
     }
     for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)),
-                       _expr= -inner( Feel::FeelModels::solidMecGeomapEulerian(u)*expression(d)*N(),id(u) ),
+                       _expr= -timeSteppingScaling*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*expression(d)*N(),id(u) ),
                        _geomap=this->geomap() );
     }
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
+{
+    if ( !this->hasMarkerDirichletBCelimination() )
+        return;
+
+    this->log("SolidMechanics","updateResidualDofElimination","start" );
+
+    vector_ptrtype& R = data.residual();
+
+    auto resFeViewDisp = M_XhDisplacement->element(R,this->rowStartInVector());
+    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("displacement");
+    auto const& dofsWithValueImposedDisp = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
+    for ( size_type thedof : dofsWithValueImposedDisp )
+        resFeViewDisp.set( thedof,0. );
+    sync( resFeViewDisp, "=", dofsWithValueImposedDisp );
+
+    this->log("SolidMechanics","updateResidualDofElimination","finish" );
 }
 
 

@@ -229,7 +229,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
                                //_expr= -inner(idv(this->couplingRNG_evalForm1()),id(u)),
                                _expr= -inner(myB*idv(this->couplingRNG_evalForm1()),id(u)),
                                _geomap=this->geomap() );
-                auto sigmaSolidN = idv( this->fluidModel()->fieldNormalStressRefMeshPtr() );
+                auto sigmaSolidN = idv( M_fieldNormalStressRefMesh_fluid );
                 //auto sigmaSolidN = -idv( this->fluidModel()->normalStressFromStruct() );
                 linearForm +=
                     integrate( _range=rangeFSI,
@@ -254,7 +254,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
                 F->close();
                 F->addVector( M_coulingRNG_vectorTimeDerivative, M_coulingRNG_matrixTimeDerivative );
 
-                *M_coulingRNG_vectorStress = *this->fluidModel()->fieldNormalStressRefMeshPtr();
+                *M_coulingRNG_vectorStress = *M_fieldNormalStressRefMesh_fluid;
                 F->addVector( M_coulingRNG_vectorStress, M_coulingRNG_matrixStress );
             }
         }
@@ -509,7 +509,7 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
                     integrate( _range=rangeFSI,
                                _expr= inner(myB*idv(this->couplingRNG_evalForm1()),id(u)),
                                _geomap=this->geomap() );
-                auto sigmaSolidN = idv( this->fluidModel()->fieldNormalStressRefMeshPtr() );
+                auto sigmaSolidN = idv( M_fieldNormalStressRefMesh_fluid );
                 linearForm +=
                     integrate( _range=rangeFSI,
                                _expr= -inner( sigmaSolidN,id(u)),
@@ -532,7 +532,7 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
                 R->close();
                 R->addVector( M_coulingRNG_vectorTimeDerivative, M_coulingRNG_matrixTimeDerivative );
 
-                *M_coulingRNG_vectorStress = *this->fluidModel()->fieldNormalStressRefMeshPtr();
+                *M_coulingRNG_vectorStress = *M_fieldNormalStressRefMesh_fluid;
                 M_coulingRNG_vectorStress->scale(-1.);
                 R->addVector( M_coulingRNG_vectorStress, M_coulingRNG_matrixStress );
             }

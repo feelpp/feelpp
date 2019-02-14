@@ -108,6 +108,7 @@ const size_type EXTRACTION_KEEP_ALL_IDS                   = ( EXTRACTION_KEEP_PO
                                                               EXTRACTION_KEEP_FACES_IDS |
                                                               EXTRACTION_KEEP_VOLUMES_IDS );
 const size_type EXTRACTION_KEEP_MESH_RELATION             = ( 1<<4 );
+const size_type EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT  = ( 1<<5 );
 
 }
 #include <feel/feeldiscr/createsubmesh.hpp>
@@ -1381,6 +1382,17 @@ public:
             this->setUpdatedForUse( false );
             this->updateForUse();
         }
+
+
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT void removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim==0>* = nullptr );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT void removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim==1>* = nullptr );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT void removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim==2>* = nullptr );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT void removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim==3>* = nullptr );
+
 private:
 
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<1> ) {}
@@ -1395,6 +1407,7 @@ private:
     FEELPP_NO_EXPORT void updateCommonDataInEntities( std::enable_if_t<TheShape::nDim==2>* = nullptr );
     template<typename TheShape=GeoShape>
     FEELPP_NO_EXPORT void updateCommonDataInEntities( std::enable_if_t<TheShape::nDim==3>* = nullptr );
+
 
     friend class boost::serialization::access;
     template<class Archive>

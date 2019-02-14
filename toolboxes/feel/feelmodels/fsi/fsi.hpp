@@ -61,7 +61,7 @@ public :
 
     //___________________________________________________________________________________//
     // normal stress from fluid into solid model
-    static const uint16_type nOrder_solid_normalStressFromFluid = fluid_type::space_stress_type::basis_type::nOrder;
+    static const uint16_type nOrder_solid_normalStressFromFluid = fluid_type::space_normalstress_type::basis_type::nOrder;
     typedef bases<Lagrange< nOrder_solid_normalStressFromFluid, Vectorial,Discontinuous,PointSetFekete>> basis_solid_normalstressfromfluid_type;
     //typedef FunctionSpace<mesh_solid_type,basis_solid_normalstressfromfluid_type> space_solid_normalstressfromfluid_type;
     typedef FunctionSpace<trace_mesh_solid_type,basis_solid_normalstressfromfluid_type> space_solid_normalstressfromfluid_type;
@@ -71,7 +71,7 @@ public :
     typedef std::shared_ptr<element_solid_normalstressfromfluid_type> element_solid_normalstressfromfluid_ptrtype;
     //___________________________________________________________________________________//
     // normal stress from fluid into solid 1dreduced model
-    static const uint16_type nOrder_solid1dReduced_normalStressFromFluid = fluid_type::space_stress_type::basis_type::nOrder;
+    static const uint16_type nOrder_solid1dReduced_normalStressFromFluid = fluid_type::space_normalstress_type::basis_type::nOrder;
     typedef bases<Lagrange< nOrder_solid1dReduced_normalStressFromFluid, Vectorial,Discontinuous,PointSetFekete>> basis_solid1dreduced_normalstressfromfluid_vect_type;
     typedef FunctionSpace<mesh_solid_1dreduced_type, basis_solid1dreduced_normalstressfromfluid_vect_type> space_solid1dreduced_normalstressfromfluid_vect_type;
     typedef std::shared_ptr<space_solid1dreduced_normalstressfromfluid_vect_type> space_solid1dreduced_normalstressfromfluid_vect_ptrtype;
@@ -159,8 +159,8 @@ public :
 
     //-----------------------------------------------------------------------------------//
     // space and element stress with interaction 2d/2d or 3d/3d
-    typedef typename fluid_type::space_stress_type space_fluid_stress_type;
-    typedef typename fluid_type::element_stress_type element_fluid_stress_type;
+    typedef typename fluid_type::space_normalstress_type space_fluid_stress_type;
+    typedef typename fluid_type::element_normalstress_type element_fluid_stress_type;
 
     typedef typename solid_type::space_normal_stress_type space_struct_stress_type;
     //typedef typename solid_type::element_normal_stress_type element_struct_stress_type;
@@ -384,7 +384,11 @@ private :
     op_f2s_interpolation2dTo2dconf_velocity_ptrtype M_opVelocity2dTo2dconfF2S;
 
 
-    //
+    // normal stress of fluid at fsi interface and computed on reference domain
+    typename fluid_type::space_normalstress_ptrtype M_spaceNormalStress_fluid;
+    typename fluid_type::element_normalstress_ptrtype M_fieldNormalStressRefMesh_fluid;
+
+    // normal stress from fluid into solid model
     space_solid_normalstressfromfluid_ptrtype M_spaceNormalStressFromFluid_solid;
     element_solid_normalstressfromfluid_ptrtype M_fieldNormalStressFromFluid_solid;
     typename solid_type::element_vectorial_ptrtype M_fieldVelocityInterfaceFromFluid_solid;

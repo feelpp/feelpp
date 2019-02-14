@@ -152,8 +152,8 @@ public :
                                      []( auto&& x ) { return *x; },
                                      []( auto&& x ) { return x; } )(M_ps);
             #endif
-            auto test_space = hana::at( spaces, n1 );
-            auto trial_space = hana::at( spaces, n2 );
+            auto test_space = hana::at( spaces.tupleSpaces(), n1 );
+            auto trial_space = hana::at( spaces.tupleSpaces(), n2 );
 
             return hana::eval_if(std::is_base_of<ProductSpaceBase,decay_type<decltype(test_space)>>{},
                                  [&]( auto _ ) { return hana::eval_if( std::is_base_of<ProductSpaceBase,decay_type<decltype(trial_space)>>{},
@@ -208,10 +208,11 @@ public :
         {
             int s = M_ps.numberOfSpaces();
             int n = 0;
-            auto cp = hana::cartesian_product( hana::make_tuple( M_ps, M_ps ) );
-            int nstatic = hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(hana::back(M_ps))>>{},
+            auto pst = M_ps.tupleSpaces();
+            auto cp = hana::cartesian_product( hana::make_tuple( pst, pst ) );
+            int nstatic = hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(hana::back(pst))>>{},
                                     [s] (auto&& x ) { return s-hana::back(std::forward<decltype(x)>(x))->numberOfSpaces()+1; },
-                                    [s] (auto&& x ) { return s; } )( M_ps );
+                                    [s] (auto&& x ) { return s; } )( pst );
             hana::for_each( cp, [&]( auto const& e )
                             {
                                 int r = n/nstatic;
@@ -242,11 +243,9 @@ public :
                                        ( post, (post_solve_type), post_solve_type() )
                                        ) )
         {
-            
-            if ( condense &&  hana::Foldable<PS>::value )
+            if ( condense )
                 return solveImplCondense( M_ps, solution, rhs, name, kind, rebuild, pre, post );
             return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
-                
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t>
     typename Backend<double>::solve_return_type
@@ -260,10 +259,10 @@ public :
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
                        bool rebuild, pre_solve_type pre, post_solve_type post,
-                       std::enable_if_t< hana::Foldable<PS_t>::value &&
+                       std::enable_if_t< hana::Foldable<typename decay_type<PS_t>::tuple_spaces_type>::value &&
                                          !std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
         {
-            return solveImplCondense( ps, solution, rhs, name, kind, rebuild, pre, post,hana::integral_constant<int,decltype(hana::size( M_ps ))::value>() );
+            return solveImplCondense( ps, solution, rhs, name, kind, rebuild, pre, post,hana::integral_constant<int,decltype(hana::size( M_ps.tupleSpaces() ))::value>() );
         }
     template <typename Solution_t, typename Rhs_t>
     typename Backend<double>::solve_return_type
@@ -496,7 +495,7 @@ public :
             auto&& spaces=hana::if_( hana::bool_<Feel::is_shared_ptr_v<PS>>{},
                                      []( auto&& x ) { return *x; },
                                      []( auto&& x ) { return x; } )(M_ps);
-            auto space = hana::at( spaces, n1 );
+            auto space = hana::at( spaces.tupleSpaces(), n1 );
 
             return hana::eval_if(std::is_base_of<ProductSpaceBase,decay_type<decltype(space)>>{},
                                  [&] (auto _) {
