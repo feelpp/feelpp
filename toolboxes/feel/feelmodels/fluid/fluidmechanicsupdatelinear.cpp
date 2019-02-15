@@ -310,7 +310,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                 auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
                 myLinearForm +=
                     integrate( _range=rangeBodyForceUsed,
-                               _expr= inner( expression(d),id(v) ),
+                               _expr= inner( expression(d,this->symbolsExpr()),id(v) ),
                                _geomap=this->geomap() );
             }
         }
@@ -423,17 +423,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
         if ( !listMarkerFaces.empty() )
             bilinearForm +=
                 on( _range=markedfaces( mesh, listMarkerFaces ),
-                    _element=u, _rhs=F, _expr=expression(d) );
+                    _element=u, _rhs=F, _expr=expression(d,this->symbolsExpr()) );
         auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
         if ( !listMarkerEdges.empty() )
             bilinearForm +=
                 on( _range=markededges( mesh, listMarkerEdges ),
-                    _element=u, _rhs=F, _expr=expression(d) );
+                    _element=u, _rhs=F, _expr=expression(d,this->symbolsExpr()) );
         auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
         if ( !listMarkerPoints.empty() )
             bilinearForm +=
                 on( _range=markedpoints( mesh, listMarkerPoints ),
-                    _element=u, _rhs=F, _expr=expression(d) );
+                    _element=u, _rhs=F, _expr=expression(d,this->symbolsExpr()) );
     }
     // apply strong Dirichle bc on velocity component
     for ( auto const& bcDirComp : this->M_bcDirichletComponents )
@@ -449,19 +449,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
                 bilinearFormComp +=
                     on( _range=markedfaces( mesh, listMarkerFaces ),
                         _element=this->M_Solution->template element<0>()[comp], //u[comp],
-                        _rhs=F, _expr=expression(d) );
+                        _rhs=F, _expr=expression(d,this->symbolsExpr()) );
             auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
             if ( !listMarkerEdges.empty() )
                 bilinearFormComp +=
                     on( _range=markededges( this->mesh(), listMarkerEdges ),
                         _element=this->M_Solution->template element<0>()[comp], //u[comp],
-                        _rhs=F, _expr=expression(d) );
+                        _rhs=F, _expr=expression(d,this->symbolsExpr()) );
             auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
             if ( !listMarkerPoints.empty() )
                 bilinearFormComp +=
                     on( _range=markedpoints( mesh, listMarkerPoints ),
                         _element=this->M_Solution->template element<0>()[comp], //u[comp],
-                        _rhs=F, _expr=expression(d) );
+                        _rhs=F, _expr=expression(d,this->symbolsExpr()) );
         }
     }
 
