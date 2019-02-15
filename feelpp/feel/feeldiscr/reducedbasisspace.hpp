@@ -1314,7 +1314,7 @@ public :
     template<typename T = double,  typename Cont = Eigen::Matrix<T,Eigen::Dynamic,1> >
     class Element
         :
-        public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >
+        public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, public FunctionSpaceBase::ElementBase
     {
     public:
         typedef ReducedBasisSpace<SpaceType> rbspace_type;
