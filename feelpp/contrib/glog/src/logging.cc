@@ -182,7 +182,7 @@ static const char* DefaultLogDir() {
 // Feelpp addition - start
 GLOG_DEFINE_bool(disable_log, false,
                   "disable logging.");
-GLOG_DEFINE_int32(log_level, 1,
+GLOG_DEFINE_int32(log_level_process, 1,
                   "log level: 2 enable logging for all processes, 1 enable only for master 0 disable for all processes");
 GLOG_DEFINE_int32(no_log, 1,
                   "disable logging. 0 enable logging for all processes, 1 enable only for master 2 disable for all processes");
@@ -991,7 +991,7 @@ void LogFileObject::Write(bool force_flush,
 
   // Feelpp addition - start
   // We don't log if the base_name_ is "" (which means "don't write")
-  if ( FLAGS_disable_log || (FLAGS_log_level==0) || FLAGS_no_log || (base_filename_selected_ && base_filename_.empty())) {
+  if ( FLAGS_disable_log || (FLAGS_log_level_process==0) || FLAGS_no_log || (base_filename_selected_ && base_filename_.empty())) {
     return;
   }
   // Feelpp addition - end
