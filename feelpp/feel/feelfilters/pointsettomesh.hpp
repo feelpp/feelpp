@@ -418,7 +418,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
     DVLOG(2) << "[PointSetToMesh::visit(<2>)] done\n";
 
 #else
-    std::cerr << "The library was not compiled with vtk support\n";
+    CHECK( false ) << "The library was not compiled with vtk support\n";
 #endif /* FEELPP_HAS_VTK */
 
 }
@@ -473,7 +473,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
 
 
 #else
-    std::cerr << "The library was not compiled with vtk support\n";
+    CHECK( false ) << "The library was not compiled with vtk support\n";
 #endif /* FEELPP_HAS_VTK */
 }
 } // Feel
