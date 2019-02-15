@@ -57,19 +57,6 @@ geo/magnetostatic/torus3d_quart_fer.geo
 geo/magnetostatic/torusaxi.geo
 geo/magnetostatic/torusaxi_quart_fer.geo
 geo/marche.geo
-geo/one-elt-meshes-2d/one-elt-real-homo.msh
-geo/one-elt-meshes-2d/one-elt-real-rot1.msh
-geo/one-elt-meshes-2d/one-elt-real-rot2.msh
-geo/one-elt-meshes-2d/one-elt-ref.msh
-geo/one-elt-meshes-2d/two_elements_mesh.msh
-geo/one-elt-meshes-3d/one-elt-real-homo-3d.msh
-geo/one-elt-meshes-3d/one-elt-real-rotx.msh
-geo/one-elt-meshes-3d/one-elt-real-roty.msh
-geo/one-elt-meshes-3d/one-elt-real-rotz.msh
-geo/one-elt-meshes-3d/one-elt-ref-3d.msh
-geo/operatorlagrangep1/hypercube-2d-lagrange-order2.msh
-geo/operatorlagrangep1/simplex-2d-lagrange-order2.msh
-geo/operatorlagrangep1/simplex-3d-lagrange-order2.msh
 geo/pelvis/pelvis.geo
 geo/pelvis/pelvis.stl
 geo/primitives/cylinder.geo
@@ -81,7 +68,7 @@ geo/tripod.med
 geo/tripod.mesh
 )
 
-install( FILES ${MESHES} DESTINATION share/feelpp/feel/geo )
+install( FILES ${MESHES} DESTINATION share/feelpp/data/geo )
 
 if (EXISTS $ENV{HOME})
   # create $ENV{HOME}/feel/geo if it does not exist already: this is the geometry
@@ -98,3 +85,22 @@ if (DEFINED ENV{FEELPP_WORKDIR})
   message(STATUS "Copying geo/msh files to FEELPP_WORKDIR=$ENV{FEELPP_WORKDIR}/geo")
   install( FILES ${MESHES} DESTINATION $ENV{FEELPP_WORKDIR}/geo) 
 endif (DEFINED ENV{FEELPP_WORKDIR})
+
+add_subdirectory(operatorlagrangep1)
+
+set( ONE_ELT_2D_MESHES
+  geo/one-elt-meshes-2d/one-elt-real-homo.msh
+  geo/one-elt-meshes-2d/one-elt-real-rot1.msh
+  geo/one-elt-meshes-2d/one-elt-real-rot2.msh
+  geo/one-elt-meshes-2d/one-elt-ref.msh
+  geo/one-elt-meshes-2d/two_elements_mesh.msh
+  )
+set( ONE_ELT_3D_MESHES
+  geo/one-elt-meshes-3d/one-elt-real-homo-3d.msh
+  geo/one-elt-meshes-3d/one-elt-real-rotx.msh
+  geo/one-elt-meshes-3d/one-elt-real-roty.msh
+  geo/one-elt-meshes-3d/one-elt-real-rotz.msh
+  geo/one-elt-meshes-3d/one-elt-ref-3d.msh
+  )
+install( FILES ${ONE_ELT_2D_MESHES} DESTINATION share/feelpp/data/geo/one-elt-meshes-2d/ )
+install( FILES ${ONE_ELT_3D_MESHES} DESTINATION share/feelpp/data/geo/one-elt-meshes-3d/ )
