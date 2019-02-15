@@ -1374,8 +1374,8 @@ public :
         typedef Eigen::Matrix<value_type,nComponents1,1> _id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nRealDim> _grad_type;
 #else
-        using _id_type = Eigen::Tensor<value_type,2>;
-        using _grad_type = Eigen::Tensor<value_type,2>;
+        using _id_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nComponents2>>;
+        using _grad_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nRealDim>>;
         using eigen_matrix_to_tensor_map = Eigen::TensorMap<Eigen::Matrix<value_type, nComponents1, 1> >;
 #endif
         typedef boost::multi_array<_id_type,1> id_array_type;
