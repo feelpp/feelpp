@@ -79,7 +79,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( Expr<Rho
             auto rangeBodyForceUsed = ( markers(d).empty() )? range : intersect( markedelements(mesh,markers(d)),range );
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
-                           _expr=tau*expression(d)*stab_test,
+                           _expr=tau*expression(d,this->symbolsExpr())*stab_test,
                            _geomap=this->geomap() );
         }
     }
@@ -115,7 +115,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( Expr<Rho
             auto rangeBodyForceUsed = ( markers(d).empty() )? range : intersect( markedelements(mesh,markers(d)), range );
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
-                           _expr=tau*expression(d)*stab_test,
+                           _expr=tau*expression(d,this->symbolsExpr())*stab_test,
                            _geomap=this->geomap() );
         }
     }
@@ -258,7 +258,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( Expr<RhoC
             auto rangeBodyForceUsed = ( markers(d).empty() )? range : intersect( markedelements(mesh,markers(d)), range );
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
-                           _expr=-tau*expression(d)*stab_test,
+                           _expr=-tau*expression(d,this->symbolsExpr())*stab_test,
                            _geomap=this->geomap() );
         }
     }
@@ -288,7 +288,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( Expr<RhoC
             auto rangeBodyForceUsed = ( markers(d).empty() )? range : intersect( markedelements(mesh,markers(d)), range );
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
-                           _expr=-tau*expression(d)*stab_test,
+                           _expr=-tau*expression(d,this->symbolsExpr())*stab_test,
                            _geomap=this->geomap() );
         }
     }
