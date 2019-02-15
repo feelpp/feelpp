@@ -81,7 +81,7 @@ int hdg_laplacian()
     auto K = expr(soption("k"));
     auto lambda = cst(1.)/K;
     
-#if defined(FEELPP_HAS_SYMPY_1 )
+#if defined(FEELPP_HAS_SYMPY)
 
     std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}};
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals );
@@ -174,7 +174,7 @@ int hdg_laplacian()
         int status = checker(p_exact_str).runOnce( norms, rate::hp( mesh->hMax(), cgXh->fe()->order() ) );
 
     }
-    auto u = Vh->element( "u" );
+`    auto u = Vh->element( "u" );
     auto v = Vh->element( "v" );
     auto p = Wh->element( "p" );
     auto q = Wh->element( "q" );
