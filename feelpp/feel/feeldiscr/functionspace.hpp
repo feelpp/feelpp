@@ -3274,7 +3274,7 @@ public:
             shape[0] = 1;
             id_array_type v( shape );
             const int ncdof  = is_product?nComponents:1;
-            _id_type idzero( ncdof, 1 );
+            _id_type idzero;
             std::fill( v.data(), v.data()+v.num_elements(), idzero.constant(0.));
 
             value_type result=0;
