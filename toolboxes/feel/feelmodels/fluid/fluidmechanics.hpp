@@ -594,7 +594,8 @@ public :
     }
     //___________________________________________________________________________________//
     // symbols expression
-    constexpr auto symbolsExpr() const { return this->symbolsExpr( hana::int_<nDim>() ); }
+    auto symbolsExpr() const { return Feel::vf::symbolsExpr( this->symbolsExprField(), this->symbolsExprFit() ); }
+    constexpr auto symbolsExprField() const { return this->symbolsExprField( hana::int_<nDim>() ); }
     //___________________________________________________________________________________//
     // boundary conditions + body forces
     void updateParameterValues();
@@ -872,7 +873,7 @@ public :
 private :
     void updateBoundaryConditionsForUse();
 
-    constexpr auto symbolsExpr( hana::int_<2> /**/ ) const
+    constexpr auto symbolsExprField( hana::int_<2> /**/ ) const
         {
             return Feel::vf::symbolsExpr( symbolExpr("fluid_Ux",idv(this->fieldVelocity())(0,0) ),
                                           symbolExpr("fluid_Uy",idv(this->fieldVelocity())(1,0) ),
@@ -880,7 +881,7 @@ private :
                                           symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity()),mpl::int_<InnerProperties::SQRT>()) )
                                           );
         }
-    constexpr auto symbolsExpr( hana::int_<3> /**/ ) const
+    constexpr auto symbolsExprField( hana::int_<3> /**/ ) const
         {
             return Feel::vf::symbolsExpr( symbolExpr("fluid_Ux",idv(this->fieldVelocity())(0,0) ),
                                           symbolExpr("fluid_Uy",idv(this->fieldVelocity())(1,0) ),
@@ -888,7 +889,8 @@ private :
                                           symbolExpr("fluid_P",idv(this->fieldPressure()) ),
                                           symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity()),mpl::int_<InnerProperties::SQRT>()) )
                                           );
-            }
+        }
+    auto symbolsExprFit() const { return super_type::symbolsExprFit( this->symbolsExprField() ); }
 
 protected:
     virtual size_type initStartBlockIndexFieldsInMatrix();
