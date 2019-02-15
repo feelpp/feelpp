@@ -44,7 +44,6 @@
 #include <feel/feelmodels/heat/thermalpropertiesdescription.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
-#include <feel/feelfit/fit.hpp>
 
 namespace Feel
 {
@@ -190,21 +189,7 @@ class Heat : public ModelNumerical,
                                               symbolExpr("heat_dzT",dzv(this->fieldTemperature()) )
                                               );
             }
-        constexpr auto symbolsExprField() const { return this->symbolsExprField( hana::int_<nDim>() ); }
-
-        /*constexpr*/ auto symbolsExprFit() const
-            {
-                typedef Expr< Fit<decltype(expr(scalar_field_expression<2>{},this->symbolsExprField())),0> > fit_expr_type;
-                std::vector<std::pair<std::string,fit_expr_type>> fitSymbs;
-                for ( auto const& param : this->modelProperties().parameters() )
-                {
-                    if ( param.second.type() != "fit" )
-                        continue;
-                    auto exprInFit = expr( param.second.expression(), this->symbolsExprField() );
-                    fitSymbs.push_back( std::make_pair( param.first, fit( exprInFit, param.second.fitInterpolator() ) ) );
-                }
-                return Feel::vf::symbolsExpr( symbolExpr( fitSymbs ) );
-            }
+        auto symbolsExprFit() const { return super_type::symbolsExprFit( this->symbolsExprField() ); }
 
     public :
         void initAlgebraicFactory();
@@ -228,6 +213,7 @@ class Heat : public ModelNumerical,
 
         void updateParameterValues();
         /*constexpr*/auto symbolsExpr() const { return Feel::vf::symbolsExpr( this->symbolsExprField(), this->symbolsExprFit() ); }
+        constexpr auto symbolsExprField() const { return this->symbolsExprField( hana::int_<nDim>() ); }
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
         // apply assembly and solver

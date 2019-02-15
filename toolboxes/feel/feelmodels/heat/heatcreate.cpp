@@ -204,7 +204,7 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     auto initialSolution = this->modelProperties().initialConditions().getScalarFields( "temperature", "" );
     for( auto const& d : initialSolution )
     {
-        auto theExpr = expr( expression(d),this->symbolsExpr() );
+        auto theExpr = expression( d,this->symbolsExpr() );
         auto rangeElt = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
         this->fieldTemperaturePtr()->on(_range=rangeElt,_expr=theExpr,_geomap=this->geomap());
     }
