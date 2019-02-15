@@ -883,7 +883,11 @@ updateOptionsDescLU( po::options_description & _options, std::string const& pref
         if( icntl == 7 )
             _options.add_options()
                 ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
-                  Feel::po::value<int>()->default_value( 0 ),"configure mumps factorisation (see mumps ICNTL documentation)" );
+                  Feel::po::value<int>()->default_value( 0 ),"configure mumps factorisation : computes a symmetric permutation (ordering) to determine the pivot order to be used for the factorization in case of sequential analysis, default value 0 set Approximate Minimum Degree (see mumps ICNTL documentation)" );
+        else if ( icntl == 24 )
+            _options.add_options()
+                ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
+                  Feel::po::value<int>()->default_value( 1 ),"configure mumps factorisation : controls the detection of “null pivot rows (see mumps ICNTL documentation)" );
         else
             _options.add_options()
                 ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),

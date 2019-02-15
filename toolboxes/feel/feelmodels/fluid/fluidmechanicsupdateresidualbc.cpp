@@ -57,17 +57,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
         for( auto const& d : this->M_bcNeumannScalar )
             linearForm_PatternCoupled +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= -expression(d)*inner( N(),id(v) ),
+                           _expr= -expression(d,this->symbolsExpr())*inner( N(),id(v) ),
                            _geomap=this->geomap() );
         for( auto const& d : this->M_bcNeumannVectorial )
             linearForm_PatternCoupled +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,name(d)) ),
-                           _expr= -inner( expression(d),id(v) ),
+                           _expr= -inner( expression(d,this->symbolsExpr()),id(v) ),
                            _geomap=this->geomap() );
         for( auto const& d : this->M_bcNeumannTensor2 )
             linearForm_PatternCoupled +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,name(d)) ),
-                           _expr= -inner( expression(d)*N(),id(v) ),
+                           _expr= -inner( expression(d,this->symbolsExpr())*N(),id(v) ),
                            _geomap=this->geomap() );
 
     }
@@ -258,7 +258,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
             for( auto const& d : this->M_bcDirichlet )
                 linearForm_PatternCoupled +=
                     integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "nitsche",name(d) ) ),
-                               _expr= -this->dirichletBCnitscheGamma()*inner( expression(d),id(v) )/hFace(),
+                               _expr= -this->dirichletBCnitscheGamma()*inner( expression(d,this->symbolsExpr()),id(v) )/hFace(),
                                _geomap=this->geomap() );
 
 
@@ -316,7 +316,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                        _rowstart=rowStartInVector+startBlockIndexDirichletLM ) +=
                     integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "lm",name(d) ) ),
                                //_range=markedelements(this->meshDirichletLM(),PhysicalName),
-                               _expr= -inner( expression(d),id(lambdaBC) ),
+                               _expr= -inner( expression(d,this->symbolsExpr()),id(lambdaBC) ),
                                _geomap=this->geomap() );
 
 
@@ -400,7 +400,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
             {
                 linearForm_PatternCoupled +=
                     integrate( _range=markedfaces(this->mesh(),this->markerPressureBC(name(d)) ),
-                               _expr= expression(d)*trans(N())*id(v),
+                               _expr= expression(d,this->symbolsExpr())*trans(N())*id(v),
                                _geomap=this->geomap() );
             }
         }
