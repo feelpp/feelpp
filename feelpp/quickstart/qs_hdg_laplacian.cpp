@@ -174,7 +174,7 @@ int hdg_laplacian()
         int status = checker(p_exact_str).runOnce( norms, rate::hp( mesh->hMax(), cgXh->fe()->order() ) );
 
     }
-`    auto u = Vh->element( "u" );
+    auto u = Vh->element( "u" );
     auto v = Vh->element( "v" );
     auto p = Wh->element( "p" );
     auto q = Wh->element( "q" );
