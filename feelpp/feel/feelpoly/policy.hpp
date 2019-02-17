@@ -604,6 +604,7 @@ struct RankCurl
     static const uint16_type nDim = T::nDim;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
                               RankSame<T>,RankDown<T> >::type::type type;
+    static const uint16_type value = (nDim==3)?3:1;
 };
 
 /**
