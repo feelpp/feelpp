@@ -1439,7 +1439,7 @@ public:
         using laplacian_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nComponents2>>;
         using div_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents2,1>>;
         using dn_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nComponents2>>;
-        using curl_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,1>>;
+        using curl_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<(nComponents1==3)?nComponents1:1,1>>;
         using dx_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents2,1>>;
         using dy_type = dx_type;
         using dz_type = dx_type;

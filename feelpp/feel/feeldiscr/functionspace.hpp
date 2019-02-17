@@ -432,7 +432,7 @@ template<typename T, int N, int D>
 struct Curl
 {
     typedef T value_type;
-    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<D,1>> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<(D==3)?D:1,1>> m_type;
     //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
@@ -3008,7 +3008,7 @@ public:
         typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nComponents2>> _dn_type;
         typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nRealDim,nRealDim>> _hess_type;
         typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents2,1>> _div_type;
-        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nRealDim,1>> _curl_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<(nRealDim==3)?nRealDim:1,1>> _curl_type;
         //typedef Eigen::Tensor<value_type,2> _dn_type;
         //typedef Eigen::Tensor<value_type,2> _hess_type;
         //typedef Eigen::Tensor<value_type,2> _div_type;

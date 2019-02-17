@@ -80,7 +80,7 @@ resizeAndSet( rank_t<1> )
 
     if ( vm::has_curl<context>::value )
     {
-        Eigen::Tensor<value_type,2> i_curl( nComponents1, 1 );
+        Eigen::Tensor<value_type,2> i_curl( (nComponents1==3)?nComponents1:1, 1 );
         std::fill( M_curl.data(), M_curl.data()+M_curl.num_elements(), i_curl.constant(0.) );
     }
 
@@ -455,7 +455,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                     if ( NDim == 2 )
                     {
                         M_curl[i][q]( 0 ) =  M_grad[i][q]( 1,0,0 ) - M_grad[i][q]( 0,1,0 );
-                        M_curl[i][q]( 1 ) =  M_curl[i][q]( 0 );
+                        //M_curl[i][q]( 1 ) =  M_curl[i][q]( 0 );
                         //M_curl[i][q]( 2 ) =  M_curl[i][q]( 0 );
                     }
 
