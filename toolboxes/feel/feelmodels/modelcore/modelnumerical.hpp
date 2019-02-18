@@ -41,6 +41,7 @@
 
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelmodels/modelcore/modelmeasures.hpp>
+#include <feel/feelfit/fit.hpp>
 
 
 namespace Feel
@@ -104,6 +105,7 @@ class ModelNumerical : public ModelAlgebraic
         void setTimeFinal(double v)  { M_timeFinal=v; }
         void setTimeStep(double v)  { M_timeStep=v; }
 
+        bool hasModelProperties() const { return (M_modelProps)? true : false; }
         std::shared_ptr<ModelProperties> modelPropertiesPtr() const { return M_modelProps; }
         ModelProperties const& modelProperties() const { return *M_modelProps; }
         ModelProperties & modelProperties() { return *M_modelProps; }
@@ -153,6 +155,24 @@ class ModelNumerical : public ModelAlgebraic
         ModelMeasuresEvaluatorContext const& postProcessMeasuresEvaluatorContext() const { return M_postProcessMeasuresEvaluatorContext; }
         ModelMeasuresEvaluatorContext & postProcessMeasuresEvaluatorContext() { return M_postProcessMeasuresEvaluatorContext; }
 
+    protected :
+        template<typename SymbExprField>
+        auto symbolsExprFit( SymbExprField const& sef ) const
+            {
+                typedef Expr< Fit<decltype(expr(scalar_field_expression<2>{},sef)),0> > fit_expr_type;
+                std::vector<std::pair<std::string,fit_expr_type>> fitSymbs;
+                if ( this->hasModelProperties() )
+                {
+                    for ( auto const& param : this->modelProperties().parameters() )
+                    {
+                        if ( param.second.type() != "fit" )
+                            continue;
+                        auto exprInFit = expr( param.second.expression(), sef );
+                        fitSymbs.push_back( std::make_pair( param.first, fit( exprInFit, param.second.fitInterpolator() ) ) );
+                    }
+                }
+                return Feel::vf::symbolsExpr( symbolExpr( fitSymbs ) );
+            }
 
     private :
 

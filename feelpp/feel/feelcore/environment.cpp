@@ -1639,10 +1639,8 @@ Environment::localGeoRepository()
 boost::tuple<std::string,bool>
 Environment::systemGeoRepository()
 {
-    fs::path rep_path;
-
-    rep_path = Info::prefix();
-    rep_path /= "share/feelpp/feel/geo";
+    fs::path rep_path = Info::datadir();
+    rep_path /= "geo";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
 
@@ -2336,7 +2334,7 @@ Environment::expand( std::string const& expr )
     std::string topBuildDir = BOOST_PP_STRINGIZE( FEELPP_BUILD_DIR );
     std::string cfgDir = S_cfgdir.string();
     std::string homeDir = ::getenv( "HOME" );
-    std::string dataDir = ( fs::path( topSrcDir )/fs::path( "data" ) ).string();
+    std::string dataDir = BOOST_PP_STRINGIZE( FEELPP_DATADIR );
     std::string exprdbDir = ( fs::path( Environment::rootRepository() )/fs::path( "exprDB" ) ).string();
 
     VLOG( 2 ) << "topSrcDir " << topSrcDir << "\n"
