@@ -297,7 +297,7 @@ public :
         // get only usefull quad point and reoder
         const uint16_type nContextPt = indexLocalToQuad.size();
         const uint16_type __face_id_in_elt_0 = faceCur.pos_first();
-
+        DCHECK( __face_id_in_elt_0 != invalid_uint16_type_value ) << "Invalid face id fooor element " << faceCur.id() << " from element " << faceCur.element( 0 ).id();
         auto const __perm = faceCur.element( 0 ).permutation( __face_id_in_elt_0 );
         matrix_node_type const& quadPtsRef =  M_ppts[ __face_id_in_elt_0].find( __perm )->second;
         //matrix_node_type quadPtsRef = this->im().points();
@@ -320,12 +320,10 @@ public :
                                                  newquadPtsRef ) );
             }
         }
-
         gmc_ptrtype gmc( new gmc_type( faceCur.element( 0 ).gm(),
                                        faceCur.element( 0 ),
                                        __geopc,
                                        __face_id_in_elt_0  ) );
-
         return gmc;
     }
 
