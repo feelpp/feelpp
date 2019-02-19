@@ -204,6 +204,17 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
     // Update density-viscosity
     this->updateFluidDensityViscosity();
 
+    // Add specific multifluid terms into the matrix assembly
+    this->fluidModel()->algebraicFactory()->addFunctionLinearAssembly(
+            boost::bind( &self_type::updateLinearPDEAdditional, this, _1 )
+            );
+    this->fluidModel()->algebraicFactory()->addFunctionJacobianAssembly(
+            boost::bind( &self_type::updateJacobianAdditional, this, _1 )
+            );
+    this->fluidModel()->algebraicFactory()->addFunctionResidualAssembly(
+            boost::bind( &self_type::updateResidualAdditional, this, _1 )
+            );
+
     this->log("MultiFluid", "init", "finish");
 }
 

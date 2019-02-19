@@ -846,9 +846,6 @@ public :
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
     void updateResidualDofElimination( DataUpdateResidual & data ) const;
 
-    virtual void updateJacobianAdditional( DataUpdateJacobian & data ) const {}
-    virtual void updateResidualAdditional( DataUpdateResidual & data ) const {}
-
     // linear
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
@@ -860,8 +857,6 @@ public :
 
     void updatePicard( DataUpdateLinear & data ) const;
     double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
-
-    virtual void updateLinearPDEAdditional( DataUpdateLinear & data ) const {}
 
     //___________________________________________________________________________________//
 

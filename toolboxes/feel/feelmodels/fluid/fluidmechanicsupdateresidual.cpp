@@ -265,10 +265,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         }
     }
 
-    //--------------------------------------------------------------------------------------------------//
-    // user-defined additional terms
-    this->updateResidualAdditional( data );
-
     //------------------------------------------------------------------------------------//
     // define pressure cst
     if ( this->definePressureCst() )

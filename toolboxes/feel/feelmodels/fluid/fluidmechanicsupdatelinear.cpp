@@ -292,10 +292,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     }
 
     //--------------------------------------------------------------------------------------------------//
-    // user-defined additional terms
-    this->updateLinearPDEAdditional( data );
-
-    //--------------------------------------------------------------------------------------------------//
     // body forces
     if ( this->M_overwritemethod_updateSourceTermLinearPDE != NULL )
     {

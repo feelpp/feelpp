@@ -240,10 +240,10 @@ protected:
     void setRebuildMatrixVector( bool b = true ) { M_doRebuildMatrixVector = b; }
     bool rebuildMatrixVector() const { return M_doRebuildMatrixVector; }
     // Linear solve
-    void updateLinearPDEAdditional( DataUpdateLinear & data ) const override;
+    void updateLinearPDEAdditional( DataUpdateLinear & data ) const;
     // Non-linear solve
-    void updateJacobianAdditional( DataUpdateJacobian & data ) const override;
-    void updateResidualAdditional( DataUpdateResidual & data ) const override;
+    void updateJacobianAdditional( DataUpdateJacobian & data ) const;
+    void updateResidualAdditional( DataUpdateResidual & data ) const;
     //--------------------------------------------------------------------//
     // Export
     virtual void exportResultsImpl( double time );
