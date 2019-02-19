@@ -4574,6 +4574,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                     map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
                     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
                     __face_id_in_elt_0 = gmcExpr_it->template get<1>()->faceId();
+                    DCHECK( __face_id_in_elt_0 != invalid_uint16_type_value ) << "Invalid face id for element " <<  gmcExpr_it->template get<1>()->id();
                     formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
 
                     formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );

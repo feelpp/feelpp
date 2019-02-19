@@ -849,7 +849,7 @@ class GeoMap
                 M_gm->gradient( node_t_type(), M_g_linear );
             }
 
-            if ( M_pc )
+            if ( M_pc && ! this->isOnFace() )
                 update( __e );
         }
 
@@ -862,6 +862,8 @@ class GeoMap
             {
                 if ( !__pc.empty() )
                     M_pc_faces =  __pc;
+                if ( M_pc )
+                    update( __e, M_face_id );
             }
         
         using using_vectices_t = mpl::int_<0>;
@@ -1997,7 +1999,8 @@ class GeoMap
             const bool doComputeNormal = ( ( NDim != PDim ) || ( vm::has_normal<CTX>::value ) ) && ( this->isOnFace() );
             if ( doComputeNormal )
             {
-                if ( M_gm->hasUnitNormalAtFace( M_id, M_face_id ) == false )
+                //if ( M_gm->hasUnitNormalAtFace( M_id, M_face_id ) == false )
+                if (1)
                 {
                     N = B * M_gm->referenceConvex().normal( M_face_id );
                     Nnorm = N.norm();
