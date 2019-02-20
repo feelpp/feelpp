@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from numpy import mean, sum, dot, linalg, zeros, ones, transpose
 from numpy.linalg import inv, cholesky
 from scipy.linalg import sqrtm
