@@ -542,7 +542,6 @@ class GeoMap
         return M_is_cached;
     }
 
-    std::vector<bool> M_cached;
     std::unordered_map<uint32_type,value_type> M_J;
     using element_face_pair_t = std::pair<uint32_type,uint16_type>;
     std::unordered_map<element_face_pair_t,value_type,boost::hash<element_face_pair_t>> M_JFace, M_n_norm;
@@ -558,10 +557,9 @@ class GeoMap
     {
         size_type nelts = mesh->numElements();
         LOG( INFO ) << "[Geomap] start caching J,K,B for " << nelts << " elements\n";
-        M_cached.resize( nelts );
-        std::fill( M_cached.begin(), M_cached.end(), false );
 
         M_J.reserve( nelts );
+        M_K.clear();
         M_K.reserve( nelts );
         M_B.reserve( nelts );
         M_JFace.reserve( nelts*mesh->numLocalTopologicalFaces() );
@@ -572,29 +570,21 @@ class GeoMap
     }
     bool isCacheValid() const
     {
-        if ( !( M_cached.size() > 0 &&
-                M_J.size() > 0 &&
+        if ( !( M_J.size() > 0 &&
                 M_K.size() > 0 &&
                 M_B.size() > 0 ) )
         {
-            LOG( INFO ) << "invalid cache\n";
             return false;
         }
 
         return true;
     }
+    //! @return true if geomap data are cache for element @p e, false otherwise
     bool cached( int e ) const
     {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
-        return M_cached[e];
+        return M_K.count( e ) > 0;
     }
-    void setCached( int e, bool v )
-    {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
-        M_cached[e] = v;
-    }
+    //! return jacobian at element @p e
     value_type J( int e ) const
     {
         return M_J.at(e);
@@ -639,7 +629,7 @@ class GeoMap
                 value_type& J,
                 std::enable_if_t<G::is_linear && (nDim==nRealDim)>* = nullptr )
         {
-            if ( M_K.count(e) == 0 ) return false;
+            if ( !cached(e) ) return false;
             K = M_K.at(e);
             B = M_B.at(e);
             J = M_J.at(e);
@@ -667,8 +657,6 @@ class GeoMap
         }
     void addJ( int e, value_type v )
     {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
         DCHECK( e >= 0 && e < M_J.size() ) << "invalid element id " << e << "( " << M_J.size() << ") for geomap cache, are you using the proper mesh\n";
         M_J[e] = v;
     }
