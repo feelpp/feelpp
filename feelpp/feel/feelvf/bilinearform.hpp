@@ -1126,8 +1126,8 @@ public:
         if ( this != &form )
         {
             
-            if ( M_X1 == form.M_X1 ) throw std::logic_error( "Invalid test function spaces" );
-            if ( M_X2 == form.M_X2 ) throw std::logic_error( "Invalid trial function spaces" );
+            if ( M_X1 != form.M_X1 ) throw std::logic_error( "Invalid test function spaces" );
+            if ( M_X2 != form.M_X2 ) throw std::logic_error( "Invalid trial function spaces" );
             super::operator=( form );
             
         }
