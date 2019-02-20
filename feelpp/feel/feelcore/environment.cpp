@@ -1567,6 +1567,8 @@ Environment::findFile( std::string const& filename )
     auto it = std::find_if( S_paths.rbegin(), S_paths.rend(),
                             [&filename] ( fs::path const& p ) -> bool
     {
+        std::cout << " looking for " << p/filename << std::endl;
+
         if ( fs::exists( p/filename ) )
             return true;
         return false;
@@ -1584,7 +1586,10 @@ Environment::findFile( std::string const& filename )
         return ( cp/filename ).string();
     }
 
-    if ( fs::path( filename ).extension() == ".geo" || fs::path( filename ).extension() == ".msh" )
+    if ( fs::path( filename ).extension() == ".geo" ||
+         fs::path( filename ).extension() == ".msh" ||
+         fs::path( filename ).extension() == ".mesh" ||
+         fs::path( filename ).extension() == ".med" )
     {
         if ( fs::exists( fs::path( Environment::localGeoRepository() ) / filename ) )
         {
