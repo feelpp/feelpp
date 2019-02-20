@@ -7,7 +7,7 @@ class Filter:
 
 # CLASS INSTANCE SETTING IS MANDATORY : INITIALIZATION WITH STATE VECTOR DIMENSION
 
-    def set(self, dim, obs, w0, dt, dynamics, observe):
+    def set(self, dim, obs, w0, dt, dynamics, observe, defect):
         self.dim = dim
         self.obs = obs
         self.Time = 0
@@ -28,7 +28,8 @@ class Filter:
         
         self.weights = ones(2*dim+1)*(1-w0)/(2*dim)
         self.weights[0] = w0
-
+        self.covydefect = defect
+        
         self.dynamics = dynamics
         self.observe = observe
 
@@ -65,7 +66,7 @@ class Filter:
         self.Covx = (self.weights*(self.SigPts-centerx)) @ transpose(self.SigPts-centerx)
         self.My = self.PreMeas @ transpose(self.weights)
         centery = transpose([self.My]) @ [np.ones(2*self.dim+1)] * 1/(2*self.dim+1)
-        self.Covy = (self.weights*(self.PreMeas-centery)) @ transpose(self.PreMeas-centery) + 0.1*np.eye(self.obs)
+        self.Covy = (self.weights*(self.PreMeas-centery)) @ transpose(self.PreMeas-centery) + self.covydefect*np.eye(self.obs)
         self.XCov = (self.weights*(self.SigPts-centerx)) @ transpose(self.PreMeas-centery)
 
         # ANALYSIS STEP
@@ -76,5 +77,6 @@ class Filter:
     def filter(self):
         for i in range(max(self.signal.shape)-1):
             self.X[:,i] = np.transpose(self.Mx)
+            print(self.X[:,0:i])
             self.forecast[:,i] = np.transpose(self.XF)
             self.step(self)
