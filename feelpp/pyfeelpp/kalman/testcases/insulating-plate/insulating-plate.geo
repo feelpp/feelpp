@@ -48,11 +48,9 @@ Line Loop(3) = {9, 10, 11, 7};
 //+
 Plane Surface(3) = {3};
 //+
-Physical Line("gamma1") = {4, 1, 2};
+Physical Line("gamma1") = {1};
 //+
-Physical Line("gamma2") = {11, 10, 9};
-//+
-Physical Line("gammainter") = {6, 8};
+Physical Line("gamma2") = {4, 2, 11, 10, 9, 6, 8};
 //+
 Physical Line("interface1") = {3};
 //+

@@ -7,13 +7,14 @@ class Filter:
 
 # CLASS INSTANCE SETTING IS MANDATORY : INITIALIZATION WITH STATE VECTOR DIMENSION
 
-    def set(self, dim, obs, w0, dt, dynamics, observe, defect):
+    def set(self, dim, obs, w0, dt, dynamics, observe, defect, initialguess, tol = 0.01):
         self.dim = dim
         self.obs = obs
         self.Time = 0
         self.dt = dt
+        self.tol = tol
         
-        self.Mx = ones(dim)                # mean value of x : state estimation
+        self.Mx = initialguess               # mean value of x : state estimation
         self.Covx = zeros([dim,dim])
         self.My = ones(obs)                # mean value of y : signal estimation
         self.Covy = zeros([obs,obs])
@@ -77,6 +78,9 @@ class Filter:
     def filter(self):
         for i in range(max(self.signal.shape)-1):
             self.X[:,i] = np.transpose(self.Mx)
-            print(self.X[:,0:i])
             self.forecast[:,i] = np.transpose(self.XF)
             self.step(self)
+            print(self.SigPts[0])
+            print("Mx : ",self.Mx," My : ",self.My," measurement : ",self.signal[i])
+            if np.abs(self.My-self.signal[i])/self.signal[i] < self.tol:
+                return self.Mx

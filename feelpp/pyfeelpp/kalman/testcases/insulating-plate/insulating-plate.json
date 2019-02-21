@@ -5,40 +5,37 @@
     {
         "omega1":
         {
-	        "name":"aluminium",
-            "k":"237"
+	        "name":"bottom",
+            "k":"1"
         },
 	    "omega2":
 	    {
-	        "name":"aluminium",
-	        "k":"237"
+	        "name":"top",
+	        "k":"1"
 	    },
 	    "plate":
 	    {
-	        "name":"plexiglas",
-	        "k":"0.2"
+	        "name":"insulation",
+	        "k":"1"
 	    }
     },
     "BoundaryConditions":
     {
         "temperature":
         {
-            "Dirichlet":
-            {
-                "gamma1":
-                {
-                    "expr":"373.15"
-                }
-	        },
 	        "Neumann":
 	        {
-		        "gammainter":
-		        {
-		            "expr":"0"
-		        },
+                "gamma1":
+                {
+                    "expr":"1"
+                }
+            },
+            "Robin":
+            {
                 "gamma2":
                 {
-                    "expr":"100"
+                    "expr1":"0.1",
+                    "expr2":"0"
                 }
 	        }
         }
@@ -53,7 +50,7 @@
                 {
                     "type":"mean",
                     "field":"temperature",
-                    "markers":"gamma2"
+                    "markers":"gamma1"
                 }
             }
         }
