@@ -27,6 +27,7 @@
 #include <sstream>
 #define BOOST_TEST_MODULE submesh testsuite
 #include <feel/feelcore/testsuite.hpp>
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 
 namespace py = pybind11;
@@ -38,7 +39,7 @@ BOOST_AUTO_TEST_SUITE( python )
 BOOST_AUTO_TEST_CASE( t1 )
 {
     py::scoped_interpreter guard{};
-
+    py::module::import("sys").attr("path").cast<py::list>().append(Feel::Environment::expand("$top_srcdir/feelpp/feel/feelpython/"));
     auto locals = py::dict("f"_a="[x**2,y**2,z**2]");
     std::ostringstream ostr;
     ostr <<  "from sympy2ginac import *\n"
@@ -56,7 +57,6 @@ BOOST_AUTO_TEST_CASE( t1 )
 
 BOOST_AUTO_TEST_CASE( t2 )
 {
-    py::scoped_interpreter guard{};
     std::ostringstream ostr;
     ostr <<  "from sympy2ginac import *\n"
          << "f=[x**2,y**2,z**2];\n"
