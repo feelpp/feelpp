@@ -5,7 +5,7 @@ from UKF import Filter
 import subprocess
 
 def f(X,time,dt):
-    Y = X + np.random.normal(0,dt)
+    Y = X #+ np.random.normal(0,dt)
 #    print("sigma-points "+str(F.SigPts))
     print("estimation "+str(np.mean(F.SigPts)))
     return Y
@@ -25,7 +25,7 @@ Time = np.arange(0,Niter)
 Signal = h([realk])*np.ones(Niter)
 
 F = Filter
-F.set(F,1,1,2/3,dt,f,h,0.1,0.21)
+F.set(F,1,1,2/3,dt,f,h,0.1,0.2)
 F.readsignal(F,Signal)
 print("Filter set up !")
 F.filter(F)
