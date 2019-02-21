@@ -24,7 +24,7 @@
 
 if ( FEELPP_ENABLE_PYTHON_WRAPPING )
 set_directory_properties(PROPERTIES LABEL testpython )
-foreach(TEST python_basic python_embed pyexpr python1)
+foreach(TEST python_basic python_embed python1)
 
   feelpp_add_test( ${TEST} )
 

@@ -25,8 +25,6 @@ int main(int argc, char** argv ) {
          << "div_kgrad_f=div(k*grad(f,[x,y,z]),[x,y,z]);\n"
          << "print('div(k*grad(f))=', div_kgrad_f)\n";
 
-    py::scoped_interpreter guard{};
-    
     auto _locals = py::dict("f"_a="[x**2,y**2,z**2]");
     std::map<std::string,std::string> locals;
     auto m = Feel::pyexpr( ostr.str(), {"kgrad_f","div_kgrad_f"}, locals );
