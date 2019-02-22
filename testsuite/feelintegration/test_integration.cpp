@@ -360,6 +360,62 @@ struct test_integration_circle: public Application
     std::string shape;
     mesh_ptrtype mesh;
 };
+
+
+template<typename value_type = double>
+struct test_integration_circle2: public Application
+{
+    typedef typename imesh<value_type,2,4>::convex_type convex_type;
+    typedef typename imesh<value_type,2,4>::type mesh_type;
+    typedef typename imesh<value_type,2,4>::ptrtype mesh_ptrtype;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<4, Scalar> >, double> space_type;
+    typedef std::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+    typedef bases<Lagrange<4, Vectorial> > vector_basis_type;
+    typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
+
+    test_integration_circle2()
+        :
+        Application(),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( "ellipsoid" ),
+        mesh()
+    {
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % 2 ).str() ,
+                                             _usenames=true,
+                                             _convex=( convex_type::is_hypercube )?"Hypercube":"Simplex",
+                                             _shape=shape,
+                                             _dim=2,
+                                             _order=mesh_type::nOrder,
+                                             _xmin=-1.,_ymin=-1.,
+                                             _h=meshSize ),
+                               _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+    }
+
+    void operator()()
+    {
+        using namespace Feel;
+        using namespace Feel::vf;
+        const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
+        double v0 = integrate( _range=boundaryfaces( mesh ), _expr=trans( P() )*N(), _verbose=true, _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate()( 0, 0 );
+        double v00 = integrate( _range=elements( mesh ), _expr=cst(2.0), _verbose=true, _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate()( 0, 0 );
+
+        BOOST_TEST_MESSAGE( "[circle] v0=" << v0 << " v00=" << v00 << " should be equal thanks to gauss int (x,y).N() != int div (x,y), order: " << mesh_type::nOrder << "\n" );
+#if defined(USE_BOOST_TEST)
+        BOOST_CHECK_CLOSE( v0, v00, eps );
+#else
+        FEELPP_ASSERT( math::abs( v0-v00 ) < eps )( v0 )( v00 )( math::abs( v0-v00 ) ).warn ( "int (x,y).N() != int div (x,y)" );
+#endif /* USE_BOOST_TEST */
+
+    }
+    std::shared_ptr<Feel::Backend<double> > M_backend;
+    double meshSize;
+    std::string shape;
+    mesh_ptrtype mesh;
+};
+
 template<typename value_type = double>
 struct test_integration_simplex: public Application
 {
@@ -1233,6 +1289,11 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( integration )
 
+BOOST_AUTO_TEST_CASE( t0 )
+{
+    Feel::test_integration_circle2<double> t;
+    t();
+}
 BOOST_AUTO_TEST_CASE( test_integration_1 )
 {
     BOOST_TEST_MESSAGE( "Test integration Circle" );
