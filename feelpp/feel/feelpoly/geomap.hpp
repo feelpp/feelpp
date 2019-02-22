@@ -2092,7 +2092,7 @@ class GeoMap
                     tensor_map_t<2,value_type> TPts( M_G.data().begin(), M_G.size1(), M_G.size2() );
                     for ( int q = 0; q < nComputedPoints(); ++q )
                     {
-                        if ( M_gm->cache( M_id, M_K[q], M_B[q], M_J[q] ) )
+                        if ( is_linear && M_gm->cache( M_id, M_K[q], M_B[q], M_J[q] ) )
                         {
                         }
                         else
@@ -2103,8 +2103,8 @@ class GeoMap
                                                                     M_G.size2(), PDim );
                             M_K[q].noalias() = Pts * GradPhi;
                             updateJacobian( M_K[q], M_B[q], M_J[q] );
-                            
-                            M_gm->updateCache( M_id, M_K[q], M_B[q], M_J[q] );
+                            if ( is_linear )
+                                M_gm->updateCache( M_id, M_K[q], M_B[q], M_J[q] );
                         }
                         if ( vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
                         {
@@ -2134,7 +2134,7 @@ class GeoMap
             ar& BOOST_SERIALIZATION_NVP( M_npoints );
             ar& BOOST_SERIALIZATION_NVP( M_J );
             ar& BOOST_SERIALIZATION_NVP( M_G );
-            ar& BOOST_SERIALIZATION_NVP( M_ref_normals );
+            //ar& BOOST_SERIALIZATION_NVP( M_ref_normals );
             ar& BOOST_SERIALIZATION_NVP( M_normals );
             ar& BOOST_SERIALIZATION_NVP( M_unit_normals );
             ar& BOOST_SERIALIZATION_NVP( M_normal_norms );
@@ -2180,7 +2180,7 @@ class GeoMap
         std::vector<value_type> M_J;
 
         matrix_type M_G;
-        vector_eigen_vector_p_type M_ref_normals;
+        //vector_eigen_vector_p_type M_ref_normals;
         vector_eigen_vector_n_type M_normals, M_unit_normals;
         std::vector<value_type> M_normal_norms;
         vector_eigen_vector_n_type M_tangents, M_unit_tangents;
