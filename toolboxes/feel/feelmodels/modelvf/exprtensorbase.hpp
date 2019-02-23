@@ -68,7 +68,8 @@ namespace FeelModels
 
         typedef Eigen::Matrix<value_type,shape_type::M,shape_type::N> matrix_shape_type;
         typedef boost::multi_array<matrix_shape_type,1> array_shape_type;
-
+        using ret_type = Eigen::Map<matrix_shape_type const>;
+        
         // shapes used
         typedef Shape<shape_type::nDim, Scalar, false, false> shape_scalar;
         //typedef Eigen::Matrix<value_type,shape_scalar::M,shape_scalar::N> loc_scalar_type;
@@ -157,11 +158,11 @@ namespace FeelModels
         virtual void update( Geo_t const& geom, uint16_type face ) = 0;
 
         virtual
-        matrix_shape_type const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             CHECK( false ) << "not allow\n";
-            return M_locMatrixShape;
+            return ret_type(M_locMatrixShape.data());
         }
 
         virtual
@@ -180,11 +181,11 @@ namespace FeelModels
             return value_type(0);
         }
         virtual
-        matrix_shape_type const&
+        ret_type
         evaliq( uint16_type i, uint16_type q ) const
         {
             CHECK( false ) << "not allow\n";
-            return M_locMatrixShape;
+            return ret_type(M_locMatrixShape.data());
         }
 
         virtual
@@ -195,11 +196,11 @@ namespace FeelModels
             return value_type(0);
         }
         virtual
-        matrix_shape_type const&
+        ret_type
         evalq( uint16_type q ) const
         {
             CHECK( false ) << "not allow\n";
-            return M_locMatrixShape;
+            return ret_type(M_locMatrixShape.data());
         }
 
     private:

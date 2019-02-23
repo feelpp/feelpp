@@ -19,7 +19,8 @@ struct tensorStabGLSParameterEigenValue : public tensorBase<Geo_t,Basis_i_t,Basi
 
     typedef typename ExprType::value_type value_type;
     typedef typename super_type::matrix_shape_type matrix_shape_type;
-
+    using ret_type = typename super_type::ret_type;
+    
     typedef typename expr_type::expression_convection_type::template tensor<Geo_t,Basis_i_t,Basis_j_t> tensor_convection_type;
     typedef typename expr_type::expression_coeffdiffusion_type::template tensor<Geo_t,Basis_i_t,Basis_j_t> tensor_coeffdiffusion_type;
 
@@ -42,10 +43,10 @@ struct tensorStabGLSParameterEigenValue : public tensorBase<Geo_t,Basis_i_t,Basi
         {
             return M_localMatrixInGeoContext[q](0,0);
         }
-    matrix_shape_type const&
+    ret_type
     evalq( uint16_type q ) const
         {
-            return M_localMatrixInGeoContext[q];
+            return ret_type(M_localMatrixInGeoContext[q].data());
         }
 private :
     void update( Geo_t const& geom, mpl::true_, mpl::true_ )
@@ -135,7 +136,7 @@ struct tensorStabGLSParameterDoublyAsymptoticApproximation : public tensorBase<G
 
     typedef typename ExprType::value_type value_type;
     typedef typename super_type::matrix_shape_type matrix_shape_type;
-
+    using ret_type = typename super_type::ret_type;
     typedef typename expr_type::expression_convection_type::template tensor<Geo_t,Basis_i_t,Basis_j_t> tensor_convection_type;
     typedef typename expr_type::expression_coeffdiffusion_type::template tensor<Geo_t,Basis_i_t,Basis_j_t> tensor_coeffdiffusion_type;
 
@@ -158,10 +159,10 @@ struct tensorStabGLSParameterDoublyAsymptoticApproximation : public tensorBase<G
         {
             return M_localMatrixInGeoContext[q](0,0);
         }
-    matrix_shape_type const&
+    ret_type
     evalq( uint16_type q ) const
         {
-            return M_localMatrixInGeoContext[q];
+            return ret_type(M_localMatrixInGeoContext[q].data());
         }
 private :
     void update( Geo_t const& geom, mpl::true_, mpl::true_ )
@@ -321,7 +322,7 @@ public:
         typedef tensorBase<Geo_t, Basis_i_t, Basis_j_t,shape,value_type> tensorbase_type;
         typedef std::shared_ptr<tensorbase_type> tensorbase_ptrtype;
         typedef typename tensorbase_type::matrix_shape_type matrix_shape_type;
-
+        using ret_type = typename tensorbase_type::ret_type;
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
@@ -382,10 +383,10 @@ public:
             M_tensorbase->update( geom, face );
         }
 
-        matrix_shape_type const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
-            return M_tensorbase->evalq( q );
+            return ret_type(M_tensorbase->evalq( q ).data());
         }
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -398,10 +399,10 @@ public:
         {
             return M_tensorbase->evalq( c1,c2,q );
         }
-        matrix_shape_type const&
+        ret_type
         evaliq( uint16_type i, uint16_type q ) const
         {
-            return M_tensorbase->evalq( q );
+            return ret_type(M_tensorbase->evalq( q ).data());
         }
 
         value_type
@@ -409,10 +410,10 @@ public:
         {
             return M_tensorbase->evalq( c1,c2,q );
         }
-        matrix_shape_type const&
+        ret_type
         evalq( uint16_type q ) const
         {
-            return M_tensorbase->evalq( q );
+            return ret_type(M_tensorbase->evalq( q ).data());
         }
 
     private:

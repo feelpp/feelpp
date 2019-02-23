@@ -85,6 +85,7 @@ public:
         typedef typename super_type::gm_type gm_type;
         //typedef typename expr_type::geoelement_type geoelement_type;
         typedef typename super_type::matrix_shape_type matrix_shape_type;
+        using ret_type = typename super_type::ret_type;
         typedef typename super_type::gmc_type gmc_type;
         typedef typename super_type::shape_type shape;
         struct is_zero { static const bool value = false; };
@@ -137,10 +138,10 @@ public:
         {
             return M_locRes[q]( c1,c2 );
         }
-        matrix_shape_type const&
+        ret_type
         evalq( uint16_type q ) const
         {
-            return M_locRes[q];
+            return ret_type(M_locRes[q].data());
         }
 
         void update( Geo_t const& geom )
@@ -155,7 +156,7 @@ public:
             this->M_expr.disp().grad( *this->M_ctxDisp, this->M_locGradDisplacement );
             updateImpl( mpl::int_<SpecificExprType::value>() );
         }
-        matrix_shape_type const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             return evalijq( i,j,q, mpl::int_<SpecificExprType::value>() );
@@ -170,11 +171,11 @@ public:
         {
             return evaliq( i,c1,c2,q, mpl::int_<SpecificExprType::value>() );
         }
-        matrix_shape_type const&
+        ret_type
         evaliq( uint16_type i, uint16_type q ) const
-        {
+            {
             DCHECK( SpecificExprType::value == ExprApplyType::EVAL ) << "only for EVAL expression";
-            return M_locRes[q];
+            return ret_type(M_locRes[q].data());
         }
 
     private:
@@ -233,17 +234,17 @@ public:
             CHECK( false ) << "not allow"; return 0;
         }
         //---------------------------------------------------------//
-        matrix_shape_type const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::EVAL> ) const
         {
             return super_type::evalijq( i,j,q); // not allow
         }
-        matrix_shape_type const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ) const
         {
             return evalijq( i,j,q, mpl::int_<ExprApplyType::JACOBIAN>(),mpl::int_<super_type::gmc_type::nDim>() );
         }
-        matrix_shape_type const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ,mpl::int_<2> /*Dim*/ ) const
         {
             CHECK( false ) << "TODO mat";
@@ -255,9 +256,9 @@ public:
             thelocRes(0,1) = -dF21;
             thelocRes(1,0) = -dF12;
             thelocRes(1,1) =  dF11;
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        typename super_type::matrix_shape_type const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ,mpl::int_<3> /*Dim*/ ) const
         {
             CHECK( false ) << "TODO mat";
@@ -280,7 +281,7 @@ public:
             thelocRes(2,0) = dF12*Fv23+Fv12*dF23-dF13-dF13*Fv22-Fv13*dF22;
             thelocRes(2,1) = dF13*Fv21+Fv13*dF21-dF23-dF23*Fv11-Fv23*dF11;
             thelocRes(2,2) = dF11+dF22+dF11*Fv22+Fv11*dF22-dF12*Fv21-Fv12*dF21;
-            return thelocRes;
+            return ret_type(thelocRes.data());
         }
 
         value_type
