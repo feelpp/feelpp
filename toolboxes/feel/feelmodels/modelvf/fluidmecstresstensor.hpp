@@ -93,7 +93,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         typedef typename super_type::shape_type shape;
         typedef typename super_type::matrix_shape_type matrix_shape_type;
         typedef typename super_type::array_shape_type array_shape_type;
-
+        using ret_type = Eigen::Map<Eigen::Matrix<value_type, shape::M, shape::N> const>;
         tensorFluidStressTensorBase( expr_type const& expr,
                                      Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
@@ -207,11 +207,11 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
 
 
         /*virtual*/
-        Eigen::Matrix<value_type, shape::M, shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             CHECK( false ) << "not allow\n";
-            return this->M_locMatrixShape;//evalijq( i,j,q,mpl::int_<gmc_type::nDim>() );
+            return ret_type(this->M_locMatrixShape.data());//evalijq( i,j,q,mpl::int_<gmc_type::nDim>() );
         }
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -233,10 +233,10 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         {
             return evalq( c1,c2,q );
         }
-        matrix_shape_type const&
+        ret_type
         evaliq( uint16_type i, uint16_type q ) const
         {
-            return M_locRes[q];
+            return ret_type(M_locRes[q].data());
         }
 
         value_type
@@ -244,10 +244,10 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         {
             return this->evalq( c1, c2, q, mpl::int_<expr_type::specific_expr_type::value>() );
         }
-        matrix_shape_type const&
+        ret_type
         evalq( uint16_type q ) const
         {
-            return M_locRes[q];
+            return ret_type(M_locRes[q].data());
         }
 
     private :
@@ -296,7 +296,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         typedef typename super_type::gmc_type gmc_type;
         typedef typename super_type::gm_type gm_type;
         typedef typename super_type::value_type value_type;
-
+        using ret_type = typename super_type::ret_type;
         // fe muP0 context
         typedef typename expr_type::fe_muP0_type fe_muP0_type;
         static const size_type context_muP0 = expr_type::context_muP0;
@@ -418,26 +418,26 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         }
         using super_type::evalijq; // fix clang warning
 
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
         {
             return evalijq( i,j,q,
                             mpl::bool_< expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN >(),
                             mpl::int_<expr_type::nRealDim>() );
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::false_ /**/, mpl::int_<2> /**/ ) const
         {
             CHECK( false) << "not allow\n";
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::false_ /**/ , mpl::int_<3> /**/ ) const
         {
             CHECK( false) << "not allow\n";
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::true_ /**/, mpl::int_<2> /**/ ) const
         {
             auto const& gradTrial = this->fecTrial()->grad( j, q );
@@ -450,9 +450,9 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             this->locMatrixShape()(0,1) = this->locMatrixShape()(1,0);
             this->locMatrixShape()(1,1) = 2*muEval*du2tdy;
 
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::true_ /**/, mpl::int_<3> /**/ ) const
         {
             auto const& gradTrial = this->fecTrial()->grad( j, q );
@@ -470,7 +470,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             this->locMatrixShape()(1,2) = this->locMatrixShape()(2,1);
             this->locMatrixShape()(2,2) = 2*muEval*du3tdz;
 
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
 
     private :
@@ -494,7 +494,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         typedef typename super_type::gmc_type gmc_type;
         typedef typename super_type::gm_type gm_type;
         typedef typename super_type::value_type value_type;
-
+        using ret_type = typename super_type::ret_type;
         // fe muP0 context
         typedef typename expr_type::fe_muP0_type fe_muP0_type;
         static const size_type context_muP0 = expr_type::context_muP0;
@@ -602,26 +602,26 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         }
         using super_type::evalijq; // fix clang warning
 
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
         {
             return evalijq( i,j,q,
                             mpl::bool_< expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN >(),
                             mpl::int_<expr_type::nRealDim>() );
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::false_ /**/, mpl::int_<2> /**/ ) const
         {
             CHECK( false) << "not allow\n";
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::false_ /**/ , mpl::int_<3> /**/ ) const
         {
             CHECK( false) << "not allow\n";
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::true_ /**/, mpl::int_<2> /**/ ) const
         {
             auto const& gradTrial = this->fecTrial()->grad( j, q );
@@ -634,9 +634,9 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             this->locMatrixShape()(0,1) = this->locMatrixShape()(1,0);
             this->locMatrixShape()(1,1) = 2*muEval*du2tdy;
 
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::true_ /**/, mpl::int_<3> /**/ ) const
         {
             auto const& gradTrial = this->fecTrial()->grad( j, q );
@@ -654,7 +654,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             this->locMatrixShape()(1,2) = this->locMatrixShape()(2,1);
             this->locMatrixShape()(2,2) = 2*muEval*du3tdz;
 
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
 
     private :
@@ -679,7 +679,8 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         typedef ExprType expr_type;
         typedef typename super_type::value_type value_type;
         typedef typename super_type::matrix_shape_type matrix_shape_type;
-
+        using ret_type = typename super_type::ret_type;
+        
         tensorFluidStressTensorPowerLaw( expr_type const& expr,
                                          Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu,
                                          Feel::FeelModels::DynamicViscosityPowerLaw const& powerLawModel )
@@ -847,27 +848,27 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
 
         using super_type::evalijq; // fix clang warning
 
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
         {
             return evalijq( i,j,q,
                             mpl::bool_< expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN >(),
                             mpl::int_<expr_type::nRealDim>() );
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::false_ /**/, mpl::int_<2> /**/ ) const
         {
             CHECK( false) << "not allow\n";
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::false_ /**/ , mpl::int_<3> /**/ ) const
         {
             CHECK( false) << "not allow\n";
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
 
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::true_ /**/, mpl::int_<2> /**/ ) const
         {
             auto const& gradTrial = this->fecTrial()->grad( j, q );
@@ -898,9 +899,9 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
                 thelocRes(1,1) = 2*(muEval*du2tdy );
             }
 
-            return thelocRes;
+            return ret_type(thelocRes.data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::true_ /**/, mpl::int_<3> /**/ ) const
         {
             auto const& gradTrial = this->fecTrial()->grad( j, q );
@@ -952,7 +953,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
                 thelocRes(2,2) = 2*(muEval*du3tdz);
             }
 
-            return thelocRes;
+            return ret_type(thelocRes.data());
         }
     private :
         Feel::FeelModels::DynamicViscosityPowerLaw const& M_powerLawModel;
@@ -971,7 +972,8 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
     public :
         typedef ExprType expr_type;
         typedef typename super_type::value_type value_type;
-
+        using ret_type = typename super_type::ret_type;
+        
         tensorFluidStressTensorCarreau( expr_type const& expr,
                                         Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu,
                                         Feel::FeelModels::DynamicViscosityCarreauLaw const& carreauLawModel )
@@ -1117,27 +1119,27 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         }
         using super_type::evalijq; // fix clang warning
 
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
         {
             return evalijq( i,j,q,
                             mpl::bool_< expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN >(),
                             mpl::int_<expr_type::nRealDim>() );
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::false_ /**/, mpl::int_<2> /**/ ) const
         {
             CHECK( false) << "not allow\n";
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::false_ /**/ , mpl::int_<3> /**/ ) const
         {
             CHECK( false) << "not allow\n";
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
 
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::true_ /**/ , mpl::int_<2> /**/ ) const
         {
             const value_type mu_inf = M_carreauLawModel.muInf();
@@ -1162,9 +1164,9 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             this->locMatrixShape()(0,1) = this->locMatrixShape()(1,0);
             this->locMatrixShape()(1,1) = 2*(muEval*du2tdy + mut*du2vdy );
 
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::true_ /**/, mpl::int_<3> /**/ ) const
         {
             const value_type mu_inf = M_carreauLawModel.muInf();
@@ -1204,7 +1206,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             this->locMatrixShape()(1,2) = this->locMatrixShape()(2,1);
             this->locMatrixShape()(2,2) = 2*(muEval*du3tdz + mut*du3vdz);
 
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
     private :
         Feel::FeelModels::DynamicViscosityCarreauLaw const& M_carreauLawModel;
@@ -1223,7 +1225,8 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
     public :
         typedef ExprType expr_type;
         typedef typename super_type::value_type value_type;
-
+        using ret_type = typename super_type::ret_type;
+        
         tensorFluidStressTensorCarreauYasuda( expr_type const& expr,
                                               Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu,
                                               Feel::FeelModels::DynamicViscosityCarreauYasudaLaw const& carreauYasudaLawModel )
@@ -1380,7 +1383,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
 
             }
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
         {
             //return evalijq( i,j,q,mpl::int_<expr_type::nRealDim>() );
@@ -1390,19 +1393,19 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         }
         using super_type::evalijq; // fix clang warning
 
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::false_ /**/, mpl::int_<2> /**/ ) const
         {
             CHECK( false) << "not allow\n";
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::false_ /**/ , mpl::int_<3> /**/ ) const
         {
             CHECK( false) << "not allow\n";
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::true_ /**/, mpl::int_<2> /**/ ) const
         {
             const value_type mu_inf = M_carreauYasudaLawModel.muInf();
@@ -1433,9 +1436,9 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             this->locMatrixShape()(0,1) = this->locMatrixShape()(1,0);
             this->locMatrixShape()(1,1) = 2*(muEval*du2tdy + mut*du2vdy );
 
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::true_ /**/, mpl::int_<3> /**/ ) const
         {
             const value_type mu_inf = M_carreauYasudaLawModel.muInf();
@@ -1481,7 +1484,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             this->locMatrixShape()(1,2) = this->locMatrixShape()(2,1);
             this->locMatrixShape()(2,2) = 2*(muEval*du3tdz + mut*du3vdz);
 
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
     private :
         Feel::FeelModels::DynamicViscosityCarreauYasudaLaw const& M_carreauYasudaLawModel;
@@ -1675,7 +1678,7 @@ public:
         typedef std::shared_ptr<tensorbase_type> tensorbase_ptrtype;
 
         typedef typename tensorbase_type::matrix_shape_type matrix_shape_type;
-
+        using ret_type = typename tensorbase_type::ret_type;
         //----------------------------------------------------------------------------------------------------//
         struct is_zero
         {
@@ -1771,7 +1774,7 @@ public:
             M_tensorbase->update( geom, face );
         }
 
-        Eigen::Matrix<value_type, shape::M, shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             return M_tensorbase->evalijq( i,j,q );
@@ -1787,7 +1790,7 @@ public:
         {
             return M_tensorbase->evaliq( i,c1,c2,q );
         }
-        matrix_shape_type const&
+        ret_type
         evaliq( uint16_type i, uint16_type q ) const
         {
             return M_tensorbase->evaliq( i, q );
@@ -1798,7 +1801,7 @@ public:
         {
             return M_tensorbase->evalq( c1,c2,q );
         }
-        matrix_shape_type const&
+        ret_type
         evalq( uint16_type q ) const
         {
             return M_tensorbase->evalq( q );

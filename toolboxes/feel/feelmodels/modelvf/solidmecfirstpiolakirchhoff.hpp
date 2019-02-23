@@ -92,8 +92,10 @@ namespace FeelModels
         }
 
         using super_type::evalijq; // fix clang warning
+        using ret_type = Eigen::Map<typename super_type::matrix_shape_type const>;
+        
         virtual
-        typename super_type::matrix_shape_type const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q,
                  const value_type detFv, const value_type ddetF,
                  typename super_type::loc_matrix_tensor2_type const& dFmt ) const = 0;
@@ -195,14 +197,15 @@ namespace FeelModels
             }
         }
         using super_type::evalijq; // fix clang warning
-        typename super_type::matrix_shape_type const&
+        using ret_type = typename super_type::ret_type;
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q,
                  const value_type detFv, const value_type ddetF,
                  typename super_type::loc_matrix_tensor2_type const& dFmt ) const
         {
             const value_type bulkModulus = this->M_locEvalBulkModulus[q](0,0);
             this->locMatrixShape() = bulkModulus*(detFv*(detFv-1)*dFmt + ddetF*(2*detFv-1)*M_locEvalFmt[q]);
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
 
     private :
@@ -215,7 +218,7 @@ namespace FeelModels
         typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartBase<Geo_t,Basis_i_t,Basis_j_t,ExprType > super_type;
         typedef ExprType expr_type;
         typedef typename super_type::value_type value_type;
-
+        using ret_type = typename super_type::ret_type;
         tensorFirstPiolaKirchhoffCompressibleVolumicPartSimo1985( expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( expr,geom,fev,feu ),
@@ -264,7 +267,7 @@ namespace FeelModels
             }
         }
         using super_type::evalijq; // fix clang warning
-        typename super_type::matrix_shape_type const&
+        ret_type 
         evalijq( uint16_type i, uint16_type j, uint16_type q,
                  const value_type detFv, const value_type ddetF,
                  typename super_type::loc_matrix_tensor2_type const& dFmt ) const
@@ -276,7 +279,7 @@ namespace FeelModels
             const value_type factorOther2 = bulkModulus*ddetF/detFv;
             typename super_type::loc_matrix_tensor2_type const& Fmt = M_locEvalFmt[q];
             locMat += factorOther2*Fmt;
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
 
     private :
@@ -305,7 +308,8 @@ namespace FeelModels
         typedef typename super_type::shape_type shape;
         typedef typename super_type::matrix_shape_type matrix_shape_type;
         typedef typename super_type::array_shape_type array_shape_type;
-
+        using ret_type = Eigen::Map<const matrix_shape_type>;
+        
         typedef typename super_type::loc_tensor2_type loc_tensor2_type;
         typedef typename super_type::array_tensor2_type array_tensor2_type;
         typedef typename super_type::loc_matrix_tensor2_type loc_matrix_tensor2_type;
@@ -386,11 +390,11 @@ namespace FeelModels
             }
         }
 
-        matrix_shape_type const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             CHECK( false ) << "not allow\n";
-            return this->M_locMatrixShape;
+            return ret_type(this->M_locMatrixShape.data());
         }
 
         value_type
@@ -407,10 +411,10 @@ namespace FeelModels
         {
             return evalq( c1,c2,q );
         }
-        matrix_shape_type const&
+        ret_type
         evaliq( uint16_type i, uint16_type q ) const
         {
-            return M_locRes[q];
+            return ret_type(M_locRes[q].data());
         }
 
         value_type
@@ -418,10 +422,10 @@ namespace FeelModels
         {
             return M_locRes[q]( c1,c2 );
         }
-        matrix_shape_type const&
+        ret_type
         evalq( uint16_type q ) const
         {
-            return M_locRes[q];
+            return ret_type(M_locRes[q].data());
         }
 
     private :
@@ -463,7 +467,8 @@ namespace FeelModels
         typedef std::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
         typedef typename fe_mechprop_scalar_type::template Context<context_mechprop_scalar, fe_mechprop_scalar_type, gm_type,geoelement_type,gmc_type::context> ctx_mechprop_scalar_type;
         typedef std::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
-
+        using ret_type = Eigen::Map<const Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N>>;
+        
         tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff( expr_type const& expr,
                                                   Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
@@ -696,24 +701,24 @@ namespace FeelModels
         }
         using super_type::evalijq; // fix clang warning
 
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             return evalijq( i,j,q, mpl::int_<expr_type::specific_expr_type::value>() );
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::EVAL> /**/ ) const
         {
             CHECK( false ) << "not allow";
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
 
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/ ) const
         {
             return evalijq( i,j,q, mpl::int_<ExprApplyType::JACOBIAN>(),mpl::int_<expr_type::nRealDim>() );
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/, mpl::int_<2> /**/ ) const
         {
             auto const& gradDisplacementEval = this->locGradDisplacement(q);
@@ -783,9 +788,9 @@ namespace FeelModels
                 thelocMat(1,0) = dFSv21 + FvdS21;
                 thelocMat(1,1) = dFSv22 + FvdS22;
             }
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/, mpl::int_<3> /**/ ) const
         {
             auto const& gradDisplacementEval = this->locGradDisplacement(q);
@@ -901,7 +906,7 @@ namespace FeelModels
                 thelocMat(2,1) = dFSv32 + FvdS32;
                 thelocMat(2,2) = dFSv32 + FvdS33;
             }
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
     private :
         pc_mechprop_scalar_ptrtype M_pcMechPropField;
@@ -1232,25 +1237,25 @@ namespace FeelModels
         }
 
         using super_type::evalijq; // fix clang warning
-
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        using ret_type = typename super_type::ret_type;
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             return evalijq( i,j,q, mpl::int_<expr_type::specific_expr_type::value>() );
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::EVAL> /**/ ) const
         {
             CHECK( false ) << "not allow";
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
 
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/ ) const
         {
             return evalijq( i,j,q, mpl::int_<ExprApplyType::JACOBIAN>(),mpl::int_<expr_type::nRealDim>() );
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/, mpl::int_<2> /**/ ) const
         {
             //const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
@@ -1312,9 +1317,9 @@ namespace FeelModels
                 const value_type detFv = 1./precomputeInvDetF;
                 matLoc += M_tensorVolumicPart->evalijq( i,j,q, detFv, ddetF, dFmt );
             }
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/, mpl::int_<3> /**/ ) const
         {
             //const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
@@ -1449,7 +1454,7 @@ namespace FeelModels
                 matLoc += M_tensorVolumicPart->evalijq( i,j,q, detFv, ddetF, dFmt );
             }
 
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
     private :
         pc_mechprop_scalar_ptrtype M_pcMechPropField;
@@ -1480,7 +1485,9 @@ namespace FeelModels
         typedef std::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
         typedef typename fe_mechprop_scalar_type::template Context<context_mechprop_scalar, fe_mechprop_scalar_type, gm_type,geoelement_type,gmc_type::context> ctx_mechprop_scalar_type;
         typedef std::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
+        using ret_type = typename super_type::ret_type;
 
+        
         //
         typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartBase<Geo_t,Basis_i_t,Basis_j_t,ExprType> tensor_volumic_part_type;
         //typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartClassic<Geo_t,Basis_i_t,Basis_j_t,ExprType> tensor_volumic_part_classic_type;
@@ -1572,24 +1579,24 @@ namespace FeelModels
 
         using super_type::evalijq; // fix clang warning
 
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             return evalijq( i,j,q, mpl::int_<expr_type::specific_expr_type::value>() );
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::EVAL> /**/ ) const
         {
             CHECK( false ) << "not allow";
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
 
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/ ) const
         {
             return evalijq( i,j,q, mpl::int_<ExprApplyType::JACOBIAN>(),mpl::int_<expr_type::nRealDim>() );
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/, mpl::int_<2> /**/ ) const
         {
             const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
@@ -1624,9 +1631,9 @@ namespace FeelModels
             if ( !useDispPresForm )
                 this->locMatrixShape() += M_tensorVolumicPart->evalijq( i,j,q, detFv, ddetF, dFmt );
 
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/, mpl::int_<3> /**/ ) const
         {
             const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
@@ -1707,7 +1714,7 @@ namespace FeelModels
             if ( !useDispPresForm )
                 this->locMatrixShape() += M_tensorVolumicPart->evalijq( i,j,q, detFv, ddetF, dFmt );
 
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
     private :
         pc_mechprop_scalar_ptrtype M_pcMechPropField;
@@ -1744,7 +1751,8 @@ namespace FeelModels
         typedef std::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
         typedef typename fe_mechprop_scalar_type::template Context<context_mechprop_scalar, fe_mechprop_scalar_type, gm_type,geoelement_type,gmc_type::context> ctx_mechprop_scalar_type;
         typedef std::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
-
+        using ret_type = typename super_type::ret_type;
+        
         tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheoryAndSimo1985( expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( expr,geom,fev,feu ),
@@ -1900,24 +1908,24 @@ namespace FeelModels
         }
         using super_type::evalijq; // fix clang warning
 
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             return evalijq( i,j,q, mpl::int_<expr_type::specific_expr_type::value>() );
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::EVAL> /**/ ) const
         {
             CHECK( false ) << "not allow";
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
 
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/ ) const
         {
             return evalijq( i,j,q, mpl::int_<ExprApplyType::JACOBIAN>(),mpl::int_<expr_type::nRealDim>() );
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/, mpl::int_<2> /**/ ) const
         {
             const value_type bulkModulus = M_locEvalBulkModulus[q](0,0);
@@ -1980,9 +1988,9 @@ namespace FeelModels
             this->locMatrixShape()(0,1) = dFS_neohookean_a12+dFS_neohookean_b12+dFS_neohookean_c12;
             this->locMatrixShape()(1,1) = dFS_neohookean_a22+dFS_neohookean_b22+dFS_neohookean_c22;
 
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
-        Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/, mpl::int_<3> /**/ ) const
         {
             const value_type bulkModulus = M_locEvalBulkModulus[q](0,0);
@@ -2103,7 +2111,7 @@ namespace FeelModels
             this->locMatrixShape()(1,2) = dFS_neohookean_a23+dFS_neohookean_b23+dFS_neohookean_c23;
             this->locMatrixShape()(2,2) = dFS_neohookean_a33+dFS_neohookean_b33+dFS_neohookean_c33;
 
-            return this->locMatrixShape();
+            return ret_type(this->locMatrixShape().data());
         }
     private :
         pc_mechprop_scalar_ptrtype M_pcMechPropField;
@@ -2259,7 +2267,8 @@ public:
         typedef std::shared_ptr<tensorbase_type> tensorbase_ptrtype;
 
         typedef typename tensorbase_type::matrix_shape_type matrix_shape_type;
-
+        using ret_type = Eigen::Map<const matrix_shape_type>;
+        
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
@@ -2395,10 +2404,10 @@ public:
             M_tensorbase->update( geom, face );
         }
 
-        matrix_shape_type const&
+        ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
-            return M_tensorbase->evalijq( i,j,q );
+            return ret_type(M_tensorbase->evalijq( i,j,q ).data() );
         }
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -2411,10 +2420,10 @@ public:
         {
             return M_tensorbase->evaliq( i,c1,c2,q );
         }
-        matrix_shape_type const&
+        ret_type
         evaliq( uint16_type i, uint16_type q ) const
         {
-            return M_tensorbase->evaliq( i, q );
+            return ret_type(M_tensorbase->evaliq( i, q ).data());
         }
 
         value_type
@@ -2422,10 +2431,10 @@ public:
         {
             return M_tensorbase->evalq( c1,c2,q );
         }
-        matrix_shape_type const&
+        ret_type
         evalq( uint16_type q ) const
         {
-            return M_tensorbase->evalq( q );
+            return ret_type(M_tensorbase->evalq( q ).data());
         }
 
     private:
