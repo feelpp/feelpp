@@ -11,7 +11,7 @@ def model(X):
     sensor = float(exports.readlines()[1])
     print("current observation : "+str(sensor))
     return sensor
-
+ 
 sample = np.zeros([10,2])
 sample[:,0] = np.exp(np.random.uniform(low=np.log(0.1), high=np.log(10), size=10))
 sample[:,1] = np.exp(np.random.uniform(low=np.log(0.01), high=0, size=10))

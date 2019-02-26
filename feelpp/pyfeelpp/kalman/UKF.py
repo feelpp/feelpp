@@ -22,7 +22,7 @@ class Filter:
         self.XF = zeros(dim)               # current forecast
 
         self.Kalman = zeros([dim,obs])
-        self.P = np.eye(dim)
+        self.P = defect*np.eye(dim)
 
         self.SigPts = zeros([dim,2*dim+1])
         self.PreMeas = zeros([obs,2*dim+1])
@@ -63,24 +63,27 @@ class Filter:
 
         self.Mx = self.SigPts @ transpose(self.weights)
         self.XF = self.Mx
-        centerx = transpose([self.Mx]) @ [np.ones(2*self.dim+1)] * 1/(2*self.dim+1)
-        self.Covx = (self.weights*(self.SigPts-centerx)) @ transpose(self.SigPts-centerx)
+        self.Covx = (self.weights*(self.SigPts-self.Mx)) @ transpose(self.SigPts-self.Mx)
         self.My = self.PreMeas @ transpose(self.weights)
-        centery = transpose([self.My]) @ [np.ones(2*self.dim+1)] * 1/(2*self.dim+1)
-        self.Covy = (self.weights*(self.PreMeas-centery)) @ transpose(self.PreMeas-centery) + self.covydefect*np.eye(self.obs)
-        self.XCov = (self.weights*(self.SigPts-centerx)) @ transpose(self.PreMeas-centery)
+        self.Covy = (self.weights*(self.PreMeas-self.My)) @ transpose(self.PreMeas-self.My) + self.covydefect*np.eye(self.obs)
+        self.XCov = (self.weights*(self.SigPts-self.Mx)) @ transpose(self.PreMeas-self.My)
 
         # ANALYSIS STEP
         self.Kalman = self.XCov * self.inverse(self.Covy)
         self.Mx += self.Kalman @ (self.signal[self.Time]-self.My)
         self.P = self.Covx - self.Kalman @ np.transpose(self.XCov)
         
-    def filter(self):
+    def filter(self,verbose=False):
         for i in range(max(self.signal.shape)-1):
             self.X[:,i] = np.transpose(self.Mx)
             self.forecast[:,i] = np.transpose(self.XF)
             self.step(self)
-            print(self.SigPts[0])
-            print("Mx : ",self.Mx," My : ",self.My," measurement : ",self.signal[i])
+            if verbose:
+                print("    sigma-points : ",self.SigPts[0])
+                print("    uncertainty matrix : ",self.P)
+                print("    Kalman gain : ",self.Kalman)
+                print("    last state estimate : ",self.Mx)
+                print("    associated predicted measure : ",self.My," ; real measure : ",self.signal[i])
+                print("    relative measure error : ",np.abs(self.My-self.signal[i])/self.signal[i]," ; tolerance : ",self.tol)
             if np.abs(self.My-self.signal[i])/self.signal[i] < self.tol:
                 return self.Mx
