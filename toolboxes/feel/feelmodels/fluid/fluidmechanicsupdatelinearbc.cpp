@@ -117,7 +117,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                        _rowstart=this->rowStartInVector()+startBlockIndexDirichletLM ) +=
                     integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "lm",name(d) ) ),
                                //_range=markedelements(this->meshDirichletLM(),PhysicalName),
-                               _expr= inner( expression(d),id(lambdaBC) ),
+                               _expr= inner( expression(d,this->symbolsExpr()),id(lambdaBC) ),
                                _geomap=this->geomap() );
             }
 
@@ -151,7 +151,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
             {
                 myLinearForm +=
                     integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "nitsche",name(d) ) ),
-                               _expr= this->dirichletBCnitscheGamma()*inner( expression(d),id(v) )/hFace(),
+                               _expr= this->dirichletBCnitscheGamma()*inner( expression(d,this->symbolsExpr()),id(v) )/hFace(),
                                _geomap=this->geomap() );
             }
 
@@ -175,17 +175,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         for( auto const& d : this->M_bcNeumannScalar )
             myLinearForm +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= expression(d)*inner( N(),id(v) ),
+                           _expr= expression(d,this->symbolsExpr())*inner( N(),id(v) ),
                            _geomap=this->geomap() );
         for( auto const& d : this->M_bcNeumannVectorial )
             myLinearForm +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,name(d)) ),
-                           _expr= inner( expression(d),id(v) ),
+                           _expr= inner( expression(d,this->symbolsExpr()),id(v) ),
                            _geomap=this->geomap() );
         for( auto const& d : this->M_bcNeumannTensor2 )
             myLinearForm +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,name(d)) ),
-                           _expr= inner( expression(d)*N(),id(v) ),
+                           _expr= inner( expression(d,this->symbolsExpr())*N(),id(v) ),
                            _geomap=this->geomap() );
     }
 
@@ -256,7 +256,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
             {
                 myLinearForm +=
                     integrate( _range=markedfaces(this->mesh(),this->markerPressureBC(name(d)) ),
-                               _expr= -expression(d)*trans(N())*id(v),
+                               _expr= -expression(d,this->symbolsExpr())*trans(N())*id(v),
                                _geomap=this->geomap() );
             }
         }

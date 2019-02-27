@@ -217,7 +217,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                 auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
                 linearForm_PatternCoupled +=
                     integrate( _range=rangeBodyForceUsed,
-                               _expr= -inner( expression(d),id(v) ),
+                               _expr= -inner( expression(d,this->symbolsExpr()),id(v) ),
                                _geomap=this->geomap() );
             }
         }
@@ -397,15 +397,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) 
             auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
             if ( !listMarkerFaces.empty() )
                 u.on(_range=markedfaces(mesh,listMarkerFaces ),
-                     _expr=expression(d) );
+                     _expr=expression(d,this->symbolsExpr()) );
             auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
             if ( !listMarkerEdges.empty() )
                 u.on(_range=markededges(mesh,listMarkerEdges ),
-                     _expr=expression(d) );
+                     _expr=expression(d,this->symbolsExpr()) );
             auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
             if ( !listMarkerPoints.empty() )
                 u.on(_range=markedpoints(mesh,listMarkerPoints ),
-                     _expr=expression(d) );
+                     _expr=expression(d,this->symbolsExpr()) );
         }
         // strong Dirichlet bc with velocity components
         for ( auto const& bcDirComp : M_bcDirichletComponents )
@@ -419,15 +419,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) 
                 auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
                 if ( !listMarkerFaces.empty() )
                     u[comp].on(_range=markedfaces(mesh,listMarkerFaces ),
-                               _expr=expression(d) );
+                               _expr=expression(d,this->symbolsExpr()) );
                 auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
                 if ( !listMarkerEdges.empty() )
                     u[comp].on(_range=markededges(mesh,listMarkerEdges ),
-                               _expr=expression(d) );
+                               _expr=expression(d,this->symbolsExpr()) );
                 auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
                 if ( !listMarkerPoints.empty() )
                     u[comp].on(_range=markedpoints(mesh,listMarkerPoints ),
-                               _expr=expression(d) );
+                               _expr=expression(d,this->symbolsExpr()) );
             }
         }
     }
