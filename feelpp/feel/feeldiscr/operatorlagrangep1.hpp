@@ -388,7 +388,7 @@ OperatorLagrangeP1<space_type>::buildReferenceMesh( bool rebuild, std::string pa
     std::string tagMeshLagP1base = this->domainSpace()->basisName() + (boost::format("-order%1%")%domain_space_type::basis_type::nOrder).str();
     std::string fileNameMeshDataBase = (boost::format("%1%-%2%d-%3%.msh")%domain_reference_convex_type::type() %domain_reference_convex_type::topological_dimension %tagMeshLagP1base).str();
     // WARNING, if we use a feelpp installed lib, datadir is wrong and can be not exist
-    std::string pathMeshDataBase = Environment::expand("$datadir/gmsh/operatorlagrangep1/"+fileNameMeshDataBase);
+    std::string pathMeshDataBase = Environment::expand("$datadir/operatorlagrangep1/"+fileNameMeshDataBase);
 
     bool useMeshInDataBase = false;
 

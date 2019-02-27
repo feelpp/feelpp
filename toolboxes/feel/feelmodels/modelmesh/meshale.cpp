@@ -81,7 +81,7 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
     for (size_type i=0;i<M_dispP1ToHO_ref->nLocalDof();++i)
         (*M_dispP1ToHO_ref)(i) = (*M_identity_ale)(M_drm->dofRelMap()[i]) - (*M_dispP1ToHO_ref)(i);
 
-    if ( mesh_type::nOrder == mesh_ref_type::nOrder )
+    if ( ( mesh_type::nOrder > 1 ) && ( mesh_type::nOrder == mesh_ref_type::nOrder )  )
         for ( size_type k=0;k<M_dispP1ToHO_ref->functionSpace()->nLocalDof();++k)
             CHECK( math::abs( M_dispP1ToHO_ref->operator()(k) ) < 1e-14 ) <<  "error must be null : " << M_dispP1ToHO_ref->operator()(k) ;
 

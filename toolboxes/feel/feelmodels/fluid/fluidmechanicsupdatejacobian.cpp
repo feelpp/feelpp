@@ -24,9 +24,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     bool _BuildCstPart = data.buildCstPart();
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    if (this->verbose()) Feel::FeelModels::Log("--------------------------------------------------\n",
-                                               this->prefix()+".FluidMechanics","updateJacobian", "start"+sc,
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateJacobian",(boost::format("start %1%") %sc).str() );
     boost::mpi::timer thetimer;
 
     bool BuildNonCstPart = !_BuildCstPart;
@@ -118,10 +116,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     }
 #endif
 
-    double timeElapsed=timerAssemble.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateJacobian",
-                                               "assemble convection term in "+(boost::format("%1% s") % timeElapsed).str(),
-                                               this->worldComm(),this->verboseAllProc());
+    double timeElapsed = timerAssemble.elapsed();
+    this->log("FluidMechanics","updateJacobian",(boost::format("assemble convection term in %1% s") %timeElapsed).str() );
 
     //--------------------------------------------------------------------------------------------------//
     // sigma : grad(v) on Omega
@@ -171,7 +167,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
             if ( BuildNonCstPart )
             {
-                auto StressTensorExprJac = Feel::FeelModels::fluidMecNewtonianStressTensorJacobian<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,false/*true*/);
+                auto StressTensorExprJac = Feel::FeelModels::fluidMecNewtonianStressTensorJacobian<2*nOrderVelocity>(u,p,*this->materialProperties(),matName);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
                                //_expr= inner( 2*sigma_powerlaw_viscous/*Sigmat_powerlaw*/,grad(v) ),
@@ -204,6 +200,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                        _geomap=this->geomap() );
     }
 
+    // peusdo transient continuation
+    if ( BuildNonCstPart && data.hasInfo( "use-pseudo-transient-continuation" ) )
+    {
+        double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
+        auto norm2_uu = this->materialProperties()->fieldRho().functionSpace()->element(); // TODO : improve this (maybe create an expression instead)
+        norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
+        bilinearForm_PatternDefault +=
+            integrate(_range=M_rangeMeshElements,
+                      _expr=(1./pseudoTimeStepDelta)*idv(norm2_uu)*inner(idt(u),id(u)),
+                      //_expr=(1./pseudoTimeStepDelta)*(norm2(idv(u))/h())*inner(idt(u),id(u)),
+                      //_expr=(1./pseudoTimeStepDelta)*inner(idt(u),id(u)),
+                      _geomap=this->geomap() );
+    }
     //--------------------------------------------------------------------------------------------------//
     // define pressure cst
     if ( this->definePressureCst() )
@@ -250,12 +259,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     this->updateJacobianWeakBC( data, U );
 
     //--------------------------------------------------------------------------------------------------//
-
     /*double*/ timeElapsed=thetimer.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateJacobian",
-                                               "finish"+sc+" in "+(boost::format("%1% s") % timeElapsed).str()+
-                                               "\n--------------------------------------------------",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateJacobian",(boost::format("finish %1% in %2% s") %sc %timeElapsed).str() );
 
 } // updateJacobian
 

@@ -357,6 +357,9 @@ namespace FeelModels
 
         void update( Geo_t const& geom )
         {
+            this->setGmc( geom );
+            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+                M_pcDisplacement->update( this->gmc()->pc()->nodes() );
             M_ctxDisplacement->update( this->gmc(),  (pc_displacement_ptrtype const&) M_pcDisplacement );
             std::fill( M_locGradDisplacement.data(), M_locGradDisplacement.data()+M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*matrix_shape_type::Zero()*/ );
             this->expr().displacement().grad( *M_ctxDisplacement, M_locGradDisplacement );
@@ -369,6 +372,7 @@ namespace FeelModels
         }
         void update( Geo_t const& geom, uint16_type face )
         {
+            this->setGmc( geom );
             if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
                 M_pcDisplacement->update( this->gmc()->pc()->nodes() );
             M_ctxDisplacement->update( this->gmc(),  (pc_displacement_ptrtype const&) M_pcDisplacement );
@@ -494,13 +498,12 @@ namespace FeelModels
         void update( Geo_t const& geom, uint16_type face )
         {
             super_type::update( geom,face );
-
-            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
-                M_pcMechPropField->update( this->gmc()->pc()->nodes() );
             updateImpl( geom );
         }
         void updateImpl( Geo_t const& geom )
         {
+            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+                M_pcMechPropField->update( this->gmc()->pc()->nodes() );
             M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
             if ( !useDispPresForm )
             {
@@ -1018,14 +1021,13 @@ namespace FeelModels
         void update( Geo_t const& geom, uint16_type face )
         {
             super_type::update( geom,face );
-
-            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
-                M_pcMechPropField->update(this->gmc()->pc()->nodes() );
             updateImpl( geom );
         }
 #if 1
         void updateImpl( Geo_t const& geom )
         {
+            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+                M_pcMechPropField->update(this->gmc()->pc()->nodes() );
             M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
             std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
             this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
@@ -1041,6 +1043,8 @@ namespace FeelModels
         // generic update but seems more slow
         void updateImpl( Geo_t const& geom )
         {
+            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+                M_pcMechPropField->update(this->gmc()->pc()->nodes() );
             M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
             std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
             this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
@@ -1526,13 +1530,12 @@ namespace FeelModels
         void update( Geo_t const& geom, uint16_type face )
         {
             super_type::update( geom,face );
-
-            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
-                M_pcMechPropField->update( this->gmc()->pc()->nodes() );
             updateImpl( geom );
         }
         void updateImpl( Geo_t const& geom )
         {
+            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+                M_pcMechPropField->update( this->gmc()->pc()->nodes() );
             M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
             std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
             this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
@@ -1784,13 +1787,12 @@ namespace FeelModels
         void update( Geo_t const& geom, uint16_type face )
         {
             super_type::update( geom,face );
-
-            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
-                M_pcMechPropField->update( this->gmc()->pc()->nodes() );
             updateImpl( geom );
         }
         void updateImpl( Geo_t const& geom )
         {
+            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+                M_pcMechPropField->update( this->gmc()->pc()->nodes() );
             M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
             std::fill( M_locEvalBulkModulus.data(), M_locEvalBulkModulus.data()+M_locEvalBulkModulus.num_elements(), /*typename*/ this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
             std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), /*typename*/ this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );

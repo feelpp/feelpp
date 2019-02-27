@@ -54,10 +54,6 @@ namespace Feel
 {
 namespace FeelModels
 {
-enum class SolidMechanicsPostProcessFieldExported
-{
-    Displacement=0, Velocity, Acceleration, NormalStress, Pressure, MaterialProperties, Pid, VonMises, Tresca, PrincipalStresses, FSI
-};
 
 template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechProp=false >
 class SolidMechanics : public ModelNumerical,
@@ -155,7 +151,9 @@ public:
     // newmark or savets(bdf) class
     typedef Newmark<space_displacement_type> newmark_displacement_type;
     typedef std::shared_ptr<newmark_displacement_type> newmark_displacement_ptrtype;
-    typedef Bdf<space_pressure_type>  savets_pressure_type;
+    typedef Bdf<space_displacement_type> bdf_displacement_type;
+    typedef std::shared_ptr<bdf_displacement_type> bdf_displacement_ptrtype;
+    typedef Bdf<space_pressure_type> savets_pressure_type;
     typedef std::shared_ptr<savets_pressure_type> savets_pressure_ptrtype;
     //___________________________________________________________________________________//
     // functionspace for rho,coefflame1,coefflame2
@@ -250,7 +248,6 @@ public:
     // basis
     //typedef bases<Lagrange<nOrder, Scalar,Continuous,PointSetFekete> > basis_1dreduced_type;
     typedef bases<Lagrange<nOrder, Vectorial,Continuous,PointSetFekete> > basis_vect_1dreduced_type;
-    typedef bases<Lagrange<nOrder+1, Vectorial,Discontinuous,PointSetFekete> > basis_stress_vect_1dreduced_type;
     //___________________________________________________________________________________//
     // function space
     typedef FunctionSpace<mesh_1dreduced_type, basis_vect_1dreduced_type> space_vect_1dreduced_type;
@@ -262,16 +259,6 @@ public:
     typedef typename space_vect_1dreduced_type::component_functionspace_ptrtype space_1dreduced_ptrtype;
     typedef typename space_1dreduced_type::element_type element_1dreduced_type;
     typedef std::shared_ptr<element_1dreduced_type> element_1dreduced_ptrtype;
-
-    typedef FunctionSpace<mesh_1dreduced_type, basis_stress_vect_1dreduced_type> space_stress_vect_1dreduced_type;
-    typedef std::shared_ptr<space_stress_vect_1dreduced_type> space_stress_vect_1dreduced_ptrtype;
-    typedef typename space_stress_vect_1dreduced_type::element_type element_stress_vect_1dreduced_type;
-    typedef std::shared_ptr<element_stress_vect_1dreduced_type> element_stress_vect_1dreduced_ptrtype;
-
-    typedef typename space_stress_vect_1dreduced_type::component_functionspace_type space_stress_scal_1dreduced_type;
-    typedef typename space_stress_vect_1dreduced_type::component_functionspace_ptrtype space_stress_scal_1dreduced_ptrtype;
-    typedef typename space_stress_scal_1dreduced_type::element_type element_stress_scal_1dreduced_type;
-    typedef std::shared_ptr<element_stress_scal_1dreduced_type> element_stress_scal_1dreduced_ptrtype;
     //___________________________________________________________________________________//
     // time step newmark
     typedef Newmark<space_1dreduced_type>  newmark_1dreduced_type;
@@ -326,7 +313,7 @@ public:
     //protected :
     void build(mesh_ptrtype mesh );
     void build( mesh_1dreduced_ptrtype mesh );
-protected :
+private :
     void buildStandardModel( mesh_ptrtype mesh = mesh_ptrtype() );
     void build1dReducedModel( mesh_1dreduced_ptrtype mesh = mesh_1dreduced_ptrtype() );
 
@@ -334,12 +321,13 @@ protected :
     void loadConfigMeshFile(std::string const& geofilename) { CHECK( false ) << "not allow"; }
     void loadConfigMeshFile1dReduced(std::string const& geofilename) { CHECK( false ) << "not allow"; }
     void loadParameterFromOptionsVm();
-    void createWorldsComm();
+    void createWorldsComm() override;
+
+    void initFunctionSpaces();
+    void initFunctionSpaces1dReduced();
 
     void createMesh();
     void createMesh1dReduced();
-    void createFunctionSpaces();
-    void createFunctionSpaces1dReduced();
     void createTimeDiscretisation();
     void createTimeDiscretisation1dReduced();
     void createExporters();
@@ -347,9 +335,6 @@ protected :
 
     void createAdditionalFunctionSpacesNormalStress();
     void createAdditionalFunctionSpacesStressTensor();
-    void createAdditionalFunctionSpacesFSI();
-    void createAdditionalFunctionSpacesFSIStandard();
-    void createAdditionalFunctionSpacesFSI1dReduced();
 
 public :
 
@@ -360,7 +345,7 @@ public :
     void init( bool buildAlgebraicFactory = true );
     void solve( bool upVelAcc=true );
 
-    std::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
 
     void pdeType(std::string __type);
     void pdeSolver(std::string __type);
@@ -389,19 +374,35 @@ public :
                      !M_bcDirichletComponents.find(Component::Z)->second.empty() );
         }
 
+    std::string const& timeStepping() const { return M_timeStepping; }
+
     std::shared_ptr<TSBase> timeStepBase()
     {
-        if (this->isStandardModel())
-            return this->timeStepNewmark();
-        else// if (this->is1dReducedModel())
-            return this->timeStepNewmark1dReduced();
+        if ( M_timeStepping == "Newmark" )
+        {
+            if (this->isStandardModel())
+                return this->timeStepNewmark();
+            else// if (this->is1dReducedModel())
+                return this->timeStepNewmark1dReduced();
+        }
+        else
+        {
+            return this->timeStepBdfDisplacement();
+        }
     }
     std::shared_ptr<TSBase> timeStepBase() const
     {
-        if (this->isStandardModel())
-            return this->timeStepNewmark();
-        else// if (this->is1dReducedModel())
-            return this->timeStepNewmark1dReduced();
+        if ( M_timeStepping == "Newmark" )
+        {
+            if (this->isStandardModel())
+                return this->timeStepNewmark();
+            else// if (this->is1dReducedModel())
+                return this->timeStepNewmark1dReduced();
+        }
+        else
+        {
+            return this->timeStepBdfDisplacement();
+        }
     }
     void initTimeStep();
     void updateTimeStep();
@@ -410,21 +411,28 @@ public :
     void initUserFunctions();
     void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
 
+    // post process
     void initPostProcess();
+    std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+    bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
+    void exportFields( double time );
+    bool updateExportedFields( exporter_ptrtype exporter, std::set<std::string> const& fields, double time );
+    bool updateExportedFields1dReduced( exporter_1dreduced_ptrtype exporter, std::set<std::string> const& fields, double time );
     void exportMeasures( double time );
-private :
-    void exportFieldsImpl( double time );
-    void exportFieldsImplHO( double time );
-public :
     void restartExporters() { this->restartExporters( this->timeInitial() ); }
     void restartExporters( double time );
+private :
+    //void exportFieldsImpl( double time );
+    void exportFieldsImplHO( double time );
 
+    void updateTimeStepThetaSchemePreviousContrib();
+public :
 
     void predictorDispl();
 
-    block_pattern_type blockPattern() const;
+    block_pattern_type blockPattern() const override;
 
     backend_ptrtype const& backend() const
     {
@@ -457,23 +465,20 @@ public :
     newmark_displacement_ptrtype & timeStepNewmark() { return M_timeStepNewmark; }
     newmark_displacement_ptrtype const& timeStepNewmark() const { return M_timeStepNewmark; }
     savets_pressure_ptrtype const& timeStepSavetsPressure() const { CHECK( M_savetsPressure ) << "savets pressure not define"; return M_savetsPressure; }
+    bdf_displacement_ptrtype timeStepBdfDisplacement() const { return M_timeStepBdfDisplacement; }
+    bdf_displacement_ptrtype timeStepBdfVelocity() const { return M_timeStepBdfVelocity; }
 
-    element_displacement_ptrtype & fieldVelocityPtr() { return M_timeStepNewmark->currentVelocityPtr(); }
-    element_displacement_ptrtype const& fieldVelocityPtr() const { return M_timeStepNewmark->currentVelocityPtr(); }
-    element_displacement_type & fieldVelocity() { return M_timeStepNewmark->currentVelocity(); }
-    element_displacement_type const& fieldVelocity() const { return M_timeStepNewmark->currentVelocity(); }
+    element_displacement_ptrtype & fieldVelocityPtr() { return M_fieldVelocity; }
+    element_displacement_ptrtype const& fieldVelocityPtr() const { return M_fieldVelocity; }
+    element_displacement_type & fieldVelocity() { return *M_fieldVelocity;; }
+    element_displacement_type const& fieldVelocity() const { return *M_fieldVelocity; }
 
-    element_displacement_type & fieldAcceleration() { return M_timeStepNewmark->currentAcceleration(); }
-    element_displacement_type const& fieldAcceleration() const { return M_timeStepNewmark->currentAcceleration(); }
-    element_displacement_ptrtype const& fieldAccelerationPtr() const { return M_timeStepNewmark->currentAccelerationPtr(); }
+    element_displacement_type & fieldAcceleration() { return *M_fieldAcceleration; }
+    element_displacement_type const& fieldAcceleration() const { return *M_fieldAcceleration; }
+    element_displacement_ptrtype const& fieldAccelerationPtr() const { return M_fieldAcceleration; }
 
-    element_normal_stress_ptrtype & fieldNormalStressFromFluidPtr() { return M_fieldNormalStressFromFluid; }
-    element_normal_stress_ptrtype const& fieldNormalStressFromFluidPtr() const { return M_fieldNormalStressFromFluid; }
     element_normal_stress_ptrtype & fieldNormalStressFromStructPtr() { return M_fieldNormalStressFromStruct; }
     element_normal_stress_ptrtype const& fieldNormalStressFromStructPtr() const { return M_fieldNormalStressFromStruct; }
-    element_vectorial_ptrtype & fieldVelocityInterfaceFromFluidPtr() { return M_fieldVelocityInterfaceFromFluid; }
-    element_vectorial_ptrtype const& fieldVelocityInterfaceFromFluidPtr() const { return M_fieldVelocityInterfaceFromFluid; }
-    element_vectorial_type const& fieldVelocityInterfaceFromFluid() const { return *M_fieldVelocityInterfaceFromFluid; }
 
     // stress tensor ( tensor2 )
     element_stress_tensor_ptrtype const& fieldStressTensorPtr() const { return M_fieldStressTensor; }
@@ -507,12 +512,12 @@ public :
     //backend_ptrtype backend() { return M_backend; }
     backend_ptrtype const& backendStandard() const { return M_backend; }
 
-    BlocksBaseGraphCSR buildBlockMatrixGraph() const;
-    graph_ptrtype buildMatrixGraph() const;
+    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
+    graph_ptrtype buildMatrixGraph() const override;
     int nBlockMatrixGraph() const;
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    void updateBlockVectorSolution();
+    //void updateBlockVectorSolution();
 
     model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
@@ -534,14 +539,11 @@ public :
 
     element_1dreduced_type & fieldDisplacementScal1dReduced() { return *M_disp_1dReduced; }
     element_1dreduced_type const & fieldDisplacementScal1dReduced() const { return *M_disp_1dReduced; }
+    element_1dreduced_ptrtype fieldDisplacementScal1dReducedPtr() const { return M_disp_1dReduced; }
     element_vect_1dreduced_type & fieldDisplacementVect1dReduced() { return *M_disp_vect_1dReduced; }
     element_vect_1dreduced_type const & fieldDisplacementVect1dReduced() const { return *M_disp_vect_1dReduced; }
     element_vect_1dreduced_ptrtype const & fieldDisplacementVect1dReducedPtr() const { return M_disp_vect_1dReduced; }
 
-    element_stress_scal_1dreduced_type & fieldStressScal1dReduced() { return *M_stress_1dReduced; }
-    element_stress_vect_1dreduced_type & fieldStressVect1dReduced() { return *M_stress_vect_1dReduced; }
-    element_stress_vect_1dreduced_type const& fieldStressVect1dReduced() const { return *M_stress_vect_1dReduced; }
-    element_stress_vect_1dreduced_type const& fieldStressVect1dReducedPtr() const { return *M_stress_vect_1dReduced; }
     element_1dreduced_type & fieldVelocityScal1dReduced() { return *M_velocity_1dReduced; }
     element_1dreduced_type const& fieldVelocityScal1dReduced() const { return *M_velocity_1dReduced; }
     element_vect_1dreduced_type & fieldVelocityVect1dReduced() { return *M_velocity_vect_1dReduced; }
@@ -552,6 +554,8 @@ public :
     newmark_1dreduced_ptrtype const& timeStepNewmark1dReduced() const { return M_newmark_displ_1dReduced; }
 
     backend_ptrtype const& backend1dReduced() const { return M_backend_1dReduced; }
+    model_algebraic_factory_ptrtype algebraicFactory1dReduced() const { return M_algebraicFactory_1dReduced; }
+    BlocksBaseGraphCSR buildBlockMatrixGraph1dReduced() const;
 
     double thickness1dReduced() const { return M_thickness_1dReduced; }
     double radius1dReduced() const { return M_radius_1dReduced; }
@@ -576,8 +580,6 @@ public :
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
 
-    void updateSubMeshDispFSIFromPrevious();
-
     std::set<std::string> const& markerNameFSI() const { return this->markerFluidStructureInterfaceBC(); }
 
     void updateNormalStressFromStruct();
@@ -589,7 +591,6 @@ public :
     //usefull for 1d reduced model
     void updateInterfaceDispFrom1dDisp();
     void updateInterfaceVelocityFrom1dVelocity();
-    void updateInterfaceScalStressDispFromVectStress();
 
     element_vect_1dreduced_ptrtype
     extendVelocity1dReducedVectorial( element_1dreduced_type const& vel1d ) const;
@@ -597,8 +598,6 @@ public :
     //-----------------------------------------------------------------------------------//
     // post processing computation
     //-----------------------------------------------------------------------------------//
-
-    bool hasPostProcessFieldExported( SolidMechanicsPostProcessFieldExported const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
 
     double computeExtremumValue( std::string const& field, std::set<std::string> const& markers, std::string const& type ) const;
     double computeVolumeVariation( elements_reference_wrapper_t<mesh_type> const& rangeElt ) const;
@@ -609,36 +608,35 @@ public :
     //-----------------------------------------------------------------------------------//
     //-----------------------------------------------------------------------------------//
 
-    // assembly methods
-    void updateNewtonInitialGuess(vector_ptrtype& U) const;
-    void updateJacobian( DataUpdateJacobian & data ) const;
-    void updateResidual( DataUpdateResidual & data ) const;
+    // assembly methods for linear system
+    void updateLinearPDE( DataUpdateLinear & data ) const override;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
-    void updateLinearPDE( DataUpdateLinear & data ) const;
-    void updateLinearGeneralisedStringGeneralisedAlpha( DataUpdateLinear & data ) const;
-    void updateLinearElasticityGeneralisedAlpha( DataUpdateLinear & data ) const;
-    void updateLinearElasticityAxiSymGeneralisedAlpha( DataUpdateLinear & data ) const {};
+    // assembly methods for nonlinear system
+    void updateNewtonInitialGuess(vector_ptrtype& U) const override;
+    void updateJacobian( DataUpdateJacobian & data ) const override;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
+    void updateResidual( DataUpdateResidual & data ) const override;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const override;
+private :
+    void updateLinearGeneralizedString( DataUpdateLinear & data ) const;
+    void updateLinearElasticityAxiSym( DataUpdateLinear & data ) const {};
+    void updateBCNeumannLinearPDE( vector_ptrtype& F, double timeSteppingScaling ) const;
+    void updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F, double timeSteppingScaling ) const;
+    void updateSourceTermLinearPDE( vector_ptrtype& F, double timeSteppingScaling ) const;
 
     void updateJacobianIncompressibilityTerms( element_displacement_external_storage_type const& u, element_pressure_external_storage_type const& p, sparse_matrix_ptrtype& J) const;
     void updateResidualIncompressibilityTerms( element_displacement_external_storage_type const& u, element_pressure_external_storage_type const& p, vector_ptrtype& R) const;
-
     void updateJacobianViscoElasticityTerms( element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const;
     void updateResidualViscoElasticityTerms( element_displacement_external_storage_type const& u, vector_ptrtype& R) const;
 
+    void updateBCNeumannResidual( vector_ptrtype& R, double timeSteppingScaling ) const;
+    void updateBCRobinResidual( element_displacement_external_storage_type const& u, vector_ptrtype& R, double timeSteppingScaling ) const;
+    void updateBCFollowerPressureResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R, double timeSteppingScaling ) const;
+    void updateSourceTermResidual( vector_ptrtype& R, double timeSteppingScaling ) const;
 
-    void updateBCNeumannResidual( vector_ptrtype& R ) const;
-    void updateBCRobinResidual( element_displacement_external_storage_type const& u, vector_ptrtype& R ) const;
-    void updateBCFollowerPressureResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R ) const;
-    void updateSourceTermResidual( vector_ptrtype& R ) const;
-
-    void updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J, vector_ptrtype& RBis ) const;
-    void updateBCFollowerPressureJacobian(element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const;
-    void updateBCRobinJacobian( sparse_matrix_ptrtype& J) const;
-
-    void updateBCDirichletStrongLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
-    void updateBCNeumannLinearPDE( vector_ptrtype& F ) const;
-    void updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
-    void updateSourceTermLinearPDE( vector_ptrtype& F ) const;
+    void updateBCFollowerPressureJacobian(element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J, double timeSteppingScaling ) const;
+    void updateBCRobinJacobian( sparse_matrix_ptrtype& J, double timeSteppingScaling ) const;
 
 private :
     void updateBoundaryConditionsForUse();
@@ -667,7 +665,7 @@ protected:
     bool M_is1dReducedModel;
     bool M_isStandardModel;
 
-    bool M_hasBuildFromMesh,M_hasBuildFromMesh1dReduced, M_isUpdatedForUse;
+    bool M_hasBuildFromMesh,M_hasBuildFromMesh1dReduced;
 
 
     //model parameters
@@ -695,17 +693,15 @@ protected:
     MeshMover<typename mesh_type::trace_mesh_type> M_meshMoverTrace;
     // function space
     space_displacement_ptrtype M_XhDisplacement;
-    element_displacement_ptrtype M_fieldDisplacement;
+    element_displacement_ptrtype M_fieldDisplacement, M_fieldVelocity, M_fieldAcceleration;
     space_pressure_ptrtype M_XhPressure;
     element_pressure_ptrtype M_fieldPressure;
     space_constraint_vec_ptrtype M_XhConstraintVec;
     element_constraint_vec_ptrtype M_fieldConstraintVec;
-    //space_displacement_ptrtype M_XhVectorial;
     element_vectorial_ptrtype U_displ_struct_prestress;
-    element_vectorial_ptrtype M_fieldVelocityInterfaceFromFluid;
     // normal stress space
     space_normal_stress_ptrtype M_XhNormalStress;
-    element_normal_stress_ptrtype M_fieldNormalStressFromFluid;
+    //element_normal_stress_ptrtype M_fieldNormalStressFromFluid;
     element_normal_stress_ptrtype M_fieldNormalStressFromStruct;
     // stress tensor space
     space_stress_tensor_ptrtype M_XhStressTensor;
@@ -729,12 +725,11 @@ protected:
     vector_ptrtype M_vecDiagMassMatrixLumped;
 
     // trace mesh
-    space_tracemesh_disp_ptrtype M_XhSubMeshDispFSI;
-    element_tracemesh_disp_ptrtype M_fieldSubMeshDispFSI;
+    //space_tracemesh_disp_ptrtype M_XhSubMeshDispFSI;
+    //element_tracemesh_disp_ptrtype M_fieldSubMeshDispFSI;
 
     // post-process
-    std::set<SolidMechanicsPostProcessFieldExported> M_postProcessFieldExported;
-    std::set<std::string> M_postProcessUserFieldExported;
+    std::set<std::string> M_postProcessFieldExported;
 
     // exporter
     exporter_ptrtype M_exporter;
@@ -764,24 +759,21 @@ protected:
     mesh_1dreduced_ptrtype M_mesh_1dReduced;
     // function space
     space_1dreduced_ptrtype M_Xh_1dReduced;
-    space_stress_vect_1dreduced_ptrtype M_XhStressVect_1dReduced;
     //element disp,vel,acc
     element_1dreduced_ptrtype M_disp_1dReduced;
     element_1dreduced_ptrtype M_velocity_1dReduced;
     element_1dreduced_ptrtype M_acceleration_1dReduced;
-    // normal stress space
-    element_stress_scal_1dreduced_ptrtype M_stress_1dReduced;
     // vectorial 1d_reduced space
     space_vect_1dreduced_ptrtype M_Xh_vect_1dReduced;
     element_vect_1dreduced_ptrtype M_disp_vect_1dReduced;
     element_vect_1dreduced_ptrtype M_velocity_vect_1dReduced;
-    element_stress_vect_1dreduced_ptrtype M_stress_vect_1dReduced;
     // time discretisation
     newmark_1dreduced_ptrtype M_newmark_displ_1dReduced;
     // backend
     backend_ptrtype M_backend_1dReduced;
     // algebraic solver ( assembly+solver )
     model_algebraic_factory_ptrtype M_algebraicFactory_1dReduced;
+    BlocksBaseVector<double> M_blockVectorSolution_1dReduced;
     // exporter
     exporter_1dreduced_ptrtype M_exporter_1dReduced;
 
@@ -792,6 +784,8 @@ protected:
     // others
     //-------------------------------------------//
 
+    bool M_timeSteppingUseMixedFormulation;
+    std::string M_timeStepping;
     //generalised-alpha parameters
     double M_genAlpha_rho;
     double M_genAlpha_alpha_m;
@@ -799,10 +793,15 @@ protected:
     double M_genAlpha_gamma;
     double M_genAlpha_beta;
 
+
+    bdf_displacement_ptrtype M_timeStepBdfDisplacement, M_timeStepBdfVelocity;
+    double M_timeStepThetaValue;
+    vector_ptrtype M_timeStepThetaSchemePreviousContrib;
+
     // fsi
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
-    std::shared_ptr<typename mesh_type::trace_mesh_type> M_fsiSubmesh;
+    //std::shared_ptr<typename mesh_type::trace_mesh_type> M_fsiSubmesh;
 
     // fields defined in json
     std::map<std::string,element_displacement_scalar_ptrtype> M_fieldsUserScalar;

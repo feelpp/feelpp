@@ -82,7 +82,7 @@ makeAbout()
      BOOST_CHECK_EQUAL( sp[0_c], Xh );
      BOOST_CHECK_EQUAL( sp[1_c], Wh );
 
-     auto cp = hana::cartesian_product(hana::make_tuple(sp,sp));
+     auto cp = hana::cartesian_product(hana::make_tuple(sp.tupleSpaces(),sp.tupleSpaces()));
 
      BOOST_CHECK_EQUAL( cp[0_c][0_c], Xh );
      BOOST_CHECK_EQUAL( cp[0_c][1_c], Xh );
