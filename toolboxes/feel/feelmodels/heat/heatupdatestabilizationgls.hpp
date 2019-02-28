@@ -149,12 +149,15 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobianStabilizationGLS( Expr<RhoC
                                _pattern=size_type(Pattern::COUPLED),
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=this->colStartInMatrix() );
-
+#if 0
     auto rhocpuconv = rhocp*uconv;
     auto tauExpr = Feel::FeelModels::stabilizationGLSParameterExpr( *this->stabilizationGLSParameter(),rhocpuconv/*rhocp*uconv*/, kappa );
     auto tauFieldPtr = this->stabilizationGLSParameter()->fieldTauPtr();
     tauFieldPtr->on(_range=range,_expr=tauExpr);
     auto tau = idv(tauFieldPtr);
+#else
+    auto tau = idv( this->stabilizationGLSParameter()->fieldTauPtr() );
+#endif
 
     if ( nOrderTemperature <= 1 || this->stabilizationGLSType() == "supg"  )
     {
@@ -226,12 +229,15 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( Expr<RhoC
 
     auto myLinearForm = form1( _test=Xh, _vector=R,
                                _rowstart=this->rowStartInVector() );
-
+#if 1
     auto rhocpuconv = rhocp*uconv;
     auto tauExpr = Feel::FeelModels::stabilizationGLSParameterExpr( *this->stabilizationGLSParameter(),rhocpuconv/*rhocp*uconv*/, kappa );
     auto tauFieldPtr = this->stabilizationGLSParameter()->fieldTauPtr();
     tauFieldPtr->on(_range=range,_expr=tauExpr);
     auto tau = idv(tauFieldPtr);
+#else
+    auto tau = idv( this->stabilizationGLSParameter()->fieldTauPtr() );
+#endif
 
     if ( nOrderTemperature <= 1 || this->stabilizationGLSType() == "supg"  )
     {

@@ -638,6 +638,42 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                     M_heatModel->updateJacobianStabilizationGLS( cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(u),range,data );
                 else
                     CHECK( false ) << "TODO";
+
+                auto rhocp = cst(rhoHeatCapacity.value());
+                auto tau = idv( M_heatModel->stabilizationGLSParameter()->fieldTauPtr() );
+#if 0
+                if ( true ) // order==1 or supg
+                {
+                    auto stab_test = rhocp*grad(t)*idv(u);
+                    auto stab_residual_bilinear = rhocp*gradv(t)*idt(u);
+                    form2( _test=XhT,_trial=XhVP,_matrix=J,
+                           _rowstart=M_heatModel->rowStartInMatrix(),
+                           _colstart=M_fluidModel->colStartInMatrix() ) +=
+                         integrate( _range=range,
+                                    _expr=tau*stab_residual_bilinear*stab_test,
+                                    _geomap=this->geomap() );
+                    
+                    auto stab_test2 = rhocp*gradv(t)*idt(u);
+                    form2( _test=XhVP,_trial=XhVP,_matrix=J,
+                           _rowstart=M_fluidModel->rowStartInMatrix(),
+                           _colstart=M_fluidModel->colStartInMatrix() ) +=
+                        integrate( _range=range,
+                                   _expr=tau*stab_residual_bilinear*stab_test2,
+                                   _geomap=this->geomap() );
+                    auto stab_residual_bilinear2 = rhocp*(idt(t)*M_heatModel->timeStepBdfTemperature()->polyDerivCoefficient(0) + gradt(t)*idv(u) );
+                    form2( _test=XhVP,_trial=XhT,_matrix=J,
+                           _rowstart=M_fluidModel->rowStartInMatrix(),
+                           _colstart=M_heatModel->colStartInMatrix() ) +=
+                        integrate( _range=range,
+                                   _expr=tau*stab_residual_bilinear2*stab_test2,
+                                   _geomap=this->geomap() );
+                    
+                }
+                else
+                {
+
+                }
+#endif
             }
 
             if ( M_fluidModel->stabilizationGLS() )
