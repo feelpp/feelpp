@@ -1495,6 +1495,9 @@ private:
 
     void generateFacePermutations ( mesh_type& mesh, mpl::bool_<true> )
         {
+            if (! mesh.numElements() )
+                return;
+                
             element_type const& _elt = mesh.beginElement()->second;
             PointSetMapped<element_type, convex_type, nOrder> pts( _elt );
 
