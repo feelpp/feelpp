@@ -808,6 +808,7 @@ class GeoMap
               M_local_basis_ref( nComputedPoints() ),
               M_xrefq( PDim, nPoints() ),
               M_xrealq( NDim, nPoints() ),
+              M_g_linear( M_G.size2(), PDim ),
               M_g( M_G.size2(), PDim ),
               M_hessian_basis_at_pt( M_G.size2(), PDim, PDim ),
               M_K( nComputedPoints() ),
