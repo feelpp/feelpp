@@ -392,7 +392,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
             std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( bcDirichletCompField, bcDirichletCompKeyword, name(d), "alemesh_bc" );
             std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
-            this->setMarkerALEMeshBC(bcTypeMeshALE,markers(d));
+            this->addMarkerALEMeshBC(bcTypeMeshALE,markers(d));
         }
     }
 
