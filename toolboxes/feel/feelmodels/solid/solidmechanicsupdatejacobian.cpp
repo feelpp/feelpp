@@ -216,6 +216,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         } // BDF
     }
     //--------------------------------------------------------------------------------------------------//
+    // peusdo transient continuation
+    if ( !BuildCstPart && data.hasInfo( "use-pseudo-transient-continuation" ) )
+    {
+        double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
+        this->log("SolidMechanics","updateJacobian",(boost::format("pseudo-transient-continuation : delta=%1% s") %pseudoTimeStepDelta).str() );
+        bilinearForm_PatternDefault +=
+            integrate(_range=M_rangeMeshElements,
+                      _expr=(1./pseudoTimeStepDelta)*inner(idt(u),id(u)),
+                      _geomap=this->geomap() );
+    }
+
+    //--------------------------------------------------------------------------------------------------//
     // incompressibility terms
     if (M_useDisplacementPressureFormulation && !BuildCstPart)
     {
