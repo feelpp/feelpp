@@ -68,12 +68,32 @@ extern "C"
         ierr = SNESGetSolution( snes,&X );
         CHKERRABORT( b->worldComm().globalComm(), ierr );
 
-        if ( b->updateIteration() )
+        if ( !b->updateIteration() )
+            return 0;
+
+        Feel::vector_ptrtype vF( vec( F, b->mapRowPtr() ) );
+        Feel::vector_ptrtype vX( vec( X, b->mapRowPtr() ) );
+
+        SNESType snesType;
+        ierr = SNESGetType( snes, &snesType );
+        CHKERRABORT( b->worldComm().globalComm(), ierr );
+
+        Feel::SolverNonLinear<double>::UpdateIterationData data;
+        data.setNonLinearSolverType( std::string(snesType) );
+        if ( std::string(snesType) == std::string(SNESNEWTONLS) )
         {
-            Feel::vector_ptrtype vF( vec( F, b->mapRowPtr() ) );
-            Feel::vector_ptrtype vX( vec( X, b->mapRowPtr() ) );
-            b->updateIteration( step, vF, vX );
+            SNESLineSearch snesLineSearch;
+            ierr = SNESGetLineSearch( snes, &snesLineSearch );
+            CHKERRABORT( b->worldComm().globalComm(), ierr );
+
+            PetscReal lambda;
+            ierr = SNESLineSearchGetLambda( snesLineSearch,&lambda );
+            CHKERRABORT( b->worldComm().globalComm(), ierr );
+            data.addInfo( "linesearch.lambda", lambda );
         }
+
+        b->updateIteration( step, vF, vX, data );
+
         return 0;
     }
 

@@ -116,9 +116,26 @@ public:
                                    map_dense_vector_type& R,
                                    map_dense_matrix_type& J )> map_dense_matvec_function_type;
 
+    class UpdateIterationData
+    {
+    public :
+        UpdateIterationData() = default;
+        UpdateIterationData( UpdateIterationData const& ) = default;
+        UpdateIterationData( UpdateIterationData && ) = default;
+
+        std::string const& nonLinearSolverType() const { return M_nonLinearSolverType; }
+        void setNonLinearSolverType( std::string const& type ) { M_nonLinearSolverType = type; }
+
+        double doubleInfos( std::string const& key ) const { return M_doubleInfos.find( key )->second; }
+        void addInfo( std::string const& key,double val ) { M_doubleInfos[key] = val; }
+    private :
+        std::string M_nonLinearSolverType;
+        std::map<std::string,double> M_doubleInfos;
+    };
+
     using pre_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
     using post_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
-    using update_iteration_type = std::function<void(int,vector_ptrtype,vector_ptrtype)>;
+    using update_iteration_type = std::function<void(int,vector_ptrtype,vector_ptrtype, UpdateIterationData const& )>;
 
     class NLSolveData : public boost::tuple<bool,size_type,value_type>
     {
@@ -463,7 +480,7 @@ public:
     /**
      * call the update function with \p step the iteration number, \p x as the residual and \p y as the solution
      */
-    void updateIteration( int step, vector_ptrtype x, vector_ptrtype y ) { return M_update_it( step,x,y ); }
+    void updateIteration( int step, vector_ptrtype x, vector_ptrtype y, UpdateIterationData const& data ) { return M_update_it( step,x,y,data ); }
 
     /**
      * \return updateIteration function
