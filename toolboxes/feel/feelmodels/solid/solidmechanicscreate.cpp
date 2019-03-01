@@ -953,6 +953,20 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
                 }
             }
 
+#if 0
+            if ( true )
+            {
+                auto massbf = form2( _trial=this->functionSpaceDisplacement(), _test=this->functionSpaceDisplacement());
+                auto const& u = this->fieldDisplacement();
+                auto const& rho = this->mechanicalProperties()->fieldRho();
+                massbf += integrate( _range=elements( this->mesh() ),
+                                     _expr=idv(rho)*inner( idt(u),id(u) ) );
+                massbf.close();
+                M_algebraicFactory->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
+            }
+#endif
+
+
             if ( M_timeStepping == "Theta" )
             {
                 M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
