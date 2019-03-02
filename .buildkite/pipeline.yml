@@ -6,7 +6,7 @@ steps:
      ubuntu: "16.04"
    artifact_paths: Testing/junit-*.xml
  - wait: ~
-   continue_on_failure: true
+   continue_on_failure: false
  - plugins:
      junit-annotate#v1.2.0:
        artifacts: Testing/junit-*.xml
@@ -28,7 +28,7 @@ steps:
  - trigger: "feelpp-testsuite"
    label: ":docker: compile and run the Feel++ testsuite :rocket:"
    async: true
-   branches: "develop"
+   branches: "develop", "feature/sc-geomap"
    build:
     message: "${BUILDKITE_MESSAGE}"
     commit: "${BUILDKITE_COMMIT}"
