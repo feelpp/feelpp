@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE( t0 )
     using namespace vm;
     const size_type v = POINT|JACOBIAN;
     BOOST_CHECK_EQUAL((has_value_v<v,POINT>),true);
-    BOOST_CHECK_EQUAL((has_point_v<v,POINT>),true);
+    //BOOST_CHECK_EQUAL((has_point_v<v,POINT>),true);
     BOOST_CHECK_EQUAL((has_value_v<v,JACOBIAN>),true);
     BOOST_CHECK_EQUAL((has_value_v<v,JACOBIAN|POINT>),true);
     BOOST_CHECK_EQUAL((has_value_v<v,HESSIAN>),false);
