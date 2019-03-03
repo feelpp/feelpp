@@ -289,7 +289,7 @@ public :
     virtual void preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     virtual void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     //----------------------------------------------------------------------------------//
-    virtual void updateIterationNewton( int step, vector_ptrtype residual, vector_ptrtype sol ) const {}
+    virtual void updateNewtonIteration( int step, vector_ptrtype residual, vector_ptrtype sol, typename backend_type::solvernonlinear_type::UpdateIterationData const& data ) const {}
 
 private :
     // verbose

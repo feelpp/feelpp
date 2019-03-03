@@ -362,8 +362,11 @@ po::options_description bdf_options( std::string const& prefix )
     ( prefixvm( prefix, "bdf.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save elements in file " )
     ( prefixvm( prefix, "bdf.save.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "freq for save elements in file " )
     ( prefixvm( prefix, "bdf.rank-proc-in-files-name" ).c_str(), Feel::po::value<bool>()->default_value( false ), "the name of files generated has the rank of the processor automatically if true" )
+#if defined(FEELPP_HAS_HDF5)
+    ( prefixvm( prefix, "bdf.file-format" ).c_str(), Feel::po::value<std::string>()->default_value( "hdf5" ), "save elements in file " )
+#else
     ( prefixvm( prefix, "bdf.file-format" ).c_str(), Feel::po::value<std::string>()->default_value( "binary" ), "save elements in file " )
-
+#endif
     ;
     _options.add_options()
     ( prefixvm( prefix, "bdf.order" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "order in time" )
@@ -391,7 +394,11 @@ po::options_description ts_options( std::string const& prefix )
         ( prefixvm( prefix, "ts.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save elements in file " )
         ( prefixvm( prefix, "ts.save.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "freq for save elements in file " )
         ( prefixvm( prefix, "ts.rank-proc-in-files-name" ).c_str(), Feel::po::value<bool>()->default_value( false ), "the name of files generated has the rank of the processor automatically if true" )
+#if defined(FEELPP_HAS_HDF5)
+        ( prefixvm( prefix, "ts.file-format" ).c_str(), Feel::po::value<std::string>()->default_value( "hdf5" ), "save elements in file " )
+#else
         ( prefixvm( prefix, "ts.file-format" ).c_str(), Feel::po::value<std::string>()->default_value( "binary" ), "save elements in file " )
+#endif
         ( prefixvm( prefix, "ts.display-stats").c_str(), po::value<bool>()->default_value(false), "display statistics (timers, iterations counts...) at each ts iteration" )
         ;
     return _options;
