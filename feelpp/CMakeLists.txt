@@ -57,7 +57,7 @@ else(APPLE)
 endif(APPLE)
 
 
-
+OPTION(FEELPP_ENABLE_ASAN "Enable Address Sanitizer support" OFF)
 if(CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth-256 -Wno-inline" )
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "Default flags" FORCE)
@@ -66,7 +66,11 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O1" CACHE STRING "Release With Debug information flags" FORCE)
 #  SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O3 -DNDEBUG  -finline-functions"  CACHE STRING "Release flags" FORCE)
 else()
-  SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0" CACHE STRING "Debug flags" FORCE)
+  if ( FEELPP_ENABLE_ASAN )
+    SET(CMAKE_CXX_FLAGS_DEBUG "-g -O1  -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls " CACHE STRING "Debug flags" FORCE)
+  else()
+    SET(CMAKE_CXX_FLAGS_DEBUG "-g -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls " CACHE STRING "Debug flags" FORCE)
+  endif()
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 #  set(CTEST_BUILD_FLAGS -j${N2})
