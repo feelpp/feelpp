@@ -60,15 +60,8 @@ feelpp_add_application( hdg_poroelastic
 
 feelpp_add_testcase(poisson PREFIX hdg CATEGORY HDG )
 feelpp_add_testcase(elasticity PREFIX hdg CATEGORY HDG )
-feelpp_add_testcase(poroelasticity PREFIX hdg CATEGORY HDG )
 
 
 feelpp_add_testcase(bitter CATEGORY hdg)
-#feelpp_add_testcase(eye2brain_level1 CATEGORY hdg)
-#feelpp_add_testcase(eye2brain_level2 CATEGORY hdg)
-feelpp_add_testcase(cylinder CATEGORY hdg )
 feelpp_add_testcase(testDarcy CATEGORY hdg )
-feelpp_add_testcase(mixed-poisson CATEGORY hdg )
-feelpp_add_testcase(mixed-elasticity CATEGORY hdg )
-feelpp_add_testcase(mp-red CATEGORY hdg )
 feelpp_add_testcase(HL-31)
