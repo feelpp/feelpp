@@ -62,7 +62,7 @@ fi
 BUILDTYPE=Release
 _WANT_PCH=no
 _WANT_PYTHON=yes
-_WANT_ASAN=yes
+_WANT_ASAN=no
 _WANT_CLING=yes
 _WANT_VERBOSE=no
 _WANT_DEBUG=no
@@ -188,6 +188,9 @@ while [ -n "$1" ]; do
    --disable-asan)
        _WANT_ASAN=no
        ;;
+   --enable-asan)
+       _WANT_ASAN=yes
+       ;;   
    --disable=*)
        _WANT_DISABLE=`echo $1 | sed "s,^--disable=\(.*\),\1,"`
        export _WANT_DISABLE
@@ -343,6 +346,8 @@ fi
 # ASAN
 if [ "X${_WANT_ASAN}" = "Xno" ]; then
     echo "set(FEELPP_ENABLE_ASAN OFF CACHE PATH \"disable asan \" FORCE)" >> cmake.configure
+else
+    echo "set(FEELPP_ENABLE_ASAN ON CACHE PATH \"enable asan \" FORCE)" >> cmake.configure
 fi
 
 
