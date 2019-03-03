@@ -1005,6 +1005,18 @@ class GeoMap
             {
                 M_npoints = M_pc.get()->nPoints();
 
+                if ( vm::has_jacobian<CTX>::value )
+                {
+                    M_K.resize( nComputedPoints() );
+                    M_B.resize( nComputedPoints() );
+                    M_J.resize( nComputedPoints() );
+                    if ( vm::has_hessian<CTX>::value || vm::has_laplacian<CTX>::value )
+                    {
+                        M_hessian.resize( nComputedPoints() );
+                    }
+                    if ( vm::has_tangent<CTX>::value )
+                        M_Ptangent.resize( nComputedPoints() );
+                }
                 M_xrefq.resize( PDim, nPoints() );
                 M_xrealq.resize( NDim, nPoints() );
                 M_normals.resize( nComputedPoints() );
@@ -1020,6 +1032,31 @@ class GeoMap
             update<CTX>( __e, __f, updatePc );
         }
 
+        template<size_type CTX=context>
+        bool resizeGradient()
+            {
+                if ( vm::has_jacobian<CTX>::value )
+                {
+                    const bool _resized = M_G.size2() != M_g.size1();
+                    if ( _resized )
+                    {
+                        M_g.resize( M_G.size2(), PDim );
+                    }
+                    return _resized;
+                }
+                return false;
+            }
+        template<size_type CTX=context>
+        void updateGradient( int q )
+            {
+                if ( vm::has_jacobian<CTX>::value )
+                {
+                    //if ( !is_linear )
+                    M_gm->gradient( q, M_g, M_pc.get() );
+                        //else 
+                        //M_gm->gradient( 0, M_g, M_pc.get() );
+                } 
+            }
         /**
          * update information on this context
          *
@@ -1036,9 +1073,6 @@ class GeoMap
         void update( element_type const& __e, uint16_type __f = invalid_uint16_type_value, bool updatePC = true )
             {
                 M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
-                //M_G = __e.G();
-                M_g.resize( M_G.size2(), PDim );
-                //M_element_c = std::shared_ptr<element_type const>(&__e);
                 M_element = boost::addressof( __e );
                 M_id = __e.id();
                 M_e_markers = __e.markers();
@@ -2091,6 +2125,9 @@ class GeoMap
                     Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
                     em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
                     tensor_map_t<2,value_type> TPts( M_G.data().begin(), M_G.size1(), M_G.size2() );
+                    bool _gradient_needs_update = resizeGradient<CTX>();
+                    
+                            
                     for ( int q = 0; q < nComputedPoints(); ++q )
                     {
                         if ( is_linear && M_gm->cache( M_id, M_K[q], M_B[q], M_J[q] ) )
@@ -2098,9 +2135,8 @@ class GeoMap
                         }
                         else
                         {
-                            if ( !is_linear )
-                                M_gm->gradient( q, M_g, M_pc.get() );
-                            em_matrix_col_type<value_type> GradPhi( is_linear?M_g_linear.data().begin():M_g.data().begin(),
+                            updateGradient<CTX>( q );
+                            em_matrix_col_type<value_type> GradPhi( M_g.data().begin(),
                                                                     M_G.size2(), PDim );
                             M_K[q].noalias() = Pts * GradPhi;
                             updateJacobian( M_K[q], M_B[q], M_J[q] );
