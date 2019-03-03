@@ -46,11 +46,11 @@ public :
 
     void clearMarkerDirichletBC();
 
-    void setMarkerDirichletBCByNameId( std::string type,std::string name,std::set<std::string> const& markers, ComponentType ct = ComponentType::NO_COMPONENT );
-    void addMarkerDirichletBC(std::string type, std::string name, std::string marker, ComponentType ct = ComponentType::NO_COMPONENT);
-    void addMarkerDirichletBC(std::string type, std::string name, std::set<std::string> const& markers, ComponentType ct = ComponentType::NO_COMPONENT);
+    void setMarkerDirichletBCByNameId( std::string const& type,std::string const& name,std::set<std::string> const& markers, ComponentType ct = ComponentType::NO_COMPONENT );
+    void addMarkerDirichletBC(std::string const& type, std::string const& name, std::string const& marker, ComponentType ct = ComponentType::NO_COMPONENT);
+    void addMarkerDirichletBC(std::string const& type, std::string const& name, std::set<std::string> const& markers, ComponentType ct = ComponentType::NO_COMPONENT);
 
-    bool hasMarkerDirichletBC( std::string type, ComponentType ct = ComponentType::NO_COMPONENT) const;
+    bool hasMarkerDirichletBC( std::string const& type, ComponentType ct = ComponentType::NO_COMPONENT) const;
     bool hasMarkerDirichletBCelimination( ComponentType ct ) const;
     bool hasMarkerDirichletBCnitsche( ComponentType ct ) const;
     bool hasMarkerDirichletBClm( ComponentType ct ) const;
@@ -59,7 +59,7 @@ public :
     bool hasMarkerDirichletBClm() const;
 
     std::map<std::string,std::set<std::string> > const& markerDirichletBCByType( ComponentType ct = ComponentType::NO_COMPONENT ) const;
-    std::set<std::string> const& markerDirichletBCByNameId(std::string type,std::string markerNameId, ComponentType ct = ComponentType::NO_COMPONENT ) const;
+    std::set<std::string> const& markerDirichletBCByNameId(std::string const& type,std::string const& markerNameId, ComponentType ct = ComponentType::NO_COMPONENT ) const;
     std::set<std::string> const& markerDirichletBCelimination( ComponentType ct = ComponentType::NO_COMPONENT ) const;
     std::set<std::string> const& markerDirichletBCnitsche( ComponentType ct = ComponentType::NO_COMPONENT ) const;
     std::set<std::string> const& markerDirichletBClm( ComponentType ct = ComponentType::NO_COMPONENT ) const;
@@ -86,12 +86,12 @@ public :
 
     void clearMarkerNeumannBC();
 
-    void setMarkerNeumannBC( NeumannBCShape shape, std::string name,std::set<std::string> const& markers );
-    void addMarkerNeumannBC( NeumannBCShape shape, std::string name, std::string marker);
-    void addMarkerNeumannBC( NeumannBCShape shape, std::string name, std::set<std::string> markers);
+    void setMarkerNeumannBC( NeumannBCShape shape, std::string const& name,std::set<std::string> const& markers );
+    void addMarkerNeumannBC( NeumannBCShape shape, std::string const& name, std::string const& marker);
+    void addMarkerNeumannBC( NeumannBCShape shape, std::string const& name, std::set<std::string> const& markers);
 
     std::map<std::string,std::set<std::string> > const& markerNeumannBC( NeumannBCShape shape ) const;
-    std::set<std::string> const& markerNeumannBC( NeumannBCShape shape, std::string markerNameId ) const;
+    std::set<std::string> const& markerNeumannBC( NeumannBCShape shape, std::string const& markerNameId ) const;
 
     std::string getInfoNeumannBC() const;
     void updateInformationObjectNeumannBC( pt::ptree & p );
@@ -111,12 +111,12 @@ public :
 
     void clearMarkerNeumannEulerianFrameBC();
 
-    void setMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string name,std::set<std::string> const& markers );
-    void addMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string name, std::string marker);
-    void addMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string name, std::set<std::string> markers);
+    void setMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string const& name,std::set<std::string> const& markers );
+    void addMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string const& name, std::string const& marker);
+    void addMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string const& name, std::set<std::string> const& markers);
 
     std::map<std::string,std::set<std::string> > const& markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape ) const;
-    std::set<std::string> const& markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId ) const;
+    std::set<std::string> const& markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string const& markerNameId ) const;
 
     std::string getInfoNeumannEulerianFrameBC() const;
     void updateInformationObjectNeumannEulerianFrameBC( pt::ptree & p );
@@ -134,12 +134,12 @@ public :
 
     void clearMarkerALEMeshBC();
 
-    void setMarkerALEMeshBC( std::string type, std::set<std::string> const& markers );
-    void addMarkerALEMeshBC(std::string type, std::string markerName);
-    void addMarkerALEMeshBC( std::string type, std::set<std::string> const& markers );
+    void setMarkerALEMeshBC( std::string const& type, std::set<std::string> const& markers );
+    void addMarkerALEMeshBC(std::string const& type, std::string const& markerName);
+    void addMarkerALEMeshBC( std::string const& type, std::set<std::string> const& markers );
 
     std::map<std::string,std::set<std::string> > const& markerALEMeshBC() const;
-    std::set<std::string> const& markerALEMeshBC( std::string type ) const;
+    std::set<std::string> const& markerALEMeshBC( std::string const& type ) const;
 
     std::string getInfoALEMeshBC() const;
     void updateInformationObjectALEMeshBC( pt::ptree & p );
@@ -157,7 +157,7 @@ public :
     MarkerManagementSlipBC( MarkerManagementSlipBC const& op ) = default;
     void clearMarkerSlipBC();
     void setMarkerSlipBC( std::set<std::string> const& markers );
-    void addMarkerSlipBC( std::string markerName);
+    void addMarkerSlipBC( std::string const& markerName);
     void addMarkerSlipBC( std::set<std::string> const& markers );
     std::set<std::string> const& markerSlipBC() const;
     std::string getInfoSlipBC() const;
@@ -215,7 +215,7 @@ public :
     MarkerManagementFluidStructureInterfaceBC( MarkerManagementFluidStructureInterfaceBC const& op ) = default;
     void clearMarkerFluidStructureInterfaceBC();
     void setMarkerFluidStructureInterfaceBC( std::set<std::string> const& markers );
-    void addMarkerFluidStructureInterfaceBC( std::string markerName );
+    void addMarkerFluidStructureInterfaceBC( std::string const& markerName );
     void addMarkerFluidStructureInterfaceBC( std::set<std::string> const& markers );
     std::set<std::string> const& markerFluidStructureInterfaceBC() const;
     std::string getInfoFluidStructureInterfaceBC() const;
