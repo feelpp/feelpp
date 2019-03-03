@@ -513,25 +513,18 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
         ublas::column( pts, 0 ) = __x_ref;
         geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
 
-
-        typedef typename gm_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, geoelement_type> gmc_type;
-        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-        gmc_ptrtype __c( new gmc_type( __gm,
-                                       functionSpace()->mesh()->element( __cv_id ),
-                                       __geopc ) );
-
+        const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+        const size_type fec_v = gmc_v;
+        gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                               this->functionSpace()->mesh()->element( __cv_id ),
+                                                               __geopc );
+        pc_ptrtype pc( new pc_type( this->functionSpace()->fe(), pts ) );
+        fec_ptr_t<fec_v,gmc_v> fectx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                             __c,
+                                                                             pc );
         DCHECK( ublas::norm_2( __x-__c->xReal(0) ) < 1e-6 ) << "Point " << __x <<  " was not properly found, got " << __c->xReal(0);
         DVLOG(2) << "Point x=" << __x << " and c->xreal = " << __c->xReal(0);
-
-        pc_ptrtype pc( new pc_type( this->functionSpace()->fe(), pts ) );
-
-        typedef typename mesh_type::element_type geoelement_type;
-        typedef typename functionspace_type::fe_type fe_type;
-        typedef typename fe_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, fe_type, gm_type, geoelement_type> fectx_type;
-        typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-        fectx_ptrtype fectx( new fectx_type( this->functionSpace()->fe(),
-                                             __c,
-                                             pc ) );
+        
         found_pt[ rank ] = 1;
 
 #if defined(FEELPP_HAS_MPI)
@@ -684,17 +677,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
 
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
+    gmc_ptr_t<> __c = std::make_shared<gmc_t<>>( __gm,
+                                                 this->functionSpace()->mesh()->element( it->first ),
+                                                 __geopc );
 
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::JACOBIAN|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    fec_ptr_t<> __ctx = std::make_shared<fec_t<>>( this->functionSpace()->fe(),
+                                                   __c,
+                                                   __pc );
 
     for ( ; it!=it_end; ++it )
     {
@@ -764,20 +753,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
         ublas::column( pts, 0 ) = __x_ref;
         geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
 
-
-        typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::KB, geoelement_type> gmc_type;
-        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-        gmc_ptrtype __c( new gmc_type( __gm,
-                                       functionSpace()->mesh()->element( __cv_id ),
-                                       __geopc ) );
+        const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+        const size_type fec_v = gmc_v|vm::GRAD;
+        gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                               this->functionSpace()->mesh()->element( __cv_id ),
+                                                               __geopc );
         pc_ptrtype pc( new pc_type( this->functionSpace()->fe(), pts ) );
-        typedef typename mesh_type::element_type geoelement_type;
-        typedef typename functionspace_type::fe_type fe_type;
-        typedef typename fe_type::template Context<vm::GRAD, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-        typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-        fectx_ptrtype fectx( new fectx_type( this->functionSpace()->fe(),
-                                             __c,
-                                             pc ) );
+        fec_ptr_t<fec_v,gmc_v> fectx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                             __c,
+                                                                             pc );
 
         found_pt[ functionSpace()->mesh()->comm().rank() ] = 1;
 
@@ -1012,17 +996,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_nod
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
 
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::GRAD|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::GRAD;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
 
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
     for ( ; it!=it_end; ++it )
     {
         nbPtsElt = it->second.size();
@@ -1191,17 +1173,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::DIV|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::DIV|vm::FIRST_DERIVATIVE;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
 
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
+    
     for ( ; it!=it_end; ++it )
     {
         nbPtsElt = it->second.size();
@@ -1387,17 +1368,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
 
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
 
     for ( ; it!=it_end; ++it )
     {
@@ -1478,17 +1457,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( matrix_nod
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
 
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
 
     for ( ; it!=it_end; ++it )
     {
@@ -1568,16 +1545,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
+
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
 
     for ( ; it!=it_end; ++it )
     {
@@ -1657,16 +1633,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
+
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
 
     for ( ; it!=it_end; ++it )
     {
@@ -1786,17 +1761,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_t
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::GRAD|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::GRAD;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
 
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
     for ( ; it!=it_end; ++it )
     {
         nbPtsElt = it->second.size();
@@ -1867,16 +1840,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::GRAD|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::GRAD;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
+
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
 
     for ( ; it!=it_end; ++it )
     {
@@ -1948,17 +1920,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::GRAD|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::GRAD;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
 
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
+    
     for ( ; it!=it_end; ++it )
     {
         nbPtsElt = it->second.size();
@@ -2080,17 +2051,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT|vm::HESSIAN;
+    const size_type fec_v = gmc_v|vm::GRAD;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
 
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
     for ( ; it!=it_end; ++it )
     {
         nbPtsElt = it->second.size();
