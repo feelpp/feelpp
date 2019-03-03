@@ -490,15 +490,16 @@ BOOST_AUTO_TEST_CASE( interp_twomesh_geomap )
 #endif
 
 // problem with this test case
-#if 1
-BOOST_AUTO_TEST_CASE( interp_twomesh_interp )
+BOOST_AUTO_TEST_CASE( interp_twomesh_interp_241 )
 {
-
     using namespace test_interp_twomesh;
-
-    BOOST_MESSAGE(   "[main] ----------TEST_INTERP_START-----------\n" );
     BOOST_MESSAGE(   "[main] ----------------<2,4,1>---------------\n" );
     run_test_interp<2,4,1>();
+}
+
+BOOST_AUTO_TEST_CASE( interp_twomesh_interp_242 )
+{
+    using namespace test_interp_twomesh;
     BOOST_MESSAGE(   "[main] ----------------<2,4,2>---------------\n" );
     run_test_interp<2,4,2>();
     //BOOST_MESSAGE(   "[main] ----------------<2,9,3>---------------\n" );
@@ -508,9 +509,9 @@ BOOST_AUTO_TEST_CASE( interp_twomesh_interp )
     //run_test_interp<2,10,4>();
     //BOOST_MESSAGE(   "[main] ----------------<2,11,5>---------------\n");
     //run_test_interp<2,11,5>();
-    BOOST_MESSAGE(   "[main] ----------TEST_INTERP_FINISH----------\n" );
+    //BOOST_MESSAGE(   "[main] ----------TEST_INTERP_FINISH----------\n" );
 }
-#endif
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #else
