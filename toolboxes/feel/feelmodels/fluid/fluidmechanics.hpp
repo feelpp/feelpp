@@ -372,7 +372,7 @@ private :
     void initPostProcess();
     void createPostProcessExporters();
 public :
-    void init( bool buildModelAlgebraicFactory=true, bool buildBlockVector=true );
+    void init( bool buildModelAlgebraicFactory=true );
     void initAlgebraicFactory();
 
     void createFunctionSpacesNormalStress();
