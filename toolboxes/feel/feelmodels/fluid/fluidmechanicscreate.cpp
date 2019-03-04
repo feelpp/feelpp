@@ -908,7 +908,7 @@ NullSpace<double> getNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, bool buildBlockVector )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
     if ( M_isUpdatedForUse ) return;
 
@@ -1041,8 +1041,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, bool 
     this->initStartBlockIndexFieldsInMatrix();
     //-------------------------------------------------//
     // build solution block vector
-    if( buildBlockVector )
-        this->buildBlockVector();
+    this->buildBlockVector();
 
     //-------------------------------------------------//
     if ( buildModelAlgebraicFactory )
