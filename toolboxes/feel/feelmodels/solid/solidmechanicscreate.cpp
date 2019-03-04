@@ -905,15 +905,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
             M_blockVectorSolution(cptBlock++) = M_fieldPressure;
         if ( M_timeSteppingUseMixedFormulation )
             M_blockVectorSolution(cptBlock++) = M_fieldVelocity;
-
-        // init vector associated to the block
-        M_blockVectorSolution.buildVector( this->backend() );
-
-        if ( M_timeStepping == "Theta" )
-        {
-            M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
-            this->updateTimeStepThetaSchemePreviousContrib();
-        }
     }
     else if ( this->is1dReducedModel() )
     {
@@ -923,8 +914,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
         M_blockVectorSolution_1dReduced.resize( nBlock );
         int cptBlock = 0;
         M_blockVectorSolution_1dReduced(cptBlock++) = this->fieldDisplacementScal1dReducedPtr();
-        // init vector associated to the block
-        M_blockVectorSolution_1dReduced.buildVector( this->backend1dReduced() );
     }
 
     // update algebraic model
@@ -932,6 +921,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     {
         if (this->isStandardModel())
         {
+            // init vector representing all blocs
+            M_blockVectorSolution.buildVector( this->backend() );
+
             M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
 
             if ( this->nBlockMatrixGraph() == 1 )
@@ -966,15 +958,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
             }
 #endif
 
-
             if ( M_timeStepping == "Theta" )
             {
+                M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
                 M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
                 M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
             }
         }
         else if (this->is1dReducedModel())
         {
+            // init vector representing all blocs
+            M_blockVectorSolution_1dReduced.buildVector( this->backend1dReduced() );
+
             M_algebraicFactory_1dReduced.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend1dReduced()) );
         }
     }
@@ -1006,43 +1001,32 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
                 M_fieldDisplacement->load(_path=initialDispFilename, _type=saveType );
             }
             if ( M_timeStepping == "Newmark" )
-            {
-                // start time step
-                M_timeStepNewmark->start(*M_fieldDisplacement);
-                // up current time
-                this->updateTime( M_timeStepNewmark->time() );
-            }
+                this->updateTime( M_timeStepNewmark->timeInitial() );
             else
-            {
-                M_timeStepBdfDisplacement->start( *M_fieldDisplacement );
-                M_timeStepBdfVelocity->start( *M_fieldVelocity );
-                this->updateTime( M_timeStepBdfDisplacement->time() );
-            }
-            if ( M_useDisplacementPressureFormulation )
-                M_savetsPressure->start( M_XhPressure );
+                this->updateTime( M_timeStepBdfDisplacement->timeInitial() );
         }
         else // do a restart
         {
             if ( M_timeStepping == "Newmark" )
             {
                 // restart time step
-                M_timeStepNewmark->restart();
+                double ti = M_timeStepNewmark->restart();
 
                 // load a previous solution as current solution
                 *M_fieldDisplacement = M_timeStepNewmark->previousUnknown();
                 // up initial time
-                this->setTimeInitial( M_timeStepNewmark->timeInitial() );
+                this->setTimeInitial( ti );
                 // up current time
-                this->updateTime( M_timeStepNewmark->time() );
+                this->updateTime( ti );
             }
             else
             {
-                M_timeStepBdfDisplacement->restart();
+                double ti = M_timeStepBdfDisplacement->restart();
                 *M_fieldDisplacement = M_timeStepBdfDisplacement->unknown(0);
                 M_timeStepBdfVelocity->restart();
                 *M_fieldVelocity = M_timeStepBdfVelocity->unknown(0);
-                this->setTimeInitial( M_timeStepBdfDisplacement->timeInitial() );
-                this->updateTime( M_timeStepBdfDisplacement->time() );
+                this->setTimeInitial( ti );
+                this->updateTime( ti );
             }
             if ( M_useDisplacementPressureFormulation )
             {
