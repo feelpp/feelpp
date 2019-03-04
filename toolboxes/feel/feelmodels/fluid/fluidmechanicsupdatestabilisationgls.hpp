@@ -364,6 +364,7 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
     {
         auto rangeEltConvectionDiffusion = fluidmec.stabilizationGLSEltRangeConvectionDiffusion( matName );
 #if 0
+#if 0
         typedef StabilizationGLSParameter<typename FluidMechanicsType::mesh_type, FluidMechanicsType::nOrderVelocity> stab_gls_parameter_impl_type;
         auto stabGLSParamConvectionDiffusion =  std::dynamic_pointer_cast<stab_gls_parameter_impl_type>( fluidmec.stabilizationGLSParameterConvectionDiffusion() );
         stabGLSParamConvectionDiffusion->updateTau(uconv, mu, rangeEltConvectionDiffusion);
@@ -373,6 +374,10 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         auto tauExpr = Feel::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterConvectionDiffusion(), uconv, mu );
         auto tauFieldPtr = fluidmec.stabilizationGLSParameterConvectionDiffusion()->fieldTauPtr();
         tauFieldPtr->on(_range=rangeEltConvectionDiffusion,_expr=tauExpr);
+        auto tau = idv(tauFieldPtr);
+#endif
+#else
+        auto tauFieldPtr = fluidmec.stabilizationGLSParameterConvectionDiffusion()->fieldTauPtr();
         auto tau = idv(tauFieldPtr);
 #endif
         auto stab_test = stabGLStestLinearExpr_u( rho,mu,idv(u),u, mpl::int_<StabGLSType>() );
@@ -411,6 +416,7 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
     {
         auto rangeEltPressure = fluidmec.stabilizationGLSEltRangePressure( matName );
 #if 0
+#if 0
         typedef StabilizationGLSParameter<typename FluidMechanicsType::mesh_type, FluidMechanicsType::nOrderPressure> stab_gls_parameter_impl_type;
         auto stabGLSParamPressure =  std::dynamic_pointer_cast<stab_gls_parameter_impl_type>( fluidmec.stabilizationGLSParameterPressure() );
         if ( ( FluidMechanicsType::nOrderPressure != FluidMechanicsType::nOrderVelocity ) || !hasUpdatedTauForConvectionDiffusion )
@@ -420,6 +426,10 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         auto tauExpr = Feel::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterPressure(), uconv, mu );
         auto tauFieldPtr = fluidmec.stabilizationGLSParameterPressure()->fieldTauPtr();
         tauFieldPtr->on(_range=rangeEltPressure,_expr=tauExpr);
+        auto tau = idv(tauFieldPtr);
+#endif
+#else
+        auto tauFieldPtr = fluidmec.stabilizationGLSParameterPressure()->fieldTauPtr();
         auto tau = idv(tauFieldPtr);
 #endif
         auto stab_test = -trans(grad(p));

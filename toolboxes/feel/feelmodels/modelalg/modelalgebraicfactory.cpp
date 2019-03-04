@@ -42,9 +42,14 @@ namespace FeelModels
         M_hasBuildResidualCst(false),
         M_hasBuildLinearSystemCst(false),
         M_usePseudoTransientContinuation( boption(_prefix=model->prefix(),_name="pseudo-transient-continuation") ),
+        M_pseudoTransientContinuationEvolutionMethod( soption(_prefix=model->prefix(),_name="pseudo-transient-continuation.evolution") ),
         M_pseudoTransientContinuationDelta0( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.delta0") ),
         M_pseudoTransientContinuationDeltaMax( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.delta-max") ),
-        M_pseudoTransientContinuationSerVariant( soption(_prefix=model->prefix(),_name="pseudo-transient-continuation.ser-variant") )
+        M_pseudoTransientContinuationSerVariant( soption(_prefix=model->prefix(),_name="pseudo-transient-continuation.ser-variant") ),
+        M_pseudoTransientContinuationExpurThresholdHigh( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.threshold-high") ),
+        M_pseudoTransientContinuationExpurThresholdLow( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.threshold-low") ),
+        M_pseudoTransientContinuationExpurBetaHigh( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.beta-high") ),
+        M_pseudoTransientContinuationExpurBetaLow( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.beta-low") )
     {
         model->timerTool("Constructor").start();
         auto graph = model->buildMatrixGraph();
@@ -75,9 +80,14 @@ namespace FeelModels
         M_hasBuildResidualCst(false),
         M_hasBuildLinearSystemCst(false),
         M_usePseudoTransientContinuation( boption(_prefix=model->prefix(),_name="pseudo-transient-continuation") ),
+        M_pseudoTransientContinuationEvolutionMethod( soption(_prefix=model->prefix(),_name="pseudo-transient-continuation.evolution") ),
         M_pseudoTransientContinuationDelta0( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.delta0") ),
         M_pseudoTransientContinuationDeltaMax( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.delta-max") ),
-        M_pseudoTransientContinuationSerVariant( soption(_prefix=model->prefix(),_name="pseudo-transient-continuation.ser-variant") )
+        M_pseudoTransientContinuationSerVariant( soption(_prefix=model->prefix(),_name="pseudo-transient-continuation.ser-variant") ),
+        M_pseudoTransientContinuationExpurThresholdHigh( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.threshold-high") ),
+        M_pseudoTransientContinuationExpurThresholdLow( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.threshold-low") ),
+        M_pseudoTransientContinuationExpurBetaHigh( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.beta-high") ),
+        M_pseudoTransientContinuationExpurBetaLow( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.beta-low") )
     {
         if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".MethodNum","constructor1", "start",
                                                             this->model()->worldComm(),this->model()->verboseAllProc());
@@ -730,7 +740,7 @@ namespace FeelModels
 
         pre_solve_type pre_solve = std::bind(&model_type::preSolveNewton, model, std::placeholders::_1, std::placeholders::_2);
         post_solve_type post_solve = std::bind(&model_type::postSolveNewton, model, std::placeholders::_1, std::placeholders::_2);
-        update_nlsolve_type update_nlsolve = std::bind(&self_type::updateIterationNewton, std::ref( *this ), std::placeholders::_1, std::placeholders::_2,std::placeholders::_3 );
+        update_nlsolve_type update_nlsolve = std::bind(&self_type::updateNewtonIteration, std::ref( *this ), std::placeholders::_1, std::placeholders::_2,std::placeholders::_3,std::placeholders::_4 );
 
         auto const solveStat = M_backend->nlSolve( _jacobian=M_J,
                                                    _solution=U,
@@ -977,38 +987,67 @@ namespace FeelModels
     }
 
 void
-ModelAlgebraicFactory::updateIterationNewton( int step, vector_ptrtype residual, vector_ptrtype sol )
+ModelAlgebraicFactory::updateNewtonIteration( int step, vector_ptrtype residual, vector_ptrtype sol, typename backend_type::solvernonlinear_type::UpdateIterationData const& data )
 {
-    this->model()->updateIterationNewton( step, residual, sol );
+    this->model()->updateNewtonIteration( step, residual, sol, data );
 
     if ( M_usePseudoTransientContinuation )
     {
-        bool useResidualNorm = M_pseudoTransientContinuationSerVariant == "residual";
-        if ( useResidualNorm )
+        /**
+         * some references used :
+         * - Coffey, T. S., Kelley, C. T., & Keyes, D. E. (2003). Pseudotransient continuation and differential-algebraic equations. SIAM Journal on Scientific Computing, 25(2), 553-569.
+         * - Kelley, C. T., & Keyes, D. E. (1998). Convergence analysis of pseudo-transient continuation. SIAM Journal on Numerical Analysis, 35(2), 508-523.
+         * - Ceze, M., & Fidkowski, K. (2013). Pseudo-transient continuation, solution update methods, and CFL strategies for DG discretizations of the RANS-SA equations. In 21st AIAA computational fluid dynamics conference (p. 2686).
+         * - Mavriplis, D. (2018). A Residual Smoothing Strategy for Accelerating Newton Method Continuation. arXiv preprint arXiv:1805.03756.
+         */
+        if ( M_pseudoTransientContinuationEvolutionMethod == "SER" )
         {
-            double resNorm = residual->l2Norm();
-            if ( step == 0 )
-                M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair(M_pseudoTransientContinuationDelta0,resNorm ) );
-            else
+            if ( M_pseudoTransientContinuationSerVariant == "residual" )
             {
-                double curDelta = M_pseudoTransientContinuationDeltaAndResidual.back().first*M_pseudoTransientContinuationDeltaAndResidual.back().second/resNorm;
-                double newDelta = std::min( curDelta, M_pseudoTransientContinuationDeltaMax );
-                M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair(newDelta,resNorm ) );
+                double resNorm = residual->l2Norm();
+                if ( step == 0 )
+                    M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair(M_pseudoTransientContinuationDelta0,resNorm ) );
+                else
+                {
+                    double curDelta = M_pseudoTransientContinuationDeltaAndResidual.back().first*M_pseudoTransientContinuationDeltaAndResidual.back().second/resNorm;
+                    double newDelta = std::min( curDelta, M_pseudoTransientContinuationDeltaMax );
+                    M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair(newDelta,resNorm ) );
+                }
+            }
+            else if ( M_pseudoTransientContinuationSerVariant == "solution" )
+            {
+                if ( step == 0 )
+                    M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair(M_pseudoTransientContinuationDelta0,0. ) );
+                else
+                {
+                    M_pseudoTransientContinuationPreviousSolution->add( -1.,sol );
+                    double diffNorm = M_pseudoTransientContinuationPreviousSolution->l2Norm();
+                    double curDelta = M_pseudoTransientContinuationDeltaAndResidual.back().first/diffNorm;
+                    double newDelta = std::min( curDelta, M_pseudoTransientContinuationDeltaMax );
+                }
+                *M_pseudoTransientContinuationPreviousSolution = *sol;
             }
         }
-        else
+        else if ( M_pseudoTransientContinuationEvolutionMethod == "EXPur" )
         {
+            double lambda = data.doubleInfos("linesearch.lambda" );
+            //std::cout << "QQ lambda="<< lambda << "\n";
             if ( step == 0 )
                 M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair(M_pseudoTransientContinuationDelta0,0. ) );
             else
             {
-                M_pseudoTransientContinuationPreviousSolution->add( -1.,sol );
-                double diffNorm = M_pseudoTransientContinuationPreviousSolution->l2Norm();
-                double curDelta = M_pseudoTransientContinuationDeltaAndResidual.back().first/diffNorm;
-                double newDelta = std::min( curDelta, M_pseudoTransientContinuationDeltaMax );
+                double beta1 = M_pseudoTransientContinuationExpurBetaHigh;
+                double beta2 = M_pseudoTransientContinuationExpurBetaLow;
+                double lastDelta = M_pseudoTransientContinuationDeltaAndResidual.back().first;
+                if ( lambda >= M_pseudoTransientContinuationExpurThresholdHigh )
+                    M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair( beta1*lastDelta,0. ) );
+                else if ( lambda <= M_pseudoTransientContinuationExpurThresholdLow )
+                    M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair( beta2*lastDelta,0. ) );
+                else
+                    M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair( lastDelta,0. ) );
             }
-            *M_pseudoTransientContinuationPreviousSolution = *sol;
         }
+        //std::cout << "CFL="<<M_pseudoTransientContinuationDeltaAndResidual.back().first<<"\n";
     }
 }
 

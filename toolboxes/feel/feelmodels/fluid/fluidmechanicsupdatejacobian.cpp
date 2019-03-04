@@ -205,7 +205,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     {
         double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
         auto norm2_uu = this->materialProperties()->fieldRho().functionSpace()->element(); // TODO : improve this (maybe create an expression instead)
-        norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
+        //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
+        auto fieldNormu = u.functionSpace()->compSpace()->element( norm2(idv(u)) );
+        auto maxu = fieldNormu.max( this->materialProperties()->fieldRho().functionSpace() );
+        //auto maxux = u[ComponentType::X].max( this->materialProperties()->fieldRho().functionSpace() );
+        //auto maxuy = u[ComponentType::Y].max( this->materialProperties()->fieldRho().functionSpace() );
+        //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(vec(idv(maxux),idv(maxux)))/h());
+        norm2_uu.on(_range=M_rangeMeshElements,_expr=idv(maxu)/h());
+        
         bilinearForm_PatternDefault +=
             integrate(_range=M_rangeMeshElements,
                       _expr=(1./pseudoTimeStepDelta)*idv(norm2_uu)*inner(idt(u),id(u)),
