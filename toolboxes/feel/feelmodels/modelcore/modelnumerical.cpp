@@ -47,7 +47,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t c
         M_timeInitial( doption(_name="ts.time-initial") ),
         M_timeFinal( doption(_name="ts.time-final") ),
         M_timeStep( doption(_name="ts.time-step") ),
-        M_timeOrder( ioption(_prefix=_theprefix, _name="bdf.order") ),
+        M_timeOrder( ioption(_prefix=_theprefix, _name="ts.order") ),
         M_tsSaveInFile( boption(_name="ts.save") ),
         M_tsSaveFreq( ioption(_name="ts.save.freq") ),
         M_timeCurrent(M_timeInitial),

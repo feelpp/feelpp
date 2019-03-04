@@ -83,6 +83,8 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         (prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties" )
         (prefixvm(prefix,"mesh.filename").c_str(), Feel::po::value< std::string >(), "input mesh or geo file")
         (prefixvm(prefix,"geomap").c_str(), Feel::po::value< std::string >()->default_value("opt"), "geomap strategy : ho, opt ")
+
+        ( prefixvm( prefix, "ts.order" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "time order" )
         ;
 
     return appliBaseOptions
@@ -556,7 +558,7 @@ multifluid_options(std::string const& prefix, uint16_type nls = 3)
             // Reinitialization
             (prefixvm(levelset_prefix,"reinit-every").c_str(), Feel::po::value<int>()->default_value( 10 ), "reinitialize levelset every n iterations" )
             // Interface forces model
-            (prefixvm(levelset_prefix,"interface-forces-model").c_str(), Feel::po::value<std::vector<std::string>>()->multitoken(), "models for interface forces (helfrich, ...)" )
+            (prefixvm(levelset_prefix,"interface-forces-model").c_str(), Feel::po::value<std::vector<std::string>>()->multitoken()->composing(), "models for interface forces (helfrich, ...)" )
             // Inextensibility
             (prefixvm(levelset_prefix, "enable-inextensibility").c_str(), Feel::po::value<bool>()->default_value( false ), "enable inextensibility of level set")
             (prefixvm(levelset_prefix, "inextensibility-method").c_str(), Feel::po::value<std::string>()->default_value( "penalty" ), "method to impose level set inextensibility (penalty or lagrange-multiplier)")
