@@ -36,12 +36,16 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     double timeSteppingScaling = 1.;
     bool timeSteppingThetaAssemblePreviousContrib = data.hasInfo( "Theta-Time-Stepping-Previous-Contrib" );
-    if ( !this->isStationary() && M_timeStepping == "Theta" )
+    if ( !this->isStationary() )
     {
-        if ( timeSteppingThetaAssemblePreviousContrib )
-            timeSteppingScaling = 1. - M_timeStepThetaValue;
-        else
-            timeSteppingScaling = M_timeStepThetaValue;
+        if ( M_timeStepping == "Theta" )
+        {
+            if ( timeSteppingThetaAssemblePreviousContrib )
+                timeSteppingScaling = 1. - M_timeStepThetaValue;
+            else
+                timeSteppingScaling = M_timeStepThetaValue;
+        }
+        data.addDoubleInfo( prefixvm(this->prefix(),"timeSteppingScaling"), timeSteppingScaling );
     }
 
     //--------------------------------------------------------------------------------------------------//
