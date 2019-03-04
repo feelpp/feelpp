@@ -83,7 +83,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpdateLinear & da
             }
             for( auto const& d : this->bodyForces() )
             {
-                auto theExpr = expr( expression(d),this->symbolsExpr() );
+                auto theExpr = expression(d,this->symbolsExpr());
                 auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(mesh,markers(d));
                 myLinearForm +=
                     integrate( _range=rangeBodyForceUsed,
@@ -119,7 +119,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpdateLinear & da
             }
             for( auto const& d : this->bodyForces() )
             {
-                auto theExpr = expr( expression(d),this->symbolsExpr() );
+                auto theExpr = expression(d,this->symbolsExpr());
                 auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(mesh,markers(d));
                 myLinearForm +=
                     integrate( _range=rangeBodyForceUsed,
@@ -345,7 +345,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
 
     for( auto const& d : M_bcDirichlet )
     {
-        auto theExpr = expr( expression(d),this->symbolsExpr() );
+        auto theExpr = expression(d,this->symbolsExpr());
         u.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
              _expr=theExpr );
     }
@@ -687,7 +687,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidualNeumannBC( vector_ptrtype& R, bool build
                                    _rowstart=this->rowStartInVector() );
         for( auto const& d : this->M_bcNeumann )
         {
-            auto theExpr = expr( expression(d),this->symbolsExpr() );
+            auto theExpr = expression(d,this->symbolsExpr());
             myLinearForm +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
                            _expr= -theExpr*id(v),
@@ -711,7 +711,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidualRobinBC( element_temperature_external_st
                                _rowstart=this->rowStartInVector() );
     for( auto const& d : this->M_bcRobin )
     {
-        auto theExpr1 = expr( expression1(d),this->symbolsExpr() );
+        auto theExpr1 = expression1( d,this->symbolsExpr() );
         if ( !buildCstPart )
         {
             myLinearForm +=
@@ -721,7 +721,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidualRobinBC( element_temperature_external_st
         }
         if ( buildCstPart )
         {
-            auto theExpr2 = expr( expression2(d),this->symbolsExpr() );
+            auto theExpr2 = expression2( d,this->symbolsExpr() );
             myLinearForm +=
                 integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
                            _expr= -theExpr1*theExpr2*id(v),
@@ -744,7 +744,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidualSourceTerm( vector_ptrtype& R, bool buil
 
         for( auto const& d : this->M_volumicForcesProperties )
         {
-            auto theExpr = expr( expression(d),this->symbolsExpr() );
+            auto theExpr = expression(d,this->symbolsExpr());
             auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
@@ -803,7 +803,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool 
                                                   _colstart=this->colStartInMatrix() );
         for( auto const& d : this->M_bcRobin )
         {
-            auto theExpr1 = expr( expression1(d),this->symbolsExpr() );
+            auto theExpr1 = expression1( d,this->symbolsExpr() );
             bilinearForm_PatternCoupled +=
                 integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
                            _expr= theExpr1*idt(v)*id(v),
@@ -833,7 +833,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data
 
     for( auto const& d : this->M_bcDirichlet )
     {
-        auto theExpr = expr( expression(d),this->symbolsExpr() );
+        auto theExpr = expression(d,this->symbolsExpr());
         bilinearForm_PatternCoupled +=
             on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
                 _element=u,_rhs=F,_expr=theExpr );
@@ -862,7 +862,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDESourceTerm( vector_ptrtype& F, bool bui
 
         for( auto const& d : this->M_volumicForcesProperties )
         {
-            auto theExpr = expr( expression(d),this->symbolsExpr() );
+            auto theExpr = expression( d,this->symbolsExpr() );
             auto rangeBodyForceUsed = ( markers(d).empty() )? this->rangeMeshElements() : markedelements(this->mesh(),markers(d));
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
@@ -888,7 +888,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC(sparse_matrix_ptrtype& A, vector
                                    _rowstart=this->rowStartInVector() );
         for( auto const& d : this->M_bcNeumann )
         {
-            auto theExpr = expr( expression(d),this->symbolsExpr() );
+            auto theExpr = expression( d,this->symbolsExpr() );
             myLinearForm +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
                            _expr= theExpr*id(v),
@@ -901,12 +901,12 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC(sparse_matrix_ptrtype& A, vector
                                                   _colstart=this->colStartInMatrix() );
         for( auto const& d : this->M_bcRobin )
         {
-            auto theExpr1 = expr( expression1(d),this->symbolsExpr() );
+            auto theExpr1 = expression1( d,this->symbolsExpr() );
             bilinearForm_PatternCoupled +=
                 integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
                            _expr= theExpr1*idt(v)*id(v),
                            _geomap=this->geomap() );
-            auto theExpr2 = expr( expression2(d),this->symbolsExpr() );
+            auto theExpr2 = expression2( d,this->symbolsExpr() );
             myLinearForm +=
                 integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
                            _expr= theExpr1*theExpr2*id(v),

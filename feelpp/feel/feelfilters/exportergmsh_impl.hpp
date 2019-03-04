@@ -35,6 +35,8 @@
 #include <feel/feelfilters/exportergmsh.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
 
+#include <limits>
+
 namespace Feel
 {
 template<typename MeshType, int N>
@@ -607,6 +609,10 @@ ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, b
     auto pt_it = std::get<0>( rangePoints );
     auto const pt_en = std::get<1>( rangePoints );
 
+    typedef std::numeric_limits<double> dbl;
+    int nodePrecision = dbl::max_digits10 - 1;
+    out << std::scientific << std::setprecision( nodePrecision );
+
     bool merge = boption(_name="exporter.gmsh.merge");
     for ( ; pt_it!=pt_en ; ++pt_it )
     {
@@ -624,18 +630,15 @@ ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, b
         // otherwise we put all the nodes in each file (to have a complete nodeset)
 
         // warning add 1 to the id in order to be sure that all gmsh id >0
-        out << pt.id()+1
-            << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt.node()[0];
+        out << pt.id()+1 << " " << pt.node()[0];
 
         if ( mesh_type::nRealDim >= 2 )
-            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt.node()[1];
-
+            out << " " << pt.node()[1];
         else
             out << " 0";
 
         if ( mesh_type::nRealDim >= 3 )
-            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt.node()[2];
-
+            out << " " << pt.node()[2];
         else
             out << " 0";
 
@@ -644,11 +647,11 @@ ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, b
             out << " " << pt.gDim() << " " << pt.gTag();
 
             if ( pt.gDim() == 1 )
-                out << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt.u();
+                out << " " << pt.u();
 
             else if ( pt.gDim() == 2 )
-                out << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt.u()
-                    << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt.v();
+                out << " " << pt.u()
+                    << " " << pt.v();
         }
 
         out << "\n";

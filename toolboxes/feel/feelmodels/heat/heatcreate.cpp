@@ -204,7 +204,7 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     auto initialSolution = this->modelProperties().initialConditions().getScalarFields( "temperature", "" );
     for( auto const& d : initialSolution )
     {
-        auto theExpr = expr( expression(d),this->symbolsExpr() );
+        auto theExpr = expression( d,this->symbolsExpr() );
         auto rangeElt = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
         this->fieldTemperaturePtr()->on(_range=rangeElt,_expr=theExpr,_geomap=this->geomap());
     }
@@ -271,7 +271,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
                             _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
 
     M_bdfTemperature->setPathSave( (fs::path(this->rootRepository()) /
-                                    fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdfTemperature->bdfOrder()).str() ) ) ).string() );
+                                    fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%") %M_bdfTemperature->bdfOrder() %this->timeStep() ).str() ) ) ).string() );
 
     // start or restart time step scheme
     if (!this->doRestart())

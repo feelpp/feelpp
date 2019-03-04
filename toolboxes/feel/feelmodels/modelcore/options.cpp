@@ -68,9 +68,15 @@ Feel::po::options_description modelalgebraic_options(std::string const& prefix)
         (prefixvm(prefix,"graph-print-python-filename").c_str(), Feel::po::value< std::string >(), "filename python graph")
 
         (prefixvm(prefix,"pseudo-transient-continuation").c_str(), Feel::po::value<bool>()->default_value( false ), "use or not the pseudo-transient-continuation")
+        (prefixvm(prefix,"pseudo-transient-continuation.evolution").c_str(), Feel::po::value<std::string>()->default_value( "SER" ), "evolution method : SER, EXPur")
         (prefixvm(prefix,"pseudo-transient-continuation.delta0").c_str(), Feel::po::value<double>()->default_value( 1.0 ), "pseudo-transient-continuation parameter : delta0")
         (prefixvm(prefix,"pseudo-transient-continuation.delta-max").c_str(), Feel::po::value<double>()->default_value( 1.0e12 ), "pseudo-transient-continuation parameter : deltaMax")
         (prefixvm(prefix,"pseudo-transient-continuation.ser-variant").c_str(), Feel::po::value<std::string>()->default_value( "residual" ), "pseudo-transient-continuation ser variant : residual, solution")
+        (prefixvm(prefix,"pseudo-transient-continuation.expur.threshold-high").c_str(), Feel::po::value<double>()->default_value( 1. ), "pseudo-transient-continuation parameter : threshold-high")
+        (prefixvm(prefix,"pseudo-transient-continuation.expur.threshold-low").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "pseudo-transient-continuation parameter : threshold-low")
+        (prefixvm(prefix,"pseudo-transient-continuation.expur.beta-high").c_str(), Feel::po::value<double>()->default_value( 1.5 ), "pseudo-transient-continuation parameter : beta-high")
+        (prefixvm(prefix,"pseudo-transient-continuation.expur.beta-low").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "pseudo-transient-continuation parameter : beta-low")
+
         ;
     return appliBaseOptions.add( modelbase_options(prefix ) );//.add( backend_options( prefix ) );
 }
