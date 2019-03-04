@@ -63,6 +63,7 @@ _WANT_PYTHON=yes
 _WANT_CLING=yes
 _WANT_VERBOSE=no
 _WANT_DEBUG=no
+_WANT_ASAN=no
 _WANT_RELWITHDEBINFO=no
 _WANT_OG=no
 _WANT_CHECK=no
@@ -175,6 +176,16 @@ while [ -n "$1" ]; do
        ;;         
    --disable-cling)
        _WANT_CLING=no
+       ;;
+   --disable-asan)
+       _WANT_ASAN=no
+       ;;
+   --enable-asan)
+       _WANT_ASAN=yes
+       ;;   
+   --disable=*)
+       _WANT_DISABLE=`echo $1 | sed "s,^--disable=\(.*\),\1,"`
+       export _WANT_DISABLE
        ;;
    --enable-toolboxes)
        _WANT_TOOLBOXES=yes
@@ -319,6 +330,13 @@ if [ "X${_WANT_PYTHON}" = "Xyes" ]; then
 else
     echo "set(FEELPP_ENABLE_PYTHON_WRAPPING OFF CACHE PATH \"disable python wrapping \" FORCE)" >> cmake.configure
     echo "set(FEELPP_ENABLE_PYTHON OFF CACHE PATH \"disable python \" FORCE)" >> cmake.configure
+fi
+
+# ASAN
+if [ "X${_WANT_ASAN}" = "Xno" ]; then
+    echo "set(FEELPP_ENABLE_ASAN OFF CACHE PATH \"disable asan \" FORCE)" >> cmake.configure
+else
+    echo "set(FEELPP_ENABLE_ASAN ON CACHE PATH \"enable asan \" FORCE)" >> cmake.configure
 fi
 
 # CLING

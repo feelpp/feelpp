@@ -6,9 +6,9 @@ steps:
      ubuntu: "16.04"
    artifact_paths: Testing/junit-*.xml
  - wait: ~
-   continue_on_failure: true
+   continue_on_failure: false
  - plugins:
-     junit-annotate#v1.5.1:
+     junit-annotate#v1.6.0:
        artifacts: Testing/junit-*.xml
  - wait
  - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-testsuite
