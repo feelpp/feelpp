@@ -45,7 +45,7 @@ class Filter:
         else:
             return inv(M)
     
-    def step(self):
+    def step(self, mode):
         # COMPUTE SIGMA-POINTS
         self.P = sqrtm(self.P*self.dim/(1-self.weights[0]))
         self.SigPts[:,0] = self.Mx
@@ -70,20 +70,48 @@ class Filter:
 
         # ANALYSIS STEP
         self.Kalman = self.XCov * self.inverse(self.Covy)
-        self.Mx += self.Kalman @ (self.signal[self.Time]-self.My)
+        
+        if mode == "dynamic":
+            self.Mx += self.Kalman @ (self.signal[self.Time]-self.My)
+        elif mode == "static":
+            self.Mx += self.Kalman @ (self.signal-self.My)
+            
         self.P = self.Covx - self.Kalman @ np.transpose(self.XCov)
         
-    def filter(self,verbose=False):
-        for i in range(max(self.signal.shape)-1):
-            self.X[:,i] = np.transpose(self.Mx)
-            self.forecast[:,i] = np.transpose(self.XF)
-            self.step(self)
-            if verbose:
-                print("    sigma-points : ",self.SigPts[0])
-                print("    uncertainty matrix : ",self.P)
-                print("    Kalman gain : ",self.Kalman)
-                print("    last state estimate : ",self.Mx)
-                print("    associated predicted measure : ",self.My," ; real measure : ",self.signal[i])
-                print("    relative measure error : ",np.abs(self.My-self.signal[i])/self.signal[i]," ; tolerance : ",self.tol)
-            if np.abs(self.My-self.signal[i])/self.signal[i] < self.tol:
-                return self.Mx
+    def filter( self, measurement, maxiter = 1000, verbose = False, mode = "dynamic"):
+        if mode == "dynamic":
+            self.readsignal(self, measurement)
+            for i in range(max(self.signal.shape)-1):
+                self.X[:,i] = np.transpose(self.Mx)
+                self.forecast[:,i] = np.transpose(self.XF)
+                self.step(self, mode)
+                if verbose:
+                    print("    sigma-points : ",self.SigPts[0])
+                    print("    uncertainty matrix : ",self.P)
+                    print("    Kalman gain : ",self.Kalman)
+                    print("    last state estimate : ",self.Mx)
+                    print("    associated predicted measure : ",self.My," ; real measure : ",self.signal[i])
+                    print("    relative measure error : ",np.abs(self.My-self.signal[i])/self.signal[i]," ; tolerance : ",self.tol)
+                    if np.abs(self.My-self.signal[i])/self.signal[i] < self.tol or i < maxiter:
+                        return self.Mx
+                    
+        elif mode == "static":
+            i = 0
+            self.signal = measurement
+            self.X = zeros([self.dim,maxiter]) # KEEPS TRACK OF THE STATES BEST ESTIMATE
+            self.forecast = zeros([self.dim,maxiter]) # KEEPS TRACK OF THE FORECAST
+            
+            while np.abs(self.My-self.signal)/self.signal > self.tol:
+                self.X[:,i] = np.transpose(self.Mx)
+                self.forecast[:,i] = np.transpose(self.XF)
+                self.step(self, mode)
+                if verbose:
+                    print("    sigma-points : ",self.SigPts[0])
+                    print("    uncertainty matrix : ",self.P)
+                    print("    Kalman gain : ",self.Kalman)
+                    print("    last state estimate : ",self.Mx)
+                    print("    associated predicted measure : ",self.My," ; real measure : ",self.signal)
+                    print("    relative measure error : ",np.abs(self.My-self.signal)/self.signal," ; tolerance : ",self.tol)
+                i += 1
+                    
+            return self.Mx
