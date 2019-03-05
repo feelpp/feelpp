@@ -916,13 +916,15 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
             int bdfOrder = 1;
             if ( M_timeStepping == "BDF" )
                 bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+            int nConsecutiveSave = std::max( 2, bdfOrder ); // at least 2 is required by fsi when restart
             M_timeStepBdfDisplacement = bdf( _space=M_XhDisplacement,
                                              _name="displacement"+suffixName,
                                              _prefix=this->prefix(),
                                              _order=bdfOrder,
                                              _initial_time=ti, _final_time=tf, _time_step=dt,
                                              _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
-                                             _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+                                             _save=this->tsSaveInFile(), _freq=this->tsSaveFreq(),
+                                             _n_consecutive_save=nConsecutiveSave );
             M_timeStepBdfDisplacement->setfileFormat( myFileFormat );
             M_timeStepBdfDisplacement->setPathSave( ( saveTsDir/"displacement" ).string() );
             M_timeStepBdfVelocity = bdf( _space=M_XhDisplacement,
@@ -931,7 +933,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
                                          _order=bdfOrder,
                                          _initial_time=ti, _final_time=tf, _time_step=dt,
                                          _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
-                                         _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+                                         _save=this->tsSaveInFile(), _freq=this->tsSaveFreq(),
+                                         _n_consecutive_save=nConsecutiveSave );
             M_timeStepBdfVelocity->setfileFormat( myFileFormat );
             M_timeStepBdfVelocity->setPathSave(  ( saveTsDir/"velocity" ).string() );
         }
