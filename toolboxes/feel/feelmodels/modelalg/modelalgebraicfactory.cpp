@@ -265,13 +265,30 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
     ModelAlgebraicFactory::addVectorLinearRhsAssembly( vector_ptrtype const& vec, double scaling, std::string const& key, bool cstPart )
     {
         std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addVectorLinearRhsAssembly.size()).str() : key;
-        M_addVectorLinearRhsAssembly[ keyUsed ] = std::make_tuple( vec, scaling, cstPart );
+        M_addVectorLinearRhsAssembly[ keyUsed ] = std::make_tuple( vec, scaling, cstPart, true );
     }
     void
     ModelAlgebraicFactory::addVectorResidualAssembly( vector_ptrtype const& vec, double scaling, std::string const& key, bool cstPart )
     {
         std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addVectorResidualAssembly.size()).str() : key;
-        M_addVectorResidualAssembly[ keyUsed ] = std::make_tuple( vec, scaling, cstPart );
+        M_addVectorResidualAssembly[ keyUsed ] = std::make_tuple( vec, scaling, cstPart, true );
+    }
+
+
+    void
+    ModelAlgebraicFactory::setActivationAddVectorLinearRhsAssembly( std::string const& key, bool b )
+    {
+        if ( M_addVectorLinearRhsAssembly.find( key ) == M_addVectorLinearRhsAssembly.end() )
+            return;
+        std::get<3>( M_addVectorLinearRhsAssembly[key] ) = b;
+    }
+    void
+    ModelAlgebraicFactory::setActivationAddVectorResidualAssembly( std::string const& key, bool b )
+    {
+        if ( M_addVectorResidualAssembly.find( key ) == M_addVectorResidualAssembly.end() )
+            return;
+        std::get<3>( M_addVectorResidualAssembly[key] ) = b;
+
     }
 
     //---------------------------------------------------------------------------------------------------------------//
@@ -422,7 +439,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 func.second( dataLinearCst );
             M_CstR->close();
             for ( auto const& av : M_addVectorLinearRhsAssembly )
-                if ( std::get<2>( av.second ) )
+                if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
                     M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
             M_hasBuildLinearSystemCst = true;
         }
@@ -438,7 +455,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 func.second( dataLinearCst );
             M_CstR->close();
             for ( auto const& av : M_addVectorLinearRhsAssembly )
-                if ( std::get<2>( av.second ) )
+                if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
                     M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
         }
         this->model()->setNeedToRebuildCstPart(false);
@@ -468,7 +485,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         M_R->close();
         // add maybe vector to rhs
         for ( auto const& av : M_addVectorLinearRhsAssembly )
-            if ( !std::get<2>( av.second ) )
+            if ( !std::get<2>( av.second ) && std::get<3>( av.second ) )
                 M_R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
 
         // dof elimination
@@ -608,7 +625,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 func.second( dataResidualCst );
             R->close();
             for ( auto const& av : M_addVectorResidualAssembly )
-                if ( std::get<2>( av.second ) )
+                if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
                     R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
         }
 
@@ -625,7 +642,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         R->close();
 
         for ( auto const& av : M_addVectorResidualAssembly )
-            if ( !std::get<2>( av.second ) )
+            if ( !std::get<2>( av.second ) && std::get<3>( av.second ) )
                 R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
 
         // dof elimination
@@ -702,7 +719,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                     func.second( dataResidualCst );
                 M_CstR->close();
                 for ( auto const& av : M_addVectorResidualAssembly )
-                    if ( std::get<2>( av.second ) )
+                    if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
                         M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
                 M_hasBuildResidualCst = true;
             }
@@ -716,7 +733,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                     func.second( dataResidualCst );
                 M_CstR->close();
                 for ( auto const& av : M_addVectorResidualAssembly )
-                    if ( std::get<2>( av.second ) )
+                    if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
                         M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
             }
         }
@@ -768,7 +785,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    ModelAlgebraicFactory::evaluateResidual(const vector_ptrtype& U, vector_ptrtype& R, std::vector<std::string> const& infos ) const
+    ModelAlgebraicFactory::evaluateResidual(const vector_ptrtype& U, vector_ptrtype& R, std::vector<std::string> const& infos, bool applyDofElimination ) const
     {
         auto model = this->model();
         R->zero();
@@ -783,13 +800,13 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         for ( auto const& func : M_addFunctionResidualAssembly )
             func.second( dataResidual );
         R->close();
-#if 0
-        //TODO FIX
-         for ( auto const& av : M_addVectorResidualAssembly )
-             R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
-#endif
+        for ( auto const& av : M_addVectorResidualAssembly )
+            if ( std::get<3>( av.second ) )
+                R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
+
         // dof elimination
-        model->updateResidualDofElimination( dataResidual );
+        if ( applyDofElimination )
+            model->updateResidualDofElimination( dataResidual );
 
         for ( auto const& func : M_addFunctionResidualPostAssembly )
             func.second( dataResidual );
