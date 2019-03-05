@@ -69,8 +69,8 @@ void defFM(py::module &m)
         // normal stress
         .def("createFunctionSpacesNormalStress",&fm_t::createFunctionSpacesNormalStress, "create a normal stress function space")
         //.def("functionSpaceNormalStress",&fm_t::functionSpaceNormalStress, "get the normal stress function space")
-        .def("fieldNormalStressPtr",static_cast<typename fm_t::element_stress_ptrtype& (fm_t::*)()>(&fm_t::fieldNormalStressPtr), "get the normal stress field")
-        .def("fieldNormalStress",static_cast<typename fm_t::element_stress_type const& (fm_t::*)() const>(&fm_t::fieldNormalStress), "get the normal stress field")
+        .def("fieldNormalStressPtr",static_cast<typename fm_t::element_normalstress_ptrtype& (fm_t::*)()>(&fm_t::fieldNormalStressPtr), "get the normal stress field")
+        .def("fieldNormalStress",static_cast<typename fm_t::element_normalstress_type const& (fm_t::*)() const>(&fm_t::fieldNormalStress), "get the normal stress field")
         
         // vorticity
         .def("createFunctionSpacesVorticity",&fm_t::createFunctionSpacesVorticity, "create a vorticity function space")
