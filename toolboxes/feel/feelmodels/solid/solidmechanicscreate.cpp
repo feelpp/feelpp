@@ -573,110 +573,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesStressTensor()
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
-{
-    this->log("SolidMechanics","createTimeDiscretisation", "start" );
-    this->timerTool("Constructor").start();
-
-    double ti = this->timeInitial();
-    double tf = this->timeFinal();
-    double dt = this->timeStep();
-
-    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
-    std::string suffixName = "";
-    if ( myFileFormat == "binary" )
-        suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
-
-    if ( M_timeStepping == "Newmark" )
-    {
-        M_timeStepNewmark = newmark( _space=M_XhDisplacement,
-                                     _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"newmark"+suffixName)),
-                                     _prefix=this->prefix(),
-                                     _initial_time=ti, _final_time=tf, _time_step=dt,
-                                     _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
-                                     _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
-        M_timeStepNewmark->setfileFormat( myFileFormat );
-        M_timeStepNewmark->setPathSave( (fs::path(this->rootRepository()) /
-                                         fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
-        M_fieldVelocity = M_timeStepNewmark->currentVelocityPtr();
-        M_fieldAcceleration = M_timeStepNewmark->currentAccelerationPtr();
-    }
-    else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
-    {
-        M_timeStepBdfDisplacement = bdf( _space=M_XhDisplacement,
-                                         _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"bdf_displacement"+suffixName)),
-                                         _prefix=this->prefix(),
-                                         _initial_time=ti, _final_time=tf, _time_step=dt,
-                                         _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
-                                         _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
-        M_timeStepBdfDisplacement->setfileFormat( myFileFormat );
-        M_timeStepBdfDisplacement->setPathSave( (fs::path(this->rootRepository()) /
-                                                 fs::path( prefixvm(this->prefix(), (boost::format("bdf_displacement_dt_%1%")%dt).str() ) ) ).string() );
-        M_timeStepBdfVelocity = bdf( _space=M_XhDisplacement,
-                                     _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"bdf_velocity"+suffixName)),
-                                     _prefix=this->prefix(),
-                                     _initial_time=ti, _final_time=tf, _time_step=dt,
-                                     _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
-                                     _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
-        M_timeStepBdfVelocity->setfileFormat( myFileFormat );
-        M_timeStepBdfVelocity->setPathSave( (fs::path(this->rootRepository()) /
-                                             fs::path( prefixvm(this->prefix(), (boost::format("bdf_velocity_dt_%1%")%dt).str() ) ) ).string() );
-    }
-
-    if ( M_useDisplacementPressureFormulation )
-    {
-        M_savetsPressure = bdf( _space=this->functionSpacePressure(),
-                                _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressure"+suffixName)),
-                                _prefix=this->prefix(),
-                                _initial_time=ti, _final_time=tf, _time_step=dt,
-                                _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
-                                _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
-        M_savetsPressure->setfileFormat( myFileFormat );
-        M_savetsPressure->setPathSave( (fs::path(this->rootRepository()) /
-                                        fs::path( prefixvm(this->prefix(),"save-pressure" ) ) ).string() );
-    }
-
-
-    this->timerTool("Constructor").stop("createTimeDiscr");
-    this->log("SolidMechanics","createTimeDiscretisation", "finish" );
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createTimeDiscretisation1dReduced()
-{
-    this->log("SolidMechanics","createTimeDiscretisation1dReduced", "start" );
-
-    double ti = this->timeInitial();
-    double tf = this->timeFinal();
-    double dt = this->timeStep();
-
-    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
-    std::string suffixName = "";
-    if ( myFileFormat == "binary" )
-        suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
-    M_newmark_displ_1dReduced = newmark( _vm=Environment::vm(),
-                                          _space=M_Xh_1dReduced,
-                                          _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"structure-1dreduced."+suffixName)),
-                                          _prefix=this->prefix(),
-                                          _initial_time=ti, _final_time=tf, _time_step=dt,
-                                          _restart=this->doRestart(),_restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
-                                          _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
-    M_newmark_displ_1dReduced->setfileFormat( myFileFormat );
-    M_newmark_displ_1dReduced->setPathSave( (fs::path(this->rootRepository()) /
-                                             fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
-
-    this->log("SolidMechanics","createTimeDiscretisation1dReduced", "finish" );
-}
-
-//---------------------------------------------------------------------------------------------------//
-//---------------------------------------------------------------------------------------------------//
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
 {
     this->log("SolidMechanics","createExporters", "start" );
@@ -987,11 +883,96 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
-    // update timediscr and exporters
-    if (this->isStandardModel())
-    {
-        this->createTimeDiscretisation();
+    this->log("SolidMechanics","initTimeStep", "start" );
+    this->timerTool("Constructor").start();
 
+    double ti = this->timeInitial();
+    double tf = this->timeFinal();
+    double dt = this->timeStep();
+
+    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
+    std::string suffixName = "";
+    if ( myFileFormat == "binary" )
+        suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+    fs::path saveTsDir = fs::path(this->rootRepository())/fs::path( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ts")) );
+
+    if ( this->isStandardModel() )
+    {
+        if ( M_timeStepping == "Newmark" )
+        {
+            M_timeStepNewmark = newmark( _space=M_XhDisplacement,
+                                         _name="displacement"+suffixName,
+                                         _prefix=this->prefix(),
+                                         _initial_time=ti, _final_time=tf, _time_step=dt,
+                                         _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
+                                         _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+            M_timeStepNewmark->setfileFormat( myFileFormat );
+            M_timeStepNewmark->setPathSave( ( saveTsDir/"displacement" ).string() );
+            M_fieldVelocity = M_timeStepNewmark->currentVelocityPtr();
+            M_fieldAcceleration = M_timeStepNewmark->currentAccelerationPtr();
+        }
+        else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+        {
+            int bdfOrder = 1;
+            if ( M_timeStepping == "BDF" )
+                bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+            M_timeStepBdfDisplacement = bdf( _space=M_XhDisplacement,
+                                             _name="displacement"+suffixName,
+                                             _prefix=this->prefix(),
+                                             _order=bdfOrder,
+                                             _initial_time=ti, _final_time=tf, _time_step=dt,
+                                             _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
+                                             _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+            M_timeStepBdfDisplacement->setfileFormat( myFileFormat );
+            M_timeStepBdfDisplacement->setPathSave( ( saveTsDir/"displacement" ).string() );
+            M_timeStepBdfVelocity = bdf( _space=M_XhDisplacement,
+                                         _name="velocity"+suffixName,
+                                         _prefix=this->prefix(),
+                                         _order=bdfOrder,
+                                         _initial_time=ti, _final_time=tf, _time_step=dt,
+                                         _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
+                                         _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+            M_timeStepBdfVelocity->setfileFormat( myFileFormat );
+            M_timeStepBdfVelocity->setPathSave(  ( saveTsDir/"velocity" ).string() );
+        }
+
+        if ( M_useDisplacementPressureFormulation )
+        {
+            M_savetsPressure = bdf( _space=this->functionSpacePressure(),
+                                    _name="pressure"+suffixName,
+                                    _prefix=this->prefix(),
+                                    _order=1,
+                                    _initial_time=ti, _final_time=tf, _time_step=dt,
+                                    _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
+                                    _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+            M_savetsPressure->setfileFormat( myFileFormat );
+            M_savetsPressure->setPathSave( ( saveTsDir/"pressure" ).string() );
+        }
+    }
+    else if ( this->is1dReducedModel() )
+    {
+        if ( M_timeStepping == "Newmark" )
+        {
+            M_newmark_displ_1dReduced = newmark( _space=M_Xh_1dReduced,
+                                                 _name="displacement"+suffixName,
+                                                 _prefix=this->prefix(),
+                                                 _initial_time=ti, _final_time=tf, _time_step=dt,
+                                                 _restart=this->doRestart(),_restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
+                                                 _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+            M_newmark_displ_1dReduced->setfileFormat( myFileFormat );
+            M_newmark_displ_1dReduced->setPathSave( ( saveTsDir/"displacement-1dreduced" ).string() );
+        }
+        else
+        {
+            CHECK( false ) << "invalid timeStepping : " << M_timeStepping;
+        }
+    }
+
+    this->log("SolidMechanics","initTimeStep", "create time stepping object done" );
+
+    // update current time, initial solution and restart
+    if ( this->isStandardModel() )
+    {
         if ( !this->doRestart() )
         {
             if ( Environment::vm().count(prefixvm(this->prefix(),"time-initial.displacement.files.directory").c_str()) )
@@ -1010,23 +991,23 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
             if ( M_timeStepping == "Newmark" )
             {
                 // restart time step
-                double ti = M_timeStepNewmark->restart();
+                double tir = M_timeStepNewmark->restart();
 
                 // load a previous solution as current solution
                 *M_fieldDisplacement = M_timeStepNewmark->previousUnknown();
                 // up initial time
-                this->setTimeInitial( ti );
+                this->setTimeInitial( tir );
                 // up current time
-                this->updateTime( ti );
+                this->updateTime( tir );
             }
             else
             {
-                double ti = M_timeStepBdfDisplacement->restart();
+                double tir = M_timeStepBdfDisplacement->restart();
                 *M_fieldDisplacement = M_timeStepBdfDisplacement->unknown(0);
                 M_timeStepBdfVelocity->restart();
                 *M_fieldVelocity = M_timeStepBdfVelocity->unknown(0);
-                this->setTimeInitial( ti );
-                this->updateTime( ti );
+                this->setTimeInitial( tir );
+                this->updateTime( tir );
             }
             if ( M_useDisplacementPressureFormulation )
             {
@@ -1038,34 +1019,31 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     }
     else if (this->is1dReducedModel())
     {
-        CHECK( M_timeStepping == "Newmark" ) << "only Newmark";
-
-        this->createTimeDiscretisation1dReduced();
-
         if ( !this->doRestart() )
         {
-            // start time step
-            M_newmark_displ_1dReduced->start(*M_disp_1dReduced);
             // up current time
-            this->updateTime( M_newmark_displ_1dReduced->time() );
+            if ( M_timeStepping == "Newmark" )
+                this->updateTime( M_newmark_displ_1dReduced->time() );
         }
         else
         {
-            // restart time step
-            M_newmark_displ_1dReduced->restart();
-            // load a previous solution as current solution
-            *M_disp_1dReduced = M_newmark_displ_1dReduced->previousUnknown();
-            this->updateInterfaceDispFrom1dDisp();
-            // up initial time
-            this->setTimeInitial(M_newmark_displ_1dReduced->timeInitial());
-            // up current time
-            this->updateTime( M_newmark_displ_1dReduced->time() );
+            if ( M_timeStepping == "Newmark" )
+            {
+                // restart time step
+                double tir = M_newmark_displ_1dReduced->restart();
+                // load a previous solution as current solution
+                *M_disp_1dReduced = M_newmark_displ_1dReduced->previousUnknown();
+                this->updateInterfaceDispFrom1dDisp();
+                // up initial time
+                this->setTimeInitial( tir );
+                // up current time
+                this->updateTime( tir ) ;
+            }
         }
     }
 
-    this->log("SolidMechanics","init", "start/restart timeStep scheme done" );
-
-
+    this->timerTool("Constructor").stop("initTimeStep");
+    this->log("SolidMechanics","initTimeStep", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//

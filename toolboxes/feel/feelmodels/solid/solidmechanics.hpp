@@ -328,8 +328,6 @@ private :
 
     void createMesh();
     void createMesh1dReduced();
-    void createTimeDiscretisation();
-    void createTimeDiscretisation1dReduced();
     void createExporters();
     void createExporters1dReduced();
 
