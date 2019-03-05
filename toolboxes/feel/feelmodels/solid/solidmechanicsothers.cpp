@@ -777,49 +777,39 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
     this->log("SolidMechanics","startTimeStep", "start" );
     if ( this->isStandardModel() )
     {
-        if ( !this->doRestart() )
+        if ( M_timeStepping == "Newmark" )
         {
-            if ( M_timeStepping == "Newmark" )
-            {
-                // start time step
+            // start time step
+            if ( !this->doRestart() )
                 M_timeStepNewmark->start(*M_fieldDisplacement);
-                // up current time
-                this->updateTime( M_timeStepNewmark->time() );
-            }
-            else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+            // up current time
+            this->updateTime( M_timeStepNewmark->time() );
+        }
+        else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+        {
+            // residual assembly for initial time (and ti restart)
+            if ( M_timeStepping == "Theta" )
+                this->updateTimeStepThetaSchemePreviousContrib();
+            // start time step
+            if ( !this->doRestart() )
             {
-                // residual assembly for initial time
-                if ( M_timeStepping == "Theta" )
-                    this->updateTimeStepThetaSchemePreviousContrib();
-                 // start time step
                 M_timeStepBdfDisplacement->start( *M_fieldDisplacement );
                 M_timeStepBdfVelocity->start( *M_fieldVelocity );
-                 // up current time
-                this->updateTime( M_timeStepBdfDisplacement->time() );
             }
-            if ( M_useDisplacementPressureFormulation )
-                M_savetsPressure->start( *M_fieldPressure );
+            // up current time
+            this->updateTime( M_timeStepBdfDisplacement->time() );
         }
-        else // do a restart
-        {
-            if ( M_timeStepping == "Newmark" )
-            {
-                // up current time
-                this->updateTime( M_timeStepNewmark->time() );
-            }
-            else
-            {
-                // residual assembly for initial time of restart
-                if ( M_timeStepping == "Theta" )
-                    this->updateTimeStepThetaSchemePreviousContrib();
-                // up current time
-                this->updateTime( M_timeStepBdfDisplacement->time() );
-            }
-        }
+        // start save pressure
+        if ( M_useDisplacementPressureFormulation && !this->doRestart() )
+            M_savetsPressure->start( *M_fieldPressure );
     }
     else if (this->is1dReducedModel())
     {
-
+        // start time step
+        if ( !this->doRestart() )
+            M_newmark_displ_1dReduced->start(*M_disp_1dReduced);
+        // up current time
+        this->updateTime( M_newmark_displ_1dReduced->time() );
     }
     this->log("SolidMechanics","startTimeStep", "finish" );
 }
@@ -832,16 +822,30 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
-    if ( M_timeStepping == "Newmark" )
+    if (this->isStandardModel())
     {
-        if (this->isStandardModel())
+        if ( M_timeStepping == "Newmark" )
         {
             // next time step
             M_timeStepNewmark->next( *M_fieldDisplacement );
             // up current time
             this->updateTime( M_timeStepNewmark->time() );
         }
-        else if (this->is1dReducedModel())
+        else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+        {
+            if ( M_timeStepping == "Theta" )
+                this->updateTimeStepThetaSchemePreviousContrib();
+            M_timeStepBdfDisplacement->next( *M_fieldDisplacement );
+            M_timeStepBdfVelocity->next( *M_fieldVelocity );
+            this->updateTime( M_timeStepBdfDisplacement->time() );
+        }
+
+        if ( M_useDisplacementPressureFormulation )
+            M_savetsPressure->next(*M_fieldPressure);
+    }
+    else if (this->is1dReducedModel())
+    {
+        if ( M_timeStepping == "Newmark" )
         {
             // next time step
             M_newmark_displ_1dReduced->next( *M_disp_1dReduced );
@@ -849,17 +853,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
             this->updateTime( M_newmark_displ_1dReduced->time() );
         }
     }
-    else
-    {
-        if ( M_timeStepping == "Theta" )
-            this->updateTimeStepThetaSchemePreviousContrib();
-        M_timeStepBdfDisplacement->next( *M_fieldDisplacement );
-        M_timeStepBdfVelocity->next( *M_fieldVelocity );
-        this->updateTime( M_timeStepBdfDisplacement->time() );
-    }
-
-    if ( this->isStandardModel() && M_useDisplacementPressureFormulation )
-        M_savetsPressure->next(*M_fieldPressure);
 
     // update user functions which depend of time only
     this->updateUserFunctions(true);
