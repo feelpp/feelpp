@@ -192,7 +192,9 @@ namespace FeelModels
         void rebuildCstJacobian( vector_ptrtype U );
         void rebuildCstLinearPDE( vector_ptrtype U );
 
-        void evaluateResidual(const vector_ptrtype& U, vector_ptrtype& R, std::vector<std::string> const& infos = std::vector<std::string>() ) const;
+        void evaluateResidual( const vector_ptrtype& U, vector_ptrtype& R,
+                               std::vector<std::string> const& infos = std::vector<std::string>(),
+                               bool applyDofElimination = true ) const;
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
@@ -207,6 +209,8 @@ namespace FeelModels
 
         void addVectorLinearRhsAssembly( vector_ptrtype const& vec, double scaling = 1.0, std::string const& key = "", bool cstPart = false );
         void addVectorResidualAssembly( vector_ptrtype const& vec, double scaling = 1.0, std::string const& key = "", bool cstPart = false );
+        void setActivationAddVectorLinearRhsAssembly( std::string const& key, bool b );
+        void setActivationAddVectorResidualAssembly( std::string const& key, bool b );
 
         void updateNewtonIteration( int step, vector_ptrtype residual, vector_ptrtype sol, typename backend_type::solvernonlinear_type::UpdateIterationData const& data );
 
@@ -245,8 +249,9 @@ namespace FeelModels
         std::map<std::string,function_assembly_jacobian_type> M_addFunctionJacobianPostAssembly;
         std::map<std::string,function_assembly_residual_type> M_addFunctionResidualPostAssembly;
 
-        std::map<std::string, std::tuple<vector_ptrtype,double,bool>> M_addVectorLinearRhsAssembly;
-        std::map<std::string, std::tuple<vector_ptrtype,double,bool>> M_addVectorResidualAssembly;
+        // ( key -> ( vector,scaling, cstPart?, activated? ) )
+        std::map<std::string, std::tuple<vector_ptrtype,double,bool,bool>> M_addVectorLinearRhsAssembly;
+        std::map<std::string, std::tuple<vector_ptrtype,double,bool,bool>> M_addVectorResidualAssembly;
 
         bool M_usePseudoTransientContinuation;
         std::string M_pseudoTransientContinuationEvolutionMethod;
