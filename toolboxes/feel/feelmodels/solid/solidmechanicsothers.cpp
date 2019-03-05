@@ -874,16 +874,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepThetaSchemePreviousContrib()
     M_timeStepThetaSchemePreviousContrib->zero();
     M_blockVectorSolution.updateVectorFromSubVectors();
     std::vector<std::string> infos = { "Theta-Time-Stepping-Previous-Contrib" };
-    M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos );
-#if 0
-    ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(),
-                                                     M_timeStepThetaSchemePreviousContrib, true, false );
-    dataResidual.addInfo( "Theta-Time-Stepping-Previous-Contrib" );
-    this->updateResidual( dataResidual );
-    dataResidual.setBuildCstPart( false );
-    this->updateResidual( dataResidual );
-    M_timeStepThetaSchemePreviousContrib->close();
-#endif
+    M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+    M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos, false );
+    M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
 }
 
 //---------------------------------------------------------------------------------------------------//
