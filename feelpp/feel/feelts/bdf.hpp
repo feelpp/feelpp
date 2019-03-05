@@ -203,6 +203,15 @@ public:
         return this->iteration()-M_last_iteration_since_order_change;
     }
 
+    //! return number of consecutive save
+    int numberOfConsecutiveSave() const { return M_numberOfConsecutiveSave; }
+
+    //! set number of consecutive save (max is BDF_MAX_ORDER)
+    void setNumberOfConsecutiveSave( int n )
+    {
+        if ( n > 0 )
+            M_numberOfConsecutiveSave = std::min( n,(int)BDF_MAX_ORDER );
+    }
 
     //! return a vector of the times prior to timeInitial() (included)
     std::map<int,double> priorTimes() const
@@ -388,6 +397,8 @@ private:
 
     //! extrapolation field and rhs part of bdf scheme
     element_ptrtype M_poly, M_polyDeriv;
+
+    int M_numberOfConsecutiveSave;
 };
 
 template <typename SpaceType>
@@ -404,7 +415,8 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     M_alpha( BDF_MAX_ORDER ),
     M_beta( BDF_MAX_ORDER ),
     M_poly( M_space->elementPtr() ),
-    M_polyDeriv( M_space->elementPtr() )
+    M_polyDeriv( M_space->elementPtr() ),
+    M_numberOfConsecutiveSave( M_order )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
 
@@ -436,7 +448,8 @@ Bdf<SpaceType>::Bdf( Bdf const& b )
         M_space( b.M_space ),
         M_unknowns( b.M_unknowns ),
         M_alpha( b.M_alpha ),
-        M_beta( b.M_beta )
+        M_beta( b.M_beta ),
+        M_numberOfConsecutiveSave( b.M_numberOfConsecutiveSave )
 {}
 
 template <typename SpaceType>
@@ -512,7 +525,7 @@ Bdf<SpaceType>::init()
         fs::path dirPath = ( this->restartPath().empty() )? this->path() : this->restartPath()/this->path();
 
         const int niteration = this->iterationNumber();
-        int pmax = std::min( M_order, M_iteration+1 );
+        int pmax = std::min( M_numberOfConsecutiveSave/*M_order*/, M_iteration+1 );
 
         for ( int p = 0; p < pmax; ++p )
         {
@@ -727,9 +740,9 @@ Bdf<SpaceType>::saveCurrent()
     if (!this->saveInFile()) return;
 
     bool doSave=false;
-    for ( uint8_type i = 0; i < this->timeOrder() && !doSave; ++i )
+    for ( uint8_type i = 0; i < M_numberOfConsecutiveSave/*this->timeOrder()*/ && !doSave; ++i )
         {
-            int iterTranslate = M_iteration + this->timeOrder()-(i+1);
+            int iterTranslate = M_iteration + M_numberOfConsecutiveSave/*this->timeOrder()*/-(i+1);
             if (iterTranslate % this->saveFreq()==0) doSave=true;
         }
 
@@ -910,6 +923,7 @@ BOOST_PARAMETER_FUNCTION(
       ( freq,*(boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="bdf.save.freq") )
       ( format,*, soption(_prefix=prefix,_name="bdf.file-format") )
       ( rank_proc_in_files_name,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.rank-proc-in-files-name") )
+      ( n_consecutive_save,*( boost::is_integral<mpl::_> ), order )
     ) )
 {
     typedef typename meta::remove_all<space_type>::type::element_type _space_type;
@@ -927,6 +941,7 @@ BOOST_PARAMETER_FUNCTION(
     thebdf->setSaveFreq( freq );
     thebdf->setRankProcInNameOfFiles( rank_proc_in_files_name );
     thebdf->setfileFormat( format );
+    thebdf->setNumberOfConsecutiveSave( n_consecutive_save );
     return thebdf;
 }
 
