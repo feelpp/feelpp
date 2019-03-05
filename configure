@@ -222,6 +222,12 @@ while [ -n "$1" ]; do
        echo "using lib$PROJECT_STDLIB_CPP..."
        export PROJECT_STDLIB_CPP
        ;;
+   --enable-opt)
+       CXXFLAGS="-march=native -mavx -mfma -msse4.2 -msse4.1 -mssse3 -msse3 -msse2"
+       ;;
+   --enable-bench)
+       CXXFLAGS="-march=native -mavx -mfma -msse4.2 -msse4.1 -mssse3 -msse3 -msse2 -fno-omit-frame-pointer"
+       ;;      
    --cxxflags=*)
        CXXFLAGS=`echo $1 | sed "s,^--cxxflags=\(.*\),\1,"`
        ;;
