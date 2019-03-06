@@ -24,7 +24,7 @@ runApplicationThermoElectric()
     }
     else
     {
-        for ( ; !thermoElectric->timeStepBase()->isFinished(); thermoElectric->updateTimeStep() )
+        for ( thermoElectric->startTimeStep() ; !thermoElectric->timeStepBase()->isFinished(); thermoElectric->updateTimeStep() )
         {
             if (thermoElectric->worldComm().isMasterRank())
             {
