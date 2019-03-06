@@ -454,9 +454,9 @@ public :
     bdf_ptrtype const& timeStepBDF() const { return M_bdf_fluid; }
     std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
     std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
-    void updateTimeStepBDF();
     void initTimeStep();
-    void updateTimeStep() { this->updateTimeStepBDF(); }
+    void startTimeStep();
+    void updateTimeStep();
 
     // init/update user functions defined in json
     void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
@@ -471,6 +471,7 @@ public :
     void setDoExport(bool b);
     void exportMeasures( double time );
 private :
+    void updateTimeStepThetaSchemePreviousContrib();
     //void exportResultsImpl( double time );
     void exportResultsImplHO( double time );
 public :
@@ -915,7 +916,10 @@ protected:
     space_trace_velocity_component_ptrtype M_spaceLagrangeMultiplierPressureBC;
     element_trace_velocity_component_ptrtype M_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC2;
     // time discrtisation fluid
+    std::string M_timeStepping;
     bdf_ptrtype M_bdf_fluid;
+    double M_timeStepThetaValue;
+    vector_ptrtype M_timeStepThetaSchemePreviousContrib;
     //----------------------------------------------------
     // normak boundary stress ans WSS
     space_normalstress_ptrtype M_XhNormalBoundaryStress;
