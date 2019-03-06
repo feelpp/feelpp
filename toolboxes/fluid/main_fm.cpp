@@ -29,7 +29,7 @@ runApplicationFluid()
         if ( !FM->doRestart() )
             FM->exportResults(FM->timeInitial());
 
-        for ( ; !FM->timeStepBase()->isFinished(); FM->updateTimeStep() )
+        for ( FM->startTimeStep(); !FM->timeStepBase()->isFinished(); FM->updateTimeStep() )
         {
             if (FM->worldComm().isMasterRank())
             {

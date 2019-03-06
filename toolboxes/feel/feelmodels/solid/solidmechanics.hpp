@@ -328,8 +328,6 @@ private :
 
     void createMesh();
     void createMesh1dReduced();
-    void createTimeDiscretisation();
-    void createTimeDiscretisation1dReduced();
     void createExporters();
     void createExporters1dReduced();
 
@@ -405,6 +403,7 @@ public :
         }
     }
     void initTimeStep();
+    void startTimeStep();
     void updateTimeStep();
     void updateVelocity();
 
@@ -429,6 +428,8 @@ private :
 
     void updateTimeStepThetaSchemePreviousContrib();
 public :
+
+    void updateParameterValues();
 
     void predictorDispl();
 
@@ -467,6 +468,7 @@ public :
     savets_pressure_ptrtype const& timeStepSavetsPressure() const { CHECK( M_savetsPressure ) << "savets pressure not define"; return M_savetsPressure; }
     bdf_displacement_ptrtype timeStepBdfDisplacement() const { return M_timeStepBdfDisplacement; }
     bdf_displacement_ptrtype timeStepBdfVelocity() const { return M_timeStepBdfVelocity; }
+    double timeStepThetaValue() const { return M_timeStepThetaValue; }
 
     element_displacement_ptrtype & fieldVelocityPtr() { return M_fieldVelocity; }
     element_displacement_ptrtype const& fieldVelocityPtr() const { return M_fieldVelocity; }

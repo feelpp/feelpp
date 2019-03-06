@@ -110,6 +110,7 @@ public :
 
     std::shared_ptr<TSBase> timeStepBase() { return this->heatModel()->timeStepBase(); }
     std::shared_ptr<TSBase> timeStepBase() const { return this->heatModel()->timeStepBase(); }
+    void startTimeStep();
     void updateTimeStep();
 
     //___________________________________________________________________________________//
