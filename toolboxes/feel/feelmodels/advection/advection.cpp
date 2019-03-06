@@ -764,12 +764,9 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) cons
 {
     using namespace Feel::vf;
 
-    const vector_ptrtype& vecCurrentSolution = data.currentSolution();
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     bool _BuildCstPart = data.buildCstPart();
-    sparse_matrix_ptrtype& A_extended = data.matrixExtended();
-    bool _BuildExtendedPart = data.buildExtendedPart();
     bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     bool BuildNonCstPart = !_BuildCstPart;
@@ -1055,7 +1052,6 @@ ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateLinearPDETransient( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool BuildCstPart ) const
 {
-    auto const& mesh = this->mesh();
     auto const& space = this->functionSpace();
     auto const& phi = this->fieldSolution();
     auto const& psi = this->fieldSolution();

@@ -325,8 +325,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                                                     std::string prefix,
                                                     bool rebuild,
                                                     bool parallelBuild,
-                                                    size_type meshUpdate
-        )
+                                                    size_type meshUpdate )
     :
     super( space,
            dual_image_space_ptrtype( dual_image_space_type::New( _mesh=image_mesh_ptrtype( new image_mesh_type ) ) ),

@@ -718,7 +718,6 @@ void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEInextensibility( DataUpdateLinear & data ) const
 {
     sparse_matrix_ptrtype& A = data.matrix();
-    vector_ptrtype& F = data.rhs();
     bool BuildCstPart = data.buildCstPart();
     bool BuildNonCstPart = !BuildCstPart;
 
@@ -824,11 +823,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) cons
     this->log("MultiFluid","updateJacobian", "start"+sc );
     this->timerTool("Solve").start();
 
-    const vector_ptrtype& XVec = data.currentSolution();
-    sparse_matrix_ptrtype& J = data.jacobian();
+    //const vector_ptrtype& XVec = data.currentSolution();
+    //sparse_matrix_ptrtype& J = data.jacobian();
 
-    bool BuildNonCstPart = !_BuildCstPart;
-    bool BuildCstPart = _BuildCstPart;
+    //bool BuildNonCstPart = !_BuildCstPart;
+    //bool BuildCstPart = _BuildCstPart;
 
     // Update interface forces
     this->updateJacobianInterfaceForces( data );

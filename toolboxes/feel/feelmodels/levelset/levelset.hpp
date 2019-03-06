@@ -813,7 +813,7 @@ LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityT
     auto linearForm = form1( _test=spaceVelocityComp, _vector=M_extensionVelocityRHSVector );
     auto Fext = spaceVelocityComp->element();
 
-    auto const& phi = this->phi();
+    //auto const& phi = this->phi();
     //auto gradPhiExpr = trans(gradv(phi));
     auto gradPhiExpr = idv(this->gradPhi());;
     auto NExpr = gradPhiExpr / sqrt(trans(gradPhiExpr)*gradPhiExpr);
