@@ -34,75 +34,66 @@ namespace Feel
 namespace FeelModels
 {
 
-    ModelAlgebraicFactory::ModelAlgebraicFactory(model_ptrtype const& model, backend_ptrtype const& __backend)
-        :
-        M_model(model),
-        M_backend( __backend ),
-        M_hasBuildLinearJacobian(false),
-        M_hasBuildResidualCst(false),
-        M_hasBuildLinearSystemCst(false),
-        M_usePseudoTransientContinuation( boption(_prefix=model->prefix(),_name="pseudo-transient-continuation") ),
-        M_pseudoTransientContinuationEvolutionMethod( soption(_prefix=model->prefix(),_name="pseudo-transient-continuation.evolution") ),
-        M_pseudoTransientContinuationDelta0( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.delta0") ),
-        M_pseudoTransientContinuationDeltaMax( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.delta-max") ),
-        M_pseudoTransientContinuationSerVariant( soption(_prefix=model->prefix(),_name="pseudo-transient-continuation.ser-variant") ),
-        M_pseudoTransientContinuationExpurThresholdHigh( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.threshold-high") ),
-        M_pseudoTransientContinuationExpurThresholdLow( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.threshold-low") ),
-        M_pseudoTransientContinuationExpurBetaHigh( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.beta-high") ),
-        M_pseudoTransientContinuationExpurBetaLow( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.beta-low") )
-    {
-        model->timerTool("Constructor").start();
-        auto graph = model->buildMatrixGraph();
-        model->timerTool("Constructor").elapsed("graph");
-        if ( graph )
-        {
-            model->timerTool("Constructor").restart();
-            this->buildMatrixVector( graph,graph->mapRow().indexSplit() );
-            model->timerTool("Constructor").elapsed("matrixVector");
+ModelAlgebraicFactory::ModelAlgebraicFactory( std::string const& prefix )
+    :
+    M_hasBuildLinearJacobian(false),
+    M_hasBuildResidualCst(false),
+    M_hasBuildLinearSystemCst(false),
+    M_usePseudoTransientContinuation( boption(_prefix=prefix,_name="pseudo-transient-continuation") ),
+    M_pseudoTransientContinuationEvolutionMethod( soption(_prefix=prefix,_name="pseudo-transient-continuation.evolution") ),
+    M_pseudoTransientContinuationDelta0( doption(_prefix=prefix,_name="pseudo-transient-continuation.delta0") ),
+    M_pseudoTransientContinuationDeltaMax( doption(_prefix=prefix,_name="pseudo-transient-continuation.delta-max") ),
+    M_pseudoTransientContinuationSerVariant( soption(_prefix=prefix,_name="pseudo-transient-continuation.ser-variant") ),
+    M_pseudoTransientContinuationExpurThresholdHigh( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.threshold-high") ),
+    M_pseudoTransientContinuationExpurThresholdLow( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.threshold-low") ),
+    M_pseudoTransientContinuationExpurBetaHigh( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.beta-high") ),
+    M_pseudoTransientContinuationExpurBetaLow( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.beta-low") )
+{}
 
-            model->timerTool("Constructor").restart();
-            this->buildOthers();
-            model->timerTool("Constructor").elapsed("algebraicOthers");
-        }
-        model->timerTool("Constructor").stop();
-    }
+ModelAlgebraicFactory::ModelAlgebraicFactory( model_ptrtype const& model, backend_ptrtype const& backend )
+    :
+    ModelAlgebraicFactory( model->prefix() )
+{
+    model->log( model->prefix()+".MethodNum","constructor1", "start" );
+    this->init( model,backend );
+    model->log( model->prefix()+".MethodNum","constructor1", "finish" );
+}
 
-    //---------------------------------------------------------------------------------------------------------------//
+ModelAlgebraicFactory::ModelAlgebraicFactory( model_ptrtype const& model, backend_ptrtype const& backend,
+                                              graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit )
+    :
+    ModelAlgebraicFactory( model->prefix() )
+{
+    model->log( model->prefix()+".MethodNum","constructor2", "start" );
+    this->init( model,backend,graph,indexSplit );
+    model->log( model->prefix()+".MethodNum","constructor2", "finish" );
+}
 
-    ModelAlgebraicFactory::ModelAlgebraicFactory(model_ptrtype const& model,
-                           backend_ptrtype const& __backend,
-                           graph_ptrtype const& graph,
-                           indexsplit_ptrtype const& indexSplit )
-        :
-        M_model(model),
-        M_backend(__backend ),
-        M_hasBuildLinearJacobian(false),
-        M_hasBuildResidualCst(false),
-        M_hasBuildLinearSystemCst(false),
-        M_usePseudoTransientContinuation( boption(_prefix=model->prefix(),_name="pseudo-transient-continuation") ),
-        M_pseudoTransientContinuationEvolutionMethod( soption(_prefix=model->prefix(),_name="pseudo-transient-continuation.evolution") ),
-        M_pseudoTransientContinuationDelta0( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.delta0") ),
-        M_pseudoTransientContinuationDeltaMax( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.delta-max") ),
-        M_pseudoTransientContinuationSerVariant( soption(_prefix=model->prefix(),_name="pseudo-transient-continuation.ser-variant") ),
-        M_pseudoTransientContinuationExpurThresholdHigh( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.threshold-high") ),
-        M_pseudoTransientContinuationExpurThresholdLow( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.threshold-low") ),
-        M_pseudoTransientContinuationExpurBetaHigh( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.beta-high") ),
-        M_pseudoTransientContinuationExpurBetaLow( doption(_prefix=model->prefix(),_name="pseudo-transient-continuation.expur.beta-low") )
-    {
-        if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".MethodNum","constructor1", "start",
-                                                            this->model()->worldComm(),this->model()->verboseAllProc());
+//---------------------------------------------------------------------------------------------------------------//
 
-        this->init(graph,indexSplit);
+void
+ModelAlgebraicFactory::init( model_ptrtype const& model, backend_ptrtype const& backend )
+{
+    model->timerTool("Constructor").start();
+    auto graph = model->buildMatrixGraph();
+    model->timerTool("Constructor").elapsed("graph");
+    auto indexSplit = ( graph )? graph->mapRow().indexSplit() : indexsplit_ptrtype();
+    this->init( model,backend,graph,graph->mapRow().indexSplit() );
+    model->timerTool("Constructor").stop();
+}
+void
+ModelAlgebraicFactory::init( model_ptrtype const& model, backend_ptrtype const& backend,
+                             graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit )
+{
+    M_model = model;
+    this->init( backend, graph, indexSplit );
+}
+void
+ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit )
+{
+    M_backend = backend;
 
-        if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".MethodNum","constructor", "finish",
-                                                            this->model()->worldComm(),this->model()->verboseAllProc());
-    }
-
-    //---------------------------------------------------------------------------------------------------------------//
-
-    void
-    ModelAlgebraicFactory::init(graph_ptrtype const& graph,
-                     indexsplit_ptrtype const& indexSplit)
+    if ( graph )
     {
         this->model()->timerTool("Constructor").start();
         this->buildMatrixVector(graph,indexSplit);
@@ -112,6 +103,7 @@ namespace FeelModels
         this->buildOthers();
         this->model()->timerTool("Constructor").stop("algebraicOthers");
     }
+}
 
     //---------------------------------------------------------------------------------------------------------------//
 
@@ -191,17 +183,15 @@ namespace FeelModels
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    ModelAlgebraicFactory::reset(backend_ptrtype __backend,
-                                 graph_ptrtype const& graph,
-                                 indexsplit_ptrtype const& indexSplit)
+    ModelAlgebraicFactory::reset( backend_ptrtype backend,
+                                  graph_ptrtype const& graph,
+                                  indexsplit_ptrtype const& indexSplit)
     {
-
-        M_backend=__backend;
         M_hasBuildLinearJacobian=false;
         M_hasBuildResidualCst=false;
         M_hasBuildLinearSystemCst=false;
 
-        this->init(graph,indexSplit);
+        this->init( backend, graph, indexSplit );
     }
 
     void
@@ -275,13 +265,30 @@ namespace FeelModels
     ModelAlgebraicFactory::addVectorLinearRhsAssembly( vector_ptrtype const& vec, double scaling, std::string const& key, bool cstPart )
     {
         std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addVectorLinearRhsAssembly.size()).str() : key;
-        M_addVectorLinearRhsAssembly[ keyUsed ] = std::make_tuple( vec, scaling, cstPart );
+        M_addVectorLinearRhsAssembly[ keyUsed ] = std::make_tuple( vec, scaling, cstPart, true );
     }
     void
     ModelAlgebraicFactory::addVectorResidualAssembly( vector_ptrtype const& vec, double scaling, std::string const& key, bool cstPart )
     {
         std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addVectorResidualAssembly.size()).str() : key;
-        M_addVectorResidualAssembly[ keyUsed ] = std::make_tuple( vec, scaling, cstPart );
+        M_addVectorResidualAssembly[ keyUsed ] = std::make_tuple( vec, scaling, cstPart, true );
+    }
+
+
+    void
+    ModelAlgebraicFactory::setActivationAddVectorLinearRhsAssembly( std::string const& key, bool b )
+    {
+        if ( M_addVectorLinearRhsAssembly.find( key ) == M_addVectorLinearRhsAssembly.end() )
+            return;
+        std::get<3>( M_addVectorLinearRhsAssembly[key] ) = b;
+    }
+    void
+    ModelAlgebraicFactory::setActivationAddVectorResidualAssembly( std::string const& key, bool b )
+    {
+        if ( M_addVectorResidualAssembly.find( key ) == M_addVectorResidualAssembly.end() )
+            return;
+        std::get<3>( M_addVectorResidualAssembly[key] ) = b;
+
     }
 
     //---------------------------------------------------------------------------------------------------------------//
@@ -432,7 +439,7 @@ namespace FeelModels
                 func.second( dataLinearCst );
             M_CstR->close();
             for ( auto const& av : M_addVectorLinearRhsAssembly )
-                if ( std::get<2>( av.second ) )
+                if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
                     M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
             M_hasBuildLinearSystemCst = true;
         }
@@ -448,7 +455,7 @@ namespace FeelModels
                 func.second( dataLinearCst );
             M_CstR->close();
             for ( auto const& av : M_addVectorLinearRhsAssembly )
-                if ( std::get<2>( av.second ) )
+                if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
                     M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
         }
         this->model()->setNeedToRebuildCstPart(false);
@@ -471,15 +478,14 @@ namespace FeelModels
 
         // assembling non cst part
         ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
-        // apply before addFunctionLinearAssembly because due to Strong dirichlet
+        this->model()->updateLinearPDE( dataLinearNonCst );
         for ( auto const& func : M_addFunctionLinearAssembly )
             func.second( dataLinearNonCst );
-        this->model()->updateLinearPDE( dataLinearNonCst );
 
         M_R->close();
         // add maybe vector to rhs
         for ( auto const& av : M_addVectorLinearRhsAssembly )
-            if ( !std::get<2>( av.second ) )
+            if ( !std::get<2>( av.second ) && std::get<3>( av.second ) )
                 M_R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
 
         // dof elimination
@@ -581,10 +587,10 @@ namespace FeelModels
             CHECK( !M_pseudoTransientContinuationDeltaAndResidual.empty() ) << "must have at least one value";
             dataJacobianNonCst.addDoubleInfo( "pseudo-transient-continuation.delta", M_pseudoTransientContinuationDeltaAndResidual.back().first );
         }
-        // apply before addFunctionJacobianAssembly because due to Strong dirichlet
+
+        model->updateJacobian( dataJacobianNonCst );
         for ( auto const& func : M_addFunctionJacobianAssembly )
             func.second( dataJacobianNonCst );
-        model->updateJacobian( dataJacobianNonCst );
 
         // dof elimination
         model->updateJacobianDofElimination( dataJacobianNonCst );
@@ -619,7 +625,7 @@ namespace FeelModels
                 func.second( dataResidualCst );
             R->close();
             for ( auto const& av : M_addVectorResidualAssembly )
-                if ( std::get<2>( av.second ) )
+                if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
                     R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
         }
 
@@ -629,15 +635,14 @@ namespace FeelModels
             R->addVector(*X, *M_CstJ );
 
         ModelAlgebraic::DataUpdateResidual dataResidualNonCst( X, R, false, doOptimization );
-        // apply before addFunctionResidualAssembly because due to Strong dirichlet
+        model->updateResidual( dataResidualNonCst );
         for ( auto const& func : M_addFunctionResidualAssembly )
             func.second( dataResidualNonCst );
-        model->updateResidual( dataResidualNonCst );
 
         R->close();
 
         for ( auto const& av : M_addVectorResidualAssembly )
-            if ( !std::get<2>( av.second ) )
+            if ( !std::get<2>( av.second ) && std::get<3>( av.second ) )
                 R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
 
         // dof elimination
@@ -714,7 +719,7 @@ namespace FeelModels
                     func.second( dataResidualCst );
                 M_CstR->close();
                 for ( auto const& av : M_addVectorResidualAssembly )
-                    if ( std::get<2>( av.second ) )
+                    if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
                         M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
                 M_hasBuildResidualCst = true;
             }
@@ -728,7 +733,7 @@ namespace FeelModels
                     func.second( dataResidualCst );
                 M_CstR->close();
                 for ( auto const& av : M_addVectorResidualAssembly )
-                    if ( std::get<2>( av.second ) )
+                    if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
                         M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
             }
         }
@@ -775,6 +780,36 @@ namespace FeelModels
         if (model->verboseSolverTimer()) Feel::FeelModels::Log( model->prefix()+".ModelAlgebraicFactory","NonLinearSolverNewton",
                                                                 (boost::format("finish in %1% s")%tElapsed ).str(),
                                                                 model->worldComm(),model->verboseSolverTimerAllProc());
+    }
+
+    //---------------------------------------------------------------------------------------------------------------//
+
+    void
+    ModelAlgebraicFactory::evaluateResidual(const vector_ptrtype& U, vector_ptrtype& R, std::vector<std::string> const& infos, bool applyDofElimination ) const
+    {
+        auto model = this->model();
+        R->zero();
+        ModelAlgebraic::DataUpdateResidual dataResidual( U, R, true, false );
+        for ( std::string const& info : infos )
+            dataResidual.addInfo( info );
+        model->updateResidual( dataResidual );
+        for ( auto const& func : M_addFunctionResidualAssembly )
+            func.second( dataResidual );
+        dataResidual.setBuildCstPart( false );
+        model->updateResidual( dataResidual );
+        for ( auto const& func : M_addFunctionResidualAssembly )
+            func.second( dataResidual );
+        R->close();
+        for ( auto const& av : M_addVectorResidualAssembly )
+            if ( std::get<3>( av.second ) )
+                R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
+
+        // dof elimination
+        if ( applyDofElimination )
+            model->updateResidualDofElimination( dataResidual );
+
+        for ( auto const& func : M_addFunctionResidualPostAssembly )
+            func.second( dataResidual );
     }
 
     //---------------------------------------------------------------------------------------------------------------//

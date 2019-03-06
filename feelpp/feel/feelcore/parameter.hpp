@@ -221,6 +221,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( restart_at_last_save )
     BOOST_PARAMETER_NAME( rank_proc_in_files_name )
     BOOST_PARAMETER_NAME( freq )
+    BOOST_PARAMETER_NAME( n_consecutive_save )
 
     BOOST_PARAMETER_NAME( markerName )
     BOOST_PARAMETER_NAME( markerAll )

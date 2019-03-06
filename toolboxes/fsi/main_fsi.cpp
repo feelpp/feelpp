@@ -23,7 +23,7 @@ runApplicationFSI()
     FSImodel->init();
     FSImodel->printAndSaveInfo();
 
-    for ( ; !FSImodel->timeStepBase()->isFinished(); FSImodel->updateTimeStep() )
+    for ( FSImodel->startTimeStep() ; !FSImodel->timeStepBase()->isFinished(); FSImodel->updateTimeStep() )
     {
         if ( Environment::isMasterRank() )
             std::cout << "\n====================================================================================="

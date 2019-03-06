@@ -222,8 +222,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     int nBlock = nBlockFluid + nBlockHeat;
     M_blockVectorSolution.resize( nBlock );
     int indexBlock=0;
+    int numberOfBlockSpaceFluid = 0;
     for ( int k=0;k<nBlockFluid ;++k )
+    {
         M_blockVectorSolution(indexBlock+k) = blockVectorSolutionFluid(k);
+        numberOfBlockSpaceFluid += blockVectorSolutionFluid(k)->map().numberOfDofIdToContainerId();
+    }
     indexBlock += nBlockFluid;
     for ( int k=0;k<nBlockHeat ;++k )
         M_blockVectorSolution(indexBlock+k) = blockVectorSolutionHeat(k);
@@ -233,7 +237,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     size_type currentStartBlockSpaceIndex = 0;
     this->setStartSubBlockSpaceIndex( "fluid", currentStartBlockSpaceIndex );
-    currentStartBlockSpaceIndex += blockVectorSolutionFluid.vectorMonolithic()->map().numberOfDofIdToContainerId();
+    currentStartBlockSpaceIndex += numberOfBlockSpaceFluid;
     this->setStartSubBlockSpaceIndex( "heat", currentStartBlockSpaceIndex );
 
     // algebraic solver
@@ -337,11 +341,20 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
+HEATFLUID_CLASS_TEMPLATE_TYPE::startTimeStep()
+{
+    this->heatModel()->startTimeStep();
+    this->fluidModel()->startTimeStep();
+    this->updateTime( this->fluidModel()->time() );
+}
+
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
     this->heatModel()->updateTimeStep();
     this->fluidModel()->updateTimeStep();
-    this->updateTime( this->timeStepBase()->time() );
+    this->updateTime( this->fluidModel()->time() );
 }
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS

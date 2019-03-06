@@ -159,8 +159,8 @@ class Heat : public ModelNumerical,
         bdf_temperature_ptrtype const& timeStepBdfTemperature() const { return M_bdfTemperature; }
         std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfTemperature(); }
         std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBdfTemperature(); }
-        void updateBdf();
-        void updateTimeStep() { this->updateBdf(); }
+        void startTimeStep();
+        void updateTimeStep();
         //___________________________________________________________________________________//
 
         std::shared_ptr<std::ostringstream> getInfo() const override;

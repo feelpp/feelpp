@@ -1238,9 +1238,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVorticity()
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
 {
-    this->log("FluidMechanics","updateTimeStepBDF", "start" );
+    this->log("FluidMechanics","startTimeStep", "start" );
+
+    // residual assembly for initial time
+    if ( M_timeStepping == "Theta" )
+        this->updateTimeStepThetaSchemePreviousContrib();
+    // start time step
+    if ( !this->doRestart() )
+        M_bdf_fluid->start(*M_Solution);
+    // up current time
+    this->updateTime( M_bdf_fluid->time() );
+
+    this->log("FluidMechanics","startTimeStep", "finish" );
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
+{
+    this->log("FluidMechanics","updateTimeStep", "start" );
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
@@ -1290,27 +1308,32 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
         }
     }
 
-
-    int previousTimeOrder = this->timeStepBDF()->timeOrder();
-
-    M_bdf_fluid->next( *M_Solution );
-
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if (this->isMoveDomain())
         M_meshALE->updateBdf();
 #endif
 
-    int currentTimeOrder = this->timeStepBDF()->timeOrder();
-
-    this->updateTime( M_bdf_fluid->time() );
+    bool rebuildCstAssembly = false;
+    if ( M_timeStepping == "BDF" )
+    {
+        int previousTimeOrder = this->timeStepBDF()->timeOrder();
+        M_bdf_fluid->next( *M_Solution );
+        int currentTimeOrder = this->timeStepBDF()->timeOrder();
+        rebuildCstAssembly = previousTimeOrder != currentTimeOrder && this->timeStepBase()->strategy() == TS_STRATEGY_DT_CONSTANT;
+        this->updateTime( M_bdf_fluid->time() );
+    }
+    else if ( M_timeStepping == "Theta" )
+    {
+        this->updateTimeStepThetaSchemePreviousContrib();
+        M_bdf_fluid->next( *M_Solution );
+        this->updateTime( M_bdf_fluid->time() );
+    }
 
     // update user functions which depend of time only
     this->updateUserFunctions(true);
 
     // maybe rebuild cst jacobian or linear
-    if ( M_algebraicFactory &&
-         previousTimeOrder!=currentTimeOrder &&
-         this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
+    if ( M_algebraicFactory && rebuildCstAssembly )
     {
         if (this->solverName() == "Newton" && !this->rebuildLinearPartInJacobian() )
         {
@@ -1325,11 +1348,26 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
     }
 
 
-    this->timerTool("TimeStepping").stop("updateBdf");
+    this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
-    this->log("FluidMechanics","updateTimeStepBDF", "finish" );
+    this->log("FluidMechanics","updateTimeStep", "finish" );
 }
 
+//---------------------------------------------------------------------------------------------------------//
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepThetaSchemePreviousContrib()
+{
+    if ( !M_algebraicFactory )
+        return;
+    M_timeStepThetaSchemePreviousContrib->zero();
+    M_blockVectorSolution.updateVectorFromSubVectors();
+    std::vector<std::string> infos = { "Theta-Time-Stepping-Previous-Contrib" };
+    M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+    M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos );
+    M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+}
 
 //---------------------------------------------------------------------------------------------------------//
 
