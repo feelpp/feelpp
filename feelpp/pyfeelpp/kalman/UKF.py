@@ -92,16 +92,16 @@ class Filter:
                     print("    last state estimate : ",self.Mx)
                     print("    associated predicted measure : ",self.My," ; real measure : ",self.signal[i])
                     print("    relative measure error : ",np.abs(self.My-self.signal[i])/self.signal[i]," ; tolerance : ",self.tol)
-                    if np.abs(self.My-self.signal[i])/self.signal[i] < self.tol or i < maxiter:
+                    if np.abs(self.My-self.signal[i])/self.signal[i] < self.tol or i > maxiter:
                         return self.Mx
                     
         elif mode == "static":
-            i = 0
+            i = 0   
             self.signal = measurement
             self.X = zeros([self.dim,maxiter]) # KEEPS TRACK OF THE STATES BEST ESTIMATE
             self.forecast = zeros([self.dim,maxiter]) # KEEPS TRACK OF THE FORECAST
             
-            while np.abs(self.My-self.signal)/self.signal > self.tol:
+            while np.abs(self.My-self.signal)/self.signal > self.tol and i < maxiter:
                 self.X[:,i] = np.transpose(self.Mx)
                 self.forecast[:,i] = np.transpose(self.XF)
                 self.step(self, mode)
