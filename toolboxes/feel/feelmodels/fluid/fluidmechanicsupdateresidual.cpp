@@ -35,6 +35,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     //--------------------------------------------------------------------------------------------------//
 
+    double timeSteppingScaling = 1.;
+    bool timeSteppingThetaAssemblePreviousContrib = data.hasInfo( "Theta-Time-Stepping-Previous-Contrib" );
+    if ( !this->isStationary() )
+    {
+        if ( M_timeStepping == "Theta" )
+        {
+            if ( timeSteppingThetaAssemblePreviousContrib )
+                timeSteppingScaling = 1. - M_timeStepThetaValue;
+            else
+                timeSteppingScaling = M_timeStepThetaValue;
+        }
+        data.addDoubleInfo( prefixvm(this->prefix(),"timeSteppingScaling"), timeSteppingScaling );
+    }
+
+    //--------------------------------------------------------------------------------------------------//
+
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
 
@@ -77,7 +93,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             linearForm_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
                            //_expr= /*idv(*M_P0Rho)**/inner( Feel::vf::FSI::fluidMecConvection(u,*M_P0Rho) + idv(*M_P0Rho)*0.5*divv(u)*idv(u), id(v) ),
-                           _expr=inner( Feel::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
+                           _expr=timeSteppingScaling*inner( Feel::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
                            _geomap=this->geomap() );
 
             /*if (this->isMoveDomain()  && !BuildCstPart && !UseJacobianLinearTerms)
@@ -98,7 +114,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 #endif
             linearForm_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
-                           _expr=convecTerm,
+                           _expr=timeSteppingScaling*convecTerm,
                            _geomap=this->geomap() );
         }
 
@@ -113,7 +129,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         // mesh velocity (convection) term
         linearForm_PatternCoupled +=
             integrate( _range=M_rangeMeshElements,
-                       _expr= -val(idv(rho)*trans( gradv(u)*( idv( this->meshVelocity() ))))*id(v),
+                       _expr= -timeSteppingScaling*val(idv(rho)*trans( gradv(u)*( idv( this->meshVelocity() ))))*id(v),
                        _geomap=this->geomap() );
         timeElapsedBis=thetimerBis.elapsed();
         this->log("FluidMechanics","updateResidual","build convective--2-- term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
@@ -139,16 +155,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                 linearForm_PatternCoupled +=
                     integrate( _range=range,
                                //_expr= inner( StressTensorExpr,grad(v) ),
-                               _expr= inner( val(Sigmav_newtonian),grad(v) ),
+                               _expr= timeSteppingScaling*inner( val(Sigmav_newtonian),grad(v) ),
                                _geomap=this->geomap() );
 #else
                 form1( Xh, R ) +=
                     integrate( _range=range,
-                               _expr= 2*idv(*M_P0Mu)*trace(trans(defv)*grad(v)),
+                               _expr= timeSteppingScaling*2*idv(*M_P0Mu)*trace(trans(defv)*grad(v)),
                                _geomap=this->geomap() );
                 form1( Xh, R ) +=
                     integrate( _range=range,
-                               _expr= -idv(p)*div(v),
+                               _expr= -timeSteppingScaling*idv(p)*div(v),
                                _geomap=this->geomap() );
 #endif
             }
@@ -159,7 +175,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             {
                 linearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= -idv(p)*div(v),
+                               _expr= -timeSteppingScaling*idv(p)*div(v),
                                _geomap=this->geomap() );
             }
             if ( BuildNonCstPart )
@@ -168,7 +184,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                 // sigma : grad(v) on Omega
                 linearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= inner( StressTensorExpr,grad(v) ),
+                               _expr= timeSteppingScaling*inner( StressTensorExpr,grad(v) ),
                                _geomap=this->geomap() );
             }
         } // non newtonian
@@ -186,7 +202,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         auto coeffDiv = (2./3.)*idv(this->materialProperties()->fieldMu()); //(eps-2mu/3)
         linearForm_PatternCoupled +=
             integrate( _range=M_rangeMeshElements,
-                       _expr= val(-coeffDiv*gradv(this->velocityDiv()))*id(v),
+                       _expr= val(-timeSteppingScaling*coeffDiv*gradv(this->velocityDiv()))*id(v),
                        _geomap=this->geomap() );
     }
 
@@ -217,7 +233,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                 auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
                 linearForm_PatternCoupled +=
                     integrate( _range=rangeBodyForceUsed,
-                               _expr= -inner( expression(d,this->symbolsExpr()),id(v) ),
+                               _expr= -timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
                                _geomap=this->geomap() );
             }
         }
@@ -226,14 +242,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         {
             linearForm_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
-                           _expr= -trans(idv(*M_SourceAdded))*id(v),
+                           _expr= -timeSteppingScaling*trans(idv(*M_SourceAdded))*id(v),
                            _geomap=this->geomap() );
         }
         if ( M_useGravityForce )
         {
             linearForm_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
-                           _expr= -idv(rho)*inner(M_gravityForce,id(u)),
+                           _expr= -timeSteppingScaling*idv(rho)*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
         }
     }
@@ -241,7 +257,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     //------------------------------------------------------------------------------------//
 
     //transients terms
-    if (!this->isStationaryModel())
+    if ( !this->isStationaryModel() && !timeSteppingThetaAssemblePreviousContrib )
     {
         bool Build_TransientTerm = !BuildCstPart;
         if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=!BuildCstPart && !UseJacobianLinearTerms;
