@@ -25,8 +25,8 @@ class Filter:
         self.Kalman = zeros([dim,obs])
         self.P = defect*np.eye(dim)
 
-        self.SigPts = zeros([dim,2*dim+1])
-        self.PreMeas = zeros([obs,2*dim+1])
+        self.SigPts = zeros([dim,2*dim+1], dtype=np.float64)
+        self.PreMeas = zeros([obs,2*dim+1], dtype=np.float64)
         
         self.weights = ones(2*dim+1)*(1-w0)/(2*dim)
         self.weights[0] = w0
@@ -65,18 +65,26 @@ class Filter:
         # PARALLELIZED DYNAMICS
         rank = self.comm.Get_rank()
         
-        counts = ( ( 2*self.dim + 1 )//( self.nb_procs - 1 ) ) * np.ones(self.nb_procs)
+        counts = ( ( 2*self.dim + 1 )//( self.nb_procs - 1 ) ) * np.ones(self.nb_procs, dtype=np.int8)
         counts[-1] = ( 2*self.dim + 1 )%( self.nb_procs -1 )
-        displacements = counts[0] * np.arange(0,nb_procs)
+        displacements = counts[0] * np.arange(0,self.nb_procs)
 
-        recvdata = np.empty(counts[rank])
+        recvdata = np.zeros([2*self.dim + 1, counts[rank]], dtype=np.float64 )
+        for ii in range( self.dim ): # SINCE SCATTER SENDS 1D ARRAY, PERFORMS LINEWISE SCATTER
+            self.comm.Scatterv( [self.SigPts[ii], counts, displacements, MPI.DOUBLE], recvdata[ii], root=0 )
+
+        measdata = np.zeros([self.obs, counts[rank]])
+        for i in range( 0, counts[rank] ): # USUAL POINTWISE PROPAGATION
+            recvdata [:,i] = self.dynamics(recvdata[:,i],self.Time,self.dt)
+            measdata[:,i] = self.observe(recvdata[:,i])
+
+        sigptstmp = np.zeros([self.dim, counts[rank]], dtype=np.float64)
+        premeastmp = np.zeros([self.obs, counts[rank]], dtype=np.float64)
+        for ii in range( self.dim ):
+            self.comm.Gatherv( [recvdata[ii], counts[rank]], [self.SigPts[ii], counts, displacements, MPI.DOUBLE], root=0 )
+        for ii in range( self.obs ):
+            self.comm.Gatherv( [measdata[ii], counts[rank]], [self.PreMeas[ii], counts, displacements, MPI.DOUBLE], root=0 )
         
-        self.comm.Scatterv( [self.SigPts, counts, displacements], recvdata, root = 0 )
-
-        for i in range( 0, counts[rank] ):
-            recvdata [:,i] = self.dynamics(self.SigPts[:,i],self.Time,self.dt)
-            self.PreMeas[:,i] = self.observe(self.SigPts[:,i])
-# gather concatenated sigpts and premeas
         self.Time += 1
 
         self.Mx = self.SigPts @ transpose(self.weights)
