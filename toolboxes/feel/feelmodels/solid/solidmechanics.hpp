@@ -328,8 +328,6 @@ private :
 
     void createMesh();
     void createMesh1dReduced();
-    void createTimeDiscretisation();
-    void createTimeDiscretisation1dReduced();
     void createExporters();
     void createExporters1dReduced();
 
@@ -405,6 +403,7 @@ public :
         }
     }
     void initTimeStep();
+    void startTimeStep();
     void updateTimeStep();
     void updateVelocity();
 
@@ -429,6 +428,8 @@ private :
 
     void updateTimeStepThetaSchemePreviousContrib();
 public :
+
+    void updateParameterValues();
 
     void predictorDispl();
 
@@ -467,6 +468,7 @@ public :
     savets_pressure_ptrtype const& timeStepSavetsPressure() const { CHECK( M_savetsPressure ) << "savets pressure not define"; return M_savetsPressure; }
     bdf_displacement_ptrtype timeStepBdfDisplacement() const { return M_timeStepBdfDisplacement; }
     bdf_displacement_ptrtype timeStepBdfVelocity() const { return M_timeStepBdfVelocity; }
+    double timeStepThetaValue() const { return M_timeStepThetaValue; }
 
     element_displacement_ptrtype & fieldVelocityPtr() { return M_fieldVelocity; }
     element_displacement_ptrtype const& fieldVelocityPtr() const { return M_fieldVelocity; }
@@ -507,7 +509,8 @@ public :
     element_displacement_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
 
     // symbols expression
-    constexpr auto symbolsExpr() const { return this->symbolsExpr( hana::int_<nDim>() ); }
+    auto symbolsExpr() const { return Feel::vf::symbolsExpr( this->symbolsExprField(), this->symbolsExprFit() ); }
+    constexpr auto symbolsExprField() const { return this->symbolsExprField( hana::int_<nDim>() ); }
     //----------------------------------//
     //backend_ptrtype backend() { return M_backend; }
     backend_ptrtype const& backendStandard() const { return M_backend; }
@@ -641,14 +644,14 @@ private :
 private :
     void updateBoundaryConditionsForUse();
 
-    constexpr auto symbolsExpr( hana::int_<2> /**/ ) const
+    constexpr auto symbolsExprField( hana::int_<2> /**/ ) const
         {
             return Feel::vf::symbolsExpr( symbolExpr("solid_Dx",idv(this->fieldDisplacement())(0,0) ),
                                           symbolExpr("solid_Dy",idv(this->fieldDisplacement())(1,0) ),
                                           symbolExpr("solid_D_magnitude",inner(idv(this->fieldDisplacement()),mpl::int_<InnerProperties::SQRT>()) )
                                           );
         }
-    constexpr auto symbolsExpr( hana::int_<3> /**/ ) const
+    constexpr auto symbolsExprField( hana::int_<3> /**/ ) const
         {
             return Feel::vf::symbolsExpr( symbolExpr("solid_Dx",idv(this->fieldDisplacement())(0,0) ),
                                           symbolExpr("solid_Dy",idv(this->fieldDisplacement())(1,0) ),
@@ -656,6 +659,7 @@ private :
                                           symbolExpr("solid_D_magnitude",inner(idv(this->fieldDisplacement()),mpl::int_<InnerProperties::SQRT>()) )
                                           );
         }
+    auto symbolsExprFit() const { return super_type::symbolsExprFit( this->symbolsExprField() ); }
 
 protected:
 

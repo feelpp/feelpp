@@ -33,6 +33,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     //bool BuildNonCstPart_robinFSI = BuildNonCstPart;
     //if (this->useFSISemiImplicitScheme()) BuildNonCstPart_robinFSI=BuildCstPart;
 
+    double timeSteppingScaling = 1.;
+    if ( !this->isStationary() )
+    {
+        if ( M_timeStepping == "Theta" )
+            timeSteppingScaling = M_timeStepThetaValue;
+        data.addDoubleInfo( prefixvm(this->prefix(),"timeSteppingScaling"), timeSteppingScaling );
+    }
+
     //--------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();
@@ -87,7 +95,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
             bilinearForm_PatternCoupled +=
                 //bilinearForm_PatternDefault +=
                 integrate ( _range=M_rangeMeshElements,
-                            _expr=convecTerm,
+                            _expr=timeSteppingScaling*convecTerm,
                             _geomap=this->geomap() );
         }
         else
@@ -100,7 +108,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
             bilinearForm_PatternCoupled +=
                 //bilinearForm_PatternDefault +=
                 integrate ( _range=M_rangeMeshElements,
-                            _expr=convecTerm,
+                            _expr=timeSteppingScaling*convecTerm,
                             _geomap=this->geomap() );
         }
     }
@@ -111,7 +119,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         bilinearForm_PatternCoupled +=
             //bilinearForm_PatternDefault +=
             integrate (_range=M_rangeMeshElements,
-                       _expr= -trans(gradt(u)*idv(rho)*idv( this->meshVelocity() ))*id(v),
+                       _expr= -timeSteppingScaling*trans(gradt(u)*idv(rho)*idv( this->meshVelocity() ))*id(v),
                        _geomap=this->geomap() );
     }
 #endif
@@ -140,18 +148,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 #if 1
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= inner(Sigmat_newtonian,grad(v)),
+                               _expr= timeSteppingScaling*inner(Sigmat_newtonian,grad(v)),
                                _geomap=this->geomap() );
 #else
                 //auto StressTensorExprJac = Feel::vf::FSI::fluidMecNewtonianStressTensorJacobian(u,p,viscosityModel,false/*true*/);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= 2*idv(mu)*inner(deft,grad(v)),
+                               _expr= timeSteppingScaling*2*idv(mu)*inner(deft,grad(v)),
                                //_expr= inner( StressTensorExprJac, grad(v) ),
                                _geomap=this->geomap() );
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= -idt(p)*div(v),
+                               _expr= -timeSteppingScaling*idt(p)*div(v),
                                _geomap=this->geomap() );
 #endif
 
@@ -162,7 +170,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
             if ( BuildCstPart )
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= -idt(p)*div(v),
+                               _expr= -timeSteppingScaling*idt(p)*div(v),
                                _geomap=this->geomap() );
 
             if ( BuildNonCstPart )
@@ -171,7 +179,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
                                //_expr= inner( 2*sigma_powerlaw_viscous/*Sigmat_powerlaw*/,grad(v) ),
-                               _expr= inner( StressTensorExprJac,grad(v) ),
+                               _expr= timeSteppingScaling*inner( StressTensorExprJac,grad(v) ),
                                _geomap=this->geomap() );
             }
         } // non newtonian
@@ -205,7 +213,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     {
         double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
         auto norm2_uu = this->materialProperties()->fieldRho().functionSpace()->element(); // TODO : improve this (maybe create an expression instead)
-        norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
+        //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
+        auto fieldNormu = u.functionSpace()->compSpace()->element( norm2(idv(u)) );
+        auto maxu = fieldNormu.max( this->materialProperties()->fieldRho().functionSpace() );
+        //auto maxux = u[ComponentType::X].max( this->materialProperties()->fieldRho().functionSpace() );
+        //auto maxuy = u[ComponentType::Y].max( this->materialProperties()->fieldRho().functionSpace() );
+        //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(vec(idv(maxux),idv(maxux)))/h());
+        norm2_uu.on(_range=M_rangeMeshElements,_expr=idv(maxu)/h());
+        
         bilinearForm_PatternDefault +=
             integrate(_range=M_rangeMeshElements,
                       _expr=(1./pseudoTimeStepDelta)*idv(norm2_uu)*inner(idt(u),id(u)),

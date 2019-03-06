@@ -200,7 +200,7 @@ public:
 
     using pre_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
     using post_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
-    using update_nlsolve_type = std::function<void(int,vector_ptrtype,vector_ptrtype)>;
+    using update_nlsolve_type = typename solvernonlinear_type::update_iteration_type;
     //@}
 
     /** @name Constructors, destructor

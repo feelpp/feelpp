@@ -24,7 +24,7 @@ runApplicationHeat()
         if ( !heat->doRestart() )
             heat->exportResults(heat->timeInitial());
 
-        for ( ; !heat->timeStepBase()->isFinished(); heat->updateTimeStep() )
+        for ( heat->startTimeStep() ; !heat->timeStepBase()->isFinished(); heat->updateTimeStep() )
         {
             if (heat->worldComm().isMasterRank())
             {

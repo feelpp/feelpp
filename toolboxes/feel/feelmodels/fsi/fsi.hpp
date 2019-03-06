@@ -291,6 +291,7 @@ public :
     std::shared_ptr<TSBase> timeStepBase() const { return this->fluidTimeStepBase(); }
     std::shared_ptr<TSBase> fluidTimeStepBase() const { return this->fluidModel()->timeStepBase(); }
     std::shared_ptr<TSBase> solidTimeStepBase() const { return this->solidModel()->timeStepBase(); }
+    void startTimeStep();
     void updateTimeStep();
 
     void exportResults() { this->exportResults( this->currentTime() ); }
