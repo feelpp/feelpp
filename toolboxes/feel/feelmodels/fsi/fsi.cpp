@@ -1116,7 +1116,7 @@ FSI<FluidType,SolidType>::startTimeStep()
     }
 
 
-    //M_fluidModel->updateTimeStep();
+    M_fluidModel->startTimeStep();
     M_solidModel->startTimeStep();
     this->updateTime( M_fluidModel->currentTime() );
 }
