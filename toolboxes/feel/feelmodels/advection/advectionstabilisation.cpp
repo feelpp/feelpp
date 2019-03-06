@@ -140,7 +140,7 @@ void
 updateLinearPDEStabilizationGLS( AdvectionType const& adv, ModelAlgebraic::DataUpdateLinear & data )
 {
     bool BuildCstPart = data.buildCstPart();
-    bool BuildNonCstPart = !BuildCstPart;
+    //bool BuildNonCstPart = !BuildCstPart;
     if( BuildCstPart )
         return;
 
@@ -238,7 +238,7 @@ void
 updateLinearPDEStabilizationSUPG( AdvectionType const& adv, ModelAlgebraic::DataUpdateLinear & data )
 {
     bool BuildCstPart = data.buildCstPart();
-    bool BuildNonCstPart = !BuildCstPart;
+    //bool BuildNonCstPart = !BuildCstPart;
     if( BuildCstPart )
         return;
 
@@ -256,7 +256,6 @@ updateLinearPDEStabilizationSUPG( AdvectionType const& adv, ModelAlgebraic::Data
 
     ADRT adrType;
 
-    double sigma = adv.isStationary() ? 0: adv.timeStepBDF()->polyDerivCoefficient(0);
     auto u = idv(adv.fieldAdvectionVelocity());
     auto D = idv(adv.diffusionReactionModel()->fieldDiffusionCoeff());
     auto R = idv(adv.diffusionReactionModel()->fieldReactionCoeff());
@@ -335,7 +334,7 @@ void
 updateLinearPDEStabilizationSGS( AdvectionType const& adv, ModelAlgebraic::DataUpdateLinear & data )
 {
     bool BuildCstPart = data.buildCstPart();
-    bool BuildNonCstPart = !BuildCstPart;
+    //bool BuildNonCstPart = !BuildCstPart;
     if( BuildCstPart )
         return;
 

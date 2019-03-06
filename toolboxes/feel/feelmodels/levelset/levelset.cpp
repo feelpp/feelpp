@@ -1165,7 +1165,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
         //else
             //*M_dirac = M_projectorL2Scalar->project( Feel::FeelModels::levelsetDelta(psi, eps) );
     //}
-    auto const& psi = *this->phi();
 
     if ( M_useHeavisideDiracNodalProj )
         *M_dirac = vf::project( this->functionSpace(), this->rangeMeshElements(),
