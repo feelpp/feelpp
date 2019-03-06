@@ -68,9 +68,15 @@ Feel::po::options_description modelalgebraic_options(std::string const& prefix)
         (prefixvm(prefix,"graph-print-python-filename").c_str(), Feel::po::value< std::string >(), "filename python graph")
 
         (prefixvm(prefix,"pseudo-transient-continuation").c_str(), Feel::po::value<bool>()->default_value( false ), "use or not the pseudo-transient-continuation")
+        (prefixvm(prefix,"pseudo-transient-continuation.evolution").c_str(), Feel::po::value<std::string>()->default_value( "SER" ), "evolution method : SER, EXPur")
         (prefixvm(prefix,"pseudo-transient-continuation.delta0").c_str(), Feel::po::value<double>()->default_value( 1.0 ), "pseudo-transient-continuation parameter : delta0")
         (prefixvm(prefix,"pseudo-transient-continuation.delta-max").c_str(), Feel::po::value<double>()->default_value( 1.0e12 ), "pseudo-transient-continuation parameter : deltaMax")
         (prefixvm(prefix,"pseudo-transient-continuation.ser-variant").c_str(), Feel::po::value<std::string>()->default_value( "residual" ), "pseudo-transient-continuation ser variant : residual, solution")
+        (prefixvm(prefix,"pseudo-transient-continuation.expur.threshold-high").c_str(), Feel::po::value<double>()->default_value( 1. ), "pseudo-transient-continuation parameter : threshold-high")
+        (prefixvm(prefix,"pseudo-transient-continuation.expur.threshold-low").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "pseudo-transient-continuation parameter : threshold-low")
+        (prefixvm(prefix,"pseudo-transient-continuation.expur.beta-high").c_str(), Feel::po::value<double>()->default_value( 1.5 ), "pseudo-transient-continuation parameter : beta-high")
+        (prefixvm(prefix,"pseudo-transient-continuation.expur.beta-low").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "pseudo-transient-continuation parameter : beta-low")
+
         ;
     return appliBaseOptions.add( modelbase_options(prefix ) );//.add( backend_options( prefix ) );
 }
@@ -133,6 +139,10 @@ fluidMechanics_options(std::string const& prefix)
     fluidOptions.add_options()
         (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >(), "fluid model : Navier-Stokes,Stokes")
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "fluid solver")
+
+        (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
+        (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+
         ( prefixvm(prefix,"start-by-solve-newtonian").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-newtonian")
         ( prefixvm(prefix,"start-by-solve-stokes-stationary").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-stokes-stationary")
         ( prefixvm(prefix,"start-by-solve-stokes-stationary.do-export").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-stokes-stationary.do-export")
@@ -232,7 +242,7 @@ solidMechanics_options(std::string const& prefix)
          Feel::po::value< std::string >()->default_value("default"), "default, molecular-theory, molecular-theory-simo1985")
         (prefixvm(prefix,"formulation").c_str(), Feel::po::value<std::string>()->default_value( "displacement" ), "displacement,displacement-pressure")
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "struct solver")
-        (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("Newmark"), "time integration schema : Newmark, Generalized-Alpha")
+        (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("Newmark"), "time integration schema : Newmark, BDF, Theta")
         (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
 
         //(prefixvm(prefix,"time-rho").c_str(), Feel::po::value< double >()->default_value(0.8), " Generalized-Alpha parameter")

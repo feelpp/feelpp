@@ -409,27 +409,27 @@ FSI<FluidType,SolidType>::init()
 
     //-------------------------------------------------------------------------//
 
-    M_fluidModel->algebraicFactory()->addFunctionLinearAssembly( boost::bind( &self_type::updateLinearPDE_Fluid,
-                                                                              boost::ref( *this ), _1 ) );
-    M_fluidModel->algebraicFactory()->addFunctionJacobianAssembly( boost::bind( &self_type::updateJacobian_Fluid,
-                                                                                boost::ref( *this ), _1 ) );
-    M_fluidModel->algebraicFactory()->addFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Fluid,
-                                                                                boost::ref( *this ), _1 ) );
+    M_fluidModel->algebraicFactory()->addFunctionLinearAssembly( std::bind( &self_type::updateLinearPDE_Fluid,
+                                                                            std::ref( *this ), std::placeholders::_1 ) );
+    M_fluidModel->algebraicFactory()->addFunctionJacobianAssembly( std::bind( &self_type::updateJacobian_Fluid,
+                                                                              std::ref( *this ), std::placeholders::_1 ) );
+    M_fluidModel->algebraicFactory()->addFunctionResidualAssembly( std::bind( &self_type::updateResidual_Fluid,
+                                                                              std::ref( *this ), std::placeholders::_1 ) );
     // M_fluidModel->algebraicFactory()->addFunctionLinearPostAssembly( boost::bind( &self_type::updateLinearPDEStrongDirichletBC_Fluid,
     //                                                                               boost::ref( *this ), _1, _2 ) );
     if ( M_solidModel->isStandardModel() )
     {
-        M_solidModel->algebraicFactory()->addFunctionLinearAssembly( boost::bind( &self_type::updateLinearPDE_Solid,
-                                                                                  boost::ref( *this ), _1 ) );
-        M_solidModel->algebraicFactory()->addFunctionJacobianAssembly( boost::bind( &self_type::updateJacobian_Solid,
-                                                                                    boost::ref( *this ), _1 ) );
-        M_solidModel->algebraicFactory()->addFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Solid,
-                                                                                    boost::ref( *this ), _1 ) );
+        M_solidModel->algebraicFactory()->addFunctionLinearAssembly( std::bind( &self_type::updateLinearPDE_Solid,
+                                                                                std::ref( *this ), std::placeholders::_1 ) );
+        M_solidModel->algebraicFactory()->addFunctionJacobianAssembly( std::bind( &self_type::updateJacobian_Solid,
+                                                                                  std::ref( *this ), std::placeholders::_1 ) );
+        M_solidModel->algebraicFactory()->addFunctionResidualAssembly( std::bind( &self_type::updateResidual_Solid,
+                                                                                  std::ref( *this ), std::placeholders::_1 ) );
     }
     else if ( M_solidModel->is1dReducedModel() )
     {
-        M_solidModel->algebraicFactory1dReduced()->addFunctionLinearAssembly( boost::bind( &self_type::updateLinearPDE_Solid1dReduced,
-                                                                                           boost::ref( *this ), _1 ) );
+        M_solidModel->algebraicFactory1dReduced()->addFunctionLinearAssembly( std::bind( &self_type::updateLinearPDE_Solid1dReduced,
+                                                                                         std::ref( *this ), std::placeholders::_1 ) );
     }
     this->log("FSI","init","finish");
 }
@@ -766,7 +766,7 @@ FSI<FluidType,SolidType>::solveImpl1()
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
-        M_fluidModel->setRebuildCstPartInResidual(true);M_solidModel->setRebuildCstPartInResidual(true);
+        //M_fluidModel->setRebuildCstPartInResidual(true);M_solidModel->setRebuildCstPartInResidual(true);
     }
 
     // predictor disp
@@ -871,13 +871,13 @@ FSI<FluidType,SolidType>::solveImpl2()
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
-        M_fluidModel->setRebuildCstPartInResidual(true);M_solidModel->setRebuildCstPartInResidual(true);
+        //M_fluidModel->setRebuildCstPartInResidual(true);M_solidModel->setRebuildCstPartInResidual(true);
     }
     bool useAitken = boption(_name="coupling-nitsche-family.use-aitken",_prefix=this->prefix());
     if ( useAitken )
         this->aitkenRelaxTool()->restart();
 
-    bool solveStruct = this->fluidModel()->timeStepBDF()->iteration() > 1 || this->fixPointMaxIt()==1;
+    bool solveStruct = true;//this->fluidModel()->timeStepBDF()->iteration() > 1 || this->fixPointMaxIt()==1;
 
     bool hasConverged = false;
     int cptFSI=0;
@@ -1099,6 +1099,30 @@ FSI<FluidType,SolidType>::updateTime(double time)
 
 template< class FluidType, class SolidType >
 void
+FSI<FluidType,SolidType>::startTimeStep()
+{
+    // need to transfert some quantities because theta scheme require a residual evaluation at previous
+    // this evaluation is done when call M_solidModel->startTimeStep()
+    if ( M_solidModel->timeStepping() == "Theta" )
+    {
+        this->transfertStress();
+        if ( ( this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" ||
+               this->fsiCouplingBoundaryCondition()=="nitsche" ) &&
+             M_solidModel->isStandardModel() )
+        {
+            bool useExtrap = boption(_prefix=this->prefix(),_name="transfert-velocity-F2S.use-extrapolation");
+            this->transfertVelocityF2S(0,useExtrap);
+        }
+    }
+
+
+    M_fluidModel->startTimeStep();
+    M_solidModel->startTimeStep();
+    this->updateTime( M_fluidModel->currentTime() );
+}
+
+template< class FluidType, class SolidType >
+void
 FSI<FluidType,SolidType>::updateTimeStep()
 {
     M_previousTimeOrder=M_fluidModel->timeStepBDF()->timeOrder();
@@ -1108,7 +1132,7 @@ FSI<FluidType,SolidType>::updateTimeStep()
 
     M_currentTimeOrder=M_fluidModel->timeStepBDF()->timeOrder();
 
-    this->updateTime( this->timeStepBase()->time() );
+    this->updateTime( M_fluidModel->currentTime() );
 }
 
 //---------------------------------------------------------------------------------------------------------//

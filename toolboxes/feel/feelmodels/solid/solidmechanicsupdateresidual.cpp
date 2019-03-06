@@ -36,12 +36,16 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     double timeSteppingScaling = 1.;
     bool timeSteppingThetaAssemblePreviousContrib = data.hasInfo( "Theta-Time-Stepping-Previous-Contrib" );
-    if ( !this->isStationary() && M_timeStepping == "Theta" )
+    if ( !this->isStationary() )
     {
-        if ( timeSteppingThetaAssemblePreviousContrib )
-            timeSteppingScaling = 1. - M_timeStepThetaValue;
-        else
-            timeSteppingScaling = M_timeStepThetaValue;
+        if ( M_timeStepping == "Theta" )
+        {
+            if ( timeSteppingThetaAssemblePreviousContrib )
+                timeSteppingScaling = 1. - M_timeStepThetaValue;
+            else
+                timeSteppingScaling = M_timeStepThetaValue;
+        }
+        data.addDoubleInfo( prefixvm(this->prefix(),"timeSteppingScaling"), timeSteppingScaling );
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -464,13 +468,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U 
         auto const& listMarkerPoints = std::get<2>( ret );
         if ( !listMarkerFaces.empty() )
             u.on(_range=markedfaces(mesh,listMarkerFaces ),
-                 _expr=expression(d) );
+                 _expr=expression(d,this->symbolsExpr()) );
         if ( !listMarkerEdges.empty() )
             u.on(_range=markededges(mesh,listMarkerEdges),
-                 _expr=expression(d) );
+                 _expr=expression(d,this->symbolsExpr()) );
         if ( !listMarkerPoints.empty() )
             u.on(_range=markedpoints(mesh,listMarkerPoints),
-                 _expr=expression(d) );
+                 _expr=expression(d,this->symbolsExpr()) );
     }
     for ( auto const& bcDirComp : M_bcDirichletComponents )
     {
@@ -483,13 +487,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U 
             auto const& listMarkerPoints = std::get<2>( ret );
             if ( !listMarkerFaces.empty() )
                 u[comp].on(_range=markedfaces(mesh,listMarkerFaces ),
-                           _expr=expression(d) );
+                           _expr=expression(d,this->symbolsExpr()) );
             if ( !listMarkerEdges.empty() )
                 u[comp].on(_range=markededges(mesh,listMarkerEdges),
-                           _expr=expression(d) );
+                           _expr=expression(d,this->symbolsExpr()) );
             if ( !listMarkerPoints.empty() )
                 u[comp].on(_range=markedpoints(mesh,listMarkerPoints),
-                           _expr=expression(d) );
+                           _expr=expression(d,this->symbolsExpr()) );
         }
     }
 
@@ -518,17 +522,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual( vector_ptrtype& R, 
     for( auto const& d : this->M_bcNeumannScalar )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                       _expr= -timeSteppingScaling*expression(d)*inner( N(),id(v) ),
+                       _expr= -timeSteppingScaling*expression(d,this->symbolsExpr())*inner( N(),id(v) ),
                        _geomap=this->geomap() );
     for( auto const& d : this->M_bcNeumannVectorial )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,name(d)) ),
-                       _expr= -timeSteppingScaling*inner( expression(d),id(v) ),
+                       _expr= -timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
                        _geomap=this->geomap() );
     for( auto const& d : this->M_bcNeumannTensor2 )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,name(d)) ),
-                       _expr= -timeSteppingScaling*inner( expression(d)*N(),id(v) ),
+                       _expr= -timeSteppingScaling*inner( expression(d,this->symbolsExpr())*N(),id(v) ),
                        _geomap=this->geomap() );
 }
 
@@ -548,7 +552,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinResidual(element_displacement_e
     for( auto const& d : this->M_bcRobin )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)/*this->markerRobinBC()*/),
-                       _expr= timeSteppingScaling*inner( expression1(d)(0,0)*idv(u) - expression2(d) ,id(u) ),
+                       _expr= timeSteppingScaling*inner( expression1(d,this->symbolsExpr())(0,0)*idv(u) - expression2(d,this->symbolsExpr()) ,id(u) ),
                        _geomap=this->geomap() );
 
 }
@@ -571,7 +575,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermResidual( vector_ptrtype& R,
         auto rangeBodyForceUsed = markers(d).empty()? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
         myLinearForm +=
             integrate( _range=rangeBodyForceUsed,
-                       _expr= -timeSteppingScaling*inner( expression(d),id(v) ),
+                       _expr= -timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
                        _geomap=this->geomap() );
     }
 }
@@ -589,21 +593,21 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureResidual( element_di
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)),
-                       _expr= -timeSteppingScaling*expression(d)*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*N(),id(u) ),
+                       _expr= -timeSteppingScaling*expression(d,this->symbolsExpr())*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*N(),id(u) ),
                        _geomap=this->geomap() );
     }
     for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)),
-                       _expr= -timeSteppingScaling*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*expression(d),id(u) ),
+                       _expr= -timeSteppingScaling*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*expression(d,this->symbolsExpr()),id(u) ),
                        _geomap=this->geomap() );
     }
     for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)),
-                       _expr= -timeSteppingScaling*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*expression(d)*N(),id(u) ),
+                       _expr= -timeSteppingScaling*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*expression(d,this->symbolsExpr())*N(),id(u) ),
                        _geomap=this->geomap() );
     }
 }
