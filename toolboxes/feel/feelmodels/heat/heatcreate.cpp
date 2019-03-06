@@ -257,9 +257,14 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
     this->log("Heat","initTimeStep", "start" );
     this->timerTool("Constructor").start();
 
-    std::string suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
+    std::string suffixName = "";
+    if ( myFileFormat == "binary" )
+        std::string suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+    fs::path saveTsDir = fs::path(this->rootRepository())/fs::path( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ts")) );
+
     M_bdfTemperature = bdf( _space=this->spaceTemperature(),
-                            _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature"+suffixName)),
+                            _name="temperature"+suffixName,
                             _prefix=this->prefix(),
                             // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
                             _initial_time=this->timeInitial(),
@@ -268,29 +273,24 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
                             _restart=this->doRestart(),
                             _restart_path=this->restartPath(),
                             _restart_at_last_save=this->restartAtLastSave(),
-                            _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+                            _save=this->tsSaveInFile(), _format=myFileFormat, _freq=this->tsSaveFreq() );
+    M_bdfTemperature->setPathSave( ( saveTsDir/"temperature" ).string() );
 
-    M_bdfTemperature->setPathSave( (fs::path(this->rootRepository()) /
-                                    fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%") %M_bdfTemperature->bdfOrder() %this->timeStep() ).str() ) ) ).string() );
-
-    // start or restart time step scheme
     if (!this->doRestart())
     {
-        // start time step
-        M_bdfTemperature->start(this->fieldTemperature());
         // up current time
-        this->updateTime( M_bdfTemperature->time() );
+        this->updateTime( M_bdfTemperature->timeInitial() );
     }
     else
     {
         // start time step
-        M_bdfTemperature->restart();
+        double tir = M_bdfTemperature->restart();
         // load a previous solution as current solution
         *this->fieldTemperaturePtr() = M_bdfTemperature->unknown(0);
         // up initial time
-        this->setTimeInitial( M_bdfTemperature->timeInitial() );
+        this->setTimeInitial( tir );
         // up current time
-        this->updateTime( M_bdfTemperature->time() );
+        this->updateTime( tir );
     }
 
     double tElapsed = this->timerTool("Constructor").stop("initTimeStep");
@@ -798,12 +798,26 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     }
 }
 
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::startTimeStep()
+{
+    this->log("Heat","startTimeStep", "start");
+
+    // start time step
+    if (!this->doRestart())
+        M_bdfTemperature->start(this->fieldTemperature());
+     // up current time
+    this->updateTime( M_bdfTemperature->time() );
+
+    this->log("Heat","startTimeStep", "finish");
+}
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::updateBdf()
+HEAT_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
-    this->log("Heat","updateBdf", "start");
+    this->log("Heat","updateTimeStep", "start");
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
@@ -831,9 +845,9 @@ HEAT_CLASS_TEMPLATE_TYPE::updateBdf()
         }
     }
 
-    this->timerTool("TimeStepping").stop("updateBdf");
+    this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
-    this->log("Heat","updateBdf", "finish");
+    this->log("Heat","updateTimeStep", "finish");
 }
 
 } // end namespace FeelModels
