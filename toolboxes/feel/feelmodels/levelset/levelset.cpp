@@ -1035,6 +1035,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         auto const& injectorPTree = this->modelProperties().pTree().get_child( "BoundaryConditions."+this->prefix()+".ParticleInjector."+injectorMarker );
         particleInjector->setFixedParticleParams( particleInjector->levelsetParticleShapes()->readShapeParams( particleInjectorShape, injectorPTree ) );
 
+        // Injector particle number
+        int nParticles = 1; // default
+        std::pair<bool, int> nParticlesRead = this->modelProperties().boundaryConditions().iparam( this->prefix(), "ParticleInjector", injectorMarker, "nparticles" );
+        if( nParticlesRead.first )
+        {
+            nParticles = nParticlesRead.second;
+        }
+        particleInjector->setNParticles( nParticles );
+
         M_levelsetParticleInjectors.push_back( particleInjector );
     }
 }
