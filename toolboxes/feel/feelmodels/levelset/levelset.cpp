@@ -1022,18 +1022,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         }
         particleInjector->setParticleInjectionMethod( particleInjectorMethod );
 
-        // Injector shape
-        std::string particleInjectorShape = "sphere"; // default value
-        std::pair<bool, std::string> particleInjectorShapeRead = this->modelProperties().boundaryConditions().sparam( this->prefix(), "ParticleInjector", injectorMarker, "shape" );
-        if( particleInjectorShapeRead.first )
-        {
-            particleInjectorShape = particleInjectorShapeRead.second;
-        }
-        particleInjector->setParticleShape( particleInjectorShape );
-
-        // Injector shape params
+        // Injector particles
         auto const& injectorPTree = this->modelProperties().pTree().get_child( "BoundaryConditions."+this->prefix()+".ParticleInjector."+injectorMarker );
-        particleInjector->setFixedParticleParams( particleInjector->levelsetParticleShapes()->readShapeParams( particleInjectorShape, injectorPTree ) );
+        if( auto const& injectorParticlesPTree = injectorPTree.get_child_optional( "particles" ) )
+        {
+            // read all particles with form "id": { "shape":[shape], [params]... }
+            for( auto const& part: *injectorParticlesPTree )
+            {
+                std::string partId = part.first;
+                std::string partShape = part.second.template get<std::string>( "shape" );
+                parameter_map partParams = particleInjector->levelsetParticleShapes()->readShapeParams( partShape, part.second );
+                particleInjector->addParticle( partId, partShape, partParams );
+            }
+        }
 
         // Injector particle number
         int nParticles = 1; // default
