@@ -37,7 +37,7 @@ runApplicationMultiFluid()
     std::shared_ptr<space_velocity_surfdiv_type> spaceSurfDivU;
     std::shared_ptr<Exporter<typename model_multifluid_type::mesh_type>> surfDivUExporter;
 
-    for( ; !MFModel->timeStepBase()->isFinished(); MFModel->updateTimeStep() )
+    for( MFModel->startTimeStep(); !MFModel->timeStepBase()->isFinished(); MFModel->updateTimeStep() )
     {
             Feel::cout << "============================================================\n";
             Feel::cout << "time simulation: " << MFModel->time() << "s \n";

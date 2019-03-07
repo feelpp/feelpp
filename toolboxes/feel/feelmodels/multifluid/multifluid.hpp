@@ -241,6 +241,7 @@ public:
     std::shared_ptr<TSBase> fluidTimeStepBase() const { return this->timeStepBase(); }
     std::shared_ptr<TSBase> levelsetTimeStepBase( std::string const& name) const { return this->levelsetModel(name)->timeStepBase(); }
     //void updateTime( double time );
+    void startTimeStep();
     void updateTimeStep();
 
     //--------------------------------------------------------------------//
