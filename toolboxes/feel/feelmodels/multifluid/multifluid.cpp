@@ -113,7 +113,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if( this->M_hasInextensibilityLM )
         this->updateInextensibilityLM();
     // Build algebraic data
-    this->buildBlockVector();
     if( this->useImplicitCoupling() || this->hasInextensibilityLM() )
     {
         if( buildModelAlgebraicFactory )
@@ -144,6 +143,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                 boost::bind( &self_type::updateResidualInextensibility, this, _1 ), "Inextensibility"
                 );
     }
+    this->buildBlockVector();
     // Do not request matrix/vector update since they were just updated
     M_doRebuildMatrixVector = false;
 
@@ -1175,6 +1175,18 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateParameterValues()
     //// This
     //super_type::updateTime(time);
 //}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::startTimeStep()
+{
+    this->log("MultiFluid", "startTimeStep", "start");
+
+    this->fluidModel()->startTimeStep();
+    this->updateTime( this->timeStepBase()->time() );
+
+    this->log("MultiFluid", "startTimeStep", "finish");
+}
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
