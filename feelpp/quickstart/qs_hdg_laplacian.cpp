@@ -245,7 +245,7 @@ int hdg_laplacian()
                             _expr=( idt(phat)*(leftface(normal(v))+
                                                rightface(normal(v)))) );
 
-    a(0_c,2_c) += integrate(_range=boundaryfaces(mesh),
+    a(0_c,2_c) += integrate(_range=complement_integral_bdy,
                             _expr=idt(phat)*(normal(v)));
     toc("a(0,2)",FLAGS_v>0);
 
@@ -276,7 +276,7 @@ int hdg_laplacian()
                             ( leftface( id(w) )+
                               rightface( id(w) )));
 
-    a(1_c,2_c) += integrate(_range=boundaryfaces(mesh),
+    a(1_c,2_c) += integrate(_range=complement_integral_bdy,
                             _expr=tau_constant * idt(phat) * id(w) );
     toc("a(1,2)",FLAGS_v>0);
 
