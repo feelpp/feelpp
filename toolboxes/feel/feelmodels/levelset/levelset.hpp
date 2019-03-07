@@ -41,6 +41,7 @@
 #include <feel/feelmodels/levelset/reinitializer.hpp>
 #include <feel/feelmodels/levelset/reinitializer_fm.hpp>
 #include <feel/feelmodels/levelset/reinitializer_hj.hpp>
+#include <feel/feelmodels/levelset/levelsetparticleinjector.hpp>
 
 #include <feel/feelfilters/straightenmesh.hpp>
 
@@ -220,6 +221,9 @@ public:
         SPHERE, ELLIPSE
     };
     static std::map<std::string, ShapeType> ShapeTypeMap;
+    // Particle injector
+    typedef LevelSetParticleInjector<self_type> levelsetparticleinjector_type;
+    typedef std::shared_ptr<levelsetparticleinjector_type> levelsetparticleinjector_ptrtype;
 
     //--------------------------------------------------------------------//
     // Backend
@@ -545,7 +549,7 @@ protected:
 private:
     void loadParametersFromOptionsVm();
     void loadConfigICFile();
-    void loadConfigBCFile();
+    void initBoundaryConditions();
     void loadConfigPostProcess();
 
     void createFunctionSpaces();
@@ -744,6 +748,10 @@ private:
     double M_extensionVelocityNitscheGamma;
     mutable sparse_matrix_ptrtype M_extensionVelocityLHSMatrix;
     mutable vector_ptrtype M_extensionVelocityRHSVector;
+
+    //--------------------------------------------------------------------//
+    // Particle injectors
+    std::vector<levelsetparticleinjector_ptrtype> M_levelsetParticleInjectors;
     
     //--------------------------------------------------------------------//
     // Export

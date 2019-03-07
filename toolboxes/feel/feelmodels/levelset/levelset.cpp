@@ -111,8 +111,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     this->loadParametersFromOptionsVm();
     // Load initial value
     this->loadConfigICFile();
-    // Load boundary conditions
-    this->loadConfigBCFile();
     // Load post-process
     this->loadConfigPostProcess();
     // Get periodicity from options (if needed)
@@ -174,6 +172,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
         // Set levelset initial value
         this->initLevelsetValue();
     }
+    // Init boundary conditions
+    this->initBoundaryConditions();
     // Init advection toolbox
     M_advectionToolbox->init();
     M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
@@ -996,14 +996,46 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
+LEVELSET_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
     M_bcMarkersInflow.clear();
+    M_levelsetParticleInjectors.clear();
 
+    // Inflow BC
     for( std::string const& bcMarker: this->modelProperties().boundaryConditions().markers( this->prefix(), "inflow" ) )
     {
         if( std::find(M_bcMarkersInflow.begin(), M_bcMarkersInflow.end(), bcMarker) == M_bcMarkersInflow.end() )
             M_bcMarkersInflow.push_back( bcMarker );
+    }
+
+    // Particle injectors
+    for( std::string const& injectorMarker: this->modelProperties().boundaryConditions().markers( this->prefix(), "ParticleInjector" ) )
+    {
+        auto particleInjector = std::make_shared<levelsetparticleinjector_type>( this->shared_from_this(), injectorMarker );
+
+        // Injector method
+        std::string particleInjectorMethod = "fixed_position"; // default value
+        std::pair<bool, std::string> particleInjectorMethodRead = this->modelProperties().boundaryConditions().sparam( this->prefix(), "ParticleInjector", injectorMarker, "method" );
+        if( particleInjectorMethodRead.first )
+        {
+            particleInjectorMethod = particleInjectorMethodRead.second;
+        }
+        particleInjector->setParticleInjectionMethod( particleInjectorMethod );
+
+        // Injector shape
+        std::string particleInjectorShape = "sphere"; // default value
+        std::pair<bool, std::string> particleInjectorShapeRead = this->modelProperties().boundaryConditions().sparam( this->prefix(), "ParticleInjector", injectorMarker, "shape" );
+        if( particleInjectorShapeRead.first )
+        {
+            particleInjectorShape = particleInjectorShapeRead.second;
+        }
+        particleInjector->setParticleShape( particleInjectorShape );
+
+        // Injector shape params
+        auto const& injectorPTree = this->modelProperties().pTree().get_child( "BoundaryConditions."+this->prefix()+".ParticleInjector."+injectorMarker );
+        particleInjector->setFixedParticleParams( particleInjector->levelsetParticleShapes()->readShapeParams( particleInjectorShape, injectorPTree ) );
+
+        M_levelsetParticleInjectors.push_back( particleInjector );
     }
 }
 
@@ -2144,6 +2176,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
         // Request update interface-related quantities again since phi has changed
         // Note that updateInterfaceQuantities has lazy evaluation
         this->updateInterfaceQuantities();
+    }
+
+    if( !M_levelsetParticleInjectors.empty() )
+    {
+        auto const& phi = this->phi();
+        // Inject particles
+        for( auto const& particleInjector: M_levelsetParticleInjectors )
+        {
+            *phi = particleInjector->inject( *phi );
+        }
     }
 
     // Reset hasReinitialized
