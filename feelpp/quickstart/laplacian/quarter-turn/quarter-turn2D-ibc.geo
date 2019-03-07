@@ -14,5 +14,6 @@ Line(4) = {2, 3};
 Line Loop(5) = {3, -2, -4, 1};
 Plane Surface(6) = {5};
 Physical Surface("omega") = {6};
-Physical Line("Dirichlet") = {3,4};
+Physical Line("Ibc") = {3};
+Physical Line("Dirichlet") = {4};
 Physical Line("Neumann") = {1, 2};
