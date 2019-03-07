@@ -63,6 +63,11 @@ public:
         FIXED_POSITION
     };
     static const std::map<std::string, ParticleInjectionMethod> ParticleInjectionMethodIdMap;
+    // Particles
+    struct Particle {
+        LevelSetShapeType shape;
+        parameter_map parameters;
+    };
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -82,9 +87,15 @@ public:
     boost::any const& injectorMarkers() const { return M_injectorMarkers; }
     //void setInjectorMarkers( boost::any const& markers ) { M_injectorMarkers = markers; }
 
-    LevelSetShapeType particleShape() const { return M_particleShape; }
-    void setParticleShape( LevelSetShapeType shape ) { M_particleShape = shape; }
-    void setParticleShape( std::string const& shape );
+    LevelSetShapeType particleShape( std::string const& id ) const { return M_particles.at(id).shape; }
+    void setParticleShape( std::string const& id, LevelSetShapeType shape ) { M_particles[id].shape = shape; }
+    void setParticleShape( std::string const& id, std::string const& shape );
+
+    parameter_map const& particleParams( std::string const& id ) const { return M_particles.at(id).parameters; }
+    void setParticleParams( std::string const& id, parameter_map const& params ) { M_particles[id].parameters = params; }
+
+    void addParticle( std::string const& id, LevelSetShapeType shape, parameter_map const& params );
+    void addParticle( std::string const& id, std::string const& shape, parameter_map const& params );
 
     ParticleInjectionMethod particleInjectionMethod() const { return M_particleInjectionMethod; }
     void setParticleInjectionMethod( ParticleInjectionMethod method ) { M_particleInjectionMethod = method; }
@@ -116,12 +127,12 @@ private:
     // Injector function space
     functionspace_ptrtype M_spaceInjector;
     //--------------------------------------------------------------------//
-    // Particle shapes
+    // Particle shapes creator
     levelsetparticleshapes_ptrtype M_levelsetParticleShapes;
     //--------------------------------------------------------------------//
     // Parameters
     boost::any M_injectorMarkers;
-    LevelSetShapeType M_particleShape;
+    std::map<std::string, Particle> M_particles;
     ParticleInjectionMethod M_particleInjectionMethod;
     uint16_type M_nParticles;
     double M_particleDensityThreshold;
@@ -146,9 +157,9 @@ LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_DECLARATIONS
 LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::LevelSetParticleInjector( levelset_ptrtype const& ls, boost::any const& markers )
     : M_levelset( ls ),
       M_injectorMarkers( markers ),
-      M_particleShape( LevelSetShapeType::SPHERE ),
+      M_particles(),
       M_particleInjectionMethod( ParticleInjectionMethod::FIXED_POSITION ),
-      M_nParticles( 1 ),
+      M_nParticles( 0 ),
       M_particleDensityThreshold( 1e-6 )
 {
     M_spaceInjector = functionspace_type::New( 
@@ -161,10 +172,25 @@ LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::LevelSetParticleInjector( levelset
 
 LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::setParticleShape( std::string const& shape )
+LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::setParticleShape( std::string const& id, std::string const& shape )
 {
     CHECK( LevelSetShapeTypeIdMap.count( shape ) ) << shape << " is not in the list of supported particle shapes\n";
-    this->setParticleShape( LevelSetShapeTypeIdMap.at( shape ) );
+    this->setParticleShape( id, LevelSetShapeTypeIdMap.at( shape ) );
+}
+
+LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::addParticle( std::string const& id, LevelSetShapeType shape, parameter_map const& params )
+{
+    M_particles[id] = { shape, params };
+}
+
+LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::addParticle( std::string const& id, std::string const& shape, parameter_map const& params )
+{
+    CHECK( LevelSetShapeTypeIdMap.count( shape ) ) << shape << " is not in the list of supported particle shapes\n";
+    this->addParticle( id, LevelSetShapeTypeIdMap.at(shape), params );
 }
 
 LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_DECLARATIONS
@@ -200,7 +226,15 @@ LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::inject( element_levelset_type cons
         {
             case ParticleInjectionMethod::FIXED_POSITION:
             {
-                *phiParticles = this->levelsetParticleShapes()->create( this->particleShape(), M_fixedParticleParams, true );
+                for( auto const& particle: M_particles )
+                {
+                    auto const newPart = this->levelsetParticleShapes()->create( particle.second.shape, particle.second.parameters, true );
+                    *phiParticles = vf::project(
+                            _space=this->functionSpaceInjector(),
+                            _range=rangeInjectorElements,
+                            _expr=vf::min( idv(phiParticles), idv(newPart) )
+                            );
+                }
             }
             break;
         }
