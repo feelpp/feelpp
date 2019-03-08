@@ -74,7 +74,8 @@ void defHDGPoisson( py::module& m )
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize the heat mechanics toolbox"
              )
-        .def("init",static_cast<void (toolbox_t::*)(mesh_ptr_t, mesh_ptr_t)>(&toolbox_t::init), "initialize the HDG toolbox",py::arg("mesh")=nullptr,py::arg("mesh_visu")=nullptr)
+        //.def("init",static_cast<void (toolbox_t::*)()>(&toolbox_t::init), "initialize the HDG toolbox")
+        .def("init",static_cast<void (toolbox_t::*)(mesh_ptr_t, mesh_ptr_t)>(&toolbox_t::init), "initialize the HDG toolbox",py::arg("mesh")=(mesh_ptr_t)nullptr,py::arg("mesh_visu")=(mesh_ptr_t)nullptr)
         // mesh
         .def( "mesh", &toolbox_t::mesh, "get the mesh" )
         // elements
@@ -90,8 +91,8 @@ void defHDGPoisson( py::module& m )
         // solve
         .def("solve",&toolbox_t::solve, "solve the HDG poisson problem")
 
-        .def("exportResults",static_cast<void (toolbox_t::*)(mesh_ptr_t, op_interp_ptr_t, opv_interp_ptr_t)>(&toolbox_t::exportResults), "export the results of the heat mechanics problem",py::arg("mesh")=nullptr,py::arg("Idh")=nullptr,py::arg("Idhv")=nullptr)
-        .def("exportResults",static_cast<void (toolbox_t::*)( double, mesh_ptr_t, op_interp_ptr_t, opv_interp_ptr_t )>(&toolbox_t::exportResults), "export the results of the heat mechanics problem", py::arg("time"),py::arg("mesh")=nullptr,py::arg("Idh")=nullptr,py::arg("Idhv")=nullptr)
+        .def("exportResults",static_cast<void (toolbox_t::*)(mesh_ptr_t, op_interp_ptr_t, opv_interp_ptr_t)>(&toolbox_t::exportResults), "export the results of the heat mechanics problem",py::arg("mesh")=(mesh_ptr_t)nullptr,py::arg("Idh")=(op_interp_ptr_t)nullptr,py::arg("Idhv")=(opv_interp_ptr_t)nullptr)
+        .def("exportResults",static_cast<void (toolbox_t::*)( double, mesh_ptr_t, op_interp_ptr_t, opv_interp_ptr_t )>(&toolbox_t::exportResults), "export the results of the heat mechanics problem", py::arg("time"),py::arg("mesh")=(mesh_ptr_t)nullptr,py::arg("Idh")=(op_interp_ptr_t)nullptr,py::arg("Idhv")=(opv_interp_ptr_t)nullptr)
         ;
 
 }
