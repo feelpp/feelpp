@@ -20,6 +20,10 @@
     {
         "potential":
         {
+            "SourceTerm":
+            {
+                "" : { "expr":"0"}
+            },
             "Dirichlet":
             {
                 "in":

@@ -26,6 +26,7 @@
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelpython/pyexpr.hpp>
+#include <feel/feelmesh/complement.hpp>
 namespace Feel {
 
 
@@ -75,6 +76,10 @@ int hdg_laplacian()
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
 
+    tic();
+    auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
+    toc("mesh",true);
+
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
     
@@ -95,6 +100,8 @@ int hdg_laplacian()
     auto u_exact = expr<Dim,1>( u_exact_str );
     auto un_exact = expr( locals.at("un") );
     auto f_exact = expr( locals.at("f") );
+    auto ibc_exact_d = integrate(markedfaces(mesh,"Ibc"), un_exact).evaluate()(0,0);
+    auto ibc_exact = cst(ibc_exact_d);
 #else
     std::string p_exact_str = soption("solution.p");
     std::string u_exact_str = soption("solution.u");
@@ -102,10 +109,8 @@ int hdg_laplacian()
     auto u_exact = expr<Dim,1>(u_exact_str);
     auto un_exact = trans(u_exact)*N();
     auto f_exact = expr( soption( "functions.f") );
+    auto ibc_exact = expr( soption("functions.i") );
 #endif
-    tic();
-    auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
-    toc("mesh",true);
 
     // ****** Hybrid-mixed formulation ******
     // We treat Vh, Wh, and Mh separately
@@ -113,8 +118,17 @@ int hdg_laplacian()
 
     auto Vh = Pdhv<OrderP>( mesh, true );
     auto Wh = Pdh<OrderP>( mesh, true );
-    auto face_mesh = createSubmesh( mesh, faces(mesh ), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto complement_integral_bdy = complement(faces(mesh),[mesh]( auto const& ewrap ) {
+                                                                auto const& e = unwrap_ref( ewrap );
+                                                                if ( e.hasMarker() && e.marker().value() == mesh->markerName( "Ibc" ) )
+                                                                    return true;
+                                                                return false; });
+
+    auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
+    // auto face_mesh = createSubmesh( mesh, faces(mesh ), EXTRACTION_KEEP_MESH_RELATION, 0 );
     auto Mh = Pdh<OrderP>( face_mesh,true );
+    auto ibc_mesh = createSubmesh( mesh, markedfaces(mesh, "Ibc"), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto Ch = Pch<0>( ibc_mesh, true );
 
     toc("spaces",true);
     auto P0dh = Pdh<0>(mesh);
@@ -181,9 +195,13 @@ int hdg_laplacian()
     auto w = Wh->element( "w" );
     auto phat = Mh->element( "phat" );
     auto l = Mh->element( "lambda" );
+    auto mu = Ch->element( "mu" );
+    auto nu = Ch->element( "nu" );
 
     tic();
-    auto ps = product( Vh, Wh, Mh );
+    int nbIbc = nelements(markedfaces(mesh,"Ibc"),true) >= 1 ? 1 : 0;
+    auto ibcSpaces = std::make_shared<ProductSpace<decltype(Ch),true> >( nbIbc, Ch);
+    auto ps = product2( ibcSpaces, Vh, Wh, Mh );
     toc("space",true);
     tic();
     solve::strategy strategy = boption("sc.condense")?solve::strategy::static_condensation:solve::strategy::monolithic;
@@ -204,7 +222,11 @@ int hdg_laplacian()
                           _expr=id(l)*un_exact );
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                           _expr=id(l)*p_exact);
-    
+    double meas = integrate( _range=markedfaces(mesh, "Ibc"),
+                             _expr=cst(1.)).evaluate()(0,0);
+    rhs(3_c,0) += integrate( _range=markedfaces(mesh,"Ibc"),
+                            _expr=ibc_exact*id(nu)/meas);
+
     toc("rhs",true);
     tic();
     //
@@ -223,9 +245,14 @@ int hdg_laplacian()
                             _expr=( idt(phat)*(leftface(normal(v))+
                                                rightface(normal(v)))) );
 
-    a(0_c,2_c) += integrate(_range=boundaryfaces(mesh),
+    a(0_c,2_c) += integrate(_range=complement_integral_bdy,
                             _expr=idt(phat)*(normal(v)));
     toc("a(0,2)",FLAGS_v>0);
+
+    tic();
+    a(0_c,3_c,0,0) += integrate(_range=markedfaces(mesh,"Ibc"),
+                                _expr=idt(mu)*(trans(id(u))*N()) );
+    toc("a(0,3)",FLAGS_v>0);
 
     //
     // Second row a(1_c,:)
@@ -249,9 +276,14 @@ int hdg_laplacian()
                             ( leftface( id(w) )+
                               rightface( id(w) )));
 
-    a(1_c,2_c) += integrate(_range=boundaryfaces(mesh),
+    a(1_c,2_c) += integrate(_range=complement_integral_bdy,
                             _expr=tau_constant * idt(phat) * id(w) );
     toc("a(1,2)",FLAGS_v>0);
+
+    tic();
+    a(1_c,3_c,1,0) += integrate( _range=markedfaces(mesh,"Ibc"),
+                                 _expr=tau_constant*idt(mu)*id(w) );
+    toc("a(1,3)", FLAGS_v>0);
 
     //
     // Third row a(2_c,:)
@@ -287,6 +319,23 @@ int hdg_laplacian()
                             _expr=idt(phat) * id(l) );
     toc("a(2,2)",FLAGS_v>0);
 
+    //
+    // Fourth row a(3_c,:)
+    //
+    tic();
+    a(3_c,0_c,0,0) += integrate( _range=markedfaces(mesh,"Ibc"),
+                                 _expr=(trans(idt(u))*N())*id(nu) );
+    toc("a(3,0)",FLAGS_v>0);
+
+    tic();
+    a(3_c,1_c,0,1) += integrate( _range=markedfaces(mesh,"Ibc"),
+                                 _expr=tau_constant*idt(p)*id(nu) );
+    toc("a(3,1)",FLAGS_v>0);
+
+    tic();
+    a(3_c,3_c,0,0) += integrate( _range=markedfaces(mesh,"Ibc"),
+                                 _expr=-tau_constant*id(nu)*idt(mu) );
+    toc("a(3,3)",FLAGS_v>0);
     toc("matrices",true);
 
     
