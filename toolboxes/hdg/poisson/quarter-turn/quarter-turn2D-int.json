@@ -7,7 +7,7 @@
         "omega":
         {
             "name":"copper",
-            "cond":"50"
+            "cond":"-1"
             // "alpha":"3.35e-3",
             // "T0":"293",
             // "sigma0":"50",
@@ -18,13 +18,31 @@
     },
     "BoundaryConditions":
     {
-        "potential":
+        "flux":
         {
-            "Dirichlet":
+            "Integral":
             {
                 "top":
                 {
-                    "expr":"1"
+                    "expr":"2.2064"
+                }
+            }
+        },
+        "potential":
+        {
+            "SourceTerm":
+            {
+                "":{"expr":"0"}
+            },
+            "Dirichlet":
+            {
+                // "top":
+                // {
+                //     "expr":"5"
+                // },
+                "bottom":
+                {
+                    "expr":"0"
                 }
             },
             "Neumann":
@@ -34,20 +52,13 @@
                     "expr":"0"
                 }
             }
-        },
-        "flux":
-        {
-            "Integral":
-            {
-                "bottom":
-                {
-                    "expr":"40"
-                }
-            }
         }
     },
     "PostProcess":
     {
-        "Fields":["potential","flux"]
+        "Exports":
+		{
+            "fields":["potential","flux"]
+        }
     }    
 }

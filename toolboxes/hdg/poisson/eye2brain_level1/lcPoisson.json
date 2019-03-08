@@ -75,7 +75,10 @@
     },
     "PostProcess":
     {
-        "Fields":["potential","flux"]
+        "Exports":
+        {
+            "fields":["potential","flux"]
+        }
     }
 }
 

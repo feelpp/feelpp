@@ -58,7 +58,10 @@
     },
     "PostProcess":
     {
-        "Fields": ["flux", "potential", "multiplier"]
+        "Exports":
+        {
+            "fields": ["flux", "potential", "multiplier"]
+        }
     }
 }
 
