@@ -42,8 +42,8 @@ PYBIND11_MODULE(_hdg, m )
            py::arg("prefix")=std::string(""),py::arg("prefix_toolbox")=std::string("hdg.poisson"));
     
     defHDGPoisson<2,1>(m);
-    defHDGPoisson<2,2>(m);
-    defHDGPoisson<3,1>(m);
-    defHDGPoisson<3,2>(m);
+//defHDGPoisson<2,2>(m);
+//  defHDGPoisson<3,1>(m);
+//  defHDGPoisson<3,2>(m);
 }
 
