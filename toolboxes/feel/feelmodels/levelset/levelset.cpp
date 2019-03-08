@@ -1023,7 +1023,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         particleInjector->setParticleInjectionMethod( particleInjectorMethod );
 
         // Injector particles
-        auto const& injectorPTree = this->modelProperties().pTree().get_child( "BoundaryConditions."+this->prefix()+".ParticleInjector."+injectorMarker );
+        auto const& injectorPTree = this->modelProperties().pTree().get_child( pt::ptree::path_type( "BoundaryConditions/"+this->prefix()+"/ParticleInjector/"+injectorMarker, '/' ) );
         if( auto const& injectorParticlesPTree = injectorPTree.get_child_optional( "particles" ) )
         {
             // read all particles with form "id": { "shape":[shape], [params]... }
