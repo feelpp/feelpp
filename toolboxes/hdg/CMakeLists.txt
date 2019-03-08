@@ -60,8 +60,4 @@ feelpp_add_application( hdg_poroelastic
 
 feelpp_add_testcase(poisson PREFIX hdg CATEGORY HDG )
 feelpp_add_testcase(elasticity PREFIX hdg CATEGORY HDG )
-
-
-feelpp_add_testcase(bitter CATEGORY hdg)
-feelpp_add_testcase(testDarcy CATEGORY hdg )
-feelpp_add_testcase(HL-31)
+feelpp_add_testcase(thermoelectric PREFIX hdg CATEGORY HDG)
