@@ -91,8 +91,9 @@ void defHDGPoisson( py::module& m )
         // solve
         .def("solve",&toolbox_t::solve, "solve the HDG poisson problem")
 
-        .def("exportResults",static_cast<void (toolbox_t::*)(mesh_ptr_t, op_interp_ptr_t, opv_interp_ptr_t)>(&toolbox_t::exportResults), "export the results of the heat mechanics problem",py::arg("mesh")=(mesh_ptr_t)nullptr,py::arg("Idh")=(op_interp_ptr_t)nullptr,py::arg("Idhv")=(opv_interp_ptr_t)nullptr)
-        .def("exportResults",static_cast<void (toolbox_t::*)( double, mesh_ptr_t, op_interp_ptr_t, opv_interp_ptr_t )>(&toolbox_t::exportResults), "export the results of the heat mechanics problem", py::arg("time"),py::arg("mesh")=(mesh_ptr_t)nullptr,py::arg("Idh")=(op_interp_ptr_t)nullptr,py::arg("Idhv")=(opv_interp_ptr_t)nullptr)
+        //.def("exportResults",&toolbox_t::exportResults, "export the results of the heat mechanics problem",py::arg("mesh")=(mesh_ptr_t)nullptr)
+        //.def("exportResults",static_cast<void (toolbox_t::*)(mesh_ptr_t, op_interp_ptr_t, opv_interp_ptr_t)>(&toolbox_t::exportResults), "export the results of the heat mechanics problem",py::arg("mesh")=(mesh_ptr_t)nullptr,py::arg("Idh")=(op_interp_ptr_t)nullptr,py::arg("Idhv")=(opv_interp_ptr_t)nullptr)
+        //.def("exportResults",static_cast<void (toolbox_t::*)( double, mesh_ptr_t, op_interp_ptr_t, opv_interp_ptr_t )>(&toolbox_t::exportResults), "export the results of the heat mechanics problem", py::arg("time"),py::arg("mesh")=(mesh_ptr_t)nullptr,py::arg("Idh")=(op_interp_ptr_t)nullptr,py::arg("Idhv")=(opv_interp_ptr_t)nullptr)
         ;
 
 }

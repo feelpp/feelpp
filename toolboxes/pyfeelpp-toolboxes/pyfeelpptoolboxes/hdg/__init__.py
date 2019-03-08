@@ -4,9 +4,9 @@ from _hdg import *
 
 _hdgs={
     'hdg(2,1)':HDGPoisson_2DP1,
-    'hdg(2,2)':HDGPoisson_2DP2,
-    'hdg(3,1)':HDGPoisson_3DP1,
-    'hdg(3,2)':HDGPoisson_3DP2,
+    #'hdg(2,2)':HDGPoisson_2DP2,
+    #'hdg(3,1)':HDGPoisson_3DP1,
+    #'hdg(3,2)':HDGPoisson_3DP2,
 }
 
 def hdgpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldComm=core.Environment.worldCommPtr() ):
@@ -22,5 +22,5 @@ def hdgpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldCo
         print(key)
     if key not in _hdgs:
         raise RuntimeError('HDG solver '+key+' not existing')
-    _prefix= toolbox_prefix+"."+prefix if prefix else toolbox_prefix
+    _prefix= prefix_toolbox+"."+prefix if prefix else prefix_toolbox
     return _hdgs[key]( _prefix, worldComm )
