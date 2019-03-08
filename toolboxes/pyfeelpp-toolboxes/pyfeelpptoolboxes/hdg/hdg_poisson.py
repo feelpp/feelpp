@@ -1,15 +1,16 @@
 from pyfeelpp import core
 import sys
 
-import pyfeelpp.toolboxes.modelcore as modelcore
+import pyfeelpptoolboxes.modelcore as modelcore
 
-e=core.Environment(sys.argv,opts=modelcore.toolboxes_options("heat"))
+from pyfeelpptoolboxes.hdg import hdg_mixed_poisson_options
+e=core.Environment(sys.argv,opts=hdg_mixed_poisson_options("hdg.mixedpoisson"))
 
 #from pyfeelpp import discr,ts,filters
-from pyfeelpp.toolboxes.heat import *
+from pyfeelpptoolboxes.hdg import *
 
-f=heat(dim=2,order=1,worldComm=e.worldCommPtr())
-f.init()
+f=hdg(dim=2,order=1,worldComm=e.worldCommPtr())
+f.init(0,0)
 f.printAndSaveInfo()
 f.solve()
 f.exportResults()
