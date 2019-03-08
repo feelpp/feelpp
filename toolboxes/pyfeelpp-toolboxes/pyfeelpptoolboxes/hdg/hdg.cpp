@@ -38,8 +38,12 @@ PYBIND11_MODULE(_hdg, m )
 
     if (import_mpi4py()<0) return ;
 
-    m.def( "hdg_mixed_poisson_options", &FeelModels::makeMixedPoissonOptions, "get hdg mixed Poisson command line options");
+    m.def( "hdg_poisson_options", &FeelModels::makeMixedPoissonOptions, "get hdg mixed Poisson command line options",
+           py::arg("prefix")=std::string(""),py::arg("prefix_toolbox")=std::string("hdg.poisson"));
     
     defHDGPoisson<2,1>(m);
+    defHDGPoisson<2,2>(m);
+    defHDGPoisson<3,1>(m);
+    defHDGPoisson<3,2>(m);
 }
 
