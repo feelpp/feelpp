@@ -24,7 +24,7 @@
 #include <pybind11/pybind11.h>
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
-#include <feel/feelmodels/heat/heat.hpp>
+#include "hdg-poisson.hpp"
 #include <mpi4py/mpi4py.h>
 
 namespace py = pybind11;
@@ -38,5 +38,6 @@ PYBIND11_MODULE(_hdg, m )
 
     if (import_mpi4py()<0) return ;
 
+    defHDGPoisson<2,1>(m);
 }
 
