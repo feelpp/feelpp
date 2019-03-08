@@ -217,11 +217,15 @@ LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::inject( element_levelset_type cons
             _expr=(1-idv(M_levelset->heaviside()))
             ).evaluate()(0,0) / injectionZoneVolume;
 
-    element_levelset_ptrtype phiParticles = this->functionSpaceInjector()->elementPtr();
     auto phiInject = phi;
 
     if( particleDensity <= this->particleDensityThreshold() )
     {
+        element_levelset_type phiParticles = vf::project(
+                _space=this->functionSpaceInjector(),
+                _range=rangeInjectorElements,
+                _expr=idv(phi)
+                );
         switch( M_particleInjectionMethod )
         {
             case ParticleInjectionMethod::FIXED_POSITION:
@@ -229,7 +233,7 @@ LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::inject( element_levelset_type cons
                 for( auto const& particle: M_particles )
                 {
                     auto const newPart = this->levelsetParticleShapes()->create( particle.second.shape, particle.second.parameters, true );
-                    *phiParticles = vf::project(
+                    phiParticles = vf::project(
                             _space=this->functionSpaceInjector(),
                             _range=rangeInjectorElements,
                             _expr=vf::min( idv(phiParticles), idv(newPart) )

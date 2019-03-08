@@ -2195,6 +2195,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
         for( auto const& particleInjector: M_levelsetParticleInjectors )
         {
             *phi = particleInjector->inject( *phi );
+            this->updateInterfaceQuantities();
         }
     }
 
