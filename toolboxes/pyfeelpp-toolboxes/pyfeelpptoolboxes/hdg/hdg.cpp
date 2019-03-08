@@ -38,6 +38,8 @@ PYBIND11_MODULE(_hdg, m )
 
     if (import_mpi4py()<0) return ;
 
+    m.def( "hdg_mixed_poisson_options", &FeelModels::makeMixedPoissonOptions, "get hdg mixed Poisson command line options");
+    
     defHDGPoisson<2,1>(m);
 }
 
