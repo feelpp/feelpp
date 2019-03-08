@@ -39,7 +39,20 @@ class Filter:
         self.comm = MPI.COMM_WORLD
         self.nb_procs = self.comm.Get_size()
 
+    def balancedpartition(nb_data,nb_procs):
+        part = np.zeros(nb_procs, dtype=np.int8)
+        for i in range(nb_procs):
+            part[i] = int(round(nb_data/(nb_procs-i)))
+            nb_data -= part[i]
+        return part
 
+    def displacements(partition):
+        len = np.size(partition)
+        disp = np.zeros(len)
+        for i in range(1,len):
+            disp[i] = disp[i-1] + partition[i-1]
+        return disp
+    
     def readsignal(self, signal):
         self.signal = signal
         self.X = zeros([self.dim,max(signal.shape)-1]) # KEEPS TRACK OF THE STATES BEST ESTIMATE
@@ -65,13 +78,12 @@ class Filter:
         # PARALLELIZED DYNAMICS
         rank = self.comm.Get_rank()
         
-        counts = ( ( 2*self.dim + 1 )//( self.nb_procs - 1 ) ) * np.ones(self.nb_procs, dtype=np.int8)
-        counts[-1] = ( 2*self.dim + 1 )%( self.nb_procs -1 )
-        displacements = counts[0] * np.arange(0,self.nb_procs)
+        counts = self.balancedpartition( 2*self.dim + 1, self.nb_procs )
+        disp = self.displacements( counts )
 
         recvdata = np.zeros([2*self.dim + 1, counts[rank]], dtype=np.float64 )
         for ii in range( self.dim ): # SINCE SCATTER SENDS 1D ARRAY, PERFORMS LINEWISE SCATTER
-            self.comm.Scatterv( [self.SigPts[ii], counts, displacements, MPI.DOUBLE], recvdata[ii], root=0 )
+            self.comm.Scatterv( [self.SigPts[ii], counts, disp, MPI.DOUBLE], recvdata[ii], root=0 )
 
         measdata = np.zeros([self.obs, counts[rank]])
         for i in range( 0, counts[rank] ): # USUAL POINTWISE PROPAGATION
@@ -81,10 +93,12 @@ class Filter:
         sigptstmp = np.zeros([self.dim, counts[rank]], dtype=np.float64)
         premeastmp = np.zeros([self.obs, counts[rank]], dtype=np.float64)
         for ii in range( self.dim ):
-            self.comm.Gatherv( [recvdata[ii], counts[rank]], [self.SigPts[ii], counts, displacements, MPI.DOUBLE], root=0 )
+            self.comm.Gatherv( [recvdata[ii], counts[rank]], [self.SigPts[ii], counts, disp, MPI.DOUBLE], root=0 )
         for ii in range( self.obs ):
-            self.comm.Gatherv( [measdata[ii], counts[rank]], [self.PreMeas[ii], counts, displacements, MPI.DOUBLE], root=0 )
-        
+            self.comm.Gatherv( [measdata[ii], counts[rank]], [self.PreMeas[ii], counts, disp, MPI.DOUBLE], root=0 )
+
+        self.comm.Barrier()
+            
         self.Time += 1
 
         self.Mx = self.SigPts @ transpose(self.weights)
@@ -127,11 +141,14 @@ class Filter:
             self.X = zeros([self.dim,maxiter]) # KEEPS TRACK OF THE STATES BEST ESTIMATE
             self.forecast = zeros([self.dim,maxiter]) # KEEPS TRACK OF THE FORECAST
             
-            while np.abs(self.My-self.signal)/self.signal > self.tol:
+            while np.abs(self.My-self.signal)/self.signal > self.tol and self.Time < maxiter:
                 self.X[:,i] = np.transpose(self.Mx)
                 self.forecast[:,i] = np.transpose(self.XF)
                 self.step(self, mode)
                 if verbose:
+                    print("-------------------------------------------------------")
+                    print("        TIME STEP",self.Time)
+                    print(" ")
                     print("    sigma-points : ",self.SigPts[0])
                     print("    uncertainty matrix : ",self.P)
                     print("    Kalman gain : ",self.Kalman)
