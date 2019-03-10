@@ -1,4 +1,4 @@
-from pyfeelpp import core,mesh,discr
+from pyfeelpp import core
 from pyfeelpptoolboxes.modelcore import *
 from _hdg import *
 
