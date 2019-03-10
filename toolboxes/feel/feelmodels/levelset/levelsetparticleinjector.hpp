@@ -162,11 +162,13 @@ LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::LevelSetParticleInjector( levelset
       M_nParticles( 0 ),
       M_particleDensityThreshold( 1e-6 )
 {
-    M_spaceInjector = functionspace_type::New( 
-            _mesh=this->functionSpaceLevelset()->mesh(), 
-            _worldscomm=this->functionSpaceLevelset()->worldsComm(), 
-            _range=markedelements(this->functionSpaceLevelset()->mesh(), M_injectorMarkers)
-            );
+    //M_spaceInjector = functionspace_type::New( 
+            //_mesh=this->functionSpaceLevelset()->mesh(), 
+            //_worldscomm=this->functionSpaceLevelset()->worldsComm(), 
+            //_range=markedelements(this->functionSpaceLevelset()->mesh(), M_injectorMarkers)
+            //);
+    // Temporary hack
+    M_spaceInjector = this->functionSpaceLevelset();
     M_levelsetParticleShapes = std::make_shared<levelsetparticleshapes_type>( M_spaceInjector );
 }
 
@@ -223,7 +225,7 @@ LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::inject( element_levelset_type cons
     {
         element_levelset_type phiParticles = vf::project(
                 _space=this->functionSpaceInjector(),
-                _range=rangeInjectorElements,
+                _range=this->functionSpaceInjector()->template rangeElements<0>(),
                 _expr=idv(phi)
                 );
         switch( M_particleInjectionMethod )
@@ -235,7 +237,7 @@ LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::inject( element_levelset_type cons
                     auto const newPart = this->levelsetParticleShapes()->create( particle.second.shape, particle.second.parameters, true );
                     phiParticles = vf::project(
                             _space=this->functionSpaceInjector(),
-                            _range=rangeInjectorElements,
+                            _range=this->functionSpaceInjector()->template rangeElements<0>(),
                             _expr=vf::min( idv(phiParticles), idv(newPart) )
                             );
                 }
@@ -243,7 +245,14 @@ LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::inject( element_levelset_type cons
             break;
         }
 
-        phiInject.on( _range=rangeInjectorElements, _expr=idv(phiParticles) );
+        //phiInject.on( _range=rangeInjectorElements, _expr=idv(phiParticles) );
+        // Temporary hack
+        //phiInject = vf::project(
+                //_space=phiInject.functionSpace(),
+                //_range=phiInject.functionSpace()->template rangeElements<0>(),
+                //_expr=vf::min( idv(phiParticles), idv(phiInject) )
+                //);
+        phiInject = phiParticles;
     }
 
     //return vf::project(
