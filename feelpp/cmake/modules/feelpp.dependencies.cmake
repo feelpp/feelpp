@@ -8,7 +8,7 @@
 # define the feel++ c++ standard level, it used to be hardcoded, this way we can
 # have builds to test the different standard flavors
 if (NOT DEFINED FEELPP_STD_CPP )
-  set(FEELPP_STD_CPP "14") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 1z")
+  set(FEELPP_STD_CPP "17") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 17, 2a")
 endif()
 if (NOT DEFINED FEELPP_STDLIB_CPP AND NOT APPLE)
   set(FEELPP_STDLIB_CPP "stdc++") # DOC STRING "define feel++ standard c++ library (default libstdc++), values can be : libc++ libstdc++")
