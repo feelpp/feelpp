@@ -26,12 +26,16 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <mpi4py/mpi4py.h>
+#include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
 using namespace Feel;
+
+//PYBIND11_MAKE_OPAQUE(Feel::worldscomm_ptr_t);
 
 template<typename MeshT, int Order = 1>
 class MyElement: public Pch_type<MeshT,Order>::element_type
@@ -56,13 +60,13 @@ void defDiscr(py::module &m)
     int Order = space_t::basis_0_type::nOrder;
     std::string suffix = std::to_string(mesh_t::nDim)+std::string("D_P") + std::to_string(Order);
     //std::cout << "suffix discr: " << suffix << std::endl;
-
+    //py::bind_vector<worldscomm_ptr_t>(m, "WorldsComm");
     if ( space_t::is_continuous )
         pyclass_name = std::string("Pch_") + suffix;
     else
         pyclass_name = std::string("Pdh_") + suffix;
     py::class_<space_t,std::shared_ptr<space_t>>(m,pyclass_name.c_str())
-        .def(py::init<mesh_ptr_t const&,mesh_support_vector_t const&, size_type, periodicity_t, std::vector<worldcomm_ptr_t> const&, std::vector<bool>>(),
+        .def(py::init<mesh_ptr_t const&,mesh_support_vector_t const&, size_type, periodicity_t, worldscomm_ptr_t const&, std::vector<bool>>(),
              py::arg("mesh"),
              py::arg("support")=mesh_support_vector_t(),
              py::arg("components")=MESH_RENUMBER | MESH_CHECK,
@@ -99,6 +103,15 @@ void defDiscr(py::module &m)
              py::arg("geomap")=GeomapStrategyType::GEOMAP_OPT, py::arg("accumulate")=false, py::arg("verbose")=false, "build the interpolant of the expression expr on a range of elements")
         ;
 
+    if ( space_t::is_continuous )
+        pyclass_name = std::string("I_Pch_") + suffix;
+    else
+        pyclass_name = std::string("I_Pdh_") + suffix;
+    //using  Feel::detail::opinterprangetype<IteratorRange>::type
+    py::class_<I_t<space_t,space_t>,std::shared_ptr<I_t<space_t,space_t>>>(m,pyclass_name.c_str())
+        .def(py::init<>())
+        //.def(py::init<std::shared_ptr<space_t> const&, std::shared_ptr<space_t> const&>())
+        ;
     
 }
 template<typename space_t>
