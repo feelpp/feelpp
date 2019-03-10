@@ -67,7 +67,7 @@ PYBIND11_MODULE(_core, m )
                 return py::make_iterator(v.begin(), v.end());
             }, py::keep_alive<0, 1>()) /* Keep vector alive while iterator is used */;
     //py::bind_vector<worldscomm_ptr_t>(m, "WorldsComm");
-    m.def( "makeWorldsComm", static_cast<worldscomm_ptr_t (*)(int, worldcomm_ptr_t const& )>(&Feel::makeWorldsComm), py::arg("n")=1, py::arg("worldComm")=Environment::worldCommPtr(), "create a vector of WorldComm with n entries" );
+    m.def( "makeWorldsComm", static_cast<worldscomm_ptr_t (*)(int, worldcomm_ptr_t const& )>(&Feel::makeWorldsComm), py::arg("n")=1, py::arg("worldComm"), "create a vector of WorldComm with n entries" );
     
     py::class_<Environment>(m,"Environment")
         .def( py::init<py::list,po::options_description>(),"Construct a Feel++ Environment",py::arg("arg"), py::arg("opts") = feel_nooptions())
@@ -81,9 +81,9 @@ PYBIND11_MODULE(_core, m )
         .def_static("isParallel",&Feel::Environment::isParallel, "true if process is parallel, false otherwise",py::return_value_policy::copy)
         .def_static("isMasterRank",&Feel::Environment::isMasterRank, "true if rank is 0, false otherwise",py::return_value_policy::copy)
         .def_static("worldComm",&Feel::Environment::worldComm, "get the Environment WorldComm",py::return_value_policy::copy)
-        .def_static("worldCommPtr",static_cast<worldcomm_ptr_t (*)()>(&Feel::Environment::worldCommPtr), "get the Environment WorldComm")
-        .def_static("worldsComm",static_cast<worldscomm_ptr_t (*)(int)>(&Feel::Environment::worldsComm), "get the Environment WorldComm",py::return_value_policy::copy,py::arg("size")=1)
-        .def_static("worldsCommSeq",static_cast<worldscomm_ptr_t (*)(int)>(&Feel::Environment::worldsCommSeq), "get the Environment sequential WorldsComm",py::arg("size")=1)
+        .def_static("worldCommPtr",static_cast<worldcomm_ptr_t const& (*)()>(&Feel::Environment::worldCommPtr), "get the Environment WorldComm")
+        .def_static("worldsComm",static_cast<worldscomm_ptr_t& (*)(int)>(&Feel::Environment::worldsComm), "get the Environment WorldComm",py::return_value_policy::copy,py::arg("size")=1)
+        .def_static("worldsCommSeq",static_cast<worldscomm_ptr_t& (*)(int)>(&Feel::Environment::worldsCommSeq), "get the Environment sequential WorldsComm",py::arg("size")=1)
         .def_static("rootRepository",&Feel::Environment::rootRepository,"get the root repository for Feel++, default $HOME/feel",py::return_value_policy::move)
         .def_static("downloadsRepository",&Feel::Environment::downloadsRepository,"get the downloads repository for Feel++",py::return_value_policy::move)
         .def_static("findFile",&Feel::Environment::findFile,"find file",py::return_value_policy::move)

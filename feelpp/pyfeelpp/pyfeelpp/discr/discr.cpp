@@ -71,7 +71,7 @@ void defDiscr(py::module &m)
              py::arg("support")=mesh_support_vector_t(),
              py::arg("components")=MESH_RENUMBER | MESH_CHECK,
              py::arg("periodicity")=periodicity_t(),
-             py::arg("worldsComm") = Environment::worldsComm(1),
+             py::arg("worldsComm"),
              py::arg("extendedDofTable") = std::vector<bool>(1,false) )
         .def("nDof",static_cast<size_type(space_t::*)() const>(&space_t::nDof), "get the number of degrees of freedom over the whole domain")
         .def("nLocalDof",static_cast<size_type(space_t::*)() const>(&space_t::nLocalDof), "get the number of degrees of freedom over the current subdomain")
