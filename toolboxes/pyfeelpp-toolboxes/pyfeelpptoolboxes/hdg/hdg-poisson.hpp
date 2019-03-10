@@ -80,10 +80,10 @@ void defHDGPoisson( py::module& m )
         .def( "mesh", &toolbox_t::mesh, "get the mesh" )
         // elements
         .def( "fluxSpace", &toolbox_t::fluxSpace, "get the flux function space")
-        .def( "fieldFlux", static_cast<element_flux_t const& (toolbox_t::*)() const>(&toolbox_t::fluxField), "returns the flux field" )
-        .def( "potentialSpace", &toolbox_t::fluxSpace, "get the potential function space")
-        .def( "fieldPotential", static_cast<element_potential_t const& (toolbox_t::*)() const>(&toolbox_t::potentialField), "returns the potential field" )
-        .def( "traceSpace", &toolbox_t::fluxSpace, "get the trace function space")
+        .def( "fluxField", static_cast<element_flux_t const& (toolbox_t::*)() const>(&toolbox_t::fluxField), "returns the flux field" )
+        .def( "potentialSpace", &toolbox_t::potentialSpace, "get the potential function space")
+        .def( "potentialField", static_cast<element_potential_t const& (toolbox_t::*)() const>(&toolbox_t::potentialField), "returns the potential field" )
+        .def( "traceSpace", &toolbox_t::traceSpace, "get the trace function space")
         //.def( "fieldTrace", static_cast<element_trace_t const& (toolbox_t::*)() const>(&toolbox_t::traceField), "returns the trace field" )
         .def( "constantSpace", &toolbox_t::fluxSpace, "get the constant function space")
         // assembly
@@ -92,7 +92,7 @@ void defHDGPoisson( py::module& m )
         .def("solve",&toolbox_t::solve, "solve the HDG poisson problem")
 
         //.def("exportResults",&toolbox_t::exportResults, "export the results of the heat mechanics problem",py::arg("mesh")=(mesh_ptr_t)nullptr)
-        //.def("exportResults",static_cast<void (toolbox_t::*)(mesh_ptr_t, op_interp_ptr_t, opv_interp_ptr_t)>(&toolbox_t::exportResults), "export the results of the heat mechanics problem",py::arg("mesh")=(mesh_ptr_t)nullptr,py::arg("Idh")=(op_interp_ptr_t)nullptr,py::arg("Idhv")=(opv_interp_ptr_t)nullptr)
+        .def("exportResults",static_cast<void (toolbox_t::*)(mesh_ptr_t, op_interp_ptr_t, opv_interp_ptr_t)>(&toolbox_t::exportResults), "export the results of the heat mechanics problem",py::arg("mesh")=(mesh_ptr_t)nullptr,py::arg("Idh")=(op_interp_ptr_t)nullptr,py::arg("Idhv")=(opv_interp_ptr_t)nullptr)
         //.def("exportResults",static_cast<void (toolbox_t::*)( double, mesh_ptr_t, op_interp_ptr_t, opv_interp_ptr_t )>(&toolbox_t::exportResults), "export the results of the heat mechanics problem", py::arg("time"),py::arg("mesh")=(mesh_ptr_t)nullptr,py::arg("Idh")=(op_interp_ptr_t)nullptr,py::arg("Idhv")=(opv_interp_ptr_t)nullptr)
         ;
 
