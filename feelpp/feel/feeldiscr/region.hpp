@@ -115,7 +115,7 @@ template<typename SpaceType>
 typename SpaceType::element_type
 regionProcess( std::shared_ptr<SpaceType> const& space )
 {
-    return region( space, lambda::bind( &SpaceType::mesh_type::element_type::processId, lambda::_1 ) );
+    return region( space, []( auto const& s ) { return s.processId(); } );
 
 }
 
@@ -140,13 +140,13 @@ template<typename SpaceType>
 typename SpaceType::element_type
 regionMarker( std::shared_ptr<SpaceType> const& space )
 {
-    return region( space, lambda::bind( &SpaceType::mesh_type::element_type::marker, lambda::_1 ) );
+    return region( space, []( auto const& e ) { return e.marker(); } );
 
 }
 /**
  * class for RegionMarker
  */
-struct RegionMarkre : public Region
+struct RegionMarker : public Region
 {
     template<typename SpaceType>
     typename SpaceType::element_type
@@ -164,7 +164,7 @@ template<typename SpaceType>
 typename SpaceType::element_type
 regionMarker2( std::shared_ptr<SpaceType> const& space )
 {
-    return region( space, lambda::bind( &SpaceType::mesh_type::element_type::marker2, lambda::_1 ) );
+    return region( space,  []( auto const& e ) { return e.marker2(); } );
 
 }
 
@@ -189,7 +189,7 @@ template<typename SpaceType>
 typename SpaceType::element_type
 regionMarker3( std::shared_ptr<SpaceType> const& space )
 {
-    return region( space, lambda::bind( &SpaceType::mesh_type::element_type::marker3, lambda::_1 ) );
+    return region( space, []( auto const& e ) { return e.marker3(); } );
 
 }
 
