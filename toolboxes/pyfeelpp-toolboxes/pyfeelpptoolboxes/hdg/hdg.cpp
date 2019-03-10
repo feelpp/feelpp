@@ -25,7 +25,6 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include "hdg-poisson.hpp"
-#include <mpi4py/mpi4py.h>
 
 namespace py = pybind11;
 using namespace Feel;
@@ -35,8 +34,6 @@ using namespace Feel;
 PYBIND11_MODULE(_hdg, m )
 {
     using namespace Feel;
-
-    if (import_mpi4py()<0) return ;
 
     m.def( "hdg_poisson_options", &FeelModels::makeMixedPoissonOptions, "get hdg mixed Poisson command line options",
            py::arg("prefix")=std::string(""),py::arg("prefix_toolbox")=std::string("hdg.poisson"));
