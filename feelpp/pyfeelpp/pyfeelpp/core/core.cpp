@@ -50,7 +50,8 @@ PYBIND11_MODULE(_core, m )
 
     
     py::class_<po::options_description>(m,"OptionsDescription")
-        .def(py::init<>());
+        .def(py::init<>())
+        .def("add",static_cast<po::options_description & (po::options_description::*)(po::options_description const& )>(&po::options_description::add), "add options description",py::arg("desc"));
 
     py::class_<WorldComm,std::shared_ptr<WorldComm>>(m,"WorldComm")
         .def(py::init<>())
