@@ -1,15 +1,15 @@
-from pyfeelpp import core,mesh
+from pyfeelpp import core,mesh,discr
 from pyfeelpptoolboxes.modelcore import *
 from _hdg import *
 
 _hdgs={
     'hdg(2,1)':HDGPoisson_2DP1,
-    #'hdg(2,2)':HDGPoisson_2DP2,
-    #'hdg(3,1)':HDGPoisson_3DP1,
-    #'hdg(3,2)':HDGPoisson_3DP2,
+    'hdg(2,2)':HDGPoisson_2DP2,
+    'hdg(3,1)':HDGPoisson_3DP1,
+    'hdg(3,2)':HDGPoisson_3DP2,
 }
 
-def hdgpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldComm=core.Environment.worldCommPtr() ):
+def hdgpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldComm=None ):
     """create a hdg toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -17,6 +17,8 @@ def hdgpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldCo
     prefix -- application prefix for the HDG poisson 
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     """
+    if worldComm is None:
+        worldComm=core.Environment.worldCommPtr()
     key='hdg('+str(dim)+','+str(order)+')'
     if worldComm.isMasterRank():
         print(key)
