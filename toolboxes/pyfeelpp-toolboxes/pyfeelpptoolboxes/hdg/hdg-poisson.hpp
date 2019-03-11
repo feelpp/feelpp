@@ -25,7 +25,7 @@
 
 #include <feel/feelmodels/hdg/mixedpoisson.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
-#include <mpi4py/mpi4py.h>
+
 
 namespace py = pybind11;
 using namespace Feel;
