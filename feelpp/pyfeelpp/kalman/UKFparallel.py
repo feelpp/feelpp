@@ -3,6 +3,7 @@ from numpy import mean, sum, dot, linalg, zeros, ones, transpose
 from numpy.linalg import inv, cholesky
 from scipy.linalg import sqrtm
 from mpi4py import MPI
+from implements import *
 
 class Filter:
 
@@ -38,20 +39,6 @@ class Filter:
         # MPI PARALLELIZATION INIT
         self.comm = MPI.COMM_WORLD
         self.nb_procs = self.comm.Get_size()
-
-    def balancedpartition(nb_data,nb_procs):
-        part = np.zeros(nb_procs, dtype=np.int8)
-        for i in range(nb_procs):
-            part[i] = int(round(nb_data/(nb_procs-i)))
-            nb_data -= part[i]
-        return part
-
-    def displacements(partition):
-        len = np.size(partition)
-        disp = np.zeros(len)
-        for i in range(1,len):
-            disp[i] = disp[i-1] + partition[i-1]
-        return disp
     
     def readsignal(self, signal):
         self.signal = signal
@@ -78,8 +65,8 @@ class Filter:
         # PARALLELIZED DYNAMICS
         rank = self.comm.Get_rank()
         
-        counts = self.balancedpartition( 2*self.dim + 1, self.nb_procs )
-        disp = self.displacements( counts )
+        counts = balancedpartition( 2*self.dim + 1, self.nb_procs )
+        disp = displacements( counts )
 
         recvdata = np.zeros([2*self.dim + 1, counts[rank]], dtype=np.float64 )
         for ii in range( self.dim ): # SINCE SCATTER SENDS 1D ARRAY, PERFORMS LINEWISE SCATTER
@@ -98,25 +85,26 @@ class Filter:
             self.comm.Gatherv( [measdata[ii], counts[rank]], [self.PreMeas[ii], counts, disp, MPI.DOUBLE], root=0 )
 
         self.comm.Barrier()
-            
-        self.Time += 1
 
-        self.Mx = self.SigPts @ transpose(self.weights)
-        self.XF = self.Mx
-        self.Covx = (self.weights*(self.SigPts-self.Mx)) @ transpose(self.SigPts-self.Mx)
-        self.My = self.PreMeas @ transpose(self.weights)
-        self.Covy = (self.weights*(self.PreMeas-self.My)) @ transpose(self.PreMeas-self.My) + self.covydefect*np.eye(self.obs)
-        self.XCov = (self.weights*(self.SigPts-self.Mx)) @ transpose(self.PreMeas-self.My)
+        if (rank == 0):
+            self.Time += 1
 
-        # ANALYSIS STEP
-        self.Kalman = self.XCov * self.inverse(self.Covy)
-        
-        if mode == "dynamic":
-            self.Mx += self.Kalman @ (self.signal[self.Time]-self.My)
-        elif mode == "static":
-            self.Mx += self.Kalman @ (self.signal-self.My)
+            self.Mx = self.SigPts @ transpose(self.weights)
+            self.XF = self.Mx
+            self.Covx = (self.weights*(self.SigPts-self.Mx)) @ transpose(self.SigPts-self.Mx)
+            self.My = self.PreMeas @ transpose(self.weights)
+            self.Covy = (self.weights*(self.PreMeas-self.My)) @ transpose(self.PreMeas-self.My) + self.covydefect*np.eye(self.obs)
+            self.XCov = (self.weights*(self.SigPts-self.Mx)) @ transpose(self.PreMeas-self.My)
+
+            # ANALYSIS STEP
+            self.Kalman = self.XCov * self.inverse(self.Covy)
             
-        self.P = self.Covx - self.Kalman @ np.transpose(self.XCov)
+            if mode == "dynamic":
+                self.Mx += self.Kalman @ (self.signal[self.Time]-self.My)
+            elif mode == "static":
+                self.Mx += self.Kalman @ (self.signal-self.My)
+            
+            self.P = self.Covx - self.Kalman @ np.transpose(self.XCov)
         
     def filter( self, measurement, maxiter = 1000, verbose = False, mode = "dynamic"):
         if mode == "dynamic":
