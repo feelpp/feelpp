@@ -2,22 +2,18 @@
 {
     "Name": "fluid fsi",
     "ShortName":"Fluidfsi",
-    "Model":"Navier-Stokes",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
     "Parameters":
     {
-        "pIn":
-        {
-            "value":"2.0e4"
-        },
-        "pTimeMax":
-        {
-            "value":"0.005"
-        }
+        "pIn":"2.0e4",
+        "pTimeMax":"0.005"
     },
     "Materials":
     {
         "Fluid":{
-            "name":"myFluidMat",
             "rho":"1",
             "mu":"0.035"
         }
@@ -58,7 +54,10 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","displacement"]
+        "Exports":
+        {
+            "fields":["velocity","pressure","displacement"]
+        }
     }
 
 }

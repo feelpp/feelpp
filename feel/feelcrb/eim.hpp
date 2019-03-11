@@ -1745,7 +1745,7 @@ public:
     template <typename TheModelType,typename TheModelHasRbSpaceType>
     struct RbSpaceFromModel
     {
-        typedef ReducedBasisSpace<TheModelType> type;
+        typedef ReducedBasisSpace<typename TheModelType::functionspace_type> type;
     };
     template <typename TheModelType>
     struct RbSpaceFromModel<TheModelType,mpl::bool_<true> >

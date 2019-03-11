@@ -76,14 +76,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
             std::cout << "Missing Name entry in model properties\n";
     }
     try {
-        M_model  = M_p.get<std::string>( "Model" );
-    }
-    catch ( pt::ptree_bad_path& e )
-    {
-        if ( Environment::isMasterRank() )
-            std::cout << "Missing Model entry in model properties\n";
-    }
-    try {
         M_shortname = M_p.get( "ShortName", M_name );
     }
     catch ( pt::ptree_bad_path& e )
@@ -92,6 +84,11 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
             std::cout << "Missing ShortName entry in model properties - set it to the Name entry : " << M_name << "\n";
     }
     M_unit = M_p.get( "Unit", "m" );
+    if ( auto mod = M_p.get_child_optional("Models") )
+    {
+        LOG(INFO) << "Model with model\n";
+        M_models.setPTree( *mod );
+    }
     auto par = M_p.get_child_optional("Parameters");
     if ( par )
     {
@@ -173,7 +170,6 @@ void ModelProperties::saveMD(std::ostream &os)
   os << " - Name **" << name()<< "**\n";
   os << " - shortName **" << shortName()<< "**\n";
   os << " - description **" << description()<< "**\n";
-  os << " - model **" << model()<< "**\n\n";
   M_params.saveMD(os);
   M_mat.saveMD(os);
   M_bc.saveMD(os);

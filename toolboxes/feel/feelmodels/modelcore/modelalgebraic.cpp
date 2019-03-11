@@ -35,11 +35,11 @@ namespace FeelModels {
 
 
 ModelAlgebraic::ModelAlgebraic( std::string _theprefix,
-                                          WorldComm const& _worldComm,
-                                          std::string const& subPrefix,
-                                          std::string const& rootRepository )
+                                WorldComm const& _worldComm,
+                                std::string const& subPrefix,
+                                ModelBaseRepository const& modelRep )
     :
-    super_type( _theprefix,_worldComm,subPrefix,rootRepository),
+    super_type( _theprefix,_worldComm,subPrefix,modelRep ),
     M_verboseSolverTimer( boption(_name="verbose_solvertimer",_prefix=this->prefix()) ),
     M_verboseSolverTimerAllProc( boption(_name="verbose_solvertimer_allproc",_prefix=this->prefix()) ),
     M_rebuildCstPartInLinearSystem( boption(_name="linearsystem-cst-update",_prefix=this->prefix()) ),
@@ -168,10 +168,25 @@ ModelAlgebraic::updatePreconditioner(const vector_ptrtype& X,
     }
 }
 
+BlocksBaseGraphCSR
+ModelAlgebraic::buildBlockMatrixGraph() const
+{
+    BlocksBaseGraphCSR myblockGraph(0,0);
+    return myblockGraph;
+
+}
+
 ModelAlgebraic::graph_ptrtype
 ModelAlgebraic::buildMatrixGraph() const
 {
-    return graph_ptrtype();
+    auto blockGraph = this->buildBlockMatrixGraph();
+    if ( blockGraph.nRow() == 0 || blockGraph.nCol() == 0 )
+        return graph_ptrtype();
+
+    if ( blockGraph.nRow() == 1 && blockGraph.nCol() == 1 )
+        return blockGraph(0,0);
+    else
+        return graph_ptrtype( new graph_type( blockGraph ) );
 }
 
 void

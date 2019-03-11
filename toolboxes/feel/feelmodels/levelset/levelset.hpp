@@ -249,7 +249,7 @@ public:
             std::string const& prefix,
             WorldComm const& _worldComm = Environment::worldComm(),
             std::string const& subPrefix = "",
-            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+            ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
 
     LevelSet( self_type const& L ) = default;
@@ -258,7 +258,7 @@ public:
             std::string const& prefix,
             WorldComm const& _worldComm = Environment::worldComm(),
             std::string const& subPrefix = "",
-            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+            ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     //BOOST_PARAMETER_MEMBER_FUNCTION(
             //(void), build, tag,
