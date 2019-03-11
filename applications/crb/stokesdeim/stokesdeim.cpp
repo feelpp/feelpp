@@ -23,6 +23,8 @@ StokesDeim::StokesDeim() :
 
 void StokesDeim::initModel()
 {
+    this->setHasDisplacementField(true);
+
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type);
     setFunctionSpaces( space_type::New(mesh));
     cout << "Number of DoF : " << this->functionSpace()->nDof() << std::endl;
@@ -99,6 +101,7 @@ void StokesDeim::initModel()
     this->addEnergyMatrix( energy );
 
     f1 = integrate( markedfaces(mesh,"midflux"), inner(oneX(),id(u)) );
+    this->M_Fqm[1][0][0]->close();
 }
 
 StokesDeim::beta_type
@@ -190,14 +193,48 @@ StokesDeim::output( int output_index, parameter_type const& mu ,
     }
     else if ( output_index==1 )
     {
-        output = 1./(.1-mu[1])*integrate( markedfaces(mesh,"midflux"), inner(oneX(),idv(u0)) ).evaluate()(0,0);
+        output = 2./(1.-mu[1])*integrate( markedfaces(mesh,"midflux"), inner(oneX(),idv(u0)) ).evaluate()(0,0);
     }
 
     return output;
 }
 
 
+StokesDeim::displacement_field_ptrtype
+StokesDeim::meshDisplacementField( parameter_type const& mu )
+{
+    auto mesh = this->functionSpace()->mesh();
+    if ( !M_Dh )
+    {
+        M_Dh = displacement_space_type::New( mesh );
+        mapping = M_Dh->elementPtr();
+    }
+    else
+        mapping->zero();
 
+    double mur = 0.3;
+    double mu1 = mu[0];
+    double mu2 = mu[1];
+
+    mapping->on( markedelements( mesh, "omega3"),
+                vec( (mur-mu1)/(2-mur)*Px() - cst((mur-mu1)/(2-mur)),
+                     -2*(mur-mu2)/(2-mur)*Px() + cst( 2*(mur-mu2)/(2-mur) ) ) );
+    mapping->on( markedelements( mesh, "omega5"),
+                vec( (mu1-mur)/mur*Px() + cst(2*(mur-mu1)/mur),
+                     (mur-mu2)/(1-mur)*Py() - cst((mur-mu2)/(1-mur)) ));
+    mapping->on( markedelements( mesh, "omega7"),
+                vec( (mur-mu1)/(2-mur)*Px() - cst(3*(mur-mu1)/(2-mur)),
+                     2*(mur-mu2)/(2-mur)*Px() - cst( 6*(mur-mu2)/(2-mur) ) ) );
+    mapping->on( markedelements( mesh, "omega26"),
+                vec( (mur-mu1)/(2-mur)*Px() - cst((mur-mu1)/(2-mur)), (mu2-mur)/mur*Py() )
+                + chi(Px()>2)*vec(  - cst(2*(mur-mu1)/(2-mur)), cst(0.) ) );
+    mapping->on( markedelements( mesh, "omega48"),
+                 vec( (mur-mu1)/(2-mur)*Px() - cst((mur-mu1)/(2-mur)),
+                      (mur-mu2)/(1-mur)*Py() - cst((mur-mu2)/(1-mur)) )
+                 + chi(Px()>2)*vec(  - cst(2*(mur-mu1)/(2-mur)), cst(0.) ));
+
+    return mapping;
+}
 
 
 

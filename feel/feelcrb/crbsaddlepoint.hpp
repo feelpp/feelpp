@@ -31,10 +31,11 @@
 #define __CRBSADDLEPOINT_H 1
 
 #include <feel/feel.hpp>
-#include <feel/feelcrb/crb.hpp>
+#include <feel/feelcrb/crbblock.hpp>
 
 namespace Feel
 {
+po::options_description crbSaddlePointOptions( std::string const& prefix="", int const& n_block=2 );
 
 /**
  * \class CRBSaddlePoint
@@ -42,51 +43,33 @@ namespace Feel
  *
  * \author JB Wahl
  */
-po::options_description crbSaddlePointOptions( std::string const& prefix="" );
-
 template<typename TruthModelType>
 class CRBSaddlePoint :
-        public CRB<TruthModelType>
+        public CRBBlock<TruthModelType>
 {
-    typedef CRB<TruthModelType> super;
+    typedef CRBBlock<TruthModelType> super;
+    using self_type = CRBSaddlePoint;
+    using self_ptrtype = boost::shared_ptr<self_type>;
 
 public:
     //@{ // Truth Model
+    typedef double value_type;
     typedef TruthModelType model_type;
     typedef boost::shared_ptr<model_type> truth_model_ptrtype;
     typedef typename model_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
     //@}
 
     //@{ /// Parameter Space
     typedef typename model_type::parameterspace_type parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
-    typedef typename parameterspace_type::element_ptrtype parameter_ptrtype;
-    typedef typename parameterspace_type::sampling_type sampling_type;
-    typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
     //@}
 
-    typedef boost::bimap< int, boost::tuple<double,double,double> > convergence_type;
-    typedef double value_type;
-    typedef typename convergence_type::value_type convergence;
-
-    using self_type = CRBSaddlePoint;
-    using self_ptrtype = boost::shared_ptr<self_type>;
-
     //@{ /// Function Space and Elements
-    typedef typename model_type::space_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef typename model_type::functionspace_type functionspace_type;
-    typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
     typedef typename model_type::element_type element_type;
     typedef typename model_type::element_ptrtype element_ptrtype;
     //@}
 
     //@{ Backend and Matrix
-    typedef typename model_type::backend_type backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
     typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename model_type::vector_ptrtype vector_ptrtype;
     typedef typename model_type::beta_vector_type beta_vector_type;
@@ -97,24 +80,12 @@ public:
     typedef Eigen::MatrixXd matrixN_type;
     typedef Eigen::Map< Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double,Eigen::Dynamic, 1> > map_dense_vector_type;
-    typedef boost::tuple< std::vector<vectorN_type>,
-                          std::vector<vectorN_type>,
-                          std::vector<vectorN_type>,
-                          std::vector<vectorN_type> > solutions_tuple;
-    typedef boost::tuple< double,double,double,
-                          std::vector< std::vector< double > >,
-                          std::vector< std::vector< double > > > upper_bounds_tuple;
     typedef boost::tuple< double,double > matrix_info_tuple; //conditioning, determinant
     //@}
 
     //@{ /// Exporter
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    //@}
-
-    //@{ /// Database
-    typedef CRBElementsDB<model_type> crb_elements_db_type;
-    typedef boost::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
     //@}
 
     typedef std::vector< std::vector< std::vector< std::vector< matrixN_type >>>> blockmatrixN_type;
@@ -149,23 +120,18 @@ protected:
     //! constructor from command line options
     CRBSaddlePoint( std::string const& name, truth_model_ptrtype const & model,
                     crb::stage stage = crb::stage::online, std::string const& prefixExt = "" ) :
-        super( name, model, stage, prefixExt ),
-        M_N0(0),
-        M_N1(0),
-        M_addSupremizer(boption("crb.saddlepoint.add-supremizer")),
-        M_orthonormalize0(boption("crb.saddlepoint.orthonormalize0")),
-        M_orthonormalize1(boption("crb.saddlepoint.orthonormalize1"))
+        super( name, model, stage, prefixExt )
         {
         }
 
 public:
     void init()
-    {
-        using Feel::cout;
+        {
+            using Feel::cout;
         if ( !this->M_rebuild && this->loadDB() )
         {
             cout << "Database CRB SP " << this->lookForDB() << " available and loaded with M_N0="
-                 << M_N0 << ", M_N1="<< M_N1 <<", M_N="<<this->M_N <<std::endl;
+                 << subN(0) << ", M_N1="<< subN(1) <<", M_N="<<this->M_N <<std::endl;
             if( this->M_loadElementsDb )
             {
                 if( this->M_elements_database.loadDB() )
@@ -179,8 +145,6 @@ public:
                 else
                 {
                     this->M_N=0;
-                    M_N0=0;
-                    M_N1=0;
                 }
             }
         }
@@ -203,18 +167,6 @@ public:
             boost::tie( boost::tuples::ignore, boost::tuples::ignore/*M_Jqm*/, this->M_Rqm ) = this->M_model->computeAffineDecomposition();
     }
 
-    //@{ /// Database
-    //! save the CRB SP database
-    void saveDB() override;
-    //! load the CRB SP Database
-    bool loadDB() override;
-    //@}
-
-
-    element_type runWithExpansion( parameter_type const& mu , int N=-1, int time_index=-1) override;
-    element_type expansion( vectorN_type const& u, int N = -1,  bool dual=false ) const override;
-    element_type expansionSaddlePoint( vectorN_type const& U_coeff, int const N, bool dual ) const;
-
     element_type solve( parameter_type const& mu )
     {
         return this->M_model->solve( mu );
@@ -225,9 +177,11 @@ public:
     max_error_type maxErrorBounds( size_type N ) const override;
 
     matrix_info_tuple fixedPointPrimal( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold, std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false, bool computeOutput=true ) const override;
-    void fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > const& uN,
-                          std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K=0) const override;
+
+    void fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > const& uN, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K=0) const override;
+
     double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu,  std::vector<vectorN_type> const & /*uNold*/, int const k ) const override;
+
 
     error_estimation_type delta( size_type N, parameter_type const& mu, std::vector< vectorN_type > const& uN, std::vector< vectorN_type > const& uNdu, std::vector<vectorN_type> const& uNold, std::vector<vectorN_type> const& uNduold, int k=0 ) const override
     {
@@ -243,20 +197,9 @@ public:
         return boost::make_tuple( output_upper_bound ,primal_residual_coeffs,dual_residual_coeffs,delta_pr,delta_du );
     }
 
+
 private :
-    void addBasis( element_type& U, element_type& Udu, parameter_type& mu ) override;
-    void orthonormalizeBasis( int number_of_added_elements ) override;
-    template <typename WNType>
-    double orthonormalize( size_type N, WNType& wn, int Nm, int n_space );
-    template <typename WNType>
-    double checkOrthonormality( int N, const WNType& wn, int n_space ) const;
-    void buildRbMatrix( int number_of_added_elements, parameter_type& mu, element_ptrtype dual_initial_field ) override;
-    void saveRB() override;
-    void updateAffineDecompositionSize() override;
-
-    void exportBasisFunctions() override;
-
-    void initBlockMatrix();
+    void initRezMatrix() override;
 
     template <int Row>
     void offlineResidualSP( int Ncur , int number_of_added_elements );
@@ -267,18 +210,7 @@ private :
     void testResidual() override;
     double empiricalError( int N, parameter_type const& mu, std::vector<double> output_vec ) const;
 
-    int M_N0, M_N1;
-    bool M_addSupremizer;
-    bool M_orthonormalize0;
-    bool M_orthonormalize1;
 
-    blockmatrixN_type M_blockAqm_pr;
-    blockvectorN_type M_blockFqm_pr;
-    blockvectorN_type M_blockLqm_pr;
-    blockmatrixN_type M_blockAqm_du;
-    blockvectorN_type M_blockFqm_du;
-    blockvectorN_type M_blockLqm_du;
-    blockmatrixN_type M_blockAqm_pr_du;
 
     std::vector< std::vector< std::vector< std::vector< std::vector< double >>>>> M_R_RhsRhs;
     std::vector< std::vector< std::vector< std::vector< std::vector< vectorN_type >>>>> M_R_Lhs0Rhs;
@@ -299,706 +231,95 @@ private :
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
-
+    using super::subN;
+    using super::M_blockAqm_pr;
+    using super::M_blockAqm_du;
+    using super::M_blockAqm_pr_du;
+    using super::M_blockFqm_pr;
+    using super::M_blockFqm_du;
+    using super::M_blockLqm_pr;
+    using super::M_blockLqm_du;
+    using super::notEmptyAqm;
+    using super::notEmptyFqm;
+    using super::notEmptyLqm;
 }; // class CRBSaddlePoint
 
 
 template<typename TruthModelType>
 void
-CRBSaddlePoint<TruthModelType>::addBasis( element_type& U, element_type& Udu, parameter_type& mu )
+CRBSaddlePoint<TruthModelType>::initRezMatrix()
 {
-    auto u = U.template elementPtr<0>();
-    auto p = U.template elementPtr<1>();
-    auto udu = Udu.template elementPtr<0>();
-    auto pdu = Udu.template elementPtr<1>();
-    auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
-    auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
+    int QLhs = this->M_model->Qa();
+    int QRhs = this->M_model->Ql( 0 );
 
-     tic();
-     XN0->addPrimalBasisElement( u );
-     XN0->addDualBasisElement( udu );
-     M_N0++;
-     toc("Add Basis Function 0");
-     tic();
-     XN1->addPrimalBasisElement( p );
-     XN1->addDualBasisElement( pdu );
-     M_N1++;
-     toc("Add Basis Function 1");
-
-     if ( M_addSupremizer )
-     {
-         tic();
-         auto us = this->M_model->supremizer( mu, U );
-         XN0->addPrimalBasisElement( us );
-         XN0->addDualBasisElement( us );
-         M_N0++;
-         toc("Supremizer computation");
-     }
-
-}
-
-template<typename TruthModelType>
-void
-CRBSaddlePoint<TruthModelType>::orthonormalizeBasis( int number_of_added_elements )
-{
-    auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
-    auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
-
-
-    double norm_max = doption(_name="crb.orthonormality-tol");
-    int max_iter = ioption(_name="crb.orthonormality-max-iter");
-
-    if( M_orthonormalize0 )
+    if ( M_R_RhsRhs.size()==0 )
     {
-        tic();
-        double norm = norm_max+1;
-        int iter=0;
-        double old = 10;
-        int n_added = ( M_addSupremizer ) ? 2:1;
-        while( norm >= norm_max && iter < max_iter)
+        M_R_RhsRhs.resize(2);
+        M_R_Lhs0Rhs.resize(2);
+        M_R_Lhs1Rhs.resize(2);
+        M_R_Lhs0Lhs0.resize(2);
+        M_R_Lhs0Lhs1.resize(2);
+        M_R_Lhs1Lhs1.resize(2);
+    }
+
+    for ( int r=0; r<2; r++ )
+    {
+        M_R_RhsRhs[r].resize(QRhs);
+        for ( int q1=0; q1<QRhs; q1++ )
         {
-            norm = this->orthonormalize( M_N0, XN0->primalRB(), n_added, 0 );
-            iter++;
-            //if the norm doesn't change
-            if( math::abs(old-norm) < norm_max )
-                norm=0;
-            old=norm;
-        }
-        XN0->updatePrimalBasisForUse();
-        toc("RB Space Orthnormalization #0");
-    }
-    if( M_orthonormalize1 )
-    {
-        tic();
-        double norm = norm_max+1;
-        int iter=0;
-        double old = 10;
-        while( norm >= norm_max && iter < max_iter )
-        {
-            norm = this->orthonormalize( M_N1, XN1->primalRB(), 1, 1 );
-            iter++;
-            if( math::abs(old-norm) < norm_max )
-                norm=0;
-            old=norm;
-        }
-        XN1->updatePrimalBasisForUse();
-        toc("RB Space Orthnormalization #1");
-    }
-
-}
-
-template<typename TruthModelType>
-template<typename WNType>
-double
-CRBSaddlePoint<TruthModelType>::orthonormalize( size_type N, WNType& wn, int Nm, int n_space )
-{
-    int proc_number = this->worldComm().globalRank();
-    Feel::cout << "  -- orthonormalization (Gram-Schmidt)\n";
-    DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for N = " << N << "\n";
-    DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for WN = " << wn.size() << "\n";
-    DVLOG(2) << "[CRB::orthonormalize] starting ...\n";
-
-    for ( size_type i =N-Nm; i < N; ++i )
-    {
-        auto & wni = unwrap_ptr( wn[i] );
-        for ( size_type j = 0; j < i; ++j )
-        {
-            auto & wnj = unwrap_ptr( wn[j] );
-            value_type __rij_pr = this->M_model->scalarProduct(  wni, wnj, n_space );
-            wni.add( -__rij_pr, wnj );
-        }
-    }
-
-    // normalize
-    for ( size_type i =N-Nm; i < N; ++i )
-    {
-        auto & wni = unwrap_ptr( wn[i] );
-        value_type __rii_pr = math::sqrt( this->M_model->scalarProduct(  wni, wni, n_space ) );
-        wni.scale( 1./__rii_pr );
-    }
-
-    DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
-    DVLOG(2) << "[CRB::orthonormalize] copying back results in basis\n";
-
-    return this->checkOrthonormality( N , wn, n_space );
-} // orthonormalize()
-
-
-template <typename TruthModelType>
-template <typename WNType>
-double
-CRBSaddlePoint<TruthModelType>::checkOrthonormality ( int N, const WNType& wn, int n_space ) const
-{
-    if ( wn.size()==0 )
-    {
-        throw std::logic_error( "[CRB::checkOrthonormality] ERROR : size of wn is zero" );
-    }
-
-
-    matrixN_type A, I;
-    A.setZero( N, N );
-    I.setIdentity( N, N );
-
-    for ( int i = 0; i < N; ++i )
-    {
-        for ( int j = 0; j < N; ++j )
-        {
-            A( i, j ) = this->M_model->scalarProduct(  wn[i], wn[j], n_space );
-        }
-    }
-
-    A -= I;
-    DVLOG(2) << "orthonormalization: " << A.norm() << "\n";
-    if ( this->worldComm().isMasterRank() )
-    {
-        LOG( INFO ) << "    o check : " << A.norm() << " (should be 0)";
-    }
-    //FEELPP_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
-
-    return A.norm();
-} //checkOrthonormality()
-
-template<typename TruthModelType>
-void
-CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, parameter_type& mu, element_ptrtype dual_initial_field )
-{
-    tic();
-    int nbBlock = 2;
-    auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
-    auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
-
-    element_type Ur = this->M_model->functionSpace()->element();
-    element_type Uc = this->M_model->functionSpace()->element();
-    auto ur = Ur.template element<0>();
-    auto uc = Uc.template element<0>();
-    auto pr = Ur.template element<1>();
-    auto pc = Uc.template element<1>();
-
-    int number_of_elements_to_update = number_of_added_elements;
-    // in the case of cobuild, we have to update all since affine decomposition has changed
-    if( ioption(_name="ser.rb-frequency") != 0 && !this->M_rebuild)
-        number_of_elements_to_update = this->M_N;
-
-    int number_of_elements_to_update0 = M_addSupremizer ? 2*number_of_elements_to_update : number_of_elements_to_update;
-    // In case of SER use + error estimation, we compute \hat{A}, \hat{F} (resp. \hat{R}) to compute norm of residual (Riesz)
-    int ser_error_estimation = this->M_SER_errorEstimation;
-    if ( ioption("crb.saddlepoint.version")==2 )
-        this->M_model->initBlockMatrix();
-
-    // update Aqm block matrices
-    for ( size_type q=0; q<this->M_model->Qa(); q++ )
-    {
-        for ( size_type m=0; m<this->M_model->mMaxA(q); m++ )
-        {
-            for( int k = 0; k < nbBlock*nbBlock; ++k )
+            int mMax1 = this->M_model->mMaxF(0,q1);
+            M_R_RhsRhs[r][q1].resize(mMax1);
+            for ( int m1=0; m1<mMax1; m1++ )
             {
-                int n0 = k%nbBlock == 0 ? M_N0 : M_N1;
-                int n1 = k/nbBlock == 0 ? M_N0 : M_N1;
-                M_blockAqm_pr[k%nbBlock][k/nbBlock][q][m].conservativeResize( n0, n1 );
-                M_blockAqm_du[k%nbBlock][k/nbBlock][q][m].conservativeResize( n0, n1 );
-                M_blockAqm_pr_du[k%nbBlock][k/nbBlock][q][m].conservativeResize( n0, n1 );
-            }
-
-            for ( size_type i=M_N0-number_of_elements_to_update0; i<M_N0; i++ )
-            {
-                //update last row of matrix 00
-                for ( size_type j=0; j<M_N0; j++ )
-                {
-                    if ( ioption("crb.saddlepoint.version")==1 )
-                    {
-                        ur = XN0->primalBasisElement(i);
-                        pr.zero();
-                        uc = XN0->primalBasisElement(j);
-                        pc.zero();
-                        M_blockAqm_pr[0][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                        ur = XN0->dualBasisElement(i);
-                        pr.zero();
-                        uc = XN0->dualBasisElement(j);
-                        pc.zero();
-                        M_blockAqm_du[0][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur, true );
-                        ur = XN0->dualBasisElement(i);
-                        pr.zero();
-                        uc = XN0->primalBasisElement(j);
-                        pc.zero();
-                        M_blockAqm_pr_du[0][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                    }
-                    else if ( ioption("crb.saddlepoint.version")==2 )
-                    {
-                        M_blockAqm_pr[0][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->primalBasisElement(i), XN0->primalBasisElement(j), 0,0 );
-                        M_blockAqm_du[0][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->dualBasisElement(i), XN0->dualBasisElement(j), 0,0, true );
-                        M_blockAqm_pr_du[0][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->primalBasisElement(i), XN0->dualBasisElement(j), 0,0 );
-                    }
-                }
-
-                //update last row of matrix 01
-                for ( size_type j=0; j<M_N1; j++ )
-                {
-                    if ( ioption("crb.saddlepoint.version")==1 )
-                    {
-                        ur=XN0->primalBasisElement(i);
-                        pr.zero();
-                        uc.zero();
-                        pc=XN1->primalBasisElement(j);
-                        M_blockAqm_pr[0][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                        ur=XN0->dualBasisElement(i);
-                        pr.zero();
-                        uc.zero();
-                        pc=XN1->dualBasisElement(j);
-                        M_blockAqm_du[0][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur, true );
-                        ur=XN0->dualBasisElement(i);
-                        pr.zero();
-                        uc.zero();
-                        pc=XN1->primalBasisElement(j);
-                        M_blockAqm_pr_du[0][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                    }
-                    else if ( ioption("crb.saddlepoint.version")==2 )
-                    {
-                        M_blockAqm_pr[0][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->primalBasisElement(i), XN1->primalBasisElement(j), 0,1 );
-                        M_blockAqm_du[0][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->dualBasisElement(i), XN1->dualBasisElement(j), 0,1, true );
-                        M_blockAqm_pr_du[0][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->primalBasisElement(i), XN1->dualBasisElement(j), 0,1 );
-                    }
-                }
-            }
-
-            for ( size_type i=M_N1-number_of_elements_to_update; i<M_N1; i++ )
-            {
-                //update last row of matrix 10
-                for ( size_type j=0; j<M_N0; j++ )
-                {
-                    if ( ioption("crb.saddlepoint.version")==1 )
-                    {
-                        ur.zero();
-                        pr = XN1->primalBasisElement(i);
-                        uc = XN0->primalBasisElement(j);
-                        pc.zero();
-                        M_blockAqm_pr[1][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                        ur.zero();
-                        pr = XN1->dualBasisElement(i);
-                        uc = XN0->dualBasisElement(j);
-                        pc.zero();
-                        M_blockAqm_du[1][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur, true );
-                        ur.zero();
-                        pr = XN1->dualBasisElement(i);
-                        uc = XN0->primalBasisElement(j);
-                        pc.zero();
-                        M_blockAqm_pr_du[1][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                    }
-                    else if ( ioption("crb.saddlepoint.version")==2 )
-                    {
-                        M_blockAqm_pr[1][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->primalBasisElement(i), XN0->primalBasisElement(j), 1,0 );
-                        M_blockAqm_du[1][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->dualBasisElement(i), XN0->dualBasisElement(j), 1,0, true );
-                        M_blockAqm_pr_du[1][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->primalBasisElement(i), XN0->dualBasisElement(j), 1,0 );
-                    }
-                }
-
-                // update last row of matrix 11
-                for ( size_type j=0; j<M_N1; j++ )
-                {
-                    if ( ioption("crb.saddlepoint.version")==1 )
-                    {
-                        ur.zero();
-                        pr = XN1->primalBasisElement(i);
-                        uc.zero();
-                        pc = XN1->primalBasisElement(j);
-                        M_blockAqm_pr[1][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                        ur.zero();
-                        pr = XN1->dualBasisElement(i);
-                        uc.zero();
-                        pc = XN1->dualBasisElement(j);
-                        M_blockAqm_du[1][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur, true );
-                        ur.zero();
-                        pr = XN1->dualBasisElement(i);
-                        uc.zero();
-                        pc = XN1->primalBasisElement(j);
-                        M_blockAqm_pr_du[1][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                    }
-                    else if ( ioption("crb.saddlepoint.version")==2 )
-                    {
-                        M_blockAqm_pr[1][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->primalBasisElement(i), XN1->primalBasisElement(j), 1,1);
-                        M_blockAqm_du[1][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->dualBasisElement(i), XN1->dualBasisElement(j), 1,1, true);
-                        M_blockAqm_pr_du[1][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->primalBasisElement(i), XN1->dualBasisElement(j), 1,1);
-                    }
-                }
-            }
-
-            for ( size_type j=M_N0-number_of_elements_to_update0; j<M_N0; j++ )
-            {
-                //update last column of matrix 00
-                for ( size_type i=0; i<M_N0-number_of_elements_to_update0; i++)
-                {
-                    if ( ioption("crb.saddlepoint.version")==1 )
-                    {
-                        ur=XN0->primalBasisElement(i);
-                        pr.zero();
-                        uc=XN0->primalBasisElement(j);
-                        pc.zero();
-                        M_blockAqm_pr[0][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                        ur=XN0->dualBasisElement(i);
-                        pr.zero();
-                        uc=XN0->dualBasisElement(j);
-                        pc.zero();
-                        M_blockAqm_du[0][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur, true );
-                        ur=XN0->dualBasisElement(i);
-                        pr.zero();
-                        uc=XN0->primalBasisElement(j);
-                        pc.zero();
-                        M_blockAqm_pr_du[0][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                    }
-                    else if ( ioption("crb.saddlepoint.version")==2 )
-                    {
-                        M_blockAqm_pr[0][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->primalBasisElement(i), XN0->primalBasisElement(j), 0,0 );
-                        M_blockAqm_du[0][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->dualBasisElement(i), XN0->dualBasisElement(j), 0,0, true );
-                        M_blockAqm_pr_du[0][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->primalBasisElement(i), XN0->dualBasisElement(j), 0,0 );
-                    }
-                }
-
-                //update last column of matrix 10
-                for ( size_type i=0; i<M_N1-number_of_elements_to_update; i++ )
-                {
-                    if ( ioption("crb.saddlepoint.version")==1 )
-                    {
-                        ur.zero();
-                        pr=XN1->primalBasisElement(i);
-                        uc=XN0->primalBasisElement(j);
-                        pc.zero();
-                        M_blockAqm_pr[1][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                        ur.zero();
-                        pr=XN1->dualBasisElement(i);
-                        uc=XN0->dualBasisElement(j);
-                        pc.zero();
-                        M_blockAqm_du[1][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur, true );
-                        ur.zero();
-                        pr=XN1->dualBasisElement(i);
-                        uc=XN0->primalBasisElement(j);
-                        pc.zero();
-                        M_blockAqm_pr_du[1][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                    }
-                    else if ( ioption("crb.saddlepoint.version")==2 )
-                    {
-                        M_blockAqm_pr[1][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->primalBasisElement(i), XN0->primalBasisElement(j), 1,0 );
-                        M_blockAqm_du[1][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->dualBasisElement(i), XN0->dualBasisElement(j), 1,0, true);
-                        M_blockAqm_pr_du[1][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->primalBasisElement(i), XN0->dualBasisElement(j), 1,0 );
-                    }
-                }
-            }
-
-            for ( size_type j=M_N1-number_of_elements_to_update; j<M_N1; j++ )
-            {
-                //update last column of matrix 01
-                for ( size_type i=0; i<M_N0-number_of_elements_to_update0; i++ )
-                {
-                    if ( ioption("crb.saddlepoint.version")==1 )
-                    {
-                        ur=XN0->primalBasisElement(i);
-                        pr.zero();
-                        uc.zero();
-                        pc=XN1->primalBasisElement(j);
-                        M_blockAqm_pr[0][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                        ur=XN0->dualBasisElement(i);
-                        pr.zero();
-                        uc.zero();
-                        pc=XN1->dualBasisElement(j);
-                        M_blockAqm_du[0][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur, true );
-                        ur=XN0->dualBasisElement(i);
-                        pr.zero();
-                        uc.zero();
-                        pc=XN1->primalBasisElement(j);
-                        M_blockAqm_pr_du[0][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                    }
-                    else if ( ioption("crb.saddlepoint.version")==2 )
-                    {
-                        M_blockAqm_pr[0][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->primalBasisElement(i), XN1->primalBasisElement(j), 0,1 );
-                        M_blockAqm_du[0][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->dualBasisElement(i), XN1->dualBasisElement(j), 0,1, true );
-                        M_blockAqm_pr_du[0][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->primalBasisElement(i), XN1->dualBasisElement(j), 0,1 );
-                    }
-                }
-
-                //update last column of matrix 11
-                for ( size_type i=0; i<M_N1-number_of_elements_to_update; i++ )
-                {
-                    if ( ioption("crb.saddlepoint.version")==1 )
-                    {
-                        ur.zero();
-                        pr=XN1->primalBasisElement(i);
-                        uc.zero();
-                        pc=XN1->primalBasisElement(j);
-                        M_blockAqm_pr[1][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                        ur.zero();
-                        pr=XN1->dualBasisElement(i);
-                        uc.zero();
-                        pc=XN1->dualBasisElement(j);
-                        M_blockAqm_du[1][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur, true );
-                        ur.zero();
-                        pr=XN1->dualBasisElement(i);
-                        uc.zero();
-                        pc=XN1->primalBasisElement(j);
-                        M_blockAqm_pr_du[1][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
-                    }
-                    else if ( ioption("crb.saddlepoint.version")==2 )
-                    {
-                        M_blockAqm_pr[1][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->primalBasisElement(i), XN1->primalBasisElement(j), 1,1 );
-                        M_blockAqm_du[1][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->dualBasisElement(i), XN1->dualBasisElement(j), 1,1, true );
-                        M_blockAqm_pr_du[1][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->primalBasisElement(i), XN1->dualBasisElement(j), 1,1 );
-                    }
-                }
-
-            }
-        }
-    }
-
-    // update Fqm block vectors
-    for ( size_type q=0; q<this->M_model->Ql(0); q++ )
-    {
-        for ( size_type m=0; m<this->M_model->mMaxF(0, q); m++ )
-        {
-            M_blockFqm_pr[0][q][m].conservativeResize(M_N0);
-            M_blockFqm_pr[1][q][m].conservativeResize(M_N1);
-            M_blockFqm_du[0][q][m].conservativeResize(M_N0);
-            M_blockFqm_du[1][q][m].conservativeResize(M_N1);
-
-            // update block 0
-            for ( size_type l=M_N0-number_of_elements_to_update0; l<M_N0; l++ )
-            {
-                if ( ioption("crb.saddlepoint.version")==1 )
-                {
-                    ur=XN0->primalBasisElement(l);
-                    pr.zero();
-                    M_blockFqm_pr[0][q][m](l) = this->M_model->Fqm( 0, q, m, Ur );
-                    ur=XN0->dualBasisElement(l);
-                    pr.zero();
-                    M_blockFqm_du[0][q][m](l) = this->M_model->Fqm( 0, q, m, Ur );
-                }
-                else if ( ioption("crb.saddlepoint.version")==2 )
-                {
-                    M_blockFqm_pr[0][q][m](l) = this->M_model->FqmBlock( 0, q, m, XN0->primalBasisElement(l), 0 );
-                    M_blockFqm_du[0][q][m](l) = this->M_model->FqmBlock( 0, q, m, XN0->dualBasisElement(l), 0 );
-                }
-            }
-
-            // udpate block 1
-            for ( size_type l=M_N1-number_of_elements_to_update; l<M_N1; l++ )
-            {
-                if ( ioption("crb.saddlepoint.version")==1 )
-                {
-                    ur.zero();
-                    pr=XN1->primalBasisElement(l);
-                    M_blockFqm_pr[1][q][m](l) = this->M_model->Fqm( 0, q, m, Ur );
-                    ur.zero();
-                    pr=XN1->dualBasisElement(l);
-                    M_blockFqm_du[1][q][m](l) = this->M_model->Fqm( 0, q, m, Ur );
-                }
-                else if ( ioption("crb.saddlepoint.version")==2 )
-                {
-                    M_blockFqm_pr[1][q][m](l) = this->M_model->FqmBlock( 0, q, m, XN1->primalBasisElement(l), 1 );
-                    M_blockFqm_du[1][q][m](l) = this->M_model->FqmBlock( 0, q, m, XN1->dualBasisElement(l), 1 );
-                }
-            }
-        }
-    }
-
-    // update Lqm block vectors
-    for ( size_type q=0; q<this->M_model->Ql(this->M_output_index); q++ )
-    {
-        for ( size_type m=0; m<this->M_model->mMaxF(this->M_output_index, q); m++ )
-        {
-            M_blockLqm_pr[0][q][m].conservativeResize(M_N0);
-            M_blockLqm_pr[1][q][m].conservativeResize(M_N1);
-            M_blockLqm_du[0][q][m].conservativeResize(M_N0);
-            M_blockLqm_du[1][q][m].conservativeResize(M_N1);
-
-            // update block 0
-            for ( size_type l=M_N0-number_of_elements_to_update0; l<M_N0; l++ )
-            {
-                if ( ioption("crb.saddlepoint.version")==1 )
-                {
-                    ur=XN0->primalBasisElement(l);
-                    pr.zero();
-                    M_blockLqm_pr[0][q][m](l) = this->M_model->Fqm( this->M_output_index, q, m, Ur );
-                    ur=XN0->dualBasisElement(l);
-                    pr.zero();
-                    M_blockLqm_du[0][q][m](l) = this->M_model->Fqm( this->M_output_index, q, m, Ur );
-                }
-                else if ( ioption("crb.saddlepoint.version")==2 )
-                {
-                    M_blockLqm_pr[0][q][m](l) = this->M_model->FqmBlock( this->M_output_index, q, m, XN0->primalBasisElement(l), 0 );
-                    M_blockLqm_du[0][q][m](l) = this->M_model->FqmBlock( this->M_output_index, q, m, XN0->dualBasisElement(l), 0 );
-                }
-            }
-
-            // udpate block 1
-            for ( size_type l=M_N1-number_of_elements_to_update; l<M_N1; l++ )
-            {
-                if ( ioption("crb.saddlepoint.version")==1 )
-                {
-                    ur.zero();
-                    pr=XN1->primalBasisElement(l);
-                    M_blockLqm_pr[1][q][m](l) = this->M_model->Fqm( this->M_output_index, q, m, Ur );
-                    ur.zero();
-                    pr=XN1->dualBasisElement(l);
-                    M_blockLqm_du[1][q][m](l) = this->M_model->Fqm( this->M_output_index, q, m, Ur );
-                }
-                else if ( ioption("crb.saddlepoint.version")==2 )
-                {
-                    M_blockLqm_pr[1][q][m](l) = this->M_model->FqmBlock( this->M_output_index, q, m, XN1->primalBasisElement(l), 1 );
-                    M_blockLqm_du[1][q][m](l) = this->M_model->FqmBlock( this->M_output_index, q, m, XN1->dualBasisElement(l), 1 );
-                }
-            }
-        }
-    }
-
-
-
-    if ( ioption("crb.saddlepoint.version")==2 )
-        this->M_model->clearBlockMatix();
-
-    toc("Reduced Matrices Built");
-} // buildRbmatrix()
-
-template<typename TruthModelType>
-void
-CRBSaddlePoint<TruthModelType>::initBlockMatrix()
-{
-    int nbBlock = 2;
-    M_blockAqm_pr.resize(nbBlock);
-    M_blockAqm_du.resize(nbBlock);
-    M_blockAqm_pr_du.resize(nbBlock);
-    for( int i = 0; i < nbBlock; i++ )
-    {
-        M_blockAqm_pr[i].resize(nbBlock);
-        M_blockAqm_du[i].resize(nbBlock);
-        M_blockAqm_pr_du[i].resize(nbBlock);
-    }
-
-    M_blockFqm_pr.resize(nbBlock);
-    M_blockLqm_pr.resize(nbBlock);
-    M_blockFqm_du.resize(nbBlock);
-    M_blockLqm_du.resize(nbBlock);
-}
-
-template<typename TruthModelType>
-void
-CRBSaddlePoint<TruthModelType>::updateAffineDecompositionSize()
-{
-    if( this->M_rebuild || this->M_N == 0 )
-        initBlockMatrix();
-    int output_index = this->M_output_index;
-
-    M_N0 = M_addSupremizer ? 2*this->M_N : this->M_N;
-    M_N1 = this->M_N;
-
-    for (int r=0; r<2; r++ )
-    {
-        for ( int c=0; c<2; c++ )
-        {
-            M_blockAqm_pr[r][c].resize( this->M_model->Qa() );
-            M_blockAqm_du[r][c].resize( this->M_model->Qa() );
-            M_blockAqm_pr_du[r][c].resize( this->M_model->Qa() );
-            for ( int q=0; q<M_blockAqm_pr[r][c].size(); q++ )
-            {
-                M_blockAqm_pr[r][c][q].resize( this->M_model->mMaxA(q) );
-                M_blockAqm_du[r][c][q].resize( this->M_model->mMaxA(q) );
-                M_blockAqm_pr_du[r][c][q].resize( this->M_model->mMaxA(q) );
+                M_R_RhsRhs[r][q1][m1].resize(QRhs);
+                for ( int q2=0; q2<QRhs; q2++ )
+                    M_R_RhsRhs[r][q1][m1][q2].resize( this->M_model->mMaxF(0,q2) );
             }
         }
 
-        M_blockFqm_pr[r].resize( this->M_model->Ql(0) );
-        M_blockFqm_du[r].resize( this->M_model->Ql(0) );
-        for ( int q=0; q<M_blockFqm_pr[r].size(); q++ )
+        M_R_Lhs0Lhs0[r].resize(QLhs);
+        M_R_Lhs0Lhs1[r].resize(QLhs);
+        M_R_Lhs0Rhs[r].resize(QLhs);
+        for ( int q1=0; q1<QLhs; q1++ )
         {
-            M_blockFqm_pr[r][q].resize( this->M_model->mMaxF( 0, q) );
-            M_blockFqm_du[r][q].resize( this->M_model->mMaxF( 0, q) );
+            int mMax1 = this->M_model->mMaxA(q1);
+            M_R_Lhs0Lhs0[r][q1].resize(mMax1);
+            M_R_Lhs0Lhs1[r][q1].resize(mMax1);
+            M_R_Lhs0Rhs[r][q1].resize(mMax1);
+            for ( int m1=0; m1<mMax1; m1++ )
+            {
+                M_R_Lhs0Lhs0[r][q1][m1].resize(QLhs);
+                M_R_Lhs0Lhs1[r][q1][m1].resize(QLhs);
+                M_R_Lhs0Rhs[r][q1][m1].resize(QRhs);
+                for ( int q2=0; q2<QLhs; q2++ )
+                    M_R_Lhs0Lhs0[r][q1][m1][q2].resize( this->M_model->mMaxA(q2) );
+                for ( int q2=0; q2<QLhs; q2++ )
+                    M_R_Lhs0Lhs1[r][q1][m1][q2].resize( this->M_model->mMaxA(q2) );
+                for ( int q2=0; q2<QRhs; q2++ )
+                    M_R_Lhs0Rhs[r][q1][m1][q2].resize( this->M_model->mMaxF(0,q2) );
+            }
         }
 
-        M_blockLqm_pr[r].resize( this->M_model->Ql( output_index ) );
-        M_blockLqm_du[r].resize( this->M_model->Ql( output_index ) );
-        for ( int q=0; q<M_blockLqm_pr[r].size(); q++ )
+        M_R_Lhs1Lhs1[r].resize(QLhs);
+        M_R_Lhs1Rhs[r].resize(QLhs);
+        for ( int q1=0; q1<QLhs; q1++ )
         {
-            M_blockLqm_pr[r][q].resize( this->M_model->mMaxF( output_index, q ) );
-            M_blockLqm_du[r][q].resize( this->M_model->mMaxF( output_index, q ) );
+            int mMax1 = this->M_model->mMaxA(q1);
+            M_R_Lhs1Lhs1[r][q1].resize(mMax1);
+            M_R_Lhs1Rhs[r][q1].resize(mMax1);
+
+            for ( int m1=0; m1<mMax1; m1++ )
+            {
+                M_R_Lhs1Lhs1[r][q1][m1].resize(QLhs);
+                M_R_Lhs1Rhs[r][q1][m1].resize(QRhs);
+                for ( int q2=0; q2<QLhs; q2++ )
+                    M_R_Lhs1Lhs1[r][q1][m1][q2].resize( this->M_model->mMaxA(q2) );
+                for ( int q2=0; q2<QRhs; q2++ )
+                    M_R_Lhs1Rhs[r][q1][m1][q2].resize( this->M_model->mMaxF(0,q2) );
+            }
         }
     }
-
-    if ( this->M_error_type == CRB_RESIDUAL || this->M_error_type == CRB_RESIDUAL_SCM )
-    {
-        int QLhs = this->M_model->Qa();
-        int QRhs = this->M_model->Ql( 0 );
-
-        if ( M_R_RhsRhs.size()==0 )
-        {
-            M_R_RhsRhs.resize(2);
-            M_R_Lhs0Rhs.resize(2);
-            M_R_Lhs1Rhs.resize(2);
-            M_R_Lhs0Lhs0.resize(2);
-            M_R_Lhs0Lhs1.resize(2);
-            M_R_Lhs1Lhs1.resize(2);
-        }
-
-        for ( int r=0; r<2; r++ )
-        {
-            M_R_RhsRhs[r].resize(QRhs);
-            for ( int q1=0; q1<QRhs; q1++ )
-            {
-                int mMax1 = this->M_model->mMaxF(0,q1);
-                M_R_RhsRhs[r][q1].resize(mMax1);
-                for ( int m1=0; m1<mMax1; m1++ )
-                {
-                    M_R_RhsRhs[r][q1][m1].resize(QRhs);
-                    for ( int q2=0; q2<QRhs; q2++ )
-                        M_R_RhsRhs[r][q1][m1][q2].resize( this->M_model->mMaxF(0,q2) );
-                }
-            }
-
-            M_R_Lhs0Lhs0[r].resize(QLhs);
-            M_R_Lhs0Lhs1[r].resize(QLhs);
-            M_R_Lhs0Rhs[r].resize(QLhs);
-            for ( int q1=0; q1<QLhs; q1++ )
-            {
-                int mMax1 = this->M_model->mMaxA(q1);
-                M_R_Lhs0Lhs0[r][q1].resize(mMax1);
-                M_R_Lhs0Lhs1[r][q1].resize(mMax1);
-                M_R_Lhs0Rhs[r][q1].resize(mMax1);
-                for ( int m1=0; m1<mMax1; m1++ )
-                {
-                    M_R_Lhs0Lhs0[r][q1][m1].resize(QLhs);
-                    M_R_Lhs0Lhs1[r][q1][m1].resize(QLhs);
-                    M_R_Lhs0Rhs[r][q1][m1].resize(QRhs);
-                    for ( int q2=0; q2<QLhs; q2++ )
-                        M_R_Lhs0Lhs0[r][q1][m1][q2].resize( this->M_model->mMaxA(q2) );
-                    for ( int q2=0; q2<QLhs; q2++ )
-                        M_R_Lhs0Lhs1[r][q1][m1][q2].resize( this->M_model->mMaxA(q2) );
-                    for ( int q2=0; q2<QRhs; q2++ )
-                        M_R_Lhs0Rhs[r][q1][m1][q2].resize( this->M_model->mMaxF(0,q2) );
-                }
-            }
-
-            M_R_Lhs1Lhs1[r].resize(QLhs);
-            M_R_Lhs1Rhs[r].resize(QLhs);
-            for ( int q1=0; q1<QLhs; q1++ )
-            {
-                int mMax1 = this->M_model->mMaxA(q1);
-                M_R_Lhs1Lhs1[r][q1].resize(mMax1);
-                M_R_Lhs1Rhs[r][q1].resize(mMax1);
-
-                for ( int m1=0; m1<mMax1; m1++ )
-                {
-                    M_R_Lhs1Lhs1[r][q1][m1].resize(QLhs);
-                    M_R_Lhs1Rhs[r][q1][m1].resize(QRhs);
-                    for ( int q2=0; q2<QLhs; q2++ )
-                        M_R_Lhs1Lhs1[r][q1][m1][q2].resize( this->M_model->mMaxA(q2) );
-                    for ( int q2=0; q2<QRhs; q2++ )
-                        M_R_Lhs1Rhs[r][q1][m1][q2].resize( this->M_model->mMaxF(0,q2) );
-                }
-            }
-        }
-    } // if Residual
 } // updateAffinedecompositionsize()
-
-template<typename TruthModelType>
-void
-CRBSaddlePoint<TruthModelType>::saveRB()
-{
-    this->M_elements_database.saveDB();
-}
 
 
 
@@ -1016,8 +337,8 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
     bool is_linear = this->M_model->isLinear();
     double output=0;
     double increment = this->M_fixedpointIncrementTol;
-    int N0 = M_addSupremizer ? 2*N:N;
-    int N1 = N;
+    int N0 = this->subN( 0,N );
+    int N1 = this->subN( 1,N );
 
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm;
@@ -1054,10 +375,14 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
         {
             for ( size_type m=0; m<mMaxA[q]; m++ )
             {
-                A.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_pr[0][0][q][m].block(0,0,N0,N0);
-                A.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_pr[0][1][q][m].block(0,0,N0,N1);
-                A.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_pr[1][0][q][m].block(0,0,N1,N0);
-                A.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_pr[1][1][q][m].block(0,0,N1,N1);
+                if ( this->notEmptyAqm(0,0,q,m) )
+                    A.block( 0,  0, N0, N0) += betaAqm[q][m]*M_blockAqm_pr[0][0][q][m].block(0,0,N0,N0);
+                if ( this->notEmptyAqm(0,1,q,m) )
+                    A.block( 0, N0, N0, N1) += betaAqm[q][m]*M_blockAqm_pr[0][1][q][m].block(0,0,N0,N1);
+                if ( this->notEmptyAqm(1,0,q,m) )
+                    A.block(N0,  0, N1, N0) += betaAqm[q][m]*M_blockAqm_pr[1][0][q][m].block(0,0,N1,N0);
+                if ( this->notEmptyAqm(1,1,q,m) )
+                    A.block(N0, N0, N1, N1) += betaAqm[q][m]*M_blockAqm_pr[1][1][q][m].block(0,0,N1,N1);
             }
         }
 
@@ -1066,10 +391,14 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
         {
             for ( size_type m=0; m<mMaxF[q]; m++ )
             {
-                F.head(N0) += betaFqm[0][q][m]*M_blockFqm_pr[0][q][m].head(N0);
-                F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
+                if ( this->notEmptyFqm(0,q,m) )
+                    F.head(N0) += betaFqm[0][q][m]*M_blockFqm_pr[0][q][m].head(N0);
+                if ( this->notEmptyFqm(1,q,m) )
+                    F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
             }
         }
+        //Feel::cout << "A=\n"<<A<<"\n F=\n"<<F<<std::endl;
+
         uN[0] = A.fullPivLu().solve( F );
     }
     else //non-linear
@@ -1081,21 +410,25 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
         do
         {
             previous_uN = uN[0];
-            // if ( this->M_useRbSpaceContextEim && this->M_hasRbSpaceContextEim )
-            //     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
-            //         this->M_model->computeBetaQm( uN[0], mu/*, N*/ );
-            // else
+            if ( this->M_useRbSpaceContextEim && this->M_hasRbSpaceContextEim )
+                boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                    this->M_model->computeBetaQm( uN[0], mu/*, N*/ );
+            else
                 boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
                     this->M_model->computeBetaQm( this->expansion( uN[0], N ), mu );
-            A.setZero( N0+N1,N0+N1);
+            A.setZero( N0+N1,N0+N1 );
             for ( size_type q=0; q<Qa; q++ )
             {
                 for ( size_type m=0; m<mMaxA[q]; m++ )
                 {
-                    A.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_pr[0][0][q][m].block(0,0,N0,N0);
-                    A.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_pr[0][1][q][m].block(0,0,N0,N1);
-                    A.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_pr[1][0][q][m].block(0,0,N1,N0);
-                    A.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_pr[1][1][q][m].block(0,0,N1,N1);
+                    if ( this->notEmptyAqm(0,0,q,m) )
+                        A.block( 0,  0, N0, N0) += betaAqm[q][m]*M_blockAqm_pr[0][0][q][m].block(0,0,N0,N0);
+                    if ( this->notEmptyAqm(0,1,q,m) )
+                        A.block( 0, N0, N0, N1) += betaAqm[q][m]*M_blockAqm_pr[0][1][q][m].block(0,0,N0,N1);
+                    if ( this->notEmptyAqm(1,0,q,m) )
+                        A.block(N0,  0, N1, N0) += betaAqm[q][m]*M_blockAqm_pr[1][0][q][m].block(0,0,N1,N0);
+                    if ( this->notEmptyAqm(1,1,q,m) )
+                        A.block(N0, N0, N1, N1) += betaAqm[q][m]*M_blockAqm_pr[1][1][q][m].block(0,0,N1,N1);
                 }
             }
 
@@ -1104,8 +437,10 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
             {
                 for ( size_type m=0; m<mMaxF[q]; m++ )
                 {
-                    F.head(N0) += betaFqm[0][q][m]*M_blockFqm_pr[0][q][m].head(N0);
-                    F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
+                    if ( this->notEmptyFqm(0,q,m) )
+                        F.head(N0) += betaFqm[0][q][m]*M_blockFqm_pr[0][q][m].head(N0);
+                    if ( this->notEmptyFqm(1,q,m) )
+                        F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
                 }
             }
             uN[0] = A.fullPivLu().solve( F );
@@ -1125,9 +460,8 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
             }
             ++fi;
         }while ( !fixPointIsFinished );
-
-
     }
+
 
     if ( computeOutput )
     {
@@ -1136,8 +470,10 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
         {
             for ( size_type m=0; m<mMaxL[q]; m++ )
             {
-                L.head(N0) += betaFqm[this->M_output_index][q][m]*M_blockLqm_pr[0][q][m].head(N0);
-                L.tail(N1) += betaFqm[this->M_output_index][q][m]*M_blockLqm_pr[1][q][m].head(N1);
+                if ( this->notEmptyLqm(0,q,m) )
+                    L.head(N0) += betaFqm[this->M_output_index][q][m]*M_blockLqm_pr[0][q][m].head(N0);
+                if ( this->notEmptyLqm(1,q,m) )
+                    L.tail(N1) += betaFqm[this->M_output_index][q][m]*M_blockLqm_pr[1][q][m].head(N1);
             }
         }
         output = L.dot( uN[0] );
@@ -1169,8 +505,8 @@ CRBSaddlePoint<TruthModelType>::fixedPointDual(  size_type N, parameter_type con
                                                  std::vector< double > & output_vector,
                                                  int K ) const
 {
-    int N0 = M_addSupremizer ? 2*N:N;
-    int N1 = N;
+    int N0 = this->subN(0,N);
+    int N1 = this->subN(1,N);
 
     bool is_linear = this->M_model->isLinear();
 
@@ -1202,10 +538,14 @@ CRBSaddlePoint<TruthModelType>::fixedPointDual(  size_type N, parameter_type con
         {
             for ( size_type m=0; m<mMaxA[q]; m++ )
             {
-                Adu.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_du[0][0][q][m].block(0,0,N0,N0);
-                Adu.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_du[0][1][q][m].block(0,0,N0,N1);
-                Adu.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_du[1][0][q][m].block(0,0,N1,N0);
-                Adu.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_du[1][1][q][m].block(0,0,N1,N1);
+                if ( this->notEmptyAqm(0,0,q,m) )
+                    Adu.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_du[0][0][q][m].block(0,0,N0,N0);
+                if ( this->notEmptyAqm(0,1,q,m) )
+                    Adu.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_du[0][1][q][m].block(0,0,N0,N1);
+                if ( this->notEmptyAqm(1,0,q,m) )
+                    Adu.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_du[1][0][q][m].block(0,0,N1,N0);
+                if ( this->notEmptyAqm(1,1,q,m) )
+                    Adu.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_du[1][1][q][m].block(0,0,N1,N1);
             }
         }
         Fdu.setZero( N0+N1 );
@@ -1213,8 +553,10 @@ CRBSaddlePoint<TruthModelType>::fixedPointDual(  size_type N, parameter_type con
             {
                 for(int m=0; m < mMaxF[q]; m++)
                 {
-                    Fdu.head(N0) -= betaFqm[this->M_output_index][q][m]*M_blockLqm_du[0][q][m].head( N0 );
-                    Fdu.tail(N1) -= betaFqm[this->M_output_index][q][m]*M_blockLqm_du[1][q][m].head( N1 );
+                    if ( this->notEmptyFqm(0,q,m) )
+                        Fdu.head(N0) -= betaFqm[this->M_output_index][q][m]*M_blockLqm_du[0][q][m].head( N0 );
+                    if ( this->notEmptyFqm(1,q,m) )
+                        Fdu.tail(N1) -= betaFqm[this->M_output_index][q][m]*M_blockLqm_du[1][q][m].head( N1 );
                 }
             }
             uNdu[0] = Adu.fullPivLu().solve( Fdu );
@@ -1241,10 +583,14 @@ CRBSaddlePoint<TruthModelType>::fixedPointDual(  size_type N, parameter_type con
             {
                 for ( size_type m=0; m<mMaxA[q]; m++ )
                 {
-                    Adu.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_du[0][0][q][m].block(0,0,N0,N0);
-                    Adu.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_du[0][1][q][m].block(0,0,N0,N1);
-                    Adu.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_du[1][0][q][m].block(0,0,N1,N0);
-                    Adu.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_du[1][1][q][m].block(0,0,N1,N1);
+                    if ( this->notEmptyAqm(0,0,q,m) )
+                        Adu.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_du[0][0][q][m].block(0,0,N0,N0);
+                    if ( this->notEmptyAqm(0,1,q,m) )
+                        Adu.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_du[0][1][q][m].block(0,0,N0,N1);
+                    if ( this->notEmptyAqm(1,0,q,m) )
+                        Adu.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_du[1][0][q][m].block(0,0,N1,N0);
+                    if ( this->notEmptyAqm(1,1,q,m) )
+                        Adu.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_du[1][1][q][m].block(0,0,N1,N1);
                 }
             }
 
@@ -1253,8 +599,10 @@ CRBSaddlePoint<TruthModelType>::fixedPointDual(  size_type N, parameter_type con
             {
                 for ( size_type m=0; m<mMaxF[q]; m++ )
                 {
-                    Fdu.head(N0) += betaFqm[0][q][m]*M_blockFqm_du[0][q][m].head(N0);
-                    Fdu.tail(N1) += betaFqm[0][q][m]*M_blockFqm_du[1][q][m].head(N1);
+                    if ( this->notEmptyFqm(0,q,m) )
+                        Fdu.head(N0) += betaFqm[0][q][m]*M_blockFqm_du[0][q][m].head(N0);
+                    if ( this->notEmptyFqm(1,q,m) )
+                        Fdu.tail(N1) += betaFqm[0][q][m]*M_blockFqm_du[1][q][m].head(N1);
                 }
             }
             uNdu[0] = Adu.fullPivLu().solve( Fdu );
@@ -1274,10 +622,11 @@ template< typename TruthModelType>
 double
 CRBSaddlePoint<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu,  std::vector<vectorN_type> const & /*uNold*/, int const k ) const
 {
-    int N = uN[0].size();
-    int Ni = M_addSupremizer ? N/3 : N/2;
-    int N0 = M_addSupremizer ? 2*Ni : Ni;
-    int N1 = Ni;
+    int N=0;
+    for ( int n=0; n<this->WNmuSize(); n++ )
+        N = uN[0].size()==this->dimension(n) ? n:0;
+    int N0 = this->subN(0,N);
+    int N1 = this->subN(1,N);
 
     matrixN_type Aprdu ( N0+N1, N0+N1 ) ;
     vectorN_type Fdu ( N0+N1 );
@@ -1298,28 +647,34 @@ CRBSaddlePoint<TruthModelType>::correctionTerms(parameter_type const& mu, std::v
         boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = this->M_model->computeBetaQm( mu/* ,time*/);
     else
     {
-        // if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
-        //     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = this->M_model->computeBetaQm( uN[0], mu/*, N*/ );
-        // else
+         if ( this->M_useRbSpaceContextEim && this->M_hasRbSpaceContextEim )
+             boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = this->M_model->computeBetaQm( uN[0], mu/*, N*/ );
+         else
             boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
-                this->M_model->computeBetaQm( this->expansion( uN[0], Ni ), mu );
+                this->M_model->computeBetaQm( this->expansion( uN[0], N ), mu );
     }
     for(size_type q = 0;q < this->M_model->Ql(0); ++q)
     {
         for(int m=0; m < this->M_model->mMaxF(0,q); m++)
         {
-            Fdu.head(N0) += betaFqm[0][q][m]*M_blockFqm_du[0][q][m].head(N0);
-            Fdu.tail(N1) += betaFqm[0][q][m]*M_blockFqm_du[1][q][m].head(N1);
+            if ( this->notEmptyFqm(0,q,m) )
+                Fdu.head(N0) += betaFqm[0][q][m]*M_blockFqm_du[0][q][m].head(N0);
+            if ( this->notEmptyFqm(1,q,m) )
+                Fdu.tail(N1) += betaFqm[0][q][m]*M_blockFqm_du[1][q][m].head(N1);
         }
     }
     for(size_type q = 0;q < this->M_model->Qa(); ++q)
     {
         for(int m=0; m < this->M_model->mMaxA(q); m++)
         {
-            Aprdu.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_pr_du[0][0][q][m].block(0,0,N0,N0);
-            Aprdu.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_pr_du[0][1][q][m].block(0,0,N0,N1);
-            Aprdu.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_pr_du[1][0][q][m].block(0,0,N1,N0);
-            Aprdu.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_pr_du[1][1][q][m].block(0,0,N1,N1);
+            if ( this->notEmptyAqm(0,0,q,m) )
+                Aprdu.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_pr_du[0][0][q][m].block(0,0,N0,N0);
+            if ( this->notEmptyAqm(0,1,q,m) )
+                Aprdu.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_pr_du[0][1][q][m].block(0,0,N0,N1);
+            if ( this->notEmptyAqm(1,0,q,m) )
+                Aprdu.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_pr_du[1][0][q][m].block(0,0,N1,N0);
+            if ( this->notEmptyAqm(1,1,q,m) )
+                Aprdu.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_pr_du[1][1][q][m].block(0,0,N1,N1);
         }
     }
 
@@ -1351,10 +706,11 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
     auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
 
     bool optimize = boption(_name="crb.optimize-offline-residual") ;
-    int N0 = M_addSupremizer ? 2*Ncur:Ncur;
-    int N1 = Ncur;
-    int n_added0 = M_addSupremizer ? 2*number_of_added_elements:number_of_added_elements;
-    int n_added1 = number_of_added_elements;
+
+    int N0 = this->subN(0,Ncur);
+    int N1 = this->subN(1,Ncur);
+    int n_added0 = N0 - this->subN(0,Ncur-1);
+    int n_added1 = N1 - this->subN(1,Ncur-1);
     // in the case of SER we need to rebuild for the new EIM basis
     if( ioption("ser.eim-frequency") != 0 )
     {
@@ -1396,7 +752,7 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
         {
             for ( int m=0; m< this->M_model->mMaxF(0,q); m++ )
             {
-                this->M_model->l2solveSP( Z1, Fqm[q][m], Row );
+                this->M_model->l2solve( Z1, Fqm[q][m], Row );
                 Z1->save( (boost::format("Riesz/%1%_%2%%3%") %Row %q %m).str()  );
             }
         }
@@ -1429,7 +785,7 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
             {
                 Lhs0[q][m]->multVector( X0, W );
                 W->scale(-1.);
-                this->M_model->l2solveSP( Z1, W, Row );
+                this->M_model->l2solve( Z1, W, Row );
                 Z1->save( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q %m %i).str()  );
             }
         }
@@ -1446,7 +802,7 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
             {
                 Lhs1[q][m]->multVector( X1, W );
                 W->scale(-1.);
-                this->M_model->l2solveSP( Z1, W, Row );
+                this->M_model->l2solve( Z1, W, Row );
                 Z1->save( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q %m %i).str()  );
             }
         }
@@ -1696,7 +1052,7 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
         } // q1 loop Lhs1
     } // j loop Lhs1
 
-    this->M_model->clearBlockMatix();
+    this->M_model->clearBlockMatrix();
 
 }
 
@@ -1719,8 +1075,8 @@ CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const
                                                 vectorN_type Un, bool test ) const
 {
     using Feel::cout;
-    int N0 = M_addSupremizer ? 2*Ncur:Ncur;
-    int N1 = Ncur;
+    int N0 = this->subN(0,Ncur);
+    int N1 = this->subN(1,Ncur);
 
     CHECK( Un.size() == N0 + N1 )
         << "invalide size of Un, vector can't be cut, Un.size="
@@ -1896,15 +1252,15 @@ CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const
         A0 = A->createSubMatrix( i_row, i_col0 );
         A0->multVector( Vn, F0 );
         F0->scale(-1);
-        this->M_model->l2solveSP( Lhs0, F0, Row );
+        this->M_model->l2solve( Lhs0, F0, Row );
 
         A1 = A->createSubMatrix( i_row, i_col1 );
         A1->multVector( Pn, F1 );
         F1->scale(-1);
-        this->M_model->l2solveSP( Lhs1, F1, Row );
+        this->M_model->l2solve( Lhs1, F1, Row );
 
         FRow = F[0]->createSubVector( i_row );
-        this->M_model->l2solveSP( Rhs, FRow, Row );
+        this->M_model->l2solve( Rhs, FRow, Row );
 
         auto RhsRhs_test = this->M_model->scalarProduct(Rhs,Rhs, Row);
         auto Lhs0Rhs_test = 2.*this->M_model->scalarProduct(Lhs0, Rhs, Row);
@@ -2033,131 +1389,16 @@ CRBSaddlePoint<TruthModelType>::empiricalError( int N, parameter_type const& mu,
     return math::abs(output-output2);
 }
 
-template<typename TruthModelType>
-typename CRBSaddlePoint<TruthModelType>::element_type
-CRBSaddlePoint<TruthModelType>::runWithExpansion( parameter_type const& mu , int N , int time_index )
-{
-    int Nwn;
 
-    if( N > 0 )
-        Nwn = N;
-    else
-        Nwn = this->M_N;
-
-    std::vector<vectorN_type> uN;
-    std::vector<vectorN_type> uNdu;
-    std::vector<vectorN_type> uNold;
-    std::vector<vectorN_type> uNduold;
-
-    auto o = this->lb( Nwn, mu, uN, uNdu , uNold, uNduold );
-    int size = uN.size();
-
-
-    return expansionSaddlePoint( uN[size-1], Nwn, false );
-}
-
-template<typename TruthModelType>
-typename CRBSaddlePoint<TruthModelType>::element_type
-CRBSaddlePoint<TruthModelType>::expansion( vectorN_type const& u, int N, bool dual ) const
-{
-    return expansionSaddlePoint( u, N, dual );
-}
-
-template<typename TruthModelType>
-typename CRBSaddlePoint<TruthModelType>::element_type
-CRBSaddlePoint<TruthModelType>::expansionSaddlePoint( vectorN_type const& U_coeff, int const N, bool dual ) const
-{
-    auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
-    auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
-    auto WN0 = dual ? XN0->dualRB() : XN0->primalRB();
-    auto WN1 = dual ? XN1->dualRB() : XN1->primalRB();
-
-    int Nwn = N>0 ? N:this->M_N;
-
-    int N0 = M_addSupremizer ? 2*Nwn:Nwn;
-    int N1 = Nwn;
-
-    CHECK( Nwn <= WN0.size() )<< "invalid expansion size\n";
-    CHECK( N0+N1 <= U_coeff.size() )<< "invalid expansion size, Nwn="
-                                    << N0+N1
-                                    << ", U_coeff.size="<<U_coeff.size()<<std::endl;
-    CHECK( U_coeff.size() == N0 + N1 )
-        << "invalide size of U_coeff, vector can't be cut\n";
-
-    vectorN_type u_coeff = U_coeff.head( N0 );
-    vectorN_type p_coeff = U_coeff.tail( N1 );
-
-    //Feel::cout << U_coeff << std::endl;
-
-    element_type U = this->M_model->functionSpace()->element();
-    auto u = U.template element<0>();
-    auto p = U.template element<1>();
-
-    u = Feel::expansion( WN0, u_coeff, N0 ).container();
-    p = Feel::expansion( WN1, p_coeff, N1 ).container();
-    return U;
-}
-
-template<typename TruthModelType>
-void
-CRBSaddlePoint<TruthModelType>::exportBasisFunctions()
-{
-    tic();
-    auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
-    auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
-    auto u_vec = XN0->primalRB();
-    auto p_vec = XN1->primalRB();
-
-    auto e = exporter( _mesh=this->M_model->functionSpace()->mesh(), _name="basis-functions" );
-    CHECK( u_vec.size()>0) << "[CRBSaddlePoint::exportBasisFunctions] Error : there are no element to export in first rb\n";
-    CHECK( p_vec.size()>0) << "[CRBSaddlePoint::exportBasisFunctions] Error : there are no element to export in second rb\n";
-
-    for( int index=0; index<this->M_N; index++)
-    {
-        std::string mu_str;
-        auto mu=this->M_WNmu->at( index );
-
-        for ( int i=0; i<mu.size(); i++)
-            mu_str += ( boost::format( "_%1%" ) %mu[i] ).str() ;
-
-        std::string basis_name = ( boost::format( "u_pr_%1%.0_param") %index  ).str();
-        std::string name = basis_name + mu_str;
-        int index0 = M_addSupremizer ? 2*index:index;
-        e->step(0)->add( name, unwrap_ptr( u_vec[index0] ) );
-
-        basis_name = ( boost::format( "p_pr_%1%_param") %index ).str();
-        name = basis_name + mu_str;
-        e->step(0)->add( name, unwrap_ptr( p_vec[index] ) );
-
-        if (M_addSupremizer)
-        {
-            basis_name = ( boost::format( "u_pr_%1%.1_param") %index  ).str();
-            name = basis_name + mu_str;
-            e->step(0)->add( name, unwrap_ptr( u_vec[index0+1] ) );
-        }
-    }
-    e->save();
-    toc("Export Basis Functions");
-}
 
 template<typename TruthModelType>
 template<class Archive>
 void
 CRBSaddlePoint<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 {
-    int proc_number = this->worldComm().globalRank();
     LOG(INFO) <<"[CRBSaddlepoint::save] version : "<<version<<std::endl;
 
     ar & boost::serialization::base_object<super>( *this );
-    ar & BOOST_SERIALIZATION_NVP( M_N0 );
-    ar & BOOST_SERIALIZATION_NVP( M_N1 );
-    ar & BOOST_SERIALIZATION_NVP( M_blockAqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_blockFqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_blockLqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_blockAqm_du );
-    ar & BOOST_SERIALIZATION_NVP( M_blockFqm_du );
-    ar & BOOST_SERIALIZATION_NVP( M_blockLqm_du );
-    ar & BOOST_SERIALIZATION_NVP( M_blockAqm_pr_du );
 
     ar & BOOST_SERIALIZATION_NVP( M_R_RhsRhs );
     ar & BOOST_SERIALIZATION_NVP( M_R_Lhs0Rhs );
@@ -2174,20 +1415,9 @@ template<class Archive>
 void
 CRBSaddlePoint<TruthModelType>::load( Archive & ar, const unsigned int version )
 {
-
-    int proc_number = this->worldComm().globalRank();
     LOG(INFO) <<"[CRBSaddlePoint::load] version"<< version <<std::endl;
 
     ar & boost::serialization::base_object<super>( *this );
-    ar & BOOST_SERIALIZATION_NVP( M_N0 );
-    ar & BOOST_SERIALIZATION_NVP( M_N1 );
-    ar & BOOST_SERIALIZATION_NVP( M_blockAqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_blockFqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_blockLqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_blockAqm_du );
-    ar & BOOST_SERIALIZATION_NVP( M_blockFqm_du );
-    ar & BOOST_SERIALIZATION_NVP( M_blockLqm_du );
-    ar & BOOST_SERIALIZATION_NVP( M_blockAqm_pr_du );
 
     ar & BOOST_SERIALIZATION_NVP( M_R_RhsRhs );
     ar & BOOST_SERIALIZATION_NVP( M_R_Lhs0Rhs );
@@ -2198,53 +1428,7 @@ CRBSaddlePoint<TruthModelType>::load( Archive & ar, const unsigned int version )
 
 } // load( ... )
 
-template<typename TruthModelType>
-void
-CRBSaddlePoint<TruthModelType>::saveDB()
-{
-    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
 
-    if ( ofs )
-    {
-        // boost::archive::text_oarchive oa( ofs );
-        boost::archive::binary_oarchive oa( ofs );
-        // write class instance to archive
-        oa << *this;
-        // archive and stream closed when destructors are called
-    }
-    this->saveJson();
-} //saveDB()
-
-template<typename TruthModelType>
-bool
-CRBSaddlePoint<TruthModelType>::loadDB()
-{
-    if( this->isDBLoaded() )
-        return true;
-
-    fs::path db = this->lookForDB();
-
-    if ( db.empty() )
-        return false;
-
-    if ( !fs::exists( db ) )
-        return false;
-
-    fs::ifstream ifs( db );
-
-    if ( ifs )
-    {
-        // boost::archive::text_iarchive ia( ifs );
-        boost::archive::binary_iarchive ia( ifs );
-        // write class instance to archive
-        ia >> *this;
-        this->setIsLoaded( true );
-        // archive and stream closed when destructors are called
-        return true;
-    }
-
-    return false;
-} // loadDB()
 
 
 } // namespace Feel
