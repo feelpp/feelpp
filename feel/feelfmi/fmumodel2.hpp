@@ -10,46 +10,7 @@
 
 namespace Feel
 {
-
-struct Fmi2Variable
-{
-    Fmi2Variable( fmi2_import_variable_t* v )
-    {
-        name = fmi2_import_get_variable_name( v );
-        is_alias = fmi2_import_get_variable_alias_kind( v );
-        ref = fmi2_import_get_variable_vr( v );
-
-        auto base_type = fmi2_import_get_variable_base_type( v );
-        if ( base_type==fmi2_base_type_real )
-            type="double";
-        else if ( base_type==fmi2_base_type_int )
-            type="int";
-        else if ( base_type==fmi2_base_type_bool )
-            type="bool";
-        else if ( base_type==fmi2_base_type_str )
-            type="string";
-        else if ( base_type==fmi2_base_type_enum )
-            type="enum";
-        auto s = fmi2_import_get_variable_description( v );
-        if ( s )
-            desc = s;
-    }
-
-    void print( bool with_header=false ) const
-    {
-        if ( with_header )
-            Feel::cout << std::left<< std::setw(30) << "Name" <<std::setw(6) <<"Alias"
-                       << std::setw(10) <<"Type" << "Description" << std::endl;
-        Feel::cout <<std::left<< std::setw(30) <<  name <<std::setw(6) <<is_alias << std::setw(10)
-                   <<type << desc << std::endl;
-    }
-
-    std::string name;
-    bool is_alias;
-    fmi2_value_reference_t ref;
-    std::string type, desc;
-};
-
+struct Fmi2Variable;
 
 class FmuModel2 :
         public FmuModelBase
@@ -68,12 +29,13 @@ public :
 
     void reset() override;
     void setupExperiment( double const& t_init, double const& t_final, double const& tol ) override;
-    void initialize() override;
+    void initialize( double t_init ) override;
     void terminate() override;
     void doStep( double t_cur, double step, bool newStep ) override;
 
     void printVariablesInfo() override;
     void printInfo() override;
+    void exportValues() override;
 
     double defaultStartTime() override;
     double defaultFinalTime() override;
@@ -89,16 +51,26 @@ public :
     void getValue( std::string name, std::string& value ) override;
     void getValue( std::string name, bool& value ) override;
 
+    template <typename VariableType>
+    VariableType getValue( std::string name )
+    {
+        VariableType value;
+        getValue( name, value );
+        return value;
+    }
+
 private :
     static void fmi2logger(fmi2_component_environment_t env, fmi2_string_t instanceName,
                            fmi2_status_t status, fmi2_string_t category, fmi2_string_t message, ...);
     static void stepFinished(fmi2_component_environment_t env, fmi2_status_t status);
 
+    std::string strValue( std::string var );
 
 private :
     fmi2_import_t* M_fmu;
     fmi2_callback_functions_t M_callbackfunctions;
     var_map_type M_v_map;
+    std::map< std::string,std::vector<std::string> > M_values;
 };
 
 

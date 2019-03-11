@@ -77,10 +77,12 @@ public :
     HarmonicExtension(mesh_ptrtype mesh, backend_ptrtype const& backend,
                       std::string prefix="",
                       WorldComm const& worldcomm = WorldComm(),
-                      bool useGhostEltFromExtendedStencil=false );
+                      bool useGhostEltFromExtendedStencil=false,
+                      ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     HarmonicExtension(space_ptrtype space, backend_ptrtype const& backend,
-                      std::string prefix="" );
+                      std::string prefix="",
+                      ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     void init();
 

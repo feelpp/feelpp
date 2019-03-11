@@ -3,6 +3,47 @@
 namespace Feel
 {
 
+struct Fmi2Variable
+{
+    Fmi2Variable( fmi2_import_variable_t* v )
+    {
+        name = fmi2_import_get_variable_name( v );
+        is_alias = fmi2_import_get_variable_alias_kind( v );
+        ref = fmi2_import_get_variable_vr( v );
+
+        auto base_type = fmi2_import_get_variable_base_type( v );
+        if ( base_type==fmi2_base_type_real )
+            type="double";
+        else if ( base_type==fmi2_base_type_int )
+            type="int";
+        else if ( base_type==fmi2_base_type_bool )
+            type="bool";
+        else if ( base_type==fmi2_base_type_str )
+            type="string";
+        else if ( base_type==fmi2_base_type_enum )
+            type="enum";
+        auto s = fmi2_import_get_variable_description( v );
+        if ( s )
+            desc = s;
+    }
+
+    void print( bool with_header=false ) const
+    {
+        if ( with_header )
+            Feel::cout << std::left<< std::setw(30) << "Name" <<std::setw(6) <<"Alias"
+                       << std::setw(10) <<"Type" << "Description" << std::endl;
+        Feel::cout <<std::left<< std::setw(30) <<  name <<std::setw(6) <<is_alias << std::setw(10)
+                   <<type << desc << std::endl;
+    }
+
+    std::string name, value;
+    bool is_alias;
+    fmi2_value_reference_t ref;
+    std::string type, desc;
+};
+
+
+
 FmuModel2::FmuModel2( fmi_import_context_t* context, std::string tmp_dir,
                       callbacks_ptrtype callbacks ) :
     super_type( callbacks )
@@ -89,12 +130,27 @@ void FmuModel2::reset()
     M_setup=false;
 }
 
-void FmuModel2::initialize()
+void FmuModel2::initialize( double t_init )
 {
     auto status = fmi2_import_enter_initialization_mode(M_fmu);
     CHECK( status==fmi2_status_ok ) << "FMUModel2 : fmi2_import_enter_initialization_mode failed\n";
     status = fmi2_import_exit_initialization_mode(M_fmu);
     CHECK( status==fmi2_status_ok ) << "FMUModel2 : fmi2_import_exit_initialization_mode failed\n";
+
+    if( M_export_list )
+    {
+        std::vector<std::string> t = { std::to_string(t_init) };
+        M_values["t"] = t;
+        for( auto const& var : *M_export_list )
+        {
+            auto it = M_v_map.find(var);
+            if ( it==M_v_map.end() )
+                Feel::cout << "WARNING: you asked to export the variable "<< var <<", but there is no corresponding variable.\n";
+
+            std::vector<std::string> t = { strValue(var) };
+            M_values[var] = t;
+        }
+    }
 }
 
 void FmuModel2::terminate()
@@ -113,6 +169,13 @@ void FmuModel2::setupExperiment( double const& t_init, double const& t_final, do
 void FmuModel2::doStep( double t_cur, double step, bool newStep )
 {
     fmi2_import_do_step( M_fmu, t_cur, step, newStep );
+
+    if ( M_export_list )
+    {
+        M_values["t"].push_back( std::to_string(t_cur+step) );
+        for( auto const& var : *M_export_list )
+            M_values[var].push_back( strValue(var) );
+    }
 }
 
 void FmuModel2::printInfo()
@@ -132,6 +195,37 @@ void FmuModel2::printVariablesInfo()
     for ( auto const& v : M_v_map )
         v.second->print();
     Feel::cout << "=================================================================\n";
+}
+
+
+void FmuModel2::exportValues()
+{
+    if ( Environment::isMasterRank() && M_export_list )
+    {
+        std::string path = M_export_directory=="" ? "fmu_values.csv": M_export_directory + "/fmu_values.csv";
+        std::ofstream data;
+        data.open( path , std::ios::trunc );
+        data << "t";
+        for( auto const& var : *M_export_list )
+            data << "," << var;
+        data << std::endl;
+
+        auto n_step = M_values["t"].size();
+        for ( int i=0; i<n_step; i++ )
+        {
+            data << M_values["t"][i];
+            for( auto const& var : *M_export_list )
+            {
+                if ( M_values[var].size()>i )
+                    data<<","<<M_values[var][i];
+                else
+                    data <<",NA";
+            }
+            data << std::endl;
+        }
+        data.close();
+    }
+
 }
 
 double FmuModel2::defaultStartTime()
@@ -223,6 +317,28 @@ void FmuModel2::stepFinished(fmi2_component_environment_t env, fmi2_status_t sta
     LOG(INFO) << "FMUModel2 : stepFinished called with fmiStatus : "<< fmi2_status_to_string(status) << std::endl;
 }
 
+std::string FmuModel2::strValue( std::string var )
+{
+    std::stringstream ss;
+    auto it = M_v_map.find(var);
+    if ( it!=M_v_map.end() )
+    {
+        auto type = M_v_map[var]->type;
+
+        if ( type=="int" )
+            ss << getValue<int>( var );
+        else if ( type=="double" )
+            ss << getValue<double>( var );
+        else if ( type=="bool" )
+            ss << getValue<bool>( var );
+        else if ( type=="string" )
+            ss << getValue<std::string>( var );
+    }
+    else
+        ss << "NA";
+
+    return ss.str();
+}
 
 
 } // namespace Feel

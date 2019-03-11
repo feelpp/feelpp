@@ -124,7 +124,7 @@ SER<CRBType>::run()
             {
                 // Be careful if you have multiple EIMs to not overstep the bounds of the vectors when computing beqtQm (see #1130)
                 do_offline_eim = false; //re-init
-                for( auto eim_sc : eim_sc_vector )
+                for( auto const& eim_sc : eim_sc_vector )
                 {
                     //if ( ser_level > 0 )
                     eim_sc->setDBSubDirectory( (boost::format("eim_ser%1%")%ser_level).str() );
@@ -142,7 +142,7 @@ SER<CRBType>::run()
 
                     do_offline_eim = do_offline_eim || eim_sc->offlineStep();
                 }
-                for( auto eim_sd : eim_sd_vector )
+                for( auto const& eim_sd : eim_sd_vector )
                 {
                     //if ( ser_level > 0 )
                     eim_sd->setDBSubDirectory( (boost::format("eim_ser%1%")%ser_level).str() );
@@ -161,7 +161,7 @@ SER<CRBType>::run()
                     do_offline_eim = do_offline_eim || eim_sd->offlineStep();
                 }
 
-                for ( auto deim : deim_vector )
+                for ( auto const& deim : deim_vector )
                 {
                     deim->setRestart( false );
                     deim->setSerFrequency( ioption(_name="ser.eim-frequency") );
@@ -178,7 +178,7 @@ SER<CRBType>::run()
                     do_offline_eim = do_offline_eim || deim->offlineStep();
                 }
 
-                for ( auto mdeim : mdeim_vector )
+                for ( auto const& mdeim : mdeim_vector )
                 {
                     mdeim->setRestart( false );
                     mdeim->setSerFrequency( ioption(_name="ser.eim-frequency") );
