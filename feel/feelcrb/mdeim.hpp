@@ -103,8 +103,7 @@ private :
             auto seqmesh = loadMesh( _mesh=new mesh_type,
                                      _filename=this->name(true)+"-submesh.msh",
                                      _worldcomm= Environment::worldCommSeq() );
-            Rh = space_type::New( seqmesh,
-                                  _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
+            Rh = this->newInterpolationSpace(seqmesh);
 
             this->M_map->init( Rh, Xh );
 

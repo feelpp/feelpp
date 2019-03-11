@@ -154,6 +154,7 @@ add_subdirectory(onlinerun)
 add_subdirectory(minimal)
 add_subdirectory(thermoelectric)
 add_subdirectory(biotsavart)
+add_subdirectory(grepldeim)
 
 
 
