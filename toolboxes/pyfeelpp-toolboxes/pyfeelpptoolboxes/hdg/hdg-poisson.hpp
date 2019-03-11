@@ -69,7 +69,7 @@ void defHDGPoisson( py::module& m )
              worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
              //py::arg("buildmesh")=true,
-             py::arg("worldComm")=Environment::worldCommPtr(),
+             py::arg("worldComm"),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize the heat mechanics toolbox"
@@ -85,7 +85,7 @@ void defHDGPoisson( py::module& m )
         .def( "potentialField", static_cast<element_potential_t const& (toolbox_t::*)() const>(&toolbox_t::potentialField), "returns the potential field" )
         .def( "traceSpace", &toolbox_t::traceSpace, "get the trace function space")
         //.def( "fieldTrace", static_cast<element_trace_t const& (toolbox_t::*)() const>(&toolbox_t::traceField), "returns the trace field" )
-        .def( "constantSpace", &toolbox_t::fluxSpace, "get the constant function space")
+        .def( "constantSpace", &toolbox_t::constantSpace, "get the constant function space")
         // assembly
         .def("assembleAll",&toolbox_t::assembleAll, "assemble the HDG Poisson model")
         // solve
