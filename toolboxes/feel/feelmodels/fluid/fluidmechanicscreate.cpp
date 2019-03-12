@@ -134,6 +134,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_couplingFSIcondition = "dirichlet-neumann";
 
     //--------------------------------------------------------------//
+    // time stepping
+    M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
+    M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
+    //--------------------------------------------------------------//
     // start solver options
     M_startBySolveNewtonian = boption(_prefix=this->prefix(),_name="start-by-solve-newtonian");
     M_hasSolveNewtonianAtKickOff = false;
@@ -392,7 +396,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
             std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( bcDirichletCompField, bcDirichletCompKeyword, name(d), "alemesh_bc" );
             std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
-            this->setMarkerALEMeshBC(bcTypeMeshALE,markers(d));
+            this->addMarkerALEMeshBC(bcTypeMeshALE,markers(d));
         }
     }
 
@@ -656,7 +660,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
                                         _range=elements(M_XhScalarVisuHO->mesh()),
                                         _backend=M_backend,
                                         _type=InterpolationNonConforme(false,true,false,15) );
-
+#if 0
         if ( this->hasPostProcessFieldExported( "normal-stress" ) ||
              this->hasPostProcessFieldExported( "wall-shear-stress" ) )
         {
@@ -671,7 +675,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
                                           _backend=M_backend,
                                           _type=InterpolationNonConforme(false,true,false,15) );
         }
-
+#endif
         this->log("FluidMechanics","createPostProcessExporters", "step2 done" );
 
         if (M_isMoveDomain )
@@ -716,15 +720,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesNormalStress()
     if ( M_XhNormalBoundaryStress ) return;
 
     if ( M_materialProperties->isDefinedOnWholeMesh() )
-        M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+    {
+        auto submesh = createSubmesh(M_mesh,boundaryfaces(M_mesh));
+        M_XhNormalBoundaryStress = space_normalstress_type::New( _mesh=submesh );
+        //M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _range=boundaryelements(M_mesh) );
+    }
     else
-        M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(), _range=M_rangeMeshElements );
-    M_fieldNormalStress.reset(new element_stress_type(M_XhNormalBoundaryStress));
-    M_fieldNormalStressRefMesh.reset(new element_stress_type(M_XhNormalBoundaryStress));
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    M_normalStressFromStruct.reset(new element_stress_type(M_XhNormalBoundaryStress));
-#endif
-    M_fieldWallShearStress.reset(new element_stress_type(M_XhNormalBoundaryStress));
+    {
+        this->functionSpaceVelocity()->dof()->meshSupport()->updateBoundaryInternalFaces();
+        auto submesh = createSubmesh(M_mesh,this->functionSpaceVelocity()->dof()->meshSupport()->rangeBoundaryFaces()); // not very nice, need to store the meshsupport
+        M_XhNormalBoundaryStress = space_normalstress_type::New( _mesh=submesh );
+        //M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _range=M_rangeMeshElements );// TODO define boundaryelements in MeshSupport // intersect(boundaryelements(M_mesh),M_rangeMeshElements) );
+    }
+    M_fieldNormalStress.reset(new element_normalstress_type(M_XhNormalBoundaryStress));
+    M_fieldNormalStressRefMesh.reset(new element_normalstress_type(M_XhNormalBoundaryStress));
+    //#if defined( FEELPP_MODELS_HAS_MESHALE )
+    //M_normalStressFromStruct.reset(new element_stress_type(M_XhNormalBoundaryStress));
+    //#endif
+    M_fieldWallShearStress.reset(new element_normalstress_type(M_XhNormalBoundaryStress));
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -1020,9 +1033,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             }
         }
 
-        // space usefull to tranfert sigma*N()
-        this->createFunctionSpacesNormalStress();
-
         this->log("FluidMechanics","init", "meshALE done" );
 #endif
     }
@@ -1058,6 +1068,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
+    M_blockVectorSolution.buildVector( this->backend() );
+
     M_algebraicFactory.reset( new model_algebraic_factory_type(this->shared_from_this(),this->backend()) );
 
     if ( boption(_name="use-velocity-near-null-space",_prefix=this->prefix() ) )
@@ -1066,6 +1078,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         M_algebraicFactory->attachNearNullSpace( 0,userNullSpace ); // for block velocity in fieldsplit
     }
     this->initInHousePreconditioner();
+
+    if ( M_timeStepping == "Theta" )
+    {
+        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
+        M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+        M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1135,9 +1154,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     std::string suffixName = "";
     if ( myFileFormat == "binary" )
          suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
-    M_bdf_fluid = bdf(  _space=M_Xh,
-                       _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-pressure"+suffixName)),
+    fs::path saveTsDir = fs::path(this->rootRepository())/fs::path( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ts")) );
+
+    int bdfOrder = 1;
+    if ( M_timeStepping == "BDF" )
+        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+    M_bdf_fluid = bdf( _space=M_Xh,
+                       _name="velocity-pressure"+suffixName,
                        _prefix=this->prefix(),
+                       _order=bdfOrder,
                        // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
                        _initial_time=this->timeInitial(),
                        _final_time=this->timeFinal(),
@@ -1147,27 +1172,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
                        _restart_at_last_save=this->restartAtLastSave(),
                        _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
     M_bdf_fluid->setfileFormat( myFileFormat );
-    M_bdf_fluid->setPathSave( (fs::path(this->rootRepository()) /
-                               fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%M_bdf_fluid->bdfOrder() %this->timeStep()).str() ) ) ).string() );
+    M_bdf_fluid->setPathSave( ( saveTsDir/"velocity-pressure" ).string() );
 
     // start or restart time step scheme
     if ( !this->doRestart() )
     {
-        // start time step
-        M_bdf_fluid->start(*M_Solution);
         // up current time
-        this->updateTime( M_bdf_fluid->time() );
+        this->updateTime( M_bdf_fluid->timeInitial() );
     }
     else
     {
         // start time step
-        M_bdf_fluid->restart();
+        double tir = M_bdf_fluid->restart();
         // load a previous solution as current solution
         *M_Solution = M_bdf_fluid->unknown(0);
         // up initial time
-        this->setTimeInitial( M_bdf_fluid->timeInitial() );
+        this->setTimeInitial( tir );
         // up current time
-        this->updateTime( M_bdf_fluid->time() );
+        this->updateTime( tir );
 
         this->log("FluidMechanics","initTimeStep", "restart bdf/exporter done" );
     }
@@ -1430,10 +1452,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::stri
             res.insert( "pressure" );
         if ( o == prefixvm(prefix,"vorticity") || o == prefixvm(prefix,"all") )
             res.insert( "vorticity" );
+#if 0
         if ( o == prefixvm(prefix,"normal-stress") || o == prefixvm(prefix,"all") )
             res.insert( "normal-stress" );
         if ( o == prefixvm(prefix,"wall-shear-stress") || o == prefixvm(prefix,"all") )
             res.insert( "wall-shear-stress" );
+#endif
         if ( o == prefixvm(prefix,"density") || o == prefixvm(prefix,"all") )
             res.insert( "density" );
         if ( o == prefixvm(prefix,"viscosity") || o == prefixvm(prefix,"all") )
@@ -1621,7 +1645,7 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockVector()
 {
     this->initBlockVector();
-    M_blockVectorSolution.buildVector( this->backend() );
+    //M_blockVectorSolution.buildVector( this->backend() );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

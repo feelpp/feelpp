@@ -48,7 +48,7 @@ void defFM(py::module &m)
         .def(py::init<std::string const&,bool,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
              py::arg("buildmesh")=true,
-             py::arg("worldComm")=Environment::worldCommPtr(),
+             py::arg("worldComm"),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize the fluid mechanics toolbox"
@@ -69,8 +69,8 @@ void defFM(py::module &m)
         // normal stress
         .def("createFunctionSpacesNormalStress",&fm_t::createFunctionSpacesNormalStress, "create a normal stress function space")
         //.def("functionSpaceNormalStress",&fm_t::functionSpaceNormalStress, "get the normal stress function space")
-        .def("fieldNormalStressPtr",static_cast<typename fm_t::element_stress_ptrtype& (fm_t::*)()>(&fm_t::fieldNormalStressPtr), "get the normal stress field")
-        .def("fieldNormalStress",static_cast<typename fm_t::element_stress_type const& (fm_t::*)() const>(&fm_t::fieldNormalStress), "get the normal stress field")
+        .def("fieldNormalStressPtr",static_cast<typename fm_t::element_normalstress_ptrtype& (fm_t::*)()>(&fm_t::fieldNormalStressPtr), "get the normal stress field")
+        .def("fieldNormalStress",static_cast<typename fm_t::element_normalstress_type const& (fm_t::*)() const>(&fm_t::fieldNormalStress), "get the normal stress field")
         
         // vorticity
         .def("createFunctionSpacesVorticity",&fm_t::createFunctionSpacesVorticity, "create a vorticity function space")

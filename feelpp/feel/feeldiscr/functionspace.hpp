@@ -2808,9 +2808,9 @@ public:
                 }
             }
 
-        void assign( geoface_type const& e, local_interpolant_type const& Ihloc )
+        void assign( geoface_type const& e, uint16_type faceConnectionId, local_interpolant_type const& Ihloc )
         {
-            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
+            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element( faceConnectionId ).id() );
             for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
                 size_type index = ldof.index();
@@ -2826,9 +2826,9 @@ public:
                 super::operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
-        void plus_assign( geoface_type const& e, local_interpolant_type const& Ihloc )
+        void plus_assign( geoface_type const& e, uint16_type faceConnectionId, local_interpolant_type const& Ihloc )
          {
-            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
+             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element( faceConnectionId ).id() );
             for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
                 size_type index = ldof.index();
@@ -4287,6 +4287,10 @@ public:
 
         template<typename IteratorType, typename ExprType>
         FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_FACES>  );
+        template<typename IteratorType, typename ExprType>
+        FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_FACES>, mpl::true_  );
+        template<typename IteratorType, typename ExprType>
+        FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_FACES>, mpl::false_  );
 
         template<typename IteratorType, typename ExprType>
         FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_EDGES>  );
@@ -5274,6 +5278,19 @@ public:
      */
     void rebuildDofPoints() { rebuildDofPoints(mpl::bool_<is_composite>()); }
 
+    //! return the index of dof defined on a range
+    template <typename RangeType>
+    std::set<size_type> dofs( RangeType const& range,
+                              ComponentType c1 = ComponentType::NO_COMPONENT,
+                              bool onlyMultiProcessDofs = false ) const
+        {
+            std::set<size_type> res;
+            if ( onlyMultiProcessDofs && this->worldComm().localSize() == 1 )
+                return res;
+            this->dofs( range, c1, onlyMultiProcessDofs, mpl::bool_<is_composite>(), res );
+            return res;
+        }
+
     //@}
 
     /** @name  Mutators
@@ -5354,6 +5371,211 @@ private:
 
     FEELPP_NO_EXPORT void rebuildDofPoints( mpl::bool_<false> );
     FEELPP_NO_EXPORT void rebuildDofPoints( mpl::bool_<true> );
+
+    template <typename RangeType>
+    void dofs( RangeType const& rangeElt, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
+               typename std::enable_if< std::is_same<RangeType,elements_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+        {
+            if ( c1 == ComponentType::NO_COMPONENT )
+            {
+                for ( auto const& eltWrap : rangeElt )
+                {
+                    auto const& elt = unwrap_ref( eltWrap );
+                    for( auto const& ldof : this->dof()->localDof( elt.id() ) )
+                    {
+                        size_type index = ldof.second.index();
+                        if ( onlyMultiProcessDofs &&
+                             ( this->dof()->dofGlobalProcessIsGhost( index ) ||
+                               this->dof()->activeDofSharedOnCluster().find( index ) != this->dof()->activeDofSharedOnCluster().end() ) )
+                        res.insert( index );
+                    }
+                }
+            }
+            else
+            {
+                auto XhComp = this->compSpace();
+                static const uint16_type nDofComponents = this->dof()->nDofComponents();
+                int c1DofShift = ((int)c1);
+                for ( auto const& eltWrap : rangeElt )
+                {
+                    auto const& elt = unwrap_ref( eltWrap );
+                    for( auto const& ldof : XhComp->dof()->localDof( elt.id() ) )
+                    {
+                        size_type index = c1DofShift + nDofComponents*ldof.second.index();
+                        if ( onlyMultiProcessDofs &&
+                             ( this->dof()->dofGlobalProcessIsGhost( index ) ||
+                               this->dof()->activeDofSharedOnCluster().find( index ) != this->dof()->activeDofSharedOnCluster().end() ) )
+                        res.insert( index );
+                    }
+                }
+            }
+        }
+    template <typename RangeType>
+    void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
+               typename std::enable_if< std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+        {
+            if ( c1 == ComponentType::NO_COMPONENT )
+            {
+                for ( auto const& faceWrap : rangeFace )
+                {
+                    auto const& face = unwrap_ref( faceWrap );
+                    auto facedof = this->dof()->faceLocalDof( face.id() );
+                    for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+                    {
+                        size_type index = it->index();
+                        if ( onlyMultiProcessDofs &&
+                             ( this->dof()->dofGlobalProcessIsGhost( index ) ||
+                               this->dof()->activeDofSharedOnCluster().find( index ) != this->dof()->activeDofSharedOnCluster().end() ) )
+                            res.insert( index );
+                    }
+                }
+            }
+            else
+            {
+                auto XhComp = this->compSpace();
+                static const uint16_type nDofComponents = this->dof()->nDofComponents();
+                int c1DofShift = ((int)c1);
+                for ( auto const& faceWrap : rangeFace )
+                {
+                    auto const& face = unwrap_ref( faceWrap );
+                    auto facedof = XhComp->dof()->faceLocalDof( face.id() );
+                    for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+                    {
+                        size_type index = c1DofShift + nDofComponents*it->index();
+                        if ( onlyMultiProcessDofs &&
+                             ( this->dof()->dofGlobalProcessIsGhost( index ) ||
+                               this->dof()->activeDofSharedOnCluster().find( index ) != this->dof()->activeDofSharedOnCluster().end() ) )
+                        res.insert( index );
+                    }
+                }
+
+            }
+        }
+    template <typename RangeType>
+    void dofs( RangeType const& rangeEdge, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
+               typename std::enable_if< std::is_same<RangeType,edges_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+        {
+            size_type eid = invalid_size_type_value;
+            uint16_type edgeid_in_element;
+            if ( c1 == ComponentType::NO_COMPONENT )
+            {
+                for ( auto const& edgeWrap : rangeEdge )
+                {
+                    auto const& edge = unwrap_ref( edgeWrap );
+                    auto itEltInfo = edge.elements().begin();
+                    if ( itEltInfo == edge.elements().end() )
+                        continue;
+                    eid = invalid_size_type_value;
+                    for ( auto const& eltConnectedToEdge : edge.elements() )
+                    {
+                        size_type eltIdConnected = eltConnectedToEdge.first;
+                        if ( this->dof()->isElementDone( eltIdConnected ) )
+                        {
+                            eid = eltIdConnected;
+                            edgeid_in_element = eltConnectedToEdge.second;
+                            break;
+                        }
+                    }
+                    if ( eid == invalid_size_type_value )
+                        continue;
+
+                    for( auto const& ldof : this->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+                    {
+                        size_type index = ldof.index();
+                        if ( onlyMultiProcessDofs &&
+                             ( this->dof()->dofGlobalProcessIsGhost( index ) ||
+                               this->dof()->activeDofSharedOnCluster().find( index ) != this->dof()->activeDofSharedOnCluster().end() ) )
+                        res.insert( index );
+                    }
+                }
+            }
+            else
+            {
+                auto XhComp = this->compSpace();
+                static const uint16_type nDofComponents = this->dof()->nDofComponents();
+                int c1DofShift = ((int)c1);
+                for ( auto const& edgeWrap : rangeEdge )
+                {
+                    auto const& edge = unwrap_ref( edgeWrap );
+                    auto itEltInfo = edge.elements().begin();
+                    if ( itEltInfo == edge.elements().end() )
+                        continue;
+                    eid = invalid_size_type_value;
+                    for ( auto const& eltConnectedToEdge : edge.elements() )
+                    {
+                        size_type eltIdConnected = eltConnectedToEdge.first;
+                        if ( this->dof()->isElementDone( eltIdConnected ) )
+                        {
+                            eid = eltIdConnected;
+                            edgeid_in_element = eltConnectedToEdge.second;
+                            break;
+                        }
+                    }
+                    if ( eid == invalid_size_type_value )
+                        continue;
+
+                    for( auto const& ldof : XhComp->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+                    {
+                        size_type index = c1DofShift + nDofComponents*ldof.index();
+                        if ( onlyMultiProcessDofs &&
+                             ( this->dof()->dofGlobalProcessIsGhost( index ) ||
+                               this->dof()->activeDofSharedOnCluster().find( index ) != this->dof()->activeDofSharedOnCluster().end() ) )
+                        res.insert( index );
+                    }
+                }
+            }
+        }
+    template <typename RangeType>
+    void dofs( RangeType const& rangePoint, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
+               typename std::enable_if< std::is_same<RangeType,points_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+        {
+            std::vector<uint16_type> compUsed;
+            static const uint16_type nDofComponents = this->dof()->nDofComponents();
+            if ( c1 == ComponentType::NO_COMPONENT )
+            {
+                for( uint16_type c = 0; c < nDofComponents; ++c )
+                    compUsed.push_back( c );
+            }
+            else
+                compUsed.push_back( (int)c1 );
+
+            size_type eid = invalid_size_type_value;
+            uint16_type ptid_in_element;
+            for ( auto const& pointWrap : rangePoint )
+            {
+                auto const& point = unwrap_ref( pointWrap );
+                auto itPointInfo = point.elements().begin();
+                if ( itPointInfo == point.elements().end() )
+                    continue;
+                eid = invalid_size_type_value;
+                for ( auto const& eltConnectedToPoint : point.elements() )
+                {
+                    size_type eltIdConnected = eltConnectedToPoint.first;
+                    if ( this->dof()->isElementDone( eltIdConnected ) )
+                    {
+                        eid = eltIdConnected;
+                        ptid_in_element = eltConnectedToPoint.second;
+                        break;
+                    }
+                }
+                if ( eid == invalid_size_type_value )
+                    continue;
+
+                for( uint16_type c : compUsed )
+                {
+                    size_type index = this->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+                    if ( onlyMultiProcessDofs &&
+                         ( this->dof()->dofGlobalProcessIsGhost( index ) ||
+                           this->dof()->activeDofSharedOnCluster().find( index ) != this->dof()->activeDofSharedOnCluster().end() ) )
+                    res.insert( index );
+                }
+            }
+        }
+    template <typename RangeType>
+    void dofs( RangeType const& rangeElt, ComponentType c1, bool onlyMultiProcessDofs, mpl::true_, std::set<size_type> & res ) const
+        {
+            CHECK(false) << "not implemented with composite space";
+        }
 
     friend class ComponentSpace;
     class ComponentSpace

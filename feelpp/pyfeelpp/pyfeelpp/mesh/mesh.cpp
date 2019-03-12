@@ -95,7 +95,7 @@ void defMesh(py::module &m)
     std::string suffix = std::to_string(Dim)+"DG"+ std::to_string(Order) + std::string("R") + std::to_string(RealDim);
     pyclass_name += suffix;
     py::class_<mesh_t,std::shared_ptr<mesh_t>>(m,pyclass_name.c_str())
-        .def(py::init<worldcomm_ptr_t const&>(),py::arg("worldComm")=Environment::worldCommPtr(),"Construct a new mesh")
+        .def(py::init<worldcomm_ptr_t const&>(),py::arg("worldComm"),"Construct a new mesh")
         .def_static("create",&mesh_t::New,"Construct a new shared_ptr mesh")
         .def("dimension",&mesh_t::dimension,"get topological dimension")
         .def("realDimension",&mesh_t::realDimension,"get real dimension")

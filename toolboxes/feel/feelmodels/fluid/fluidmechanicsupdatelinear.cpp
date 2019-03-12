@@ -57,6 +57,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     this->log("FluidMechanics","updateLinearPDE", "start"+sc );
     this->timerTool("Solve").start();
 
+    double timeSteppingScaling = 1.;
+    if ( !this->isStationary() )
+    {
+        if ( M_timeStepping == "Theta" )
+            timeSteppingScaling = M_timeStepThetaValue;
+        data.addDoubleInfo( prefixvm(this->prefix(),"timeSteppingScaling"), timeSteppingScaling );
+    }
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -124,7 +131,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                 auto Sigmat = -idt(p)*Id + 2*idv(this->materialProperties()->fieldMu())*deft;
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= inner(Sigmat,grad(v)),
+                               _expr= timeSteppingScaling*inner(Sigmat,grad(v)),
                                _geomap=this->geomap() );
             }
         }
@@ -137,14 +144,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                 auto myViscosity = Feel::FeelModels::fluidMecViscosity<2*nOrderVelocity>(betaU,p,*this->materialProperties(),matName);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= 2*myViscosity*inner(deft,grad(v)),
+                               _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),
                                _geomap=this->geomap() );
             }
             if ( BuildCstPart )
             {
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= -div(v)*idt(p),
+                               _expr= -timeSteppingScaling*div(v)*idt(p),
                                _geomap=this->geomap() );
             }
         }
@@ -232,7 +239,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             bilinearForm_PatternDefault +=
                 integrate( _range=M_rangeMeshElements,
-                           _expr= idv(rho)*trans( gradt(u)*( idv(betaU) -idv( this->meshVelocity() )))*id(v),
+                           _expr= timeSteppingScaling*idv(rho)*trans( gradt(u)*( idv(betaU) -idv( this->meshVelocity() )))*id(v),
                            _geomap=this->geomap() );
 #endif
         }
@@ -240,7 +247,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         {
             bilinearForm_PatternDefault +=
                 integrate( _range=M_rangeMeshElements,
-                           _expr= idv(rho)*trans( gradt(u)*idv(betaU) )*id(v),
+                           _expr= timeSteppingScaling*idv(rho)*trans( gradt(u)*idv(betaU) )*id(v),
                            _geomap=this->geomap() );
         }
 
@@ -248,7 +255,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         {
             bilinearForm_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
-                           _expr= 0.5*idv(rho)*divt(u)*trans(idv(betaU))*id(v),
+                           _expr= timeSteppingScaling*0.5*idv(rho)*divt(u)*trans(idv(betaU))*id(v),
                            _geomap=this->geomap() );
         }
 
@@ -261,7 +268,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         bilinearForm_PatternDefault +=
             integrate( _range=M_rangeMeshElements,
-                       _expr= -idv(rho)*trans( gradt(u)*(idv( this->meshVelocity() )))*id(v),
+                       _expr= -timeSteppingScaling*idv(rho)*trans( gradt(u)*(idv( this->meshVelocity() )))*id(v),
                        _geomap=this->geomap() );
 #endif
     }
@@ -310,7 +317,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                 auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
                 myLinearForm +=
                     integrate( _range=rangeBodyForceUsed,
-                               _expr= inner( expression(d),id(v) ),
+                               _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
                                _geomap=this->geomap() );
             }
         }
@@ -321,14 +328,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     {
         myLinearForm +=
             integrate( _range=M_rangeMeshElements,
-                       _expr= trans(idv(*M_SourceAdded))*id(v),
+                       _expr= timeSteppingScaling*trans(idv(*M_SourceAdded))*id(v),
                        _geomap=this->geomap() );
     }
     if ( M_useGravityForce && BuildCstPart )
     {
         myLinearForm +=
             integrate( _range=M_rangeMeshElements,
-                       _expr= idv(rho)*inner(M_gravityForce,id(v)),
+                       _expr= timeSteppingScaling*idv(rho)*inner(M_gravityForce,id(v)),
                        _geomap=this->geomap() );
     }
     //--------------------------------------------------------------------------------------------------//
@@ -343,7 +350,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         auto coeffDiv = (2./3.)*idv(this->materialProperties()->fieldMu()); //(eps-2mu/3)
         myLinearForm +=
             integrate( _range=M_rangeMeshElements,
-                       _expr= val(coeffDiv*gradv(this->velocityDiv()))*id(v),
+                       _expr= val(timeSteppingScaling*coeffDiv*gradv(this->velocityDiv()))*id(v),
                        _geomap=this->geomap() );
 
         if ( this->doStabConvectionEnergy() )
@@ -352,7 +359,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
             auto betaU = BetaU.template element<0>();
             myLinearForm +=
                 integrate( _range=M_rangeMeshElements,
-                           _expr= 0.5*idv(rho)*idv(this->velocityDiv())*trans(idv(betaU))*id(v),
+                           _expr= timeSteppingScaling*0.5*idv(rho)*idv(this->velocityDiv())*trans(idv(betaU))*id(v),
                            _geomap=this->geomap() );
         }
     }
@@ -423,17 +430,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
         if ( !listMarkerFaces.empty() )
             bilinearForm +=
                 on( _range=markedfaces( mesh, listMarkerFaces ),
-                    _element=u, _rhs=F, _expr=expression(d) );
+                    _element=u, _rhs=F, _expr=expression(d,this->symbolsExpr()) );
         auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
         if ( !listMarkerEdges.empty() )
             bilinearForm +=
-                on( _range=markedfaces( mesh, listMarkerEdges ),
-                    _element=u, _rhs=F, _expr=expression(d) );
+                on( _range=markededges( mesh, listMarkerEdges ),
+                    _element=u, _rhs=F, _expr=expression(d,this->symbolsExpr()) );
         auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
         if ( !listMarkerPoints.empty() )
             bilinearForm +=
                 on( _range=markedpoints( mesh, listMarkerPoints ),
-                    _element=u, _rhs=F, _expr=expression(d) );
+                    _element=u, _rhs=F, _expr=expression(d,this->symbolsExpr()) );
     }
     // apply strong Dirichle bc on velocity component
     for ( auto const& bcDirComp : this->M_bcDirichletComponents )
@@ -449,19 +456,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
                 bilinearFormComp +=
                     on( _range=markedfaces( mesh, listMarkerFaces ),
                         _element=this->M_Solution->template element<0>()[comp], //u[comp],
-                        _rhs=F, _expr=expression(d) );
+                        _rhs=F, _expr=expression(d,this->symbolsExpr()) );
             auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
             if ( !listMarkerEdges.empty() )
                 bilinearFormComp +=
-                    on( _range=markedfaces( this->mesh(), listMarkerEdges ),
+                    on( _range=markededges( this->mesh(), listMarkerEdges ),
                         _element=this->M_Solution->template element<0>()[comp], //u[comp],
-                        _rhs=F, _expr=expression(d) );
+                        _rhs=F, _expr=expression(d,this->symbolsExpr()) );
             auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
             if ( !listMarkerPoints.empty() )
                 bilinearFormComp +=
                     on( _range=markedpoints( mesh, listMarkerPoints ),
                         _element=this->M_Solution->template element<0>()[comp], //u[comp],
-                        _rhs=F, _expr=expression(d) );
+                        _rhs=F, _expr=expression(d,this->symbolsExpr()) );
         }
     }
 

@@ -343,7 +343,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                   mpl::identity<Shape<gmc_type::NDim, Tensor2, false> > >::type>::type::type shape; \
                 typedef typename fe_type::PreCompute pc_type;           \
                 typedef std::shared_ptr<pc_type> pc_ptrtype;          \
-                typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type; \
+                typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context, gmc_type::subEntityCoDim> ctx_type; \
                 typedef std::shared_ptr<ctx_type> ctx_ptrtype;        \
                 /*typedef Eigen::Matrix<value_type,shape::M,shape::N> loc_type;*/ \
                 using loc_type = Eigen::Tensor<value_type,2>;           \
@@ -778,7 +778,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     return ctx_ptrtype( /*new ctx_type( )*/ );          \
                 }                                                       \
                 void updateCtxIfSameGeom(Geo_t const& geom, mpl::bool_<true> )    \
-                {   if (fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value ) /*face case*/ \
+                        {   if ( gmc_type::subEntityCoDim > 1 || fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value ) /*face case*/ \
                         M_pc->update(fusion::at_key<key_type>( geom )->pc()->nodes() ); \
                     M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&) M_pc ); \
                 }                                                       \

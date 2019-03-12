@@ -60,7 +60,27 @@ public :
 
     typedef vf::BlocksBase<size_type> block_pattern_type;
 
-    class DataUpdateLinear
+    class DataUpdateBase
+    {
+    public:
+        DataUpdateBase() = default;
+        DataUpdateBase( DataUpdateBase const& ) = default;
+        DataUpdateBase( DataUpdateBase && ) = default;
+        void addInfo( std::string const& info ) { M_infos.insert( info ); }
+        bool hasInfo( std::string const& info ) const { return M_infos.find( info ) != M_infos.end(); }
+        void addDoubleInfo( std::string const& info, double val ) { M_doubleInfos[info] = val; }
+        bool hasDoubleInfo( std::string const& info ) const { return M_doubleInfos.find( info ) != M_doubleInfos.end(); }
+        double doubleInfo( std::string const& info ) const
+            {
+                CHECK( this->hasDoubleInfo( info ) ) << "double info "<< info << "is missing";
+                return M_doubleInfos.find(info)->second;
+            }
+    private :
+        std::set<std::string> M_infos;
+        std::map<std::string,double> M_doubleInfos;
+    };
+
+    class DataUpdateLinear : public DataUpdateBase
     {
     public:
         DataUpdateLinear( const vector_ptrtype& currentSolution,
@@ -68,6 +88,7 @@ public :
                           bool buildCstPart,
                           sparse_matrix_ptrtype matrixExtended, bool buildExtendedPart )
             :
+            DataUpdateBase(),
             M_matrix( matrix ),
             M_rhs( rhs ),
             M_currentSolution( currentSolution ),
@@ -86,10 +107,13 @@ public :
         sparse_matrix_ptrtype& matrixExtended() { return M_matrixExtended; }
         bool buildExtendedPart() const { return M_buildExtendedPart; }
         bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
+        std::map<Feel::MatrixStructure,std::pair<sparse_matrix_ptrtype,double>> const& matrixToAdd() const { return M_matrixToAdd; }
+        std::vector<std::pair<sparse_matrix_ptrtype,vector_ptrtype>> const& rhsToAddFromMatrixVectorProduct() const { return M_rhsToAddFromMatrixVectorProduct; }
 
         void setBuildCstPart( bool b ) { M_buildCstPart = b; }
         void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
-
+        void addMatrixToAdd( sparse_matrix_ptrtype mat, Feel::MatrixStructure matStruc, double scaling ) { M_matrixToAdd[matStruc] = std::make_pair( mat, scaling ); }
+        void addRhsToAdd( sparse_matrix_ptrtype mat, vector_ptrtype vec ) { M_rhsToAddFromMatrixVectorProduct.push_back( std::make_pair(mat,vec) ); }
     private :
         sparse_matrix_ptrtype M_matrix;
         vector_ptrtype M_rhs;
@@ -99,14 +123,18 @@ public :
         sparse_matrix_ptrtype M_matrixExtended;
         bool M_buildExtendedPart;
         bool M_doBCStrongDirichlet;
+
+        std::map<Feel::MatrixStructure,std::pair<sparse_matrix_ptrtype,double>> M_matrixToAdd;
+        std::vector<std::pair<sparse_matrix_ptrtype,vector_ptrtype>> M_rhsToAddFromMatrixVectorProduct;
     };
 
-    class DataUpdateResidual
+    class DataUpdateResidual : public DataUpdateBase
     {
     public:
         DataUpdateResidual( const vector_ptrtype& currentSolution, vector_ptrtype residual,
                             bool buildCstPart, bool useJacobianLinearTerms )
             :
+            DataUpdateBase(),
             M_residual( residual ),
             M_currentSolution( currentSolution ),
             M_buildCstPart( buildCstPart ),
@@ -133,13 +161,14 @@ public :
         bool M_doBCStrongDirichlet;
     };
 
-    class DataUpdateJacobian
+    class DataUpdateJacobian : public DataUpdateBase
     {
     public:
         DataUpdateJacobian( const vector_ptrtype& currentSolution, sparse_matrix_ptrtype jacobian,
                             vector_ptrtype vectorUsedInStrongDirichlet, bool buildCstPart,
                             sparse_matrix_ptrtype matrixExtended, bool buildExtendedPart )
             :
+            DataUpdateBase(),
             M_jacobian( jacobian ),
             M_vectorUsedInStrongDirichlet( vectorUsedInStrongDirichlet ),
             M_currentSolution( currentSolution ),
@@ -260,6 +289,7 @@ public :
     virtual void preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     virtual void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     //----------------------------------------------------------------------------------//
+    virtual void updateNewtonIteration( int step, vector_ptrtype residual, vector_ptrtype sol, typename backend_type::solvernonlinear_type::UpdateIterationData const& data ) const {}
 
 private :
     // verbose

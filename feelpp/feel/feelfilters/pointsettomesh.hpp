@@ -329,7 +329,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
     // reinitialize mesh
     M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeqPtr() ) );
 
-    vtkPoints *newPoints = vtkPoints::New();
+    vtkPoints *newPoints = vtkPoints::New( VTK_DOUBLE );
 
     if ( M_vertices )
     {
@@ -418,7 +418,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
     DVLOG(2) << "[PointSetToMesh::visit(<2>)] done\n";
 
 #else
-    std::cerr << "The library was not compiled with vtk support\n";
+    CHECK( false ) << "The library was not compiled with vtk support\n";
 #endif /* FEELPP_HAS_VTK */
 
 }
@@ -431,7 +431,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
     // reinitialize mesh
     M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeqPtr() ) );
 
-    vtkPoints *newPoints = vtkPoints::New();
+    vtkPoints *newPoints = vtkPoints::New( VTK_DOUBLE );
 
     //if ( M_add_bdy_pts )
     if ( 0 )
@@ -473,7 +473,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
 
 
 #else
-    std::cerr << "The library was not compiled with vtk support\n";
+    CHECK( false ) << "The library was not compiled with vtk support\n";
 #endif /* FEELPP_HAS_VTK */
 }
 } // Feel

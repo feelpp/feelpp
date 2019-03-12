@@ -1,9 +1,9 @@
 
-# geo order 1, Taylor-Hood, T_ORDER=U_ORDER and T_ORDER=1
 foreach(_DIM 2 3)
   feelpp_max( MAX_ORDER 2 ${FEELPP_INSTANTIATION_ORDER_MAX})
   message(STATUS "[feelpp] HEATFLUID ${_DIM}D PNPN-1P1G1 N=2..${MAX_ORDER}")
   message(STATUS "[feelpp] HEATFLUID ${_DIM}D PNPN-1PNG1 N=2..${MAX_ORDER}")
+  # geo order 1, Taylor-Hood, T_ORDER=U_ORDER and T_ORDER=1
   foreach( _U_ORDER RANGE 2 ${MAX_ORDER} )
     math(EXPR _P_ORDER "${_U_ORDER}-1")
     genLibHeatFluid(
@@ -19,6 +19,18 @@ foreach(_DIM 2 3)
       T_ORDER ${_U_ORDER}
       U_ORDER ${_U_ORDER}
       P_ORDER ${_P_ORDER}
+      GEO_ORDER 1
+      )
+    set(FEELPP_MODELS_LIBRARIES_HEATFLUID ${FEELPP_MODELS_LIBRARIES_HEATFLUID} ${HEATFLUID_LIB_NAME}  )
+  endforeach()
+  message(STATUS "[feelpp] HEATFLUID ${_DIM}D PNPNPNG1 N=1..1")
+  # geo order 1, T_ORDER=U_ORDER=P_ORDER
+  foreach( _U_ORDER RANGE 1 1 )
+    genLibHeatFluid(
+      DIM     ${_DIM}
+      T_ORDER ${_U_ORDER}
+      U_ORDER ${_U_ORDER}
+      P_ORDER ${_U_ORDER}
       GEO_ORDER 1
       )
     set(FEELPP_MODELS_LIBRARIES_HEATFLUID ${FEELPP_MODELS_LIBRARIES_HEATFLUID} ${HEATFLUID_LIB_NAME}  )
