@@ -1451,7 +1451,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockVector()
 
     size_type currentStartBlockSpaceIndex = this->startBlockSpaceIndexVector();
     this->setStartSubBlockSpaceIndex( "fluid", currentStartBlockSpaceIndex );
-    currentStartBlockSpaceIndex += this->fluidModel()->blockVectorSolution().vectorMonolithic()->map().numberOfDofIdToContainerId();
+    currentStartBlockSpaceIndex += this->fluidModel()->blockVectorSolution()->map().numberOfDofIdToContainerId();
     if( this->useImplicitCoupling() )
     {
         //for( auto const& ls: M_levelsets )
