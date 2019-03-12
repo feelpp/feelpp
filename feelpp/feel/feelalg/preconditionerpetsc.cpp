@@ -2207,6 +2207,7 @@ ConfigurePCGAMG::run( PC& pc )
     }
 
     // configure coarse pc
+    // this discussion can be help : https://bitbucket.org/petsc/petsc/pull-requests/334/added-preonly-default-for-coarse-grid/diff
     if ( !M_coarseGridUseConfigDefaultPetsc )
         configurePCGAMGCoarse( pc );
 
