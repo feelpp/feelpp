@@ -1448,23 +1448,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockVector()
 {
     this->initBlockVector();
     M_blockVectorSolution.buildVector( this->backend() );
-
-    size_type currentStartBlockSpaceIndex = this->startBlockSpaceIndexVector();
-    this->setStartSubBlockSpaceIndex( "fluid", currentStartBlockSpaceIndex );
-    currentStartBlockSpaceIndex += this->fluidModel()->blockVectorSolution()->map().numberOfDofIdToContainerId();
-    if( this->useImplicitCoupling() )
-    {
-        //for( auto const& ls: M_levelsets )
-        //{
-            //this->setStartSubBlockSpaceIndex( ls.first, currentStartBlockSpaceIndex );
-            //currentStartBlockSpaceIndex += ls.second->blockVectorSolution().vectorMonolithic()->map().numberOfDofIdToContainerId();
-        //}
-        CHECK(false) << "TODO: implicit coupling\n";
-    }
-    if( this->hasInextensibilityLM() )
-    {
-        this->setStartSubBlockSpaceIndex( "inextensibility-lm", currentStartBlockSpaceIndex );
-    }
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -1490,14 +1473,24 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initBlockVector()
 
     M_blockVectorSolution.resize( nBlocks );
 
+    size_type currentStartBlockSpaceIndex = this->startBlockSpaceIndexVector();
     int indexBlock = 0;
+
+    this->setStartSubBlockSpaceIndex( "fluid", currentStartBlockSpaceIndex );
     for( int k = 0; k < nBlocksFluid; k++ )
     {
         M_blockVectorSolution(indexBlock + k) = blockVectorSolutionFluid(k);
+        currentStartBlockSpaceIndex += blockVectorSolutionFluid(k)->map().numberOfDofIdToContainerId();
     }
     indexBlock += nBlocksFluid;
+
     if( this->useImplicitCoupling() )
     {
+        //for( auto const& ls: M_levelsets )
+        //{
+            //this->setStartSubBlockSpaceIndex( ls.first, currentStartBlockSpaceIndex );
+            //currentStartBlockSpaceIndex += ls.second->blockVectorSolution().vectorMonolithic()->map().numberOfDofIdToContainerId();
+        //}
         //for( auto const& ls: this->levelsetModels() )
         //{
             //auto const& blockVectorSolutionLevelset = ls.second->blockVectorSolution();
@@ -1511,6 +1504,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initBlockVector()
     }
     if( this->hasInextensibilityLM() )
     {
+        this->setStartSubBlockSpaceIndex( "inextensibility-lm", currentStartBlockSpaceIndex );
         M_blockVectorSolution(indexBlock) = this->backend()->newVector( this->functionSpaceInextensibilityLM() );
         ++indexBlock;
     }
