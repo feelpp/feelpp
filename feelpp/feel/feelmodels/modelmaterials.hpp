@@ -69,6 +69,7 @@ struct FEELPP_EXPORT ModelMaterial
     void addPhysics( std::string const& s) { M_physics.insert( s ); }
 
     void setProperty( std::string const& property, pt::ptree const& p );
+    void setProperty( std::string const& property, std::string const& e );
 
     bool hasProperty( std::string const& prop ) const;
     bool hasPropertyConstant( std::string const& prop ) const;
@@ -85,6 +86,8 @@ struct FEELPP_EXPORT ModelMaterial
         return matProp.template hasExprMatrix<M,N>();
     }
 
+    std::map<std::string,mat_property_expr_type>& properties() { return M_materialProperties; }
+    std::map<std::string,mat_property_expr_type> const& properties() const { return M_materialProperties; }
     mat_property_expr_type const& property( std::string const& prop ) const;
     double propertyConstant( std::string const& prop ) const;
     expr_scalar_type const& propertyExprScalar( std::string const& prop ) const;

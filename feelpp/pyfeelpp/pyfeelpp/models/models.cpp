@@ -30,6 +30,8 @@ namespace py = pybind11;
 
 using namespace Feel;
 
+PYBIND11_MAKE_OPAQUE(ModelMaterial);
+PYBIND11_MAKE_OPAQUE(ModelMaterials);
 
 PYBIND11_MODULE(_models, m )
 {
@@ -40,11 +42,102 @@ PYBIND11_MODULE(_models, m )
     py::class_<ModelParameters>(m,pyclass_name.c_str())
         .def(py::init<worldcomm_t const&>(),
              py::arg("worldComm"))
-        .def("setParameterValues",&ModelParameters::setParameterValues, "set parameter values from a map of string/double pairs");
+        .def("clear", &ModelParameters::clear)
+        .def("__len__", [](const ModelParameters &v) { return v.size(); })
+        .def("__iter__", [](ModelParameters &v) {
+                return py::make_iterator(v.begin(), v.end());
+            }, py::keep_alive<0, 1>()) /* Keep vector alive while iterator is used */
+        .def("setParameterValues",&ModelParameters::setParameterValues, "set parameter values from a map of string/double pairs")
+        .def("toParameterValues",&ModelParameters::toParameterValues, "get a dictionary from the map of parameter values");
 
+    pyclass_name = "ModelMaterial";
+    py::class_<ModelMaterial>(m,pyclass_name.c_str())
+        .def(py::init<>())
+        .def("__getitem__", [](const ModelMaterial &map, std::string key) {
+                try { return map.property(key).exprScalar().expression().exprDesc(); }
+                catch (const std::out_of_range&) {
+                    throw py::key_error("key '" + key + "' does not exist");
+                }
+            })
+
+        .def("setProperty",[](ModelMaterial& m, const std::string& prop, const std::string& e )
+             {
+                 m.setProperty( prop, e );
+             }, "returns true of the property exists, false otherwise")
+        .def("hasProperty",&ModelMaterial::hasProperty, "returns true of the property exists, false otherwise")
+        .def("hasPropertyConstant",&ModelMaterial::hasPropertyConstant, "returns true of the property exists and is constant, false otherwise")
+        .def("hasPropertyScalar",&ModelMaterial::hasPropertyExprScalar, "returns true of the property exists and is a scalar expression, false otherwise")
+        .def("propertyConstant",&ModelMaterial::propertyConstant, "return the value of the constant property")
+        .def("setParameterValues",&ModelMaterial::setParameterValues, "set parameter values from a map of string/double pairs")
+        .def("getString",&ModelMaterial::getString, "returns the string from key if the value is a string")
+        .def("__str__", [](const ModelMaterial &mat )
+             {
+                 std::ostringstream s;
+                 s << mat.name() << std::endl;
+                 s << " . markers: ";
+                 for( auto const& p : mat.meshMarkers() )
+                     s << p << " ";
+                 s << std::endl;
+                 s << " . physics: ";
+                 for( auto const& p : mat.physics() )
+                     s << p << " ";
+                 s << std::endl;
+                 s << " . properties: " << std::endl;
+                 for( auto const& [p,value] : mat.properties() )
+                 {
+                     if ( value.isConstant() )
+                         s << "   {" << p << ", " << value.value() << "}" << std::endl;
+                     if ( value.isScalar() )
+                         s << "   {" << p << ", " << value.exprScalar().expression().exprDesc() << "}" << std::endl;
+                     if ( value.hasExprVectorial2() )
+                         s << "   {" << p << ", " << value.exprVectorial2().expression().exprDesc() << "}" << std::endl;
+                     if ( value.hasExprVectorial3() )
+                         s << "   {" << p << ", " << value.exprVectorial3().expression().exprDesc() << "}" << std::endl;
+                 }
+                 s << std::endl;	
+                 return s.str();
+             }, "")
+             
+        ;
+    
+    pyclass_name = "ModelMaterials";
+    py::class_<ModelMaterials>(m,pyclass_name.c_str())
+        .def(py::init<worldcomm_t const&>(),
+             py::arg("worldComm"))
+        .def("clear", &ModelMaterials::clear)
+        .def("__len__", [](const ModelMaterials &v) { return v.size(); })
+        .def("__str__", [](ModelMaterials &v) {
+                std::ostringstream s;
+                for (auto const& [key,mat] : v ) 
+                    s << mat.name() << " " << std::endl;
+                return s.str();
+            })
+#if 0        
+        .def("__getitem__", [](const ModelMaterials &map, std::string key) {
+                try { return map.at(key); }
+                catch (const std::out_of_range&) {
+                    throw py::key_error("key '" + key + "' does not exist");
+                }
+            })
+#endif
+        .def("__getitem__", [](ModelMaterials &map, std::string key) {
+                try { return map.at(key); }
+                catch (const std::out_of_range&) {
+                    throw py::key_error("key '" + key + "' does not exist");
+                }
+            })
+        .def("at", static_cast<ModelMaterial& (ModelMaterials::*)(std::string const&)>(&ModelMaterials::at),"")
+        .def("__iter__", [](ModelMaterials &v) {
+                return py::make_iterator(v.begin(), v.end());
+            }, py::keep_alive<0, 1>()) /* Keep vector alive while iterator is used */
+        .def("setParameterValues",&ModelMaterials::setParameterValues, "set parameter values from a map of string/double pairs")
+        .def("items", [](ModelMaterials &map) { return py::make_iterator(map.begin(), map.end()); },
+             py::keep_alive<0, 1>());
+        
     pyclass_name = "ModelProperties";
-    py::class_<ModelProperties>(m,pyclass_name.c_str())
+    py::class_<ModelProperties,std::shared_ptr<ModelProperties>>(m,pyclass_name.c_str())
         .def(py::init<std::string const&, std::string const&, worldcomm_t const&, std::string const&>(),"initialize ModelProperties",py::arg("filename")="",py::arg("directoryLibExpr")="",py::arg("worldComm"),py::arg("prefix")="")
-        .def("parameters",static_cast<ModelParameters& (ModelProperties::*)()>(&ModelProperties::parameters), "get parameters of the model");
+        .def("parameters",static_cast<ModelParameters& (ModelProperties::*)()>(&ModelProperties::parameters), "get parameters of the model")
+        .def("materials",static_cast<ModelMaterials& (ModelProperties::*)()>(&ModelProperties::materials), "get the materials of the model",py::return_value_policy::reference);
     
 }
