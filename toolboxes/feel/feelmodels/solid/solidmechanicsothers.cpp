@@ -775,6 +775,11 @@ void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
 {
     this->log("SolidMechanics","startTimeStep", "start" );
+
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+
+    // go to next time step : ti + \Delta t
     if ( this->isStandardModel() )
     {
         if ( M_timeStepping == "Newmark" )
@@ -787,9 +792,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
         }
         else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
         {
-            // residual assembly for initial time (and ti restart)
-            if ( M_timeStepping == "Theta" )
-                this->updateTimeStepThetaSchemePreviousContrib();
             // start time step
             if ( !this->doRestart() )
             {
@@ -822,6 +824,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+
+    // go to next time step
     if (this->isStandardModel())
     {
         if ( M_timeStepping == "Newmark" )
@@ -833,8 +839,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
         }
         else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
         {
-            if ( M_timeStepping == "Theta" )
-                this->updateTimeStepThetaSchemePreviousContrib();
             M_timeStepBdfDisplacement->next( *M_fieldDisplacement );
             M_timeStepBdfVelocity->next( *M_fieldVelocity );
             this->updateTime( M_timeStepBdfDisplacement->time() );
@@ -867,16 +871,26 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepThetaSchemePreviousContrib()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 {
-    if ( !M_algebraicFactory )
-        return;
-    M_timeStepThetaSchemePreviousContrib->zero();
-    M_blockVectorSolution.updateVectorFromSubVectors();
-    std::vector<std::string> infos = { "Theta-Time-Stepping-Previous-Contrib" };
-    M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
-    M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos, false );
-    M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+    if ( this->isStandardModel() )
+    {
+        if ( !M_algebraicFactory || M_timeStepping == "BDF" || M_timeStepping == "Newmark" )
+            return;
+
+        if ( M_timeStepping == "Theta" )
+        {
+            M_timeStepThetaSchemePreviousContrib->zero();
+            M_blockVectorSolution.updateVectorFromSubVectors();
+            std::vector<std::string> infos = { "time-stepping.evaluate-residual-without-time-derivative" };
+            M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+            M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos, false );
+            M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+        }
+    }
+    else if ( this->is1dReducedModel() )
+    {
+    }
 }
 
 //---------------------------------------------------------------------------------------------------//
