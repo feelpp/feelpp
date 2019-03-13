@@ -78,11 +78,17 @@ for container in ${CONTAINERS}; do
     #         echo "docker push  \"feelpp/${container}:latest\"";
     #     fi
     # fi
-
-    if [ "${BRANCH}" = "develop" -o  "${BRANCH}" = "master" ]; then
+    #echo "extra"
+    #if [ "${BRANCH}" = "develop" -o  "${BRANCH}" = "master" ]; then
+#    if 
+        #echo "extra"
         #extratags=$(echo "${BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(extratags_from_target $TARGET))
         #extratags=$(cut -d- -f 2- <<< $(extratags_from_target $TARGET))
-        extratags=$(extratags_from_target $TARGET $BRANCHTAG $VERSION)
+        echo $TARGET
+        echo $BRANCHTAG
+        echo $VERSION
+        extratags=$(echo $(extratags_from_target $TARGET $BRANCHTAG $VERSION) | tr ' ' '\n' | sort | uniq | xargs)
+        echo $extratags
         for aliastag in ${extratags[@]} ; do
             echo "--- Pushing feelpp/${container}:$aliastag"
             if [ "$noop" = "false" ]; then
@@ -93,7 +99,7 @@ for container in ${CONTAINERS}; do
                 echo "docker push \"feelpp/${container}:$aliastag\"";
             fi
         done
-    fi
+#    fi
 done
 
 echo -e "\033[33;32m--- All tags released!\033[0m"
