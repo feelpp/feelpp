@@ -20,6 +20,10 @@
     {
         "potential":
         {
+            "SourceTerm":
+            {
+                "": {"expr":"0"}
+            },
             "Dirichlet":
             {
                 "in":
@@ -50,6 +54,9 @@
     },
     "PostProcess":
     {
-        "Fields":["potential","flux"]
-    }    
+        "Exports":
+        {
+            "fields":["potential","flux"]
+        }
+    }
 }
