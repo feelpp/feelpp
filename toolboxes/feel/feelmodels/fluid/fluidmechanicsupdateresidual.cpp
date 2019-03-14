@@ -36,17 +36,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     //--------------------------------------------------------------------------------------------------//
 
     double timeSteppingScaling = 1.;
-    bool timeSteppingThetaAssemblePreviousContrib = data.hasInfo( "Theta-Time-Stepping-Previous-Contrib" );
-    if ( !this->isStationary() )
+    bool timeSteppingEvaluateResidualWithoutTimeDerivative = false;
+    if ( !this->isStationaryModel() )
     {
+        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( "time-stepping.evaluate-residual-without-time-derivative" );
         if ( M_timeStepping == "Theta" )
         {
-            if ( timeSteppingThetaAssemblePreviousContrib )
+            if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
                 timeSteppingScaling = 1. - M_timeStepThetaValue;
             else
                 timeSteppingScaling = M_timeStepThetaValue;
         }
-        data.addDoubleInfo( prefixvm(this->prefix(),"timeSteppingScaling"), timeSteppingScaling );
+        data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -70,15 +71,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     //--------------------------------------------------------------------------------------------------//
 
-    // strain tensor (trial)
-    auto defv = sym(gradv(u));
     // identity Matrix
     auto Id = eye<nDim,nDim>();
     // dynamic viscosity
     auto const& mu = this->materialProperties()->fieldMu();
     auto const& rho = this->materialProperties()->fieldRho();
-    // stress tensor (eval)
-    auto Sigmav = -idv(p)*Id + 2*idv(mu)*defv;
 
     double timeElapsedBis=thetimerBis.elapsed();
     this->log("FluidMechanics","updateResidual","init done in "+(boost::format("%1% s") % timeElapsedBis ).str() );
@@ -86,38 +83,69 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     //--------------------------------------------------------------------------------------------------//
 
     thetimerBis.restart();
-    if ( BuildNonCstPart )
+    if ( BuildNonCstPart && this->modelName() == "Navier-Stokes" )
     {
-        if ( this->doStabConvectionEnergy() )
+        if ( this->solverName() == "Oseen" ) // call when evaluate residual for time-stepping
         {
+            element_fluid_ptrtype fieldVelocityPressureExtrapolated;
+            if ( this->currentTime() == this->timeInitial() )
+            {
+                fieldVelocityPressureExtrapolated = Xh->elementPtr();
+                if ( M_bdf_fluid->iteration() == 1 )
+                    fieldVelocityPressureExtrapolated->add( 1, M_bdf_fluid->unknown(1) );
+                else if ( M_bdf_fluid->iteration() > 1 )
+                {
+                    fieldVelocityPressureExtrapolated->add( 2, M_bdf_fluid->unknown(1) );
+                    fieldVelocityPressureExtrapolated->add( -1, M_bdf_fluid->unknown(2) );
+                }
+            }
+            else
+            {
+                if ( M_timeStepping == "BDF" )
+                    fieldVelocityPressureExtrapolated = M_bdf_fluid->polyPtr();
+                else if ( M_timeStepping == "Theta" )
+                {
+                    fieldVelocityPressureExtrapolated = Xh->elementPtr();
+                    if ( M_bdf_fluid->iteration() == 1 )
+                        fieldVelocityPressureExtrapolated->add( 2, M_bdf_fluid->unknown(0) );
+                    else if ( M_bdf_fluid->iteration() > 1 )
+                    {
+                        fieldVelocityPressureExtrapolated->add( 2, M_bdf_fluid->unknown(0) );
+                        fieldVelocityPressureExtrapolated->add( -1, M_bdf_fluid->unknown(1) );
+                    }
+                }
+            }
+
+            auto const& BetaU = *fieldVelocityPressureExtrapolated;
+            auto betaU = BetaU.template element<0>();
             linearForm_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
-                           //_expr= /*idv(*M_P0Rho)**/inner( Feel::vf::FSI::fluidMecConvection(u,*M_P0Rho) + idv(*M_P0Rho)*0.5*divv(u)*idv(u), id(v) ),
-                           _expr=timeSteppingScaling*inner( Feel::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
+                           _expr= timeSteppingScaling*idv(rho)*trans( gradv(u)*idv(betaU) )*id(v),
                            _geomap=this->geomap() );
-
-            /*if (this->isMoveDomain()  && !BuildCstPart && !UseJacobianLinearTerms)
-             {
-             linearForm_PatternCoupled +=
-             integrate( _range=elements(mesh),
-             _expr= -0.5*idv(M_P0Rho)*divv(this->meshVelocity())*trans(idv(u))*id(v),
-             _geomap=this->geomap() );
-             }*/
+            if ( this->doStabConvectionEnergy() )
+                CHECK( false ) << "TODO";
         }
         else
         {
-            // convection term
-#if 0
-            auto convecTerm = val( idv(rho)*trans( gradv(u)*idv(u) ))*id(v);
-#else
-            auto convecTerm = inner( Feel::FeelModels::fluidMecConvection(u,rho),id(v) );
-#endif
-            linearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr=timeSteppingScaling*convecTerm,
-                           _geomap=this->geomap() );
+            if ( this->doStabConvectionEnergy() )
+            {
+                linearForm_PatternCoupled +=
+                    integrate( _range=M_rangeMeshElements,
+                               //_expr= /*idv(*M_P0Rho)**/inner( Feel::vf::FSI::fluidMecConvection(u,*M_P0Rho) + idv(*M_P0Rho)*0.5*divv(u)*idv(u), id(v) ),
+                               _expr=timeSteppingScaling*inner( Feel::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                // convection term
+                // auto convecTerm = val( idv(rho)*trans( gradv(u)*idv(u) ))*id(v);
+                auto convecTerm = inner( Feel::FeelModels::fluidMecConvection(u,rho),id(v) );
+                linearForm_PatternCoupled +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr=timeSteppingScaling*convecTerm,
+                               _geomap=this->geomap() );
+            }
         }
-
     }
 
     timeElapsedBis=thetimerBis.elapsed();thetimerBis.restart();
@@ -149,6 +177,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             if ( BuildNonCstPart && !UseJacobianLinearTerms )
             {
                 this->log("FluidMechanics","updateResidualModel","assembly with newtonian viscosity" );
+                // strain tensor
+                auto defv = sym(gradv(u));
                 auto const mu_newtonian = idv(mu);
                 auto const Sigmav_newtonian = -idv(p)*Id + 2*mu_newtonian*defv;
 #if 1
@@ -257,7 +287,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     //------------------------------------------------------------------------------------//
 
     //transients terms
-    if ( !this->isStationaryModel() && !timeSteppingThetaAssemblePreviousContrib )
+    if ( !this->isStationaryModel() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
     {
         bool Build_TransientTerm = !BuildCstPart;
         if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=!BuildCstPart && !UseJacobianLinearTerms;

@@ -1163,6 +1163,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     int bdfOrder = 1;
     if ( M_timeStepping == "BDF" )
         bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
     M_bdf_fluid = bdf( _space=M_Xh,
                        _name="velocity-pressure"+suffixName,
                        _prefix=this->prefix(),
@@ -1174,7 +1175,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
                        _restart=this->doRestart(),
                        _restart_path=this->restartPath(),
                        _restart_at_last_save=this->restartAtLastSave(),
-                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq(),
+                       _n_consecutive_save=nConsecutiveSave );
     M_bdf_fluid->setfileFormat( myFileFormat );
     M_bdf_fluid->setPathSave( ( saveTsDir/"velocity-pressure" ).string() );
 
