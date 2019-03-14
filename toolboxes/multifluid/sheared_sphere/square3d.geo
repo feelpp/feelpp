@@ -42,4 +42,4 @@ Physical Surface("Top") = {26};
 Physical Surface("Front") = {17};
 Physical Surface("Back") = {25};
 
-Physical Volume("Omega") = {1};
+Physical Volume("OmegaFluid") = {1};

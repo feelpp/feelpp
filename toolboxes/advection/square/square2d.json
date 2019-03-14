@@ -1,9 +1,9 @@
 {
-    "Name": "Ring2d",
-    "ShortName": "Ring2d",
+    "Name": "Square2d",
+    "ShortName": "Square2d",
     "Models":
     {
-        "equations":"Advection"
+        "equations":"Advection-Diffusion-Reaction"
     },
     "BoundaryConditions":
     {

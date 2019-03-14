@@ -6,19 +6,22 @@
 namespace Feel {
 namespace FeelModels {
 
-template<class LevelSetType>
+template<class LevelSetType, class FluidMechanicsType>
 class HyperelasticForceModel
-: public virtual InterfaceForcesModel<LevelSetType>
+: public virtual InterfaceForcesModel<LevelSetType, FluidMechanicsType>
 {
-    typedef HyperelasticForceModel<LevelSetType> self_type;
-    typedef InterfaceForcesModel<LevelSetType> super_type;
+    typedef HyperelasticForceModel<LevelSetType, FluidMechanicsType> self_type;
+    typedef InterfaceForcesModel<LevelSetType, FluidMechanicsType> super_type;
 public:
     typedef typename super_type::levelset_type levelset_type;
     typedef typename super_type::levelset_ptrtype levelset_ptrtype;
 
+    typedef typename super_type::fluidmechanics_type fluidmechanics_type;
+    typedef typename super_type::fluidmechanics_ptrtype fluidmechanics_ptrtype;
+
     typedef typename super_type::mesh_type mesh_type;
 
-    typedef typename levelset_type::space_levelset_vectorial_type space_type;
+    typedef typename levelset_type::space_vectorial_type space_type;
     typedef std::shared_ptr<space_type> space_ptrtype;
 
     typedef typename space_type::element_type element_type;
@@ -40,8 +43,8 @@ public:
     HyperelasticForceModel() = default;
     HyperelasticForceModel( HyperelasticForceModel const& i ) = default;
 
-    void build( std::string const& prefix, levelset_ptrtype const& ls ) override;
-    void build( std::string const& prefix, levelset_ptrtype const& ls, std::string const& name );
+    void build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm = fluidmechanics_ptrtype() ) override;
+    void build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm, std::string const& name );
 
     void loadParametersFromOptionsVm();
 
@@ -67,24 +70,24 @@ protected:
 #endif
 };
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-HyperelasticForceModel<LevelSetType>::build( std::string const& prefix, levelset_ptrtype const& ls )
+HyperelasticForceModel<LevelSetType, FluidMechanicsType>::build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm )
 {
-    this->build( prefix, ls, "");
+    this->build( prefix, ls, fm, "");
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-HyperelasticForceModel<LevelSetType>::build( std::string const& prefix, levelset_ptrtype const& ls, std::string const& name )
+HyperelasticForceModel<LevelSetType, FluidMechanicsType>::build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm, std::string const& name )
 {
-    super_type::build( prefix, ls );
+    super_type::build( prefix, ls, fm );
     M_name = name;
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-HyperelasticForceModel<LevelSetType>::loadParametersFromOptionsVm()
+HyperelasticForceModel<LevelSetType, FluidMechanicsType>::loadParametersFromOptionsVm()
 {
 #ifdef DEBUG_HYPERELASTICFORCEMODEL
     M_exporter = Feel::exporter(
@@ -97,23 +100,23 @@ HyperelasticForceModel<LevelSetType>::loadParametersFromOptionsVm()
 #endif
 }
 
-template<typename LevelSetType>
-typename HyperelasticForceModel<LevelSetType>::element_energyderivative_ptrtype const&
-HyperelasticForceModel<LevelSetType>::energyDerivative1() const
+template<typename LevelSetType, typename FluidMechanicsType>
+typename HyperelasticForceModel<LevelSetType, FluidMechanicsType>::element_energyderivative_ptrtype const&
+HyperelasticForceModel<LevelSetType, FluidMechanicsType>::energyDerivative1() const
 {
     return this->energyDerivative1Impl();
 }
 
-template<typename LevelSetType>
-typename HyperelasticForceModel<LevelSetType>::element_energyderivative_ptrtype const&
-HyperelasticForceModel<LevelSetType>::energyDerivative2() const
+template<typename LevelSetType, typename FluidMechanicsType>
+typename HyperelasticForceModel<LevelSetType, FluidMechanicsType>::element_energyderivative_ptrtype const&
+HyperelasticForceModel<LevelSetType, FluidMechanicsType>::energyDerivative2() const
 {
     return this->energyDerivative2Impl();
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-HyperelasticForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F ) const
+HyperelasticForceModel<LevelSetType, FluidMechanicsType>::updateInterfaceForcesImpl( element_ptrtype & F ) const
 {
 #ifdef DEBUG_HYPERELASTICFORCEMODEL
     if( !M_exporterInitDone )
@@ -181,7 +184,7 @@ HyperelasticForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype
     F->zero();
     F->on(
         //_range=elements(this->levelset()->mesh()),
-        _range=this->levelset()->interfaceElements(),
+        _range=this->levelset()->rangeDiracElements(),
         _expr=idv(Fe)*idv(this->levelset()->D())
         );
 

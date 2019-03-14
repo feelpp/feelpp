@@ -65,6 +65,8 @@ public:
         typedef typename expr_cauchygreentensor_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
 
+        struct is_zero { static const bool value = tensor_expr_type::is_zero::value; };
+
         typedef typename tensor_expr_type::shape tensor_expr_shape;
         BOOST_MPL_ASSERT_MSG( ( boost::is_same<mpl::int_<tensor_expr_shape::M>,mpl::int_<tensor_expr_shape::N> >::value ), INVALID_TENSOR_SHOULD_BE_RANK_2_OR_0, ( mpl::int_<tensor_expr_shape::M>, mpl::int_<tensor_expr_shape::N> ) );
         typedef Shape<tensor_expr_shape::nDim, Tensor2, false, false> shape_cauchygreentensor;

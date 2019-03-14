@@ -5,6 +5,14 @@
     {
         "equations":"Navier-Stokes"
     },
+    "Materials":
+    {
+        "OmegaFluid":
+        {
+            "rho":1000,
+            "mu":10
+        }
+    },
     "BoundaryConditions":
     {
         "velocity":

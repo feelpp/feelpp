@@ -1,0 +1,42 @@
+{
+    "Name": "Drop3d",
+    "ShortName": "Drop3d",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
+    "Materials":
+    {
+        "OmegaFluid":
+        {
+            "rho":1000,
+            "mu":10
+        }
+    },
+
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "Bottom":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Top":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Side":
+                {
+                    "expr":"{0,0,0}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["velocity","pressure","density", "viscosity", "pid"]
+    }
+}

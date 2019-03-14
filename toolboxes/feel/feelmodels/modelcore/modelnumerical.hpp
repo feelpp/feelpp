@@ -99,11 +99,13 @@ class ModelNumerical : public ModelAlgebraic
         double timeInitial() const { return M_timeInitial; }
         double timeFinal() const { return M_timeFinal; }
         double timeStep() const { return M_timeStep; }
+        int timeOrder() const { return M_timeOrder; }
         bool tsSaveInFile() const { return M_tsSaveInFile; }
         int tsSaveFreq() const { return M_tsSaveFreq; }
         void setTimeInitial(double v)  { M_timeInitial=v; }
         void setTimeFinal(double v)  { M_timeFinal=v; }
         void setTimeStep(double v)  { M_timeStep=v; }
+        void setTimeOrder(int o) { M_timeOrder=o; }
 
         bool hasModelProperties() const { return (M_modelProps)? true : false; }
         std::shared_ptr<ModelProperties> modelPropertiesPtr() const { return M_modelProps; }
@@ -182,6 +184,7 @@ class ModelNumerical : public ModelAlgebraic
         bool M_restartAtLastSave;
 
         double M_timeInitial,M_timeFinal,M_timeStep;
+        int M_timeOrder;
         bool M_tsSaveInFile;
         int M_tsSaveFreq;
         double M_timeCurrent;
