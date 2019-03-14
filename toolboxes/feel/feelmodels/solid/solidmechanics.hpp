@@ -426,7 +426,7 @@ private :
     //void exportFieldsImpl( double time );
     void exportFieldsImplHO( double time );
 
-    void updateTimeStepThetaSchemePreviousContrib();
+    void updateTimeStepCurrentResidual();
 public :
 
     void updateParameterValues();

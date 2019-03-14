@@ -570,7 +570,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
 
     double timeSteppingScaling = 1.;
     if ( !this->solidModel()->isStationary() )
-        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"timeSteppingScaling") );
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"time-stepping.scaling") );
 
     // neumann boundary condition with normal stress (fsi boundary condition)
     if ( buildNonCstPart)
@@ -684,7 +684,7 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
 
     double timeSteppingScaling = 1.;
     if ( !this->solidModel()->isStationary() )
-        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"timeSteppingScaling") );
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"time-stepping.scaling") );
 
 
     double gammaRobinFSI = M_couplingNitscheFamily_gamma;
@@ -745,7 +745,7 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
 
     double timeSteppingScaling = 1.;
     if ( !this->solidModel()->isStationary() )
-        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"timeSteppingScaling") );
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"time-stepping.scaling") );
 
     auto mesh = M_solidModel->mesh();
     auto Xh = M_solidModel->functionSpaceDisplacement();
