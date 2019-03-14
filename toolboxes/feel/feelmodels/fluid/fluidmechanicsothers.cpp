@@ -1630,15 +1630,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
     sync( *M_meshVelocityInterface, "=", M_dofsVelocityInterfaceOnMovingBoundary);
 
     //-------------------------------------------------------------------//
-    // semi implicit optimisation
-    if (this->useFSISemiImplicitScheme())
-    {
-        //this->meshALE()->revertReferenceMesh();
-        this->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(this->mesh(),this->markersNameMovingBoundary()) );
-        //this->meshALE()->revertMovingMesh();
-    }
-
-    //-------------------------------------------------------------------//
     // move winkessel submesh
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
@@ -1659,27 +1650,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
                       (boost::format( "normWind %1% normDisp %2% normDispImposed %3% ") %normWind %normDisp %normDispImposed ).str() );
         }
     }
-
-    //-------------------------------------------------------------------//
-    //ho visu
-#if 0 //defined(FEELPP_HAS_VTK)
-    if (M_isHOVisu && false) // useless now ( this export mesh stay fix!)
-    {
-        auto drm = M_meshALE->dofRelationShipMap();
-        //revert ref
-        M_meshdispVisuHO->scale(-1);
-        M_meshmover_visu_ho.apply(M_XhVectorialVisuHO->mesh(),*M_meshdispVisuHO);
-        // get disp from ref
-        auto thedisp = M_meshALE->functionSpace()->element();
-        for (uint i=0;i<thedisp.nLocalDof();++i)
-            thedisp(drm->dofRelMap()[i])=(*(M_meshALE->displacementInRef()))(i) - (*M_meshALE->dispP1ToHO_ref())(i) ;
-        //transfert disp on ho mesh
-        M_opImeshdisp->apply( thedisp , *M_meshdispVisuHO);
-        // move ho mesh
-        M_meshmover_visu_ho.apply(M_XhVectorialVisuHO->mesh(),*M_meshdispVisuHO);
-    }
-#endif
-
 
     this->log("FluidMechanics","updateALEmesh", "finish");
 }

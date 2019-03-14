@@ -763,6 +763,7 @@ FSI<FluidType,SolidType>::solveImpl1()
     {
         this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
+        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()) );
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
@@ -868,6 +869,7 @@ FSI<FluidType,SolidType>::solveImpl2()
     {
         this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
+        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()) );
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
@@ -975,6 +977,7 @@ FSI<FluidType,SolidType>::solveImpl2()
     {
         this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
+        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()) );
     }
 
 
@@ -990,6 +993,7 @@ FSI<FluidType,SolidType>::solveImpl3()
     {
         this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
+        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()) );
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
