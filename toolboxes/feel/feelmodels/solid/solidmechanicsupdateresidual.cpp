@@ -23,7 +23,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     vector_ptrtype& R = data.residual();
     bool _buildCstPart = data.buildCstPart();
     bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
 
     std::string sc=(_buildCstPart)?" (cst part)":" (non cst part)";
@@ -35,17 +34,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
 
     double timeSteppingScaling = 1.;
-    bool timeSteppingThetaAssemblePreviousContrib = data.hasInfo( "Theta-Time-Stepping-Previous-Contrib" );
+    bool timeSteppingEvaluateResidualWithoutTimeDerivative = false;
     if ( !this->isStationary() )
     {
+        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( "time-stepping.evaluate-residual-without-time-derivative" );
         if ( M_timeStepping == "Theta" )
         {
-            if ( timeSteppingThetaAssemblePreviousContrib )
+            if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
                 timeSteppingScaling = 1. - M_timeStepThetaValue;
             else
                 timeSteppingScaling = M_timeStepThetaValue;
         }
-        data.addDoubleInfo( prefixvm(this->prefix(),"timeSteppingScaling"), timeSteppingScaling );
+        data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -230,7 +230,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             CHECK( this->hasStartSubBlockSpaceIndex( "velocity" ) ) << "no SubBlockSpaceIndex velocity";
             size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
             //std::cout << "RESIDUAL bdf\n";
-            if ( timeSteppingThetaAssemblePreviousContrib )
+            if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
             {
                 if ( !BuildCstPart )
                 {
@@ -264,7 +264,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                                _geomap=this->geomap() );
             }
 
-            if ( BuildCstPart && !timeSteppingThetaAssemblePreviousContrib )
+            if ( BuildCstPart && !timeSteppingEvaluateResidualWithoutTimeDerivative )
             {
                 auto rhsTimeStepVelocity = M_timeStepBdfVelocity->polyDeriv();
                 if ( !this->useMassMatrixLumped() )

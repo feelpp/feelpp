@@ -183,6 +183,7 @@ public:
     void setOrder( int order )
     {
         M_order = order;
+        M_order_cur = M_order; // require when restart
     }
 
     //!return the prefix
@@ -305,19 +306,28 @@ public:
         //return M_alpha[this->timeOrder()-1][i]/this->timeStep();
     }
 
-    //! Returns the right hand side \f$ \bar{p} \f$ of the time derivative
-    //! formula
+    //! Returns the right hand side \f$ \bar{p} \f$ of the time derivative formula
     element_type const& polyDeriv() const;
+
+    //! Returns the right hand side \f$ \bar{p} \f$ of the time derivative formula
+    element_ptrtype const& polyDerivPtr() const { return M_polyDeriv; }
 
     //! Compute the polynomial extrapolation approximation of order n-1 of
     //! u^{n+1} defined by the n stored state vectors
     element_type const& poly() const;
 
+    //! Compute the polynomial extrapolation approximation of order n-1 of
+    //! u^{n+1} defined by the n stored state vectors
+    element_ptrtype const& polyPtr() const { return M_poly; }
+
     //! Return a vector with the last n state vectors
     unknowns_type const& unknowns() const;
 
-    //! Return a vector with the last n state vectors
+    //! Return the previous element at previous time i-1
     element_type& unknown( int i );
+
+    //! Return the previous element at previous time i-1
+    element_ptrtype unknownPtr( int i );
 
     element_type const& prior() const { return *M_unknowns[0]; }
 
@@ -708,6 +718,8 @@ Bdf<SpaceType>::restart()
                 M_last_iteration_since_order_change = i;
                 ++M_order_cur;
             }
+            if ( M_order_cur == M_order )
+                break;
         }
     }
     break;
@@ -730,6 +742,14 @@ Bdf<SpaceType>::unknown( int i )
 {
     DVLOG(2) << "[Bdf::unknown] id: " << i << " l2norm = " << M_unknowns[i]->l2Norm() << "\n";
     return *M_unknowns[i];
+}
+
+template <typename SpaceType>
+typename Bdf<SpaceType>::element_ptrtype
+Bdf<SpaceType>::unknownPtr( int i )
+{
+    DVLOG(2) << "[Bdf::unknown] id: " << i << " l2norm = " << M_unknowns[i]->l2Norm() << "\n";
+    return M_unknowns[i];
 }
 
 

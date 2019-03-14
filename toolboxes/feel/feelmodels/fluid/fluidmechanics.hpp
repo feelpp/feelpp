@@ -471,7 +471,7 @@ public :
     void setDoExport(bool b);
     void exportMeasures( double time );
 private :
-    void updateTimeStepThetaSchemePreviousContrib();
+    void updateTimeStepCurrentResidual();
     //void exportResultsImpl( double time );
     void exportResultsImplHO( double time );
 public :
