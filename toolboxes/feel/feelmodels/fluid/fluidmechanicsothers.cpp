@@ -1242,9 +1242,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
 {
     this->log("FluidMechanics","startTimeStep", "start" );
 
-    // residual assembly for initial time
-    if ( M_timeStepping == "Theta" )
-        this->updateTimeStepThetaSchemePreviousContrib();
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+
     // start time step
     if ( !this->doRestart() )
         M_bdf_fluid->start(*M_Solution);
@@ -1261,6 +1261,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->log("FluidMechanics","updateTimeStep", "start" );
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
+
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
 
     // windkessel outlet
     if (this->hasFluidOutletWindkessel() )
@@ -1324,7 +1327,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     }
     else if ( M_timeStepping == "Theta" )
     {
-        this->updateTimeStepThetaSchemePreviousContrib();
         M_bdf_fluid->next( *M_Solution );
         this->updateTime( M_bdf_fluid->time() );
     }
@@ -1357,16 +1359,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepThetaSchemePreviousContrib()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 {
     if ( !M_algebraicFactory )
         return;
-    M_timeStepThetaSchemePreviousContrib->zero();
-    M_blockVectorSolution.updateVectorFromSubVectors();
-    std::vector<std::string> infos = { "Theta-Time-Stepping-Previous-Contrib" };
-    M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
-    M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos );
-    M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+
+    if ( M_timeStepping == "Theta" )
+    {
+        M_timeStepThetaSchemePreviousContrib->zero();
+        M_blockVectorSolution.updateVectorFromSubVectors();
+        //this->updateBlockVectorSolution();
+        std::vector<std::string> infos = { "time-stepping.evaluate-residual-without-time-derivative" };
+        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+        M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos );
+        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+    }
 }
 
 //---------------------------------------------------------------------------------------------------------//

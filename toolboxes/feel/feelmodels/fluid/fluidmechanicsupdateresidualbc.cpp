@@ -31,7 +31,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 
     double timeSteppingScaling = 1.;
     if ( !this->isStationary() )
-        timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"timeSteppingScaling") );
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
     //--------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();
