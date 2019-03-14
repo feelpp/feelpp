@@ -22,7 +22,7 @@
 //! @copyright 2017 Feel++ Consortium
 //!
 #include <pybind11/pybind11.h>
-
+#include <pybind11/stl.h>
 #include <mpi4py/mpi4py.h>
 #include<feel/feelmodels/modelproperties.hpp>
 
@@ -32,13 +32,34 @@ using namespace Feel;
 
 PYBIND11_MAKE_OPAQUE(ModelMaterial);
 PYBIND11_MAKE_OPAQUE(ModelMaterials);
+PYBIND11_MAKE_OPAQUE(ModelParameters);
 
 PYBIND11_MODULE(_models, m )
 {
     using namespace Feel;
 
+    auto parameter_to_str = [](const ModelParameter &mat )
+    {
+        std::ostringstream s;
+        s << mat.name() << " : " << mat.value() << std::endl;
+        return s.str();
+    };
+    std::string pyclass_name;
+    pyclass_name = "ModelParameter";
+    py::class_<ModelParameter>(m,pyclass_name.c_str())
+        .def(py::init<>())
+        .def("name",&ModelParameter::name, "name of the parameter")
+        .def("type",&ModelParameter::type, "type of the parameter: value, expression, fit")
+        .def("value",&ModelParameter::value, "value of the parameter")
+        .def("setValue",&ModelParameter::setValue, "set value of the parameter")
+        .def("hasExpression",&ModelParameter::hasExpression, "return true if the parameter has an expression, false otherwise")
+        .def("hasFitInterpolator",&ModelParameter::hasFitInterpolator, "return true if the parameter has a fit interpolator, false otherwise")
+        .def("setParameterValues",&ModelParameter::setParameterValues, "set parameter values from a map of string/double pairs")
+        .def("__str__", parameter_to_str, "");
+    
 
-    std::string pyclass_name = "ModelParameters";
+    
+    pyclass_name = "ModelParameters";
     py::class_<ModelParameters>(m,pyclass_name.c_str())
         .def(py::init<worldcomm_t const&>(),
              py::arg("worldComm"))
@@ -47,6 +68,18 @@ PYBIND11_MODULE(_models, m )
         .def("__iter__", [](ModelParameters &v) {
                 return py::make_iterator(v.begin(), v.end());
             }, py::keep_alive<0, 1>()) /* Keep vector alive while iterator is used */
+        .def("__str__", [](ModelParameters &mp) {
+                std::ostringstream s;
+                s << "{";
+                for( auto const& [k,v] : mp )
+                {
+                    s << "{" << v.name() << "," << v.value() << "},";
+                }
+                s << "}";
+                return s.str();
+            },"")
+        .def("at",static_cast<ModelParameter& (ModelParameters::*)(std::string const&)>(&ModelParameters::at),"",
+             py::return_value_policy::reference, py::keep_alive<0, 1>())
         .def("setParameterValues",&ModelParameters::setParameterValues, "set parameter values from a map of string/double pairs")
         .def("toParameterValues",&ModelParameters::toParameterValues, "get a dictionary from the map of parameter values");
 
@@ -137,7 +170,7 @@ PYBIND11_MODULE(_models, m )
     pyclass_name = "ModelProperties";
     py::class_<ModelProperties,std::shared_ptr<ModelProperties>>(m,pyclass_name.c_str())
         .def(py::init<std::string const&, std::string const&, worldcomm_t const&, std::string const&>(),"initialize ModelProperties",py::arg("filename")="",py::arg("directoryLibExpr")="",py::arg("worldComm"),py::arg("prefix")="")
-        .def("parameters",static_cast<ModelParameters& (ModelProperties::*)()>(&ModelProperties::parameters), "get parameters of the model")
+        .def("parameters",static_cast<ModelParameters& (ModelProperties::*)()>(&ModelProperties::parameters), "get parameters of the model",py::return_value_policy::reference)
         .def("materials",static_cast<ModelMaterials& (ModelProperties::*)()>(&ModelProperties::materials), "get the materials of the model",py::return_value_policy::reference);
     
 }
