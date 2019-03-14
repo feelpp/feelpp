@@ -1,9 +1,17 @@
 {
     "Name": "Square2d",
-    "ShortName":"Square2d",
+    "ShortName": "Square2d",
     "Models":
     {
         "equations":"Navier-Stokes"
+    },
+    "Materials":
+    {
+        "OmegaFluid":
+        {
+            "rho":1,
+            "mu":10
+        }
     },
     "Parameters":
     {
