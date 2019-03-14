@@ -3,7 +3,7 @@ from numpy import mean, sum, dot, linalg, zeros, ones, transpose
 from numpy.linalg import inv, cholesky
 from scipy.linalg import sqrtm
 from mpi4py import MPI
-from implements import *
+from base import *
 
 class Filter:
 

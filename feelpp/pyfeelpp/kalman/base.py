@@ -1,3 +1,5 @@
+import numpy as np
+
 def balancedpartition(nb_data,nb_procs):
     part = np.zeros(nb_procs, dtype=np.int8)
     for i in range(nb_procs):

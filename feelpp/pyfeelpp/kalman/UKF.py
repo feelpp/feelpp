@@ -62,7 +62,7 @@ class Filter:
         self.Time += 1
 
         self.Mx = self.SigPts @ transpose(self.weights)
-        self.XF = self.Mx
+#        self.XF = self.Mx
         self.Covx = (self.weights*(self.SigPts-self.Mx)) @ transpose(self.SigPts-self.Mx)
         self.My = self.PreMeas @ transpose(self.weights)
         self.Covy = (self.weights*(self.PreMeas-self.My)) @ transpose(self.PreMeas-self.My) + self.covydefect*np.eye(self.obs)
