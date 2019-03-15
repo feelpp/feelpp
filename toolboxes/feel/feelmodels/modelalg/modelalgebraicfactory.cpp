@@ -224,6 +224,12 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         M_addFunctionLinearAssembly[ keyUsed ] = func;
     }
     void
+    ModelAlgebraicFactory::addFunctionLinearDofElimination( function_assembly_linear_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionLinearDofElimination.size()).str() : key;
+        M_addFunctionLinearDofElimination[ keyUsed ] = func;
+    }
+    void
     ModelAlgebraicFactory::addFunctionLinearPostAssembly( function_assembly_linear_type const& func, std::string const& key )
     {
         std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionLinearPostAssembly.size()).str() : key;
@@ -246,6 +252,18 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
     {
         std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionResidualAssembly.size()).str() : key;
         M_addFunctionResidualAssembly[ keyUsed ] = func;
+    }
+    void
+    ModelAlgebraicFactory::addFunctionJacobianDofElimination( function_assembly_jacobian_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionJacobianDofElimination.size()).str() : key;
+        M_addFunctionJacobianDofElimination[ keyUsed ] = func;
+    }
+    void
+    ModelAlgebraicFactory::addFunctionResidualDofElimination( function_assembly_residual_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionResidualDofElimination.size()).str() : key;
+        M_addFunctionResidualDofElimination[ keyUsed ] = func;
     }
     void
     ModelAlgebraicFactory::addFunctionJacobianPostAssembly( function_assembly_jacobian_type const& func, std::string const& key )
@@ -490,6 +508,8 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
         // dof elimination
         this->model()->updateLinearPDEDofElimination( dataLinearNonCst );
+        for ( auto const& func : M_addFunctionLinearDofElimination )
+            func.second( dataLinearNonCst );
 
         // post-assembly
         for ( auto const& func : M_addFunctionLinearPostAssembly )
@@ -594,6 +614,8 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
         // dof elimination
         model->updateJacobianDofElimination( dataJacobianNonCst );
+        for ( auto const& func : M_addFunctionJacobianDofElimination )
+            func.second( dataJacobianNonCst );
 
         for ( auto const& func : M_addFunctionJacobianPostAssembly )
             func.second( dataJacobianNonCst );
@@ -647,6 +669,8 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
         // dof elimination
         model->updateResidualDofElimination( dataResidualNonCst );
+        for ( auto const& func : M_addFunctionResidualDofElimination )
+            func.second( dataResidualNonCst );
 
         for ( auto const& func : M_addFunctionResidualPostAssembly )
             func.second( dataResidualNonCst );
@@ -806,7 +830,11 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
         // dof elimination
         if ( applyDofElimination )
+        {
             model->updateResidualDofElimination( dataResidual );
+            for ( auto const& func : M_addFunctionResidualDofElimination )
+                func.second( dataResidual );
+        }
 
         for ( auto const& func : M_addFunctionResidualPostAssembly )
             func.second( dataResidual );
