@@ -78,6 +78,7 @@ int hdg_laplacian()
 
     tic();
     auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
+    int nbIbc = nelements(markedfaces(mesh,"Ibc"),true) >= 1 ? 1 : 0;
     toc("mesh",true);
 
     int proc_rank = Environment::worldComm().globalRank();
@@ -145,6 +146,8 @@ int hdg_laplacian()
          << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
          << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
          << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
+    if( nbIbc > 0 )
+        cout << "Ch<0> : " << Ch->nDof() << std::endl;
     cout << mesh->numGlobalElements()  << " " << mesh->numGlobalFaces() << " "
          << Vh->nDof() << " " << Wh->nDof() << " " << Mh->nDof() << " "
          << cgXh->nDof() << std::endl;
@@ -199,7 +202,6 @@ int hdg_laplacian()
     auto nu = Ch->element( "nu" );
 
     tic();
-    int nbIbc = nelements(markedfaces(mesh,"Ibc"),true) >= 1 ? 1 : 0;
     auto ibcSpaces = std::make_shared<ProductSpace<decltype(Ch),true> >( nbIbc, Ch);
     auto ps = product2( ibcSpaces, Vh, Wh, Mh );
     toc("space",true);
