@@ -1,0 +1,35 @@
+{
+    "Name": "Drop3d",
+    "ShortName": "Drop3d",
+    "Models":
+    {
+        "equations":"Advection"
+    },
+
+    "Parameters":
+    {
+        "x0": "0.5",
+        "y0": "0.5",
+        "z0": "0.5",
+        "r0": "0.25"
+    },
+
+    "InitialConditions":
+    {
+        "multifluid.levelset1":
+        {
+            "Dirichlet":
+            {
+                "":
+                {
+                    "expr":"sqrt( (x-x0)*(x-x0) + (y-y0)*(y-y0) + (z-z0)*(z-z0) ) - r0 :x:x0:y:y0:z:z0:r0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields": ["gradphi", "modgradphi"],
+        "PhysicalQuantities": ["volume", "perimeter","position_com","velocity_com"]
+    }
+}

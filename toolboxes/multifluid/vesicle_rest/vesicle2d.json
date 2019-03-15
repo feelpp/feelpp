@@ -3,9 +3,8 @@
     "ShortName": "VesicleRest2d",
     "Models":
     {
-        "equations":"Levelset"
+        "equations":"Advection"
     },
-
     "Parameters":
     {
         "x0": "0.",
@@ -13,7 +12,6 @@
         "a0": "0.650",
         "b0": "2.244"
     },
-
     "InitialConditions":
     {
         "multifluid.levelset1":
