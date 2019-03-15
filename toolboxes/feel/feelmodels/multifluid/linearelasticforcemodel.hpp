@@ -6,19 +6,22 @@
 namespace Feel {
 namespace FeelModels {
 
-template<class LevelSetType>
+template<class LevelSetType, class FluidMechanicsType>
 class LinearElasticForceModel
-: public HyperelasticForceModel<LevelSetType>
+: public HyperelasticForceModel<LevelSetType, FluidMechanicsType>
 {
-    typedef LinearElasticForceModel<LevelSetType> self_type;
-    typedef HyperelasticForceModel<LevelSetType> super_type;
+    typedef LinearElasticForceModel<LevelSetType, FluidMechanicsType> self_type;
+    typedef HyperelasticForceModel<LevelSetType, FluidMechanicsType> super_type;
 public:
     typedef typename super_type::levelset_type levelset_type;
     typedef typename super_type::levelset_ptrtype levelset_ptrtype;
 
+    typedef typename super_type::fluidmechanics_type fluidmechanics_type;
+    typedef typename super_type::fluidmechanics_ptrtype fluidmechanics_ptrtype;
+
     typedef typename super_type::mesh_type mesh_type;
 
-    typedef typename levelset_type::space_levelset_vectorial_type space_type;
+    typedef typename levelset_type::space_vectorial_type space_type;
     typedef std::shared_ptr<space_type> space_ptrtype;
 
     typedef typename space_type::element_type element_type;
@@ -40,7 +43,7 @@ public:
     LinearElasticForceModel() = default;
     LinearElasticForceModel( LinearElasticForceModel const& i ) = default;
 
-    void build( std::string const& prefix, levelset_ptrtype const& ls );
+    void build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm = fluidmechanics_ptrtype() );
     void loadParametersFromOptionsVm();
 
     std::shared_ptr<std::ostringstream> getInfo() const;
@@ -57,25 +60,25 @@ private:
 
 };
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-LinearElasticForceModel<LevelSetType>::build( std::string const& prefix, levelset_ptrtype const& ls )
+LinearElasticForceModel<LevelSetType, FluidMechanicsType>::build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm )
 {
-    super_type::build( prefix, ls, "linear-elastic-force" );
+    super_type::build( prefix, ls, fm, "linear-elastic-force" );
     this->loadParametersFromOptionsVm();
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-LinearElasticForceModel<LevelSetType>::loadParametersFromOptionsVm()
+LinearElasticForceModel<LevelSetType, FluidMechanicsType>::loadParametersFromOptionsVm()
 {
     M_elasticStretchModulus = doption( _name="elastic-stretch-modulus", _prefix=this->prefix() );
     M_elasticShearModulus = doption( _name="elastic-shear-modulus", _prefix=this->prefix() );
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 std::shared_ptr<std::ostringstream> 
-LinearElasticForceModel<LevelSetType>::getInfo() const
+LinearElasticForceModel<LevelSetType, FluidMechanicsType>::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "Linear elastic force ("
@@ -86,9 +89,9 @@ LinearElasticForceModel<LevelSetType>::getInfo() const
     return _ostr;
 }
 
-template<typename LevelSetType>
-typename LinearElasticForceModel<LevelSetType>::element_energyderivative_ptrtype const&
-LinearElasticForceModel<LevelSetType>::energyDerivative1Impl() const
+template<typename LevelSetType, typename FluidMechanicsType>
+typename LinearElasticForceModel<LevelSetType, FluidMechanicsType>::element_energyderivative_ptrtype const&
+LinearElasticForceModel<LevelSetType, FluidMechanicsType>::energyDerivative1Impl() const
 {
     if( !M_energyDerivative1 )
         M_energyDerivative1.reset( new element_energyderivative_type(this->levelset()->functionSpace(), "EnergyDerivative1") );
@@ -109,9 +112,9 @@ LinearElasticForceModel<LevelSetType>::energyDerivative1Impl() const
     return M_energyDerivative1;
 }
 
-template<typename LevelSetType>
-typename LinearElasticForceModel<LevelSetType>::element_energyderivative_ptrtype const&
-LinearElasticForceModel<LevelSetType>::energyDerivative2Impl() const
+template<typename LevelSetType, typename FluidMechanicsType>
+typename LinearElasticForceModel<LevelSetType, FluidMechanicsType>::element_energyderivative_ptrtype const&
+LinearElasticForceModel<LevelSetType, FluidMechanicsType>::energyDerivative2Impl() const
 {
     if( !M_energyDerivative2 )
         M_energyDerivative2.reset( new element_energyderivative_type(this->levelset()->functionSpace(), "EnergyDerivative2") );

@@ -30,7 +30,7 @@
 #define _REINITIALIZER_HJ_HPP 1
 
 #include <feel/feelmodels/levelset/reinitializer.hpp>
-#include <feel/feelmodels/advection/advectionbase.hpp>
+#include <feel/feelmodels/advection/advection.hpp>
 #include <feel/feelmodels/levelset/levelsetdeltaexpr.hpp>
 
 namespace Feel
@@ -72,19 +72,11 @@ public:
     // Hamilton-Jacobi advection
     template<typename SpaceType>
     class AdvectionHJ
-        : public Feel::FeelModels::AdvectionBase<
-            typename SpaceType::mesh_type::shape_type, 
-            typename SpaceType::template Basis<0>::type,
-            typename SpaceType::periodicity_0_type
-          >
+        : public Feel::FeelModels::AdvDiffReac<SpaceType/*,TODO*/>
         , public std::enable_shared_from_this< AdvectionHJ<SpaceType> >
     {
     public:
-        typedef Feel::FeelModels::AdvectionBase<
-            typename SpaceType::mesh_type::shape_type, 
-            typename SpaceType::template Basis<0>::type,
-            typename SpaceType::periodicity_0_type
-          > super_type;
+        typedef Feel::FeelModels::AdvDiffReac<SpaceType> super_type;
 
         typedef AdvectionHJ<SpaceType> self_type;
         typedef std::shared_ptr<self_type> self_ptrtype;
@@ -180,7 +172,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::ReinitializerHJ(
 
     M_functionSpaceP1Vec = functionspace_P1v_type::New( space->mesh() );
     M_projectorL2Vec = projector(M_functionSpaceP1Vec, M_functionSpaceP1Vec, 
-            backend(_name=prefixvm("levelset", "projector-l2-vec")) );
+            backend(_name=prefixvm("levelset", "projector-l2-vectorial")) );
     
     //if( this->M_useVolumeConstraint )
         M_functionSpaceP0 = functionspace_P0_type::New( space->mesh() );
@@ -239,8 +231,8 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
     {
         LOG(INFO) << "iter reinit : " << i << std::endl;
 
-        auto phi_reinit = M_advectionHJ->fieldSolutionPtr();
-        auto phi_reinito = M_advectionHJ->timeStepBDF()->unknowns()[1];
+        auto const& phi_reinit = M_advectionHJ->fieldSolutionPtr();
+        auto const& phi_reinito = M_advectionHJ->timeStepBDF()->unknowns()[1];
 
         auto gradPhiReinit = M_projectorL2Vec->project( _expr=trans(gradv(phi_reinit)) );
 #if 1
@@ -316,7 +308,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
 
             //auto modGradPhiReinit = vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit)));
             auto modGradPhiReinit = vf::sqrt( trans(idv(gradPhiReinit))*idv(gradPhiReinit) );
-            auto Delta = Feel::FeelModels::levelsetDelta( idv(phi_reinit), M_thicknessHeaviside );
+            auto Delta = Feel::FeelModels::levelsetDelta( *phi_reinit, M_thicknessHeaviside );
             auto spaceP0 = this->functionSpaceP0();
             auto LambdaNum = integrate(
                     _range=elements(mesh),
@@ -411,8 +403,9 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::ADVECTIONHJ_CLASS_TEMPLATE_TYPE::init(
         functionspace_ptrtype const& space,
         bool buildModelAlgebraicFactory )
 {
-    super_type::build( space );
-    super_type::init( buildModelAlgebraicFactory, this->shared_from_this() );
+    this->setFunctionSpace( space );
+    //super_type::init( buildModelAlgebraicFactory, this->shared_from_this() );
+    super_type::init( buildModelAlgebraicFactory );
 }
 
 REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS
