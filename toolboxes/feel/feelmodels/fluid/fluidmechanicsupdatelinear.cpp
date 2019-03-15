@@ -253,10 +253,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     }
 
     //--------------------------------------------------------------------------------------------------//
-    // user-defined additional terms
-    this->updateLinearPDEAdditional( A, F, _BuildCstPart );
-
-    //--------------------------------------------------------------------------------------------------//
     // body forces
     if ( this->M_overwritemethod_updateSourceTermLinearPDE != NULL )
     {
@@ -302,7 +298,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
             double beta = this->definePressureCstPenalisationBeta();
             for ( auto const& rangeElt : M_definePressureCstMeshRanges )
                 bilinearForm_PatternCoupled +=
-                    integrate( _range=M_rangeMeshElements,
+                    integrate( _range=rangeElt,
                                _expr=beta*idt(p)*id(q),
                                _geomap=this->geomap() );
         }

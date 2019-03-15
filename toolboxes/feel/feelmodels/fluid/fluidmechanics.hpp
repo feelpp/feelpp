@@ -852,9 +852,6 @@ public :
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
     void updateResidualDofElimination( DataUpdateResidual & data ) const;
 
-    virtual void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const {}
-    virtual void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const {}
-
     // linear
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
@@ -866,8 +863,6 @@ public :
 
     void updatePicard( DataUpdateLinear & data ) const;
     double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
-
-    virtual void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const {}
 
     //___________________________________________________________________________________//
 
