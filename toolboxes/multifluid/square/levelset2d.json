@@ -3,16 +3,14 @@
     "ShortName": "Square2d",
     "Models":
     {
-        "equations":"Levelset"
+        "equations":"Advection"
     },
-
     "Parameters":
     {
         "x0": "0.",
         "y0": "0.",
         "r0": "0.2"
     },
-
     "InitialConditions":
     {
         "multifluid.levelset1":

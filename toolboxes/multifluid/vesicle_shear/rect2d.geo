@@ -24,4 +24,4 @@ Physical Line("Bottom") = {2};
 Physical Line("LowerRight") = {31};
 Physical Line("UpperRight") = {32};
 Physical Line("Top") = {4};
-Physical Surface("Omega") = {6};
+Physical Surface("OmegaFluid") = {6};
