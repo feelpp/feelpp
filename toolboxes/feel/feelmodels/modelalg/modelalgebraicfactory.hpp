@@ -81,16 +81,23 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
-        ModelAlgebraicFactory(model_ptrtype const& __app, backend_ptrtype const& __backend);
+        ModelAlgebraicFactory( std::string const& prefix );
+        ModelAlgebraicFactory( model_ptrtype const& model, backend_ptrtype const& backend );
 
-        ModelAlgebraicFactory(model_ptrtype const&__app,
-                              backend_ptrtype const& __backend,
+        ModelAlgebraicFactory(model_ptrtype const& model,
+                              backend_ptrtype const& backend,
                               graph_ptrtype const& graph,
                               indexsplit_ptrtype const& indexSplit );
 
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
+        void init( model_ptrtype const& model, backend_ptrtype const& backend );
+        void init( model_ptrtype const& model, backend_ptrtype const& backend,
+                   graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit );
+        void init( backend_ptrtype const& backend, graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit );
+
+#if 0
         template <typename SpaceType>
         void
         initFromFunctionSpace(std::shared_ptr<SpaceType> const& space )
@@ -117,6 +124,7 @@ namespace FeelModels
             if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".MethodNum","initFromFunctionSpace", "finish",
                                                                 this->model()->worldComm(),this->model()->verboseAllProc());
         }
+#endif
 
         //---------------------------------------------------------------------------------------------------------------//
 
@@ -183,6 +191,10 @@ namespace FeelModels
 
         void rebuildCstJacobian( vector_ptrtype U );
         void rebuildCstLinearPDE( vector_ptrtype U );
+
+        void evaluateResidual( const vector_ptrtype& U, vector_ptrtype& R,
+                               std::vector<std::string> const& infos = std::vector<std::string>(),
+                               bool applyDofElimination = true ) const;
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
@@ -197,14 +209,12 @@ namespace FeelModels
 
         void addVectorLinearRhsAssembly( vector_ptrtype const& vec, double scaling = 1.0, std::string const& key = "", bool cstPart = false );
         void addVectorResidualAssembly( vector_ptrtype const& vec, double scaling = 1.0, std::string const& key = "", bool cstPart = false );
+        void setActivationAddVectorLinearRhsAssembly( std::string const& key, bool b );
+        void setActivationAddVectorResidualAssembly( std::string const& key, bool b );
 
         void updateNewtonIteration( int step, vector_ptrtype residual, vector_ptrtype sol, typename backend_type::solvernonlinear_type::UpdateIterationData const& data );
 
     private :
-
-        void
-        init(graph_ptrtype const& graph,
-             indexsplit_ptrtype const& indexSplit);
 
         void
         buildMatrixVector(graph_ptrtype const& graph,
@@ -239,8 +249,9 @@ namespace FeelModels
         std::map<std::string,function_assembly_jacobian_type> M_addFunctionJacobianPostAssembly;
         std::map<std::string,function_assembly_residual_type> M_addFunctionResidualPostAssembly;
 
-        std::map<std::string, std::tuple<vector_ptrtype,double,bool>> M_addVectorLinearRhsAssembly;
-        std::map<std::string, std::tuple<vector_ptrtype,double,bool>> M_addVectorResidualAssembly;
+        // ( key -> ( vector,scaling, cstPart?, activated? ) )
+        std::map<std::string, std::tuple<vector_ptrtype,double,bool,bool>> M_addVectorLinearRhsAssembly;
+        std::map<std::string, std::tuple<vector_ptrtype,double,bool,bool>> M_addVectorResidualAssembly;
 
         bool M_usePseudoTransientContinuation;
         std::string M_pseudoTransientContinuationEvolutionMethod;

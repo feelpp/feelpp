@@ -32,8 +32,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     this->timerTool("Solve").start();
 
     double timeSteppingScaling = 1.;
-    if ( !this->isStationary() && M_timeStepping == "Theta" )
-        timeSteppingScaling = M_timeStepThetaValue;
+    if ( !this->isStationary() )
+    {
+        if ( M_timeStepping == "Theta" )
+            timeSteppingScaling = M_timeStepThetaValue;
+        data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
+    }
 
     //---------------------------------------------------------------------------------------//
 

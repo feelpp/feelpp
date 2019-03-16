@@ -25,6 +25,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
     sparse_matrix_ptrtype& J = data.jacobian();
     bool BuildCstPart = data.buildCstPart();
 
+    double timeSteppingScaling = 1.;
+    if ( !this->isStationary() )
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
+
     //--------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();
@@ -58,8 +62,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
 
         bilinearForm_PatternCoupled +=
             integrate( _range=markedfaces(mesh, this->markerDirichletBCnitsche()),
-                       _expr= -trans(Sigmat*N())*id(v)
-                       /**/   + this->dirichletBCnitscheGamma()*trans(idt(u))*id(v)/hFace(),
+                       _expr= -timeSteppingScaling*trans(Sigmat*N())*id(v)
+                       /**/   + timeSteppingScaling*this->dirichletBCnitscheGamma()*trans(idt(u))*id(v)/hFace(),
                        _geomap=this->geomap() );
     }
     //--------------------------------------------------------------------------------------------------//
@@ -99,7 +103,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
-                               _expr=-trans(cross(id(u),N()))(0,0)*idt(M_fieldLagrangeMultiplierPressureBC1),
+                               _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,0)*idt(M_fieldLagrangeMultiplierPressureBC1),
                                _geomap=this->geomap() );
 
                 form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=J,_pattern=size_type(Pattern::COUPLED),
@@ -116,7 +120,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
-                               _expr=-trans(cross(id(u),N()))(0,2)*idt(M_fieldLagrangeMultiplierPressureBC1)*alpha,
+                               _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,2)*idt(M_fieldLagrangeMultiplierPressureBC1)*alpha,
                                _geomap=this->geomap() );
 
                 form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=J,_pattern=size_type(Pattern::COUPLED),
@@ -133,8 +137,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM2 ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
-                               _expr= -trans(cross(id(u),N()))(0,0)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Ny()
-                               +trans(cross(id(u),N()))(0,1)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
+                               _expr= -timeSteppingScaling*trans(cross(id(u),N()))(0,0)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Ny()
+                               +timeSteppingScaling*trans(cross(id(u),N()))(0,1)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
                                _geomap=this->geomap() );
 
                 form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=J,_pattern=size_type(Pattern::COUPLED),
@@ -227,7 +231,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                        _rowstart=rowStartInMatrix,
                        _colstart=blockStartWindkesselCol/*colStartInMatrixWindkessel*/ ) +=
                     integrate( _range=markedfaces(mesh,markerOutlet),
-                               _expr= idt(presProximal)*trans(N())*id(v),
+                               _expr= timeSteppingScaling*idt(presProximal)*trans(N())*id(v),
                                _geomap=this->geomap() );
             }
         }
@@ -257,81 +261,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                        _geomap=this->geomap()
                        );
     }
-    //--------------------------------------------------------------------------------------------------//
-    // fsi bc
-#if 0 // defined( FEELPP_MODELS_HAS_MESHALE )
-    if ( this->isMoveDomain() && ( this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "robin-neumann-genuine" ||
-                                   this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
-                                   this->couplingFSIcondition() == "robin-neumann-generalized" || this->couplingFSIcondition() == "nitsche" ) )
-    {
-        //---------------------------------------------------------------------------//
-        if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
-             this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "robin-neumann-genuine" ||
-             this->couplingFSIcondition() == "nitsche" )
-        //---------------------------------------------------------------------------//
-        {
-            double gammaRobinFSI = this->couplingFSI_Nitsche_gamma();
-            if ( BuildCstPart )
-            {
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                               _expr= ( gammaRobinFSI*idv(mu)/hFace() )*inner(idt(u),id(u)),
-                               _geomap=this->geomap() );
-
-                if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-neumann" ||
-                     this->couplingFSIcondition() == "nitsche" )
-                {
-                    double alpha = this->couplingFSI_Nitsche_alpha();
-                    double gamma0RobinFSI = this->couplingFSI_Nitsche_gamma0();
-                    auto mysigma = id(q)*Id+2*alpha*idv(mu)*sym(grad(u));
-
-                    bilinearForm_PatternCoupled +=
-                        integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                   _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*idv(mu)) )*idt(p)*id(q),
-                                   _geomap=this->geomap() );
-
-                    if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-neumann" )
-                    {
-                        bilinearForm_PatternCoupled +=
-                            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                       _expr= -inner( idt(u), vf::N() )*id(q),
-                                       _geomap=this->geomap() );
-                    }
-                    else if ( this->couplingFSIcondition() == "nitsche" )
-                    {
-                        bilinearForm_PatternCoupled +=
-                            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                       _expr= -inner( idt(u), mysigma*vf::N() ),
-                                       _geomap=this->geomap() );
-                    }
-                }
-            }
-        }
-        //---------------------------------------------------------------------------//
-        else if ( this->couplingFSIcondition() == "robin-neumann-generalized" )
-        //---------------------------------------------------------------------------//
-        {
-            bool useInterfaceOperator = this->couplingFSI_RNG_useInterfaceOperator() && !this->couplingFSI_solidIs1dReduced();
-            if ( !useInterfaceOperator )
-            {
-                if ( BuildCstPart )
-                {
-                    this->meshALE()->revertReferenceMesh();
-                    bilinearForm_PatternCoupled +=
-                        integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                   _expr=this->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
-                                   _geomap=this->geomap() );
-                    this->meshALE()->revertMovingMesh();
-                }
-            }
-            else // useInterfaceOperator
-            {
-                CHECK( false ) << "TODO";
-            }
-        }
-    }
-#endif // FEELPP_MODELS_HAS_MESHALE
-
     //--------------------------------------------------------------------------------------------------//
     double timeElapsed=t1.elapsed();
     this->log("FluidMechanics","updateJacobianWeakBC","finish in "+(boost::format("%1% s") % timeElapsed).str() );

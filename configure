@@ -66,6 +66,7 @@ _WANT_ASAN=no
 _WANT_CLING=yes
 _WANT_VERBOSE=no
 _WANT_DEBUG=no
+_WANT_ASAN=no
 _WANT_RELWITHDEBINFO=no
 _WANT_OG=no
 _WANT_CHECK=no
@@ -355,7 +356,6 @@ if [ "X${_WANT_ASAN}" = "Xno" ]; then
 else
     echo "set(FEELPP_ENABLE_ASAN ON CACHE PATH \"enable asan \" FORCE)" >> cmake.configure
 fi
-
 
 # CLING
 if [ "X${_WANT_CLING}" = "Xyes" ]; then

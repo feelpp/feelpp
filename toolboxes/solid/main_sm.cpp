@@ -113,7 +113,7 @@ runApplicationSolid()
         if ( !SM->doRestart() )
             SM->exportResults(SM->timeInitial());
 
-        for ( ; !SM->timeStepBase()->isFinished(); SM->updateTimeStep() )
+        for ( SM->startTimeStep() ; !SM->timeStepBase()->isFinished(); SM->updateTimeStep() )
         {
             if (SM->worldComm().isMasterRank())
             {
