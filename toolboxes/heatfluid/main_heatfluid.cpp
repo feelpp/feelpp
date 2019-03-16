@@ -25,7 +25,7 @@ runApplicationHeatFluid()
     }
     else
     {
-        for ( ; !heatFluid->timeStepBase()->isFinished(); heatFluid->updateTimeStep() )
+        for ( heatFluid->startTimeStep() ; !heatFluid->timeStepBase()->isFinished(); heatFluid->updateTimeStep() )
         {
             if (heatFluid->worldComm().isMasterRank())
             {

@@ -772,22 +772,84 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
+{
+    this->log("SolidMechanics","startTimeStep", "start" );
+
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+
+    // go to next time step : ti + \Delta t
+    if ( this->isStandardModel() )
+    {
+        if ( M_timeStepping == "Newmark" )
+        {
+            // start time step
+            if ( !this->doRestart() )
+                M_timeStepNewmark->start(*M_fieldDisplacement);
+            // up current time
+            this->updateTime( M_timeStepNewmark->time() );
+        }
+        else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+        {
+            // start time step
+            if ( !this->doRestart() )
+            {
+                M_timeStepBdfDisplacement->start( *M_fieldDisplacement );
+                M_timeStepBdfVelocity->start( *M_fieldVelocity );
+            }
+            // up current time
+            this->updateTime( M_timeStepBdfDisplacement->time() );
+        }
+        // start save pressure
+        if ( M_useDisplacementPressureFormulation && !this->doRestart() )
+            M_savetsPressure->start( *M_fieldPressure );
+    }
+    else if (this->is1dReducedModel())
+    {
+        // start time step
+        if ( !this->doRestart() )
+            M_newmark_displ_1dReduced->start(*M_disp_1dReduced);
+        // up current time
+        this->updateTime( M_newmark_displ_1dReduced->time() );
+    }
+    this->log("SolidMechanics","startTimeStep", "finish" );
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
     this->log("SolidMechanics","updateTimeStep", "start" );
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
-    if ( M_timeStepping == "Newmark" )
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+
+    // go to next time step
+    if (this->isStandardModel())
     {
-        if (this->isStandardModel())
+        if ( M_timeStepping == "Newmark" )
         {
             // next time step
             M_timeStepNewmark->next( *M_fieldDisplacement );
             // up current time
             this->updateTime( M_timeStepNewmark->time() );
         }
-        else if (this->is1dReducedModel())
+        else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+        {
+            M_timeStepBdfDisplacement->next( *M_fieldDisplacement );
+            M_timeStepBdfVelocity->next( *M_fieldVelocity );
+            this->updateTime( M_timeStepBdfDisplacement->time() );
+        }
+
+        if ( M_useDisplacementPressureFormulation )
+            M_savetsPressure->next(*M_fieldPressure);
+    }
+    else if (this->is1dReducedModel())
+    {
+        if ( M_timeStepping == "Newmark" )
         {
             // next time step
             M_newmark_displ_1dReduced->next( *M_disp_1dReduced );
@@ -795,18 +857,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
             this->updateTime( M_newmark_displ_1dReduced->time() );
         }
     }
-    else
-    {
-
-        if ( M_timeStepping == "Theta" )
-            this->updateTimeStepThetaSchemePreviousContrib();
-        M_timeStepBdfDisplacement->next( *M_fieldDisplacement );
-        M_timeStepBdfVelocity->next( *M_fieldVelocity );
-        this->updateTime( M_timeStepBdfDisplacement->time() );
-    }
-
-    if ( this->isStandardModel() && M_useDisplacementPressureFormulation )
-        M_savetsPressure->next(*M_fieldPressure);
 
     // update user functions which depend of time only
     this->updateUserFunctions(true);
@@ -821,17 +871,26 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepThetaSchemePreviousContrib()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 {
-    M_timeStepThetaSchemePreviousContrib->zero();
-    M_blockVectorSolution.updateVectorFromSubVectors();
-    ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(),
-                                                     M_timeStepThetaSchemePreviousContrib, true, false );
-    dataResidual.addInfo( "Theta-Time-Stepping-Previous-Contrib" );
-    this->updateResidual( dataResidual );
-    dataResidual.setBuildCstPart( false );
-    this->updateResidual( dataResidual );
-    M_timeStepThetaSchemePreviousContrib->close();
+    if ( this->isStandardModel() )
+    {
+        if ( !M_algebraicFactory || M_timeStepping == "BDF" || M_timeStepping == "Newmark" )
+            return;
+
+        if ( M_timeStepping == "Theta" )
+        {
+            M_timeStepThetaSchemePreviousContrib->zero();
+            M_blockVectorSolution.updateVectorFromSubVectors();
+            std::vector<std::string> infos = { "time-stepping.evaluate-residual-without-time-derivative" };
+            M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+            M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos, false );
+            M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+        }
+    }
+    else if ( this->is1dReducedModel() )
+    {
+    }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -887,14 +946,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::predictorDispl()
 
 //---------------------------------------------------------------------------------------------------//
 
-
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
-    this->log("SolidMechanics","solve", "start" );
-    this->timerTool("Solve").start();
-
     this->modelProperties().parameters().updateParameterValues();
 
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -909,6 +964,16 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
     this->M_bcNeumannEulerianFrameTensor2.setParameterValues( paramValues );
     this->M_bcRobin.setParameterValues( paramValues );
     this->M_volumicForcesProperties.setParameterValues( paramValues );
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
+{
+    this->log("SolidMechanics","solve", "start" );
+    this->timerTool("Solve").start();
+
+    this->updateParameterValues();
 
     if ( this->isStandardModel() )
     {
