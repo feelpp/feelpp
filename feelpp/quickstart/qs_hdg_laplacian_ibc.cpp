@@ -314,7 +314,7 @@ int hdg_laplacian()
 
     tic();
     a(2_c,2_c) += integrate(_range=internalfaces(mesh),
-                            _expr=-0.5*tau_constant * idt(phat) * id(l) );
+                            _expr=-(1-0.5*boption("sc.condense"))*tau_constant * idt(phat) * id(l) );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                             _expr=-tau_constant * idt(phat) * id(l)  );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
