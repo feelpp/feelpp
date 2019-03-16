@@ -119,11 +119,13 @@ int hdg_laplacian()
 
     auto Vh = Pdhv<OrderP>( mesh, true );
     auto Wh = Pdh<OrderP>( mesh, true );
-    auto complement_integral_bdy = complement(faces(mesh),[mesh]( auto const& ewrap ) {
-                                                                auto const& e = unwrap_ref( ewrap );
-                                                                if ( e.hasMarker() && e.marker().value() == mesh->markerName( "Ibc" ) )
-                                                                    return true;
-                                                                return false; });
+    auto select_faces = [mesh]( auto const& ewrap ) {
+        auto const& e = unwrap_ref( ewrap );
+        if ( e.hasMarker() && e.marker().value() == mesh->markerName( "Ibc" ) )
+            return true;
+        return false; };
+    auto complement_integral_bdy = complement(faces(mesh),select_faces);
+    auto complement_integral_bdy_boundary = complement(boundaryfaces(mesh),select_faces);
 
     auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
     // auto face_mesh = createSubmesh( mesh, faces(mesh ), EXTRACTION_KEEP_MESH_RELATION, 0 );
@@ -247,7 +249,7 @@ int hdg_laplacian()
                             _expr=( idt(phat)*(leftface(normal(v))+
                                                rightface(normal(v)))) );
 
-    a(0_c,2_c) += integrate(_range=complement_integral_bdy,
+    a(0_c,2_c) += integrate(_range=complement_integral_bdy_boundary,
                             _expr=idt(phat)*(normal(v)));
     toc("a(0,2)",FLAGS_v>0);
 
@@ -278,7 +280,7 @@ int hdg_laplacian()
                             ( leftface( id(w) )+
                               rightface( id(w) )));
 
-    a(1_c,2_c) += integrate(_range=complement_integral_bdy,
+    a(1_c,2_c) += integrate(_range=complement_integral_bdy_boundary,
                             _expr=tau_constant * idt(phat) * id(w) );
     toc("a(1,2)",FLAGS_v>0);
 
