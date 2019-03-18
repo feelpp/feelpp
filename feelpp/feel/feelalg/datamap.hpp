@@ -589,6 +589,13 @@ public:
      */
     size_type dofIdToContainerId( int tag,size_type gpdof ) const { return M_dofIdToContainerId[tag][gpdof]; }
 
+    //! update global process dof id in container from global process dof id in a doftable
+    void dofIdToContainerId( int tag, std::set<size_type> const& gpdofs, std::set<size_type> & gpcont ) const
+    {
+        for ( size_type gp : gpdofs )
+            gpcont.insert( this->dofIdToContainerId( tag, gp ) );
+    }
+
     size_type containerIdToDofId( int tag, size_type gpdof ) const
     {
         size_type dof_id = invalid_size_type_value;
