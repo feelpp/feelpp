@@ -34,7 +34,7 @@
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/vectorblock.hpp>
-
+#include <feel/feelmesh/enums.hpp>
 
 namespace Feel
 {
@@ -203,6 +203,51 @@ public :
         bool M_doBCStrongDirichlet;
     };
 
+    class DataDofIdsMultiProcessModified
+    {
+    public :
+        DataDofIdsMultiProcessModified() = default;
+        DataDofIdsMultiProcessModified( DataDofIdsMultiProcessModified const& d) = default;
+        DataDofIdsMultiProcessModified( DataDofIdsMultiProcessModified && d) = default;
+
+        bool hasDofIdsMultiProcessModified( ElementsType e ) const { return M_dofIdsMultiProcessModified.find( e ) != M_dofIdsMultiProcessModified.end(); }
+        bool hasDofIdsMultiProcessModified() const
+            {
+                return this->hasDofIdsMultiProcessModified( MESH_ELEMENTS ) ||
+                    this->hasDofIdsMultiProcessModified( MESH_FACES ) ||
+                    this->hasDofIdsMultiProcessModified( MESH_EDGES ) ||
+                    this->hasDofIdsMultiProcessModified( MESH_POINTS );
+            }
+        std::set<size_type> const& dofIdsMultiProcessModified( ElementsType e ) const
+            {
+                CHECK( this->hasDofIdsMultiProcessModified(e) ) << "entity not registered";
+                return M_dofIdsMultiProcessModified.find( e )->second;
+            }
+        std::set<size_type> & dofIdsMultiProcessModified( ElementsType e ) { return M_dofIdsMultiProcessModified[e]; }
+        void initDofIdsMultiProcessModified( ElementsType e ) { M_dofIdsMultiProcessModified[e]; }
+        void addDofIdsMultiProcessModified( ElementsType e, size_type id ) { M_dofIdsMultiProcessModified[e].insert( id ); }
+        void addDofIdsMultiProcessModified( ElementsType e, std::set<size_type> const& ids ) { M_dofIdsMultiProcessModified[e].insert( ids.begin(), ids.end() ); }
+    private:
+        std::map<ElementsType,std::set<size_type>> M_dofIdsMultiProcessModified;
+    };
+
+    class DataNewtonInitialGuess : public DataUpdateBase, public DataDofIdsMultiProcessModified
+    {
+    public:
+        DataNewtonInitialGuess( vector_ptrtype& initialGuess )
+            :
+            DataUpdateBase(),
+            DataDofIdsMultiProcessModified(),
+            M_initialGuess( initialGuess )
+            {}
+        DataNewtonInitialGuess( DataNewtonInitialGuess const& d) = default;
+        DataNewtonInitialGuess( DataNewtonInitialGuess && d) = default;
+        vector_ptrtype & initialGuess() { return M_initialGuess; }
+
+
+    private:
+        vector_ptrtype& M_initialGuess;
+    };
 
     ModelAlgebraic( std::string _theprefix,
                     worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
@@ -271,7 +316,7 @@ public :
 
     //----------------------------------------------------------------------------------//
 
-    virtual void updateNewtonInitialGuess( vector_ptrtype& U ) const;
+    virtual void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const;
     virtual void updateJacobian( DataUpdateJacobian & data ) const;
     virtual void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
     virtual void updateResidual( DataUpdateResidual & data ) const;

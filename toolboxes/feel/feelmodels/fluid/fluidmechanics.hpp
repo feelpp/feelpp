@@ -833,7 +833,7 @@ public :
     //___________________________________________________________________________________//
 
     // non linear (newton)
-    void updateNewtonInitialGuess( vector_ptrtype& U ) const;
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
     void updateResidual( DataUpdateResidual & data ) const;
 

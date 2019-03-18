@@ -2273,94 +2273,67 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     //-------------------------------------//
     // on topological faces
     auto const& listMarkedFacesVelocity = std::get<0>( meshMarkersVelocityByEntities );
-    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesVelocity ) )
+    if ( !listMarkedFacesVelocity.empty() )
     {
-        auto const& face = unwrap_ref( faceWrap );
-        auto facedof = XhVelocity->dof()->faceLocalDof( face.id() );
-        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-        {
-            dofsWithValueImposedVelocity.insert( it->index() );
-        }
+        auto therange = markedfaces( mesh,listMarkedFacesVelocity );
+        auto dofsToAdd = XhVelocity->dofs( therange );
+        dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
     // on marked edges (only 3d)
     auto const& listMarkedEdgesVelocity = std::get<1>( meshMarkersVelocityByEntities );
-    for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesVelocity ) )
+    if ( !listMarkedEdgesVelocity.empty() )
     {
-        auto const& edge = unwrap_ref( edgeWrap );
-        auto itEltInfo = edge.elements().begin();
-        if ( itEltInfo == edge.elements().end() )
-            continue;
-        size_type eid = itEltInfo->first;
-        uint16_type edgeid_in_element = itEltInfo->second;
-        for( auto const& ldof : XhVelocity->dof()->edgeLocalDof( eid, edgeid_in_element ) )
-        {
-            dofsWithValueImposedVelocity.insert( ldof.index() );
-        }
+        auto therange = markededges(mesh,listMarkedEdgesVelocity );
+        auto dofsToAdd = XhVelocity->dofs( therange );
+        dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("velocity",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
     // on marked points
     auto const& listMarkedPointsVelocity = std::get<2>( meshMarkersVelocityByEntities );
-    for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsVelocity ) )
+    if ( !listMarkedPointsVelocity.empty() )
     {
-        auto const& point = unwrap_ref( pointWrap );
-        auto itPointInfo = point.elements().begin();
-        if ( itPointInfo == point.elements().end() )
-            continue;
-        size_type eid = itPointInfo->first;
-        uint16_type ptid_in_element = itPointInfo->second;
-        for( uint16_type c = 0; c < nDofComponentsVelocity; ++c )
-        {
-            size_type index = XhVelocity->dof()->localToGlobal( eid, ptid_in_element, c ).index();
-            dofsWithValueImposedVelocity.insert( index );
-        }
+        auto therange = markedpoints(mesh,listMarkedPointsVelocity );
+        auto dofsToAdd = XhVelocity->dofs( therange );
+        dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("velocity",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
     //-------------------------------------//
     // on velocity components
     for ( auto const& meshMarkersPair : meshMarkersCompVelocityByEntities )
     {
         ComponentType comp = meshMarkersPair.first;
-        int compDofShift = ((int)comp);
-        // topological faces
         auto const& listMarkedFacesCompVelocity = std::get<0>( meshMarkersPair.second );
-        for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesCompVelocity ) )
+        if ( !listMarkedFacesCompVelocity.empty() )
         {
-            auto const& face = unwrap_ref( faceWrap );
-            auto facedof = XhCompVelocity->dof()->faceLocalDof( face.id() );
-            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-            {
-                size_type compdof = it->index();
-                size_type thedof = compDofShift +  nDofComponentsVelocity*compdof;
-                dofsWithValueImposedVelocity.insert( thedof );
-            }
+            auto therange = markedfaces(mesh,listMarkedFacesCompVelocity );
+            auto dofsToAdd = XhVelocity->dofs( therange, comp );
+            dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
+            this->dofEliminationIdsMultiProcess("velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
         // edges (only 3d)
         auto const& listMarkedEdgesCompVelocity = std::get<1>( meshMarkersPair.second );
-        for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesCompVelocity ) )
+        if ( !listMarkedEdgesCompVelocity.empty() )
         {
-            auto const& edge = unwrap_ref( edgeWrap );
-            auto itEltInfo = edge.elements().begin();
-            if ( itEltInfo == edge.elements().end() )
-                continue;
-            size_type eid = itEltInfo->first;
-            uint16_type edgeid_in_element = itEltInfo->second;
-            for( auto const& ldof : XhCompVelocity->dof()->edgeLocalDof( eid, edgeid_in_element ) )
-            {
-                size_type compdof = ldof.index();
-                size_type thedof = compDofShift + nDofComponentsVelocity*compdof;
-                dofsWithValueImposedVelocity.insert( thedof );
-            }
+            auto therange = markededges(mesh,listMarkedEdgesCompVelocity );
+            auto dofsToAdd = XhVelocity->dofs( therange, comp );
+            dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
+            this->dofEliminationIdsMultiProcess("velocity",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
         // points
         auto const& listMarkedPointsCompVelocity = std::get<2>( meshMarkersPair.second );
-        for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsCompVelocity ) )
+        if ( !listMarkedPointsCompVelocity.empty() )
         {
-            auto const& point = unwrap_ref( pointWrap );
-            auto itPointInfo = point.elements().begin();
-            if ( itPointInfo == point.elements().end() )
-                continue;
-            size_type eid = itPointInfo->first;
-            uint16_type ptid_in_element = itPointInfo->second;
-            size_type index = XhVelocity->dof()->localToGlobal( eid, ptid_in_element, compDofShift ).index();
-            dofsWithValueImposedVelocity.insert( index );
+            auto therange = markedpoints(mesh,listMarkedPointsCompVelocity );
+            auto dofsToAdd = XhVelocity->dofs( therange, comp );
+            dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
+            this->dofEliminationIdsMultiProcess("velocity",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
     }
 

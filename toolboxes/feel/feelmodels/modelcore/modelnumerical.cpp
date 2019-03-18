@@ -141,6 +141,36 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t c
         }
     }
 
+void
+ModelNumerical::updateDofEliminationIdsMultiProcess( std::string const& spaceName, DataNewtonInitialGuess & data ) const
+{
+    auto itFindDofIdsMultiProcessDirichletElimination = M_dofEliminationIdsMultiProcess.find( spaceName );
+    if ( itFindDofIdsMultiProcessDirichletElimination != M_dofEliminationIdsMultiProcess.end() )
+    {
+        auto const& dofIdsMultiProcess = itFindDofIdsMultiProcessDirichletElimination->second;
+        this->updateDofEliminationIdsMultiProcess( spaceName, dofIdsMultiProcess, data );
+    }
+}
+
+void
+ModelNumerical::updateDofEliminationIdsMultiProcess( std::string const& spaceName,
+                                                     std::map<ElementsType, std::set<size_type>> const& dofIdsMultiProcess,
+                                                     DataNewtonInitialGuess & data ) const
+{
+    CHECK( this->hasStartSubBlockSpaceIndex( spaceName ) ) << "no space name registered : " << spaceName;
+    int spaceIndexVector = this->startBlockSpaceIndexVector() + this->startSubBlockSpaceIndex( spaceName );
+    std::vector<ElementsType> fromEntities = { MESH_ELEMENTS, MESH_FACES, MESH_EDGES, MESH_POINTS };
+    auto dm = data.initialGuess()->mapPtr();
+    for ( ElementsType entity : fromEntities )
+    {
+        auto itFindDofIdsMultiProcessByEntity = dofIdsMultiProcess.find( entity );
+        if ( itFindDofIdsMultiProcessByEntity != dofIdsMultiProcess.end() )
+            dm->dofIdToContainerId( spaceIndexVector,itFindDofIdsMultiProcessByEntity->second,
+                                    data.dofIdsMultiProcessModified( entity ) );
+    }
+
+}
+
 
 } // namespace FeelModels
 

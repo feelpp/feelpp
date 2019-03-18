@@ -28,6 +28,7 @@
  */
 
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
+#include <feel/feelalg/vectorublas.hpp>
 
 namespace Feel
 {
@@ -702,11 +703,25 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         //---------------------------------------------------------------------//
         //---------------------------------------------------------------------//
         model->timerTool("Solve").start();
-        model->updateNewtonInitialGuess(U);
+        ModelAlgebraic::DataNewtonInitialGuess dataInitialGuess( U );
+        model->updateNewtonInitialGuess( dataInitialGuess );
         for ( auto const& func : M_addFunctionNewtonInitialGuess )
-            func.second( U );
-        //U->close();
-        model->timerTool("Solve").elapsed("algebraic-newton-bc");
+            func.second( dataInitialGuess );
+
+        if ( dataInitialGuess.hasDofIdsMultiProcessModified() )
+        {
+            // create view in order to avoid mpi comm inside petsc
+            auto UView = VectorUblas<value_type>::createView( *U );
+            // imposed values by ordering the entities
+            std::vector<ElementsType> fromEntities = { MESH_ELEMENTS, MESH_FACES, MESH_EDGES, MESH_POINTS };
+            for ( ElementsType entity : fromEntities )
+            {
+                if ( dataInitialGuess.hasDofIdsMultiProcessModified( entity ) )
+                    sync( UView, "=", dataInitialGuess.dofIdsMultiProcessModified( entity ) );
+            }
+        }
+
+        model->timerTool("Solve").elapsed("algebraic-newton-initial-guess");
         model->timerTool("Solve").restart();
         //---------------------------------------------------------------------//
         if (model->useCstMatrix())
