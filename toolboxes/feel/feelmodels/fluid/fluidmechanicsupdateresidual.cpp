@@ -395,24 +395,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {
     this->log("FluidMechanics","updateNewtonInitialGuess","start");
 
+    vector_ptrtype& U = data.initialGuess();
     size_type rowStartInVector = this->rowStartInVector();
     auto Xh = this->functionSpace();
     auto up = Xh->element( U, rowStartInVector );
     auto u = up.template element<0>();
     auto mesh = this->mesh();
-
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
-    {
-        this->log("FluidMechanics","updateNewtonInitialGuess","update moving boundary with strong Dirichlet");
-        u.on(_range=markedfaces(mesh, this->markersNameMovingBoundary()),
-             _expr=idv(this->meshVelocity2()) );
-    }
-#endif
 
     if ( this->hasMarkerDirichletBCelimination() )
     {
@@ -488,10 +480,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) 
         u.on(_range=markedfaces(mesh, marker),
              _expr=-idv(inletVel)*N() );
     }
-    // synchronize velocity dof on interprocess
-    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("velocity");
-    if ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )
-        sync( u, "=", itFindDofsWithValueImposed->second );
+
+    // update info for synchronization
+    this->updateDofEliminationIdsMultiProcess( "velocity", data );
 
     if ( this->definePressureCst() && this->definePressureCstMethod() == "algebraic" )
     {

@@ -1621,8 +1621,8 @@ size_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
 {
     size_type currentStartIndex = 0;
-    this->setStartSubBlockSpaceIndex( "velocity-pressure", currentStartIndex );
-    currentStartIndex += 2;
+    this->setStartSubBlockSpaceIndex( "velocity", currentStartIndex++ );
+    this->setStartSubBlockSpaceIndex( "pressure", currentStartIndex++ );
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
         this->setStartSubBlockSpaceIndex( "define-pressure-cst-lm", currentStartIndex );

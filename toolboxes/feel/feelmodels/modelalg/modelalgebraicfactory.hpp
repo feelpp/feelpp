@@ -71,7 +71,7 @@ namespace FeelModels
         typedef boost::function<void ( ModelAlgebraic::DataUpdateLinear& )> function_assembly_linear_type;
         typedef boost::function<void ( ModelAlgebraic::DataUpdateJacobian& )> function_assembly_jacobian_type;
         typedef boost::function<void ( ModelAlgebraic::DataUpdateResidual& )> function_assembly_residual_type;
-        typedef boost::function<void ( vector_ptrtype& )> function_newton_initial_guess_type;
+        typedef boost::function<void ( ModelAlgebraic::DataNewtonInitialGuess& )> function_newton_initial_guess_type;
 
         typedef typename backend_type::pre_solve_type pre_solve_type;
         typedef typename backend_type::post_solve_type post_solve_type;

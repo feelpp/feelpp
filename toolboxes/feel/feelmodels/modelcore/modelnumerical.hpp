@@ -157,6 +157,18 @@ class ModelNumerical : public ModelAlgebraic
         ModelMeasuresEvaluatorContext const& postProcessMeasuresEvaluatorContext() const { return M_postProcessMeasuresEvaluatorContext; }
         ModelMeasuresEvaluatorContext & postProcessMeasuresEvaluatorContext() { return M_postProcessMeasuresEvaluatorContext; }
 
+        //! update data usefull for mpi synchronization of NewtonInitialGuess
+        void updateDofEliminationIdsMultiProcess( std::string const& spaceName, DataNewtonInitialGuess & data ) const;
+        void updateDofEliminationIdsMultiProcess( std::string const& spaceName, std::map<ElementsType, std::set<size_type>> const& dofIdsMultiProcess, DataNewtonInitialGuess & data ) const;
+        std::set<size_type> & dofEliminationIdsMultiProcess( std::string const& spaceName, ElementsType e ) { return M_dofEliminationIdsMultiProcess[spaceName][e]; }
+        std::map<std::string,std::map<ElementsType, std::set<size_type> > > const& dofEliminationIdsMultiProcess() const { return M_dofEliminationIdsMultiProcess; }
+        std::map<ElementsType, std::set<size_type> > const& dofEliminationIdsMultiProcess( std::string const& spaceName ) const
+            {
+                CHECK( this->hasDofEliminationIdsMultiProcess( spaceName ) ) << "no space name registered : " << spaceName;
+                return M_dofEliminationIdsMultiProcess.find( spaceName )->second;
+            }
+        bool hasDofEliminationIdsMultiProcess( std::string const& spaceName ) const { return M_dofEliminationIdsMultiProcess.find( spaceName ) != M_dofEliminationIdsMultiProcess.end(); }
+
     protected :
         template<typename SymbExprField>
         auto symbolsExprFit( SymbExprField const& sef ) const
@@ -193,6 +205,8 @@ class ModelNumerical : public ModelAlgebraic
 
         size_type M_startBlockSpaceIndexMatrixRow, M_startBlockSpaceIndexMatrixCol, M_startBlockSpaceIndexVector;
         std::map<std::string,size_type> M_startSubBlockSpaceIndex;
+        std::map<std::string,std::map<ElementsType, std::set<size_type> > > M_dofEliminationIdsMultiProcess;
+
 
         std::string M_meshFile, M_geoFile;
 

@@ -195,7 +195,7 @@ ModelAlgebraic::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
 {}
 
 void
-ModelAlgebraic::updateNewtonInitialGuess( vector_ptrtype& U ) const
+ModelAlgebraic::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {}
 void
 ModelAlgebraic::updateJacobian( DataUpdateJacobian & data ) const
