@@ -1364,6 +1364,33 @@ VectorUblas<T,Storage>::loadHDF5( std::string const& filename, std::string table
 }
 #endif
 
+
+
+template<typename T, typename Storage>
+typename VectorUblas<T,Storage>::shallow_array_adaptor::type
+VectorUblas<T,Storage>::createView( Vector<T> const& vec )
+{
+    typedef typename VectorUblas<T,Storage>::shallow_array_adaptor::type ret_view_type;
+    datamap_ptrtype dmVec = vec.mapPtr();
+#if FEELPP_HAS_PETSC
+    VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
+    if ( vecPetsc )
+    {
+        //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
+        size_type nActiveDof = dmVec->nLocalDofWithoutGhost();
+        value_type* arrayActiveDof = (nActiveDof>0)? std::addressof( (*vecPetsc)( 0  ) ) : nullptr;
+        size_type nGhostDof = dmVec->nLocalGhosts();
+        value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( nActiveDof ) ) : nullptr;
+        ret_view_type u( nActiveDof, arrayActiveDof, nGhostDof, arrayGhostDof, dmVec );
+        return u;
+    }
+#endif
+
+    CHECK( false ) << "fails in vector cast (only implemented for Petsc vector)";
+    ret_view_type u;
+    return u;
+}
+
 //
 // instantiation
 //
