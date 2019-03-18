@@ -1410,7 +1410,11 @@ Environment::doOptions( int argc, char** argv,
         std::reverse(configFiles.begin(),configFiles.end());
         for ( std::string const& cfgfile : configFiles )
         {
-            if ( !fs::exists( cfgfile ) ) continue;
+            if ( !fs::exists( cfgfile ) )
+            {
+                LOG( WARNING ) << "config file " << cfgfile << " not found";
+                continue;
+            }
             fs::path cfgAbsolutePath = fs::absolute( cfgfile );
             cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
             // LOG( INFO ) << "Reading " << cfgfile << "...";
