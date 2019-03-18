@@ -1001,6 +1001,10 @@ public:
     void ioHDF5( bool isLoad, std::string const& filename, std::string tableName = "element", bool appendMode = false );
 #endif
 
+    //! create a VectorUblas as a view of another Vector type (as VectorPetsc)
+    static
+    typename this_type::shallow_array_adaptor::type
+    createView( Vector<T> const& vec );
 
 protected:
 
