@@ -1,0 +1,51 @@
+{
+    "Name":"Omega_p",
+    "Models": { "equations":"hdg" },
+    "Materials":
+    {
+        "Omega_p":
+        {
+            "cond":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "Dirichlet":
+            {
+                "Gammaf-bottom":
+                {
+                    "expr":"x*(1-x)*sin(2*pi*x)*y*(1-y)*sin(2*pi*y)*z*(1-2*z)^2*sin(pi*z):x:y:z"
+                },
+                "Gammaf-side-north":
+                {
+                    "expr":"x*(1-x)*sin(2*pi*x)*y*(1-y)*sin(2*pi*y)*z*(1-2*z)^2*sin(pi*z):x:y:z"
+                },
+                "Gammaf-side-east":
+                {
+                    "expr":"x*(1-x)*sin(2*pi*x)*y*(1-y)*sin(2*pi*y)*z*(1-2*z)^2*sin(pi*z):x:y:z"
+                },
+                "Gammaf-side-south":
+                {
+                    "expr":"x*(1-x)*sin(2*pi*x)*y*(1-y)*sin(2*pi*y)*z*(1-2*z)^2*sin(pi*z):x:y:z"
+                },
+                "Gammaf-side-west":
+                {
+                    "expr":"x*(1-x)*sin(2*pi*x)*y*(1-y)*sin(2*pi*y)*z*(1-2*z)^2*sin(pi*z):x:y:z"
+                }
+            },
+            "Robin":
+            {
+                "Gamma":
+                {
+                    "expr1":"1",
+                    "expr2":"0"
+                }
+	        }
+        }
+    }
+}
+
+
+
