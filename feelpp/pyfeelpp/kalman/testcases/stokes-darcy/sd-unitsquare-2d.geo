@@ -48,6 +48,6 @@ Physical Line("Gammap-top") = {4};
 //+
 Physical Line("Gammap-bottom") = {2};
 //+
-Physical Surface("Gammap") = {2};
+Physical Surface("Omegap") = {2};
 //+
-Physical Surface("Gammaf") = {1};
+Physical Surface("Omegaf") = {1};

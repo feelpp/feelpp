@@ -10,8 +10,8 @@ $PhysicalNames
 1 5 "Gammap-side"
 1 6 "Gammap-top"
 1 7 "Gammap-bottom"
-2 8 "Gammap"
-2 9 "Gammaf"
+2 8 "Omegap"
+2 9 "Omegaf"
 $EndPhysicalNames
 $Nodes
 155
