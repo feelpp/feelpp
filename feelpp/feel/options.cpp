@@ -197,7 +197,7 @@ gmsh_options( std::string const& prefix )
 
     _options.add_options()
     // gmsh options
-        ( prefixvm( prefix,"gmsh.filename" ).c_str(), Feel::po::value<std::string>()->default_value( "untitled.geo" ), "Gmsh filename" )
+        ( prefixvm( prefix,"gmsh.filename" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Gmsh filename" )
         ( prefixvm( prefix,"gmsh.depends" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "list of files separated by , or ; that are dependencies of a loaded Gmsh geometry" )
         ( prefixvm( prefix,"gmsh.hsize" ).c_str(), Feel::po::value<double>()->default_value( 0.1 ), "default characteristic mesh size" )
         ( prefixvm( prefix,"gmsh.scale" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "scale the mesh after loading" )

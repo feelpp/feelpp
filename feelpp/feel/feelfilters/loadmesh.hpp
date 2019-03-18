@@ -117,7 +117,8 @@ BOOST_PARAMETER_FUNCTION(
             mesh_name.extension() != ".p3d" &&
             mesh_name.extension() != ".mesh" &&
             mesh_name.extension() != ".med" &&
-            mesh_name.extension() != ".arm" )
+            mesh_name.extension() != ".arm" &&
+            !mesh_name.extension().empty() )
         << "Invalid filename " << filenameExpand << " it should have either the .geo. .json or .msh extension\n";
 
 #if defined(FEELPP_HAS_GMSH_H)
@@ -253,6 +254,31 @@ BOOST_PARAMETER_FUNCTION(
             m->saveHDF5( fs::path(filenameExpand).stem().string()+".json" );
 #endif
         return m;
+    }
+
+    // search for partitionned mesh
+    if( !filenameExpand.empty() )
+    {
+#if defined(FEELPP_HAS_HDF5)
+        auto partName = filenameExpand + "_p" + std::to_string(partitions) + ".json";
+        fs::path json_fname=fs::path(Environment::findFile(partName));
+        if( fs::exists(json_fname) )
+        {
+            auto json_string = json_fname.string();
+            cout << "[loadMesh] Loading partitionned mesh in format json+h5: " << fs::system_complete(json_fname) << "\n";
+            LOG(INFO) << " Loading partitionned mesh in format json+h5: " << json_string;
+            CHECK( mesh ) << "Invalid mesh pointer to load " << json_string;
+            _mesh_ptrtype m( mesh );
+            m->setWorldComm( worldcomm );
+            m->loadHDF5( json_string );
+            return m;
+        }
+        else
+#endif
+        {
+            LOG(ERROR) << "Invalid filename " << filenameExpand << " aborting!";
+            exit(1);
+        }
     }
 #if defined( FEELPP_HAS_GMSH_H )
     mesh_name = soption(_name="gmsh.domain.shape");
