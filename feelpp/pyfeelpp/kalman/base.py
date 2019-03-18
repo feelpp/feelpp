@@ -1,5 +1,11 @@
 import numpy as np
 
+def inverse(M):          
+    if M.size == 1:
+        return 1/M
+    else:
+        return inv(M)
+
 def balancedpartition(nb_data,nb_procs):
     part = np.zeros(nb_procs, dtype=np.int8)
     for i in range(nb_procs):
