@@ -138,6 +138,6 @@ Physical Surface("Gammaf-side-north") = {5};
 //+
 Physical Surface("Gammaf-top") = {3};
 //+
-Physical Volume("Gammap") = {1};
+Physical Volume("Omegap") = {1};
 //+
-Physical Volume("Gammaf") = {2};
+Physical Volume("Omegaf") = {2};
