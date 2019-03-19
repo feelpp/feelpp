@@ -371,10 +371,11 @@ Winslow<MeshType,Order>::updateMeshAdaptation()
 
 template< typename MeshType, int Order >
 void
-Winslow<MeshType,Order>::updateNewtonInitialGuess(vector_ptrtype& U) const
+Winslow<MeshType,Order>::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {
     this->log("Winslow","updateNewtonInitialGuess", "start" );
 
+    vector_ptrtype& U = data.initialGuess();
     auto Xh = this->functionSpace();
     auto mesh = Xh->mesh();
     auto u = Xh->element( U );
@@ -595,7 +596,7 @@ Winslow<MeshType,Order>::updateResidual( DataUpdateResidual & data, mpl::int_<2>
     auto alpha = pow(du1dyv,2) + pow(du2dyv,2);
     auto beta = du1dxv*du1dyv + du2dxv*du2dyv;
     auto gamma = pow(du1dxv,2) + pow(du2dxv,2);
-#if 0
+#if 1
     auto proj_alpha = this->l2projector()->operator()(alpha);
     auto proj_beta = this->l2projector()->operator()(beta);
     auto proj_gamma = this->l2projector()->operator()(gamma);
@@ -717,7 +718,7 @@ template< typename MeshType, int Order >
 void
 Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    if ( false )
+    if ( true/*false*/ )
     {
         this->updateLinearPDE( data, mpl::int_<mesh_type::nDim>() );
         return;
@@ -773,7 +774,7 @@ template< typename MeshType, int Order >
 void
 Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data, mpl::int_<2> /**/ ) const
 {
-#if 0
+#if 1
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     auto Xh = this->functionSpace();
