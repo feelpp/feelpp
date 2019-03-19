@@ -2807,6 +2807,8 @@ public:
         std::vector<int> dofs( std::vector<size_type> const& e ) const
             {
                 std::vector<int> d;
+                int N = M_functionspace->dof()->nRealLocalDof();
+                d.reserve( e.size()*N );
                 std::for_each( e.begin(), e.end(), [&]( auto const& id ){
 
                         for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
@@ -2820,6 +2822,8 @@ public:
         std::vector<int> dofs( std::vector<size_type> const& e, DataMap const& dm, int block  ) const
             {
                 std::vector<int> d;
+                int N = M_functionspace->dof()->nRealLocalDof();
+                d.reserve( e.size()*N );
                 std::for_each( e.begin(), e.end(), [&]( auto const& id ){
 
                         for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
