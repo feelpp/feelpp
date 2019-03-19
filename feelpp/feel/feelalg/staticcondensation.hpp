@@ -1308,8 +1308,8 @@ StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& r
             M_AinvF.emplace( K, AinvF );
             toc("sc.condense.localassembly", FLAGS_v>0);
             tic();
-            auto dofs = e3.dofs(dK.faces1());
-
+            auto dofs = e3.dofs(dK.faces1(),S.matrixPtr()->mapRow(),0);
+            
             S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
             V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
             toc("sc.condense.globalassembly", FLAGS_v>0);
