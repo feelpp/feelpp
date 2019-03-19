@@ -51,9 +51,6 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t c
         M_tsSaveInFile( boption(_name="ts.save") ),
         M_tsSaveFreq( ioption(_name="ts.save.freq") ),
         M_timeCurrent(M_timeInitial),
-        M_startBlockSpaceIndexMatrixRow(0),
-        M_startBlockSpaceIndexMatrixCol(0),
-        M_startBlockSpaceIndexVector(0),
         M_exporterPath( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) ),
         M_postProcessMeasuresIO( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldCommPtr() )
         //M_PsLogger( new PsLogger(prefixvm(this->prefix(),"PsLogger"),this->worldComm() ) )
@@ -140,36 +137,6 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t c
             file.close();
         }
     }
-
-void
-ModelNumerical::updateDofEliminationIdsMultiProcess( std::string const& spaceName, DataNewtonInitialGuess & data ) const
-{
-    auto itFindDofIdsMultiProcessDirichletElimination = M_dofEliminationIdsMultiProcess.find( spaceName );
-    if ( itFindDofIdsMultiProcessDirichletElimination != M_dofEliminationIdsMultiProcess.end() )
-    {
-        auto const& dofIdsMultiProcess = itFindDofIdsMultiProcessDirichletElimination->second;
-        this->updateDofEliminationIdsMultiProcess( spaceName, dofIdsMultiProcess, data );
-    }
-}
-
-void
-ModelNumerical::updateDofEliminationIdsMultiProcess( std::string const& spaceName,
-                                                     std::map<ElementsType, std::set<size_type>> const& dofIdsMultiProcess,
-                                                     DataNewtonInitialGuess & data ) const
-{
-    CHECK( this->hasStartSubBlockSpaceIndex( spaceName ) ) << "no space name registered : " << spaceName;
-    int spaceIndexVector = this->startBlockSpaceIndexVector() + this->startSubBlockSpaceIndex( spaceName );
-    std::vector<ElementsType> fromEntities = { MESH_ELEMENTS, MESH_FACES, MESH_EDGES, MESH_POINTS };
-    auto dm = data.initialGuess()->mapPtr();
-    for ( ElementsType entity : fromEntities )
-    {
-        auto itFindDofIdsMultiProcessByEntity = dofIdsMultiProcess.find( entity );
-        if ( itFindDofIdsMultiProcessByEntity != dofIdsMultiProcess.end() )
-            dm->dofIdToContainerId( spaceIndexVector,itFindDofIdsMultiProcessByEntity->second,
-                                    data.dofIdsMultiProcessModified( entity ) );
-    }
-
-}
 
 
 } // namespace FeelModels

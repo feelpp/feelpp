@@ -114,26 +114,6 @@ class ModelNumerical : public ModelAlgebraic
         void setModelProperties( std::shared_ptr<ModelProperties> modelProps ) { M_modelProps = modelProps; }
         void addParameterInModelProperties( std::string const& symbolName,double value );
 
-        size_type rowStartInMatrix() const { return this->startBlockSpaceIndexMatrixRow(); }
-        size_type colStartInMatrix() const { return this->startBlockSpaceIndexMatrixCol(); }
-        size_type rowStartInVector() const { return this->startBlockSpaceIndexVector(); }
-        size_type startBlockSpaceIndexMatrixRow() const { return M_startBlockSpaceIndexMatrixRow; }
-        size_type startBlockSpaceIndexMatrixCol() const { return M_startBlockSpaceIndexMatrixCol; }
-        size_type startBlockSpaceIndexVector() const { return M_startBlockSpaceIndexVector; }
-        void setStartBlockSpaceIndexMatrixRow( size_type s ) { M_startBlockSpaceIndexMatrixRow = s; }
-        void setStartBlockSpaceIndexMatrixCol( size_type s ) { M_startBlockSpaceIndexMatrixCol = s; }
-        void setStartBlockSpaceIndexVector( size_type s ) { M_startBlockSpaceIndexVector = s; }
-        void setStartBlockSpaceIndex( size_type s ) { this->setStartBlockSpaceIndexMatrixRow( s ); this->setStartBlockSpaceIndexMatrixCol( s ); this->setStartBlockSpaceIndexVector( s ); }
-
-        size_type startSubBlockSpaceIndex( std::string const& name ) const
-            {
-                auto itFind = M_startSubBlockSpaceIndex.find( name );
-                if ( itFind != M_startSubBlockSpaceIndex.end() )
-                    return itFind->second;
-                return invalid_size_type_value;
-            }
-        bool hasStartSubBlockSpaceIndex( std::string const& name ) const { return (this->startSubBlockSpaceIndex( name ) != invalid_size_type_value); }
-        void setStartSubBlockSpaceIndex( std::string const& name, size_type s ) { M_startSubBlockSpaceIndex[name] = s; }
 
         GeomapStrategyType geomap() const { return M_geomap; }
 
@@ -156,18 +136,6 @@ class ModelNumerical : public ModelAlgebraic
         ModelMeasuresIO & postProcessMeasuresIO() { return M_postProcessMeasuresIO; }
         ModelMeasuresEvaluatorContext const& postProcessMeasuresEvaluatorContext() const { return M_postProcessMeasuresEvaluatorContext; }
         ModelMeasuresEvaluatorContext & postProcessMeasuresEvaluatorContext() { return M_postProcessMeasuresEvaluatorContext; }
-
-        //! update data usefull for mpi synchronization of NewtonInitialGuess
-        void updateDofEliminationIdsMultiProcess( std::string const& spaceName, DataNewtonInitialGuess & data ) const;
-        void updateDofEliminationIdsMultiProcess( std::string const& spaceName, std::map<ElementsType, std::set<size_type>> const& dofIdsMultiProcess, DataNewtonInitialGuess & data ) const;
-        std::set<size_type> & dofEliminationIdsMultiProcess( std::string const& spaceName, ElementsType e ) { return M_dofEliminationIdsMultiProcess[spaceName][e]; }
-        std::map<std::string,std::map<ElementsType, std::set<size_type> > > const& dofEliminationIdsMultiProcess() const { return M_dofEliminationIdsMultiProcess; }
-        std::map<ElementsType, std::set<size_type> > const& dofEliminationIdsMultiProcess( std::string const& spaceName ) const
-            {
-                CHECK( this->hasDofEliminationIdsMultiProcess( spaceName ) ) << "no space name registered : " << spaceName;
-                return M_dofEliminationIdsMultiProcess.find( spaceName )->second;
-            }
-        bool hasDofEliminationIdsMultiProcess( std::string const& spaceName ) const { return M_dofEliminationIdsMultiProcess.find( spaceName ) != M_dofEliminationIdsMultiProcess.end(); }
 
     protected :
         template<typename SymbExprField>
@@ -202,10 +170,6 @@ class ModelNumerical : public ModelAlgebraic
         double M_timeCurrent;
 
         std::shared_ptr<ModelProperties> M_modelProps;
-
-        size_type M_startBlockSpaceIndexMatrixRow, M_startBlockSpaceIndexMatrixCol, M_startBlockSpaceIndexVector;
-        std::map<std::string,size_type> M_startSubBlockSpaceIndex;
-        std::map<std::string,std::map<ElementsType, std::set<size_type> > > M_dofEliminationIdsMultiProcess;
 
 
         std::string M_meshFile, M_geoFile;
