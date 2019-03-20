@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required (VERSION 3.1.3)
+cmake_minimum_required (VERSION 3.7.2)
 if ( ${CMAKE_VERSION} VERSION_GREATER 2.8.12 )
   message(STATUS "[feelpp] use new policy CMP0022" )
   cmake_policy(SET CMP0022 NEW)
