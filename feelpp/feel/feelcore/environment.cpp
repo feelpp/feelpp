@@ -1334,6 +1334,7 @@ Environment::doOptions( int argc, char** argv,
 
         std::vector<std::string> configFiles;
 
+        bool hasConfig = false;
         if ( S_vm.count( "case" ) )
         {
             std::vector<std::string> cfgsInCaseDir;
@@ -1364,13 +1365,17 @@ Environment::doOptions( int argc, char** argv,
                 }
             }
             if ( cfgsInCaseDir.size() == 1 )
+            {
+                hasConfig = true;
                 configFiles.push_back( cfgsInCaseDir.front() );
+            }
             else
             {
                 for ( std::string const& cfgFile : cfgsInCaseDir )
                 {
                     if ( fs::path( cfgFile ).filename().string() == caseConfigFile )
                     {
+                        hasConfig = true;
                         configFiles.push_back( cfgFile );
                         break;
                     }
@@ -1380,9 +1385,13 @@ Environment::doOptions( int argc, char** argv,
          // parse config file if given to command line
         if ( S_vm.count( "config-file" ) || S_vm.count( "config-files" ) )
         {
+            hasConfig = true;
             std::vector<std::string> configFilesFromCmd;
             if ( S_vm.count( "config-file" ) )
-                configFilesFromCmd.push_back( S_vm["config-file"].as<std::string>() );
+            {
+                std::vector<std::string> configFilesOptVec = S_vm["config-file"].as<std::vector<std::string> >();
+                configFilesFromCmd.insert( configFilesFromCmd.end(), configFilesOptVec.begin(), configFilesOptVec.end() );
+            }
             if ( S_vm.count( "config-files" ) )
             {
                 std::vector<std::string> configFilesOptVec = S_vm["config-files"].as<std::vector<std::string> >();
@@ -1401,6 +1410,10 @@ Environment::doOptions( int argc, char** argv,
                     configFiles.push_back( cfgFile );
             }
         }
+        if( !hasConfig && fs::exists(appName+".cfg") )
+        {
+            configFiles.push_back(appName+".cfg");
+        }
 #if 0
         std::cout << "CONFIG-FILES\n";
         for ( std::string const& cfgFile : configFiles )
@@ -1413,6 +1426,7 @@ Environment::doOptions( int argc, char** argv,
             if ( !fs::exists( cfgfile ) )
             {
                 LOG( WARNING ) << "config file " << cfgfile << " not found";
+                std::cout << tc::red << "config file " << cfgfile << " not found" << tc::reset << std::endl;
                 continue;
             }
             fs::path cfgAbsolutePath = fs::absolute( cfgfile );
