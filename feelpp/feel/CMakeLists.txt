@@ -63,7 +63,7 @@ add_library(Feelpp::feelpp ALIAS feelpp )  # to match exported target
 set_target_properties(feelpp PROPERTIES OUTPUT_NAME "feelpp")
 #set_target_properties(feelpp PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
 if ( ${CMAKE_VERSION} VERSION_GREATER 3.7.2 )
-  target_compile_features(feelpp PUBLIC cxx_std_14)
+  target_compile_features(feelpp PUBLIC cxx_std_${FEELPP_STD_CPP})
 endif()
 set_property(TARGET feelpp PROPERTY LABELS feel++)
 target_include_directories(feelpp PUBLIC
