@@ -1,0 +1,67 @@
+{
+    "Name": "Thermoelectric",
+    "ShortName": "Thermoelectric",
+    "Model": "thermoelectric-crb",
+    "Parameters":
+    {
+        "sigma":58000,
+        "dif":0.2,
+        "k":0.38,
+        "h":0.08,
+        "Tw":300,
+        "zb":0.5,
+        "zt":4.5,
+        "p1":
+        {
+            "min":-2,
+            "max":2,
+            "value":1
+        },
+        "p2":
+        {
+            "min":-2,
+            "max":2,
+            "value":-0.5
+        }
+    },
+    "Materials":
+    {
+        "box":
+        {
+            "physics":"magnetic"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "Dirichlet":
+            {
+                "in":
+                {
+                    "expr":"current:current"
+                },
+                "out":
+                {
+                    "expr":"0"
+                }
+            }
+        },
+        "temperature":
+        {
+            "Robin":
+            {
+                "ext":
+                {
+                    "expr1":"h:h",
+                    "expr2":"h*Tw:h:Tw"
+                },
+                "int":
+                {
+                    "expr1":"h:h",
+                    "expr2":"h*Tw:h:Tw"
+                }
+            }
+        }
+    }
+}

@@ -436,7 +436,7 @@ public:
     //@{
 
 
-    virtual bool useMonolithicRbSpace() { return true; }
+    virtual bool useMonolithicRbSpace() { return !model_type::by_block; }
 
     //!
     //! world communicator
@@ -1245,15 +1245,15 @@ public:
     {
         return M_model->mdeimVector();
     }
-    void updateRbInDeim()
+    void updateRbInDeim( std::vector<std::vector<int>> subN={} )
     {
         auto deim_vector = this->deimVector();
         auto mdeim_vector = this->mdeimVector();
 
         for ( auto deim : deim_vector )
-            deim->updateRb( rBFunctionSpace() );
+            deim->updateRb( rBFunctionSpace(), subN );
         for ( auto mdeim : mdeim_vector )
-            mdeim->updateRb( rBFunctionSpace() );
+            mdeim->updateRb( rBFunctionSpace(), subN );
     }
 
     struct ComputeNormL2InCompositeCase
@@ -2815,6 +2815,12 @@ public:
         return is_linear ;
     }
 
+    virtual bool isTrilinear() const
+        {return false;}
+
+    bool hasZeroMeanPressure()
+        { return this->M_model->hasZeroMeanPressure(); }
+
     void initializationField( element_ptrtype& initial_field,parameter_type const& mu )
     {
         return initializationField( initial_field,mu,mpl::bool_<model_type::is_time_dependent>() );
@@ -2866,7 +2872,7 @@ protected:
     std::vector< std::vector< std::vector<vector_ptrtype> > > M_RF_Fqm;
 
 
-private:
+protected:
 
 
     bool M_is_initialized = false;
@@ -3637,7 +3643,14 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
             }
             else
             {
-                backend( _name="backend-primal")->solve( _matrix=A , _solution=u, _rhs=F[0] );
+                auto ret = M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] );
+                if  ( !ret.template get<0>() )
+                {
+                    LOG(INFO)<<"[CRB] WARNING : we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
+                    Feel::cout << "Rebuild backend primal\n";
+                    M_backend_primal = backend(_name="backend-primal", _rebuild=true );
+                    M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] );
+                }
             }
         }
         else

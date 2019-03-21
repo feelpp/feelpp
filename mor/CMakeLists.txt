@@ -64,7 +64,7 @@ OPTION(FEELPP_ENABLE_MOR_EEG "enable EEG testcase" OFF)
 OPTION(FEELPP_ENABLE_MOR_CONVECTION "enable Convection testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_STOKESDEIM "enable stokes with deim testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_THERMOELECTRIC "enable thermoelectric testcase" ${FEELPP_ENABLE_MOR_ALL})
-OPTION(FEELPP_ENABLE_MOR_BIOTSAVART "enable biosavart testcase" ${FEELPP_ENABLE_MOR_ALL})
+# OPTION(FEELPP_ENABLE_MOR_BIOTSAVART "enable biosavart testcase" ${FEELPP_ENABLE_MOR_ALL})
 
 set(FEELPP_MOR_LIBRARIES)
 
@@ -169,9 +169,9 @@ endif()
 if ( FEELPP_ENABLE_MOR_THERMOELECTRIC )
   add_subdirectory(thermoelectric)
 endif()
-if ( FEELPP_ENABLE_MOR_BIOTSAVART )
-  add_subdirectory(biotsavart)
-endif()
+# if ( FEELPP_ENABLE_MOR_BIOTSAVART )
+#   add_subdirectory(biotsavart)
+# endif()
 
 add_subdirectory(pyfeelpp-mor)
 
