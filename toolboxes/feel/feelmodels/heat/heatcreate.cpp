@@ -233,7 +233,11 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldCommPtr() );
 
-    // vector solution
+    // subspaces index
+    size_type currentStartIndex = 0;
+    this->setStartSubBlockSpaceIndex( "temperature", currentStartIndex++ );
+
+     // vector solution
     M_blockVectorSolution.resize( 1 );
     M_blockVectorSolution(0) = this->fieldTemperaturePtr();
     // init petsc vector associated to the block
@@ -590,12 +594,13 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
     // on topological faces
     auto const& listMarkedFacesTemperature = std::get<0>( meshMarkersTemperatureByEntities );
-    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesTemperature ) )
+    if ( !listMarkedFacesTemperature.empty() )
     {
-        auto const& face = unwrap_ref( faceWrap );
-        auto facedof = XhTemperature->dof()->faceLocalDof( face.id() );
-        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-            dofsWithValueImposedTemperature.insert( it->index() );
+        auto therange = markedfaces(mesh,listMarkedFacesTemperature );
+        auto dofsToAdd = XhTemperature->dofs( therange );
+        dofsWithValueImposedTemperature.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhTemperature->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("temperature",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
 }
 

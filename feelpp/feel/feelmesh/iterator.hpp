@@ -24,10 +24,9 @@
 #ifndef FEELPP_FEELMESH_ITERATOR_HPP
 #define FEELPP_FEELMESH_ITERATOR_HPP 1
 
-namespace Feel {
+#include <feel/feelmesh/enums.hpp>
 
-enum class EntityProcessType {LOCAL_ONLY,GHOST_ONLY,ALL,IGNORE_ENTITY_ON_INTERPROCESS_FACE};
-using entity_process_t = EntityProcessType;
+namespace Feel {
 
 template<size_t S, class ITERATOR>
 ITERATOR begin( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR> &range )
@@ -74,19 +73,6 @@ ITERATOR end( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> const& ra
 {
     return range.template get<2>();
 }
-
-/**
- * entity identifier  for mesh iterators
- */
-enum ElementsType
-{
-    MESH_ELEMENTS = 0,           /**< elements */
-    MESH_FACES = 1,              /**< faces */
-    MESH_INTERNAL_FACES = 2,     /**< internal faces */
-    MESH_EDGES = 3,              /**< edges */
-    MESH_INTERNAL_EDGES = 4,     /**< internal edges */
-    MESH_POINTS = 5              /**< points */
-};
 
 
 }
