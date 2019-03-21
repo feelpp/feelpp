@@ -161,7 +161,7 @@ public :
     virtual element_type expansion( vectorN_type const& u , int N = -1, bool dual=false ) const=0;
     virtual int dimension() const=0;
     virtual std::pair<int,double> online_iterations()=0;
-
+    virtual int WNmuSize() const=0;
     virtual element_type solveFemModelUsingAffineDecomposition( parameter_type const& mu ) const=0;
 
 };
@@ -343,7 +343,7 @@ public:
         M_elements_database( name,
                              prefixvm(prefixExt,"elements"),
                              this->worldCommPtr() ),
-        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldCommPtr() ) ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldCommSeqPtr() ) ),// this->worldComm() ) ),
         M_model( model ),
         M_output_index( ioption(_name="crb.output-index") ),
         M_tolerance( doption(_name="crb.error-max") ),
@@ -385,7 +385,8 @@ public:
         M_useAccurateApee( boption(_name="crb.use-accurate-apee") ),
         M_computeApeeForEachTimeStep( boption(_name="crb.compute-apee-for-each-time-step") ),
         M_seekMuInComplement( boption(_name="crb.seek-mu-in-complement") ),
-        M_showResidual( boption(_name="crb.show-residual") )
+        M_showResidual( boption(_name="crb.show-residual") ),
+        M_check_cvg( false )
         {
             this->setTruthModel( model );
             if( stage == crb::stage::offline )
@@ -559,6 +560,13 @@ public:
             return M_N;
         }
 
+    //! \return the current size of WNmu:
+    //! may differ from the dimension of XN for multiphysic problems
+    int WNmuSize() const override
+        {
+            return M_N;
+        }
+
     //! \return the train sampling used to generate the reduced basis space
     sampling_ptrtype const& trainSampling() const
         {
@@ -699,6 +707,21 @@ public:
     bool offlineStep() const
         {
             return M_offline_step;
+        }
+
+    virtual std::vector<bool> hasZeroMean()
+        { return {false}; }
+
+    void setCheckCvg( bool check )
+        { M_check_cvg = check; }
+
+    bool onlineHasConverged()
+        {return M_last_online_converged; }
+
+    virtual std::map<std::string,double> timerMap() const
+        {
+            std::map<std::string,double> m;
+            return m;
         }
 
     struct ComputePhi
@@ -920,6 +943,10 @@ public:
      */
     void computeProjectionInitialGuess( const parameter_type & mu, int N , vectorN_type& initial_guess ) const ;
 
+    element_type femSolve( parameter_type& mu );
+
+    virtual void offlineSolve( element_type& u, element_type& udu, parameter_type& mu, element_ptrtype & dual_initial_field );
+
     /*
      * newton for primal problem ( offline step )
      * \param mu : current parameter
@@ -1027,6 +1054,8 @@ public:
     matrix_info_tuple fixedPoint(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
                                    std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,
                                    std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false, bool computeOutput = true ) const;
+
+    virtual matrix_info_tuple onlineSolve(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu, std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false, bool computeOutput = true ) const;
 
     /**
      * computation of the conditioning number of a given matrix
@@ -1445,6 +1474,12 @@ public:
     double computeOnlineDualApee( int N , parameter_type const& mu , vectorN_type const & uNdu, vectorN_type const & uNduold=vectorN_type(), double dt=1e30, double time=1e30 ) const ;
     //@}
 
+
+    virtual void updateRbInDeim()
+        {
+            M_model->updateRbInDeim();
+        }
+
 protected:
     /**
      * generate the super sampling M_Xi depending of the options
@@ -1454,6 +1489,9 @@ protected:
     virtual void addBasis( element_type& u, element_type& udu, parameter_type& mu );
     virtual void orthonormalizeBasis( int number_of_added_elements );
     virtual void buildRbMatrix( int number_of_added_elements, parameter_type& mu, element_ptrtype dual_initial_field );
+    virtual void buildRbMatrixTrilinear( int number_of_added_elements, parameter_type& mu )
+        {}
+
     virtual void saveRB();
 
     crb_elements_db_type M_elements_database;
@@ -1677,6 +1715,9 @@ protected:
     bool M_computeApeeForEachTimeStep;
     bool M_seekMuInComplement;
     bool M_showResidual;
+
+    bool M_check_cvg;
+    mutable bool M_last_online_converged;
 
     mutable std::pair<int,double> offline_iterations_summary;
     mutable std::pair<int,double> online_iterations_summary;
@@ -2120,6 +2161,68 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
+CRB<TruthModelType>::femSolve( parameter_type& mu )
+{
+    if ( M_model->hasEim() )
+        return M_model->solve(mu);
+
+    auto u = M_model->functionSpace()->element();
+    auto udu = M_model->functionSpace()->element();
+    element_ptrtype dual_initial_field( new element_type( M_model->functionSpace() ) );
+    this->offlineSolve( u, udu, mu, dual_initial_field );
+
+    return u;
+}
+
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::offlineSolve( element_type& u, element_type& udu, parameter_type& mu, element_ptrtype & dual_initial_field )
+{
+    if ( M_model->isSteady()  )
+    {
+        if ( M_model->hasEim() && boption("crb.solve-fem-monolithic") )
+        {
+            u = M_model->solve(mu);
+        }
+        else if( ! M_use_newton )
+        {
+            tic();
+            u = offlineFixedPointPrimal( mu );//, A  );
+            toc("Solve primal problem");
+
+            if( M_solve_dual_problem )
+            {
+                tic();
+                udu = offlineFixedPointDual( mu , dual_initial_field );//,  A , u );
+                toc("Solve dual problem");
+            }
+        }
+        else
+        {
+            tic();
+            u = offlineNewtonPrimal( mu );
+            toc("Solve primal problem");
+        }
+    }//steady
+    else
+    {
+        tic();
+        u = offlineFixedPointPrimal( mu  );
+        toc("Solve primal problem");
+
+        if ( M_solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+        {
+            tic();
+            udu = offlineFixedPointDual( mu , dual_initial_field );
+            toc("Solve dual problem");
+        }
+    }//transient
+}
+
+
+template<typename TruthModelType>
+typename CRB<TruthModelType>::element_type
 CRB<TruthModelType>::offlineNewtonPrimal( parameter_type const& mu )
 {
     return M_model->solveFemUsingAffineDecompositionNewton( mu );
@@ -2298,9 +2401,10 @@ CRB<TruthModelType>::offline()
     double delta_pr;
     double delta_du;
     size_type index = 0;
-
+    bool use_predefined_WNmu = false;
     int Nrestart = ioption(_name="crb.restart-from-N");
     int Frestart = ioption(_name="ser.rb-rebuild-freq");
+
 
 #if 0
     //we do affine decomposition here to then have access to Qa, mMax ect...
@@ -2355,7 +2459,6 @@ CRB<TruthModelType>::offline()
         M_coeff_pr_ini_online.resize(0);
         M_coeff_du_ini_online.resize(0);
 
-
         this->generateSuperSampling();
 
         if( this->worldComm().isMasterRank() )
@@ -2374,6 +2477,7 @@ CRB<TruthModelType>::offline()
         M_primal_apee_mu->clear();
         M_dual_apee_mu->clear();
 
+        use_predefined_WNmu = buildSampling();
         if( M_error_type == CRB_NO_RESIDUAL )
         {
             if( this->worldComm().isMasterRank() )
@@ -2424,6 +2528,8 @@ CRB<TruthModelType>::offline()
             M_model->rBFunctionSpace()->saveMesh( meshFilename );
         }
         M_model->copyAdditionalModelFiles( this->dbDirectory() );
+
+
 
     }//end of if( rebuild_database )
     else
@@ -2488,12 +2594,13 @@ CRB<TruthModelType>::offline()
 
     //bool reuse_prec = boption(_name="crb.reuse-prec") ;
 
-    bool use_predefined_WNmu = buildSampling();
+
 
     LOG(INFO) << "[CRB::offline] strategy "<< M_error_type <<"\n";
     if( this->worldComm().isMasterRank() )
         std::cout << "[CRB::offline] strategy "<< M_error_type <<std::endl;
 
+    use_predefined_WNmu = this->M_error_type==CRB_NO_RESIDUAL || boption("crb.use-predefined-WNmu");
     if( M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
     {
         //in this case it makes no sens to check the estimated error
@@ -2540,7 +2647,7 @@ CRB<TruthModelType>::offline()
 
         if( this->worldComm().isMasterRank() )
         {
-            std::cout << "N = " << M_N << "/"  << M_iter_max << "( max = " << user_max << ")\n";
+            std::cout << "N = " << M_N+1 << "/"  << M_iter_max << "( max = " << user_max << ")\n";
             int size = mu.size();
             std::cout << "  -- mu = [ ";
             for ( int i=0; i< size-1; i++ )
@@ -2566,71 +2673,13 @@ CRB<TruthModelType>::offline()
 
         double tpr=0,tdu=0;
 
-        if ( M_model->isSteady()  )
-        {
-            if( ! M_use_newton )
-            {
-                timer2.restart();
-                u = offlineFixedPointPrimal( mu );//, A  );
-                tpr=timer2.elapsed();
-                if( M_solve_dual_problem )
-                {
-                    timer2.restart();
-                    udu = offlineFixedPointDual( mu , dual_initial_field );//,  A , u );
-                    tdu=timer2.elapsed();
-                }
-
-                if( boption( _name="crb.print-iterations-info") )
-                    this->printRbPicardIterations();
-            }
-            else
-            {
-                timer2.restart();
-                //auto o = M_model->solve( mu );
-                u = offlineNewtonPrimal( mu );
-                // u = M_model->solve( mu );
-                // if( this->worldComm().isMasterRank() )
-                //     std::cout<<"============================================= start"<<std::endl;
-                // auto    u_fem = M_model->solve( mu );
-                // if( this->worldComm().isMasterRank() )
-                //     std::cout<<"============================================= finish"<<std::endl;
-
-                tpr=timer2.elapsed();
-                LOG(INFO) << "  -- primal problem solved in " << tpr << "s";
-                timer2.restart();
-            }
-        }//steady
-        else
-        {
-            timer2.restart();
-            u = offlineFixedPointPrimal( mu  );
-            tpr=timer2.elapsed();
-
-            if ( M_solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
-            {
-                timer2.restart();
-                udu = offlineFixedPointDual( mu , dual_initial_field );
-                tdu=timer2.elapsed();
-            }
-        }//transient
-
+        this->offlineSolve( u, udu, mu, dual_initial_field );
 
         if( ! use_predefined_WNmu )
             M_WNmu->push_back( mu, index );
-
-        timer2.restart();
         M_WNmu_complement = M_WNmu->complement();
-        double time=timer2.elapsed();
-
-        if( this->worldComm().isMasterRank() )
-        {
-            std::cout<<" -- primal problem solved in "<<tpr<<" s"<<std::endl;
-            std::cout<<" -- dual problem solved in "<<tdu<<" s"<<std::endl;
-            std::cout<<" -- complement of M_WNmu built in "<<time<<" s"<<std::endl;
-        }
 
         bool norm_zero = false;
-
         timer2.restart();
         timer3.restart();
         if ( M_model->isSteady() )
@@ -2833,16 +2882,10 @@ CRB<TruthModelType>::offline()
                 }
             }
 
-            time = timer3.elapsed();
 
         }//end of transient case
 
-        if( this->worldComm().isMasterRank() && !M_model->isSteady() )
-        {
-            std::cout<<"-- time to perform primal POD : "<<tpr<<" s"<<std::endl;
-            std::cout<<"-- time to perform dual POD : "<<tdu<<" s"<<std::endl;
-            std::cout<<"-- time to add primal and dual basis : "<<time<<" s"<<std::endl;
-        }
+
 
         //in the case of transient problem, we can add severals modes for a same mu
         //Moreover, if the case where the initial condition is not zero and we don't orthonormalize elements in the basis,
@@ -2856,7 +2899,6 @@ CRB<TruthModelType>::offline()
         M_N+=number_of_added_elements;
 
         this->orthonormalizeBasis( number_of_added_elements );
-
 
         this->buildRbMatrix( number_of_added_elements, mu, dual_initial_field );
 
@@ -2887,11 +2929,7 @@ CRB<TruthModelType>::offline()
             M_model->updateRbSpaceContextEim();
             M_hasRbSpaceContextEim = true;
         }
-        if ( M_model->hasDeim() && !M_model->isLinear() )
-        {
-            M_model->updateRbInDeim();
-        }
-
+        this->updateRbInDeim();
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
@@ -2941,7 +2979,7 @@ CRB<TruthModelType>::offline()
         else if ( use_predefined_WNmu )
         {
             //remmber that in this case M_iter_max = sampling size
-            if( M_N < M_iter_max )
+            if( M_N < M_WNmu->size() )
             {
                 mu = M_WNmu->at( M_N );
                 M_current_mu = mu;
@@ -2951,7 +2989,7 @@ CRB<TruthModelType>::offline()
         {
             timer2.restart();
             boost::tie( M_maxerror, mu , delta_pr , delta_du ) = maxErrorBounds( M_N );
-            time=timer2.elapsed();
+            auto time=timer2.elapsed();
             M_current_mu = mu;
 
             if( this->worldComm().isMasterRank() )
@@ -5661,6 +5699,16 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 }
 #endif
 
+template<typename TruthModelType>
+typename CRB<TruthModelType>::matrix_info_tuple
+CRB<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu, std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K, bool print_rb_matrix, bool computeOutput ) const
+{
+    if( M_use_newton )
+        return newton( N , mu , uN[0], output_vector[0] );
+    else
+        return fixedPoint( N ,  mu , uN , uNdu , uNold , uNduold , output_vector , K , print_rb_matrix, computeOutput );
+}
+
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::matrix_info_tuple
@@ -5758,12 +5806,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     // init by 1, the model could provide better init
     uN[0].setOnes(N);
 
-    if( M_use_newton )
-        boost::tie(conditioning, determinant) = newton( N , mu , uN[0], output_vector[0] );
-    else
-        boost::tie(conditioning, determinant) = fixedPoint( N ,  mu , uN , uNdu , uNold , uNduold , output_vector , K , print_rb_matrix, computeOutput );
-
-    auto matrix_info = boost::make_tuple( conditioning, determinant );
+    auto matrix_info = onlineSolve( N ,  mu , uN , uNdu , uNold , uNduold , output_vector , K , print_rb_matrix, computeOutput );
 
     if ( M_compute_variance || M_save_output_behavior )
     {
@@ -9290,17 +9333,17 @@ CRB<TruthModelType>::runWithExpansion( parameter_type const& mu , int N , int ti
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
     int size = uN.size();
 
-    FEELPP_ASSERT( N <= M_model->rBFunctionSpace()->size() )( N )( M_model->rBFunctionSpace()->size() ).error( "invalid expansion size ( N and RB size ) ");
-
     element_type ucrb;
     if( time_index == -1 )
     {
-        ucrb = Feel::expansion( M_model->rBFunctionSpace()->primalRB(), uN[size-1] , Nwn);
+        ucrb = expansion( uN[size-1], Nwn );
+        //ucrb = Feel::expansion( M_model->rBFunctionSpace()->primalRB(), uN[size-1] , Nwn);
     }
     else
     {
         CHECK( time_index < size )<<" call crb::expansion with a wrong value of time index : "<<time_index<<" or size of uN vector is only "<<size;
-        ucrb = Feel::expansion( M_model->rBFunctionSpace()->primalRB(), uN[time_index] , Nwn);
+        ucrb = expansion( uN[time_index], Nwn );
+        //ucrb = Feel::expansion( M_model->rBFunctionSpace()->primalRB(), uN[time_index] , Nwn);
     }
     return ucrb;
 }
@@ -10870,9 +10913,9 @@ CRB<TruthModelType>::generateSuperSampling()
     {
         std::string supersamplingname =(boost::format("Dmu-%1%-generated-by-master-proc") %sampling_size ).str();
         if( sampling_mode == "random" )
-            this->M_Xi->randomize( sampling_size , all_proc_same_sampling, "", false );
+            this->M_Xi->randomize( sampling_size , all_proc_same_sampling, supersamplingname, false );
         else if( sampling_mode == "log-random" )
-            this->M_Xi->randomize( sampling_size , all_proc_same_sampling , supersamplingname );
+            this->M_Xi->randomize( sampling_size , all_proc_same_sampling , supersamplingname, true );
         else if( sampling_mode == "log-equidistribute" )
             this->M_Xi->logEquidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
         else if( sampling_mode == "equidistribute" )
@@ -10924,35 +10967,46 @@ CRB<TruthModelType>::buildSampling()
     else if ( this->M_error_type==CRB_NO_RESIDUAL )// We generate the sampling with choosen strategy
     {
         this->M_WNmu->clear();
-        if ( N_log_equi>0 )
+        std::ifstream file ( file_name );
+        if ( file && boption("crb.reload-last-sampling") )
         {
-            this->M_WNmu->logEquidistribute( N_log_equi , true );
-            if( Environment::isMasterRank() )
-                std::cout<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
-                         <<N_log_equi<<" )"<<std::endl;
-            LOG( INFO )<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
-                       <<N_log_equi<<" )";
+            Feel::cout << "[CRB::offline] Reload last sampling\n";
+            this->M_WNmu->readFromFile(file_name);
         }
-        else if ( N_equi>0 )
+        else
         {
-            this->M_WNmu->equidistribute( N_equi , true );
-            if( Environment::isMasterRank() )
-                std::cout<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
-                         <<N_equi<<" )"<<std::endl;
-            LOG( INFO )<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
-                       <<N_equi<<" )";
+            if ( N_log_equi>0 )
+            {
+                this->M_WNmu->logEquidistribute( N_log_equi , true );
+                if( Environment::isMasterRank() )
+                    std::cout<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
+                             <<N_log_equi<<" )"<<std::endl;
+                LOG( INFO )<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
+                           <<N_log_equi<<" )";
+            }
+            else if ( N_equi>0 )
+            {
+                this->M_WNmu->equidistribute( N_equi , true );
+                if( Environment::isMasterRank() )
+                    std::cout<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
+                             <<N_equi<<" )"<<std::endl;
+                LOG( INFO )<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
+                           <<N_equi<<" )";
+            }
+            else if ( N_random>0 )
+            {
+                bool use_log = boption("crb.randomize.use-log");
+                this->M_WNmu->randomize( N_random , true, "",use_log );
+                if( Environment::isMasterRank() )
+                    std::cout<<"[CRB::offline] Randomize WNmu ( sampling size : "
+                             <<N_random<<" )"<<std::endl;
+                LOG( INFO )<<"[CRB::offline] Randomize WNmu ( sampling size : "
+                           <<N_random<<" )";
+            }
+            else // In this case we don't know what sampling to use
+                throw std::logic_error( "[CRB::offline] ERROR : You have to choose an appropriate strategy for the offline sampling : random, equi, logequi or predefined" );
+
         }
-        else if ( N_random>0 )
-        {
-            this->M_WNmu->randomize( N_random , true );
-            if( Environment::isMasterRank() )
-                std::cout<<"[CRB::offline] Randomize WNmu ( sampling size : "
-                         <<N_random<<" )"<<std::endl;
-            LOG( INFO )<<"[CRB::offline] Randomize WNmu ( sampling size : "
-                       <<N_random<<" )";
-        }
-        else // In this case we don't know what sampling to use
-            throw std::logic_error( "[CRB::offline] ERROR : You have to choose an appropriate strategy for the offline sampling : random, equi, logequi or predefined" );
 
         this->M_WNmu->writeOnFile(file_name);
         use_predefined_WNmu=true;

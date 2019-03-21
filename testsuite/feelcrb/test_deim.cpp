@@ -59,6 +59,14 @@ public :
     typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
+    typedef Pch_type<mesh_type,POrder> scalarspace_type;
+    typedef Pchv_type<mesh_type,POrder> vectorialspace_type;
+    typedef typename mpl::if_< mpl::bool_<is_vect>,
+                               vectorialspace_type,
+                               scalarspace_type>::type space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+
     typedef Backend<double> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef backend_type::vector_type vector_type;
@@ -260,9 +268,10 @@ public :
     {
         return Xh;
     }
-    element_type solve( parameter_type const& mu )
+    virtual std::pair<element_type,bool> safeSolve( parameter_type const& mu )
     {
-        return Xh->element();
+        auto u = Xh->element();
+        return std::make_pair( u, true );
     }
     std::string modelName()
     {
@@ -270,7 +279,11 @@ public :
     }
     void initOnlineModel()
     {}
-
+    typename space_type::mesh_support_vector_type
+        functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
+    {
+        return typename space_type::mesh_support_vector_type();
+    }
  private :
     void initDeim( sampling_ptrtype Pset )
     {

@@ -1825,18 +1825,18 @@ public:
         {
             if ( model )
                 M_eimFeSpaceDb.setModel( model );
-           if ( this->functionSpace() )
-           {
-               M_eimFeSpaceDb.setEimFunctionSpace( this->functionSpace() );
+            if ( this->functionSpace() )
+            {
+                M_eimFeSpaceDb.setEimFunctionSpace( this->functionSpace() );
 
-               if ( model_use_nosolve && this->functionSpace()->mesh() )
-               {
-                   geometricspace_ptrtype geospace( new geometricspace_type( this->functionSpace()->mesh() ) );
-                   M_ctxGeoEim.reset( new geometricspace_context_type( geospace ) );
-               }
-               M_ctxFeBasisEim.reset( new context_type( this->functionSpace() ) );
-               M_internalModelFeFunc = this->functionSpace()->elementPtr();
-           }
+                if ( model_use_nosolve && this->functionSpace()->mesh() )
+                {
+                    geometricspace_ptrtype geospace( new geometricspace_type( this->functionSpace()->mesh() ) );
+                    M_ctxGeoEim.reset( new geometricspace_context_type( geospace ) );
+                }
+                M_ctxFeBasisEim.reset( new context_type( this->functionSpace() ) );
+                M_internalModelFeFunc = this->functionSpace()->elementPtr();
+            }
 
             this->initExprFeContex( mpl::bool_<use_subspace_element>() );
 
