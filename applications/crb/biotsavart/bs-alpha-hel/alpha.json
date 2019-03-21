@@ -14,12 +14,21 @@
         "p1":
         {
             "min":-2,
-            "max":2
+            "max":2,
+            "value":1
         },
         "p2":
         {
             "min":-2,
-            "max":2
+            "max":2,
+            "value":-0.5
+        }
+    },
+    "Materials":
+    {
+        "box":
+        {
+            "physics":"magnetic"
         }
     },
     "BoundaryConditions":

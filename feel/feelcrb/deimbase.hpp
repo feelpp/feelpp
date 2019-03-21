@@ -1028,6 +1028,8 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::serialize(Archive & __ar, con
                 __ar & BOOST_SERIALIZATION_NVP( unwrap_ptr(M_rb[i]) );
             DVLOG(2) << "M_rb saved/loaded\n";
         }
+        for ( auto& mu : M_mus )
+            mu.setParameterSpace( M_Dmu );
     }
     else
     {

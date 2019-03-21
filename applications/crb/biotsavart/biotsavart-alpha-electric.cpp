@@ -34,7 +34,7 @@ namespace Feel {
 template<typename te_rb_model_type>
 BiotSavartAlphaElectricCRB<te_rb_model_type>::BiotSavartAlphaElectricCRB(crb::stage stage)
     : super_type("biotsavart"),
-      M_propertyPath(soption("biotsavart.filename")),
+      M_propertyPath(Environment::expand(soption("biotsavart.filename"))),
       M_repart(boption("biotsavart.repart")),
       M_computeFe(boption("biotsavart.compute-fe")),
       M_computeOffline(boption("biotsavart.compute-offline")),
@@ -69,7 +69,7 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::initModel()
     tic();
     M_teCrbModel = boost::make_shared<te_rb_model_type>(M_mesh);
     M_crbModel = boost::make_shared<crb_model_type>(M_teCrbModel, crb::stage::offline);
-    M_crb = crb_type::New("biotsavartalphaelectro_crb", M_crbModel, crb::stage::offline);
+    M_crb = crb_type::New("alphaelectric", M_crbModel, crb::stage::offline);
     toc("constructor + eim");
 
     tic();
@@ -128,7 +128,7 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::setupCRB( crb_ptrtype crb )
 template<typename te_rb_model_type>
 void BiotSavartAlphaElectricCRB<te_rb_model_type>::runBS()
 {
-    M_mu = this->paramFromOption();
+    M_mu = this->paramFromProperties();
     if( M_computeOffline )
     {
         if( M_computeOnline )
@@ -157,6 +157,7 @@ BiotSavartAlphaElectricCRB<te_rb_model_type>::assembleForDEIM( parameter_type co
     M_uN = solutions.template get<0>()[0];
     this->expand();
 
+    auto mesh = M_XhCond->mesh();
     vector_ptrtype Bvec = backend()->newVector( this->Xh );
     auto B = this->Xh->element( Bvec );
 
@@ -202,7 +203,7 @@ BiotSavartAlphaElectricCRB<te_rb_model_type>::assembleForDEIM( parameter_type co
                     auto dist = inner( _e1v-psi, _e1v-psi,
                                        mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
 
-                    mgnFields[j++] = integrate(_range=markedelements( M_mesh, material.first ),
+                    mgnFields[j++] = integrate(_range=markedelements( mesh, material.first ),
                                                _expr=-mu0*coeff*sigma*cross(trans(gradv(M_V)*Jinv),
                                                                             _e1v-psi)/(dist*dist*dist),
                                                _quad=_Q<1>()
@@ -213,7 +214,7 @@ BiotSavartAlphaElectricCRB<te_rb_model_type>::assembleForDEIM( parameter_type co
                     auto sigma = material.second.getDouble("sigma");
                     auto dist = inner( _e1v-P(), _e1v-P(),
                                        mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
-                    mgnFields[j++] = integrate(_range=markedelements( M_mesh, material.first ),
+                    mgnFields[j++] = integrate(_range=markedelements( mesh, material.first ),
                                                _expr=-mu0*coeff*sigma*cross(trans(gradv(M_V)),
                                                                             _e1v-P())/(dist*dist*dist),
                                                _quad=_Q<1>()
@@ -427,6 +428,7 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeFE( parameter_type & m
     toc("compute j FE");
 
     tic();
+    auto mesh = Xh->mesh();
     M_BFe = this->Xh->element();
     auto coeff = 1/(4*M_PI);
     auto mu0 = 4*M_PI*1e-4; //SI unit : H.m-1 = m.kg.s-2.A-2
@@ -476,7 +478,7 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeFE( parameter_type & m
                                     Pz() );
                     auto dist = inner( _e1v-psi,_e1v-psi,
                                        mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
-                    mgnFields[j++] = integrate(_range=markedelements( M_mesh, material.first ),
+                    mgnFields[j++] = integrate(_range=markedelements( mesh, material.first ),
                                                _expr=-mu0*coeff*sigma*cross(trans(gradv(M_V)*Jinv),
                                                                             _e1v-psi)/(dist*dist*dist),
                                                _quad=_Q<1>()
@@ -487,7 +489,7 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeFE( parameter_type & m
                     auto sigma = material.second.getDouble("sigma");
                     auto dist = inner( _e1v-P(), _e1v-P(),
                                        mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
-                    mgnFields[j++] = integrate(_range=markedelements( M_mesh, material.first ),
+                    mgnFields[j++] = integrate(_range=markedelements( mesh, material.first ),
                                                _expr=-mu0*coeff*sigma*cross(trans(gradv(M_V)),
                                                                             _e1v-P())/(dist*dist*dist),
                                                _quad=_Q<1>()
@@ -528,8 +530,9 @@ typename BiotSavartAlphaElectricCRB<te_rb_model_type>::cond_element_type
 BiotSavartAlphaElectricCRB<te_rb_model_type>::alpha( parameter_type const& mu )
 {
     auto a = M_XhCond->element();
+    auto mesh = M_XhCond->mesh();
     for( auto const& material : M_teCrbModel->materials() )
-        a += project( _space=M_XhCond, _range=markedelements(M_mesh, material.first),
+        a += project( _space=M_XhCond, _range=markedelements(mesh, material.first),
                       _expr=expr(M_teCrbModel->alpha(mu, material.second)) );
     return a;
 }
