@@ -21,13 +21,13 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+cmake_minimum_required(VERSION 3.7.2)
 project(mor)
 
 
 # with this it is possible to compile applications/MOR from an installed
 # version of feel++. This is useful also for staged compilation for docker
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  cmake_minimum_required(VERSION VERSION 3.1.3)
   find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
   message(STATUS "[feelpp] module path: ${CMAKE_MODULE_PATH}")
   if(NOT FEELPP_FOUND)

@@ -160,7 +160,7 @@ public :
     void updateLinearPDE( DataUpdateLinear & data ) const override;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
-    void updateNewtonInitialGuess( vector_ptrtype& U ) const override;
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
     void updateJacobian( DataUpdateJacobian & data ) const override;
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
     void updateResidual( DataUpdateResidual & data ) const override;

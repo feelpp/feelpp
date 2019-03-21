@@ -616,7 +616,7 @@ public :
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
     // assembly methods for nonlinear system
-    void updateNewtonInitialGuess(vector_ptrtype& U) const override;
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
     void updateJacobian( DataUpdateJacobian & data ) const override;
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
     void updateResidual( DataUpdateResidual & data ) const override;

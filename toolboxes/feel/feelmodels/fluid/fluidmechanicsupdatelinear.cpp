@@ -480,17 +480,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
         }
     }
 
-
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
-    {
-        bilinearForm +=
-            on( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                _element=u, _rhs=F,
-                _expr=idv(this->meshVelocity2()) );
-    }
-#endif
-
     for ( auto const& inletbc : M_fluidInletDesc )
     {
         std::string const& marker = std::get<0>( inletbc );

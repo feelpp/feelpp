@@ -384,7 +384,7 @@ public :
 
     void updateMarkedZonesInMesh();
 
-    std::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"FluidMechanicsMesh.path"); }
     //___________________________________________________________________________________//
 
@@ -435,9 +435,9 @@ public :
     // algebraic data
     backend_ptrtype backend() { return M_backend; }
     backend_ptrtype const& backend() const { return  M_backend; }
-    typename super_type::block_pattern_type blockPattern() const;
-    virtual BlocksBaseGraphCSR buildBlockMatrixGraph() const;
-    graph_ptrtype buildMatrixGraph() const;
+    typename super_type::block_pattern_type blockPattern() const override;
+    virtual BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
+    graph_ptrtype buildMatrixGraph() const override;
     virtual int nBlockMatrixGraph() const;
     indexsplit_ptrtype buildIndexSplit() const;
     model_algebraic_factory_ptrtype algebraicFactory() { return M_algebraicFactory; }
@@ -817,25 +817,25 @@ public :
 
     void solve();
     //___________________________________________________________________________________//
-    void preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
-    void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
-    void preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
-    void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
-    void preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const;
-    void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const override;
+    void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const override;
+    void preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const override;
+    void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const override;
+    void preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const override;
+    void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const override;
     //___________________________________________________________________________________//
 
     void initInHousePreconditioner();
-    void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
+    void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const override;
     void updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
     void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
 
     //___________________________________________________________________________________//
 
     // non linear (newton)
-    void updateNewtonInitialGuess( vector_ptrtype& U ) const;
-    void updateJacobian( DataUpdateJacobian & data ) const;
-    void updateResidual( DataUpdateResidual & data ) const;
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
+    void updateJacobian( DataUpdateJacobian & data ) const override;
+    void updateResidual( DataUpdateResidual & data ) const override;
 
     void updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianStabilisation( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
@@ -849,20 +849,20 @@ public :
                                          std::string const& matName, const ExprT&... exprs ) const;
     void updateJacobianWeakBC( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
     void updateResidualWeakBC( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
-    void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
-    void updateResidualDofElimination( DataUpdateResidual & data ) const;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
     // linear
-    void updateLinearPDE( DataUpdateLinear & data ) const;
+    void updateLinearPDE( DataUpdateLinear & data ) const override;
     void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
     template<typename DensityExprType, typename ViscosityExprType, typename AdditionalRhsType = hana::tuple<>, typename AdditionalMatType = hana::tuple<> >
     void updateLinearPDEStabilisationGLS( DataUpdateLinear & data, Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu, std::string const& matName,
                                           AdditionalRhsType const& addRhsTuple = hana::make_tuple(), AdditionalMatType const& addMatTuple = hana::make_tuple() ) const;
-    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
-    void updatePicard( DataUpdateLinear & data ) const;
-    double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
+    void updatePicard( DataUpdateLinear & data ) const override;
+    double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const override;
 
     //___________________________________________________________________________________//
 

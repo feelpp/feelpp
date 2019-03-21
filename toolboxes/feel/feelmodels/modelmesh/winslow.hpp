@@ -48,7 +48,6 @@ class Winslow : public ModelAlgebraic,
 public :
     typedef Winslow<MeshType,Order> self_type;
     typedef ModelAlgebraic super_type;
-
     typedef MeshType mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -101,7 +100,7 @@ public :
 
     void init();
 
-    std::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
 
 
     backend_ptrtype const& backend() const { return M_backend; }
@@ -128,14 +127,14 @@ public :
 
     void solve();
 
-    void updateLinearPDE( DataUpdateLinear & data ) const;
-    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
+    void updateLinearPDE( DataUpdateLinear & data ) const override;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
-    void updateNewtonInitialGuess( vector_ptrtype& U ) const;
-    void updateJacobian( DataUpdateJacobian & data ) const;
-    void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
-    void updateResidual( DataUpdateResidual & data ) const;
-    void updateResidualDofElimination( DataUpdateResidual & data ) const;
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
+    void updateJacobian( DataUpdateJacobian & data ) const override;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
+    void updateResidual( DataUpdateResidual & data ) const override;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
 private :
     void updateMeshAdaptation();
