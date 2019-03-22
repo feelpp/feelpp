@@ -88,31 +88,13 @@ ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t c
     M_isInitWinslow( false ),
     M_moveGhostEltFromExtendedStencil( moveGhostEltFromExtendedStencil )
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix(),"constructor", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log( "ALE", "constructor", "start" );
+
     this->createALE();
 
     this->preCompute();
-#if 0
-    if ( M_alemeshTypeName == "harmonic" )
-    {
-#if defined( FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION )
-        this->createHarmonicExtension();
-#else
-        CHECK( false ) << " FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION is turned to OFF";
-#endif
-    }
-    else if ( M_alemeshTypeName == "winslow" )
-    {
-#if defined( FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW )
-        this->createWinslow();
-#else
-        CHECK( false ) << " FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW is turned to OFF";
-#endif
-    }
-#endif
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix(),"constructor", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+
+    this->log( "ALE", "constructor", "finish" );
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -360,8 +342,7 @@ ALE<Convex,Order>::createWinslow()
 
     bool useGhostEltFromExtendedStencil = M_fspaceLow->dof()->buildDofTableMPIExtended() && M_reference_mesh->worldComm().localSize()>1;
     M_winslowFactory.reset(new winslow_type( M_reference_mesh,
-                                             prefixvm(this->prefix(),"winslow"),
-                                             this->worldCommPtr(),useGhostEltFromExtendedStencil) );
+                                             prefixvm(this->prefix(),"winslow") ) );
     //M_winslowFactory.reset( new winslow_type( M_fspaceLow,M_bLow,prefixvm(M_prefix,"alemesh.winslow")/*M_prefix*/) );
     M_winslowFactory->setflagSet(this->flagSet());
     M_winslowFactory->init();
@@ -476,14 +457,11 @@ ALE<Convex,Order>::generateLowOrderMap_WINSLOW( ale_map_element_type const & dis
     M_winslowFactory->generateALEMap(dispOnBoundary,oldDisp);
 
     // interpolate disp
-    //interpolate( M_fspaceHigh, M_displacementLow, M_displacementHigh, INTERPOLATE_SAME_MESH );
-    bool useGhostEltFromExtendedStencil = M_displacementLow->functionSpace()->dof()->buildDofTableMPIExtended() &&
-        M_winslowFactory->functionSpace()->dof()->buildDofTableMPIExtended() &&
-        M_displacementLow->mesh()->worldComm().localSize()>1;
-    EntityProcessType entityProcess = (useGhostEltFromExtendedStencil)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-    *M_displacementLow = vf::project(_space=M_displacementLow->functionSpace(),
-                                     _range=elements(M_displacementLow->mesh(),entityProcess),
-                                     _expr=idv(M_winslowFactory->displacement()) );
+    M_displacementLow->on( _range=elements(M_displacementLow->mesh()),
+                           _expr=idv(M_winslowFactory->displacement()) );
+    if ( M_displacementLow->functionSpace()->dof()->buildDofTableMPIExtended() )
+        sync( *M_displacementLow, "=" );
+
     *M_aleLow = *M_identityLow;
     *M_aleLow += *M_displacementLow;
 #endif
