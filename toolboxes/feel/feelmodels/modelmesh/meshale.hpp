@@ -116,13 +116,10 @@ public :
     typedef std::shared_ptr<DofRelationshipMap_type> DofRelationshipMap_ptrtype;
 
 
-    MeshALE(mesh_ptrtype mesh_moving,
-            //po::variables_map const& vm=Environment::vm(),
-            std::string const& prefix="",
-            //std::string exportName="ExportMeshALE",
-            worldcomm_ptr_t const& worldcomm=Environment::worldCommPtr(),
-            bool moveGhostEltFromExtendedStencil=false,
-            ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    MeshALE( mesh_ptrtype mesh_moving,
+             std::string const& prefix="",
+             worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
+             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     void init();
 
@@ -345,15 +342,14 @@ BOOST_PARAMETER_FUNCTION(
       ) // required
     ( optional
       ( prefix,            (std::string), std::string("") )
-      ( worldcomm,         (worldcomm_ptr_t), Environment::worldCommPtr() )
-      ( extended_doftable, (bool), true )
+      ( worldcomm,         (worldcomm_ptr_t), mesh->worldCommPtr() )
       ( directory,         (ModelBaseRepository),  ModelBaseRepository() )
       ) // optionnal
                          )
 {
     typedef typename compute_meshale_return<Args>::ptrtype meshale_ptrtype;
     typedef typename compute_meshale_return<Args>::type meshale_type;
-    return meshale_ptrtype( new meshale_type(mesh,prefix,worldcomm,extended_doftable,directory) );
+    return meshale_ptrtype( new meshale_type(mesh,prefix,worldcomm,directory) );
 }
 
 
