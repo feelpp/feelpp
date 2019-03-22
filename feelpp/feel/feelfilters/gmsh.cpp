@@ -282,7 +282,7 @@ Gmsh::gpstr2map( std::string const& _geopars )
         {
             boost::tokenizer< boost::char_separator<char> > kv( ikvl, sep2);
 
-            assert( distance( kv.begin(), kv.end() ) == 2 ); //! TODO modify message !
+            DCHECK( std::distance( kv.begin(), kv.end() ) == 2 ); //! TODO modify message !
 
             try{
                 //geopm[ *(kv.begin()) ] = boost::lexical_cast<double>( *(++(kv.begin())) );
