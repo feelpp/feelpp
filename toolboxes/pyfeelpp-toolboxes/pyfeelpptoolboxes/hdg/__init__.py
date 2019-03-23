@@ -14,7 +14,7 @@ def hdgpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldCo
     Keyword arguments:
     dim -- the dimension (default: 2)
     order -- the polynomial order for the fields : potential, flux, displacement, stress and associated traces (default: 1)
-    prefix -- application prefix for the HDG poisson 
+    prefix -- application prefix for the HDG poisson
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     """
     if worldComm is None:

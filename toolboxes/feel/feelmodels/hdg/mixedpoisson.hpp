@@ -27,7 +27,7 @@ namespace FeelModels
 {
 
 inline po::options_description
-makeMixedPoissonOptions( std::string  _prefix = "", std::string  _toolbox_prefix = "hdg.poisson" )
+makeMixedPoissonOptions( std::string const&  _prefix = "", std::string const&  _toolbox_prefix = "hdg.poisson" )
 {
     std::string prefix = _toolbox_prefix.empty()?"hdg.poisson":_toolbox_prefix;
     if ( !_prefix.empty() )
@@ -46,7 +46,7 @@ makeMixedPoissonOptions( std::string  _prefix = "", std::string  _toolbox_prefix
 }
 
 inline po::options_description
-makeMixedPoissonLibOptions( std::string  prefix = "", std::string  _toolbox_prefix = "hdg.poisson" )
+makeMixedPoissonLibOptions( std::string const&  prefix = "", std::string const&  _toolbox_prefix = "hdg.poisson" )
 {
     po::options_description mpLibOptions( "Mixed Poisson HDG Lib options" );
     // if ( !prefix.empty() )

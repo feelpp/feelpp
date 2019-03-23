@@ -17,11 +17,10 @@ def solid( dim=2, orderDisp=1, buildMesh=True, worldComm=None):
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     """
     if worldComm is None:
-        worldComm=core.Environment.worldCommPtr() 
+        worldComm=core.Environment.worldCommPtr()
     key='solid('+str(dim)+','+str(orderDisp)+')'
     if worldComm.isMasterRank():
         print(key)
     if key not in _csms:
         raise RuntimeError('Solid solver '+key+' not existing')
     return _csms[key]( "solid", buildMesh, worldComm )
-
