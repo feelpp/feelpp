@@ -56,9 +56,9 @@ PYBIND11_MODULE(_models, m )
         .def("hasFitInterpolator",&ModelParameter::hasFitInterpolator, "return true if the parameter has a fit interpolator, false otherwise")
         .def("setParameterValues",&ModelParameter::setParameterValues, "set parameter values from a map of string/double pairs")
         .def("__str__", parameter_to_str, "");
-    
 
-    
+
+
     pyclass_name = "ModelParameters";
     py::class_<ModelParameters>(m,pyclass_name.c_str())
         .def(py::init<worldcomm_t const&>(),
@@ -127,12 +127,12 @@ PYBIND11_MODULE(_models, m )
                      if ( value.hasExprVectorial3() )
                          s << "   {" << p << ", " << value.exprVectorial3().expression().exprDesc() << "}" << std::endl;
                  }
-                 s << std::endl;	
+                 s << std::endl;
                  return s.str();
              }, "")
-             
+
         ;
-    
+
     pyclass_name = "ModelMaterials";
     py::class_<ModelMaterials>(m,pyclass_name.c_str())
         .def(py::init<worldcomm_t const&>(),
@@ -141,11 +141,11 @@ PYBIND11_MODULE(_models, m )
         .def("__len__", [](const ModelMaterials &v) { return v.size(); })
         .def("__str__", [](ModelMaterials &v) {
                 std::ostringstream s;
-                for (auto const& [key,mat] : v ) 
+                for (auto const& [key,mat] : v )
                     s << mat.name() << " " << std::endl;
                 return s.str();
             })
-#if 0        
+#if 0
         .def("__getitem__", [](const ModelMaterials &map, std::string key) {
                 try { return map.at(key); }
                 catch (const std::out_of_range&) {
@@ -166,11 +166,11 @@ PYBIND11_MODULE(_models, m )
         .def("setParameterValues",&ModelMaterials::setParameterValues, "set parameter values from a map of string/double pairs")
         .def("items", [](ModelMaterials &map) { return py::make_iterator(map.begin(), map.end()); },
              py::keep_alive<0, 1>());
-        
+
     pyclass_name = "ModelProperties";
     py::class_<ModelProperties,std::shared_ptr<ModelProperties>>(m,pyclass_name.c_str())
         .def(py::init<std::string const&, std::string const&, worldcomm_t const&, std::string const&>(),"initialize ModelProperties",py::arg("filename")="",py::arg("directoryLibExpr")="",py::arg("worldComm"),py::arg("prefix")="")
         .def("parameters",static_cast<ModelParameters& (ModelProperties::*)()>(&ModelProperties::parameters), "get parameters of the model",py::return_value_policy::reference)
         .def("materials",static_cast<ModelMaterials& (ModelProperties::*)()>(&ModelProperties::materials), "get the materials of the model",py::return_value_policy::reference);
-    
+
 }
