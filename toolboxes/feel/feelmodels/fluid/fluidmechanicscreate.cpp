@@ -1074,8 +1074,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 
     if ( boption(_name="use-velocity-near-null-space",_prefix=this->prefix() ) )
     {
+        std::string nearNullSpacePrefix = this->prefix();
+        if ( Environment::vm().count(prefixvm(this->prefix(),"use-velocity-near-null-space.prefix").c_str()) )
+            nearNullSpacePrefix = soption( _name="use-velocity-near-null-space.prefix", _prefix=this->prefix() );
+
         NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpaceVelocity(), mpl::int_<nDim>() ) ;
-        M_algebraicFactory->attachNearNullSpace( 0,userNullSpace ); // for block velocity in fieldsplit
+        M_algebraicFactory->attachNearNullSpace( 0,userNullSpace, nearNullSpacePrefix ); // for block velocity in fieldsplit
     }
     this->initInHousePreconditioner();
 
@@ -1159,6 +1163,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     int bdfOrder = 1;
     if ( M_timeStepping == "BDF" )
         bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
     M_bdf_fluid = bdf( _space=M_Xh,
                        _name="velocity-pressure"+suffixName,
                        _prefix=this->prefix(),
@@ -1170,7 +1175,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
                        _restart=this->doRestart(),
                        _restart_path=this->restartPath(),
                        _restart_at_last_save=this->restartAtLastSave(),
-                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq(),
+                       _n_consecutive_save=nConsecutiveSave );
     M_bdf_fluid->setfileFormat( myFileFormat );
     M_bdf_fluid->setPathSave( ( saveTsDir/"velocity-pressure" ).string() );
 
@@ -1615,8 +1621,8 @@ size_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
 {
     size_type currentStartIndex = 0;
-    this->setStartSubBlockSpaceIndex( "velocity-pressure", currentStartIndex );
-    currentStartIndex += 2;
+    this->setStartSubBlockSpaceIndex( "velocity", currentStartIndex++ );
+    this->setStartSubBlockSpaceIndex( "pressure", currentStartIndex++ );
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
         this->setStartSubBlockSpaceIndex( "define-pressure-cst-lm", currentStartIndex );

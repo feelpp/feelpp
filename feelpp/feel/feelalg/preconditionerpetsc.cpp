@@ -204,12 +204,12 @@ void PreconditionerPetsc<T>::init ()
                 int splitId = splitBaseIdsMap.first;
                 std::set<int> splitBaseIds = splitBaseIdsMap.second;
 
-                if ( this->hasNearNullSpace( splitBaseIds ) )
+                if ( this->hasNearNullSpace( splitBaseIds, this->name() ) )
                 {
                     IS isToApply;
                     std::string splitIdStr = (boost::format("%1%")%splitId).str();
                     this->check( PCFieldSplitGetIS( M_pc,splitIdStr.c_str(),&isToApply ) );
-                    auto const& nearnullspace = this->nearNullSpace( splitBaseIds );
+                    auto const& nearnullspace = this->nearNullSpace( splitBaseIds, this->name() );
                     int dimNullSpace = nearnullspace->size();
                     std::vector<Vec> petsc_vec(dimNullSpace);
                     for ( int k = 0 ; k<dimNullSpace ; ++k )
@@ -637,12 +637,14 @@ ConfigurePC::run( PC& pc )
     VLOG(2) << "configuring PC (" << this->prefix() << "." << this->sub() << ")" << pctype <<  "\n";
     google::FlushLogFiles(google::INFO);
 
+    bool pcSetupNotCalled = !pc->setupcalled;
+    // init with petsc option if given and not interfaced
+    if ( pcSetupNotCalled )
+        this->check( PCSetFromOptions( pc ) );
+
     if ( M_useConfigDefaultPetsc )
         return;
 
-    // init with petsc option if given and not interfaced
-    if ( true )
-        this->check( PCSetFromOptions( pc ) );
 
     if ( std::string(pctype) == "lu" || std::string(pctype) == "ilu" )
     {
@@ -1207,10 +1209,12 @@ getOptionsDescGAMG( std::string const& prefix, std::string const& sub )
           "set for asymmetric matrice (if the matrix is sym, put to false)" )
         ( prefixvm( prefix,pcctx+"gamg-reuse-interpolation").c_str(), Feel::po::value<bool>()->default_value( false ),
           "reuse prolongation operator" )
-        ( prefixvm( prefix,pcctx+"gamg-verbose").c_str(), Feel::po::value<int>()->default_value( 0 ),
-          "verbose internal petsc info for gamg" )
         ( prefixvm( prefix,pcctx+"gamg-nsmooths" ).c_str(), Feel::po::value<int>()->default_value( 1 ),
           "number of smoothing steps" )
+        ( prefixvm( prefix,pcctx+"gamg-coarse-grid-use-config-default-petsc").c_str(), Feel::po::value<bool>()->default_value( true ),
+          "verbose internal petsc info for gamg" )
+        ( prefixvm( prefix,pcctx+"gamg-levels-use-config-default-petsc").c_str(), Feel::po::value<bool>()->default_value( true ),
+          "verbose internal petsc info for gamg" )
         ;
 
     // coarse ksp/pc
@@ -2092,8 +2096,9 @@ ConfigurePCGAMG::ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double> * precFeel
     M_threshold( option(_name="pc-gamg-threshold",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
     M_setSymGraph( option(_name="pc-gamg-set-sym-graph",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
     M_reuseInterpolation( option(_name="pc-gamg-reuse-interpolation",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
-    M_gamgVerbose( option(_name="pc-gamg-verbose",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
     M_nSmooths( option(_name="pc-gamg-nsmooths",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_coarseGridUseConfigDefaultPetsc( option(_name="pc-gamg-coarse-grid-use-config-default-petsc",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
+    M_gamgLevelsUseConfigDefaultPetsc( option(_name="pc-gamg-levels-use-config-default-petsc",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
     M_prefixMGCoarse( (boost::format( "%1%%2%mg-coarse" ) %prefixvm( prefix,"" ) %std::string((sub.empty())?"":sub+"-")  ).str() ),
     M_coarsePCtype( option(_name="pc-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
     M_coarsePCMatSolverPackage( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
@@ -2111,45 +2116,45 @@ void
 ConfigurePCGAMG::run( PC& pc )
 {
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
-    if ( !pc->setupcalled )
+    bool pcSetupNotCalled = !pc->setupcalled;
+
+    std::string petscPrefixStr;
+    std::vector<std::string> petscOptionsValueAdded;
+    if ( pcSetupNotCalled )
     {
         // set type of multigrid (agg only supported)
         this->check( PCGAMGSetType( pc, M_gamgType.c_str() ) );
-        // Set for asymmetric matrices
-        //this->check( PetscOptionsSetValue("-pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
-        //this->check( PetscOptionsSetValue("-fieldsplit_0_pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
-        const char     *petscPrefix;
+
+        const char     *petscPrefix = NULL;
         this->check( PCGetOptionsPrefix(pc,&petscPrefix ) );
         if ( petscPrefix != NULL )
+            petscPrefixStr = petscPrefix;
+
+        std::vector<std::pair<std::string,std::string>> petscOptionsValueToAdd;
+        petscOptionsValueToAdd.push_back( std::make_pair( (boost::format("-%1%pc_gamg_sym_graph")%petscPrefixStr).str(),  boost::lexical_cast<std::string>(M_setSymGraph) ) );
+        petscOptionsValueToAdd.push_back( std::make_pair( (boost::format("-%1%pc_gamg_agg_nsmooths")%petscPrefixStr).str(),  boost::lexical_cast<std::string>(M_nSmooths) ) );
+
+        for ( auto const& petscOpt : petscOptionsValueToAdd )
         {
+            std::string const& key = petscOpt.first;
+            std::string const& value = petscOpt.second;
+            PetscBool hasOption;
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
-            this->check( PetscOptionsSetValue( NULL, (boost::format("-%1%pc_gamg_sym_graph")%std::string(petscPrefix)).str().c_str(),
-                                               boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
-            this->check( PetscOptionsSetValue( NULL, (boost::format("-%1%pc_gamg_verbose")%std::string(petscPrefix)).str().c_str(),
-                                               boost::lexical_cast<std::string>(M_gamgVerbose).c_str()) );
-            this->check( PetscOptionsSetValue( NULL, (boost::format("-%1%pc_gamg_agg_nsmooths")%std::string(petscPrefix)).str().c_str(),
-                                               boost::lexical_cast<std::string>(M_nSmooths).c_str()) );
+            this->check( PetscOptionsHasName( NULL, NULL, key.c_str(), &hasOption ) );
 #else
-            this->check( PetscOptionsSetValue( (boost::format("-%1%pc_gamg_sym_graph")%std::string(petscPrefix)).str().c_str(),
-                                               boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
-            this->check( PetscOptionsSetValue( (boost::format("-%1%pc_gamg_verbose")%std::string(petscPrefix)).str().c_str(),
-                                               boost::lexical_cast<std::string>(M_gamgVerbose).c_str()) );
-            this->check( PetscOptionsSetValue( (boost::format("-%1%pc_gamg_agg_nsmooths")%std::string(petscPrefix)).str().c_str(),
-                                               boost::lexical_cast<std::string>(M_nSmooths).c_str()) );
+            this->check( PetscOptionsHasName( NULL, key.c_str(), &hasOption ) );
 #endif
-        }
-        else
-        {
+            if ( !hasOption )
+            {
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
-            this->check( PetscOptionsSetValue(NULL, "-pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
-            this->check( PetscOptionsSetValue(NULL, "-pc_gamg_verbose", boost::lexical_cast<std::string>(M_gamgVerbose).c_str()) );
-            this->check( PetscOptionsSetValue(NULL, "-pc_gamg_agg_nsmooths", boost::lexical_cast<std::string>(M_nSmooths).c_str()) );
+                this->check( PetscOptionsSetValue( NULL,  key.c_str(), value.c_str() ) );
 #else
-            this->check( PetscOptionsSetValue("-pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
-            this->check( PetscOptionsSetValue("-pc_gamg_verbose", boost::lexical_cast<std::string>(M_gamgVerbose).c_str()) );
-            this->check( PetscOptionsSetValue("-pc_gamg_agg_nsmooths", boost::lexical_cast<std::string>(M_nSmooths).c_str()) );
+                this->check( PetscOptionsSetValue( key.c_str(), value.c_str() ) );
 #endif
+                petscOptionsValueAdded.push_back( key );
+            }
         }
+        //this->check( PetscOptionsSetValue(NULL, "-mg_coarse_pc_type", boost::lexical_cast<std::string>("none").c_str()) );
 
         // PCSetFromOptions is called here because PCGAMGSetType destroy all unless the type_name
         this->check( PCSetFromOptions( pc ) );
@@ -2176,24 +2181,40 @@ ConfigurePCGAMG::run( PC& pc )
 #endif
         // not work also
         //this->check( PCGAMGSetNSmooths( pc, 30 ) );
-
     }
 
     // setup sub-pc
     this->check( PCSetUp( pc ) );
     //this->check( PCView( pc, PETSC_VIEWER_STDOUT_WORLD ) );
 
-    // configure coarse pc
-    configurePCGAMGCoarse( pc );
-    // configure level pc
-    ConfigurePCMGLevels( pc, this->precFeel(), this->worldCommPtr(), this->sub(), this->prefix() );
+    if ( pcSetupNotCalled )
+    {
+        // must be called after setup gamg pc because this one call PCMGSetLevels and reset mg prec associated
+        if ( M_mgType=="multiplicative" ) this->check( PCMGSetType( pc, PC_MG_MULTIPLICATIVE ) );
+        else if ( M_mgType=="additive" ) this->check( PCMGSetType( pc, PC_MG_ADDITIVE ) );
+        else if ( M_mgType=="full" ) this->check( PCMGSetType( pc, PC_MG_FULL ) );
+        else if ( M_mgType=="kaskade" ) this->check( PCMGSetType( pc, PC_MG_KASKADE ) );
+        else CHECK( false ) << "invalid mgType :" << M_mgType << "\n";
 
-    // must be called after setup gamg pc because this one call PCMGSetLevels and reset mg prec associated
-    if ( M_mgType=="multiplicative" ) this->check( PCMGSetType( pc, PC_MG_MULTIPLICATIVE ) );
-    else if ( M_mgType=="additive" ) this->check( PCMGSetType( pc, PC_MG_ADDITIVE ) );
-    else if ( M_mgType=="full" ) this->check( PCMGSetType( pc, PC_MG_FULL ) );
-    else if ( M_mgType=="kaskade" ) this->check( PCMGSetType( pc, PC_MG_KASKADE ) );
-    else CHECK( false ) << "invalid mgType :" << M_mgType << "\n";
+        for ( std::string const& key : petscOptionsValueAdded )
+        {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
+            this->check( PetscOptionsClearValue(NULL, key.c_str()) );
+#else
+            this->check( PetscOptionsClearValue(key.c_str()) );
+#endif
+        }
+    }
+
+    // configure coarse pc
+    // this discussion can be help : https://bitbucket.org/petsc/petsc/pull-requests/334/added-preonly-default-for-coarse-grid/diff
+    if ( !M_coarseGridUseConfigDefaultPetsc )
+        configurePCGAMGCoarse( pc );
+
+    // configure level pc
+    if ( !M_gamgLevelsUseConfigDefaultPetsc )
+        ConfigurePCMGLevels( pc, this->precFeel(), this->worldCommPtr(), this->sub(), this->prefix() );
+
 #else // petsc version >= 3.3
     CHECK( false ) << "gamg supported only from petsc 3.3";
 #endif
@@ -2215,10 +2236,20 @@ ConfigurePCGAMG::configurePCGAMGCoarse( PC& pc )
     // in order to setup our ksp config, call PCSetType (with != name) reset the prec
     if ( coarsepc->setupcalled )
         this->check( PCSetType(coarsepc, ( char* )PCNONE) );
+#if 0
+    const char* pctype;
+    this->check( PCGetType ( coarsepc, &pctype ) );
+    std::cout << "pctype before " << pctype << "and ask is " << M_coarsePCtype << "\n";
+#endif
     // configure coarse pc
     SetPCType( coarsepc, pcTypeConvertStrToEnum( M_coarsePCtype ),
                matSolverPackageConvertStrToEnum( M_coarsePCMatSolverPackage ),
                this->worldCommPtr() );
+#if 0
+    this->check( PCGetType ( coarsepc, &pctype ) );
+    std::cout << "pctype after " << pctype << "\n";
+#endif
+
     ConfigurePC coarsepcConf( this->precFeel(), /*coarsepc, is,*/ this->worldCommPtr(), "", M_prefixMGCoarse, prefixOverwrite, this->vm() );
     coarsepcConf.setFactorShiftType( "inblocks" );
     coarsepcConf.run( coarsepc );
@@ -2680,6 +2711,32 @@ ConfigurePCFieldSplit::ConfigureSubKSP::run(KSP& ksp, int splitId )
             {
                 this->check( PCFieldSplitSetIS( subpc,(boost::format("%1%")%i).str().c_str(),isPetsc[i] ) );
                 this->check( ISDestroy(&isPetsc[i]) );
+            }
+
+            // Also add the sub-splits nearNullSpaces is needed
+            for ( auto const& splitBaseIdsMap : fieldsDef )
+            {
+                int splitId = splitBaseIdsMap.first;
+                std::set<int> splitBaseIds = splitBaseIdsMap.second;
+
+                if ( this->precFeel()->hasNearNullSpace( splitBaseIds, prefixSplit ) )
+                {
+                    IS isToApply;
+                    std::string splitIdStr = (boost::format("%1%")%splitId).str();
+                    this->check( PCFieldSplitGetIS( subpc,splitIdStr.c_str(),&isToApply ) );
+                    auto const& nearnullspace = this->precFeel()->nearNullSpace( splitBaseIds, prefixSplit );
+                    int dimNullSpace = nearnullspace->size();
+                    std::vector<Vec> petsc_vec(dimNullSpace);
+                    for ( int k = 0 ; k<dimNullSpace ; ++k )
+                        petsc_vec[k] =  dynamic_cast<const VectorPetsc<double>*>( &nearnullspace->basisVector(k) )->vec();
+
+                    MatNullSpace nullsp;
+                    this->check( MatNullSpaceCreate( this->precFeel()->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data(), &nullsp ) );
+                    //this->check( PetscObjectCompose((PetscObject) isToApply, "nullspace", (PetscObject) nullsp) );
+                    this->check( PetscObjectCompose((PetscObject) isToApply, "nearnullspace", (PetscObject) nullsp) );
+                    //nullspList.push_back( nullsp );
+                    PETSc::MatNullSpaceDestroy( nullsp );
+                }
             }
         }
 #else

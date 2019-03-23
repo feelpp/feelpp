@@ -223,12 +223,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
     // on topological faces
     auto const& listMarkedFacesElectricPotential = std::get<0>( meshMarkersElectricPotentialByEntities );
-    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesElectricPotential ) )
+    if ( !listMarkedFacesElectricPotential.empty() )
     {
-        auto const& face = unwrap_ref( faceWrap );
-        auto facedof = XhElectricPotential->dof()->faceLocalDof( face.id() );
-        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-            dofsWithValueImposedElectricPotential.insert( it->index() );
+        auto therange = markedfaces( mesh,listMarkedFacesElectricPotential );
+        auto dofsToAdd = XhElectricPotential->dofs( therange );
+        dofsWithValueImposedElectricPotential.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhElectricPotential->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("potential-electric",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
 }
 
@@ -678,12 +679,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {
     if ( M_bcDirichlet.empty() ) return;
 
     this->log("Electric","updateNewtonInitialGuess","start" );
 
+    vector_ptrtype& U = data.initialGuess();
     auto mesh = this->mesh();
     size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
     auto v = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
@@ -692,10 +694,9 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) cons
         v.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
              _expr=expression(d) );
     }
-    // synchronize electric potential dof on interprocess
-    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("electric-potential");
-    if ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )
-        sync( v, "=", itFindDofsWithValueImposed->second );
+
+    // update info for synchronization
+    this->updateDofEliminationIdsMultiProcess( "potential-electric", data );
 
     this->log("Electric","updateNewtonInitialGuess","finish" );
 }
