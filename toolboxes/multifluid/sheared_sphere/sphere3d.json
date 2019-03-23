@@ -1,9 +1,9 @@
 {
-    "Name": "VesicleRest3d",
-    "ShortName": "VesicleRest3d",
+    "Name": "ShearedSphere3d",
+    "ShortName": "ShearedSphere3d",
     "Models":
     {
-        "equations":"Levelset"
+        "equations":"Advection"
     },
 
     "Parameters":

@@ -1,9 +1,17 @@
 {
-    "Name": "Square2d",
-    "ShortName":"Square2d",
+    "Name": "VesicleRest2d",
+    "ShortName":"VesicleRest2d",
     "Models":
     {
         "equations":"Navier-Stokes"
+    },
+    "Materials":
+    {
+        "OmegaFluid":
+        {
+            "rho":"1e-5",
+            "mu":"1"
+        }
     },
     "BoundaryConditions":
     {

@@ -58,11 +58,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     this->timerTool("Solve").start();
 
     double timeSteppingScaling = 1.;
-    if ( !this->isStationary() )
+    if ( !this->isStationaryModel() )
     {
         if ( M_timeStepping == "Theta" )
             timeSteppingScaling = M_timeStepThetaValue;
-        data.addDoubleInfo( prefixvm(this->prefix(),"timeSteppingScaling"), timeSteppingScaling );
+        data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -86,19 +86,30 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                               _rowstart=rowStartInVector );
 
 
-    //std::shared_ptr<element_fluid_external_storage_type> fielCurrentPicardSolution;
-    element_fluid_ptrtype fielCurrentPicardSolution;
+    //std::shared_ptr<element_fluid_external_storage_type> fieldVelocityPressureExtrapolated;
+    element_fluid_ptrtype fieldVelocityPressureExtrapolated;
     if ( this->solverName() == "Picard" )
     {
-#if 0
-        fielCurrentPicardSolution = Xh->elementPtr();
-        *fielCurrentPicardSolution = *vecCurrentPicardSolution;
-        //for ( size_type k=0;k<Xh->nLocalDofWithGhost();++k )
-        //fielCurrentPicardSolution->set( k,vecCurrentPicardSolution->operator()(/*rowStartInVector+*/k) );
-#else
-        fielCurrentPicardSolution = Xh->elementPtr();
-        *fielCurrentPicardSolution = *Xh->elementPtr(*vecCurrentPicardSolution, rowStartInVector);
-#endif
+        fieldVelocityPressureExtrapolated = Xh->elementPtr();
+        *fieldVelocityPressureExtrapolated = *Xh->elementPtr(*vecCurrentPicardSolution, rowStartInVector);
+    }
+    else if ( !this->isStationary() )
+    {
+        if ( M_timeStepping == "BDF" )
+        {
+            fieldVelocityPressureExtrapolated = M_bdf_fluid->polyPtr();
+        }
+        else if ( M_timeStepping == "Theta" )
+        {
+            fieldVelocityPressureExtrapolated = Xh->elementPtr();
+            if ( M_bdf_fluid->iteration() == 1 )
+                fieldVelocityPressureExtrapolated->add( 1, M_bdf_fluid->unknown(0) );
+            else if ( M_bdf_fluid->iteration() > 1 )
+            {
+                fieldVelocityPressureExtrapolated->add( 2 /*3./2.*/, M_bdf_fluid->unknown(0) );
+                fieldVelocityPressureExtrapolated->add( -1 /*-1./2.*/, M_bdf_fluid->unknown(1) );
+            }
+        }
     }
 
     auto const& U = this->fieldVelocityPressure();
@@ -139,7 +150,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         {
             if ( build_StressTensorNonNewtonian )
             {
-                auto BetaU = ( this->solverName() == "Oseen" )? M_bdf_fluid->poly() : *fielCurrentPicardSolution;
+                auto const& BetaU = *fieldVelocityPressureExtrapolated;
                 auto betaU = BetaU.template element<0>();
                 auto myViscosity = Feel::FeelModels::fluidMecViscosity<2*nOrderVelocity>(betaU,p,*this->materialProperties(),matName);
                 bilinearForm_PatternCoupled +=
@@ -169,70 +180,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     this->log("FluidMechanics","updateLinearPDE","assembly stress tensor + incompressibility in "+(boost::format("%1% s") %timeElapsedStressTensor).str() );
 
     //--------------------------------------------------------------------------------------------------//
-    // define pressure cst
-    if ( this->definePressureCst() )
-    {
-        if ( this->definePressureCstMethod() == "penalisation" && BuildCstPart  )
-        {
-            double beta = this->definePressureCstPenalisationBeta();
-            for ( auto const& rangeElt : M_definePressureCstMeshRanges )
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=M_rangeMeshElements,
-                               _expr=beta*idt(p)*id(q),
-                               _geomap=this->geomap() );
-        }
-        if ( this->definePressureCstMethod() == "lagrange-multiplier" )
-        {
-            CHECK( this->hasStartSubBlockSpaceIndex("define-pressure-cst-lm") ) << " start dof index for define-pressure-cst-lm is not present\n";
-            size_type startBlockIndexDefinePressureCstLM = this->startSubBlockSpaceIndex("define-pressure-cst-lm");
-
-            if (BuildCstPart)
-            {
-                for ( int k=0;k<M_XhMeanPressureLM.size();++k )
-                {
-                    auto lambda = M_XhMeanPressureLM[k]->element();
-                    form2( _test=Xh, _trial=M_XhMeanPressureLM[k], _matrix=A,
-                           _rowstart=this->rowStartInMatrix(),
-                           _colstart=this->colStartInMatrix()+startBlockIndexDefinePressureCstLM+k ) +=
-                        integrate( _range=M_definePressureCstMeshRanges[k],
-                                   _expr= id(p)*idt(lambda) /*+ idt(p)*id(lambda)*/,
-                                   _geomap=this->geomap() );
-
-                    form2( _test=M_XhMeanPressureLM[k], _trial=Xh, _matrix=A,
-                           _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM+k,
-                           _colstart=this->colStartInMatrix() ) +=
-                        integrate( _range=M_definePressureCstMeshRanges[k],
-                                   _expr= + idt(p)*id(lambda),
-                                   _geomap=this->geomap() );
-                }
-            }
-
-#if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE)
-            if (BuildNonCstPart)
-            {
-                this->log("FluidMechanics","updateLinearPDE", "also add nonzero MEANPRESSURE" );
-                for ( int k=0;k<M_XhMeanPressureLM.size();++k )
-                {
-                    auto lambda = M_XhMeanPressureLM[k]->element();
-                    form1( _test=M_XhMeanPressureLM[k], _vector=F,
-                           _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM+k ) +=
-                        integrate( _range=M_definePressureCstMeshRanges[k],
-                                   _expr= FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE(this->shared_from_this())*id(lambda),
-                                   _geomap=this->geomap() );
-                }
-            }
-#endif
-        } // if ( this->definePressureCstMethod() == "lagrange-multiplier" )
-    } // if ( this->definePressureCst() )
-
-    //--------------------------------------------------------------------------------------------------//
     // convection
     if ( this->modelName() == "Navier-Stokes" && build_ConvectiveTerm )
     {
         this->timerTool("Solve").start();
 
         CHECK( this->solverName() == "Oseen" || this->solverName() == "Picard" ) << "invalid solver name " << this->solverName();
-        auto BetaU = ( this->solverName() == "Oseen" )? M_bdf_fluid->poly() : *fielCurrentPicardSolution;
+        auto const& BetaU = *fieldVelocityPressureExtrapolated;
         auto betaU = BetaU.template element<0>();
         if ( this->isMoveDomain() )
         {
@@ -299,10 +253,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     }
 
     //--------------------------------------------------------------------------------------------------//
-    // user-defined additional terms
-    this->updateLinearPDEAdditional( A, F, _BuildCstPart );
-
-    //--------------------------------------------------------------------------------------------------//
     // body forces
     if ( this->M_overwritemethod_updateSourceTermLinearPDE != NULL )
     {
@@ -338,6 +288,64 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                        _expr= timeSteppingScaling*idv(rho)*inner(M_gravityForce,id(v)),
                        _geomap=this->geomap() );
     }
+
+    //--------------------------------------------------------------------------------------------------//
+    // define pressure cst
+    if ( this->definePressureCst() )
+    {
+        if ( this->definePressureCstMethod() == "penalisation" && BuildCstPart  )
+        {
+            double beta = this->definePressureCstPenalisationBeta();
+            for ( auto const& rangeElt : M_definePressureCstMeshRanges )
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=rangeElt,
+                               _expr=beta*idt(p)*id(q),
+                               _geomap=this->geomap() );
+        }
+        if ( this->definePressureCstMethod() == "lagrange-multiplier" )
+        {
+            CHECK( this->hasStartSubBlockSpaceIndex("define-pressure-cst-lm") ) << " start dof index for define-pressure-cst-lm is not present\n";
+            size_type startBlockIndexDefinePressureCstLM = this->startSubBlockSpaceIndex("define-pressure-cst-lm");
+
+            if (BuildCstPart)
+            {
+                for ( int k=0;k<M_XhMeanPressureLM.size();++k )
+                {
+                    auto lambda = M_XhMeanPressureLM[k]->element();
+                    form2( _test=Xh, _trial=M_XhMeanPressureLM[k], _matrix=A,
+                           _rowstart=this->rowStartInMatrix(),
+                           _colstart=this->colStartInMatrix()+startBlockIndexDefinePressureCstLM+k ) +=
+                        integrate( _range=M_definePressureCstMeshRanges[k],
+                                   _expr= id(p)*idt(lambda) /*+ idt(p)*id(lambda)*/,
+                                   _geomap=this->geomap() );
+
+                    form2( _test=M_XhMeanPressureLM[k], _trial=Xh, _matrix=A,
+                           _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM+k,
+                           _colstart=this->colStartInMatrix() ) +=
+                        integrate( _range=M_definePressureCstMeshRanges[k],
+                                   _expr= + idt(p)*id(lambda),
+                                   _geomap=this->geomap() );
+                }
+            }
+
+#if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE)
+            if (BuildNonCstPart)
+            {
+                this->log("FluidMechanics","updateLinearPDE", "also add nonzero MEANPRESSURE" );
+                for ( int k=0;k<M_XhMeanPressureLM.size();++k )
+                {
+                    auto lambda = M_XhMeanPressureLM[k]->element();
+                    form1( _test=M_XhMeanPressureLM[k], _vector=F,
+                           _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM+k ) +=
+                        integrate( _range=M_definePressureCstMeshRanges[k],
+                                   _expr= FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE(this->shared_from_this())*id(lambda),
+                                   _geomap=this->geomap() );
+                }
+            }
+#endif
+        } // if ( this->definePressureCstMethod() == "lagrange-multiplier" )
+    } // if ( this->definePressureCst() )
+
     //--------------------------------------------------------------------------------------------------//
     // div u != 0
     if (!this->velocityDivIsEqualToZero() && BuildNonCstPart)
@@ -471,17 +479,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
                         _rhs=F, _expr=expression(d,this->symbolsExpr()) );
         }
     }
-
-
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
-    {
-        bilinearForm +=
-            on( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                _element=u, _rhs=F,
-                _expr=idv(this->meshVelocity2()) );
-    }
-#endif
 
     for ( auto const& inletbc : M_fluidInletDesc )
     {

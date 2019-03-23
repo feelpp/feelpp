@@ -38,7 +38,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     {
         if ( M_timeStepping == "Theta" )
             timeSteppingScaling = M_timeStepThetaValue;
-        data.addDoubleInfo( prefixvm(this->prefix(),"timeSteppingScaling"), timeSteppingScaling );
+        data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -228,10 +228,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                       //_expr=(1./pseudoTimeStepDelta)*inner(idt(u),id(u)),
                       _geomap=this->geomap() );
     }
-    //--------------------------------------------------------------------------------------------------//
-    // user-defined additional terms
-    this->updateJacobianAdditional( J, _BuildCstPart );
-
     //--------------------------------------------------------------------------------------------------//
     // define pressure cst
     if ( this->definePressureCst() )

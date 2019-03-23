@@ -571,11 +571,11 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATFLUID_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {
     this->log("HeatFluid","updateNewtonInitialGuess","start" );
-    M_heatModel->updateNewtonInitialGuess( U );
-    M_fluidModel->updateNewtonInitialGuess( U );
+    M_heatModel->updateNewtonInitialGuess( data );
+    M_fluidModel->updateNewtonInitialGuess( data );
     this->log("HeatFluid","updateNewtonInitialGuess","finish" );
 }
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS

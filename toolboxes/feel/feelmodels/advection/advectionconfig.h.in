@@ -32,38 +32,20 @@
 
 #define ADVECTION_PERIODICITY NoPeriodicity
 
-#define ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename ConvexType, typename BasisAdvectionType, typename PeriodicityType, typename BasisDiffusionCoeffType, typename BasisReactionCoeffType> \
+#define ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS \
+    template< typename FunctionSpaceType, typename FunctionSpaceAdvectionVelocityType, typename BasisDiffusionCoeffType, typename BasisReactionCoeffType> \
         /**/
-#define ADVECTIONBASE_CLASS_TEMPLATE_TYPE \
-    AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType> \
+#define ADVDIFFREAC_CLASS_TEMPLATE_TYPE \
+    AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType> \
         /**/
-#define ADVECTIONBASE_CLASS_TYPE \
-    AdvectionBase< Simplex<ADVECTION_DIM,ADVECTION_ORDERGEO,ADVECTION_DIM>, \
-        Lagrange<ADVECTION_ORDERPOLY, ADVECTION_POLYSET, ADVECTION_CONTINUITY_TAG, ADVECTION_INTERPOLATIONPOINTS >, \
-        ADVECTION_PERIODICITY, \
+#define ADVDIFFREAC_CLASS_TYPE \
+    AdvDiffReac< \
+        FunctionSpace< Mesh<Simplex<ADVECTION_DIM,ADVECTION_ORDERGEO,ADVECTION_DIM>>, bases<Lagrange<ADVECTION_ORDERPOLY, ADVECTION_POLYSET, ADVECTION_CONTINUITY_TAG, ADVECTION_INTERPOLATIONPOINTS>>, Periodicity<ADVECTION_PERIODICITY> >, \
+        FunctionSpace< Mesh<Simplex<ADVECTION_DIM,ADVECTION_ORDERGEO,ADVECTION_DIM>>, bases<Lagrange<ADVECTION_ORDERPOLY, Vectorial, ADVECTION_CONTINUITY_TAG, ADVECTION_INTERPOLATIONPOINTS>>, Periodicity<ADVECTION_PERIODICITY> >, \
         Lagrange<ADVECTION_ORDER_DIFFUSION_REACTION, ADVECTION_DIFFUSIONCOEFF_POLYSET, ADVECTION_DIFFUSION_REACTION_CONTINUITY_TAG, ADVECTION_INTERPOLATIONPOINTS >, \
         Lagrange<ADVECTION_ORDER_DIFFUSION_REACTION, ADVECTION_REACTIONCOEFF_POLYSET, ADVECTION_DIFFUSION_REACTION_CONTINUITY_TAG, ADVECTION_INTERPOLATIONPOINTS > \
         >                                                              \
     /**/
-#define ADVECTIONBASE_CLASS_INSTANTIATION \
-    template class ADVECTIONBASE_CLASS_TYPE ;  \
-    /**/
-
-#define ADVECTION_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename ConvexType, typename BasisAdvectionType, typename PeriodicityType, typename BasisDiffusionCoeffType, typename BasisReactionCoeffType> \
-        /**/
-#define ADVECTION_CLASS_TEMPLATE_TYPE \
-    Advection<ConvexType,BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType> \
-        /**/
-#define ADVECTION_CLASS_TYPE \
-    Advection< Simplex<ADVECTION_DIM,ADVECTION_ORDERGEO,ADVECTION_DIM>, \
-        Lagrange<ADVECTION_ORDERPOLY, ADVECTION_POLYSET, ADVECTION_CONTINUITY_TAG, ADVECTION_INTERPOLATIONPOINTS >, \
-        ADVECTION_PERIODICITY, \
-        Lagrange<ADVECTION_ORDER_DIFFUSION_REACTION, ADVECTION_DIFFUSIONCOEFF_POLYSET, ADVECTION_DIFFUSION_REACTION_CONTINUITY_TAG, ADVECTION_INTERPOLATIONPOINTS >, \
-        Lagrange<ADVECTION_ORDER_DIFFUSION_REACTION, ADVECTION_REACTIONCOEFF_POLYSET, ADVECTION_DIFFUSION_REACTION_CONTINUITY_TAG, ADVECTION_INTERPOLATIONPOINTS > \
-        >                                                              \
-    /**/
-#define ADVECTION_CLASS_INSTANTIATION \
-    template class ADVECTION_CLASS_TYPE ;  \
+#define ADVDIFFREAC_CLASS_INSTANTIATION \
+    template class ADVDIFFREAC_CLASS_TYPE ;  \
     /**/

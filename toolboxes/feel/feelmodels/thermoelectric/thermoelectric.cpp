@@ -617,11 +617,11 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateGenericPreAssemblyJouleLaw( vector_ptr
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {
     this->log("ThermoElectric","updateNewtonInitialGuess","start" );
-    M_heatModel->updateNewtonInitialGuess( U );
-    M_electricModel->updateNewtonInitialGuess( U );
+    M_heatModel->updateNewtonInitialGuess( data );
+    M_electricModel->updateNewtonInitialGuess( data );
     this->log("ThermoElectric","updateNewtonInitialGuess","finish" );
 }
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
