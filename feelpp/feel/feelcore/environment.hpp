@@ -293,6 +293,8 @@ public:
      */
     ~Environment();
 
+    static void finalize();
+    static void destruct();
     //@}
 
     /** @name Operator overloads

@@ -93,6 +93,7 @@ generic_options()
         ( "serialization-library", po::value<std::string>()->default_value("boost"), "Library used for serialization" )
         ( "display-stats", po::value<bool>()->default_value(false), "display statistics (timers, iterations counts...)" )
         ( "subdir.expr", po::value<std::string>()->default_value("exprs"), "subdirectory for expressions" )
+        ( "demo", po::value<bool>()->default_value(false), "demo mode: try to load appname.cfg")
         ;
     return generic;
 }

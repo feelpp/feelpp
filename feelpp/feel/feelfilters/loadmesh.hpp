@@ -276,8 +276,10 @@ BOOST_PARAMETER_FUNCTION(
         else
 #endif
         {
-            LOG(ERROR) << "Invalid filename " << filenameExpand << " aborting!";
-            exit(1);
+            Environment::worldComm().barrier();
+            Feel::cout << tc::red << "Invalid mesh filename '" << filenameExpand << "' aborting!" << tc::reset << std::endl;
+            delete mesh;
+            Environment::destruct();
         }
     }
 #if defined( FEELPP_HAS_GMSH_H )

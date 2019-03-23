@@ -631,6 +631,12 @@ Environment::clearSomeMemory()
 // Destructor.
 Environment::~Environment()
 {
+    Environment::finalize();
+}
+
+void
+Environment::finalize()
+{
     if ( boption( "display-stats" ) )
         Environment::saveTimers( true );
 
@@ -732,7 +738,7 @@ Environment::~Environment()
     GmshFinalize();
 #endif
 
-    if ( i_initialized )
+    if ( Environment::initialized() )
     {
         VLOG( 2 ) << "clearing known paths\n";
         S_paths.clear();
@@ -772,11 +778,16 @@ Environment::~Environment()
             cout << tc::red << "Removing all files (--rm)  in " << appRepository() << "..." << tc::reset << std::endl;
             fs::remove_all( S_appdir );
         }
-        
     }
-    
 }
 
+void
+Environment::destruct()
+{
+    Environment::finalize();
+    MPI_Finalize();
+    exit(0);
+}
 
 void
 Environment::generateOLFiles( int argc, char** argv, std::string const& appName )
@@ -1410,7 +1421,7 @@ Environment::doOptions( int argc, char** argv,
                     configFiles.push_back( cfgFile );
             }
         }
-        if( !hasConfig && fs::exists(appName+".cfg") )
+        if( !hasConfig && boption("demo") && fs::exists(appName+".cfg") )
         {
             configFiles.push_back(appName+".cfg");
         }
@@ -1425,9 +1436,10 @@ Environment::doOptions( int argc, char** argv,
         {
             if ( !fs::exists( cfgfile ) )
             {
-                LOG( WARNING ) << "config file " << cfgfile << " not found";
-                std::cout << tc::red << "config file " << cfgfile << " not found" << tc::reset << std::endl;
-                continue;
+                Environment::worldComm().barrier();
+                Feel::cout << tc::red << "Invalid config filename '" << cfgfile << "' aborting!" << tc::reset << std::endl;
+                MPI_Finalize();
+                exit(0);
             }
             fs::path cfgAbsolutePath = fs::absolute( cfgfile );
             cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
