@@ -4156,7 +4156,7 @@ public:
                                            ( accumulate,     *( boost::is_integral<mpl::_> ), false )
                                            ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
             {
-                return onImpl( range, expr, prefix, geomap, accumulate, verbose );
+                return onImpl( range, expr, prefix, Feel::detail::geomapStrategy(range,geomap), accumulate, verbose );
             }
 
 

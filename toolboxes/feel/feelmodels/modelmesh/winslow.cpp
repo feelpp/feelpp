@@ -38,29 +38,27 @@ namespace FeelModels
 
 
 template< typename MeshType, int Order >
-Winslow<MeshType,Order>::Winslow( mesh_ptrtype mesh, std::string const& prefix, worldcomm_ptr_t const& worldcomm,
-                                  bool useGhostEltFromExtendedStencil, ModelBaseRepository const& modelRep )
+Winslow<MeshType,Order>::Winslow( mesh_ptrtype mesh, std::string const& prefix,
+                                  ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, worldcomm,"", modelRep ),
+    super_type( prefix, mesh->worldCommPtr(),"", modelRep ),
     M_backend( backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() ) ),
     M_solverType( soption(_prefix=this->prefix(),_name="solver") ),
     M_mesh(mesh),
     M_flagSet(/*flagSet*/),
-    M_Xh(space_type::New(_mesh=mesh,_worldscomm=makeWorldsComm(1,this->worldCommPtr()),
-                         _extended_doftable=std::vector<bool>(1,useGhostEltFromExtendedStencil) )),
+    M_Xh( space_type::New(_mesh=mesh ) ),
     M_displacement( new element_type(M_Xh) ),
     M_displacementOld( new element_type(M_Xh) ),
     M_dispImposedOnBoundary( new element_type(M_Xh) ),
     M_identity( new element_type(M_Xh) ),
-    M_XhScalM1(space_scal_m1_type::New(_mesh=mesh,_worldscomm=makeWorldsComm(1,this->worldCommPtr()))),
-    M_XhScalP0Disc(space_p0_type::New(_mesh=mesh,_worldscomm=makeWorldsComm(1,this->worldCommPtr()))),
+    M_XhScalM1( space_scal_m1_type::New(_mesh=mesh ) ),
+    M_XhScalP0Disc( space_p0_type::New(_mesh=mesh ) ),
     M_l2projector(opProjection(_domainSpace=this->functionSpaceScalM1(),
                                _imageSpace=this->functionSpaceScalM1(),
                                _backend=backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"l2proj"), this->worldCommPtr() ),
                                _type=Feel::L2 ) )
 {
-    EntityProcessType entityProcess = (useGhostEltFromExtendedStencil)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-    *M_identity = vf::project( _space=M_Xh, _range=elements(M_mesh,entityProcess), _expr=vf::P() );
+    *M_identity = vf::project( _space=M_Xh, _range=elements(M_mesh), _expr=vf::P() );
 }
 
 //----------------------------------------------------------------------------//
@@ -95,19 +93,6 @@ void
 Winslow<MeshType,Order>::init()
 {
     this->log("Winslow","init", "start" );
-
-    this->setRebuildCstPartInLinearSystem(false);
-    this->setUseLinearJacobianInResidual(false);
-    this->setRebuildLinearPartInJacobian(false);
-    this->setUseCstMatrix(false);
-    this->setUseCstVector(false);
-
-    auto graph = stencil( _test=M_Xh, _trial=M_Xh )->graph();
-    M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),Feel::backend(_rebuild=true,_name=this->backend()->prefix())/*this->backend()*/,
-                                                                graph, graph->mapRow().indexSplit() ) );
-    // mesh not move so not rebuild cst part
-    M_vectorSolution = this->backend()->newVector( this->functionSpace() );
-    *M_vectorSolution = *M_identity;
 
     // update dofsWithValueImposed
     std::set<flag_type> flagsMovingAndFixed;
@@ -144,7 +129,12 @@ Winslow<MeshType,Order>::init()
     M_useMeshAdapationScalar = boption(_name="mesh-adaptation.scalar-weight",_prefix=this->prefix() );
 
     M_weightFunctionScalar.reset( new element_p0_type( M_XhScalP0Disc ) );
-    M_weightFunctionScalar->on(_range=elements(mesh),_expr=cst(1.));
+    M_weightFunctionScalar->setConstant( 1.0 );
+    if ( Environment::vm().count( prefixvm(this->prefix(),"mesh-adaptation.scalar-weight.expr").c_str() ) )
+    {
+        auto eScal = expr( soption(_name="mesh-adaptation.scalar-weight.expr", _prefix=this->prefix() ) );
+        M_weightFunctionScalar->on(_range=elements(mesh),_expr=eScal);
+    }
     if ( M_useMeshAdapation && !M_useMeshAdapationScalar )
     {
         M_XhTensor2P0Disc = space_p0_tensor2_type::New(_mesh=mesh);
@@ -171,6 +161,50 @@ Winslow<MeshType,Order>::init()
         }
     }
 #endif
+
+    this->setRebuildCstPartInLinearSystem(false);
+    this->setUseLinearJacobianInResidual(false);
+    this->setRebuildLinearPartInJacobian(false);
+    this->setUseCstMatrix(false);
+    this->setUseCstVector(false);
+
+    if ( true/*false*//*true*/ )
+    {
+        int nBlock=2;
+
+        M_blockVectorSolution.resize( nBlock );
+        int cptBlock = 0;
+        M_blockVectorSolution(cptBlock++) = M_displacement;//this->backend()->newVector( this->functionSpace() );
+        *M_blockVectorSolution(0) = *M_identity;
+        M_blockVectorSolution(cptBlock++) = M_fieldMetricDerivative;//this->backend()->newVector( this->functionSpace() );
+        M_blockVectorSolution.buildVector( this->backend() );
+
+        BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
+        int indexBlock=0;
+        auto graph = stencil( _test=M_Xh, _trial=M_Xh )->graph();
+        myblockGraph(0,0) = graph;
+        myblockGraph(0,1) = graph;
+        myblockGraph(1,0) = graph;
+        myblockGraph(1,1) = graph;
+        myblockGraph.close();
+
+        graph_ptrtype fullGraph( new graph_type( myblockGraph ) );
+        M_algebraicFactoryMixedFormulation.reset( new model_algebraic_factory_type( this->shared_from_this(),Feel::backend(_rebuild=true,_name=this->backend()->prefix())/*this->backend()*/,
+                                                                                    fullGraph, fullGraph->mapRow().indexSplit() ) );
+    }
+    if ( true )//else
+    {
+        auto graph = stencil( _test=M_Xh, _trial=M_Xh )->graph();
+        M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),Feel::backend(_rebuild=true,_name=this->backend()->prefix())/*this->backend()*/,
+                                                                    graph, graph->mapRow().indexSplit() ) );
+        // mesh not move so not rebuild cst part
+        M_vectorSolution = this->backend()->newVector( this->functionSpace() );
+        *M_vectorSolution = *M_identity;
+    }
+
+
+
+
     this->log("Winslow","init", "finish" );
 }
 
@@ -197,17 +231,32 @@ Winslow<MeshType,Order>::solve()
 {
     this->log("Winslow","solve", "start" );
 
+#if 0
     if ( M_useMeshAdapation )
         this->updateMeshAdaptation();
-
+#endif
     if ( M_solverType=="Picard" || M_solverType == "FixPoint" )
     {
-        //this->updateNewtonInitialGuess( M_vectorSolution );
+        //ModelAlgebraic::DataNewtonInitialGuess dataInitialGuess( M_vectorSolution );
+        //this->updateNewtonInitialGuess( dataInitialGuess );
+#if 1
         M_algebraicFactory->solvePicard( M_vectorSolution );
+        *M_displacement = *M_vectorSolution;
+#else
+        M_blockVectorSolution.updateVectorFromSubVectors();
+        M_algebraicFactoryMixedFormulation->solvePicard( M_blockVectorSolution.vectorMonolithic() );
+        M_blockVectorSolution.localize();
+#endif
     }
     else if ( M_solverType=="Newton" )
     {
+#if 0
         M_algebraicFactory->solveNewton( M_vectorSolution );
+#else
+        M_blockVectorSolution.updateVectorFromSubVectors();
+        M_algebraicFactoryMixedFormulation->solveNewton( M_blockVectorSolution.vectorMonolithic() );
+        M_blockVectorSolution.localize();
+#endif
     }
     else if (M_solverType=="Picard-Newton")
     {
@@ -219,11 +268,17 @@ Winslow<MeshType,Order>::solve()
         M_algebraicFactory->backend()->setTolerancesSNES(_rtolerance=rtol,_maxit=picardMaxIt,_atolerance=atol,_stolerance=stol);
         M_algebraicFactory->solvePicard( M_vectorSolution );
         M_algebraicFactory->backend()->setTolerancesSNES(_rtolerance=rtol,_maxit=saveMaxIt,_atolerance=atol,_stolerance=stol);
-        M_algebraicFactory->solveNewton( M_vectorSolution );
+        //M_algebraicFactory->solveNewton( M_vectorSolution );
+        *M_displacement = *M_vectorSolution;
+        M_blockVectorSolution.updateVectorFromSubVectors();
+        M_algebraicFactoryMixedFormulation->solveNewton( M_blockVectorSolution.vectorMonolithic() );
+        M_blockVectorSolution.localize();
     }
 
     //update displacement
+#if 0
     *M_displacement = *M_vectorSolution;
+#endif
     *M_displacement -= *M_identity;
 
     this->log("Winslow","solve", "finish" );
@@ -390,18 +445,101 @@ Winslow<MeshType,Order>::updateNewtonInitialGuess( DataNewtonInitialGuess & data
     this->log("Winslow","updateNewtonInitialGuess", "finish" );
 }
 
+
+
+template<typename ElementMappingType>
+auto
+MyInvGt( ElementMappingType const& u,  mpl::int_<2> /**/ )
+{
+    auto G = trans(gradv(u))*gradv(u);
+
+    auto Gt00 = 2*gradt(u)(0,0)*gradv(u)(0,0) +  2*gradt(u)(1,0)*gradv(u)(1,0);
+    auto Gt11 = 2*gradt(u)(0,1)*gradv(u)(0,1) +  2*gradt(u)(1,1)*gradv(u)(1,1);
+    auto Gt01 = gradt(u)(0,1)*gradv(u)(0,0) + gradv(u)(0,1)*gradt(u)(0,0) + gradt(u)(1,1)*gradv(u)(1,0) + gradv(u)(1,1)*gradt(u)(1,0);
+    auto Gt10 = Gt01;
+    auto detGt = Gt00*G(1,1)+G(0,0)*Gt11 - Gt01*G(1,0) - G(0,1)*Gt10;
+    auto detG = G(0,0)*G(1,1) - G(0,1)*G(1,0);
+    auto invGt = (cst(1.)/detG)*mat<2,2>( Gt11, -Gt01, -Gt10, Gt00 ) - detGt*(cst(1.)/pow(detG,2))*mat<2,2>( G(1,1), -G(0,1), -G(1,0), G(0,0) );
+    return invGt;
+}
+template<typename ElementMappingType>
+auto
+MyInvGt( ElementMappingType const& u,  mpl::int_<3> /**/ )
+{
+    return vf::zero<3,3>();
+}
+
 template< typename MeshType, int Order >
 void
 Winslow<MeshType,Order>::updateJacobian( DataUpdateJacobian & data ) const
 {
-    this->updateJacobian( data, mpl::int_<mesh_type::nDim>() );
+    //this->updateJacobian( data );//, mpl::int_<mesh_type::nDim>() );
+
+#if 1
+    const vector_ptrtype& XVec = data.currentSolution();
+    sparse_matrix_ptrtype& J = data.jacobian();
+    bool buildCstPart = data.buildCstPart();
+
+    if ( buildCstPart )
+        return;
+
+    this->log("Winslow","updateJacobian", "start" );
+    auto Xh = this->functionSpace();
+    auto mesh = Xh->mesh();
+
+    auto u = Xh->element( XVec, 0 );
+    auto alpha = Xh->element( XVec, 1 );
+
+    auto G = trans(gradv(u))*gradv(u);
+    auto invG = inv(G);
+
+    auto tau = idv( M_weightFunctionScalar );
+    form2( _test=Xh, _trial=Xh, _matrix=J,
+           _rowstart=0,_colstart=0 ) +=
+        integrate( _range=elements(mesh),
+                   _expr= tau*inner(invG*trans(gradt(u)),trans(grad(u))) );
+
+    form2( _test=Xh, _trial=Xh, _matrix=J,
+           _rowstart=0,_colstart=0 ) +=
+        integrate( _range=elements(mesh),
+                   _expr= -tau*inner( gradt(u)*idv(alpha), id(u) ) );
+   form2( _test=Xh, _trial=Xh, _matrix=J,
+           _rowstart=0,_colstart=1 ) +=
+        integrate( _range=elements(mesh),
+                   _expr= -tau*inner( gradv(u)*idt(alpha), id(u) ) );
+
+    form2( _test=Xh, _trial=Xh, _matrix=J,
+           _rowstart=1,_colstart=1 ) +=
+        integrate( _range=elements(mesh),
+                   _expr= inner( idt(alpha), id(alpha) ) );
+
+
+    auto invGt = MyInvGt( u, mpl::int_<mesh_type::nDim>() );
+    form2( _test=Xh, _trial=Xh, _matrix=J,
+           _rowstart=0,_colstart=0 ) +=
+        integrate( _range=elements(mesh),
+                   _expr= tau*inner(invGt*trans(gradv(u)),trans(grad(u))) );
+
+    form2( _test=Xh, _trial=Xh, _matrix=J,
+               _rowstart=1,_colstart=0 ) +=
+        integrate( _range=elements(mesh),
+                   _expr= -inner( invGt*eye<mesh_type::nDim,mesh_type::nDim>(), grad(alpha) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=J,
+               _rowstart=1,_colstart=0 ) +=
+        integrate( _range=boundaryfaces(mesh),
+                   _expr= inner( invGt*N(), id(alpha) ) );
+
+#endif
+
+    this->log("Winslow","updateJacobian", "finish" );
 }
 
 template< typename MeshType, int Order >
 void
 Winslow<MeshType,Order>::updateJacobian( DataUpdateJacobian & data, mpl::int_<2> /**/ ) const
 {
-#if 1
+
+#if 0
     const vector_ptrtype& XVec = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
     bool buildCstPart = data.buildCstPart();
@@ -568,7 +706,47 @@ template< typename MeshType, int Order >
 void
 Winslow<MeshType,Order>::updateResidual( DataUpdateResidual & data ) const
 {
-    this->updateResidual( data, mpl::int_<mesh_type::nDim>() );
+    //this->updateResidual( data, mpl::int_<mesh_type::nDim>() );
+
+    const vector_ptrtype& XVec = data.currentSolution();
+    vector_ptrtype& R = data.residual();
+    bool buildCstPart = data.buildCstPart();
+    bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
+    bool BuildNonCstPart = !buildCstPart;
+    if ( buildCstPart )
+        return;
+
+    this->log("Winslow","updateResidual", "start" );
+
+    auto Xh = this->functionSpace();
+    auto mesh = Xh->mesh();
+    auto u = Xh->element( XVec, 0 );
+    auto alpha = Xh->element( XVec, 1 );
+    auto G = trans(gradv(u))*gradv(u);
+    auto invG = inv(G);
+
+    auto linearFormMapping = form1( _test=Xh, _vector=R,_rowstart=0 );
+    auto linearFormLagMult = form1( _test=Xh, _vector=R,_rowstart=1 );
+
+    auto tau = idv( M_weightFunctionScalar );
+    linearFormMapping +=
+        integrate( _range=elements(mesh),
+                   _expr= tau*inner(invG*trans(gradv(u)),trans(grad(u))) );
+    linearFormMapping +=
+        integrate( _range=elements(mesh),
+                   _expr= -tau*inner( gradv(u)*idv(alpha), id(u) ) );
+
+    linearFormLagMult +=
+        integrate( _range=elements(mesh),
+                   _expr= inner( idv(alpha), id(alpha) ) );
+    linearFormLagMult +=
+        integrate( _range=elements(mesh),
+                   _expr= -inner( invG, grad(alpha) ) );
+    linearFormLagMult +=
+        integrate( _range=boundaryfaces(mesh),
+                   _expr= inner( invG*N(), id(alpha) ) );
+
+    this->log("Winslow","updateResidual", "finish" );
 }
 template< typename MeshType, int Order >
 void
@@ -718,7 +896,7 @@ template< typename MeshType, int Order >
 void
 Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    if ( true/*false*/ )
+    if ( false )
     {
         this->updateLinearPDE( data, mpl::int_<mesh_type::nDim>() );
         return;
@@ -733,6 +911,47 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
     if ( buildCstPart )
         return;
 
+#if 0
+    const vector_ptrtype& vecCurrentPicardSolution = data.currentSolution();
+    auto u = Xh->element( vecCurrentPicardSolution, 0 );
+    auto alpha = Xh->element( vecCurrentPicardSolution, 1 );
+
+    auto G = trans(gradv(u))*gradv(u);
+    auto invG = inv(G);
+
+    form2( _test=Xh, _trial=Xh, _matrix=A,
+           _rowstart=0,_colstart=0 ) +=
+        integrate( _range=elements(mesh),
+                   _expr= inner(invG*trans(gradt(u)),trans(grad(u))) );
+
+    form2( _test=Xh, _trial=Xh, _matrix=A,
+           _rowstart=0,_colstart=0 ) +=
+        integrate( _range=elements(mesh),
+                   _expr= -inner( gradt(u)*idv(alpha), id(u) ) );
+
+
+    form2( _test=Xh, _trial=Xh, _matrix=A,
+           _rowstart=1,_colstart=1 ) +=
+        integrate( _range=elements(mesh),
+                   _expr= inner( idt(alpha), id(alpha) ) );
+
+    form1( _test=Xh, _vector=F,
+           _rowstart=1 ) +=
+        integrate( _range=elements(mesh),
+                   _expr= inner( invG, grad(alpha) ) );
+
+    form1( _test=Xh, _vector=F,
+           _rowstart=1 ) +=
+        integrate( _range=boundaryfaces(mesh),
+                   _expr= -inner( invG*N(), id(alpha) ) );
+
+#endif
+
+
+
+
+
+#if 1
     const vector_ptrtype& vecCurrentPicardSolution = data.currentSolution();
     auto u = Xh->element( vecCurrentPicardSolution );
     auto G = trans(gradv(u))*gradv(u);
@@ -756,7 +975,7 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
                        _expr= inner(invG*trans(tau*gradt(u)),trans(grad(u))) );
         form2( _test=Xh, _trial=Xh, _matrix=A ) +=
             integrate( _range=elements(mesh),
-                   _expr=-inner(tau*gradt(u)*idv(M_fieldMetricDerivative),id(u)) );
+                       _expr=-inner(tau*gradt(u)*idv(M_fieldMetricDerivative),id(u)) );
     }
     else
     {
@@ -768,6 +987,7 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
             integrate( _range=elements(mesh),
                        _expr=-(tau)*inner(gradt(u)*idv(M_fieldMetricDerivative),id(u)) );
     }
+#endif
 }
 
 template< typename MeshType, int Order >
