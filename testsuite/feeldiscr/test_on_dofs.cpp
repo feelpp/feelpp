@@ -88,7 +88,8 @@ void runTestElimination()
 
     auto u = Xh->element();
     auto g = Xh->element();
-    g.on(_range=elements(mesh),_expr=Px()+Py());
+    //g.on(_range=elements(mesh),_expr=Px()+Py());
+    g.on(_range=elements(mesh),_expr=cst(1));
 
     auto mat = backend()->newMatrix(_test=Xh,_trial=Xh);
     auto rhs = backend()->newVector( Xh );
@@ -104,7 +105,7 @@ void runTestElimination()
     a+=on(_range=markedpoints( mesh,"P"), _rhs=rhs, _element=u, _expr=idv(g)*cst(32.) );
 
     backend(_rebuild=true)->solve(_matrix=mat,_rhs=rhs,_solution=u );
-
+    u.printMatlab("u.m");
     auto err = Xh->element();
 
     err.on( _range=elements( mesh ), _expr=abs(idv(u)-idv(g)*cst(2.)) );
@@ -117,12 +118,19 @@ void runTestElimination()
 
     err.on( _range=markededges( mesh,"L"), _expr=abs(idv(u)-idv(g)*cst(22.)) );
     auto dofsOnEdge = err.functionSpace()->dofs( markededges( mesh,"L"), ComponentType::NO_COMPONENT, true );
+    for( auto e : markededges( mesh, "L" ) )
+    {
+        std::cout << "edge " << boost::unwrap_ref(e).id() << std::endl;
+    }
+    for( auto d: dofsOnEdge )
+        std::cout << "dof " << d << std::endl;
     sync(err, "=", dofsOnEdge);
 
     err.on( _range=markedpoints( mesh,"P"), _expr=abs(idv(u)-idv(g)*cst(32.)) );
     auto dofsOnPoint = err.functionSpace()->dofs( markedpoints( mesh,"P"), ComponentType::NO_COMPONENT, true );
     sync(err, "=", dofsOnPoint);
 
+    err.printMatlab("err.m");
     BOOST_CHECK_SMALL( err.sum(), 1e-10 );
 }
 
@@ -193,4 +201,3 @@ BOOST_AUTO_TEST_CASE( elimination_3d )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
