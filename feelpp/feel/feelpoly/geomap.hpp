@@ -838,7 +838,7 @@ class GeoMap
                 M_gm->gradient( node_t_type(), M_g_linear );
             }
 
-            if ( M_pc && ! this->isOnFace() )
+            if ( M_pc && !this->isOnSubEntity() )
                 update( __e );
         }
 
@@ -1077,7 +1077,7 @@ class GeoMap
                 M_id = __e.id();
                 M_e_markers = __e.markers();
                 M_face_id = __f;
-                if ( this->isOnFace() && updatePC )
+                if ( this->isOnSubEntity() && updatePC )
                 {
                     M_perm = __e.permutation( M_face_id, mpl::int_<subEntityCoDim>() );
                     //M_perm = __e.permutation( M_face_id );
@@ -1145,6 +1145,13 @@ class GeoMap
         bool isOnFace() const
             {
                 return (subEntityCoDim == 1) && (M_face_id != invalid_uint16_type_value);
+            }
+        //!
+        //! @return true if geomap assocated to a face, edge or point, false otherwise
+        //!
+        bool isOnSubEntity() const
+            {
+                return subEntityCoDim > 1 || ( (subEntityCoDim == 1) && (M_face_id != invalid_uint16_type_value) );
             }
         
         //!
