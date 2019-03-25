@@ -1298,7 +1298,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
             this->log("LevelSet", "updateCurvature", "perform smooth projection");
             //*M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
             auto phi = this->phi();
-            *M_levelsetCurvature = this->smoother()->project( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
+            *M_levelsetCurvature = this->smoother()->derivate( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
         }
         break;
         case CurvatureMethod::PN_NODAL_PROJECTION:
