@@ -92,7 +92,6 @@ public :
     typedef std::shared_ptr<exporter_type> exporter_ptrtype;
 
     Winslow( mesh_ptrtype mesh, std::string const& prefix="",
-             worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(), bool useGhostEltFromExtendedStencil=false,
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     Winslow( space_ptrtype const& space, std::string const& prefix="",
@@ -151,6 +150,8 @@ private :
 
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
+    model_algebraic_factory_ptrtype M_algebraicFactoryMixedFormulation;
+    BlocksBaseVector<double> M_blockVectorSolution;
     vector_ptrtype M_vectorSolution;
     std::set<size_type> M_dofsWithValueImposed;
 
@@ -196,17 +197,14 @@ template < typename elem_type,typename elem2_type >
 void
 Winslow<MeshType,Order>::generateALEMap( elem_type const & elem,elem2_type const & elem2 )
 {
-    bool useGhostEltFromExtendedStencil = M_displacement->functionSpace()->dof()->buildDofTableMPIExtended() && M_displacement->mesh()->worldComm().localSize()>1;
-    EntityProcessType entityProcess = (useGhostEltFromExtendedStencil)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-    M_dispImposedOnBoundary->on( _range=elements(M_displacement->mesh(),entityProcess),
+    M_dispImposedOnBoundary->on( _range=elements(M_displacement->mesh()),
                                  _expr=idv(elem) );
-
 
     // initial value with a previous solution (before solve)
     *M_displacement = *M_identity;
-    *M_displacement += vf::project(M_displacement->functionSpace(),elements(M_displacement->mesh(),entityProcess),vf::idv(elem2) );
+    *M_displacement += vf::project(M_displacement->functionSpace(),elements(M_displacement->mesh()),vf::idv(elem2) );
     *M_displacementOld = *M_identity;
-    *M_displacementOld += vf::project(M_displacement->functionSpace(),elements(M_displacement->mesh(),entityProcess),vf::idv(elem2) );
+    *M_displacementOld += vf::project(M_displacement->functionSpace(),elements(M_displacement->mesh()),vf::idv(elem2) );
 
     // solve winslow model
     this->solve();
