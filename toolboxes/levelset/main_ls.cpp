@@ -4,19 +4,27 @@
 namespace Feel
 {
 
-template <uint16_type OrderLevelset>
+template <uint16_type OrderLevelset, uint16_type OrderLevelsetPN = LEVELSET_PN_ORDER >
 void
 runLevelsetApplication()
 {
     using namespace Feel;
 
-    typedef FeelModels::LevelSet< 
-        Simplex<FEELPP_DIM,1>,
-        Lagrange<OrderLevelset, Scalar, Continuous, PointSetFekete>
+    typedef Simplex<FEELPP_DIM,1> convex_type;
+    typedef Lagrange<OrderLevelset, Scalar, Continuous, PointSetFekete> basis_type;
+    //typedef FunctionSpace<Mesh<convex_type>, bases<typename FeelModels::detail::ChangeBasisPolySet<Vectorial, basis_type>::type>, Periodicity<NoPeriodicity>> space_advection_velocity_type;
+    typedef FunctionSpace<Mesh<convex_type>, Feel::detail::bases<Lagrange<OrderLevelset, Vectorial, Continuous, PointSetFekete>>, double, Periodicity<NoPeriodicity>, mortars<NoMortar>> space_advection_velocity_type;
+    typedef Lagrange<OrderLevelsetPN, Scalar, Continuous, PointSetFekete> basis_PN_type;
+
+    typedef FeelModels::LevelSet<
+        convex_type,
+        basis_type,
+        NoPeriodicity,
+        space_advection_velocity_type,
+        basis_PN_type
         > model_type;
     
     auto LS = model_type::New("levelset");
-    LS->build();
 
     double ls_x0 = 0.5, ls_y0 = 0.5, ls_z0 = 0.5;
     double ls_radius = 0.25;
@@ -31,7 +39,7 @@ runLevelsetApplication()
     LS->init();
     LS->printAndSaveInfo();
     if( !LS->doRestart() )
-        LS->exportResults(0);
+        LS->exportResults(0.);
 
     bool exportDistToBoundary = boption( _name="export-dist-to-boundary" );
 

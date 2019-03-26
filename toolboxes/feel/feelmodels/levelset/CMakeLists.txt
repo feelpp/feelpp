@@ -1,4 +1,6 @@
 
+set(FEELPP_MODELS_LEVELSET_PN_ORDER "2" CACHE STRING "order of isoPN basis in levelset toolbox" )
+
 # geo order 1 (non-periodic)
 foreach(_DIM 2 3)
   math(EXPR _PHI_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}-1")
@@ -8,6 +10,8 @@ foreach(_DIM 2 3)
       genLibLevelset(
           DIM     ${_DIM}
           LEVELSET_ORDER ${_PHI_ORDER}
+          VELOCITY_ORDER ${_PHI_ORDER}
+          LEVELSET_PN_ORDER ${FEELPP_MODELS_LEVELSET_PN_ORDER}
           GEO_ORDER 1 
           )
   set(FEELPP_MODELS_LIBRARIES_LEVELSET  ${FEELPP_MODELS_LIBRARIES_LEVELSET} ${LEVELSET_LIB_NAME}  )
