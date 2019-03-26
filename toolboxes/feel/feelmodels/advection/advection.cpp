@@ -799,11 +799,12 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) cons
     {
         this->timerTool("Solve").start();
         
-        bilinearForm += integrate(
-                _range=this->rangeMeshElements(),
-                _expr=inner((gradt(phi)*idv(advection_velocity)), id(psi)),
-                _geomap=this->geomap()
-                );
+        //bilinearForm += integrate(
+                //_range=this->rangeMeshElements(),
+                //_expr=inner((gradt(phi)*idv(advection_velocity)), id(psi)),
+                //_geomap=this->geomap()
+                //);
+        this->M_functionAssemblyLinearAdvection( data );
 
         double timeElapsedAdvection = this->timerTool("Solve").stop();
         this->log("AdvDiffReac","updateLinearPDE","assembly advection terms in "+(boost::format("%1% s") %timeElapsedAdvection).str() );
