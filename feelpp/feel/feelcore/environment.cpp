@@ -87,6 +87,20 @@ extern void cleanup_ex( bool verbose );
 }
 namespace detail
 {
+void DebugWait(int rank)
+{
+    char    a;
+    char hostname[256];
+    gethostname(hostname, sizeof(hostname));
+    std::cout << "PID " << getpid() << " on " << hostname <<  " ready for attach" << std::endl;
+    if(rank == 0) {
+        std::cin >> a;
+        std::cout << rank << ": Starting now\n";
+    } 
+
+    MPI_Bcast(&a, 1, MPI_BYTE, 0, MPI_COMM_WORLD);
+    std::cout << rank << ": Starting now\n";
+}
 class Env
 {
 public:
@@ -614,6 +628,8 @@ Environment::Environment( int argc, char** argv,
 #endif
 
     Environment::journalCheckpoint();
+
+    //::detail::DebugWait( worldComm().globalRank() );
 }
 void
 Environment::clearSomeMemory()
