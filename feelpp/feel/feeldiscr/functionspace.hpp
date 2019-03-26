@@ -4319,7 +4319,7 @@ public:
                                            ( accumulate,     *( boost::is_integral<mpl::_> ), false )
                                            ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
             {
-                return onImpl( range, expr, prefix, geomap, accumulate, verbose );
+                return onImpl( range, expr, prefix, Feel::detail::geomapStrategy(range,geomap), accumulate, verbose );
             }
 
         BOOST_PARAMETER_MEMBER_FUNCTION( (void),
@@ -5563,10 +5563,10 @@ private:
                     for( auto const& ldof : this->dof()->localDof( elt.id() ) )
                     {
                         size_type index = ldof.second.index();
-                        if ( onlyMultiProcessDofs &&
+                        if ( !onlyMultiProcessDofs ||
                              ( this->dof()->dofGlobalProcessIsGhost( index ) ||
                                this->dof()->activeDofSharedOnCluster().find( index ) != this->dof()->activeDofSharedOnCluster().end() ) )
-                        res.insert( index );
+                            res.insert( index );
                     }
                 }
             }
@@ -5581,7 +5581,7 @@ private:
                     for( auto const& ldof : XhComp->dof()->localDof( elt.id() ) )
                     {
                         size_type index = c1DofShift + nDofComponents*ldof.second.index();
-                        if ( onlyMultiProcessDofs &&
+                        if ( !onlyMultiProcessDofs ||
                              ( this->dof()->dofGlobalProcessIsGhost( index ) ||
                                this->dof()->activeDofSharedOnCluster().find( index ) != this->dof()->activeDofSharedOnCluster().end() ) )
                         res.insert( index );
@@ -5602,7 +5602,7 @@ private:
                     for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
                     {
                         size_type index = it->index();
-                        if ( onlyMultiProcessDofs &&
+                        if ( !onlyMultiProcessDofs ||
                              ( this->dof()->dofGlobalProcessIsGhost( index ) ||
                                this->dof()->activeDofSharedOnCluster().find( index ) != this->dof()->activeDofSharedOnCluster().end() ) )
                             res.insert( index );
@@ -5621,7 +5621,7 @@ private:
                     for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
                     {
                         size_type index = c1DofShift + nDofComponents*it->index();
-                        if ( onlyMultiProcessDofs &&
+                        if ( !onlyMultiProcessDofs ||
                              ( this->dof()->dofGlobalProcessIsGhost( index ) ||
                                this->dof()->activeDofSharedOnCluster().find( index ) != this->dof()->activeDofSharedOnCluster().end() ) )
                         res.insert( index );
@@ -5661,7 +5661,7 @@ private:
                     for( auto const& ldof : this->dof()->edgeLocalDof( eid, edgeid_in_element ) )
                     {
                         size_type index = ldof.index();
-                        if ( onlyMultiProcessDofs &&
+                        if ( !onlyMultiProcessDofs ||
                              ( this->dof()->dofGlobalProcessIsGhost( index ) ||
                                this->dof()->activeDofSharedOnCluster().find( index ) != this->dof()->activeDofSharedOnCluster().end() ) )
                         res.insert( index );
@@ -5696,7 +5696,7 @@ private:
                     for( auto const& ldof : XhComp->dof()->edgeLocalDof( eid, edgeid_in_element ) )
                     {
                         size_type index = c1DofShift + nDofComponents*ldof.index();
-                        if ( onlyMultiProcessDofs &&
+                        if ( !onlyMultiProcessDofs ||
                              ( this->dof()->dofGlobalProcessIsGhost( index ) ||
                                this->dof()->activeDofSharedOnCluster().find( index ) != this->dof()->activeDofSharedOnCluster().end() ) )
                         res.insert( index );
@@ -5743,7 +5743,7 @@ private:
                 for( uint16_type c : compUsed )
                 {
                     size_type index = this->dof()->localToGlobal( eid, ptid_in_element, c ).index();
-                    if ( onlyMultiProcessDofs &&
+                    if ( !onlyMultiProcessDofs ||
                          ( this->dof()->dofGlobalProcessIsGhost( index ) ||
                            this->dof()->activeDofSharedOnCluster().find( index ) != this->dof()->activeDofSharedOnCluster().end() ) )
                     res.insert( index );

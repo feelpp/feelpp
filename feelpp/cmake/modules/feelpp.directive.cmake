@@ -56,6 +56,8 @@ endfunction()
 list_options(Feelpp::feelpp_contrib FEELPP_CONTRIB_ENABLED_OPTIONS)
 list_options(Feelpp::feelpp FEELPP_ENABLED_OPTIONS)
 
+get_property(FEELPP_STD_CPP TARGET Feelpp::feelpp PROPERTY FEELPP_STD_CPP)
+
 MESSAGE(STATUS "================================================================================")
 MESSAGE(STATUS "     FEELPP_VERSION_MAJOR : ${FEELPP_VERSION_MAJOR}")
 MESSAGE(STATUS "     FEELPP_VERSION_MINOR : ${FEELPP_VERSION_MINOR}")

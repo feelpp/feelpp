@@ -253,10 +253,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     }
 
     //--------------------------------------------------------------------------------------------------//
-    // user-defined additional terms
-    this->updateLinearPDEAdditional( A, F, _BuildCstPart );
-
-    //--------------------------------------------------------------------------------------------------//
     // body forces
     if ( this->M_overwritemethod_updateSourceTermLinearPDE != NULL )
     {
@@ -302,7 +298,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
             double beta = this->definePressureCstPenalisationBeta();
             for ( auto const& rangeElt : M_definePressureCstMeshRanges )
                 bilinearForm_PatternCoupled +=
-                    integrate( _range=M_rangeMeshElements,
+                    integrate( _range=rangeElt,
                                _expr=beta*idt(p)*id(q),
                                _geomap=this->geomap() );
         }
@@ -483,17 +479,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
                         _rhs=F, _expr=expression(d,this->symbolsExpr()) );
         }
     }
-
-
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
-    {
-        bilinearForm +=
-            on( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                _element=u, _rhs=F,
-                _expr=idv(this->meshVelocity2()) );
-    }
-#endif
 
     for ( auto const& inletbc : M_fluidInletDesc )
     {

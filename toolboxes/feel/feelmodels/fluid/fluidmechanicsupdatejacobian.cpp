@@ -229,10 +229,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                       _geomap=this->geomap() );
     }
     //--------------------------------------------------------------------------------------------------//
-    // user-defined additional terms
-    this->updateJacobianAdditional( J, _BuildCstPart );
-
-    //--------------------------------------------------------------------------------------------------//
     // define pressure cst
     if ( this->definePressureCst() )
     {

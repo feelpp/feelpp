@@ -204,12 +204,12 @@ void PreconditionerPetsc<T>::init ()
                 int splitId = splitBaseIdsMap.first;
                 std::set<int> splitBaseIds = splitBaseIdsMap.second;
 
-                if ( this->hasNearNullSpace( splitBaseIds ) )
+                if ( this->hasNearNullSpace( splitBaseIds, this->name() ) )
                 {
                     IS isToApply;
                     std::string splitIdStr = (boost::format("%1%")%splitId).str();
                     this->check( PCFieldSplitGetIS( M_pc,splitIdStr.c_str(),&isToApply ) );
-                    auto const& nearnullspace = this->nearNullSpace( splitBaseIds );
+                    auto const& nearnullspace = this->nearNullSpace( splitBaseIds, this->name() );
                     int dimNullSpace = nearnullspace->size();
                     std::vector<Vec> petsc_vec(dimNullSpace);
                     for ( int k = 0 ; k<dimNullSpace ; ++k )
@@ -2711,6 +2711,32 @@ ConfigurePCFieldSplit::ConfigureSubKSP::run(KSP& ksp, int splitId )
             {
                 this->check( PCFieldSplitSetIS( subpc,(boost::format("%1%")%i).str().c_str(),isPetsc[i] ) );
                 this->check( ISDestroy(&isPetsc[i]) );
+            }
+
+            // Also add the sub-splits nearNullSpaces is needed
+            for ( auto const& splitBaseIdsMap : fieldsDef )
+            {
+                int splitId = splitBaseIdsMap.first;
+                std::set<int> splitBaseIds = splitBaseIdsMap.second;
+
+                if ( this->precFeel()->hasNearNullSpace( splitBaseIds, prefixSplit ) )
+                {
+                    IS isToApply;
+                    std::string splitIdStr = (boost::format("%1%")%splitId).str();
+                    this->check( PCFieldSplitGetIS( subpc,splitIdStr.c_str(),&isToApply ) );
+                    auto const& nearnullspace = this->precFeel()->nearNullSpace( splitBaseIds, prefixSplit );
+                    int dimNullSpace = nearnullspace->size();
+                    std::vector<Vec> petsc_vec(dimNullSpace);
+                    for ( int k = 0 ; k<dimNullSpace ; ++k )
+                        petsc_vec[k] =  dynamic_cast<const VectorPetsc<double>*>( &nearnullspace->basisVector(k) )->vec();
+
+                    MatNullSpace nullsp;
+                    this->check( MatNullSpaceCreate( this->precFeel()->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data(), &nullsp ) );
+                    //this->check( PetscObjectCompose((PetscObject) isToApply, "nullspace", (PetscObject) nullsp) );
+                    this->check( PetscObjectCompose((PetscObject) isToApply, "nearnullspace", (PetscObject) nullsp) );
+                    //nullspList.push_back( nullsp );
+                    PETSc::MatNullSpaceDestroy( nullsp );
+                }
             }
         }
 #else

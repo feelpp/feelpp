@@ -58,15 +58,11 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
-    GeomapStrategyType thegeomap = geomap;
-    if ( vf::detail::integrate_type<Args>::geoOrder == 1 ) // force ho_geomap with geoOrder==1
-        thegeomap = GeomapStrategyType::GEOMAP_HO;
-
     auto the_ims = vf::detail::integrate_type<Args>::_im_type::im( quad,quad1,expr );
     auto const& the_im = the_ims.first;
     auto const& the_im1 = the_ims.second;
 
-    auto ret =  integrate_impl( range, the_im , expr, thegeomap, the_im1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
+    auto ret =  integrate_impl( range, the_im , expr,  Feel::detail::geomapStrategy(range,geomap), the_im1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
 
     if ( verbose )
     {

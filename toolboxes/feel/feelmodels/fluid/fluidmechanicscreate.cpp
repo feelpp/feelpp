@@ -1074,8 +1074,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 
     if ( boption(_name="use-velocity-near-null-space",_prefix=this->prefix() ) )
     {
+        std::string nearNullSpacePrefix = this->prefix();
+        if ( Environment::vm().count(prefixvm(this->prefix(),"use-velocity-near-null-space.prefix").c_str()) )
+            nearNullSpacePrefix = soption( _name="use-velocity-near-null-space.prefix", _prefix=this->prefix() );
+
         NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpaceVelocity(), mpl::int_<nDim>() ) ;
-        M_algebraicFactory->attachNearNullSpace( 0,userNullSpace ); // for block velocity in fieldsplit
+        M_algebraicFactory->attachNearNullSpace( 0,userNullSpace, nearNullSpacePrefix ); // for block velocity in fieldsplit
     }
     this->initInHousePreconditioner();
 
@@ -1617,8 +1621,8 @@ size_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
 {
     size_type currentStartIndex = 0;
-    this->setStartSubBlockSpaceIndex( "velocity-pressure", currentStartIndex );
-    currentStartIndex += 2;
+    this->setStartSubBlockSpaceIndex( "velocity", currentStartIndex++ );
+    this->setStartSubBlockSpaceIndex( "pressure", currentStartIndex++ );
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
         this->setStartSubBlockSpaceIndex( "define-pressure-cst-lm", currentStartIndex );
