@@ -64,12 +64,13 @@ namespace Feel { namespace vf {
 
 #
 
-const size_type jn = vm::JACOBIAN|vm::NORMAL;
-const size_type jkbn = vm::JACOBIAN|vm::KB|vm::NORMAL;
-const size_type jkbl = vm::JACOBIAN|vm::KB|vm::LOCAL_BASIS;
-const size_type jt = vm::JACOBIAN|vm::NORMAL|vm::TANGENT;
-const size_type jp = vm::JACOBIAN|vm::POINT;
-const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
+const size_type jn = vm::NORMAL;
+const size_type jj = vm::JACOBIAN;
+const size_type jkbn = vm::KB|vm::NORMAL;
+const size_type jkbl = vm::KB|vm::LOCAL_BASIS;
+const size_type jt = vm::KB|vm::NORMAL|vm::TANGENT;
+const size_type jp = vm::POINT;
+const size_type jkp = vm::KB;
 const size_type mctx = vm::MEASURE;
 
 # /* List of applicative unary operators. */
@@ -89,7 +90,7 @@ const size_type mctx = vm::MEASURE;
        ( Tx      , GDTx      , 0, jt, Scalar   , M_gmc->unitTangent( q )[ 0 ] , 0), \
        ( Ty      , GDTy      , 1, jt, Scalar   , M_gmc->unitTangent( q )[ 1 ] , 0), \
        ( Tz      , GDTz      , 2, jt, Scalar   , M_gmc->unitTangent( q )[ 2 ] , 0), \
-       ( detJ    , GDDetJ    , 0, jp, Scalar   , M_gmc->J( q )                , 0), \
+       ( detJ    , GDDetJ    , 0, jj, Scalar   , M_gmc->J( q )                , 0), \
        ( J       , GDJ       , 0, jkp,Tensor2  , M_gmc->K( c1, c2, q )        , 0), \
        ( JinvT   , GDJinv    , 0, jkp,Tensor2  , M_gmc->B( c1, c2, q )        , 0), \
        ( P       , GDP       , 0, jp, Vectorial, M_gmc->xReal( q )[ c1 ]      , 1), \

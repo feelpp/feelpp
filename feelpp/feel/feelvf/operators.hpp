@@ -128,23 +128,23 @@ Eigen::Map<const Eigen::Matrix<ValueType,ShapeM*ShapeP,ShapeN>>  convertEigenMat
    BOOST_PP_TUPLE_TO_LIST( \
       16, \
       (                                                                 \
-          ( OpId   , id   , id   , 0, 0, 0, vm::JACOBIAN          , RankSame,false, 0, 1 ), \
-          ( OpN    , normal    , normalComponent    , 1, 0, 0, vm::JACOBIAN|vm::NORMAL_COMPONENT|vm::KB|vm::NORMAL , RankDown,false, 0, 1 ), \
-          ( OpDx   , dx   , dx   , 0, 1, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
-          ( OpDy   , dy   , dy   , 0, 1, 1, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
-          ( OpDz   , dz   , dz   , 0, 1, 2, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
-          ( OpDn   , dn   , dn   , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::NORMAL|vm::FIRST_DERIVATIVE|vm::FIRST_DERIVATIVE_NORMAL , RankSame,false,-1,1 ), \
-          ( OpGrad , grad , grad , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankUp,true,-1,1 ), \
-          ( OpSymmGrad , symm_grad , symmetricGradient , 1, 0, 0, vm::JACOBIAN|vm::KB|vm::GRAD|vm::SYMM , RankUp,true,-1,1 ), \
-          ( OpDiv  , div  , div  , 1, 0, 0, vm::DIV|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
-          ( OpCurl , curl , curl , 1, 0, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankCurl,false,-1,1 ), \
-          ( OpCurlX, curlx, curlx, 1, 1, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
-          ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
-          ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
-          ( OpHess , hess , hess,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2,1 ), \
-          ( OpLap  , laplacian, laplacian,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::LAPLACIAN|vm::FIRST_DERIVATIVE , RankSame,false,-2,1 ), \
-          ( OpTrace  , trace, trace,  0, 0, 0, vm::JACOBIAN|vm::TRACE , Rank0,false,0,1 ) \
-      ) \
+       ( OpId   , id   , id   , 0, 0, 0, vm::JACOBIAN          , RankSame,false, 0, 1 ), \
+       ( OpN    , normal    , normalComponent    , 1, 0, 0, vm::JACOBIAN|vm::NORMAL_COMPONENT|vm::KB|vm::NORMAL , RankDown,false, 0, 1 ), \
+       ( OpDx   , dx   , dx   , 0, 1, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
+       ( OpDy   , dy   , dy   , 0, 1, 1, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
+       ( OpDz   , dz   , dz   , 0, 1, 2, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
+       ( OpDn   , dn   , dn   , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::NORMAL|vm::FIRST_DERIVATIVE|vm::FIRST_DERIVATIVE_NORMAL , RankSame,false,-1,1 ), \
+       ( OpGrad , grad , grad , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankUp,true,-1,1 ), \
+       ( OpSymmGrad , symm_grad , symmetricGradient , 1, 0, 0, vm::JACOBIAN|vm::KB|vm::GRAD|vm::SYMM , RankUp,true,-1,1 ), \
+       ( OpDiv  , div  , div  , 1, 0, 0, vm::JACOBIAN|vm::DIV|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
+       ( OpCurl , curl , curl , 1, 0, 0, vm::JACOBIAN|vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankCurl,false,-1,1 ), \
+       ( OpCurlX, curlx, curlx, 1, 1, 0, vm::JACOBIAN|vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
+       ( OpCurlY, curly, curly, 1, 1, 1, vm::JACOBIAN|vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
+       ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::JACOBIAN|vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
+       ( OpHess , hess , hess,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2,1 ), \
+       ( OpLap  , laplacian, laplacian,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::LAPLACIAN|vm::FIRST_DERIVATIVE , RankSame,false,-2,1 ), \
+       ( OpTrace  , trace, trace,  0, 0, 0, vm::JACOBIAN|vm::TRACE , Rank0,false,0,1 ) \
+                                                                        ) \
    ) \
    /**/
 #
@@ -258,8 +258,6 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
         {                                                               \
         public:                                                         \
                                                                         \
-            static const size_type context = VF_OPERATOR_CONTEXT( O );  \
-                                                                        \
             typedef Element element_type;                               \
             typedef std::shared_ptr<element_type> element_ptrtype;    \
             typedef VF_OPERATOR_NAME( O )<element_type, VF_OP_TYPE_OBJECT(T)> this_type; \
@@ -278,6 +276,10 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             static const uint16_type nComponents1 = fe_type::nComponents1; \
             static const uint16_type nComponents2 = fe_type::nComponents2; \
             static const bool is_terminal = VF_OPERATOR_TERMINAL(O);    \
+            static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<fe_type>::value; \
+            static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<fe_type>::value; \
+            static const size_type context = (is_hdiv_conforming_v<fe_type>||is_hcurl_conforming_v<fe_type>)?(VF_OPERATOR_CONTEXT( O )|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL):VF_OPERATOR_CONTEXT( O ); \
+                                                                        \
                                                                         \
             template<typename Func>                                     \
                 struct HasTestFunction                                  \
@@ -815,7 +817,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     return ctx_ptrtype( /*new ctx_type( )*/ );          \
                 }                                                       \
                 void updateCtxIfSameGeom(Geo_t const& geom, mpl::bool_<true> )    \
-                        {   if ( gmc_type::subEntityCoDim > 1 || fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value ) /*face case*/ \
+                {                                                       \
+                    if ( gmc_type::subEntityCoDim > 1 || fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value ) /*face case*/ \
                         M_pc->update(fusion::at_key<key_type>( geom )->pc()->nodes() ); \
                     M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&) M_pc ); \
                 }                                                       \

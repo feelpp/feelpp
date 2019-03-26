@@ -2250,7 +2250,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacianInterpolate( matrix
         //update precompute of basis functions
         __pc->update( pts );
         __ctx->update( __c, __pc );
-
+        
         //evaluate element for these points
         laplacian_type __lap( this->laplacian( *__ctx ) );
 
@@ -2340,8 +2340,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         return;
 
     auto const& initElt = boost::unwrap_ref( *it );
-    gm_context_ptrtype __c( new gm_context_type( this->functionSpace()->gm(),initElt,__geopc ) );
-    gm1_context_ptrtype __c1( new gm1_context_type( this->mesh()->gm1(),initElt,__geopc1 ) );
+    gm_context_ptrtype __c( new gm_context_type( this->functionSpace()->gm(),initElt,__geopc, invalid_uint16_type_value, ex.dynamicContext() ) );
+    gm1_context_ptrtype __c1( new gm1_context_type( this->mesh()->gm1(),initElt,__geopc1, invalid_uint16_type_value, ex.dynamicContext() ) );
 
     typedef typename t_expr_type::shape shape;
     static const bool is_rank_ok = ( shape::M == nComponents1 &&
@@ -2549,8 +2549,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     }
     face_type const& firstFace = *__face_it;
     uint16_type __face_id = firstFace.pos_first();
-    gmc_ptrtype __c( new gmc_type( __gm, firstFace.element( 0 ), __geopc, __face_id ) );
-    gmc1_ptrtype __c1( new gmc1_type( __gm1, firstFace.element( 0 ), __geopc1, __face_id ) );
+    gmc_ptrtype __c( new gmc_type( __gm, firstFace.element( 0 ), __geopc, __face_id, ex.dynamicContext() ) );
+    gmc1_ptrtype __c1( new gmc1_type( __gm1, firstFace.element( 0 ), __geopc1, __face_id, ex.dynamicContext() ) );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     t_expr_type expr( ex, mapgmc );
@@ -2718,7 +2718,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     const size_type context = mpl::if_< mpl::or_<mpl::bool_<is_hdiv_conforming>, mpl::bool_<is_hcurl_conforming> >,
                                         mpl::int_<ExprType::context|vm::POINT|vm::JACOBIAN>,
                                         mpl::int_<ExprType::context|vm::POINT> >::type::value;
-    auto gmcRange = gmRange->template context<context,1>( eltConnectedToFirstFace, geopcRange, fid_in_element );
+    auto gmcRange = gmRange->template context<context,1>( eltConnectedToFirstFace, geopcRange, fid_in_element, ex.dynamicContext() );
     auto expr_evaluator = ex.evaluatorWithPermutation( vf::mapgmc(gmcRange) );
 
     // geomap context on fe (allow to get relation between geomap context on face range )
@@ -2831,7 +2831,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             geopc[__f][__p] = gm->preCompute( __fe->edgePoints(__f) );
         }
     }
-    auto ctx = gm->template context<context,2>( elt, geopc, eid_in_element );
+    auto ctx = gm->template context<context,2>( elt, geopc, eid_in_element, ex.dynamicContext() );
 
     auto expr_evaluator = ex.evaluator( vf::mapgmc(ctx) );
 
@@ -2839,10 +2839,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     for ( ; entity_it != entity_en; ++entity_it )
     {
         auto const& curEntity = boost::unwrap_ref(*entity_it);
+        std::cout << "ok2: " << curEntity.elements().size()  << std::endl;
         eid = invalid_size_type_value;
         for ( auto const& eltConnectedToEdge : curEntity.elements() )
         {
             size_type eltIdConnected = eltConnectedToEdge.first;
+            std::cout << "eltIdConnected: " << eltIdConnected << std::endl;
             if ( __dof->isElementDone( eltIdConnected ) )
             {
                 eid = eltIdConnected;
@@ -2852,13 +2854,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         }
         if ( eid == invalid_size_type_value )
             continue;
-        DVLOG(3) << "entity " << curEntity.id() << " element " << eid << " id in element "
-                 << eid_in_element<< " with hasMarker " << curEntity.hasMarker();
+        std::cout << "entity " << curEntity.id() << " element " << eid << " id in element "
+                  << eid_in_element<< " with hasMarker " << curEntity.hasMarker() << std::endl;
         auto const& elt = mesh->element( eid );
         ctx->update( elt, eid_in_element );
-
+        
         expr_evaluator.update( vf::mapgmc( ctx ) );
         __fe->edgeInterpolate( expr_evaluator, IhLoc );
+        std::cout << "Ihloc: " << IhLoc << " eid: " << eid << " eid_in_element:" << eid_in_element << std::endl;
         if ( accumulate )
             this->plus_assign( curEntity, IhLoc, std::make_pair(eid,eid_in_element) );
         else
@@ -2918,7 +2921,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             geopc[__f][__p] = gm->preCompute( __fe->vertexPoints(__f) );
         }
     }
-    auto ctx = gm->template context<context,geoelement_type::nDim>( elt, geopc, ptid_in_element );
+    auto ctx = gm->template context<context,geoelement_type::nDim>( elt, geopc, ptid_in_element, ex.dynamicContext() );
 
     //t_expr_type expr( ex, mapgmc(ctx) );
     auto expr_evaluator = ex.evaluator( vf::mapgmc(ctx) );

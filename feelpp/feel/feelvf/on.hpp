@@ -564,7 +564,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         }
 
         uint16_type __face_id = faceForInit.pos_first();
-        gmc_ptrtype __c( new gmc_type( __gm, faceForInit.element( 0 ), __geopc, __face_id ) );
+        gmc_ptrtype __c( new gmc_type( __gm, faceForInit.element( 0 ), __geopc, __face_id, M_expr.dynamicContext() ) );
 
         // map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
         // t_expr_type expr( M_expr, mapgmc );

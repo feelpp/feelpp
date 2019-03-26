@@ -59,6 +59,7 @@ const size_type STIFFNESS                = ( 1<<21 );
 const size_type NORMAL_COMPONENT         = ( 1<<22 );
 const size_type LOCAL_BASIS              = ( 1<<23 );
 const size_type TRACE                    = ( 1<<24 );
+const size_type DYNAMIC                  = ( 1<<25 );
 
 
 #if 0
@@ -73,18 +74,31 @@ typedef mpl::vector_c<size_type,
 #endif
 template<size_type Context>
 using has_jacobian = has_value<Context, JACOBIAN>;
+template<size_type Context>
+constexpr bool has_jacobian_v = has_value<Context, JACOBIAN>::value;
+inline bool hasJACOBIAN( size_type c ) { return hasValue<JACOBIAN>( c ); }
 
 template<size_type Context>
 using has_kb = has_value<Context, KB>;
-
+template<size_type Context>
+constexpr bool has_kb_v = has_value<Context, KB>::value;
+inline bool hasKB( size_type c ) { return hasValue<KB>( c ); }
+    
 template<size_type Context>
 using has_kb2 = has_value<Context, KB2>;
+template<size_type Context>
+constexpr bool has_kb2_v = has_value<Context, KB2>::value;
 
 template<size_type Context>
 using has_first_derivative = has_value<Context, FIRST_DERIVATIVE>;
+template<size_type Context>
+constexpr bool has_first_derivative_v = has_value<Context, FIRST_DERIVATIVE>::value;
 
 template<size_type Context>
 using has_grad = has_value<Context, GRAD>;
+template<size_type Context>
+constexpr bool has_grad_v = has_value<Context, GRAD>::value;
+inline bool hasGRAD( size_type c ) { return hasValue<GRAD>( c ); }
 
 template<size_type Context>
 struct has_second_derivative
@@ -106,12 +120,11 @@ template<size_type Context>
 constexpr bool has_laplacian_v = has_value<Context,LAPLACIAN>::value;
 
 template<size_type Context>
-struct has_normal
-{
-    static const bool value = has_value<Context, NORMAL>::value;
-};
+using has_normal = has_value<Context, NORMAL>;
+
 template<size_type Context>
 constexpr  bool has_normal_v = has_normal<Context>::value;
+inline bool hasNORMAL( size_type c ) { return hasValue<NORMAL>( c ); }
 
 template<size_type Context>
 struct has_tangent
@@ -122,16 +135,19 @@ template<size_type Context>
 constexpr  bool has_tangent_v = has_tangent<Context>::value;
 
 template<size_type Context>
-struct has_first_derivative_normal
-{
-    static const bool value = has_value<Context, FIRST_DERIVATIVE_NORMAL>::value;
-};
+using has_first_derivative_normal = has_value<Context, FIRST_DERIVATIVE_NORMAL>;
+template<size_type Context>
+constexpr bool has_first_derivative_normal_v = has_value_v<Context, FIRST_DERIVATIVE_NORMAL>;
+
 
 template<size_type Context>
-struct has_point
-{
-    static const bool value = has_value<Context, POINT>::value;
-};
+using has_point = has_value<Context, POINT>;
+
+template<size_type Context>
+constexpr bool  has_point_v = has_value_v<Context, POINT>;
+
+inline bool hasPOINT( size_type c ) { return hasValue<POINT>( c ); }
+
 template<size_type Context>
 struct has_symm
 {
@@ -179,6 +195,12 @@ template<size_type Context>
 using has_local_basis = has_value<Context,LOCAL_BASIS>;
 template<size_type Context>
 constexpr  bool has_local_basis_v = has_local_basis<Context>::value;
+
+
+template<size_type Context>
+using has_dynamic = has_value<Context,DYNAMIC>;
+template<size_type Context>
+constexpr  bool has_dynamic_v = has_dynamic<Context>::value;
 
 } // vm
 
