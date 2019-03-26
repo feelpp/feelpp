@@ -1,9 +1,9 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 06 Aug 2018
+#       Date: 08 Mar 2019
 #
-#  Copyright (C) 2018 Feel++ Consortium
+#  Copyright (C) 2019 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,16 +21,11 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
-project(toolboxes-hdg)
 
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  find_package(Feel++ COMPONENTS Toolboxes PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
-  if(NOT FEELPP_FOUND)
-      message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
-  endif()
-endif()
+set( FEELPP_TOOLBOXES_CONFIG_FILE  ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/cmake/Feel++-ToolboxesConfig.cmake)
+configure_file(${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/cmake/Feel++-ToolboxesConfig.cmake.in ${FEELPP_TOOLBOXES_CONFIG_FILE} @ONLY)
+install(FILES ${FEELPP_TOOLBOXES_CONFIG_FILE} DESTINATION share/feelpp/toolboxes/cmake COMPONENT Devel)
 
-
-pybind11_add_module(_hdg  hdg.cpp )
-target_link_libraries( _hdg PRIVATE Feelpp::feelpp_toolbox_hdg_poisson_lib )
+install(EXPORT feelpp-toolboxes-targets
+  NAMESPACE Feelpp::
+  DESTINATION share/feelpp/toolboxes/cmake )

@@ -73,12 +73,21 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, World
             M_physics.insert(M_p.get<std::string>("physics") );
     }
 
+    for( auto const& [k,v] : M_p )
+    {
+        if ( (k!= "markers") &&  (k!= "physics") && (k!= "name") )
+        {
+            this->setProperty( k,M_p );
+        }
+    }
+#if 0
     std::set<std::string> matProperties = { "rho","mu","Cp","Cv","Tref","beta",
                                             "k","k11","k12","k13","k22","k23","k33",
                                             "E","nu","sigma","C","Cs","Cl","L",
                                             "Ks","Kl","Tsol","Tliq" };
     for ( std::string const& prop : matProperties )
         this->setProperty( prop,M_p );
+#endif
 }
 
 bool
@@ -165,6 +174,13 @@ ModelMaterial::setProperty( std::string const& property, pt::ptree const& p )
 {
     M_materialProperties[property] = mat_property_expr_type();
     M_materialProperties[property].setExpr( property,p,*M_worldComm,M_directoryLibExpr );
+}
+
+void
+ModelMaterial::setProperty( std::string const& property, std::string const& e )
+{
+    M_materialProperties[property] = mat_property_expr_type();
+    M_materialProperties[property].setExpr( e,*M_worldComm,M_directoryLibExpr );
 }
 
 void

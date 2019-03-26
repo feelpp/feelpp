@@ -48,7 +48,7 @@ void defFM(py::module &m)
         .def(py::init<std::string const&,bool,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
              py::arg("buildmesh")=true,
-             py::arg("worldComm")=Environment::worldCommPtr(),
+             py::arg("worldComm"),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize the fluid mechanics toolbox"

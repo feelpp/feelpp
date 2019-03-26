@@ -9,13 +9,15 @@ _heats={
     'heat(3,2)':Heat_3DP2,
 }
 
-def heat( dim=2, order=1, buildMesh=True, worldComm=core.Environment.worldCommPtr() ):
+def heat( dim=2, order=1, buildMesh=True, worldComm=None ):
     """create a heat toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
     orderTemperature -- the polynomial order for the temperature (default: 1)
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     """
+    if worldComm is None:
+        worldComm = core.Environment.worldCommPtr()
     key='heat('+str(dim)+','+str(order)+')'
     if worldComm.isMasterRank():
         print(key)

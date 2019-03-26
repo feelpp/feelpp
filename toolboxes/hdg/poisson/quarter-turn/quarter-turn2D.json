@@ -2,12 +2,17 @@
     "Name": "HDG-Mixed-Poisson ",
     "ShortName":"MP",
     "Models":{"equations":"hdg"},
+    "Parameters":
+    {
+        "k0":50
+    },
     "Materials":
     {
         "omega":
         {
             "name":"copper",
-            "cond":"50"
+            "cond":"1",
+            "k":"k0:k0"
             // "alpha":"3.35e-3",
             // "T0":"293",
             // "sigma0":"50",
