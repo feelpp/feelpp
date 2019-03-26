@@ -37,7 +37,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     double timeSteppingScaling = 1.;
     bool timeSteppingEvaluateResidualWithoutTimeDerivative = false;
-    if ( !this->isStationaryModel() )
+    if ( !this->isStationary() )
     {
         timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( "time-stepping.evaluate-residual-without-time-derivative" );
         if ( M_timeStepping == "Theta" )
