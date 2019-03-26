@@ -2897,8 +2897,8 @@ public:
         void assign( EltType const& e, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo,
                      typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
             {
-                size_type eid = eltsInfo.first;
-                uint16_type edgeid_in_element = eltsInfo.second;
+                const auto [ eid,edgeid_in_element ]  = eltsInfo;
+                
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
                 {
