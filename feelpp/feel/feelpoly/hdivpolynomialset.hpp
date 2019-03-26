@@ -37,9 +37,17 @@ class HDivPolynomialSet {};
  * @return true_type if hdiv conforming polynomialset, false_type otherwise
  */
 template<typename P>
-class is_hdiv_conforming : public boost::is_base_of<HDivPolynomialSet,P>
+using is_hdiv_conforming = boost::is_base_of<HDivPolynomialSet,P>;
+template<typename P>
+using is_hdiv_conforming_t = boost::is_base_of<HDivPolynomialSet,P>;
+template<typename P>
+constexpr bool is_hdiv_conforming_v = boost::is_base_of<HDivPolynomialSet,P>::value;
+
+template<typename P>
+constexpr bool isHDivConforming()
 {
-};
+    return is_hdiv_conforming_v<P>;
+}
 
 }
 #endif // FEELPP_HDIV_POLYNOMIALSET_HPP

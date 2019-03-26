@@ -1,5 +1,6 @@
 set_directory_properties(PROPERTIES LABEL testvf )
 
+feelpp_add_test( expr )
 feelpp_add_test( ginac )
 feelpp_add_test( inner CFG test_inner.cfg )
 feelpp_add_test( vf_operators )

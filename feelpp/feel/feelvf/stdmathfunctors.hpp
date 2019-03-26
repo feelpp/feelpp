@@ -163,10 +163,10 @@ sign( T const& x )
 
 #define VF_UNARY_FUNCTIONS_CODE(O)                                      \
     template < typename ExprT1 >                                        \
-class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>              \
+    class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>, public ExprDynamicBase \
     {                                                                   \
     public:                                                             \
-                                                                        \
+        using super2 = ExprDynamicBase;                                 \
         static const size_type context = ExprT1::context;               \
         static const bool is_terminal = false;                          \
                                                                         \
@@ -202,7 +202,8 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             explicit VF_FUNC_NAME(O)( expression_1_type const& __expr1  ) \
             :                                                           \
             super( VF_FUNC_NAME_STRING(O), functordomain_ptrtype(new VF_FUNC_DOMAIN(O) )), \
-            M_expr_1( __expr1 )                                        \
+            super2( Feel::vf::dynamicContext( __expr1 ) ),              \
+            M_expr_1( __expr1 )                                         \
             {                                                           \
                 DVLOG(2) << "VF_FUNC_NAME(O)::VF_FUNC_NAME(O) default constructor\n"; \
             }                                                           \
@@ -210,6 +211,7 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         VF_FUNC_NAME(O)( VF_FUNC_NAME(O) const& __vfp  )                \
             :                                                           \
             super( VF_FUNC_NAME_STRING(O), functordomain_ptrtype(new VF_FUNC_DOMAIN(O) )), \
+            super2( Feel::vf::dynamicContext( __vfp.M_expr_1 ) ),       \
             M_expr_1( __vfp.M_expr_1 )                                \
                 {                                                       \
                     DVLOG(2) << "VF_FUNC_NAME(O)::VF_FUNC_NAME(O) copy constructor\n"; \

@@ -252,7 +252,85 @@ public:
 
 class IntegratorBase {};
 
+class ExprDynamicBase
+{
+public:
+    ExprDynamicBase() = default;
+    explicit ExprDynamicBase( size_type c ) : M_context( c ) {}
+    size_type dynamicContext() const { return M_context; }
+private:
+    size_type M_context = 0;
+};
 
+//!
+//! @return true if the expr hass static context, false otherwise
+//!
+template <class T>
+constexpr bool hasStaticContext()
+{
+    return !has_dynamic_v<T::context>;
+}
+
+//!
+//! @return true if the expr hass static context, false otherwise
+//!
+template <class T>
+inline bool hasStaticContext( T const& t )
+{
+    return !has_dynamic_v<T::context>;
+}
+
+//!
+//! @return the static context  
+//!
+template <class T>
+constexpr size_type staticContext()
+{
+    return T::context;
+}
+
+//!
+//! @return the static context  
+//!
+template <class T>
+inline size_type staticContext( T const& t )
+{
+    return T::context;
+}
+
+//!
+//! @return true if the expression has dynamic context, false otherwise
+//!
+template <class T>
+constexpr bool hasDynamicContext()
+{
+    return has_dynamic_v<T::context> && std::is_base_of_v<ExprDynamicBase, T>;
+}
+
+//!
+//! @return true if the expression has dynamic context, false otherwise
+//!
+template <class T>
+inline bool hasDynamicContext( T const& t )
+{
+    return has_dynamic_v<T::context> && std::is_base_of_v<ExprDynamicBase, T>;
+}
+
+//!
+//! @return the dynamic context  if the expression has one or the static context otherwise
+//!
+template <class T>
+size_type dynamicContext( T const& t )
+{
+    if constexpr ( hasDynamicContext<T>() )
+    {
+        return t.dynamicContext() | T::context;
+    }
+    else
+    {
+        return T::context;
+    }
+}
 
 /*!
   \class Expr
@@ -262,7 +340,7 @@ class IntegratorBase {};
   @see
 */
 template<typename ExprT>
-class Expr : public ExprBase //: public std::enable_shared_from_this<Expr<ExprT> >
+class Expr : public ExprBase, public ExprDynamicBase //: public std::enable_shared_from_this<Expr<ExprT> >
 {
 public:
 
@@ -424,6 +502,12 @@ public:
     ExprT operator=( ExprTT const& e )
         {
             
+        }
+    //! @return the dynamic context of the expression
+    size_type dynamicContext() const
+        {
+            //std::cout << "dynctx:" << Feel::vf::dynamicContext( M_expr ) << " hasp:" << vm::hasPOINT(Feel::vf::dynamicContext( M_expr )) << std::endl;
+            return Feel::vf::dynamicContext( M_expr );
         }
     
     template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,std::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>

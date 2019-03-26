@@ -342,9 +342,9 @@
                            BOOST_PP_IDENTITY(class VF_TYPE_NAME(R)),    \
                            BOOST_PP_EMPTY                               \
                            )()>                                         \
-    class VF_OP_NAME( O ) VF_SPECIALIZATION_IF_BUILTIN( L, R )          \
+    class VF_OP_NAME( O ) VF_SPECIALIZATION_IF_BUILTIN( L, R ) : public ExprDynamicBase        \
     {                                                                   \
-    public:                                                             \
+      public:                                                           \
         typedef VF_OP_NAME( O )<VF_TYPE_TYPE_EXPR_CST( L ), VF_TYPE_TYPE_EXPR_CST( R )> expression_type; \
         typedef VF_OP_NAME( O )<VF_TYPE_TYPE_EXPR_CST( L ), VF_TYPE_TYPE_EXPR_CST( R )> this_type; \
         typedef VF_TYPE_VALUE_TYPE( L ) VF_VALUE_TYPE(L);               \
@@ -353,6 +353,7 @@
         typedef VF_TYPE_TYPE( R ) R_type;                               \
                                                                         \
         static const size_type context = L_type::context | R_type::context; \
+        size_type dynamicContext() const { return vf::dynamicContext( M_left ) | vf::dynamicContext( M_right ); } \
                                                                         \
         static const bool is_terminal = false;                           \
                                                                         \
