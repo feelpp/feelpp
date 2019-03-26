@@ -216,19 +216,21 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
          vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
     {
         geometric_mapping_context_type* thegmc = __gmc.get();
-
+        tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> B( thegmc->B( 0 ).data(), gmc_type::NDim, gmc_type::PDim );
         const uint16_type Q = do_optimization_p1?1:M_npoints;
         const uint16_type I = nDof;
         //Eigen::array<int, 3> tensorGradShapeAfterContract{{1, 1, nRealDim}};
         Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 1)}};
         for ( uint16_type i = 0; i < I; ++i )
         {
+            auto const& g_phi_i = (*M_gradphi)[i];
             for ( uint16_type q = 0; q < Q; ++q )
             {
-                tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> B( thegmc->B( q ).data(), gmc_type::NDim, gmc_type::PDim );
+                if constexpr(!gmc_type::is_linear)
+                                new (&B) tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type>(thegmc->B( q ).data(), gmc_type::NDim, gmc_type::PDim );
                 // grad = (gradphi_1,...,gradphi_nRealDim) * B^T
                 //M_grad[i][q].reshape( tensorGradShapeAfterContract ) = ((*M_gradphi)[i][q].contract( B,dims ));
-                M_grad[i][q] = ((*M_gradphi)[i][q].contract( B,dims ));
+                M_grad[i][q] = (g_phi_i[q].contract( B,dims ));
 #if 0
                 M_dx[i][q] = M_grad[i][q].col( 0 );
 
