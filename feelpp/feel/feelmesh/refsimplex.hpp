@@ -1026,8 +1026,8 @@ private:
             _n1 = edgeVertex(edge,1);
             _n0 = edgeVertex(edge,0);
             
-            em_node_type<value_type> n1( _n1.data().begin(), nDim, 1 );
-            em_node_type<value_type> n0( _n0.data().begin(), nDim, 1 ); 
+            em_node_type<value_type> n1( _n1.data().begin(), nRealDim, 1 );
+            em_node_type<value_type> n0( _n0.data().begin(), nRealDim, 1 ); 
             M_edge_tangents[edge] = n1-n0;
             //M_edge_tangents[edge] /= ublas::norm_2( M_edge_tangents[edge] );
         }
