@@ -1,14 +1,9 @@
-from pyfeelpp import core
 import sys
-
-import pyfeelpptoolboxes.modelcore as modelcore
-
-e=core.Environment(sys.argv,opts=modelcore.toolboxes_options("solid"))
-
-#from pyfeelpp import discr,ts,filters
 from pyfeelpptoolboxes.solid import *
+e=core.Environment(sys.argv,opts=toolboxes_options("solid"))
 
-f=solid(dim=2,orderDisp=1,worldComm=e.worldCommPtr())
+
+f=solid(dim=2,orderDisp=1)
 f.init()
 f.printAndSaveInfo()
 if f.isStationary():

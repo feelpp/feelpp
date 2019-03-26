@@ -1285,7 +1285,7 @@ struct BasisOrder
 template<typename SpaceType>
 struct createWorldsComm
 {
-    
+
     typedef typename SpaceType::mesh_ptrtype mesh_ptrtype;
     typedef typename SpaceType::meshes_list meshes_list;
     static const bool useMeshesList = !boost::is_base_of<MeshBase, meshes_list >::value;
@@ -1603,7 +1603,7 @@ public:
 public:
 
     using super = FunctionSpaceBase;
-    
+
     template<typename ThePeriodicityType, int pos>
     struct GetPeriodicity
     {
@@ -1931,7 +1931,7 @@ public:
 #if 0
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<mpl::void_>,
-                              mpl::identity<typename basis_0_type::template Context<vm::POINT|vm::GRAD|vm::JACOBIAN|vm::HESSIAN|vm::KB, basis_0_type, gm_type, geoelement_type> > >::type::type basis_context_type;
+                              mpl::identity<typename basis_0_type::template Context<vm::POINT|vm::GRAD|vm::JACOBIAN|vm::Hessian|vm::KB, basis_0_type, gm_type, geoelement_type> > >::type::type basis_context_type;
                               //mpl::identity<typename basis_0_type::template Context<vm::POINT, basis_0_type, gm_type, geoelement_type, pts_gmc_type::context> > >::type::type basis_context_type;
 #else
     static const size_type basis_context_value = ( basis_0_type::is_product && nComponents > 1 )?
@@ -3952,11 +3952,11 @@ public:
         /**
          * world communicator
          */
-        WorldComm & worldComm() 
+        WorldComm & worldComm()
         {
             return M_functionspace->worldComm();
         }
-        
+
         /**
          * world communicator
          */
@@ -4716,7 +4716,7 @@ public:
     {
         M_worldsComm=_worldsComm;
     }
-    worldscomm_ptr_t & worldsComm() 
+    worldscomm_ptr_t & worldsComm()
     {
         return M_worldsComm;
     }
@@ -4724,7 +4724,7 @@ public:
     {
         return M_worldsComm;
     }
-    
+
     bool hasEntriesForAllSpaces()
     {
         return (this->template mesh<0>()->worldComm().localSize() == this->template mesh<0>()->worldComm().globalSize() );

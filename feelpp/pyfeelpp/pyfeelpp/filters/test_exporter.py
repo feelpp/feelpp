@@ -1,9 +1,8 @@
 import sys
-from pyfeelpp import core
+from pyfeelpp import core,mesh,discr,filters,vf
 
 e=core.Environment(sys.argv)
 
-from pyfeelpp import mesh,discr,filters,vf
 
 geo={
     '2':core.download( "github:{repo:feelpp,path:feelpp/quickstart/laplacian/feelpp2d/feelpp2d.geo}", worldComm=core.Environment.worldCommPtr() )[0],
