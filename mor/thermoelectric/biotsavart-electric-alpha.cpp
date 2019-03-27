@@ -32,16 +32,47 @@
 namespace Feel {
 
 template<typename te_rb_model_type>
-BiotSavartAlphaElectricCRB<te_rb_model_type>::BiotSavartAlphaElectricCRB(crb::stage stage)
-    : super_type("biotsavart"),
+po::options_description
+BiotSavartAlphaElectricCRB<te_rb_model_type>::makeOptions( std::string const& prefix )
+{
+    po::options_description opt("BiotSavart options");
+    opt.add_options()
+        ( "biotsavart.filename", po::value<std::string>()->default_value("biotsavart.json"),
+          "json file")
+        ( "biotsavart.trainset-deim-size", po::value<int>()->default_value(10),
+          "size of the trainset for DEIM of BiotSavart" )
+        ( "biotsavart.db.base", po::value<std::string>()->default_value("alphabiotsavart"), "basename for crb db")
+        ;
+    opt.add(deimOptions("bs"));
+    opt.add(crbOptions(prefix));
+    opt.add(crbSEROptions(prefix));
+    opt.add(AlphaElectric::makeOptions("electric"));
+    return opt;
+}
+
+template<typename te_rb_model_type>
+typename BiotSavartAlphaElectricCRB<te_rb_model_type>::self_ptrtype
+BiotSavartAlphaElectricCRB<te_rb_model_type>::New(crb::stage stage, std::string const& prefix)
+{
+    return std::make_shared<self_type>(stage, prefix);
+}
+
+template<typename te_rb_model_type>
+BiotSavartAlphaElectricCRB<te_rb_model_type>::BiotSavartAlphaElectricCRB(std::string const& prefix)
+    : BiotSavartAlphaElectricCRB<te_rb_model_type>(crb::stage::online, prefix)
+{}
+
+template<typename te_rb_model_type>
+BiotSavartAlphaElectricCRB<te_rb_model_type>::BiotSavartAlphaElectricCRB(crb::stage stage, std::string const& prefix)
+    : super_type(soption("biotsavart.db.base"), Environment::worldCommPtr(), prefix),
       M_propertyPath(Environment::expand(soption("biotsavart.filename"))),
-      M_repart(boption("biotsavart.repart")),
-      M_computeFe(boption("biotsavart.compute-fe")),
-      M_computeOffline(boption("biotsavart.compute-offline")),
-      M_computeOnline(boption("biotsavart.compute-online")),
-      M_rebuildDb(boption("biotsavart.rebuild-database")),
-      M_pathToDb(soption("biotsavart.path-to-database")),
-      M_trainsetDeimSize(ioption("biotsavart.trainset-deim-size"))
+      // M_computeFe(boption("biotsavart.compute-fe")),
+      // M_computeOffline(boption("biotsavart.compute-offline")),
+      // M_computeOnline(boption("biotsavart.compute-online")),
+      // M_rebuildDb(boption("biotsavart.rebuild-database")),
+      // M_pathToDb(soption("biotsavart.path-to-database")),
+      M_trainsetDeimSize(ioption("biotsavart.trainset-deim-size")),
+      M_dbBasename(soption("biotsavart.db.base"))
 {
     // if( stage == crb::stage::online )
     // {
@@ -59,21 +90,18 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::initModel()
     M_modelProps = std::make_shared<prop_type>(M_propertyPath);
     M_materials = M_modelProps->materials().materialWithPhysic("magnetic");
 
-    std::string mshFileName = Environment::expand(soption("gmsh.filename"));
-
     auto M_mesh = loadMesh( _mesh=new mesh_type,
-                            _filename=mshFileName,
-                            _rebuild_partitions=M_repart,
                             _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
 
     tic();
-    M_teCrbModel = std::make_shared<te_rb_model_type>(M_mesh);
+    M_teCrbModel = std::make_shared<te_rb_model_type>(M_mesh, "electric");
     M_crbModel = std::make_shared<crb_model_type>(M_teCrbModel, crb::stage::offline);
-    M_crb = crb_type::New("alphaelectric", M_crbModel, crb::stage::offline);
+    M_crb = crb_type::New(M_teCrbModel->dbBasename(), M_crbModel, crb::stage::offline);
     toc("constructor + eim");
 
     tic();
     M_crb->offline();
+    M_N = M_crb->dimension();
     toc("rb construction");
     Feel::cout << tc::green << "Construction of DEIM, MDEIM and CRB finished!!"
                << tc::reset <<std::endl;
@@ -122,41 +150,48 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::setupCRB( crb_ptrtype crb )
     M_crbModel = crb->model();
     M_teCrbModel = M_crbModel->model();
     M_XhCond = M_teCrbModel->functionSpace();
+    M_N = M_crb->dimension();
     Feel::cout << "Online model : Conductor  nDof = " << M_XhCond->nDof()
                << " Box nDof = " << this->Xh->nDof() << std::endl;
     this->setupCommunicatorsBS();
 }
 
-template<typename te_rb_model_type>
-void BiotSavartAlphaElectricCRB<te_rb_model_type>::runBS()
-{
-    M_mu = this->paramFromProperties();
-    if( M_computeOffline )
-    {
-        if( M_computeOnline )
-            this->online(M_mu);
-    }
+// template<typename te_rb_model_type>
+// void BiotSavartAlphaElectricCRB<te_rb_model_type>::runBS()
+// {
+//     M_mu = this->paramFromProperties();
+//     if( M_computeOffline )
+//     {
+//         if( M_computeOnline )
+//             this->online(M_mu);
+//     }
 
-    if( M_computeFe )
-        this->computeFE(M_mu);
+//     if( M_computeFe )
+//         this->computeFE(M_mu);
 
-    if( M_computeOffline && M_computeOnline && M_computeFe )
-        this->computeErrors();
+//     if( M_computeOffline && M_computeOnline && M_computeFe )
+//         this->computeErrors();
 
-    this->exportResults(M_mu);
-}
+//     this->exportResults(M_mu);
+// }
 
 template<typename te_rb_model_type>
 typename BiotSavartAlphaElectricCRB<te_rb_model_type>::vector_ptrtype
 BiotSavartAlphaElectricCRB<te_rb_model_type>::assembleForDEIM( parameter_type const& mu, int const& tag )
 {
     tic();
-    double online_tol = doption(_name="crb.online-tolerance");
-    vectorN_type time_crb;
-    auto o = M_crb->run( mu, time_crb, online_tol);
+    int timeSteps = 1;
+    std::vector<vectorN_type> uNs(timeSteps, vectorN_type(M_N));
+    std::vector<vectorN_type> uNolds(timeSteps, vectorN_type(M_N));
+    std::vector<double> outputs(timeSteps, 0);
+    M_crb->fixedPointPrimal(M_N, mu, uNs, uNolds, outputs);
+    M_uN = uNs[0];
+    // double online_tol = doption(_name="crb.online-tolerance");
+    // vectorN_type time_crb;
+    // auto o = M_crb->run( mu, time_crb, online_tol);
 
-    auto solutions = o.template get<2>();
-    M_uN = solutions.template get<0>()[0];
+    // auto solutions = o.template get<2>();
+    // M_uN = solutions.template get<0>()[0];
     this->expand();
 
     auto mesh = M_XhCond->mesh();
@@ -329,35 +364,35 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::setupCommunicatorsBS()
     toc("setup comms");
 }
 
-template<typename te_rb_model_type>
-typename BiotSavartAlphaElectricCRB<te_rb_model_type>::parameter_type
-BiotSavartAlphaElectricCRB<te_rb_model_type>::paramFromOption()
-{
-    std::vector<double> muOpt = vdoption("biotsavart.param");
-    auto paramSpace = M_crbModel->parameterSpace();
-    int paramSize = paramSpace->dimension();
-    if ( muOpt.size() != paramSize )
-    {
-        Feel::cout << "ERROR: The number of parameter from 'biotsavart.param' is different than from the parameter space: "
-                   << paramSize << ". Stopping here!" << std::endl;
-        boost::mpi::environment::abort(1);
-    }
-    auto muMin = paramSpace->min();
-    auto muMax = paramSpace->max();
-    for ( int i = 0; i < paramSize; ++i)
-    {
-        if( muOpt[i] < muMin(i) || muOpt[i] > muMax(i) )
-        {
-            Feel::cout << "WARNING: The " << i << "-th parameter is not in the right range! "
-                       << "Using min: " << muMin(i) << " instead." << std::endl;
-            muOpt[i] = muMin(i);
-        }
-    }
-    auto mu = paramSpace->element();
-    for ( int i = 0; i < paramSize; ++i)
-        mu(i) = muOpt[i];
-    return mu;
-}
+// template<typename te_rb_model_type>
+// typename BiotSavartAlphaElectricCRB<te_rb_model_type>::parameter_type
+// BiotSavartAlphaElectricCRB<te_rb_model_type>::paramFromOption()
+// {
+//     std::vector<double> muOpt = vdoption("biotsavart.param");
+//     auto paramSpace = M_crbModel->parameterSpace();
+//     int paramSize = paramSpace->dimension();
+//     if ( muOpt.size() != paramSize )
+//     {
+//         Feel::cout << "ERROR: The number of parameter from 'biotsavart.param' is different than from the parameter space: "
+//                    << paramSize << ". Stopping here!" << std::endl;
+//         boost::mpi::environment::abort(1);
+//     }
+//     auto muMin = paramSpace->min();
+//     auto muMax = paramSpace->max();
+//     for ( int i = 0; i < paramSize; ++i)
+//     {
+//         if( muOpt[i] < muMin(i) || muOpt[i] > muMax(i) )
+//         {
+//             Feel::cout << "WARNING: The " << i << "-th parameter is not in the right range! "
+//                        << "Using min: " << muMin(i) << " instead." << std::endl;
+//             muOpt[i] = muMin(i);
+//         }
+//     }
+//     auto mu = paramSpace->element();
+//     for ( int i = 0; i < paramSize; ++i)
+//         mu(i) = muOpt[i];
+//     return mu;
+// }
 
 template<typename te_rb_model_type>
 typename BiotSavartAlphaElectricCRB<te_rb_model_type>::parameter_type
@@ -392,16 +427,24 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::online( parameter_type & mu, 
     tic();
 
     tic();
-    double online_tol = doption(_name="crb.online-tolerance");
-    vectorN_type time_crb;
-    auto o = M_crb->run( mu, time_crb, online_tol, M_N);
-    toc("crb run");
+    int timeSteps = 1;
+    std::vector<vectorN_type> uNs(timeSteps, vectorN_type(M_N)), uNolds(timeSteps, vectorN_type(M_N));
+    std::vector<double> outputs(timeSteps, 0);
+    M_crb->fixedPointPrimal(M_N, mu, uNs, uNolds, outputs);
+    M_uN = uNs[0];
+    // double online_tol = doption(_name="crb.online-tolerance");
+    // vectorN_type time_crb;
+    // auto o = M_crb->run( mu, time_crb, online_tol, M_N);
 
-    auto solutions = o.template get<2>();
-    M_uN = solutions.template get<0>()[0];
+    // auto solutions = o.template get<2>();
+    // M_uN = solutions.template get<0>()[0];
+    toc("crb run");
     this->expand();
 
     auto beta = this->deim()->beta(mu, M);
+    // Feel::cout << "coefficient for m=" << M << ":\n";
+    // for(int m = 0; m < beta.size(); ++m)
+    //     Feel::cout << "beta[" << m << "]=" << beta(m) << std::endl;
     auto q = this->deim()->q();
     vector_ptrtype Bvec = backend()->newVector( this->Xh );
     Bvec->zero();
@@ -430,7 +473,7 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeFE( parameter_type & m
     toc("compute j FE");
 
     tic();
-    auto mesh = Xh->mesh();
+    auto mesh = M_XhCond->mesh();
     M_BFe = this->Xh->element();
     auto coeff = 1/(4*M_PI);
     auto mu0 = 4*M_PI*1e-4; //SI unit : H.m-1 = m.kg.s-2.A-2
@@ -481,7 +524,7 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeFE( parameter_type & m
                     auto dist = inner( _e1v-psi,_e1v-psi,
                                        mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
                     mgnFields[j++] = integrate(_range=markedelements( mesh, material.first ),
-                                               _expr=-mu0*coeff*sigma*cross(trans(gradv(M_V)*Jinv),
+                                               _expr=-mu0*coeff*sigma*cross(trans(gradv(M_VFe)*Jinv),
                                                                             _e1v-psi)/(dist*dist*dist),
                                                _quad=_Q<1>()
                                                ).template evaluate(coords);
@@ -492,7 +535,7 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeFE( parameter_type & m
                     auto dist = inner( _e1v-P(), _e1v-P(),
                                        mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
                     mgnFields[j++] = integrate(_range=markedelements( mesh, material.first ),
-                                               _expr=-mu0*coeff*sigma*cross(trans(gradv(M_V)),
+                                               _expr=-mu0*coeff*sigma*cross(trans(gradv(M_VFe)),
                                                                             _e1v-P())/(dist*dist*dist),
                                                _quad=_Q<1>()
                                                ).template evaluate(coords);
@@ -539,66 +582,66 @@ BiotSavartAlphaElectricCRB<te_rb_model_type>::alpha( parameter_type const& mu )
     return a;
 }
 
-template<typename te_rb_model_type>
-std::vector<double> BiotSavartAlphaElectricCRB<te_rb_model_type>::computeErrors()
-{
-    std::vector<double> err(4,0);
-    auto rangeV = M_VFe.functionSpace()->dof()->meshSupport()->rangeElements();
-    auto rangeB = M_BFe.functionSpace()->dof()->meshSupport()->rangeElements();
-    double normVFe = normL2( rangeV, idv(M_VFe) );
-    double normBFe = normL2( rangeB, idv(M_BFe) );
-    err[0] = normL2( rangeV, idv(M_V)-idv(M_VFe) );
-    err[1] = err[0]/normVFe;
-    err[2] = normL2( rangeB, idv(M_B)-idv(M_BFe) );
-    err[3] = err[2]/normBFe;
-    Feel::cout << "ErrV: " << err[0] << " relative: " << err[1] << std::endl
-               << "ErrB: " << err[2] << " relative: " << err[3] << std::endl;
-    return err;
-}
+// template<typename te_rb_model_type>
+// std::vector<double> BiotSavartAlphaElectricCRB<te_rb_model_type>::computeErrors()
+// {
+//     std::vector<double> err(4,0);
+//     auto rangeV = M_VFe.functionSpace()->dof()->meshSupport()->rangeElements();
+//     auto rangeB = M_BFe.functionSpace()->dof()->meshSupport()->rangeElements();
+//     double normVFe = normL2( rangeV, idv(M_VFe) );
+//     double normBFe = normL2( rangeB, idv(M_BFe) );
+//     err[0] = normL2( rangeV, idv(M_V)-idv(M_VFe) );
+//     err[1] = err[0]/normVFe;
+//     err[2] = normL2( rangeB, idv(M_B)-idv(M_BFe) );
+//     err[3] = err[2]/normBFe;
+//     Feel::cout << "ErrV: " << err[0] << " relative: " << err[1] << std::endl
+//                << "ErrB: " << err[2] << " relative: " << err[3] << std::endl;
+//     return err;
+// }
 
-template<typename te_rb_model_type>
-void BiotSavartAlphaElectricCRB<te_rb_model_type>::exportResults(parameter_type const& mu)
-{
-    exporter_ptrtype eC( exporter_type::New( "conductor") );
-    eC->setMesh(M_XhCond->mesh());
-    exporter_ptrtype eM( exporter_type::New( "mgn") );
-    eM->setMesh(this->Xh->mesh());
+// template<typename te_rb_model_type>
+// void BiotSavartAlphaElectricCRB<te_rb_model_type>::exportResults(parameter_type const& mu)
+// {
+//     exporter_ptrtype eC( exporter_type::New( "conductor") );
+//     eC->setMesh(M_XhCond->mesh());
+//     exporter_ptrtype eM( exporter_type::New( "mgn") );
+//     eM->setMesh(this->Xh->mesh());
 
-    auto a = this->alpha(mu);
-    eC->add("alpha", a);
+//     auto a = this->alpha(mu);
+//     eC->add("alpha", a);
 
-    if( boption("biotsavart.compute-offline") && boption("biotsavart.compute-online") )
-    {
-        // auto WN = M_crb->wn();
-        // cond_element_type V = M_crb->expansion( M_uN, M_uN.size() );
+//     if( boption("biotsavart.compute-offline") && boption("biotsavart.compute-online") )
+//     {
+//         // auto WN = M_crb->wn();
+//         // cond_element_type V = M_crb->expansion( M_uN, M_uN.size() );
 
-        // auto Jh = current_space_type::New( M_meshCond );
-        // auto j = Jh->element();
-        // for( int n = 0; n < M_uN.size(); ++n )
-        // {
-        //     element_type xiVT_n = M_crbModel->rBFunctionSpace()->primalBasisElement(n);
-        //     auto xi_n = xiVT_n.template element<0>();
-        //     for( int m = 0; m < M_betaMu.size(); ++m )
-        //     {
-        //         auto qm = M_teCrbModel->eimSigmaQ(m);
-        //         j += vf::project( _space=Jh, _range=elements(M_XhCond->mesh()), _expr=M_betaMu(m)*M_uN(n)*idv(qm)*trans(gradv(xi_n)) );
-        //     }
-        // }
+//         // auto Jh = current_space_type::New( M_meshCond );
+//         // auto j = Jh->element();
+//         // for( int n = 0; n < M_uN.size(); ++n )
+//         // {
+//         //     element_type xiVT_n = M_crbModel->rBFunctionSpace()->primalBasisElement(n);
+//         //     auto xi_n = xiVT_n.template element<0>();
+//         //     for( int m = 0; m < M_betaMu.size(); ++m )
+//         //     {
+//         //         auto qm = M_teCrbModel->eimSigmaQ(m);
+//         //         j += vf::project( _space=Jh, _range=elements(M_XhCond->mesh()), _expr=M_betaMu(m)*M_uN(n)*idv(qm)*trans(gradv(xi_n)) );
+//         //     }
+//         // }
 
-        eC->add( "V", M_V);
-        // eC->add( "j", j);
-        eM->add( "B", M_B);
-    }
-    if( boption("biotsavart.compute-fe") )
-    {
-        eC->add( "V_fe", M_VFe);
-        // eC->add( "j_fe", M_j);
-        eM->add( "B_fe", M_BFe );
-    }
+//         eC->add( "V", M_V);
+//         // eC->add( "j", j);
+//         eM->add( "B", M_B);
+//     }
+//     if( boption("biotsavart.compute-fe") )
+//     {
+//         eC->add( "V_fe", M_VFe);
+//         // eC->add( "j_fe", M_j);
+//         eM->add( "B_fe", M_BFe );
+//     }
 
-    eC->save();
-    eM->save();
-}
+//     eC->save();
+//     eM->save();
+// }
 
 template<typename te_rb_model_type>
 double BiotSavartAlphaElectricCRB<te_rb_model_type>::homogeneity( element_type& B)

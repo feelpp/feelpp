@@ -36,6 +36,8 @@ int main(int argc, char**argv )
     using namespace Feel;
     using Feel::cout;
 
+    using biotsavart_type = BiotSavartAlphaElectricCRB<AlphaElectric>;
+
     po::options_description nloptoptions( "NLOpt options" );
     nloptoptions.add_options()
         ( "nlopt.algo", po::value<std::string>()->default_value( "LN_NEWUOA" ), "NLOPT algorithm [LN_NEWUOA,LD_LBFGS]" )
@@ -43,17 +45,7 @@ int main(int argc, char**argv )
           "do or not the optimization" )
         ;
 
-    nloptoptions.add(biotsavartOptions());
-    nloptoptions.add(crbOptions());
-    nloptoptions.add(crbSEROptions());
-    nloptoptions.add(eimOptions());
-    nloptoptions.add(eimOptions());
-    nloptoptions.add(podOptions());
-    nloptoptions.add(backend_options("backend-primal"));
-    nloptoptions.add(backend_options("backend-dual"));
-    nloptoptions.add(backend_options("backend-l2"));
-    nloptoptions.add(bdf_options("ThermoElectricCRB"));
-    nloptoptions.add(makeOptions());
+    nloptoptions.add(biotsavart_type::makeOptions("biotsavart"));
 
     Environment env( _argc=argc, _argv=argv,
                      _desc=nloptoptions,
@@ -70,7 +62,7 @@ int main(int argc, char**argv )
         ("LD_MMA", ::nlopt::LD_MMA )
         ("LD_SLSQP", ::nlopt::LD_SLSQP );
 
-    auto BS = BiotSavartAlphaElectricCRB<AlphaElectric>::New(crb::stage::offline);
+    auto BS = BiotSavartAlphaElectricCRB<AlphaElectric>::New(crb::stage::offline, "biotsavart");
     BS->initModel();
     if( !boption("biotsavart.do-opt") )
     {
@@ -80,49 +72,49 @@ int main(int argc, char**argv )
         auto B0 = BS->magneticFluxFE();
         mu = BS->paramFromProperties();
         BS->computeFE(mu);
+        auto VFE = BS->potentialFE();
+        auto BFE = BS->magneticFluxFE();
+        auto rangeB = BFE.functionSpace()->dof()->meshSupport()->rangeElements();
+        double normBFE = normL2( rangeB, idv(BFE) );
 
-        boost::format fmter("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5%\n");
+        boost::format fmter("%1% %|14t|%2% %|28t|%3%\n");
         fs::ofstream file( "cvg.dat" );
         if( file && Environment::isMasterRank() )
-            file << fmter % "M" % "errV" % "relErrV" % "errB" % "relErrB";
+            file << fmter % "M" % "errB" % "relErrB";
 
-        int size = ( BS->dimension() < BS->crbDimension() ) ? BS->dimension() : BS->crbDimension();
-        std::vector<std::vector<double> > errs(size);
+        int size = BS->dimension();
+        std::vector<std::vector<double> > errs(size, std::vector<double>(2));
         for( int m = 1; m <= size; ++m)
         {
             Feel::cout << "M = " << m << std::endl;
             BS->online(mu, m);
-            BS->expand(m);
-            errs[m] = BS->computeErrors();
+            BS->expand();
+            auto B = BS->magneticFlux();
+            errs[m-1][0] = normL2( rangeB, idv(B)-idv(BFE) );
+            errs[m-1][1] = errs[m-1][0]/normBFE;
             if( Environment::isMasterRank() )
-                file << fmter % m % errs[m][0] % errs[m][1] % errs[m][2] % errs[m][3];
+                file << fmter % m % errs[m-1][0] % errs[m-1][1];
         }
 
         file.close();
-        Feel::cout << fmter % "M" % "errV" % "relErrV" % "errB" % "relErrB";
-        for( int m = 1; m <= size; ++m)
-            Feel::cout << fmter % m % errs[m][0] % errs[m][1] % errs[m][2] % errs[m][3];
+        Feel::cout << fmter % "M" % "errB" % "relErrB";
+        for( int m = 0; m < size; ++m)
+            Feel::cout << fmter % (m+1) % errs[m][0] % errs[m][1];
 
         auto alpha = BS->alpha(mu);
         auto V = BS->potential();
-        auto VFE = BS->potentialFE();
         auto B = BS->magneticFlux();
-        auto BFE = BS->magneticFluxFE();
 
-        auto eC( Exporter<Mesh<Simplex<3> > >::New( "conductor") );
-        eC->setMesh(V.functionSpace()->mesh());
-        auto eM( Exporter<Mesh<Simplex<3> > >::New( "mgn") );
-        eM->setMesh(B.functionSpace()->mesh());
+        auto eCM = exporter(_mesh=V.functionSpace()->mesh(), _name="biotsavart");
 
-        eC->add("alpha", alpha);
-        eC->add( "V", V);
-        eM->add( "B", B);
-        eC->add( "VFE", VFE);
-        eM->add( "BFE", BFE );
-        eC->add( "V0", V0);
-        eM->add( "B0", B0);
-        eC->save();
-        eM->save();
+        eCM->add("alpha", alpha);
+        eCM->add( "V", V);
+        eCM->add( "B", B);
+        eCM->add( "VFE", VFE);
+        eCM->add( "BFE", BFE );
+        eCM->add( "V0", V0);
+        eCM->add( "B0", B0);
+        eCM->save();
     }
     else
     {
@@ -156,10 +148,10 @@ int main(int argc, char**argv )
                 iter++;
                 auto mu = BS->newParameter();
                 mu = Eigen::Map<Eigen::VectorXd const>( x.data(), mu.size());
-                // BS->online(mu);
-                // auto B = BS->magneticFlux();
-                BS->computeFE(mu);
-                auto B = BS->magneticFluxFE();
+                BS->online(mu);
+                auto B = BS->magneticFlux();
+                // BS->computeFE(mu);
+                // auto B = BS->magneticFluxFE();
                 return BS->homogeneity(B);
             };
 
@@ -180,36 +172,31 @@ int main(int argc, char**argv )
 
         cout << iter << " iterations in " << optiTime << " (" << optiTime/iter << "/iter)" << std::endl;
 
-        // export
-
-        auto eC = Exporter<Mesh<Simplex<3> > >::New( "conductor");
-        eC->setMesh(BS->mesh());
-        auto eM = Exporter<Mesh<Simplex<3> > >::New( "magneto");
-        eM->setMesh(BS->mesh());
-
-        auto VFe = BS->potentialFE();
-        auto BFe = BS->magneticFluxFE();
-        // auto alphaStr = BS->alpha(mu);
-        // Feel::cout << "alpha: " <<alphaStr << std::endl;
-        // auto alphaExpr = expr(BS->alpha(mu));
-        // auto Vh = BS->spaceCond();
         auto alpha = BS->alpha(mu);
-        // alpha.on( elements( BS->meshCond()), alphaExpr);
-        eC->add("alpha", alpha);
-        eC->add("VFe", VFe);
-        eM->add("BFe", BFe);
-
-        mu = BS->param0();
+        auto V = BS->potential();
+        auto B = BS->magneticFlux();
         BS->computeFE(mu);
+        auto VFE = BS->potentialFE();
+        auto BFE = BS->magneticFluxFE();
+        auto mu0 = BS->param0();
+        BS->computeFE(mu0);
         auto V0 = BS->potentialFE();
         auto B0 = BS->magneticFluxFE();
-        eC->add("V0", V0);
-        eM->add("B0", B0);
 
-        eC->save();
-        eM->save();
+        // export
 
-        auto homoFE = BS->homogeneity(BFe);
+        auto eCM = exporter(_mesh=V.functionSpace()->mesh(), _name="biotsavart");
+
+        eCM->add("alpha", alpha);
+        eCM->add( "V", V);
+        eCM->add( "B", B);
+        eCM->add( "VFE", VFE);
+        eCM->add( "BFE", BFE );
+        eCM->add( "V0", V0);
+        eCM->add( "B0", B0);
+        eCM->save();
+
+        auto homoFE = BS->homogeneity(BFE);
         auto homo0 = BS->homogeneity(B0);
         std::stringstream ss;
         ss << "homogeneity = " << homoFE << " for parameter\n" << mu << "\n"

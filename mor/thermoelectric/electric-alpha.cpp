@@ -30,16 +30,44 @@
 
 namespace Feel {
 
-AlphaElectric::AlphaElectric()
-    : AlphaElectric(nullptr)
+po::options_description
+AlphaElectric::makeOptions( std::string const& prefix )
+{
+    po::options_description options( "Electric" );
+    options.add_options()
+        ( "thermoelectric.filename", Feel::po::value<std::string>()->default_value("electric.json"),
+          "json file containing application parameters and boundary conditions")
+        ( "thermoelectric.penal-dir", po::value<double>()->default_value( 1e5 ), "penalisation term" )
+        ( "thermoelectric.trainset-deim-size", po::value<int>()->default_value(40), "size of the deim trainset" )
+        ( "thermoelectric.trainset-mdeim-size", po::value<int>()->default_value(40), "size of the mdeim trainset" )
+        ( "thermoelectric.test-deim", po::value<bool>()->default_value(false), "test deim interpolation" )
+        ( "thermoelectric.db.base", po::value<std::string>()->default_value("alphaelectric"), "database basename" )
+        ;
+    options.add(backend_options("feV") );
+    options.add(deimOptions("vec")).add(deimOptions("mat"));
+    options.add(crbOptions(prefix));
+    options.add(crbSEROptions(prefix));
+    options.add(eimOptions());
+    options.add(podOptions());
+    options.add(backend_options("backend-primal"));
+    options.add(backend_options("backend-dual"));
+    options.add(backend_options("backend-l2"));
+
+    return options;
+}
+
+AlphaElectric::AlphaElectric(std::string const& prefix)
+    : AlphaElectric(nullptr, prefix)
 {}
 
-AlphaElectric::AlphaElectric( mesh_ptrtype mesh )
-    : super_type( "electric" ),
+AlphaElectric::AlphaElectric( mesh_ptrtype mesh,  std::string const& prefix )
+    : super_type( soption("thermoelectric.db.base"), Environment::worldCommPtr(), prefix),
       M_trainsetDeimSize(ioption("thermoelectric.trainset-deim-size")),
       M_trainsetMdeimSize(ioption("thermoelectric.trainset-mdeim-size")),
       M_penalDir(doption("thermoelectric.penal-dir")),
-      M_propertyPath(Environment::expand( soption("thermoelectric.filename")))
+      M_propertyPath(Environment::expand( soption("thermoelectric.filename"))),
+      M_testDeim(boption("thermoelectric.test-deim")),
+      M_dbBasename(soption("thermoelectric.db.base"))
 {
     M_modelProps = std::make_shared<prop_type>(M_propertyPath);
 
@@ -395,49 +423,52 @@ void AlphaElectric::initModel()
     this->resizeQm();
     this->decomposition();
 
-    auto VFE = this->solve(M_mu);
-    auto A = this->assembleForMDEIM(M_mu, 0 );
-    auto F = this->assembleForDEIM(M_mu, 0 );
-
-    auto betaA = this->mdeim()->beta(M_mu);
-    auto betaF = deim()->beta(M_mu);
-    auto qa = mdeim()->q();
-    auto qf = deim()->q();
-    auto Am = backend()->newMatrix(Xh,Xh);
-    Am->zero();
-    for( int m = 0; m < mdeim()->size(); ++m )
+    if( M_testDeim )
     {
-        Am->addMatrix( betaA(m), qa[m]);
-        Feel::cout << "betaA(" << m << ") = " << betaA(m) << std::endl;
+        auto VFE = this->solve(M_mu);
+        auto A = this->assembleForMDEIM(M_mu, 0 );
+        auto F = this->assembleForDEIM(M_mu, 0 );
+
+        auto betaA = this->mdeim()->beta(M_mu);
+        auto betaF = deim()->beta(M_mu);
+        auto qa = mdeim()->q();
+        auto qf = deim()->q();
+        auto Am = backend()->newMatrix(Xh,Xh);
+        Am->zero();
+        for( int m = 0; m < mdeim()->size(); ++m )
+        {
+            Am->addMatrix( betaA(m), qa[m]);
+            Feel::cout << "betaA(" << m << ") = " << betaA(m) << std::endl;
+        }
+        auto Fm = backend()->newVector(Xh);
+        Fm->zero();
+        for( int m = 0; m < deim()->size(); ++m )
+        {
+            Fm->add( betaF(m), qf[m]);
+            Feel::cout << "betaF(" << m << ") = " << betaF(m) << std::endl;
+        }
+
+        auto VEIM = Xh->element();
+        backend()->solve( _matrix=Am, _rhs=Fm, _solution=VEIM);
+
+        auto e = exporter(M_mesh);
+        e->add("VFE", VFE);
+        e->add("VEIM", VEIM);
+        e->save();
+
+        auto errV = normL2(domain, idv(VFE)-idv(VEIM) );
+        auto normV = normL2(domain, idv(VFE) );
+        Feel::cout << "V: err = " << errV << " relative err = " << errV/normV << std::endl;
+
+        Am->addMatrix(-1., A);
+        Fm->add(-1., F);
+        auto errA = Am->linftyNorm();
+        auto normA = A->linftyNorm();
+        auto errF = Fm->linftyNorm();
+        auto normF = F->linftyNorm();
+        Feel::cout << "A: err = " << errA << " relative err = " << errA/normA << std::endl
+                   << "F: err = " << errF << " relative err = " << errF/normF << std::endl;
     }
-    auto Fm = backend()->newVector(Xh);
-    Fm->zero();
-    for( int m = 0; m < deim()->size(); ++m )
-    {
-        Fm->add( betaF(m), qf[m]);
-        Feel::cout << "betaF(" << m << ") = " << betaF(m) << std::endl;
-    }
-
-    auto VEIM = Xh->element();
-    backend()->solve( _matrix=Am, _rhs=Fm, _solution=VEIM);
-
-    auto e = exporter(M_mesh);
-    e->add("VFE", VFE);
-    e->add("VEIM", VEIM);
-    e->save();
-
-    auto errV = normL2(domain, idv(VFE)-idv(VEIM) );
-    auto normV = normL2(domain, idv(VFE) );
-    Feel::cout << "V: err = " << errV << " relative err = " << errV/normV << std::endl;
-
-    Am->addMatrix(-1., A);
-    Fm->add(-1., F);
-    auto errA = Am->linftyNorm();
-    auto normA = A->linftyNorm();
-    auto errF = Fm->linftyNorm();
-    auto normF = F->linftyNorm();
-    Feel::cout << "A: err = " << errA << " relative err = " << errA/normA << std::endl
-               << "F: err = " << errF << " relative err = " << errF/normF << std::endl;
 }
 
 void AlphaElectric::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
