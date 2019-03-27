@@ -134,6 +134,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_couplingFSIcondition = "dirichlet-neumann";
 
     //--------------------------------------------------------------//
+    // time stepping
+    M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
+    M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
+    //--------------------------------------------------------------//
     // start solver options
     M_startBySolveNewtonian = boption(_prefix=this->prefix(),_name="start-by-solve-newtonian");
     M_hasSolveNewtonianAtKickOff = false;
@@ -392,7 +396,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
             std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( bcDirichletCompField, bcDirichletCompKeyword, name(d), "alemesh_bc" );
             std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
-            this->setMarkerALEMeshBC(bcTypeMeshALE,markers(d));
+            this->addMarkerALEMeshBC(bcTypeMeshALE,markers(d));
         }
     }
 
@@ -1064,14 +1068,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
+    M_blockVectorSolution.buildVector( this->backend() );
+
     M_algebraicFactory.reset( new model_algebraic_factory_type(this->shared_from_this(),this->backend()) );
 
     if ( boption(_name="use-velocity-near-null-space",_prefix=this->prefix() ) )
     {
+        std::string nearNullSpacePrefix = this->prefix();
+        if ( Environment::vm().count(prefixvm(this->prefix(),"use-velocity-near-null-space.prefix").c_str()) )
+            nearNullSpacePrefix = soption( _name="use-velocity-near-null-space.prefix", _prefix=this->prefix() );
+
         NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpaceVelocity(), mpl::int_<nDim>() ) ;
-        M_algebraicFactory->attachNearNullSpace( 0,userNullSpace ); // for block velocity in fieldsplit
+        M_algebraicFactory->attachNearNullSpace( 0,userNullSpace, nearNullSpacePrefix ); // for block velocity in fieldsplit
     }
     this->initInHousePreconditioner();
+
+    if ( M_timeStepping == "Theta" )
+    {
+        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
+        M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+        M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1141,9 +1158,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     std::string suffixName = "";
     if ( myFileFormat == "binary" )
          suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
-    M_bdf_fluid = bdf(  _space=M_Xh,
-                       _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-pressure"+suffixName)),
+    fs::path saveTsDir = fs::path(this->rootRepository())/fs::path( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ts")) );
+
+    int bdfOrder = 1;
+    if ( M_timeStepping == "BDF" )
+        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
+    M_bdf_fluid = bdf( _space=M_Xh,
+                       _name="velocity-pressure"+suffixName,
                        _prefix=this->prefix(),
+                       _order=bdfOrder,
                        // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
                        _initial_time=this->timeInitial(),
                        _final_time=this->timeFinal(),
@@ -1151,29 +1175,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
                        _restart=this->doRestart(),
                        _restart_path=this->restartPath(),
                        _restart_at_last_save=this->restartAtLastSave(),
-                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq(),
+                       _n_consecutive_save=nConsecutiveSave );
     M_bdf_fluid->setfileFormat( myFileFormat );
-    M_bdf_fluid->setPathSave( (fs::path(this->rootRepository()) /
-                               fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%M_bdf_fluid->bdfOrder() %this->timeStep()).str() ) ) ).string() );
+    M_bdf_fluid->setPathSave( ( saveTsDir/"velocity-pressure" ).string() );
 
     // start or restart time step scheme
     if ( !this->doRestart() )
     {
-        // start time step
-        M_bdf_fluid->start(*M_Solution);
         // up current time
-        this->updateTime( M_bdf_fluid->time() );
+        this->updateTime( M_bdf_fluid->timeInitial() );
     }
     else
     {
         // start time step
-        M_bdf_fluid->restart();
+        double tir = M_bdf_fluid->restart();
         // load a previous solution as current solution
         *M_Solution = M_bdf_fluid->unknown(0);
         // up initial time
-        this->setTimeInitial( M_bdf_fluid->timeInitial() );
+        this->setTimeInitial( tir );
         // up current time
-        this->updateTime( M_bdf_fluid->time() );
+        this->updateTime( tir );
 
         this->log("FluidMechanics","initTimeStep", "restart bdf/exporter done" );
     }
@@ -1599,8 +1621,8 @@ size_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
 {
     size_type currentStartIndex = 0;
-    this->setStartSubBlockSpaceIndex( "velocity-pressure", currentStartIndex );
-    currentStartIndex += 2;
+    this->setStartSubBlockSpaceIndex( "velocity", currentStartIndex++ );
+    this->setStartSubBlockSpaceIndex( "pressure", currentStartIndex++ );
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
         this->setStartSubBlockSpaceIndex( "define-pressure-cst-lm", currentStartIndex );
@@ -1629,7 +1651,7 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockVector()
 {
     this->initBlockVector();
-    M_blockVectorSolution.buildVector( this->backend() );
+    //M_blockVectorSolution.buildVector( this->backend() );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

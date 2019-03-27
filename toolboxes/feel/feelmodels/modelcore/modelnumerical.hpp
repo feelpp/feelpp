@@ -41,6 +41,7 @@
 
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelmodels/modelcore/modelmeasures.hpp>
+#include <feel/feelfit/fit.hpp>
 
 
 namespace Feel
@@ -98,38 +99,21 @@ class ModelNumerical : public ModelAlgebraic
         double timeInitial() const { return M_timeInitial; }
         double timeFinal() const { return M_timeFinal; }
         double timeStep() const { return M_timeStep; }
+        int timeOrder() const { return M_timeOrder; }
         bool tsSaveInFile() const { return M_tsSaveInFile; }
         int tsSaveFreq() const { return M_tsSaveFreq; }
         void setTimeInitial(double v)  { M_timeInitial=v; }
         void setTimeFinal(double v)  { M_timeFinal=v; }
         void setTimeStep(double v)  { M_timeStep=v; }
+        void setTimeOrder(int o) { M_timeOrder=o; }
 
+        bool hasModelProperties() const { return (M_modelProps)? true : false; }
         std::shared_ptr<ModelProperties> modelPropertiesPtr() const { return M_modelProps; }
         ModelProperties const& modelProperties() const { return *M_modelProps; }
         ModelProperties & modelProperties() { return *M_modelProps; }
         void setModelProperties( std::shared_ptr<ModelProperties> modelProps ) { M_modelProps = modelProps; }
         void addParameterInModelProperties( std::string const& symbolName,double value );
 
-        size_type rowStartInMatrix() const { return this->startBlockSpaceIndexMatrixRow(); }
-        size_type colStartInMatrix() const { return this->startBlockSpaceIndexMatrixCol(); }
-        size_type rowStartInVector() const { return this->startBlockSpaceIndexVector(); }
-        size_type startBlockSpaceIndexMatrixRow() const { return M_startBlockSpaceIndexMatrixRow; }
-        size_type startBlockSpaceIndexMatrixCol() const { return M_startBlockSpaceIndexMatrixCol; }
-        size_type startBlockSpaceIndexVector() const { return M_startBlockSpaceIndexVector; }
-        void setStartBlockSpaceIndexMatrixRow( size_type s ) { M_startBlockSpaceIndexMatrixRow = s; }
-        void setStartBlockSpaceIndexMatrixCol( size_type s ) { M_startBlockSpaceIndexMatrixCol = s; }
-        void setStartBlockSpaceIndexVector( size_type s ) { M_startBlockSpaceIndexVector = s; }
-        void setStartBlockSpaceIndex( size_type s ) { this->setStartBlockSpaceIndexMatrixRow( s ); this->setStartBlockSpaceIndexMatrixCol( s ); this->setStartBlockSpaceIndexVector( s ); }
-
-        size_type startSubBlockSpaceIndex( std::string const& name ) const
-            {
-                auto itFind = M_startSubBlockSpaceIndex.find( name );
-                if ( itFind != M_startSubBlockSpaceIndex.end() )
-                    return itFind->second;
-                return invalid_size_type_value;
-            }
-        bool hasStartSubBlockSpaceIndex( std::string const& name ) const { return (this->startSubBlockSpaceIndex( name ) != invalid_size_type_value); }
-        void setStartSubBlockSpaceIndex( std::string const& name, size_type s ) { M_startSubBlockSpaceIndex[name] = s; }
 
         GeomapStrategyType geomap() const { return M_geomap; }
 
@@ -153,6 +137,24 @@ class ModelNumerical : public ModelAlgebraic
         ModelMeasuresEvaluatorContext const& postProcessMeasuresEvaluatorContext() const { return M_postProcessMeasuresEvaluatorContext; }
         ModelMeasuresEvaluatorContext & postProcessMeasuresEvaluatorContext() { return M_postProcessMeasuresEvaluatorContext; }
 
+    protected :
+        template<typename SymbExprField>
+        auto symbolsExprFit( SymbExprField const& sef ) const
+            {
+                typedef Expr< Fit<decltype(expr(scalar_field_expression<2>{},sef)),0> > fit_expr_type;
+                std::vector<std::pair<std::string,fit_expr_type>> fitSymbs;
+                if ( this->hasModelProperties() )
+                {
+                    for ( auto const& param : this->modelProperties().parameters() )
+                    {
+                        if ( param.second.type() != "fit" )
+                            continue;
+                        auto exprInFit = expr( param.second.expression(), sef );
+                        fitSymbs.push_back( std::make_pair( param.first, fit( exprInFit, param.second.fitInterpolator() ) ) );
+                    }
+                }
+                return Feel::vf::symbolsExpr( symbolExpr( fitSymbs ) );
+            }
 
     private :
 
@@ -162,14 +164,13 @@ class ModelNumerical : public ModelAlgebraic
         bool M_restartAtLastSave;
 
         double M_timeInitial,M_timeFinal,M_timeStep;
+        int M_timeOrder;
         bool M_tsSaveInFile;
         int M_tsSaveFreq;
         double M_timeCurrent;
 
         std::shared_ptr<ModelProperties> M_modelProps;
 
-        size_type M_startBlockSpaceIndexMatrixRow, M_startBlockSpaceIndexMatrixCol, M_startBlockSpaceIndexVector;
-        std::map<std::string,size_type> M_startSubBlockSpaceIndex;
 
         std::string M_meshFile, M_geoFile;
 

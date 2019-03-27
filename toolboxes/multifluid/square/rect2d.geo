@@ -18,4 +18,4 @@ Physical Line("Left") = {1};
 Physical Line("Bottom") = {2};
 Physical Line("Right") = {3};
 Physical Line("Top") = {4};
-Physical Surface("Omega") = {6};
+Physical Surface("OmegaFluid") = {6};

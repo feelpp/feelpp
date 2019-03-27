@@ -161,8 +161,8 @@ class Heat : public ModelNumerical,
         bdf_temperature_ptrtype const& timeStepBdfTemperature() const { return M_bdfTemperature; }
         std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfTemperature(); }
         std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBdfTemperature(); }
-        void updateBdf();
-        void updateTimeStep() { this->updateBdf(); }
+        void startTimeStep();
+        void updateTimeStep();
         //___________________________________________________________________________________//
 
         std::shared_ptr<std::ostringstream> getInfo() const override;
@@ -176,14 +176,14 @@ class Heat : public ModelNumerical,
         void initTimeStep();
         void initPostProcess();
 
-        constexpr auto symbolsExpr( hana::int_<2> /**/ ) const
+        constexpr auto symbolsExprField( hana::int_<2> /**/ ) const
             {
                 return Feel::vf::symbolsExpr( symbolExpr("heat_T",idv(this->fieldTemperature()) ),
                                               symbolExpr("heat_dxT",dxv(this->fieldTemperature()) ),
                                               symbolExpr("heat_dyT",dyv(this->fieldTemperature()) )
                                               );
             }
-        constexpr auto symbolsExpr( hana::int_<3> /**/ ) const
+        constexpr auto symbolsExprField( hana::int_<3> /**/ ) const
             {
                 return Feel::vf::symbolsExpr( symbolExpr("heat_T",idv(this->fieldTemperature()) ),
                                               symbolExpr("heat_dxT",dxv(this->fieldTemperature()) ),
@@ -191,6 +191,8 @@ class Heat : public ModelNumerical,
                                               symbolExpr("heat_dzT",dzv(this->fieldTemperature()) )
                                               );
             }
+        auto symbolsExprFit() const { return super_type::symbolsExprFit( this->symbolsExprField() ); }
+
     public :
         void initAlgebraicFactory();
 
@@ -212,7 +214,8 @@ class Heat : public ModelNumerical,
         void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
 
         void updateParameterValues();
-        constexpr auto symbolsExpr() const { return this->symbolsExpr( hana::int_<nDim>() ); }
+        /*constexpr*/auto symbolsExpr() const { return Feel::vf::symbolsExpr( this->symbolsExprField(), this->symbolsExprFit() ); }
+        constexpr auto symbolsExprField() const { return this->symbolsExprField( hana::int_<nDim>() ); }
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
         // apply assembly and solver
@@ -228,7 +231,7 @@ class Heat : public ModelNumerical,
                                               Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateLinear & data ) const;
 
         // non linear (newton)
-        void updateNewtonInitialGuess( vector_ptrtype& U ) const override;
+        void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
         void updateJacobian( DataUpdateJacobian & data ) const override;
         void updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool buildCstPart ) const;
         void updateJacobianRadiationBC( sparse_matrix_ptrtype& J, bool buildCstPart ) const;

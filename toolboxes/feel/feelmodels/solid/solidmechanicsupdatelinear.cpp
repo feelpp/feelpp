@@ -32,8 +32,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     this->timerTool("Solve").start();
 
     double timeSteppingScaling = 1.;
-    if ( !this->isStationary() && M_timeStepping == "Theta" )
-        timeSteppingScaling = M_timeStepThetaValue;
+    if ( !this->isStationary() )
+    {
+        if ( M_timeStepping == "Theta" )
+            timeSteppingScaling = M_timeStepThetaValue;
+        data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
+    }
 
     //---------------------------------------------------------------------------------------//
 
@@ -321,17 +325,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
             if ( !listMarkerFaces.empty() )
                 bilinearForm +=
                     on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                        _element=u,_rhs=F,_expr=expression(d),
+                        _element=u,_rhs=F,_expr=expression(d,this->symbolsExpr()),
                         _prefix=this->prefix() );
             if ( !listMarkerEdges.empty() )
                 bilinearForm +=
                     on( _range=markededges(this->mesh(), listMarkerEdges),
-                        _element=u,_rhs=F,_expr=expression(d),
+                        _element=u,_rhs=F,_expr=expression(d,this->symbolsExpr()),
                         _prefix=this->prefix() );
             if ( !listMarkerPoints.empty() )
                 bilinearForm +=
                     on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                        _element=u,_rhs=F,_expr=expression(d),
+                        _element=u,_rhs=F,_expr=expression(d,this->symbolsExpr()),
                         _prefix=this->prefix() );
         }
         for ( auto const& bcDirComp : this->M_bcDirichletComponents )
@@ -346,17 +350,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
                 if ( !listMarkerFaces.empty() )
                     bilinearForm +=
                         on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                            _element=u[comp],_rhs=F,_expr=expression(d),
+                            _element=u[comp],_rhs=F,_expr=expression(d,this->symbolsExpr()),
                             _prefix=this->prefix() );
                 if ( !listMarkerEdges.empty() )
                     bilinearForm +=
                         on( _range=markededges(this->mesh(), listMarkerEdges),
-                            _element=u[comp],_rhs=F,_expr=expression(d),
+                            _element=u[comp],_rhs=F,_expr=expression(d,this->symbolsExpr()),
                             _prefix=this->prefix() );
                 if ( !listMarkerPoints.empty() )
                     bilinearForm +=
                         on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                            _element=u[comp],_rhs=F,_expr=expression(d),
+                            _element=u[comp],_rhs=F,_expr=expression(d,this->symbolsExpr()),
                             _prefix=this->prefix() );
             }
         }
@@ -392,17 +396,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F,
     for( auto const& d : this->M_bcNeumannScalar )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                       _expr= timeSteppingScaling*expression(d)*inner( N(),id(v) ),
+                       _expr= timeSteppingScaling*expression(d,this->symbolsExpr())*inner( N(),id(v) ),
                         _geomap=this->geomap() );
     for( auto const& d : this->M_bcNeumannVectorial )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,name(d)) ),
-                       _expr= timeSteppingScaling*inner( expression(d),id(v) ),
+                       _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
                        _geomap=this->geomap() );
     for( auto const& d : this->M_bcNeumannTensor2 )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,name(d)) ),
-                       _expr= timeSteppingScaling*inner( expression(d)*N(),id(v) ),
+                       _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr())*N(),id(v) ),
                        _geomap=this->geomap() );
 }
 
@@ -425,11 +429,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinLinearPDE( sparse_matrix_ptrtyp
     {
         bilinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)/*this->markerRobinBC()*/),
-                       _expr= timeSteppingScaling*expression1(d)(0,0)*inner( idt(u) ,id(u) ),
+                       _expr= timeSteppingScaling*expression1(d,this->symbolsExpr())(0,0)*inner( idt(u) ,id(u) ),
                        _geomap=this->geomap() );
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)/*this->markerRobinBC()*/),
-                       _expr= timeSteppingScaling*inner( expression2(d) , id(u) ),
+                       _expr= timeSteppingScaling*inner( expression2(d,this->symbolsExpr()) , id(u) ),
                        _geomap=this->geomap() );
 
     }
@@ -450,7 +454,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F
         auto rangeBodyForceUsed = markers(d).empty()? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
         myLinearForm +=
             integrate( _range=rangeBodyForceUsed,
-                       _expr= timeSteppingScaling*inner( expression(d),id(v) ),
+                       _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
                        _geomap=this->geomap() );
     }
 }

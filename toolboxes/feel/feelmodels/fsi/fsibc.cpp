@@ -7,14 +7,17 @@ namespace Feel
 namespace FeelModels
 {
 
-#if 0
+
 template< class FluidType, class SolidType >
 void
-FSI<FluidType,SolidType>::updateLinearPDEStrongDirichletBC_Fluid( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
+FSI<FluidType,SolidType>::updateLinearPDEDofElimination_Fluid( DataUpdateLinear & data ) const
 {
     if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
     {
-        this->log("FSI","updateLinearPDEStrongDirichletBC_Fluid", "start" );
+        this->log("FSI","updateLinearPDEDofElimination_Fluid", "start" );
+
+        sparse_matrix_ptrtype& A = data.matrix();
+        vector_ptrtype& F = data.rhs();
 
         auto mesh = M_fluidModel->mesh();
         auto Xh = M_fluidModel->spaceVelocityPressure();
@@ -28,31 +31,33 @@ FSI<FluidType,SolidType>::updateLinearPDEStrongDirichletBC_Fluid( sparse_matrix_
                 _element=u, _rhs=F,
                 _expr=idv(M_fluidModel->meshVelocity2()) );
 
-        this->log("FSI","updateLinearPDEStrongDirichletBC_Fluid", "finish" );
+        this->log("FSI","updateLinearPDEDofElimination_Fluid", "finish" );
     }
 }
 
 template< class FluidType, class SolidType >
 void
-FSI<FluidType,SolidType>::updateNewtonInitialGuess_Fluid( vector_ptrtype& U ) const
+FSI<FluidType,SolidType>::updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess & data ) const
 {
     if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
     {
+        this->log("FSI","updateNewtonInitialGuess_Fluid", "start" );
+
+        vector_ptrtype& U = data.initialGuess();
         auto mesh = M_fluidModel->mesh();
         auto Xh = M_fluidModel->spaceVelocityPressure();
         auto up = Xh->element( U, M_fluidModel->rowStartInVector() );
         auto u = up.template element<0>();
         u.on(_range=markedfaces(mesh, M_fluidModel->markersNameMovingBoundary()),
              _expr=idv( M_fluidModel->meshVelocity2() ) );
-#if 0
-        // synchronize velocity dof on interprocess
-        auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("velocity");
-        if ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )
-            sync( u, "=", itFindDofsWithValueImposed->second );
-#endif
+        // update info for synchronization
+        M_fluidModel->updateDofEliminationIdsMultiProcess( "velocity", this->dofEliminationIdsMultiProcess( "fluid.velocity" ), data );
+
+        this->log("FSI","updateNewtonInitialGuess_Fluid", "finish" );
     }
 }
 
+#if 0
 template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::updateJacobianStrongDirichletBC_Fluid( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const
@@ -552,6 +557,9 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
 
+     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
+    this->log("FSI","updateLinearPDE_Solid", "start"+sc );
+
     auto mesh = M_solidModel->mesh();
     auto Xh = M_solidModel->functionSpaceDisplacement();
     auto const& u = M_solidModel->fieldDisplacement();
@@ -565,12 +573,16 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
 
     auto rangeFSI = markedfaces(mesh,M_solidModel->markerNameFSI());
 
+    double timeSteppingScaling = 1.;
+    if ( !this->solidModel()->isStationary() )
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"time-stepping.scaling") );
+
     // neumann boundary condition with normal stress (fsi boundary condition)
     if ( buildNonCstPart)
     {
         linearForm +=
             integrate( _range=rangeFSI,
-                       _expr= -inner( idv(this->fieldNormalStressFromFluidPtr_solid()),id(u) ),
+                       _expr= -timeSteppingScaling*inner( idv(this->fieldNormalStressFromFluidPtr_solid()),id(u) ),
                        _geomap=this->geomap() );
     }
 
@@ -603,7 +615,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
             {
                 bilinearForm +=
                     integrate( _range=rangeFSI,
-                               _expr= gammaRobinFSI*muFluid*M_solidModel->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(u))/hFace(),
+                               _expr= timeSteppingScaling*gammaRobinFSI*muFluid*M_solidModel->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(u))/hFace(),
                                _geomap=this->geomap() );
             }
             if ( buildNonCstPart )
@@ -611,7 +623,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
                 auto robinFSIRhs = idv(M_solidModel->timeStepNewmark()->polyFirstDeriv() ) + idv(this->fieldVelocityInterfaceFromFluid_solid());
                 linearForm +=
                     integrate( _range=rangeFSI,
-                               _expr= gammaRobinFSI*muFluid*inner( robinFSIRhs, id(u))/hFace(),
+                               _expr= timeSteppingScaling*gammaRobinFSI*muFluid*inner( robinFSIRhs, id(u))/hFace(),
                                _geomap=this->geomap() );
             }
         }
@@ -625,7 +637,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
                        _rowstart=this->solidModel()->rowStartInMatrix(),
                        _colstart=this->solidModel()->colStartInMatrix() + startBlockIndexVelocity ) +=
                     integrate( _range=rangeFSI,
-                               _expr= gammaRobinFSI*muFluid*inner(idt(u),id(u))/hFace(),
+                               _expr= timeSteppingScaling*gammaRobinFSI*muFluid*inner(idt(u),id(u))/hFace(),
                                _geomap=this->geomap() );
             }
             if ( buildNonCstPart )
@@ -633,7 +645,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
                 auto robinFSIRhs = idv(this->fieldVelocityInterfaceFromFluid_solid());
                 linearForm +=
                     integrate( _range=rangeFSI,
-                               _expr= gammaRobinFSI*muFluid*inner( robinFSIRhs, id(u))/hFace(),
+                               _expr= timeSteppingScaling*gammaRobinFSI*muFluid*inner( robinFSIRhs, id(u))/hFace(),
                                _geomap=this->geomap() );
             }
         }
@@ -642,6 +654,8 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
         mymesh_mover.apply( mymesh, dispInv );
 #endif
     }
+
+     this->log("FSI","updateLinearPDE_Solid", "finish"+sc );
 }
 
 template< class FluidType, class SolidType >
@@ -673,6 +687,10 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
                                _colstart=M_solidModel->colStartInMatrix() );
 
 
+    double timeSteppingScaling = 1.;
+    if ( !this->solidModel()->isStationary() )
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"time-stepping.scaling") );
+
 
     double gammaRobinFSI = M_couplingNitscheFamily_gamma;
 
@@ -694,7 +712,7 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
         {
             bilinearForm +=
                 integrate( _range=rangeFSI,
-                           _expr= gammaRobinFSI*muFluid*M_solidModel->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(u))/hFace(),
+                           _expr= timeSteppingScaling*gammaRobinFSI*muFluid*M_solidModel->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(u))/hFace(),
                            _geomap=this->geomap() );
         }
         else
@@ -705,7 +723,7 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
                    _rowstart=this->solidModel()->rowStartInMatrix(),
                    _colstart=this->solidModel()->colStartInMatrix() + startBlockIndexVelocity ) +=
                 integrate( _range=rangeFSI,
-                           _expr= gammaRobinFSI*muFluid*inner(idt(u),id(u))/hFace(),
+                           _expr= timeSteppingScaling*gammaRobinFSI*muFluid*inner(idt(u),id(u))/hFace(),
                            _geomap=this->geomap() );
         }
     }
@@ -730,6 +748,9 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("FSI","updateResidual_Solid", "start"+sc );
 
+    double timeSteppingScaling = 1.;
+    if ( !this->solidModel()->isStationary() )
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"time-stepping.scaling") );
 
     auto mesh = M_solidModel->mesh();
     auto Xh = M_solidModel->functionSpaceDisplacement();
@@ -745,7 +766,7 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
     {
         linearForm +=
             integrate( _range=rangeFSI,
-                       _expr= trans(idv(this->fieldNormalStressFromFluidPtr_solid()))*id(u),
+                       _expr= timeSteppingScaling*inner(idv(this->fieldNormalStressFromFluidPtr_solid()),id(u)),
                        _geomap=this->geomap() );
     }
 
@@ -771,7 +792,7 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
             {
                 linearForm +=
                     integrate( _range=rangeFSI,
-                               _expr= gammaRobinFSI*muFluid*M_solidModel->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idv(u),id(u))/hFace(),
+                               _expr= timeSteppingScaling*gammaRobinFSI*muFluid*M_solidModel->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idv(u),id(u))/hFace(),
                                _geomap=this->geomap() );
             }
             else
@@ -780,7 +801,7 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
                 auto const curVel = Xh->element(XVec, this->solidModel()->rowStartInVector()+startBlockIndexVelocity);
                 linearForm +=
                     integrate( _range=rangeFSI,
-                               _expr= gammaRobinFSI*muFluid*inner(idv(curVel),id(u))/hFace(),
+                               _expr= timeSteppingScaling*gammaRobinFSI*muFluid*inner(idv(curVel),id(u))/hFace(),
                                _geomap=this->geomap() );
             }
         }
@@ -791,7 +812,7 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
                 auto robinFSIRhs = idv(M_solidModel->timeStepNewmark()->polyFirstDeriv() ) + idv(this->fieldVelocityInterfaceFromFluid_solid());
                 linearForm +=
                     integrate( _range=rangeFSI,
-                               _expr= -gammaRobinFSI*muFluid*inner( robinFSIRhs,id(u) )/hFace(),
+                               _expr= -timeSteppingScaling*gammaRobinFSI*muFluid*inner( robinFSIRhs,id(u) )/hFace(),
                                _geomap=this->geomap() );
             }
             else
@@ -799,7 +820,7 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
                 auto robinFSIRhs = idv(this->fieldVelocityInterfaceFromFluid_solid());
                 linearForm +=
                     integrate( _range=rangeFSI,
-                               _expr= -gammaRobinFSI*muFluid*inner( robinFSIRhs,id(u) )/hFace(),
+                               _expr= -timeSteppingScaling*gammaRobinFSI*muFluid*inner( robinFSIRhs,id(u) )/hFace(),
                                _geomap=this->geomap() );
 
             }

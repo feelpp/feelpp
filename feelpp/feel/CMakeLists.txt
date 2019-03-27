@@ -63,8 +63,10 @@ add_library(Feelpp::feelpp ALIAS feelpp )  # to match exported target
 set_target_properties(feelpp PROPERTIES OUTPUT_NAME "feelpp")
 #set_target_properties(feelpp PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
 if ( ${CMAKE_VERSION} VERSION_GREATER 3.7.2 )
-  target_compile_features(feelpp PUBLIC cxx_std_14)
+  target_compile_features(feelpp PUBLIC cxx_std_${FEELPP_STD_CPP})
 endif()
+set_property(TARGET feelpp PROPERTY FEELPP_STD_CPP ${FEELPP_STD_CPP} )
+
 set_property(TARGET feelpp PROPERTY LABELS feel++)
 target_include_directories(feelpp PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>
@@ -127,6 +129,18 @@ if ( Boost_FOUND )
     target_compile_definitions( feelpp PUBLIC BOOST_TEST_DYN_LINK )
   endif (BOOST_ENABLE_TEST_DYN_LINK)
 
+  # re-enable some std functions which have been removed in c++17 (for libcpp)
+  # * std::random_shuffle : fixed in boost >= 1.69
+  # * std::auto_ptr : fixed in boost >= 1.67
+  if(${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION} VERSION_LESS 1.69)
+    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
+      if ( "${FEELPP_STDLIB_CPP}" STREQUAL "c++" )
+        #target_compile_definitions( feelpp PUBLIC _LIBCPP_ENABLE_CXX17_REMOVED_AUTO_PTR )
+        target_compile_definitions( feelpp PUBLIC _LIBCPP_ENABLE_CXX17_REMOVED_FEATURES )
+      endif()
+    endif()
+  endif()
+
   target_include_directories( feelpp PUBLIC ${Boost_INCLUDE_DIR} )
   target_link_libraries( feelpp PUBLIC ${Boost_LIBRARIES} )
   
@@ -171,7 +185,7 @@ if ( GMSH_FOUND )
   if ( FEELPP_HAS_MED )
     target_compile_definitions( feelpp PUBLIC FEELPP_HAS_MED FEELPP_HAS_GMSH_HAS_MED )
   endif()
-  target_include_directories( feelpp PUBLIC ${GMSH_INCLUDE_DIR} )
+  target_include_directories( feelpp BEFORE PUBLIC ${GMSH_INCLUDE_DIR} )
   if ( GL2PS_LIBRARY )
     if ( GL_LIBRARY AND FEELPP_ENABLE_OPENGL )
       target_link_libraries( feelpp PUBLIC ${GL2PS_LIBRARY} ${GL_LIBRARY})

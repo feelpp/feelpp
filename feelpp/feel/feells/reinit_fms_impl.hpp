@@ -437,8 +437,10 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
     reduceClosePoints( theHeap, status );
     checkHeap( "after reduce close points" );
 
-    auto minNewEntry = [](std::pair<heap_entry_type, size_type> a,
-                          std::pair<heap_entry_type, size_type> b)
+    typedef std::pair<heap_entry_type, size_type> pair_heap_dofid_type;
+    std::function<pair_heap_dofid_type( pair_heap_dofid_type const&, pair_heap_dofid_type const& )>
+        minNewEntry = []( pair_heap_dofid_type const& a,
+                          pair_heap_dofid_type const& b)
       { // return the entry having the minimum abs(phi) value
         return std::abs(a.first.first) < std::abs(b.first.first) ? a : b; };
 

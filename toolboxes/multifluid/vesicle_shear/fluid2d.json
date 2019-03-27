@@ -1,11 +1,18 @@
 {
-    "Name": "Square2d",
-    "ShortName":"Square2d",
+    "Name": "VesicleShear2d",
+    "ShortName": "VesicleShear2d",
     "Models":
     {
         "equations":"Stokes"
     },
-        
+    "Materials":
+    {
+        "OmegaFluid":
+        {
+            "rho":"1e-4",
+            "mu":"10"
+        }
+    },
     "Parameters":
     {
         "gammaDot": { "value":"2" },

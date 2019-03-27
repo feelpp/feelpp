@@ -772,22 +772,84 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
+{
+    this->log("SolidMechanics","startTimeStep", "start" );
+
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+
+    // go to next time step : ti + \Delta t
+    if ( this->isStandardModel() )
+    {
+        if ( M_timeStepping == "Newmark" )
+        {
+            // start time step
+            if ( !this->doRestart() )
+                M_timeStepNewmark->start(*M_fieldDisplacement);
+            // up current time
+            this->updateTime( M_timeStepNewmark->time() );
+        }
+        else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+        {
+            // start time step
+            if ( !this->doRestart() )
+            {
+                M_timeStepBdfDisplacement->start( *M_fieldDisplacement );
+                M_timeStepBdfVelocity->start( *M_fieldVelocity );
+            }
+            // up current time
+            this->updateTime( M_timeStepBdfDisplacement->time() );
+        }
+        // start save pressure
+        if ( M_useDisplacementPressureFormulation && !this->doRestart() )
+            M_savetsPressure->start( *M_fieldPressure );
+    }
+    else if (this->is1dReducedModel())
+    {
+        // start time step
+        if ( !this->doRestart() )
+            M_newmark_displ_1dReduced->start(*M_disp_1dReduced);
+        // up current time
+        this->updateTime( M_newmark_displ_1dReduced->time() );
+    }
+    this->log("SolidMechanics","startTimeStep", "finish" );
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
     this->log("SolidMechanics","updateTimeStep", "start" );
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
-    if ( M_timeStepping == "Newmark" )
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+
+    // go to next time step
+    if (this->isStandardModel())
     {
-        if (this->isStandardModel())
+        if ( M_timeStepping == "Newmark" )
         {
             // next time step
             M_timeStepNewmark->next( *M_fieldDisplacement );
             // up current time
             this->updateTime( M_timeStepNewmark->time() );
         }
-        else if (this->is1dReducedModel())
+        else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+        {
+            M_timeStepBdfDisplacement->next( *M_fieldDisplacement );
+            M_timeStepBdfVelocity->next( *M_fieldVelocity );
+            this->updateTime( M_timeStepBdfDisplacement->time() );
+        }
+
+        if ( M_useDisplacementPressureFormulation )
+            M_savetsPressure->next(*M_fieldPressure);
+    }
+    else if (this->is1dReducedModel())
+    {
+        if ( M_timeStepping == "Newmark" )
         {
             // next time step
             M_newmark_displ_1dReduced->next( *M_disp_1dReduced );
@@ -795,18 +857,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
             this->updateTime( M_newmark_displ_1dReduced->time() );
         }
     }
-    else
-    {
-
-        if ( M_timeStepping == "Theta" )
-            this->updateTimeStepThetaSchemePreviousContrib();
-        M_timeStepBdfDisplacement->next( *M_fieldDisplacement );
-        M_timeStepBdfVelocity->next( *M_fieldVelocity );
-        this->updateTime( M_timeStepBdfDisplacement->time() );
-    }
-
-    if ( this->isStandardModel() && M_useDisplacementPressureFormulation )
-        M_savetsPressure->next(*M_fieldPressure);
 
     // update user functions which depend of time only
     this->updateUserFunctions(true);
@@ -821,17 +871,26 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepThetaSchemePreviousContrib()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 {
-    M_timeStepThetaSchemePreviousContrib->zero();
-    M_blockVectorSolution.updateVectorFromSubVectors();
-    ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(),
-                                                     M_timeStepThetaSchemePreviousContrib, true, false );
-    dataResidual.addInfo( "Theta-Time-Stepping-Previous-Contrib" );
-    this->updateResidual( dataResidual );
-    dataResidual.setBuildCstPart( false );
-    this->updateResidual( dataResidual );
-    M_timeStepThetaSchemePreviousContrib->close();
+    if ( this->isStandardModel() )
+    {
+        if ( !M_algebraicFactory || M_timeStepping == "BDF" || M_timeStepping == "Newmark" )
+            return;
+
+        if ( M_timeStepping == "Theta" )
+        {
+            M_timeStepThetaSchemePreviousContrib->zero();
+            M_blockVectorSolution.updateVectorFromSubVectors();
+            std::vector<std::string> infos = { "time-stepping.evaluate-residual-without-time-derivative" };
+            M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+            M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos, false );
+            M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+        }
+    }
+    else if ( this->is1dReducedModel() )
+    {
+    }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -887,14 +946,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::predictorDispl()
 
 //---------------------------------------------------------------------------------------------------//
 
-
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
-    this->log("SolidMechanics","solve", "start" );
-    this->timerTool("Solve").start();
-
     this->modelProperties().parameters().updateParameterValues();
 
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -909,6 +964,16 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
     this->M_bcNeumannEulerianFrameTensor2.setParameterValues( paramValues );
     this->M_bcRobin.setParameterValues( paramValues );
     this->M_volumicForcesProperties.setParameterValues( paramValues );
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
+{
+    this->log("SolidMechanics","solve", "start" );
+    this->timerTool("Solve").start();
+
+    this->updateParameterValues();
 
     if ( this->isStandardModel() )
     {
@@ -1440,102 +1505,71 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     //-------------------------------------//
     // on topological faces
     auto const& listMarkedFacesDisp = std::get<0>( meshMarkersDispByEntities );
-    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesDisp ) )
+    if ( !listMarkedFacesDisp.empty() )
     {
-        auto const& face = unwrap_ref( faceWrap );
-        auto facedof = XhDisp->dof()->faceLocalDof( face.id() );
-        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-        {
-            dofsWithValueImposedDisp.insert( it->index() );
-        }
+        auto therange = markedfaces( mesh,listMarkedFacesDisp );
+        auto dofsToAdd = XhDisp->dofs( therange );
+        dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhDisp->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("displacement",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
     // on marked edges (only 3d)
     auto const& listMarkedEdgesDisp = std::get<1>( meshMarkersDispByEntities );
-    for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesDisp ) )
+    if ( !listMarkedEdgesDisp.empty() )
     {
-        auto const& edge = unwrap_ref( edgeWrap );
-        auto itEltInfo = edge.elements().begin();
-        if ( itEltInfo == edge.elements().end() )
-            continue;
-        size_type eid = itEltInfo->first;
-        uint16_type edgeid_in_element = itEltInfo->second;
-        for( auto const& ldof : XhDisp->dof()->edgeLocalDof( eid, edgeid_in_element ) )
-        {
-            dofsWithValueImposedDisp.insert( ldof.index() );
-        }
+        auto therange = markededges(mesh,listMarkedEdgesDisp );
+        auto dofsToAdd = XhDisp->dofs( therange );
+        dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhDisp->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("displacement",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
     // on marked points
     auto const& listMarkedPointsDisp = std::get<2>( meshMarkersDispByEntities );
-    for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsDisp ) )
+    if ( !listMarkedPointsDisp.empty() )
     {
-        auto const& point = unwrap_ref( pointWrap );
-        auto itPointInfo = point.elements().begin();
-        if ( itPointInfo == point.elements().end() )
-            continue;
-        size_type eid = itPointInfo->first;
-        uint16_type ptid_in_element = itPointInfo->second;
-        for( uint16_type c = 0; c < nDofComponentsDisp; ++c )
-        {
-            size_type index = XhDisp->dof()->localToGlobal( eid, ptid_in_element, c ).index();
-            dofsWithValueImposedDisp.insert( index );
-        }
+        auto therange = markedpoints(mesh,listMarkedPointsDisp );
+        auto dofsToAdd = XhDisp->dofs( therange );
+        dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhDisp->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("displacement",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
     //-------------------------------------//
     // on disp components
     for ( auto const& meshMarkersPair : meshMarkersCompDispByEntities )
     {
         ComponentType comp = meshMarkersPair.first;
-        int compDofShift = ((int)comp);
         // topological faces
         auto const& listMarkedFacesCompDisp = std::get<0>( meshMarkersPair.second );
-        for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesCompDisp ) )
+        if ( !listMarkedFacesCompDisp.empty() )
         {
-            auto const& face = unwrap_ref( faceWrap );
-            auto facedof = XhCompDisp->dof()->faceLocalDof( face.id() );
-            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-            {
-                size_type compdof = it->index();
-                size_type thedof = compDofShift +  nDofComponentsDisp*compdof;
-                dofsWithValueImposedDisp.insert( thedof );
-            }
+            auto therange = markedfaces(mesh,listMarkedFacesCompDisp );
+            auto dofsToAdd = XhDisp->dofs( therange, comp );
+            dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
+            this->dofEliminationIdsMultiProcess("displacement",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
         // edges (only 3d)
         auto const& listMarkedEdgesCompDisp = std::get<1>( meshMarkersPair.second );
-        for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesCompDisp ) )
+        if ( !listMarkedEdgesCompDisp.empty() )
         {
-            auto const& edge = unwrap_ref( edgeWrap );
-            auto itEltInfo = edge.elements().begin();
-            if ( itEltInfo == edge.elements().end() )
-                continue;
-            size_type eid = itEltInfo->first;
-            uint16_type edgeid_in_element = itEltInfo->second;
-            for( auto const& ldof : XhCompDisp->dof()->edgeLocalDof( eid, edgeid_in_element ) )
-            {
-                size_type compdof = ldof.index();
-                size_type thedof = compDofShift + nDofComponentsDisp*compdof;
-                dofsWithValueImposedDisp.insert( ldof.index() );
-            }
+            auto therange = markededges(mesh,listMarkedEdgesCompDisp );
+            auto dofsToAdd = XhDisp->dofs( therange, comp );
+            dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
+            this->dofEliminationIdsMultiProcess("displacement",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
         // points
         auto const& listMarkedPointsCompDisp = std::get<2>( meshMarkersPair.second );
-        for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsCompDisp ) )
+        if ( !listMarkedPointsCompDisp.empty() )
         {
-            auto const& point = unwrap_ref( pointWrap );
-            auto itPointInfo = point.elements().begin();
-            if ( itPointInfo == point.elements().end() )
-                continue;
-            size_type eid = itPointInfo->first;
-            uint16_type ptid_in_element = itPointInfo->second;
-            size_type index = XhDisp->dof()->localToGlobal( eid, ptid_in_element, compDofShift ).index();
-            dofsWithValueImposedDisp.insert( index );
+            auto therange = markedpoints(mesh,listMarkedPointsCompDisp );
+            auto dofsToAdd = XhDisp->dofs( therange, comp );
+            dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
+            this->dofEliminationIdsMultiProcess("displacement",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
     }
 
-
-
-
-
-    
 
 }
 

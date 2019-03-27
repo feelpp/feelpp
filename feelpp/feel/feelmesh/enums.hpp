@@ -31,12 +31,29 @@
 
 namespace  Feel
 {
+
+/**
+ * entity identifier  for mesh iterators
+ */
+enum ElementsType
+{
+    MESH_ELEMENTS = 0,           /**< elements */
+    MESH_FACES = 1,              /**< faces */
+    MESH_INTERNAL_FACES = 2,     /**< internal faces */
+    MESH_EDGES = 3,              /**< edges */
+    MESH_INTERNAL_EDGES = 4,     /**< internal edges */
+    MESH_POINTS = 5              /**< points */
+};
+
 enum MESH_CHANGES
 {
     MESH_CHANGES_POINTS_COORDINATES = 0,
     MESH_CHANGES_CONNECTIVITY       = 1,
     MESH_CHANGES_PARTITION          = 2
 };
+
+enum class EntityProcessType {LOCAL_ONLY,GHOST_ONLY,ALL,IGNORE_ENTITY_ON_INTERPROCESS_FACE};
+using entity_process_t = EntityProcessType;
 
 }
 #endif /* __MeshEnums_H */

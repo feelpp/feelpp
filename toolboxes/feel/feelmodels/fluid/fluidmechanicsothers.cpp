@@ -1238,11 +1238,32 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVorticity()
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
 {
-    this->log("FluidMechanics","updateTimeStepBDF", "start" );
+    this->log("FluidMechanics","startTimeStep", "start" );
+
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+
+    // start time step
+    if ( !this->doRestart() )
+        M_bdf_fluid->start(*M_Solution);
+    // up current time
+    this->updateTime( M_bdf_fluid->time() );
+
+    this->log("FluidMechanics","startTimeStep", "finish" );
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
+{
+    this->log("FluidMechanics","updateTimeStep", "start" );
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
+
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
 
     // windkessel outlet
     if (this->hasFluidOutletWindkessel() )
@@ -1290,27 +1311,31 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
         }
     }
 
-
-    int previousTimeOrder = this->timeStepBDF()->timeOrder();
-
-    M_bdf_fluid->next( *M_Solution );
-
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if (this->isMoveDomain())
         M_meshALE->updateBdf();
 #endif
 
-    int currentTimeOrder = this->timeStepBDF()->timeOrder();
-
-    this->updateTime( M_bdf_fluid->time() );
+    bool rebuildCstAssembly = false;
+    if ( M_timeStepping == "BDF" )
+    {
+        int previousTimeOrder = this->timeStepBDF()->timeOrder();
+        M_bdf_fluid->next( *M_Solution );
+        int currentTimeOrder = this->timeStepBDF()->timeOrder();
+        rebuildCstAssembly = previousTimeOrder != currentTimeOrder && this->timeStepBase()->strategy() == TS_STRATEGY_DT_CONSTANT;
+        this->updateTime( M_bdf_fluid->time() );
+    }
+    else if ( M_timeStepping == "Theta" )
+    {
+        M_bdf_fluid->next( *M_Solution );
+        this->updateTime( M_bdf_fluid->time() );
+    }
 
     // update user functions which depend of time only
     this->updateUserFunctions(true);
 
     // maybe rebuild cst jacobian or linear
-    if ( M_algebraicFactory &&
-         previousTimeOrder!=currentTimeOrder &&
-         this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
+    if ( M_algebraicFactory && rebuildCstAssembly )
     {
         if (this->solverName() == "Newton" && !this->rebuildLinearPartInJacobian() )
         {
@@ -1325,11 +1350,31 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
     }
 
 
-    this->timerTool("TimeStepping").stop("updateBdf");
+    this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
-    this->log("FluidMechanics","updateTimeStepBDF", "finish" );
+    this->log("FluidMechanics","updateTimeStep", "finish" );
 }
 
+//---------------------------------------------------------------------------------------------------------//
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
+{
+    if ( !M_algebraicFactory )
+        return;
+
+    if ( M_timeStepping == "Theta" )
+    {
+        M_timeStepThetaSchemePreviousContrib->zero();
+        M_blockVectorSolution.updateVectorFromSubVectors();
+        //this->updateBlockVectorSolution();
+        std::vector<std::string> infos = { "time-stepping.evaluate-residual-without-time-derivative" };
+        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+        M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos );
+        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+    }
+}
 
 //---------------------------------------------------------------------------------------------------------//
 
@@ -1585,15 +1630,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
     sync( *M_meshVelocityInterface, "=", M_dofsVelocityInterfaceOnMovingBoundary);
 
     //-------------------------------------------------------------------//
-    // semi implicit optimisation
-    if (this->useFSISemiImplicitScheme())
-    {
-        //this->meshALE()->revertReferenceMesh();
-        this->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(this->mesh(),this->markersNameMovingBoundary()) );
-        //this->meshALE()->revertMovingMesh();
-    }
-
-    //-------------------------------------------------------------------//
     // move winkessel submesh
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
@@ -1614,27 +1650,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
                       (boost::format( "normWind %1% normDisp %2% normDispImposed %3% ") %normWind %normDisp %normDispImposed ).str() );
         }
     }
-
-    //-------------------------------------------------------------------//
-    //ho visu
-#if 0 //defined(FEELPP_HAS_VTK)
-    if (M_isHOVisu && false) // useless now ( this export mesh stay fix!)
-    {
-        auto drm = M_meshALE->dofRelationShipMap();
-        //revert ref
-        M_meshdispVisuHO->scale(-1);
-        M_meshmover_visu_ho.apply(M_XhVectorialVisuHO->mesh(),*M_meshdispVisuHO);
-        // get disp from ref
-        auto thedisp = M_meshALE->functionSpace()->element();
-        for (uint i=0;i<thedisp.nLocalDof();++i)
-            thedisp(drm->dofRelMap()[i])=(*(M_meshALE->displacementInRef()))(i) - (*M_meshALE->dispP1ToHO_ref())(i) ;
-        //transfert disp on ho mesh
-        M_opImeshdisp->apply( thedisp , *M_meshdispVisuHO);
-        // move ho mesh
-        M_meshmover_visu_ho.apply(M_XhVectorialVisuHO->mesh(),*M_meshdispVisuHO);
-    }
-#endif
-
 
     this->log("FluidMechanics","updateALEmesh", "finish");
 }
@@ -2258,94 +2273,67 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     //-------------------------------------//
     // on topological faces
     auto const& listMarkedFacesVelocity = std::get<0>( meshMarkersVelocityByEntities );
-    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesVelocity ) )
+    if ( !listMarkedFacesVelocity.empty() )
     {
-        auto const& face = unwrap_ref( faceWrap );
-        auto facedof = XhVelocity->dof()->faceLocalDof( face.id() );
-        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-        {
-            dofsWithValueImposedVelocity.insert( it->index() );
-        }
+        auto therange = markedfaces( mesh,listMarkedFacesVelocity );
+        auto dofsToAdd = XhVelocity->dofs( therange );
+        dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
     // on marked edges (only 3d)
     auto const& listMarkedEdgesVelocity = std::get<1>( meshMarkersVelocityByEntities );
-    for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesVelocity ) )
+    if ( !listMarkedEdgesVelocity.empty() )
     {
-        auto const& edge = unwrap_ref( edgeWrap );
-        auto itEltInfo = edge.elements().begin();
-        if ( itEltInfo == edge.elements().end() )
-            continue;
-        size_type eid = itEltInfo->first;
-        uint16_type edgeid_in_element = itEltInfo->second;
-        for( auto const& ldof : XhVelocity->dof()->edgeLocalDof( eid, edgeid_in_element ) )
-        {
-            dofsWithValueImposedVelocity.insert( ldof.index() );
-        }
+        auto therange = markededges(mesh,listMarkedEdgesVelocity );
+        auto dofsToAdd = XhVelocity->dofs( therange );
+        dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("velocity",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
     // on marked points
     auto const& listMarkedPointsVelocity = std::get<2>( meshMarkersVelocityByEntities );
-    for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsVelocity ) )
+    if ( !listMarkedPointsVelocity.empty() )
     {
-        auto const& point = unwrap_ref( pointWrap );
-        auto itPointInfo = point.elements().begin();
-        if ( itPointInfo == point.elements().end() )
-            continue;
-        size_type eid = itPointInfo->first;
-        uint16_type ptid_in_element = itPointInfo->second;
-        for( uint16_type c = 0; c < nDofComponentsVelocity; ++c )
-        {
-            size_type index = XhVelocity->dof()->localToGlobal( eid, ptid_in_element, c ).index();
-            dofsWithValueImposedVelocity.insert( index );
-        }
+        auto therange = markedpoints(mesh,listMarkedPointsVelocity );
+        auto dofsToAdd = XhVelocity->dofs( therange );
+        dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("velocity",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
     //-------------------------------------//
     // on velocity components
     for ( auto const& meshMarkersPair : meshMarkersCompVelocityByEntities )
     {
         ComponentType comp = meshMarkersPair.first;
-        int compDofShift = ((int)comp);
-        // topological faces
         auto const& listMarkedFacesCompVelocity = std::get<0>( meshMarkersPair.second );
-        for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesCompVelocity ) )
+        if ( !listMarkedFacesCompVelocity.empty() )
         {
-            auto const& face = unwrap_ref( faceWrap );
-            auto facedof = XhCompVelocity->dof()->faceLocalDof( face.id() );
-            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-            {
-                size_type compdof = it->index();
-                size_type thedof = compDofShift +  nDofComponentsVelocity*compdof;
-                dofsWithValueImposedVelocity.insert( thedof );
-            }
+            auto therange = markedfaces(mesh,listMarkedFacesCompVelocity );
+            auto dofsToAdd = XhVelocity->dofs( therange, comp );
+            dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
+            this->dofEliminationIdsMultiProcess("velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
         // edges (only 3d)
         auto const& listMarkedEdgesCompVelocity = std::get<1>( meshMarkersPair.second );
-        for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesCompVelocity ) )
+        if ( !listMarkedEdgesCompVelocity.empty() )
         {
-            auto const& edge = unwrap_ref( edgeWrap );
-            auto itEltInfo = edge.elements().begin();
-            if ( itEltInfo == edge.elements().end() )
-                continue;
-            size_type eid = itEltInfo->first;
-            uint16_type edgeid_in_element = itEltInfo->second;
-            for( auto const& ldof : XhCompVelocity->dof()->edgeLocalDof( eid, edgeid_in_element ) )
-            {
-                size_type compdof = ldof.index();
-                size_type thedof = compDofShift + nDofComponentsVelocity*compdof;
-                dofsWithValueImposedVelocity.insert( thedof );
-            }
+            auto therange = markededges(mesh,listMarkedEdgesCompVelocity );
+            auto dofsToAdd = XhVelocity->dofs( therange, comp );
+            dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
+            this->dofEliminationIdsMultiProcess("velocity",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
         // points
         auto const& listMarkedPointsCompVelocity = std::get<2>( meshMarkersPair.second );
-        for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsCompVelocity ) )
+        if ( !listMarkedPointsCompVelocity.empty() )
         {
-            auto const& point = unwrap_ref( pointWrap );
-            auto itPointInfo = point.elements().begin();
-            if ( itPointInfo == point.elements().end() )
-                continue;
-            size_type eid = itPointInfo->first;
-            uint16_type ptid_in_element = itPointInfo->second;
-            size_type index = XhVelocity->dof()->localToGlobal( eid, ptid_in_element, compDofShift ).index();
-            dofsWithValueImposedVelocity.insert( index );
+            auto therange = markedpoints(mesh,listMarkedPointsCompVelocity );
+            auto dofsToAdd = XhVelocity->dofs( therange, comp );
+            dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
+            this->dofEliminationIdsMultiProcess("velocity",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
     }
 

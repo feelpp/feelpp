@@ -110,6 +110,7 @@ public :
 
     std::shared_ptr<TSBase> timeStepBase() { return this->heatModel()->timeStepBase(); }
     std::shared_ptr<TSBase> timeStepBase() const { return this->heatModel()->timeStepBase(); }
+    void startTimeStep();
     void updateTimeStep();
 
     //___________________________________________________________________________________//
@@ -123,7 +124,7 @@ public :
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
 
-    void updateNewtonInitialGuess( vector_ptrtype& U ) const;
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
     void updateResidual( DataUpdateResidual & data ) const;

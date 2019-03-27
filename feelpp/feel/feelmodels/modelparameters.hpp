@@ -29,6 +29,7 @@
 #include <boost/property_tree/ptree.hpp>
 
 #include <feel/feelvf/ginac.hpp>
+#include <feel/feelfit/interpolator.hpp>
 
 namespace Feel {
 
@@ -44,6 +45,7 @@ struct FEELPP_EXPORT ModelParameter
     ModelParameter( std::string const& name, double value, double min = 0., double max = 0. )
         :
         M_name( name ),
+        M_type( "value" ),
         M_value( value ),
         M_min( min ),
         M_max( max )
@@ -54,6 +56,7 @@ struct FEELPP_EXPORT ModelParameter
                     double min = 0., double max = 0. )
         :
         M_name( name ),
+        M_type( "expression" ),
         M_value( 0. ),
         M_min( min ),
         M_max( max ),
@@ -61,8 +64,23 @@ struct FEELPP_EXPORT ModelParameter
         {
             M_value = M_expr->evaluate();
         }
+    ModelParameter( std::string const& name, std::shared_ptr<Interpolator> interpolator, std::string const& expression,
+                    std::string const& dirLibExpr = "",
+                    WorldComm const& world = Environment::worldComm() )
+    :
+    M_name( name ),
+    M_type( "fit" ),
+    M_value( 0. ),
+    M_min( 0. ),
+    M_max( 0. ),
+    M_expr( expr<2>( expression,"",world,dirLibExpr ) ),
+    M_interpolator( interpolator )
+    {}
+
     std::string const& name() const { return M_name; }
     void setName( std::string const& name ) { M_name = name; }
+
+    std::string const& type() const { return M_type; }
 
     double value() const { return M_value; }
     void setValue( double v ) { M_value = v; }
@@ -82,10 +100,14 @@ struct FEELPP_EXPORT ModelParameter
         }
     scalar_field_expression<2> const& expression() const { CHECK( this->hasExpression() ) << "no expression defined"; return *M_expr; }
 
+    bool hasFitInterpolator() const { return ( M_interpolator )? true : false; }
+    std::shared_ptr<Interpolator> fitInterpolator() const { return M_interpolator; }
+
 private:
-    std::string M_name;
+    std::string M_name, M_type;
     double M_value, M_min, M_max;
     boost::optional<scalar_field_expression<2>> M_expr;
+    std::shared_ptr<Interpolator> M_interpolator;
 
 };
 
