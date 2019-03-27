@@ -623,7 +623,10 @@ template<typename Context_t>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
 {
-
+    if ( is_hcurl_conforming && ( ( context.gmContext()->context & vm::KB ) == 0 ) )
+        throw std::logic_error("invalid geometric mapping context for hcurl " + std::to_string(context.gmContext()->context) );
+    if ( is_hdiv_conforming && ( ( context.gmContext()->context & vm::JACOBIAN ) == 0  ) )
+        throw std::logic_error("invalid geometric mapping context for hdiv " + std::to_string(context.gmContext()->context) );
     size_type elt_id = context.eId();
     if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
@@ -1457,7 +1460,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( matrix_nod
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type gmc_v = vm::KB|vm::POINT;
     const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
     gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
                                                            this->functionSpace()->mesh()->element( it->first ),
@@ -1545,7 +1548,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type gmc_v = vm::KB|vm::POINT;
     const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
     gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
                                                            this->functionSpace()->mesh()->element( it->first ),
@@ -1633,7 +1636,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type gmc_v = vm::KB|vm::POINT;
     const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
     gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
                                                            this->functionSpace()->mesh()->element( it->first ),
@@ -1840,7 +1843,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type gmc_v = vm::KB|vm::POINT;
     const size_type fec_v = gmc_v|vm::GRAD;
     gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
                                                            this->functionSpace()->mesh()->element( it->first ),
@@ -1920,7 +1923,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type gmc_v = vm::KB|vm::POINT;
     const size_type fec_v = gmc_v|vm::GRAD;
     gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
                                                            this->functionSpace()->mesh()->element( it->first ),
