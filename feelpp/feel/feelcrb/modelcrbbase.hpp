@@ -302,29 +302,37 @@ public :
     typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     ModelCrbBase() = delete;
-    ModelCrbBase( std::string const& name,  worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    ModelCrbBase( std::string const& name,  worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& prefix = "" )
         :
-        ModelCrbBase( name, Environment::randomUUID( true ), worldComm )
+        ModelCrbBase( name, Environment::randomUUID( true ), worldComm, prefix )
         {}
-    ModelCrbBase( std::string const& name, uuids::uuid const& uid, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    ModelCrbBase( std::string const& name, uuids::uuid const& uid, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& prefix = "" )
         :
         super( worldComm ),
+        M_prefix(prefix),
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
         M_backend( backend() ),
         M_crbModelDb( name, uid ),
         M_is_initialized( false ),
-        M_has_displacement_field( false )
+        M_has_displacement_field( false ),
+        M_rebuildDb(boption(_prefix=M_prefix,_name="crb.rebuild-database")),
+        M_dbLoad(ioption(_prefix=M_prefix, _name="crb.db.load" )),
+        M_dbFilename(soption(_prefix=M_prefix, _name="crb.db.filename")),
+        M_dbId(soption(_prefix=M_prefix,_name="crb.db.id")),
+        M_dbUpdate(ioption(_prefix=M_prefix, _name="crb.db.update" )),
+        M_serEimFreq(ioption(_prefix=M_prefix,_name = "ser.eim-frequency")),
+        M_serRbFreq(ioption(_prefix=M_prefix,_name = "ser.rb-frequency")),
+        M_serErrorEstimation(boption(_prefix=M_prefix,_name="ser.error-estimation")),
+        M_crbUseNewton(boption(_prefix=M_prefix,_name="crb.use-newton"))
     {
 
-        bool rebuilddb = boption(_name="crb.rebuild-database");// || ( ioption(_name="crb.restart-from-N") == 0 );
-        if ( !rebuilddb )
+        if ( !M_rebuildDb )
         {
-            int loadmode = ioption( _name="crb.db.load" );
-            switch ( loadmode )
+            switch ( M_dbLoad )
             {
             case 0 :
-                M_crbModelDb.updateIdFromDBFilename( soption( _name="crb.db.filename") );
+                M_crbModelDb.updateIdFromDBFilename( M_dbFilename );
                 break;
             case 1:
                 M_crbModelDb.updateIdFromDBLast( crb::last::created );
@@ -333,17 +341,16 @@ public :
                 M_crbModelDb.updateIdFromDBLast( crb::last::modified );
                 break;
             case 3:
-                M_crbModelDb.updateIdFromId( soption(_name="crb.db.id") );
+                M_crbModelDb.updateIdFromId( M_dbId );
                 break;
             }
         }
         else
         {
-            int updatemode = ioption( _name="crb.db.update" );
-            switch ( updatemode )
+            switch ( M_dbUpdate )
             {
             case 0 :
-                M_crbModelDb.updateIdFromDBFilename( soption( _name="crb.db.filename") );
+                M_crbModelDb.updateIdFromDBFilename( M_dbFilename );
                 break;
             case 1:
                 M_crbModelDb.updateIdFromDBLast( crb::last::created );
@@ -352,7 +359,7 @@ public :
                 M_crbModelDb.updateIdFromDBLast( crb::last::modified );
                 break;
             case 3:
-                M_crbModelDb.updateIdFromId( soption(_name="crb.db.id") );
+                M_crbModelDb.updateIdFromId( M_dbId );
                 break;
             default:
                 // don't do anything and let the system pick up a new unique id
@@ -363,6 +370,7 @@ public :
         if ( this->worldComm().isMasterRank() )
         {
             fs::path modeldir = M_crbModelDb.dbRepository();
+            Feel::cout << "Model repository: " << modeldir.string() << std::endl;
             if ( !fs::exists( modeldir ) )
                 fs::create_directories( modeldir );
             boost::property_tree::ptree ptree;
@@ -387,6 +395,9 @@ public :
      */
     void setModelName( std::string const& name ) { M_crbModelDb.setName( name ); }
 
+    std::string const& prefix() const { return M_prefix; }
+
+    void setPrefix( std::string const& prefix ) { M_prefix = prefix; }
 
     /**
      * Define the model as an online (sequential) model
@@ -976,7 +987,7 @@ public :
 
     virtual void assemble()
     {
-        if( (ioption(_name = "ser.eim-frequency") != 0) || (ioption(_name = "ser.rb-frequency") != 0) )
+        if( (M_serEimFreq != 0) || (M_serRbFreq != 0) )
         {
             Feel::cout << "************************************************************************ \n"
                        << "** SER method is asked without implementation of assemble() function. ** \n"
@@ -1085,7 +1096,7 @@ public :
 
     virtual affine_decomposition_type computePicardAffineDecomposition()
     {
-        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && M_serErrorEstimation && M_crbUseNewton )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs     **"<<std::endl;
@@ -1244,7 +1255,7 @@ public :
 
     virtual betaqm_type computePicardBetaQm( parameter_type const& mu )
     {
-        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && M_serErrorEstimation && M_crbUseNewton )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1331,7 +1342,7 @@ public :
 
     virtual betaqm_type computePicardBetaQm( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false)
     {
-        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && M_serErrorEstimation && M_crbUseNewton )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1507,7 +1518,7 @@ public :
 
     virtual betaqm_type computePicardBetaQm( element_type const& u , parameter_type const& mu )
     {
-        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && M_serErrorEstimation && M_crbUseNewton )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1518,7 +1529,7 @@ public :
     }
     virtual betaqm_type computePicardBetaQm( element_type const& u, parameter_type const& mu ,  double time , bool only_time_dependent_terms=false )
     {
-        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && M_serErrorEstimation && M_crbUseNewton )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -2139,6 +2150,8 @@ public:
 
 
 protected :
+    std::string M_prefix;
+
     parameterspace_ptrtype Dmu;
     functionspace_ptrtype Xh;
     rbfunctionspace_ptrtype XN;
@@ -2209,6 +2222,15 @@ protected :
     std::map<int,double> M_eim_error_aq;
     std::vector< std::map<int,double> > M_eim_error_fq;
 
+    bool M_rebuildDb;
+    int M_dbLoad;
+    std::string M_dbFilename;
+    std::string M_dbId;
+    int M_dbUpdate;
+    int M_serEimFreq;
+    int M_serRbFreq;
+    bool M_serErrorEstimation;
+    bool M_crbUseNewton;
 private :
     std::map<std::string,std::string > M_additionalModelFiles;
 };

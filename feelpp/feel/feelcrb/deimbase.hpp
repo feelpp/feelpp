@@ -159,7 +159,8 @@ protected :
     DEIMBase(  space_ptrtype Xh, parameterspace_ptrtype Dmu, sampling_ptrtype sampling,
                uuids::uuid const& uid, std::string const& modelname,
                std::string prefix, std::string const& dbfilename, std::string const& dbdirectory,
-               worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+               worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+               std::string const& prefixModel = "" );
 
 public :
     //! Destructor
@@ -258,6 +259,9 @@ public :
     //! loadDB from \p filename with load strately \p l
     //!
     void loadDB( std::string const& filename, crb::load l ) override {}
+
+    std::string const& prefixModel() const { return M_prefixModel; }
+    void setPrefixModel( std::string const& prefix ) { M_prefixModel = prefix; }
 
 protected :
     /**
@@ -409,6 +413,7 @@ protected :
 
 protected :
     std::string M_prefix;
+    std::string M_prefixModel;
     parameterspace_ptrtype M_Dmu;
     std::vector<parameter_type> M_mus;
 
@@ -444,12 +449,13 @@ protected :
 
 
 template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
-DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, parameterspace_ptrtype Dmu, sampling_ptrtype sampling, uuids::uuid const& uid, std::string const& modelname, std::string prefix, std::string const& dbfilename, std::string const& dbdirectory, worldcomm_ptr_t const& worldComm ) :
+DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, parameterspace_ptrtype Dmu, sampling_ptrtype sampling, uuids::uuid const& uid, std::string const& modelname, std::string prefix, std::string const& dbfilename, std::string const& dbdirectory, worldcomm_ptr_t const& worldComm, std::string const& prefixModel ) :
     super ( ( boost::format( "%1%DEIM%2%" ) %(is_matrix ? "M":"") %prefix  ).str(),
             "deim",
             uid,
             worldComm ),
     M_prefix( prefix ),
+    M_prefixModel(prefixModel),
     M_Dmu( Dmu ),
     M_trainset( sampling ),
     M_M(0),
@@ -467,7 +473,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, 
     M_crb_built( false ),
     M_offline_step( true ),
     M_restart( true ),
-    M_use_ser( ioption(_name="ser.eim-frequency") || ioption(_name="ser.rb-frequency") ),
+    M_use_ser( ioption(_prefix=M_prefixModel,_name="ser.eim-frequency") || ioption(_prefix=M_prefixModel,_name="ser.rb-frequency") ),
     M_ser_use_rb( false ),
     M_map( new spaces_map_type ),
     M_last_mu( Dmu->element() )
@@ -684,7 +690,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::addNewVector( parameter_type 
 {
     tic();
     LOG(INFO) << this->name() + " : addNewVector() start with "<<mu.toString();
-    bool forced_fem = !boption( "ser.use-rb-in-eim-basis-build" );
+    bool forced_fem = !boption(_prefix=M_prefixModel, _name="ser.use-rb-in-eim-basis-build" );
     tensor_ptrtype Phi = residual( mu, forced_fem );
 
     auto vec_max = vectorMaxAbs( Phi );

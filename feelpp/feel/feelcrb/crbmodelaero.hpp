@@ -58,13 +58,13 @@ public :
 
     CRBModelAero( model_ptrtype const& model , crb::stage stage, int level = 0 ) :
         super ( model, stage, level ),
-        M_use_psit( boption("crb.aero.use-psit")),
-        M_delta( doption("crb.aero.psit.delta0" ) ),
+        M_use_psit( boption(_prefix=this->M_prefix,"crb.aero.use-psit")),
+        M_delta( doption(_prefix=this->M_prefix,"crb.aero.psit.delta0" ) ),
         M_rez(-1),
         M_QTri( 0 ),
-        M_set_0_mean_pressure( boption("crb.aero.fix-mean-pressure") )
+        M_set_0_mean_pressure( boption(_prefix=this->M_prefix,"crb.aero.fix-mean-pressure") )
         {
-            this->M_addSupremizer = boption("crb.aero.add-supremizer");
+            this->M_addSupremizer = boption(_prefix=this->M_prefix,"crb.aero.add-supremizer");
             if ( stage == crb::stage::offline )
                 this->initTrilinear();
         }
@@ -153,7 +153,7 @@ CRBModelAero<ModelType>::offlineSolveAD( parameter_type const& mu )
     if ( M_use_psit )
     {
         M_rez = -1;
-        M_delta = doption("crb.aero.psit.delta0");
+        M_delta = doption(_prefix=this->M_prefix,"crb.aero.psit.delta0");
     }
 
     auto U = this->functionSpace()->element();

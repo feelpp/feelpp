@@ -171,8 +171,10 @@ public:
      */
     //@{
 
-    EIM( std::string const& name= "default", WorldComm const& worldComm = Environment::worldComm() )
+    EIM( std::string const& name= "default", WorldComm const& worldComm = Environment::worldComm(), std::string const& prefix = "", std::string const& prefixModel = "" )
         :
+        M_prefix( prefix ),
+        M_prefixModel( prefixModel ),
         M_worldComm( worldComm ),
         M_is_read( false ),
         M_is_written( false ),
@@ -186,8 +188,10 @@ public:
         M_model( 0 ),
         M_correct_RB_SER( false )
         {}
-    EIM( model_type* model, sampling_ptrtype sampling, double __tol = 1e-8, bool offline_done=false )
+    EIM( model_type* model, sampling_ptrtype sampling, double __tol = 1e-8, bool offline_done=false, std::string const& prefix = "", std::string const& prefixModel = "" )
         :
+        M_prefix( prefix ),
+        M_prefixModel( prefixModel ),
         M_worldComm( model->worldComm() ),
         M_is_read( false ),
         M_is_written( false ),
@@ -203,10 +207,10 @@ public:
         M_correct_RB_SER( false )
         {
 
-            int user_max = ioption(_name="eim.dimension-max");
+            int user_max = ioption(_prefix=this->M_prefix,_name="eim.dimension-max");
             int max_built = M_model->maxQ();
-            bool enrich_database = boption(_name="eim.enrich-database");
-            bool cobuild = ( ioption(_name="ser.eim-frequency") != 0 );
+            bool enrich_database = boption(_prefix=this->M_prefix,_name="eim.enrich-database");
+            bool cobuild = ( ioption(_prefix=this->M_prefixModel,_name="ser.eim-frequency") != 0 );
 
             bool do_offline=false;
             M_restart=false;
@@ -219,7 +223,7 @@ public:
                     do_offline=false;
             }
 
-            if( !M_offline_done || boption(_name="eim.rebuild-database") )
+            if( !M_offline_done || boption(_prefix=this->M_prefix,_name="eim.rebuild-database") )
             {
                 do_offline=true;
                 M_restart = true;
@@ -389,6 +393,9 @@ public:
     //@}
 protected:
 
+    std::string M_prefix;
+    std::string M_prefixModel;
+
     //! mpi communicators
     WorldComm const& M_worldComm;
 
@@ -539,8 +546,8 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
 
     // Create the associated trainset (according to ser.error-estimation)
     sampling_ptrtype subtrainset( new sampling_type( M_model->parameterSpace() ) );
-    bool ser_error_estimation = boption(_name="ser.error-estimation");
-    int subtrainset_method = ioption(_name="ser.eim-subtrainset-method");
+    bool ser_error_estimation = boption(_prefix=this->M_prefixModel,_name="ser.error-estimation");
+    int subtrainset_method = ioption(_prefix=this->M_prefixModel,_name="ser.eim-subtrainset-method");
 
     if( ser_error_estimation && subtrainset_method != 0 )
         subtrainset = M_model->createSubTrainset( trainset, subtrainset_method );
@@ -550,8 +557,8 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     std::vector<bool> error_criterion(subtrainset->size(), true);
     M_criterion=true;
     double max_rb_error = 0.0;
-    bool ser = (ioption(_name="ser.eim-frequency") != 0);
-    double rtol = doption(_name="ser.eim-greedy-rtol");
+    bool ser = (ioption(_prefix=this->M_prefixModel,_name="ser.eim-frequency") != 0);
+    double rtol = doption(_prefix=this->M_prefixModel,_name="ser.eim-greedy-rtol");
     std::vector<vectorN_type> uN; //eventually contains reduced basis approx.
     tic();
     for( auto const& mu : *subtrainset )
@@ -568,7 +575,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         {
             if ( ser ) //Use SER
             {
-                if( ser_error_estimation && doption(_name="ser.eim-greedy-rtol")!=0 )
+                if( ser_error_estimation && doption(_prefix=this->M_prefixModel,_name="ser.eim-greedy-rtol")!=0 )
                 {
                     // Compute the error indicator with mu
                     auto riesz = M_model->RieszResidualNorm( mu );
@@ -580,7 +587,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
                         error_criterion[index] = error_indicator/M_greedy_rbmaxerr < rtol;
                 }
 
-                if( boption(_name="ser.use-rb-in-eim-mu-selection") && error_criterion[index] )
+                if( boption(_prefix=this->M_prefixModel,_name="ser.use-rb-in-eim-mu-selection") && error_criterion[index] )
                     solution = M_model->computeRbExpansion( mu, uN ); //RB
                 else
                     solution = M_model->computePfem( mu ); //PFEM
@@ -605,7 +612,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     }
     toc("ComputeBestFit Greedy Algorithm - "+ M_model->name(), FLAGS_v>0);
 
-    if( doption(_name="ser.eim-greedy-rtol")!=0 )
+    if( doption(_prefix=this->M_prefixModel,_name="ser.eim-greedy-rtol")!=0 )
     {
         M_greedy_rbmaxerr = max_rb_error; // Update the maximum error indicator value for the next basis
         if( this->worldComm().isMasterRank() )
@@ -616,7 +623,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     {
         std::cout << "-- Mean time to solve(mu) : " << time_solve/trainset->size() << std::endl;
         std::cout << "-- Mean time to compute resmax : " << time_exp/trainset->size() << std::endl;
-        if( doption(_name="ser.eim-greedy-rtol")!=0 )
+        if( doption(_prefix=this->M_prefixModel,_name="ser.eim-greedy-rtol")!=0 )
         {
             std::cout << "-- Number of parameters selected to compute resmax : " << index << "/" << subtrainset->size() << "\n";
             std::cout << "-- Number of parameters which satistify the criterion : " << index_criterion << "/" << subtrainset->size() << "\n";
@@ -676,7 +683,7 @@ EIM<ModelType>::offline()
             M_trainset = M_model->parameterSpace()->sampling();
         if ( M_trainset->empty() )
         {
-            int sampling_size = ioption(_name="eim.sampling-size");
+            int sampling_size = ioption(_prefix=this->M_prefix,_name="eim.sampling-size");
             std::string file_name = ( boost::format("eim_trainset_%1%") % sampling_size ).str();
             bool all_procs_have_same_sampling=true;
             std::string sampling_mode = "log-equidistribute";// random, log-random, log-equidistribute, equidistribute
@@ -790,8 +797,8 @@ EIM<ModelType>::offline()
         max_z = M_model->maxZ();
         max_solution = M_model->maxSolution();
 
-        int cobuild_freq = ioption(_name="ser.eim-frequency");
-        int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection") || boption(_name="ser.use-rb-in-eim-basis-build");
+        int cobuild_freq = ioption(_prefix=this->M_prefixModel,_name="ser.eim-frequency");
+        int use_rb = boption(_prefix=this->M_prefixModel,_name="ser.use-rb-in-eim-mu-selection") || boption(_prefix=this->M_prefixModel,_name="ser.use-rb-in-eim-basis-build");
 
         if( cobuild_freq != 0 && use_rb )
         {
@@ -809,13 +816,13 @@ EIM<ModelType>::offline()
        \par build \f$W^g_M\f$
     */
     double err = 1;
-    int cobuild_freq = ioption(_name="ser.eim-frequency");
+    int cobuild_freq = ioption(_prefix=this->M_prefixModel,_name="ser.eim-frequency");
     LOG(INFO) << "[eim] cobuild frequency = " << cobuild_freq << "\n";
-    int user_max = ioption(_name="eim.dimension-max");
+    int user_max = ioption(_prefix=this->M_prefix,_name="eim.dimension-max");
     int Mmax;
     int restart = M_restart ? 1 : 0;
 
-    if( ioption(_name="ser.eim-frequency") != 0 ) // SER
+    if( ioption(_prefix=this->M_prefixModel,_name="ser.eim-frequency") != 0 ) // SER
     {
         if( M_restart ) // First EIM basis with SER : do only initialization step (require only one FEM approx)
             Mmax = 0;
@@ -846,12 +853,12 @@ EIM<ModelType>::offline()
     if( this->worldComm().isMasterRank() )
     {
         greedy_maxerr.open(eim_greedy_file_name, std::ios::app);
-        if( doption(_name="ser.radapt-eim-rtol") != 0 )
+        if( doption(_prefix=this->M_prefixModel,_name="ser.radapt-eim-rtol") != 0 )
             greedy_maxerr_inc.open(eim_greedy_inc_file_name, std::ios::app);
         if( M_M == 2 )
         {
             greedy_maxerr << "M" << "\t" << "maxErr" <<"\n";
-            if( doption(_name="ser.radapt-eim-rtol") != 0 )
+            if( doption(_prefix=this->M_prefixModel,_name="ser.radapt-eim-rtol") != 0 )
                 greedy_maxerr_inc << "M" << "\t" << "Increment" <<"\n";
         }
     }
@@ -878,7 +885,7 @@ EIM<ModelType>::offline()
         toc("ComputeBestFit - M_M= " + std::to_string(M_M) + " - " + M_model->name(), FLAGS_v>0);
 
         // Print summary of EIM iterations
-        if( boption(_name="ser.use-rb-in-eim-mu-selection") && boption(_name="ser.print-rb-iterations_info") )
+        if( boption(_prefix=this->M_prefixModel,_name="ser.use-rb-in-eim-mu-selection") && boption(_prefix=this->M_prefixModel,_name="ser.print-rb-iterations_info") )
             M_model->printRbIterationsSER( M_M-1 );
 
         time=timer2.elapsed();
@@ -893,11 +900,11 @@ EIM<ModelType>::offline()
         mu = bestfit.template get<1>();
         timer2.restart();
 
-        if( ioption(_name="ser.eim-frequency") != 0  ) // SER
+        if( ioption(_prefix=this->M_prefixModel,_name="ser.eim-frequency") != 0  ) // SER
         {
             // SER : choose between RB and PFEM approx
             tic();
-            if( boption(_name="ser.use-rb-in-eim-basis-build") && M_criterion )
+            if( boption(_prefix=this->M_prefixModel,_name="ser.use-rb-in-eim-basis-build") && M_criterion )
                 solution = M_model->computeRbExpansion( mu ); // Use current RB approx
             else
                 solution = M_model->computePfem( mu ); // Use parametric FE with current affine decomposition
@@ -908,21 +915,21 @@ EIM<ModelType>::offline()
                 // Need adapt group size (r-adaptation) ?
                 double increment = math::abs( error - M_greedy_maxerr );
                 double inc_relative = increment/math::abs( M_greedy_maxerr );
-                if( this->worldComm().isMasterRank() && doption(_name="ser.radapt-eim-rtol")!=0 )
+                if( this->worldComm().isMasterRank() && doption(_prefix=this->M_prefixModel,_name="ser.radapt-eim-rtol")!=0 )
                 {
                     std::cout << " -- Absolute error (Greedy) relative increment = " << inc_relative
-                              << ", rtol = " << doption(_name="ser.radapt-eim-rtol") << std::endl;
+                              << ", rtol = " << doption(_prefix=this->M_prefixModel,_name="ser.radapt-eim-rtol") << std::endl;
                     greedy_maxerr_inc << M_M << "\t" << inc_relative <<"\n";
                 }
 
                 // Adapt only if user has given tol in option (default : 0)
                 // increment > 1e-10 and inc_relative > 0 avoid to take into account EIM used for constants
-                if( increment > 1e-10 && inc_relative > 0 && inc_relative < doption(_name="ser.radapt-eim-rtol") )
+                if( increment > 1e-10 && inc_relative > 0 && inc_relative < doption(_prefix=this->M_prefixModel,_name="ser.radapt-eim-rtol") )
                     this->setAdaptationSER( true );
 
                 // Use corrected RB if increment is not sufficient
                 this->setRbCorrection( false ); //Re-init to false
-                if( increment > 1e-10 && inc_relative > 0 && inc_relative < doption(_name="ser.corrected-rb-rtol") )
+                if( increment > 1e-10 && inc_relative > 0 && inc_relative < doption(_prefix=this->M_prefixModel,_name="ser.corrected-rb-rtol") )
                 {
                     if( this->worldComm().isMasterRank() )
                         std::cout << " -- Relative increment < tol : RB approx used for next EIM will be corrected " << std::endl;
@@ -956,7 +963,7 @@ EIM<ModelType>::offline()
 
         //if we want to impose the use of dimension-max functions, we don't want to stop here
         //if ( (bestfit.template get<0>()/gmax.template get<0>()) < doption(_name="eim.error-max") &&  ! boption(_name="eim.use-dimension-max-functions") )
-        if ( bestfit.template get<0>() < doption(_name="eim.error-max") &&  ! boption(_name="eim.use-dimension-max-functions") )
+        if ( bestfit.template get<0>() < doption(_prefix=this->M_prefix,_name="eim.error-max") &&  ! boption(_prefix=this->M_prefix,_name="eim.use-dimension-max-functions") )
         {
             M_M--;
             this->setOfflineStep(false);
@@ -1028,7 +1035,7 @@ EIM<ModelType>::offline()
         DVLOG(2) << "store new basis function..." <<"\n";
 
         //if we want to impose the use of dimension-max functions, we don't want to stop here
-        if ( resmax.template get<0>() < doption(_name="eim.error-max") &&  ! boption(_name="eim.use-dimension-max-functions") )
+        if ( resmax.template get<0>() < doption(_prefix=this->M_prefix,_name="eim.error-max") &&  ! boption(_prefix=this->M_prefix,_name="eim.use-dimension-max-functions") )
         {
             M_M--;
             this->setOfflineStep(false);
@@ -1058,7 +1065,7 @@ EIM<ModelType>::offline()
     if( this->worldComm().isMasterRank() )
     {
         greedy_maxerr.close();
-        if( doption(_name="ser.radapt-eim-rtol") != 0 )
+        if( doption(_prefix=this->M_prefixModel,_name="ser.radapt-eim-rtol") != 0 )
             greedy_maxerr_inc.close();
     }
 
@@ -1179,7 +1186,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , model_solution_typ
     fileLINFratio.close();
 
 #if 0
-    bool use_expression = boption(_name="eim.compute-error-with-truth-expression");
+    bool use_expression = boption(_prefix=this->M_prefix,_name="eim.compute-error-with-truth-expression");
 
         if( use_expression )
         {
@@ -1290,19 +1297,21 @@ public:
                      sampling_ptrtype const& sampling,
                      std::string const& modelname,
                      std::string const& name,
-                     uuids::uuid const& uid )
+                     uuids::uuid const& uid,
+                     std::string const& prefix)
         :
         super_type( name, "eim", uid ),
+        M_prefix( prefix ),
         M_fspace(),
         M_pspace( pspace ),
         M_trainset( sampling ),
         M_modelname( modelname ),
         M_name( name ),
-        M_computeExpansionOfExpression( boption(_name="eim.compute-expansion-of-expression") ),
+        M_computeExpansionOfExpression( boption(_prefix=this->M_prefix,_name="eim.compute-expansion-of-expression") ),
         M_normUsedForResidual( ResidualNormType::Linfty)
         {
             this->setDBDirectory( modelname,uid );
-            std::string norm_used = soption(_name="eim.norm-used-for-residual");
+            std::string norm_used = soption(_prefix=this->M_prefix,_name="eim.norm-used-for-residual");
             if( norm_used == "Linfty" )
                 M_normUsedForResidual = ResidualNormType::Linfty;
             else if( norm_used == "L2" )
@@ -1471,6 +1480,7 @@ public:
     virtual sampling_ptrtype createSubTrainset( sampling_ptrtype const& trainset, int method )=0;
 
 protected :
+    std::string M_prefix;
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
     sampling_ptrtype M_trainset;
@@ -1806,10 +1816,12 @@ public:
                  sampling_ptrtype sampling,
                  std::string const& name,
                  std::string const& dbfilename,
-                 std::string const& dbdirectory)
+                 std::string const& dbdirectory,
+                 std::string const& prefix)
         :
-        super( space, model->parameterSpace(), sampling, model->modelName(), name, model->uuid() ),
+        super( space, model->parameterSpace(), sampling, model->modelName(), name, model->uuid(), prefix ),
         M_model( model ),
+        M_prefixModel( model->prefix() ),
         M_expr( expr ),
         M_u( &u ),
         M_u2( &u2 ),
@@ -1820,8 +1832,8 @@ public:
         M_B(),
         M_offline_error(),
         M_eim(),
-        M_write_nl_solutions( boption( "eim.elements.write") ),
-        M_write_nl_directory( soption( "eim.elements.directory") )
+        M_write_nl_solutions( boption(_prefix=this->M_prefix, "eim.elements.write") ),
+        M_write_nl_directory( soption(_prefix=this->M_prefix, "eim.elements.directory") )
         {
             if ( model )
                 M_eimFeSpaceDb.setModel( model );
@@ -1882,14 +1894,14 @@ public:
 
             // build eim basis
             if ( this->functionSpace() )
-                M_eim.reset( new eim_type( this, sampling , 1e-8, hasLoadedDb ) );
+                M_eim.reset( new eim_type( this, sampling , 1e-8, hasLoadedDb, this->M_prefix ) );
 
             if ( M_write_nl_solutions )
             {
                 if ( this->worldComm().isMasterRank() )
                 {
                     boost::filesystem::path dir( M_write_nl_directory );
-                    if ( boost::filesystem::exists(dir) && boption( "eim.elements.clean-directory" ) )
+                    if ( boost::filesystem::exists(dir) && boption(_prefix=this->M_prefix, "eim.elements.clean-directory" ) )
                     {
                         boost::filesystem::remove_all(dir);
                         boost::filesystem::create_directory(dir);
@@ -2318,9 +2330,9 @@ public:
     element_type operator()( parameter_type const&  mu ) override
         {
             model_solution_type sol;
-            if( ioption(_name="ser.eim-frequency") != 0 ) //Use SER
+            if( ioption(_prefix=this->M_prefixModel,_name="ser.eim-frequency") != 0 ) //Use SER
             {
-                if( boption(_name="ser.use-rb-in-eim-basis-build") )
+                if( boption(_prefix=this->M_prefixModel,_name="ser.use-rb-in-eim-basis-build") )
                     sol = this->computeRbExpansion( mu ); //RB
                 else
                     sol = this->computePfem( mu ); //PFEM
@@ -2349,9 +2361,9 @@ public:
     vector_type operator()( model_element_expr_context_type const& ctx, parameter_type const& mu , int M)
         {
             model_solution_type sol;
-            if( ioption(_name="ser.eim-frequency") != 0 ) //Use SER
+            if( ioption(_prefix=this->M_prefixModel,_name="ser.eim-frequency") != 0 ) //Use SER
             {
-                if( boption(_name="ser.use-rb-in-eim-basis-build") )
+                if( boption(_prefix=this->M_prefixModel,_name="ser.use-rb-in-eim-basis-build") )
                     sol = this->computeRbExpansion( mu ); //RB
                 else
                     sol = this->computePfem( mu ); //PFEM
@@ -2532,13 +2544,13 @@ public:
         auto proj_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(),_expr=eimexpr/*M_expr*/ );
         auto projected_expr = idv( proj_g );
 
-        std::string norm_used = soption(_name="eim.norm-used-for-residual");
+        std::string norm_used = soption(_prefix=this->M_prefix,_name="eim.norm-used-for-residual");
         bool check_name_norm = false;
         DVLOG( 2 ) << "[computeMaximumOfExpression] norm used : "<<norm_used;
         if( norm_used == "Linfty" )
         {
             check_name_norm=true;
-            if( boption(_name="eim.compute-expansion-of-expression") )
+            if( boption(_prefix=this->M_prefix,_name="eim.compute-expansion-of-expression") )
             {
                 auto exprmax = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr= eimexpr );
                 max = exprmax.template get<0>();
@@ -2554,7 +2566,7 @@ public:
         if( norm_used == "L2" )
         {
             check_name_norm=true;
-            if( boption(_name="eim.compute-expansion-of-expression") )
+            if( boption(_prefix=this->M_prefix,_name="eim.compute-expansion-of-expression") )
             {
                 double norm = math::sqrt( integrate( _range=this->functionSpace()->template rangeElements<0>() ,_expr=eimexpr*eimexpr).evaluate()( 0,0 ) );
                 max = norm;
@@ -2568,7 +2580,7 @@ public:
         if( norm_used == "LinftyVec" )
         {
             check_name_norm=true;
-            if( boption(_name="eim.compute-expansion-of-expression") )
+            if( boption(_prefix=this->M_prefix,_name="eim.compute-expansion-of-expression") )
             {
                 auto projection = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(),_expr=eimexpr );
                 double norm = projection.linftyNorm();
@@ -3014,7 +3026,7 @@ public:
             M_crb->offline();
         }
 
-        int n_eval = ioption(_name="eim.computational-time-neval");
+        int n_eval = ioption(_prefix=this->M_prefix,_name="eim.computational-time-neval");
 
         Eigen::Matrix<double, Eigen::Dynamic, 1> time_crb;
         Eigen::Matrix<double, Eigen::Dynamic, 1> time;
@@ -3024,7 +3036,7 @@ public:
         Sampling->logEquidistribute( n_eval  );
 
         //dimension
-        int N =  ioption(_name="crb.dimension");
+        int N =  ioption(_prefix=this->M_prefixModel,_name="crb.dimension");
         //reduced basis approximation space
         auto WN = M_crb->wn();
         int mu_number = 0;
@@ -3033,7 +3045,7 @@ public:
             //LOG( INFO ) << "[computational] mu = \n"<<mu;
 
             boost::mpi::timer tcrb;
-            auto o = M_crb->run( mu, time, doption(_name="crb.online-tolerance") , N);
+            auto o = M_crb->run( mu, time, doption(_prefix=this->M_prefixModel,_name="crb.online-tolerance") , N);
             auto solutions=o.template get<2>();
             auto uN = solutions.template get<0>();//vector of solutions ( one solution at each time step )
 
@@ -3205,7 +3217,7 @@ public:
     size_type mMax( bool & error) const override
     {
         int max=0;
-        int user_max = ioption(_name="eim.dimension-max");
+        int user_max = ioption(_prefix=this->M_prefix,_name="eim.dimension-max");
         // int built = M_max_q;
         //if the user wants to enrich the database we return M_M_max or
         //if the eim expansion contains less terms that expected by the user then there is no error.
@@ -3228,7 +3240,7 @@ public:
     size_type mMax() const override
     {
         int max=0;
-        int user_max = ioption(_name="eim.dimension-max");
+        int user_max = ioption(_prefix=this->M_prefix,_name="eim.dimension-max");
         // int built = M_max_q;
         //if the user wants to enrich the database we return M_M_max or
         //if the eim expansion contains less terms that expected by the user then there is no error.
@@ -3316,6 +3328,7 @@ private:
     EIMFunctionFeSpaceDb<functionspace_type,model_type> M_eimFeSpaceDb;
     // model_ptrtype M_model;
     model_weakptrtype M_model;
+    std::string M_prefixModel;
     model_ptrtype M_modelAttached;
     expr_type M_expr;
     // model_solution_type& M_u;
@@ -3390,6 +3403,7 @@ BOOST_PARAMETER_FUNCTION(
       ( verbose, (int), 0 )
       ( filename, *( boost::is_convertible<mpl::_,std::string> ), "" )
       ( directory, *( boost::is_convertible<mpl::_,std::string> ), "" )
+      ( prefix, (std::string), "")
         ) // optionnal
 )
 {
@@ -3399,7 +3413,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename Feel::detail::compute_eim_return<Args>::type eim_type;
     typedef typename Feel::detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
     // return std::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename );
-    auto eimFunc = std::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename, directory );
+    auto eimFunc = std::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename, directory, prefix );
     if ( eim_type::model_use_nosolve )
         eimFunc->attachModel( model );
     return eimFunc;
