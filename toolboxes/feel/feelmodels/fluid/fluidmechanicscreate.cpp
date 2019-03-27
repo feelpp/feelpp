@@ -317,28 +317,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createALE()
         M_XhMeshVelocityInterface = space_meshvelocityonboundary_type::New(_mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm());
         M_XhMeshALEmapDisc = space_alemapdisc_type::New(_mesh=this->mesh(), _worldscomm=this->localNonCompositeWorldsComm() );
 
-#if 0
-        // init
-        bool moveGhostEltFromExtendedStencil=false;
-        for ( bool hasExt : M_Xh->extendedDofTableComposite() )
-            moveGhostEltFromExtendedStencil = moveGhostEltFromExtendedStencil || hasExt;
-#else
-        bool moveGhostEltFromExtendedStencil = this->useExtendedDofTable();
-#endif
-        if ( moveGhostEltFromExtendedStencil )
-            this->log("FluidMechanics","createALE", "use moveGhostEltFromExtendedStencil" );
-
-        M_meshALE.reset(new mesh_ale_type( M_mesh,
-                                           this->prefix(),
-                                           this->localNonCompositeWorldsComm()[0],
-                                           moveGhostEltFromExtendedStencil,
-                                           this->repository() ));
-        this->log("FluidMechanics","createALE", "--1--" );
+        M_meshALE = meshale( _mesh=M_mesh,_prefix=this->prefix(),_directory=this->repository() );
+        this->log("FluidMechanics","createALE", "create meshale object done" );
         // mesh displacement only on moving
         M_meshDisplacementOnInterface.reset( new element_mesh_disp_type(M_meshALE->displacement()->functionSpace(),"mesh_disp_on_interface") );
-        this->log("FluidMechanics","createALE", "--2--" );
         // mesh velocity only on moving interface
         M_meshVelocityInterface.reset(new element_meshvelocityonboundary_type( M_XhMeshVelocityInterface, "mesh_velocity_interface" ) );
+        // mesh velocity used with stab CIP terms (need extended dof table)
+        if ( this->doCIPStabConvection() )
+            M_fieldMeshVelocityUsedWithStabCIP.reset( new element_velocity_noview_type( this->functionSpaceVelocity() ) );
 
         double tElapsed = this->timerTool("Constructor").stop("createALE");
         this->log("FluidMechanics","createALE", (boost::format("finish in %1% s") %tElapsed).str() );

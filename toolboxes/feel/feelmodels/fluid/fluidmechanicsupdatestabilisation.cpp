@@ -105,7 +105,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
         if (M_isMoveDomain)
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            auto cip_stab_coeff_ale_expr = (gamma/order_scaling)*abs( inner(idv(u_extrapoled)-idv(this->meshVelocity()),N() ) )*pow(hFace(),2.0);
+            auto cip_stab_coeff_ale_expr = (gamma/order_scaling)*abs( inner(idv(u_extrapoled)-idv(M_fieldMeshVelocityUsedWithStabCIP/*this->meshVelocity()*/),N() ) )*pow(hFace(),2.0);
             bilinearForm_PatternExtended +=
                 integrate( _range=marked3faces(Xh->mesh(),1),
                            //_expr=val(cip_stab_coeff_ale_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
@@ -275,7 +275,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
         if (M_isMoveDomain)
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            auto cip_stab_coeff_ale_expr = gamma*abs( trans(idv(u_extrapoled)-idv(this->meshVelocity()) )*N() )*pow(hFace(),2.0)/cst(order_scaling);
+            auto cip_stab_coeff_ale_expr = gamma*abs( trans(idv(u_extrapoled)-idv(M_fieldMeshVelocityUsedWithStabCIP/*this->meshVelocity()*/) )*N() )*pow(hFace(),2.0)/cst(order_scaling);
             linearForm_PatternExtended +=
                 integrate( _range=marked3faces(mesh,1),
                            //_expr= val( cip_stab_coeff_ale_expr*trans(jumpv(gradv(u))) )*jump(grad(v)), // this line not work!
@@ -460,7 +460,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
         if ( this->isMoveDomain() )
         {
             // warning here !! extended element maybe!!
-            betaField.on(_range=elements(mesh),_expr=idv(u_extrapoled)-idv(this->meshVelocity()) );
+            betaField.on(_range=elements(mesh),_expr=idv(u_extrapoled)-idv(M_fieldMeshVelocityUsedWithStabCIP/*this->meshVelocity()*/) );
         }
         else
             betaField.add(1.,u_extrapoled );
@@ -469,7 +469,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
         if ( this->isMoveDomain() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            auto cip_stab_coeff_ale_expr = (gamma/order_scaling)*abs( trans(idv(u_extrapoled)-idv(this->meshVelocity()))*N() )*pow(hFace(),2.0);
+            auto cip_stab_coeff_ale_expr = (gamma/order_scaling)*abs( trans(idv(u_extrapoled)-idv(M_fieldMeshVelocityUsedWithStabCIP/*this->meshVelocity()*/))*N() )*pow(hFace(),2.0);
             bilinearForm_PatternExtended +=
                 integrate( _range=marked3faces(Xh->mesh(),1),
                            //_expr= val(cip_stab_coeff_ale_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),

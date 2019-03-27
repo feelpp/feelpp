@@ -117,18 +117,18 @@ public :
      * constructor
      *
      */
-    ALE( mesh_ptrtype mesh, std::string prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(), bool moveGhostEltFromExtendedStencil=false,
+    ALE( mesh_ptrtype mesh, std::string prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
          ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     /**
      * copy constructor
      */
-    ALE( ALE const& tc );
+    ALE( ALE const& ) = default;
 
     /**
      * desctructor
      */
-    ~ALE();
+    ~ALE() {}
 
     void init() override;
 
@@ -278,8 +278,6 @@ private :
     winslow_ptrtype M_winslowFactory;
 #endif
     bool M_isInitHarmonicExtension, M_isInitWinslow;
-
-    bool M_moveGhostEltFromExtendedStencil;
 
     std::map<std::string,std::set<size_type> > M_dofsHighOnBoundary;
 };

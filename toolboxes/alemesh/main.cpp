@@ -10,7 +10,7 @@ runALEMesh()
 
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
 
-    auto alemesh = FeelModels::meshale(_mesh=mesh,_extended_doftable=true);
+    auto alemesh = FeelModels::meshale( _mesh=mesh );
 
     alemesh->addBoundaryFlags("moving","Moving");
     alemesh->addBoundaryFlags("fixed","Fixed");

@@ -83,9 +83,8 @@ public:
      */
     ALE( mesh_ptrtype mesh, std::string prefix="",
          worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
-         bool moveGhostEltFromExtendedStencil=false,
          ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    ALE( ALE const& tc );
+    ALE( ALE const& tc ) = default;
     //~ALE();
 
     /**
@@ -93,7 +92,6 @@ public:
      */
     static self_ptrtype build(mesh_ptrtype mesh, std::string prefix="",
                               worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
-                              bool moveGhostEltFromExtendedStencil=false,
                               ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     /**
