@@ -278,7 +278,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             static const bool is_terminal = VF_OPERATOR_TERMINAL(O);    \
             static const bool is_hdiv_conforming = Feel::is_hdiv_conforming_v<fe_type>; \
             static const bool is_hcurl_conforming = Feel::is_hcurl_conforming_v<fe_type>; \
-            static const size_type context = (is_hdiv_conforming_v<fe_type>?(VF_OPERATOR_CONTEXT( O )|vm::JACOBIAN|vm::KB)\
+            inline static const size_type context = (is_hdiv_conforming_v<fe_type>?(VF_OPERATOR_CONTEXT( O )|vm::JACOBIAN|vm::KB)\
                             :(is_hcurl_conforming_v<fe_type>?(VF_OPERATOR_CONTEXT( O )|vm::KB):VF_OPERATOR_CONTEXT( O ))); \
                                                                         \
                                                                         \
@@ -638,7 +638,6 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), M_mzero.constant(0.) ); \
                     this->updateCtxIfSameGeom(geom,mpl::bool_<isSameGeo>() ); \
                     if (M_same_mesh) {                                  \
-                        /*std::cout << "\n idv no interp \n";*/         \
                         M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
                     }                                                   \
                     else {                                              \

@@ -344,7 +344,7 @@ class Expr : public ExprBase, public ExprDynamicBase //: public std::enable_shar
 {
 public:
 
-    static const size_type context = ExprT::context;
+    inline static const size_type context = ExprT::context;
     static const bool is_terminal = ExprT::is_terminal;
 
     template<typename Func>
