@@ -248,7 +248,7 @@ ModelBaseUpload::print() const
 }
 
 
-ModelBase::ModelBase( std::string const& prefix,
+ModelBase::ModelBase( std::string const& prefix, std::string const& keyword,
                       worldcomm_ptr_t const& worldComm,
                       std::string const& subPrefix,
                       ModelBaseRepository const& modelRep )
@@ -259,6 +259,7 @@ ModelBase::ModelBase( std::string const& prefix,
     M_localNonCompositeWorldsComm( { worldComm } ),
     M_prefix( prefix ),
     M_subPrefix( subPrefix ),
+    M_keyword( keyword ),
     M_modelRepository( modelRep ),
     M_verbose( boption(_name="verbose",_prefix=this->prefix()) ),
     M_verboseAllProc( boption(_name="verbose_allproc",_prefix=this->prefix()) ),

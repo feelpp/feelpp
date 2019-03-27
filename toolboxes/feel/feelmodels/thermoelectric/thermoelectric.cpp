@@ -44,12 +44,12 @@ namespace FeelModels
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::ThermoElectric( std::string const& prefix,
-                                                    bool buildMesh,
+                                                    std::string const& keyword,
                                                     worldcomm_ptr_t const& worldComm,
                                                     std::string const& subPrefix,
                                                     ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, worldComm, subPrefix, modelRep )
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep )
 {
     this->log("ThermoElectric","constructor", "start" );
 
@@ -65,10 +65,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::ThermoElectric( std::string const& prefix,
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
-    //-----------------------------------------------------------------------------//
-    // build mesh
-    if ( buildMesh )
-        this->createMesh();
     //-----------------------------------------------------------------------------//
     this->log("ThermoElectric","constructor", "finish");
 }
@@ -90,16 +86,16 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::createMesh()
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initMesh()
 {
-    this->log("ThermoElectric","createMesh", "start");
+    this->log("ThermoElectric","initMesh", "start");
     this->timerTool("Constructor").start();
 
     createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
     CHECK( M_mesh ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("createMesh");
-    this->log("ThermoElectric","createMesh",(boost::format("finish in %1% s")%tElpased).str() );
+    this->log("ThermoElectric","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
 
 } // createMesh()
 
@@ -167,6 +163,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("ThermoElectric","init", "start" );
     this->timerTool("Constructor").start();
 
+    if ( !M_mesh )
+        this->initMesh();
+
 #if 0
     M_modelName = this->modelProperties().models().model("thermo-electric").equations();
     if ( M_modelName.empty() )
@@ -187,14 +186,14 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 #endif
  
 
-    M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), false, this->worldCommPtr(),
+    M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
                                                            this->subPrefix(), this->repository() ) );
     if ( !M_heatModel->modelPropertiesPtr() )
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
     M_heatModel->setMesh( this->mesh() );
     M_heatModel->init( false );
 
-    M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), false, this->worldCommPtr(),
+    M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
                                                    this->subPrefix(), this->repository() ) );
     if ( !M_electricModel->modelPropertiesPtr() )
         M_electricModel->setModelProperties( this->modelPropertiesPtr() );
@@ -289,10 +288,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("ThermoElectric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    std::string modelName = "thermo-electric";
-    auto const& exportsFields = this->modelProperties().postProcess().exports( modelName ).fields();
-    M_postProcessFieldExportedHeat = M_heatModel->postProcessFieldExported( exportsFields, "heat" );
-    M_postProcessFieldExportedElectric = M_electricModel->postProcessFieldExported( exportsFields, "electric" );
+    auto const& exportsFields = this->modelProperties().postProcess().exports( this->keyword() ).fields();
+    M_postProcessFieldExportedHeat = M_heatModel->postProcessFieldExported( exportsFields, M_heatModel->keyword() );
+    M_postProcessFieldExportedElectric = M_electricModel->postProcessFieldExported( exportsFields, M_electricModel->keyword() );
 
     if ( !M_postProcessFieldExportedHeat.empty() || !M_postProcessFieldExportedElectric.empty() )
     {
