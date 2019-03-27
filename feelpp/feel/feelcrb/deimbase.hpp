@@ -190,7 +190,7 @@ public :
     //! \return the \f$ \beta^m(\mu)\f$ for a specific parameter \p mu
     vectorN_type beta( parameter_type const& mu, int M = -1 )
         {
-            if ( mu!=M_last_mu )
+            if ( mu!=M_last_mu || ( ((M < 0) || (M > M_M)) && M_last_beta.size() != M_M ) || M_last_beta.size() != M )
             {
                 M_last_mu=mu;
                 M_last_beta=computeCoefficient( mu, M );
@@ -943,7 +943,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::residual( parameter_type cons
     auto newT = copyTensor( T );
     for ( int i=0; i<M_M; i++ )
         add( newT, -coeff(i), M_bases[i] );
-    newT->scale( 1./norm );
+    // newT->scale( 1./norm );
 
     LOG(INFO) << this->name() + " : residual() end";
     return newT;
