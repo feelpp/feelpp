@@ -276,9 +276,10 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             static const uint16_type nComponents1 = fe_type::nComponents1; \
             static const uint16_type nComponents2 = fe_type::nComponents2; \
             static const bool is_terminal = VF_OPERATOR_TERMINAL(O);    \
-            static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<fe_type>::value; \
-            static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<fe_type>::value; \
-            static const size_type context = (is_hdiv_conforming_v<fe_type>||is_hcurl_conforming_v<fe_type>)?(VF_OPERATOR_CONTEXT( O )|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL):VF_OPERATOR_CONTEXT( O ); \
+            static const bool is_hdiv_conforming = Feel::is_hdiv_conforming_v<fe_type>; \
+            static const bool is_hcurl_conforming = Feel::is_hcurl_conforming_v<fe_type>; \
+            static const size_type context = (is_hdiv_conforming_v<fe_type>?(VF_OPERATOR_CONTEXT( O )|vm::JACOBIAN|vm::KB)\
+                            :(is_hcurl_conforming_v<fe_type>?(VF_OPERATOR_CONTEXT( O )|vm::KB):VF_OPERATOR_CONTEXT( O ))); \
                                                                         \
                                                                         \
             template<typename Func>                                     \
