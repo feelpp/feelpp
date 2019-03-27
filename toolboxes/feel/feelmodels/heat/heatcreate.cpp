@@ -628,7 +628,8 @@ HEAT_CLASS_TEMPLATE_TYPE::solve()
 
     M_blockVectorSolution.updateVectorFromSubVectors();
 
-    if ( this->thermalProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
+    if ( this->thermalProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" )
+         || !this->M_bcRadiation.empty() )
         M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
     else
         M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
