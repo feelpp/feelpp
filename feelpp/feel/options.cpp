@@ -486,8 +486,6 @@ deimOptions( std::string const& prefix )
         ( prefixvm( prefix, "deim.elements.write" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Write evaluated nl solutions on disk"  )
         ( prefixvm( prefix, "deim.elements.clean-directory" ).c_str(), Feel::po::value<bool>()->default_value( false ), ""  )
         ( prefixvm( prefix, "deim.elements.directory" ).c_str(), Feel::po::value<std::string>()->default_value( "nlsolutions" ), "directory were nl solutions are stored"  )
-
-        ( prefixvm( prefix, "deim.optimized-online" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Use optimized version for online assembly. DEBUG, this option has to be removed !"  )
         ;
 
     return deimoptions.add(backend_options(prefixvm(prefix,"deim-online")));
@@ -604,6 +602,7 @@ crbOptions( std::string const& prefix )
         ( "crb.db.filename"   , Feel::po::value<std::string>(), "DB filename" )
         ( "crb.output-index"   , Feel::po::value<int>()->default_value( 0 ), "output index (default is right hand side = 0)" )
         ( "crb.sampling-size"   , Feel::po::value<int>()->default_value( 1000 ), "Offline  sampling size " )
+        ( "crb.randomize.use-log"   , Feel::po::value<bool>()->default_value(true ), "" )
         ( "crb.sampling-mode"   , Feel::po::value<std::string>()->default_value( "log-random" ), "Offline  sampling mode, equidistribute, log-equidistribute or log-random " )
         ( "crb.all-procs-have-same-sampling" , Feel::po::value<bool>()->default_value( false ), "all procs have the same sampling if true" )
         ( "crb.error-max"   , Feel::po::value<double>()->default_value( 1e-6 ),       "Offline  tolerance" )
@@ -619,6 +618,8 @@ crbOptions( std::string const& prefix )
         ( "crb.check.rb"   , Feel::po::value<int>()->default_value( 0 ),       "check reduced basis" )
         ( "crb.orthonormality-tol" , Feel::po::value<double>()->default_value( 1e-13 ),"tolerance of orthonormalisation : i.e. norm of matrix A(i,j)=scalarProduct( Wn[j], Wn[i] )" )
         ( "crb.orthonormality-max-iter" , Feel::po::value<int>()->default_value( 10 ),"while the tolerance is not reached, the orthonormalization step is done or until max-iter is reached" )
+        ( "crb.gram-schmidt.selection" , Feel::po::value<bool>()->default_value( false ),"Use selection in Gram-Schmidt orthonormalizatin to erase useless basis vectors" )
+        ( "crb.gram-schmidt.selection.tol" , Feel::po::value<double>()->default_value( 1e-8 ),"Selective Gram-Schmidt alogrithm tolerance" )
 
         ( "crb.check.residual"   , Feel::po::value<bool>()->default_value( false ),  "check residual" )
         ( "crb.reuse-prec"   , Feel::po::value<bool>()->default_value( 0 ),       "reuse or not the preconditioner" )
@@ -664,7 +665,7 @@ crbOptions( std::string const& prefix )
         ( "crb.compute-stat",Feel::po::value<bool>()->default_value( true ), "compute statistics on the run if true")
         ( "crb.cvg-study",Feel::po::value<bool>()->default_value( false ), "convergence study if true")
         ( "crb.computational-time-neval",Feel::po::value<int>()->default_value( 0 )," number of evaluation to perform to have the computational time of crb online step" )
-
+        ( "crb.reload-last-sampling",Feel::po::value<bool>()->default_value( false ), "")
         ( "crb.run-on-WNmu",Feel::po::value<bool>()->default_value( false ), "use mu taken for build the reduced basis, so for steady problems we are very accurate")
         ( "crb.run-on-scm-parameters",Feel::po::value<bool>()->default_value( false ), "use mu taken during the SCM offline step ( for a(.,.;mu) ), so the coercivity constant is exact")
         ( "crb.script-mode",Feel::po::value<bool>()->default_value( false ), "disable error computation (need FEM computation) if true")
@@ -696,6 +697,8 @@ crbOptions( std::string const& prefix )
 
         ( "crb.use-fast-eim",Feel::po::value<bool>()->default_value( true ), "use fast eim algo (with rbspace context)")
 
+
+
         ;
 
     crboptions
@@ -704,19 +707,52 @@ crbOptions( std::string const& prefix )
     return crboptions;
 }
 
-    Feel::po::options_description
-    crbSaddlePointOptions( std::string const& prefix )
+Feel::po::options_description
+crbBlockOptions( int const& n_block )
+{
+    Feel::po::options_description crboptions( "CRB Block Options" );
+    for ( int i=0; i<n_block; i++ )
+    {
+        crboptions.add_options()
+            ( (boost::format("crb.block.orthonormalize%1%") %i ).str().c_str(), Feel::po::value<bool>()->default_value( true ), (boost::format("orthonormalize reduce basis for rbspace #%1%") %i ).str().c_str() )
+            ;
+        crboptions.add( backend_options("backend-Xh"+std::to_string(i)) );
+    }
+
+    return crboptions;
+}
+
+
+Feel::po::options_description
+crbSaddlePointOptions( std::string const& prefix, int const& n_block )
 {
     Feel::po::options_description crboptions( "CRB Options" );
     crboptions.add_options()
         ( "crb.saddlepoint.add-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis")
-        ( "crb.saddlepoint.orthonormalize0",Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #0")
-        ( "crb.saddlepoint.orthonormalize1",Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #1")
-        ( "crb.saddlepoint.version",Feel::po::value<int>()->default_value( 1 ), "test residual evaluation")
         ;
 
-    crboptions.add( backend_options("backend-Xh0") );
-    crboptions.add( backend_options("backend-Xh1") );
+    return crboptions.add( crbBlockOptions(n_block) );
+}
+
+Feel::po::options_description
+crbAeroOptions( std::string const& prefix )
+{
+    Feel::po::options_description crboptions( "CRB Aero Options" );
+    crboptions.add_options()
+        ( "crb.aero.add-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis")
+        ( "crb.aero.fix-mean-pressure",Feel::po::value<bool>()->default_value( false ), "")
+        ( "crb.aero.use-psit",Feel::po::value<bool>()->default_value( false ), "")
+        ( "crb.aero.psit.delta0",Feel::po::value<double>()->default_value( 1. ), "")
+        ( "crb.aero.linear-solve",Feel::po::value<bool>()->default_value(false ), "")
+        ( "crb.aero.use-newton",Feel::po::value<bool>()->default_value(true ), "")
+        ( "crb.aero.init-online",Feel::po::value<bool>()->default_value(true ), "")
+        ( "crb.aero.snes.rtol",Feel::po::value<double>()->default_value( 1e-8 ), "")
+        ( "crb.aero.online-continuation",Feel::po::value<int>()->default_value( 10 ), "")
+        ( "crb.aero.log-continuation",Feel::po::value<bool>()->default_value( true ), "")
+        ( "crb.aero.store-rb-sol",Feel::po::value<bool>()->default_value( false ), "")
+        ( "crb.aero.assemble-version",Feel::po::value<int>()->default_value( 1 ), "")
+        ;
+    crboptions.add( crbSaddlePointOptions(prefix,3) );
 
     return crboptions;
 }
