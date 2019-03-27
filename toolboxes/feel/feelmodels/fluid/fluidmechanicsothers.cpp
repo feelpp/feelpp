@@ -1627,6 +1627,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
                                  _geomap=this->geomap() );
     sync( *M_meshVelocityInterface, "=", M_dofsVelocityInterfaceOnMovingBoundary);
 
+    if ( this->doCIPStabConvection() )
+    {
+        M_fieldMeshVelocityUsedWithStabCIP->on(_range=M_rangeMeshElements,_expr=idv(M_meshALE->velocity()) );
+        sync( *M_fieldMeshVelocityUsedWithStabCIP, "=" );
+    }
     //-------------------------------------------------------------------//
     // move winkessel submesh
     if ( this->hasFluidOutletWindkesselImplicit() )
