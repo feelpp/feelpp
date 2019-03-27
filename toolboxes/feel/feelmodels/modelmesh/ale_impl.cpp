@@ -58,15 +58,14 @@ namespace detailALE
 {
 template < typename SpaceLowType,typename SpaceHighType >
 std::shared_ptr<SpaceHighType>
-buildSpaceHigh(std::shared_ptr<SpaceLowType> spaceLow, bool moveGhostEltFromExtendedStencil, mpl::bool_<false> /**/ )
+buildSpaceHigh(std::shared_ptr<SpaceLowType> spaceLow, mpl::bool_<false> /**/ )
 {
-    return SpaceHighType::New( _mesh=spaceLow->mesh(),_worldscomm=spaceLow->worldsComm(),
-                               _extended_doftable=std::vector<bool>(1,moveGhostEltFromExtendedStencil) );
+    return SpaceHighType::New( _mesh=spaceLow->mesh() );
 }
 
 template < typename SpaceLowType,typename SpaceHighType >
 std::shared_ptr<SpaceHighType>
-buildSpaceHigh(std::shared_ptr<SpaceLowType> spaceLow, bool moveGhostEltFromExtendedStencil, mpl::bool_<true> /**/ )
+buildSpaceHigh(std::shared_ptr<SpaceLowType> spaceLow, mpl::bool_<true> /**/ )
 {
     return spaceLow;
 }
@@ -75,18 +74,17 @@ buildSpaceHigh(std::shared_ptr<SpaceLowType> spaceLow, bool moveGhostEltFromExte
 
 
 template < class Convex, int Order >
-ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t const& worldcomm, bool moveGhostEltFromExtendedStencil,
+ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t const& worldcomm,
                         ModelBaseRepository const& modelRep )
     :
-    super_type( mesh,prefix,worldcomm,moveGhostEltFromExtendedStencil,modelRep ),
+    super_type( mesh,prefix,worldcomm,modelRep ),
     M_verboseSolverTimer(boption(_prefix=this->prefix(),_name="verbose_solvertimer")),
     M_verboseSolverTimerAllProc(boption(_prefix=this->prefix(),_name="verbose_solvertimer_allproc")),
     M_reference_mesh( mesh ),
     M_alemeshTypeName( soption( _name="type",_prefix=this->prefix() ) ),
     M_doHoCorrection( boption(_prefix=this->prefix(),_name="apply-ho-correction") ),
     M_isInitHarmonicExtension( false ),
-    M_isInitWinslow( false ),
-    M_moveGhostEltFromExtendedStencil( moveGhostEltFromExtendedStencil )
+    M_isInitWinslow( false )
 {
     this->log( "ALE", "constructor", "start" );
 
@@ -98,6 +96,8 @@ ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t c
 }
 
 //-------------------------------------------------------------------------------------------//
+
+#if 0
 /**
  * copy constructor
  */
@@ -132,11 +132,7 @@ ALE<Convex,Order>::ALE( ALE const& tc )
     M_isInitWinslow( tc.M_isInitWinslow )
 {
 }
-
-//-------------------------------------------------------------------------------------------//
-
-template < class Convex, int Order >
-ALE<Convex,Order>::~ALE() {}
+#endif
 
 //-------------------------------------------------------------------------------------------//
 
@@ -249,8 +245,7 @@ template < class Convex, int Order >
 void
 ALE<Convex,Order>::createALE()
 {
-    M_fspaceLow = space_low_type::New( _mesh=M_reference_mesh,_worldscomm=makeWorldsComm(1,this->worldCommPtr()),
-                                       _extended_doftable=std::vector<bool>(1,M_moveGhostEltFromExtendedStencil) );
+    M_fspaceLow = space_low_type::New( _mesh=M_reference_mesh );
     M_aleLow.reset( new element_low_type( M_fspaceLow, "low_order_ALE_map" ) );
     M_displacementLow.reset( new element_low_type( M_fspaceLow, "low_order_displacement" ) );
     M_identityLow.reset( new element_low_type( M_fspaceLow, "low_order_identity_map" ) );
@@ -264,8 +259,7 @@ void
 ALE<Convex,Order>::createALEHO( mpl::true_ )
 {
     M_bHigh = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"ho"), this->worldCommPtr() );
-    M_fspaceHigh = detailALE::buildSpaceHigh<space_low_type,space_high_type>(M_fspaceLow, M_moveGhostEltFromExtendedStencil,
-                                                                             mpl::bool_<isEqualOrderAndOrderLow>() );
+    M_fspaceHigh = detailALE::buildSpaceHigh<space_low_type,space_high_type>(M_fspaceLow,mpl::bool_<isEqualOrderAndOrderLow>() );
 #if ALE_WITH_BOUNDARYELEMENT
     M_fspaceHighLocal = space_high_type::New( createSubmesh( M_reference_mesh, boundaryelements(M_reference_mesh) ) );
 #endif
@@ -314,9 +308,7 @@ ALE<Convex,Order>::createHarmonicExtension()
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix(),"createHarmonicExtension", "start",
                                         this->worldComm(),this->verboseAllProc());
-    /*bool useGhostEltFromExtendedStencil = M_fspaceLow->dof()->buildDofTableMPIExtended() && M_reference_mesh->worldComm().localSize()>1;
-     M_harmonicextensionFactory.reset( new harmonicextension_type( M_reference_mesh, M_bLow, prefixvm(M_prefix,"alemesh.harmonic"),
-     M_worldComm,useGhostEltFromExtendedStencil) );*/
+
     M_harmonicextensionFactory.reset( new harmonicextension_type( M_fspaceLow,
                                                                   Feel::backend(_rebuild=true,_name=this->prefix() ),
                                                                   prefixvm(this->prefix(),"harmonic"),
@@ -340,10 +332,8 @@ ALE<Convex,Order>::createWinslow()
     if (this->verbose()) Feel::FeelModels::Log(this->prefix(),"createWinslow", "start",
                                         this->worldComm(),this->verboseAllProc());
 
-    bool useGhostEltFromExtendedStencil = M_fspaceLow->dof()->buildDofTableMPIExtended() && M_reference_mesh->worldComm().localSize()>1;
     M_winslowFactory.reset(new winslow_type( M_reference_mesh,
                                              prefixvm(this->prefix(),"winslow") ) );
-    //M_winslowFactory.reset( new winslow_type( M_fspaceLow,M_bLow,prefixvm(M_prefix,"alemesh.winslow")/*M_prefix*/) );
     M_winslowFactory->setflagSet(this->flagSet());
     M_winslowFactory->init();
     M_isInitWinslow=true;
@@ -379,34 +369,6 @@ ALE<Convex,Order>::generateMap( ale_map_element_type const & dispOnBoundary,
         // Run if Order_low is different of Order
         updateBoundaryElements( dispOnBoundary, mpl::bool_< ( Order > Order_low ) >() );
     }
-
-#if 0
-    CHECK( M_displacementLow->functionSpace()->nLocalDofWithGhost() == dispOnBoundary.functionSpace()->nLocalDofWithGhost() ) << "BLEM ALE 1\n";
-    CHECK( M_displacementLow->functionSpace()->nLocalDofWithoutGhost() == dispOnBoundary.functionSpace()->nLocalDofWithoutGhost() ) << "BLEM ALE 1\n";
-    for ( uint16_type i=0; i < this->flagSet("moving").size(); ++i )
-    {
-        for ( auto const& faces : markedfaces(dispOnBoundary.mesh(), this->flagSet("moving",i) ) )
-        {
-            //for ( uint16_type l =0; l < ale_map_functionspace_type::dof_type::fe_type::nLocalDof; ++l )
-            for ( uint16_type l =0; l < M_displacementLow->functionSpace()->dof()->nLocalDofOnFace(true); ++l )
-            {
-                int ncdof  = ale_map_functionspace_type::dof_type::is_product?ale_map_functionspace_type::dof_type::nComponents:1;
-                for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
-                {
-                    //const size_type thedof =  boost::get<0>(dispOnBoundary.functionSpace()->dof()->localToGlobal(faces,l,c1) );
-                    const size_type thedof =  boost::get<0>(dispOnBoundary.functionSpace()->dof()->faceLocalToGlobal(faces.id(),l,c1) );
-
-                    CHECK( thedof < M_displacementLow->functionSpace()->nLocalDofWithGhost() ) << "invalid dof " << thedof
-                                                                                               << "faces.id() " <<faces.id()
-                                                                                               <<" l "<<l<<" c1 " << c1 << "\n";
-                    CHECK( std::abs( (*M_displacementLow)(thedof) - dispOnBoundary(thedof) ) < 1e-12 ) << "error ALE at dof "<< thedof << " :  "
-                                                                                                       << (*M_displacementLow)(thedof) << " vs " << dispOnBoundary(thedof) << "\n";
-                }
-            }
-        }
-    }
-#endif
-
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MethodsNum","generateMap", "finish",
                                         this->worldComm(),this->verboseAllProc());
@@ -479,9 +441,7 @@ ALE<Convex,Order>::preCompute()
 
     M_aleLow->zero();
     M_displacementLow->zero();
-    //bool useGhostEltFromExtendedStencil = M_fspaceLow->dof()->buildDofTableMPIExtended() && M_reference_mesh->worldComm().localSize()>1;
-    EntityProcessType entityProcess = (M_moveGhostEltFromExtendedStencil)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-    *M_identityLow = vf::project( _space=M_fspaceLow, _range=elements( M_reference_mesh,entityProcess ), _expr=P() );
+    M_identityLow->on( _range=elements( M_reference_mesh ), _expr=P() );
 
     this->preComputeHO( mpl::bool_< ( Order > Order_low ) >() );
 }
@@ -496,8 +456,7 @@ ALE<Convex,Order>::preComputeHO( mpl::true_ )
 {
     M_aleHigh->zero();
     M_displacementHigh->zero();
-    EntityProcessType entityProcess = (M_moveGhostEltFromExtendedStencil)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-    *M_identityHigh = vf::project( _space=M_fspaceHigh, _range=elements( M_reference_mesh,entityProcess ), _expr=P() );
+    *M_identityHigh = vf::project( _space=M_fspaceHigh, _range=elements( M_reference_mesh ), _expr=P() );
 
     using namespace Feel::vf;
 #if ALE_WITH_BOUNDARYELEMENT
