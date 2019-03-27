@@ -61,12 +61,12 @@ public :
 
     CRBModelSaddlePoint( crb::stage stage, int level = 0 ) :
         super ( stage, level ),
-        M_addSupremizer(boption("crb.saddlepoint.add-supremizer"))
+        M_addSupremizer(boption(_prefix=this->M_prefix,"crb.saddlepoint.add-supremizer"))
     {}
 
     CRBModelSaddlePoint( model_ptrtype const& model , crb::stage stage, int level = 0 ) :
         super ( model, stage, level ),
-        M_addSupremizer(boption("crb.saddlepoint.add-supremizer"))
+        M_addSupremizer(boption(_prefix=this->M_prefix,"crb.saddlepoint.add-supremizer"))
     {}
 
     bool addSupremizerInSpace( int const& n_space ) const override

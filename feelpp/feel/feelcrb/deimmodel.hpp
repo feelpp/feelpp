@@ -312,11 +312,11 @@ template <typename ModelType, typename TensorType>
 DEIMModel<ModelType,TensorType>::DEIMModel( model_ptrtype model, sampling_ptrtype sampling, std::string prefix, std::string const& dbfilename, std::string const& dbdirectory, int tag ) :
     super_type( model->functionSpace(), model->parameterSpace(),
                 sampling, model->uuid(), model->modelName(),
-                prefix, dbfilename, dbdirectory ),
+                prefix, dbfilename, dbdirectory, Environment::worldCommPtr(), model->prefix() ),
     M_model( model ),
     M_tag( tag )
 {
-    this->M_online_model = model_ptrtype( new model_type() );
+    this->M_online_model = model_ptrtype( new model_type( model->prefix() ) );
     this->M_online_model->setModelOnlineDeim( prefixvm(this->M_prefix,"deim-online") );
 
     if ( !this->M_rebuild )
