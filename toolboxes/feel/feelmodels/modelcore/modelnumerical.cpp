@@ -147,6 +147,11 @@ ModelNumerical::checkResults() const
         return true;
 
     std::string const& modelKeyword = this->keyword();
+
+    bool hasChecker = !this->modelProperties().postProcess().checkersMeasure( modelKeyword ).empty();
+    if ( !hasChecker )
+        return true;
+
     bool resultsAreOk = true;
     bool isMasterRank = this->worldComm().isMasterRank();
     if ( isMasterRank )

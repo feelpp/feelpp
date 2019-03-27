@@ -92,7 +92,7 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
 
         ( prefixvm( prefix, "ts.order" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "time order" )
 
-        ( prefixvm( prefix, "checker" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use checker" )
+        ( prefixvm( prefix, "checker" ).c_str(), Feel::po::value<bool>()->default_value( true ), "use checker" )
         ;
 
     return appliBaseOptions
