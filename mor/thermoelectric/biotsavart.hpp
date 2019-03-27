@@ -330,7 +330,7 @@ int
 BiotSavart<ThermoElectricModelT>::computeIntegrals( int n, int m)
 {
     tic();
-    double coeff = M_modelProps->unit() == "mm" ? 1e-4 : 1e-7;
+    double coeff = /*M_modelProps->unit() == "mm" ? 1e-4 :*/ 1e-7;
 
     auto matIt = M_elecMaterials.begin();
     while( m >= M_teModel->mMaxSigma( matIt->first ) )

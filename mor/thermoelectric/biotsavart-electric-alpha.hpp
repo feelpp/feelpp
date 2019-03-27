@@ -38,31 +38,6 @@
 namespace Feel
 {
 
-FEELPP_EXPORT po::options_description biotsavartOptions()
-{
-    po::options_description opt("BiotSavart options");
-    opt.add_options()
-        ( "biotsavart.filename", po::value<std::string>()->default_value("biotsavart.json"),
-          "json file")
-        ( "biotsavart.repart", po::value<bool>()->default_value( false ),
-          "repartition the mesh" )
-        ( "biotsavart.compute-fe", po::value<bool>()->default_value(false),
-          "compute the finite element version of Biot Savart" )
-        ( "biotsavart.compute-offline", po::value<bool>()->default_value(true),
-          "compute the offline part of Biot Savart" )
-        ( "biotsavart.compute-online", po::value<bool>()->default_value(true),
-          "compute the online part of Biot Savart" )
-        ( "biotsavart.rebuild-database", po::value<bool>()->default_value(false),
-          "rebuild the integrals or not" )
-        ( "biotsavart.path-to-database", po::value<std::string>()->default_value("BiotSavart"),
-          "path to the database" )
-        ( "biotsavart.trainset-deim-size", po::value<int>()->default_value(10),
-          "size of the trainset for DEIM of BiotSavart" )
-        ;
-    opt.add(deimOptions("bs"));
-    return opt;
-}
-
 class BSParameterDefinition
 {
 public:
@@ -160,8 +135,10 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
     using map_mat_type = std::map<std::string,mat_type>;
 
   public:
-    static self_ptrtype New(crb::stage stage = crb::stage::online) { return std::make_shared<self_type>(stage); }
-    BiotSavartAlphaElectricCRB(crb::stage stage = crb::stage::online);
+    static po::options_description makeOptions( std::string const& prefix = "");
+    static self_ptrtype New(crb::stage stage = crb::stage::online, std::string const& prefix = "");
+    BiotSavartAlphaElectricCRB(std::string const& prefix = "");
+    BiotSavartAlphaElectricCRB(crb::stage stage, std::string const& prefix = "");
 
     void initModel();
     // setupSpecificityModel
@@ -172,10 +149,10 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
     //!
     value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
-    parameter_type paramFromOption();
+    // parameter_type paramFromOption();
     parameter_type param0();
     parameter_type paramFromProperties() const;
-    void runBS();
+    // void runBS();
     void setupCommunicatorsBS();
     vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag );
     vectorN_type beta( parameter_type& mu, int M = -1 ) { return this->deim()->beta(mu, M); }
@@ -183,8 +160,8 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
     void online( parameter_type & mu, int M = -1 );
     void expand( int N = -1 );
     void computeFE( parameter_type & mu );
-    std::vector<double> computeErrors();
-    void exportResults( parameter_type const& mu );
+    // std::vector<double> computeErrors();
+    // void exportResults( parameter_type const& mu );
     double homogeneity( element_type& B );
 
     parameter_type newParameter() const { return M_teCrbModel->newParameter(); }
@@ -231,13 +208,14 @@ protected:
     std::map<int, dof_points_type> M_dofMgn;
 
     std::string M_propertyPath;
-    bool M_repart;
-    bool M_computeFe;
-    bool M_computeOffline;
-    bool M_computeOnline;
-    bool M_rebuildDb;
-    std::string M_pathToDb;
+    // bool M_repart;
+    // bool M_computeFe;
+    // bool M_computeOffline;
+    // bool M_computeOnline;
+    // bool M_rebuildDb;
+    // std::string M_pathToDb;
     int M_trainsetDeimSize;
+    std::string M_dbBasename;
 }; // class BiotSavartAlphaElectroCRB
 
 #if !defined(FEELPP_INSTANTIATE_BIOTSAVARTALPHAELECTRIC_ELECTRIC)

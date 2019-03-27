@@ -34,23 +34,6 @@
 namespace Feel
 {
 
-FEELPP_EXPORT po::options_description
-makeOptions()
-{
-    po::options_description options( "Electric" );
-    options.add_options()
-        ( "thermoelectric.filename", Feel::po::value<std::string>()->default_value("electric.json"),
-          "json file containing application parameters and boundary conditions")
-        ( "thermoelectric.penal-dir", po::value<double>()->default_value( 1e5 ), "penalisation term" )
-        ( "thermoelectric.trainset-deim-size", po::value<int>()->default_value(40), "size of the deim trainset" )
-        ( "thermoelectric.trainset-mdeim-size", po::value<int>()->default_value(40), "size of the mdeim trainset" )
-        ;
-    options.add(backend_options("feV") );
-    options.add(deimOptions("vec")).add(deimOptions("mat"));
-
-    return options;
-}
-
 FEELPP_EXPORT AboutData
 makeAbout( std::string const& str = "electriccrbmodel" )
 {
@@ -175,11 +158,14 @@ private:
     int M_trainsetMdeimSize;
     double M_penalDir;
     std::string M_propertyPath;
+    bool M_testDeim;
+    std::string M_dbBasename;
 
 public:
+    static po::options_description makeOptions( std::string const& prefix="" );
     // Constructors
-    AlphaElectric();
-    AlphaElectric( mesh_ptrtype mesh );
+    AlphaElectric(std::string const& prefix = "");
+    AlphaElectric( mesh_ptrtype mesh, std::string const& prefix = "" );
 
     // Helpers
     int Qa();
@@ -223,6 +209,7 @@ public:
     map_mat_type const& materials() const { return M_materials; }
     map_mat_type const& materialsWithGeo() const { return M_materialsWithGeo; }
     map_mat_type const& materialsWithoutGeo() const { return M_materialsWithoutGeo; }
+    std::string const& dbBasename() const { return M_dbBasename; }
 }; // AlphaElectric class
 
 } // namespace Feel

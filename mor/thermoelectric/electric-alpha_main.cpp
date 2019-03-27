@@ -74,7 +74,8 @@ int main( int argc, char** argv)
     auto e = exporter(mesh);
 
     auto VFE = model->solve(mu);
-    auto normV = normL2( elements(model->mesh()), idv(VFE) );
+    auto rangeV = VFE.functionSpace()->dof()->meshSupport()->rangeElements();
+    auto normV = normL2( rangeV, idv(VFE) );
     boost::format fmter("%1% %|14t|%2% %|28t|%3%\n");
     fs::ofstream file( "cvg.dat" );
     if( file && Environment::isMasterRank() )
@@ -87,7 +88,7 @@ int main( int argc, char** argv)
         crb->fixedPointPrimal(n, mu, uNs, uNolds, outputs);
         vectorN_type uN = uNs[0];
         auto VRB = crb->expansion( uN, n );
-        auto errVRB = normL2( elements(model->mesh()), idv(VRB)-idv(VFE) );
+        auto errVRB = normL2( rangeV, idv(VRB)-idv(VFE) );
         auto errRel = errVRB/normV;
         if( Environment::isMasterRank() )
             file << fmter % n % errVRB % errRel;
