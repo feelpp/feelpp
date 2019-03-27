@@ -375,9 +375,9 @@ public:                                                                 \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \
-    static boost::shared_ptr<this_t> create()                           \
+    static std::shared_ptr<this_t> create()                           \
         {                                                               \
-            return boost::shared_ptr<this_t>( new this_t() );           \
+            return std::shared_ptr<this_t>( new this_t() );           \
         }                                                               \
 };                                                                      \
                                                                         \

@@ -458,7 +458,7 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
                                    {
                                        return p.second.hasMinMax();
                                    });
-    Dmu = parameterspace_type::New( nbCrbParameters, Environment::worldComm() );
+    Dmu = parameterspace_type::New( nbCrbParameters, Environment::worldCommPtr() );
 
     auto mu_min = Dmu->element();
     auto mu_max = Dmu->element();

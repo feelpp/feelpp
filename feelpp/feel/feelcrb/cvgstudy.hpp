@@ -46,6 +46,9 @@ public :
         crb_model( std::make_shared<crb_model_type>(crb::stage::offline) ),
         crb( crb_type::New( crb_model->model()->modelName(), crb_model, crb::stage::offline) )
     {
+        crb_model = boost::make_shared<crb_model_type>(crb::stage::offline);
+        crb = crb_type::New( crb_model->model()->modelName(),
+                             crb_model, crb::stage::offline);
         if( crb_model->hasEim() && crb_model->useSER() )
         {
             ser = std::make_shared<ser_type>( crb, crb_model );
@@ -371,7 +374,7 @@ private :
 
     struct ExportSolutionsComposite
     {
-        ExportSolutionsComposite( element_type const& u_rb, element_type const& u_fem, boost::shared_ptr<Exporter<mesh_type>> e, int const& i ) :
+        ExportSolutionsComposite( element_type const& u_rb, element_type const& u_fem, std::shared_ptr<Exporter<mesh_type>> e, int const& i ) :
             m_urb( u_rb ),
             m_ufem( u_fem ),
             m_e( e ),
@@ -389,7 +392,7 @@ private :
 
     private:
         element_type m_urb,m_ufem;
-        boost::shared_ptr<Exporter<mesh_type>> m_e;
+        std::shared_ptr<Exporter<mesh_type>> m_e;
         int m_i;
     };
 
@@ -397,7 +400,7 @@ private :
     crb_model_ptrtype crb_model;
     crb_ptrtype crb;
     ser_ptrtype ser;
-    boost::shared_ptr<Exporter<mesh_type>> M_e;
+    std::shared_ptr<Exporter<mesh_type>> M_e;
 };
 
 } //namespace Feel

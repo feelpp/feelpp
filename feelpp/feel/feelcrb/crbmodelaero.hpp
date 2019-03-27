@@ -40,7 +40,7 @@ class CRBModelAero :
     typedef CRBModelSaddlePoint<ModelType> super;
 public :
     typedef ModelType model_type;
-    typedef boost::shared_ptr<ModelType> model_ptrtype;
+    typedef std::shared_ptr<ModelType> model_ptrtype;
 
     typedef typename model_type::value_type value_type;
     typedef typename model_type::parameter_type parameter_type;
@@ -53,7 +53,7 @@ public :
     typedef typename model_type::beta_vector_type beta_vector_type;
 
     CRBModelAero( crb::stage stage, int level = 0 ) :
-        CRBModelAero( boost::make_shared<model_type>(), stage, level )
+        CRBModelAero( std::make_shared<model_type>(), stage, level )
         {}
 
     CRBModelAero( model_ptrtype const& model , crb::stage stage, int level = 0 ) :

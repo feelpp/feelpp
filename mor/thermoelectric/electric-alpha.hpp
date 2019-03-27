@@ -216,7 +216,7 @@ public:
 
     element_type solve( parameter_type const& mu ) override;
     value_type
-    output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
+    output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false) override;
 
     double sigma(std::string mat);
     void computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu );

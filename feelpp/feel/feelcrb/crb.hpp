@@ -343,7 +343,7 @@ public:
         M_elements_database( name,
                              prefixvm(prefixExt,"elements"),
                              this->worldCommPtr() ),
-        M_nlsolver( SolverNonLinear<double>::build( "petsc", "",Environment::worldCommPtr() ) ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldCommSeqPtr() ) ),// this->worldComm() ) ),
         M_model( model ),
         M_output_index( ioption(_name="crb.output-index") ),
         M_tolerance( doption(_name="crb.error-max") ),

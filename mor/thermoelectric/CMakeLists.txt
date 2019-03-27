@@ -46,9 +46,12 @@ crb_add_library( electric-alpha SRCS electric-alpha.cpp EXEC CRB_LIB_ELECTRIC_AL
 set(FEELPP_CRB_ELECTRIC_ALPHA_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_ELECTRIC_ALPHA_LIBRARIES PARENT_SCOPE)
 
+crb_add_library( biotsavart-electric-alpha SRCS biotsavart-electric-alpha.hpp biotsavart-electric-alpha.cpp LINK_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA} EXEC CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA )
+set(FEELPP_CRB_BIOTSAVART_ELECTRIC_ALPHA_LIBRARIES ${CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA} PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_BIOTSAVART_ELECTRIC_ALPHA_LIBRARIES PARENT_SCOPE)
 
 #install( FILES electric.hpp thermic.hpp thermoelectric-simple.hpp thermoelectric-linear.hpp thermoelectric-nonlinear.hpp electric-alpha.hpp
-install( FILES thermoelectric-nonlinear.hpp electric-alpha.hpp
+install( FILES thermoelectric-nonlinear.hpp electric-alpha.hpp biotsavart.hpp biotsavart-electric-alpha.hpp
          DESTINATION include/feelpp/crb/thermoelectric COMPONENT Devel)
 
 
@@ -83,6 +86,9 @@ feelpp_add_application( electric-alpha-app
 feelpp_add_application( biotsavart-app
                         SRCS thermoelectric-nonlinear.hpp biotsavart.hpp biotsavart_main.cpp
                         LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
+feelpp_add_application( biotsavart-electric-alpha-app
+                        SRCS electric-alpha.hpp biotsavart-electric-alpha.hpp biotsavart-electric-alpha_main.cpp
+                        LINK_LIBRARIES ${CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA} )
 
 # feelpp_add_application( test SRCS test.cpp )
 
@@ -98,3 +104,4 @@ feelpp_add_application( biotsavart-app
 feelpp_add_testcase( crb-thermoelectric-nonlinear CATEGORY CRB)
 feelpp_add_testcase( crb-electric-alpha CATEGORY CRB)
 feelpp_add_testcase( crb-biotsavart CATEGORY CRB)
+feelpp_add_testcase( bs-alpha-hel CATEGORY CRB)

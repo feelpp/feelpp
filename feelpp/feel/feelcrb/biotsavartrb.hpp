@@ -42,24 +42,24 @@ class CRBPluginBase : public CRBDB
 {
 public:
     using self_type = CRBPluginBase;
-    using self_ptrtype = boost::shared_ptr<self_type>;
+    using self_ptrtype = std::shared_ptr<self_type>;
 
     using parameterspace_type = ParameterSpaceX;
-    using parameterspace_ptrtype = boost::shared_ptr<parameterspace_type>;
+    using parameterspace_ptrtype = std::shared_ptr<parameterspace_type>;
     using parameter_type = parameterspace_type::element_type;
 
     using model_type = ModelT;
-    using model_ptrtype = boost::shared_ptr<model_type>;
+    using model_ptrtype = std::shared_ptr<model_type>;
 
     CRBPluginBase() = delete;
     CRBPluginBase( std::string const& name, std::string const& ext,
-                   WorldComm const& worldComm = Environment::worldComm() )
+                   worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         : CRBDB( name, ext, worldComm )
         {
             Feel::cout << tc::red << "CRBPluginBase constructor with uuid: " << id() << tc::reset << std::endl;
         }
     CRBPluginBase( std::string const& name, std::string const& ext, uuids::uuid const& i,
-                   WorldComm const& worldComm = Environment::worldComm() )
+                   worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         : CRBDB( name, ext, i, worldComm )
         {
             Feel::cout << tc::red << "CRBPluginBase constructor with uuid: " << id() << tc::reset << std::endl;
@@ -78,13 +78,13 @@ class BiotSavartRB : public CRBPluginBase<BiotSavartModelT>
 {
 public:
     using model_type = BiotSavartModelT;
-    using model_ptrtype = boost::shared_ptr<model_type>;
+    using model_ptrtype = std::shared_ptr<model_type>;
     using super = CRBPluginBase<model_type>;
     using self_type = BiotSavartRB;
-    using self_ptrtype = boost::shared_ptr<self_type>;
+    using self_ptrtype = std::shared_ptr<self_type>;
 
     using parameterspace_type = ParameterSpaceX;
-    using parameterspace_ptrtype = boost::shared_ptr<parameterspace_type>;
+    using parameterspace_ptrtype = std::shared_ptr<parameterspace_type>;
     using parameter_type = parameterspace_type::element_type;
 
     using mesh_ptrtype = typename model_type::mesh_ptrtype;
@@ -92,7 +92,7 @@ public:
     using vt_element_type = typename model_type::vt_element_type;
 
     using crb_elements_db_type = CRBElementsDB<model_type>;
-    using crb_elements_db_ptrtype = boost::shared_ptr<crb_elements_db_type>;
+    using crb_elements_db_ptrtype = std::shared_ptr<crb_elements_db_type>;
 
 private:
     model_ptrtype M_model;
@@ -158,7 +158,7 @@ BiotSavartRB<BiotSavartModelT>::New( std::string const& name,
                                      std::string const& prefixExt,
                                      std::string const& prefix)
 {
-    auto bs = boost::shared_ptr<self_type>( new self_type(name, model, stage, prefixExt, prefix) );
+    auto bs = std::shared_ptr<self_type>( new self_type(name, model, stage, prefixExt, prefix) );
     if( stage == crb::stage::offline )
         bs->init();
     return bs;
@@ -211,7 +211,7 @@ template <typename BiotSavartModelT>
 void
 BiotSavartRB<BiotSavartModelT>::saveRB()
 {
-    M_elements_db.setWn( boost::make_tuple( M_model->rBFunctionSpace()->primalRB() , M_model->rBFunctionSpace()->dualRB() ) );
+    M_elements_db.setWn( std::make_tuple( M_model->rBFunctionSpace()->primalRB() , M_model->rBFunctionSpace()->dualRB() ) );
 
     M_elements_db.saveDB();
 }

@@ -170,9 +170,10 @@ protected :
     //! Update the list of element containing the dofs in the \p index_list for composite spaces
     void updateEltsId( std::vector<int> const& index_list, mpl::true_ )
         {
-            UdpateEltsIdComposite builder( this->M_model->functionSpace(), index_list, this->M_elts_ids );
+            UdpateEltsIdComposite builder( this->M_model->functionSpace(), index_list );
             rangespace_type range;
             boost::fusion::for_each( range, builder );
+            this->M_elts_ids = builder.elts();
         }
 
     virtual space_ptrtype newInterpolationSpace( mesh_ptrtype const& mesh ) override
@@ -223,7 +224,7 @@ private :
 
     struct ExpansionByBlock
     {
-        ExpansionByBlock( self_type* deim, vectorN_type const& urb, element_type & _U ) :
+        ExpansionByBlock( self_type* deim, vectorN_type const& urb ) :
             m_deim( deim ),
             m_urb( urb ),
             N(0),
@@ -250,6 +251,8 @@ private :
             m_start += Nwn;
         }
 
+        element_type& field() { return U; }
+
     private :
         self_type* m_deim;
         vectorN_type m_urb;
@@ -260,10 +263,9 @@ private :
 
     struct UdpateEltsIdComposite
     {
-        UdpateEltsIdComposite( space_ptrtype const& Xh, std::vector<int> const& index,  std::set<int> & elts_ids ) :
+        UdpateEltsIdComposite( space_ptrtype const& Xh, std::vector<int> const& index ) :
             m_Xh( Xh ),
-            m_index( index ),
-            m_elts_ids( elts_ids )
+            m_index( index )
         {}
 
         template <typename T>
@@ -294,10 +296,12 @@ private :
             }
         }
 
+        std::set<int> elts() { return m_elts_ids; }
+
     private:
         space_ptrtype m_Xh;
         std::vector<int> m_index;
-        std::set<int> & m_elts_ids;
+        mutable std::set<int> m_elts_ids;
     };
 
 
@@ -464,10 +468,9 @@ DEIMModel<ModelType,TensorType>::deimExpansion( vectorN_type const& urb, mpl::tr
     BOOST_STATIC_ASSERT( space_type::is_composite );//<< "Use of CBR block but space is not composite\n";
 
     rangespace_type range;
-    auto U =  this->model()->functionSpace();
-    auto builder = ExpansionByBlock( this, urb, U );
+    auto builder = ExpansionByBlock( this, urb );
     boost::fusion::for_each( range, builder );
-    return U;
+    return builder.field();
 } // deimExpansion with block
 
 
