@@ -1,0 +1,64 @@
+= How to run the UKF
+
+== Files content
+
+=== The UKF files
+
+The `UKF.py` `UKFparallel.py` files contain the following features :
+
+* `set( self, dim, obs, w0, dt, dynamics, observe, defect, initialguess, tol = 0.01 )` : initialization of the filter
+** `self` is the current filter,
+** `dim` is the dimension of the state-parameter array to be estimated,
+** `obs` is the dimension of the measurement array
+** `w0` is the weight assigned to the central sigma point ; this affects the blur from the point of view of the filter,
+** `dt` is the time step,
+** `dynamics` denotes the forward model function, or dynamics function, that is the one linking the state at step k to the state at step k+1,
+** `observe` denotes the observation function,
+** `defect` is a regularisation term introduced to avoid sigma-point collapse,
+** `initialguess` is the starting point in the space of state-parameters,
+** `tol` is the error tolerance, default 0.01.
+
+* `readsignal( self, signal )` : black box function saving the measurements
+** `self` is the current filter,
+** `signal` is a scalar in static mode but a time-indexed array in dynamic mode.
+
+* step( self, mode ) : main function of the filter ; computes sigma-points, updates time, forecasts and analyzes
+** `self` is the current filter,
+** `mode` is either `static` or `dynamic`.
+
+* `filter( self, measurement, maxiter = 1000, verbose = False, mode = "dynamic" )` : the user-side function
+** `self` is the current filter,
+** `measurement` will be read by `readsignal`,
+** `maxiter` is the maximum number of iterations to be performed, default 1000,
+** `verbose` displays the filter activity in real time for debugging purpose, default `False`,
+** `mode` is either `static` or `dynamic`, default `dynamic`.
+
+=== The base file
+
+The `base.py` file contains basic functions, namely :
+
+* `inverse` designed to handle both scalar and square matrix inverse,
+* `balancedpartition( nb_data, nb_procs )` computing the "best" partition of an integer `nb_data` in `nb_procs` bits,
+* `displacements( partition )` computing the starting position of each data bits.
+
+These two last functions find their use when parallelising the filtering process.
+
+== Estimation of static parameters
+
+This is useful for inferring the values of fixed parameters from one measurement. This feature is dramatically less efficient than a classical conjugate gradient method, but allows to tune a highly nonlinear model.
+
+We present a elementary example in which we recover a directly measured quantity with noise, that is direct parameter estimation.
+
+[source,python]
+----
+include::testcases/tracking/constant-signal/tracking.py[]
+----
+
+== Tracking a signal
+
+This is a basic test case useful for anyone who is interested in handling time-varying signals.
+
+[source,python]
+----
+include::testcases/tracking/periodic-signal/sinusoid.py
+----
