@@ -2324,15 +2324,16 @@ public:
         typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
         typedef typename gm_type::precompute_type geopc_type;
 
-        template <size_type CTX=vm::POINT|vm::JACOBIAN>
+        static constexpr size_type DefaultCTX = (is_hdiv_conforming?vm::POINT|vm::JACOBIAN:(is_hcurl_conforming?vm::POINT|vm::KB:vm::POINT));
+        template <size_type CTX=DefaultCTX>
         using gmc_t = typename gm_type::template Context<CTX, geoelement_type>;
-        template <size_type CTX=vm::POINT|vm::JACOBIAN>
+        template <size_type CTX=DefaultCTX>
         using gmc_ptr_t = std::shared_ptr<gmc_t<CTX>>;
         
         using fe_type = typename functionspace_type::fe_type;
-        template <size_type FECTX=vm::POINT|vm::JACOBIAN, size_type GEOCTX=vm::POINT|vm::JACOBIAN>
+        template <size_type FECTX=DefaultCTX, size_type GEOCTX=DefaultCTX>
         using fec_t = typename basis_0_type::template Context<FECTX, fe_type, gm_type, geoelement_type,GEOCTX>;
-        template <size_type FECTX=vm::POINT|vm::JACOBIAN, size_type GEOCTX=vm::POINT|vm::JACOBIAN>
+        template <size_type FECTX=DefaultCTX, size_type GEOCTX=DefaultCTX>
         using fec_ptr_t = std::shared_ptr<fec_t<FECTX,GEOCTX>>;
         
         //@}
