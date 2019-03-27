@@ -2,6 +2,7 @@ import numpy as np
 from numpy import mean, sum, dot, linalg, zeros, ones, transpose
 from numpy.linalg import inv, cholesky
 from scipy.linalg import sqrtm
+from base import *
 
 class Filter:
 
@@ -38,12 +39,6 @@ class Filter:
         self.signal = signal
         self.X = zeros([self.dim,max(signal.shape)-1]) # KEEPS TRACK OF THE STATES BEST ESTIMATE
         self.forecast = zeros([self.dim,max(signal.shape)]) # KEEPS TRACK OF THE FORECAST
-
-    def inverse(M):          
-        if M.size == 1:
-            return 1/M
-        else:
-            return inv(M)
     
     def step(self, mode):
         # COMPUTE SIGMA-POINTS
@@ -54,7 +49,7 @@ class Filter:
         for i in range(self.dim+1,2*self.dim+1):
             self.SigPts[:,i] = self.Mx - self.P[:,i-self.dim-1]
 
-        # TIME UPDATE
+            # TIME UPDATE
         for i in range(0,2*self.dim+1):
             self.SigPts[:,i] = self.dynamics(self.SigPts[:,i],self.Time,self.dt)
             self.PreMeas[:,i] = self.observe(self.SigPts[:,i])
@@ -62,14 +57,14 @@ class Filter:
         self.Time += 1
 
         self.Mx = self.SigPts @ transpose(self.weights)
-#        self.XF = self.Mx
+        self.XF = self.Mx
         self.Covx = (self.weights*(self.SigPts-self.Mx)) @ transpose(self.SigPts-self.Mx)
         self.My = self.PreMeas @ transpose(self.weights)
         self.Covy = (self.weights*(self.PreMeas-self.My)) @ transpose(self.PreMeas-self.My) + self.covydefect*np.eye(self.obs)
         self.XCov = (self.weights*(self.SigPts-self.Mx)) @ transpose(self.PreMeas-self.My)
 
         # ANALYSIS STEP
-        self.Kalman = self.XCov * self.inverse(self.Covy)
+        self.Kalman = self.XCov * inverse(self.Covy)
         
         if mode == "dynamic":
             self.Mx += self.Kalman @ (self.signal[self.Time]-self.My)
@@ -92,8 +87,8 @@ class Filter:
                     print("    last state estimate : ",self.Mx)
                     print("    associated predicted measure : ",self.My," ; real measure : ",self.signal[i])
                     print("    relative measure error : ",np.abs(self.My-self.signal[i])/self.signal[i]," ; tolerance : ",self.tol)
-                    if np.abs(self.My-self.signal[i])/self.signal[i] < self.tol or i > maxiter:
-                        return self.Mx
+#                    if np.abs(self.My-self.signal[i])/self.signal[i] < self.tol or i > maxiter:
+#                        return self.Mx
                     
         elif mode == "static":
             i = 0   
