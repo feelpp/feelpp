@@ -55,7 +55,7 @@ void StokesDeim::initModel()
         Pset->readFromFile(samplingname);
     }
 
-    auto d = ::Feel::mdeim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()),
+    auto d = ::Feel::mdeim( _model=boost::dynamic_pointer_cast<self_type>(this->shared_from_this()),
                             _sampling=Pset, _tag=0 );
     this->addMdeim( d );
     this->mdeim()->run();

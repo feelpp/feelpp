@@ -48,8 +48,7 @@ class CRBSaddlePoint :
         public CRBBlock<TruthModelType>
 {
     typedef CRBBlock<TruthModelType> super;
-    using self_type = CRBSaddlePoint;
-    using self_ptrtype = boost::shared_ptr<self_type>;
+
 
 public:
     //@{ // Truth Model
@@ -68,7 +67,6 @@ public:
     //@}
 
     typedef boost::bimap< int, boost::tuple<double,double,double> > convergence_type;
-    typedef double value_type;
     typedef typename convergence_type::value_type convergence;
 
     using self_type = CRBSaddlePoint;

@@ -17,7 +17,7 @@ class CRBAero :
 {
     typedef CRBBlock<TruthModelType> super;
     typedef CRBAero<TruthModelType> self_type;
-    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::shared_ptr<self_type> self_ptrtype;
 
 public:
     typedef TruthModelType model_type;
@@ -39,7 +39,7 @@ public:
     static self_ptrtype New( std::string const& name = "defaultname_crb",
                              crb::stage stage = crb::stage::online )
         {
-            return New( name, boost::make_shared<model_type>(stage), stage );
+            return New( name, std::make_shared<model_type>(stage), stage );
         }
 
     static self_ptrtype New( std::string const& name,
@@ -47,7 +47,7 @@ public:
                              crb::stage stage = crb::stage::online,
                              std::string const& prefixElt = "")
         {
-            auto crb = boost::shared_ptr<self_type>( new self_type(name, model, stage, prefixElt ));
+            auto crb = std::shared_ptr<self_type>( new self_type(name, model, stage, prefixElt ));
             crb->init();
             return crb;
         }
@@ -58,7 +58,7 @@ protected:
     CRBAero( std::string const& name = "defaultname_crb",
               crb::stage stage = crb::stage::online,
               WorldComm const& worldComm = Environment::worldComm() ) :
-        CRBAero( name, boost::make_shared<model_type>(stage), stage )
+        CRBAero( name, std::make_shared<model_type>(stage), stage )
         {}
 
     //! constructor from command line options
