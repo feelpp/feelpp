@@ -28,7 +28,8 @@ namespace Feel {
 
 ModelMarkers::ModelMarkers( std::string const& marker )
 {
-    this->insert(marker);
+    if( !marker.empty() ) // let markers be empty if marker is not set (volumic forces)
+        this->insert(marker);
 }
 
 void
