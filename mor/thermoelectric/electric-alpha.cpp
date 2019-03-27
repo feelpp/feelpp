@@ -426,8 +426,8 @@ void AlphaElectric::initModel()
     e->add("VEIM", VEIM);
     e->save();
 
-    auto errV = normL2(elements(M_mesh), idv(VFE)-idv(VEIM) );
-    auto normV = normL2(elements(M_mesh), idv(VFE) );
+    auto errV = normL2(domain, idv(VFE)-idv(VEIM) );
+    auto normV = normL2(domain, idv(VFE) );
     Feel::cout << "V: err = " << errV << " relative err = " << errV/normV << std::endl;
 
     Am->addMatrix(-1., A);

@@ -28,24 +28,43 @@
 
 namespace Feel {
 
-ThermoElectric::ThermoElectric()
-    : super_type( soption("thermoelectric.basename") ),
-      M_propertyPath( Environment::expand( soption("thermoelectric.filename")) ),
-      M_penalDir( doption("thermoelectric.penal-dir") ),
-      M_picardTol( doption("thermoelectric.picard.tol") ),
-      M_picardMaxit( ioption("thermoelectric.picard.maxit") ),
-      M_trainsetEimSize( ioption("thermoelectric.trainset-eim-size") ),
-      M_exportFE( boption("thermoelectric.export-FE") )
+po::options_description
+ThermoElectric::makeOptions( std::string const& prefix )
+{
+    po::options_description options( "Thermoelectric" );
+    options.add_options()
+        ( prefixvm( prefix, "basename").c_str(), Feel::po::value<std::string>()->default_value("thermoelectric_linear"),
+          "name of the database" )
+        ( prefixvm( prefix, "filename").c_str(), Feel::po::value<std::string>()->default_value("thermoelectric.json"),
+          "json file containing application parameters and boundary conditions")
+        ( prefixvm( prefix, "penal-dir").c_str(), po::value<double>()->default_value( 1e4 ), "penalisation term" )
+        ( prefixvm( prefix, "trainset-eim-size").c_str(), po::value<int>()->default_value(40), "size of the eim trainset" )
+        ( prefixvm( prefix, "export-FE").c_str(), po::value<bool>()->default_value(true), "export FE solution" )
+        ( prefixvm( prefix, "picard.maxit").c_str(), po::value<int>()->default_value(5), "maximum number of iterations for Picard" )
+        ( prefixvm( prefix, "picard.tol").c_str(), po::value<double>()->default_value(1e-8), "tolerance for Picard" )
+        ;
+    options.add(backend_options("thermo-electro") );
+    return options;
+}
+
+ThermoElectric::ThermoElectric( std::string const& prefix )
+    : super_type( soption(prefixvm( prefix, "basename").c_str()) ),
+      M_propertyPath( Environment::expand( soption(prefixvm( prefix, "filename").c_str())) ),
+      M_penalDir( doption(prefixvm( prefix, "penal-dir").c_str()) ),
+      M_picardTol( doption(prefixvm( prefix, "picard.tol").c_str()) ),
+      M_picardMaxit( ioption(prefixvm( prefix, "picard.maxit").c_str()) ),
+      M_trainsetEimSize( ioption(prefixvm( prefix, "trainset-eim-size").c_str()) ),
+      M_exportFE( boption(prefixvm( prefix, "export-FE").c_str()) )
 {}
 
-ThermoElectric::ThermoElectric( mesh_ptrtype mesh )
-    : super_type( soption("thermoelectric.basename") ),
-      M_propertyPath( Environment::expand( soption("thermoelectric.filename")) ),
-      M_penalDir( doption("thermoelectric.penal-dir") ),
-      M_picardTol( doption("thermoelectric.picard.tol") ),
-      M_picardMaxit( ioption("thermoelectric.picard.maxit") ),
-      M_trainsetEimSize( ioption("thermoelectric.trainset-eim-size") ),
-      M_exportFE( boption("thermoelectric.export-FE") )
+ThermoElectric::ThermoElectric( mesh_ptrtype mesh, std::string const& prefix )
+    : super_type( soption(prefixvm( prefix, "basename").c_str()) ),
+      M_propertyPath( Environment::expand( soption(prefixvm( prefix, "filename").c_str())) ),
+      M_penalDir( doption(prefixvm( prefix, "penal-dir").c_str()) ),
+      M_picardTol( doption(prefixvm( prefix, "picard.tol").c_str()) ),
+      M_picardMaxit( ioption(prefixvm( prefix, "picard.maxit").c_str()) ),
+      M_trainsetEimSize( ioption(prefixvm( prefix, "trainset-eim-size").c_str()) ),
+      M_exportFE( boption(prefixvm( prefix, "export-FE").c_str()) )
 {
     this->M_mesh = mesh;
 }
@@ -368,6 +387,7 @@ void ThermoElectric::initModel()
     auto T0 = cst(293.0);
     for( auto const& mat : M_elecMaterials )
     {
+        auto name = (boost::format("eim_sigma_%1%") % mat.first ).str();
         auto Th = q_sigma_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, mat.first) );
         auto sigma0 = cst_ref(M_mu.parameterNamed(mat.second.getString("sigmaKey")));
         auto alpha = cst_ref(M_mu.parameterNamed(mat.second.getString("alphaKey")));
@@ -378,12 +398,14 @@ void ThermoElectric::initModel()
                               _parameter=M_mu,
                               _expr=sigma,
                               _space=Th,
-                              _name=(boost::format("eim_sigma_%1%") % mat.first ).str(),
+                              _name=name,
                               _sampling=Pset );
         this->addEim( eim_sigma );
+        Feel::cout << tc::green << name << " dimension: " << eim_sigma->mMax() << tc::reset << std::endl;
     }
     for( auto const& mat : M_therMaterials )
     {
+        auto name = (boost::format("eim_k_%1%") % mat.first ).str();
         auto Th = q_sigma_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, mat.first) );
         auto sigma0 = cst_ref(M_mu.parameterNamed(mat.second.getString("sigmaKey")));
         auto alpha = cst_ref(M_mu.parameterNamed(mat.second.getString("alphaKey")));
@@ -396,9 +418,10 @@ void ThermoElectric::initModel()
                           _parameter=M_mu,
                           _expr=k,
                           _space=Th,
-                          _name=(boost::format("eim_k_%1%") % mat.first ).str(),
+                          _name=name,
                           _sampling=Pset );
         this->addEim( eim_k );
+        Feel::cout << tc::green << name << " dimension: " << eim_k->mMax() << tc::reset << std::endl;
     }
     auto gradgrad = _e2v*trans(_e2v);
     auto eim_gradgrad = eim( _model=std::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
@@ -411,7 +434,7 @@ void ThermoElectric::initModel()
                              _sampling=Pset
                              );
     this->addEimDiscontinuous( eim_gradgrad );
-    auto eimGradgrad = this->scalarDiscontinuousEim()[0];
+    Feel::cout << tc::green << "eim_gradgrad dimension: " << eim_gradgrad->mMax() << tc::reset << std::endl;
 
     this->assemble();
 }
@@ -1403,24 +1426,29 @@ int ThermoElectric::mMaxJoule()
     return this->scalarDiscontinuousEim()[0]->mMax();
 }
 
-int ThermoElectric::mMaxSigma()
+int ThermoElectric::mMaxSigma( std::string const& mat )
 {
-    return 1;
+    return this->scalarContinuousEim()[indexOfMatV(mat)]->mMax();
 }
 
-ThermoElectric::q_sigma_element_type ThermoElectric::eimSigmaQ(int m)
+ThermoElectric::q_sigma_element_type ThermoElectric::eimSigmaQ( std::string const& mat, int m)
 {
-    // auto Vh = Xh->template functionSpace<0>();
-    q_sigma_element_type q/* = M_Th->element()*/;
-    // q.on( _range=elements(M_mesh), _expr=cst(1.) );
-    return q;
+    return this->scalarContinuousEim()[indexOfMatV(mat)]->q(m);
 }
 
-ThermoElectric::vectorN_type ThermoElectric::eimSigmaBeta( parameter_type const& mu )
+ThermoElectric::vectorN_type ThermoElectric::eimSigmaBeta( std::string const& mat, parameter_type const& mu )
 {
-    vectorN_type beta(1);
-    beta(0) = mu.parameterNamed( "sigma" );
-    return beta;
+    return this->scalarContinuousEim()[indexOfMatV(mat)]->beta(mu);
+}
+
+ThermoElectric::vectorN_type ThermoElectric::eimSigmaBeta( std::string const& mat, parameter_type const& mu, element_type const& U )
+{
+    return this->scalarContinuousEim()[indexOfMatV(mat)]->beta(mu, U);
+}
+
+ThermoElectric::vectorN_type ThermoElectric::eimSigmaBeta( std::string const& mat, parameter_type const& mu, vectorN_type const& Urb )
+{
+    return this->scalarContinuousEim()[indexOfMatV(mat)]->beta(mu, Urb);
 }
 
 void ThermoElectric::computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu )
