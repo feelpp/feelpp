@@ -18,7 +18,7 @@
     "COIL": // Physical marker
     {
       "name":"firstMat",
-      "file":"false",
+      //"file":"false",
       "B":"mu_0*mu_r*H:x:y:H:mu_r:B:mu_0",
       "mu_r":"1"
     }
