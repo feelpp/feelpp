@@ -207,6 +207,25 @@ private :
     std::set<std::string> M_listMarkerEmpty;
 };
 
+class MarkerManagementRadiationBC
+{
+public :
+
+    MarkerManagementRadiationBC();
+    MarkerManagementRadiationBC( MarkerManagementRadiationBC const& op ) = default;
+    void clearMarkerRadiationBC();
+    void setMarkerRadiationBC( std::string const& name, std::set<std::string> const& markers );
+    void addMarkerRadiationBC( std::string const& name, std::string const& marker );
+    void addMarkerRadiationBC( std::string const& name, std::set<std::string> const& markers );
+    std::map<std::string,std::set<std::string> > const& markerRadiationBC() const;
+    std::set<std::string> const& markerRadiationBC( std::string const& markerNameId ) const;
+    std::string getInfoRadiationBC() const;
+    void updateInformationObjectRadiationBC( pt::ptree & p );
+private :
+    std::map<std::string,std::set<std::string> > M_containerMarkers;
+    std::set<std::string> M_listMarkerEmpty;
+};
+
 class MarkerManagementFluidStructureInterfaceBC
 {
 public :

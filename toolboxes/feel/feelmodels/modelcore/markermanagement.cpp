@@ -695,6 +695,77 @@ MarkerManagementRobinBC::getInfoRobinBC() const
 
 //--------------------------------------------------------------//
 
+MarkerManagementRadiationBC::MarkerManagementRadiationBC()
+    :
+    M_containerMarkers(),
+    M_listMarkerEmpty()
+{}
+void
+MarkerManagementRadiationBC::clearMarkerRadiationBC()
+{
+    M_containerMarkers.clear();
+}
+void
+MarkerManagementRadiationBC::setMarkerRadiationBC( std::string const& name, std::set<std::string> const& markers )
+{
+    M_containerMarkers[name] = markers;
+}
+void
+MarkerManagementRadiationBC::addMarkerRadiationBC( std::string const& name, std::string const& marker )
+{
+    if ( name.empty() ) return;
+    M_containerMarkers[name].insert(marker);
+}
+void
+MarkerManagementRadiationBC::addMarkerRadiationBC( std::string const& name, std::set<std::string> const& markers )
+{
+    if ( name.empty() ) return;
+    for(auto const& m : markers )
+        M_containerMarkers[name].insert(m);
+}
+std::map<std::string,std::set<std::string> > const&
+MarkerManagementRadiationBC::markerRadiationBC() const
+{
+    return M_containerMarkers;
+}
+std::set<std::string> const&
+MarkerManagementRadiationBC::markerRadiationBC( std::string const& markerNameId ) const
+{
+    if ( M_containerMarkers.find( markerNameId ) != M_containerMarkers.end() )
+        return M_containerMarkers.find(markerNameId)->second;
+    else
+        return M_listMarkerEmpty;
+}
+
+void
+MarkerManagementRadiationBC::updateInformationObjectRadiationBC( pt::ptree & p )
+{
+    // TODO
+}
+std::string
+MarkerManagementRadiationBC::getInfoRadiationBC() const
+{
+    std::ostringstream _ostr;
+
+    for ( auto const& markerBase : M_containerMarkers )
+    {
+        _ostr << "\n       -- Radiation : " << markerBase.first;
+        if ( markerBase.second.size() == 1 && *markerBase.second.begin() == markerBase.first ) continue;
+        _ostr << " -> (";
+        int cptMark = 0;
+        for ( auto itMark = markerBase.second.begin(), enMark = markerBase.second.end() ; itMark!=enMark ; ++itMark,++cptMark )
+        {
+            if ( cptMark > 0) _ostr << " , ";
+            _ostr << *itMark;
+        }
+        _ostr << ")";
+    }
+
+    return _ostr.str();
+}
+
+//--------------------------------------------------------------//
+
 MarkerManagementFluidStructureInterfaceBC::MarkerManagementFluidStructureInterfaceBC()
     :
     M_containerMarkers(),

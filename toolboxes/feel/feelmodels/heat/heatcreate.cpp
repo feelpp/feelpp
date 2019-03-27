@@ -455,6 +455,10 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
     this->updateInformationObjectRobinBC( subPt2 );
     for( const auto& ptIter : subPt2 )
         subPt.put_child( ptIter.first, ptIter.second );
+    subPt2.clear();
+    this->updateInformationObjectRadiationBC( subPt2 );
+    for( const auto& ptIter : subPt2 )
+        subPt.put_child( ptIter.first, ptIter.second );
     p.put_child( "Boundary Conditions",subPt );
 
     // Materials parameters
@@ -508,7 +512,8 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
            << this->getInfoNeumannBC()
-           << this->getInfoRobinBC();
+           << this->getInfoRobinBC()
+           << this->getInfoRadiationBC();
     *_ostr << this->thermalProperties()->getInfoMaterialParameters()->str();
     *_ostr << "\n   Mesh Discretization"
            << "\n     -- mesh filename      : " << this->meshFile()
@@ -548,6 +553,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateParameterValues()
     M_bcDirichlet.setParameterValues( paramValues );
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );
+    M_bcRadiation.setParameterValues( paramValues );
     M_volumicForcesProperties.setParameterValues( paramValues );
 }
 
@@ -558,6 +564,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
     this->clearMarkerRobinBC();
+    this->clearMarkerRadiationBC();
 
     this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Dirichlet" );
     for( auto const& d : this->M_bcDirichlet )
@@ -569,6 +576,10 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "temperature", "Robin" );
     for( auto const& d : this->M_bcRobin )
         this->addMarkerRobinBC( name(d),markers(d) );
+
+    this->M_bcRadiation = this->modelProperties().boundaryConditions().getScalarFieldsList( "temperature", "Radiation" );
+    for( auto const& d : this->M_bcRadiation )
+        this->addMarkerRadiationBC( name(d),markers(d) );
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
 
