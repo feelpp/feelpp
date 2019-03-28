@@ -37,7 +37,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
     // Build FluidMechanics model
     M_fluidModel = std::make_shared<fluid_model_type>(
-            prefixvm(this->prefix(),"fluid"), false, this->worldCommPtr(),
+            prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
             this->subPrefix(), this->repository() );
     // Build LevelSet models
     uint16_type nLevelsets = M_nFluids - 1;
