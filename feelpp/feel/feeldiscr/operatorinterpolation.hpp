@@ -686,7 +686,7 @@ struct PrecomputeDomainBasisFunction
     typedef typename geoelement_type::gm_ptrtype gm_ptrtype;
     typedef typename gm_type::precompute_type geopc_type;
     typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
-    static const size_type context2 = (mpl::or_<is_hdiv_conforming<fe_type>, is_hcurl_conforming<fe_type> >::type::value)?
+    static const size_type context2 = (is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> )?
         expression_type::context|vm::JACOBIAN|vm::KB :
         expression_type::context;
     static const size_type context = ( DomainSpaceType::nDim == ImageSpaceType::nDim )? context2 : context2|vm::POINT;
@@ -718,17 +718,19 @@ struct PrecomputeDomainBasisFunction
 
     void update( geoelement_type const& elt )
     {
-        if ( !vm::has_grad<context>::value && !vm::has_curl<context>::value && !vm::has_div<context>::value && 
-             !mpl::or_<is_hdiv_conforming<typename DomainSpaceType::fe_type>, is_hcurl_conforming<typename DomainSpaceType::fe_type> >::type::value &&
-             !mpl::or_<is_hdiv_conforming<typename ImageSpaceType::fe_type>, is_hcurl_conforming<typename ImageSpaceType::fe_type> >::type::value )
+        if constexpr ( !vm::has_grad_v<context> && !vm::has_curl_v<context> && !vm::has_div_v<context> && 
+             !is_hdiv_conforming_v<typename DomainSpaceType::fe_type> && !is_hcurl_conforming_v<typename DomainSpaceType::fe_type> &&
+             !is_hdiv_conforming_v<typename ImageSpaceType::fe_type> && !is_hcurl_conforming_v<typename ImageSpaceType::fe_type> )
             return;
+        else
+        {
+            M_gmc->update( elt );
+            M_fec->update( M_gmc );
 
-        M_gmc->update( elt );
-        M_fec->update( M_gmc );
+            t_expr_type texpr( M_expr, mapgmc( M_gmc), mapfec( M_fec ) );
 
-        t_expr_type texpr( M_expr, mapgmc( M_gmc), mapfec( M_fec ) );
-
-        M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
+            M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
+        } 
     }
 
     Eigen::MatrixXd const& interpolant() const { return M_IhLoc; }
