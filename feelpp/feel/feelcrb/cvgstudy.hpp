@@ -46,7 +46,7 @@ public :
         crb_model( std::make_shared<crb_model_type>(crb::stage::offline) ),
         crb( crb_type::New( crb_model->model()->modelName(), crb_model, crb::stage::offline) )
     {
-        crb_model = boost::make_shared<crb_model_type>(crb::stage::offline);
+        crb_model = std::make_shared<crb_model_type>(crb::stage::offline);
         crb = crb_type::New( crb_model->model()->modelName(),
                              crb_model, crb::stage::offline);
         if( crb_model->hasEim() && crb_model->useSER() )

@@ -731,7 +731,7 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
     int n_added0 = N0 - this->subN(0,Ncur-1);
     int n_added1 = N1 - this->subN(1,Ncur-1);
     // in the case of SER we need to rebuild for the new EIM basis
-    if( ioption(_prefix=this->M_prefix,"ser.eim-frequency") != 0 )
+    if( ioption(_prefix=this->M_prefix,_name="ser.eim-frequency") != 0 )
     {
         n_added0 = N0;
         n_added1 = N1;
