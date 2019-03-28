@@ -110,7 +110,7 @@ public:
      */
     //@{
 
-    static const size_type context = Expr::context;
+    static const size_type context = Expr::context|vm::JACOBIAN;
     static const bool is_terminal = false;
 
     //static const uint16_type imorder = 0;
@@ -1606,29 +1606,16 @@ namespace detail
 {
 template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 std::shared_ptr<GmcType>
-buildGmcWithRelationDifferentMeshType( std::shared_ptr<SpaceType> const& /*space*/,typename GmcType::gm_ptrtype const& /*gm*/, ImType const& im,
-                                        size_type /*idElt*/ ,std::shared_ptr<GmcExprType> const& gmcExpr,mpl::int_<0> /**/, mpl::true_ )
-{
-    return gmcExpr;
-}
-
-template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-std::shared_ptr<GmcType>
-buildGmcWithRelationDifferentMeshType( std::shared_ptr<SpaceType> const& /*space*/,typename GmcType::gm_ptrtype const& /*gm*/, ImType const& im,
-                                        size_type /*idElt*/ ,std::shared_ptr<GmcExprType> const& gmcExpr,mpl::int_<0> /**/, mpl::false_ )
-{
-    CHECK( false ) << "not allowed\n";
-    return std::shared_ptr<GmcType>();
-}
-
-template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-std::shared_ptr<GmcType>
 buildGmcWithRelationDifferentMeshType( std::shared_ptr<SpaceType> const& space,typename GmcType::gm_ptrtype const& gm, ImType const& im,
                                         size_type idElt ,std::shared_ptr<GmcExprType> const& gmcExpr,mpl::int_<0> /**/ )
 {
-    return buildGmcWithRelationDifferentMeshType<SpaceType,ImType,GmcType,GmcExprType>( space,gm,im, idElt, gmcExpr,
-                                                                                        mpl::int_<0>(),
-                                                                                        mpl::bool_<boost::is_same<GmcType,GmcExprType>::type::value>() );
+    if constexpr ( std::is_same_v<GmcType,GmcExprType> )
+        return gmcExpr;
+    else
+    {
+        throw std::logic_error("GmcExprType must be of the same type as GmcType");
+        return nullptr;
+    }
 }
 template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 std::shared_ptr<GmcType>
@@ -1823,8 +1810,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename FormType::gm_1_type gm_formTest_type;
     typedef typename FormType::gm1_1_type gm1_formTest_type;
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
-    typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc_formTest_type;
-    typedef typename gm1_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc1_formTest_type;
+    typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_formTest_type> gmc_formTest_type;
+    typedef typename gm1_formTest_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_formTest_type> gmc1_formTest_type;
     typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
     typedef std::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
@@ -1838,8 +1825,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename FormType::gm_2_type gm_formTrial_type;
     typedef typename FormType::gm1_2_type gm1_formTrial_type;
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
-    typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc_formTrial_type;
-    typedef typename gm1_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc1_formTrial_type;
+    typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_formTrial_type> gmc_formTrial_type;
+    typedef typename gm1_formTrial_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_formTrial_type> gmc1_formTrial_type;
     typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
     typedef std::shared_ptr<gmc1_formTrial_type> gmc1_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
