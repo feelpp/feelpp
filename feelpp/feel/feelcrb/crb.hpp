@@ -532,6 +532,8 @@ public:
     truth_model_ptrtype & model() { return M_model; }
     truth_model_ptrtype const& model() const { return M_model; }
 
+    std::string const& prefix() const { return M_prefix; }
+
     //! return factor
     int factor() const
         {

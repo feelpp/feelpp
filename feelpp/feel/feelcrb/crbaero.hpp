@@ -65,11 +65,11 @@ protected:
     CRBAero( std::string const& name, truth_model_ptrtype const & model,
              crb::stage stage = crb::stage::online, std::string const& prefixExt = "" ) :
         super( name, model, stage, prefixExt ),
-        M_use_psit( boption(_prefix=this->M_prefix,"crb.aero.use-psit")),
-        M_newton( boption(_prefix=this->M_prefix,"crb.aero.use-newton")),
-        M_delta( doption(_prefix=this->M_prefix,"crb.aero.psit.delta0" ) ),
+        M_use_psit( boption(_prefix=this->M_prefix,_name="crb.aero.use-psit")),
+        M_newton( boption(_prefix=this->M_prefix,_name="crb.aero.use-newton")),
+        M_delta( doption(_prefix=this->M_prefix,_name="crb.aero.psit.delta0" ) ),
         M_rez(-1),
-        M_store_rb_sol( boption(_prefix=this->M_prefix,"crb.aero.store-rb-sol"))
+        M_store_rb_sol( boption(_prefix=this->M_prefix,_name="crb.aero.store-rb-sol"))
         {
             CHECK( n_block==3 ) <<"CRBAero is supposed to work with a composite space u,p,T\n";
         }
@@ -81,7 +81,7 @@ public:
     void init();
     void offlineSolve( element_type& u, element_type& udu, parameter_type& mu, element_ptrtype & dual_initial_field )override
         {
-            if ( boption(_prefix=this->M_prefix,"crb.solve-fem-monolithic") )
+            if ( boption(_prefix=this->M_prefix,_name="crb.solve-fem-monolithic") )
                 u = this->M_model->solve(mu);
             else
                 u = this->M_model->offlineSolveAD(mu);
@@ -446,7 +446,7 @@ CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, st
         uN[0].segment(    N0, n1 ) = u_prev.segment(    n0, n1 );
         uN[0].segment( N0+N1, n2 ) = u_prev.segment( n0+n1, n2 );
     }
-    else if ( boption(_prefix=this->M_prefix,"crb.aero.init-online"))
+    else if ( boption(_prefix=this->M_prefix,_name="crb.aero.init-online"))
     {
         uN[0].segment(     0,N0 ) = u_init[0].head(N0);
         uN[0].segment(    N0,N1 ) = u_init[1].head(N1);
@@ -459,10 +459,10 @@ CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, st
     else
         onlineSolvePicard( N, mu, uN, uNdu, uNold, uNduold, output_vector, K, print_rb_matrix, computeOutput);
 
-    if ( !this->M_last_online_converged && ioption(_prefix=this->M_prefix,"crb.aero.online-continuation") )
+    if ( !this->M_last_online_converged && ioption(_prefix=this->M_prefix,_name="crb.aero.online-continuation") )
     {
         Feel::cout << "CRBAero: use continuation for mu="<<mu.toString()<<std::endl;
-        int n = ioption(_prefix=this->M_prefix,"crb.aero.online-continuation");
+        int n = ioption(_prefix=this->M_prefix,_name="crb.aero.online-continuation");
         uN[0].segment(     0,N0 ) = u_init[0].head(N0);
         uN[0].segment(    N0,N1 ) = u_init[1].head(N1);
         uN[0].segment( N0+N1,N2 ) = u_init[2].head(N2);
@@ -470,7 +470,7 @@ CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, st
         for ( int i=0; i<=n; i++ )
         {
             parameter_type current_mu = (n-i)/(double)n*mu_init + i/(double)n*mu;
-            if ( boption(_prefix=this->M_prefix,"crb.aero.log-continuation") )
+            if ( boption(_prefix=this->M_prefix,_name="crb.aero.log-continuation") )
                 for ( int k=0; k<mu.size(); k++ )
                 {
                     current_mu(k) = std::pow(mu_init(k),(n-i)/(double)n )*std::pow(mu(k),i/(double)n );
@@ -493,8 +493,8 @@ CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, st
     {
         if ( !M_sol_done[mu.toString()].size() )
         {
-            M_sol_done[mu.toString()].resize(ioption(_prefix=this->M_prefix,"crb.dimension-max"));
-            M_rb_sol[mu.toString()].resize(ioption(_prefix=this->M_prefix,"crb.dimension-max"));
+            M_sol_done[mu.toString()].resize(ioption(_prefix=this->M_prefix,_name="crb.dimension-max"));
+            M_rb_sol[mu.toString()].resize(ioption(_prefix=this->M_prefix,_name="crb.dimension-max"));
         }
         M_sol_done[mu.toString()][N-1]=true;
         M_rb_sol[mu.toString()][N-1]=uN[0];
@@ -812,7 +812,7 @@ CRBAero<TruthModelType>::onlineSolveNewton(  size_type N, parameter_type const& 
     this->M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidualOnline, boost::ref( *this ), _1, _2  , mu , N );
 
     this->M_nlsolver->setType( TRUST_REGION );
-    this->M_nlsolver->setRelativeResidualTol( doption(_prefix=this->M_prefix,"crb.aero.snes.rtol"));
+    this->M_nlsolver->setRelativeResidualTol( doption(_prefix=this->M_prefix,_name="crb.aero.snes.rtol"));
     this->M_nlsolver->setKspSolverType( PREONLY );
     auto out = this->M_nlsolver->solve( map_J , map_UN , map_R, 1e-12, 100 );
 
@@ -915,7 +915,7 @@ CRBAero<TruthModelType>::updateJacobianOnline( const map_dense_vector_type& X, m
     auto betaTri = this->M_model->computeBetaTri( mu );
     for ( int q=0; q<model->QTri(); q++ )
     {
-        if ( ioption(_prefix=this->M_prefix,"crb.aero.assemble-version")==1 )
+        if ( ioption(_prefix=this->M_prefix,_name="crb.aero.assemble-version")==1 )
         {
             for ( int k=0; k<N0; k++ )
             {
@@ -1010,7 +1010,7 @@ CRBAero<TruthModelType>::updateResidualOnline( const map_dense_vector_type& X, m
     auto betaTri = this->M_model->computeBetaTri( mu );
     for ( int q=0; q<model->QTri(); q++ )
     {
-        if ( ioption(_prefix=this->M_prefix,"crb.aero.assemble-version")==1 )
+        if ( ioption(_prefix=this->M_prefix,_name="crb.aero.assemble-version")==1 )
         {
             for ( int k=0; k<N0; k++ )
                 temp.block(k,0,1,N0) = ((blockTriqm(0,0)[q][k].block(0,0,N0,N0))*(X.segment(0,N0))).transpose();

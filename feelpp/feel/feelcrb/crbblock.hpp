@@ -90,7 +90,7 @@ protected:
         {
             for ( int i=0; i<n_block; i++ )
             {
-                M_orthonormalize.push_back( boption(_prefix=this->M_prefix,"crb.block.orthonormalize"+std::to_string(i)) );
+                M_orthonormalize.push_back( boption(_prefix=this->M_prefix,_name="crb.block.orthonormalize"+std::to_string(i)) );
                 std::vector<int> vec(1,0);
                 M_subN.push_back( vec );
             }
@@ -325,8 +325,8 @@ struct OrthonormalizeBasisByBlock
                 LOG(INFO) <<"CRBBlock orthonomalization begin for space "<<T::value <<", with "<< N
                           <<" basis vectors and "<< n_added <<" new vectors\n";
 
-                double tol = doption(_prefix=this->M_prefix,_name="crb.orthonormality-tol");
-                int maxit = ioption(_prefix=this->M_prefix,_name="crb.orthonormality-max-iter");
+                double tol = doption(_prefix=m_crb->prefix(),_name="crb.orthonormality-tol");
+                int maxit = ioption(_prefix=m_crb->prefix(),_name="crb.orthonormality-max-iter");
                 double norm = tol+1;
                 int iter=0;
                 double old = 0;
@@ -355,13 +355,13 @@ struct OrthonormalizeBasisByBlock
                         auto & wni = unwrap_ptr( wn[i] );
                         double __rii_pr = math::sqrt( m_crb->model()->scalarProduct(  wni, wni, T::value ) );
 
-                        if ( boption(_prefix=this->M_prefix,"crb.gram-schmidt.selection")
-                             && (__rii_pr/norms[i])<doption(_prefix=this->M_prefix,"crb.gram-schmidt.selection.tol") )
+                        if ( boption(_prefix=m_crb->prefix(),_name="crb.gram-schmidt.selection")
+                             && (__rii_pr/norms[i])<doption(_prefix=m_crb->prefix(),_name="crb.gram-schmidt.selection.tol") )
                         {
                             to_remove.push_back( i );
                             Feel::cout << "Selective Gram-Schmidt: exclude basis vector "<< i <<" in space #"
                                        << T::value<<" norm of the orthogonal comp="<< __rii_pr
-                                       <<" with a tolerance="<<doption(_prefix=this->M_prefix,"crb.gram-schmidt.selection.tol")<< std::endl;
+                                       <<" with a tolerance="<<doption(_prefix=m_crb->prefix(),_name="crb.gram-schmidt.selection.tol")<< std::endl;
 
                             XN->primalRB().erase( XN->primalRB().begin()+i );
                             wn.erase( wn.begin()+i );
@@ -559,7 +559,7 @@ struct BuildRbMatrixByRow
                 int n_upr = Nr - m_crb->subN(R::value,N-1);
                 int n_upc = Nc - m_crb->subN(C::value,N-1);
 
-                if( N==1 || (ioption(_prefix=this->M_prefix,_name="ser.rb-frequency")!=0 && !m_crb->rebuild()) )
+                if( N==1 || (ioption(_prefix=m_crb->prefix(),_name="ser.rb-frequency")!=0 && !m_crb->rebuild()) )
                 {
                     n_upr = Nr;
                     n_upc = Nc;
