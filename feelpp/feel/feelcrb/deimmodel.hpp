@@ -172,8 +172,7 @@ protected :
         {
             UdpateEltsIdComposite builder( this->M_model->functionSpace(), index_list );
             rangespace_type range;
-            boost::fusion::for_each( range, builder );
-            this->M_elts_ids = builder.elts();
+            this->M_elts_ids = boost::fusion::fold(range, std::set<int>(), builder);
         }
 
     virtual space_ptrtype newInterpolationSpace( mesh_ptrtype const& mesh ) override
@@ -263,16 +262,20 @@ private :
 
     struct UdpateEltsIdComposite
     {
+        using result_type = std::set<int>;
+
         UdpateEltsIdComposite( space_ptrtype const& Xh, std::vector<int> const& index ) :
             m_Xh( Xh ),
             m_index( index )
         {}
 
         template <typename T>
-        void operator()( T const& t ) const
+        result_type operator()( result_type const& s, T const& t ) const
         {
             auto subXh = m_Xh->template functionSpace<T::value>();
             auto mesh = m_Xh->mesh();
+            std::set<int> r1;
+            std::set<int> r2;
             for ( auto index : m_index )
             {
                 auto searchGpDof = m_Xh->dof()->searchGlobalProcessDof( index );
@@ -289,19 +292,20 @@ private :
                             size_type eltId = dof.second.elementId();
                             if ( mesh->element( eltId ).isGhostCell() )
                                 continue;
-                            this->m_elts_ids.insert( eltId );
+                            r1.insert( eltId );
                         }
                     }
                 }
             }
+            std::set_union(std::begin(s), std::end(s),
+                           std::begin(r1), std::end(r1),
+                           std::inserter(r2, std::begin(r2)));
+            return r2;
         }
-
-        std::set<int> elts() { return m_elts_ids; }
 
     private:
         space_ptrtype m_Xh;
         std::vector<int> m_index;
-        mutable std::set<int> m_elts_ids;
     };
 
 
