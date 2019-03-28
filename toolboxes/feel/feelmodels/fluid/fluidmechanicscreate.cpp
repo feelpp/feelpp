@@ -17,13 +17,12 @@ namespace Feel {
 namespace FeelModels {
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
-                                                    bool buildMesh,
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix, std::string const& keyword,
                                                     worldcomm_ptr_t const& worldComm,
                                                     std::string const& subPrefix,
                                                     ModelBaseRepository const& modelRep )
     :
-    super_type( prefix,worldComm,subPrefix, modelRep ),
+    super_type( prefix,keyword,worldComm,subPrefix, modelRep ),
     M_isUpdatedForUse(false ),
     M_materialProperties( new material_properties_type( prefix ) )
 {
@@ -43,10 +42,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
     // option in cfg files
     this->loadParameterFromOptionsVm();
     //-----------------------------------------------------------------------------//
-    // build  mesh, space,exporter,...
-    if ( buildMesh )
-        this->initMesh();
-    //-----------------------------------------------------------------------------//
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "finish",
                                                this->worldComm(),this->verboseAllProc());
@@ -55,11 +50,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, bool buildMesh,
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, std::string const& keyword,
                                          worldcomm_ptr_t const& worldComm, std::string const& subPrefix,
                                          ModelBaseRepository const& modelRep )
 {
-    return std::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
+    return std::make_shared<self_type>( prefix, keyword, worldComm, subPrefix, modelRep );
 
 }
 
@@ -322,28 +317,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createALE()
         M_XhMeshVelocityInterface = space_meshvelocityonboundary_type::New(_mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm());
         M_XhMeshALEmapDisc = space_alemapdisc_type::New(_mesh=this->mesh(), _worldscomm=this->localNonCompositeWorldsComm() );
 
-#if 0
-        // init
-        bool moveGhostEltFromExtendedStencil=false;
-        for ( bool hasExt : M_Xh->extendedDofTableComposite() )
-            moveGhostEltFromExtendedStencil = moveGhostEltFromExtendedStencil || hasExt;
-#else
-        bool moveGhostEltFromExtendedStencil = this->useExtendedDofTable();
-#endif
-        if ( moveGhostEltFromExtendedStencil )
-            this->log("FluidMechanics","createALE", "use moveGhostEltFromExtendedStencil" );
-
-        M_meshALE.reset(new mesh_ale_type( M_mesh,
-                                           this->prefix(),
-                                           this->localNonCompositeWorldsComm()[0],
-                                           moveGhostEltFromExtendedStencil,
-                                           this->repository() ));
-        this->log("FluidMechanics","createALE", "--1--" );
+        M_meshALE = meshale( _mesh=M_mesh,_prefix=this->prefix(),_directory=this->repository() );
+        this->log("FluidMechanics","createALE", "create meshale object done" );
         // mesh displacement only on moving
         M_meshDisplacementOnInterface.reset( new element_mesh_disp_type(M_meshALE->displacement()->functionSpace(),"mesh_disp_on_interface") );
-        this->log("FluidMechanics","createALE", "--2--" );
         // mesh velocity only on moving interface
         M_meshVelocityInterface.reset(new element_meshvelocityonboundary_type( M_XhMeshVelocityInterface, "mesh_velocity_interface" ) );
+        // mesh velocity used with stab CIP terms (need extended dof table)
+        if ( this->doCIPStabConvection() )
+            M_fieldMeshVelocityUsedWithStabCIP.reset( new element_velocity_noview_type( this->functionSpaceVelocity() ) );
 
         double tElapsed = this->timerTool("Constructor").stop("createALE");
         this->log("FluidMechanics","createALE", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -1493,14 +1475,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    std::string modelName = "fluid";
-
     // update post-process expression
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
+    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
     // init exporter
     if ( !M_postProcessFieldExported.empty() )
     {
@@ -1517,7 +1497,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // forces (lift, drag) and flow rate measures
-    pt::ptree ptree = this->modelProperties().postProcess().pTree( modelName );
+    pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
     std::string ppTypeMeasures = "Measures";
     for( auto const& ptreeLevel0 : ptree )
     {
@@ -1576,7 +1556,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // point measures
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
     {
         auto const& ptPos = evalPoints.pointPosition();
         node_type ptCoord(3);

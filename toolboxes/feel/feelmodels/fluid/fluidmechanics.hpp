@@ -345,14 +345,14 @@ public:
     //___________________________________________________________________________________//
     // constructor
     FluidMechanics( std::string const& prefix,
-                    bool __buildMesh = true,
+                    std::string const& keyword = "fluid",
                     worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                     std::string const& subPrefix = "",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
     FluidMechanics( self_type const & M ) = default;
 
     static self_ptrtype New( std::string const& prefix,
-                             bool buildMesh = true,
+                             std::string const& keyword = "fluid",
                              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
@@ -983,6 +983,7 @@ protected:
     // stabilisation available
     bool M_doCIPStabConvection,M_doCIPStabDivergence,M_doCIPStabPressure;
     double M_stabCIPConvectionGamma,M_stabCIPDivergenceGamma,M_stabCIPPressureGamma;
+    element_velocity_noview_ptrtype M_fieldMeshVelocityUsedWithStabCIP;
     bool M_doStabDivDiv;
     bool M_doStabConvectionEnergy; // see Nobile thesis
     //----------------------------------------------------

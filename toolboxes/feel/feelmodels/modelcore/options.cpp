@@ -91,6 +91,8 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         (prefixvm(prefix,"geomap").c_str(), Feel::po::value< std::string >()->default_value("opt"), "geomap strategy : ho, opt ")
 
         ( prefixvm( prefix, "ts.order" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "time order" )
+
+        ( prefixvm( prefix, "checker" ).c_str(), Feel::po::value<bool>()->default_value( true ), "use checker" )
         ;
 
     return appliBaseOptions
