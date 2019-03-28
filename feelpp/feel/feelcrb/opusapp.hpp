@@ -559,6 +559,7 @@ private:
 
                 double norm  = normL2(_range=u.functionSpace()->template rangeElements<0>(),_expr=( idv(u) ) );
                 M_vec(i) = norm ;
+                return norm + r;
             }
 
         double norm()
