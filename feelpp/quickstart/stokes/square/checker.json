@@ -1,0 +1,31 @@
+{
+    "{0,0}:x:y":{
+        "1": {
+            "exact": true
+        }
+        "2": {
+            "exact": true
+        }
+    },
+    "{x,-y}:x:y":{
+        "1": {
+            "exact": true
+        },
+        "2": {
+            "exact": true
+        },
+        "3": {
+            "exact": true
+        },
+        "4": {
+            "exact": true
+        },
+        "5": {
+            "exact": true
+        }
+    },
+    "{y*y-2*y+1,x*x-x}:x:y":{
+        "2": {
+            "exact": true
+        }
+}
