@@ -17,13 +17,12 @@ namespace Feel {
 namespace FeelModels {
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
-                                                    bool buildMesh,
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix, std::string const& keyword,
                                                     worldcomm_ptr_t const& worldComm,
                                                     std::string const& subPrefix,
                                                     ModelBaseRepository const& modelRep )
     :
-    super_type( prefix,worldComm,subPrefix, modelRep ),
+    super_type( prefix,keyword,worldComm,subPrefix, modelRep ),
     M_isUpdatedForUse(false ),
     M_materialProperties( new material_properties_type( prefix ) )
 {
@@ -43,10 +42,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
     // option in cfg files
     this->loadParameterFromOptionsVm();
     //-----------------------------------------------------------------------------//
-    // build  mesh, space,exporter,...
-    if ( buildMesh )
-        this->initMesh();
-    //-----------------------------------------------------------------------------//
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "finish",
                                                this->worldComm(),this->verboseAllProc());
@@ -55,11 +50,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, bool buildMesh,
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, std::string const& keyword,
                                          worldcomm_ptr_t const& worldComm, std::string const& subPrefix,
                                          ModelBaseRepository const& modelRep )
 {
-    return std::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
+    return std::make_shared<self_type>( prefix, keyword, worldComm, subPrefix, modelRep );
 
 }
 
@@ -1480,14 +1475,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    std::string modelName = "fluid";
-
     // update post-process expression
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
+    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
     // init exporter
     if ( !M_postProcessFieldExported.empty() )
     {
@@ -1504,7 +1497,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // forces (lift, drag) and flow rate measures
-    pt::ptree ptree = this->modelProperties().postProcess().pTree( modelName );
+    pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
     std::string ppTypeMeasures = "Measures";
     for( auto const& ptreeLevel0 : ptree )
     {
@@ -1563,7 +1556,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // point measures
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
     {
         auto const& ptPos = evalPoints.pointPosition();
         node_type ptCoord(3);

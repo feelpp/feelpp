@@ -269,7 +269,7 @@ FSI<FluidType,SolidType>::init()
     // fluid model build
     if ( !M_fluidModel )
     {
-        M_fluidModel = std::make_shared<fluid_type>("fluid",false,this->worldCommPtr(), "", this->repository() );
+        M_fluidModel = std::make_shared<fluid_type>("fluid","fluid",this->worldCommPtr(), "", this->repository() );
         if ( !M_mshfilepathFluidPartN.empty() )
             M_fluidModel->setMeshFile(M_mshfilepathFluidPartN.string());
 
