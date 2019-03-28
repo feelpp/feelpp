@@ -24,23 +24,28 @@
 cmake_minimum_required(VERSION 3.7.2)
 project(mor)
 
+set(FEELPP_MOR_SOURCE_DIR ${PROJECT_SOURCE_DIR})
+set(FEELPP_MOR_BINARY_DIR ${PROJECT_BINARY_DIR})
 
 # with this it is possible to compile applications/MOR from an installed
 # version of feel++. This is useful also for staged compilation for docker
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
-  message(STATUS "[feelpp] module path: ${CMAKE_MODULE_PATH}")
+  find_package(Feel++ COMPONENTS Toolboxes PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
   if(NOT FEELPP_FOUND)
     message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
   endif()
+  if (NOT FEELPP_TOOLBOXES_FOUND)
+    message(FATAL_ERROR "Feel++ was not installed with toolboxes")
+  endif()
+else()
+  include_directories(${FEELPP_MOR_SOURCE_DIR})
+  include_directories(${FEELPP_MOR_BINARY_DIR})  
 endif()
 
-set(FEELPP_MOR_SOURCE_DIR ${PROJECT_SOURCE_DIR})
-set(FEELPP_MOR_BINARY_DIR ${PROJECT_BINARY_DIR})
 
 
-include_directories(${FEELPP_MOR_SOURCE_DIR})
-include_directories(${FEELPP_MOR_BINARY_DIR})
+
+
 
 OPTION(FEELPP_ENABLE_MOR_ALL "enable all MOR testcase" OFF)
 

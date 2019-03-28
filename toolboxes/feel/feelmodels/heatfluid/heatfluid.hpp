@@ -67,7 +67,7 @@ public:
     //___________________________________________________________________________________//
     // constructor
     HeatFluid( std::string const& prefix,
-               bool buildMesh = true,
+               std::string const& keyword = "heat-fluid",
                worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
                ModelBaseRepository const& modelRep = ModelBaseRepository() );

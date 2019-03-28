@@ -98,7 +98,7 @@ public:
     //___________________________________________________________________________________//
     // constructor
     Electric( std::string const& prefix,
-              bool buildMesh = true,
+              std::string const& keyword = "electric",
               worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
               std::string const& subPrefix = "",
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
@@ -108,7 +108,7 @@ public:
 
 private :
     void loadParameterFromOptionsVm();
-    void createMesh();
+    void initMesh();
     void initBoundaryConditions();
     void initPostProcess();
 public :

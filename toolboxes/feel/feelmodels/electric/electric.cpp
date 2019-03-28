@@ -46,12 +46,12 @@ namespace FeelModels
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 ELECTRIC_CLASS_TEMPLATE_TYPE::Electric( std::string const& prefix,
-                                        bool buildMesh,
+                                        std::string const& keyword,
                                         worldcomm_ptr_t const& worldComm,
                                         std::string const& subPrefix,
                                         ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, worldComm, subPrefix, modelRep ),
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     M_electricProperties( new electricproperties_type( prefix ) )
 {
     this->log("Electric","constructor", "start" );
@@ -69,10 +69,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::Electric( std::string const& prefix,
     // option in cfg files
     this->loadParameterFromOptionsVm();
     //-----------------------------------------------------------------------------//
-    // build mesh
-    if ( buildMesh )
-        this->createMesh();
-    //-----------------------------------------------------------------------------//
     this->log("Electric","constructor", "finish");
 }
 
@@ -86,16 +82,16 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::createMesh()
+ELECTRIC_CLASS_TEMPLATE_TYPE::initMesh()
 {
-    this->log("Electric","createMesh", "start");
+    this->log("Electric","initMesh", "start");
     this->timerTool("Constructor").start();
 
     createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
     CHECK( M_mesh ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("createMesh");
-    this->log("Electric","createMesh",(boost::format("finish in %1% s")%tElpased).str() );
+    this->log("Electric","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
 
 } // createMesh()
 
@@ -129,7 +125,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("Electric","init", "start" );
     this->timerTool("Constructor").start();
 
-    CHECK( M_mesh ) << "no mesh defined";
+    if ( !M_mesh )
+        this->initMesh();
 
     // physical properties
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -262,8 +259,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->timerTool("Constructor").start();
 
     M_postProcessFieldExported.clear();
-    std::string modelName = "electric";
-    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
+    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
 
     if ( !M_postProcessFieldExported.empty() )
     {
@@ -476,7 +472,6 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
-    std::string modelName = "electric";
     bool hasMeasure = false;
 
     this->modelProperties().parameters().updateParameterValues();
@@ -484,7 +479,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
     auto fieldTuple = hana::make_tuple( std::make_pair( "electric-potential",this->fieldElectricPotentialPtr() ) );
-    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
     {
         std::map<std::string,double> resPpNorms;
         measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
@@ -494,7 +489,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
             hasMeasure = true;
         }
     }
-    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( modelName ) )
+    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
     {
         std::map<std::string,double> resPpStats;
         measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );

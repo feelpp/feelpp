@@ -38,18 +38,15 @@ namespace FeelModels
 template< class Convex >
 MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
                          std::string const& prefix, worldcomm_ptr_t const& worldcomm,
-                         bool moveGhostEltFromExtendedStencil,
                          ModelBaseRepository const& modelRep )
     :
     super_type( prefixvm(prefix,"alemesh"),worldcomm,"",modelRep ),
     M_referenceMesh( mesh_moving->createP1mesh() ),
     M_movingMesh(mesh_moving),
     M_isOnReferenceMesh( true ), M_isOnMovingMesh( true ),
-    M_aleFactory( ale_map_type::build(M_referenceMesh ,this->prefix(), this->worldCommPtr(), moveGhostEltFromExtendedStencil,modelRep ) ),
+    M_aleFactory( ale_map_type::build(M_referenceMesh ,this->prefix(), this->worldCommPtr(), modelRep ) ),
     M_Xhref( M_aleFactory->functionSpace() ),
-    M_Xhmove(ale_map_functionspace_type::New(_mesh=M_movingMesh,
-                                             _worldscomm=makeWorldsComm(1,worldcomm),
-                                             _extended_doftable=std::vector<bool>(1,moveGhostEltFromExtendedStencil) ) ),
+    M_Xhmove( ale_map_functionspace_type::New(_mesh=M_movingMesh ) ),
     M_identity_ale(new ale_map_element_type( M_Xhmove) ),
     M_dispP1ToHO_ref(new ale_map_element_ref_type( M_Xhref) ),
     M_displacementOnMovingBoundary_HO_ref(new ale_map_element_type( M_Xhmove) ),
@@ -72,13 +69,11 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
     // compute dist between P1(ref) to Ho mesh
     if ( mesh_type::nOrder == mesh_ref_type::nOrder )
     {
-        EntityProcessType entityProcess = (moveGhostEltFromExtendedStencil)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-        M_dispP1ToHO_ref->on(_range=elements(M_referenceMesh,entityProcess),
+        M_dispP1ToHO_ref->on(_range=elements(M_referenceMesh),
                              _expr=vf::P() );
         for (size_type i=0;i<M_dispP1ToHO_ref->nLocalDof();++i)
             (*M_dispP1ToHO_ref)(i) = (*M_identity_ale)(M_drm->dofRelMap()[i]) - (*M_dispP1ToHO_ref)(i);
     }
-
 
     this->initTimeStep();
 
@@ -124,23 +119,10 @@ MeshALE<Convex>::init()
 
         this->log(prefixvm(this->prefix(),"MeshALE"),"init", "restart on moving mesh");
 
-
-#if 0
-        //important!!!
-        M_displacement->zero();
-#endif
-
-#if 0
-        *M_identity_ale = vf::project( _space=M_identity_ale->functionSpace(), _range=elements( M_identity_ale->mesh() ),
-                                       _expr=vf::P(),
-                                       _geomap=GeomapStrategyType::GEOMAP_OPT/*HO*/);
-#else
-
         // rebuild dof point (necessary in updateIdentityMap with extended dof table)
         M_Xhmove->rebuildDofPoints();
         // update M_identity_ale
         this->updateIdentityMap();
-#endif
 
 
 #if 1
@@ -401,9 +383,7 @@ template< class Convex >
 void
 MeshALE<Convex>::updateIdentityMap()
 {
-    bool moveGhostEltFromExtendedStencil = M_Xhmove->dof()->buildDofTableMPIExtended() && M_movingMesh->worldComm().localSize()>1;
-    EntityProcessType entityProcess = (moveGhostEltFromExtendedStencil)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-    M_identity_ale->on(_range=elements( M_identity_ale->mesh(),entityProcess ),
+    M_identity_ale->on(_range=elements( M_identity_ale->mesh() ),
                        _expr=vf::P() );
 }
 
