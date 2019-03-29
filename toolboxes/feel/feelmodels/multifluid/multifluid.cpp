@@ -97,10 +97,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // Init mesh
     this->initMesh();
     // Init FluidMechanics
-    M_fluidModel->setMesh( this->mesh() );
-    M_fluidModel->init( false );
     if( !M_fluidModel->modelPropertiesPtr() )
         M_fluidModel->setModelProperties( this->modelPropertiesPtr() );
+    M_fluidModel->setMesh( this->mesh() );
+    M_fluidModel->init( false );
     // Init LevelSets
     this->initLevelsets();
     // Update current time
