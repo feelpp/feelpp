@@ -635,6 +635,8 @@ toolboxes_options(std::string const& type)
         toolboxesOptions.add(levelset_options("levelset"));
     else if (type == "multifluid")
         toolboxesOptions.add(multifluid_options("multifluid"));
+    else if (type == "electric")
+        toolboxesOptions.add(electricity_options("electric"));
     else if (type == "thermo-electric")
         toolboxesOptions.add(thermoElectric_options("thermo-electric"));
     else if (type == "heat-fluid")
