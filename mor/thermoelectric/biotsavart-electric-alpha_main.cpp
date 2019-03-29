@@ -26,26 +26,33 @@
 #include <feel/feel.hpp>
 #include <feel/feelopt/nlopt.hpp>
 
+#include "biotsavartbase.hpp"
 #include "biotsavart-electric-alpha.hpp"
 #include <electric-alpha.hpp>
+#include <feel/feelmodels/electric/electric.hpp>
 
 int iter=0;
 
 int main(int argc, char**argv )
 {
     using namespace Feel;
+    using namespace Feel::FeelModels;
     using Feel::cout;
 
     using biotsavart_type = BiotSavartAlphaElectricCRB<AlphaElectric>;
+    using electric_tb_type = Electric<Simplex<3,1>, Lagrange<1, Scalar,Continuous,PointSetFekete> >;
 
     po::options_description nloptoptions( "NLOpt options" );
     nloptoptions.add_options()
         ( "nlopt.algo", po::value<std::string>()->default_value( "LN_NEWUOA" ), "NLOPT algorithm [LN_NEWUOA,LD_LBFGS]" )
         ( "biotsavart.do-opt", po::value<bool>()->default_value(false),
           "do or not the optimization" )
+        ( "biotsavart.use-bg-field", po::value<bool>()->default_value(false),
+          "use a background field for the optimization" )
         ;
 
     nloptoptions.add(biotsavart_type::makeOptions("biotsavart"));
+    nloptoptions.add(electricity_options("toolbox"));
 
     Environment env( _argc=argc, _argv=argv,
                      _desc=nloptoptions,
@@ -118,6 +125,19 @@ int main(int argc, char**argv )
     }
     else
     {
+        auto bBg = BS->spaceMgn()->element();
+        if( boption("biotsavart.use-bg-field") )
+        {
+            auto tb = std::make_shared<electric_tb_type>("toolbox", false);
+            tb->setMesh(BS->mesh());
+            tb->init();
+            tb->printAndSaveInfo();
+            tb->solve();
+            auto jBg = tb->fieldCurrentDensity();
+            auto bsbg = BiotSavartBase(tb->spaceElectricField(), BS->spaceMgn());
+            bBg = bsbg.computeMagneticField(jBg);
+        }
+
         int N = BS->nbParameters();
 
         auto salgo = soption("nlopt.algo");
@@ -152,6 +172,8 @@ int main(int argc, char**argv )
                 auto B = BS->magneticFlux();
                 // BS->computeFE(mu);
                 // auto B = BS->magneticFluxFE();
+                if( boption("biotsavart.use-bg-field") )
+                    B += bBg;
                 return BS->homogeneity(B);
             };
 
@@ -194,6 +216,8 @@ int main(int argc, char**argv )
         eCM->add( "BFE", BFE );
         eCM->add( "V0", V0);
         eCM->add( "B0", B0);
+        if( boption("biotsavart.use-bg-field") )
+            eCM->add("Bbg", bBg);
         eCM->save();
 
         auto homoFE = BS->homogeneity(BFE);

@@ -94,7 +94,7 @@ AlphaElectric::AlphaElectric( mesh_ptrtype mesh,  std::string const& prefix )
     M_mu = Dmu->element();
 
     // keep only materials with physic electric
-    M_materials = M_modelProps->materials().materialWithPhysic("electric");
+    M_materials = M_modelProps->materials().materialWithPhysic("electric-geo");
     for( auto const& mp : M_materials )
     {
         if( mp.second.hasProperty("zmin")
@@ -304,22 +304,18 @@ AlphaElectric::assembleForMDEIM( parameter_type const& mu, int const& tag )
                         material.second.getDouble("sigma")/sigmaMax*inner(gradt(V),grad(phiV)) );
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
-        auto sigma = M_materials[exAtM.material()].getDouble("sigma");
-        a += integrate( markedfaces(mesh, exAtM.marker()),
-                        sigma/sigmaMax*(M_penalDir/hFace()*inner(idt(V),id(phiV))
-                                        -inner(grad(V)*N(),id(phiV))
-                                        -inner(grad(phiV)*N(),idt(V)) ) );
+        if( isInMaterials(exAtM) )
+        {
+            auto sigma = M_materials[exAtM.material()].getDouble("sigma");
+            a += integrate( markedfaces(mesh, exAtM.marker()),
+                            sigma/sigmaMax*(M_penalDir/hFace()*inner(idt(V),id(phiV))
+                                            -inner(grad(V)*N(),id(phiV))
+                                            -inner(grad(phiV)*N(),idt(V)) ) );
+        }
     }
 
     auto am = a.matrixPtr();
     am->close();
-
-    // Feel::cout << "assemble for mu=[" << mu(0);
-    // for( int i = 1; i < mu.size(); ++i)
-    //     Feel::cout << "," << mu(i);
-    // Feel::cout << "]" << std::endl << "alpha : " << alpha(mu) << std::endl
-    //            << "alpha\': " << std::endl << alphaPrime(mu) << std::endl
-    //            << "norm A = " << am->l1Norm() << std::endl;
 
     return am;
 }
@@ -342,20 +338,16 @@ AlphaElectric::assembleForDEIM( parameter_type const& mu, int const& tag )
     auto f = form1(_test=Xh);
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
-        auto sigma = M_materials[exAtM.material()].getDouble("sigma");
-        auto dif = expr(exAtM.expression());
-        f += integrate( markedfaces(mesh, exAtM.marker()),
-                        sigma/sigmaMax*dif*(M_penalDir/hFace()*id(phiV) - grad(phiV)*N()) );
+        if( isInMaterials(exAtM) )
+        {
+            auto sigma = M_materials[exAtM.material()].getDouble("sigma");
+            auto dif = expr(exAtM.expression());
+            f += integrate( markedfaces(mesh, exAtM.marker()),
+                            sigma/sigmaMax*dif*(M_penalDir/hFace()*id(phiV) - grad(phiV)*N()) );
+        }
     }
     auto fv = f.vectorPtr();
     fv->close();
-
-    // Feel::cout << "assemble for mu=[" << mu(0);
-    // for( int i = 1; i < mu.size(); ++i)
-    //     Feel::cout << "," << mu(i);
-    // Feel::cout << "] " << std::endl << "alpha : " << alpha(mu) << std::endl
-    //            << "alpha\': " << std::endl << alphaPrime(mu) << std::endl
-    //            << "norm F = " << fv->l2Norm() << std::endl;
 
     return fv;
 }
@@ -482,9 +474,6 @@ void AlphaElectric::setupSpecificityModel( boost::property_tree::ptree const& pt
     M_modelProps = std::make_shared<prop_type>(propertyPath);
 
     auto parameters = M_modelProps->parameters();
-    Feel::cout << "Using parameters:" << std::endl
-               << "dif  : " << parameters["dif"].value() << std::endl;
-
     int nbCrbParameters = count_if(parameters.begin(), parameters.end(), [] (auto const& p)
                                    {
                                        return p.second.hasMinMax();
@@ -657,22 +646,21 @@ AlphaElectric::solve( parameter_type const& mu )
     auto fV = form1(_test=Xh);
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
-        auto sigma = M_materials[exAtM.material()].getDouble("sigma");
-        aV += integrate( markedfaces(M_mesh, exAtM.marker()),
-                         sigma/sigmaMax*(M_penalDir/hFace()*inner(idt(V),id(phiV))
-                                         -inner(grad(V)*N(),id(phiV))
-                                         -inner(grad(phiV)*N(),idt(V)) ) );
+        if( isInMaterials(exAtM) )
+        {
+            auto sigma = M_materials[exAtM.material()].getDouble("sigma");
+            aV += integrate( markedfaces(M_mesh, exAtM.marker()),
+                             sigma/sigmaMax*(M_penalDir/hFace()*inner(idt(V),id(phiV))
+                                             -inner(grad(V)*N(),id(phiV))
+                                             -inner(grad(phiV)*N(),idt(V)) ) );
 
-        auto dif = expr(exAtM.expression());
-        fV += integrate( markedfaces(M_mesh, exAtM.marker()),
-                         sigma/sigmaMax*dif*(M_penalDir/hFace()*id(phiV) - grad(phiV)*N()) );
+            auto dif = expr(exAtM.expression());
+            fV += integrate( markedfaces(M_mesh, exAtM.marker()),
+                             sigma/sigmaMax*dif*(M_penalDir/hFace()*id(phiV) - grad(phiV)*N()) );
+        }
     }
     aV.solve(_rhs=fV, _solution=solution, _name="feV");
     toc("solve V");
-
-    // auto e = exporter(M_mesh);
-    // e->add("sol", solution);
-    // e->save();
 
     return solution;
 }
@@ -710,6 +698,11 @@ void AlphaElectric::computeTruthCurrentDensity( current_element_type& j, paramet
         auto sigma = mat.second.getDouble("sigma");
         j += vf::project(Vh, markedelements(M_mesh,mat.first), cst(-1.)*sigma*trans(gradv(V)) );
     }
+}
+
+bool AlphaElectric::isInMaterials(ExpressionStringAtMarker const& ex) const
+{
+    return ex.hasMaterial() && M_materials.find(ex.material()) != M_materials.end();
 }
 
 FEELPP_CRB_PLUGIN( AlphaElectric, electric)

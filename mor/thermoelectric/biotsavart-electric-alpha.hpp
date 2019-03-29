@@ -162,7 +162,7 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
     void computeFE( parameter_type & mu );
     // std::vector<double> computeErrors();
     // void exportResults( parameter_type const& mu );
-    double homogeneity( element_type& B );
+    double homogeneity( element_type const& B );
 
     parameter_type newParameter() const { return M_teCrbModel->newParameter(); }
     void setParameter( parameter_type& mu ) { M_mu = mu; }
