@@ -116,20 +116,22 @@ public :
     typedef std::shared_ptr<DofRelationshipMap_type> DofRelationshipMap_ptrtype;
 
 
-    MeshALE(mesh_ptrtype mesh_moving,
-            //po::variables_map const& vm=Environment::vm(),
-            std::string const& prefix="",
-            //std::string exportName="ExportMeshALE",
-            worldcomm_ptr_t const& worldcomm=Environment::worldCommPtr(),
-            bool moveGhostEltFromExtendedStencil=false,
-            ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    MeshALE( mesh_ptrtype mesh_moving,
+             std::string const& prefix="",
+             worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
+             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     void init();
 
     std::shared_ptr<std::ostringstream> getInfo() const;
 
 
-    void addBoundaryFlags(std::string __type, std::string __marker);
+    void addBoundaryFlags( std::string const& bctype, std::string const& marker );
+    void addBoundaryFlags( std::string const& bctype, std::vector<std::string> const& markers )
+        {
+            for ( std::string const& marker : markers )
+                this->addBoundaryFlags( bctype,marker );
+        }
 
     /**
      * \return the reference mesh
@@ -245,9 +247,19 @@ public :
      */
     void exportResults(double time=0);
 
+    void updateMetricMeshAdaptation( Expr<GinacExVF<2>> const& e )
+        {
+            M_aleFactory->updateMetricMeshAdaptation( e );
+        }
+    template < typename ExprT >
+    void updateMetricMeshAdaptation( Expr<ExprT> const& e )
+        {
+            M_aleFactory->updateMetricMeshAdaptation( e );
+        }
 private :
 
     void updateIdentityMap();
+    void initTimeStep();
 
 private :
 
@@ -344,15 +356,14 @@ BOOST_PARAMETER_FUNCTION(
       ) // required
     ( optional
       ( prefix,            (std::string), std::string("") )
-      ( worldcomm,         (worldcomm_ptr_t), Environment::worldCommPtr() )
-      ( extended_doftable, (bool), true )
+      ( worldcomm,         (worldcomm_ptr_t), mesh->worldCommPtr() )
       ( directory,         (ModelBaseRepository),  ModelBaseRepository() )
       ) // optionnal
                          )
 {
     typedef typename compute_meshale_return<Args>::ptrtype meshale_ptrtype;
     typedef typename compute_meshale_return<Args>::type meshale_type;
-    return meshale_ptrtype( new meshale_type(mesh,prefix,worldcomm,extended_doftable,directory) );
+    return meshale_ptrtype( new meshale_type(mesh,prefix,worldcomm,directory) );
 }
 
 
