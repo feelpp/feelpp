@@ -767,13 +767,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         }
     }
 
-    std::string modelName = "fluid";
-
     // point measures
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
     {
         auto const& ptPos = evalPoints.pointPosition();
         if ( !ptPos.hasExpression() )
@@ -832,7 +830,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     }
 
     auto fieldTuple = hana::make_tuple( std::make_pair( "velocity",this->fieldVelocity() ), std::make_pair( "pressure",this->fieldPressure() ) );
-    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
     {
         std::map<std::string,double> resPpNorms;
         measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
@@ -842,7 +840,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
             hasMeasure = true;
         }
     }
-    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( modelName ) )
+    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
     {
         std::map<std::string,double> resPpStats;
         measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );

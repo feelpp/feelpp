@@ -249,10 +249,17 @@ public :
         vector_ptrtype& M_initialGuess;
     };
 
-    ModelAlgebraic( std::string _theprefix,
+    ModelAlgebraic( std::string _theprefix, std::string const& keyword,
                     worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
                     std::string const& subPrefix="",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    ModelAlgebraic( std::string _theprefix,
+                    worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
+                    std::string const& subPrefix="",
+                    ModelBaseRepository const& modelRep = ModelBaseRepository() )
+        :
+        ModelAlgebraic( _theprefix, _theprefix, _worldComm, subPrefix, modelRep )
+        {}
 
     ModelAlgebraic( ModelAlgebraic const& app ) = default;
 
