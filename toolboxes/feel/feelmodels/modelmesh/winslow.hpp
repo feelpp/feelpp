@@ -28,10 +28,11 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/projector.hpp>
+//#include <feel/feeldiscr/projector.hpp>
 //#include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/projectors.hpp>
-#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/operators.hpp>
+//#include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
@@ -67,17 +68,23 @@ public :
     typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef std::shared_ptr<element_type> element_ptrtype;
-
+#if 0
     typedef bases<Lagrange<Order-1,Scalar> > basis_scal_m1_type;
     typedef FunctionSpace<mesh_type,basis_scal_m1_type> space_scal_m1_type;
     typedef std::shared_ptr<space_scal_m1_type> space_scal_m1_ptrtype;
     typedef typename space_scal_m1_type::element_type element_scal_m1_type;
-
+#endif
+#if 0
     typedef FunctionSpace<mesh_type, bases<Lagrange<1/*0*/,Scalar,Discontinuous> > > space_p0_type;
     typedef std::shared_ptr<space_p0_type> space_p0_ptrtype;
     typedef typename space_p0_type::element_type element_p0_type;
     typedef std::shared_ptr<element_p0_type> element_p0_ptrtype;
-
+#else
+    typedef typename  space_type::component_functionspace_type space_scalar_type;
+    typedef typename space_scalar_type::element_type element_scalar_type;
+    typedef std::shared_ptr<element_scalar_type> element_scalar_ptrtype;
+#endif
+#if 0
     typedef FunctionSpace<mesh_type, bases<Lagrange<1/*0*/,Tensor2,Discontinuous> > > space_p0_tensor2_type;
     typedef std::shared_ptr<space_p0_tensor2_type> space_p0_tensor2_ptrtype;
     typedef typename space_p0_tensor2_type::element_type element_p0_tensor2_type;
@@ -85,11 +92,11 @@ public :
 
     typedef Projector<space_scal_m1_type,space_scal_m1_type> projector_scal_m1_type;
     typedef std::shared_ptr<projector_scal_m1_type> projector_scal_m1_ptrtype;
-
+#endif
     typedef std::map< std::string, std::vector<flag_type> > flagSet_type;
 
-    typedef Exporter<mesh_type,mesh_type::nOrder> exporter_type;
-    typedef std::shared_ptr<exporter_type> exporter_ptrtype;
+    //typedef Exporter<mesh_type,mesh_type::nOrder> exporter_type;
+    //typedef std::shared_ptr<exporter_type> exporter_ptrtype;
 
     Winslow( mesh_ptrtype mesh, std::string const& prefix="",
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
@@ -135,17 +142,11 @@ public :
     void updateResidual( DataUpdateResidual & data ) const override;
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
-private :
-    void updateMeshAdaptation();
-
-#if 0
-    void updateLinearPDE( DataUpdateLinear & data, mpl::int_<2> /**/ ) const;
-    void updateLinearPDE( DataUpdateLinear & data, mpl::int_<3> /**/ ) const;
-    void updateJacobian( DataUpdateJacobian & data, mpl::int_<2> /**/ ) const;
-    void updateJacobian( DataUpdateJacobian & data, mpl::int_<3> /**/ ) const;
-    void updateResidual( DataUpdateResidual & data, mpl::int_<2> /**/ ) const;
-    void updateResidual( DataUpdateResidual & data, mpl::int_<3> /**/ ) const;
-#endif
+    template <typename MetricElementType>
+    void setMetricMeshAdaptation( MetricElementType const& m )
+        {
+            M_weightFunctionScalar->on(_range=elements(M_mesh),_expr=idv(m));
+        }
 
 private :
 
@@ -168,10 +169,7 @@ private :
     element_ptrtype M_identity;
 
     //space_scal_m1_ptrtype M_XhScalM1;
-    space_p0_ptrtype M_XhScalP0Disc;
-
-    space_p0_tensor2_ptrtype M_XhTensor2P0Disc;
-
+    //space_p0_ptrtype M_XhScalP0Disc;
     //projector_scal_m1_ptrtype M_l2projector;
 
     backend_ptrtype M_backendMetricDerivative;
@@ -179,10 +177,13 @@ private :
     vector_ptrtype M_vectorMetricDerivative;
     element_ptrtype M_fieldMetricDerivative;
 
+    element_scalar_ptrtype M_weightFunctionScalar;
+#if 0
+    space_p0_tensor2_ptrtype M_XhTensor2P0Disc;
     bool M_useMeshAdapation, M_useMeshAdapationScalar;
-    element_p0_ptrtype M_weightFunctionScalar;
     element_p0_tensor2_ptrtype M_weightFunctionTensor2;
     //element_p0_ptrtype M_hMinRadius;
+#endif
 
 
 }; // class Winslow
