@@ -1018,7 +1018,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
         {
             this->log("LevelSetBase", "updateCurvature", "perform L2 projection");
             //*M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
-            auto phi = this->phi();
+            auto const& phi = this->phiElt();
             *M_levelsetCurvature = this->projectorL2()->derivate( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
         }
         break;
@@ -1026,7 +1026,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
         {
             this->log("LevelSetBase", "updateCurvature", "perform smooth projection");
             //*M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
-            auto phi = this->phi();
+            auto const& phi = this->phiElt();
             *M_levelsetCurvature = this->smoother()->derivate( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
         }
         break;
