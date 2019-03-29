@@ -209,6 +209,7 @@ public:
     map_mat_type const& materials() const { return M_materials; }
     map_mat_type const& materialsWithGeo() const { return M_materialsWithGeo; }
     map_mat_type const& materialsWithoutGeo() const { return M_materialsWithoutGeo; }
+    bool isInMaterials(ExpressionStringAtMarker const& ex) const;
     std::string const& dbBasename() const { return M_dbBasename; }
 }; // AlphaElectric class
 

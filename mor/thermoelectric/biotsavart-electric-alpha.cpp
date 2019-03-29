@@ -134,7 +134,6 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::initModel()
 
     auto d = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()),
                          _sampling=Pset, _prefix="bs");
-    // auto d = DEIM(this->shared_from_this(), Pset, "bs", "", "", 0);
     this->addDeim(d);
     this->deim()->run();
     Feel::cout << tc::green << "Construction of BiotSavart DEIM finished!!"
@@ -644,7 +643,7 @@ BiotSavartAlphaElectricCRB<te_rb_model_type>::alpha( parameter_type const& mu )
 // }
 
 template<typename te_rb_model_type>
-double BiotSavartAlphaElectricCRB<te_rb_model_type>::homogeneity( element_type& B)
+double BiotSavartAlphaElectricCRB<te_rb_model_type>::homogeneity( element_type const& B)
 {
     auto range = B.functionSpace()->dof()->meshSupport()->rangeElements();
     auto m = minmax( _range=range, _pset=_Q<2>(),
