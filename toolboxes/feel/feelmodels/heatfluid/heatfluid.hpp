@@ -67,7 +67,7 @@ public:
     //___________________________________________________________________________________//
     // constructor
     HeatFluid( std::string const& prefix,
-               bool buildMesh = true,
+               std::string const& keyword = "heat-fluid",
                worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
                ModelBaseRepository const& modelRep = ModelBaseRepository() );
@@ -124,7 +124,7 @@ public :
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
 
-    void updateNewtonInitialGuess( vector_ptrtype& U ) const;
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
     void updateResidual( DataUpdateResidual & data ) const;

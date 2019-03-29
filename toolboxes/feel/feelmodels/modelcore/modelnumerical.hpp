@@ -72,8 +72,16 @@ class ModelNumerical : public ModelAlgebraic
         typedef vf::BlocksBase<size_type> block_pattern_type;
 
 
-        ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(), std::string const& subPrefix="",
+        ModelNumerical( std::string const& _theprefix, std::string const& keyword,
+                        worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
+                        std::string const& subPrefix="",
                         ModelBaseRepository const& modelRep = ModelBaseRepository() );
+        ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
+                        std::string const& subPrefix="",
+                        ModelBaseRepository const& modelRep = ModelBaseRepository() )
+            :
+            ModelNumerical( _theprefix, _theprefix, _worldComm, subPrefix, modelRep )
+            {}
 
         ModelNumerical( ModelNumerical const& app ) = default;
 
@@ -114,26 +122,6 @@ class ModelNumerical : public ModelAlgebraic
         void setModelProperties( std::shared_ptr<ModelProperties> modelProps ) { M_modelProps = modelProps; }
         void addParameterInModelProperties( std::string const& symbolName,double value );
 
-        size_type rowStartInMatrix() const { return this->startBlockSpaceIndexMatrixRow(); }
-        size_type colStartInMatrix() const { return this->startBlockSpaceIndexMatrixCol(); }
-        size_type rowStartInVector() const { return this->startBlockSpaceIndexVector(); }
-        size_type startBlockSpaceIndexMatrixRow() const { return M_startBlockSpaceIndexMatrixRow; }
-        size_type startBlockSpaceIndexMatrixCol() const { return M_startBlockSpaceIndexMatrixCol; }
-        size_type startBlockSpaceIndexVector() const { return M_startBlockSpaceIndexVector; }
-        void setStartBlockSpaceIndexMatrixRow( size_type s ) { M_startBlockSpaceIndexMatrixRow = s; }
-        void setStartBlockSpaceIndexMatrixCol( size_type s ) { M_startBlockSpaceIndexMatrixCol = s; }
-        void setStartBlockSpaceIndexVector( size_type s ) { M_startBlockSpaceIndexVector = s; }
-        void setStartBlockSpaceIndex( size_type s ) { this->setStartBlockSpaceIndexMatrixRow( s ); this->setStartBlockSpaceIndexMatrixCol( s ); this->setStartBlockSpaceIndexVector( s ); }
-
-        size_type startSubBlockSpaceIndex( std::string const& name ) const
-            {
-                auto itFind = M_startSubBlockSpaceIndex.find( name );
-                if ( itFind != M_startSubBlockSpaceIndex.end() )
-                    return itFind->second;
-                return invalid_size_type_value;
-            }
-        bool hasStartSubBlockSpaceIndex( std::string const& name ) const { return (this->startSubBlockSpaceIndex( name ) != invalid_size_type_value); }
-        void setStartSubBlockSpaceIndex( std::string const& name, size_type s ) { M_startSubBlockSpaceIndex[name] = s; }
 
         GeomapStrategyType geomap() const { return M_geomap; }
 
@@ -156,6 +144,8 @@ class ModelNumerical : public ModelAlgebraic
         ModelMeasuresIO & postProcessMeasuresIO() { return M_postProcessMeasuresIO; }
         ModelMeasuresEvaluatorContext const& postProcessMeasuresEvaluatorContext() const { return M_postProcessMeasuresEvaluatorContext; }
         ModelMeasuresEvaluatorContext & postProcessMeasuresEvaluatorContext() { return M_postProcessMeasuresEvaluatorContext; }
+
+        bool checkResults() const;
 
     protected :
         template<typename SymbExprField>
@@ -191,8 +181,6 @@ class ModelNumerical : public ModelAlgebraic
 
         std::shared_ptr<ModelProperties> M_modelProps;
 
-        size_type M_startBlockSpaceIndexMatrixRow, M_startBlockSpaceIndexMatrixCol, M_startBlockSpaceIndexVector;
-        std::map<std::string,size_type> M_startSubBlockSpaceIndex;
 
         std::string M_meshFile, M_geoFile;
 
@@ -204,6 +192,7 @@ class ModelNumerical : public ModelAlgebraic
 
         GeomapStrategyType M_geomap;
 
+        bool M_useChecker;
     };
 
 

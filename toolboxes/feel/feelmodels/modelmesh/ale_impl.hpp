@@ -117,22 +117,22 @@ public :
      * constructor
      *
      */
-    ALE( mesh_ptrtype mesh, std::string prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(), bool moveGhostEltFromExtendedStencil=false,
+    ALE( mesh_ptrtype mesh, std::string prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
          ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     /**
      * copy constructor
      */
-    ALE( ALE const& tc );
+    ALE( ALE const& ) = default;
 
     /**
      * desctructor
      */
-    ~ALE();
+    ~ALE() {}
 
-    void init();
+    void init() override;
 
-    std::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
 
     /**
      * verbose
@@ -149,7 +149,7 @@ public :
      * \calculates the high order ALE map given the boundary's displacement
      */
     void generateMap( ale_map_element_type const & dispOnBoundary,
-                      ale_map_element_type const & oldDisp );
+                      ale_map_element_type const & oldDisp ) override;
 
     /**
      * \return the low order displacement
@@ -159,14 +159,14 @@ public :
     /**
      * \return the high order ALE map
      */
-    ale_map_element_type const& map() const { return map( mpl::bool_< (Order>Order_low) >() ); }
+    ale_map_element_type const& map() const override { return map( mpl::bool_< (Order>Order_low) >() ); }
     element_high_type const& map( mpl::bool_<true> ) const { return *M_aleHigh; }
     element_low_type const& map( mpl::bool_<false> ) const { return *M_aleLow; }
 
     /**
      * \return the high order displacement
      */
-    ale_map_element_type const& displacement() const { return displacement( mpl::bool_< (Order>Order_low) >() ); }
+    ale_map_element_type const& displacement() const override { return displacement( mpl::bool_< (Order>Order_low) >() ); }
     element_high_type const& displacement( mpl::bool_<true> ) const { return *M_displacementHigh; }
     element_low_type const& displacement( mpl::bool_<false> ) const { return *M_displacementLow; }
 
@@ -180,7 +180,7 @@ public :
     /**
      * \return the functionspace that contains the high order ALE map
      */
-    ale_map_functionspace_ptrtype const& functionSpace() const { return functionSpace( mpl::bool_< (Order>Order_low) >() ); }
+    ale_map_functionspace_ptrtype const& functionSpace() const override { return functionSpace( mpl::bool_< (Order>Order_low) >() ); }
     space_high_ptrtype const& functionSpace( mpl::bool_<true> ) const { return M_fspaceHigh; }
     space_low_ptrtype const& functionSpace( mpl::bool_<false> ) const { return M_fspaceLow; }
 
@@ -188,6 +188,10 @@ public :
      * reset all the data from the class
      */
     void restart( mesh_ptrtype mesh );
+
+    void initMetricMeshAdaptation() override;
+    void updateMetricMeshAdaptation( Expr<GinacExVF<2>> const& e ) override;
+    void updateMetricMeshAdaptation( typename super_type::metricmeshadaptation_type::element_scalar_type const& u ) override;
 
 private:
 
@@ -249,6 +253,9 @@ private:
     void updateBoundaryElements( ale_map_element_type const & dispOnBoundary,
                                  mpl::bool_<false> /**/ );
 
+    // metric mesh adaptation
+    void updateMetricMeshAdaptationForUse();
+
 private :
     bool M_verboseSolverTimer,M_verboseSolverTimerAllProc;
 
@@ -278,8 +285,6 @@ private :
     winslow_ptrtype M_winslowFactory;
 #endif
     bool M_isInitHarmonicExtension, M_isInitWinslow;
-
-    bool M_moveGhostEltFromExtendedStencil;
 
     std::map<std::string,std::set<size_type> > M_dofsHighOnBoundary;
 };

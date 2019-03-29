@@ -21,12 +21,12 @@ namespace FeelModels
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
-                                bool buildMesh,
+                                std::string const& keyword,
                                 worldcomm_ptr_t const& worldComm,
                                 std::string const& subPrefix,
                                 ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, worldComm, subPrefix, modelRep ),
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     M_thermalProperties( new thermalproperties_type( prefix, this->repository().expr() ) )
 {
     this->log("Heat","constructor", "start" );
@@ -43,10 +43,6 @@ HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
-    //-----------------------------------------------------------------------------//
-    // build mesh
-    if ( buildMesh )
-        this->initMesh();
     //-----------------------------------------------------------------------------//
     this->log("Heat","constructor", "finish");
 
@@ -233,7 +229,11 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldCommPtr() );
 
-    // vector solution
+    // subspaces index
+    size_type currentStartIndex = 0;
+    this->setStartSubBlockSpaceIndex( "temperature", currentStartIndex++ );
+
+     // vector solution
     M_blockVectorSolution.resize( 1 );
     M_blockVectorSolution(0) = this->fieldTemperaturePtr();
     // init petsc vector associated to the block
@@ -325,8 +325,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("Heat","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    std::string modelName = "heat";
-    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
+    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
 
     if ( !M_postProcessFieldExported.empty() )
     {
@@ -341,7 +340,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
             M_exporter->restart(this->timeInitial());
     }
 
-    pt::ptree ptree = this->modelProperties().postProcess().pTree( modelName );
+    pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
     //  heat flux measures
     std::string ppTypeMeasures = "Measures";
     for( auto const& ptreeLevel0 : ptree )
@@ -383,7 +382,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // point measures
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
     {
         auto const& ptPos = evalPoints.pointPosition();
         node_type ptCoord(3);
@@ -590,12 +589,13 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
     // on topological faces
     auto const& listMarkedFacesTemperature = std::get<0>( meshMarkersTemperatureByEntities );
-    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesTemperature ) )
+    if ( !listMarkedFacesTemperature.empty() )
     {
-        auto const& face = unwrap_ref( faceWrap );
-        auto facedof = XhTemperature->dof()->faceLocalDof( face.id() );
-        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-            dofsWithValueImposedTemperature.insert( it->index() );
+        auto therange = markedfaces(mesh,listMarkedFacesTemperature );
+        auto dofsToAdd = XhTemperature->dofs( therange );
+        dofsWithValueImposedTemperature.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhTemperature->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("temperature",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
 }
 
@@ -713,7 +713,6 @@ void
 HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
     bool hasMeasure = false;
-    std::string modelName = "heat";
 
     // compute measures
     for ( auto const& ppForces : M_postProcessMeasuresForces )
@@ -732,7 +731,7 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
     {
         auto const& ptPos = evalPoints.pointPosition();
         if ( !ptPos.hasExpression() )
@@ -767,7 +766,7 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     }
 
     auto fieldTuple = hana::make_tuple( std::make_pair( "temperature",this->fieldTemperaturePtr() ) );
-    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
     {
         std::map<std::string,double> resPpNorms;
         measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
@@ -778,7 +777,7 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         }
     }
 
-    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( modelName ) )
+    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
     {
         std::map<std::string,double> resPpStats;
         measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );

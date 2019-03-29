@@ -34,7 +34,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     //if (this->useFSISemiImplicitScheme()) BuildNonCstPart_robinFSI=BuildCstPart;
 
     double timeSteppingScaling = 1.;
-    if ( !this->isStationary() )
+    if ( !this->isStationaryModel() )
     {
         if ( M_timeStepping == "Theta" )
             timeSteppingScaling = M_timeStepThetaValue;

@@ -269,7 +269,7 @@ FSI<FluidType,SolidType>::init()
     // fluid model build
     if ( !M_fluidModel )
     {
-        M_fluidModel = std::make_shared<fluid_type>("fluid",false,this->worldCommPtr(), "", this->repository() );
+        M_fluidModel = std::make_shared<fluid_type>("fluid","fluid",this->worldCommPtr(), "", this->repository() );
         if ( !M_mshfilepathFluidPartN.empty() )
             M_fluidModel->setMeshFile(M_mshfilepathFluidPartN.string());
 
@@ -399,6 +399,12 @@ FSI<FluidType,SolidType>::init()
     {
         this->initCouplingRobinNeumannGeneralized();
     }
+    else if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
+    {
+        auto rangeFSIfluid = markedfaces( this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary() );
+        auto dofsMultiProcessToAdd = M_fluidModel->functionSpaceVelocity()->dofs( rangeFSIfluid, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("fluid.velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+    }
     //-------------------------------------------------------------------------//
 
     if ( this->fluidModel()->doRestart() )
@@ -415,8 +421,10 @@ FSI<FluidType,SolidType>::init()
                                                                               std::ref( *this ), std::placeholders::_1 ) );
     M_fluidModel->algebraicFactory()->addFunctionResidualAssembly( std::bind( &self_type::updateResidual_Fluid,
                                                                               std::ref( *this ), std::placeholders::_1 ) );
-    // M_fluidModel->algebraicFactory()->addFunctionLinearPostAssembly( boost::bind( &self_type::updateLinearPDEStrongDirichletBC_Fluid,
-    //                                                                               boost::ref( *this ), _1, _2 ) );
+    M_fluidModel->algebraicFactory()->addFunctionLinearDofElimination( std::bind( &self_type::updateLinearPDEDofElimination_Fluid,
+                                                                                  std::ref( *this ), std::placeholders::_1 ) );
+    M_fluidModel->algebraicFactory()->addFunctionNewtonInitialGuess( std::bind( &self_type::updateNewtonInitialGuess_Fluid,
+                                                                                std::ref( *this ), std::placeholders::_1 ) );
     if ( M_solidModel->isStandardModel() )
     {
         M_solidModel->algebraicFactory()->addFunctionLinearAssembly( std::bind( &self_type::updateLinearPDE_Solid,
@@ -763,6 +771,7 @@ FSI<FluidType,SolidType>::solveImpl1()
     {
         this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
+        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()) );
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
@@ -868,6 +877,7 @@ FSI<FluidType,SolidType>::solveImpl2()
     {
         this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
+        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()) );
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
@@ -975,6 +985,7 @@ FSI<FluidType,SolidType>::solveImpl2()
     {
         this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
+        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()) );
     }
 
 
@@ -990,6 +1001,7 @@ FSI<FluidType,SolidType>::solveImpl3()
     {
         this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
+        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()) );
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
