@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2012 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2019 Université de Strasbourg
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -49,6 +50,7 @@
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelvf/unaryfunctor.hpp>
 #include <feel/feelvf/binaryfunctor.hpp>
+#include <feel/feelvf/arithmetic.hpp>
 
 namespace Feel
 {
@@ -127,38 +129,6 @@ sign( T const& x )
       VF_BINARY_FUNCTIONS_CODE O \
    /**/
 
-#if defined( FEELPP_HAS_QD_H ) && defined(FEELPP_HAS_MPFR)
-# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
-   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
-                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
-                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
-                         ::boost::is_same<VALUE_TYPE,mp_type>::value ||  \
-                         ::boost::is_same<VALUE_TYPE,dd_real>::value ||  \
-                         ::boost::is_same<VALUE_TYPE,qd_real>::value) ); \
-   /**/
-#elif defined( FEELPP_HAS_QD_H )
-# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
-   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
-                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
-                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
-                         ::boost::is_same<VALUE_TYPE,dd_real>::value ||  \
-                         ::boost::is_same<VALUE_TYPE,qd_real>::value) ); \
-   /**/
-#elif defined( FEELPP_HAS_MPFR )
-# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
-   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
-                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
-                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
-                         ::boost::is_same<VALUE_TYPE,mp_type>::value) ); \
-   /**/
-#else
-# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
-    BOOST_STATIC_ASSERT( ( ::boost::is_arithmetic<VALUE_TYPE>::value || \
-                           ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
-                           ::boost::is_same<VALUE_TYPE, std::complex<double> >::value ) \
-                         );                                             \
-   /**/
-#endif
 
 
 #define VF_UNARY_FUNCTIONS_CODE(O)                                      \
