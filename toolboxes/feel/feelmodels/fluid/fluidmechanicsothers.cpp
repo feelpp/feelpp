@@ -1359,9 +1359,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 {
+    if ( this->isStationaryModel() )
+        return;
     if ( !M_algebraicFactory )
         return;
-
     if ( M_timeStepping == "Theta" )
     {
         M_timeStepThetaSchemePreviousContrib->zero();

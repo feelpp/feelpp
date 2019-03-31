@@ -46,6 +46,7 @@
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/on.hpp>
 
+#include <feel/feelmodels/modelmesh/metricmeshadaptation.hpp>
 
 namespace Feel
 {
@@ -94,45 +95,6 @@ ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t c
 
     this->log( "ALE", "constructor", "finish" );
 }
-
-//-------------------------------------------------------------------------------------------//
-
-#if 0
-/**
- * copy constructor
- */
-template < class Convex, int Order >
-ALE<Convex,Order>::ALE( ALE const& tc )
-    :
-    super_type( tc ),
-    M_verboseSolverTimer( tc.M_verboseSolverTimer ),
-    M_verboseSolverTimerAllProc( tc.M_verboseSolverTimerAllProc ),
-    M_reference_mesh( tc.M_reference_mesh ),
-    M_fspaceLow( tc.M_fspaceLow ),
-    M_fspaceHigh( tc.M_fspaceHigh ),
-    M_fspaceHighLocal( tc.M_fspaceHighLocal ),
-    M_aleLow( tc.M_aleLow ),
-    M_displacementLow( tc.M_displacementLow ),
-    M_identityLow( tc.M_identityLow ),
-    M_aleHigh( tc.M_aleHigh ),
-    M_displacementHigh( tc.M_displacementHigh ),
-    M_identityHigh( tc.M_identityHigh ),
-    M_bHigh( tc.M_bHigh),
-    M_harmonicHigh( tc.M_harmonicHigh ),
-    M_rhsHigh( tc.M_rhsHigh ),
-    M_alemeshTypeName( tc.M_alemeshTypeName ),
-    M_doHoCorrection( tc.M_doHoCorrection ),
-#if defined( FSI_ENABLE_HARMONICEXTENSION )
-    M_harmonicextensionFactory( tc.M_harmonicextensionFactory ),
-#endif
-#if defined( FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW )
-    M_winslowFactory( tc.M_winslowFactory ),
-#endif
-    M_isInitHarmonicExtension( tc.M_isInitHarmonicExtension ),
-    M_isInitWinslow( tc.M_isInitWinslow )
-{
-}
-#endif
 
 //-------------------------------------------------------------------------------------------//
 
@@ -306,8 +268,7 @@ template < class Convex, int Order >
 void
 ALE<Convex,Order>::createHarmonicExtension()
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix(),"createHarmonicExtension", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log( "ALE", "createHarmonicExtension", "start" );
 
     M_harmonicextensionFactory.reset( new harmonicextension_type( M_fspaceLow,
                                                                   Feel::backend(_rebuild=true,_name=this->prefix() ),
@@ -317,8 +278,7 @@ ALE<Convex,Order>::createHarmonicExtension()
     M_harmonicextensionFactory->init();
     M_isInitHarmonicExtension = true;
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix(),"createHarmonicExtension", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log( "ALE", "createHarmonicExtension", "finish" );
 }
 #endif
 
@@ -329,17 +289,15 @@ template < class Convex, int Order >
 void
 ALE<Convex,Order>::createWinslow()
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix(),"createWinslow", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log( "ALE", "createWinslow", "start" );
 
-    M_winslowFactory.reset(new winslow_type( M_reference_mesh,
+    M_winslowFactory.reset(new winslow_type( M_fspaceLow,//M_reference_mesh,
                                              prefixvm(this->prefix(),"winslow") ) );
     M_winslowFactory->setflagSet(this->flagSet());
     M_winslowFactory->init();
     M_isInitWinslow=true;
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix(),"createWinslow", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log( "ALE", "createWinslow", "finish" );
 }
 #endif
 
@@ -353,14 +311,14 @@ void
 ALE<Convex,Order>::generateMap( ale_map_element_type const & dispOnBoundary,
                                 ale_map_element_type const & oldDisp )
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MethodsNum","generateMap", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log( "ALE", "generateMap", "start" );
 
     if ( M_alemeshTypeName == "harmonic" )
         generateLowOrderMap_HARMONIC( dispOnBoundary );
     else if ( M_alemeshTypeName == "winslow" )
         generateLowOrderMap_WINSLOW( dispOnBoundary, oldDisp );
-    else FEELPP_ASSERT (false).error( "wrong arg alemesh.type" );
+    else
+        CHECK( false ) << "wrong arg alemesh.type";
 
     interpolateLow2High( mpl::bool_< ( Order > Order_low ) >() );
 
@@ -370,8 +328,7 @@ ALE<Convex,Order>::generateMap( ale_map_element_type const & dispOnBoundary,
         updateBoundaryElements( dispOnBoundary, mpl::bool_< ( Order > Order_low ) >() );
     }
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MethodsNum","generateMap", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log( "ALE", "generateMap", "finish" );
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -381,23 +338,11 @@ void
 ALE<Convex,Order>::generateLowOrderMap_HARMONIC( ale_map_element_type const & dispOnBoundary )
 {
 #if defined( FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION )
-    using namespace Feel::vf;
-
     M_harmonicextensionFactory->setflagSet(this->flagSet());
     M_harmonicextensionFactory->generateALEMap(dispOnBoundary);
 
-    // interpolate disp
-#if 1
-    //interpolate( M_displacementLow->functionSpace(), M_harmonicextensionFactory->displacement(), M_displacementLow, INTERPOLATE_SAME_MESH );
     *M_displacementLow = *M_harmonicextensionFactory->displacement();
-#else
-    bool useGhostEltFromExtendedStencil = M_displacementLow->functionSpace()->dof()->buildDofTableMPIExtended() &&
-        M_harmonicextensionFactory->functionSpace()->dof()->buildDofTableMPIExtended() &&
-        M_displacementLow->mesh()->worldComm().localSize()>1;
-    *M_displacementLow = vf::project(_space=M_displacementLow->functionSpace(),
-                                     _range=elements(M_displacementLow->mesh(),useGhostEltFromExtendedStencil),
-                                     _expr=idv(M_harmonicextensionFactory->displacement()) );
-#endif
+
     // update ALE map from displacement
     *M_aleLow = *M_identityLow;
     *M_aleLow += *M_displacementLow;
@@ -781,6 +726,49 @@ ALE<Convex,Order>::updateBoundaryElements( ale_map_element_type const & dispOnBo
     //std::cout << "\nWARNING!!!!!!updateBoundaryElements\n";
 }
 
+template < class Convex, int Order >
+void
+ALE<Convex,Order>::initMetricMeshAdaptation()
+{
+    this->M_metricMeshAdaptation = std::make_shared<typename super_type::metricmeshadaptation_type>( M_fspaceLow, "");
+    this->M_metricMeshAdaptation->init();
+}
+
+template < class Convex, int Order >
+void
+ALE<Convex,Order>::updateMetricMeshAdaptation( Expr<GinacExVF<2>> const& e )
+{
+    if ( !this->M_metricMeshAdaptation )
+        this->initMetricMeshAdaptation();
+    this->M_metricMeshAdaptation->update( e );
+    this->updateMetricMeshAdaptationForUse();
+}
+
+template < class Convex, int Order >
+void
+ALE<Convex,Order>::updateMetricMeshAdaptation( typename super_type::metricmeshadaptation_type::element_scalar_type const& u )
+{
+    if ( !this->M_metricMeshAdaptation )
+        this->initMetricMeshAdaptation();
+    this->M_metricMeshAdaptation->update( u );
+    this->updateMetricMeshAdaptationForUse();
+}
+
+template < class Convex, int Order >
+void
+ALE<Convex,Order>::updateMetricMeshAdaptationForUse()
+{
+    if ( M_alemeshTypeName == "winslow" )
+    {
+#if defined( FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW )
+        M_winslowFactory->setMetricMeshAdaptation( this->M_metricMeshAdaptation->scalarMetric() );
+#else
+        CHECK( false ) << "WINSLOW is disable";
+#endif
+    }
+    else
+        CHECK( false ) << "mesh adaptation only supported by Winslow model";
+}
 
 } // namespace ALE_IMPL
 } // namespace FeelModels

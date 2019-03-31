@@ -229,10 +229,10 @@ MeshALE<Convex>::getInfo() const
 
 template< class Convex >
 void
-MeshALE<Convex>::addBoundaryFlags(std::string __type, std::string __marker)
+MeshALE<Convex>::addBoundaryFlags(std::string const& bctype, std::string const& marker)
 {
-    CHECK( this->referenceMesh()->hasMarker(__marker) ) << " marker " << __marker << " is not define in reference mesh\n";
-    M_aleFactory->addBoundaryFlags( __type, this->referenceMesh()->markerName(__marker) );
+    CHECK( this->referenceMesh()->hasMarker(marker) ) << " marker " << marker << " is not define in reference mesh\n";
+    M_aleFactory->addBoundaryFlags( bctype, this->referenceMesh()->markerName( marker ) );
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -561,8 +561,6 @@ MeshALE<Convex>::updateImpl()
     M_meshVelocity->add(-1.0,M_bdf_ale_identity->polyDeriv());
 
 }
-
-
 
 } // namespace FeelModels
 } // namespace Feel
