@@ -3420,11 +3420,18 @@ public:
         }
         template<typename ElementType>
         void
-        grad( ElementType const& elt, grad_array_type& v )
+        grad( ElementType const& elt, grad_array_type& v ) const
         {
-            gmc_ptrtype gmc( geomapPtr( elt ) );
-            v.resize( gradExtents(  *gmc ) );
-            grad_( *gmc, *pcPtr( elt ), v );
+            if constexpr ( std::is_base_of_v<ElementType,ConvexBase> )
+            {
+                gmc_ptrtype gmc( geomapPtr( elt ) );
+                v.resize( gradExtents(  *gmc ) );
+                grad_( *gmc, *pcPtr( elt ), v );
+            }
+            else
+            {
+                grad_( elt, v );
+            }
         }
 
         /**
@@ -3443,12 +3450,6 @@ public:
          */
         template<typename ContextType>
         void grad_( ContextType const & context, grad_array_type& v ) const;
-
-        template<typename ContextType>
-        void grad( ContextType const & context, grad_array_type& v ) const
-        {
-            grad_( context, v );
-        }
 
         //!
         //! compute Symmetric Gradient only in the vectorial case
