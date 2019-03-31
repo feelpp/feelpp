@@ -1136,6 +1136,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     this->log("FluidMechanics","initTimeStep", "start" );
     this->timerTool("Constructor").start();
 
+    if ( this->isStationaryModel() ) // force BDF with Stokes
+        M_timeStepping = "BDF";
+
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
     std::string suffixName = "";
     if ( myFileFormat == "binary" )
