@@ -63,6 +63,8 @@ public:
                               mpl::identity<ublas::row_major>,
                               mpl::identity<ublas::column_major> >::type::type layout_type;
 
+
+    BilinearFormBase() = default;
     
     template<typename FE1,  typename FE2>
     BilinearFormBase( std::string name,
@@ -392,7 +394,15 @@ public:
         return M_n_nz[i];
     }
 
-
+    template<typename X1, typename X2>
+    void allocateMatrix( std::shared_ptr<X1> const& x1, std::shared_ptr<X2> const& x2 )
+    {
+        M_matrix = backend()->newMatrix( _test=x1, _trial=x2 );
+    }
+    bool isMatrixAllocated() const
+    {
+        return (bool)M_matrix;
+    }
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
                                      solve,
                                      tag,

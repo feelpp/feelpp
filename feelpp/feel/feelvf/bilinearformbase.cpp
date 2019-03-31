@@ -54,6 +54,7 @@ BilinearFormBase<T>::operator=( BilinearFormBase const& form )
 {
     if ( this != &form )
     {
+        super::operator=( form );
         M_name = form.M_name;
         M_pattern = form.M_pattern;
         M_matrix->zero();

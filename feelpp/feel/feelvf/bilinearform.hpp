@@ -1075,7 +1075,7 @@ public:
     //@{
 
 
-    BilinearForm(){}
+    BilinearForm() = default;
     /**
 
 
@@ -1125,9 +1125,11 @@ public:
     {
         if ( this != &form )
         {
-            
-            if ( M_X1 != form.M_X1 ) throw std::logic_error( "Invalid test function spaces" );
-            if ( M_X2 != form.M_X2 ) throw std::logic_error( "Invalid trial function spaces" );
+            bool same_spaces = (M_X1 == form.M_X1) && ( M_X2 == form.M_X2 );
+            M_X1 = form.M_X1;
+            M_X2 = form.M_X2;
+            if ( !this->isMatrixAllocated() || !same_spaces )
+                this->allocateMatrix( M_X1, M_X2 );
             super::operator=( form );
             
         }
@@ -1580,6 +1582,12 @@ template<typename FE1,
          typename FE2,
          typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type> >
 using form2_type = Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType>;
+
+template<typename FE1,
+         typename FE2,
+         typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type> >
+using form2_t = form2_type<FE1,FE2,ElemContType>;
+
 } // feel
 
 #include <feel/feelvf/bilinearformcontext.hpp>
