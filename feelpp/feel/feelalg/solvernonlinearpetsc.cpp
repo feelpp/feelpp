@@ -615,6 +615,13 @@ void SolverNonLinearPetsc<T>::init ()
             ierr = SNESSetType( M_snes, SNESNEWTONLS );
 #endif
             CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+            SNESLineSearch snesLineSearch;
+            ierr = SNESGetLineSearch( M_snes, &snesLineSearch );
+            CHKERRABORT( this->worldComm().globalComm(), ierr );
+
+            ierr = SNESLineSearchSetType( snesLineSearch,  toPetscName( this->nlSolverLineSearchType() ) );
+            CHKERRABORT( this->worldComm().globalComm(), ierr );
         }
         break;
 
