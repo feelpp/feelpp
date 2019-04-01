@@ -5,7 +5,7 @@ feelpp_add_application( solid SRCS main_sm.cpp
   feelpp_toolbox_solid_lib_2dP2G1
   feelpp_toolbox_solid_lib_3dP1G1
   feelpp_toolbox_solid_lib_3dP2G1
-  INSTALL
+  INSTALL TESTS
  )
 
 feelpp_add_application( stress_2d SRCS stress.cpp
