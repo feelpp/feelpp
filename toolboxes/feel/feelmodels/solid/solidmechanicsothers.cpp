@@ -74,7 +74,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Prefix : " << this->prefix()
            << "\n   Root Repository : " << this->rootRepository()
            << "\n   Physical Model"
-           << "\n     -- pde name : " << M_pdeType
+           << "\n     -- model : " << M_modelName
            << "\n     -- material law : " << this->mechanicalProperties()->materialLaw()
            << "\n     -- use displacement-pressure formulation : " << std::boolalpha << M_useDisplacementPressureFormulation
            << "\n     -- time mode : " << StateTemporal;
@@ -137,7 +137,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- global rank : " << this->worldComm().globalRank()
            << "\n     -- local rank : " << this->worldComm().localRank()
            << "\n   Numerical Solver"
-           << "\n     -- solver : " << M_pdeSolver;
+           << "\n     -- solver : " << M_solverName;
     if (this->isStandardModel() && M_algebraicFactory)
         *_ostr << M_algebraicFactory->getInfo()->str();
     else if (this->is1dReducedModel() && M_algebraicFactory_1dReduced)
@@ -154,33 +154,43 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::pdeType(std::string __type)
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
 {
-    if ( __type == "Elasticity" )                      { M_pdeType="Elasticity"; M_pdeSolver="LinearSystem"; }
-    else if ( __type == "Elasticity-Large-Deformation" ) { M_pdeType="Elasticity-Large-Deformation"; M_pdeSolver="Newton"; }
-    else if ( __type == "Hyper-Elasticity" )           { M_pdeType="Hyper-Elasticity"; M_pdeSolver="Newton"; }
-    else if ( __type == "Generalised-String" )         { M_pdeType="Generalised-String"; M_pdeSolver="LinearSystem"; }
+    // if pde change -> force to rebuild all algebraic data at next solve
+    if ( type != M_modelName )
+        this->setNeedToRebuildCstPart(true);
+
+    if ( type == "Elasticity" )
+        M_modelName = "Elasticity";
+    else if ( type == "Elasticity-Large-Deformation" )
+        M_modelName="Elasticity-Large-Deformation";
+    else if ( type == "Hyper-Elasticity" )
+        M_modelName = "Hyper-Elasticity";
+    else if ( type == "Generalised-String" )
+        M_modelName = "Generalised-String";
     else
-        CHECK( false ) << "invalid pdeType "<< __type << "\n";
+        CHECK( false ) << "invalid modelName "<< type << "\n";
 
-    //if ( M_useDisplacementPressureFormulation && M_pdeSolver != "Newton" )
-    //    M_pdeSolver="Newton";
+    M_isStandardModel= (M_modelName != "Generalised-String" );
+    M_is1dReducedModel=!M_isStandardModel;
 }
-
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::pdeSolver(std::string __type)
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setSolverName( std::string const& type )
 {
-    if ( __type == "LinearSystem" )
-        M_pdeSolver="LinearSystem";
-    else if ( __type == "Newton" )
-        M_pdeSolver="Newton";
-    else
-        CHECK( false ) << "invalid pdeSolver " << __type << "\n";
-}
+    // if solver change -> force to rebuild all algebraic data at next solve
+    if ( type != M_solverName )
+        this->setNeedToRebuildCstPart(true);
 
+    if ( type == "LinearSystem" )
+        M_solverName="LinearSystem";
+    else if ( type == "Newton" )
+        M_solverName="Newton";
+    else
+        CHECK( false ) << "invalid solver name " << type << "\n";
+}
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -224,7 +234,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                              _diag_is_nonzero=false,_close=false)->graph();
         myblockGraph(0,indexBlock) = stencil(_test=M_XhDisplacement,_trial=M_XhPressure,
                                              _diag_is_nonzero=false,_close=false)->graph();
-        //if ( M_pdeSolver=="LinearSystem" )
         myblockGraph(indexBlock,indexBlock) = stencil(_test=M_XhPressure,_trial=M_XhPressure,
                                                       _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
@@ -977,45 +986,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 
     if ( this->isStandardModel() )
     {
+        if ( M_solverName == "LinearSystem" )
+            CHECK( M_modelName == "Elasticity" ) << "model is not linear";
         M_blockVectorSolution.updateVectorFromSubVectors();
-        if (M_pdeType=="Elasticity")
-        {
-            if (M_pdeSolver=="LinearSystem")
-            {
-                M_algebraicFactory->solveLinear( M_blockVectorSolution.vectorMonolithic() );
-            }
-            else if (M_pdeSolver == "Newton")
-            {
-                M_algebraicFactory->solveNewton( M_blockVectorSolution.vectorMonolithic() );
-            }
-        }
-        else if ( M_pdeType=="Hyper-Elasticity" || M_pdeType=="Elasticity-Large-Deformation" )
-        {
-            if (M_pdeSolver=="LinearSystem")
-            {
-                CHECK(false) <<" M_pdeType " << M_pdeType << "can not be used with LinearSystem\n";
-            }
-            else if (M_pdeSolver == "Newton")
-            {
-                M_algebraicFactory->solveNewton( M_blockVectorSolution.vectorMonolithic() );
-            }
-        }
+        M_algebraicFactory->solve( M_solverName, M_blockVectorSolution.vectorMonolithic() );
         M_blockVectorSolution.localize();
     }
     else if ( this->is1dReducedModel() )
     {
+        if ( M_solverName == "LinearSystem" )
+            CHECK( M_modelName =="Generalised-String" ) << "model is not linear";
         M_blockVectorSolution_1dReduced.updateVectorFromSubVectors();
-        if (M_pdeType=="Generalised-String")
-        {
-            if (M_pdeSolver=="LinearSystem")
-            {
-                M_algebraicFactory_1dReduced->solveLinear( M_blockVectorSolution_1dReduced.vectorMonolithic() );
-            }
-            else if (M_pdeSolver == "Newton")
-            {
-                CHECK(false) <<" M_pdeType " << M_pdeType << "can not be used with Newton\n";
-            }
-        }
+        M_algebraicFactory_1dReduced->solve( M_solverName, M_blockVectorSolution_1dReduced.vectorMonolithic() );
         M_blockVectorSolution_1dReduced.localize();
     }
 
@@ -1071,7 +1053,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
     //auto range = markedfaces(this->mesh(),this->markerNameFSI());
 
 
-    if ( M_pdeType=="Elasticity" )
+    if ( M_modelName == "Elasticity" )
     {
         auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
         auto const& coeffLame2 = this->mechanicalProperties()->fieldCoeffLame2();
@@ -1094,11 +1076,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
                                                _geomap=this->geomap() );
         }
     }
-    else if ( M_pdeType=="Elasticity-Large-Deformation" )
+    else if ( M_modelName=="Elasticity-Large-Deformation" )
     {
         CHECK( false ) << "TODO";
     }
-    else if ( M_pdeType=="Hyper-Elasticity" )
+    else if ( M_modelName == "Hyper-Elasticity" )
     {
         auto const sigma = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
         if ( !this->useDisplacementPressureFormulation() )
@@ -1130,7 +1112,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
     this->createAdditionalFunctionSpacesStressTensor();
 
     auto const& u = this->fieldDisplacement();
-    if ( M_pdeType=="Elasticity" )
+    if ( M_modelName == "Elasticity" )
     {
         auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
         auto const& coeffLame2 = this->mechanicalProperties()->fieldCoeffLame2();
@@ -1149,7 +1131,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
             M_fieldStressTensor->on(_range=M_rangeMeshElements,_expr=sigma );
         }
     }
-    else if ( M_pdeType=="Hyper-Elasticity" )
+    else if ( M_modelName == "Hyper-Elasticity" )
     {
         auto sigma = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
         if ( !this->useDisplacementPressureFormulation() )
