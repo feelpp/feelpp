@@ -372,7 +372,7 @@ void AlphaElectric::initModel()
 
     auto PsetV = this->Dmu->sampling();
 
-    std::string supersamplingname =(boost::format("DmuDEim-Ne%1%-generated-by-master-proc") % M_trainsetDeimSize ).str();
+    std::string supersamplingname =(boost::format("DmuDEim-P%1%-Ne%2%-generated-by-master-proc") % this->Dmu->dimension() % M_trainsetDeimSize ).str();
     std::ifstream file ( supersamplingname );
     bool all_proc_same_sampling=true;
     if( ! file )
@@ -394,7 +394,7 @@ void AlphaElectric::initModel()
 
     auto PsetM = this->Dmu->sampling();
 
-    supersamplingname =(boost::format("DmuMDEim-Ne%1%-generated-by-master-proc") % M_trainsetMdeimSize ).str();
+    supersamplingname =(boost::format("DmuMDEim-P%1%-Ne%2%-generated-by-master-proc") % this->Dmu->dimension() % M_trainsetMdeimSize ).str();
     std::ifstream fileM ( supersamplingname );
     if( ! fileM )
     {
