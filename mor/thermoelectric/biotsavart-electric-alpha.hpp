@@ -155,17 +155,17 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
     // void runBS();
     void setupCommunicatorsBS();
     vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag );
-    vectorN_type beta( parameter_type& mu, int M = -1 ) { return this->deim()->beta(mu, M); }
+    vectorN_type beta( parameter_type const& mu, int M = -1 ) { return this->deim()->beta(mu, M); }
     std::vector<vector_ptrtype> q() { return this->deim()->q(); }
-    void online( parameter_type & mu, int M = -1 );
-    void expand( int N = -1 );
-    void computeFE( parameter_type & mu );
+    void online( parameter_type const& mu, int M = -1 );
+    void expandV( int N = -1 );
+    void computeFE( parameter_type const& mu );
     // std::vector<double> computeErrors();
     // void exportResults( parameter_type const& mu );
     double homogeneity( element_type const& B );
 
     parameter_type newParameter() const { return M_teCrbModel->newParameter(); }
-    void setParameter( parameter_type& mu ) { M_mu = mu; }
+    void setParameter( parameter_type const& mu ) { M_mu = mu; }
     int nbParameters() const { return M_crbModel->parameterSpace()->dimension();  }
     auto parameterSpace() const { return M_crbModel->parameterSpace(); }
     int dimension() const { return this->deim()->size(); }
@@ -178,6 +178,7 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
     cond_space_ptrtype spaceCond() const { return M_XhCond; }
     space_ptrtype spaceMgn() const { return this->Xh; }
     cond_element_type alpha( parameter_type const& mu );
+    void setIndices( std::vector<int> const& index ) { M_indexR = index; }
 
 protected:
     te_rb_model_ptrtype M_teCrbModel;
@@ -204,8 +205,10 @@ protected:
     int M_N;
     int M_M;
 
+
     std::vector< mpi::communicator > M_commsC1M;
     std::map<int, dof_points_type> M_dofMgn;
+    std::vector<int> M_indexR;
 
     std::string M_propertyPath;
     // bool M_repart;
@@ -216,6 +219,8 @@ protected:
     // std::string M_pathToDb;
     int M_trainsetDeimSize;
     std::string M_dbBasename;
+    int M_verbose;
+    bool M_useRbInDeim;
 }; // class BiotSavartAlphaElectroCRB
 
 #if !defined(FEELPP_INSTANTIATE_BIOTSAVARTALPHAELECTRIC_ELECTRIC)

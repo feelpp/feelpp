@@ -324,7 +324,8 @@ public :
         M_serEimFreq(ioption(_prefix=M_prefix,_name = "ser.eim-frequency")),
         M_serRbFreq(ioption(_prefix=M_prefix,_name = "ser.rb-frequency")),
         M_serErrorEstimation(boption(_prefix=M_prefix,_name="ser.error-estimation")),
-        M_crbUseNewton(boption(_prefix=M_prefix,_name="crb.use-newton"))
+        M_crbUseNewton(boption(_prefix=M_prefix,_name="crb.use-newton")),
+        M_isOnlineModel(false)
     {
 
         if ( !M_rebuildDb )
@@ -411,6 +412,9 @@ public :
     //! functions call by deim to init specific part of the model when online.
     virtual void initOnlineModel()
     {}
+
+    void setOnlineModel() { M_isOnlineModel = true; }
+    bool isOnlineModel() const { return M_isOnlineModel; }
 
     //!
     //! unique id for CRB Model
@@ -2231,6 +2235,8 @@ protected :
     int M_serRbFreq;
     bool M_serErrorEstimation;
     bool M_crbUseNewton;
+
+    bool M_isOnlineModel;
 private :
     std::map<std::string,std::string > M_additionalModelFiles;
 };
