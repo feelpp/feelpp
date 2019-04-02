@@ -137,7 +137,7 @@ BiotSavartBase<SpaceTypeConductor, SpaceTypeMag>::computeMagneticField(element_c
     auto B = M_XhM->element();
 
     auto coeff = 1/(4*M_PI);
-    auto mu0 = 4*M_PI*1e-4; //SI unit : H.m-1 = m.kg.s-2.A-2
+    auto mu0 = 4*M_PI*1e-7; //SI unit : H.m-1 = m.kg.s-2.A-2
 
     std::vector<double> intLocD, intSumD;
     for(int i = 0; i < M_dofMgn.size(); ++i)
@@ -163,7 +163,7 @@ BiotSavartBase<SpaceTypeConductor, SpaceTypeMag>::computeMagneticField(element_c
                 auto dist = inner( _e1v-P(), _e1v-P(),
                                    mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
                 mgnFields = integrate(_range=M_XhC->dof()->meshSupport()->rangeElements(),
-                                      _expr=mu0*coeff*cross(idv(j),_e1v-P())/(dist*dist*dist)
+                                      _expr=-mu0*coeff*cross(idv(j),_e1v-P())/(dist*dist*dist)
                                       ).template evaluate(coords);
 
                 for( int d = 0; d < dofSize; ++d )
