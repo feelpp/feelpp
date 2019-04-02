@@ -263,6 +263,10 @@ public :
     std::string const& prefixModel() const { return M_prefixModel; }
     void setPrefixModel( std::string const& prefix ) { M_prefixModel = prefix; }
 
+    std::vector<indice_type> const& index() const { return M_index; }
+    std::vector<indice_type> const& indexR() const { return M_indexR; }
+    std::vector<parameter_type> const& mus() const { return M_mus; }
+
 protected :
     /**
      * The assemble function calls the function provided by the model. This
@@ -943,7 +947,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::residual( parameter_type cons
     auto newT = copyTensor( T );
     for ( int i=0; i<M_M; i++ )
         add( newT, -coeff(i), M_bases[i] );
-    // newT->scale( 1./norm );
+    newT->scale( 1./norm );
 
     LOG(INFO) << this->name() + " : residual() end";
     return newT;
