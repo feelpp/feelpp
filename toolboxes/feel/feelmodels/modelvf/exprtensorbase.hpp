@@ -74,17 +74,20 @@ namespace FeelModels
         typedef Shape<shape_type::nDim, Scalar, false, false> shape_scalar;
         //typedef Eigen::Matrix<value_type,shape_scalar::M,shape_scalar::N> loc_scalar_type;
         typedef Eigen::Tensor<value_type,2> loc_scalar_type;
-        typedef boost::multi_array<loc_scalar_type,1> array_scalar_type;
+        typedef boost::multi_array<loc_scalar_type,1> array_scalar_type;  // TO REMOVE
+        typedef Eigen::Matrix<loc_scalar_type,Eigen::Dynamic,1> new_array_scalar_type;
 
         typedef Shape<shape_type::nDim, Vectorial, false, false> shape_vectorial;
         //typedef Eigen::Matrix<value_type,shape_vectorial::M,shape_vectorial::N> loc_vectorial_type;
         typedef Eigen::Tensor<value_type,2> loc_vectorial_type;
-        typedef boost::multi_array<loc_vectorial_type,1> array_vectorial_type;
+        typedef boost::multi_array<loc_vectorial_type,1> array_vectorial_type; // TO REMOVE
+        typedef Eigen::Matrix<loc_vectorial_type,Eigen::Dynamic,1> new_array_vectorial_type;
 
         typedef Shape<shape_type::nDim, Vectorial, true, false> shape_vectorial_transpose;
         //typedef Eigen::Matrix<value_type,shape_vectorial_transpose::M,shape_vectorial_transpose::N> loc_vectorial_transpose_type;
         typedef Eigen::Tensor<value_type,2> loc_vectorial_transpose_type;
-        typedef boost::multi_array<loc_vectorial_transpose_type,1> array_vectorial_transpose_type;
+        typedef boost::multi_array<loc_vectorial_transpose_type,1> array_vectorial_transpose_type; // TO REMOVE
+        typedef Eigen::Matrix<loc_vectorial_transpose_type,Eigen::Dynamic,1> new_array_vectorial_transpose_type;
 
         typedef Shape<shape_type::nDim, Tensor2, false, false> shape_tensor2;
         //typedef Eigen::Matrix<value_type,shape_tensor2::M,shape_tensor2::N> loc_tensor2_type;
