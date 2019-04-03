@@ -57,26 +57,23 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ExprType>
     struct tensorFluidStressTensorBase : public tensorBase<Geo_t,Basis_i_t,Basis_j_t,
-                                                           typename detail::GetShapeExpr<ExprType::nRealDim, typename ExprType::specific_expr_type>::shape_type,
+                                                           typename detail::GetShapeExpr< ExprType::expr_grad_velocity_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>::shape::nDim, typename ExprType::specific_expr_type>::shape_type,
                                                            typename ExprType::value_type >
     {
         typedef tensorBase<Geo_t,Basis_i_t,Basis_j_t,
-                           typename detail::GetShapeExpr<ExprType::nRealDim, typename ExprType::specific_expr_type>::shape_type,
+                           typename detail::GetShapeExpr<ExprType::expr_grad_velocity_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>::shape::nDim, typename ExprType::specific_expr_type>::shape_type,
                            typename ExprType::value_type> super_type;
     public :
         typedef ExprType expr_type;
         typedef typename super_type::key_type key_type;
 
-        typedef typename expr_type::fe_velocity_type fe_velocity_type;
         typedef typename expr_type::fe_pressure_type fe_pressure_type;
         typedef typename expr_type::geoelement_type geoelement_type;
         typedef typename super_type::gm_type gm_type;
         typedef typename super_type::gmc_type gmc_type;
-        // fe velocity context
-        typedef typename fe_velocity_type::PreCompute pc_velocity_type;
-        typedef std::shared_ptr<pc_velocity_type> pc_velocity_ptrtype;
-        typedef typename fe_velocity_type::template Context<expr_type::context_velocity, fe_velocity_type, gm_type,geoelement_type,gmc_type::context> ctx_velocity_type;
-        typedef std::shared_ptr<ctx_velocity_type> ctx_velocity_ptrtype;
+
+        typedef typename expr_type::expr_grad_velocity_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_grad_velocity_type;
+
         // fe pressure context
         typedef typename fe_pressure_type::PreCompute pc_pressure_type;
         typedef std::shared_ptr<pc_pressure_type> pc_pressure_ptrtype;
@@ -86,54 +83,48 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         typedef typename expr_type::value_type value_type;
 
         typedef typename super_type::loc_tensor2_type loc_grad_type;
-        typedef typename super_type::array_tensor2_type array_grad_type;
+        typedef typename super_type::new_array_tensor2_type array_grad_type;
         typedef typename super_type::loc_scalar_type loc_scalar_type;
         typedef typename super_type::array_scalar_type array_scalar_type;
 
         typedef typename super_type::shape_type shape;
         typedef typename super_type::matrix_shape_type matrix_shape_type;
-        typedef typename super_type::array_shape_type array_shape_type;
+        typedef typename super_type::new_array_shape_type array_shape_type;
 
         tensorFluidStressTensorBase( expr_type const& expr,
                                      Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( geom,fev,feu ),
             M_expr( expr ),
-            M_pcVelocity( new pc_velocity_type( expr.velocity().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ),
-            M_ctxVelocity( new ctx_velocity_type( expr.velocity().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_velocity_ptrtype const&)M_pcVelocity ) ),
+            M_tensorExprGradVelocity( expr.expressionGradVelocity(),geom,fev,feu ),
             M_pcPressure( new pc_pressure_type( expr.pressure().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ),
             M_ctxPressure( new ctx_pressure_type( expr.pressure().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_pressure_ptrtype const&)M_pcPressure ) ),
-            M_locRes( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
-            M_locGradVelocity( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
+            M_locRes( this->gmc()->nPoints() ),
+            M_locGradVelocity( this->gmc()->nPoints() ),
             M_locPressure( expr.pressure().idExtents(*fusion::at_key<key_type>( geom )) )
-            //M_locMatrixShape( matrix_shape_type::Zero() )
         {}
         tensorFluidStressTensorBase( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
             :
             super_type( geom,fev ),
             M_expr( expr ),
-            M_pcVelocity( new pc_velocity_type( expr.velocity().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ),
-            M_ctxVelocity( new ctx_velocity_type( expr.velocity().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_velocity_ptrtype const&)M_pcVelocity ) ),
+            M_tensorExprGradVelocity( expr.expressionGradVelocity(),geom,fev ),
             M_pcPressure( new pc_pressure_type( expr.pressure().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ),
             M_ctxPressure( new ctx_pressure_type( expr.pressure().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_pressure_ptrtype const&)M_pcPressure ) ),
-            M_locRes( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
-            M_locGradVelocity( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
+            M_locRes( this->gmc()->nPoints() ),
+            M_locGradVelocity( this->gmc()->nPoints() ),
             M_locPressure( expr.pressure().idExtents(*fusion::at_key<key_type>( geom )) )
-            //M_locMatrixShape( matrix_shape_type::Zero() )
         {}
 
         tensorFluidStressTensorBase( expr_type const& expr, Geo_t const& geom )
             :
             super_type( geom ),
             M_expr( expr ),
-            M_pcVelocity( new pc_velocity_type( expr.velocity().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ),
-            M_ctxVelocity( new ctx_velocity_type( expr.velocity().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_velocity_ptrtype const&)M_pcVelocity ) ),
+            M_tensorExprGradVelocity( expr.expressionGradVelocity(),geom ),
             M_pcPressure( new pc_pressure_type( expr.pressure().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ),
             M_ctxPressure( new ctx_pressure_type( expr.pressure().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_pressure_ptrtype const&)M_pcPressure ) ),
-            M_locRes( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
-            M_locGradVelocity( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
+            M_locRes( this->gmc()->nPoints() ),
+            M_locGradVelocity( this->gmc()->nPoints() ),
             M_locPressure( expr.pressure().idExtents(*fusion::at_key<key_type>( geom )) )
-            //M_locMatrixShape( matrix_shape_type::Zero() )
         {}
 
 
@@ -149,23 +140,34 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         matrix_shape_type & locRes( uint16_type q ) { return M_locRes[q]; }
         matrix_shape_type const& locRes( uint16_type q ) const { return M_locRes[q]; }
 
-        /*virtual*/ void updateCommon( Geo_t const& geom, bool upGradVelocity = true )
+        void updateCommon( Geo_t const& geom, bool upGradVelocity = true )
         {
             this->setGmc( geom );
 
-            bool faceEval = this->gmc()->faceId() != invalid_uint16_type_value;
-
             if ( upGradVelocity )
             {
-                if ( faceEval )
-                    M_pcVelocity->update( this->gmc()->pc()->nodes() );
-                M_ctxVelocity->update( fusion::at_key<key_type>( geom ),  (pc_velocity_ptrtype const&) M_pcVelocity );
-                std::fill( M_locGradVelocity.data(), M_locGradVelocity.data()+M_locGradVelocity.num_elements(), this->M_zeroLocTensor2 );
-                this->expr().velocity().grad( *M_ctxVelocity, M_locGradVelocity );
+                M_tensorExprGradVelocity.update( geom );
+                M_locGradVelocity.resize( this->gmc()->nPoints() );
+                for ( int q=0;q< this->gmc()->nPoints();++q )
+                {
+                    if constexpr ( false /*expr_type::expr_grad_velocity_type::is_terminal*/ )
+                    {
+                        M_locGradVelocity[q] = M_tensorExprGradVelocity.evalq( q ); //not compile, need to investigate
+                    }
+                    else
+                    {
+                        typename super_type::loc_tensor2_type& locData = M_locGradVelocity[q];
+                        locData = this->M_zeroLocTensor2;
+                        for (int c1=0;c1<super_type::shape_tensor2::M;++c1 )
+                            for (int c2=0;c2<super_type::shape_tensor2::N;++c2 )
+                                locData(c1,c2) = M_tensorExprGradVelocity.evalq( c1,c2,q );
+                    }
+                }
             }
 
             if ( this->expr().withPressureTerm() )
             {
+                bool faceEval = this->gmc()->faceId() != invalid_uint16_type_value;
                 if ( faceEval )
                     M_pcPressure->update( this->gmc()->pc()->nodes() );
                 M_ctxPressure->update( fusion::at_key<key_type>( geom ),  (pc_pressure_ptrtype const&) M_pcPressure );
@@ -183,17 +185,29 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
 
             if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
             {
-                if ( upGradVelocity )
-                    M_pcVelocity->update( this->gmc()->pc()->nodes() );
                 if ( this->expr().withPressureTerm() )
                     M_pcPressure->update( this->gmc()->pc()->nodes() );
             }
-            //this->update( geom, upGradVelocity );
+
             if ( upGradVelocity )
             {
-                M_ctxVelocity->update( fusion::at_key<key_type>( geom ),  (pc_velocity_ptrtype const&) M_pcVelocity );
-                std::fill( M_locGradVelocity.data(), M_locGradVelocity.data()+M_locGradVelocity.num_elements(), this->M_zeroLocTensor2 );
-                this->expr().velocity().grad( *M_ctxVelocity, M_locGradVelocity );
+                M_tensorExprGradVelocity.update( geom, face );
+                M_locGradVelocity.resize( this->gmc()->nPoints() );
+                for ( int q=0;q< this->gmc()->nPoints();++q )
+                {
+                    if constexpr ( false /*expr_type::expr_grad_velocity_type::is_terminal*/ )
+                    {
+                        M_locGradVelocity[q] = M_tensorExprGradVelocity.evalq( q );
+                    }
+                    else
+                    {
+                        typename super_type::loc_tensor2_type& locData = M_locGradVelocity[q];
+                        locData = this->M_zeroLocTensor2;
+                        for (int c1=0;c1<super_type::shape_tensor2::M;++c1 )
+                            for (int c2=0;c2<super_type::shape_tensor2::N;++c2 )
+                                locData(c1,c2) = M_tensorExprGradVelocity.evalq( c1,c2,q );
+                    }
+                }
             }
 
             if ( this->expr().withPressureTerm() )
@@ -270,8 +284,8 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
 
         expr_type const& M_expr;
 
-        pc_velocity_ptrtype M_pcVelocity;
-        ctx_velocity_ptrtype M_ctxVelocity;
+        tensor_expr_grad_velocity_type M_tensorExprGradVelocity;
+
         pc_pressure_ptrtype M_pcPressure;
         ctx_pressure_ptrtype M_ctxPressure;
 
@@ -348,8 +362,8 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             std::fill( M_locMuP0.data(), M_locMuP0.data()+M_locMuP0.num_elements(), this->M_zeroLocScalar );
             this->expr().viscosityModelDesc().fieldMu().id( *M_ctxMuP0, M_locMuP0 );
 
-            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type::Zero() );
-            updateImpl( mpl::int_<gmc_type::nDim>()/*, expr_type::specific_expr_type()*/ );
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
+            updateImpl( mpl::int_<super_type::shape_type::nDim>() );
         }
 
         void updateImpl( mpl::int_<2> /**/ )
@@ -423,7 +437,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         {
             return evalijq( i,j,q,
                             mpl::bool_< expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN >(),
-                            mpl::int_<expr_type::nRealDim>() );
+                            mpl::int_<super_type::shape_type::nDim>() );
         }
         Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::false_ /**/, mpl::int_<2> /**/ ) const
@@ -524,16 +538,16 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         {
             super_type::updateCommon( geom, expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL );
             M_muExprTensor.update( geom );
-            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type::Zero() );
-            updateImpl( mpl::int_<gmc_type::nDim>()/*, expr_type::specific_expr_type()*/ );
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
+            updateImpl( mpl::int_<super_type::shape_type::nDim>() );
         }
 
         void update( Geo_t const& geom, uint16_type face ) override
         {
             super_type::updateCommon( geom, face, expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL );
             M_muExprTensor.update( geom, face );
-            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type::Zero() );
-            updateImpl( mpl::int_<gmc_type::nDim>()/*, expr_type::specific_expr_type()*/ );
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
+            updateImpl( mpl::int_<super_type::shape_type::nDim>() );
         }
 
         void updateImpl( mpl::int_<2> /**/ )
@@ -607,7 +621,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         {
             return evalijq( i,j,q,
                             mpl::bool_< expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN >(),
-                            mpl::int_<expr_type::nRealDim>() );
+                            mpl::int_<super_type::shape_type::nDim/*expr_type::nRealDim*/>() );
         }
         Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::false_ /**/, mpl::int_<2> /**/ ) const
@@ -713,17 +727,17 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         {
             super_type::updateCommon( geom );
 
-            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
-            M_muIsInInterval.resize( this->locRes().num_elements() );
-            updateImpl( mpl::int_<expr_type::nRealDim>() );
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
+            M_muIsInInterval.resize( this->locRes().size() );
+            updateImpl( mpl::int_<super_type::shape_type::nDim>() );
         }
         void update( Geo_t const& geom, uint16_type face ) override
         {
             super_type::updateCommon( geom, face );
 
-            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
-            M_muIsInInterval.resize( this->locRes().num_elements() );
-            updateImpl( mpl::int_<expr_type::nRealDim>() );
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
+            M_muIsInInterval.resize( this->locRes().size() );
+            updateImpl( mpl::int_<super_type::shape_type::nDim>() );
         }
 
         void updateImpl( mpl::int_<2> /**/ )
@@ -852,7 +866,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         {
             return evalijq( i,j,q,
                             mpl::bool_< expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN >(),
-                            mpl::int_<expr_type::nRealDim>() );
+                            mpl::int_<super_type::shape_type::nDim/*expr_type::nRealDim*/>() );
         }
         Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::false_ /**/, mpl::int_<2> /**/ ) const
@@ -1002,15 +1016,15 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         {
             super_type::updateCommon( geom );
 
-            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type::Zero() );
-            updateImpl( mpl::int_<expr_type::nRealDim>() );
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
+            updateImpl( mpl::int_<super_type::shape_type::nDim>() );
         }
         void update( Geo_t const& geom, uint16_type face ) override
         {
             super_type::updateCommon( geom, face );
 
-            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type::Zero() );
-            updateImpl( mpl::int_<expr_type::nRealDim>() );
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
+            updateImpl( mpl::int_<super_type::shape_type::nDim>() );
         }
 
         void updateImpl( mpl::int_<2> /**/ )
@@ -1122,7 +1136,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         {
             return evalijq( i,j,q,
                             mpl::bool_< expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN >(),
-                            mpl::int_<expr_type::nRealDim>() );
+                            mpl::int_<super_type::shape_type::nDim>() );
         }
         Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N> const&
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::false_ /**/, mpl::int_<2> /**/ ) const
@@ -1254,16 +1268,16 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         {
             super_type::updateCommon( geom );
 
-            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type::Zero() );
-            updateImpl( mpl::int_<expr_type::nRealDim>() );
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
+            updateImpl( mpl::int_<super_type::shape_type::nDim>() );
         }
 
         void update( Geo_t const& geom, uint16_type face ) override
         {
             super_type::updateCommon( geom, face );
 
-            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type::Zero() );
-            updateImpl( mpl::int_<expr_type::nRealDim>() );
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
+            updateImpl( mpl::int_<super_type::shape_type::nDim>() );
         }
 
         void updateImpl( mpl::int_<2> /**/ )
@@ -1386,7 +1400,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             //return evalijq( i,j,q,mpl::int_<expr_type::nRealDim>() );
             return evalijq( i,j,q,
                             mpl::bool_< expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN >(),
-                            mpl::int_<expr_type::nRealDim>() );
+                            mpl::int_<super_type::shape_type::nDim/*expr_type::nRealDim*/>() );
         }
         using super_type::evalijq; // fix clang warning
 
@@ -1497,7 +1511,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
  * @author Vincent Chabannes
  * @see
  */
-template<typename ElementVelocityType, typename ElementPressureType, typename ViscosityModelType, typename SpecificExprType, int QuadOrder>
+template<typename ExprGradVelocityType, typename FiniteElementVelocityType, typename ElementPressureType, typename ViscosityModelType, typename SpecificExprType>
 class FluidMecStressTensorImpl
 {
 public:
@@ -1506,23 +1520,18 @@ public:
      */
     //@{
 
-    typedef FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ViscosityModelType,SpecificExprType,QuadOrder> this_type;
+    typedef FluidMecStressTensorImpl<ExprGradVelocityType,FiniteElementVelocityType,ElementPressureType,ViscosityModelType,SpecificExprType> this_type;
 
     static const size_type context_velocity = vm::JACOBIAN|vm::KB|vm::GRAD;
     static const size_type context_pressure = vm::JACOBIAN;
     static const size_type context_muP0 = vm::JACOBIAN;
     static const size_type context = context_velocity;
 
-    typedef ElementVelocityType element_velocity_type;
+    typedef ExprGradVelocityType expr_grad_velocity_type;
     typedef ElementPressureType element_pressure_type;
     typedef ViscosityModelType viscosity_model_type;
     typedef typename viscosity_model_type::element_type element_muP0_type;
     typedef SpecificExprType specific_expr_type;
-    //------------------------------------------------------------------------------//
-    // displacement functionspace
-    typedef typename element_velocity_type::functionspace_type functionspace_velocity_type;
-    typedef typename functionspace_velocity_type::reference_element_type* fe_velocity_ptrtype;
-    typedef typename functionspace_velocity_type::reference_element_type fe_velocity_type;
     //------------------------------------------------------------------------------//
     // pressure functionspace
     typedef typename element_pressure_type::functionspace_type functionspace_pressure_type;
@@ -1533,25 +1542,14 @@ public:
     typedef typename functionspace_muP0_type::reference_element_type fe_muP0_type;
     //------------------------------------------------------------------------------//
     // expression desc
-    typedef typename functionspace_velocity_type::geoelement_type geoelement_type;
+    typedef typename functionspace_pressure_type/*functionspace_velocity_type*/::geoelement_type geoelement_type;
     //typedef typename functionspace_velocity_type::gm_type gm_type;
-    typedef typename functionspace_velocity_type::value_type value_type;
+    typedef typename functionspace_pressure_type/*functionspace_velocity_type*/::value_type value_type;
     typedef value_type evaluate_type;
-    static const uint16_type nDim = fe_velocity_type::nDim;
-    static const uint16_type nRealDim = fe_velocity_type::nRealDim;
-    static const uint16_type rank = fe_velocity_type::rank;
-    static const uint16_type nComponents1 = fe_velocity_type::nComponents1;
-    static const uint16_type nComponents2 = fe_velocity_type::nComponents2;
+
     static const bool is_terminal = true;
 
-    static const uint16_type ordervelocity = functionspace_velocity_type::basis_type::nOrder;
     static const uint16_type orderpressure = functionspace_pressure_type::basis_type::nOrder;
-
-    //QuadOrder
-    static const uint16_type imorderAuto = mpl::if_<boost::is_same<SpecificExprType,mpl::int_<FMSTExprApplyType::FM_ST_EVAL> >,
-                                                typename mpl::max< mpl::int_<ordervelocity-1>, mpl::int_<orderpressure> >::type,
-                                                mpl::int_<ordervelocity-1> >::type::value;
-
 
     template<typename Func>
     struct HasTestFunction
@@ -1563,7 +1561,7 @@ public:
     struct HasTrialFunction
     {
         static const bool result = mpl::if_<boost::is_same<SpecificExprType,mpl::int_<FMSTExprApplyType::FM_ST_JACOBIAN> >,
-                                            typename mpl::if_<boost::is_same<Func,fe_velocity_type>,
+                                            typename mpl::if_<boost::is_same<Func,FiniteElementVelocityType>,
                                                               mpl::bool_<true>,
                                                               mpl::bool_<false> >::type,
                                             mpl::bool_<false> >::type::value;
@@ -1579,24 +1577,27 @@ public:
      */
     //@{
 
-    FluidMecStressTensorImpl( element_velocity_type const & u, element_pressure_type const& p,
+    FluidMecStressTensorImpl( expr_grad_velocity_type const& exprGradVelocity, element_pressure_type const& p,
                               viscosity_model_type const& viscosityModelDesc, std::string const& matName,
+                              uint16_type polyOrder,
                               bool withPressure, bool useNewNewtonianVersion )
         :
-        M_velocity( boost::cref(u) ),
+        M_exprGradVelocity( exprGradVelocity ),
         M_pressure( boost::cref(p) ),
         M_viscosityModelDesc( viscosityModelDesc ),
         M_matName( matName ),
+        M_polynomialOrder( polyOrder ),
         M_withPressureTerm( withPressure ),
         M_useNewNewtonianVersion( useNewNewtonianVersion )
     {}
 
     FluidMecStressTensorImpl( FluidMecStressTensorImpl const & op )
         :
-        M_velocity( op.M_velocity ),
+        M_exprGradVelocity( op.M_exprGradVelocity ),
         M_pressure( op.M_pressure ),
         M_viscosityModelDesc( op.M_viscosityModelDesc ),
         M_matName( op.M_matName ),
+        M_polynomialOrder( op.M_polynomialOrder ),
         M_withPressureTerm( op.M_withPressureTerm ),
         M_useNewNewtonianVersion( op.M_useNewNewtonianVersion )
     {}
@@ -1632,12 +1633,29 @@ public:
     //@{
 
     //! polynomial order
-    uint16_type polynomialOrder() const { return (QuadOrder>=0)?QuadOrder:imorderAuto; }
+    uint16_type polynomialOrder() const
+        {
+            if ( M_polynomialOrder != invalid_uint16_type_value )
+                return M_polynomialOrder;
+            uint16_type orderGradVelocity = M_exprGradVelocity.polynomialOrder();
+            if ( this->dynamicViscosity().isNewtonianLaw() )
+            {
+                if ( SpecificExprType::value == FMSTExprApplyType::FM_VISCOSITY_EVAL )
+                    return this->dynamicViscosity().newtonian().expr().polynomialOrder();
+                else if ( SpecificExprType::value == FMSTExprApplyType::FM_ST_EVAL )
+                    return std::max( orderGradVelocity, orderpressure );
+                else
+                    return orderGradVelocity;
+            }
+            else
+                return 2*(orderGradVelocity+1);
+        }
 
     //! expression is polynomial?
     bool isPolynomial() const { return true; }
 
-    element_velocity_type const& velocity() const { return M_velocity; }
+    expr_grad_velocity_type const& expressionGradVelocity() const { return M_exprGradVelocity; }
+
     element_pressure_type const& pressure() const { return M_pressure; }
     viscosity_model_type const& viscosityModelDesc() const { return M_viscosityModelDesc; }
     auto const& dynamicViscosity() const { return M_viscosityModelDesc.dynamicViscosity( M_matName ); }
@@ -1646,13 +1664,10 @@ public:
     //@}
 
 
-
-
-
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {
-        typedef typename element_velocity_type::value_type value_type;
+        typedef typename element_pressure_type/*element_velocity_type*/::value_type value_type;
 
         // geomap context
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, Feel::vf::detail::gmc<0> >,
@@ -1664,10 +1679,8 @@ public:
 
         //----------------------------------------------------------------------------------------------------//
 
-        typedef typename detail::GetShapeExpr<this_type::nRealDim, SpecificExprType>::shape_type shape;
-
-        // typedef Eigen::Matrix<value_type,shape::M,shape::N> matrix_shape_type;
-        //typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> locAssembly_LinearForm_type;
+        typedef typename this_type::expr_grad_velocity_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_grad_velocity_type;
+        typedef typename detail::GetShapeExpr<tensor_expr_grad_velocity_type::shape::nDim, SpecificExprType>::shape_type shape;
 
         //----------------------------------------------------------------------------------------------------//
 
@@ -1809,10 +1822,11 @@ public:
     };
 
 private:
-    boost::reference_wrapper<const element_velocity_type> M_velocity;
+    expr_grad_velocity_type M_exprGradVelocity;
     boost::reference_wrapper<const element_pressure_type> M_pressure;
     viscosity_model_type const& M_viscosityModelDesc;
     std::string M_matName;
+    uint16_type M_polynomialOrder;
     bool M_withPressureTerm;
     bool M_useNewNewtonianVersion;
 };
@@ -1822,34 +1836,34 @@ private:
  * \brief det of the expression tensor
  */
 
-template<int QuadOrder=-1,class ElementVelocityType,class ElementPressureType, class ViscosityModelType >
+template<class ExprGradVelocityType,class ElementPressureType, class ViscosityModelType >
 inline
-Expr< FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_ST_EVAL>,QuadOrder > >
-fluidMecNewtonianStressTensor( ElementVelocityType const& u, ElementPressureType const& p,
-                               ViscosityModelType const& viscosityModelDesc, std::string const& matName, bool withPressure, bool useNewNewtonianVersion = false )
+Expr< FluidMecStressTensorImpl<Expr<ExprGradVelocityType>,std::nullptr_t,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_ST_EVAL> > >
+fluidMecNewtonianStressTensor( Expr<ExprGradVelocityType> const& grad_u, ElementPressureType const& p,
+                               ViscosityModelType const& viscosityModelDesc, std::string const& matName, bool withPressure, uint16_type polyOrder = invalid_uint16_type_value, bool useNewNewtonianVersion = false )
 {
-    typedef FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_ST_EVAL>, QuadOrder > fmstresstensor_t;
-    return Expr< fmstresstensor_t >(  fmstresstensor_t( u,p,viscosityModelDesc,matName,withPressure,useNewNewtonianVersion ) );
+    typedef FluidMecStressTensorImpl<Expr<ExprGradVelocityType>,std::nullptr_t,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_ST_EVAL> > fmstresstensor_t;
+    return Expr< fmstresstensor_t >(  fmstresstensor_t( grad_u,p,viscosityModelDesc,matName,polyOrder,withPressure,useNewNewtonianVersion ) );
 }
 
-template<int QuadOrder=-1,class ElementVelocityType,class ElementPressureType, class ViscosityModelType >
+template<class ExprGradVelocityType,class ElementVelocityType,class ElementPressureType, class ViscosityModelType >
 inline
-Expr< FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_ST_JACOBIAN>,QuadOrder > >
-fluidMecNewtonianStressTensorJacobian( ElementVelocityType const& u, ElementPressureType const& p,
-                                       ViscosityModelType const& viscosityModelDesc, std::string const& matName, bool useNewNewtonianVersion = false )
+Expr< FluidMecStressTensorImpl<Expr<ExprGradVelocityType>,typename ElementVelocityType::functionspace_type::reference_element_type,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_ST_JACOBIAN> > >
+fluidMecNewtonianStressTensorJacobian( Expr<ExprGradVelocityType> const& grad_u, ElementVelocityType const& /*u*/, ElementPressureType const& p,
+                                       ViscosityModelType const& viscosityModelDesc, std::string const& matName, uint16_type polyOrder = invalid_uint16_type_value, bool useNewNewtonianVersion = false )
 {
-    typedef FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_ST_JACOBIAN>, QuadOrder > fmstresstensor_t;
-    return Expr< fmstresstensor_t >(  fmstresstensor_t( u,p,viscosityModelDesc,matName,false,useNewNewtonianVersion ) );
+    typedef FluidMecStressTensorImpl<Expr<ExprGradVelocityType>,typename ElementVelocityType::functionspace_type::reference_element_type,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_ST_JACOBIAN> > fmstresstensor_t;
+    return Expr< fmstresstensor_t >(  fmstresstensor_t( grad_u,p,viscosityModelDesc,matName,polyOrder,false,useNewNewtonianVersion ) );
 }
 
-template<int QuadOrder=-1,class ElementVelocityType,class ElementPressureType, class ViscosityModelType >
+template<class ExprGradVelocityType,class ElementPressureType, class ViscosityModelType >
 inline
-Expr< FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_VISCOSITY_EVAL>,QuadOrder > >
-fluidMecViscosity( ElementVelocityType const& u, ElementPressureType const& p,
-                   ViscosityModelType const& viscosityModelDesc, std::string const& matName, bool useNewNewtonianVersion = false )
+Expr< FluidMecStressTensorImpl<Expr<ExprGradVelocityType>,std::nullptr_t,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_VISCOSITY_EVAL> > >
+fluidMecViscosity( Expr<ExprGradVelocityType> const& grad_u, ElementPressureType const& p,
+                   ViscosityModelType const& viscosityModelDesc, std::string const& matName, uint16_type polyOrder = invalid_uint16_type_value, bool useNewNewtonianVersion = false )
 {
-    typedef FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_VISCOSITY_EVAL>, QuadOrder > fmstresstensor_t;
-    return Expr< fmstresstensor_t >(  fmstresstensor_t( u,p,viscosityModelDesc,matName,false,useNewNewtonianVersion ) );
+    typedef FluidMecStressTensorImpl<Expr<ExprGradVelocityType>,std::nullptr_t,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_VISCOSITY_EVAL> > fmstresstensor_t;
+    return Expr< fmstresstensor_t >(  fmstresstensor_t( grad_u,p,viscosityModelDesc,matName,polyOrder,false,useNewNewtonianVersion ) );
 }
 
 
