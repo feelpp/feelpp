@@ -68,6 +68,7 @@ namespace FeelModels
 
         typedef Eigen::Matrix<value_type,shape_type::M,shape_type::N> matrix_shape_type;
         typedef boost::multi_array<matrix_shape_type,1> array_shape_type;
+        typedef Eigen::Matrix<matrix_shape_type,Eigen::Dynamic,1> new_array_shape_type;
 
         // shapes used
         typedef Shape<shape_type::nDim, Scalar, false, false> shape_scalar;
@@ -88,7 +89,8 @@ namespace FeelModels
         typedef Shape<shape_type::nDim, Tensor2, false, false> shape_tensor2;
         //typedef Eigen::Matrix<value_type,shape_tensor2::M,shape_tensor2::N> loc_tensor2_type;
         typedef Eigen::Tensor<value_type,2> loc_tensor2_type;
-        typedef boost::multi_array<loc_tensor2_type,1> array_tensor2_type;
+        typedef boost::multi_array<loc_tensor2_type,1> array_tensor2_type; // TO REMOVE
+        typedef Eigen::Matrix<loc_tensor2_type,Eigen::Dynamic,1> new_array_tensor2_type;
 
         typedef Eigen::Matrix<value_type,shape_tensor2::M,shape_tensor2::N> loc_matrix_tensor2_type;
         typedef boost::multi_array<loc_matrix_tensor2_type,1> array_matrix_tensor2_type;
