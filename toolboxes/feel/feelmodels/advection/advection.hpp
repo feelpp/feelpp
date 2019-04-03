@@ -302,8 +302,8 @@ public :
     element_advection_type & fieldSolution() { return *M_fieldSolution; }
     element_advection_type const& fieldSolution() const { return *M_fieldSolution; }
 
-    element_advection_velocity_type const& fieldAdvectionVelocity() const { return *M_fieldAdvectionVelocity; }
-    element_advection_velocity_ptrtype const& fieldAdvectionVelocityPtr() const { return M_fieldAdvectionVelocity; }
+    element_advection_velocity_ptrtype const& fieldAdvectionVelocityPtr() const;
+    element_advection_velocity_type const& fieldAdvectionVelocity() const { return *(this->fieldAdvectionVelocityPtr()); }
 
     //--------------------------------------------------------------------//
     // Algebraic data
@@ -452,8 +452,9 @@ protected:
     // Advection velocity
     space_advection_velocity_ptrtype M_XhAdvectionVelocity;
     element_advection_velocity_ptrtype M_fieldAdvectionVelocity;
-    boost::optional<vector_field_expression<nDim,1,2> > M_exprAdvectionVelocity;
     function_assembly_linear_type M_functionAssemblyLinearAdvection;
+    bool M_doProjectFieldAdvectionVelocity;
+    std::function<void ()> M_functionProjectFieldAdvectionVelocity;
     //--------------------------------------------------------------------//
     // Physical parameters (diffusivity and reaction coefficient)
     diffusionreaction_model_ptrtype M_diffusionReactionModel;
@@ -509,11 +510,15 @@ void
 AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateAdvectionVelocity(
         vf::Expr<ExprT> const& v_expr)
 {
-    M_exprAdvectionVelocity.reset(); // remove symbolic expr
-    M_fieldAdvectionVelocity->on(_range=elements(this->mesh()), _expr=v_expr );
+    //M_exprAdvectionVelocity.reset(); // remove symbolic expr
+    //M_fieldAdvectionVelocity->on(_range=elements(this->mesh()), _expr=v_expr );
     M_functionAssemblyLinearAdvection = [v_expr, this]( DataUpdateLinear & data ) { 
         this->updateLinearPDEAdvection( data, v_expr );
     };
+    M_functionProjectFieldAdvectionVelocity = [v_expr, this]() {
+        this->M_fieldAdvectionVelocity->on(_range=this->rangeMeshElements(), _expr=v_expr );
+    };
+    M_doProjectFieldAdvectionVelocity = true;
 }
 
 template< 

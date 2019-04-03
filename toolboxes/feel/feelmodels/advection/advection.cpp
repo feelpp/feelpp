@@ -39,6 +39,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::AdvDiffReac(
     super_type( prefix, worldComm, subPrefix, modelRep ),
     M_isUpdatedForUse(false),
     M_diffusionReactionModel( new diffusionreaction_model_type( prefix ) ),
+    M_doProjectFieldAdvectionVelocity( false ),
     M_gamma1(std::pow(nOrder, -3.5))
 {
     this->loadParametersFromOptionsVm();
@@ -385,10 +386,11 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initOthers()
     if ( Environment::vm().count(prefixvm(this->prefix(),"advection-velocity").c_str()) )
     {
         std::string pathGinacExpr = this->repository().expr() + "/advection-velocity";
-        M_exprAdvectionVelocity = expr<nDim,1>( soption(_prefix=this->prefix(),_name="advection-velocity"),
+        vector_field_expression<nDim,1,2> exprAdvectionVelocity = expr<nDim,1>( soption(_prefix=this->prefix(),_name="advection-velocity"),
                                                                  this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
         //this->updateFieldVelocityConvection();
-        M_fieldAdvectionVelocity->on( _range=this->rangeMeshElements(), _expr=*M_exprAdvectionVelocity );
+        this->updateAdvectionVelocity( exprAdvectionVelocity );
+        //M_fieldAdvectionVelocity->on( _range=this->rangeMeshElements(), _expr=*M_exprAdvectionVelocity );
     }
 
     // Source term
@@ -618,6 +620,18 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
     for ( bool hasExt : M_Xh->extendedDofTableComposite() )
         useExtendedDofTable = useExtendedDofTable || hasExt;
     return useExtendedDofTable;
+}
+
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+typename ADVDIFFREAC_CLASS_TEMPLATE_TYPE::element_advection_velocity_ptrtype const&
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::fieldAdvectionVelocityPtr() const
+{
+    if( M_doProjectFieldAdvectionVelocity )
+    {
+       const_cast<self_type*>(this)->M_functionProjectFieldAdvectionVelocity();
+    }
+
+    return M_fieldAdvectionVelocity;
 }
 
 //----------------------------------------------------------------------------//
@@ -1097,16 +1111,18 @@ ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity( element_advection_velocity_ptrtype const& u )
 {
-    M_exprAdvectionVelocity.reset(); // remove symbolic expr
-    M_fieldAdvectionVelocity = u;
+    this->updateAdvectionVelocity( *u );
 }
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity( element_advection_velocity_type const& u )
 {
-    M_exprAdvectionVelocity.reset(); // remove symbolic expr
+    //M_exprAdvectionVelocity.reset(); // remove symbolic expr
     *M_fieldAdvectionVelocity = u;
+    M_functionAssemblyLinearAdvection = [this]( DataUpdateLinear & data ) { 
+        this->updateLinearPDEAdvection( data, idv(this->M_fieldAdvectionVelocity) );
+    };
 }
 
 
