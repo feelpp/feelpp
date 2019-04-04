@@ -92,15 +92,15 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleCstPart()
 
     auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
-    auto H = M_M0h->element( "H" );
-    if ( M_hFace == 0 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
-    else if ( M_hFace == 1 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
-    else if ( M_hFace == 2 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
-    else
-        H.on( _range=elements(M_M0h->mesh()), _expr=h() );
+    // auto H = M_M0h->element( "H" );
+    // if ( M_hFace == 0 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
+    // else if ( M_hFace == 1 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
+    // else if ( M_hFace == 2 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
+    // else
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=h() );
     // stabilisation parameter
     auto tau_constant = cst(M_tauCst);
 
@@ -124,9 +124,9 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleCstPart()
 
     // <phat,v.n>_Gamma\Gamma_I
     bbf( 0_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=( idt(phat)*leftface(trans(id(v))*N())+idt(phat)*rightface(trans(id(v))*N())) );
+                                 _expr=( idt(phat)*(leftface(normal(v))+rightface(normal(v)))) );
     bbf( 0_c, 2_c ) += integrate(_range=gammaMinusIntegral,
-                                 _expr=idt(phat)*trans(id(v))*N());
+                                 _expr=idt(phat)*normal(v));
 
     // (div(j),q)_Omega
     bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=- (id(w)*divt(u)));
@@ -135,35 +135,34 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleCstPart()
     // <tau p, w>_Gamma
     bbf( 1_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
                                  _expr=-tau_constant *
-                                 ( leftfacet( pow(idv(H),M_tauOrder)*idt(p))*leftface(id(w)) +
-                                   rightfacet( pow(idv(H),M_tauOrder)*idt(p))*rightface(id(w) )));
+                                 ( leftfacet( idt(p))*leftface(id(w)) +
+                                   rightfacet( idt(p))*rightface(id(w) )));
     bbf( 1_c, 1_c ) += integrate(_range=boundaryfaces(M_mesh),
-                                 _expr=-(tau_constant * pow(idv(H),M_tauOrder)*id(w)*idt(p)));
+                                 _expr=-(tau_constant * id(w)*idt(p)));
 
 
     // <-tau phat, w>_Gamma\Gamma_I
     bbf( 1_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
                                  _expr=tau_constant * idt(phat) *
-                                 ( leftface( pow(idv(H),M_tauOrder)*id(w) )+
-                                   rightface( pow(idv(H),M_tauOrder)*id(w) )));
+                                 ( leftface( id(w) )+
+                                   rightface( id(w) )));
     bbf( 1_c, 2_c ) += integrate(_range=gammaMinusIntegral,
-                                 _expr=tau_constant * idt(phat) * pow(idv(H),M_tauOrder)*id(w) );
+                                 _expr=tau_constant * idt(phat) * id(w) );
 
 
     // <j.n,mu>_Omega/Gamma
     bbf( 2_c, 0_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
-                                                rightfacet(trans(idt(u))*N())) ) );
+                                 _expr=( id(l)*(leftfacet(normalt(u))+
+                                                rightfacet(normalt(u))) ) );
 
     // <tau p, mu>_Omega/Gamma
     bbf( 2_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=tau_constant * id(l) * ( leftfacet( pow(idv(H),M_tauOrder)*idt(p) )+
-                                                                rightfacet( pow(idv(H),M_tauOrder)*idt(p) )));
+                                 _expr=tau_constant * id(l) * ( leftfacet( idt(p) )+
+                                                                rightfacet( idt(p) )));
 
     // <-tau phat, mu>_Omega/Gamma
     bbf( 2_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=-sc_param*tau_constant * idt(phat) * id(l) * ( leftface( pow(idv(H),M_tauOrder) )+
-                                                                                      rightface( pow(idv(H),M_tauOrder) )));
+                                 _expr=-sc_param*tau_constant * idt(phat) * id(l) );
 
     this->assembleBoundaryCond();
 }
@@ -583,29 +582,29 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleNeumann( std::string marker)
     auto p = M_Wh->element( "p" );
     auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
-    auto H = M_M0h->element( "H" );
+    // auto H = M_M0h->element( "H" );
 
-    if ( M_hFace == 0 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
-    else if ( M_hFace == 1 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
-    else if ( M_hFace == 2 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
-    else
-        H.on( _range=elements(M_M0h->mesh()), _expr=h() );
+    // if ( M_hFace == 0 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
+    // else if ( M_hFace == 1 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
+    // else if ( M_hFace == 2 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
+    // else
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=h() );
 
     // stabilisation parameter
     auto tau_constant = cst(M_tauCst);
 
     // <j.n,mu>_Gamma_N
     bbf( 2_c, 0_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=( id(l)*(trans(idt(u))*N()) ));
+                                 _expr=id(l)*normalt(u) );
     // <tau p, mu>_Gamma_N
     bbf( 2_c, 1_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=tau_constant * id(l) * ( pow(idv(H),M_tauOrder)*idt(p) ) );
+                                 _expr=tau_constant * id(l) * idt(p) );
     // <-tau phat, mu>_Gamma_N
     bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tauOrder) ) );
+                                 _expr=-tau_constant * idt(phat) * id(l) );
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
@@ -621,17 +620,17 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleIBC( int i, std::string markerOpt )
     auto nu = M_Ch->element( "nu" );
     auto uI = M_Ch->element( "uI" );
 
-    auto H = M_M0h->element( "H" );
+    // auto H = M_M0h->element( "H" );
 
 
-    if ( ioption(prefixvm(this->prefix(), "hface") ) == 0 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
-    else if ( ioption(prefixvm(this->prefix(), "hface") ) == 1 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
-    else if ( ioption(prefixvm(this->prefix(), "hface") ) == 2 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
-    else
-        H.on( _range=elements(M_M0h->mesh()), _expr=h() );
+    // if ( ioption(prefixvm(this->prefix(), "hface") ) == 0 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
+    // else if ( ioption(prefixvm(this->prefix(), "hface") ) == 1 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
+    // else if ( ioption(prefixvm(this->prefix(), "hface") ) == 2 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
+    // else
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=h() );
 
     // stabilisation parameter
     auto tau_constant = cst(M_tauCst);
@@ -653,23 +652,23 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleIBC( int i, std::string markerOpt )
 
     // <lambda, v.n>_Gamma_I
     bbf( 0_c, 3_c, 0, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr= idt(uI) * (trans(id(u))*N()) );
+                                        _expr= idt(uI) * normal(u) );
 
     // <lambda, tau w>_Gamma_I
     bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=tau_constant * idt(uI) * id(w) * ( pow(idv(H),M_tauOrder)) );
+                                        _expr=tau_constant * idt(uI) * id(w) );
 
     // <j.n, m>_Gamma_I
-    bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), _expr=(trans(idt(u))*N()) * id(nu) );
+    bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), _expr=normalt(u) * id(nu) );
 
 
     // <tau p, m>_Gamma_I
     bbf( 3_c, 1_c, i, 1 ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=tau_constant *idt(p)  * id(nu)* ( pow(idv(H),M_tauOrder)) );
+                                        _expr=tau_constant *idt(p)  * id(nu) );
 
     // -<lambda2, m>_Gamma_I
     bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=-tau_constant * id(nu) *idt(uI)* (pow(idv(H),M_tauOrder)) );
+                                        _expr=-tau_constant * id(nu) *idt(uI) );
 
 
 }
