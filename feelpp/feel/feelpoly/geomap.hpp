@@ -595,9 +595,17 @@ class GeoMap
         return true;
     }
     //! @return true if geomap data are cache for element @p e, false otherwise
-    bool cached( int e ) const
+    bool cachedK( int e ) const
     {
         return M_K.count( e ) > 0;
+    }
+    bool cachedB( int e ) const
+    {
+        return M_B.count( e ) > 0;
+    }
+    bool cachedJ( int e ) const
+    {
+        return M_J.count( e ) > 0;
     }
     //! return jacobian at element @p e
     value_type J( int e ) const
@@ -629,46 +637,69 @@ class GeoMap
             M_K[e]=K;
         }
     template<typename G = self_type>
-    bool cache( int e,
-                eigen_matrix_type<nRealDim,nDim,value_type>& K,
-                eigen_matrix_type<nRealDim,nDim,value_type>& B,
-                value_type& J,
-                std::enable_if_t<!G::is_linear || (nDim!=nRealDim)>* = nullptr )
+    bool cacheK( int e,
+                 eigen_matrix_type<nRealDim,nDim,value_type>& K )
         {
-            return false;
+            if constexpr ( G::is_linear && (nDim==nRealDim) )
+            {
+                if ( !cachedK(e) ) return false;
+                K.noalias() = M_K.at(e);
+                return true;
+            }
+            else
+                return false;
         }
     template<typename G = self_type>
-    bool cache( int e,
-                eigen_matrix_type<nRealDim,nDim,value_type>& K,
-                eigen_matrix_type<nRealDim,nDim,value_type>& B,
-                value_type& J,
-                std::enable_if_t<G::is_linear && (nDim==nRealDim)>* = nullptr )
+    bool cacheB( int e,
+                 eigen_matrix_type<nRealDim,nDim,value_type>& B )
         {
-            if ( !cached(e) ) return false;
-            K = M_K.at(e);
-            B = M_B.at(e);
-            J = M_J.at(e);
-            return true;
+            if constexpr ( G::is_linear && (nDim==nRealDim) )
+            {
+                if ( !cachedB(e) ) return false;
+                B.noalias() = M_B.at(e);
+                return true;
+            }
+            else
+                return false;
         }
     template<typename G = self_type>
-    void updateCache( int e,
-                      eigen_matrix_type<nRealDim,nDim,value_type> const& K,
-                      eigen_matrix_type<nRealDim,nDim,value_type> const& B,
-                      value_type const& J,
-                      std::enable_if_t<!G::is_linear || (nDim!=nRealDim)>* = nullptr )
+    bool cacheJ( int e, value_type& J )
         {
+            if constexpr ( G::is_linear && (nDim==nRealDim) )
+            {
+                if ( !cachedJ(e) ) return false;
+                J = M_J.at(e);
+                return true;
+            }
+            else
+                return false;
         }
     template<typename G = self_type>
-    void updateCache( int e,
-                      eigen_matrix_type<nRealDim,nDim,value_type> const& K,
-                      eigen_matrix_type<nRealDim,nDim,value_type> const & B,
-                      value_type const& J,
-                      std::enable_if_t<G::is_linear && (nDim==nRealDim)>* = nullptr )
+    void updateCacheK( int e,
+                       eigen_matrix_type<nRealDim,nDim,value_type> const& K )
         {
-            //if ( M_K.count(e) > 0 ) return false;
-            M_K[e] = K;
-            M_B[e] = B;
-            M_J[e] = J;
+            if constexpr ( G::is_linear && (nDim==nRealDim) )
+            {
+                M_K[e] = K;
+            }
+        }
+    template<typename G = self_type>
+    void updateCacheB( int e,
+                       eigen_matrix_type<nRealDim,nDim,value_type> const & B)
+        {
+            if constexpr ( G::is_linear && (nDim==nRealDim) )
+            {
+                M_B[e] = B;
+            }
+        }
+    template<typename G = self_type>
+    void updateCacheJ( int e,
+                       value_type const& J )
+        {
+            if constexpr ( G::is_linear && (nDim==nRealDim) )
+            {
+                M_J[e] = J;
+            }
         }
     void addJ( int e, value_type v )
     {
@@ -2175,7 +2206,7 @@ class GeoMap
                             //std::cout << "K[" << q << "]=" << M_K[q] << std::endl;
                             //std::cout << "B[" << q << "]=" << M_B[q] << std::endl;
                             //std::cout << "J[" << q << "]=" << M_J[q] << std::endl;
-                            if ( is_linear )
+                            if ( 0 && is_linear )
                                 M_gm->updateCache( M_id, M_K[q], M_B[q], M_J[q] );
                         }
                         if constexpr ( vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
