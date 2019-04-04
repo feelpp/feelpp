@@ -1505,102 +1505,71 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     //-------------------------------------//
     // on topological faces
     auto const& listMarkedFacesDisp = std::get<0>( meshMarkersDispByEntities );
-    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesDisp ) )
+    if ( !listMarkedFacesDisp.empty() )
     {
-        auto const& face = unwrap_ref( faceWrap );
-        auto facedof = XhDisp->dof()->faceLocalDof( face.id() );
-        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-        {
-            dofsWithValueImposedDisp.insert( it->index() );
-        }
+        auto therange = markedfaces( mesh,listMarkedFacesDisp );
+        auto dofsToAdd = XhDisp->dofs( therange );
+        dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhDisp->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("displacement",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
     // on marked edges (only 3d)
     auto const& listMarkedEdgesDisp = std::get<1>( meshMarkersDispByEntities );
-    for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesDisp ) )
+    if ( !listMarkedEdgesDisp.empty() )
     {
-        auto const& edge = unwrap_ref( edgeWrap );
-        auto itEltInfo = edge.elements().begin();
-        if ( itEltInfo == edge.elements().end() )
-            continue;
-        size_type eid = itEltInfo->first;
-        uint16_type edgeid_in_element = itEltInfo->second;
-        for( auto const& ldof : XhDisp->dof()->edgeLocalDof( eid, edgeid_in_element ) )
-        {
-            dofsWithValueImposedDisp.insert( ldof.index() );
-        }
+        auto therange = markededges(mesh,listMarkedEdgesDisp );
+        auto dofsToAdd = XhDisp->dofs( therange );
+        dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhDisp->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("displacement",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
     // on marked points
     auto const& listMarkedPointsDisp = std::get<2>( meshMarkersDispByEntities );
-    for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsDisp ) )
+    if ( !listMarkedPointsDisp.empty() )
     {
-        auto const& point = unwrap_ref( pointWrap );
-        auto itPointInfo = point.elements().begin();
-        if ( itPointInfo == point.elements().end() )
-            continue;
-        size_type eid = itPointInfo->first;
-        uint16_type ptid_in_element = itPointInfo->second;
-        for( uint16_type c = 0; c < nDofComponentsDisp; ++c )
-        {
-            size_type index = XhDisp->dof()->localToGlobal( eid, ptid_in_element, c ).index();
-            dofsWithValueImposedDisp.insert( index );
-        }
+        auto therange = markedpoints(mesh,listMarkedPointsDisp );
+        auto dofsToAdd = XhDisp->dofs( therange );
+        dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhDisp->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("displacement",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
     //-------------------------------------//
     // on disp components
     for ( auto const& meshMarkersPair : meshMarkersCompDispByEntities )
     {
         ComponentType comp = meshMarkersPair.first;
-        int compDofShift = ((int)comp);
         // topological faces
         auto const& listMarkedFacesCompDisp = std::get<0>( meshMarkersPair.second );
-        for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesCompDisp ) )
+        if ( !listMarkedFacesCompDisp.empty() )
         {
-            auto const& face = unwrap_ref( faceWrap );
-            auto facedof = XhCompDisp->dof()->faceLocalDof( face.id() );
-            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-            {
-                size_type compdof = it->index();
-                size_type thedof = compDofShift +  nDofComponentsDisp*compdof;
-                dofsWithValueImposedDisp.insert( thedof );
-            }
+            auto therange = markedfaces(mesh,listMarkedFacesCompDisp );
+            auto dofsToAdd = XhDisp->dofs( therange, comp );
+            dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
+            this->dofEliminationIdsMultiProcess("displacement",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
         // edges (only 3d)
         auto const& listMarkedEdgesCompDisp = std::get<1>( meshMarkersPair.second );
-        for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesCompDisp ) )
+        if ( !listMarkedEdgesCompDisp.empty() )
         {
-            auto const& edge = unwrap_ref( edgeWrap );
-            auto itEltInfo = edge.elements().begin();
-            if ( itEltInfo == edge.elements().end() )
-                continue;
-            size_type eid = itEltInfo->first;
-            uint16_type edgeid_in_element = itEltInfo->second;
-            for( auto const& ldof : XhCompDisp->dof()->edgeLocalDof( eid, edgeid_in_element ) )
-            {
-                size_type compdof = ldof.index();
-                size_type thedof = compDofShift + nDofComponentsDisp*compdof;
-                dofsWithValueImposedDisp.insert( ldof.index() );
-            }
+            auto therange = markededges(mesh,listMarkedEdgesCompDisp );
+            auto dofsToAdd = XhDisp->dofs( therange, comp );
+            dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
+            this->dofEliminationIdsMultiProcess("displacement",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
         // points
         auto const& listMarkedPointsCompDisp = std::get<2>( meshMarkersPair.second );
-        for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsCompDisp ) )
+        if ( !listMarkedPointsCompDisp.empty() )
         {
-            auto const& point = unwrap_ref( pointWrap );
-            auto itPointInfo = point.elements().begin();
-            if ( itPointInfo == point.elements().end() )
-                continue;
-            size_type eid = itPointInfo->first;
-            uint16_type ptid_in_element = itPointInfo->second;
-            size_type index = XhDisp->dof()->localToGlobal( eid, ptid_in_element, compDofShift ).index();
-            dofsWithValueImposedDisp.insert( index );
+            auto therange = markedpoints(mesh,listMarkedPointsCompDisp );
+            auto dofsToAdd = XhDisp->dofs( therange, comp );
+            dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
+            this->dofEliminationIdsMultiProcess("displacement",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
     }
 
-
-
-
-
-    
 
 }
 

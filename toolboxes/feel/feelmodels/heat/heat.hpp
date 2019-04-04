@@ -110,10 +110,10 @@ class Heat : public ModelNumerical,
 
 
         Heat( std::string const& prefix,
-                      bool buildMesh = true,
-                      worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
-                      std::string const& subPrefix  = "",
-                      ModelBaseRepository const& modelRep = ModelBaseRepository() );
+              std::string const& keyword = "heat",
+              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+              std::string const& subPrefix  = "",
+              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
         std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"HeatMesh.path"); }
         //___________________________________________________________________________________//
@@ -229,7 +229,7 @@ class Heat : public ModelNumerical,
                                               Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateLinear & data ) const;
 
         // non linear (newton)
-        void updateNewtonInitialGuess( vector_ptrtype& U ) const override;
+        void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
         void updateJacobian( DataUpdateJacobian & data ) const override;
         void updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool buildCstPart ) const;
         void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;

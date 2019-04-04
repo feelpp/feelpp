@@ -237,7 +237,7 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    std::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
 
     //---------------------------------------------------------------------------------------------------------//
 
@@ -308,7 +308,8 @@ public :
     void updateLinearPDE_Solid( DataUpdateLinear & data ) const;
     void updateJacobian_Solid( DataUpdateJacobian & data ) const;
     void updateResidual_Solid( DataUpdateResidual & data ) const;
-    //void updateLinearPDEStrongDirichletBC_Fluid( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+    void updateLinearPDEDofElimination_Fluid( DataUpdateLinear & data ) const;
+    void updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess & data ) const;
     //void updateJacobianStrongDirichletBC_Fluid( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
 
     void updateLinearPDE_Solid1dReduced( DataUpdateLinear & data ) const;

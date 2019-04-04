@@ -34,7 +34,7 @@
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/vectorblock.hpp>
-
+#include <feel/feelmesh/enums.hpp>
 
 namespace Feel
 {
@@ -203,11 +203,63 @@ public :
         bool M_doBCStrongDirichlet;
     };
 
+    class DataDofIdsMultiProcessModified
+    {
+    public :
+        DataDofIdsMultiProcessModified() = default;
+        DataDofIdsMultiProcessModified( DataDofIdsMultiProcessModified const& d) = default;
+        DataDofIdsMultiProcessModified( DataDofIdsMultiProcessModified && d) = default;
 
-    ModelAlgebraic( std::string _theprefix,
+        bool hasDofIdsMultiProcessModified( ElementsType e ) const { return M_dofIdsMultiProcessModified.find( e ) != M_dofIdsMultiProcessModified.end(); }
+        bool hasDofIdsMultiProcessModified() const
+            {
+                return this->hasDofIdsMultiProcessModified( MESH_ELEMENTS ) ||
+                    this->hasDofIdsMultiProcessModified( MESH_FACES ) ||
+                    this->hasDofIdsMultiProcessModified( MESH_EDGES ) ||
+                    this->hasDofIdsMultiProcessModified( MESH_POINTS );
+            }
+        std::set<size_type> const& dofIdsMultiProcessModified( ElementsType e ) const
+            {
+                CHECK( this->hasDofIdsMultiProcessModified(e) ) << "entity not registered";
+                return M_dofIdsMultiProcessModified.find( e )->second;
+            }
+        std::set<size_type> & dofIdsMultiProcessModified( ElementsType e ) { return M_dofIdsMultiProcessModified[e]; }
+        void initDofIdsMultiProcessModified( ElementsType e ) { M_dofIdsMultiProcessModified[e]; }
+        void addDofIdsMultiProcessModified( ElementsType e, size_type id ) { M_dofIdsMultiProcessModified[e].insert( id ); }
+        void addDofIdsMultiProcessModified( ElementsType e, std::set<size_type> const& ids ) { M_dofIdsMultiProcessModified[e].insert( ids.begin(), ids.end() ); }
+    private:
+        std::map<ElementsType,std::set<size_type>> M_dofIdsMultiProcessModified;
+    };
+
+    class DataNewtonInitialGuess : public DataUpdateBase, public DataDofIdsMultiProcessModified
+    {
+    public:
+        DataNewtonInitialGuess( vector_ptrtype& initialGuess )
+            :
+            DataUpdateBase(),
+            DataDofIdsMultiProcessModified(),
+            M_initialGuess( initialGuess )
+            {}
+        DataNewtonInitialGuess( DataNewtonInitialGuess const& d) = default;
+        DataNewtonInitialGuess( DataNewtonInitialGuess && d) = default;
+        vector_ptrtype & initialGuess() { return M_initialGuess; }
+
+
+    private:
+        vector_ptrtype& M_initialGuess;
+    };
+
+    ModelAlgebraic( std::string _theprefix, std::string const& keyword,
                     worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
                     std::string const& subPrefix="",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    ModelAlgebraic( std::string _theprefix,
+                    worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
+                    std::string const& subPrefix="",
+                    ModelBaseRepository const& modelRep = ModelBaseRepository() )
+        :
+        ModelAlgebraic( _theprefix, _theprefix, _worldComm, subPrefix, modelRep )
+        {}
 
     ModelAlgebraic( ModelAlgebraic const& app ) = default;
 
@@ -271,7 +323,7 @@ public :
 
     //----------------------------------------------------------------------------------//
 
-    virtual void updateNewtonInitialGuess( vector_ptrtype& U ) const;
+    virtual void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const;
     virtual void updateJacobian( DataUpdateJacobian & data ) const;
     virtual void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
     virtual void updateResidual( DataUpdateResidual & data ) const;
@@ -291,6 +343,41 @@ public :
     //----------------------------------------------------------------------------------//
     virtual void updateNewtonIteration( int step, vector_ptrtype residual, vector_ptrtype sol, typename backend_type::solvernonlinear_type::UpdateIterationData const& data ) const {}
 
+
+    //! index start of (sub-)block
+    size_type rowStartInMatrix() const { return this->startBlockSpaceIndexMatrixRow(); }
+    size_type colStartInMatrix() const { return this->startBlockSpaceIndexMatrixCol(); }
+    size_type rowStartInVector() const { return this->startBlockSpaceIndexVector(); }
+    size_type startBlockSpaceIndexMatrixRow() const { return M_startBlockSpaceIndexMatrixRow; }
+    size_type startBlockSpaceIndexMatrixCol() const { return M_startBlockSpaceIndexMatrixCol; }
+    size_type startBlockSpaceIndexVector() const { return M_startBlockSpaceIndexVector; }
+    void setStartBlockSpaceIndexMatrixRow( size_type s ) { M_startBlockSpaceIndexMatrixRow = s; }
+    void setStartBlockSpaceIndexMatrixCol( size_type s ) { M_startBlockSpaceIndexMatrixCol = s; }
+    void setStartBlockSpaceIndexVector( size_type s ) { M_startBlockSpaceIndexVector = s; }
+    void setStartBlockSpaceIndex( size_type s ) { this->setStartBlockSpaceIndexMatrixRow( s ); this->setStartBlockSpaceIndexMatrixCol( s ); this->setStartBlockSpaceIndexVector( s ); }
+
+    size_type startSubBlockSpaceIndex( std::string const& name ) const
+        {
+            auto itFind = M_startSubBlockSpaceIndex.find( name );
+            if ( itFind != M_startSubBlockSpaceIndex.end() )
+                return itFind->second;
+            return invalid_size_type_value;
+        }
+    bool hasStartSubBlockSpaceIndex( std::string const& name ) const { return (this->startSubBlockSpaceIndex( name ) != invalid_size_type_value); }
+    void setStartSubBlockSpaceIndex( std::string const& name, size_type s ) { M_startSubBlockSpaceIndex[name] = s; }
+
+    //! update data usefull for mpi synchronization of NewtonInitialGuess
+    void updateDofEliminationIdsMultiProcess( std::string const& spaceName, DataNewtonInitialGuess & data ) const;
+    void updateDofEliminationIdsMultiProcess( std::string const& spaceName, std::map<ElementsType, std::set<size_type>> const& dofIdsMultiProcess, DataNewtonInitialGuess & data ) const;
+    std::set<size_type> & dofEliminationIdsMultiProcess( std::string const& spaceName, ElementsType e ) { return M_dofEliminationIdsMultiProcess[spaceName][e]; }
+    std::map<std::string,std::map<ElementsType, std::set<size_type> > > const& dofEliminationIdsMultiProcess() const { return M_dofEliminationIdsMultiProcess; }
+    std::map<ElementsType, std::set<size_type> > const& dofEliminationIdsMultiProcess( std::string const& spaceName ) const
+        {
+            CHECK( this->hasDofEliminationIdsMultiProcess( spaceName ) ) << "no space name registered : " << spaceName;
+            return M_dofEliminationIdsMultiProcess.find( spaceName )->second;
+        }
+    bool hasDofEliminationIdsMultiProcess( std::string const& spaceName ) const { return M_dofEliminationIdsMultiProcess.find( spaceName ) != M_dofEliminationIdsMultiProcess.end(); }
+
 private :
     // verbose
     bool M_verboseSolverTimer,M_verboseSolverTimerAllProc;
@@ -306,6 +393,14 @@ private :
     // save a python script to view graph
     bool M_printGraph;
     std::string M_printGraphFileName;
+
+    //! index start of (sub-)block
+    size_type M_startBlockSpaceIndexMatrixRow, M_startBlockSpaceIndexMatrixCol, M_startBlockSpaceIndexVector;
+    std::map<std::string,size_type> M_startSubBlockSpaceIndex;
+    //! dofs eliminiation
+    std::map<std::string,std::map<ElementsType, std::set<size_type> > > M_dofEliminationIdsMultiProcess;
+
+
 };
 
 

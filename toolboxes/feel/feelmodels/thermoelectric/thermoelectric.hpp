@@ -72,7 +72,7 @@ public:
     //___________________________________________________________________________________//
     // constructor
     ThermoElectric( std::string const& prefix,
-                    bool buildMesh = true,
+                    std::string const& keyword = "thermo-electric",
                     worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                     std::string const& subPrefix = "",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
@@ -82,7 +82,7 @@ public:
 
 private :
     void loadParameterFromOptionsVm();
-    void createMesh();
+    void initMesh();
     void initPostProcess();
 public :
     // update for use
@@ -132,7 +132,7 @@ public :
 
     void updateLinearPDE( DataUpdateLinear & data ) const override;
 
-    void updateNewtonInitialGuess( vector_ptrtype& U ) const override;
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
     void updateJacobian( DataUpdateJacobian & data ) const override;
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
     void updateResidual( DataUpdateResidual & data ) const override;

@@ -34,12 +34,12 @@ namespace Feel {
 namespace FeelModels {
 
 
-ModelAlgebraic::ModelAlgebraic( std::string _theprefix,
+ModelAlgebraic::ModelAlgebraic( std::string _theprefix, std::string const& keyword,
                                 worldcomm_ptr_t const& _worldComm,
                                 std::string const& subPrefix,
                                 ModelBaseRepository const& modelRep )
     :
-    super_type( _theprefix,_worldComm,subPrefix,modelRep ),
+    super_type( _theprefix,keyword,_worldComm,subPrefix,modelRep ),
     M_verboseSolverTimer( boption(_name="verbose_solvertimer",_prefix=this->prefix()) ),
     M_verboseSolverTimerAllProc( boption(_name="verbose_solvertimer_allproc",_prefix=this->prefix()) ),
     M_rebuildCstPartInLinearSystem( boption(_name="linearsystem-cst-update",_prefix=this->prefix()) ),
@@ -50,7 +50,10 @@ ModelAlgebraic::ModelAlgebraic( std::string _theprefix,
     M_useCstVector( boption(_name="use-cst-vector",_prefix=this->prefix()) ),
     M_needToRebuildCstPart( false ),
     M_errorIfSolverNotConverged( boption(_name="error-if-solver-not-converged",_prefix=this->prefix()) ),
-    M_printGraph( boption(_name="graph-print-python",_prefix=this->prefix()) )
+    M_printGraph( boption(_name="graph-print-python",_prefix=this->prefix()) ),
+    M_startBlockSpaceIndexMatrixRow(0),
+    M_startBlockSpaceIndexMatrixCol(0),
+    M_startBlockSpaceIndexVector(0)
 {
 
     //-----------------------------------------------------------------------//
@@ -195,7 +198,7 @@ ModelAlgebraic::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
 {}
 
 void
-ModelAlgebraic::updateNewtonInitialGuess( vector_ptrtype& U ) const
+ModelAlgebraic::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {}
 void
 ModelAlgebraic::updateJacobian( DataUpdateJacobian & data ) const
@@ -222,6 +225,37 @@ double
 ModelAlgebraic::updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const
 {
     return 0.;
+}
+
+
+void
+ModelAlgebraic::updateDofEliminationIdsMultiProcess( std::string const& spaceName, DataNewtonInitialGuess & data ) const
+{
+    auto itFindDofIdsMultiProcessDirichletElimination = M_dofEliminationIdsMultiProcess.find( spaceName );
+    if ( itFindDofIdsMultiProcessDirichletElimination != M_dofEliminationIdsMultiProcess.end() )
+    {
+        auto const& dofIdsMultiProcess = itFindDofIdsMultiProcessDirichletElimination->second;
+        this->updateDofEliminationIdsMultiProcess( spaceName, dofIdsMultiProcess, data );
+    }
+}
+
+void
+ModelAlgebraic::updateDofEliminationIdsMultiProcess( std::string const& spaceName,
+                                                     std::map<ElementsType, std::set<size_type>> const& dofIdsMultiProcess,
+                                                     DataNewtonInitialGuess & data ) const
+{
+    CHECK( this->hasStartSubBlockSpaceIndex( spaceName ) ) << "no space name registered : " << spaceName;
+    int spaceIndexVector = this->startBlockSpaceIndexVector() + this->startSubBlockSpaceIndex( spaceName );
+    std::vector<ElementsType> fromEntities = { MESH_ELEMENTS, MESH_FACES, MESH_EDGES, MESH_POINTS };
+    auto dm = data.initialGuess()->mapPtr();
+    for ( ElementsType entity : fromEntities )
+    {
+        auto itFindDofIdsMultiProcessByEntity = dofIdsMultiProcess.find( entity );
+        if ( itFindDofIdsMultiProcessByEntity != dofIdsMultiProcess.end() )
+            dm->dofIdToContainerId( spaceIndexVector,itFindDofIdsMultiProcessByEntity->second,
+                                    data.dofIdsMultiProcessModified( entity ) );
+    }
+
 }
 
 
