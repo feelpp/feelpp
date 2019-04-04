@@ -26,7 +26,10 @@ runApplicationMixedPoisson( std::string  const& prefix )
 
     typedef FeelModels::MixedPoisson<nDim,OrderT> mp_type;
 
-    auto MP = mp_type::New("hdg.poisson." + prefix);
+    std::string p = "hdg.poisson";
+    if( !prefix.empty() )
+        p += "."+prefix;
+    auto MP = mp_type::New(p);
     auto mesh = loadMesh( _mesh=new typename mp_type::mesh_type );
     decltype( IPtr( _domainSpace=Pdh<OrderT>(mesh), _imageSpace=Pdh<OrderT>(mesh) ) ) Idh ;
     decltype( IPtr( _domainSpace=Pdhv<OrderT>(mesh), _imageSpace=Pdhv<OrderT>(mesh) ) ) Idhv;
@@ -70,7 +73,7 @@ int main(int argc, char *argv[])
 {
     using namespace Feel;
 
-    po::options_description mpoptions( "mixedpoisson options" );
+    po::options_description mpoptions( "hdg.poisson options" );
     mpoptions.add( FeelModels::makeMixedPoissonOptions("","hdg.poisson") );
     mpoptions.add_options()
         ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")

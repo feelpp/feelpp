@@ -245,6 +245,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
     // M_Ch = Pch<0>( M_mesh, true );
     M_M0h = Pdh<0>( face_mesh );
 
+    // we need one space per ibc
     std::vector<std::string> ibc_markers(M_integralCondition);
     for( int i = 0; i < M_integralCondition; i++)
     {
