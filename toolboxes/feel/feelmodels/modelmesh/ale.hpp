@@ -30,6 +30,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 
 #include <feel/feelmodels/modelcore/modelbase.hpp>
+#include <feel/feelmodels/modelmesh/metricmeshadaptation.hpp>
 
 namespace Feel
 {
@@ -78,14 +79,16 @@ public:
     typedef typename MyReferenceFunctionSpace<orderUse>::elt_type ale_map_element_type;
 
 
+    typedef MetricMeshAdaptation<convex_type> metricmeshadaptation_type;
+    typedef std::shared_ptr<metricmeshadaptation_type> metricmeshadaptation_ptrtype;
+
     /**
      * constructor,copy,desctructor
      */
     ALE( mesh_ptrtype mesh, std::string prefix="",
          worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
-         bool moveGhostEltFromExtendedStencil=false,
          ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    ALE( ALE const& tc );
+    ALE( ALE const& tc ) = default;
     //~ALE();
 
     /**
@@ -93,7 +96,6 @@ public:
      */
     static self_ptrtype build(mesh_ptrtype mesh, std::string prefix="",
                               worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
-                              bool moveGhostEltFromExtendedStencil=false,
                               ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     /**
@@ -116,6 +118,19 @@ public:
     virtual void generateMap( ale_map_element_type const & dispOnBoundary,
                               ale_map_element_type const & oldDisp ) = 0;
 
+    template < typename ExprT >
+    void updateMetricMeshAdaptation( Expr<ExprT> const& e )
+        {
+            if ( !M_metricMeshAdaptation )
+                this->initMetricMeshAdaptation();
+            this->updateMetricMeshAdaptation( *M_metricMeshAdaptation->feProjection( e ) );
+        }
+    virtual void initMetricMeshAdaptation() = 0;
+    virtual void updateMetricMeshAdaptation( Expr<GinacExVF<2>> const& e ) = 0;
+    virtual void updateMetricMeshAdaptation( typename metricmeshadaptation_type::element_scalar_type const& u ) = 0;
+
+protected :
+    metricmeshadaptation_ptrtype M_metricMeshAdaptation;
 private :
     flagSet_type M_flagSet;
 

@@ -46,12 +46,12 @@ namespace FeelModels
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 ELECTRIC_CLASS_TEMPLATE_TYPE::Electric( std::string const& prefix,
-                                        bool buildMesh,
+                                        std::string const& keyword,
                                         worldcomm_ptr_t const& worldComm,
                                         std::string const& subPrefix,
                                         ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, worldComm, subPrefix, modelRep ),
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     M_electricProperties( new electricproperties_type( prefix ) )
 {
     this->log("Electric","constructor", "start" );
@@ -69,10 +69,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::Electric( std::string const& prefix,
     // option in cfg files
     this->loadParameterFromOptionsVm();
     //-----------------------------------------------------------------------------//
-    // build mesh
-    if ( buildMesh )
-        this->createMesh();
-    //-----------------------------------------------------------------------------//
     this->log("Electric","constructor", "finish");
 }
 
@@ -86,16 +82,16 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::createMesh()
+ELECTRIC_CLASS_TEMPLATE_TYPE::initMesh()
 {
-    this->log("Electric","createMesh", "start");
+    this->log("Electric","initMesh", "start");
     this->timerTool("Constructor").start();
 
     createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
     CHECK( M_mesh ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("createMesh");
-    this->log("Electric","createMesh",(boost::format("finish in %1% s")%tElpased).str() );
+    this->log("Electric","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
 
 } // createMesh()
 
@@ -129,7 +125,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("Electric","init", "start" );
     this->timerTool("Constructor").start();
 
-    CHECK( M_mesh ) << "no mesh defined";
+    if ( !M_mesh )
+        this->initMesh();
 
     // physical properties
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -223,12 +220,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
     // on topological faces
     auto const& listMarkedFacesElectricPotential = std::get<0>( meshMarkersElectricPotentialByEntities );
-    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesElectricPotential ) )
+    if ( !listMarkedFacesElectricPotential.empty() )
     {
-        auto const& face = unwrap_ref( faceWrap );
-        auto facedof = XhElectricPotential->dof()->faceLocalDof( face.id() );
-        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-            dofsWithValueImposedElectricPotential.insert( it->index() );
+        auto therange = markedfaces( mesh,listMarkedFacesElectricPotential );
+        auto dofsToAdd = XhElectricPotential->dofs( therange );
+        dofsWithValueImposedElectricPotential.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhElectricPotential->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("potential-electric",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
 }
 
@@ -261,8 +259,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->timerTool("Constructor").start();
 
     M_postProcessFieldExported.clear();
-    std::string modelName = "electric";
-    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
+    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
 
     if ( !M_postProcessFieldExported.empty() )
     {
@@ -475,7 +472,6 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
-    std::string modelName = "electric";
     bool hasMeasure = false;
 
     this->modelProperties().parameters().updateParameterValues();
@@ -483,7 +479,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
     auto fieldTuple = hana::make_tuple( std::make_pair( "electric-potential",this->fieldElectricPotentialPtr() ) );
-    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
     {
         std::map<std::string,double> resPpNorms;
         measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
@@ -493,7 +489,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
             hasMeasure = true;
         }
     }
-    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( modelName ) )
+    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
     {
         std::map<std::string,double> resPpStats;
         measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
@@ -678,12 +674,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {
     if ( M_bcDirichlet.empty() ) return;
 
     this->log("Electric","updateNewtonInitialGuess","start" );
 
+    vector_ptrtype& U = data.initialGuess();
     auto mesh = this->mesh();
     size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
     auto v = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
@@ -692,10 +689,9 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) cons
         v.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
              _expr=expression(d) );
     }
-    // synchronize electric potential dof on interprocess
-    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("electric-potential");
-    if ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )
-        sync( v, "=", itFindDofsWithValueImposed->second );
+
+    // update info for synchronization
+    this->updateDofEliminationIdsMultiProcess( "potential-electric", data );
 
     this->log("Electric","updateNewtonInitialGuess","finish" );
 }

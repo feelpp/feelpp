@@ -3009,6 +3009,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time, bool save )
         if( nDim > 1 ) vecUCOM.push_back( ucom(1,0) );
         if( nDim > 2 ) vecUCOM.push_back( ucom(2,0) );
         this->postProcessMeasuresIO().setMeasureComp( "velocity_com", vecUCOM );
+        double normUCOM = std::sqrt( std::inner_product( vecUCOM.begin(), vecUCOM.end(), vecUCOM.begin(), 0.0 ) );
+        this->postProcessMeasuresIO().setMeasure( "velocity_com", normUCOM );
         hasMeasureToExport = true;
     }
 

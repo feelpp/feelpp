@@ -217,6 +217,9 @@ public:
     //--------------------------------------------------------------------//
     // Solve
     void solve();
+    virtual void solveExplicitCoupling();
+    virtual void solveImplicitCoupling();
+    void solvePicard();
 
     void updateLinearPDE( DataUpdateLinear & data ) const override;
     void updateLinearPDEInterfaceForces( DataUpdateLinear & data ) const;

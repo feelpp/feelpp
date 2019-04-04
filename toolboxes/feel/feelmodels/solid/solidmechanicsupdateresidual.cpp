@@ -445,19 +445,16 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( element_
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {
     if ( !this->hasDirichletBC() ) return;
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateNewtonInitialGuess", "start",
                                                this->worldComm(),this->verboseAllProc());
 
+    vector_ptrtype& U = data.initialGuess();
     auto Xh = this->functionSpace();
     auto mesh = this->mesh();
-
-    if ( !Xh->worldsComm()[0]->isActive()) // only on Displacement Proc
-        return;
-
     auto u = Xh->element( U, this->rowStartInVector() );
 
     for( auto const& d : M_bcDirichlet )
@@ -497,11 +494,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U 
         }
     }
 
-    // synchronize velocity dof on interprocess
-    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("displacement");
-    if ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )
-        sync( u, "=", itFindDofsWithValueImposed->second );
-
+    // update info for synchronization
+    this->updateDofEliminationIdsMultiProcess( "displacement", data );
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateNewtonInitialGuess", "finish",
                                                this->worldComm(),this->verboseAllProc());
