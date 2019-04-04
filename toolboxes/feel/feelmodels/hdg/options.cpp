@@ -31,28 +31,26 @@ namespace FeelModels
 {
 
 po::options_description
-makeMixedPoissonOptions( std::string prefix )
+makeMixedPoissonOptions( std::string const&  _prefix, std::string const&  _toolbox_prefix )
 {
-    po::options_description mpOptions( "Mixed Poisson HDG options");
-    mpOptions.add_options()
-        ( "gmsh.submesh", po::value<std::string>()->default_value( "" ), "submesh extraction" )
-        ( prefixvm( prefix, "tau_constant").c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
-        ( prefixvm( prefix, "tau_order").c_str(), po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
-        ( prefixvm( prefix, "picard.itol").c_str(), po::value<double>()->default_value( 1e-4 ), "tolerance" )
-        ( prefixvm( prefix, "picard.itmax").c_str(), po::value<int>()->default_value( 10 ), "iterations max" )
-        ( prefixvm( prefix, "hface").c_str(), po::value<int>()->default_value( 0 ), "hface" )
-        ( prefixvm( prefix, "conductivity_json").c_str(), po::value<std::string>()->default_value( "cond" ), "key for conductivity in json" )
-        ( prefixvm( prefix, "conductivityNL_json").c_str(), po::value<std::string>()->default_value( "condNL" ), "key for non linear conductivity in json (depends on potential p)" )
-        ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
-        ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")
-        ;
+    std::string prefix = _toolbox_prefix.empty()?"hdg.poisson":_toolbox_prefix;
+    if ( !_prefix.empty() )
+        prefix = prefixvm( prefix, _prefix );
+    po::options_description mpOptions( "Mixed Poisson HDG options" );
+    mpOptions.add_options()( "gmsh.submesh", po::value<std::string>()->default_value( "" ), "submesh extraction" )
+        ( prefixvm( prefix, "tau_constant" ).c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
+        ( prefixvm( prefix, "tau_order" ).c_str(), po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges" ) // -1, 0, 1 ==> h^-1, h^0, h^1
+        ( prefixvm( prefix, "hface" ).c_str(), po::value<int>()->default_value( 0 ), "hface" )
+        ( prefixvm( prefix, "conductivity_json" ).c_str(), po::value<std::string>()->default_value( "cond" ), "key for conductivity in json" )
+        ( prefixvm( prefix, "conductivityNL_json" ).c_str(), po::value<std::string>()->default_value( "condNL" ), "key for non linear conductivity in json (depends on potential p)" )
+        ( prefixvm( prefix, "use-sc" ).c_str(), po::value<bool>()->default_value( true ), "use static condensation" );
     mpOptions.add( modelnumerical_options( prefix ) );
-    mpOptions.add ( backend_options( prefixvm(prefix,"sc" ) ) );
+    mpOptions.add( backend_options( prefix + ".sc" ) );
     return mpOptions;
 }
 
 po::options_description
-makeMixedPoissonLibOptions( std::string prefix )
+makeMixedPoissonLibOptions( std::string const&  prefix , std::string const&  _toolbox_prefix )
 {
     po::options_description mpLibOptions( "Mixed Poisson HDG Lib options");
     // if ( !prefix.empty() )
