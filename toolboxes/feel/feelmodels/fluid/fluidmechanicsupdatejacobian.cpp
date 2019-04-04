@@ -34,7 +34,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     //if (this->useFSISemiImplicitScheme()) BuildNonCstPart_robinFSI=BuildCstPart;
 
     double timeSteppingScaling = 1.;
-    if ( !this->isStationary() )
+    if ( !this->isStationaryModel() )
     {
         if ( M_timeStepping == "Theta" )
             timeSteppingScaling = M_timeStepThetaValue;
@@ -175,7 +175,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
             if ( BuildNonCstPart )
             {
-                auto StressTensorExprJac = Feel::FeelModels::fluidMecNewtonianStressTensorJacobian<2*nOrderVelocity>(u,p,*this->materialProperties(),matName);
+                auto StressTensorExprJac = Feel::FeelModels::fluidMecNewtonianStressTensorJacobian(gradv(u),u,p,*this->materialProperties(),matName);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
                                //_expr= inner( 2*sigma_powerlaw_viscous/*Sigmat_powerlaw*/,grad(v) ),

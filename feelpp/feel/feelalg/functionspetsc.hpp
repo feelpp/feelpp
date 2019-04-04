@@ -61,6 +61,11 @@ std::string PetscConvertSNESReasonToString( SNESConvergedReason reason );
 MatStructure PetscGetMatStructureEnum( Feel::MatrixStructure matStruc );
 
 void PetscConvertIndexSplit( std::vector<IS> & isPetsc ,IndexSplit const& is,WorldComm const& worldcomm );
+
+
+SNESLineSearchType
+toPetscName( SolverNonLinearLineSearchType const& type );
+
 } // namespace Feel
 
 #endif

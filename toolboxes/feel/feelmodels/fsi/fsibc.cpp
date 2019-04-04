@@ -116,8 +116,8 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
 
     CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
     std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-    auto sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor<2*fluid_type::nOrderVelocity>(uEval,pEval,*M_fluidModel->materialProperties(),matName,true);
-    auto muExpr = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(uEval,pEval,*M_fluidModel->materialProperties(),matName);
+    auto sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(uEval),pEval,*M_fluidModel->materialProperties(),matName,true);
+    auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(uEval),pEval,*M_fluidModel->materialProperties(),matName);
     auto const Id = eye<fluid_type::nDim,fluid_type::nDim>();
 
     auto linearForm = form1( _test=Xh, _vector=F,
@@ -306,7 +306,7 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
 
     CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
     std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-    auto muExpr = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(uPrevious,pPrevious,*M_fluidModel->materialProperties(),matName);
+    auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(uPrevious),pPrevious,*M_fluidModel->materialProperties(),matName);
 
 
     if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
@@ -416,8 +416,8 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
 
     CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
     std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-    auto sigmavPrevious = Feel::FeelModels::fluidMecNewtonianStressTensor<2*fluid_type::nOrderVelocity>(uPrevious,pPrevious,*M_fluidModel->materialProperties(),matName,true);
-    auto muExpr = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(uPrevious,pPrevious,*M_fluidModel->materialProperties(),matName);
+    auto sigmavPrevious = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(uPrevious),pPrevious,*M_fluidModel->materialProperties(),matName,true);
+    auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(uPrevious),pPrevious,*M_fluidModel->materialProperties(),matName);
 
     if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
          this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
@@ -599,8 +599,8 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
         double muFluid = dynamicViscosity.newtonian().value();
 #endif
 
-        auto muFluid = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(/*uCur*/this->fieldVelocityInterfaceFromFluid_solid(),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
-                                                                                         *M_fluidModel->materialProperties(),matName,true);
+        auto muFluid = Feel::FeelModels::fluidMecViscosity(/*uCur*/gradv(this->fieldVelocityInterfaceFromFluid_solid()),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
+                                                           *M_fluidModel->materialProperties(),matName, invalid_uint16_type_value,true);
 
 
 #if 0
@@ -704,8 +704,8 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
 
     if ( buildCstPart )
     {
-        auto muFluid = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(/*uCur*/this->fieldVelocityInterfaceFromFluid_solid(),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
-                                                                                         *M_fluidModel->materialProperties(),matName,true);
+        auto muFluid = Feel::FeelModels::fluidMecViscosity(/*uCur*/gradv(this->fieldVelocityInterfaceFromFluid_solid()),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
+                                                           *M_fluidModel->materialProperties(),matName, invalid_uint16_type_value,true);
         auto rangeFSI = markedfaces(mesh,M_solidModel->markerNameFSI());
 
         if ( this->solidModel()->timeStepping() == "Newmark" )
@@ -783,8 +783,8 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
         double muFluid = dynamicViscosity.newtonian().value();
 #endif
 
-        auto muFluid = Feel::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(/*uCur*/this->fieldVelocityInterfaceFromFluid_solid(),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
-                                                                                         *M_fluidModel->materialProperties(),matName,true);
+        auto muFluid = Feel::FeelModels::fluidMecViscosity(/*uCur*/gradv(this->fieldVelocityInterfaceFromFluid_solid()),/*pCur*/M_fluidModel->fieldPressure() /*useless*/,
+                                                           *M_fluidModel->materialProperties(),matName, invalid_uint16_type_value, true);
 
         if ( buildNonCstPart && !useJacobianLinearTerms )
         {
