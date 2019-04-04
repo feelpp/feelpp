@@ -403,10 +403,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsBoundaryCond()
                     /*
                      auto blf = blockform1( *M_ps, M_F );
                      auto l = M_Mh->element( "lambda" );
-
                      // <g_N,mu>_Gamma_N
-                     blf(2_c) += integrate(_range=markedfaces(M_mesh, marker),
-                     _expr=trans(g)*N() * id(l));
+                     blf(2_c) += integrate(_range=markedfaces(M_mesh, marker), _expr=trans(g)*N() * id(l));
                      */
                     auto gn = inner(g,N());
                     this->assembleRhsNeumann( gn, marker);
@@ -701,7 +699,19 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initTimeStep()
 
                         if ( !this->isStationary() )
                             p_init.setParameterValues( { {"t", this->time() } } );
+
+                        double K = 1;
+                        for( auto const& pairMat : modelProperties().materials() )
+                        {
+                            auto material = pairMat.second;
+                            K = material.getDouble( "k" );
+                        }
+                        auto gradp_init = grad<Dim>(p_init) ;
+                        auto u_init = cst(-K)*trans(gradp_init);
+
                         M_pp = project( _space=M_Wh, _range=markedelements(M_mesh,marker), _expr=p_init );
+                        M_up = project( _space=M_Vh, _range=markedelements(M_mesh,marker), _expr=u_init );
+
                         if (M_integralCondition)
                         {
                             auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[0].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
@@ -710,12 +720,23 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initTimeStep()
                             Feel::cout << "Initial integral value of potential on "
                                        << M_IBCList[0].marker() << " : \t " << mup/meas << std::endl;
                         }
+
+                        // Initialize time steps
+                        for( auto time : M_bdf_mixedpoisson->priorTimes() )
+                        {
+                            if( Environment::worldComm().isMasterRank() )
+                                Feel::cout << "Initialize prior times (from timeInitial()) : " << time.second << "s index: " << time.first << "\n";
+
+                            p_init.setParameterValues( { {"t", time.second} } );
+                            auto p_e = project( _space=M_Wh, _expr=p_init );
+                            M_bdf_mixedpoisson->setUnknown( time.first, p_e );
+                        }
                     }
                 }
             }
         }
 
-        M_bdf_mixedpoisson -> start( M_pp );
+        M_bdf_mixedpoisson -> start();
         // up current time
         this->updateTime( M_bdf_mixedpoisson -> time() );
     }
