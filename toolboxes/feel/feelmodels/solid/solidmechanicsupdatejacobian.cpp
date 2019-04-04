@@ -84,7 +84,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     //thetimerBis.restart();
     this->timerTool("Solve").start();
 
-    if (M_pdeType=="Hyper-Elasticity")
+    if ( M_modelName == "Hyper-Elasticity" )
     {
         if (this->mechanicalProperties()->materialLaw() == "StVenantKirchhoff")
         {
@@ -126,7 +126,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         }
 #endif
     }
-    else if (M_pdeType=="Elasticity-Large-Deformation")
+    else if ( M_modelName == "Elasticity-Large-Deformation" )
     {
         if (!BuildCstPart)
             bilinearForm_PatternCoupled +=
@@ -134,7 +134,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                            _expr= timeSteppingScaling*inner( dS, grad(v) ),
                            _geomap=this->geomap() );
     }
-    else if (M_pdeType=="Elasticity")
+    else if ( M_modelName == "Elasticity" )
     {
         if (BuildCstPart)
             bilinearForm_PatternCoupled +=
@@ -299,7 +299,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
     auto const Id = eye<nDim,nDim>();
 
 
-    if (M_pdeType=="Hyper-Elasticity")
+    if ( M_modelName == "Hyper-Elasticity")
     {
         auto pFmtNLa = Feel::FeelModels::solidMecPressureFormulationMultiplierJacobianTrialPressure(u,p,*this->mechanicalProperties());
         form2( _test=M_XhDisplacement, _trial=M_XhPressure, _matrix=J,
@@ -318,7 +318,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
                         _expr= inner(pFmtNLb,grad(v) ),
                         _geomap=this->geomap() );
     }
-    else if (M_pdeType=="Elasticity-Large-Deformation" || M_pdeType=="Elasticity")
+    else if ( M_modelName == "Elasticity-Large-Deformation" || M_modelName == "Elasticity")
     {
         form2( _test=M_XhDisplacement, _trial=M_XhPressure, _matrix=J,
                _rowstart=rowStartInMatrix,

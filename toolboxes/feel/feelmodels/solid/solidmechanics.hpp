@@ -293,29 +293,21 @@ public:
 
 
     SolidMechanics( std::string const& prefix,
-                    bool buildMesh=true,
+                    std::string const& keyword = "solid",
                     worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                     std::string const& subPrefix = "",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    SolidMechanics( self_type const & M ) = default;
+    SolidMechanics( self_type const& ) = default;
 
     static self_ptrtype New( std::string const& prefix,
-                             bool buildMesh = true,
+                             std::string const& keyword = "solid",
                              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     static std::string expandStringFromSpec( std::string const& expr );
 
-    void build();
-    void loadMesh(mesh_ptrtype __mesh );
-    void loadMesh(mesh_1dreduced_ptrtype __mesh );
-    //protected :
-    void build(mesh_ptrtype mesh );
-    void build( mesh_1dreduced_ptrtype mesh );
 private :
-    void buildStandardModel( mesh_ptrtype mesh = mesh_ptrtype() );
-    void build1dReducedModel( mesh_1dreduced_ptrtype mesh = mesh_1dreduced_ptrtype() );
 
     void loadConfigBCFile();
     void loadConfigMeshFile(std::string const& geofilename) { CHECK( false ) << "not allow"; }
@@ -326,8 +318,8 @@ private :
     void initFunctionSpaces();
     void initFunctionSpaces1dReduced();
 
-    void createMesh();
-    void createMesh1dReduced();
+    void initMesh();
+    void initMesh1dReduced();
     void createExporters();
     void createExporters1dReduced();
 
@@ -345,9 +337,6 @@ public :
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
 
-    void pdeType(std::string __type);
-    void pdeSolver(std::string __type);
-
     bool is1dReducedModel() const { return M_is1dReducedModel; }
     bool isStandardModel() const { return M_isStandardModel; }
     bool useDisplacementPressureFormulation() const { return M_useDisplacementPressureFormulation; }
@@ -360,6 +349,9 @@ public :
     //-----------------------------------------------------------------------------------//
     // all models
     //-----------------------------------------------------------------------------------//
+
+    void setModelName( std::string const& type );
+    void setSolverName( std::string const& type );
 
     mechanicalproperties_ptrtype const& mechanicalProperties() const { return M_mechanicalProperties; }
     mechanicalproperties_ptrtype & mechanicalProperties() { return M_mechanicalProperties; }
@@ -447,6 +439,7 @@ public :
     // standart model
     //-----------------------------------------------------------------------------------//
 
+    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
     mesh_ptrtype const& mesh() const { return M_mesh; }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
@@ -534,6 +527,8 @@ public :
     //-----------------------------------------------------------------------------------//
     // 1d reduced model
     //-----------------------------------------------------------------------------------//
+
+    void setMesh1dReduce( mesh_1dreduced_ptrtype const& mesh ) { M_mesh_1dReduced = mesh; }
 
     //mesh_1dreduced_ptrtype mesh1dReduced() { return M_mesh_1dReduced; }
     mesh_1dreduced_ptrtype const& mesh1dReduced() const { return M_mesh_1dReduced; }
@@ -664,12 +659,10 @@ private :
 protected:
 
     // model
-    std::string M_pdeType,M_pdeSolver;
+    std::string M_modelName, M_solverName;
     bool M_useDisplacementPressureFormulation;
     bool M_is1dReducedModel;
     bool M_isStandardModel;
-
-    bool M_hasBuildFromMesh,M_hasBuildFromMesh1dReduced;
 
 
     //model parameters

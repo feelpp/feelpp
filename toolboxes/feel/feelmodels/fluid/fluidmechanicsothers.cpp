@@ -506,7 +506,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
             std::string const& matName = rangeData.first;
             auto const& range = rangeData.second;
             //auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
-            auto myViscosity = Feel::FeelModels::fluidMecViscosity<2*nOrderVelocity>(uCur,pCur,*this->materialProperties(),matName);
+            auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(uCur),pCur,*this->materialProperties(),matName);
             viscosityField.on( _range=range,_expr=myViscosity );
         }
         exporter->step( time )->add( prefixvm(this->prefix(),"viscosity"),
@@ -1128,7 +1128,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         auto p = U.template element<1>();
         CHECK( this->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
         std::string matName = this->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-        auto myViscosity = Feel::FeelModels::fluidMecViscosity<2*nOrderVelocity>(u,p,*this->materialProperties(),matName);
+        auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(u),p,*this->materialProperties(),matName);
         if (this->isMoveDomain() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -1359,9 +1359,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 {
+    if ( this->isStationaryModel() )
+        return;
     if ( !M_algebraicFactory )
         return;
-
     if ( M_timeStepping == "Theta" )
     {
         M_timeStepThetaSchemePreviousContrib->zero();
@@ -1474,7 +1475,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( s
     auto InvFa = det(Fa)*inv(Fa);
 
     // stress tensor : -p*Id + 2*mu*D(u)
-    auto const Sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,true);
+    auto const Sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),p,*this->materialProperties(),matName,true);
 
     fieldToUpdate->on(_range=rangeFaces,
                       _expr=Sigmav*trans(InvFa)*N(),
@@ -1534,7 +1535,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( std:
     auto const& u = this->fieldVelocity();
     auto const& p = this->fieldPressure();
     // stress tensor : -p*Id + 2*mu*D(u)
-    auto const Sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,true);
+    auto const Sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),p,*this->materialProperties(),matName,true);
 
     fieldToUpdate->on(_range=rangeFaces,
                       _expr=Sigmav*idv(M_saveALEPartNormalStress),
@@ -1703,7 +1704,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName) 
 #endif
     CHECK( this->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
     std::string matName = this->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-    auto sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,true);
+    auto sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),p,*this->materialProperties(),matName,true);
 
     return integrate(_range=markedfaces(M_mesh,markerName),
                      _expr= sigmav*N(),
