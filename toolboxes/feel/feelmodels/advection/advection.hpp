@@ -419,6 +419,15 @@ protected:
     template<typename ExprT>
     void updateLinearPDEAdvection( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity );
 
+    template<typename ExprT>
+    void updateLinearPDEStabilization( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity );
+    template<typename ADRT, typename ExprT>
+    void updateLinearPDEStabilizationGLS( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity );
+    template<typename ADRT, typename ExprT>
+    void updateLinearPDEStabilizationSUPG( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity );
+    template<typename ADRT, typename ExprT>
+    void updateLinearPDEStabilizationSGS( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity );
+
     virtual std::string geoExportType() const { return "static"; }
     virtual void exportResultsImpl( double time );
     virtual void exportMeasuresImpl( double time );
@@ -488,6 +497,7 @@ protected:
     // Stabilization
     static const std::map<std::string, AdvectionStabMethod> AdvectionStabMethodIdMap;
     AdvectionStabMethod M_stabMethod;
+    function_assembly_linear_type M_functionAssemblyLinearStabilization;
     double M_stabilizationCIPCoefficient;
     double M_gamma1;
     // stabilization
@@ -510,11 +520,13 @@ void
 AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateAdvectionVelocity(
         vf::Expr<ExprT> const& v_expr)
 {
-    //M_exprAdvectionVelocity.reset(); // remove symbolic expr
-    //M_fieldAdvectionVelocity->on(_range=elements(this->mesh()), _expr=v_expr );
     M_functionAssemblyLinearAdvection = [v_expr, this]( DataUpdateLinear & data ) { 
         this->updateLinearPDEAdvection( data, v_expr );
     };
+    M_functionAssemblyLinearStabilization = [v_expr, this]( DataUpdateLinear & data ) { 
+        this->updateLinearPDEStabilization( data, v_expr );
+    };
+
     M_functionProjectFieldAdvectionVelocity = [v_expr, this]() {
         this->M_fieldAdvectionVelocity->on(_range=this->rangeMeshElements(), _expr=v_expr );
     };
@@ -575,6 +587,10 @@ AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusio
 
 } // namespace FeelModels
 } // namespace Feel
+
+//----------------------------------------------------------------------------//
+// Stabilization
+#include <feel/feelmodels/advection/advectionstabilisation.cpp>
 
 
 #endif

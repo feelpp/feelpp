@@ -5,9 +5,6 @@
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 
-#include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
-#include <feel/feelmodels/advection/advectionstabilisation.cpp>
-
 namespace Feel {
 namespace FeelModels {
 
@@ -905,68 +902,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization( DataUpdateLinear 
     this->log("AdvDiffReac","updateLinearPDEStabilization", "start"+sc );
     this->timerTool("Solve").start();
 
-    uint16_type adrt = ADREnum::Advection;
-    if( this->hasReaction() ) adrt |= ADREnum::Reaction;
-    if( this->hasDiffusion() && nOrder >= 2 ) adrt |= ADREnum::Diffusion;
-    ADREnum adrtype = static_cast<ADREnum>( adrt );
-    
-    switch ( this->stabilizationMethod() )
-    {
-        case AdvectionStabMethod::NONE : { break; } // remove -Wswitch warning
-
-        case AdvectionStabMethod::GALS :
-        {
-            if( adrtype == Advection ) ADRDetails::updateLinearPDEStabilizationGLS<ADRTypes::Advection>( *this, data );
-            if( adrtype == AdvectionDiffusion) ADRDetails::updateLinearPDEStabilizationGLS<ADRTypes::AdvectionDiffusion>( *this, data );
-            if( adrtype == AdvectionReaction) ADRDetails::updateLinearPDEStabilizationGLS<ADRTypes::AdvectionReaction>( *this, data );
-            if( adrtype == AdvectionDiffusionReaction) ADRDetails::updateLinearPDEStabilizationGLS<ADRTypes::AdvectionDiffusionReaction>( *this, data );
-        } //GALS
-        break ;
-
-        case AdvectionStabMethod::SUPG :
-        {
-            if( adrtype == Advection ) ADRDetails::updateLinearPDEStabilizationSUPG<ADRTypes::Advection>( *this, data );
-            if( adrtype == AdvectionDiffusion) ADRDetails::updateLinearPDEStabilizationSUPG<ADRTypes::AdvectionDiffusion>( *this, data );
-            if( adrtype == AdvectionReaction) ADRDetails::updateLinearPDEStabilizationSUPG<ADRTypes::AdvectionReaction>( *this, data );
-            if( adrtype == AdvectionDiffusionReaction) ADRDetails::updateLinearPDEStabilizationSUPG<ADRTypes::AdvectionDiffusionReaction>( *this, data );
-        } //SUPG
-        break;
-
-        case AdvectionStabMethod::SGS :
-        {
-            if( adrtype == Advection ) ADRDetails::updateLinearPDEStabilizationSGS<ADRTypes::Advection>( *this, data );
-            if( adrtype == AdvectionDiffusion) ADRDetails::updateLinearPDEStabilizationSGS<ADRTypes::AdvectionDiffusion>( *this, data );
-            if( adrtype == AdvectionReaction) ADRDetails::updateLinearPDEStabilizationSGS<ADRTypes::AdvectionReaction>( *this, data );
-            if( adrtype == AdvectionDiffusionReaction) ADRDetails::updateLinearPDEStabilizationSGS<ADRTypes::AdvectionDiffusionReaction>( *this, data );
-        } //SGS
-        break;
-
-        case AdvectionStabMethod::CIP :
-        {
-            if( BuildNonCstPart )
-            {
-                auto mesh = this->mesh();
-                auto space = this->functionSpace();
-                auto const& phi = this->fieldSolution();
-                sparse_matrix_ptrtype & A = data.matrix();
-
-                auto beta = idv(this->fieldAdvectionVelocity());
-                auto beta_norm = vf::sqrt(trans(beta)*beta);
-                double stabCoeff = this->M_stabilizationCIPCoefficient;
-                auto coeff = stabCoeff * M_gamma1 * hFace() * hFace() * beta_norm;
-
-                auto bilinearForm_PatternExtended = form2( 
-                        _test=space, _trial=space, _matrix=A, _pattern=size_type(Pattern::EXTENDED) 
-                        );
-                bilinearForm_PatternExtended += integrate(
-                        _range=internalfaces(mesh),
-                        _expr=coeff * inner(jumpt(gradt(phi)), jump(grad(phi)))
-                        );
-            }
-
-        } //CIP
-        break;
-    } //switch
+    this->M_functionAssemblyLinearStabilization( data );
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("AdvDiffReac","updateLinearPDEStabilization","finish in "+(boost::format("%1% s") %timeElapsed).str() );
@@ -1118,10 +1054,12 @@ ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity( element_advection_velocity_type const& u )
 {
-    //M_exprAdvectionVelocity.reset(); // remove symbolic expr
     *M_fieldAdvectionVelocity = u;
     M_functionAssemblyLinearAdvection = [this]( DataUpdateLinear & data ) { 
         this->updateLinearPDEAdvection( data, idv(this->M_fieldAdvectionVelocity) );
+    };
+    M_functionAssemblyLinearStabilization = [this]( DataUpdateLinear & data ) {
+        this->updateLinearPDEStabilization( data, idv(this->M_fieldAdvectionVelocity) );
     };
 }
 
