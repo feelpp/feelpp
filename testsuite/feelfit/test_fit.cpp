@@ -58,14 +58,15 @@ BOOST_AUTO_TEST_CASE( test_main_fit )
 #if 1
     auto e = exporter(_mesh = mesh );
 #endif
-    std::string datafilename = (fs::current_path()/"data.txt").string();
+    std::string datafilename = (fs::current_path()/"data.csv").string();
     if ( Environment::worldComm().isMasterRank() )
     {
         // Generates the datafile
         // we assume an unitsquare as mesh
         std::ofstream datafile( datafilename );
+        datafile << "x, y\n";
         for(double t = -1; t < 2; t+=0.32)
-            datafile << t << "\t" << f(t) << "\n";
+            datafile << t << " , " << f(t) << "\n";
         datafile.close();
     }
     Environment::worldComm().barrier();
@@ -76,8 +77,8 @@ BOOST_AUTO_TEST_CASE( test_main_fit )
         std::string const& interpType = interpTypeRange[k];
         BOOST_TEST_MESSAGE( boost::format("test %1%")% interpType );
         // evaluate K(T) with the interpolation from the datafile
-        K.on(_range=elements(mesh), _expr=fit( idv(T), datafilename, interpType ) );
-        Kd.on(_range=elements(mesh), _expr=fitDiff( idv(T), datafilename, interpType ) );
+        K.on(_range=elements(mesh), _expr=fit( idv(T), datafilename, "x", "y", interpType ) );
+        Kd.on(_range=elements(mesh), _expr=fitDiff( idv(T), datafilename, "x", "y", interpType ) );
 
         D_K.on(_range=elements(mesh),_expr=vf::abs(idv(K)-idv(T_K)));
         D_Kd.on(_range=elements(mesh),_expr=vf::abs(idv(Kd)-idv(T_Kd)));
