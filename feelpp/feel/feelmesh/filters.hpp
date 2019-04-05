@@ -1515,11 +1515,11 @@ idelements( MeshType const& imesh, std::vector<T> const& l )
 }
 
 
-//! \return a pair of iterators to iterate over elements (not ghost) which
+//! \return a pair of iterators to iterate over a range of elements 'rangeElt' which
 //!  touch the range of faces rangeFace by a point/edge/faces (with respect to type arg)
 template<typename MeshType>
 elements_pid_t<MeshType>
-elements( MeshType const& mesh, faces_reference_wrapper_t<MeshType> const& rangeFace, ElementsType type = ElementsType::MESH_POINTS )
+elements( MeshType const& mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, faces_reference_wrapper_t<MeshType> const& rangeFace, ElementsType type = ElementsType::MESH_POINTS )
 {
     std::unordered_set<size_type> entityIds;
     for( auto const& faceWrap : rangeFace )
@@ -1544,17 +1544,11 @@ elements( MeshType const& mesh, faces_reference_wrapper_t<MeshType> const& range
     }
 
 
-    rank_type pid = rank( mesh );
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
-    auto const& imesh = Feel::unwrap_ptr( mesh );
-    typedef typename MeshTraits<MeshType>::mesh_type mesh_type;
-    auto it = imesh.beginOrderedElement();
-    auto en = imesh.endOrderedElement();
-    for ( ; it!=en;++it )
+
+    for ( auto const& eltWrap : rangeElt )
     {
-        auto const& elt = unwrap_ref( *it );
-        if ( elt.processId() != pid )
-            continue;
+        auto const& elt = unwrap_ref( eltWrap );
         bool addElt = false;
         if ( type == ElementsType::MESH_POINTS )
         {
@@ -1597,6 +1591,15 @@ elements( MeshType const& mesh, faces_reference_wrapper_t<MeshType> const& range
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               myelts->begin(), myelts->end(),
                               myelts );
+}
+
+//! \return a pair of iterators to iterate over all elements (not ghost) which
+//!  touch the range of faces rangeFace by a point/edge/faces (with respect to type arg)
+template<typename MeshType>
+elements_pid_t<MeshType>
+elements( MeshType const& mesh, faces_reference_wrapper_t<MeshType> const& rangeFace, ElementsType type = ElementsType::MESH_POINTS )
+{
+    return elements( mesh, elements(mesh), rangeFace, type );
 }
 
 
