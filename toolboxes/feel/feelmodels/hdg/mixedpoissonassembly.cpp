@@ -46,6 +46,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleAll()
 {
+    tic();
     M_A_cst->zero();
     M_F->zero();
     tic();
@@ -53,7 +54,7 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleAll()
     toc("assembleCstPart");
     tic();
     this->assembleNonCstPart();
-    toc("assembleNonCstPart");
+    toc("MixedPoisson::assembleAll");
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
