@@ -386,7 +386,7 @@ int hdg_laplacian()
     toc("postprocessing.solve.correction.pp",FLAGS_v>0);
     toc("postprocessing.solve.correction",FLAGS_v>0);
     toc("postprocessing.solve",FLAGS_v>0);
-    toc("postprocessing",FLAGS_v>0);
+    toc("postprocessing",true);
 
     
 

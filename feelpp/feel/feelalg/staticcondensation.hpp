@@ -1089,13 +1089,13 @@ StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& r
 
             M_AinvB.emplace( K, AinvB );
             M_AinvF.emplace( K, AinvF );
-            toc("sc.condense.localassembly", FLAGS_v>0);
+            toc("sc.condense.localassembly", FLAGS_v>1);
             tic();
             auto dofs = e3.dofs(dK.first->second.faces1());
 
             S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
             V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
-            toc("sc.condense.globalassembly", FLAGS_v>0);
+            toc("sc.condense.globalassembly", FLAGS_v>1);
         } // else
         toc("sc.condense.sequential", FLAGS_v>0);
 
@@ -1306,13 +1306,13 @@ StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& r
 
             M_AinvB.emplace( K, AinvB );
             M_AinvF.emplace( K, AinvF );
-            toc("sc.condense.localassembly", FLAGS_v>0);
+            toc("sc.condense.localassembly", FLAGS_v>1);
             tic();
             auto dofs = e3.dofs(dK.faces1(),S.matrixPtr()->mapRow(),0);
             
             S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
             V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
-            toc("sc.condense.globalassembly", FLAGS_v>0);
+            toc("sc.condense.globalassembly", FLAGS_v>1);
 
         }
         else
@@ -1454,7 +1454,7 @@ StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& r
 #endif            
             M_AinvB.emplace( K, AinvB );
             M_AinvF.emplace( K, AinvF );
-            toc("sc.condense.localassembly", FLAGS_v>0);
+            toc("sc.condense.localassembly", FLAGS_v>1);
             tic();
             auto dofs1 = e3.dofs(dK.faces1(),S.matrixPtr()->mapRow(),0);
 
@@ -1485,7 +1485,7 @@ StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& r
 
             condense2( dK, rhs, e, S, V );
            //V.vectorPtr()->printMatlab("g2.m");
-            toc("sc.condense.globalassembly", FLAGS_v>0);
+            toc("sc.condense.globalassembly", FLAGS_v>1);
 
         }
 
@@ -1498,7 +1498,7 @@ void
 StaticCondensation<T>::condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
                                   std::enable_if_t<std::decay_t<E>::nspaces == 4>* ) 
 {
-	Feel::cout << __LINE__ << std::endl;
+	//Feel::cout << __LINE__ << std::endl;
 }
 
 template<typename T>

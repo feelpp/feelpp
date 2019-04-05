@@ -2206,8 +2206,8 @@ class GeoMap
                             //std::cout << "K[" << q << "]=" << M_K[q] << std::endl;
                             //std::cout << "B[" << q << "]=" << M_B[q] << std::endl;
                             //std::cout << "J[" << q << "]=" << M_J[q] << std::endl;
-                            if ( 0 && is_linear )
-                                M_gm->updateCache( M_id, M_K[q], M_B[q], M_J[q] );
+                            //if ( 0 && is_linear )
+                                //M_gm->updateCache( M_id, M_K[q], M_B[q], M_J[q] );
                         }
                         if constexpr ( vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
                         {
