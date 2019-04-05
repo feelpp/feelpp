@@ -277,9 +277,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
     M_A = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
 #else
-    M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
-    M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
+    tic();
+    M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
+    M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
     M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
+    toc("matrixCondensed");
 #endif
 }
 
