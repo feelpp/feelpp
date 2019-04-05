@@ -1430,6 +1430,29 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( element_n
             this->updateNormalStressOnReferenceMeshOptSI( matName,rangeFaces, fieldToUpdate );
         else
             this->updateNormalStressOnReferenceMeshStandard( matName,rangeFaces, fieldToUpdate );
+
+#if 0
+        //
+        auto resRef = integrate(_range=rangeFaces,_expr=idv(fieldToUpdate)).evaluate();
+        this->meshALE()->revertMovingMesh( false );
+        // current solution
+        auto const& u = this->fieldVelocity();
+        auto const& p = this->fieldPressure();
+        // identity Matrix
+        auto const Id = eye<nDim,nDim>();
+        // deformation tensor
+        auto Fa = Id+gradv(*M_meshALE->displacement());
+        auto InvFa = det(Fa)*inv(Fa);
+        auto const Sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->materialProperties(),matName,true);
+        auto resMove = integrate(_range=rangeFaces,_expr=Sigmav*N() ).evaluate();
+        this->meshALE()->revertReferenceMesh( false );
+        if ( this->worldComm().isMasterRank() )
+        {
+            std::cout << "resRef " << resRef << "\n";
+            std::cout << "resMove " << resMove << "\n";
+            std::cout << "diff " << (resRef-resMove).norm() << "\n";
+        }
+#endif
     }
 
 #if 0
@@ -1472,13 +1495,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( s
     auto const Id = eye<nDim,nDim>();
     // deformation tensor
     auto Fa = Id+gradv(*M_meshALE->displacement());
-    auto InvFa = det(Fa)*inv(Fa);
-
     // stress tensor : -p*Id + 2*mu*D(u)
-    auto const Sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->materialProperties(),matName,true);
+    auto const Sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u)*inv(Fa),idv(p),*this->materialProperties(),matName,true);
 
     fieldToUpdate->on(_range=rangeFaces,
-                      _expr=Sigmav*trans(InvFa)*N(),
+                      _expr=Sigmav*det(Fa)*trans(inv(Fa))*N(),
                       _geomap=this->geomap() );
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshStandard", "finish" );
@@ -1504,7 +1525,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrecompu
     auto const Id = eye<nDim,nDim>();
     // deformation tensor
     auto Fa = Id+gradv(*M_meshALE->displacement());
-    auto InvFa = det(Fa)*inv(Fa);
 
     if ( !M_saveALEPartNormalStress )
         M_saveALEPartNormalStress = M_XhMeshALEmapDisc->elementPtr();
@@ -1512,7 +1532,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrecompu
     M_saveALEPartNormalStress->zero();
 
     M_saveALEPartNormalStress->on(_range=rangeFaces,
-                                  _expr=trans(InvFa)*N(),
+                                  _expr= det(Fa)*trans(inv(Fa))*N(),
                                   _geomap=this->geomap() );
 
     if ( !meshIsOnRefAtBegin )
@@ -1534,9 +1554,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( std:
     // current solution
     auto const& u = this->fieldVelocity();
     auto const& p = this->fieldPressure();
-    // stress tensor : -p*Id + 2*mu*D(u)
-    auto const Sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->materialProperties(),matName,true);
 
+    auto const Id = eye<nDim,nDim>();
+    auto Fa = Id+gradv(*M_meshALE->displacement());
+    // stress tensor : -p*Id + 2*mu*D(u)
+    auto const Sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u)*inv(Fa),idv(p),*this->materialProperties(),matName,true);
     fieldToUpdate->on(_range=rangeFaces,
                       _expr=Sigmav*idv(M_saveALEPartNormalStress),
                       _geomap=this->geomap() );
