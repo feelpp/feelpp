@@ -175,7 +175,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
             if ( BuildNonCstPart )
             {
-                auto StressTensorExprJac = Feel::FeelModels::fluidMecNewtonianStressTensorJacobian<2*nOrderVelocity>(u,p,*this->materialProperties(),matName);
+                auto StressTensorExprJac = Feel::FeelModels::fluidMecNewtonianViscousStressTensorJacobian(gradv(u),u,*this->materialProperties(),matName);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
                                //_expr= inner( 2*sigma_powerlaw_viscous/*Sigmat_powerlaw*/,grad(v) ),

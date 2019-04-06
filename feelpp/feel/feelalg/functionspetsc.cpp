@@ -403,4 +403,23 @@ PetscConvertIndexSplit( std::vector<IS> & isPetsc ,IndexSplit const& is, WorldCo
 
 }
 
+
+SNESLineSearchType
+toPetscName( Feel::SolverNonLinearLineSearchType const& type )
+{
+    switch ( type )
+    {
+    case Feel::SolverNonLinearLineSearchType::BT : return SNESLINESEARCHBT;
+    case Feel::SolverNonLinearLineSearchType::NLEQERR : return SNESLINESEARCHNLEQERR;
+    case Feel::SolverNonLinearLineSearchType::BASIC : return SNESLINESEARCHBASIC;
+    case Feel::SolverNonLinearLineSearchType::L2 : return SNESLINESEARCHL2;
+    case Feel::SolverNonLinearLineSearchType::CP : return SNESLINESEARCHCP;
+
+    default:
+        LOG(WARNING) << "line search type is unknown, switch to bt";
+        return SNESLINESEARCHBT;
+    }
+}
+
+
 } // namespace Feel
