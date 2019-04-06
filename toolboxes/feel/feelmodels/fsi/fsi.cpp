@@ -291,7 +291,7 @@ FSI<FluidType,SolidType>::init()
     // solid model build
     if ( !M_solidModel )
     {
-        M_solidModel = std::make_shared<solid_type>("solid",false,this->worldCommPtr(), "", this->repository() );
+        M_solidModel = std::make_shared<solid_type>("solid","solid",this->worldCommPtr(), "", this->repository() );
         bool doExtractSubmesh = boption(_name="solid-mesh.extract-1d-from-fluid-mesh",_prefix=this->prefix() );
         if ( doExtractSubmesh )
         {
@@ -305,16 +305,15 @@ FSI<FluidType,SolidType>::init()
 
             // TODO ( save 1d mesh and reload )
             if ( M_fluidModel->doRestart() )
-                M_solidModel->build(submeshStruct);
+                M_solidModel->setMesh1dReduce(submeshStruct);
             else
-                M_solidModel->loadMesh(submeshStruct);
+                M_solidModel->setMesh1dReduce(submeshStruct);
 
         }
         else
         {
             if ( !M_mshfilepathSolidPartN.empty() )
                 M_solidModel->setMeshFile( M_mshfilepathSolidPartN.string() );
-            M_solidModel->build();
         }
 
         // temporary fix TODO !!!!
