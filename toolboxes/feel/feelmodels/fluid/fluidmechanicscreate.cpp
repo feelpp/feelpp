@@ -911,7 +911,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     if ( M_modelName.empty() )
     {
-        std::string theFluidModel = this->modelProperties().models().model("fluid").equations();
+        std::string theFluidModel = this->modelProperties().models().model( this->keyword() ).equations();
         this->setModelName( theFluidModel );
     }
     if ( M_solverName.empty() )

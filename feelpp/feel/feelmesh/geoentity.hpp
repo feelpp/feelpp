@@ -217,7 +217,7 @@ public:
      *
      * @return the dimension of the reference shape
      */
-    uint16_type refDim() const
+    constexpr uint16_type refDim() const
     {
         return super::nDim;
     }
@@ -227,7 +227,7 @@ public:
      *
      * @return the number of points on the reference shape
      */
-    uint16_type nPoints() const
+    constexpr uint16_type nPoints() const
     {
         return super::numPoints;
     }
@@ -237,7 +237,7 @@ public:
      *
      * @return the number of vertices on the reference shape
      */
-    uint16_type nVertices() const
+    constexpr uint16_type nVertices() const
     {
         return super::numVertices;
     }
@@ -247,7 +247,7 @@ public:
      *
      * @return the number of edges on the reference shape
      */
-    uint16_type nEdges() const
+    constexpr uint16_type nEdges() const
     {
         return super::numEdges;
     }
@@ -257,7 +257,7 @@ public:
      *
      * @return the number of edges on the reference shape
      */
-    uint16_type nFaces() const
+    constexpr uint16_type nFaces() const
     {
         return super::numFaces;
     }
@@ -277,7 +277,7 @@ public:
      *
      * @return the number of edges on the reference shape
      */
-    uint16_type nGeometricFaces() const
+    constexpr uint16_type nGeometricFaces() const
     {
         return super::numGeometricFaces;
     }
@@ -287,7 +287,7 @@ public:
      *
      * @return the number of normals on the reference shape
      */
-    uint16_type nNormals() const
+    constexpr uint16_type nNormals() const
     {
         return super::numNormals;
     }
