@@ -61,7 +61,7 @@ PYBIND11_MODULE(_models, m )
 
     pyclass_name = "ModelParameters";
     py::class_<ModelParameters>(m,pyclass_name.c_str())
-        .def(py::init<worldcomm_t const&>(),
+        .def(py::init<worldcomm_ptr_t const&>(),
              py::arg("worldComm"))
         .def("clear", &ModelParameters::clear)
         .def("__len__", [](const ModelParameters &v) { return v.size(); })
@@ -135,7 +135,7 @@ PYBIND11_MODULE(_models, m )
 
     pyclass_name = "ModelMaterials";
     py::class_<ModelMaterials>(m,pyclass_name.c_str())
-        .def(py::init<worldcomm_t const&>(),
+        .def(py::init<worldcomm_ptr_t const&>(),
              py::arg("worldComm"))
         .def("clear", &ModelMaterials::clear)
         .def("__len__", [](const ModelMaterials &v) { return v.size(); })
@@ -169,7 +169,7 @@ PYBIND11_MODULE(_models, m )
 
     pyclass_name = "ModelProperties";
     py::class_<ModelProperties,std::shared_ptr<ModelProperties>>(m,pyclass_name.c_str())
-        .def(py::init<std::string const&, std::string const&, worldcomm_t const&, std::string const&>(),"initialize ModelProperties",py::arg("filename")="",py::arg("directoryLibExpr")="",py::arg("worldComm"),py::arg("prefix")="")
+        .def(py::init<std::string const&, std::string const&, worldcomm_ptr_t const&, std::string const&>(),"initialize ModelProperties",py::arg("filename")="",py::arg("directoryLibExpr")="",py::arg("worldComm"),py::arg("prefix")="")
         .def("parameters",static_cast<ModelParameters& (ModelProperties::*)()>(&ModelProperties::parameters), "get parameters of the model",py::return_value_policy::reference)
         .def("materials",static_cast<ModelMaterials& (ModelProperties::*)()>(&ModelProperties::materials), "get the materials of the model",py::return_value_policy::reference);
 
