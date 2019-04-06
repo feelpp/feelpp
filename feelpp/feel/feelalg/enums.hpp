@@ -307,6 +307,15 @@ enum SolverNonLinearType
     ASPIN
 };
 
+enum class SolverNonLinearLineSearchType
+{
+    BT = 0,
+    NLEQERR,
+    BASIC,
+    L2,
+    CP
+};
+
 /**
  *
  */
@@ -387,6 +396,9 @@ SolverNonLinearType
 snesTypeConvertStrToEnum( std::string const& type );
 std::string
 snesTypeConvertEnumToStr( SolverNonLinearType type );
+
+SolverNonLinearLineSearchType
+snesLineSearchTypeConvertStrToEnum( std::string const& type );
 
 MatSolverPackageType
 matSolverPackageConvertStrToEnum( std::string const& type );

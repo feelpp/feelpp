@@ -1515,6 +1515,94 @@ idelements( MeshType const& imesh, std::vector<T> const& l )
 }
 
 
+//! \return a pair of iterators to iterate over a range of elements 'rangeElt' which
+//!  touch the range of faces rangeFace by a point/edge/faces (with respect to type arg)
+template<typename MeshType>
+elements_pid_t<MeshType>
+elements( MeshType const& mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, faces_reference_wrapper_t<MeshType> const& rangeFace, ElementsType type = ElementsType::MESH_POINTS )
+{
+    std::unordered_set<size_type> entityIds;
+    for( auto const& faceWrap : rangeFace )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        if ( type == ElementsType::MESH_POINTS )
+        {
+            for ( uint16_type p=0;p<face.nVertices();++p )
+                entityIds.insert( face.point(p).id() );
+        }
+        else if ( type == ElementsType::MESH_EDGES && is_3d<MeshType>::value )
+        {
+            for ( uint16_type p=0;p<face.nEdges();++p )
+                entityIds.insert( face.edge(p).id() );
+        }
+        else if ( type == ElementsType::MESH_FACES || ( is_2d<MeshType>::value && type == ElementsType::MESH_EDGES ) )
+        {
+            entityIds.insert( face.id() );
+        }
+        else
+            CHECK( false ) << "invalid type " << type;
+    }
+
+
+    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
+
+    for ( auto const& eltWrap : rangeElt )
+    {
+        auto const& elt = unwrap_ref( eltWrap );
+        bool addElt = false;
+        if ( type == ElementsType::MESH_POINTS )
+        {
+            for ( uint16_type p=0;p<elt.nVertices();++p )
+            {
+                if  ( entityIds.find( elt.point(p).id() ) != entityIds.end() )
+                {
+                    addElt = true;
+                    break;
+                }
+            }
+        }
+        else if ( type == ElementsType::MESH_EDGES && is_3d<MeshType>::value )
+        {
+            for ( uint16_type p=0;p<elt.nEdges();++p )
+            {
+                if  ( entityIds.find( elt.edge(p).id() ) != entityIds.end() )
+                {
+                    addElt = true;
+                    break;
+                }
+            }
+        }
+        else if ( type == ElementsType::MESH_FACES || ( is_2d<MeshType>::value && type == ElementsType::MESH_EDGES ) )
+        {
+            for ( uint16_type p=0;p<elt.nTopologicalFaces();++p )
+            {
+                if  ( entityIds.find( elt.face(p).id() ) != entityIds.end() )
+                {
+                    addElt = true;
+                    break;
+                }
+            }
+        }
+        else
+            CHECK( false ) << "invalid type " << type;
+        if ( addElt )
+            myelts->push_back(boost::cref(elt));
+    }
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                              myelts->begin(), myelts->end(),
+                              myelts );
+}
+
+//! \return a pair of iterators to iterate over all elements (not ghost) which
+//!  touch the range of faces rangeFace by a point/edge/faces (with respect to type arg)
+template<typename MeshType>
+elements_pid_t<MeshType>
+elements( MeshType const& mesh, faces_reference_wrapper_t<MeshType> const& rangeFace, ElementsType type = ElementsType::MESH_POINTS )
+{
+    return elements( mesh, elements(mesh), rangeFace, type );
+}
+
+
 } // namespace Feel
 
 
