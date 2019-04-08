@@ -152,7 +152,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
             {
                 auto const& BetaU = *fieldVelocityPressureExtrapolated;
                 auto betaU = BetaU.template element<0>();
-                auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(betaU),p,*this->materialProperties(),matName);
+                auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(betaU),*this->materialProperties(),matName);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
                                _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),
