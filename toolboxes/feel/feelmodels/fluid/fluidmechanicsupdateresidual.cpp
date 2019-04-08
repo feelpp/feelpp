@@ -210,7 +210,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             }
             if ( BuildNonCstPart )
             {
-                auto const StressTensorExpr = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),p,*this->materialProperties(),matName,false/*true*/);
+                auto const StressTensorExpr = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->materialProperties(),matName,false/*true*/);
                 // sigma : grad(v) on Omega
                 linearForm_PatternCoupled +=
                     integrate( _range=range,

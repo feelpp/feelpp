@@ -68,14 +68,6 @@ public:
 
     typedef Fit<ExprT,InterpOperator> this_type;
 
-    explicit Fit( expression_type const & __expr,
-                  std::string const& dataFile,
-                  InterpolationType interpType,
-                  WorldComm const& worldComm )
-        :
-        M_expr(__expr),
-        M_interpolator( Interpolator::New( interpType, dataFile, worldComm) )
-        {}
     Fit( expression_type const & expr,
          std::shared_ptr<Interpolator> const& interpolator )
         :
@@ -244,22 +236,13 @@ private:
 /**
  * \brief Fit
  **/
-template<typename ExprT>
-inline
-Expr< Fit<ExprT,0> >
-fit( ExprT const& v, std::string const& dataFile, int intType,
-     WorldComm const& worldComm = Environment::worldComm() )
-{
-    LOG(INFO) << "Fit "<< dataFile << " with " << intType;
-    typedef Fit<ExprT,0> fit_t;
-    return Expr< fit_t >(  fit_t( v, dataFile, static_cast<InterpolationType>( intType ), worldComm ) );
-}
 
 template<typename ExprT>
 inline
 Expr< Fit<ExprT,0> >
 fit( ExprT const& v,
      std::string const& dataFile = soption("fit.datafile"),
+     std::string const& abscissa = "", std::string const& ordinate = "",
      std::string const& type = soption("fit.type"),
      WorldComm const& worldComm = Environment::worldComm() )
 {
@@ -268,7 +251,7 @@ fit( ExprT const& v,
     InterpolationType interpolatorEnumType = itFindType->second;
     LOG(INFO) << "Fit "<< dataFile << " with " << type;
     typedef Fit<ExprT,0> fit_t;
-    return Expr< fit_t >(  fit_t( v, dataFile, interpolatorEnumType, worldComm ) );
+    return Expr< fit_t >(  fit_t( v, Interpolator::New( interpolatorEnumType, dataFile, abscissa, ordinate, worldComm ) ) );
 }
 
 template<typename ExprT>
@@ -285,18 +268,9 @@ fit( ExprT const& v,
 template<typename ExprT>
 inline
 Expr< Fit<ExprT,1> >
-fitDiff( ExprT v, std::string dataFile, int intType,
-         WorldComm const& worldComm = Environment::worldComm() )
-{
-    LOG(INFO) << "Fit Diff "<< dataFile << " with " << intType;
-    typedef Fit<ExprT,1> fit_t;
-    return Expr< fit_t >(  fit_t( v, dataFile, intType, worldComm ) );
-}
-template<typename ExprT>
-inline
-Expr< Fit<ExprT,1> >
 fitDiff( ExprT const& v,
          std::string const& dataFile = soption("fit.datafile"),
+         std::string const& abscissa = "", std::string const& ordinate = "",
          std::string const& type = soption("fit.type"),
          WorldComm const& worldComm = Environment::worldComm() )
 {
@@ -305,7 +279,7 @@ fitDiff( ExprT const& v,
     InterpolationType interpolatorEnumType = itFindType->second;
     LOG(INFO) << "Fit Diff"<< dataFile << " with " << type;
     typedef Fit<ExprT,1> fit_t;
-    return Expr< fit_t >(  fit_t( v, dataFile, interpolatorEnumType, worldComm ) );
+    return Expr< fit_t >(  fit_t( v, Interpolator::New( interpolatorEnumType, dataFile, abscissa, ordinate, worldComm ) ) );
 }
 
 template<typename ExprT>

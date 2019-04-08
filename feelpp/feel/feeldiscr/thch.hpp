@@ -71,6 +71,14 @@ using THch_ptrtype = std::shared_ptr<FunctionSpace<MeshType,
                                                      double,
                                                      Periodicity <NoPeriodicity,NoPeriodicity>,
                                                      mortars<NoMortar,NoMortar> >>;
+template<int Order,typename MeshType>
+using THch_velocity_space_t = typename THch_type<Order,MeshType>::template sub_functionspace_type<0>;
+template<int Order,typename MeshType>
+using THch_pressure_space_t = typename THch_type<Order,MeshType>::template sub_functionspace_type<1>;
+template<int Order,typename MeshType>
+using THch_velocity_space_ptr_t = typename THch_type<Order,MeshType>::template sub_functionspace_ptrtype<0>;
+template<int Order,typename MeshType>
+using THch_pressure_space_ptr_t = typename THch_type<Order,MeshType>::template sub_functionspace_ptrtype<1>;
     
 /**
    Given a \p mesh and polynomial order \f$k\f$(template argument), build a

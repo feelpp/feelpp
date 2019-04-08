@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <feel/feelfit/interpolator.hpp>
 
 #include <feel/feelalg/backendeigen.hpp>
+#include <feel/feelfilters/loadcsv.hpp>
 
 namespace Feel
 {
@@ -69,12 +70,17 @@ Interpolator::New( InterpolationType type, std::vector<pair_type> const& data )
     return {};
 }
 
-std::unique_ptr<Interpolator> Interpolator::New( InterpolationType type, std::string const& dataFile, WorldComm const& worldComm )
+std::unique_ptr<Interpolator> Interpolator::New( InterpolationType type, std::string const& dataFile,  std::string const& abscissa, std::string const& ordinate, WorldComm const& worldComm )
 {
     std::vector<pair_type> data;
     std::string dataFileExpanded = Environment::expand( dataFile );
     if ( worldComm.isMasterRank() )
     {
+        std::map<double,double> dataFromReader = loadXYFromCSV( dataFileExpanded, abscissa, ordinate );
+        data.reserve( dataFromReader.size() );
+        for ( auto const& [ key,value ] : dataFromReader )
+            data.push_back( { key,value } );
+#if 0
         std::ifstream infile( dataFileExpanded );
         std::string line;
         double a, b;
@@ -95,6 +101,7 @@ std::unique_ptr<Interpolator> Interpolator::New( InterpolationType type, std::st
         {
             LOG(WARNING) << "Error opening data file" << dataFileExpanded;
         }
+#endif
     }
     if ( worldComm.globalComm().size() > 1 )
         boost::mpi::broadcast( worldComm.globalComm() , data , worldComm.masterRank() );
