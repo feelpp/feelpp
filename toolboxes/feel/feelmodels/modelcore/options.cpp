@@ -98,7 +98,8 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
     return appliBaseOptions
         .add( gmsh_options( prefix ) )
         .add( modelalgebraic_options( prefix ))
-        .add( backend_options( prefix ) );
+        .add( backend_options( prefix ) )
+        .add( ptree_options( prefix ) );
 }
 
 /**
