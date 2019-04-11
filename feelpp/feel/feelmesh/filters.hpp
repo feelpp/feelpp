@@ -56,6 +56,8 @@ using range_t = typename mpl::if_< boost::is_std_list<RangeType>,
                                    mpl::identity<RangeType>,
                                    mpl::identity<std::list<RangeType> > >::type::type::value_type;
 
+template <typename RangeType>
+using entity_range_t = typename  boost::unwrap_reference<typename boost::tuples::template element<1,range_t<RangeType> >::type::value_type>::type;
 
 template<typename MeshType>
 using elements_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
