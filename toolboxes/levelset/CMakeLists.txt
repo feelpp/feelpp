@@ -9,3 +9,4 @@ feelpp_add_application( levelset_2d SRCS main_ls.cpp
 
 feelpp_add_testcase(square PREFIX feelpp_levelset CATEGORY levelset )
 feelpp_add_testcase(tube PREFIX feelpp_levelset CATEGORY levelset )
+feelpp_add_testcase(injector PREFIX feelpp_levelset CATEGORY levelset )
