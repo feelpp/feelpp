@@ -165,7 +165,7 @@ removeComments( std::string str )
 FEELPP_EXPORT void
 editPtreeFromOptions( pt::ptree& p, std::string const& prefix )
 {
-    if ( Environment::vm().count("json-editions") )
+    if ( Environment::vm().count(prefixvm(prefix, "json-editions")) )
     {
         std::vector<std::string> var_list = option( _name="json-editions", _prefix=prefix ).template as<std::vector<std::string>>();
 
