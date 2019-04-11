@@ -1025,7 +1025,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // Particle injectors
     for( std::string const& injectorMarker: this->modelProperties().boundaryConditions().markers( this->prefix(), "ParticleInjector" ) )
     {
-        auto particleInjector = std::make_shared<levelsetparticleinjector_type>( this->shared_from_this(), injectorMarker );
+        auto particleInjector = std::make_shared<levelsetparticleinjector_type>( this->shared_from_this(), markedelements( this->mesh(), injectorMarker) );
 
         // Injector method
         std::string particleInjectorMethod = "fixed_position"; // default value

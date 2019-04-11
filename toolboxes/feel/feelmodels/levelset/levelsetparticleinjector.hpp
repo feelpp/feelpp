@@ -50,6 +50,11 @@ public:
     static const uint16_type nDim = levelset_type::nDim;
     typedef typename levelset_type::mesh_type mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+    // Range types
+    typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
+    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
+    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
+    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
     // Levelset element
     typedef typename levelset_type::space_levelset_type functionspace_type;
     typedef typename levelset_type::space_levelset_ptrtype functionspace_ptrtype;
@@ -75,7 +80,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Constructor
-    LevelSetParticleInjector( levelset_ptrtype const& ls, boost::any const& markers );
+    LevelSetParticleInjector( levelset_ptrtype const& ls, range_elements_type const& range );
 
     //--------------------------------------------------------------------//
     // Function spaces
@@ -84,7 +89,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Parameters
-    boost::any const& injectorMarkers() const { return M_injectorMarkers; }
+    range_elements_type const& rangeInjectorElements() const { return M_rangeInjectorElements; }
     //void setInjectorMarkers( boost::any const& markers ) { M_injectorMarkers = markers; }
 
     LevelSetShapeType particleShape( std::string const& id ) const { return M_particles.at(id).shape; }
@@ -125,13 +130,13 @@ private:
     levelset_ptrtype M_levelset;
     //--------------------------------------------------------------------//
     // Injector function space
+    range_elements_type M_rangeInjectorElements;
     functionspace_ptrtype M_spaceInjector;
     //--------------------------------------------------------------------//
     // Particle shapes creator
     levelsetparticleshapes_ptrtype M_levelsetParticleShapes;
     //--------------------------------------------------------------------//
     // Parameters
-    boost::any M_injectorMarkers;
     std::map<std::string, Particle> M_particles;
     ParticleInjectionMethod M_particleInjectionMethod;
     uint16_type M_nParticles;
@@ -154,9 +159,9 @@ LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::ParticleInjectionMethodIdMap = {
 };
 
 LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_DECLARATIONS
-LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::LevelSetParticleInjector( levelset_ptrtype const& ls, boost::any const& markers )
+LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::LevelSetParticleInjector( levelset_ptrtype const& ls, range_elements_type const& range )
     : M_levelset( ls ),
-      M_injectorMarkers( markers ),
+      M_rangeInjectorElements( range ),
       M_particles(),
       M_particleInjectionMethod( ParticleInjectionMethod::FIXED_POSITION ),
       M_nParticles( 0 ),
@@ -208,14 +213,13 @@ typename LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::element_levelset_type
 LEVELSETPARTICLEINJECTOR_CLASS_TEMPLATE_TYPE::inject( element_levelset_type const& phi ) const
 {
     auto const& mesh = phi.mesh();
-    auto const rangeInjectorElements = markedelements( mesh, this->injectorMarkers() );
 
     double injectionZoneVolume = integrate(
-            _range=rangeInjectorElements,
+            _range=this->rangeInjectorElements(),
             _expr=cst(1.)
             ).evaluate()(0,0);
     double particleDensity = integrate(
-            _range=rangeInjectorElements,
+            _range=this->rangeInjectorElements(),
             _expr=(1-idv(M_levelset->heaviside()))
             ).evaluate()(0,0) / injectionZoneVolume;
 
