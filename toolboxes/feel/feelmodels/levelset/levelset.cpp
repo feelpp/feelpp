@@ -7,6 +7,7 @@
 #include <feel/feelmodels/levelset/cauchygreeninvariantsexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetdeltaexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetheavisideexpr.hpp>
+//#include <feel/feelmodels/levelset/levelsetcurvatureexpr.hpp>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/list_inserter.hpp>
@@ -611,13 +612,26 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::createTools()
 {
-    this->toolManager()->createProjectorL2Default();
-    M_projectorL2Scalar = this->toolManager()->projectorL2Scalar();
-    M_projectorL2Vectorial = this->toolManager()->projectorL2Vectorial();
+    if( M_useSpaceIsoPN )
+    {
+        this->toolManager()->createProjectorL2IsoPN();
+        M_projectorL2Scalar = this->toolManager()->projectorL2ScalarIsoPN();
+        M_projectorL2Vectorial = this->toolManager()->projectorL2VectorialIsoPN();
 
-    this->toolManager()->createProjectorSMDefault();
-    M_projectorSMScalar = this->toolManager()->projectorSMScalar();
-    M_projectorSMVectorial = this->toolManager()->projectorSMVectorial();
+        this->toolManager()->createProjectorSMIsoPN();
+        M_projectorSMScalar = this->toolManager()->projectorSMScalarIsoPN();
+        M_projectorSMVectorial = this->toolManager()->projectorSMVectorialIsoPN();
+    }
+    else
+    {
+        this->toolManager()->createProjectorL2Default();
+        M_projectorL2Scalar = this->toolManager()->projectorL2Scalar();
+        M_projectorL2Vectorial = this->toolManager()->projectorL2Vectorial();
+
+        this->toolManager()->createProjectorSMDefault();
+        M_projectorSMScalar = this->toolManager()->projectorSMScalar();
+        M_projectorSMVectorial = this->toolManager()->projectorSMVectorial();
+    }
 
     if( M_useCauchyAugmented )
     {
@@ -1317,13 +1331,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
         {
             this->log("LevelSet", "updateCurvature", "perform L2 projection");
             //*M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
-            *M_levelsetCurvature = this->projectorL2()->derivate( trans(idv(this->normal())) );
+            auto phi = this->phi();
+            *M_levelsetCurvature = this->projectorL2()->derivate( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
         }
         break;
         case CurvatureMethod::SMOOTH_PROJECTION:
         {
             this->log("LevelSet", "updateCurvature", "perform smooth projection");
-            *M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
+            //*M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
+            auto phi = this->phi();
+            *M_levelsetCurvature = this->smoother()->derivate( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
         }
         break;
         case CurvatureMethod::PN_NODAL_PROJECTION:
@@ -1339,6 +1356,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
                     _space=this->functionSpaceManager()->functionSpaceScalarPN(),
                     _range=this->functionSpaceManager()->rangeMeshPNElements(),
                     _expr=divv(normalPN)
+                    //_expr=levelsetCurvature( *phiPN )
                     );
 
             this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *M_levelsetCurvature );
@@ -3044,6 +3062,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time, bool save )
         if( nDim > 1 ) vecUCOM.push_back( ucom(1,0) );
         if( nDim > 2 ) vecUCOM.push_back( ucom(2,0) );
         this->postProcessMeasuresIO().setMeasureComp( "velocity_com", vecUCOM );
+        double normUCOM = std::sqrt( std::inner_product( vecUCOM.begin(), vecUCOM.end(), vecUCOM.begin(), 0.0 ) );
+        this->postProcessMeasuresIO().setMeasure( "velocity_com", normUCOM );
         hasMeasureToExport = true;
     }
 

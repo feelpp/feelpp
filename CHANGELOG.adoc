@@ -10,6 +10,13 @@
 :uri-toolbox-issue: https://github.com/feelpp/toolbox/issues
 
 [[v0.106.0-2019-02-05]]
+== v0.107.0
+
+=== Developers
+
+* use C++17 language features, {uri-issue}/1282[#1282]
+
+[[v0.106.0-2019-02-05]]
 == v0.106.0
 https://github.com/feelpp/feelpp/tree/v0.106.0[v0.106.0] (2019-02-05)
 

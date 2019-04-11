@@ -85,6 +85,8 @@ public:
     void createProjectorL2Default();
     void createProjectorSMDefault();
     void createProjectorL2Tensor2Symm();
+    void createProjectorL2IsoPN();
+    void createProjectorSMIsoPN();
 
     void createCurvatureDiffusion();
 
@@ -96,6 +98,11 @@ public:
 
     projector_scalar_ptrtype const& projectorSMScalar() const { return M_projectorSMScalar; }
     projector_vectorial_ptrtype const& projectorSMVectorial() const { return M_projectorSMVectorial; }
+
+    projector_scalar_ptrtype const& projectorL2ScalarIsoPN() const { return M_projectorL2ScalarIsoPN; }
+    projector_vectorial_ptrtype const& projectorL2VectorialIsoPN() const { return M_projectorL2VectorialIsoPN; }
+    projector_scalar_ptrtype const& projectorSMScalarIsoPN() const { return M_projectorSMScalarIsoPN; }
+    projector_vectorial_ptrtype const& projectorSMVectorialIsoPN() const { return M_projectorSMVectorialIsoPN; }
 
     levelset_curvaturediffusion_ptrtype const& curvatureDiffusion() const { return M_curvatureDiffusion; }
 
@@ -111,16 +118,30 @@ private:
     backend_ptrtype M_backendProjectorSMScalar;
     backend_ptrtype M_backendProjectorSMVectorial;
     backend_ptrtype M_backendProjectorL2Tensor2Symm;
+
+    backend_ptrtype M_backendProjectorL2ScalarIsoPN;
+    backend_ptrtype M_backendProjectorL2VectorialIsoPN;
+    backend_ptrtype M_backendProjectorSMScalarIsoPN;
+    backend_ptrtype M_backendProjectorSMVectorialIsoPN;
     //--------------------------------------------------------------------//
     // Projectors L2
     projector_scalar_ptrtype M_projectorL2Scalar;
     projector_vectorial_ptrtype M_projectorL2Vectorial;
     projector_tensor2symm_ptrtype M_projectorL2Tensor2Symm;
+
+    projector_scalar_ptrtype M_projectorL2ScalarIsoPN;
+    projector_vectorial_ptrtype M_projectorL2VectorialIsoPN;
+    projector_tensor2symm_ptrtype M_projectorL2Tensor2SymmIsoPN;
     // Projectors SMOOTH
     double M_projectorSMScalarCoeff;
-    double M_projectorSMVectorialCoeff;
     projector_scalar_ptrtype M_projectorSMScalar;
+    double M_projectorSMVectorialCoeff;
     projector_vectorial_ptrtype M_projectorSMVectorial;
+
+    double M_projectorSMScalarIsoPNCoeff;
+    projector_scalar_ptrtype M_projectorSMScalarIsoPN;
+    double M_projectorSMVectorialIsoPNCoeff;
+    projector_vectorial_ptrtype M_projectorSMVectorialIsoPN;
     //--------------------------------------------------------------------//
     // Curvature diffusion method
     levelset_curvaturediffusion_ptrtype M_curvatureDiffusion;
@@ -144,8 +165,11 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::LevelSetToolManager(
 {
     double h = M_spaceManager->mesh()->hAverage();
     double O = BasisType::nOrder;
+    double On = BasisPnType::nOrder;
     M_projectorSMScalarCoeff = h / O * doption( _name="smooth-coeff", _prefix=prefixvm(M_prefix,"projector-sm-scalar") );
     M_projectorSMVectorialCoeff = h / O * doption( _name="smooth-coeff", _prefix=prefixvm(M_prefix,"projector-sm-vectorial") );
+    M_projectorSMScalarIsoPNCoeff = h / On * doption( _name="smooth-coeff", _prefix=prefixvm(M_prefix,"projector-sm-scalar-isopn") );
+    M_projectorSMVectorialIsoPNCoeff = h / On * doption( _name="smooth-coeff", _prefix=prefixvm(M_prefix,"projector-sm-vectorial-isopn") );
 }
 
 LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
@@ -234,6 +258,76 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorL2Tensor2Symm()
                 this->functionSpaceManager()->functionSpaceTensor2Symm(),
                 this->functionSpaceManager()->functionSpaceTensor2Symm(),
                 this->M_backendProjectorL2Tensor2Symm
+                );
+    }
+}
+
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorL2IsoPN()
+{
+    if( !M_projectorL2ScalarIsoPN )
+    {
+        auto backendName = prefixvm( this->M_prefix, "projector-l2-scalar-isopn" );
+        M_backendProjectorL2ScalarIsoPN = backend_type::build(
+                soption( _prefix=backendName, _name="backend" ),
+                backendName,
+                this->functionSpaceManager()->functionSpaceScalarIsoPN()->worldCommPtr()
+                );
+        M_projectorL2ScalarIsoPN = projector(
+                this->functionSpaceManager()->functionSpaceScalarIsoPN(),
+                this->functionSpaceManager()->functionSpaceScalarIsoPN(),
+                this->M_backendProjectorL2ScalarIsoPN
+                );
+    }
+    if( !M_projectorL2VectorialIsoPN )
+    {
+        auto backendName = prefixvm( this->M_prefix, "projector-l2-vectorial-isopn" );
+        M_backendProjectorL2VectorialIsoPN = backend_type::build(
+                soption( _prefix=backendName, _name="backend" ),
+                backendName,
+                this->functionSpaceManager()->functionSpaceVectorialIsoPN()->worldCommPtr()
+                );
+        M_projectorL2VectorialIsoPN = projector(
+                this->functionSpaceManager()->functionSpaceVectorialIsoPN(),
+                this->functionSpaceManager()->functionSpaceVectorialIsoPN(),
+                this->M_backendProjectorL2VectorialIsoPN
+                );
+    }
+}
+
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMIsoPN()
+{
+    if( !M_projectorSMScalarIsoPN )
+    {
+        auto backendName = prefixvm( this->M_prefix, "projector-sm-scalar-isopn" );
+        M_backendProjectorSMScalarIsoPN = backend_type::build(
+                soption( _prefix=backendName, _name="backend" ),
+                backendName,
+                this->functionSpaceManager()->functionSpaceScalarIsoPN()->worldCommPtr()
+                );
+        M_projectorSMScalarIsoPN = projector(
+                this->functionSpaceManager()->functionSpaceScalarIsoPN(),
+                this->functionSpaceManager()->functionSpaceScalarIsoPN(),
+                this->M_backendProjectorSMScalarIsoPN,
+                DIFF, M_projectorSMScalarIsoPNCoeff, 30
+                );
+    }
+    if( !M_projectorSMVectorialIsoPN )
+    {
+        auto backendName = prefixvm( this->M_prefix, "projector-sm-vectorial-isopn" );
+        M_backendProjectorSMVectorialIsoPN = backend_type::build(
+                soption( _prefix=backendName, _name="backend" ),
+                backendName,
+                this->functionSpaceManager()->functionSpaceVectorialIsoPN()->worldCommPtr()
+                );
+        M_projectorSMVectorialIsoPN = projector(
+                this->functionSpaceManager()->functionSpaceVectorialIsoPN(),
+                this->functionSpaceManager()->functionSpaceVectorialIsoPN(),
+                this->M_backendProjectorSMVectorialIsoPN,
+                DIFF, M_projectorSMVectorialIsoPNCoeff, 30
                 );
     }
 }

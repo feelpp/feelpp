@@ -13,7 +13,7 @@ Options:
  -d, --debug                         debug mode
 -rd, --relwithdebinfo                relwithdebinfo mode
  -r, --release                       release mode
-     --std=c++xx                     c++ standard c++14, c++1z (default: c++14)
+     --std=c++xx                     c++ standard c++17,c++14, c++2a (default: c++17)
      --stdlib=libxx                  c++ standard library libstdc++, libc++ (default: libstdc++)
      --max-order=x                   maximum polynomial order to instantiate(default: 3)
      --cxxflags                      override cxxflags
@@ -41,7 +41,7 @@ EOT
 _HAS_ERROR=no
 _WANT_HELP=no
 PROJECT_INSTALL_PREFIX=$(dirname `pwd`)/install-$(basename `pwd`)
-PROJECT_STD_CPP=14
+PROJECT_STD_CPP=17
 PROJECT_MAX_ORDER=3
 PROJECTSRCROOT=`dirname $0`
 GENERATOR="Unix Makefiles"
@@ -276,7 +276,7 @@ fi
 echo "SET(BUILDROOT ${BUILDROOT} CACHE PATH \"Compilation directory\")" >> cmake.configure
 echo "SET(CMAKE_INSTALL_PREFIX \"${PROJECT_INSTALL_PREFIX}\" CACHE PATH \"Installation directory\" FORCE)" >> cmake.configure
 echo "SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)" >> cmake.configure
-echo "SET(FEELPP_STD_CPP \"$PROJECT_STD_CPP\" CACHE PATH \"Feel++ c++ standard c++14 or c++1z\")"  >> cmake.configure
+echo "SET(FEELPP_STD_CPP \"$PROJECT_STD_CPP\" CACHE PATH \"Feel++ c++ standard c++17, c++14 or c++2a\")"  >> cmake.configure
 echo "SET(FEELPP_STDLIB_CPP \"$PROJECT_STDLIB_CPP\" CACHE PATH \"Feel++ c++ standard library stdc++ or c++\")"  >> cmake.configure
 echo "SET(FEELPP_INSTANTIATION_ORDER_MAX \"$PROJECT_MAX_ORDER\" CACHE PATH \"Feel++ maximum polynomial order instantiation\")"  >> cmake.configure
 echo "SET(PROJECT_ROOT ${PROJECTSRCROOT} CACHE PATH \"Project root\")" >> cmake.configure

@@ -334,12 +334,13 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {
     if ( M_bcDirichlet.empty() ) return;
 
     this->log("Heat","updateNewtonInitialGuess","start" );
 
+    vector_ptrtype& U = data.initialGuess();
     auto mesh = this->mesh();
     auto u = this->spaceTemperature()->element( U, this->rowStartInVector() );
 
@@ -349,10 +350,9 @@ HEAT_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
         u.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
              _expr=theExpr );
     }
-    // synchronize temperature dof on interprocess
-    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("temperature");
-    if ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )
-        sync( u, "=", itFindDofsWithValueImposed->second );
+
+    // update info for synchronization
+    this->updateDofEliminationIdsMultiProcess( "temperature", data );
 
     this->log("Heat","updateNewtonInitialGuess","finish" );
 }

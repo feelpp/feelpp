@@ -57,6 +57,7 @@
 
 #include <feel/feelmesh/marker.hpp>
 #include <feel/feelmesh/traits.hpp>
+#include <feel/feelmesh/filters.hpp>
 #include <feel/feelpoly/lagrange.hpp>
 
 
@@ -71,6 +72,20 @@ enum class GeomapStrategyType
     GEOMAP_O1 = 1,
     GEOMAP_HO = 2
 };
+
+namespace detail
+{
+template <typename RangeType>
+GeomapStrategyType
+geomapStrategy( RangeType const& /**/, GeomapStrategyType gs )
+{
+    static const uint16_type geoOrder = entity_range_t<RangeType>::nOrder;
+    if ( geoOrder == 1 )
+        return GeomapStrategyType::GEOMAP_HO;
+    else
+        return gs;
+}
+}
 
 //namespace blas = boost::numeric::bindings::blas;
 //namespace traits = boost::numeric::bindings::traits;

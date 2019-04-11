@@ -7,14 +7,17 @@ namespace Feel
 namespace FeelModels
 {
 
-#if 0
+
 template< class FluidType, class SolidType >
 void
-FSI<FluidType,SolidType>::updateLinearPDEStrongDirichletBC_Fluid( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
+FSI<FluidType,SolidType>::updateLinearPDEDofElimination_Fluid( DataUpdateLinear & data ) const
 {
     if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
     {
-        this->log("FSI","updateLinearPDEStrongDirichletBC_Fluid", "start" );
+        this->log("FSI","updateLinearPDEDofElimination_Fluid", "start" );
+
+        sparse_matrix_ptrtype& A = data.matrix();
+        vector_ptrtype& F = data.rhs();
 
         auto mesh = M_fluidModel->mesh();
         auto Xh = M_fluidModel->spaceVelocityPressure();
@@ -28,31 +31,33 @@ FSI<FluidType,SolidType>::updateLinearPDEStrongDirichletBC_Fluid( sparse_matrix_
                 _element=u, _rhs=F,
                 _expr=idv(M_fluidModel->meshVelocity2()) );
 
-        this->log("FSI","updateLinearPDEStrongDirichletBC_Fluid", "finish" );
+        this->log("FSI","updateLinearPDEDofElimination_Fluid", "finish" );
     }
 }
 
 template< class FluidType, class SolidType >
 void
-FSI<FluidType,SolidType>::updateNewtonInitialGuess_Fluid( vector_ptrtype& U ) const
+FSI<FluidType,SolidType>::updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess & data ) const
 {
     if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
     {
+        this->log("FSI","updateNewtonInitialGuess_Fluid", "start" );
+
+        vector_ptrtype& U = data.initialGuess();
         auto mesh = M_fluidModel->mesh();
         auto Xh = M_fluidModel->spaceVelocityPressure();
         auto up = Xh->element( U, M_fluidModel->rowStartInVector() );
         auto u = up.template element<0>();
         u.on(_range=markedfaces(mesh, M_fluidModel->markersNameMovingBoundary()),
              _expr=idv( M_fluidModel->meshVelocity2() ) );
-#if 0
-        // synchronize velocity dof on interprocess
-        auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("velocity");
-        if ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )
-            sync( u, "=", itFindDofsWithValueImposed->second );
-#endif
+        // update info for synchronization
+        M_fluidModel->updateDofEliminationIdsMultiProcess( "velocity", this->dofEliminationIdsMultiProcess( "fluid.velocity" ), data );
+
+        this->log("FSI","updateNewtonInitialGuess_Fluid", "finish" );
     }
 }
 
+#if 0
 template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::updateJacobianStrongDirichletBC_Fluid( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const
@@ -570,7 +575,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
 
     double timeSteppingScaling = 1.;
     if ( !this->solidModel()->isStationary() )
-        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"timeSteppingScaling") );
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"time-stepping.scaling") );
 
     // neumann boundary condition with normal stress (fsi boundary condition)
     if ( buildNonCstPart)
@@ -684,7 +689,7 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
 
     double timeSteppingScaling = 1.;
     if ( !this->solidModel()->isStationary() )
-        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"timeSteppingScaling") );
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"time-stepping.scaling") );
 
 
     double gammaRobinFSI = M_couplingNitscheFamily_gamma;
@@ -745,7 +750,7 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
 
     double timeSteppingScaling = 1.;
     if ( !this->solidModel()->isStationary() )
-        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"timeSteppingScaling") );
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"time-stepping.scaling") );
 
     auto mesh = M_solidModel->mesh();
     auto Xh = M_solidModel->functionSpaceDisplacement();
