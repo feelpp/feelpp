@@ -374,8 +374,8 @@ public :
         }
     template <typename Solution_t, typename Rhs_t>
     typename Backend<double>::solve_return_type
-    solveImpl( Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
-               bool rebuild, pre_solve_type pre, post_solve_type post )
+    solveImpl( Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind = "petsc",
+               bool rebuild = false, pre_solve_type pre = pre_solve_type(), post_solve_type post = post_solve_type() )
         {
             auto U = backend()->newBlockVector(_block=solution, _copy_values=false);
             tic();
@@ -652,7 +652,8 @@ public :
     using product_space_t = decay_type<PS>;
     using condensed_vector_type = VectorCondensed<value_type>;
     using condensed_vector_ptrtype = std::shared_ptr<condensed_vector_type>;
-
+    using vector_ptrtype = condensed_vector_ptrtype;
+    
     BlockLinearForm() = default;
     BlockLinearForm( BlockLinearForm const& ) = default;
 
@@ -688,7 +689,16 @@ public :
         {}
     BlockLinearForm( BlockLinearForm&& ) = default;
     BlockLinearForm& operator=( BlockLinearForm && lf ) = default;
-    BlockLinearForm& operator=( BlockLinearForm const& lf ) = default;
+    BlockLinearForm& operator=( BlockLinearForm const& lf )
+        {
+            if ( this == &lf )
+                return *this;
+
+            M_ps = lf.M_ps;
+            M_vector = lf.M_vector;
+            
+            return *this;
+        }
 
 #if 0
     template<typename N1>
@@ -774,6 +784,12 @@ public :
     product_space_t M_ps;
     condensed_vector_ptrtype M_vector;
 };
+
+template<typename PS>
+using blockform1_t = BlockLinearForm<PS>;
+template<typename PS>
+using blockform2_t = BlockBilinearForm<PS>;
+
 
 template<typename PS>
 BlockLinearForm<PS>
