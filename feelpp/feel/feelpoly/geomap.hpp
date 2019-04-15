@@ -2148,7 +2148,7 @@ class GeoMap
                 if  ( !this->isOnFace() )
                     return;//throw std::logic_error("Local basis defined only on faces ");
                 local_basis_ref = eigen_matrix_pp_type::Identity();
-                eigen_vector_n_type Np = M_gm->referenceConvex().normal( M_face_id );
+                eigen_vector_p_type Np = M_gm->referenceConvex().normal( M_face_id );
                 int max_col;
                 Np.array().abs().maxCoeff( &max_col );
                 if ( max_col != 0 )
