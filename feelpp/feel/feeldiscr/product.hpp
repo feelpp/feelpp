@@ -271,7 +271,7 @@ public:
         decltype(auto)
             operator()( N const& n1 ) const
             {
-                if constexpr ( is_shared_ptr_v< decltype(M_fspace[n1]) > )
+                if constexpr ( is_shared_ptr_v< std::decay_t<decltype(M_fspace[n1])> > )
                     return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*(super::operator()(int(n1),0)));
                 else
                     return dynamic_cast<decltype(M_fspace[n1].element()) const&>(*(super::operator()(int(n1),0)));
@@ -281,7 +281,7 @@ public:
         decltype(auto)
         operator()( N const& n1 )
             {
-                if constexpr ( is_shared_ptr_v< decltype(M_fspace[n1]) > )
+                if constexpr ( is_shared_ptr_v< std::decay_t<decltype(M_fspace[n1])>> )
                     return dynamic_cast<decltype(M_fspace[n1]->element())&>(*(super::operator()(int(n1),0)));
                 else
                     return dynamic_cast<decltype(M_fspace[n1].element())&>(*(super::operator()(int(n1),0)));
