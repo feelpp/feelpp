@@ -654,15 +654,10 @@
             l_type M_left;                                             \
             r_type M_right;                                            \
         }; /* tensor */                                                 \
-        double                                                          \
-            evaluate() const                                            \
+        auto/*double*/                                                  \
+            evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const  \
         {                                                               \
-            return M_left.evaluate() VF_OP_SYMBOL( O ) M_right.evaluate(); \
-        }                                                               \
-        double                                                          \
-            evaluate(bool p) const                                            \
-        {                                                               \
-            return M_left.evaluate(p) VF_OP_SYMBOL( O ) M_right.evaluate(p); \
+            return M_left.evaluate(p,worldcomm) VF_OP_SYMBOL( O ) M_right.evaluate(p,worldcomm); \
         }                                                               \
                                                                         \
         std::string expressionStr() const                               \
