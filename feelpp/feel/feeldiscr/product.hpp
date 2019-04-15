@@ -166,7 +166,7 @@ public:
         functionspace_type& functionSpace() { return M_fspace; }
         functionspace_type const& functionSpace() const { return M_fspace; }
         //void zero() { super::zero(); }
-        functionspace_type& M_fspace;
+        functionspace_type M_fspace;
     };
     using element_type = Element;
     using element_ptrtype = std::shared_ptr<element_type>;
@@ -175,19 +175,42 @@ public:
     size_type M_nspaces;
 };
 
+template<typename SpaceT, bool same_mesh = true>
+using dyn_product_space_t = ProductSpace<SpaceT,same_mesh>;
+template<typename SpaceT, bool same_mesh = true>
+using dyn_product_space_ptr_t = std::shared_ptr<ProductSpace<SpaceT,same_mesh>>;
+template<typename SpaceT, bool same_mesh = true>
+using dyn_product_space_element_t = typename ProductSpace<SpaceT,same_mesh>::element_type;
+template<typename SpaceT, bool same_mesh = true>
+using dyn_product_space_element_ptr_t = typename ProductSpace<SpaceT,same_mesh>::element_ptrtype;
+
+
+template<typename SpaceT, bool same_mesh=true>
+ProductSpace<SpaceT,same_mesh>
+dynProduct( int n, typename SpaceT::mesh_ptrtype mesh )
+{
+    return ProductSpace<SpaceT,same_mesh>( n, mesh );
+}
+template<typename SpaceT, bool same_mesh=true>
+std::shared_ptr<ProductSpace<SpaceT,same_mesh>>
+dynProductPtr( int n, typename SpaceT::mesh_ptrtype mesh )
+{
+    return std::make_shared<ProductSpace<SpaceT,same_mesh>>( n, mesh );
+}
+
+template<typename SpaceT, bool same_mesh=true>
+std::shared_ptr<ProductSpace<SpaceT,same_mesh>>
+dynProductPtr( int n, std::shared_ptr<SpaceT> const& s )
+{
+    return std::make_shared<ProductSpace<SpaceT,same_mesh>>( n, s );
+}
 
 template<typename... SpaceList>
 class ProductSpaces : public  ProductSpacesBase
 {
 public:
-#if 0
-    using super = typename mpl::if_<mpl::is_void_<T>,
-                                    mpl::identity<hana::tuple<SpaceList...>>,
-                                    mpl::identity<hana::tuple<SpaceList...,ProductSpace<T,true>>>
-                                    >::type::type ;//hana::if_(is_void(T),,>);
-#else
     using tuple_spaces_type = hana::tuple<SpaceList...>;
-#endif
+
     //using value_type = typename decay_type<decltype(super[0_c])>::value_type;
     using value_type = double;
     using functionspace_type = ProductSpaces<SpaceList...>;
@@ -248,14 +271,20 @@ public:
         decltype(auto)
             operator()( N const& n1 ) const
             {
-                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*(super::operator()(int(n1),0)));
+                if constexpr ( is_shared_ptr_v< decltype(M_fspace[n1]) > )
+                    return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*(super::operator()(int(n1),0)));
+                else
+                    return dynamic_cast<decltype(M_fspace[n1].element()) const&>(*(super::operator()(int(n1),0)));
             }
 
         template<typename N>
         decltype(auto)
         operator()( N const& n1 )
             {
-                return dynamic_cast<decltype(M_fspace[n1]->element())&>(*(super::operator()(int(n1),0)));
+                if constexpr ( is_shared_ptr_v< decltype(M_fspace[n1]) > )
+                    return dynamic_cast<decltype(M_fspace[n1]->element())&>(*(super::operator()(int(n1),0)));
+                else
+                    return dynamic_cast<decltype(M_fspace[n1].element())&>(*(super::operator()(int(n1),0)));
             }
 
         functionspace_type& functionSpace() { return M_fspace; }
@@ -398,7 +427,7 @@ public:
         template<typename N>
         decltype(auto) functionSpace( N const& n ) const { return M_fspace[n]; }
         //void zero() { super::zero(); }
-        functionspace_type& M_fspace;
+        functionspace_type M_fspace;
     };
 
     Element element() { Element u( *this ); return u; }
@@ -422,11 +451,28 @@ productPtr( SpaceList... spaces )
     return std::make_unique<ProductSpaces<SpaceList...>>( spaces... );
 }
 template<typename... SpaceList>
+using product_spaces_t = ProductSpaces<SpaceList...>;
+template<typename... SpaceList>
+using product_spaces_element_t = typename ProductSpaces<SpaceList...>::element_type;
+template<typename... SpaceList>
+using product_spaces_element_ptr_t = typename ProductSpaces<SpaceList...>::element_ptrtype;
+
+
+template<typename... SpaceList>
 ProductSpaces<SpaceList...>
 product( SpaceList... spaces )
 {
     return ProductSpaces<SpaceList...>( spaces... );
 }
+
+template<typename SpaceT, typename... SpaceList>
+using dyn_product_spaces_t = ProductSpaces2<SpaceT, SpaceList...>;
+template<typename SpaceT, typename... SpaceList>
+using dyn_product_spaces_ptr_t = std::shared_ptr<ProductSpaces2<SpaceT, SpaceList...>>;
+template<typename SpaceT, typename... SpaceList>
+using dyn_product_spaces_element_t = typename ProductSpaces2<SpaceT,SpaceList...>::element_type;
+template<typename SpaceT, typename... SpaceList>
+using dyn_product_spaces_element_ptr_t = typename ProductSpaces2<SpaceT,SpaceList...>::element_ptrtype;
 
 template<typename T, typename... SpaceList>
 ProductSpaces2<T,SpaceList...>
