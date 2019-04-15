@@ -404,6 +404,17 @@ FSI<FluidType,SolidType>::init()
         auto dofsMultiProcessToAdd = M_fluidModel->functionSpaceVelocity()->dofs( rangeFSIfluid, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("fluid.velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
+
+    if ( ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
+           this->fsiCouplingBoundaryCondition() == "nitsche" ) && this->solidModel()->isStandardModel() )
+    {
+        M_fieldsGradVelocity_fluid.resize( fluid_type::nDim );
+        for (int k = 0;k<fluid_type::nDim ;++k)
+            M_fieldsGradVelocity_fluid[k] = M_spaceNormalStress_fluid->elementPtr();
+        M_fieldsGradVelocity_solid.resize( fluid_type::nDim );
+        for (int k = 0;k<fluid_type::nDim ;++k)
+            M_fieldsGradVelocity_solid[k] = M_spaceNormalStressFromFluid_solid->elementPtr();
+    }
     //-------------------------------------------------------------------------//
 
     if ( this->fluidModel()->doRestart() )
@@ -915,6 +926,8 @@ FSI<FluidType,SolidType>::solveImpl2()
             {
                 bool useExtrap = boption(_prefix=this->prefix(),_name="transfert-velocity-F2S.use-extrapolation");
                 this->transfertVelocityF2S(cptFSI,useExtrap);
+                if ( M_fluidModel->materialProperties()->hasNonNewtonianLaw() )
+                    this->transfertGradVelocityF2S();
             }
             M_solidModel->solve();
             M_solidModel->updateVelocity();

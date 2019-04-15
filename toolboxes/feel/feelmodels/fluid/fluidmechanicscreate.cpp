@@ -823,7 +823,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateFluidInletVelocity()
         std::string const& type = std::get<1>( inletbc );
         auto & exprFluidInlet = std::get<2>( inletbc );
         exprFluidInlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-        double evalExprFluidInlet = exprFluidInlet.evaluate();
+        double evalExprFluidInlet = expr( exprFluidInlet, this->symbolsExpr() ).evaluate();
 
         auto itMesh = M_fluidInletMesh.find( marker );
         CHECK( itMesh != M_fluidInletMesh.end() ) << "fluid inlet not init for this marker" << marker;

@@ -268,6 +268,9 @@ private :
     void transfertStressS2F();
     void transfertVelocityF2S( int iterationFSI, bool _useExtrapolation );
 
+    void transfertGradVelocityF2S();
+
+
     double couplingRNG_coeffForm2() const { return M_couplingRNG_coeffForm2; }
     typename fluid_type::element_meshvelocityonboundary_ptrtype const& couplingRNG_evalForm1() const { return M_couplingRNG_evalForm1; }
 
@@ -403,6 +406,25 @@ private :
     space_solid1dreduced_normalstressfromfluid_vect_ptrtype M_spaceNormalStressFromFluid_solid1dReduced;
     element_solid1dreduced_normalstressfromfluid_scal_ptrtype M_fieldNormalStressFromFluidScalar_solid1dReduced;
     element_solid1dreduced_normalstressfromfluid_vect_ptrtype  M_fieldNormalStressFromFluidVectorial_solid1dReduced;
+
+    // gradient of velocity from fluid into solid model (use normal spress function space and store the matric field by a vector of vectorial field)
+    std::vector<typename fluid_type::element_normalstress_ptrtype> M_fieldsGradVelocity_fluid;
+    std::vector<typename space_solid_normalstressfromfluid_type::/*component_functionspace_type::*/element_ptrtype> M_fieldsGradVelocity_solid;
+
+    auto
+    gradVelocityExpr_fluid2solid(  hana::int_<2> /**/ ) const
+        {
+            return mat<2,2>( idv(M_fieldsGradVelocity_solid[0])(0),idv(M_fieldsGradVelocity_solid[0])(1),
+                             idv(M_fieldsGradVelocity_solid[1])(0),idv(M_fieldsGradVelocity_solid[1])(1) );
+        }
+    auto
+    gradVelocityExpr_fluid2solid(  hana::int_<3> /**/ ) const
+        {
+            return mat<3,3>( idv(M_fieldsGradVelocity_solid[0])(0),idv(M_fieldsGradVelocity_solid[0])(1),idv(M_fieldsGradVelocity_solid[0])(2),
+                             idv(M_fieldsGradVelocity_solid[1])(0),idv(M_fieldsGradVelocity_solid[1])(1),idv(M_fieldsGradVelocity_solid[1])(2),
+                             idv(M_fieldsGradVelocity_solid[2])(0),idv(M_fieldsGradVelocity_solid[2])(1),idv(M_fieldsGradVelocity_solid[2])(2) );
+        }
+
 };
 
 } // namespace FeelModels
