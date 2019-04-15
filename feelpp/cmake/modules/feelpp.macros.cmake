@@ -821,6 +821,45 @@ macro( feelppContribPrepare contribname )
   endif()
 endmacro( feelppContribPrepare )
 
+# feelppGitSubmodulePrepare( submodulename )
+# Clone/Update a submodule hold on feel++ repository 
+macro( feelppGitSubmodulePrepare contribname )
+  set( FEELPP_PREPARE_SUCCEED FALSE )
+  set( FEELPP_SUBMODULE_UPDATED FALSE )
+  message(STATUS "[feelpp] ${contribname} : ${CMAKE_CURRENT_SOURCE_DIR}/${contribname}")
+  # Count files number in <name>.
+  file(GLOB CONTRIB_LIST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${contribname}/*")
+  list(LENGTH CONTRIB_LIST_FILES CONTRIB_NFILES)
+  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${contribname} )
+    # Update submodule if the contrib/<name> directory is empty. User should run
+    # `git submodule update --init --recursive` in other cases.
+    if ( GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git/ AND CONTRIB_NFILES EQUAL 0 )
+      execute_process(
+        COMMAND git submodule update --init --recursive ${CMAKE_CURRENT_SOURCE_DIR}/${contribname}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_FILE ${FEELPP_BUILD_DIR}/git.${contribname}.log
+        ERROR_FILE ${FEELPP_BUILD_DIR}/git.${contribname}.log
+        RESULT_VARIABLE ERROR_CODE
+        )
+      if(ERROR_CODE EQUAL "0")
+        message( STATUS "[feelpp] ${contribname}: submodule updated!`")
+        set( FEELPP_PREPARE_SUCCEED TRUE )
+      else()
+        MESSAGE(WARNING "Git submodule ${contribname} failed to be updated (error: ${ERROR_CODE}). Possible cause: No internet access, firewalls ...")
+      endif()
+    else()
+      if ( NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${contribname})
+        message( WARNING "Please make sure that git submodule ${CMAKE_CURRENT_SOURCE_DIR}/${contribname} is available")
+        message( WARNING "  run `git submodule update --init --recursive ${CMAKE_CURRENT_SOURCE_DIR}/${contribname}`")
+      else()
+        message( STATUS "[feelpp] ${CMAKE_CURRENT_SOURCE_DIR}/${contribname}: submodule hold!")
+        set( FEELPP_PREPARE_SUCCEED TRUE )
+        set( FEELPP_SUBMODULE_UPDATED TRUE ) # Diplay message info."$Feel++ submodules are not updated automatically. Please be sure to run `git submodule update --init --recurse` in the source directory beforehand!"
+      endif()
+    endif()
+  endif()
+endmacro( feelppGitSubmodulePrepare )
+
 
 # Colorized cmake message.
 macro( feelpp_message )
