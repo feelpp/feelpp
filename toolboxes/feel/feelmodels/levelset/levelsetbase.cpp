@@ -124,11 +124,13 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::init()
     this->createExporters();
 
     // Initial value
-    if( !this->doRestart() )
-    {
-        // Set levelset initial value
-        this->initLevelsetValue();
-    }
+    //if( !this->doRestart() )
+    //{
+    // Set levelset initial value
+    // Note: we initialise the levelset even in case of restart to be able to
+    // compute the initial geometrical quantities (volume, perimeter, ...)
+    this->initLevelsetValue();
+    //}
 
     M_initialVolume = this->volume();
     M_initialPerimeter = this->perimeter();
