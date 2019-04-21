@@ -313,8 +313,8 @@ class GeoToolPoint
 public :
     GeoToolPoint()
         :
-        M_localId( invalid_size_type_value ),
-        M_globalId( invalid_size_type_value ),
+        M_localId( invalid_v<size_type> ),
+        M_globalId( invalid_v<size_type> ),
         M_node(0),
         M_hSize(0)
         {}
@@ -377,8 +377,8 @@ class GeoToolLine
 public :
     GeoToolLine()
         :
-        M_localId( invalid_size_type_value ),
-        M_globalId( invalid_size_type_value )
+        M_localId( invalid_v<size_type> ),
+        M_globalId( invalid_v<size_type> )
         {}
     GeoToolLine(std::string name,size_type localId,size_type globalId,std::string type)
         :
@@ -458,8 +458,8 @@ class GeoToolLineLoop
 public :
     GeoToolLineLoop()
         :
-        M_localId( invalid_size_type_value ),
-        M_globalId( invalid_size_type_value )
+        M_localId( invalid_v<size_type> ),
+        M_globalId( invalid_v<size_type> )
         {}
     GeoToolLineLoop(std::string name,size_type localId,size_type globalId)
         :
@@ -511,8 +511,8 @@ public :
 
     GeoToolSurface()
         :
-        M_localId( invalid_size_type_value ),
-        M_globalId( invalid_size_type_value )
+        M_localId( invalid_v<size_type> ),
+        M_globalId( invalid_v<size_type> )
         {}
     GeoToolSurface(std::string name,size_type localId,size_type globalId,std::string type)
         :
@@ -599,8 +599,8 @@ public :
 
     GeoToolSurfaceLoop()
         :
-        M_localId( invalid_size_type_value ),
-        M_globalId( invalid_size_type_value )
+        M_localId( invalid_v<size_type> ),
+        M_globalId( invalid_v<size_type> )
         {}
     GeoToolSurfaceLoop(std::string name,size_type localId,size_type globalId)
         :
@@ -655,8 +655,8 @@ public :
 
     GeoToolVolume()
         :
-        M_localId( invalid_size_type_value ),
-        M_globalId( invalid_size_type_value )
+        M_localId( invalid_v<size_type> ),
+        M_globalId( invalid_v<size_type> )
         {}
     GeoToolVolume(std::string name,size_type localId,size_type globalId)
         :

@@ -311,7 +311,7 @@ idElt( EltType & elt,mpl::size_t<MESH_FACES> )
     else
     {
         CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
-        return invalid_size_type_value;
+        return invalid_v<size_type>;
     }
 }
 
@@ -817,9 +817,10 @@ precomputeDomainBasisFunction( std::shared_ptr<DomainSpaceType> const& domainSpa
 //--------------------------------------------------------------------------------------------------//
 
 template <typename DomainMeshType, typename ImageMeshType>
-std::set<size_type>
-domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, size_type imageEltId, mpl::int_<0> /**/ )
+std::set<typename DomainMeshType::size_type>
+domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, typename DomainMeshType::size_type imageEltId, mpl::int_<0> /**/ )
 {
+    using size_type = typename DomainMeshType::size_type;
     const bool image_related_to_domain = imageMesh->isSubMeshFrom( domainMesh );
     const bool domain_related_to_image = domainMesh->isSubMeshFrom( imageMesh );
     const bool domain_sibling_of_image = domainMesh->isSiblingOf( imageMesh );
@@ -828,19 +829,19 @@ domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, st
     {
         const size_type domainEltId = imageMesh->subMeshToMesh( imageEltId );
         VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
-        if ( domainEltId != invalid_size_type_value ) idsFind.insert( domainEltId );
+        if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
     }
     else if( domain_related_to_image )
     {
         const size_type domainEltId = domainMesh->meshToSubMesh( imageEltId );
         VLOG(2) << "[domain_related_to_image] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
-        if ( domainEltId != invalid_size_type_value ) idsFind.insert( domainEltId );
+        if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
     }
     else if( domain_sibling_of_image )
     {
         const size_type domainEltId = domainMesh->meshToSubMesh( imageMesh, imageEltId );
         DVLOG(1) << "[domain_sibling_of_image] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
-        if ( domainEltId != invalid_size_type_value ) idsFind.insert( domainEltId );
+        if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
     }
     else // same mesh
     {
@@ -850,9 +851,10 @@ domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, st
 }
 
 template <typename DomainMeshType, typename ImageMeshType>
-std::set<size_type>
-domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, size_type imageEltId, mpl::int_<1> /**/ )
+std::set<typename DomainMeshType::size_type>
+domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, typename DomainMeshType::size_type imageEltId, mpl::int_<1> /**/ )
 {
+    using size_type = typename DomainMeshType::size_type;
     const bool image_related_to_domain = imageMesh->isSubMeshFrom( domainMesh );
     const bool domain_related_to_image = domainMesh->isSubMeshFrom( imageMesh );
     const bool domain_sibling_of_image = domainMesh->isSiblingOf( imageMesh );
@@ -860,7 +862,7 @@ domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, st
     if ( image_related_to_domain )
     {
         auto const& theface = domainMesh->face( imageMesh->subMeshToMesh( imageEltId ) );
-        size_type domainEltId = invalid_size_type_value;
+        size_type domainEltId = invalid_v<size_type>;
         if ( !theface.element0().isGhostCell() )
             domainEltId = theface.element0().id();
         else if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
@@ -869,7 +871,7 @@ domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, st
             CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
 
         VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
-        if ( domainEltId != invalid_size_type_value ) idsFind.insert( domainEltId );
+        if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
     }
     else if( domain_related_to_image )
     {
@@ -877,7 +879,7 @@ domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, st
         for (uint16_type f=0;f< imageMesh->numLocalFaces();++f)
         {
             const size_type idFind = domainMesh->meshToSubMesh( eltImage.face(f).id() );
-            if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
+            if ( idFind != invalid_v<size_type> ) idsFind.insert( idFind );
         }
         DVLOG(2) << "[trial_related_to_test<1>] test element id: "  << imageEltId << " idsFind.size() "<< idsFind.size() << "\n";
     }
@@ -888,7 +890,7 @@ domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, st
 
         if ( nDimDomain > nDimImage )
         {
-            size_type domainEltId = invalid_size_type_value;
+            size_type domainEltId = invalid_v<size_type>;
             auto const& theface = dynamic_cast<DomainMeshType const*>(imageMesh->parentMesh().get())->face( imageMesh->subMeshToMesh( imageEltId ) );
             if ( !theface.element0().isGhostCell() )
                 domainEltId = theface.element0().id();
@@ -899,7 +901,7 @@ domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, st
             // now recover the element id in domain mesh
             domainEltId = domainMesh->meshToSubMesh( domainEltId );
             VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
-            if ( domainEltId != invalid_size_type_value ) idsFind.insert( domainEltId );
+            if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
         }
         else
         {
@@ -909,7 +911,7 @@ domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, st
                 const size_type id_in_parent_face = dynamic_cast<ImageMeshType const*>(imageMesh->parentMesh().get())->subMeshToMesh( eltImage.face(f).id() );
                 // get now the id of the face in the domain mesh
                 const size_type idFind = domainMesh->meshToSubMesh( id_in_parent_face );
-                if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
+                if ( idFind != invalid_v<size_type> ) idsFind.insert( idFind );
             }
             DVLOG(2) << "[trial_related_to_test<1>] test element id: "  << imageEltId << " idsFind.size() "<< idsFind.size() << "\n";
         }
@@ -922,18 +924,20 @@ domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, st
 }
 
 template <typename DomainMeshType, typename ImageMeshType>
-std::set<size_type>
-domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, size_type imageEltId, mpl::int_<2> /**/ )
+std::set<typename DomainMeshType::size_type>
+domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, typename DomainMeshType::size_type imageEltId, mpl::int_<2> /**/ )
 {
+    using size_type = typename DomainMeshType::size_type;
     CHECK(false) << "not implemented\n";
     std::set<size_type> idsFind;
     return idsFind;
 }
 
 template <typename DomainMeshType, typename ImageMeshType>
-std::set<size_type>
-domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, size_type imageEltId )
+std::set<typename DomainMeshType::size_type>
+domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, typename DomainMeshType::size_type imageEltId )
 {
+    using size_type = typename DomainMeshType::size_type;
     static const uint16_type nDimDomain = DomainMeshType::nDim;
     static const uint16_type nDimImage = ImageMeshType::nDim;
     static const uint16_type nDimDiffBetweenDomainImage = ( nDimDomain > nDimImage )? nDimDomain-nDimImage : nDimImage-nDimDomain;
@@ -966,7 +970,7 @@ domainLocalDofFromImageLocalDof(std::shared_ptr<DomainDofType> const& domaindof,
     double dofPtCompareTol = std::max(1e-15,imageElt.hMin()*1e-5);
     auto const& imageGlobDofPt = imagedof->dofPoint( imageGlobDof ).template get<0>();
     bool find=false;
-    size_type thelocDofToFind = invalid_size_type_value;
+    size_type thelocDofToFind = invalid_v<size_type>;
     for ( uint16_type jloc = 0; jloc < new_basis_type::nLocalDof; ++jloc )
     {
         auto const& domainGlobDofPt = gmcDomain->xReal(jloc);
@@ -1383,7 +1387,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     ublas::column(ptsReal,0 ) = boost::get<0>(imagedof->dofPoint(gdof));
                                     //------------------------
                                     // localisation process
-                                    if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
+                                    if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
                                     auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,theImageElt.vertices()/*theImageElt.G()*/,mpl::int_<interpolation_type::isConforming()>());
                                     for ( bool hasFindPtLocalised : resLocalisation.template get<0>()  )
                                          LOG_IF(ERROR, !hasFindPtLocalised ) << "OperatorInterpolation::updateNoRelationMesh : point localisation fail!\n";
@@ -2013,7 +2017,7 @@ OperatorInterpolation<DomainSpaceType,
     matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
     matrix_node_type verticesOfEltSearched;
 
-    size_type eltIdLocalised = invalid_size_type_value;
+    size_type eltIdLocalised = invalid_v<size_type>;
 
     for ( size_type k=0 ; k<memmapGdof[proc_id].size() ; ++k)
         {
@@ -2033,7 +2037,7 @@ OperatorInterpolation<DomainSpaceType,
                         }
 
                     // localisation process
-                    if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
+                    if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
                     auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,
                                                                  mpl::int_<interpolation_type::isConforming()>());
                     if (!resLocalisation.template get<0>()[0]) // not find
@@ -2137,7 +2141,7 @@ OperatorInterpolation<DomainSpaceType,
                         }
 
                     // localisation process
-                    if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
+                    if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
                     auto resLocalisation = locTool->run_analysis(ptsReal, eltIdLocalised, verticesOfEltSearched, mpl::int_<interpolation_type::isConforming()>());
                     if (!resLocalisation.template get<0>()[0]) // not find
                         {
@@ -2465,7 +2469,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                             else // random
                                                 verticesOfEltSearched = eltRandom.vertices();
                                             // search process
-                                            if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
+                                            if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
                                             auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,mpl::int_<interpolation_type::value>());
                                             if (resLocalisation.template get<0>()[0]) // is find
                                                 {
@@ -2718,7 +2722,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
     matrix_node_type verticesOfEltSearched;
 
-    size_type eltIdLocalised = invalid_size_type_value;
+    size_type eltIdLocalised = invalid_v<size_type>;
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
 
@@ -2878,7 +2882,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
             }
 
             // search process
-            if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
+            if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
             auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,mpl::int_<interpolation_type::isConforming()>());
             if (resLocalisation.template get<0>()[0]) // is find
             {

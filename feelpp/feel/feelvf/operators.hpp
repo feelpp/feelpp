@@ -885,6 +885,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
 //
 BOOST_PP_LIST_FOR_EACH_PRODUCT(
 
+
     VF_ARRAY_OPERATOR, 2, (
         VF_OPERATORS, VF_OPERATORS_TYPE ) )
 /// \endcond

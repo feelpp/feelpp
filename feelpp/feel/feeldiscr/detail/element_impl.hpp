@@ -632,7 +632,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<size_type> )
         return;
 
     const uint16_type nq = context.xRefs().size2();
@@ -659,9 +659,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -854,7 +854,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<size_type> )
         return;
 
     //std::cout << "coeff=" << coeff << "\n";
@@ -951,7 +951,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::symmetricGradient( ContextTy
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<size_type> )
         return;
 
     for ( int l = 0; l < basis_type::nDof; ++l )
@@ -982,9 +982,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_nod
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -1061,7 +1061,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dn_( ContextType const & con
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<size_type> )
         return;
 
     const size_type Q = context.xRefs().size2();
@@ -1116,7 +1116,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<size_type> )
         return;
 
     const size_type Q = context.xRefs().size2();
@@ -1156,9 +1156,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -1238,7 +1238,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<size_type> )
         return;
 
     auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
@@ -1301,7 +1301,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<size_type> )
         return;
 
     auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
@@ -1351,9 +1351,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -1440,9 +1440,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( matrix_nod
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -1528,9 +1528,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -1616,9 +1616,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -1744,9 +1744,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_t
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -1822,9 +1822,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type> );
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -1902,9 +1902,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type> );
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -2033,9 +2033,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type> );
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -2201,9 +2201,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacianInterpolate( matrix
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<size_type> );
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -2565,7 +2565,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     bool hasDofTableMPIExtended = __dof->buildDofTableMPIExtended();
 
 #if 0
-    size_type nbFaceDof = invalid_size_type_value;
+    size_type nbFaceDof = invalid_v<size_type>;
 
     if ( !fe_type::is_modal )
         nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
@@ -2843,7 +2843,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     {
         auto const& curEntity = boost::unwrap_ref(*entity_it);
         std::cout << "ok2: " << curEntity.elements().size()  << std::endl;
-        eid = invalid_size_type_value;
+        eid = invalid_v<size_type>;
         for ( auto const& eltConnectedToEdge : curEntity.elements() )
         {
             size_type eltIdConnected = eltConnectedToEdge.first;
@@ -2855,7 +2855,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                 break;
             }
         }
-        if ( eid == invalid_size_type_value )
+        if ( eid == invalid_v<size_type> )
             continue;
         std::cout << "entity " << curEntity.id() << " element " << eid << " id in element "
                   << eid_in_element<< " with hasMarker " << curEntity.hasMarker() << std::endl;
@@ -2937,7 +2937,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     {
         auto const& curPt = boost::unwrap_ref(*pt_it);
         DVLOG(3) << "point " << curPt.id() << " with hasMarker " << curPt.hasMarker();
-        eid = invalid_size_type_value;
+        eid = invalid_v<size_type>;
         for ( auto const& eltConnectedToPoint : curPt.elements() )
         {
             size_type eltIdConnected = eltConnectedToPoint.first;
@@ -2948,7 +2948,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                 break;
             }
         }
-        if ( eid == invalid_size_type_value )
+        if ( eid == invalid_v<size_type> )
             continue;
 
         auto const& elt = mesh->element( eid );

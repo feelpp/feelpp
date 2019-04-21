@@ -174,7 +174,7 @@ private:
 
             uint16_type lc = local_shift;
             size_type n = elt.neighbor( 0 );
-            if ( n  != invalid_size_type_value )
+            if ( n  != invalid_v<size_type> )
             {
                 size_type gDof = M_doftable->mesh()->element( n ).point(1).id()*fe_type::nDofPerVertex;
                 DVLOG(2) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
@@ -187,7 +187,7 @@ private:
             else
             {
                 n = elt.neighbor( 1 );
-                CHECK( n != invalid_size_type_value ) << "the element should be connected to at least one other element, it is not the case";
+                CHECK( n != invalid_v<size_type> ) << "the element should be connected to at least one other element, it is not the case";
 
                 size_type gDof = ( elt.point( 0 ).id() ) * mortar_fe_type::nDofPerVertex;
                 DVLOG(2) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
@@ -244,14 +244,14 @@ private:
                 if ( nOrder == 0 )//is_p0_continuous )
                 {
                     size_type n = elt.neighbor( 0 );
-                    if ( n  != invalid_size_type_value )
+                    if ( n  != invalid_v<size_type> )
                     {
                         gDof = M_doftable->mesh()->element( n ).point(1).id()*fe_type::nDofPerVertex;
                     }
                     else
                     {
                         n = elt.neighbor( 1 );
-                        CHECK( n != invalid_size_type_value ) << "the element should be connected to at least one other element, it is not the case";
+                        CHECK( n != invalid_v<size_type> ) << "the element should be connected to at least one other element, it is not the case";
                         gDof = M_doftable->mesh()->element( n ).point(0).id()*fe_type::nDofPerVertex;
                     }
                     DVLOG(2) << "inserting dof " << gDof << "," << next_free_dof << "," << ie;

@@ -236,6 +236,8 @@ public:
     typedef typename eval::matrix_type matrix_type;
     typedef typename eval::matrix_type value_type;
     typedef typename eval::matrix_type evaluate_type;
+    using index_type = typename eval::element_type::index_type;
+    using size_type = typename eval::element_type::size_type;
     //@}
 
     /** @name Constructors, destructor
@@ -534,7 +536,7 @@ public:
             // maybe better to create anoter worldcomm which split the mesh worldcomm
             // with only partition that contains at least one element (Vincent C.)
             // and thus argument worldComm can be remove
-            // auto const& worldcomm = const_cast<MeshBase*>( this->beginElement()->mesh() )->worldComm();
+            // auto const& worldcomm = const_cast<MeshBase<>*>( this->beginElement()->mesh() )->worldComm();
 
             if ( worldcomm->localSize() > 1 )
             {
@@ -968,7 +970,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __v
 
     const bool test_related_to_range = __v->mesh()->isRelatedTo( boost::unwrap_ref(*it).mesh() );
 
-    //if ( dynamic_cast<void*>( const_cast<MeshBase*>( it->mesh() ) ) == dynamic_cast<void*>( __v->mesh().get() ) )
+    //if ( dynamic_cast<void*>( const_cast<MeshBase<>*>( it->mesh() ) ) == dynamic_cast<void*>( __v->mesh().get() ) )
     if ( test_related_to_range )
         assemble( __form, mpl::int_<iDim>(), mpl::bool_<same_mesh_type::value>(), test_related_to_range/*true*/ );
 
@@ -1729,26 +1731,26 @@ buildGmcWithRelationDifferentMeshType2( std::shared_ptr<SpaceType> const& space,
 }
 
 template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-size_type
+typename FaceType::size_type
 updateGmcWithRelationDifferentMeshType2( FaceType const& theface, std::shared_ptr<SpaceType> const& /*space*/,
                                          std::shared_ptr<GmcType> /*gmc*/, std::shared_ptr<GmcExprType> /*gmcExpr*/,
                                          size_type idElt, mpl::int_<0> /**/ )
 {
     // nothing to do!
-    return invalid_size_type_value;
+    return invalid_v<typename FaceType::size_type>;
 }
 template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-size_type
+typename FaceType::size_type
 updateGmcWithRelationDifferentMeshType21( FaceType const& theface, std::shared_ptr<SpaceType> const& /*space*/,
                                           std::shared_ptr<GmcType> /*gmc*/, std::shared_ptr<GmcExprType> /*gmcExpr*/,
                                           size_type /*idElt*/, mpl::int_<0> /**/ )
 {
     // nothing to do!
-    return invalid_size_type_value;
+    return invalid_v<typename FaceType::size_type>;
 }
 
 template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-size_type
+typename FaceType::size_type
 updateGmcWithRelationDifferentMeshType2( FaceType const& theface, std::shared_ptr<SpaceType> const& space,
                                          std::shared_ptr<GmcType>& gmc, std::shared_ptr<GmcExprType>& gmcExpr,
                                          size_type idElt, mpl::int_<1> /**/ )
@@ -2349,7 +2351,6 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
         M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts, M_im ) );
         M_QPL->update( meshTest,meshTrial );
     }
-
     if (!M_QPL->hasPrecompute())
     {
         auto res_it = M_QPL->result().begin();
@@ -2819,7 +2820,7 @@ Integrator<Elements, Im, Expr, Im2>::useSameMesh( vf::detail::LinearForm<FE,Vect
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE1,typename FE2,typename ElemContType,typename FaceRangeType>
-boost::tuple<size_type,rank_type,uint16_type>
+boost::tuple<typename Integrator<Elements, Im, Expr, Im2>::size_type,rank_type,uint16_type>
 Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
                                                               FaceRangeType const& faceRange ) const
 {
@@ -2840,7 +2841,7 @@ Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::Biline
     else if ( __form.testSpace()->mesh()->isSubMeshFrom( faceRange.mesh() ) )
     {
         idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltTest );
-        if ( idEltTest == invalid_size_type_value )
+        if ( idEltTest == invalid_v<size_type> )
         {
             if ( faceRange.isConnectedTo1() && !faceRange.element1().isGhostCell() )
             {
@@ -2852,7 +2853,7 @@ Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::Biline
         }
     }
 
-    if ( idEltTest != invalid_size_type_value )
+    if ( idEltTest != invalid_v<size_type> )
     {
         size_type idEltTrial = idEltTest;
         if ( __form.trialSpace()->mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
@@ -2860,7 +2861,7 @@ Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::Biline
         else if ( __form.testSpace()->mesh()->isSubMeshFrom( __form.trialSpace()->mesh() ) )
             idEltTrial = __form.testSpace()->mesh()->subMeshToMesh( idEltTest );
 
-        if (idEltTrial != invalid_size_type_value)
+        if (idEltTrial != invalid_v<size_type>)
             trialEltIsOk=true;
      }
 
@@ -2868,13 +2869,13 @@ Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::Biline
     else // ghost cell
     {
         if ( !faceRange.isConnectedTo1() || faceRange.element1().isGhostCell() )
-            return boost::make_tuple( invalid_size_type_value, procIdElt0, __face_id_in_elt_0 );
+            return boost::make_tuple( invalid_v<size_type>, procIdElt0, __face_id_in_elt_0 );
         else
-            idEltTest = invalid_size_type_value; // continue algo
+            idEltTest = invalid_v<size_type>; // continue algo
     }
 
     // if first pass not good, restart with faceRange.element1
-    if ( ( idEltTest == invalid_size_type_value || !trialEltIsOk )  && faceRange.isConnectedTo1() && !faceRange.element1().isGhostCell() )
+    if ( ( idEltTest == invalid_v<size_type> || !trialEltIsOk )  && faceRange.isConnectedTo1() && !faceRange.element1().isGhostCell() )
     {
         __face_id_in_elt_0 = faceRange.pos_second();
         procIdElt0 = faceRange.proc_second();
@@ -2885,7 +2886,7 @@ Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::Biline
             idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltTest );
 
         trialEltIsOk = false;
-        if ( idEltTest != invalid_size_type_value )
+        if ( idEltTest != invalid_v<size_type> )
         {
             size_type idEltTrial = idEltTest;
             if ( __form.trialSpace()->mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
@@ -2893,7 +2894,7 @@ Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::Biline
             else if ( __form.testSpace()->mesh()->isSubMeshFrom( __form.trialSpace()->mesh() ) )
                 idEltTrial = __form.testSpace()->mesh()->subMeshToMesh( idEltTest );
 
-            if (idEltTrial != invalid_size_type_value)
+            if (idEltTrial != invalid_v<size_type>)
                 {
 
                 trialEltIsOk=true;
@@ -2902,14 +2903,14 @@ Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::Biline
     }
 
     // if test or trial id not find, return invalid value
-    if ( idEltTest == invalid_size_type_value || !trialEltIsOk )
-        return boost::make_tuple( invalid_size_type_value, procIdElt0, __face_id_in_elt_0 );
+    if ( idEltTest == invalid_v<size_type> || !trialEltIsOk )
+        return boost::make_tuple( invalid_v<size_type>, procIdElt0, __face_id_in_elt_0 );
     else
         return boost::make_tuple( idEltTest,procIdElt0, __face_id_in_elt_0 );
 }
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE,typename VectorType,typename ElemContType,typename FaceRangeType>
-boost::tuple<size_type,rank_type,uint16_type>
+boost::tuple<typename Integrator<Elements, Im, Expr, Im2>::size_type,rank_type,uint16_type>
 Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::LinearForm<FE,VectorType,ElemContType>& __form,
                                                               FaceRangeType const& faceRange ) const
 {
@@ -2923,7 +2924,7 @@ Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::Linear
     else if ( __form.testSpace()->mesh()->isSubMeshFrom( faceRange.mesh() ) )
     {
         idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltTest );
-        if ( idEltTest == invalid_size_type_value )
+        if ( idEltTest == invalid_v<size_type> )
         {
             if ( faceRange.isConnectedTo1() )
             {
@@ -2956,7 +2957,7 @@ Integrator<Elements, Im, Expr, Im2>::faceIntegratorUseTwoConnections( vf::detail
         else if ( __form.testSpace()->mesh()->isSubMeshFrom( __form.trialSpace()->mesh() ) )
             idEltTrial = __form.testSpace()->mesh()->subMeshToMesh( idEltTrial );
 
-        if ( idEltTrial == invalid_size_type_value )
+        if ( idEltTrial == invalid_v<size_type> )
             res=false;
         else
         {
@@ -3075,7 +3076,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 else if ( __form.testSpace()->mesh()->isSubMeshFrom( faceInit.mesh() ) )
                 {
                     idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltTestInit );
-                    if ( idEltTestInit == invalid_size_type_value )
+                    if ( idEltTestInit == invalid_v<size_type> )
                     {
                         if ( faceInit.isConnectedTo1() )
                         {
@@ -3085,7 +3086,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         }
                     }
                 }
-                if ( idEltTestInit == invalid_size_type_value )
+                if ( idEltTestInit == invalid_v<size_type> )
                 {
                     ++it;
                     if (it==en) break;
@@ -3096,7 +3097,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             if ( !hasFindEltToInit )
                 continue;
             else
-                CHECK( idEltTestInit != invalid_size_type_value ) << "mesh relation fail : no find a corresponding element\n";
+                CHECK( idEltTestInit != invalid_v<size_type> ) << "mesh relation fail : no find a corresponding element\n";
 
         }
 
@@ -3168,7 +3169,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     idElt1TestInit = elt0TestInit.face( __face_id_in_elt_0 ).element( 0 ).id();
                 }
             }
-            //CHECK( idElt1TestInit != invalid_size_type_value ) << "mesh relation fail : no find a corresponding element\n";
+            //CHECK( idElt1TestInit != invalid_v<size_type> ) << "mesh relation fail : no find a corresponding element\n";
             // get element1
             auto const& elt1TestInit = __form.testSpace()->mesh()->element( idElt1TestInit );
 
@@ -3218,7 +3219,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             if ( !useSameMesh)
             {
                 boost::tie( idEltTest, procIdElt0, __face_id_in_elt_0) = this->testElt0IdFromFaceRange(__form,faceCur);
-                if ( idEltTest == invalid_size_type_value )
+                if ( idEltTest == invalid_v<size_type> )
                     continue;
             }
             else if ( faceCur.isConnectedTo1() )
@@ -3326,7 +3327,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     rank_type procIdElt1 = faceCur.proc_first();
                     size_type idElt1Test = faceCur.element( 0 ).id();
                 }
-                CHECK( idElt1Test != invalid_size_type_value ) << "mesh relation fail : no find a corresponding element\n";
+                CHECK( idElt1Test != invalid_v<size_type> ) << "mesh relation fail : no find a corresponding element\n";
 
                 // element1 (from test mesh) used in integration
                 auto const& elt1Test = __form.testSpace()->mesh()->element( idElt1Test );
@@ -3724,10 +3725,10 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             {
                 __face_id_in_elt_0 = faceCur.pos_first();
                 uint16_type __face_id_in_elt_1 = faceCur.pos_second();
-                size_type test_elt_0 = invalid_size_type_value;
-                size_type test_elt_1 = invalid_size_type_value;
-                size_type trial_elt_0 = invalid_size_type_value;
-                size_type trial_elt_1 = invalid_size_type_value;
+                size_type test_elt_0 = invalid_v<size_type>;
+                size_type test_elt_1 = invalid_v<size_type>;
+                size_type trial_elt_0 = invalid_v<size_type>;
+                size_type trial_elt_1 = invalid_v<size_type>;
                 // update gmc
                 test_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
                                                                 gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest, gmcExpr0,
@@ -3744,12 +3745,12 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                                                                 gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial1, gmcExpr1,
                                                                                                    idEltTrial, mpl::int_<gmTrialRangeRelation>() );
 
-                if ( test_elt_0 == invalid_size_type_value )
+                if ( test_elt_0 == invalid_v<size_type> )
                 {
                     test_elt_0 = gmcExpr0->id();
                     test_elt_1 = gmcExpr1->id();
                 }
-                if ( trial_elt_0 == invalid_size_type_value )
+                if ( trial_elt_0 == invalid_v<size_type> )
                 {
                     trial_elt_0 = gmcExpr0->id();
                     trial_elt_1 = gmcExpr1->id();
@@ -3774,8 +3775,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                     isInitConnectionTo0=true;
                 }
 
-                size_type test_elt_0 = invalid_size_type_value;
-                size_type trial_elt_0 = invalid_size_type_value;
+                size_type test_elt_0 = invalid_v<size_type>;
+                size_type trial_elt_0 = invalid_v<size_type>;
                 // update gmc
                 test_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
                                                                 gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest, gmcExpr0,
@@ -3785,11 +3786,11 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                                                                 gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial, gmcExpr0,
                                                                                                   idEltTrial, mpl::int_<gmTrialRangeRelation>() );
 
-                if ( test_elt_0 == invalid_size_type_value )
+                if ( test_elt_0 == invalid_v<size_type> )
                 {
                     test_elt_0 = gmcExpr0->id();
                 }
-                if ( trial_elt_0 == invalid_size_type_value )
+                if ( trial_elt_0 == invalid_v<size_type> )
                 {
                     trial_elt_0 = gmcExpr0->id();
                 }
@@ -4079,10 +4080,10 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             {
                 __face_id_in_elt_0 = faceCur.pos_first();
                 uint16_type __face_id_in_elt_1 = faceCur.pos_second();
-                size_type test_elt_0 = invalid_size_type_value;
-                size_type test_elt_1 = invalid_size_type_value;
-                size_type trial_elt_0 = invalid_size_type_value;
-                size_type trial_elt_1 = invalid_size_type_value;
+                size_type test_elt_0 = invalid_v<size_type>;
+                size_type test_elt_1 = invalid_v<size_type>;
+                size_type trial_elt_0 = invalid_v<size_type>;
+                size_type trial_elt_1 = invalid_v<size_type>;
                 // update gmc
                 test_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
                                                                 gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest, gmcExpr0,
@@ -4283,7 +4284,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             idEltTestInit = faceInit.mesh()->subMeshToMesh( idEltRangeInit );
         else if ( testIsSubMeshFromRange )
             idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltRangeInit );
-        DCHECK( idEltTestInit != invalid_size_type_value ) << "invalid element id getting correspondance from "<< idEltRangeInit;
+        DCHECK( idEltTestInit != invalid_v<size_type> ) << "invalid element id getting correspondance from "<< idEltRangeInit;
         //-----------------------------------------------//
         // get the geometric mapping associated with element 0
         uint16_type __face_id_in_elt_0 = faceInit.pos_first();
@@ -5119,7 +5120,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
 
         auto geopc = gm->preCompute( this->im().points() );
         auto geopc1 = gm1->preCompute( this->im2().points() );
-        auto const& worldComm = const_cast<MeshBase*>( eltInit.mesh() )->worldComm();
+        auto const& worldComm = const_cast<MeshBase<>*>( eltInit.mesh() )->worldComm();
         auto ctx = gm->template context<context|vm::JACOBIAN>( eltInit, geopc );
         auto ctx1 = gm1->template context<context|vm::JACOBIAN>( eltInit, geopc1 );
         double x=100,y=101,z=102;
@@ -5915,7 +5916,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     }
 #if defined(FEELPP_HAS_HARTS)
                     perf_mng.stop("total") ;
-                    auto const& worldComm = const_cast<MeshBase*>( eltInit.mesh() )->worldComm();
+                    auto const& worldComm = const_cast<MeshBase<>*>( eltInit.mesh() )->worldComm();
                     std::cout << Environment::worldComm().rank() <<  " Total: " << perf_mng.getValueInSeconds("total") << std::endl;
 #endif
 
@@ -6200,7 +6201,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
          //it = this->beginElement();
          // wait for all the guys
 #ifdef FEELPP_HAS_MPI
-         auto const& worldComm = const_cast<MeshBase*>( eltInit.mesh() )->worldComm();
+         auto const& worldComm = const_cast<MeshBase<>*>( eltInit.mesh() )->worldComm();
 
 #if 0
          if ( worldComm.size() > 1 )
