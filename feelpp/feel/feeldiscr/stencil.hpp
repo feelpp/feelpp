@@ -1613,10 +1613,10 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                         for ( uint16_type ms=0; ms < elem.nNeighbors(); ms++ )
                         {
                             // const auto * neighbor = boost::addressof( *_M_X1->mesh()->beginElementWithProcessId() /*elem*/ );
-                            size_type neighbor_id = elem.neighbor( ms );
+                            index_type neighbor_id = elem.neighbor( ms );
 
                             // warning ! the last condition is a temporary solution
-                            if ( neighbor_id != invalid_v<size_type> )
+                            if ( neighbor_id != invalid_v<index_type> )
                             {
                                 const auto * neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id ) );
 
@@ -1628,7 +1628,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                                 if ( neighbor_id == neighbor->id()  )
                                 {
                                     auto const domainsExtended_eid_set = trialElementId( neighbor_id/*elem.id()*/, mpl::int_<nDimDiffBetweenTestTrial>() );
-                                    for ( const size_type neighborEltIdTrial : domainsExtended_eid_set )
+                                    for ( const index_type neighborEltIdTrial : domainsExtended_eid_set )
                                     {
                                         if ( hasMeshSupportPartialX2 )
                                         {
@@ -1841,7 +1841,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
     {
         auto const& elem = elem_it->get();
 
-        auto eId = _M_X1->mesh()->meshToSubMesh( elem.id() );
+        index_type eId = _M_X1->mesh()->meshToSubMesh( elem.id() );
         DVLOG(2) << "[Stencil::computeGraphHDG] element " << elem.id() << " on proc " << elem.processId() << std::endl;
         if ( eId == invalid_v<index_type> )
             continue;
@@ -2078,7 +2078,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
     if (doExtrapolationAtStartXh1) locToolForXh1->setExtrapolation( false );
 
 
-    size_type IdEltInXh2 = invalid_v<size_type>;
+    index_type IdEltInXh2 = invalid_v<index_type>;
     //node_type trialNodeRef,testNodeRef;
 
 #if FEELPP_EXPORT_GRAPH
@@ -2086,9 +2086,9 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 #endif
 
     std::vector<size_type> element_dof1_range, element_dof1, element_dof2;
-    std::set<size_type> neighLocalizedInXh1;
+    std::set<index_type> neighLocalizedInXh1;
 
-    std::set<size_type > listTup;
+    std::set<index_type > listTup;
 
     theim_type im( order_used_type::value );
     //-----------------------------------------------------------------------//
@@ -2131,7 +2131,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
                 auto const ptRealDof = boost::get<0>( _M_X1->dof()->dofPoint( ig1 ) );
 
                 ublas::column(ptsReal,0 ) = ptRealDof;
-                if (notUseOptLocTrial) IdEltInXh2=invalid_v<size_type>;
+                if (notUseOptLocTrial) IdEltInXh2=invalid_v<index_type>;
                 auto resLocalisationInXh2 = locToolForXh2->run_analysis(ptsReal,IdEltInXh2,elem.vertices(),mpl::int_<0>());
                 IdEltInXh2 = resLocalisationInXh2.template get<1>();
                 bool hasFind = resLocalisationInXh2.template get<0>()[0];
