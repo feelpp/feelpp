@@ -28,16 +28,16 @@
 
 namespace Feel {
 
-template<typename T>
-void StaticCondensation<T>::addLocalMatrix ( int* rows, int nrows,
+template<typename T, typename IndexT>
+void StaticCondensation<T,IndexT>::addLocalMatrix ( int* rows, int nrows,
                                              int* cols, int ncols,
                                              value_type* data,
                                              size_type K, size_type K2  )
 {
     std::lock_guard<std::mutex> guard(mutex_add_m);
     //tic();
-    if ( K == invalid_size_type_value ) return;
-    if ( K2 == invalid_size_type_value ) return;
+    if ( K == invalid_v<size_type> ) return;
+    if ( K2 == invalid_v<size_type> ) return;
     auto key = std::make_pair(K,K2);
     auto entry = this->M_local_matrices[this->M_block_rowcol].find(key);
     if ( entry == this->M_local_matrices[this->M_block_rowcol].end() )
@@ -61,14 +61,14 @@ void StaticCondensation<T>::addLocalMatrix ( int* rows, int nrows,
     //toc("sc.addLocalMatrix",FLAGS_v>0);
 }
 
-template<typename T>
-void StaticCondensation<T>::addLocalVector ( int* rows, int nrows,
+template<typename T, typename IndexT>
+void StaticCondensation<T,IndexT>::addLocalVector ( int* rows, int nrows,
                                              value_type* data,
                                              size_type K, size_type K2  )
 {
     std::lock_guard<std::mutex> guard(mutex_add_v);
     //tic();
-    if ( K == invalid_size_type_value ) return;
+    if ( K == invalid_v<size_type> ) return;
     auto entry = this->M_local_vectors[this->M_block_row].find(K);
     if ( entry == this->M_local_vectors[this->M_block_row].end() )
     {

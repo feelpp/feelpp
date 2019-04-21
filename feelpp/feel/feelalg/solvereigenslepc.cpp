@@ -780,7 +780,7 @@ SolverEigenSlepc<T>:: setSlepcDimensions()
     int ierr = 0;
 
     // Set eigenvalues to be computed.
-    PetscInt mpdValue = ( this->maximumProjectedDimension() != invalid_size_type_value )? this->maximumProjectedDimension() : PETSC_DEFAULT;
+    PetscInt mpdValue = ( this->maximumProjectedDimension() != invalid_v<size_type> )? this->maximumProjectedDimension() : PETSC_DEFAULT;
     ierr = EPSSetDimensions ( M_eps,
                               (PetscInt)this->numberOfEigenvalues(),
                               (PetscInt)this->numberOfEigenvaluesConverged(),

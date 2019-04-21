@@ -53,7 +53,7 @@ public:
 
 protected:
     /**
-     * Partition the \p MeshBase into \p n subdomains.
+     * Partition the \p MeshBase<> into \p n subdomains.
      */
     virtual void partitionImpl ( mesh_ptrtype& mesh, rank_type n );
 

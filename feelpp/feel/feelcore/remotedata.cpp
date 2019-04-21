@@ -1838,7 +1838,7 @@ RemoteData::Girder::fileInfoImpl( std::string const& fileId, std::string const& 
     }
 
     std::string name, id, mimeType, sha512;
-    size_type size = invalid_size_type_value;
+    size_type size = invalid_v<size_type>;
     if ( auto it = pt.get_optional<std::string>("_id") )
         id = *it;
     if ( auto it = pt.get_optional<std::string>("name") )
@@ -1886,7 +1886,7 @@ RemoteData::Girder::folderInfoImpl( std::string const& folderId, std::string con
     }
 
     std::string name, id;
-    size_type size = invalid_size_type_value;
+    size_type size = invalid_v<size_type>;
     if ( auto it = pt.get_optional<std::string>("_id") )
         id = *it;
     if ( auto it = pt.get_optional<std::string>("name") )
@@ -1928,7 +1928,7 @@ RemoteData::Girder::itemInfoImpl( std::string const& itemId, std::string const& 
     }
 
     std::string name, id;
-    size_type size = invalid_size_type_value;
+    size_type size = invalid_v<size_type>;
     if ( auto it = pt.get_optional<std::string>("_id") )
         id = *it;
     if ( auto it = pt.get_optional<std::string>("name") )
@@ -1976,7 +1976,7 @@ RemoteData::Girder::folderContentsImpl( std::string const& folderId, std::string
     for (auto const& item : ptFolder )
     {
         std::string name, id;
-        size_type size = invalid_size_type_value;
+        size_type size = invalid_v<size_type>;
         if ( auto it = item.second.get_optional<std::string>("_id") )
             id = *it;
         if ( auto it = item.second.get_optional<std::string>("name") )
@@ -2012,7 +2012,7 @@ RemoteData::Girder::folderContentsImpl( std::string const& folderId, std::string
     for (auto const& item : ptItem )
     {
         std::string name, id;
-        size_type size = invalid_size_type_value;
+        size_type size = invalid_v<size_type>;
         if ( auto it = item.second.get_optional<std::string>("_id") )
             id = *it;
         if ( auto it = item.second.get_optional<std::string>("name") )
@@ -2064,7 +2064,7 @@ RemoteData::Girder::updateFilesImpl( std::shared_ptr<RemoteData::ItemInfo> itemI
     for (auto const& ptFile : pt )
     {
         std::string name, id, mimeType, sha512;
-        size_type size = invalid_size_type_value;
+        size_type size = invalid_v<size_type>;
         if ( auto it = ptFile.second.get_optional<std::string>("_id") )
             id = *it;
         if ( auto it = ptFile.second.get_optional<std::string>("name") )
@@ -2093,7 +2093,7 @@ RemoteData::FolderInfo::print( size_t nTab ) const
     ostr << tab << "|-- "<< this->name() << "  [type:folder";
     if ( !this->id().empty() )
         ostr << ", id:" << this->id();
-    if ( this->size() != invalid_size_type_value )
+    if ( this->size() != invalid_v<size_type> )
         ostr << ", size:" << this->size();
     ostr << "]\n";
 
@@ -2116,7 +2116,7 @@ RemoteData::ItemInfo::print( size_t nTab ) const
     ostr << tab << "|-- "<< this->name() << "  [type:item";
     if ( !this->id().empty() )
         ostr << ", id:" << this->id();
-    if ( this->size() != invalid_size_type_value )
+    if ( this->size() != invalid_v<size_type> )
         ostr << ", size:" << this->size();
     ostr << "]\n";
 
@@ -2139,7 +2139,7 @@ RemoteData::FileInfo::print( size_t nTab, bool isFileInItem ) const
     ostr << this->name() << "  [type:file";
     if ( !this->id().empty() )
         ostr << ", id:" << this->id();
-    if ( this->size() != invalid_size_type_value )
+    if ( this->size() != invalid_v<size_type> )
         ostr << ", size:" << this->size();
     ostr << "]\n";
     return ostr;

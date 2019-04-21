@@ -94,9 +94,11 @@ private:
 };
 //! this data structure stores element faces ids which can possibly split onto
 //! two sets of face ids depending on the type of approximation used on the faces
+template<typename IndexT=uint32_type>
 class ElementFaces
 {
 public:
+    using size_type = IndexT;
     ElementFaces() : M_has_same_trace(true), M_space_index(-1) {}
     ElementFaces( bool t ) : M_has_same_trace(t), M_space_index(-1) {}
     ElementFaces( std::vector<size_type>& f1 )
@@ -127,10 +129,12 @@ private:
 
 }
 
-template<typename T>
+template<typename T,typename IndexT=uint32_type>
 class StaticCondensation
 {
 public:
+    using index_type = IndexT;
+    using size_type = index_type;
     using block_index_t = std::pair<int,int>;
     using block_element_t = std::pair<size_type,size_type>;
     using value_type = T;
@@ -172,12 +176,12 @@ public:
                          int* cols, int ncols,
                          value_type* data,
                          size_type K = 0,
-                         size_type K2 = invalid_size_type_value );
+                         size_type K2 = invalid_v<size_type> );
 
     void addLocalVector( int* rows, int nrows,
                          value_type* data,
                          size_type K = 0,
-                         size_type K2 = invalid_size_type_value );
+                         size_type K2 = invalid_v<size_type> );
 
 
     template <typename Space1,typename Space2>
@@ -482,7 +486,7 @@ public:
     using ainvb_iterator_t = typename ainvb_t::iterator;
     using ainvb_const_iterator_t = typename ainvb_t::const_iterator;
     using ainvf_t = std::unordered_map<int,local_vector_t>;
-    using dk_t = std::unordered_map<int,Feel::detail::ElementFaces>;
+    using dk_t = std::unordered_map<int,Feel::detail::ElementFaces<>>;
 #if 0
     local_vector_t& localVector( size_type K ) { return M_local_vectors[this->M_block_row][K]; }
     local_vector_t const& localVector( size_type K ) const { return M_local_vectors.at(this->M_block_row).at(K); }
@@ -545,8 +549,8 @@ private:
     std::unordered_map<int,local_vector_t> M_F3;
     
     
-    using dK_iterator_type = std::unordered_map<int,Feel::detail::ElementFaces>::iterator;
-    std::unordered_map<int,Feel::detail::ElementFaces> M_dK;
+    using dK_iterator_type = std::unordered_map<int,Feel::detail::ElementFaces<>>::iterator;
+    std::unordered_map<int,Feel::detail::ElementFaces<>> M_dK;
     block_index_t M_block_rowcol;
     int M_block_row;
     int M_dim4;
@@ -852,7 +856,7 @@ struct Condenser
                     {
                         std::lock_guard<std::mutex> guard(this->mutex_dk);
                         dK = dkset.emplace(key.first,
-                                           Feel::detail::ElementFaces(e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId()).first) );
+                                           Feel::detail::ElementFaces<>(e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId()).first) );
                     }
         
                     int n = 0;
@@ -911,8 +915,8 @@ struct Condenser
                         AinvB.emplace( K, _AinvB );
                         AinvF.emplace( K, _AinvF );
 
-                        S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
-                        V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
+                        S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_v<size_type>, invalid_v<size_type> );
+                        V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_v<size_type>, invalid_v<size_type> );
                     }
                 }
                 return;
@@ -941,10 +945,10 @@ private:
     int grain;
     std::mutex mutex_dk;
 };
-template<typename T>
+template<typename T, typename IndexT>
 template<typename E, typename M_ptrtype, typename V_ptrtype>
 void
-StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
+StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
                                  std::enable_if_t<std::decay_t<E>::nspaces == 3>* )
 {
     using Feel::cout;
@@ -1036,7 +1040,7 @@ StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& r
             //std::cout << "AK=\n" << AK << std::endl;
             //std::cout << "AK-AK^T=\n" << (AK-AK.transpose()) << std::endl;
             // dK contains the set of faces ids in the submesh associated to the boundary of K
-            auto dK = M_dK.emplace(key.first, Feel::detail::ElementFaces(e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId()).first) );
+            auto dK = M_dK.emplace(key.first, Feel::detail::ElementFaces<>(e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId()).first) );
         
             int n = 0;
             std::for_each( dK.first->second.faces1().begin(), dK.first->second.faces1().end(), [&]( auto dKi )
@@ -1093,8 +1097,8 @@ StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& r
             tic();
             auto dofs = e3.dofs(dK.first->second.faces1());
 
-            S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
-            V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
+            S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_v<size_type>, invalid_v<size_type> );
+            V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_v<size_type>, invalid_v<size_type> );
             toc("sc.condense.globalassembly", FLAGS_v>1);
         } // else
         toc("sc.condense.sequential", FLAGS_v>0);
@@ -1103,16 +1107,16 @@ StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& r
     M_nnz = S.nnz();
 }
 
-template<typename T>
-StaticCondensation<T>::StaticCondensation()
+template<typename T, typename IndexT>
+StaticCondensation<T,IndexT>::StaticCondensation()
     :
     M_condense{ boption("sc.condense.parallel" ), ioption("sc.condense.parallel.n") },
     M_localsolve{ boption("sc.localsolve.parallel" ), ioption("sc.localsolve.parallel.n") }
 {}
-template<typename T>
+template<typename T, typename IndexT>
 template<typename E, typename M_ptrtype, typename V_ptrtype>
 void
-StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
+StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
                                  std::enable_if_t<std::decay_t<E>::nspaces >= 4>* ) 
 {
     using Feel::cout;
@@ -1222,7 +1226,7 @@ StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& r
                     {
                         DLOG(INFO) << " . added face from space index " << i;
                         index = i;
-                        dK_it = M_dK.emplace( K, Feel::detail::ElementFaces( std::move(dK.first), std::move(dK1.first), index ) ).first;
+                        dK_it = M_dK.emplace( K, Feel::detail::ElementFaces<>( std::move(dK.first), std::move(dK1.first), index ) ).first;
                         break;
                     }
                     
@@ -1230,7 +1234,7 @@ StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& r
                 DCHECK( dK_it != M_dK.end() ) << "could not find missing faces";
             }
             else
-                dK_it = M_dK.emplace( K, Feel::detail::ElementFaces( std::move(dK.first) ) ).first;
+                dK_it = M_dK.emplace( K, Feel::detail::ElementFaces<>( std::move(dK.first) ) ).first;
         }
 
         auto & dK = dK_it->second;
@@ -1310,8 +1314,8 @@ StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& r
             tic();
             auto dofs = e3.dofs(dK.faces1(),S.matrixPtr()->mapRow(),0);
             
-            S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
-            V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
+            S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_v<size_type>, invalid_v<size_type> );
+            V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_v<size_type>, invalid_v<size_type> );
             toc("sc.condense.globalassembly", FLAGS_v>1);
 
         }
@@ -1470,18 +1474,18 @@ StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& r
             local_matrix_t DK11( DK3.block( N41, N41, N42, N42 ) );
             local_vector_t DKF1( DKF3.head( N41 ) );
             local_vector_t DKF2( DKF3.tail( N42 ) );
-            S(0_c,0_c).addMatrix( dofs1.data(), dofs1.size(), dofs1.data(), dofs1.size(), DK00.data(), invalid_size_type_value, invalid_size_type_value );
+            S(0_c,0_c).addMatrix( dofs1.data(), dofs1.size(), dofs1.data(), dofs1.size(), DK00.data(), invalid_v<size_type>, invalid_v<size_type> );
             //S.matrixPtr()->printMatlab("S1.m");
-            S(0_c,1_c,0,dK.spaceIndex()).addMatrix( dofs1.data(), dofs1.size(), dofs2.data(), dofs2.size(), DK01.data(), invalid_size_type_value, invalid_size_type_value );
+            S(0_c,1_c,0,dK.spaceIndex()).addMatrix( dofs1.data(), dofs1.size(), dofs2.data(), dofs2.size(), DK01.data(), invalid_v<size_type>, invalid_v<size_type> );
             //S.matrixPtr()->printMatlab("S2.m");
-            S(1_c,0_c,dK.spaceIndex(),0).addMatrix( dofs2.data(), dofs2.size(), dofs1.data(), dofs1.size(), DK10.data(), invalid_size_type_value, invalid_size_type_value );
+            S(1_c,0_c,dK.spaceIndex(),0).addMatrix( dofs2.data(), dofs2.size(), dofs1.data(), dofs1.size(), DK10.data(), invalid_v<size_type>, invalid_v<size_type> );
             //S.matrixPtr()->printMatlab("S3.m");
-            S(1_c,1_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs2.data(), dofs2.size(), dofs2.data(), dofs2.size(), DK11.data(), invalid_size_type_value, invalid_size_type_value );
+            S(1_c,1_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs2.data(), dofs2.size(), dofs2.data(), dofs2.size(), DK11.data(), invalid_v<size_type>, invalid_v<size_type> );
             
             //S.matrixPtr()->printMatlab("S4.m");
-            V(0_c).addVector( dofs1.data(), dofs1.size(), DKF1.data(), invalid_size_type_value, invalid_size_type_value );
+            V(0_c).addVector( dofs1.data(), dofs1.size(), DKF1.data(), invalid_v<size_type>, invalid_v<size_type> );
             //V.vectorPtr()->printMatlab("g1.m");
-            V(1_c,dK.spaceIndex()).addVector( dofs2.data(), dofs2.size(), DKF2.data(), invalid_size_type_value, invalid_size_type_value );
+            V(1_c,dK.spaceIndex()).addVector( dofs2.data(), dofs2.size(), DKF2.data(), invalid_v<size_type>, invalid_v<size_type> );
 
             condense2( dK, rhs, e, S, V );
            //V.vectorPtr()->printMatlab("g2.m");
@@ -1492,19 +1496,19 @@ StaticCondensation<T>::condense( std::shared_ptr<StaticCondensation<T>> const& r
     }
     M_nnz = S.nnz();
 }
-template<typename T>
+template<typename T, typename IndexT>
 template<typename DK, typename E, typename M_ptrtype, typename V_ptrtype>
 void
-StaticCondensation<T>::condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
+StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
                                   std::enable_if_t<std::decay_t<E>::nspaces == 4>* ) 
 {
 	//Feel::cout << __LINE__ << std::endl;
 }
 
-template<typename T>
+template<typename T, typename IndexT>
 template<typename DK, typename E, typename M_ptrtype, typename V_ptrtype>
 void
-StaticCondensation<T>::condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
+StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
                                   std::enable_if_t<std::decay_t<E>::nspaces == 5>* ) 
 {
     auto const& A34K = M_local_matrices[std::make_pair(3,4)];
@@ -1556,11 +1560,11 @@ StaticCondensation<T>::condense2( DK const& dK, std::shared_ptr<StaticCondensati
                        Feel::cout << "A44(" << key.first << "):" << A44K.at(key) << "\n";
                        Feel::cout << "V4(" << key.first << "):" << V4K.at(key) << "\n";
                        
-                       S(1_c,2_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs1.data(), dofs1.size(), dofs2.data(), dofs2.size(), A34K.at(key).data(), invalid_size_type_value, invalid_size_type_value );
-                       S(2_c,2_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs2.data(), dofs2.size(), dofs2.data(), dofs2.size(), A44K.at(key).data(), invalid_size_type_value, invalid_size_type_value );
-                       S(2_c,1_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs2.data(), dofs2.size(), dofs1.data(), dofs1.size(), A43K.at(key).data(), invalid_size_type_value, invalid_size_type_value );
+                       S(1_c,2_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs1.data(), dofs1.size(), dofs2.data(), dofs2.size(), A34K.at(key).data(), invalid_v<size_type>, invalid_v<size_type> );
+                       S(2_c,2_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs2.data(), dofs2.size(), dofs2.data(), dofs2.size(), A44K.at(key).data(), invalid_v<size_type>, invalid_v<size_type> );
+                       S(2_c,1_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs2.data(), dofs2.size(), dofs1.data(), dofs1.size(), A43K.at(key).data(), invalid_v<size_type>, invalid_v<size_type> );
 
-                       V(2_c,dK.spaceIndex()).addVector( dofs2.data(), dofs2.size(), V4K.at(key).data(), invalid_size_type_value, invalid_size_type_value );
+                       V(2_c,dK.spaceIndex()).addVector( dofs2.data(), dofs2.size(), V4K.at(key).data(), invalid_v<size_type>, invalid_v<size_type> );
                    });
 }
 
@@ -1645,10 +1649,10 @@ private:
     int grain;
 };
 
-template<typename T>
+template<typename T, typename IndexT>
 template<typename E>
 void
-StaticCondensation<T>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces == 1>* )
+StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces == 1>* )
 {
     using Feel::cout;
     auto& e1 = e(0_c);
@@ -1691,20 +1695,20 @@ StaticCondensation<T>::localSolve( std::shared_ptr<StaticCondensation<T>> const&
     }
 }
 
-template<typename T>
+template<typename T, typename IndexT>
 template<typename E>
 void
-StaticCondensation<T>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces == 2>* )
+StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces == 2>* )
 {
     using Feel::cout;
     cout << tc::red << "WARNING!! localSolve with function space of size 2 is not implemented yet!"
          << tc::reset << std::endl;
 }
 
-template<typename T>
+template<typename T, typename IndexT>
 template<typename E>
 void
-StaticCondensation<T>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces == 3>* )
+StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces == 3>* )
 {
     using Feel::cout;
     auto& e1 = e(0_c);
@@ -1752,10 +1756,10 @@ StaticCondensation<T>::localSolve( std::shared_ptr<StaticCondensation<T>> const&
     }
 }
 
-template<typename T>
+template<typename T, typename IndexT>
 template<typename E>
 void
-StaticCondensation<T>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces >= 4>*  )
+StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces >= 4>*  )
 {
     using Feel::cout;
     auto& e1 = e(0_c);

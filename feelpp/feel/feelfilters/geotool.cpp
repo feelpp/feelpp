@@ -1234,7 +1234,7 @@ GeoGMSHTool::geoStr()
             ++thecpt;
         }
         std::string surfType = surfaceRegisterFront.surfaceType(); // plane, ruled
-        detail::GeoToolSurface mySurf( newSurfName,invalid_size_type_value,idNewSurf,surfType );
+        detail::GeoToolSurface mySurf( newSurfName,invalid_v<size_type>,idNewSurf,surfType );
         mySurf.setPhysicalMarker( surfaceRegisterFront.physicalMarker() );
 
         for ( auto const& itSurf2 : itSurf )
@@ -1278,7 +1278,7 @@ GeoGMSHTool::geoStr()
         int idNewVol = this->M_cptVolume;
         ++this->M_cptVolume; //update counter
 
-        detail::GeoToolVolume myVol( newVolName, invalid_size_type_value,idNewVol );
+        detail::GeoToolVolume myVol( newVolName, invalid_v<size_type>,idNewVol );
         myVol.setPhysicalMarker( volumeRegisterFront.physicalMarker() );
 
         for ( auto const& itVol2 : itVol )
@@ -1864,7 +1864,7 @@ GeoGMSHTool::updateFusionMarkersLineWithoutInterface( std::set<int> & surfaceIdE
         int idNewSurf = this->M_cptSurface;
         ++this->M_cptSurface; //update counter
         std::string surfType = "plane";//surfaceRegisterFront.surfaceType(); // plane, ruled
-        detail::GeoToolSurface myFusionSurface( newSurf.first,invalid_size_type_value,idNewSurf,surfType );
+        detail::GeoToolSurface myFusionSurface( newSurf.first,invalid_v<size_type>,idNewSurf,surfType );
 
         std::vector<detail::GeoToolLineLoop> newLineLoopMemory;
         // define physical marker of new surface and identify line erased with fusion
@@ -1925,7 +1925,7 @@ GeoGMSHTool::updateFusionMarkersLineWithoutInterface( std::set<int> & surfaceIdE
                 {
                     int idNewLineLoop = this->M_cptLineLoop;
                     ++this->M_cptLineLoop; //update counter
-                    detail::GeoToolLineLoop myNewLineLoop(myFusionSurface.name(), invalid_size_type_value,idNewLineLoop );
+                    detail::GeoToolLineLoop myNewLineLoop(myFusionSurface.name(), invalid_v<size_type>,idNewLineLoop );
                     myNewLineLoop.setLines( myNewLinesId );
                     // store partial lineloop
                     newLineLoopMemory.push_back( myNewLineLoop );
@@ -1958,7 +1958,7 @@ GeoGMSHTool::updateFusionMarkersLineWithoutInterface( std::set<int> & surfaceIdE
             {
                 int idNewLineLoop = this->M_cptLineLoop;
                 ++this->M_cptLineLoop; //update counter
-                detail::GeoToolLineLoop myNewLineLoop(myFusionSurface.name(), invalid_size_type_value,idNewLineLoop );
+                detail::GeoToolLineLoop myNewLineLoop(myFusionSurface.name(), invalid_v<size_type>,idNewLineLoop );
                 myNewLineLoop.setLines( newLineLoopMemory[k].listLine() );
                 isDone[k]=true;
 
