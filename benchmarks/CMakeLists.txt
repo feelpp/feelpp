@@ -42,6 +42,7 @@ else()
 endif()
 
 option(BENCHMARK_ENABLE_GTEST_TESTS "Enable building the unit tests which depend on gtest" OFF)
+set( BENCHMARK_ENABLE_GTEST_TESTS OFF )
 feelppGitSubmodulePrepare( benchmark )
 include_directories(${CMAKE_SOURCE_DIR}/benchmarks/benchmark/include)
 add_subdirectory(benchmark)
