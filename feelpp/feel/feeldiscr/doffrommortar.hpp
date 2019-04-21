@@ -166,15 +166,15 @@ private:
             size_type global_shift;
             boost::tie( local_shift, global_shift ) = shifts;
 
-            size_type ie = elt.id();
+            index_type ie = elt.id();
             auto const& pt0 = elt.point(0);
             auto const& pt1 = elt.point(1);
             Marker1 markerPt0 = pt0.hasMarker()? pt0.marker() : Marker1(0);
             Marker1 markerPt1 = pt1.hasMarker()? pt1.marker() : Marker1(0);
 
             uint16_type lc = local_shift;
-            size_type n = elt.neighbor( 0 );
-            if ( n  != invalid_v<size_type> )
+            index_type n = elt.neighbor( 0 );
+            if ( n  != invalid_v<index_type> )
             {
                 size_type gDof = M_doftable->mesh()->element( n ).point(1).id()*fe_type::nDofPerVertex;
                 DVLOG(2) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
@@ -187,7 +187,7 @@ private:
             else
             {
                 n = elt.neighbor( 1 );
-                CHECK( n != invalid_v<size_type> ) << "the element should be connected to at least one other element, it is not the case";
+                CHECK( n != invalid_v<index_type> ) << "the element should be connected to at least one other element, it is not the case";
 
                 size_type gDof = ( elt.point( 0 ).id() ) * mortar_fe_type::nDofPerVertex;
                 DVLOG(2) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
@@ -232,7 +232,7 @@ private:
             size_type global_shift;
             boost::tie( local_shift, global_shift ) = shifts;
 
-            size_type ie = elt.id();
+            index_type ie = elt.id();
             uint16_type lc = local_shift;
             Marker1 markerElt = elt.hasMarker()? elt.marker() : Marker1(0);
 
@@ -243,15 +243,15 @@ private:
                 size_type gDof = ie * fe_type::nDofPerEdge + l;
                 if ( nOrder == 0 )//is_p0_continuous )
                 {
-                    size_type n = elt.neighbor( 0 );
-                    if ( n  != invalid_v<size_type> )
+                    index_type n = elt.neighbor( 0 );
+                    if ( n  != invalid_v<index_type> )
                     {
                         gDof = M_doftable->mesh()->element( n ).point(1).id()*fe_type::nDofPerVertex;
                     }
                     else
                     {
                         n = elt.neighbor( 1 );
-                        CHECK( n != invalid_v<size_type> ) << "the element should be connected to at least one other element, it is not the case";
+                        CHECK( n != invalid_v<index_type> ) << "the element should be connected to at least one other element, it is not the case";
                         gDof = M_doftable->mesh()->element( n ).point(0).id()*fe_type::nDofPerVertex;
                     }
                     DVLOG(2) << "inserting dof " << gDof << "," << next_free_dof << "," << ie;
@@ -279,7 +279,7 @@ private:
             size_type global_shift;
             boost::tie( local_shift, global_shift ) = shifts;
 
-            size_type ie = elt.id();
+            index_type ie = elt.id();
             uint16_type lc = local_shift;
 
             /** The boundary dofs are constructed in the same way if the basis is modal **/
@@ -338,7 +338,7 @@ private:
             size_type global_shift;
             boost::tie( local_shift, global_shift ) = shifts;
 
-            size_type ie = elt.id();
+            index_type ie = elt.id();
             uint16_type lc = local_shift;
 
             for ( uint16_type i = 0; i < element_type::numEdges; ++i )
@@ -402,7 +402,7 @@ private:
             size_type global_shift;
             boost::tie( local_shift, global_shift ) = shifts;
 
-            size_type ie = elt.id();
+            index_type ie = elt.id();
             uint16_type lc = local_shift;
             Marker1 markerElt = elt.hasMarker()? elt.marker() : Marker1(0);
 
@@ -428,7 +428,7 @@ private:
             size_type global_shift;
             boost::tie( local_shift, global_shift ) = shifts;
 
-            size_type ie = elt.id();
+            index_type ie = elt.id();
 
             uint16_type lc = local_shift;
 
@@ -518,7 +518,7 @@ private:
             size_type global_shift;
             boost::tie( local_shift, global_shift ) = shifts;
 
-            size_type ie = elt.id();
+            index_type ie = elt.id();
             uint16_type lc = local_shift;
             Marker1 markerElt =  elt.hasMarker()? elt.marker() : Marker1(0);
 
