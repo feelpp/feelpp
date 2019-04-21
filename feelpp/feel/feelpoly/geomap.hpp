@@ -1148,8 +1148,11 @@ class GeoMap
                 updateJKBN<CTX>();
             }
 
+        //!
+        //! update geomap data only on face, element has not been changed
+        //!
         template<size_type CTX=context>
-        void update( uint16_type __f, bool updatePC = true )
+        void updateOnFace( uint16_type __f, bool updatePC = true )
             {
                 M_face_id = __f;
                 if ( this->isOnSubEntity() && updatePC )
