@@ -1420,20 +1420,24 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
     rank_type procId = this->worldComm().localRank();
     rank_type worldSize = this->worldComm().localSize();
 
+    std::vector<std::map<int,std::set<int>>> entityTagToPhysicalMarkers(4);
     if ( std::string( __buf ) == "$Entities" )
     {
-        LOG(INFO) << "Reading $Entities ...";
+        VLOG(2) << "Reading $Entities ...";
         std::vector<size_type> nGeoEntities(4); // points, curves, surfaces, volumes
         __is >> nGeoEntities[0] >> nGeoEntities[1] >> nGeoEntities[2] >> nGeoEntities[3];
 
-        int tag;
+        int entityTag, physicalTag;
         std::vector<double> coordGeoPoints(3);
         size_type numPhysicalTags = 0;
         for ( size_type k=0; k<nGeoEntities[0]; ++k )
         {
-            __is >> tag >> coordGeoPoints[0] >> coordGeoPoints[1] >> coordGeoPoints[2] >> numPhysicalTags;
+            __is >> entityTag >> coordGeoPoints[0] >> coordGeoPoints[1] >> coordGeoPoints[2] >> numPhysicalTags;
             for ( int l=0;l<numPhysicalTags;++l )
-                __is  >> tag;
+            {
+                __is  >> physicalTag;
+                entityTagToPhysicalMarkers[0][entityTag].insert( physicalTag );
+            }
         }
 
         std::vector<double> coordMinMax(6);
@@ -1442,15 +1446,18 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         {
             for ( size_type k=0; k<nGeoEntities[e]; ++k )
             {
-                __is >> tag
+                __is >> entityTag
                      >> coordMinMax[0] >> coordMinMax[1] >> coordMinMax[2] // min
                      >> coordMinMax[3] >> coordMinMax[4] >> coordMinMax[5] //max
                      >> numPhysicalTags;
                 for ( int l=0;l<numPhysicalTags;++l )
-                    __is  >> tag;
+                {
+                    __is  >> physicalTag;
+                    entityTagToPhysicalMarkers[e][entityTag].insert( physicalTag );
+                }
                 __is >> nBoundingEntity;
                 for ( int l=0;l<nBoundingEntity;++l )
-                    __is  >> tag;
+                    __is  >> physicalTag;
             }
         }
 
@@ -1459,7 +1466,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             << "invalid file format entry "
             << __buf
             << " instead of $EndEntities\n";
-        LOG(INFO) << "Reading $Entities done";
+        VLOG(2) << "Reading $Entities done";
 
         __is >> __buf;
     }
@@ -1468,7 +1475,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
     if ( std::string( __buf ) == "$PartitionedEntities" )
     {
-        LOG(INFO) << "Reading $PartitionedEntities ...";
+        VLOG(2) << "Reading $PartitionedEntities ...";
         entityTagInCurrentPartition.resize( 4 );
 
         size_type numPartitions, numGhostEntities;
@@ -1528,17 +1535,15 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             << "invalid file format entry "
             << __buf
             << " instead of $EndPartitionedEntities\n";
-        LOG(INFO) << "Reading $PartitionedEntities done";
+        VLOG(2) << "Reading $PartitionedEntities done";
 
         __is >> __buf;
     }
 
-    //std::unordered_map<int, Feel::detail::GMSHPoint > gmshpts;
-    //LOG(INFO) << "Reading "<< __n << " nodes\n";
 
     if ( std::string( __buf ) == "$Nodes" )
     {
-        LOG(INFO) << "Reading $Nodes ...";
+        VLOG(2) << "Reading $Nodes ...";
 
         size_type nEntityBlocks, nNodes, minNodeTag, maxNodeTag;
         __is >> nEntityBlocks >> nNodes >> minNodeTag >> maxNodeTag;
@@ -1594,7 +1599,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             << "invalid file format entry "
             << __buf
             << " instead of $EndNodes\n";
-        LOG(INFO) << "Reading $Nodes done";
+        VLOG(2) << "Reading $Nodes done";
 
         __is >> __buf;
     }
@@ -1603,25 +1608,30 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
     mesh->updateOrderedPoints();// TODO move after insert ghost elements
 
 
-    //LOG(INFO) << "Reading " << numElements << " elements...\n";
-    //std::vector<Feel::detail::GMSHElement> __et; // tags in each element
-    //std::map<int,int> __idGmshToFeel; // id Gmsh to id Feel
-    //std::map<int,int> __gt;
-
     if ( std::string( __buf ) == "$Elements" )
     {
-        LOG(INFO) << "Reading $Elements ...";
+        VLOG(2) << "Reading $Elements ...";
         size_type numEntityBlocks, numElements, minElementTag, maxElementTag;
         __is >> numEntityBlocks >> numElements >> minElementTag >> maxElementTag;
         //__et.reserve( numElements );
-        int entityDim, entityTag, elementType;
-        size_type numElementsInBlock;
-        int tag;
+        int entityDim = 0, entityTag = 0, elementType = 0, physicalTag = 0;
+        size_type numElementsInBlock = 0;
+        int tag = 0;
 
-        // ghost data to REMOVE???
+        // partitioning data
         int numPartitions = 1, partition = procId;
         int parent =0 , dom1 = 0, dom2 = 0;
         std::vector<rank_type> ghosts;
+
+        int numVertices = 0;
+        std::vector<int> indices;
+        Feel::detail::GMSHElement it_gmshElt( tag, elementType, physicalTag, entityTag,    //   num, type, physical, elementary,
+                                              numPartitions, partition, ghosts,
+                                              parent, dom1, dom2,
+                                              numVertices, indices,
+                                              this->worldComm().localRank(),
+                                              this->worldComm().localSize(),
+                                              M_respect_partition );
 
         for ( size_type k=0;k<numEntityBlocks;++k )
         {
@@ -1631,9 +1641,9 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
 
             const char* ename;
-            int numVertices = getInfoMSH(elementType,&ename);
+            numVertices = getInfoMSH( elementType,&ename );
             CHECK(numVertices!=0) << "Unknown number of vertices for element type " << elementType << "\n";
-            std::vector<int> indices( numVertices );
+            indices.resize( numVertices );
 
             for ( size_type p=0;p<numElementsInBlock;++p )
             {
@@ -1645,24 +1655,27 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
                 if ( useThisEntity )
                 {
-#if 0
-                    // PAS Sure que entityTag == physical Tag
-                    __et.emplace_back( tag, elementType, entityTag, entityTag,    //   num, type, physical, elementary,
-                                       numPartitions, partition, ghosts,
-                                       parent, dom1, dom2,
-                                       numVertices, indices,
-                                       this->worldComm().localRank(),
-                                       this->worldComm().localSize(),
-                                       M_respect_partition );
-#endif
-                    Feel::detail::GMSHElement it_gmshElt( tag, elementType, entityTag, entityTag,    //   num, type, physical, elementary,
-                                            numPartitions, partition, ghosts,
-                                            parent, dom1, dom2,
-                                            numVertices, indices,
-                                            this->worldComm().localRank(),
-                                            this->worldComm().localSize(),
-                                            M_respect_partition );
-#if 1
+                    // get physical tag
+                    physicalTag = 0; // default value??
+                    auto itFindEntityTagToPhysicalMarkers = entityTagToPhysicalMarkers[entityDim].find( entityTag );
+                    if ( itFindEntityTagToPhysicalMarkers != entityTagToPhysicalMarkers[entityDim].end() )
+                    {
+                        if ( itFindEntityTagToPhysicalMarkers->second.size() > 0 )
+                        {
+                            CHECK( itFindEntityTagToPhysicalMarkers->second.size() == 1 ) << "support only one physical marker by entity";
+                            physicalTag = *itFindEntityTagToPhysicalMarkers->second.begin();
+                        }
+                    }
+
+                    // update current gmsh element with read data
+                    it_gmshElt.num = tag;
+                    it_gmshElt.type = elementType;
+                    it_gmshElt.physical = physicalTag;
+                    it_gmshElt.elementary = entityTag;
+                    it_gmshElt.numVertices = numVertices;
+                    it_gmshElt.indices = indices;
+
+
                     switch ( elementType )
                     {
                         // Points
@@ -1713,7 +1726,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                         break;
                     }
 
-#endif
+
                 }
 
             }
@@ -1723,14 +1736,18 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             << "invalid file format entry "
             << __buf
             << " instead of $EndElements";
-        LOG(INFO) << "Reading $Elements done";
+        VLOG(2) << "Reading $Elements done";
         __is >> __buf;
     }
 
+    if ( std::string( __buf ) == "$Periodic" )
+    {
+        CHECK( false ) <<  "$Periodic part not implemented";
+    }
 
     if ( std::string( __buf ) == "$GhostElements" )
     {
-        LOG(INFO) << "Reading $GhostElements ...";
+        VLOG(2) << "Reading $GhostElements ...";
 
         size_type numGhostElements, elementTag, numGhostPartitions;
         int partitionTag, ghostPartitionTag;
@@ -1746,7 +1763,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             << "invalid file format entry "
             << __buf
             << " instead of $EndGhostElements";
-        LOG(INFO) << "Reading $GhostElements done";
+        VLOG(2) << "Reading $GhostElements done";
         __is >> __buf;
     }
 
@@ -2094,7 +2111,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
          __e.type == GMSH_QUADRANGLE_2 )
         M_n_vertices[ __e.indices[3] ] = 1;
 
-    auto fit = mesh->addFace( std::move(e) );
+    auto fit = mesh->addFace( std::move(e) ).first;
 
     return fit->second.id();
 }
