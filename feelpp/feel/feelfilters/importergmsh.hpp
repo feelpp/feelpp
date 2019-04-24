@@ -1471,12 +1471,12 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         __is >> __buf;
     }
 
-    std::vector< std::set<int> > entityTagInCurrentPartition;
+    std::vector< std::map<int,std::set<int>>> entityTagInCurrentPartitionToPartitions;
 
     if ( std::string( __buf ) == "$PartitionedEntities" )
     {
         VLOG(2) << "Reading $PartitionedEntities ...";
-        entityTagInCurrentPartition.resize( 4 );
+        entityTagInCurrentPartitionToPartitions.resize( 4 );
 
         size_type numPartitions, numGhostEntities;
         __is >> numPartitions >> numGhostEntities;
@@ -1491,19 +1491,29 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         std::vector<double> coordGeoPoints(3);
         int entityTag, parentDim, parentTag, partitionTag, physicalTag;
         size_type numPartitionsForThisEntity, numPhysicalTags;
+        std::set<int> partitionTags;
         for ( size_type k=0; k<nGeoEntities[0]; ++k )
         {
             __is >> entityTag >> parentDim >> parentTag;
             __is >> numPartitionsForThisEntity;
+            partitionTags.clear();
+            bool isOnCurrentPartition = false;
             for ( size_type p=0;p<numPartitionsForThisEntity;++p )
             {
                 __is >> partitionTag;
+                partitionTags.insert( partitionTag );
                 if ( procId == ( partitionTag % worldSize ) )
-                    entityTagInCurrentPartition[0].insert( entityTag );
+                    isOnCurrentPartition = true;
             }
+            if ( isOnCurrentPartition )
+                entityTagInCurrentPartitionToPartitions[0][entityTag] = partitionTags;
+
             __is >> coordGeoPoints[0] >> coordGeoPoints[1] >> coordGeoPoints[2] >> numPhysicalTags;
             for ( size_type t=0;t<numPhysicalTags;++t )
+            {
                 __is >> physicalTag;
+                entityTagToPhysicalMarkers[0][entityTag].insert( physicalTag );
+            }
         }
         std::vector<double> coordMinMax(6);
         size_type numBoundingSubentity;
@@ -1513,17 +1523,26 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             {
                 __is >> entityTag >> parentDim >> parentTag;
                 __is >> numPartitionsForThisEntity;
+                partitionTags.clear();
+                bool isOnCurrentPartition = false;
                 for ( size_type p=0;p<numPartitionsForThisEntity;++p )
                 {
                     __is >> partitionTag;
+                    partitionTags.insert( partitionTag );
                     if ( procId == ( partitionTag % worldSize ) )
-                        entityTagInCurrentPartition[e].insert( entityTag );
+                        isOnCurrentPartition = true;
                 }
+                if ( isOnCurrentPartition )
+                    entityTagInCurrentPartitionToPartitions[e][entityTag] = partitionTags;
+
                 __is >> coordMinMax[0] >> coordMinMax[1] >> coordMinMax[2] // min
                      >> coordMinMax[3] >> coordMinMax[4] >> coordMinMax[5] //max
                      >> numPhysicalTags;
                 for ( size_type t=0;t<numPhysicalTags;++t )
+                {
                     __is >> physicalTag;
+                    entityTagToPhysicalMarkers[e][entityTag].insert( physicalTag );
+                }
                 __is >> numBoundingSubentity;
                 for ( size_type t=0;t<numBoundingSubentity;++t )
                     __is >> entityTag;
@@ -1540,6 +1559,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         __is >> __buf;
     }
 
+    std::map<rank_type,std::set<size_type>> interprocessNodes; // neighboor partId -> ( points id )
 
     if ( std::string( __buf ) == "$Nodes" )
     {
@@ -1558,7 +1578,23 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             for ( size_type p=0;p<numNodesInBlock;++p )
                 __is >> nodeIds[p];
 
-            bool useThisNode = ( entityTagInCurrentPartition.empty() )? true : entityTagInCurrentPartition[entityDim].find( entityTag ) != entityTagInCurrentPartition[entityDim].end();
+            bool useThisNode = true;
+            std::set<rank_type> connectedProcessIds;
+            if ( !entityTagInCurrentPartitionToPartitions.empty() )
+            {
+                auto itFindEntityTag = entityTagInCurrentPartitionToPartitions[entityDim].find( entityTag );
+                useThisNode = itFindEntityTag != entityTagInCurrentPartitionToPartitions[entityDim].end();
+                if ( useThisNode )
+                {
+                    for ( int onPartitionTag : itFindEntityTag->second )
+                    {
+                        rank_type otherProcId = onPartitionTag % worldSize;
+                        if ( procId != otherProcId )
+                            connectedProcessIds.insert( otherProcId );
+                    }
+                }
+            }
+
             for ( size_type p=0;p<numNodesInBlock;++p )
             {
                 size_type id = nodeIds[p];
@@ -1571,13 +1607,17 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 if ( !useThisNode )
                     continue;
 
-#if 1
+                for ( rank_type cpid : connectedProcessIds )
+                    interprocessNodes[cpid].insert( id );
+
+
                 node_type coords( mesh_type::nRealDim );
                 for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
                     coords[j] = x[j]*M_scale;
 
                 point_type pt( id, coords /*, gmshpt.onbdy*/ );
                 pt.setProcessIdInPartition( procId/*this->worldComm().localRank()*/ );
+                pt.setProcessId( procId );
                 if ( parametric == 1 )
                 {
 #if 0
@@ -1591,7 +1631,6 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 #endif
                 }
                 mesh->addPoint( pt );
-#endif
             }
         }
         __is >> __buf;
@@ -1605,8 +1644,8 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
     }
 
 
-    mesh->updateOrderedPoints();// TODO move after insert ghost elements
 
+    std::map<int,int> __idGmshToFeel; // id Gmsh to id Feel
 
     if ( std::string( __buf ) == "$Elements" )
     {
@@ -1637,8 +1676,12 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         {
             __is >> entityDim >> entityTag >> elementType >> numElementsInBlock;
 
-            bool useThisEntity = ( entityTagInCurrentPartition.empty() )? true : entityTagInCurrentPartition[entityDim].find( entityTag ) != entityTagInCurrentPartition[entityDim].end();
-
+            bool useThisEntity = true;
+            if ( !entityTagInCurrentPartitionToPartitions.empty() )
+            {
+                auto itFindEntityTag = entityTagInCurrentPartitionToPartitions[entityDim].find( entityTag );
+                useThisEntity = itFindEntityTag != entityTagInCurrentPartitionToPartitions[entityDim].end();
+            }
 
             const char* ename;
             numVertices = getInfoMSH( elementType,&ename );
@@ -1667,6 +1710,9 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                         }
                     }
 
+                    // fix for exporter TO REMOVE!!!!
+                    if ( physicalTag == 0 && entityDim == mesh_type::nDim )
+                        physicalTag = 1234;//123456;//0;
                     // update current gmsh element with read data
                     it_gmshElt.num = tag;
                     it_gmshElt.type = elementType;
@@ -1681,7 +1727,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                         // Points
                     case GMSH_POINT:
                     {
-                        addPoint( mesh, it_gmshElt );
+                        __idGmshToFeel[it_gmshElt.num] = addPoint( mesh, it_gmshElt );
                         break;
                     }
 
@@ -1692,7 +1738,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     case GMSH_LINE_4:
                     case GMSH_LINE_5:
                     {
-                        addEdge( mesh, it_gmshElt );
+                        __idGmshToFeel[it_gmshElt.num] = addEdge( mesh, it_gmshElt );
                         break;
                     }
 
@@ -1705,7 +1751,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     case GMSH_QUADRANGLE:
                     case GMSH_QUADRANGLE_2:
                     {
-                        addFace( mesh, it_gmshElt );
+                        __idGmshToFeel[it_gmshElt.num] = addFace( mesh, it_gmshElt );
                         break;
                     }
 
@@ -1718,7 +1764,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     case GMSH_HEXAHEDRON:
                     case GMSH_HEXAHEDRON_2:
                     {
-                        addVolume( mesh, it_gmshElt );
+                        __idGmshToFeel[it_gmshElt.num] = addVolume( mesh, it_gmshElt );
                         break;
                     }
 
@@ -1745,18 +1791,44 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         CHECK( false ) <<  "$Periodic part not implemented";
     }
 
+
+    std::map<rank_type,std::set<size_type>> ghostElementToSendToProcessId;
+    std::set<rank_type> ghostElementToRecvFromProcessId;
+
     if ( std::string( __buf ) == "$GhostElements" )
     {
         VLOG(2) << "Reading $GhostElements ...";
 
         size_type numGhostElements, elementTag, numGhostPartitions;
-        int partitionTag, ghostPartitionTag;
+        int partitionTag;
+        std::vector<int> ghostPartitionTags;
         __is >> numGhostElements;
         for ( size_type g=0;g<numGhostElements;++g )
         {
             __is >> elementTag >> partitionTag >> numGhostPartitions;
+            ghostPartitionTags.resize( numGhostPartitions );
             for ( size_type p=0;p<numGhostPartitions;++p )
-                __is >> ghostPartitionTag;
+                __is >> ghostPartitionTags[p];
+
+            if ( procId == ( partitionTag % worldSize ) )
+            {
+                for ( int k=0;k<numGhostPartitions;++k )
+                {
+                    rank_type gproc = ( ghostPartitionTags[k] % worldSize );
+                    ghostElementToSendToProcessId[gproc].insert( elementTag );
+                }
+            }
+            else
+            {
+                auto itHasGhostElement = std::find_if( ghostPartitionTags.begin(), ghostPartitionTags.end(),
+                                                       [&procId,&worldSize](int const& ghostPartitionTag )
+                                                           {
+                                                               return procId == ( ghostPartitionTag % worldSize );
+                                                           });
+
+                if ( itHasGhostElement != ghostPartitionTags.end() )
+                    ghostElementToRecvFromProcessId.insert( partitionTag % worldSize );
+            }
         }
         __is >> __buf;
         CHECK( std::string( __buf ) == "$EndGhostElements" )
@@ -1767,6 +1839,101 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         __is >> __buf;
     }
 
+    int nbRequest = ghostElementToSendToProcessId.size() + ghostElementToRecvFromProcessId.size();
+    if ( nbRequest > 0 )
+    {
+        mpi::request * reqs = new mpi::request[nbRequest];
+        int cptRequest=0;
+        // prepare and send ghost informations
+        for ( auto const& [ gproc, ghostElts ] : ghostElementToSendToProcessId )
+        {
+            std::vector<boost::tuple<size_type, std::vector<double> > > dataPointsToSend;
+            std::vector<std::vector<size_type>> dataGhostElementToSend;// eltId, ptId1, ptId2,...
+            std::set<size_type> pointsRegistered;
+            for ( size_type ghostEltGmshId : ghostElts )
+            {
+                auto itFindGmshId = __idGmshToFeel.find( ghostEltGmshId );
+                CHECK( itFindGmshId != __idGmshToFeel.end() ) << "no element gmsh with id  " << ghostEltGmshId;
+                size_type ghostEltFeelId = itFindGmshId->second;
+                auto const& elt = mesh->element( ghostEltFeelId );
+                std::vector<size_type> theindices( npoints_per_element+1 );
+                theindices[0] = ghostEltFeelId;
+                for ( int p=0;p<npoints_per_element;++ p )
+                {
+                    auto const& pt = elt.point( p );
+                    size_type ptId = pt.id();
+                    theindices[ p+1 ] = ptId;
+                    if ( pointsRegistered.find( ptId ) != pointsRegistered.end() )
+                        continue;
+                    auto itFindIpN = interprocessNodes.find( gproc );
+                    if ( itFindIpN == interprocessNodes.end() ||
+                         itFindIpN->second.find ( ptId ) == itFindIpN->second.end() )
+                    {
+                        std::vector<double> thecoord( mesh_type::nRealDim );
+                        for ( uint8_type d=0;d<mesh_type::nRealDim;++d )
+                            thecoord[d] = pt.node()[d];
+                        dataPointsToSend.push_back( boost::make_tuple( ptId,thecoord ) );
+                        pointsRegistered.insert( ptId );
+                    }
+                }
+                dataGhostElementToSend.push_back( theindices );
+            }
+            auto fullDataToSend = boost::make_tuple( dataPointsToSend,dataGhostElementToSend );
+            reqs[cptRequest++] = this->worldComm().localComm().isend( gproc , 0, fullDataToSend );
+        }
+
+        // recv ghost informations
+        std::map<rank_type, boost::tuple< std::vector<boost::tuple<size_type, std::vector<double> > >,
+                                          std::vector<std::vector<size_type>> > > dataToRecv;
+        for ( rank_type aproc : ghostElementToRecvFromProcessId )
+        {
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( aproc , 0, dataToRecv[aproc] );
+        }
+        // wait all requests
+        mpi::wait_all(reqs, reqs + nbRequest);
+
+        // create ghost elements
+        for ( auto const& [ aproc, dataRecvByProc ] : dataToRecv )
+        {
+            auto const& dataRecvPoints = boost::get<0>( dataRecvByProc );
+            auto const& dataRecvGhostElements = boost::get<1>( dataRecvByProc );
+            for ( auto const& dataRecvPoint : dataRecvPoints )
+            {
+                size_type ptId = boost::get<0>( dataRecvPoint );
+                auto const& coordsRecv = boost::get<1> (dataRecvPoint );
+                node_type coords( mesh_type::nRealDim );
+                for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
+                    coords[j] = coordsRecv[j];
+                point_type pt( ptId, coords /*, gmshpt.onbdy*/ );
+                pt.setProcessIdInPartition( procId/*this->worldComm().localRank()*/ );
+                mesh->addPoint( pt );
+            }
+            for ( auto const& dataRecvGhostElement : dataRecvGhostElements )
+            {
+                element_type e;
+                e.setId( mesh->elements().size() );
+                e.setProcessIdInPartition( this->worldComm().localRank() );
+                //e.setMarker( __e.physical );
+                //e.setMarker2( __e.elementary );
+                e.setProcessId( aproc );
+                //e.setNeighborPartitionIds( __e.ghosts );
+                size_type idOtherPartition = dataRecvGhostElement[0];
+                e.setIdInOtherPartitions( aproc, idOtherPartition );
+
+                for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
+                {
+                    //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
+                    CHECK( mesh->hasPoint( dataRecvGhostElement[jj+1] ) ) << "point not found with id " << dataRecvGhostElement[jj+1];
+                    point_type & pt = mesh->pointIterator( dataRecvGhostElement[jj+1] )->second;
+                    e.setPoint(  jj, pt );
+                }
+                auto const& eltInserted = mesh->addElement( /*mesh->endElement(), */std::move(e) );
+            }
+        }
+    }
+
+    // update ordered points in mesh data structure
+    mesh->updateOrderedPoints();
 }
 
 template<typename MeshType>
@@ -1848,7 +2015,7 @@ int
 ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const& __e, mpl::int_<1> )
 {
     element_type e;
-    e.setId( mesh->elements().size() );
+    e.setId( ( false )? __e.num : mesh->elements().size() );
     //e.setWorldComm(this->worldComm());
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setMarker( __e.physical );
@@ -2013,7 +2180,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     GmshOrdering<element_type> ordering;
 
     element_type e;
-    e.setId( mesh->elements().size() );
+    e.setId( ( false )? __e.num : mesh->elements().size() );
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setMarker( __e.physical );
     e.setMarker2( __e.elementary );
@@ -2141,7 +2308,7 @@ int
 ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<3> )
 {
     element_type e;
-    e.setId( mesh->elements().size() );
+    e.setId( ( false )? __e.num : mesh->elements().size() );
     e.setProcessIdInPartition( this->worldComm().localRank() );
     GmshOrdering<element_type> ordering;
     e.setMarker( __e.physical );
