@@ -117,3 +117,7 @@ feelpp_add_testcase( crb-thermoelectric-nonlinear CATEGORY CRB)
 feelpp_add_testcase( crb-electric-alpha CATEGORY CRB)
 feelpp_add_testcase( crb-biotsavart CATEGORY CRB)
 feelpp_add_testcase( bs-alpha-hel CATEGORY CRB)
+
+
+feelpp_add_application( test_eq SRCS test_eq.cpp LINK_LIBRARIES ${GLPK_LIBRARIES} )
+target_include_directories(feelpp_mor_test_eq PUBLIC ${GLPK_INCLUDE_DIR} )

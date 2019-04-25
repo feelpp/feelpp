@@ -1032,6 +1032,19 @@ ptree_options( std::string const& prefix )
         ;
     return _options;
 }
+
+po::options_description
+eq_options( std::string const& prefix )
+{
+    po::options_description _options( "EQ " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"eq.tolerance" ).c_str(), po::value<double>()->default_value(1e-6), "tolerance to reach for offline empirical quadrature" )
+        ( prefixvm( prefix, "eq.sampling-size").c_str(), po::value<int>()->default_value(100), "sampling size for offline empirical quadrature" )
+        ( prefixvm( prefix, "eq.test").c_str(), po::value<bool>()->default_value(true) )
+        ;
+    return _options;
+}
+
 po::options_description
 feel_options( std::string const& prefix  )
 {
