@@ -42,6 +42,7 @@ AlphaElectric::makeOptions( std::string const& prefix )
         ( "thermoelectric.trainset-mdeim-size", po::value<int>()->default_value(40), "size of the mdeim trainset" )
         ( "thermoelectric.test-deim", po::value<bool>()->default_value(false), "test deim interpolation" )
         ( "thermoelectric.db.base", po::value<std::string>()->default_value("alphaelectric"), "database basename" )
+        ( "thermoelectric.verbose", po::value<int>()->default_value(0), "verbosity level" )
         ;
     options.add(backend_options("feV") );
     options.add(deimOptions("vec")).add(deimOptions("mat"));
@@ -67,7 +68,8 @@ AlphaElectric::AlphaElectric( mesh_ptrtype mesh,  std::string const& prefix )
       M_penalDir(doption("thermoelectric.penal-dir")),
       M_propertyPath(Environment::expand( soption("thermoelectric.filename"))),
       M_testDeim(boption("thermoelectric.test-deim")),
-      M_dbBasename(soption("thermoelectric.db.base"))
+      M_dbBasename(soption("thermoelectric.db.base")),
+      M_verbose(ioption("thermoelectric.verbose"))
 {
     M_modelProps = std::make_shared<prop_type>(M_propertyPath);
 
@@ -354,7 +356,6 @@ AlphaElectric::assembleForDEIM( parameter_type const& mu, int const& tag )
 
 void AlphaElectric::initModel()
 {
-    Feel::cout << "initModel" << std::endl;
     this->addModelFile("property-file", M_propertyPath);
 
     if( !M_mesh )
@@ -365,13 +366,12 @@ void AlphaElectric::initModel()
     auto domain = markedelements(M_mesh, range);
     this->setFunctionSpaces(functionspace_type::New( _mesh=M_mesh, _range=domain ) );
 
-    Feel::cout << "nDof: " << Xh->nDof() << std::endl;
+    Feel::cout << "initModel with nDof: " << Xh->nDof() << std::endl;
 
     if( !pT )
         pT = element_ptrtype( new element_type( Xh ) );
 
     auto PsetV = this->Dmu->sampling();
-
     std::string supersamplingname =(boost::format("DmuDEim-P%1%-Ne%2%-generated-by-master-proc") % this->Dmu->dimension() % M_trainsetDeimSize ).str();
     std::ifstream file ( supersamplingname );
     bool all_proc_same_sampling=true;
@@ -389,11 +389,9 @@ void AlphaElectric::initModel()
     auto d = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetV, _prefix="vec");
     this->addDeim(d);
     this->deim()->run();
-
     Feel::cout << tc::green << "Electric DEIM construction finished!!" << tc::reset << std::endl;
 
     auto PsetM = this->Dmu->sampling();
-
     supersamplingname =(boost::format("DmuMDEim-P%1%-Ne%2%-generated-by-master-proc") % this->Dmu->dimension() % M_trainsetMdeimSize ).str();
     std::ifstream fileM ( supersamplingname );
     if( ! fileM )
@@ -603,8 +601,6 @@ AlphaElectric::computeInitialGuessAffineDecomposition()
 AlphaElectric::element_type
 AlphaElectric::solve( parameter_type const& mu )
 {
-    Feel::cout << "solve for parameter:" << std::endl << mu << std::endl;
-
     auto solution = Xh->element();
 
     auto V = Xh->element();
@@ -660,7 +656,7 @@ AlphaElectric::solve( parameter_type const& mu )
         }
     }
     aV.solve(_rhs=fV, _solution=solution, _name="feV");
-    toc("solve V");
+    toc("solve V", M_verbose > 0);
 
     return solution;
 }

@@ -160,6 +160,7 @@ private:
     std::string M_propertyPath;
     bool M_testDeim;
     std::string M_dbBasename;
+    int M_verbose;
 
 public:
     static po::options_description makeOptions( std::string const& prefix="" );
