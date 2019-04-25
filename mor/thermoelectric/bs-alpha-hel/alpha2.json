@@ -29,7 +29,7 @@
         "cond":
         {
             "name":"copper",
-            "physics":"electric",
+            "physics":["electric","electric-geo"],
             "sigma":58000,
             "zmin":0.5,
             "zmax":4.5,
