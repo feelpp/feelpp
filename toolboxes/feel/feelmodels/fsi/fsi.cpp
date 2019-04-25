@@ -269,7 +269,7 @@ FSI<FluidType,SolidType>::init()
     // fluid model build
     if ( !M_fluidModel )
     {
-        M_fluidModel = std::make_shared<fluid_type>("fluid",false,this->worldCommPtr(), "", this->repository() );
+        M_fluidModel = std::make_shared<fluid_type>("fluid","fluid",this->worldCommPtr(), "", this->repository() );
         if ( !M_mshfilepathFluidPartN.empty() )
             M_fluidModel->setMeshFile(M_mshfilepathFluidPartN.string());
 
@@ -291,7 +291,7 @@ FSI<FluidType,SolidType>::init()
     // solid model build
     if ( !M_solidModel )
     {
-        M_solidModel = std::make_shared<solid_type>("solid",false,this->worldCommPtr(), "", this->repository() );
+        M_solidModel = std::make_shared<solid_type>("solid","solid",this->worldCommPtr(), "", this->repository() );
         bool doExtractSubmesh = boption(_name="solid-mesh.extract-1d-from-fluid-mesh",_prefix=this->prefix() );
         if ( doExtractSubmesh )
         {
@@ -305,16 +305,15 @@ FSI<FluidType,SolidType>::init()
 
             // TODO ( save 1d mesh and reload )
             if ( M_fluidModel->doRestart() )
-                M_solidModel->build(submeshStruct);
+                M_solidModel->setMesh1dReduce(submeshStruct);
             else
-                M_solidModel->loadMesh(submeshStruct);
+                M_solidModel->setMesh1dReduce(submeshStruct);
 
         }
         else
         {
             if ( !M_mshfilepathSolidPartN.empty() )
                 M_solidModel->setMeshFile( M_mshfilepathSolidPartN.string() );
-            M_solidModel->build();
         }
 
         // temporary fix TODO !!!!
@@ -404,6 +403,17 @@ FSI<FluidType,SolidType>::init()
         auto rangeFSIfluid = markedfaces( this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary() );
         auto dofsMultiProcessToAdd = M_fluidModel->functionSpaceVelocity()->dofs( rangeFSIfluid, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("fluid.velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+    }
+
+    if ( ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
+           this->fsiCouplingBoundaryCondition() == "nitsche" ) && this->solidModel()->isStandardModel() )
+    {
+        M_fieldsGradVelocity_fluid.resize( fluid_type::nDim );
+        for (int k = 0;k<fluid_type::nDim ;++k)
+            M_fieldsGradVelocity_fluid[k] = M_spaceNormalStress_fluid->elementPtr();
+        M_fieldsGradVelocity_solid.resize( fluid_type::nDim );
+        for (int k = 0;k<fluid_type::nDim ;++k)
+            M_fieldsGradVelocity_solid[k] = M_spaceNormalStressFromFluid_solid->elementPtr();
     }
     //-------------------------------------------------------------------------//
 
@@ -916,6 +926,8 @@ FSI<FluidType,SolidType>::solveImpl2()
             {
                 bool useExtrap = boption(_prefix=this->prefix(),_name="transfert-velocity-F2S.use-extrapolation");
                 this->transfertVelocityF2S(cptFSI,useExtrap);
+                if ( M_fluidModel->materialProperties()->hasNonNewtonianLaw() )
+                    this->transfertGradVelocityF2S();
             }
             M_solidModel->solve();
             M_solidModel->updateVelocity();

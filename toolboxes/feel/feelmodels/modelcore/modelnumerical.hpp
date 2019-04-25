@@ -72,8 +72,16 @@ class ModelNumerical : public ModelAlgebraic
         typedef vf::BlocksBase<size_type> block_pattern_type;
 
 
-        ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(), std::string const& subPrefix="",
+        ModelNumerical( std::string const& _theprefix, std::string const& keyword,
+                        worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
+                        std::string const& subPrefix="",
                         ModelBaseRepository const& modelRep = ModelBaseRepository() );
+        ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
+                        std::string const& subPrefix="",
+                        ModelBaseRepository const& modelRep = ModelBaseRepository() )
+            :
+            ModelNumerical( _theprefix, _theprefix, _worldComm, subPrefix, modelRep )
+            {}
 
         ModelNumerical( ModelNumerical const& app ) = default;
 
@@ -137,6 +145,8 @@ class ModelNumerical : public ModelAlgebraic
         ModelMeasuresEvaluatorContext const& postProcessMeasuresEvaluatorContext() const { return M_postProcessMeasuresEvaluatorContext; }
         ModelMeasuresEvaluatorContext & postProcessMeasuresEvaluatorContext() { return M_postProcessMeasuresEvaluatorContext; }
 
+        bool checkResults() const;
+
     protected :
         template<typename SymbExprField>
         auto symbolsExprFit( SymbExprField const& sef ) const
@@ -182,6 +192,7 @@ class ModelNumerical : public ModelAlgebraic
 
         GeomapStrategyType M_geomap;
 
+        bool M_useChecker;
     };
 
 

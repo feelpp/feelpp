@@ -121,8 +121,15 @@ ModelParameters::setup()
                 CHECK( itFindType != InterpolationTypeMap.end() ) << "invalid interpolator type " << type;
                 InterpolationType interpolatorEnumType = itFindType->second;
 
+                std::string abscissa;
+                if( boost::optional<std::string> d = f.get_optional<std::string>("abscissa") )
+                    abscissa = *d;
+                std::string ordinate;
+                if( boost::optional<std::string> d = f.get_optional<std::string>("ordinate") )
+                    ordinate = *d;
 
-                std::shared_ptr<Interpolator> interpolator = Interpolator::New( /*interpType*/interpolatorEnumType, filename, M_worldComm );
+
+                std::shared_ptr<Interpolator> interpolator = Interpolator::New( /*interpType*/interpolatorEnumType, filename, abscissa, ordinate, M_worldComm );
                 this->operator[](t) = ModelParameter( name, interpolator, exprStr, M_directoryLibExpr, M_worldComm );
             }
         }

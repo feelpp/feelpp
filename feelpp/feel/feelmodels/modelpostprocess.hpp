@@ -259,6 +259,39 @@ private:
     uint16_type M_quadOrder, M_quad1Order;
 };
 
+class FEELPP_EXPORT ModelPostprocessCheckerMeasure
+{
+  public :
+    ModelPostprocessCheckerMeasure( double value=0., double tol=0.01 )
+        :
+        M_value( value ),
+        M_tolerance( tol )
+        {}
+    ModelPostprocessCheckerMeasure( ModelPostprocessCheckerMeasure const& ) = default;
+    ModelPostprocessCheckerMeasure( ModelPostprocessCheckerMeasure&& ) = default;
+    ModelPostprocessCheckerMeasure& operator=( ModelPostprocessCheckerMeasure const& ) = default;
+    ModelPostprocessCheckerMeasure& operator=( ModelPostprocessCheckerMeasure && ) = default;
+
+    //! name of a measure to check
+    std::string const& name() const { return M_name; }
+    //! reference value
+    double value() const { return M_value; }
+    //! tolerance used in comparison
+    double tolerance() const { return M_tolerance; }
+    //! check if the arg val is close at tolerance to the reference value
+    //! \return tuple ( check is true, diff value )
+    std::tuple<bool,double> run( double val ) const;
+
+    void setPTree( pt::ptree const& _p, std::string const& name ) { M_p = _p; this->setup( name ); }
+  private:
+    void setup( std::string const& name );
+  private :
+    pt::ptree M_p;
+    std::string M_name;
+    double M_value;
+    double M_tolerance;
+};
+
 class FEELPP_EXPORT ModelPostprocess
 {
 public:
@@ -274,14 +307,17 @@ public:
     std::map<std::string,std::vector<ModelPostprocessPointPosition> > const& allMeasuresPoint() const { return M_measuresPoint; }
     std::map<std::string,std::vector<ModelPostprocessNorm> > const& allMeasuresNorm() const { return M_measuresNorm; }
     std::map<std::string,std::vector<ModelPostprocessStatistics> > const& allMeasuresStatistics() const { return M_measuresStatistics; }
+    std::map<std::string,std::vector<ModelPostprocessCheckerMeasure> > const& allCheckersMeasure() const { return M_checkersMeasure; }
     bool hasExports( std::string const& name = "" ) const;
     bool hasMeasuresPoint( std::string const& name = "" ) const;
     bool hasMeasuresNorm( std::string const& name = "" ) const;
     bool hasMeasuresStatistics( std::string const& name = "" ) const;
+    bool hasCheckersMeasure( std::string const& name = "" ) const;
     ModelPostprocessExports const& exports( std::string const& name = "" ) const;
     std::vector<ModelPostprocessPointPosition> const& measuresPoint( std::string const& name = "" ) const;
     std::vector<ModelPostprocessNorm> const& measuresNorm( std::string const& name = "" ) const;
     std::vector<ModelPostprocessStatistics> const& measuresStatistics( std::string const& name = "" ) const;
+    std::vector<ModelPostprocessCheckerMeasure> const& checkersMeasure( std::string const& name = "" ) const;
 
     void setPTree( pt::ptree const& _p );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
@@ -309,10 +345,12 @@ private:
     std::map<std::string,std::vector< ModelPostprocessPointPosition > > M_measuresPoint;
     std::map<std::string,std::vector< ModelPostprocessNorm > > M_measuresNorm;
     std::map<std::string,std::vector< ModelPostprocessStatistics > > M_measuresStatistics;
+    std::map<std::string,std::vector< ModelPostprocessCheckerMeasure > > M_checkersMeasure;
     ModelPostprocessExports M_emptyExports;
     std::vector< ModelPostprocessPointPosition > M_emptyMeasuresPoint;
     std::vector< ModelPostprocessNorm > M_emptyMeasuresNorm;
     std::vector< ModelPostprocessStatistics > M_emptyMeasuresStatistics;
+    std::vector< ModelPostprocessCheckerMeasure > M_emptyCheckersMeasure;
     std::string M_directoryLibExpr;
 };
 

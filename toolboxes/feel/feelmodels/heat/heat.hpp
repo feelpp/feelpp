@@ -110,10 +110,10 @@ class Heat : public ModelNumerical,
 
 
         Heat( std::string const& prefix,
-                      bool buildMesh = true,
-                      worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
-                      std::string const& subPrefix  = "",
-                      ModelBaseRepository const& modelRep = ModelBaseRepository() );
+              std::string const& keyword = "heat",
+              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+              std::string const& subPrefix  = "",
+              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
         std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"HeatMesh.path"); }
         //___________________________________________________________________________________//

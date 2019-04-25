@@ -39,7 +39,7 @@ SET(SRC
   ${FEELFILTERS_GMSH_SRCS}
   ${FEELFILTERS_INST_SRCS}
   detail/fileindex.cpp
-  loadcsv.cpp
+  importercsv.cpp loadcsv.cpp
   hbf.cpp
   straightenmesh_inst_1d.cpp straightenmesh_inst_1d_p2.cpp straightenmesh_inst_2d.cpp straightenmesh_inst_2d_ho.cpp straightenmesh_inst_3d.cpp straightenmesh_inst_3d_ho.cpp
   )

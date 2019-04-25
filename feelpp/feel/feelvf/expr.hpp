@@ -138,6 +138,11 @@ public:
         return M_expr;
     }
 
+    auto
+    evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr.evaluate( p, worldcomm ); // TODO : take into composant
+        }
     /** @name Operator overloads
      */
     //@{
