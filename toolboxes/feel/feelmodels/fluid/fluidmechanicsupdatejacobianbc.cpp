@@ -26,7 +26,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
     bool BuildCstPart = data.buildCstPart();
 
     double timeSteppingScaling = 1.;
-    if ( !this->isStationary() )
+    if ( !this->isStationaryModel() )
         timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
 
     //--------------------------------------------------------------------------------------------------//

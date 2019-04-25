@@ -189,6 +189,10 @@ public :
      */
     void restart( mesh_ptrtype mesh );
 
+    void initMetricMeshAdaptation() override;
+    void updateMetricMeshAdaptation( Expr<GinacExVF<2>> const& e ) override;
+    void updateMetricMeshAdaptation( typename super_type::metricmeshadaptation_type::element_scalar_type const& u ) override;
+
 private:
 
     void createALE();
@@ -248,6 +252,9 @@ private:
     // no ho correction
     void updateBoundaryElements( ale_map_element_type const & dispOnBoundary,
                                  mpl::bool_<false> /**/ );
+
+    // metric mesh adaptation
+    void updateMetricMeshAdaptationForUse();
 
 private :
     bool M_verboseSolverTimer,M_verboseSolverTimerAllProc;

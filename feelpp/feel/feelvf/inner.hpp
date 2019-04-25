@@ -162,6 +162,11 @@ public:
         return M_right_expr;
     }
 
+    auto
+    evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_left_expr.evaluate(p,worldcomm) * M_right_expr.evaluate(p,worldcomm); // TODO : take into account Eigen::Matrix
+        }
     //@}
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>

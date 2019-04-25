@@ -96,16 +96,23 @@ public :
     using worldcomm_t = WorldComm;
     using worldcomm_ptr_t = std::shared_ptr<WorldComm>;
     using worldscomm_ptr_t = std::vector<std::shared_ptr<WorldComm>>;
-    
+
     //!
     //! @param worldcomm communicator
     //!
     //! The worldcomm must be allocated via shared_ptr. The WorldComm can be retrieved via \c shared_from_this()
     //!
-    ModelBase( std::string const& prefix,
+    ModelBase( std::string const& prefix, std::string const& keyword,
                worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
                ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    ModelBase( std::string const& prefix,
+               worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+               std::string const& subPrefix = "",
+               ModelBaseRepository const& modelRep = ModelBaseRepository() )
+        :
+        ModelBase( prefix, prefix, worldComm, subPrefix, modelRep )
+        {}
 
     ModelBase( ModelBase const& app ) = default;
     virtual ~ModelBase();
@@ -125,6 +132,9 @@ public :
     // prefix
     std::string const& prefix() const;
     std::string const& subPrefix() const;
+    //! keyword
+    std::string const& keyword() const { return M_keyword; }
+    //void setKeyword( std::string const& keyword ) { M_keyword = keyword; }
     // root repository
     ModelBaseRepository const& repository() const { return M_modelRepository; }
     std::string const& rootRepository() const;
@@ -165,6 +175,8 @@ private :
     // prefix
     std::string M_prefix;
     std::string M_subPrefix;
+    // keyword (can be usefull in json for example)
+    std::string M_keyword;
     // directory
     ModelBaseRepository M_modelRepository;
     // verbose

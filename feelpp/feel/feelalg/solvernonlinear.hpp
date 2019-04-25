@@ -324,6 +324,9 @@ public:
         return M_snl_type;
     }
 
+    //! type of line search
+    SolverNonLinearLineSearchType nlSolverLineSearchType() const { return M_snl_lstype; }
+
     /**
      * Sets the type of solver to use.
      */
@@ -649,6 +652,9 @@ protected:
      * Define the type of non linear solver
      */
     SolverNonLinearType M_snl_type;
+
+    //! type of line search
+    SolverNonLinearLineSearchType M_snl_lstype;
 
     /**
      * Enum stating which type of iterative linear solver to use.

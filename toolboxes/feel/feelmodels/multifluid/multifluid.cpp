@@ -37,7 +37,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
     // Build FluidMechanics model
     M_fluidModel = std::make_shared<fluid_model_type>(
-            prefixvm(this->prefix(),"fluid"), false, this->worldCommPtr(),
+            prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
             this->subPrefix(), this->repository() );
     // Build LevelSet models
     uint16_type nLevelsets = M_nFluids - 1;
@@ -1290,7 +1290,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::computeLevelsetForce( std::string const& name ) 
     auto u = solFluid->template element<0>();
     auto p = solFluid->template element<1>();
     std::string matName = this->fluidModel()->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-    auto sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor<2*fluid_model_type::nOrderVelocity>(u,p,*this->fluidModel()->materialProperties(),matName,true);
+    auto sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->fluidModel()->materialProperties(),matName,true,2*fluid_model_type::nOrderVelocity,true);
 
     auto const& phi = this->levelsetModel(name)->phi();
     auto N_expr = trans(gradv(phi)) / sqrt( gradv(phi) * trans(gradv(phi)) );

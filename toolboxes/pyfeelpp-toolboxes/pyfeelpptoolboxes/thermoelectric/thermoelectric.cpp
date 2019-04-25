@@ -43,9 +43,9 @@ void defToolbox(py::module &m)
 
     std::string pyclass_name = std::string("Thermoelectric_") + std::to_string(nDim) + std::string("DP") + std::to_string(OrderPotential);
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
-        .def(py::init<std::string const&,bool,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
+        .def(py::init<std::string const&,std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
-             py::arg("buildmesh")=true,
+             py::arg("keyword")=std::string("thermo-electric"),
              py::arg("worldComm")=Environment::worldCommPtr(),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),

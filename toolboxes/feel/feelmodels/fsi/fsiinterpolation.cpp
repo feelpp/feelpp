@@ -1132,6 +1132,47 @@ FSI<FluidType,SolidType>::transfertVelocityF2S( int iterationFSI, bool _useExtra
 
 
 
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::transfertGradVelocityF2S()
+{
+    this->log("FSI","transfertGradVelocityF2S","start");
+
+    bool meshIsOnRefAtBegin = this->fluidModel()->meshALE()->isOnReferenceMesh();
+    if ( !meshIsOnRefAtBegin )
+        this->fluidModel()->meshALE()->revertReferenceMesh( false );
+
+    auto const Id = eye<fluid_type::nDim,fluid_type::nDim>();
+    auto Fa = Id+gradv( this->fluidModel()->meshALE()->displacement());
+    auto fsirange = markedfaces( this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary());
+    for ( int k = 0;k<fluid_type::nDim ;++k )
+    {
+        Component comp = ( k==0 )? Component::X : ( k == 1 )? Component::Y : Component::Z;
+        //auto uComp = this->fluidModel()->fieldVelocityPressurePtr()->template element<0>().comp(comp);
+        auto const& uComp = this->fluidModel()->fieldVelocity().comp(comp);
+        M_fieldsGradVelocity_fluid[k]->on(_range=fsirange,_expr=trans(inv(Fa))*trans(gradv(uComp)));
+    }
+
+    if ( !meshIsOnRefAtBegin )
+        this->fluidModel()->meshALE()->revertMovingMesh( false );
+
+    if ( M_interfaceFSIisConforme )
+    {
+        CHECK( M_opStress2dTo2dconf ) << "interpolation operator not build";
+        for ( int k = 0;k<fluid_type::nDim ;++k )
+            M_opStress2dTo2dconf->apply( *M_fieldsGradVelocity_fluid[k], *M_fieldsGradVelocity_solid[k] );
+    }
+    else
+    {
+        CHECK( M_opStress2dTo2dnonconf ) << "interpolation operator not build";
+        for ( int k = 0;k<fluid_type::nDim ;++k )
+            M_opStress2dTo2dnonconf->apply( *M_fieldsGradVelocity_fluid[k], *M_fieldsGradVelocity_solid[k] );
+    }
+
+    this->log("FSI","transfertGradVelocityF2S","finish");
+}
+
+
 
 } // namespace FeelModels
 } // namespace Feel
