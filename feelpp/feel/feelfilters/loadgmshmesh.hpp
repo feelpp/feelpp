@@ -119,6 +119,9 @@ BOOST_PARAMETER_FUNCTION(
          p_fname.extension() == ".mesh"
          )
     {
+#if defined( FEELPP_HAS_GMSH_API )
+        CHECK( false ) << "NOT IMPLEMENTED";
+#else
         tic();
         auto m = GmshReaderFactory::instance().at(p_fname.extension().string())( filename_with_path );
         if(m.first > 1)
@@ -129,6 +132,7 @@ BOOST_PARAMETER_FUNCTION(
         import.setInMemory(true);
         using namespace std::string_literals;
         toc("loadGMSHMesh.reader"s+p_fname.extension().string(), FLAGS_v>0);
+#endif
     }
 #endif // FEELPP_HAS_GMSH_H
     

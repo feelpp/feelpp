@@ -49,6 +49,7 @@
 #include <feel/feelfilters/periodicentities.hpp>
 
 
+#if !defined( FEELPP_HAS_GMSH_API )
 #if defined( FEELPP_HAS_GMSH_H )
 class GModel;
 class Msg;
@@ -59,6 +60,7 @@ class Msg;
 // at least one member function sign() from DofTable.
 // hence we undefine the macro sign after including Gmsh headers
 #undef sign
+#endif
 
 namespace Feel
 {
@@ -340,11 +342,13 @@ public:
         }
 
 #if defined( FEELPP_HAS_GMSH_H )
+#if !defined( FEELPP_HAS_GMSH_API )
     /**
      * @brief get the Gmsh GModel data structure
      * @return the Gmsh GModel data structure
      */
     std::shared_ptr<GModel> gModel() const { return std::make_shared<GModel>(); }
+#endif
 #endif
 
 
@@ -396,9 +400,11 @@ public:
     void setVerbosity( int val )
         {
 #if defined( FEELPP_HAS_GMSH_H )
+#if !defined( FEELPP_HAS_GMSH_API )
             // Feel::cout << "Get GMSH Verbosity : " << Msg::GetVerbosity() << std::endl;
             // Feel::cout << "Set GMSH Verbosity to " << val << std::endl;
             Msg::SetVerbosity( val );
+#endif
 #endif
         }
 
@@ -785,7 +791,9 @@ protected:
     mutable std::pair<std::string,std::string> M_geo;
 
 #if defined( FEELPP_HAS_GMSH_H )
+#if !defined( FEELPP_HAS_GMSH_API )
     mutable std::shared_ptr<GModel>  M_gmodel;
+#endif
 #endif
 };
 

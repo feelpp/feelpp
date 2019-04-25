@@ -26,6 +26,7 @@
 namespace Feel
 {
 #if defined(FEELPP_HAS_GMSH_H)
+#if !defined( FEELPP_HAS_GMSH_API )
 // EDF MED format
 const auto med = GmshReaderFactory::instance().emplace( ".med",
                                                         []( std::string fname )
@@ -80,7 +81,7 @@ const auto reader_cgns = GmshReaderFactory::instance().emplace( ".cgns",
 #endif
                                                                     return std::make_pair( status, m );
                                                                 });
-
+#endif
 
 #endif // FEELPP_HAS_GMSH_H
 namespace detail
@@ -123,7 +124,15 @@ void SwapBytes(char *array, int size, int n)
 }
 #endif
 
-
+#if defined( FEELPP_HAS_GMSH_API )
+int getInfoMSH(const int typeMSH, std::string & elementName)
+{
+    int dim, order, numNodes;
+    std::vector<double> parametricCoord;
+    gmsh::model::mesh::getElementProperties( typeMSH,elementName,dim,order,numNodes,parametricCoord );
+    return numNodes;
+}
+#else
 int getInfoMSH(const int typeMSH, const char **const name)
 {
     CHECK(typeMSH != MSH_POLYG_ && typeMSH != MSH_POLYH_ && typeMSH != MSH_POLYG_B)
@@ -274,5 +283,8 @@ int getInfoMSH(const int typeMSH, const char **const name)
         if(name) *name = "Unknown";
         return 0;
     }
+
 #endif // FEELPP_HAS_GMSH_H
 }
+
+#endif // !FEELPP_HAS_GMSH_API
