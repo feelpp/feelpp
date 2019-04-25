@@ -8,7 +8,6 @@
 #include <feel/feelcrb/empiricalquadrature.hpp>
 
 #include <algorithm>
-#include <numeric>
 
 #if defined(FEELPP_HAS_GLPK_H)
 #include <glpk.h>
