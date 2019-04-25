@@ -22,7 +22,7 @@
         "Cu":
         {
             "name":"copper",
-            "physics":"electric",
+            "physics":"electric-geo",
             "sigma":58e6,
             "zmin":-0.08651,
             "zmax":0.08651,
