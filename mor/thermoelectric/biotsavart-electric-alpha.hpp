@@ -159,7 +159,11 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
     std::vector<vector_ptrtype> q() { return this->deim()->q(); }
     void online( parameter_type const& mu, int M = -1 );
     void expandV( int N = -1 );
+    void computeVFE( parameter_type const& mu );
+    void computeVRB( parameter_type const& mu, int N = -1 );
     void computeFE( parameter_type const& mu );
+    void computeRB( parameter_type const& mu, int N = -1 );
+    element_type computeB( parameter_type const& mu, cond_element_type const & V);
     // std::vector<double> computeErrors();
     // void exportResults( parameter_type const& mu );
     double homogeneity( element_type const& B );

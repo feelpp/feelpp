@@ -81,8 +81,8 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::initModel()
     M_modelProps = std::make_shared<prop_type>(M_propertyPath);
     M_materials = M_modelProps->materials().materialWithPhysic("magnetic");
 
-    auto M_mesh = loadMesh( _mesh=new mesh_type,
-                            _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
+    M_mesh = loadMesh( _mesh=new mesh_type,
+                       _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
 
     tic();
     M_teCrbModel = std::make_shared<te_rb_model_type>(M_mesh, "electric");
@@ -430,45 +430,103 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::expandV(int N )
 }
 
 template<typename te_rb_model_type>
-void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeFE( parameter_type const& mu )
+void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeVFE( parameter_type const& mu )
 {
-    tic();
-
     tic();
     M_VFe = M_teCrbModel->solve(mu);
     toc("compute j FE", M_verbose > 1);
+}
 
+template<typename te_rb_model_type>
+void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeVRB( parameter_type const& mu, int N )
+{
+    tic();
+    if( N < 1 || N > M_N )
+        N = M_N;
+    int timeSteps = 1;
+    std::vector<vectorN_type> uNs(timeSteps, vectorN_type(N)), uNolds(timeSteps, vectorN_type(N));
+    std::vector<double> outputs(timeSteps, 0);
+    M_crb->fixedPointPrimal(N, mu, uNs, uNolds, outputs);
+    M_uN = uNs[0];
+    toc("crb run", M_verbose > 1);
+}
+
+template<typename te_rb_model_type>
+void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeFE( parameter_type const& mu )
+{
+    tic();
+    computeVFE(mu);
+    tic();
+    M_BFe = computeB(mu, M_VFe);
+    toc("compute B FE", M_verbose > 1);
+    toc("compute FE", M_verbose > 0);
+}
+
+template<typename te_rb_model_type>
+void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeRB( parameter_type const& mu, int N )
+{
+    if( N < 1 || N > M_N )
+        N = M_N;
+    tic();
+    computeVRB(mu, N);
+    expandV(N);
+    tic();
+    M_B = computeB(mu, M_V);
+    toc("compute B RB", M_verbose > 1);
+    toc("compute RB", M_verbose > 0);
+}
+
+template<typename te_rb_model_type>
+typename BiotSavartAlphaElectricCRB<te_rb_model_type>::element_type
+BiotSavartAlphaElectricCRB<te_rb_model_type>::computeB( parameter_type const& mu, cond_element_type const& V )
+{
     tic();
     auto mesh = M_XhCond->mesh();
-    M_BFe = this->Xh->element();
+    auto B = this->Xh->element();
     auto coeff = 1/(4*M_PI);
     auto mu0 = 4*M_PI*1e-7; //SI unit : H.m-1 = m.kg.s-2.A-2
 
-    Feel::cout << "Computing integrals for "
-               << this->Xh->nDof() << " dofs distributed on " << M_dofMgn.size()
-               << " procs on a domain with:"<< std::endl;
-    std::cout << "Proc[" << Environment::rank() << "] " << M_XhCond->nLocalDof()
-              << " dofs" << std::endl;
+    if( M_verbose > 1 )
+        Feel::cout << "Computing integrals for "
+                   << this->Xh->nDof() << " dofs distributed on " << M_dofMgn.size()
+                   << " procs on a domain with:"<< std::endl
+                   << "Proc[" << Environment::rank() << "] " << M_XhCond->nLocalDof()
+                   << " dofs" << std::endl;
 
     std::vector<double> intLocD, intSumD;
     for(int i = 0; i < M_dofMgn.size(); ++i)
     {
         if( M_commsC1M[i] )
         {
-            int dofSize = M_dofMgn.at(i).size();
+            int dofSize;
+            int coordSize;
+            if( !this->isOnlineModel() )
+            {
+                dofSize = M_dofMgn.at(i).size();
+                coordSize = dofSize/3;
+            }
+            else
+            {
+                dofSize = M_indexR.size();
+                coordSize = dofSize;
+            }
             intLocD.resize( dofSize, 0 );
             intSumD.resize( dofSize );
 
             tic();
             if( M_XhCond->nLocalDof() > 0 )
             {
-                std::vector<Eigen::Matrix<double,3,1>> coords( dofSize/3 );
-                for( int d = 0; d < dofSize; d+= 3 )
+                std::vector<Eigen::Matrix<double,3,1>> coords( coordSize );
+                for( int d = 0; d < coordSize; ++d )
                 {
-                    auto dofCoord = M_dofMgn.at(i)[d].template get<0>();
+                    node_type dofCoord;
+                    if( !this->isOnlineModel() )
+                        dofCoord = M_dofMgn.at(i)[d*3].template get<0>();
+                    else
+                        dofCoord = this->Xh->dof()->dofPoint(M_indexR[d]).template get<0>();
                     Eigen::Matrix<double,3,1> coord;
                     coord << dofCoord[0], dofCoord[1], dofCoord[2];
-                    coords[d/3] = coord;
+                    coords[d] = coord;
                 }
 
                 std::vector<std::vector<Eigen::Matrix<double,3,1> > > mgnFields(M_teCrbModel->materials().size());
@@ -490,7 +548,7 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeFE( parameter_type con
                     auto dist = inner( _e1v-psi,_e1v-psi,
                                        mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
                     mgnFields[j++] = integrate(_range=markedelements( mesh, material.first ),
-                                               _expr=-mu0*coeff*sigma*cross(trans(gradv(M_VFe)*Jinv),
+                                               _expr=-mu0*coeff*sigma*cross(trans(gradv(V)*Jinv),
                                                                             _e1v-psi)/(dist*dist*dist),
                                                _quad=_Q<1>()
                                                ).template evaluate(coords);
@@ -501,7 +559,7 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeFE( parameter_type con
                     auto dist = inner( _e1v-P(), _e1v-P(),
                                        mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
                     mgnFields[j++] = integrate(_range=markedelements( mesh, material.first ),
-                                               _expr=-mu0*coeff*sigma*cross(trans(gradv(M_VFe)),
+                                               _expr=-mu0*coeff*sigma*cross(trans(gradv(V)),
                                                                             _e1v-P())/(dist*dist*dist),
                                                _quad=_Q<1>()
                                                ).template evaluate(coords);
@@ -509,10 +567,20 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeFE( parameter_type con
 
                 for( int d = 0; d < dofSize; ++d )
                 {
-                    auto dofComp = M_dofMgn.at(i)[d].template get<2>();
+                    uint16_type dofComp;
                     int j = 0;
-                    for( auto const& mat : M_teCrbModel->materials() )
-                        intLocD[d] += mgnFields[j++][d/3](dofComp,0);
+                    if( !this->isOnlineModel() )
+                    {
+                        dofComp = M_dofMgn.at(i)[d].template get<2>();
+                        for( auto const& mat : M_teCrbModel->materials() )
+                            intLocD[d] += mgnFields[j++][d/3](dofComp,0);
+                    }
+                    else
+                    {
+                        dofComp = this->Xh->dof()->dofPoint(M_indexR[d]).template get<2>();
+                        for( auto const& mat : M_teCrbModel->materials() )
+                            intLocD[d] += mgnFields[j++][d](dofComp,0);
+                    }
                 }
             }
             toc("integral_computation", M_verbose > 2);
@@ -524,16 +592,20 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeFE( parameter_type con
             if( M_commsC1M[i].rank() == 0 )
             {
                 for(int d=0; d<dofSize; d++)
-                    M_BFe.set(M_dofMgn.at(i)[d].template get<1>(), intSumD[d]);
+                {
+                    if( !this->isOnlineModel() )
+                        B.set(M_dofMgn.at(i)[d].template get<1>(), intSumD[d]);
+                    else
+                        B.set(this->Xh->dof()->dofPoint(M_indexR[d]).template get<1>(), intSumD[d]);
+                }
             }
         }
         Environment::worldComm().barrier();
     }
 
-    M_BFe.close();
-    toc("compute BiotSavart FE", M_verbose > 1);
-
-    toc("compute FE", M_verbose > 0);
+    B.close();
+    toc("compute BiotSavart", M_verbose > 1);
+    return B;
 }
 
 template<typename te_rb_model_type>

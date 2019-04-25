@@ -33,6 +33,68 @@
 
 int iter=0;
 
+std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double> >
+computeStats(std::vector<std::vector<double> > const& err)
+{
+    int M = err.size();
+    std::vector<double> min(M), max(M), mean(M), stdev(M);
+    if( M > 0 )
+    {
+        int size = err[0].size();
+        for(int m = 0; m < M; ++m)
+        {
+            min[m] = *std::min_element(err[m].begin(), err[m].end());
+            max[m] = *std::max_element(err[m].begin(), err[m].end());
+            double s = std::accumulate(err[m].begin(), err[m].end(), 0.0);
+            mean[m] = s/size;
+            double accum = std::accumulate(err[m].begin(), err[m].end(), 0.0,
+                                           [s,size](double a, double b) {
+                                               return a + (b-s/size)*(b-s/size);
+                                       });
+            stdev[m] = accum/size;
+        }
+    }
+    return std::make_tuple(min,max,mean,stdev);
+}
+
+void writeErrors(fs::ofstream& out, std::vector<std::vector<double> > const& err)
+{
+    if( out && Environment::isMasterRank() )
+    {
+        int M = err.size();
+        int size = err[0].size();
+        out << std::setw(5) << "M";
+        for(int i = 0; i < size; ++i)
+            out << std::setw(24) << "mu_" << i;
+        out << std::endl;
+        for(int m = 0; m < M; ++m)
+        {
+            out << std::setw(5) << m+1;
+            for(int i = 0; i < size; ++i)
+                out << std::setw(25) << err[m][i];
+            out << std::endl;
+        }
+        out.close();
+    }
+}
+
+void writeStats(std::ostream& out, std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double> > const& stat, std::string base = "M")
+{
+    auto min = std::get<0>(stat);
+    auto max = std::get<1>(stat);
+    auto mean = std::get<2>(stat);
+    auto stdev = std::get<3>(stat);
+    if( Environment::isMasterRank() )
+    {
+        int M = min.size();
+        out << std::setw(5) << base << std::setw(25) << "min" << std::setw(25) << "max"
+            << std::setw(25) << "mean" << std::setw(25) << "stdev" << std::endl;
+        for(int m = 0; m < M; ++m)
+            out << std::setw(5) << m+1 << std::setw(25) << min[m] << std::setw(25) << max[m]
+                << std::setw(25) << mean[m] << std::setw(25) << stdev[m] << std::endl;
+    }
+}
+
 int main(int argc, char**argv )
 {
     using namespace Feel;
@@ -41,6 +103,8 @@ int main(int argc, char**argv )
 
     using biotsavart_type = BiotSavartAlphaElectricCRB<AlphaElectric>;
     using electric_tb_type = Electric<Simplex<3,1>, Lagrange<1, Scalar,Continuous,PointSetFekete> >;
+    using sampling_type = typename biotsavart_type::crb_type::sampling_type;
+    using sampling_ptrtype = std::shared_ptr<sampling_type>;
 
     po::options_description nloptoptions( "NLOpt options" );
     nloptoptions.add_options()
@@ -49,6 +113,8 @@ int main(int argc, char**argv )
           "do or not the optimization" )
         ( "biotsavart.use-bg-field", po::value<bool>()->default_value(false),
           "use a background field for the optimization" )
+        ( "biotsavart.size", po::value<int>()->default_value(1), "size of convergence sampling" )
+        ( "biotsavart.use-rb-cvg", po::value<bool>()->default_value(true), "" )
         ;
 
     nloptoptions.add(biotsavart_type::makeOptions("biotsavart"));
@@ -60,75 +126,132 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    // List of NLOPT algorithm
-    const boost::unordered_map< const std::string, ::nlopt::algorithm >& authAlgo = boost::assign::map_list_of
-        ("LN_NEWUOA", ::nlopt::LN_NEWUOA )
-        ("LN_COBYLA", ::nlopt::LN_COBYLA )
-        ("LN_BOBYQA", ::nlopt::LN_BOBYQA )
-        ("LD_LBFGS", ::nlopt::LD_LBFGS )
-        ("LD_MMA", ::nlopt::LD_MMA )
-        ("LD_SLSQP", ::nlopt::LD_SLSQP );
-
     auto BS = BiotSavartAlphaElectricCRB<AlphaElectric>::New(crb::stage::offline, "biotsavart");
     BS->initModel();
     if( !boption("biotsavart.do-opt") )
     {
-        auto mu = BS->param0();
+        auto sampling = sampling_type( BS->parameterSpace());
+        int size = ioption("biotsavart.size");
+        if( size == -1 )
+        {
+            auto mus = BS->deim()->mus();
+            sampling.setElements(mus);
+            size = mus.size();
+        }
+        else if( size == 0 )
+        {
+            auto mu = BS->paramFromProperties();
+            sampling.setElements({mu});
+            size = 1;
+        }
+        else
+        {
+            sampling.clear();
+            sampling.randomize( size, true );
+        }
+
+        auto Xh = BS->spaceMgn();
+        auto rangeB = Xh->dof()->meshSupport()->rangeElements();
+        auto BFE = Xh->element();
+        auto BRB = Xh->element();
+        auto BRBn = Xh->element();
+
+        int M = BS->dimension();
+        std::vector<std::vector<double> > errs(M, std::vector<double>(size));
+        std::vector<std::vector<double> > errsRel(M, std::vector<double>(size));
+        int N = BS->crbDimension();
+        std::vector<std::vector<double> > errsV(N, std::vector<double>(size));
+        std::vector<std::vector<double> > errsRelV(N, std::vector<double>(size));
+
+        Feel::cout << "start convergence study with " << size << " parameters" << std::endl;
+        int i = 0;
+        for( auto const& mu : sampling )
+        {
+            if( boption("biotsavart.use-rb-cvg") )
+            {
+                BFE = *BS->assembleForDEIM(mu,0);
+            }
+            else
+            {
+                BS->computeFE(mu);
+                BFE = BS->magneticFluxFE();
+            }
+            double normB = normL2( rangeB, idv(BFE) );
+            for( int m = 0; m < M; ++m)
+            {
+                BS->online(mu, m+1);
+                BRB = BS->magneticFlux();
+                errs[m][i] = normL2( rangeB, idv(BRB)-idv(BFE) );
+                errsRel[m][i] = errs[m][i]/normB;
+            }
+            for( int n = 0; n < N; ++n)
+            {
+                BS->computeRB(mu, n+1);
+                BRBn = BS->magneticFlux();
+                errsV[n][i] = normL2( rangeB, idv(BRBn)-idv(BFE) );
+                errsRelV[n][i] = errsV[n][i]/normB;
+            }
+            ++i;
+        }
+
+        auto stats = computeStats(errsRel);
+
+        fs::ofstream cvgErr( "err.dat" );
+        fs::ofstream cvgErrR( "errR.dat" );
+        fs::ofstream cvgStat( "stat.dat" );
+        writeErrors(cvgErr, errs);
+        writeErrors(cvgErrR, errsRel);
+        if( cvgStat )
+        {
+            writeStats(cvgStat, stats);
+            cvgStat.close();
+        }
+        if( Environment::isMasterRank() )
+            writeStats(std::cout, stats);
+
+        auto statsV = computeStats(errsRelV);
+
+        fs::ofstream cvgErrV( "errV.dat" );
+        fs::ofstream cvgErrRV( "errRV.dat" );
+        fs::ofstream cvgStatV( "statV.dat" );
+        writeErrors(cvgErrV, errsV);
+        writeErrors(cvgErrRV, errsRelV);
+        if( cvgStatV )
+        {
+            writeStats(cvgStatV, statsV);
+            cvgStatV.close();
+        }
+        if( Environment::isMasterRank() )
+            writeStats(std::cout, statsV);
+
+        auto mu = sampling.back();
+        auto alpha = BS->alpha(mu);
+        BS->computeFE(mu);
+        BS->expandV();
+        auto VRB = BS->potential();
+        auto VFE = BS->potentialFE();
+        mu = BS->param0();
         BS->computeFE(mu);
         auto V0 = BS->potentialFE();
         auto B0 = BS->magneticFluxFE();
-        mu = BS->paramFromProperties();
-        BS->computeFE(mu);
-        auto VFE = BS->potentialFE();
-        auto BFE = BS->magneticFluxFE();
-        auto rangeB = BFE.functionSpace()->dof()->meshSupport()->rangeElements();
-        double normBFE = normL2( rangeB, idv(BFE) );
 
-        boost::format fmter("%1% %|14t|%2% %|28t|%3%\n");
-        fs::ofstream file( "cvg.dat" );
-        if( file && Environment::isMasterRank() )
-            file << fmter % "M" % "errB" % "relErrB";
-
-        int size = BS->dimension();
-        std::vector<std::vector<double> > errs(size, std::vector<double>(2));
-        for( int m = 1; m <= size; ++m)
-        {
-            Feel::cout << "M = " << m << std::endl;
-            BS->online(mu, m);
-            BS->expand();
-            auto B = BS->magneticFlux();
-            errs[m-1][0] = normL2( rangeB, idv(B)-idv(BFE) );
-            errs[m-1][1] = errs[m-1][0]/normBFE;
-            if( Environment::isMasterRank() )
-                file << fmter % m % errs[m-1][0] % errs[m-1][1];
-        }
-
-        file.close();
-        Feel::cout << fmter % "M" % "errB" % "relErrB";
-        for( int m = 0; m < size; ++m)
-            Feel::cout << fmter % (m+1) % errs[m][0] % errs[m][1];
-
-        auto alpha = BS->alpha(mu);
-        auto V = BS->potential();
-        auto B = BS->magneticFlux();
-
-        auto eCM = exporter(_mesh=V.functionSpace()->mesh(), _name="biotsavart");
+        auto eCM = exporter(_mesh=BRB.functionSpace()->mesh(), _name="biotsavart");
 
         eCM->add("alpha", alpha);
-        eCM->add( "V", V);
-        eCM->add( "B", B);
-        eCM->add( "VFE", VFE);
-        eCM->add( "BFE", BFE );
-        eCM->add( "V0", V0);
-        eCM->add( "B0", B0);
+        eCM->add( "V_RB", VRB);
+        eCM->add( "B_RB", BRB);
+        eCM->add( "V_FE", VFE);
+        eCM->add( "B_FE", BFE );
+        eCM->add( "V_0", V0);
+        eCM->add( "B_0", B0);
         eCM->save();
     }
     else
     {
+        auto tb = std::make_shared<electric_tb_type>("toolbox");
         auto bBg = BS->spaceMgn()->element();
         if( boption("biotsavart.use-bg-field") )
         {
-            auto tb = std::make_shared<electric_tb_type>("toolbox", false);
             tb->setMesh(BS->mesh());
             tb->init();
             tb->printAndSaveInfo();
@@ -142,16 +265,25 @@ int main(int argc, char**argv )
 
         auto salgo = soption("nlopt.algo");
         cout << "NLOP algorithm: " << salgo << "\n";
-        auto algo = authAlgo.at(salgo);
+        auto algo = nloptAlgoMap.at(salgo);
         opt::OptimizationNonLinear opt( algo, N );
 
         // lower and upper bounds
         auto muMin = BS->parameterSpace()->min();
         auto muMax = BS->parameterSpace()->max();
+        auto mu0 = BS->param0();
 
         std::vector<double> lb(muMin.data(), muMin.data()+muMin.size());
         std::vector<double> ub(muMax.data(), muMax.data()+muMax.size());
 
+        Feel::cout << "lb: [";
+        for(int j = 0; j < lb.size()-1; ++j)
+            Feel::cout << lb[j] << ", ";
+        Feel::cout << lb.back() << "]" << std::endl;
+        Feel::cout << "ub: [";
+        for(int j = 0; j < ub.size()-1; ++j)
+            Feel::cout << ub[j] << ", ";
+        Feel::cout << ub.back() << "]" << std::endl;
         opt.set_lower_bounds(lb);
         opt.set_upper_bounds(ub);
 
@@ -174,7 +306,12 @@ int main(int argc, char**argv )
                 // auto B = BS->magneticFluxFE();
                 if( boption("biotsavart.use-bg-field") )
                     B += bBg;
-                return BS->homogeneity(B);
+                auto h = BS->homogeneity(B);
+                Feel::cout << "iter " << iter << " homogeneity for parameter mu=[";
+                for(int j = 0; j < x.size()-1; ++j)
+                    Feel::cout << x[j] << ", ";
+                Feel::cout << x.back() << "] = " << h << std::endl;
+                return h;
             };
 
         opt.set_min_objective( myfunc, nullptr );
@@ -183,7 +320,7 @@ int main(int argc, char**argv )
         double minf;
         tic();
         std::vector<double> x(N);
-        Eigen::VectorXd::Map(x.data(), N) = muMin;
+        Eigen::VectorXd::Map(x.data(), N) = mu0;
 
         ::nlopt::result result = opt.optimize(x, minf);
 
@@ -192,19 +329,39 @@ int main(int argc, char**argv )
         auto mu = BS->newParameter();
         mu = Eigen::Map<Eigen::VectorXd>( x.data(), mu.size());
 
-        cout << iter << " iterations in " << optiTime << " (" << optiTime/iter << "/iter)" << std::endl;
+        Feel::cout << nloptResultMap.at(result) << std::endl
+                   << iter << " iterations in " << optiTime
+                   << " (" << optiTime/iter << "/iter)" << std::endl;
 
         auto alpha = BS->alpha(mu);
         auto V = BS->potential();
         auto B = BS->magneticFlux();
+        if( boption("biotsavart.use-bg-field") )
+            B += bBg;
         BS->computeFE(mu);
         auto VFE = BS->potentialFE();
         auto BFE = BS->magneticFluxFE();
-        auto mu0 = BS->param0();
+        if( boption("biotsavart.use-bg-field") )
+            BFE += bBg;
         BS->computeFE(mu0);
-        auto V0 = BS->potentialFE();
-        auto B0 = BS->magneticFluxFE();
+        auto V0FE = BS->potentialFE();
+        auto B0FE = BS->magneticFluxFE();
+        if( boption("biotsavart.use-bg-field") )
+            B0FE += bBg;
+        BS->online(mu0);
+        auto B0 = BS->magneticFlux();
 
+        if( result > 0 )
+        {
+            auto homo = BS->homogeneity(B);
+            auto homoFE = BS->homogeneity(BFE);
+            auto homo0 = BS->homogeneity(B0);
+            auto homo0FE = BS->homogeneity(B0FE);
+            Feel::cout << "homogeneity = " << homo << " (" << homoFE
+                       << ") for parameter\n" << mu << "\n"
+                       << "default homogeneity = " << homo0 << " (" << homo0FE << ")\n"
+                       << "Evaluation number: " << iter << std::endl;
+        }
         // export
 
         auto eCM = exporter(_mesh=V.functionSpace()->mesh(), _name="biotsavart");
@@ -214,66 +371,17 @@ int main(int argc, char**argv )
         eCM->add( "B", B);
         eCM->add( "VFE", VFE);
         eCM->add( "BFE", BFE );
-        eCM->add( "V0", V0);
+        eCM->add( "V0", V0FE);
+        eCM->add( "B0FE", B0FE);
         eCM->add( "B0", B0);
         if( boption("biotsavart.use-bg-field") )
+        {
             eCM->add("Bbg", bBg);
+            eCM->add("Vbg", tb->fieldElectricPotential());
+            eCM->add("jbg", tb->fieldCurrentDensity());
+        }
         eCM->save();
 
-        auto homoFE = BS->homogeneity(BFE);
-        auto homo0 = BS->homogeneity(B0);
-        std::stringstream ss;
-        ss << "homogeneity = " << homoFE << " for parameter\n" << mu << "\n"
-           << "default homogeneity = " << homo0 << "\n"
-           << "Evaluation number: " << iter << "\n";
-
-        switch( result )
-        {
-        case ::nlopt::FAILURE:
-            Feel::cerr << "NLOPT Generic Failure!" << "\n";
-            break;
-        case ::nlopt::INVALID_ARGS:
-            Feel::cerr << "NLOPT Invalid arguments!" << "\n";
-            break;
-        case ::nlopt::OUT_OF_MEMORY:
-            Feel::cerr << "NLOPT Out of memory!" << "\n";
-            break;
-        case ::nlopt::ROUNDOFF_LIMITED:
-            Feel::cerr << "NLOPT Roundoff limited!" << "\n";
-            break;
-        case ::nlopt::FORCED_STOP:
-            Feel::cerr << "NLOPT Forced stop!" << "\n";
-            break;
-        case::nlopt::SUCCESS:
-            cout << "NLOPT coefficient found! (status " << result << ") \n"
-                 << ss.str();
-            break;
-        case ::nlopt::STOPVAL_REACHED:
-            cout << "NLOPT Stop value reached!" << "\n";
-            cout << "NLOPT coefficient found! (status " << result << ") \n"
-                 << ss.str();
-            break;
-        case ::nlopt::FTOL_REACHED:
-            cout << "NLOPT ftol reached!" << "\n";
-            cout << "NLOPT coefficient found! (status " << result << ") \n"
-                 << ss.str();
-            break;
-        case ::nlopt::XTOL_REACHED:
-            cout << "NLOPT xtol reached!" << "\n";
-            cout << "NLOPT coefficient found! (status " << result << ") \n"
-                 << ss.str();
-            break;
-        case ::nlopt::MAXEVAL_REACHED:
-            cout << "NLOPT Maximum number of evaluation reached!" << "\n";
-            cout << "NLOPT coefficient found! (status " << result << ") \n"
-                 << ss.str();
-            break;
-        case ::nlopt::MAXTIME_REACHED:
-            cout << "NLOPT Maximum time reached" << "\n";
-            cout << "NLOPT coefficient found! (status " << result << ") \n"
-                 << ss.str();
-            break;
-        }
     }
     return 0;
 }
