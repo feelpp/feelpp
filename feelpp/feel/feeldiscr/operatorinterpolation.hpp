@@ -686,7 +686,7 @@ struct PrecomputeDomainBasisFunction
     typedef typename geoelement_type::gm_ptrtype gm_ptrtype;
     typedef typename gm_type::precompute_type geopc_type;
     typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
-    static const size_type context2 = (is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> )?
+    static const size_type context2 = (is_hdiv_conforming_v<image_fe_type> || is_hcurl_conforming_v<image_fe_type> )?
         expression_type::context|vm::JACOBIAN|vm::KB :
         expression_type::context;
     static const size_type context = ( DomainSpaceType::nDim == ImageSpaceType::nDim )? context2 : context2|vm::POINT;
