@@ -498,46 +498,67 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
     return ret;
 }
 std::string
-Gmsh::refine( std::string const& name, int level, bool parametric  ) const
+Gmsh::refine( std::string const& name, int /*level*/, bool parametric  ) const
 {
-#if FEELPP_HAS_GMSH
-    std::ostringstream filename;
-	std::string _name;
+#if defined(FEELPP_HAS_GMSH_LIBRARY)
+	//std::string _name;
+    std::string nameMshOutput = (boost::format("%1%-refine-%2%.msh")%fs::path( name ).stem().string() %M_refine_levels).str();
 
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
+#if defined( FEELPP_HAS_GMSH_API )
+        // load geofile
+        gmsh::open( name );
+
+        // mesh refine
+        for( int l = 0; l < M_refine_levels; ++l )
+        {
+            VLOG(1) << "apply mesh refinement levels : " << l+1 << "/" << M_refine_levels << "\n";
+            gmsh::model::mesh::refine();
+        }
+
+        int dim = gmsh::model::getDimension();
+        VLOG(1) << "Read mesh with dim : " << dim << "\n";
+
+        gmsh::option::setNumber( "Mesh.PartitionCreateGhostCells", 1 );
+        gmsh::option::setNumber( "Mesh.PartitionOldStyleMsh2",0 );
+        gmsh::model::mesh::partition( M_partitions );
+
+        // info about partitioning
+        gmsh::vectorpair dimTags;
+        gmsh::model::getEntities( dimTags,dim );
+        std::set<int> allpartitions;
+        for ( auto const& dimTag : dimTags )
+        {
+            std::vector<int> partitionsInEntity;
+            gmsh::model::getPartitions(dimTag.first,
+                                       dimTag.second,
+                                       partitionsInEntity );
+            allpartitions.insert( partitionsInEntity.begin(),partitionsInEntity.end() );
+        }
+        VLOG(1) << "Number of partitions : " << allpartitions.size() << "\n";
+
+        // write mesh file
+        gmsh::option::setNumber( "Mesh.MshFileVersion", std::stod( this->version() ) );
+        gmsh::option::setNumber( "Mesh.Binary", M_format );
+        gmsh::option::setNumber( "Mesh.PartitionSplitMeshFiles", M_partition_file );
+        //LOG(INFO) << "Writing partitioned GMSH file " << nameMshOutput << " in " << (M_format?"binary":"ascii") << " format\n";
+        gmsh::write( nameMshOutput );
+
+#else
+
+        std::ostringstream filename;
 #if BOOST_FILESYSTEM_VERSION == 3
-		filename << fs::path( name ).stem().string() << "-refine-" << level << ".msh";
+		filename << fs::path( name ).stem().string() << "-refine-" << M_refine_levels << ".msh";
 		boost::system::error_code ec;
         auto na = fs::path( name );
         auto fi= fs::path( filename.str() );
 		fs::copy_file( na, fi, fs::copy_option::overwrite_if_exists, ec );
 #elif BOOST_FILESYSTEM_VERSION == 2
-		filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
+		filename << fs::path( name ).stem() << "-refine-" << M_refine_levels << ".msh";
 		fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists );
 #endif
 
-#if !defined(FEELPP_HAS_GMSH_LIBRARY)
-        // generate mesh
-        std::ostringstream __str;
-
-        if ( parametric )
-            __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
-                  << " -parametric -refine " << filename.str();
-
-        else
-            __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
-                  << " -refine " << filename.str();
-
-		for ( int l = 0; l < level; ++l )
-		{
-		    auto err = ::system( __str.str().c_str() );
-		}
-
-#else
-#if defined( FEELPP_HAS_GMSH_API )
-        CHECK( false ) << "TODO";
-#else
 		M_gmodel->readMSH(filename.str());
 
 		CTX::instance()->mesh.order = M_order;
@@ -557,7 +578,7 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 		CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
 		CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
 
-		for ( int l = 0; l < level; ++l )
+		for ( int l = 0; l < M_refine_levels; ++l )
 		{
 		    M_gmodel->refineMesh( CTX::instance()->mesh.secondOrderLinear );
 		}
@@ -567,16 +588,15 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
                 LOG(INFO) << "[Gmsh::refine] Repartioning mesh : " << filename.str() << "\n";
                 PartitionMesh( M_gmodel.get(), CTX::instance()->partitionOptions );
             }
-        M_gmodel->writeMSH( filename.str() );
+        M_gmodel->writeMSH( nameMshOutput );
 		LOG(INFO) << "[Gmsh::refine] Refined mesh : " << filename.str() << "\n";
 		//LOG(INFO) << "[Gmsh::refine] vertices : " << M_gmodel->getNumMeshVertices() << "\n";
 		LOG(INFO) << "[Gmsh::refine] elements : " << M_gmodel->getNumMeshElements() << "\n";
 		LOG(INFO) << "[Gmsh::refine] partitions : " << M_gmodel->getMeshPartitions().size() << "\n";
 
-		_name = filename.str();
+		//_name = filename.str();
 
 		M_gmodel->destroy();
-#endif
 #endif
 
 	}
@@ -584,13 +604,13 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 	if ( mpi::environment::initialized() )
     {
 		this->worldComm().barrier();
-
-        _name = filename.str();
-        mpi::broadcast( this->worldComm().globalComm(), _name, this->worldComm().masterRank() );
-        LOG(INFO) << "[Gmsh::refine] broadcast mesh filename : " << _name << " to all other processes\n";
+        //_name = filename.str();
+        //mpi::broadcast( this->worldComm().globalComm(), _name, this->worldComm().masterRank() );
+        //LOG(INFO) << "[Gmsh::refine] broadcast mesh filename : " << _name << " to all other processes\n";
     }
 
-    return _name;
+    return nameMshOutput;
+    //return _name;
 
 #else
     throw std::invalid_argument( "Gmsh is not available on this system" );
@@ -793,7 +813,35 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
             fs::create_directories( directory );
 
 #if defined( FEELPP_HAS_GMSH_API )
-        CHECK( false ) << "TODO";
+        // load msh file
+        gmsh::open( nameMshInput );
+        int dim = gmsh::model::getDimension();
+        VLOG(1) << "Read mesh with dim : " << dim << "\n";
+
+        gmsh::option::setNumber( "Mesh.PartitionCreateGhostCells", 1 );
+        gmsh::option::setNumber( "Mesh.PartitionOldStyleMsh2",0 );
+        gmsh::model::mesh::partition( M_partitions );
+
+        // info about partitioning
+        gmsh::vectorpair dimTags;
+        gmsh::model::getEntities( dimTags,dim );
+        std::set<int> allpartitions;
+        for ( auto const& dimTag : dimTags )
+        {
+            std::vector<int> partitionsInEntity;
+            gmsh::model::getPartitions(dimTag.first,
+                                       dimTag.second,
+                                       partitionsInEntity );
+            allpartitions.insert( partitionsInEntity.begin(),partitionsInEntity.end() );
+        }
+        VLOG(1) << "Number of partitions : " << allpartitions.size() << "\n";
+
+        // write mesh file
+        gmsh::option::setNumber( "Mesh.MshFileVersion", std::stod( this->version() ) );
+        gmsh::option::setNumber( "Mesh.Binary", M_format );
+        gmsh::option::setNumber( "Mesh.PartitionSplitMeshFiles", M_partition_file );
+        LOG(INFO) << "Writing partitioned GMSH file " << nameMshOutput << " in " << (M_format?"binary":"ascii") << " format\n";
+        gmsh::write( nameMshOutput );
 #else
         CTX _backup = *(CTX::instance());
 
