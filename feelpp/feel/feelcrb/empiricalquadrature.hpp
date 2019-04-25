@@ -26,6 +26,7 @@
 #define FEELPP_EQ_HPP
 
 #include <feel/feelcrb/parameterspace.hpp>
+#include <numeric>
 
 #if defined(FEELPP_HAS_GLPK_H)
 #include <glpk.h>
@@ -43,7 +44,7 @@ protected:
 public:
     ExpressionEvaluatorBase(range_type const& r) : M_range(r) {};
     virtual void init(int o) = 0;
-    virtual void update(element_type elt) = 0;
+    virtual void update(element_type const& elt) = 0;
     virtual int nPoints() = 0;
     virtual double weight(int i) = 0;
     virtual double eval(int q, int comp) = 0;
@@ -72,7 +73,7 @@ class ExpressionEvaluator : public ExpressionEvaluatorBase<EltT>
 public:
     ExpressionEvaluator( range_type const& r, expr_type const& ex );
     void init(int o) override;
-    void update(element_type elt) override;
+    void update(element_type const& elt) override;
     int nPoints() override;
     double weight(int i) override;
     double eval(int q, int comp) override;
@@ -93,11 +94,11 @@ class EmpiricalQuadrature
     using element_type = typename boost::tuples::element<1_c,range_type>::type::value_type;
     using gm_type = typename element_type::type::gm_type;
 
-    using expressionevalbase_type = ExpressionEvaluatorBase<element_type>;
+    using expressionevalbase_type = ExpressionEvaluatorBase<range_type>;
     using expressionevalbase_ptrtype = std::shared_ptr<expressionevalbase_type>;
     using expressionevalbase_vectype = std::vector<expressionevalbase_ptrtype>;
     template<typename ExprT>
-    using expressioneval_type = ExpressionEvaluator<element_type, ExprT>;
+    using expressioneval_type = ExpressionEvaluator<range_type, ExprT>;
     // using exprs_type = std::tuple<ExprTs...>;
     // using contexts_type = std::tuple<typename gm_type::template Context<vm::POINT|vm::JACOBIAN|ExprTs::context,typename std::remove_const<typename element_type::type>::type >...>;
     // using contexts_ptrtype = std::tuple<std::shared_ptr<typename gm_type::template Context<vm::POINT|vm::JACOBIAN|ExprTs::context,typename std::remove_const<typename element_type::type>::type >>...>;
@@ -138,7 +139,7 @@ private:
 
 private:
     range_type M_range;
-    expressioneval_vectype M_exprevals;
+    expressionevalbase_vectype M_exprevals;
     // exprs_type M_exprs;
     // contexts_ptrtype M_ctxs;
     // expr_type M_expr;
@@ -187,7 +188,7 @@ template<typename ExprT>
 void
 EmpiricalQuadrature<RangeType>::addExpression( ExprT const& ex)
 {
-    auto exev = std::make_shared<expressioneval_type>(ex);
+    auto exev = std::make_shared<expressioneval_type<ExprT>>(M_range, ex);
     M_exprevals.push_back(exev);
     M_M++;
 }
@@ -201,31 +202,15 @@ EmpiricalQuadrature<RangeType>::offline()
 
     auto const eltForInit = boost::unwrap_ref(*boost::get<1>(M_range));
 
-    int max_order = std::reduce(M_exprevals.first, M_exprevals.end(), 0.0,
-                                [](auto const& a, auto const& b)
-                                    {
-                                        return std::max(a.order(),b.order());
-                                    });
+    int max_order = std::accumulate(M_exprevals.begin(), M_exprevals.end(), 0,
+                                    [](auto const& a, auto const& b)
+                                        {
+                                            return std::max(a,b->order());
+                                        });
     for( auto const& ee : M_exprevals )
-        ee.init(max_order);
-    // std::apply([max_order](auto const& ...ex) mutable {
-    //                return (max_order = ... = std::max(max_order, (int)ex.polynomialOrder()));},
-    //            M_exprs);
-    // auto q = _Q(max_order);
+        ee->init(max_order);
 
-    // using iim_type = vf::detail::integrate_im_type<decltype(M_range),decltype(M_expr),decltype(q),decltype(q)>;
-    // auto ims = iim_type::im(q,q,M_expr);
-    // auto im = ims.first;
-    // auto pts = im.points();
-    // int npts = im.nPoints();
-    // auto gm = eltForInit.gm();
-    // auto geopc = gm->preCompute( pts );
-
-    // M_ctxs = std::make_tuple(gm->context( eltForInit, geopc ));
-    // M_ctx = gm->template context<vm::POINT|vm::JACOBIAN|expr_type::context>( eltForInit, geopc );
-    // M_evaluator = std::make_shared<evaluator_type>(M_expr.evaluator( mapgmc(M_ctx) ) );
-
-    int nPts = M_exprevals.begin()->nPoints();
+    int nPts = M_exprevals[0]->nPoints();
     M_N = M_numElts*nPts;
     evaluation_type eval(M_M, std::vector<std::vector<double> >(M_J, std::vector<double>(M_N, 0.0)));
     local_result_type res(M_M, std::vector<double>(M_N, 0.0) );
@@ -237,9 +222,7 @@ EmpiricalQuadrature<RangeType>::offline()
             continue;
 
         for( auto const& ee : M_exprevals )
-            ee.update( elt );
-        // M_ctx->update( elt );
-        // M_evaluator->update( vf::mapgmc( M_ctx ) );
+            ee->update( eltWrap );
 
         for ( uint16_type q = 0; q < nPts; ++q )
         {
@@ -248,17 +231,13 @@ EmpiricalQuadrature<RangeType>::offline()
                 for( j = 0; j < M_J; ++j )
                 {
                     M_mu = M_trainset->at(j);
-                    eval[m][j][n] = M_exprevals[m]->eval(q, M_component); //M_evaluator->evalq( M_component,0,q )*M_ctx->J(q);
+                    eval[m][j][n] = M_exprevals[m]->eval(q, M_component);
                     res[m][j] += M_exprevals[m]->weight(q)*eval[m][j][n];
                 }
             }
             n++;
         }
     }
-
-    // double b = 0.0;
-    // mpi::all_reduce(Environment::worldComm().globalComm(), res[0][0], b, std::plus<double>());
-    // Feel::cout << "res = " << b << std::endl;
 
     auto indexes = solveLP(eval,res);
 
@@ -337,7 +316,6 @@ EmpiricalQuadrature<RangeType>::solveLP( evaluation_type const& eval, local_resu
     for( int n = 1; n <= M_N; ++n)
     {
         auto p = glp_get_col_prim(lp, n);
-        // Feel::cout << "p = " << p << std::endl;
         if( p > 1e-12 )
         {
             M_weights.push_back(p);
@@ -357,31 +335,28 @@ EmpiricalQuadrature<RangeType>::evaluate( int m )
     double res = 0.0, loc = 0.0;
     for( int i = 0; i < M_weights.size(); ++i )
     {
-        auto const& elt = unwrap_ref( M_points[i].second );
-        M_exprevals[m]->update( elt );
-        // M_ctx->update( elt );
-        // M_evaluator->update( vf::mapgmc( M_ctx ) );
-        loc += M_weights[i]*M_exprevals[m]->eval(M_points[i].first, M_component); //M_evaluator->evalq(M_component,0,M_points[i].first)*M_ctx->J(M_points[i].first);
+        M_exprevals[m]->update( M_points[i].second );
+        loc += M_weights[i]*M_exprevals[m]->eval(M_points[i].first, M_component);
     }
     mpi::all_reduce(Environment::worldComm().globalComm(), loc, res, std::plus<double>());
     toc("compute");
     return res;
 }
 
-template<typename EltT, typename ExprT>
-ExpressionEvaluator<EltT, ExprT>::ExpressionEvaluator( range_type const& r, expr_type const& ex )
+template<typename RangeType, typename ExprT>
+ExpressionEvaluator<RangeType, ExprT>::ExpressionEvaluator( range_type const& r, expr_type const& ex )
     : super(r),
       M_expr(ex)
 {}
 
-template<typename EltT, typename ExprT>
+template<typename RangeType, typename ExprT>
 void
-ExpressionEvaluator<EltT, ExprT>::init(int o) override
+ExpressionEvaluator<RangeType, ExprT>::init(int o)
 {
-    auto const eltForInit = boost::unwrap_ref(*boost::get<1>(M_range));
+    auto const eltForInit = boost::unwrap_ref(*boost::get<1>(this->M_range));
     auto q = _Q(o);
 
-    using iim_type = vf::detail::integrate_im_type<decltype(M_range),decltype(M_expr),decltype(q),decltype(q)>;
+    using iim_type = vf::detail::integrate_im_type<decltype(this->M_range),decltype(M_expr),decltype(q),decltype(q)>;
     auto ims = iim_type::im(q,q,M_expr);
     auto im = ims.first;
     auto pts = im.points();
@@ -393,38 +368,39 @@ ExpressionEvaluator<EltT, ExprT>::init(int o) override
     M_weights = im.weights();
 }
 
-template<typename EltT, typename ExprT>
+template<typename RangeType, typename ExprT>
 void
-ExpressionEvaluator<EltT, ExprT>::update(element_type elt) override
+ExpressionEvaluator<RangeType, ExprT>::update(element_type const& eltWrap)
 {
+    auto const& elt = unwrap_ref( eltWrap );
     M_ctx->update( elt );
     M_evaluator->update( vf::mapgmc( M_ctx ) );
 }
 
-template<typename EltT, typename ExprT>
+template<typename RangeType, typename ExprT>
 int
-ExpressionEvaluator<EltT, ExprT>::nPoints() override
+ExpressionEvaluator<RangeType, ExprT>::nPoints()
 {
     return M_ctx->nPoints();
 }
 
-template<typename EltT, typename ExprT>
+template<typename RangeType, typename ExprT>
 double
-ExpressionEvaluator<EltT, ExprT>::weight(int i) override
+ExpressionEvaluator<RangeType, ExprT>::weight(int i)
 {
     return M_weights[i];
 }
 
-template<typename EltT, typename ExprT>
+template<typename RangeType, typename ExprT>
 double
-ExpressionEvaluator<EltT, ExprT>::eval(int q, int comp) override
+ExpressionEvaluator<RangeType, ExprT>::eval(int q, int comp)
 {
     return M_evaluator->evalq(comp,0,q)*M_ctx->J(q);
 }
 
-template<typename EltT, typename ExprT>
+template<typename RangeType, typename ExprT>
 int
-ExpressionEvaluator<EltT, ExprT>::order() override
+ExpressionEvaluator<RangeType, ExprT>::order()
 {
     return M_expr.polynomialOrder();
 }
