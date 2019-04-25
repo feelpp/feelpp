@@ -77,7 +77,7 @@ int main( int argc, char** argv)
     // init
     rb_model_ptrtype model = std::make_shared<rb_model_type>(mesh, "electric");
     crb_model_ptrtype crbModel = std::make_shared<crb_model_type>(model);
-    crb_ptrtype crb = crb_type::New("alphaelectric", crbModel, crb::stage::offline);
+    crb_ptrtype crb = crb_type::New(model->dbBasename(), crbModel, crb::stage::offline);
 
     // offline
     crb->offline();
@@ -124,12 +124,12 @@ int main( int argc, char** argv)
         min[n] = *std::min_element(errsRel[n].begin(), errsRel[n].end());
         max[n] = *std::max_element(errsRel[n].begin(), errsRel[n].end());
         double s = std::accumulate(errsRel[n].begin(), errsRel[n].end(), 0.0);
-        mean[n] = s/N;
+        mean[n] = s/size;
         double accum = std::accumulate(errsRel[n].begin(), errsRel[n].end(), 0.0,
-                                       [s,N](double a, double b) {
-                                           return a + (b-s/N)*(b-s/N);
+                                       [s,size](double a, double b) {
+                                           return a + (b-s/size)*(b-s/size);
                                        });
-        stdev[n] = accum/N;
+        stdev[n] = accum/size;
     }
 
     fs::ofstream cvgErr( "err.dat" );
