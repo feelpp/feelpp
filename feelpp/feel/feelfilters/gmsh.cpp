@@ -44,6 +44,7 @@
 #include <feel/feelcore/application.hpp>
 #include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/gmshenums.hpp>
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmshellipsoiddomain.hpp>
@@ -627,20 +628,60 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
     LOG(INFO) << "[Gmsh::generate] partitioner: " <<  M_partitioner << "\n";
 
 #if defined( FEELPP_HAS_GMSH_API )
+
+    // load geofile
     gmsh::open( __geoname );
+    //std::cout << "GETDIM-2 : " << gmsh::model::getDimension() << "\n";
+
+    // some options
     gmsh::model::mesh::setOrder( M_order );
+    gmsh::option::setNumber( "Mesh.Algorithm", (double)GMSH_ALGORITHM_2D::FRONTAL );
+    gmsh::option::setNumber( "Mesh.Algorithm3D", (double)GMSH_ALGORITHM_3D::DELAUNAY );
+    if( doption("gmsh.randFactor") > 0. )
+       gmsh::option::setNumber( "Mesh.RandomFactor", doption("gmsh.randFactor") );
+
+    // generate mesh
     gmsh::model::mesh::generate( dim );
+
+    // mesh refine
+    for( int l = 0; l < M_refine_levels; ++l )
+    {
+        VLOG(1) << "apply mesh refinement levels : " << l+1 << "/" << M_refine_levels << "\n";
+        gmsh::model::mesh::refine();
+    }
+
+    // mesh partitioning
     if ( M_partitions > 1 )
     {
         gmsh::option::setNumber( "Mesh.PartitionCreateGhostCells", 1 );
         gmsh::option::setNumber( "Mesh.PartitionOldStyleMsh2",0 );
         gmsh::model::mesh::partition( M_partitions );
 
+        gmsh::vectorpair dimTags;
+        gmsh::model::getEntities( dimTags,dim );
+        std::set<int> allpartitions;
+        for ( auto const& dimTag : dimTags )
+        {
+            std::vector<int> partitionsInEntity;
+            gmsh::model::getPartitions(dimTag.first,
+                                       dimTag.second,
+                                       partitionsInEntity );
+            allpartitions.insert( partitionsInEntity.begin(),partitionsInEntity.end() );
+        }
+        VLOG(1) << "Number of partitions : " << allpartitions.size() << "\n";
     }
 
+    // check mesh generation
+    std::vector<int> elementTypes;
+    gmsh::model::mesh::getElementTypes(elementTypes,dim);
+    CHECK( !elementTypes.empty() ) << "Invalid Gmsh Mesh. Something went wrong with Gmsh";
+
+    // write mesh file
     if ( M_in_memory == false )
     {
+        gmsh::option::setNumber( "Mesh.MshFileVersion", std::stod( this->version() ) );
         gmsh::option::setNumber( "Mesh.Binary", M_format );
+        gmsh::option::setNumber( "Mesh.PartitionSplitMeshFiles", M_partition_file );
         std::string outputFilenameUsed = ( outputFilename.empty() )?_name+".msh" : outputFilename;
         LOG(INFO) << "Writing GMSH file " << outputFilenameUsed << " in " << (M_format?"binary":"ascii") << " format\n";
         gmsh::write( outputFilename );
@@ -670,11 +711,11 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
 
     else
     {
-        CTX::instance()->mesh.algo2d = ( Environment::vm().count("gmsh.algo2d") )? ioption("gmsh.algo2d") : ALGO_2D_FRONTAL;
+        CTX::instance()->mesh.algo2d = ( Environment::vm().count("gmsh.algo2d") )? ioption("gmsh.algo2d") : GMSH_ALGORITHM_2D::FRONTAL;
 #if defined(HAVE_TETGEN)
-        CTX::instance()->mesh.algo3d = ( Environment::vm().count("gmsh.algo3d") )? ioption("gmsh.algo3d") : ALGO_3D_DELAUNAY;
+        CTX::instance()->mesh.algo3d = ( Environment::vm().count("gmsh.algo3d") )? ioption("gmsh.algo3d") : GMSH_ALGORITHM_3D::DELAUNAY;
 #else
-        CTX::instance()->mesh.algo3d = ( Environment::vm().count("gmsh.algo3d") )? ioption("gmsh.algo3d") : ALGO_3D_FRONTAL;
+        CTX::instance()->mesh.algo3d = ( Environment::vm().count("gmsh.algo3d") )? ioption("gmsh.algo3d") : GMSH_ALGORITHM_3D::FRONTAL;
 #endif
     }
     // disable heap checking if enabled
@@ -798,6 +839,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
 }
 
+#if 0
 /* if Gmsh API is not detected, some variables need to be define
    see gmsh/Common/GmshDefines.h
 */
@@ -827,7 +869,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 #define ALGO_3D_RTREE          9
 
 #endif
-
+#endif
     std::string
     Gmsh::preamble() const
     {
@@ -839,6 +881,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
              << "Mesh.ElementOrder=" << M_order << ";\n"
              << "Mesh.SecondOrderIncomplete = 0;\n";
 
+#if 0
         if ( M_recombine )
             ostr << "Mesh.Algorithm = 5;\n";
         else
@@ -860,6 +903,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
                  << "Mesh.NbPartitions=" << M_partitions << ";\n"
                  << "Mesh.MshFilePartitioned=" << M_partition_file << ";\n";
         }
+#endif
         //ostr << "Mesh.Optimize=1;\n"
         //<< "Mesh.CharacteristicLengthFromCurvature=1;\n"
 
