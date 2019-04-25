@@ -56,7 +56,9 @@
 
 
 #if defined( FEELPP_HAS_GMSH_H )
-
+#if defined( FEELPP_HAS_GMSH_API )
+#include <gmsh.h>
+#else
 #include <GmshConfig.h>
 #include <Gmsh.h>
 #include <GModel.h>
@@ -79,7 +81,7 @@ extern int gmsh_yyerrorstate;
 extern int gmsh_yyviewindex;
 extern char *gmsh_yytext;
 void PrintParserSymbols(bool help, std::vector<std::string> &vec);
-
+#endif // !FEELPP_HAS_GMSH_API
 #endif // FEELPP_HAS_GMSH_H
 
 
@@ -88,7 +90,7 @@ namespace Feel
 namespace fs = boost::filesystem;
 
 
-
+#if !defined( FEELPP_HAS_GMSH_API )
 int
 ParseGeoFromMemory( GModel* model, std::string const& name, std::string const& geo  )
 {
@@ -124,6 +126,7 @@ ParseGeoFromMemory( GModel* model, std::string const& name, std::string const& g
 
     return imported;
 }
+#endif
 Gmsh::Gmsh( int nDim, int nOrder, worldcomm_ptr_t const& worldComm )
     :
     super( worldComm ),
@@ -145,8 +148,11 @@ Gmsh::Gmsh( int nDim, int nOrder, worldcomm_ptr_t const& worldComm )
     M_structured( 2 ),
     M_refine_levels( 0 ),
     M_substructuring( false ),
-    M_periodic(),
+    M_periodic()
+#if !defined( FEELPP_HAS_GMSH_API )
+    ,
     M_gmodel( new GModel() )
+#endif
 {
     this->setReferenceDomain();
 }
@@ -171,12 +177,15 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_structured( __g.M_structured ),
     M_refine_levels( __g.M_refine_levels ),
     M_substructuring( __g.M_substructuring ),
-    M_periodic( __g.M_periodic ),
+    M_periodic( __g.M_periodic )
+#if !defined( FEELPP_HAS_GMSH_API )
+    ,
     M_gmodel( __g.M_gmodel )
+#endif
 {}
 Gmsh::~Gmsh()
 {
-#if 1
+#if !defined( FEELPP_HAS_GMSH_API )
     M_gmodel->deleteMesh();
     //M_gmodel->destroy();
 #endif
@@ -199,7 +208,9 @@ Gmsh::operator=( Gmsh const& __g )
         M_shear = __g.M_shear;
         M_refine_levels = __g.M_refine_levels;
         M_periodic = __g.M_periodic;
+#if !defined( FEELPP_HAS_GMSH_API )
         M_gmodel = __g.M_gmodel;
+#endif
     }
 
     return *this;
@@ -523,6 +534,9 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 		}
 
 #else
+#if defined( FEELPP_HAS_GMSH_API )
+        CHECK( false ) << "TODO";
+#else
 		M_gmodel->readMSH(filename.str());
 
 		CTX::instance()->mesh.order = M_order;
@@ -561,6 +575,7 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 		_name = filename.str();
 
 		M_gmodel->destroy();
+#endif
 #endif
 
 	}
@@ -607,11 +622,32 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
     fs::path gp = __geoname;
     std::string _name = gp.stem().string();
 
-    CTX _backup = *(CTX::instance());
     LOG(INFO) << "[Gmsh::generate] env.part: " <<  Environment::numberOfProcessors() << "\n";
-    LOG(INFO) << "[Gmsh::generate] env.part: " <<  Environment::worldComm().size() << "\n";
     LOG(INFO) << "[Gmsh::generate] partitions: " <<  M_partitions << "\n";
     LOG(INFO) << "[Gmsh::generate] partitioner: " <<  M_partitioner << "\n";
+
+#if defined( FEELPP_HAS_GMSH_API )
+    gmsh::open( __geoname );
+    gmsh::model::mesh::setOrder( M_order );
+    gmsh::model::mesh::generate( dim );
+    if ( M_partitions > 1 )
+    {
+        gmsh::option::setNumber( "Mesh.PartitionCreateGhostCells", 1 );
+        gmsh::option::setNumber( "Mesh.PartitionOldStyleMsh2",0 );
+        gmsh::model::mesh::partition( M_partitions );
+
+    }
+
+    if ( M_in_memory == false )
+    {
+        gmsh::option::setNumber( "Mesh.Binary", M_format );
+        std::string outputFilenameUsed = ( outputFilename.empty() )?_name+".msh" : outputFilename;
+        LOG(INFO) << "Writing GMSH file " << outputFilenameUsed << " in " << (M_format?"binary":"ascii") << " format\n";
+        gmsh::write( outputFilename );
+    }
+
+#else
+    CTX _backup = *(CTX::instance());
     CTX::instance()->partitionOptions.num_partitions =  M_partitions;
     CTX::instance()->partitionOptions.partitioner =  M_partitioner;
     CTX::instance()->partitionOptions.mesh_dims[0] = M_partitions;
@@ -690,6 +726,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
     }
     // copy context (in order to allow multiple calls)
     *(CTX::instance()) = _backup ;
+#endif // FEELPP_HAS_GMSH_API
 #endif
 #else
     throw std::invalid_argument( "Gmsh is not available on this system" );
@@ -714,6 +751,9 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
         if ( !directory.empty() && !fs::exists(directory) )
             fs::create_directories( directory );
 
+#if defined( FEELPP_HAS_GMSH_API )
+        CHECK( false ) << "TODO";
+#else
         CTX _backup = *(CTX::instance());
 
         M_gmodel=std::make_shared<GModel>();
@@ -741,6 +781,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
         // copy context (in order to allow multiple calls)
         *(CTX::instance()) = _backup ;
+#endif
     }
 
     if ( mpi::environment::initialized() )
@@ -762,7 +803,12 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 */
 
 #ifndef FEELPP_HAS_GMSH_H
+#define FEELPP_ADD_MACRO_GMSH_ALGO 1
+#elif defined( FEELPP_HAS_GMSH_API )
+#define FEELPP_ADD_MACRO_GMSH_ALGO 1
+#endif
 
+#if defined(FEELPP_ADD_MACRO_GMSH_ALGO)
 // 2D meshing algorithms (numbers should not be changed)
 #define ALGO_2D_MESHADAPT      1
 #define ALGO_2D_AUTO           2

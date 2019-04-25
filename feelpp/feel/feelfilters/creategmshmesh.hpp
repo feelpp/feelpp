@@ -139,7 +139,9 @@ BOOST_PARAMETER_FUNCTION(
         }
         import.setRespectPartition( respect_partition );
 #if defined( FEELPP_HAS_GMSH_H )
+#if !defined( FEELPP_HAS_GMSH_API )
         import.setGModel( desc->gModel() );
+#endif
         import.setInMemory( in_memory );
 #endif
         _mesh->accept( import );

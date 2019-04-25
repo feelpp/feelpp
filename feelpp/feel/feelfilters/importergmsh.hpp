@@ -45,6 +45,7 @@
 #include <feel/feeltiming/tic.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
+#if !defined( FEELPP_HAS_GMSH_API )
 #if defined( FEELPP_HAS_GMSH_H )
 #include <GModel.h>
 #include <MElement.h>
@@ -62,10 +63,14 @@
 // hence we undefine the macro sign after including Gmsh headers
 #undef sign
 
-
+#endif
 
 // from Gmsh
+#if defined( FEELPP_HAS_GMSH_API )
+int getInfoMSH(const int typeMSH, std::string & elementName);
+#else
 int getInfoMSH(const int typeMSH, const char **const name);
+#endif
 void SwapBytes(char *array, int size, int n);
 
 namespace Feel
@@ -126,7 +131,11 @@ struct FEELPP_NO_EXPORT GMSHElement
     GMSHElement()
         :
         num( 0 ),
+#if defined( FEELPP_HAS_GMSH_API )
+        type( 1 ),
+#else
         type( MSH_PNT ),
+#endif
         physical( 0 ),
         elementary( 0 ),
         numPartitions( 1 ),
@@ -469,11 +478,13 @@ public:
         }
 
 #if defined( FEELPP_HAS_GMSH_H)
+#if !defined( FEELPP_HAS_GMSH_API )
     /**
      * @brief set the GMsh GModel object
      * @param gmodel GMsh GModel object
      */
     void setGModel( std::shared_ptr<GModel> gmodel ) { M_gmodel = gmodel; }
+#endif
 #endif
 
     //@}
@@ -547,7 +558,9 @@ private:
     //std::map<int,int> itoii;
     //std::vector<int> ptseen;
 #if defined( FEELPP_HAS_GMSH_H )
+#if !defined( FEELPP_HAS_GMSH_API )
     std::shared_ptr<GModel> M_gmodel;
+#endif
 #endif
 };
 
@@ -635,10 +648,16 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     DVLOG(2) << "visit("  << mesh_type::nDim << "D ) starts\n";
 
 #if defined( FEELPP_HAS_GMSH_H )
+
+#if defined( FEELPP_HAS_GMSH_API )
+    CHECK( !M_in_memory ) << "gmsh in memory not available with gmsh API"; 
+    readFromFile( mesh );
+#else
     if ( ( M_gmodel != 0 ) && ( M_in_memory == true ) )
         readFromMemory( mesh );
     else
         readFromFile( mesh );
+#endif
 #else
     LOG(WARNING) << "Gmsh is not available. Cannot read from memory Gmsh directly. Use file instead.";
     readFromFile( mesh );
@@ -656,6 +675,7 @@ template<typename MeshType>
 void
 ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
 {
+#if !defined( FEELPP_HAS_GMSH_API )
 #if defined( FEELPP_HAS_GMSH_H )
     tic();
     LOG(INFO) << "Reading Msh from memory ";
@@ -779,6 +799,9 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
     toc("read msh from memory");
 #else
     LOG(WARNING) << "Gmsh library not available, cannot read mesh in memory ";
+#endif
+#else
+    LOG(WARNING) << "We use Gmsh API, we cannot read mesh in memory at this time!";
 #endif
 }
 template<typename MeshType>
@@ -1055,8 +1078,13 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
                   __is >> dom2;
               }
           }
+#if defined( FEELPP_HAS_GMSH_API )
+          std::string ename;
+          numVertices = getInfoMSH(type,ename);
+#else
           const char* ename;
           numVertices = getInfoMSH(type,&ename);
+#endif
 
           CHECK(numVertices!=0) << "Unknown number of vertices for element type " << type << "\n";
 
@@ -1113,10 +1141,13 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
             int type = header[0];
             int numElems = header[1];
             int numTags = header[2];
+#if defined( FEELPP_HAS_GMSH_API )
+            std::string name;
+            int numVertices = getInfoMSH(type,name);
+#else
             char const* name;
-
             int numVertices = getInfoMSH(type,&name);
-
+#endif
             CHECK( numVertices > 0 ) << "Unsupported element type " << name << "\n";
 
             unsigned int n = 1 + numTags + numVertices;
@@ -1189,8 +1220,13 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
 #if defined( FEELPP_HAS_GMSH_H )
     for ( auto const& it : __gt )
     {
+#if defined( FEELPP_HAS_GMSH_API )
+        std::string name;
+        getInfoMSH( it.first,name );
+#else
         const char* name;
         getInfoMSH( it.first, &name );
+#endif
         LOG(INFO) << "Read " << it.second << " " << name << " elements\n";
     }
 #endif
@@ -1682,9 +1718,13 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 auto itFindEntityTag = entityTagInCurrentPartitionToPartitions[entityDim].find( entityTag );
                 useThisEntity = itFindEntityTag != entityTagInCurrentPartitionToPartitions[entityDim].end();
             }
-
+#if defined( FEELPP_HAS_GMSH_API )
+            std::string ename;
+            numVertices = getInfoMSH( elementType,ename );
+#else
             const char* ename;
             numVertices = getInfoMSH( elementType,&ename );
+#endif
             CHECK(numVertices!=0) << "Unknown number of vertices for element type " << elementType << "\n";
             indices.resize( numVertices );
 
@@ -2619,7 +2659,9 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
 
 // Gmsh reader factory
 #if defined( FEELPP_HAS_GMSH_H )
+#if !defined( FEELPP_HAS_GMSH_API )
 using GmshReaderFactory = Feel::Singleton< std::map< std::string, std::function<std::pair<int,std::shared_ptr<GModel>>(std::string)> > >;
+#endif
 #endif
 
 

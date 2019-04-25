@@ -62,7 +62,11 @@ extern "C"
 #include <petscsys.h>
 #endif
 #if defined( FEELPP_HAS_GMSH_H )
+#if defined( FEELPP_HAS_GMSH_API )
+#include <gmsh.h>
+#else
 #include <Gmsh.h>
+#endif
 #endif
 
 #include <feel/feelcore/environment.hpp>
@@ -485,7 +489,11 @@ Environment::Environment( int argc, char** argv,
     initPetsc( &argc, &envargv );
 #endif
 #if defined( FEELPP_HAS_GMSH_H )
+#if defined( FEELPP_HAS_GMSH_API )
+    gmsh::initialize();
+#else
     GmshInitialize();
+#endif
 #endif
 
     // parse options
@@ -729,7 +737,11 @@ Environment::~Environment()
     MongoCxx::reset();
 #endif
 #if defined( FEELPP_HAS_GMSH_H )
+#if defined( FEELPP_HAS_GMSH_API )
+    gmsh::finalize();
+#else
     GmshFinalize();
+#endif
 #endif
 
     if ( i_initialized )
