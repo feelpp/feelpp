@@ -45,8 +45,21 @@ runApplicationHeat()
             // work only on process rank 0
             if ( heat->worldComm().isMasterRank() )
             {
+                // Seed with a real random value, if available
+                std::random_device r;
+ 
+                // Choose a random mean between 1 and 6
+                std::default_random_engine e1(r());
+                std::uniform_int_distribution<int> uniform_dist(1e6, 1.1e6);
+                int mean = uniform_dist(e1);
+                std::cout << "Randomly-chosen mean: " << mean << '\n';
+                
                 boost::filesystem::path p = bp::search_path("heat.sh"); 
-                int result = bp::system(p);
+                int result = bp::system(p, std::to_string(mean));
+                std::ifstream ifs("q.dat");
+                std::string q;
+                ifs >> q >> the_value_computed_in_heat_sh;
+                    
             }
             mpi::broadcast( heat->worldComm(), the_value_computed_in_heat_sh, heat->worldComm().rank() );
             heat->exportResults();
