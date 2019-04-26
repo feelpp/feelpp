@@ -350,6 +350,8 @@ public:
     std::shared_ptr<GModel> gModel() const { return std::make_shared<GModel>(); }
 #endif
 #endif
+    std::string const& gModelName() const { return M_gmodelName; }
+
 
 
     //@}
@@ -440,6 +442,9 @@ public:
         {
             M_in_memory = in;
         }
+
+    void setGModelName( std::string const& name ) { M_gmodelName = name; }
+
 
     /**
      * set file \p format: ascii or binary
@@ -789,6 +794,8 @@ protected:
     PeriodicEntities M_periodic;
 
     mutable std::pair<std::string,std::string> M_geo;
+
+    mutable std::string M_gmodelName;
 
 #if defined( FEELPP_HAS_GMSH_H )
 #if !defined( FEELPP_HAS_GMSH_API )

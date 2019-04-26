@@ -78,7 +78,7 @@ BOOST_PARAMETER_FUNCTION(
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.rebuild") )
       ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition") )
       ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition") )
-      ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
+      ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, "" )
       ( partitions,      *( boost::is_integral<mpl::_> ), (worldcomm)?worldcomm->globalSize():1 )
       ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
       ( savehdf5,        *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.savehdf5") )
