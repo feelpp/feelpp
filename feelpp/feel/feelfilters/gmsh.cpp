@@ -501,12 +501,14 @@ std::string
 Gmsh::refine( std::string const& name, int /*level*/, bool parametric  ) const
 {
 #if defined(FEELPP_HAS_GMSH_LIBRARY)
-	//std::string _name;
-    std::string nameMshOutput = (boost::format("%1%-refine-%2%.msh")%fs::path( name ).stem().string() %M_refine_levels).str();
+	std::string _name = fs::path( name ).stem().string();
+    std::string nameMshOutput = (boost::format("%1%-refine-%2%.msh")%_name %M_refine_levels).str();
 
-    if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
+    if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().isMasterRank() ) )
     {
 #if defined( FEELPP_HAS_GMSH_API )
+        gmsh::model::add( _name );
+
         // load geofile
         gmsh::open( name );
 
@@ -545,6 +547,7 @@ Gmsh::refine( std::string const& name, int /*level*/, bool parametric  ) const
         //LOG(INFO) << "Writing partitioned GMSH file " << nameMshOutput << " in " << (M_format?"binary":"ascii") << " format\n";
         gmsh::write( nameMshOutput );
 
+        gmsh::model::remove();
 #else
 
         std::ostringstream filename;
@@ -649,9 +652,9 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
 
 #if defined( FEELPP_HAS_GMSH_API )
 
+    gmsh::model::add( _name );
     // load geofile
     gmsh::open( __geoname );
-    //std::cout << "GETDIM-2 : " << gmsh::model::getDimension() << "\n";
 
     // some options
     gmsh::model::mesh::setOrder( M_order );
@@ -707,6 +710,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
         gmsh::write( outputFilename );
     }
 
+    gmsh::model::remove();
 #else
     CTX _backup = *(CTX::instance());
     CTX::instance()->partitionOptions.num_partitions =  M_partitions;
@@ -731,11 +735,11 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
 
     else
     {
-        CTX::instance()->mesh.algo2d = ( Environment::vm().count("gmsh.algo2d") )? ioption("gmsh.algo2d") : GMSH_ALGORITHM_2D::FRONTAL;
+        CTX::instance()->mesh.algo2d = ( Environment::vm().count("gmsh.algo2d") )? ioption("gmsh.algo2d") : (int)GMSH_ALGORITHM_2D::FRONTAL;
 #if defined(HAVE_TETGEN)
-        CTX::instance()->mesh.algo3d = ( Environment::vm().count("gmsh.algo3d") )? ioption("gmsh.algo3d") : GMSH_ALGORITHM_3D::DELAUNAY;
+        CTX::instance()->mesh.algo3d = ( Environment::vm().count("gmsh.algo3d") )? ioption("gmsh.algo3d") : (int)GMSH_ALGORITHM_3D::DELAUNAY;
 #else
-        CTX::instance()->mesh.algo3d = ( Environment::vm().count("gmsh.algo3d") )? ioption("gmsh.algo3d") : GMSH_ALGORITHM_3D::FRONTAL;
+        CTX::instance()->mesh.algo3d = ( Environment::vm().count("gmsh.algo3d") )? ioption("gmsh.algo3d") : (int)GMSH_ALGORITHM_3D::FRONTAL;
 #endif
     }
     // disable heap checking if enabled
@@ -813,6 +817,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
             fs::create_directories( directory );
 
 #if defined( FEELPP_HAS_GMSH_API )
+        gmsh::model::add( _name );
         // load msh file
         gmsh::open( nameMshInput );
         int dim = gmsh::model::getDimension();
@@ -842,6 +847,8 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
         gmsh::option::setNumber( "Mesh.PartitionSplitMeshFiles", M_partition_file );
         LOG(INFO) << "Writing partitioned GMSH file " << nameMshOutput << " in " << (M_format?"binary":"ascii") << " format\n";
         gmsh::write( nameMshOutput );
+
+        gmsh::model::remove();
 #else
         CTX _backup = *(CTX::instance());
 
