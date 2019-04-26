@@ -126,7 +126,9 @@ BOOST_PARAMETER_FUNCTION(
         tic();
         std::string gmodelName = "feelpp_gmsh_model";
 #if defined( FEELPP_HAS_GMSH_API )
-        CHECK( false ) << "NOT IMPLEMENTED";
+        gmsh::model::add( gmodelName );
+        // load msh file
+        gmsh::open( filename_with_path );
 #else
         int status = GmshReaderFactory::instance().at(p_fname.extension().string())( filename_with_path, gmodelName );
         if( status > 1)
