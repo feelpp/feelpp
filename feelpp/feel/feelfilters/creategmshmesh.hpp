@@ -109,6 +109,7 @@ BOOST_PARAMETER_FUNCTION(
         desc->setStructuredMesh( structured );
         desc->setPeriodic( periodic );
         desc->setInMemory( in_memory );
+        desc->setGModelName( "feelpp_gmsh_model" );
         desc->setVerbosity( verbose );
 
         std::string fname;
@@ -123,11 +124,14 @@ BOOST_PARAMETER_FUNCTION(
             fname = desc->refine( fname, refine, parametricnodes );
         }
 
-        if ( rebuild_partitions && partitions > 1 )
+        if ( rebuild_partitions && partitions > 1 && !generated_or_modified )
         {
             VLOG(1) << "Rebuild partitions\n";
+            std::string fnamePartitioned = rebuild_partitions_filename;
+            if ( fnamePartitioned.empty() )
+                fnamePartitioned = fname;
             desc->rebuildPartitionMsh(fname,rebuild_partitions_filename);
-            fname=rebuild_partitions_filename;
+            fname = fnamePartitioned;
         }
 
         ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
@@ -138,25 +142,19 @@ BOOST_PARAMETER_FUNCTION(
             import.setElementRegionAsPhysicalRegion( physical_are_elementary_regions );
         }
         import.setRespectPartition( respect_partition );
-#if defined( FEELPP_HAS_GMSH_H )
-#if !defined( FEELPP_HAS_GMSH_API )
-        import.setGModel( desc->gModel() );
-#endif
-        import.setInMemory( in_memory );
-#endif
+
+        if ( in_memory )
+        {
+            import.setGModelName( desc->gModelName() );
+            import.setDeleteGModelAfterUse( true );
+            import.setInMemory( in_memory );
+        }
         _mesh->accept( import );
 
-        if ( update )
-        {
-            _mesh->components().reset();
-            _mesh->components().set( update );
-            _mesh->updateForUse();
-        }
+        _mesh->components().reset();
+        _mesh->components().set( update );
+        _mesh->updateForUse();
 
-        else
-        {
-            _mesh->components().reset();
-        }
         if ( straighten && _mesh_type::nOrder > 1 )
             return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
     }

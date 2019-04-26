@@ -87,27 +87,31 @@ BOOST_PARAMETER_FUNCTION(
         std::for_each( plist.begin(), plist.end(), [&ostr]( std::string s ) { ostr << " - " << s << "\n"; } );
         CHECK( !filename_with_path.empty() ) << "File " << filename << " cannot be found in the following paths list:\n " << ostr.str();
     }
-#if defined( FEELPP_HAS_GMSH_H )
-    Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
-    gmsh.setRefinementLevels( refine );
-    gmsh.setNumberOfPartitions( partitions );
-    gmsh.setPartitioner( (GMSH_PARTITIONER)partitioner );
-    gmsh.setMshFileByPartition( partition_file );
-    gmsh.setVerbosity(verbose);
 
-    // refinement if option is enabled to a value greater or equal to 1
-    if ( refine )
+    if ( refine || ( rebuild_partitions && partitions > 1 ) )
     {
-        filename_with_path = gmsh.refine( filename_with_path, refine );
+        Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
+        gmsh.setRefinementLevels( refine );
+        gmsh.setNumberOfPartitions( partitions );
+        gmsh.setPartitioner( (GMSH_PARTITIONER)partitioner );
+        gmsh.setMshFileByPartition( partition_file );
+        gmsh.setVerbosity(verbose);
+
+        // refinement if option is enabled to a value greater or equal to 1
+        if ( refine )
+        {
+            filename_with_path = gmsh.refine( filename_with_path, refine );
+        }
+        if ( rebuild_partitions && partitions > 1 )
+        {
+            std::string fnamePartitioned = rebuild_partitions_filename;
+            if ( fnamePartitioned.empty() )
+                fnamePartitioned = filename_with_path;
+            gmsh.rebuildPartitionMsh(filename_with_path,rebuild_partitions_filename);
+            filename_with_path = rebuild_partitions_filename;
+        }
     }
-    else if ( rebuild_partitions && partitions > 1 )
-    {
-        gmsh.rebuildPartitionMsh(filename_with_path,rebuild_partitions_filename);
-        filename_with_path=rebuild_partitions_filename;
-    }
-#else
-    LOG(WARNING) << "Gmsh support not available: refine and repartition operations are not supported.";
-#endif
+
     ImporterGmsh<_mesh_type> import( filename_with_path, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
     fs::path p_fname( filename_with_path );
 
@@ -119,28 +123,26 @@ BOOST_PARAMETER_FUNCTION(
          p_fname.extension() == ".mesh"
          )
     {
+        tic();
+        std::string gmodelName = "feelpp_gmsh_model";
 #if defined( FEELPP_HAS_GMSH_API )
         CHECK( false ) << "NOT IMPLEMENTED";
 #else
-        tic();
-        auto m = GmshReaderFactory::instance().at(p_fname.extension().string())( filename_with_path );
-        if(m.first > 1)
-        {
+        int status = GmshReaderFactory::instance().at(p_fname.extension().string())( filename_with_path, gmodelName );
+        if( status > 1)
             throw std::logic_error( "read  failed: " + filename_with_path );
-        }
-        import.setGModel(m.second );
+#endif
+        import.setGModelName( gmodelName );
+        import.setDeleteGModelAfterUse( true );
         import.setInMemory(true);
         using namespace std::string_literals;
         toc("loadGMSHMesh.reader"s+p_fname.extension().string(), FLAGS_v>0);
-#endif
     }
 #endif // FEELPP_HAS_GMSH_H
-    
+
     // need to replace physical_region by elementary_region while reading
     if ( physical_are_elementary_regions )
-    {
         import.setElementRegionAsPhysicalRegion( physical_are_elementary_regions );
-    }
     import.setScaling( scale );
     import.setRespectPartition( respect_partition );
     tic();
@@ -148,17 +150,9 @@ BOOST_PARAMETER_FUNCTION(
     toc("loadGMSHMesh.readmesh", FLAGS_v>0);
 
     tic();
-    if ( update )
-    {
-        _mesh->components().reset();
-        _mesh->components().set( update );
-        _mesh->updateForUse();
-    }
-
-    else
-    {
-        _mesh->components().reset();
-    }
+    _mesh->components().reset();
+    _mesh->components().set( update );
+    _mesh->updateForUse();
     toc("loadGMSHMesh.update", FLAGS_v>0);
 
     if ( straighten && _mesh_type::nOrder > 1 )
