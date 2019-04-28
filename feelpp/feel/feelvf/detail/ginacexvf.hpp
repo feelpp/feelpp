@@ -462,7 +462,7 @@ public:
             if ( M_is_constant ) return;
 
             uint16_type k=0;
-            hana::for_each( M_t_expr, [&k,&geom,&fev,feu,this]( auto & evec )
+            hana::for_each( M_t_expr, [&k,&geom,&fev,&feu,this]( auto & evec )
                             {
                                 for ( auto & e : evec )
                                 {
@@ -576,13 +576,13 @@ public:
     evaluate( std::map<std::string,value_type> const& mp  )
     {
         this->setParameterValues( mp );
-        return this->evaluateImpl();
+        return this->evaluateImpl( true, Environment::worldCommPtr() );
     }
 
     evaluate_type
     evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
     {
-        return this->evaluateImpl();
+        return this->evaluateImpl( parallel, worldcomm );
     }
 private :
 
@@ -632,14 +632,30 @@ private :
     }
 
     evaluate_type
-    evaluateImpl() const
+    evaluateImpl( bool parallel, worldcomm_ptr_t const& worldcomm ) const
     {
         if ( M_isNumericExpression )
             return M_numericValue;
         int no = 1;
         int ni = M_syms.size();
+
+        vec_type x( ni );
+        for ( uint16_type k=0;k<ni;++k )
+            x[k] = M_params[k];
+        hana::for_each( M_expr.tupleExpr, [&]( auto const& evec )
+                        {
+                            for ( auto const& e : evec )
+                            {
+                                uint16_type idx = this->index( e.first );
+                                if ( idx == invalid_uint16_type_value )
+                                    continue;
+                                auto const& theexpr = e.second;
+                                x[idx] = theexpr.evaluate( parallel, worldcomm );
+                            }
+                        });
+
         value_type res;
-        (*M_cfun)(&ni,M_params.data(),&no,&res);
+        (*M_cfun)(&ni,x.data(),&no,&res);
         return res;
     }
 

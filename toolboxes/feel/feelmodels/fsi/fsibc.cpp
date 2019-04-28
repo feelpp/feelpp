@@ -599,9 +599,8 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
         double muFluid = dynamicViscosity.newtonian().value();
 #endif
 
-        auto muFluid = Feel::FeelModels::fluidMecViscosity(/*uCur*/gradv(this->fieldVelocityInterfaceFromFluid_solid()),
-                                                           *M_fluidModel->materialProperties(),matName, invalid_uint16_type_value,true);
-
+        auto gradVelocityExpr = gradVelocityExpr_fluid2solid( hana::int_<fluid_type::nDim>() );
+        auto muFluid = Feel::FeelModels::fluidMecViscosity( gradVelocityExpr, *M_fluidModel->materialProperties(), matName, invalid_uint16_type_value, true );
 
 #if 0
         MeshMover<mesh_type> mymesh_mover;
@@ -704,8 +703,8 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
 
     if ( buildCstPart )
     {
-        auto muFluid = Feel::FeelModels::fluidMecViscosity(/*uCur*/gradv(this->fieldVelocityInterfaceFromFluid_solid()),
-                                                           *M_fluidModel->materialProperties(),matName, invalid_uint16_type_value,true);
+        auto gradVelocityExpr = gradVelocityExpr_fluid2solid( hana::int_<fluid_type::nDim>() );
+        auto muFluid = Feel::FeelModels::fluidMecViscosity( gradVelocityExpr, *M_fluidModel->materialProperties(),matName, invalid_uint16_type_value, true );
         auto rangeFSI = markedfaces(mesh,M_solidModel->markerNameFSI());
 
         if ( this->solidModel()->timeStepping() == "Newmark" )
@@ -782,9 +781,8 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
         CHECK( dynamicViscosity.isNewtonianLaw() && dynamicViscosity.newtonian().isConstant() ) << "TODO";
         double muFluid = dynamicViscosity.newtonian().value();
 #endif
-
-        auto muFluid = Feel::FeelModels::fluidMecViscosity(/*uCur*/gradv(this->fieldVelocityInterfaceFromFluid_solid()),
-                                                           *M_fluidModel->materialProperties(),matName, invalid_uint16_type_value, true);
+        auto gradVelocityExpr = gradVelocityExpr_fluid2solid( hana::int_<fluid_type::nDim>() );
+        auto muFluid = Feel::FeelModels::fluidMecViscosity( gradVelocityExpr, *M_fluidModel->materialProperties(), matName, invalid_uint16_type_value, true );
 
         if ( buildNonCstPart && !useJacobianLinearTerms )
         {
