@@ -1729,18 +1729,41 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
     if ( std::string( __buf ) == "$PartitionedEntities" )
     {
         VLOG(2) << "Reading $PartitionedEntities ...";
+        // eat  '\n' in binary mode otherwise the next binary read will get screwd
+        if ( binary )
+            __is.get();
+
         entityTagInCurrentPartitionToPartitions.resize( 4 );
-        CHECK( !binary ) << "TODO BINARY";
 
         size_type numPartitions, numGhostEntities;
-        __is >> numPartitions >> numGhostEntities;
+        if ( !binary )
+            __is >> numPartitions >> numGhostEntities;
+        else
+        {
+            __is.read( (char*)&numPartitions, sizeof(size_type) );
+            __is.read( (char*)&numGhostEntities, sizeof(size_type) );
+        }
 
-        int ghostEntityTag, partition;
-        for ( size_type k=0; k<numGhostEntities; ++k )
-            __is >> ghostEntityTag >> partition;
+        // ghost partitions tag (not currently used)
+        if ( !binary )
+        {
+            int ghostEntityTag, partition;
+            for ( size_type k=0; k<numGhostEntities; ++k )
+                __is >> ghostEntityTag >> partition;
+        }
+        else
+        {
+            _vectmpint.resize( 2*numGhostEntities );
+            __is.read( (char*)&_vectmpint[0], 2*numGhostEntities*sizeof(int) );
+        }
 
         std::vector<size_type> nGeoEntities(4); // points, curves, surfaces, volumes
-        __is >> nGeoEntities[0] >> nGeoEntities[1] >> nGeoEntities[2] >> nGeoEntities[3];
+        if ( !binary )
+            __is >> nGeoEntities[0] >> nGeoEntities[1] >> nGeoEntities[2] >> nGeoEntities[3];
+        else
+        {
+            __is.read( (char*)&nGeoEntities[0], 4*sizeof(size_type) );
+        }
 
         std::vector<double> coordGeoPoints(3);
         int entityTag, parentDim, parentTag, partitionTag, physicalTag;
@@ -1748,13 +1771,28 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         std::set<int> partitionTags;
         for ( size_type k=0; k<nGeoEntities[0]; ++k )
         {
-            __is >> entityTag >> parentDim >> parentTag;
-            __is >> numPartitionsForThisEntity;
+            if ( !binary )
+            {
+                __is >> entityTag >> parentDim >> parentTag >> numPartitionsForThisEntity;
+            }
+            else
+            {
+                __is.read( (char*)&entityTag, sizeof(int) );
+                __is.read( (char*)&parentDim, sizeof(int) );
+                __is.read( (char*)&parentTag, sizeof(int) );
+                __is.read( (char*)&numPartitionsForThisEntity, sizeof(size_type) );
+            }
             partitionTags.clear();
             bool isOnCurrentPartition = false;
             for ( size_type p=0;p<numPartitionsForThisEntity;++p )
             {
-                __is >> partitionTag;
+                if ( !binary )
+                    __is >> partitionTag;
+                else
+                {
+                    __is.read( (char*)&partitionTag, sizeof(int) );
+                }
+
                 partitionTags.insert( partitionTag );
                 if ( procId == ( partitionTag % worldSize ) )
                     isOnCurrentPartition = true;
@@ -1762,26 +1800,53 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             if ( isOnCurrentPartition )
                 entityTagInCurrentPartitionToPartitions[0][entityTag] = partitionTags;
 
-            __is >> coordGeoPoints[0] >> coordGeoPoints[1] >> coordGeoPoints[2] >> numPhysicalTags;
-            for ( size_type t=0;t<numPhysicalTags;++t )
+            if ( !binary )
             {
-                __is >> physicalTag;
-                entityTagToPhysicalMarkers[0][entityTag].insert( physicalTag );
+                __is >> coordGeoPoints[0] >> coordGeoPoints[1] >> coordGeoPoints[2] >> numPhysicalTags;
+                for ( size_type t=0;t<numPhysicalTags;++t )
+                {
+                    __is >> physicalTag;
+                    entityTagToPhysicalMarkers[0][entityTag].insert( physicalTag );
+                }
+            }
+            else
+            {
+                __is.read( (char*)&coordGeoPoints[0], 3*sizeof(double) );
+                __is.read( (char*)&numPhysicalTags, sizeof(size_type) );
+                _vectmpint.resize( numPhysicalTags );
+                __is.read( (char*)&_vectmpint[0], numPhysicalTags*sizeof(int) );
+                entityTagToPhysicalMarkers[0][entityTag].insert( _vectmpint.begin(), _vectmpint.end() );
             }
         }
+
         std::vector<double> coordMinMax(6);
         size_type numBoundingSubentity;
         for ( int e=1;e<4;++e )
         {
             for ( size_type k=0; k<nGeoEntities[e]; ++k )
             {
-                __is >> entityTag >> parentDim >> parentTag;
-                __is >> numPartitionsForThisEntity;
+                if ( !binary )
+                {
+                    __is >> entityTag >> parentDim >> parentTag >> numPartitionsForThisEntity;
+                }
+                else
+                {
+                    __is.read( (char*)&entityTag, sizeof(int) );
+                    __is.read( (char*)&parentDim, sizeof(int) );
+                    __is.read( (char*)&parentTag, sizeof(int) );
+                    __is.read( (char*)&numPartitionsForThisEntity, sizeof(size_type) );
+                }
                 partitionTags.clear();
                 bool isOnCurrentPartition = false;
                 for ( size_type p=0;p<numPartitionsForThisEntity;++p )
                 {
-                    __is >> partitionTag;
+                    if ( !binary )
+                        __is >> partitionTag;
+                    else
+                    {
+                        __is.read( (char*)&partitionTag, sizeof(int) );
+                    }
+
                     partitionTags.insert( partitionTag );
                     if ( procId == ( partitionTag % worldSize ) )
                         isOnCurrentPartition = true;
@@ -1789,17 +1854,31 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 if ( isOnCurrentPartition )
                     entityTagInCurrentPartitionToPartitions[e][entityTag] = partitionTags;
 
-                __is >> coordMinMax[0] >> coordMinMax[1] >> coordMinMax[2] // min
-                     >> coordMinMax[3] >> coordMinMax[4] >> coordMinMax[5] //max
-                     >> numPhysicalTags;
-                for ( size_type t=0;t<numPhysicalTags;++t )
+                if ( !binary )
                 {
-                    __is >> physicalTag;
-                    entityTagToPhysicalMarkers[e][entityTag].insert( physicalTag );
+                    __is >> coordMinMax[0] >> coordMinMax[1] >> coordMinMax[2] // min
+                         >> coordMinMax[3] >> coordMinMax[4] >> coordMinMax[5] //max
+                         >> numPhysicalTags;
+                    for ( size_type t=0;t<numPhysicalTags;++t )
+                    {
+                        __is >> physicalTag;
+                        entityTagToPhysicalMarkers[e][entityTag].insert( physicalTag );
+                    }
+                    __is >> numBoundingSubentity;
+                    for ( size_type t=0;t<numBoundingSubentity;++t )
+                        __is >> entityTag;
                 }
-                __is >> numBoundingSubentity;
-                for ( size_type t=0;t<numBoundingSubentity;++t )
-                    __is >> entityTag;
+                else
+                {
+                    __is.read( (char*)&coordMinMax[0], 6*sizeof(double) );
+                    __is.read( (char*)&numPhysicalTags, sizeof(size_type) );
+                    _vectmpint.resize( numPhysicalTags );
+                    __is.read( (char*)&_vectmpint[0], numPhysicalTags*sizeof(int) );
+                    entityTagToPhysicalMarkers[e][entityTag].insert( _vectmpint.begin(), _vectmpint.end() );
+                    __is.read( (char*)&numBoundingSubentity, sizeof(size_type) );
+                    _vectmpint.resize( numBoundingSubentity );
+                    __is.read( (char*)&_vectmpint[0], numBoundingSubentity*sizeof(int) );
+                }
             }
         }
 
@@ -2129,17 +2208,36 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
     if ( std::string( __buf ) == "$GhostElements" )
     {
         VLOG(2) << "Reading $GhostElements ...";
+        // eat  '\n' in binary mode otherwise the next binary read will get screwd
+        if ( binary )
+            __is.get();
 
         size_type numGhostElements, elementTag, numGhostPartitions;
         int partitionTag;
         std::vector<int> ghostPartitionTags;
-        __is >> numGhostElements;
+        if ( !binary )
+            __is >> numGhostElements;
+        else
+        {
+            __is.read( (char*)&numGhostElements, sizeof(size_type) );
+        }
         for ( size_type g=0;g<numGhostElements;++g )
         {
-            __is >> elementTag >> partitionTag >> numGhostPartitions;
-            ghostPartitionTags.resize( numGhostPartitions );
-            for ( size_type p=0;p<numGhostPartitions;++p )
-                __is >> ghostPartitionTags[p];
+            if ( !binary )
+            {
+                __is >> elementTag >> partitionTag >> numGhostPartitions;
+                ghostPartitionTags.resize( numGhostPartitions );
+                for ( size_type p=0;p<numGhostPartitions;++p )
+                    __is >> ghostPartitionTags[p];
+            }
+            else
+            {
+                __is.read( (char*)&elementTag, sizeof(size_type) );
+                __is.read( (char*)&partitionTag, sizeof(int) );
+                __is.read( (char*)&numGhostPartitions, sizeof(size_type) );
+                ghostPartitionTags.resize( numGhostPartitions );
+                __is.read( (char*)&ghostPartitionTags[0], numGhostPartitions*sizeof(int) );
+            }
 
             if ( procId == ( partitionTag % worldSize ) )
             {
