@@ -397,8 +397,14 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
 
     bool geochanged = true;
     // save geo file on disk if in-memory is false
+#if defined( FEELPP_HAS_GMSH_API )
+    if ( true  )
+    {
+        LOG_IF( WARNING,M_in_memory ) << "load geo in-memory is not implemented";
+#else
     if ( M_in_memory == false )
     {
+#endif
         std::ostringstream __geoname;
         if ( outputFilename.empty() )
             __geoname << __name << ".geo";

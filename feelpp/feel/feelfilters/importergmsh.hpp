@@ -712,19 +712,39 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
     rank_type procId = this->worldComm().localRank();
     rank_type worldSize = this->worldComm().localSize();
 
-    gmsh::vectorpair dimTagsPhysicalGroups;
-    gmsh::model::getPhysicalGroups( dimTagsPhysicalGroups );
-    for ( auto const& [ dim, tag ] : dimTagsPhysicalGroups )
-    {
-        std::cout << "PhysicalGroups dim="<<dim<< " tag="<<tag<<"\n";
-    }
-
     std::map<int,int> __idGmshToFeel; // id Gmsh to id Feel
 
     gmsh::vectorpair dimTagsEntities;
     gmsh::model::getEntities( dimTagsEntities );
+
+    if ( M_use_elementary_region_as_physical_region )
+    {
+        for ( auto const& [ entityDim, entityTag ] : dimTagsEntities )
+        {
+            std::string entityName;
+            gmsh::model::getEntityName( entityDim,entityTag,entityName );
+            boost::trim(entityName); // get rid of eventual trailing spaces
+            if ( !entityName.empty() )
+                mesh->addMarkerName( entityName, entityTag, entityDim );
+        }
+    }
+    else
+    {
+        gmsh::vectorpair dimTagsPhysicalGroups;
+        gmsh::model::getPhysicalGroups( dimTagsPhysicalGroups );
+        for ( auto const& [ dim, tag ] : dimTagsPhysicalGroups )
+        {
+            std::string physicalName;
+            gmsh::model::getPhysicalName( dim,tag,physicalName );
+            boost::trim(physicalName); // get rid of eventual trailing spaces
+            if ( !physicalName.empty() )
+                mesh->addMarkerName( physicalName, tag, dim );
+        }
+    }
+
     for ( auto const& [ entityDim, entityTag ] : dimTagsEntities )
     {
+
 #if 0
         std::vector<int> partitions;
         gmsh::model::getPartitions(entityDim,entityTag,partitions);
@@ -750,6 +770,16 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
             mesh->addPoint( pt );
         }
 
+        // physical tags
+        std::vector<int> physicalTags;
+        if ( M_use_elementary_region_as_physical_region )
+            physicalTags.push_back( entityTag );
+        else
+            gmsh::model::getPhysicalGroupsForEntity( entityDim, entityTag, physicalTags );
+        // fix for exporter TO REMOVE!!!!
+        if ( physicalTags.empty() && entityDim == mesh_type::nDim )
+            physicalTags.push_back( 1234 );
+
         std::vector<int> elementTypes;
         std::vector<std::vector<std::size_t> > elementTags;
         std::vector<std::vector<std::size_t> > nodeTagsInElements;
@@ -758,9 +788,6 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
         {
             size_type eltId = 0;
             int elementType = elementTypes[et];
-            std::vector<int> physicalTag;
-            if ( M_use_elementary_region_as_physical_region )
-                physicalTag.push_back( entityTag );
             // partitioning data
             int numPartitions = 1, partition = procId;
             int parent =0 , dom1 = 0, dom2 = 0;
@@ -770,7 +797,7 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
             int numVertices = getInfoMSH( elementType,ename );
 
             std::vector<int> indices( numVertices );
-            Feel::detail::GMSHElement it_gmshElt( eltId, elementType, physicalTag, entityTag,    //   num, type, physical, elementary,
+            Feel::detail::GMSHElement it_gmshElt( eltId, elementType, physicalTags, entityTag,    //   num, type, physical, elementary,
                                                   numPartitions, partition, ghosts,
                                                   parent, dom1, dom2,
                                                   numVertices, indices,
