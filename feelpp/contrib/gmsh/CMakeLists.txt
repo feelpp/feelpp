@@ -1,5 +1,6 @@
 message(STATUS "[feelpp] adding missing Gmsh headers...")
 
+if( FEELPP_HAS_GMSH_LIBRARY AND NOT FEELPP_HAS_GMSH_API )
 # we include this directory : add some missing headers from Gmsh
 #INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/contrib/gmsh )
 find_program(WGET NAMES wget )
@@ -16,3 +17,4 @@ if ( WGET )
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/BasisFactory.h ${CMAKE_CURRENT_BINARY_DIR}/Field.h ${CMAKE_CURRENT_BINARY_DIR}/OpenFile.h DESTINATION include/feelpp/gmsh COMPONENT Devel )
 endif()
 
+endif()
