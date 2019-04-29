@@ -1627,23 +1627,54 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
     rank_type procId = this->worldComm().localRank();
     rank_type worldSize = this->worldComm().localSize();
 
+    //usefull for binary read
+    std::vector<int> _vectmpint;
+    std::vector<size_type> _vectmpsizet;
+
     std::vector<std::map<int,std::set<int>>> entityTagToPhysicalMarkers(4);
     if ( std::string( __buf ) == "$Entities" )
     {
         VLOG(2) << "Reading $Entities ...";
+        // eat  '\n' in binary mode otherwise the next binary read will get screwd
+        if ( binary )
+            __is.get();
+
         std::vector<size_type> nGeoEntities(4); // points, curves, surfaces, volumes
-        __is >> nGeoEntities[0] >> nGeoEntities[1] >> nGeoEntities[2] >> nGeoEntities[3];
+        if ( !binary )
+        {
+            __is >> nGeoEntities[0] >> nGeoEntities[1] >> nGeoEntities[2] >> nGeoEntities[3];
+        }
+        else
+        {
+            __is.read( (char*)&nGeoEntities[0], 4*sizeof(size_type) );
+            CHECK( !swap ) << "TODO BINARY";
+            //if(swap) SwapBytes((char*)&nGeoEntities[0], sizeof(size_type), 4);
+            //__is.read( (char*)&x[0], 3*sizeof(double) );
+            //if(swap) SwapBytes((char*)&x[0], sizeof(double), 3);
+        }
 
         int entityTag, physicalTag;
         std::vector<double> coordGeoPoints(3);
         size_type numPhysicalTags = 0;
         for ( size_type k=0; k<nGeoEntities[0]; ++k )
         {
-            __is >> entityTag >> coordGeoPoints[0] >> coordGeoPoints[1] >> coordGeoPoints[2] >> numPhysicalTags;
-            for ( int l=0;l<numPhysicalTags;++l )
+            if ( !binary )
             {
-                __is  >> physicalTag;
-                entityTagToPhysicalMarkers[0][entityTag].insert( physicalTag );
+                __is >> entityTag >> coordGeoPoints[0] >> coordGeoPoints[1] >> coordGeoPoints[2] >> numPhysicalTags;
+                for ( int l=0;l<numPhysicalTags;++l )
+                {
+                    __is  >> physicalTag;
+                    entityTagToPhysicalMarkers[0][entityTag].insert( physicalTag );
+                }
+            }
+            else
+            {
+                __is.read( (char*)&entityTag, sizeof(int) );
+                __is.read( (char*)&coordGeoPoints[0], 3*sizeof(double) );
+                __is.read( (char*)&numPhysicalTags, sizeof(size_type) );
+                _vectmpint.resize( numPhysicalTags );
+                __is.read( (char*)&_vectmpint[0], numPhysicalTags*sizeof(int) );
+                entityTagToPhysicalMarkers[0][entityTag].insert( _vectmpint.begin(), _vectmpint.end() );
             }
         }
 
@@ -1653,18 +1684,33 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         {
             for ( size_type k=0; k<nGeoEntities[e]; ++k )
             {
-                __is >> entityTag
-                     >> coordMinMax[0] >> coordMinMax[1] >> coordMinMax[2] // min
-                     >> coordMinMax[3] >> coordMinMax[4] >> coordMinMax[5] //max
-                     >> numPhysicalTags;
-                for ( int l=0;l<numPhysicalTags;++l )
+                if ( !binary )
                 {
-                    __is  >> physicalTag;
-                    entityTagToPhysicalMarkers[e][entityTag].insert( physicalTag );
+                    __is >> entityTag
+                         >> coordMinMax[0] >> coordMinMax[1] >> coordMinMax[2] // min
+                         >> coordMinMax[3] >> coordMinMax[4] >> coordMinMax[5] //max
+                         >> numPhysicalTags;
+                    for ( int l=0;l<numPhysicalTags;++l )
+                    {
+                        __is  >> physicalTag;
+                        entityTagToPhysicalMarkers[e][entityTag].insert( physicalTag );
+                    }
+                    __is >> nBoundingEntity;
+                    for ( int l=0;l<nBoundingEntity;++l )
+                        __is  >> physicalTag;
                 }
-                __is >> nBoundingEntity;
-                for ( int l=0;l<nBoundingEntity;++l )
-                    __is  >> physicalTag;
+                else
+                {
+                    __is.read( (char*)&entityTag, sizeof(int) );
+                    __is.read( (char*)&coordMinMax[0], 6*sizeof(double) );
+                    __is.read( (char*)&numPhysicalTags, sizeof(size_type) );
+                    _vectmpint.resize( numPhysicalTags );
+                    __is.read( (char*)&_vectmpint[0], numPhysicalTags*sizeof(int) );
+                    entityTagToPhysicalMarkers[e][entityTag].insert( _vectmpint.begin(), _vectmpint.end() );
+                    __is.read( (char*)&nBoundingEntity, sizeof(size_type) );
+                    _vectmpint.resize( nBoundingEntity );
+                    __is.read( (char*)&_vectmpint[0], nBoundingEntity*sizeof(int) );
+                }
             }
         }
 
@@ -1684,6 +1730,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
     {
         VLOG(2) << "Reading $PartitionedEntities ...";
         entityTagInCurrentPartitionToPartitions.resize( 4 );
+        CHECK( !binary ) << "TODO BINARY";
 
         size_type numPartitions, numGhostEntities;
         __is >> numPartitions >> numGhostEntities;
@@ -1771,19 +1818,38 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
     if ( std::string( __buf ) == "$Nodes" )
     {
         VLOG(2) << "Reading $Nodes ...";
+        // eat  '\n' in binary mode otherwise the next binary read will get screwd
+        if ( binary )
+            __is.get();
 
         size_type nEntityBlocks, nNodes, minNodeTag, maxNodeTag;
-        __is >> nEntityBlocks >> nNodes >> minNodeTag >> maxNodeTag;
-
+        if ( !binary )
+            __is >> nEntityBlocks >> nNodes >> minNodeTag >> maxNodeTag;
+        else
+        {
+            __is.read( (char*)&nEntityBlocks, sizeof(size_type) );
+            __is.read( (char*)&nNodes, sizeof(size_type) );
+            __is.read( (char*)&minNodeTag, sizeof(size_type) );
+            __is.read( (char*)&maxNodeTag, sizeof(size_type) );
+        }
+ 
         int entityDim, entityTag, parametric;
         size_type numNodesInBlock;
         Eigen::Vector3d x;
         for ( size_type k=0;k<nEntityBlocks;++k )
         {
-            __is >> entityDim >> entityTag >> parametric >> numNodesInBlock;
-            std::vector<size_type> nodeIds( numNodesInBlock );
-            for ( size_type p=0;p<numNodesInBlock;++p )
-                __is >> nodeIds[p];
+            if ( !binary )
+                __is >> entityDim >> entityTag >> parametric >> numNodesInBlock;
+            else
+            {
+                __is.read( (char*)&entityDim, sizeof(int) );
+                __is.read( (char*)&entityTag, sizeof(int) );
+                __is.read( (char*)&parametric, sizeof(int) );
+                __is.read( (char*)&numNodesInBlock, sizeof(size_type) );
+            }
+
+            if ( parametric == 1 )
+                CHECK( false ) << "TODO parametric nodes";
 
             bool useThisNode = true;
             std::set<rank_type> connectedProcessIds;
@@ -1802,13 +1868,29 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 }
             }
 
+            std::vector<size_type> nodeIds( numNodesInBlock );
+            if ( !binary )
+            {
+                for ( size_type p=0;p<numNodesInBlock;++p )
+                    __is >> nodeIds[p];
+            }
+            else
+            {
+                __is.read( (char*)&nodeIds[0], numNodesInBlock*sizeof(size_type) );
+            }
+
             for ( size_type p=0;p<numNodesInBlock;++p )
             {
                 size_type id = nodeIds[p];
-                __is >> x[0] >> x[1] >> x[2];
-                if ( parametric == 1 )
+                if ( !binary )
                 {
-                    CHECK( false ) << "TODO parametric nodes";
+                    __is >> x[0] >> x[1] >> x[2];
+                    // TODO add parametric node if require
+                }
+                else
+                {
+                    __is.read( (char*)&x[0], 3*sizeof(double) );
+                    // TODO add parametric node if require
                 }
 
                 if ( !useThisNode )
@@ -1851,19 +1933,33 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
     }
 
 
-
     std::map<int,int> __idGmshToFeel; // id Gmsh to id Feel
 
     if ( std::string( __buf ) == "$Elements" )
     {
         VLOG(2) << "Reading $Elements ...";
+        // eat  '\n' in binary mode otherwise the next binary read will get screwd
+        if ( binary )
+            __is.get();
+
         size_type numEntityBlocks, numElements, minElementTag, maxElementTag;
-        __is >> numEntityBlocks >> numElements >> minElementTag >> maxElementTag;
-        //__et.reserve( numElements );
+        if ( !binary )
+            __is >> numEntityBlocks >> numElements >> minElementTag >> maxElementTag;
+        else
+        {
+            __is.read( (char*)&numEntityBlocks, sizeof(size_type) );
+            __is.read( (char*)&numElements, sizeof(size_type) );
+            __is.read( (char*)&minElementTag, sizeof(size_type) );
+            __is.read( (char*)&maxElementTag, sizeof(size_type) );
+        }
+
+        // CHECK( !binary ) << "TODO BINARY";
+
+
         int entityDim = 0, entityTag = 0, elementType = 0;//, physicalTag = 0;
         std::vector<int> physicalTag;
         size_type numElementsInBlock = 0;
-        int tag = 0;
+        size_type elementTag = 0;
 
         // partitioning data
         int numPartitions = 1, partition = procId;
@@ -1872,7 +1968,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
         int numVertices = 0;
         std::vector<int> indices;
-        Feel::detail::GMSHElement it_gmshElt( tag, elementType, physicalTag, entityTag,    //   num, type, physical, elementary,
+        Feel::detail::GMSHElement it_gmshElt( elementTag, elementType, physicalTag, entityTag,    //   num, type, physical, elementary,
                                               numPartitions, partition, ghosts,
                                               parent, dom1, dom2,
                                               numVertices, indices,
@@ -1882,7 +1978,15 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
         for ( size_type k=0;k<numEntityBlocks;++k )
         {
-            __is >> entityDim >> entityTag >> elementType >> numElementsInBlock;
+            if ( !binary )
+                __is >> entityDim >> entityTag >> elementType >> numElementsInBlock;
+            else
+            {
+                __is.read( (char*)&entityDim, sizeof(int) );
+                __is.read( (char*)&entityTag, sizeof(int) );
+                __is.read( (char*)&elementType, sizeof(int) );
+                __is.read( (char*)&numElementsInBlock, sizeof(size_type) );
+            }
 
             bool useThisEntity = true;
             if ( !entityTagInCurrentPartitionToPartitions.empty() )
@@ -1890,6 +1994,26 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 auto itFindEntityTag = entityTagInCurrentPartitionToPartitions[entityDim].find( entityTag );
                 useThisEntity = itFindEntityTag != entityTagInCurrentPartitionToPartitions[entityDim].end();
             }
+
+            if ( useThisEntity )
+            {
+                // get physical tag
+                physicalTag.clear();
+                auto itFindEntityTagToPhysicalMarkers = entityTagToPhysicalMarkers[entityDim].find( entityTag );
+                if ( itFindEntityTagToPhysicalMarkers != entityTagToPhysicalMarkers[entityDim].end() )
+                {
+                    for ( int thePhysicalTag : itFindEntityTagToPhysicalMarkers->second )
+                        physicalTag.push_back( thePhysicalTag );
+                    if ( physicalTag.size() > 0 )
+                    {
+                        CHECK( physicalTag.size() == 1 ) << "support only one physical marker by entity";
+                    }
+                }
+                // fix for exporter TO REMOVE!!!!
+                if ( physicalTag.empty() && entityDim == mesh_type::nDim )
+                    physicalTag.push_back( 1234 );//123456;//0;
+            }
+
 #if defined( FEELPP_HAS_GMSH_API )
             std::string ename;
             numVertices = getInfoMSH( elementType,ename );
@@ -1898,42 +2022,36 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             numVertices = getInfoMSH( elementType,&ename );
 #endif
             CHECK(numVertices!=0) << "Unknown number of vertices for element type " << elementType << "\n";
+
+            // update current gmsh element with read data
+            it_gmshElt.type = elementType;
+            it_gmshElt.physical = physicalTag;
+            it_gmshElt.elementary = entityTag;
+            it_gmshElt.numVertices = numVertices;
+
             indices.resize( numVertices );
+            _vectmpsizet.resize( numVertices );
 
             for ( size_type p=0;p<numElementsInBlock;++p )
             {
-                __is >> tag;
-                for(int j = 0; j < numVertices; j++)
+                if ( !binary )
                 {
-                    __is >> indices[j];
+                    __is >> elementTag;
+                    for(int j = 0; j < numVertices; j++)
+                        __is >> indices[j];
+                }
+                else
+                {
+                    __is.read( (char*)&elementTag, sizeof(size_type) );
+                    __is.read( (char*)&_vectmpsizet[0], numVertices*sizeof(size_type) );
+                    indices.assign( _vectmpsizet.begin(),_vectmpsizet.end() );
                 }
 
                 if ( useThisEntity )
                 {
-                    // get physical tag
-                    physicalTag.clear();
-                    auto itFindEntityTagToPhysicalMarkers = entityTagToPhysicalMarkers[entityDim].find( entityTag );
-                    if ( itFindEntityTagToPhysicalMarkers != entityTagToPhysicalMarkers[entityDim].end() )
-                    {
-                        for ( int thePhysicalTag : itFindEntityTagToPhysicalMarkers->second )
-                            physicalTag.push_back( thePhysicalTag );
-                        if ( physicalTag.size() > 0 )
-                        {
-                            CHECK( physicalTag.size() == 1 ) << "support only one physical marker by entity";
-                        }
-                    }
-
-                    // fix for exporter TO REMOVE!!!!
-                    if ( physicalTag.empty() && entityDim == mesh_type::nDim )
-                        physicalTag.push_back( 1234 );//123456;//0;
                     // update current gmsh element with read data
-                    it_gmshElt.num = tag;
-                    it_gmshElt.type = elementType;
-                    it_gmshElt.physical = physicalTag;
-                    it_gmshElt.elementary = entityTag;
-                    it_gmshElt.numVertices = numVertices;
+                    it_gmshElt.num = elementTag;
                     it_gmshElt.indices = indices;
-
 
                     switch ( elementType )
                     {
