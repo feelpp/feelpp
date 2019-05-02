@@ -1938,16 +1938,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToBoundary()
     // Retrieve the elements touching the boundary
     auto boundaryelts = boundaryelements( this->mesh() );
 
-    // Mark the elements in myrange
-    auto mymark = vf::project(
-            _space=this->functionSpaceMarkers(),
-            _range=boundaryelts,
-            _expr=cst(1)
-            );
-
-    // Update mesh marker2
-    this->mesh()->updateMarker2( mymark );
-
     // Init phi0 with h on marked2 elements
     auto phi0 = vf::project(
             _space=this->functionSpace(),
@@ -1958,7 +1948,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToBoundary()
 
     // Run FM using marker2 as marker DONE
     this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
-    *distToBoundary = this->reinitializerFM()->run( phi0 );
+    *distToBoundary = this->reinitializerFM()->run( phi0, boundaryelts );
 
     return distToBoundary;
 }
@@ -1988,13 +1978,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
             mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
             );
 
-    // Mark the elements in myrange
-    auto mymark = this->functionSpaceMarkers()->element();
-    mymark.on( _range=myrange, _expr=cst(1) );
-
-    // Update mesh marker2
-    this->mesh()->updateMarker2( mymark );
-
     // Init phi0 with h on marked2 elements
     auto phi0 = vf::project(
             _space=this->functionSpace(),
@@ -2004,8 +1987,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
     phi0.on( _range=mfaces, _expr=cst(0.) );
 
     // Run FM using marker2 as marker DONE
-    this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
-    *distToMarkedFaces = this->reinitializerFM()->run( phi0 );
+    *distToMarkedFaces = this->reinitializerFM()->run( phi0, myrange );
 
     return distToMarkedFaces;
 }
@@ -2036,13 +2018,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
             mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
             );
 
-    // Mark the elements in myrange
-    auto mymark = this->functionSpaceMarkers()->element();
-    mymark.on( _range=myrange, _expr=cst(1) );
-
-    // Update mesh marker2
-    this->mesh()->updateMarker2( mymark );
-
     // Init phi0 with h on marked2 elements
     auto phi0 = vf::project(
             _space=this->functionSpace(),
@@ -2052,8 +2027,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
     phi0.on( _range=mfaces, _expr=cst(0.) );
 
     // Run FM using marker2 as marker DONE
-    this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
-    *distToMarkedFaces = this->reinitializerFM()->run( phi0 );
+    *distToMarkedFaces = this->reinitializerFM()->run( phi0, myrange );
 
     return distToMarkedFaces;
 }
