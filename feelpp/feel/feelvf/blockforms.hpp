@@ -166,7 +166,18 @@ public :
         M_ps(ps),
         M_matrix(m)
         {}
-    BlockBilinearForm& operator=( BlockBilinearForm const& a ) = default;
+    BlockBilinearForm& operator=( BlockBilinearForm const& a )
+        {
+            if ( this == &a )
+                return *this;
+
+            M_ps = a.M_ps;
+            M_matrix = std::make_shared<condensed_matrix_type>( a.M_matrix->solveStrategy(), csrGraphBlocks(M_ps, a.M_matrix->staticCondensation()?Pattern::ZERO:Pattern::COUPLED), a.M_matrix->backend(), a.M_matrix->staticCondensation()?false:true );
+            M_matrix->zero();
+            M_matrix->addMatrix( 1.,(MatrixSparse<value_type> const&)*a.M_matrix->getSparseMatrix() );
+            
+            return *this;
+        }
     BlockBilinearForm& operator=( BlockBilinearForm && a ) = default;
     BlockBilinearForm& operator+=( BlockBilinearForm& a )
         {
@@ -695,7 +706,9 @@ public :
                 return *this;
 
             M_ps = lf.M_ps;
-            M_vector = lf.M_vector;
+            M_vector = std::make_shared<condensed_vector_type>( lf.M_vector->solveStrategy(), blockVector(M_ps), lf.M_vector->backend(), false );
+            M_vector->zero();
+            M_vector->add( 1., *lf.M_vector->getVector() );
             
             return *this;
         }

@@ -248,6 +248,21 @@ class MatrixBlockBase : public MatrixSparse<T>
                const size_type n_l,
                graph_ptrtype const& graph ) override;
 
+    //!
+    //! get the backend read-only
+    //!
+    backend_ptrtype const& backend() const { return M_backend; }
+
+    //!
+    //! get the backend read-write
+    //!
+    backend_ptrtype backend()  { return M_backend; }
+
+    //!
+    //! set the backend
+    //!
+    void setBackend( backend_ptrtype b ) { M_backend = b; }
+    
     /**
      * Release all memory and return to a state just like after having
      * called the default constructor.
