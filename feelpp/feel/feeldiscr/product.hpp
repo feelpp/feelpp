@@ -205,6 +205,18 @@ dynProductPtr( int n, std::shared_ptr<SpaceT> const& s )
     return std::make_shared<ProductSpace<SpaceT,same_mesh>>( n, s );
 }
 
+template <typename X, bool SM>
+bool operator==( ProductSpace<X, SM> const& x, ProductSpace<X, SM> const& y )
+{
+    return x == y;
+}
+
+template <typename X, bool SM>
+bool operator!=( ProductSpace<X, SM> const& x, ProductSpace<X, SM> const& y )
+{
+    return !(x == y);
+}
+
 template<typename... SpaceList>
 class ProductSpaces : public  ProductSpacesBase
 {
@@ -301,6 +313,21 @@ private :
     tuple_spaces_type M_tupleSpaces;
 };
 
+
+template<typename... SList1, typename... SList2>
+bool operator== (ProductSpaces<SList1...> const&x, ProductSpaces<SList2...> const&y)
+{
+    return x.tupleSpaces() == y.tupleSpaces();
+}
+template<typename... SList1, typename... SList2>
+bool operator!= (ProductSpaces<SList1...> const&x, ProductSpaces<SList2...> const&y)
+{
+    return !(x == y)
+}
+
+//!
+//! class mixing dynamic and compile-time space product
+//!
 template<typename T,typename... SpaceList>
 class ProductSpaces2 : public ProductSpacesBase
 {
@@ -438,6 +465,17 @@ public:
 private :
     tuple_spaces_type M_tupleSpaces;
 };
+
+template<typename T, typename... SList1, typename... SList2>
+bool operator== (ProductSpaces2<T,SList1...> const&x, ProductSpaces2<T, SList2...> const&y)
+{
+    return x.tupleSpaces() == y.tupleSpaces();
+}
+template<typename T, typename... SList1, typename... SList2>
+bool operator!= (ProductSpaces2<T,SList1...> const&x, ProductSpaces2<T, SList2...> const&y)
+{
+    return !(x == y)
+}
 
 template<typename PS>
 constexpr auto is_product_spaces( PS&& ps )
