@@ -682,6 +682,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
     // mesh partitioning
     if ( M_partitions > 1 )
     {
+        gmsh::option::setNumber( "Mesh.PartitionCreatePhysicals", 0);
+        gmsh::option::setNumber( "Mesh.PartitionCreateTopology", 1);
         gmsh::option::setNumber( "Mesh.PartitionCreateGhostCells", 1 );
         gmsh::option::setNumber( "Mesh.PartitionOldStyleMsh2",0 );
         gmsh::model::mesh::partition( M_partitions );
