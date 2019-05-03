@@ -210,11 +210,20 @@ DistanceToMesh< MeshType, FunctionSpaceType >::updateIntersectingElements()
 {
     M_intersectingElements.clear();
     M_eltsIntersectedBySurfaceElt.clear();
+    std::unordered_map< size_type, std::unordered_set< size_type > > eltsToVisit;
 
+    // Meshes
     auto const& meshSurface = this->meshSurface();
     auto const& meshDistance = this->meshDistance();
+    // Localisation tool
     auto locTool = meshDistance->tool_localization();
+    locTool->setExtrapolation( false );
     locTool->updateForUse();
+    // Communication
+    rank_type const pidMeshDistance = meshDistance->worldCommPtr()->localRank();
+    std::set<rank_type> const& neighborSubdomainsMeshDistance = meshDistance->neighborSubdomains();
+    int nRequests = 2*neighborSubdomainsMeshDistance.size();
+    mpi::request * mpiRequests = new mpi::request[nRequests];
 
     auto it_elt_surf = meshSurface->beginOrderedElement();
     auto en_elt_surf = meshSurface->endOrderedElement();
@@ -223,50 +232,119 @@ DistanceToMesh< MeshType, FunctionSpaceType >::updateIntersectingElements()
         auto const& surfElt = boost::unwrap_ref( *it_elt_surf );
         size_type const surfEltId = surfElt.id();
         // Localise only the first dof
-        node_type ptReal = ublas::column( surfElt.vertices(), 0 );
+        //node_type ptReal = ublas::column( surfElt.vertices(), 0 );
+        matrix_node_type ptReal( nRealDim, 1 );
+        ublas::column( ptReal, 0 ) = ublas::column( surfElt.vertices(), 0 );
         // Localise
-        //auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,theImageElt.vertices()[>theImageElt.G()<],mpl::int_<interpolation_type::isConforming()>());
-        auto resLocalisation = locTool->searchElement( ptReal );
+        //auto resLocalisation = locTool->searchElement( ptReal );
+        auto resLocalisation = locTool->run_analysis( ptReal, invalid_size_type_value );
 
-        std::unordered_set< size_type > eltsToVisit;
-        if( !resLocalisation.template get<0>() )
-            Feel::cout << "point localisation failed !" << std::endl;
-        else
+        //if( resLocalisation.template get<0>() )
+        if( resLocalisation.template get<0>()[0] )
         {
             size_type localisedEltId = resLocalisation.template get<1>();
             M_intersectingElements.insert( localisedEltId );
-            eltsToVisit.insert( localisedEltId );
+            eltsToVisit[surfEltId].insert( localisedEltId );
             M_eltsIntersectedBySurfaceElt[surfEltId].insert( localisedEltId );
         }
+    }
 
-        while( !eltsToVisit.empty() )
+    bool eltsToVisitIsEmptyOnAllProc = false;
+    while( !eltsToVisitIsEmptyOnAllProc )
+    {
+        /* Contain the ghost elts which require communication */
+        std::map<rank_type, std::vector< std::pair<size_type, size_type> > > dataToSend;
+        std::map<rank_type, std::vector< std::pair<size_type, size_type> > > dataToRecv;
+
+        for( auto & eltsToVisitPerSurfElt: eltsToVisit )
         {
-            size_type const eltId = *(eltsToVisit.begin());
-            auto const& elt = meshDistance->element( eltId );
-            // Add elements connected via the "faces" which intersect meshSurface element
-            for( uint16_type faceLocId = 0; faceLocId < elt.nTopologicalFaces(); faceLocId++ )
+            size_type const surfEltId = eltsToVisitPerSurfElt.first;
+            auto const& surfElt = meshSurface->element( surfEltId );
+            auto & eltsToVisitInSurfElt = eltsToVisitPerSurfElt.second;
+
+            while( !eltsToVisitInSurfElt.empty() )
             {
-                size_type const neighId = elt.neighbor( faceLocId );
-
-                if( neighId == invalid_size_type_value )
-                    continue;
-
-                auto const& face = elt.face( faceLocId );
-                size_type const faceId = face.id();
-                bool intersect = self_type::facesIntersect( face.vertices(), surfElt.vertices() );
-
-                if( intersect && M_eltsIntersectedBySurfaceElt[surfEltId].find( neighId ) == M_eltsIntersectedBySurfaceElt[surfEltId].end() )
+                size_type const eltId = *(eltsToVisitInSurfElt.begin());
+                auto const& elt = meshDistance->element( eltId );
+                // Add elements connected via the "faces" which intersect meshSurface element
+                for( uint16_type faceLocId = 0; faceLocId < elt.nTopologicalFaces(); faceLocId++ )
                 {
-                    M_eltsIntersectedBySurfaceElt[surfEltId].insert( neighId );
+                    size_type const neighId = elt.neighbor( faceLocId );
+
+                    if( neighId == invalid_size_type_value )
+                        continue;
+
                     auto const& neigh = meshDistance->element( neighId );
-                    eltsToVisit.insert( neighId );
+                    rank_type const neighPid = neigh.processId();
+
+                    auto const& face = elt.face( faceLocId );
+                    size_type const faceId = face.id();
+                    bool intersect = self_type::facesIntersect( face.vertices(), surfElt.vertices() );
+                    if( intersect )
+                    {
+                        // the neighbor elt is a ghost -> send to owner
+                        if( neighPid != pidMeshDistance )
+                        {
+                            size_type neighIdOnOwner = neigh.idInOthersPartitions( neighPid );
+                            dataToSend[neighPid].push_back( { neighIdOnOwner, surfEltId } );
+                        }
+                        // else process
+                        else if( M_eltsIntersectedBySurfaceElt[surfEltId].find( neighId ) == M_eltsIntersectedBySurfaceElt[surfEltId].end() )
+                        {
+                            M_eltsIntersectedBySurfaceElt[surfEltId].insert( neighId );
+                            eltsToVisitInSurfElt.insert( neighId );
+                        }
+                    }
+                }
+                eltsToVisitInSurfElt.erase( eltId );
+            }
+        }
+
+        /* Perform ghost elts communications */
+        // Send and recv
+        int cntRequests = 0;
+        for( rank_type neighborRank: neighborSubdomainsMeshDistance )
+        {
+            mpiRequests[cntRequests++] = meshDistance->worldCommPtr()->localComm().isend( neighborRank, 0, dataToSend[neighborRank] );
+            mpiRequests[cntRequests++] = meshDistance->worldCommPtr()->localComm().irecv( neighborRank, 0, dataToRecv[neighborRank] );
+        }
+        mpi::wait_all( mpiRequests, mpiRequests + cntRequests );
+
+        /* Process received ghosts */
+        for( auto const& data: dataToRecv )
+        {
+            for( auto const& eltRecv: data.second )
+            {
+                size_type const eltId = eltRecv.first;
+                size_type const surfEltId = eltRecv.second;
+                if( M_eltsIntersectedBySurfaceElt[surfEltId].find( eltId ) == M_eltsIntersectedBySurfaceElt[surfEltId].end() )
+                {
+                    M_eltsIntersectedBySurfaceElt[surfEltId].insert( eltId );
+                    eltsToVisit[surfEltId].insert( eltId );
                 }
             }
-            eltsToVisit.erase( eltId );
         }
+
+        bool eltsToVisitIsEmpty = std::reduce( 
+                eltsToVisit.begin(), eltsToVisit.end(),
+                true,
+                [](bool empty, auto const& set) { return empty && set.second.empty(); }
+                );
+        eltsToVisitIsEmptyOnAllProc = mpi::all_reduce(
+                meshDistance->worldComm(),
+                eltsToVisitIsEmpty,
+                std::logical_and<bool>()
+                );
+    }
+
+    delete [] mpiRequests;
+
+    // Merge intersecting elements
+    for( auto const& eltsIntersected: M_eltsIntersectedBySurfaceElt )
+    {
         M_intersectingElements.insert( 
-                M_eltsIntersectedBySurfaceElt[surfEltId].begin(),
-                M_eltsIntersectedBySurfaceElt[surfEltId].end()
+                eltsIntersected.second.begin(),
+                eltsIntersected.second.end()
                 );
     }
 
@@ -309,6 +387,7 @@ DistanceToMesh< MeshType, FunctionSpaceType >::updateUnsignedDistance()
     }
     // Then perform fast-marching
     *M_unsignedDistance = this->fastMarching()->march( *M_unsignedDistance, this->rangeIntersectingElements() );
+    sync( *M_unsignedDistance, "min" );
 
     M_doUpdateUnsignedDistance = false;
 }
@@ -323,6 +402,13 @@ DistanceToMesh< MeshType, FunctionSpaceType >::updateSignedDistance()
     // Compute unsigned distance
     if( M_doUpdateUnsignedDistance )
         this->updateUnsignedDistance();
+
+    // Communication
+    rank_type const pidMeshDistance = this->meshDistance()->worldCommPtr()->localRank();
+    std::set<rank_type> const& neighborSubdomainsMeshDistance = this->meshDistance()->neighborSubdomains();
+    int nRequests = 2*neighborSubdomainsMeshDistance.size();
+    mpi::request * mpiRequests = new mpi::request[nRequests];
+
     // Set sign: set negative everywhere, then propagate + sign from the domain boundary
     // note: the element container (VectorUblas) does not provide unary operators at the moment -> TODO: need to improve
     *M_signedDistance = *M_unsignedDistance;
@@ -339,34 +425,86 @@ DistanceToMesh< MeshType, FunctionSpaceType >::updateSignedDistance()
         size_type const eltId = elt.id();
         eltsToVisit.insert( eltId );
     }
-    while( !eltsToVisit.empty() )
+
+    bool eltsToVisitIsEmptyOnAllProc = false;
+    while( !eltsToVisitIsEmptyOnAllProc )
     {
-        auto eltIt = eltsToVisit.begin();
-        size_type eltId = *eltIt;
-        auto const& elt = this->meshDistance()->element( eltId );
-        // visit elt
-        // set + sign
-        for( uint16_type j = 0; j < nDofPerEltDistance; j++ )
+        /* Contain the ghost elts which require communication */
+        std::map<rank_type, std::vector< size_type > > dataToRecv;
+        std::map<rank_type, std::vector< size_type > > dataToSend;
+
+        while( !eltsToVisit.empty() )
         {
-            auto curPhi = M_signedDistance->localToGlobal( eltId, j, 0 );
-            if( curPhi < 0. )
-                M_signedDistance->assign( eltId, j, 0, -curPhi );
+            auto eltIt = eltsToVisit.begin();
+            size_type eltId = *eltIt;
+            auto const& elt = this->meshDistance()->element( eltId );
+            // visit elt
+            // set + sign
+            for( uint16_type j = 0; j < nDofPerEltDistance; j++ )
+            {
+                auto curPhi = M_signedDistance->localToGlobal( eltId, j, 0 );
+                if( curPhi < 0. )
+                    M_signedDistance->assign( eltId, j, 0, -curPhi );
+            }
+            // add potential neighbors to visit
+            for( uint16_type faceId = 0; faceId < elt.nTopologicalFaces(); faceId++ )
+            {
+                size_type neighId = elt.neighbor( faceId );
+                if( neighId == invalid_size_type_value )
+                    continue;
+                auto const& neigh = this->meshDistance()->element( neighId );
+                rank_type const neighPid = neigh.processId();
+                // the neighbor elt is a ghost -> send to owner
+                if( neighPid != pidMeshDistance )
+                {
+                    size_type neighIdOnOwner = neigh.idInOthersPartitions( neighPid );
+                    dataToSend[neighPid].push_back( neighIdOnOwner );
+                    continue;
+                }
+                if( eltsVisited.find( neighId ) != eltsVisited.end()
+                        // stop when reaching an intersecting elt
+                        || intersectingElements.find( neighId ) != intersectingElements.end() )
+                    continue;
+                // need to visit neighbor
+                eltsToVisit.insert( neighId );
+            }
+            eltsVisited.insert( eltId );
+            eltsToVisit.erase( eltIt );
         }
-        // add potential neighbors to visit
-        for( uint16_type faceId = 0; faceId < elt.nTopologicalFaces(); faceId++ )
+
+        // Perform communications
+        int cntRequests = 0;
+        for( rank_type neighborRank: neighborSubdomainsMeshDistance )
         {
-            size_type neighId = elt.neighbor( faceId );
-            if( neighId == invalid_size_type_value 
-                    || eltsVisited.find( neighId ) != eltsVisited.end()
-                    // stop when reaching an intersecting elt
-                    || intersectingElements.find( neighId ) != intersectingElements.end() )
-                continue;
-            // need to visit neighbor
-            eltsToVisit.insert( neighId );
+            mpiRequests[cntRequests++] = this->meshDistance()->worldCommPtr()->localComm().isend( neighborRank, 0, dataToSend[neighborRank] );
+            mpiRequests[cntRequests++] = this->meshDistance()->worldCommPtr()->localComm().irecv( neighborRank, 0, dataToRecv[neighborRank] );
         }
-        eltsVisited.insert( eltId );
-        eltsToVisit.erase( eltIt );
+        mpi::wait_all( mpiRequests, mpiRequests + cntRequests );
+
+        /* Process received ghosts */
+        for( auto const& data: dataToRecv )
+        {
+            for( size_type const eltId: data.second )
+            {
+                if( eltsVisited.find( eltId ) != eltsVisited.end()
+                        // stop when reaching an intersecting elt
+                        || intersectingElements.find( eltId ) != intersectingElements.end() )
+                    continue;
+                // need to visit neighbor
+                eltsToVisit.insert( eltId );
+            }
+        }
+
+        bool eltsToVisitIsEmpty = eltsToVisit.empty();
+        eltsToVisitIsEmptyOnAllProc = mpi::all_reduce(
+                this->meshDistance()->worldComm(),
+                eltsToVisitIsEmpty,
+                std::logical_and<bool>() );
     }
+
+    delete [] mpiRequests;
+
+    sync( *M_signedDistance, "max" );
 
     M_doUpdateSignedDistance = false;
 }
