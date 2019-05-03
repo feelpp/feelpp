@@ -284,6 +284,7 @@ public:
      */
     //@{
 
+    void setBackend( backend_ptrtype const& b ) { M_backend = b; } 
     backend_ptrtype backend() const { return M_backend; }
     
     VectorBlockBase& operator=( VectorBlockBase const& vb ) = default;
