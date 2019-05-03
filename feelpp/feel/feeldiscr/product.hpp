@@ -322,7 +322,7 @@ bool operator== (ProductSpaces<SList1...> const&x, ProductSpaces<SList2...> cons
 template<typename... SList1, typename... SList2>
 bool operator!= (ProductSpaces<SList1...> const&x, ProductSpaces<SList2...> const&y)
 {
-    return !(x == y)
+    return !(x == y);
 }
 
 //!
@@ -474,7 +474,7 @@ bool operator== (ProductSpaces2<T,SList1...> const&x, ProductSpaces2<T, SList2..
 template<typename T, typename... SList1, typename... SList2>
 bool operator!= (ProductSpaces2<T,SList1...> const&x, ProductSpaces2<T, SList2...> const&y)
 {
-    return !(x == y)
+    return !(x == y);
 }
 
 template<typename PS>
