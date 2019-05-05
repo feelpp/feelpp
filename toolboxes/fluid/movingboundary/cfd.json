@@ -1,0 +1,56 @@
+// -*- mode: javascript -*-
+{
+    "Name": "moving boundary",
+    "ShortName":"moving_boundary",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
+    "Parameters":
+    {
+        "ubar":"2",
+        "chi":"t<2:t"
+    },
+    "Materials":
+    {
+        "Fluid":{
+            "rho":10,//"1.0e3",
+            "mu":"1.0"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "fluid":
+        {
+            "inlet":
+            {
+                "inlet":
+                {
+                    "expr":"ubar:ubar",
+		            "shape":"parabolic", //"constant",
+		            "constraint": "velocity_max" //flow_rate
+                }
+            },
+            "outlet":
+            {
+                "outlet":
+                {
+                    "expr":"0" 
+                }
+            },
+            "moving_boundary_imposed":
+            {
+                "wall_bottom": { "expr":"{0,0.01*x*(5-x)*sin(2*pi*t)}:x:t" },
+                "wall_top": { "expr":"{0,0}" }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["velocity","pressure","displacement","pid"]
+        }
+    }
+
+}
