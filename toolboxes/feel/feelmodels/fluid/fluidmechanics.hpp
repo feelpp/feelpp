@@ -522,6 +522,8 @@ public :
     void useFSISemiImplicitScheme(bool b) { M_useFSISemiImplicitScheme=b; }
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
+
+    std::set<std::string> const& markersFSI() const { return M_markersFSI; }
     //___________________________________________________________________________________//
     // stabilization
     bool stabilizationGLS() const { return M_stabilizationGLS; }
@@ -948,6 +950,8 @@ protected:
     map_scalar_field<2> M_bcNeumannScalar, M_bcPressure;
     map_vector_field<nDim,1,2> M_bcNeumannVectorial;
     map_matrix_field<nDim,nDim,2> M_bcNeumannTensor2;
+    map_vector_field<nDim,1,2> M_bcMovingBoundaryImposed;
+    MarkerManagementDirichletBC M_bcMarkersMovingBoundaryImposed;
     map_vector_field<nDim,1,2> M_volumicForcesProperties;
     //---------------------------------------------------
     // range of mesh faces by material : (type -> ( matName -> ( faces range ) )
@@ -967,6 +971,7 @@ protected:
 
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
+    std::set<std::string> M_markersFSI;
 
     bool M_startBySolveNewtonian, M_hasSolveNewtonianAtKickOff;
     bool M_startBySolveStokesStationary, M_hasSolveStokesStationaryAtKickOff;

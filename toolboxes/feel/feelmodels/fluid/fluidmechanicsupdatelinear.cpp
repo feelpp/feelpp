@@ -491,6 +491,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
                 _expr=-idv(inletVel)*N() );
     }
 
+    for( auto const& d : M_bcMovingBoundaryImposed )
+    {
+        auto listMarkerFaces = M_bcMarkersMovingBoundaryImposed.markerDirichletBCByNameId( "elimination",name(d) );
+        bilinearForm +=
+            on( _range=markedfaces(this->mesh(),listMarkerFaces),
+                _element=u, _rhs=F,
+                _expr=idv(M_meshALE->velocity()) );
+    }
+
     if ( this->hasMarkerPressureBC() )
     {
         auto rangePressureBC = boundaryfaces(M_meshLagrangeMultiplierPressureBC);

@@ -637,8 +637,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
         {
             auto themeshvelocityOnInterfaceVisuHO = M_XhVectorialVisuHO->element();
             auto hola2 = vf::project(_space=this->functionSpaceVelocity(),_range=elements(M_Xh->mesh()),_expr=vf::idv(this->meshVelocity2Ptr()));
-            //auto hola2 = vf::project(_space=M_Xh->functionSpace<0>(),_range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-            //                         _expr=vf::idv(this->meshVelocity2Ptr()));
+
             M_opIvelocity->apply( hola2/* *this->meshVelocity2Ptr()*/,themeshvelocityOnInterfaceVisuHO);
             M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"meshVelocityOnInterface_ho"),
                                               prefixvm(this->prefix(),prefixvm(this->subPrefix(),"meshVelocityOnInterface_ho")),
@@ -878,6 +877,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
     this->M_bcNeumannVectorial.setParameterValues( paramValues );
     this->M_bcNeumannTensor2.setParameterValues( paramValues );
     this->M_bcPressure.setParameterValues( paramValues );
+    M_bcMovingBoundaryImposed.setParameterValues( paramValues );
     this->M_volumicForcesProperties.setParameterValues( paramValues );
     this->updateFluidInletVelocity();
 
@@ -1455,26 +1455,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( element_n
 #endif
     }
 
-#if 0
-    // TODO : store this information
-    if ( this->worldComm().globalSize() > 1 )
-    {
-        //M_fieldNormalStressRefMesh->functionSpace()->dofs( markedpoints( mesh,"P"), ComponentType::NO_COMPONENT, true );
-
-        std::set<size_type> thedofMovingBoundary;
-        for ( auto const& faceWrap : markedfaces(M_mesh,this->markersNameMovingBoundary() ) )
-        {
-            auto const& face = unwrap_ref( faceWrap );
-            auto facedof = M_fieldNormalStressRefMesh->functionSpace()->dof()->faceLocalDof( face.id() );
-            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-            {
-                thedofMovingBoundary.insert( it->index() );
-            }
-        }
-        sync(*M_fieldNormalStressRefMesh, "=",thedofMovingBoundary);
-    }
-#endif
-
     if ( !meshIsOnRefAtBegin )
         this->meshALE()->revertMovingMesh( false );
 }
@@ -1638,6 +1618,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
 {
     this->log("FluidMechanics","updateALEmesh", "start");
 
+    for( auto const& d : M_bcMovingBoundaryImposed )
+    {
+        M_meshDisplacementOnInterface->on( _range=markedfaces(this->mesh(),markers(d)),
+                                           _expr=expression(d,this->symbolsExpr()),
+                                           _geomap=this->geomap() );
+    }
     //-------------------------------------------------------------------//
     // compute ALE map
     //std::vector< mesh_ale_type::ale_map_element_type> polyBoundarySet = { *M_meshDisplacementOnInterface };
@@ -2262,7 +2248,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     // strong Dirichlet bc on velocity from fsi coupling
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
-        velocityMarkers.insert( this->markersNameMovingBoundary().begin(), this->markersNameMovingBoundary().end() );
+        velocityMarkers.insert( M_markersFSI.begin(), M_markersFSI.end() );
 #endif
     // strong Dirichlet bc on velocity from expression
     for( auto const& d : M_bcDirichlet )
@@ -2285,6 +2271,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     {
         std::string const& marker = std::get<0>( inletbc );
         velocityMarkers.insert( marker );
+    }
+    // strong  Dirichlet bc on velocity from moving boundary imposed
+    for( auto const& d : M_bcMovingBoundaryImposed )
+    {
+        auto listMark = M_bcMarkersMovingBoundaryImposed.markerDirichletBCByNameId( "elimination",name(d) );
+        velocityMarkers.insert( listMark.begin(), listMark.end() );
     }
 
     //-------------------------------------//

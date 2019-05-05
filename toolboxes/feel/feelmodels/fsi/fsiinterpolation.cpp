@@ -99,7 +99,7 @@ FSI<FluidType,SolidType>::initDispInterpolation()
             std::cout << "initDispInterpolation() CONFORME"  << std::endl;
         M_opDisp2dTo2dconf = opInterpolation(_domainSpace=this->solidModel()->functionSpaceDisplacement(),
                                              _imageSpace=this->fluidModel()->meshALE()->displacement()->functionSpace(),
-                                             _range=markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()),
+                                             _range=M_rangeFSI_fluid,
                                              _type=InterpolationConforme(),
                                              _backend=this->fluidModel()->backend() );
     }
@@ -109,7 +109,7 @@ FSI<FluidType,SolidType>::initDispInterpolation()
             std::cout << "initDispInterpolation() NONCONFORME" << std::endl;
         M_opDisp2dTo2dnonconf = opInterpolation(_domainSpace=this->solidModel()->functionSpaceDisplacement(),
                                                 _imageSpace=this->fluidModel()->meshALE()->displacement()->functionSpace(),
-                                                _range=markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()),
+                                                _range=M_rangeFSI_fluid,
                                                 _type=InterpolationNonConforme(),
                                                 _backend=this->fluidModel()->backend() );
     }
@@ -122,15 +122,13 @@ template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::initDisp1dToNdInterpolation()
 {
-    if ( this->fluidModel()->markersNameMovingBoundary().empty() ) return;
-
     if (M_interfaceFSIisConforme)
     {
         if (this->verbose() && this->fluidModel()->worldComm().isMasterRank())
             std::cout << "initDisp1dToNdInterpolation() CONFORME"  << std::endl;
         M_opDisp1dToNdconf = opInterpolation(_domainSpace=this->solidModel()->fieldDisplacementVect1dReduced().functionSpace(),
                                              _imageSpace=this->fluidModel()->meshALE()->displacement()->functionSpace(),//M_fluid->meshDisplacementOnInterface().functionSpace(),
-                                             _range=markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()),
+                                             _range=M_rangeFSI_fluid,
                                              _type=InterpolationConforme(),
                                              _backend=this->fluidModel()->backend() );
     }
@@ -140,7 +138,7 @@ FSI<FluidType,SolidType>::initDisp1dToNdInterpolation()
             std::cout << "initDisp1dToNdInterpolation() NONCONFORME" << std::endl;
         M_opDisp1dToNdnonconf = opInterpolation(_domainSpace=this->solidModel()->fieldDisplacementVect1dReduced().functionSpace(),
                                                 _imageSpace=this->fluidModel()->meshALE()->displacement()->functionSpace(),//M_fluid->meshDisplacementOnInterface().functionSpace(),
-                                                _range=markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()),
+                                                _range=M_rangeFSI_fluid,
                                                 _type=InterpolationNonConforme(),
                                                 _backend=this->fluidModel()->backend() );
     }
@@ -217,7 +215,7 @@ FSI<FluidType,SolidType>::initVelocityInterpolation()
             std::cout << "initVelocityInterpolation() CONFORME" << std::endl;
         M_opVelocity2dTo2dconf = opInterpolation(_domainSpace=this->solidModel()->fieldVelocity().functionSpace(),
                                                  _imageSpace=this->fluidModel()->meshVelocity2().functionSpace(),
-                                                 _range=markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()),
+                                                 _range=M_rangeFSI_fluid,
                                                  _type=InterpolationConforme(),
                                                  _backend=this->fluidModel()->backend() );
 
@@ -228,7 +226,7 @@ FSI<FluidType,SolidType>::initVelocityInterpolation()
             std::cout << "initVelocityInterpolation() NONCONFORME" << std::endl;
         M_opVelocity2dTo2dnonconf = opInterpolation(_domainSpace=this->solidModel()->fieldVelocity().functionSpace(),
                                                     _imageSpace=this->fluidModel()->meshVelocity2().functionSpace(),
-                                                    _range=markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()),
+                                                    _range=M_rangeFSI_fluid,
                                                     _type=InterpolationNonConforme(),
                                                     _backend=this->fluidModel()->backend() );
     }
@@ -246,7 +244,7 @@ FSI<FluidType,SolidType>::initVelocity1dToNdInterpolation()
             std::cout << "initVelocity1dToNdInterpolation() CONFORME" << std::endl;
         M_opVelocity1dToNdconf = opInterpolation(_domainSpace=this->solidModel()->fieldVelocityVect1dReduced().functionSpace(),
                                                  _imageSpace=this->fluidModel()->meshVelocity2().functionSpace(),
-                                                 _range=markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()),
+                                                 _range=M_rangeFSI_fluid,
                                                  _type=InterpolationConforme(),
                                                  _backend=this->fluidModel()->backend() );
     }
@@ -256,7 +254,7 @@ FSI<FluidType,SolidType>::initVelocity1dToNdInterpolation()
             std::cout << "initVelocity1dToNdInterpolation() NONCONFORME" << std::endl;
         M_opVelocity1dToNdnonconf = opInterpolation(_domainSpace=this->solidModel()->fieldVelocityVect1dReduced().functionSpace(),
                                                     _imageSpace=this->fluidModel()->meshVelocity2().functionSpace(),
-                                                    _range=markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()),
+                                                    _range=M_rangeFSI_fluid,
                                                     _type=InterpolationNonConforme(),
                                                     _backend=this->fluidModel()->backend() );
     }
@@ -304,7 +302,7 @@ FSI<FluidType,SolidType>::initStressInterpolationS2F()
 #if 0
     M_opStress2dTo2dconfS2F = opInterpolation(_domainSpace=this->solidModel()->fieldNormalStressFromStructPtr()->functionSpace(),
                                               _imageSpace=this->fluidModel()->normalStressFromStruct()->functionSpace(),
-                                              _range=markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()),
+                                              _range=M_rangeFSI_fluid,
                                               _type=InterpolationConforme(),
                                               _backend=this->fluidModel()->backend() );
 #else
@@ -387,7 +385,7 @@ FSI<FluidType,SolidType>::transfertStress()
             M_opStress2dTo2dnonconf->apply( *M_fieldNormalStressRefMesh_fluid, *M_fieldNormalStressFromFluid_solid );
 #else
             //auto FluidPhysicalName = M_fluid->getMarkerNameFSI().front();
-            auto mysubmesh = createSubmesh(this->fluidModel()->mesh(),markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()/*FluidPhysicalName*/));
+            auto mysubmesh = createSubmesh(this->fluidModel()->mesh(),M_rangeFSI_fluid);
             typedef Mesh<Simplex<1,1,2> > mymesh_type;
             typedef bases<Lagrange<1, Vectorial,Continuous,PointSetFekete> > mybasis_stress_type;
             typedef FunctionSpace<mymesh_type, mybasis_stress_type> myspace_stress_type;
@@ -474,7 +472,7 @@ FSI<FluidType,SolidType>::transfertRobinNeumannInterfaceOperatorS2F()
     {
         M_opVelocityBis2dTo2dconf/*auto opI*/ = opInterpolation(_domainSpace=this->solidModel()->functionSpaceDisplacement(),
                                    _imageSpace=this->fluidModel()->functionSpaceVelocity(),
-                                   _range=markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()),
+                                                                _range=M_rangeFSI_fluid,
                                    _type=InterpolationConforme(),
                                    _backend=this->fluidModel()->backend() );
         M_opVelocityBis2dTo2dconf/*opI*/->apply( *fieldToTransfert, *fieldInterpolated );
@@ -483,7 +481,7 @@ FSI<FluidType,SolidType>::transfertRobinNeumannInterfaceOperatorS2F()
     {
         M_opVelocityBis2dTo2dnonconf/*auto opI*/ = opInterpolation(_domainSpace=this->solidModel()->functionSpaceDisplacement(),
                                    _imageSpace=this->fluidModel()->functionSpaceVelocity(),
-                                   _range=markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()),
+                                                                   _range=M_rangeFSI_fluid,
                                    _type=InterpolationNonConforme(),
                                    _backend=this->fluidModel()->backend() );
         M_opVelocityBis2dTo2dnonconf/*opI*/->apply( *fieldToTransfert, *fieldInterpolated );
@@ -1144,7 +1142,7 @@ FSI<FluidType,SolidType>::transfertGradVelocityF2S()
 
     auto const Id = eye<fluid_type::nDim,fluid_type::nDim>();
     auto Fa = Id+gradv( this->fluidModel()->meshALE()->displacement());
-    auto fsirange = markedfaces( this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary());
+    auto fsirange = M_rangeFSI_fluid;
     for ( int k = 0;k<fluid_type::nDim ;++k )
     {
         Component comp = ( k==0 )? Component::X : ( k == 1 )? Component::Y : Component::Z;
