@@ -481,6 +481,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialG
              _expr=-idv(inletVel)*N() );
     }
 
+    for( auto const& d : M_bcMovingBoundaryImposed )
+    {
+        auto listMarkerFaces = M_bcMarkersMovingBoundaryImposed.markerDirichletBCByNameId( "elimination",name(d) );
+        u.on( _range=markedfaces(this->mesh(),listMarkerFaces),
+              _expr=idv(M_meshALE->velocity()) );
+    }
+
     // update info for synchronization
     this->updateDofEliminationIdsMultiProcess( "velocity", data );
 

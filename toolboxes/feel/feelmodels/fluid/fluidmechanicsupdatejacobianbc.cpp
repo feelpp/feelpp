@@ -339,18 +339,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJaco
     }
 
 
-    std::list<std::string> markerDirichletEliminationOthers;
+    std::set<std::string> markerDirichletEliminationOthers;
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
     {
-        for (std::string const& marker : this->markersNameMovingBoundary() )
-            markerDirichletEliminationOthers.push_back( marker );
+        for (std::string const& marker : M_markersFSI )
+            markerDirichletEliminationOthers.insert( marker );
     }
 #endif
     for ( auto const& inletbc : M_fluidInletDesc )
     {
         std::string const& marker = std::get<0>( inletbc );
-        markerDirichletEliminationOthers.push_back( marker );
+        markerDirichletEliminationOthers.insert( marker );
+    }
+    for( auto const& d : M_bcMovingBoundaryImposed )
+    {
+        auto listMarkerFaces = M_bcMarkersMovingBoundaryImposed.markerDirichletBCByNameId( "elimination",name(d) );
+        markerDirichletEliminationOthers.insert( listMarkerFaces.begin(), listMarkerFaces.end() );
     }
 
     if ( !markerDirichletEliminationOthers.empty() )

@@ -27,7 +27,7 @@ FSI<FluidType,SolidType>::updateLinearPDEDofElimination_Fluid( DataUpdateLinear 
                                    _colstart=M_fluidModel->colStartInMatrix() );
         auto const& u = M_fluidModel->fieldVelocity();
         bilinearForm +=
-            on( _range=markedfaces(mesh, M_fluidModel->markersNameMovingBoundary()),
+            on( _range=M_rangeFSI_fluid,
                 _element=u, _rhs=F,
                 _expr=idv(M_fluidModel->meshVelocity2()) );
 
@@ -48,7 +48,7 @@ FSI<FluidType,SolidType>::updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess
         auto Xh = M_fluidModel->spaceVelocityPressure();
         auto up = Xh->element( U, M_fluidModel->rowStartInVector() );
         auto u = up.template element<0>();
-        u.on(_range=markedfaces(mesh, M_fluidModel->markersNameMovingBoundary()),
+        u.on(_range=M_rangeFSI_fluid,
              _expr=idv( M_fluidModel->meshVelocity2() ) );
         // update info for synchronization
         M_fluidModel->updateDofEliminationIdsMultiProcess( "velocity", this->dofEliminationIdsMultiProcess( "fluid.velocity" ), data );
@@ -74,7 +74,7 @@ FSI<FluidType,SolidType>::updateJacobianStrongDirichletBC_Fluid( sparse_matrix_p
                                    _colstart=M_fluidModel->colStartInMatrix() );
         auto const& u = M_fluidModel->fieldVelocity();
         bilinearForm +=
-            on( _range=markedfaces(mesh, M_fluidModel->markersNameMovingBoundary()),
+            on( _range=M_rangeFSI_fluid,
                 _element=u, _rhs=RBis,
                 _expr= vf::zero<nDim,1>() );
 
@@ -127,7 +127,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
                                _rowstart=M_fluidModel->rowStartInMatrix(),
                                _colstart=M_fluidModel->colStartInMatrix() );
 
-    auto rangeFSI = markedfaces(mesh,M_fluidModel->markersNameMovingBoundary());
+    auto rangeFSI = M_rangeFSI_fluid;
 
     if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
          this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
@@ -302,7 +302,7 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
                                _rowstart=M_fluidModel->rowStartInMatrix(),
                                _colstart=M_fluidModel->colStartInMatrix() );
 
-    auto rangeFSI = markedfaces(mesh,M_fluidModel->markersNameMovingBoundary());
+    auto rangeFSI = M_rangeFSI_fluid;
 
     CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
     std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
@@ -409,7 +409,7 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
 
     auto const Id = eye<fluid_type::nDim,fluid_type::nDim>();
 
-    auto rangeFSI = markedfaces(mesh,M_fluidModel->markersNameMovingBoundary());
+    auto rangeFSI = M_rangeFSI_fluid;
 
     auto const& uPrevious = (true)? M_fluidModel->fieldVelocity() : M_fluidModel->timeStepBDF()->unknown(0).template element<0>();
     auto const& pPrevious = (true)? M_fluidModel->fieldPressure() : M_fluidModel->timeStepBDF()->unknown(0).template element<1>();

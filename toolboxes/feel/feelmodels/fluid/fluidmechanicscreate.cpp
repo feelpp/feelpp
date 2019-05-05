@@ -382,12 +382,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         }
     }
 
-    for( std::string const& bcMarker : this->modelProperties().boundaryConditions().markers( { { "velocity", "interface_fsi" }, { "velocity","moving_boundary"} } ) )
-    {
-        this->addMarkerALEMeshBC("moving",bcMarker);
-        this->M_isMoveDomain=true;
-    }
-
     this->M_bcNeumannScalar = this->modelProperties().boundaryConditions().getScalarFields( "velocity", "Neumann_scalar" );
     for( auto const& d : this->M_bcNeumannScalar )
     {
@@ -499,6 +493,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
         this->M_fluidInletDesc.push_back(std::make_tuple(bcMarker,fullTypeInlet, expr<2>( exprFluidInlet,"",this->worldComm(),this->repository().expr() )) );
         this->addMarkerALEMeshBC(bcTypeMeshALE,bcMarker);
+    }
+
+    M_bcMovingBoundaryImposed = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "fluid", "moving_boundary_imposed" );
+    for( auto const& d : M_bcMovingBoundaryImposed )
+    {
+        for( std::string const& bcMarker : markers(d) )
+            this->addMarkerALEMeshBC("moving",bcMarker);
+
+        std::string dirichletbcType = "elimination";
+        M_bcMarkersMovingBoundaryImposed.setMarkerDirichletBCByNameId( dirichletbcType, name(d), markers(d),ComponentType::NO_COMPONENT );
+        this->M_isMoveDomain=true;
+    }
+
+    for( std::string const& bcMarker : this->modelProperties().boundaryConditions().markers( { { "velocity", "interface_fsi" }, { "fluid","interface_fsi"} } ) )
+    {
+        this->addMarkerALEMeshBC("moving",bcMarker);
+        this->M_isMoveDomain=true;
+        M_markersFSI.insert( bcMarker );
     }
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "fluid", "VolumicForces" );

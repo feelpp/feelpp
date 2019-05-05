@@ -336,6 +336,9 @@ private :
     std::set<std::string> M_markersNameFluid,M_markersNameSolid;
     std::string M_tagFileNameMeshGenerated;
 
+    range_fluid_face_type M_rangeFSI_fluid;
+    range_solid_face_type M_rangeFSI_solid;
+
     std::string M_fsiCouplingType; // implicit,semi-implicit
     std::string M_fsiCouplingBoundaryCondition; // dirichlet-neumann, robin-robin, ...
     bool M_interfaceFSIisConforme;
