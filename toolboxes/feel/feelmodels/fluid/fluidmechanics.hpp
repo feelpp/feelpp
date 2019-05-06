@@ -53,6 +53,7 @@
 #endif
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
+#include <feel/feelmodels/modelcore/rangedistributionbymaterialname.hpp>
 
 
 namespace Feel
@@ -496,6 +497,8 @@ public :
     //element_fluid_velocity_scalar_type & meshVelocityScalOnInterface() { return *M_meshVelocityScalarOnInterface; }
     //___________________________________________________________________________________//
 
+    bool applyMovingMeshBeforeSolve() const { return M_applyMovingMeshBeforeSolve; }
+    void setApplyMovingMeshBeforeSolve( bool b ) { M_applyMovingMeshBeforeSolve = b; }
     bool isMoveDomain() const { return M_isMoveDomain; }
 
     std::string const& modelName() const;
@@ -694,6 +697,10 @@ public :
 #endif
             return hasStrongDirichletBC;
         }
+
+    //___________________________________________________________________________________//
+
+    void updateRangeDistributionByMaterialName( std::string const& key, range_faces_type const& rangeFaces );
     //___________________________________________________________________________________//
 
     std::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ const& velocityDiv() const { return M_velocityDiv; }
@@ -705,7 +712,7 @@ public :
     // update normal stress in reference ALE mesh
     void updateNormalStressOnCurrentMesh( std::set<std::string> const& listMarkers = std::set<std::string>() );
     // update normal stress in reference ALE mesh
-    void updateNormalStressOnReferenceMesh( element_normalstress_ptrtype & fieldToUpdate );
+    void updateNormalStressOnReferenceMesh( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate );
 private :
     // update normal stress (subfunctions)
     void updateNormalStressOnReferenceMeshStandard( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces, element_normalstress_ptrtype & fieldToUpdate );
@@ -894,7 +901,6 @@ protected:
     virtual size_type initStartBlockIndexFieldsInMatrix();
     virtual int initBlockVector();
 
-    bool M_isUpdatedForUse;
     //----------------------------------------------------
     // mesh
     mesh_ptrtype M_mesh;
@@ -954,8 +960,9 @@ protected:
     MarkerManagementDirichletBC M_bcMarkersMovingBoundaryImposed;
     map_vector_field<nDim,1,2> M_volumicForcesProperties;
     //---------------------------------------------------
+    std::shared_ptr<RangeDistributionByMaterialName<mesh_type> > M_rangeDistributionByMaterialName;
     // range of mesh faces by material : (type -> ( matName -> ( faces range ) )
-    std::map<std::string,std::map<std::string,faces_reference_wrapper_t<mesh_type>>> M_rangeMeshFacesByMaterial;
+    //std::map<std::string,std::map<std::string,faces_reference_wrapper_t<mesh_type>>> M_rangeMeshFacesByMaterial;
     //---------------------------------------------------
     space_vectorial_PN_ptrtype M_XhSourceAdded;
     element_vectorial_PN_ptrtype M_SourceAdded;
@@ -975,6 +982,7 @@ protected:
 
     bool M_startBySolveNewtonian, M_hasSolveNewtonianAtKickOff;
     bool M_startBySolveStokesStationary, M_hasSolveStokesStationaryAtKickOff;
+    bool M_applyMovingMeshBeforeSolve;
     //----------------------------------------------------
     // stabilization
     bool M_stabilizationGLS, M_stabilizationGLSDoAssembly;

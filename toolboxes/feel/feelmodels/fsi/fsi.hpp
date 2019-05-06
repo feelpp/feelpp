@@ -338,6 +338,7 @@ private :
 
     range_fluid_face_type M_rangeFSI_fluid;
     range_solid_face_type M_rangeFSI_solid;
+    std::map<std::string,range_fluid_face_type> M_rangeMeshFacesByMaterial_fluid;
 
     std::string M_fsiCouplingType; // implicit,semi-implicit
     std::string M_fsiCouplingBoundaryCondition; // dirichlet-neumann, robin-robin, ...

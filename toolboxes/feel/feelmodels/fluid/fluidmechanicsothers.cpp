@@ -24,7 +24,6 @@
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
-#include <feel/feelmodels/modelcore/rangedistributionbymaterialname.hpp>
 
 namespace Feel
 {
@@ -901,6 +900,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
     this->updateBlockVectorSolution();
 
+    if ( M_applyMovingMeshBeforeSolve && !M_bcMovingBoundaryImposed.empty() )
+        this->updateALEmesh();
+
     if ( this->startBySolveStokesStationary() &&
          !this->hasSolveStokesStationaryAtKickOff() && !this->doRestart() )
     {
@@ -1249,6 +1251,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
     // up current time
     this->updateTime( M_bdf_fluid->time() );
 
+    // update all expressions in bc or in house prec
+    this->updateParameterValues();
+
     this->log("FluidMechanics","startTimeStep", "finish" );
 }
 
@@ -1331,6 +1336,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
     // update user functions which depend of time only
     this->updateUserFunctions(true);
+    // update all expressions in bc or in house prec
+    this->updateParameterValues();
 
     // maybe rebuild cst jacobian or linear
     if ( M_algebraicFactory && rebuildCstAssembly )
@@ -1412,17 +1419,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::set<st
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( element_normalstress_ptrtype & fieldToUpdate )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate )
 {
     bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
     if ( !meshIsOnRefAtBegin )
         this->meshALE()->revertReferenceMesh( false );
 
     //M_fieldNormalStressRefMesh->zero();
-
-    auto itFindRange = M_rangeMeshFacesByMaterial.find( "moving-boundary" );
-    CHECK( itFindRange != M_rangeMeshFacesByMaterial.end() ) << "not find range moving-boundary";
-    for ( auto const& rangeFacesMat : itFindRange->second )
+    //auto itFindRange = M_rangeMeshFacesByMaterial.find( "moving-boundary" );
+    //CHECK( itFindRange != M_rangeMeshFacesByMaterial.end() ) << "not find range moving-boundary";
+    CHECK( M_rangeDistributionByMaterialName ) << "M_rangeDistributionByMaterialName is not init";
+    for ( auto const& rangeFacesMat : M_rangeDistributionByMaterialName->rangeMeshFacesByMaterial( nameOfRange ) )
     {
         std::string matName = rangeFacesMat.first;
         auto const& rangeFaces = rangeFacesMat.second;
@@ -2383,7 +2390,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     }
 #endif
 
-
+#if 0
     // update rangeDistributionByMaterialName
     if ( this->isMoveDomain() )
     {
@@ -2392,8 +2399,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         rangeDistributionByMaterialName.update( "moving-boundary", markedfaces(mesh,this->markersNameMovingBoundary()) );
         M_rangeMeshFacesByMaterial[ "moving-boundary"] = rangeDistributionByMaterialName.rangeMeshFacesByMaterial( "moving-boundary" );
     }
+#endif
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateRangeDistributionByMaterialName( std::string const& key, range_faces_type const& rangeFaces )
+{
+    if ( !M_rangeDistributionByMaterialName )
+    {
+        M_rangeDistributionByMaterialName = std::make_shared<RangeDistributionByMaterialName<mesh_type>>();
+        M_rangeDistributionByMaterialName->init( this->materialProperties()->rangeMeshElementsByMaterial() );
+    }
+    M_rangeDistributionByMaterialName->update( key, rangeFaces );
+}
 
 } // namespace FeelModels
 } // namespace Feel

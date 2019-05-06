@@ -571,7 +571,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
     auto linearForm = form1( _test=Xh, _vector=F,
                              _rowstart=M_solidModel->rowStartInVector() );
 
-    auto rangeFSI = markedfaces(mesh,M_solidModel->markerNameFSI());
+    auto rangeFSI = M_rangeFSI_solid;
 
     double timeSteppingScaling = 1.;
     if ( !this->solidModel()->isStationary() )
@@ -705,7 +705,7 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
     {
         auto gradVelocityExpr = gradVelocityExpr_fluid2solid( hana::int_<fluid_type::nDim>() );
         auto muFluid = Feel::FeelModels::fluidMecViscosity( gradVelocityExpr, *M_fluidModel->materialProperties(),matName, invalid_uint16_type_value, true );
-        auto rangeFSI = markedfaces(mesh,M_solidModel->markerNameFSI());
+        auto rangeFSI = M_rangeFSI_solid;
 
         if ( this->solidModel()->timeStepping() == "Newmark" )
         {
@@ -758,7 +758,7 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
 
     auto u = Xh->element(XVec, M_solidModel->rowStartInVector());
 
-    auto rangeFSI = markedfaces(mesh,M_solidModel->markerNameFSI());
+    auto rangeFSI = M_rangeFSI_solid;
 
     // neumann boundary condition with normal stress (fsi boundary condition)
     if ( buildCstPart )
