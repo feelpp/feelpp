@@ -8,8 +8,7 @@
     },
     "Parameters":
     {
-        "ubar":"2",
-        "chi":"t<2:t"
+        "ubar":"0.02"
     },
     "Materials":
     {
@@ -20,28 +19,31 @@
     },
     "BoundaryConditions":
     {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "apply_no_slip":
+                {
+                    "markers":["wall_others","wall_left"],
+                    "expr":"{0,0}"
+                }
+            }
+        },
         "fluid":
         {
-            "inlet":
-            {
-                "inlet":
-                {
-                    "expr":"ubar:ubar",
-		            "shape":"parabolic", //"constant",
-		            "constraint": "velocity_max" //flow_rate
-                }
-            },
             "outlet":
             {
-                "outlet":
+                "apply_outlets":
                 {
+                    "markers":["outlet1","outlet2"],
                     "expr":"0" 
                 }
             },
             "moving_boundary_imposed":
             {
-                "wall_bottom": { "expr":"{0,0.01*x*(5-x)*sin(2*pi*t)}:x:t" },
-                "wall_top": { "expr":"{0,0}" }
+                "wall_bottom": { "expr":"{0,ubar*x*(5-x)*sin(2*pi*t)}:x:t:ubar" },
+                "wall_top": { "expr":"{0,-ubar*x*(5-x)*sin(2*pi*t)}:x:t:ubar" }
             }
         }
     },
