@@ -23,8 +23,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix, s
                                                     ModelBaseRepository const& modelRep )
     :
     super_type( prefix,keyword,worldComm,subPrefix, modelRep ),
-    M_isUpdatedForUse(false ),
-    M_materialProperties( new material_properties_type( prefix ) )
+    M_materialProperties( new material_properties_type( prefix ) ),
+    M_applyMovingMeshBeforeSolve( true )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -908,7 +908,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
-    if ( M_isUpdatedForUse ) return;
+    if ( this->isUpdatedForUse() ) return;
 
     this->log("FluidMechanics","init", "start" );
     this->timerTool("Constructor").start();
@@ -1049,7 +1049,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     //-------------------------------------------------//
     //-------------------------------------------------//
-    M_isUpdatedForUse = true;
+    this->setIsUpdatedForUse( true );
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();

@@ -197,7 +197,7 @@ template <typename FluidType,typename SolidType>
 typename SolidType::mesh_1dreduced_ptrtype
 createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, mpl::bool_<false> /**/ )
 {
-    auto submeshStruct = createSubmesh( FM->meshALE()->referenceMesh(), markedfaces( FM->meshALE()->referenceMesh(), FM->markersNameMovingBoundary()/*"Paroi"*/) );
+    auto submeshStruct = createSubmesh( FM->meshALE()->referenceMesh(), markedfaces( FM->meshALE()->referenceMesh(), FM->markersFSI() ) );
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
         submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
@@ -223,7 +223,7 @@ template <typename FluidType,typename SolidType>
 typename FluidType::mesh_type::trace_mesh_ptrtype
 createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, mpl::bool_<true> /**/ )
 {
-    auto submeshStruct = createSubmesh( FM->mesh(), markedfaces( FM->mesh(),FM->markersNameMovingBoundary() ) );
+    auto submeshStruct = createSubmesh( FM->mesh(), markedfaces( FM->mesh(),FM->markersFSI() ) );
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
         submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
@@ -295,7 +295,7 @@ FSI<FluidType,SolidType>::init()
         bool doExtractSubmesh = boption(_name="solid-mesh.extract-1d-from-fluid-mesh",_prefix=this->prefix() );
         if ( doExtractSubmesh )
         {
-            CHECK( !M_fluidModel->markersNameMovingBoundary().empty() ) << "no marker moving boundary in fluid model";
+            CHECK( !M_fluidModel->markersFSI().empty() ) << "no marker moving boundary in fluid model";
 
             //if ( M_fluidModel->doRestart() )
             //M_fluidModel->meshALE()->revertReferenceMesh();
@@ -333,6 +333,7 @@ FSI<FluidType,SolidType>::init()
     M_solidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
 
     M_fluidModel->initAlgebraicFactory();
+    M_fluidModel->setApplyMovingMeshBeforeSolve( false );
 
     if (this->fsiCouplingType()=="Semi-Implicit")
     {
@@ -340,10 +341,12 @@ FSI<FluidType,SolidType>::init()
         M_solidModel->useFSISemiImplicitScheme(true);
     }
 
-    M_rangeFSI_fluid = markedfaces( this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary() );
+    M_rangeFSI_fluid = markedfaces( this->fluidModel()->mesh(),this->fluidModel()->markersFSI() );
     auto submeshfsi_fluid = createSubmesh( this->fluidModel()->mesh(),M_rangeFSI_fluid );
     M_spaceNormalStress_fluid = fluid_type::space_normalstress_type::New(_mesh=submeshfsi_fluid );
     M_fieldNormalStressRefMesh_fluid.reset( new typename fluid_type::element_normalstress_type( M_spaceNormalStress_fluid ) );
+
+    this->fluidModel()->updateRangeDistributionByMaterialName( "interface_fsi", M_rangeFSI_fluid );
 
     if ( M_solidModel->isStandardModel() )
     {
@@ -465,7 +468,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
     {
         if ( M_fluidModel->useFSISemiImplicitScheme() )
             M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( M_rangeFSI_fluid );
-        M_fluidModel->updateNormalStressOnReferenceMesh( M_fieldNormalStressRefMesh_fluid );
+        M_fluidModel->updateNormalStressOnReferenceMesh( "interface_fsi", M_fieldNormalStressRefMesh_fluid );
     }
 
     if ( this->solidModel()->isStandardModel() )
@@ -482,7 +485,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         M_coulingRNG_operatorDiagonalOnFluid = this->fluidModel()->meshVelocity2().functionSpace()->elementPtr();
 
         //--------------------------------------------------------
-        auto rangeFSI = markedfaces(mesh,this->solidModel()->markerNameFSI());
+        auto rangeFSI = M_rangeFSI_solid;
         double areaFSI = measure(_range=rangeFSI);
 
         std::set<size_type> dofsIdOnFSI;
