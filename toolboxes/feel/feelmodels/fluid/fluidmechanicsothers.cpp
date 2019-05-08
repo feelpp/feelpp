@@ -424,7 +424,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportFields( double time )
     bool hasFieldToExport = this->updateExportedFields( M_exporter, M_postProcessFieldExported, time );
     if ( hasFieldToExport )
     {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+        // TODO : only at the first export
+        if ( this->isMoveDomain() && M_exporter->exporterGeometry()==ExporterGeometry::EXPORTER_GEOMETRY_STATIC)
+            this->meshALE()->revertReferenceMesh( false );
+#endif
+
         M_exporter->save();
+
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+        if ( this->isMoveDomain() && M_exporter->exporterGeometry()==ExporterGeometry::EXPORTER_GEOMETRY_STATIC)
+            this->meshALE()->revertMovingMesh( false );
+#endif
+
         this->upload( M_exporter->path() );
     }
 }
@@ -436,11 +448,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
     if ( !exporter ) return false;
     if ( !exporter->doExport() ) return false;
 
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    // because write geofile at each step ( TODO fix !!! )
-    if ( this->isMoveDomain() && exporter->exporterGeometry()==ExporterGeometry::EXPORTER_GEOMETRY_STATIC)
-        this->meshALE()->revertReferenceMesh();
-#endif
     //exporter->step( time )->setMesh( M_mesh );
     bool hasFieldToExport = false;
     if ( fields.find( "pid" ) != fields.end() )
@@ -570,10 +577,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
     }
 
     //----------------------//
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    if ( this->isMoveDomain() && M_exporter->exporterGeometry()==ExporterGeometry::EXPORTER_GEOMETRY_STATIC)
-        this->meshALE()->revertMovingMesh();
-#endif
     return hasFieldToExport;
 }
 
@@ -2248,15 +2251,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     std::set<std::string> velocityMarkers;
     std::map<ComponentType,std::set<std::string> > compVelocityMarkers;
 
-    auto & dofsWithValueImposedVelocity = M_dofsWithValueImposed["velocity"];
-    dofsWithValueImposedVelocity.clear();
-
     //-------------------------------------//
-    // strong Dirichlet bc on velocity from fsi coupling
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
-        velocityMarkers.insert( M_markersFSI.begin(), M_markersFSI.end() );
-#endif
     // strong Dirichlet bc on velocity from expression
     for( auto const& d : M_bcDirichlet )
     {
@@ -2302,7 +2297,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     {
         auto therange = markedfaces( mesh,listMarkedFacesVelocity );
         auto dofsToAdd = XhVelocity->dofs( therange );
-        dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+        this->dofEliminationIdsAll("velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
         auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
@@ -2312,7 +2308,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     {
         auto therange = markededges(mesh,listMarkedEdgesVelocity );
         auto dofsToAdd = XhVelocity->dofs( therange );
-        dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+        this->dofEliminationIdsAll("velocity",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
         auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("velocity",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
@@ -2322,7 +2319,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     {
         auto therange = markedpoints(mesh,listMarkedPointsVelocity );
         auto dofsToAdd = XhVelocity->dofs( therange );
-        dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+        this->dofEliminationIdsAll("velocity",MESH_POINTS).insert( dofsToAdd.begin(), dofsToAdd.end() );
         auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("velocity",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
@@ -2336,7 +2334,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         {
             auto therange = markedfaces(mesh,listMarkedFacesCompVelocity );
             auto dofsToAdd = XhVelocity->dofs( therange, comp );
-            dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+            this->dofEliminationIdsAll("velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
             auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
             this->dofEliminationIdsMultiProcess("velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
@@ -2346,7 +2345,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         {
             auto therange = markededges(mesh,listMarkedEdgesCompVelocity );
             auto dofsToAdd = XhVelocity->dofs( therange, comp );
-            dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+            this->dofEliminationIdsAll("velocity",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
             auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
             this->dofEliminationIdsMultiProcess("velocity",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
@@ -2356,7 +2356,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         {
             auto therange = markedpoints(mesh,listMarkedPointsCompVelocity );
             auto dofsToAdd = XhVelocity->dofs( therange, comp );
-            dofsWithValueImposedVelocity.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+            this->dofEliminationIdsAll("velocity",MESH_POINTS).insert( dofsToAdd.begin(), dofsToAdd.end() );
             auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
             this->dofEliminationIdsMultiProcess("velocity",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
@@ -2364,20 +2365,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
 
     if ( this->hasMarkerPressureBC() && M_spaceLagrangeMultiplierPressureBC )
     {
-        auto & dofsWithValueImposedPressureBC = M_dofsWithValueImposed["pressurebc-lm"];
-        dofsWithValueImposedPressureBC.clear();
-        for ( auto const& faceWrap : boundaryfaces(M_meshLagrangeMultiplierPressureBC) )
-        {
-            auto const& face = unwrap_ref( faceWrap );
-            auto facedof = M_spaceLagrangeMultiplierPressureBC->dof()->faceLocalDof( face.id() );
-            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-                dofsWithValueImposedPressureBC.insert( it->index() );
-        }
+        auto therange = boundaryfaces(M_meshLagrangeMultiplierPressureBC);
+        auto dofsToAdd = M_spaceLagrangeMultiplierPressureBC->dofs( therange );
+        M_spaceLagrangeMultiplierPressureBC->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+        this->dofEliminationIdsAll("pressurebc-lm",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = M_spaceLagrangeMultiplierPressureBC->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("pressurebc-lm",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if ( this->isMoveDomain() )
     {
+        M_dofsVelocityInterfaceOnMovingBoundary = M_XhMeshVelocityInterface->dofs( markedfaces(mesh,this->markersNameMovingBoundary() ) );
+#if 0
         for ( auto const& faceWrap : markedfaces(mesh,this->markersNameMovingBoundary() ) )
         {
             auto const& face = unwrap_ref( faceWrap );
@@ -2387,6 +2387,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
                 M_dofsVelocityInterfaceOnMovingBoundary.insert( it->index() );
             }
         }
+#endif
     }
 #endif
 

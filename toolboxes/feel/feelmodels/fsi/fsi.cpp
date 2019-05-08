@@ -404,7 +404,11 @@ FSI<FluidType,SolidType>::init()
     }
     else if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
     {
-        auto dofsMultiProcessToAdd = M_fluidModel->functionSpaceVelocity()->dofs( M_rangeFSI_fluid, ComponentType::NO_COMPONENT, true );
+        auto XhFluidVelocity = this->fluidModel()->functionSpaceVelocity();
+        auto dofsToAdd = XhFluidVelocity->dofs(  M_rangeFSI_fluid );
+        XhFluidVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+        this->dofEliminationIdsAll("fluid.velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhFluidVelocity->dofs( M_rangeFSI_fluid, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("fluid.velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
 
@@ -438,6 +442,10 @@ FSI<FluidType,SolidType>::init()
                                                                                   std::ref( *this ), std::placeholders::_1 ) );
     M_fluidModel->algebraicFactory()->addFunctionNewtonInitialGuess( std::bind( &self_type::updateNewtonInitialGuess_Fluid,
                                                                                 std::ref( *this ), std::placeholders::_1 ) );
+    M_fluidModel->algebraicFactory()->addFunctionJacobianDofElimination( std::bind( &self_type::updateJacobianDofElimination_Fluid,
+                                                                                    std::ref( *this ), std::placeholders::_1 ) );
+    M_fluidModel->algebraicFactory()->addFunctionResidualDofElimination( std::bind( &self_type::updateResidualDofElimination_Fluid,
+                                                                                    std::ref( *this ), std::placeholders::_1 ) );
     if ( M_solidModel->isStandardModel() )
     {
         M_solidModel->algebraicFactory()->addFunctionLinearAssembly( std::bind( &self_type::updateLinearPDE_Solid,

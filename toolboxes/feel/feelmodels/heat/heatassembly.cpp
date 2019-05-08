@@ -352,7 +352,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & dat
     }
 
     // update info for synchronization
-    this->updateDofEliminationIdsMultiProcess( "temperature", data );
+    this->updateDofEliminationIds( "temperature", data );
 
     this->log("Heat","updateNewtonInitialGuess","finish" );
 }
@@ -659,14 +659,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & dat
 
     this->log("Heat","updateResidualDofElimination","start" );
 
-    vector_ptrtype& R = data.residual();
-    auto mesh = this->mesh();
-    auto u = this->spaceTemperature()->element( R,this->rowStartInVector() );
-    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("temperature");
-    auto const& dofsWithValueImposedTemperature = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
-    for ( size_type thedof : dofsWithValueImposedTemperature )
-        u.set( thedof,0. );
-    sync( u, "=", dofsWithValueImposedTemperature );
+    this->updateDofEliminationIds( "temperature", data );
 
     this->log("Heat","updateResidualDofElimination","finish" );
 }
@@ -763,26 +756,9 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & dat
 
     this->log("Heat","updateJacobianDofElimination","start" );
 
-    sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
-
-    auto mesh = this->mesh();
-    auto Xh = this->spaceTemperature();
-    auto const& u = this->fieldTemperature();
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=J,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix(),
-                                              _colstart=this->colStartInMatrix() );
-
-    for( auto const& d : this->M_bcDirichlet )
-    {
-        bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
-                _element=u,_rhs=RBis,_expr=cst(0.) );
-    }
+    this->updateDofEliminationIds( "temperature", data );
 
     this->log("Heat","updateJacobianDofElimination","finish" );
-
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS

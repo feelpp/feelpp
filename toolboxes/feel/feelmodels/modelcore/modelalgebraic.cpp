@@ -229,20 +229,9 @@ ModelAlgebraic::updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrt
 
 
 void
-ModelAlgebraic::updateDofEliminationIdsMultiProcess( std::string const& spaceName, DataNewtonInitialGuess & data ) const
-{
-    auto itFindDofIdsMultiProcessDirichletElimination = M_dofEliminationIdsMultiProcess.find( spaceName );
-    if ( itFindDofIdsMultiProcessDirichletElimination != M_dofEliminationIdsMultiProcess.end() )
-    {
-        auto const& dofIdsMultiProcess = itFindDofIdsMultiProcessDirichletElimination->second;
-        this->updateDofEliminationIdsMultiProcess( spaceName, dofIdsMultiProcess, data );
-    }
-}
-
-void
-ModelAlgebraic::updateDofEliminationIdsMultiProcess( std::string const& spaceName,
-                                                     std::map<ElementsType, std::set<size_type>> const& dofIdsMultiProcess,
-                                                     DataNewtonInitialGuess & data ) const
+ModelAlgebraic::updateDofEliminationIds( std::string const& spaceName,
+                                         std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>> const& dofIds,
+                                         DataNewtonInitialGuess & data ) const
 {
     CHECK( this->hasStartSubBlockSpaceIndex( spaceName ) ) << "no space name registered : " << spaceName;
     int spaceIndexVector = this->startBlockSpaceIndexVector() + this->startSubBlockSpaceIndex( spaceName );
@@ -250,12 +239,51 @@ ModelAlgebraic::updateDofEliminationIdsMultiProcess( std::string const& spaceNam
     auto dm = data.initialGuess()->mapPtr();
     for ( ElementsType entity : fromEntities )
     {
-        auto itFindDofIdsMultiProcessByEntity = dofIdsMultiProcess.find( entity );
-        if ( itFindDofIdsMultiProcessByEntity != dofIdsMultiProcess.end() )
-            dm->dofIdToContainerId( spaceIndexVector,itFindDofIdsMultiProcessByEntity->second,
-                                    data.dofIdsMultiProcessModified( entity ) );
+        auto itFindDofIdsByEntity = dofIds.find( entity );
+        if ( itFindDofIdsByEntity != dofIds.end() )
+            dm->dofIdToContainerId( spaceIndexVector,std::get<1>( itFindDofIdsByEntity->second ),
+                                    data.dofEliminationIds( entity ) );
     }
-
+}
+void
+ModelAlgebraic::updateDofEliminationIds( std::string const& spaceName,
+                                         std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>> const& dofIds,
+                                         DataUpdateResidual & data ) const
+{
+    CHECK( this->hasStartSubBlockSpaceIndex( spaceName ) ) << "no space name registered : " << spaceName;
+    int spaceIndexVector = this->startBlockSpaceIndexVector() + this->startSubBlockSpaceIndex( spaceName );
+    std::vector<ElementsType> fromEntities = { MESH_ELEMENTS, MESH_FACES, MESH_EDGES, MESH_POINTS };
+    auto dm = data.residual()->mapPtr();
+    for ( ElementsType entity : fromEntities )
+    {
+        auto itFindDofIdsByEntity = dofIds.find( entity );
+        if ( itFindDofIdsByEntity != dofIds.end() )
+        {
+            data.setHasDofEliminationIds( true );
+            dm->dofIdToContainerId( spaceIndexVector,std::get<0>( itFindDofIdsByEntity->second ),
+                                    data.dofEliminationIds() );
+        }
+    }
+}
+void
+ModelAlgebraic::updateDofEliminationIds( std::string const& spaceName,
+                                         std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>> const& dofIds,
+                                         DataUpdateJacobian & data ) const
+{
+    CHECK( this->hasStartSubBlockSpaceIndex( spaceName ) ) << "no space name registered : " << spaceName;
+    int spaceIndexVector = this->startBlockSpaceIndexVector() + this->startSubBlockSpaceIndex( spaceName );
+    std::vector<ElementsType> fromEntities = { MESH_ELEMENTS, MESH_FACES, MESH_EDGES, MESH_POINTS };
+    auto dm = data.jacobian()->mapRowPtr();
+    for ( ElementsType entity : fromEntities )
+    {
+        auto itFindDofIdsByEntity = dofIds.find( entity );
+        if ( itFindDofIdsByEntity != dofIds.end() )
+        {
+            data.setHasDofEliminationIds( true );
+            dm->dofIdToContainerId( spaceIndexVector,std::get<0>( itFindDofIdsByEntity->second ),
+                                    data.dofEliminationIds() );
+        }
+    }
 }
 
 
