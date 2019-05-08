@@ -523,8 +523,8 @@ public :
 
     bool useFSISemiImplicitScheme() const { return M_useFSISemiImplicitScheme; }
     void useFSISemiImplicitScheme(bool b) { M_useFSISemiImplicitScheme=b; }
-    std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
-    void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
+    /*FEELPP_DEPRECATED*/ std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
+    /*FEELPP_DEPRECATED*/ void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
 
     std::set<std::string> const& markersFSI() const { return M_markersFSI; }
     //___________________________________________________________________________________//
@@ -688,13 +688,9 @@ public :
     space_fluidoutlet_windkessel_ptrtype const& fluidOutletWindkesselSpace() { return M_fluidOutletWindkesselSpace; }
 
 
-    
     bool hasStrongDirichletBC() const
         {
-            bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet() || this->hasMarkerPressureBC();
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-            hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
-#endif
+            bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet() || M_bcMarkersMovingBoundaryImposed.hasMarkerDirichletBCelimination() || this->hasMarkerPressureBC();
             return hasStrongDirichletBC;
         }
 
@@ -1078,7 +1074,6 @@ protected:
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
-    std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
     //----------------------------------------------------
     // overwrite assembly process : source terms
     typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;

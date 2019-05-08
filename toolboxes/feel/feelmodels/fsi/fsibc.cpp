@@ -51,37 +51,39 @@ FSI<FluidType,SolidType>::updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess
         u.on(_range=M_rangeFSI_fluid,
              _expr=idv( M_fluidModel->meshVelocity2() ) );
         // update info for synchronization
-        M_fluidModel->updateDofEliminationIdsMultiProcess( "velocity", this->dofEliminationIdsMultiProcess( "fluid.velocity" ), data );
+        M_fluidModel->updateDofEliminationIds( "velocity", this->dofEliminationIds( "fluid.velocity" ), data );
 
         this->log("FSI","updateNewtonInitialGuess_Fluid", "finish" );
     }
 }
 
-#if 0
 template< class FluidType, class SolidType >
 void
-FSI<FluidType,SolidType>::updateJacobianStrongDirichletBC_Fluid( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const
+FSI<FluidType,SolidType>::updateJacobianDofElimination_Fluid( DataUpdateJacobian & data ) const
 {
-    if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
-    {
-        this->log("FSI","updateJacobianStrongDirichletBC_Fluid", "start" );
+    if ( this->fsiCouplingBoundaryCondition() != "dirichlet-neumann" )
+        return;
 
-        auto mesh = M_fluidModel->mesh();
-        auto Xh = M_fluidModel->spaceVelocityPressure();
-        auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
-                                   _pattern=size_type(Pattern::COUPLED),
-                                   _rowstart=M_fluidModel->rowStartInMatrix(),
-                                   _colstart=M_fluidModel->colStartInMatrix() );
-        auto const& u = M_fluidModel->fieldVelocity();
-        bilinearForm +=
-            on( _range=M_rangeFSI_fluid,
-                _element=u, _rhs=RBis,
-                _expr= vf::zero<nDim,1>() );
+    this->log("FSI","updateJacobianDofElimination_Fluid", "start" );
 
-        this->log("FSI","updateJacobianStrongDirichletBC_Fluid", "finish" );
-    }
+    M_fluidModel->updateDofEliminationIds( "velocity", this->dofEliminationIds( "fluid.velocity" ), data );
+
+    this->log("FSI","updateJacobianDofElimination_Fluid", "finish" );
 }
-#endif
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateResidualDofElimination_Fluid( DataUpdateResidual & data ) const
+{
+    if ( this->fsiCouplingBoundaryCondition() != "dirichlet-neumann" )
+        return;
+
+    this->log("FSI","updateResidualDofElimination_Fluid", "start" );
+
+    M_fluidModel->updateDofEliminationIds( "velocity", this->dofEliminationIds( "fluid.velocity" ), data );
+
+    this->log("FSI","updateResidualDofElimination_Fluid", "finish" );
+}
 
 
 template< class FluidType, class SolidType >

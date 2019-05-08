@@ -128,7 +128,24 @@ public :
         std::vector<std::pair<sparse_matrix_ptrtype,vector_ptrtype>> M_rhsToAddFromMatrixVectorProduct;
     };
 
-    class DataUpdateResidual : public DataUpdateBase
+    class DataDofEliminationIds
+    {
+    public :
+        DataDofEliminationIds() : M_hasDofEliminationIds( false ) {}
+        DataDofEliminationIds( DataDofEliminationIds const& d) = default;
+        DataDofEliminationIds( DataDofEliminationIds && d) = default;
+
+        bool hasDofEliminationIds() const { return M_hasDofEliminationIds; }
+        void setHasDofEliminationIds( bool b ) { M_hasDofEliminationIds = b; }
+        std::set<size_type> const& dofEliminationIds() const { return M_dofEliminationIds; }
+        std::set<size_type> & dofEliminationIds() { return M_dofEliminationIds; }
+
+    private:
+        bool M_hasDofEliminationIds;
+        std::set<size_type> M_dofEliminationIds;
+    };
+
+    class DataUpdateResidual : public DataUpdateBase, public DataDofEliminationIds
     {
     public:
         DataUpdateResidual( const vector_ptrtype& currentSolution, vector_ptrtype residual,
@@ -161,7 +178,7 @@ public :
         bool M_doBCStrongDirichlet;
     };
 
-    class DataUpdateJacobian : public DataUpdateBase
+    class DataUpdateJacobian : public DataUpdateBase, public DataDofEliminationIds
     {
     public:
         DataUpdateJacobian( const vector_ptrtype& currentSolution, sparse_matrix_ptrtype jacobian,
@@ -203,41 +220,41 @@ public :
         bool M_doBCStrongDirichlet;
     };
 
-    class DataDofIdsMultiProcessModified
+    class DataDofEliminationIdsByEntity
     {
     public :
-        DataDofIdsMultiProcessModified() = default;
-        DataDofIdsMultiProcessModified( DataDofIdsMultiProcessModified const& d) = default;
-        DataDofIdsMultiProcessModified( DataDofIdsMultiProcessModified && d) = default;
+        DataDofEliminationIdsByEntity() = default;
+        DataDofEliminationIdsByEntity( DataDofEliminationIdsByEntity const& d) = default;
+        DataDofEliminationIdsByEntity( DataDofEliminationIdsByEntity && d) = default;
 
-        bool hasDofIdsMultiProcessModified( ElementsType e ) const { return M_dofIdsMultiProcessModified.find( e ) != M_dofIdsMultiProcessModified.end(); }
-        bool hasDofIdsMultiProcessModified() const
+        bool hasDofEliminationIds( ElementsType e ) const { return M_dofEliminationIds.find( e ) != M_dofEliminationIds.end(); }
+        bool hasDofEliminationIds() const
             {
-                return this->hasDofIdsMultiProcessModified( MESH_ELEMENTS ) ||
-                    this->hasDofIdsMultiProcessModified( MESH_FACES ) ||
-                    this->hasDofIdsMultiProcessModified( MESH_EDGES ) ||
-                    this->hasDofIdsMultiProcessModified( MESH_POINTS );
+                return this->hasDofEliminationIds( MESH_ELEMENTS ) ||
+                    this->hasDofEliminationIds( MESH_FACES ) ||
+                    this->hasDofEliminationIds( MESH_EDGES ) ||
+                    this->hasDofEliminationIds( MESH_POINTS );
             }
-        std::set<size_type> const& dofIdsMultiProcessModified( ElementsType e ) const
+        std::set<size_type> const& dofEliminationIds( ElementsType e ) const
             {
-                CHECK( this->hasDofIdsMultiProcessModified(e) ) << "entity not registered";
-                return M_dofIdsMultiProcessModified.find( e )->second;
+                CHECK( this->hasDofEliminationIds(e) ) << "entity not registered";
+                return M_dofEliminationIds.find( e )->second;
             }
-        std::set<size_type> & dofIdsMultiProcessModified( ElementsType e ) { return M_dofIdsMultiProcessModified[e]; }
-        void initDofIdsMultiProcessModified( ElementsType e ) { M_dofIdsMultiProcessModified[e]; }
-        void addDofIdsMultiProcessModified( ElementsType e, size_type id ) { M_dofIdsMultiProcessModified[e].insert( id ); }
-        void addDofIdsMultiProcessModified( ElementsType e, std::set<size_type> const& ids ) { M_dofIdsMultiProcessModified[e].insert( ids.begin(), ids.end() ); }
+        std::set<size_type> & dofEliminationIds( ElementsType e ) { return M_dofEliminationIds[e]; }
+        void initDofEliminationIds( ElementsType e ) { M_dofEliminationIds[e]; }
+        void addDofEliminationIds( ElementsType e, size_type id ) { M_dofEliminationIds[e].insert( id ); }
+        void addDofEliminationIds( ElementsType e, std::set<size_type> const& ids ) { M_dofEliminationIds[e].insert( ids.begin(), ids.end() ); }
     private:
-        std::map<ElementsType,std::set<size_type>> M_dofIdsMultiProcessModified;
+        std::map<ElementsType,std::set<size_type>> M_dofEliminationIds;
     };
 
-    class DataNewtonInitialGuess : public DataUpdateBase, public DataDofIdsMultiProcessModified
+    class DataNewtonInitialGuess : public DataUpdateBase, public DataDofEliminationIdsByEntity
     {
     public:
         DataNewtonInitialGuess( vector_ptrtype& initialGuess )
             :
             DataUpdateBase(),
-            DataDofIdsMultiProcessModified(),
+            DataDofEliminationIdsByEntity(),
             M_initialGuess( initialGuess )
             {}
         DataNewtonInitialGuess( DataNewtonInitialGuess const& d) = default;
@@ -366,17 +383,30 @@ public :
     bool hasStartSubBlockSpaceIndex( std::string const& name ) const { return (this->startSubBlockSpaceIndex( name ) != invalid_size_type_value); }
     void setStartSubBlockSpaceIndex( std::string const& name, size_type s ) { M_startSubBlockSpaceIndex[name] = s; }
 
-    //! update data usefull for mpi synchronization of NewtonInitialGuess
-    void updateDofEliminationIdsMultiProcess( std::string const& spaceName, DataNewtonInitialGuess & data ) const;
-    void updateDofEliminationIdsMultiProcess( std::string const& spaceName, std::map<ElementsType, std::set<size_type>> const& dofIdsMultiProcess, DataNewtonInitialGuess & data ) const;
-    std::set<size_type> & dofEliminationIdsMultiProcess( std::string const& spaceName, ElementsType e ) { return M_dofEliminationIdsMultiProcess[spaceName][e]; }
-    std::map<std::string,std::map<ElementsType, std::set<size_type> > > const& dofEliminationIdsMultiProcess() const { return M_dofEliminationIdsMultiProcess; }
-    std::map<ElementsType, std::set<size_type> > const& dofEliminationIdsMultiProcess( std::string const& spaceName ) const
+    //! update data usefull for mpi synchronization of NewtonInitialGuess, impose value in residual or jacobian
+    template <typename DataType>
+    void updateDofEliminationIds( std::string const& spaceName, DataType & data ) const
         {
-            CHECK( this->hasDofEliminationIdsMultiProcess( spaceName ) ) << "no space name registered : " << spaceName;
-            return M_dofEliminationIdsMultiProcess.find( spaceName )->second;
+            auto itFindDofEliminationIds = M_dofEliminationIds.find( spaceName );
+            if ( itFindDofEliminationIds != M_dofEliminationIds.end() )
+            {
+                auto const& dofIds = itFindDofEliminationIds->second;
+                this->updateDofEliminationIds( spaceName, dofIds, data );
+            }
         }
-    bool hasDofEliminationIdsMultiProcess( std::string const& spaceName ) const { return M_dofEliminationIdsMultiProcess.find( spaceName ) != M_dofEliminationIdsMultiProcess.end(); }
+    void updateDofEliminationIds( std::string const& spaceName, std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>> const& dofIds, DataNewtonInitialGuess & data ) const;
+    void updateDofEliminationIds( std::string const& spaceName, std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>> const& dofIds, DataUpdateResidual & data ) const;
+    void updateDofEliminationIds( std::string const& spaceName, std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>> const& dofIds, DataUpdateJacobian & data ) const;
+    std::set<size_type> & dofEliminationIdsAll( std::string const& spaceName, ElementsType e ) { return std::get<0>( M_dofEliminationIds[spaceName][e] ); }
+    std::set<size_type> & dofEliminationIdsMultiProcess( std::string const& spaceName, ElementsType e ) { return std::get<1>( M_dofEliminationIds[spaceName][e] ); }
+
+    std::map<std::string,std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>>> const& dofEliminationIds() const { return M_dofEliminationIds; }
+    std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>> const& dofEliminationIds( std::string const& spaceName ) const
+        {
+            CHECK( this->hasDofEliminationIds( spaceName ) ) << "no space name registered : " << spaceName;
+            return M_dofEliminationIds.find( spaceName )->second;
+        }
+    bool hasDofEliminationIds( std::string const& spaceName ) const { return M_dofEliminationIds.find( spaceName ) != M_dofEliminationIds.end(); }
 
 private :
     // verbose
@@ -397,8 +427,8 @@ private :
     //! index start of (sub-)block
     size_type M_startBlockSpaceIndexMatrixRow, M_startBlockSpaceIndexMatrixCol, M_startBlockSpaceIndexVector;
     std::map<std::string,size_type> M_startSubBlockSpaceIndex;
-    //! dofs eliminiation
-    std::map<std::string,std::map<ElementsType, std::set<size_type> > > M_dofEliminationIdsMultiProcess;
+    //! dofs eliminiation ( spaceName -> ( ElementsType -> ( all dofs, only dofs at interprocess that the value can be used) ) )
+    std::map<std::string,std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type> > > > M_dofEliminationIds;
 
 
 };

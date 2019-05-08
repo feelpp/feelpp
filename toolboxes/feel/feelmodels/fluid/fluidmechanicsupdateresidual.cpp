@@ -489,8 +489,26 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialG
     }
 
     // update info for synchronization
-    this->updateDofEliminationIdsMultiProcess( "velocity", data );
+    this->updateDofEliminationIds( "velocity", data );
 
+    // dofs imposed with pressure Dirichlet bc
+    if ( this->hasMarkerPressureBC() )
+    {
+        auto rangePressureBC = boundaryfaces(M_meshLagrangeMultiplierPressureBC);
+        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
+        auto plm1 = M_spaceLagrangeMultiplierPressureBC->element( U, rowStartInVector+startBlockIndexPressureLM1 );
+        plm1.on( _range=rangePressureBC,_expr=cst(0.) );
+        this->updateDofEliminationIds( "pressurelm1", this->dofEliminationIds( "pressurebc-lm" ), data );
+        if ( nDim == 3 )
+        {
+            size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
+            auto plm2 = M_spaceLagrangeMultiplierPressureBC->element( U, rowStartInVector+startBlockIndexPressureLM2 );
+            plm2.on( _range=rangePressureBC,_expr=cst(0.) );
+            this->updateDofEliminationIds( "pressurelm2", this->dofEliminationIds( "pressurebc-lm" ), data );
+        }
+    }
+
+    // imposed mean pressure (TODO use updateDofEliminationIds)
     if ( this->definePressureCst() && this->definePressureCstMethod() == "algebraic" )
     {
         auto upSol = this->functionSpace()->element( U, this->rowStartInVector() );
@@ -520,50 +538,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResi
     auto Xh = this->spaceVelocityPressure();
     size_type rowStartInVector = this->rowStartInVector();
 
-    auto resFeView = Xh->element(R,rowStartInVector);
-    auto resFeViewVelocity = resFeView.template element<0>();
-
-    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("velocity");
-    auto const& dofsWithValueImposedVelocity = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
-    for ( size_type thedof : dofsWithValueImposedVelocity )
-        resFeViewVelocity.set( thedof,0. );
-    sync( resFeViewVelocity, "=", dofsWithValueImposedVelocity );
-
+    this->updateDofEliminationIds( "velocity", data );
 
     if ( this->hasMarkerPressureBC() )
     {
-#if 0
-        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
-        auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
-        lambdaPressure1.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
-                           _expr=vf::zero<1,1>() );
+        this->updateDofEliminationIds( "pressurelm1", this->dofEliminationIds( "pressurebc-lm" ), data );
         if ( nDim == 3 )
-        {
-            size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
-            auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
-            lambdaPressure2.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
-                               _expr=vf::zero<1,1>() );
-        }
-#else
-        auto itFindDofsWithValueImposedPressureBC = M_dofsWithValueImposed.find("pressurebc-lm");
-        auto const& dofsWithValueImposedPressureBC = ( itFindDofsWithValueImposedPressureBC != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposedPressureBC->second : std::set<size_type>();
-        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
-        auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
-        for ( size_type thedof : dofsWithValueImposedPressureBC )
-            lambdaPressure1.set( thedof,0. );
-        sync( lambdaPressure1, "=", dofsWithValueImposedPressureBC );
-        if ( nDim == 3 )
-        {
-            size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
-            auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
-            for ( size_type thedof : dofsWithValueImposedPressureBC )
-                lambdaPressure2.set( thedof,0. );
-            sync( lambdaPressure2, "=", dofsWithValueImposedPressureBC );
-        }
-
-#endif
+            this->updateDofEliminationIds( "pressurelm2", this->dofEliminationIds( "pressurebc-lm" ), data );
     }
-
 }
 
 

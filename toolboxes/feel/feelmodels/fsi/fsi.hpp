@@ -313,7 +313,8 @@ public :
     void updateResidual_Solid( DataUpdateResidual & data ) const;
     void updateLinearPDEDofElimination_Fluid( DataUpdateLinear & data ) const;
     void updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess & data ) const;
-    //void updateJacobianStrongDirichletBC_Fluid( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
+    void updateJacobianDofElimination_Fluid( DataUpdateJacobian & data ) const;
+    void updateResidualDofElimination_Fluid( DataUpdateResidual & data ) const;
 
     void updateLinearPDE_Solid1dReduced( DataUpdateLinear & data ) const;
 

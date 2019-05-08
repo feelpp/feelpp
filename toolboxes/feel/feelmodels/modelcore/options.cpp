@@ -78,7 +78,7 @@ Feel::po::options_description modelalgebraic_options(std::string const& prefix)
         (prefixvm(prefix,"pseudo-transient-continuation.expur.beta-low").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "pseudo-transient-continuation parameter : beta-low")
 
         ;
-    return appliBaseOptions.add( modelbase_options(prefix ) );//.add( backend_options( prefix ) );
+    return appliBaseOptions.add( modelbase_options(prefix ) ).add( on_options( prefix ) );//.add( backend_options( prefix ) );
 }
 
 
@@ -264,7 +264,7 @@ solidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"use-near-null-space").c_str(), Feel::po::value<bool>()->default_value( true ), "use-near-null-space")
         ;
     solidOptions.add( gmsh_options( prefixvm(prefix,"1dreduced") ) );
-    return solidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).add( on_options( prefix ) );
+    return solidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
 
 Feel::po::options_description
