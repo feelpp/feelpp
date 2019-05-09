@@ -1632,11 +1632,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
 {
     this->log("FluidMechanics","updateALEmesh", "start");
 
-    for( auto const& d : M_bcMovingBoundaryImposed )
+    if ( !M_bcMovingBoundaryImposed.empty() )
     {
-        M_meshDisplacementOnInterface->on( _range=markedfaces(this->mesh(),markers(d)),
-                                           _expr=expression(d,this->symbolsExpr()),
-                                           _geomap=this->geomap() );
+        // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid tjese meshmoves)
+        bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
+        if ( !meshIsOnRefAtBegin )
+            this->meshALE()->revertReferenceMesh( false );
+        for( auto const& d : M_bcMovingBoundaryImposed )
+        {
+            M_meshDisplacementOnInterface->on( _range=markedfaces(this->mesh(),markers(d)),
+                                               _expr=expression(d,this->symbolsExpr()),
+                                               _geomap=this->geomap() );
+        }
+        if ( !meshIsOnRefAtBegin )
+            this->meshALE()->revertMovingMesh( false );
     }
     //-------------------------------------------------------------------//
     // compute ALE map
