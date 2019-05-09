@@ -174,7 +174,8 @@ protected:
     integral_boundary_list_type M_IBCList;
 
     bool M_isPicard;
-
+    std::map<std::string,value_type> M_paramValues;
+    
 public:
 
     // constructor
@@ -268,7 +269,7 @@ public:
     template<typename ExprT> void assembleRhsNeumann( Expr<ExprT> expr, std::string marker);
     template<typename ExprT> void assembleRhsInterfaceCondition( Expr<ExprT> expr, std::string marker);
     // u.n + g1.p = g2
-    template<typename ExprT1, typename ExprT2> void assembleRobin( Expr<ExprT1> expr1, Expr<ExprT2> expr2, std::string marker);
+    template<typename ExprT1, typename ExprT2> void assembleRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker);
     void assembleIBC(int i, std::string marker = "");
     virtual void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
 
@@ -436,7 +437,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsInterfaceCondition( Expr<
 template<int Dim, int Order, int G_Order, int E_Order>
 template<typename ExprT1, typename ExprT2>
 void
-MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> expr1, Expr<ExprT2> expr2, std::string marker)
+MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker)
 {
     tic();
     auto bbf = blockform2( *M_ps, M_A_cst);

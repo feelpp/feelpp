@@ -46,6 +46,15 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleAll()
 {
+    this->modelProperties().parameters().updateParameterValues();
+    M_paramValues = this->modelProperties().parameters().toParameterValues();
+    for( auto const& [k,v] : M_paramValues )
+    {
+        Feel::cout << " - parameter " << k << " : " << v << std::endl;
+    }
+    this->modelProperties().materials().setParameterValues( M_paramValues );
+    //this->modelProperties().boundaryConditions().setParameterValues( paramValues );
+    this->modelProperties().postProcess().setParameterValues( M_paramValues );
     tic();
     M_A_cst->zero();
     M_F->zero();
@@ -215,7 +224,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateConductivityTerm( bool isNL)
         auto material = pairMat.second;
         if ( !isNL )
         {
-            auto cond = material.getScalar(M_conductivityKey);
+            auto cond = material.getScalar(M_conductivityKey, M_paramValues);
             // (sigma^-1 j, v)
             bbf(0_c,0_c) += integrate(_range=markedelements(M_mesh,marker),
                                       _expr=(trans(idt(u))*id(v))/cond );
@@ -262,6 +271,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRHS()
                 auto g = expr<expr_order>(exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+                g.setParameterValues( M_paramValues );
                 this->assemblePotentialRHS(g, marker);
             }
         }
@@ -339,7 +349,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleBoundaryCond()
                     g1.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                     g2.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 }
-
+                g1.setParameterValues( M_paramValues );
+                g2.setParameterValues( M_paramValues );
                 this->assembleRobin(g1, g2, marker);
             }
         }
@@ -372,6 +383,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsBoundaryCond()
                     auto g = expr<expr_order>(exAtMarker.expression());
                     if ( !this->isStationary() )
                         g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+                    g.setParameterValues( M_paramValues );
                     this->assembleRhsDirichlet(g, marker);
                 } else if ( exAtMarker.isFile() )
                 {
@@ -407,12 +419,14 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsBoundaryCond()
                     auto g = expr<expr_order>(exAtMarker.expression());
                     if ( !this->isStationary() )
                         g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+                    g.setParameterValues( M_paramValues );
                     this->assembleRhsNeumann( g, marker);
                 } else if ( nComp == Dim )
                 {
                     auto g = expr<Dim,1,expr_order>(exAtMarker.expression());
                     if ( !this->isStationary() )
                         g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+                    g.setParameterValues( M_paramValues );
                     /*
                      auto blf = blockform1( *M_ps, M_F );
                      auto l = M_Mh->element( "lambda" );
@@ -435,7 +449,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsBoundaryCond()
                 auto gradp_ex = expr(grad<Dim>(p_ex)) ;
                 if ( !this->isStationary() )
                     gradp_ex.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
-
+                gradp_ex.setParameterValues( M_paramValues );
                 for( auto const& pairMat : modelProperties().materials() )
                 {
                     auto material = pairMat.second;
@@ -484,6 +498,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsBoundaryCond()
                 auto g = expr<1,1,expr_order>(exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+                g.setParameterValues( M_paramValues );
                 Feel::cout << "Interface condition on " << marker << ":\t" << g << std::endl;
                 this->assembleRhsInterfaceCondition( g, marker);
             }
@@ -525,6 +540,7 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsIBC( int i, std::string marker
             g = expr<expr_order>(exAtMarker.expression());
             if ( !this->isStationary() )
                 g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+            g.setParameterValues( M_paramValues );
         } else if ( exAtMarker.isFile() )
         {
             double d = 0;
@@ -929,15 +945,17 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                                 auto p_exact = expr(exAtMarker.expression()) ;
                                 if ( !this->isStationary() )
                                     p_exact.setParameterValues( { {"t", time } } );
+                                p_exact.setParameterValues( M_paramValues );
                                 double K = 1;
                                 for( auto const& pairMat : modelProperties().materials() )
                                 {
                                     auto material = pairMat.second;
-                                    K = material.getDouble( "k" );
+                                    K = material.getScalar( "k" ).evaluate(M_paramValues);
                                 }
                                 auto gradp_exact = grad<Dim>(p_exact) ;
                                 if ( !this->isStationary() )
                                     gradp_exact.setParameterValues( { {"t", time } } );
+                                gradp_exact.setParameterValues( M_paramValues );
                                 auto u_exact = cst(-K)*trans(gradp_exact);//expr(-K* trans(gradp_exact)) ;
 
                                 auto p_exactExport = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact );
