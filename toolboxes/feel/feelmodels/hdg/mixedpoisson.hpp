@@ -459,15 +459,15 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> const& e
     // stabilisation parameter
     auto tau_constant = cst(doption(prefixvm(prefix(), "tau_constant")));
 
-    // // <j.n,mu>_Gamma_R
-    // bbf( 2_c, 0_c ) += integrate(_range=markedfaces(M_mesh,marker),
-    //                              _expr=( id(l)*(trans(idt(u))*N()) ));
-    // // <tau p, mu>_Gamma_R
-    // bbf( 2_c, 1_c ) += integrate(_range=markedfaces(M_mesh,marker),
-    //                              _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
-    // // <-tau phat, mu>_Gamma_R
-    // bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
-    //                              _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
+    // <j.n,mu>_Gamma_R
+    bbf( 2_c, 0_c ) += integrate(_range=markedfaces(M_mesh,marker),
+                                 _expr=( id(l)*(trans(idt(u))*N()) ));
+    // <tau p, mu>_Gamma_R
+    bbf( 2_c, 1_c ) += integrate(_range=markedfaces(M_mesh,marker),
+                                 _expr=tau_constant * id(l) * ( pow(idv(H),M_tauOrder)*idt(p) ) );
+    // <-tau phat, mu>_Gamma_R
+    bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+                                 _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tauOrder) ) );
     // <g_R^1 phat, mu>_Gamma_R
     bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
                                  _expr=expr1*idt(phat) * id(l) );
