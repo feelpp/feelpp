@@ -188,8 +188,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
                << "\n     -- initial time : " << this->timeStepBase()->timeInitial()
                << "\n     -- final time   : " << this->timeStepBase()->timeFinal()
                << "\n     -- time step    : " << this->timeStepBase()->timeStep()
-               << "\n     -- order        : " << this->timeStepBDF()->timeOrder()
-               << "\n     -- restart mode : " << ResartMode
+               << "\n     -- type : " << M_timeStepping;
+        if ( M_timeStepping == "BDF" )
+            *_ostr << " ( order=" << this->timeStepBDF()->timeOrder() << " )";
+        else if ( M_timeStepping == "Theta" )
+            *_ostr << " ( theta=" << M_timeStepThetaValue << " )";
+        *_ostr << "\n     -- restart mode : " << ResartMode
                << "\n     -- save on disk : " << std::boolalpha << this->timeStepBase()->saveInFile();
         if ( this->timeStepBase()->saveFreq() )
             *_ostr << "\n     -- freq save : " << this->timeStepBase()->saveFreq()
