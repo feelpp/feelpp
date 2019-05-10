@@ -528,9 +528,14 @@ Gmsh::refine( std::string const& name, int /*level*/, bool parametric  ) const
         int dim = gmsh::model::getDimension();
         VLOG(1) << "Read mesh with dim : " << dim << "\n";
 
-        gmsh::option::setNumber( "Mesh.PartitionCreateGhostCells", 1 );
-        gmsh::option::setNumber( "Mesh.PartitionOldStyleMsh2",0 );
-        gmsh::model::mesh::partition( M_partitions );
+        if ( M_partitions > 1 )
+        {
+            gmsh::option::setNumber( "Mesh.PartitionCreatePhysicals", 0);
+            gmsh::option::setNumber( "Mesh.PartitionCreateTopology", 1);
+            gmsh::option::setNumber( "Mesh.PartitionCreateGhostCells", 1 );
+            gmsh::option::setNumber( "Mesh.PartitionOldStyleMsh2",0 );
+            gmsh::model::mesh::partition( M_partitions );
+        }
 
         // info about partitioning
         gmsh::vectorpair dimTags;
@@ -669,9 +674,15 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
     if( doption("gmsh.randFactor") > 0. )
        gmsh::option::setNumber( "Mesh.RandomFactor", doption("gmsh.randFactor") );
 
+    std::vector<std::string> gmshLog;
+    gmsh::logger::start( gmshLog );
     // generate mesh
     gmsh::model::mesh::generate( dim );
+    gmsh::logger::stop();
 
+    for ( std::string const& msg : gmshLog )
+        std::cout << msg << "\n";
+    
     // mesh refine
     for( int l = 0; l < M_refine_levels; ++l )
     {
@@ -824,6 +835,8 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
         int dim = gmsh::model::getDimension();
         VLOG(1) << "Read mesh with dim : " << dim << "\n";
 
+        gmsh::option::setNumber( "Mesh.PartitionCreatePhysicals", 0);
+        gmsh::option::setNumber( "Mesh.PartitionCreateTopology", 1);
         gmsh::option::setNumber( "Mesh.PartitionCreateGhostCells", 1 );
         gmsh::option::setNumber( "Mesh.PartitionOldStyleMsh2",0 );
         gmsh::model::mesh::partition( M_partitions );
@@ -931,7 +944,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
     Gmsh::preamble() const
     {
         std::ostringstream ostr;
-
+        std::cout << "GMSH file version " << this->version() << std::endl;
         ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
              << "Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
              << "Mesh.CharacteristicLengthFromPoints=1;\n"
