@@ -309,10 +309,12 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createALE()
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-    if ( this->isMoveDomain() )
+    if ( !this->markerALEMeshBC( "moving" ).empty() )
     {
         this->log("FluidMechanics","createALE", "start" );
         this->timerTool("Constructor").start();
+
+        M_isMoveDomain=true;
 
         M_XhMeshVelocityInterface = space_meshvelocityonboundary_type::New(_mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm());
         M_XhMeshALEmapDisc = space_alemapdisc_type::New(_mesh=this->mesh(), _worldscomm=this->localNonCompositeWorldsComm() );
@@ -503,13 +505,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
         std::string dirichletbcType = "elimination";
         M_bcMarkersMovingBoundaryImposed.setMarkerDirichletBCByNameId( dirichletbcType, name(d), markers(d),ComponentType::NO_COMPONENT );
-        this->M_isMoveDomain=true;
     }
 
     for( std::string const& bcMarker : this->modelProperties().boundaryConditions().markers( { { "velocity", "interface_fsi" }, { "fluid","interface_fsi"} } ) )
     {
         this->addMarkerALEMeshBC("moving",bcMarker);
-        this->M_isMoveDomain=true;
         M_markersFSI.insert( bcMarker );
     }
 
