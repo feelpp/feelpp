@@ -886,13 +886,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
     M_bcMovingBoundaryImposed.setParameterValues( paramValues );
     this->M_volumicForcesProperties.setParameterValues( paramValues );
     this->updateFluidInletVelocity();
-
-    if ( M_preconditionerAttachPCD && this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") )
-    {
-        std::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
-            std::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
-        myOpPCD->setParameterValues( paramValues );
-    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1097,56 +1090,92 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol) const
 {
+    this->log("FluidMechanics","updateInHousePreconditionerPCD", "start" );
+
     CHECK( this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") ) << "operator PCD does not init";
 
-    std::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
-        std::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
-    auto const& rho = this->materialProperties()->fieldRho();
-    auto const& mu = this->materialProperties()->fieldMu();
+    typedef Feel::Alternatives::OperatorPCD<space_fluid_velocity_type,space_fluid_pressure_type> op_pcd_type;
+    std::shared_ptr<op_pcd_type> myOpPCD =
+        std::dynamic_pointer_cast<op_pcd_type>( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
     bool hasAlpha = !this->isStationaryModel();
     double coeffAlpha = (this->isStationaryModel())? 0. : this->timeStepBDF()->polyDerivCoefficient(0);
-    auto alpha = idv(rho)*coeffAlpha;
-    if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
+
+    auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
+    auto u = U.template element<0>();
+    auto p = U.template element<1>();
+
+    myOpPCD->updateStart();
+
+    for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
     {
-        if (this->isMoveDomain() )
+        std::string const& matName = rangeData.first;
+        auto const& therange = rangeData.second;
+        auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
+        auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*this->materialProperties(),matName);
+        //auto rhoExpr = this->materialProperties()->density( matName ).expr();
+        auto const& fieldRho = this->materialProperties()->fieldRho();
+        auto rhoExpr = idv( fieldRho );
+        auto alpha = rhoExpr*coeffAlpha;
+        if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
         {
+            if (this->isMoveDomain() )
+            {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            myOpPCD->update(idv(rho),idv(mu), -idv(rho)*idv(this->meshVelocity()), alpha, true, hasAlpha );
+                myOpPCD->updateDiffConvectionMass( therange, rhoExpr, muExpr, -rhoExpr*idv(this->meshVelocity()), alpha, true, hasAlpha );
 #endif
+            }
+            else
+            {
+                myOpPCD->updateDiffConvectionMass( therange, rhoExpr, muExpr, zero<nDim,1>(), alpha, false, hasAlpha );
+            }
         }
-        else
-            myOpPCD->update(idv(rho),idv(mu), zero<nDim,1>(), alpha, false, hasAlpha );
+        else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
+        {
+            auto BetaU = this->timeStepBDF()->poly();
+            auto betaU = BetaU.template element<0>();
+            if (this->isMoveDomain() )
+            {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+                myOpPCD->updateDiffConvectionMass( therange, rhoExpr, muExpr, rhoExpr*( idv(betaU)-idv(this->meshVelocity()) ), alpha, true, hasAlpha );
+#endif
+            }
+            else
+            {
+                myOpPCD->updateDiffConvectionMass( therange, rhoExpr, muExpr, rhoExpr*idv(betaU) , alpha, true, hasAlpha );
+            }
+        }
+        else if ( this->modelName() == "Navier-Stokes" )
+        {
+            if (this->isMoveDomain() )
+            {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+                myOpPCD->updateDiffConvectionMass( therange, rhoExpr, muExpr, rhoExpr*( idv(u)-idv(this->meshVelocity()) ), alpha, true, hasAlpha );
+#endif
+            }
+            else
+            {
+                myOpPCD->updateDiffConvectionMass( therange, rhoExpr, muExpr, rhoExpr*idv(u) , alpha, true, hasAlpha );
+            }
+        }
+
     }
-    else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
+
+    auto const& fieldRho = this->materialProperties()->fieldRho();
+    auto rhoExpr = idv( fieldRho );
+    for( auto const& d : M_bcDirichlet )
+        myOpPCD->updateInflowBC( rhoExpr, name(d), expression(d,this->symbolsExpr()) );
+    for( auto const& d : M_bcMovingBoundaryImposed )
+        myOpPCD->updateInflowBC( rhoExpr, name(d), idv(M_meshALE->velocity()) );
+    for ( auto const& inletbc : M_fluidInletDesc )
     {
-        auto BetaU = this->timeStepBDF()->poly();
-        auto betaU = BetaU.template element<0>();
-        if (this->isMoveDomain() )
-        {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-            myOpPCD->update(idv(rho),idv(mu), idv(rho)*( idv(betaU)-idv(this->meshVelocity()) ), alpha, true, hasAlpha );
-#endif
-        }
-        else
-            myOpPCD->update(idv(rho),idv(mu), idv(rho)*idv(betaU) , alpha, true, hasAlpha );
+        std::string const& marker = std::get<0>( inletbc );
+        auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
+        myOpPCD->updateInflowBC( rhoExpr, marker, -idv(inletVel)*N() );
     }
-    else if ( this->modelName() == "Navier-Stokes" )
-    {
-        auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
-        auto u = U.template element<0>();
-        auto p = U.template element<1>();
-        CHECK( this->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
-        std::string matName = this->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-        auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(u),*this->materialProperties(),matName);
-        if (this->isMoveDomain() )
-        {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-            myOpPCD->update(idv(rho),myViscosity/*idv(mu)*/, idv(rho)*( idv(u)-idv(this->meshVelocity()) ), alpha, true, hasAlpha );
-#endif
-        }
-        else
-            myOpPCD->update(idv(rho),myViscosity/*idv(mu)*/, idv(rho)*idv(u) , alpha, true, hasAlpha );
-    }
+
+    myOpPCD->updateFinish();
+
+    this->log("FluidMechanics","updateInHousePreconditionerPCD", "finish" );
 }
 
 
