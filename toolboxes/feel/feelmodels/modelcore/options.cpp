@@ -219,6 +219,7 @@ fluidMechanics_options(std::string const& prefix)
         .add( alemesh_options( prefix ) )
         .add( backend_options( prefixvm(prefix,"fluidinlet") ) )
         .add( densityviscosity_options( prefix ) )
+        .add( pcd_options( prefix ) )
         ;
 
 
