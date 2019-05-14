@@ -6,100 +6,103 @@
 #include <feel/feells/reinit_fms_impl.hpp>
 
 #include "geometryconceptwrappers.hpp"
+#include "trianglesintersect.hpp"
+#include "distancepointtoface.hpp"
 
 namespace Feel {
 
 template< typename MeshType, typename FunctionSpaceType >
 class DistanceToMesh
 {
-public:
-    typedef DistanceToMesh< MeshType, FunctionSpaceType > self_type;
-    typedef std::shared_ptr< self_type > self_ptrtype;
+    public:
+        typedef DistanceToMesh< MeshType, FunctionSpaceType > self_type;
+        typedef std::shared_ptr< self_type > self_ptrtype;
 
-    //--------------------------------------------------------------------//
-    // Surface mesh
-    typedef MeshType mesh_surface_type;
-    typedef std::shared_ptr< mesh_surface_type > mesh_surface_ptrtype;
+        //--------------------------------------------------------------------//
+        // Surface mesh
+        typedef MeshType mesh_surface_type;
+        typedef std::shared_ptr< mesh_surface_type > mesh_surface_ptrtype;
 
-    //--------------------------------------------------------------------//
-    // Distance functionspace and mesh
-    typedef FunctionSpaceType functionspace_distance_type;
-    typedef std::shared_ptr< functionspace_distance_type > functionspace_distance_ptrtype;
-    typedef typename functionspace_distance_type::element_type element_distance_type;
-    typedef typename functionspace_distance_type::element_ptrtype element_distance_ptrtype;
+        //--------------------------------------------------------------------//
+        // Distance functionspace and mesh
+        typedef FunctionSpaceType functionspace_distance_type;
+        typedef std::shared_ptr< functionspace_distance_type > functionspace_distance_ptrtype;
+        typedef typename functionspace_distance_type::element_type element_distance_type;
+        typedef typename functionspace_distance_type::element_ptrtype element_distance_ptrtype;
 
-    static const uint16_type nDofPerEltDistance = functionspace_distance_type::fe_type::nDof;
+        static const uint16_type nDofPerEltDistance = functionspace_distance_type::fe_type::nDof;
 
-    typedef typename functionspace_distance_type::mesh_type mesh_distance_type;
-    typedef typename functionspace_distance_type::mesh_ptrtype mesh_distance_ptrtype;
+        typedef typename functionspace_distance_type::mesh_type mesh_distance_type;
+        typedef typename functionspace_distance_type::mesh_ptrtype mesh_distance_ptrtype;
 
-    typedef typename MeshTraits<mesh_distance_type>::elements_reference_wrapper_type elements_reference_wrapper_distance_type;
-    typedef typename MeshTraits<mesh_distance_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_distance_ptrtype;
-    typedef elements_reference_wrapper_t<mesh_distance_type> range_elements_distance_type;
+        typedef typename MeshTraits<mesh_distance_type>::elements_reference_wrapper_type elements_reference_wrapper_distance_type;
+        typedef typename MeshTraits<mesh_distance_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_distance_ptrtype;
+        typedef elements_reference_wrapper_t<mesh_distance_type> range_elements_distance_type;
 
-    //--------------------------------------------------------------------//
-    static const uint16_type nRealDim = functionspace_distance_type::nRealDim;
-    typedef typename functionspace_distance_type::value_type value_type;
-    typedef typename node<value_type>::type node_type;
-    typedef typename matrix_node<value_type>::type matrix_node_type;
+        //--------------------------------------------------------------------//
+        static constexpr uint16_type nRealDim = functionspace_distance_type::nRealDim;
+        typedef typename functionspace_distance_type::value_type value_type;
+        typedef typename node<value_type>::type node_type;
+        typedef typename matrix_node<value_type>::type matrix_node_type;
 
-    //--------------------------------------------------------------------//
-    // Fast-marching
-    typedef ReinitializerFMS< functionspace_distance_type > fastmarching_type;
-    typedef std::shared_ptr<fastmarching_type> fastmarching_ptrtype;
+        //--------------------------------------------------------------------//
+        // Fast-marching
+        typedef ReinitializerFMS< functionspace_distance_type > fastmarching_type;
+        typedef std::shared_ptr<fastmarching_type> fastmarching_ptrtype;
 
-public:
-    //--------------------------------------------------------------------//
-    // Constructor
-    DistanceToMesh( mesh_surface_ptrtype const& meshSurface, functionspace_distance_ptrtype const& spaceDistance );
+    public:
+        //--------------------------------------------------------------------//
+        // Constructor
+        DistanceToMesh( mesh_surface_ptrtype const& meshSurface, functionspace_distance_ptrtype const& spaceDistance );
 
-    //--------------------------------------------------------------------//
-    // Accessors
-    mesh_surface_ptrtype const& meshSurface() const { return M_meshSurface; }
-    functionspace_distance_ptrtype const& functionSpaceDistance() const { return M_spaceDistance; }
-    mesh_distance_ptrtype const& meshDistance() const { return this->functionSpaceDistance()->mesh(); }
+        //--------------------------------------------------------------------//
+        // Accessors
+        mesh_surface_ptrtype const& meshSurface() const { return M_meshSurface; }
+        functionspace_distance_ptrtype const& functionSpaceDistance() const { return M_spaceDistance; }
+        mesh_distance_ptrtype const& meshDistance() const { return this->functionSpaceDistance()->mesh(); }
 
-    //--------------------------------------------------------------------//
-    // Fast-marching
-    fastmarching_ptrtype const& fastMarching() const;
+        //--------------------------------------------------------------------//
+        // Fast-marching
+        fastmarching_ptrtype const& fastMarching() const;
 
-    //--------------------------------------------------------------------//
-    // Geometry
-    static bool segmentsIntersect( matrix_node_type const& seg1, matrix_node_type const& seg2 );
-    static bool trianglesIntersect( matrix_node_type const& tri1, matrix_node_type const& tri2 );
+        //--------------------------------------------------------------------//
+        // Geometry
+        static bool segmentsIntersect( matrix_node_type const& seg1, matrix_node_type const& seg2 );
+        static bool trianglesIntersect( matrix_node_type const& tri1, matrix_node_type const& tri2 );
+        static bool facesIntersect( matrix_node_type const& face1, matrix_node_type const& face2 );
 
-    static bool facesIntersect( matrix_node_type const& face1, matrix_node_type const& face2 );
+        value_type distancePointToSegment( node_type const& pt, matrix_node_type const& seg );
+        value_type distancePointToTriangle( node_type const& pt, matrix_node_type const& tri );
+        value_type distancePointToFace( node_type const& pt, matrix_node_type const& face );
 
-    static value_type distancePointToSegment( node_type const& pt, matrix_node_type const& seg );
+        //--------------------------------------------------------------------//
+        // Result
+        element_distance_ptrtype const& unsignedDistance() const;
+        element_distance_ptrtype const& signedDistance() const;
 
-    //--------------------------------------------------------------------//
-    // Result
-    element_distance_ptrtype const& unsignedDistance() const;
-    element_distance_ptrtype const& signedDistance() const;
+        std::unordered_set< size_type > const& intersectingElements() const;
+        range_elements_distance_type rangeIntersectingElements() const;
 
-    std::unordered_set< size_type > const& intersectingElements() const;
-    range_elements_distance_type rangeIntersectingElements() const;
-
-private:
-    void updateIntersectingElements();
-    void updateUnsignedDistance();
-    void updateSignedDistance();
+    private:
+        void updateIntersectingElements();
+        void updateUnsignedDistance();
+        void updateSignedDistance();
 
 
-private:
-    mesh_surface_ptrtype M_meshSurface;
-    functionspace_distance_ptrtype M_spaceDistance;
+    private:
+        mesh_surface_ptrtype M_meshSurface;
+        functionspace_distance_ptrtype M_spaceDistance;
 
-    fastmarching_ptrtype M_fastMarching;
+        fastmarching_ptrtype M_fastMarching;
 
-    std::unordered_set< size_type > M_intersectingElements;
-    std::unordered_map< size_type, std::unordered_set< size_type > > M_eltsIntersectedBySurfaceElt;
-    bool M_doUpdateIntersectingElements;
+        std::unordered_set< size_type > M_intersectingElements;
+        std::unordered_map< size_type, std::unordered_set< size_type > > M_eltsIntersectedBySurfaceElt;
+        bool M_doUpdateIntersectingElements;
 
-    element_distance_ptrtype M_unsignedDistance;
-    bool M_doUpdateUnsignedDistance;
-    element_distance_ptrtype M_signedDistance;
-    bool M_doUpdateSignedDistance;
+        element_distance_ptrtype M_unsignedDistance;
+        bool M_doUpdateUnsignedDistance;
+        element_distance_ptrtype M_signedDistance;
+        bool M_doUpdateSignedDistance;
 };
 
 template< typename MeshType, typename FunctionSpaceType >
@@ -123,22 +126,28 @@ DistanceToMesh< MeshType, FunctionSpaceType >::fastMarching() const
 }
 
 template< typename MeshType, typename FunctionSpaceType >
-bool
+    bool
 DistanceToMesh< MeshType, FunctionSpaceType >::segmentsIntersect( matrix_node_type const& seg1, matrix_node_type const& seg2 )
 {
     return boost::geometry::intersects( Feel::detail::geometry::segmentWrap<nRealDim>( seg1 ), Feel::detail::geometry::segmentWrap<nRealDim>( seg2 ) );
 }
 
 template< typename MeshType, typename FunctionSpaceType >
-bool
+    bool
 DistanceToMesh< MeshType, FunctionSpaceType >::trianglesIntersect( matrix_node_type const& poly1, matrix_node_type const& poly2 )
 {
-    //TODO
-    return false;
+    typedef Eigen::Matrix<value_type, nRealDim, Eigen::Dynamic, Eigen::ColMajor> PointsMatrix;
+    typedef Eigen::Map<PointsMatrix> PointsMatrixMap;
+    PointsMatrixMap tri1( const_cast<value_type*>( poly1.data().begin() ), nRealDim, poly1.size2() );
+    PointsMatrixMap tri2( const_cast<value_type*>( poly2.data().begin() ), nRealDim, poly2.size2() );
+    return Feel::detail::geometry::triangles3DIntersect( 
+            tri1.col(0), tri1.col(1), tri1.col(2),
+            tri2.col(0), tri2.col(1), tri2.col(2)
+            );
 }
 
 template< typename MeshType, typename FunctionSpaceType >
-bool
+    bool
 DistanceToMesh< MeshType, FunctionSpaceType >::facesIntersect( matrix_node_type const& face1, matrix_node_type const& face2 )
 {
     if constexpr ( nRealDim == 2 )
@@ -147,13 +156,6 @@ DistanceToMesh< MeshType, FunctionSpaceType >::facesIntersect( matrix_node_type 
         return trianglesIntersect( face1, face2 );
     else
         CHECK( false ) << "nRealDim must be 2 or 3" << std::endl;
-}
-
-template< typename MeshType, typename FunctionSpaceType >
-typename DistanceToMesh< MeshType, FunctionSpaceType >::value_type
-DistanceToMesh< MeshType, FunctionSpaceType >::distancePointToSegment( node_type const& pt, matrix_node_type const& seg )
-{
-    return boost::geometry::distance( Feel::detail::geometry::pointWrap<nRealDim>( pt ), Feel::detail::geometry::segmentWrap<nRealDim>( seg ) );
 }
 
 template< typename MeshType, typename FunctionSpaceType >
@@ -205,7 +207,7 @@ DistanceToMesh< MeshType, FunctionSpaceType >::rangeIntersectingElements() const
 }
 
 template< typename MeshType, typename FunctionSpaceType >
-void
+    void
 DistanceToMesh< MeshType, FunctionSpaceType >::updateIntersectingElements()
 {
     M_intersectingElements.clear();
@@ -232,15 +234,15 @@ DistanceToMesh< MeshType, FunctionSpaceType >::updateIntersectingElements()
         auto const& surfElt = boost::unwrap_ref( *it_elt_surf );
         size_type const surfEltId = surfElt.id();
         // Localise only the first dof
-        //node_type ptReal = ublas::column( surfElt.vertices(), 0 );
-        matrix_node_type ptReal( nRealDim, 1 );
-        ublas::column( ptReal, 0 ) = ublas::column( surfElt.vertices(), 0 );
+        node_type ptReal = ublas::column( surfElt.vertices(), 0 );
+        //matrix_node_type ptReal( nRealDim, 1 );
+        //ublas::column( ptReal, 0 ) = ublas::column( surfElt.vertices(), 0 );
         // Localise
-        //auto resLocalisation = locTool->searchElement( ptReal );
-        auto resLocalisation = locTool->run_analysis( ptReal, invalid_size_type_value );
+        auto resLocalisation = locTool->searchElement( ptReal );
+        //auto resLocalisation = locTool->run_analysis( ptReal, invalid_size_type_value );
 
-        //if( resLocalisation.template get<0>() )
-        if( resLocalisation.template get<0>()[0] )
+        if( resLocalisation.template get<0>() )
+            //if( resLocalisation.template get<0>()[0] )
         {
             size_type localisedEltId = resLocalisation.template get<1>();
             M_intersectingElements.insert( localisedEltId );
@@ -278,7 +280,6 @@ DistanceToMesh< MeshType, FunctionSpaceType >::updateIntersectingElements()
                     rank_type const neighPid = neigh.processId();
 
                     auto const& face = elt.face( faceLocId );
-                    size_type const faceId = face.id();
                     bool intersect = self_type::facesIntersect( face.vertices(), surfElt.vertices() );
                     if( intersect )
                     {
@@ -352,7 +353,7 @@ DistanceToMesh< MeshType, FunctionSpaceType >::updateIntersectingElements()
 }
 
 template< typename MeshType, typename FunctionSpaceType >
-void
+    void
 DistanceToMesh< MeshType, FunctionSpaceType >::updateUnsignedDistance()
 {
     if( !M_unsignedDistance )
@@ -370,7 +371,7 @@ DistanceToMesh< MeshType, FunctionSpaceType >::updateUnsignedDistance()
         size_type const surfEltId = eltsIntersectedBySurfaceEltPair.first;
         auto const& surfElt = this->meshSurface()->element( surfEltId );
         auto const& eltsIntersected = eltsIntersectedBySurfaceEltPair.second;
-        
+
         for( size_type const eltId: eltsIntersected )
         {
             auto const elt = this->meshDistance()->element( eltId );
@@ -379,7 +380,7 @@ DistanceToMesh< MeshType, FunctionSpaceType >::updateUnsignedDistance()
                 size_type const eltDofGlobalId = dofTable->localToGlobal( elt, j, 0 ).index();
                 auto const pt = boost::get<0>( dofTable->dofPoint( eltDofGlobalId ) );
 
-                auto dist = distancePointToSegment( pt, surfElt.vertices() );
+                auto dist = Feel::detail::geometry::distancePointToFace<nRealDim>( pt, surfElt.vertices() );
                 if( dist < M_unsignedDistance->localToGlobal( eltId, j, 0 ) )
                     M_unsignedDistance->assign( eltId, j, 0, dist );
             }
@@ -393,7 +394,7 @@ DistanceToMesh< MeshType, FunctionSpaceType >::updateUnsignedDistance()
 }
 
 template< typename MeshType, typename FunctionSpaceType >
-void
+    void
 DistanceToMesh< MeshType, FunctionSpaceType >::updateSignedDistance()
 {
     if( !M_signedDistance )
