@@ -1712,119 +1712,59 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 
     if ( M_preconditionerAttachPCD )
     {
-        BoundaryConditions bcPrecPCD;
-        bcPrecPCD.clear();
+        typedef Feel::Alternatives::OperatorPCD<space_fluid_velocity_type,space_fluid_pressure_type> op_pcd_type;
+        auto opPCD = std::make_shared<op_pcd_type>( this->functionSpaceVelocity(), this->functionSpacePressure(),
+                                                    this->backend(), this->prefix(), true);
 
-        auto itFindFieldVelocity = this->modelProperties().boundaryConditions().find("velocity");
-        bool hasFindFieldVelocity = itFindFieldVelocity != this->modelProperties().boundaryConditions().end();
-        if ( hasFindFieldVelocity )
+        for( auto const& d : M_bcDirichlet )
         {
-            auto itFindDirichletType = itFindFieldVelocity->second.find("Dirichlet");
-            if ( itFindDirichletType != itFindFieldVelocity->second.end() )
+            std::set<std::string> themarkers;
+            for ( std::string const& type : std::vector<std::string>( { "elimination", "nitsche", "lm" } ) )
             {
-                for ( auto const& myBcDesc : itFindDirichletType->second )
-                {
-                    auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",myBcDesc.marker() ) );
-                    auto const& listMarkerFaces = std::get<0>( ret );
-                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
-                    myBcDesc2.setMeshMarkers( listMarkerFaces );
-                    bcPrecPCD["velocity"]["Dirichlet"].push_back( myBcDesc2 );
-                }
+                auto ret = detail::distributeMarkerListOnSubEntity( this->mesh(),this->markerDirichletBCByNameId( type, name(d) ) );
+                themarkers.insert( std::get<0>( ret ).begin(), std::get<0>( ret ).end() );
             }
-            // For weak Dirichlet (Nitche,Magrange Multiplier ) ???
-            // TODO Dirchlet component
+            opPCD->addRangeDirichletBC( name(d), markedfaces( this->mesh(), themarkers ) );
+        }
+        for( auto const& d : M_bcMovingBoundaryImposed )
+        {
+            std::set<std::string> themarkers;
+            for ( std::string const& type : std::vector<std::string>( { "elimination", "nitsche", "lm" } ) )
+            {
+                auto ret = detail::distributeMarkerListOnSubEntity( this->mesh(), M_bcMarkersMovingBoundaryImposed.markerDirichletBCByNameId( type, name(d) ) );
+                themarkers.insert( std::get<0>( ret ).begin(), std::get<0>( ret ).end() );
+            }
+            opPCD->addRangeDirichletBC( name(d), markedfaces( this->mesh(), themarkers ) );
+        }
+        for ( auto const& inletbc : M_fluidInletDesc )
+        {
+            std::string const& themarker = std::get<0>( inletbc );
+            opPCD->addRangeDirichletBC( themarker, markedfaces( this->mesh(), themarker ) ); // warning marker is the name
+        }
 
-            auto itFindNeumannScalType = itFindFieldVelocity->second.find("Neumann_scalar");
-            if ( itFindNeumannScalType != itFindFieldVelocity->second.end() )
-            {
-                for ( auto const& myBcDesc : itFindNeumannScalType->second )
-                {
-                    auto markList = this->markerNeumannBC( NeumannBCShape::SCALAR,myBcDesc.marker() );
-                    if ( markList.empty() ) continue;
-                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
-                    myBcDesc2.setMeshMarkers( markList );
-                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
-                }
-            }
-            auto itFindNeumannVecType = itFindFieldVelocity->second.find("Neumann_vectorial");
-            if ( itFindNeumannVecType != itFindFieldVelocity->second.end() )
-            {
-                for ( auto const& myBcDesc : itFindNeumannVecType->second )
-                {
-                    auto markList = this->markerNeumannBC( NeumannBCShape::VECTORIAL,myBcDesc.marker() );
-                    if ( markList.empty() ) continue;
-                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
-                    myBcDesc2.setMeshMarkers( markList );
-                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
-                }
-            }
-            auto itFindNeumannTensor2Type = itFindFieldVelocity->second.find("Neumann_tensor2");
-            if ( itFindNeumannTensor2Type != itFindFieldVelocity->second.end() )
-            {
-                for ( auto const& myBcDesc : itFindNeumannTensor2Type->second )
-                {
-                    auto markList = this->markerNeumannBC( NeumannBCShape::TENSOR2,myBcDesc.marker() );
-                    if ( markList.empty() ) continue;
-                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
-                    myBcDesc2.setMeshMarkers( markList );
-                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
-                }
-            }
-        }
-#if 0
-        auto itFindFieldFluid = this->modelProperties().boundaryConditions().find("fluid");
-        if ( itFindFieldFluid != this->modelProperties().boundaryConditions().end() )
+        std::set<std::string> markersNeumann;
+        for( auto const& d : M_bcNeumannScalar )
         {
-            auto itFindOutletType = itFindFieldFluid->second.find("outlet");
-            if ( itFindOutletType != itFindFieldFluid->second.end() )
-            {
-                for ( auto const& myBcDesc : itFindOutletType->second )
-                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc );
-            }
+            auto themarkers = this->markerNeumannBC(NeumannBCShape::SCALAR,name(d));
+            markersNeumann.insert( themarkers.begin(), themarkers.end() );
         }
-#else
-        if ( !this->M_fluidOutletsBCType.empty() )
+        for( auto const& d : M_bcNeumannVectorial )
         {
-            std::set<std::string> markList;
-            for ( auto const& bcOutlet : this->M_fluidOutletsBCType )
-                markList.insert( std::get<0>(bcOutlet) );
-            ExpressionStringAtMarker myBcDesc2( std::make_tuple( "expression","wind","0","","" ) );
-            myBcDesc2.setMeshMarkers( markList );
-            bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
+            auto themarkers = this->markerNeumannBC(NeumannBCShape::VECTORIAL,name(d));
+            markersNeumann.insert( themarkers.begin(), themarkers.end() );
         }
-#endif
+        for( auto const& d : M_bcNeumannTensor2 )
+        {
+            auto themarkers = this->markerNeumannBC(NeumannBCShape::TENSOR2,name(d));
+            markersNeumann.insert( themarkers.begin(), themarkers.end() );
+        }
+        for ( auto const& bcOutlet : M_fluidOutletsBCType )
+        {
+            markersNeumann.insert( std::get<0>(bcOutlet) );
+        }
+        opPCD->addRangeNeumannBC( "FluidNeumann", markedfaces( this->mesh(), markersNeumann ) );
 
-        // TODO other bc (fsi,...)
-#if 1
-        if ( this->worldComm().isMasterRank() && this->verbose() )
-        {
-            for( auto const& s : bcPrecPCD )
-            {
-                std::cout << "field " << s.first << "\n";
-                for( auto const& t : s.second )
-                {
-                    std::cout << " - type " << t.first << "\n";
-                    for( auto const& c : t.second )
-                    {
-                        std::ostringstream ostrMarkers;
-                        ostrMarkers << "(";
-                        for ( std::string const& mark : c.meshMarkers() )
-                            ostrMarkers << mark << " ";
-                        ostrMarkers << ")";
-                        if ( c.hasExpression2() )
-                            std::cout << "  . boundary  " << c.marker() << " " << ostrMarkers.str() << " expr : " << c.expression1() << " expr2:" << c.expression2() << "\n";
-                        else
-                            std::cout << "  . boundary  " << c.marker() << " " << ostrMarkers.str() << " expr : " << c.expression() << "\n";
-                    }
-                }
-            }
-        }
-#endif
-        //CHECK( this->algebraicFactory()->preconditionerTool()->matrix() ) << "no matrix define in preconditionerTool";
-
-        // build pcd operator
-        std::shared_ptr<OperatorPCD<space_fluid_type>> opPCD;
-        opPCD = std::make_shared<OperatorPCD<space_fluid_type>>( this->functionSpace(),this->backend(),bcPrecPCD,"velocity",false,true);
+        opPCD->initialize();
         this->algebraicFactory()->preconditionerTool()->attachOperatorPCD("pcd",opPCD);
     }
 
