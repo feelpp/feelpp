@@ -71,9 +71,7 @@ class DistanceToMesh
         static bool trianglesIntersect( matrix_node_type const& tri1, matrix_node_type const& tri2 );
         static bool facesIntersect( matrix_node_type const& face1, matrix_node_type const& face2 );
 
-        value_type distancePointToSegment( node_type const& pt, matrix_node_type const& seg );
-        value_type distancePointToTriangle( node_type const& pt, matrix_node_type const& tri );
-        value_type distancePointToFace( node_type const& pt, matrix_node_type const& face );
+        value_type distanceDofToSurfaceElt( size_type dofId, size_type surfEltId ) const;
 
         //--------------------------------------------------------------------//
         // Result
@@ -94,6 +92,8 @@ class DistanceToMesh
         functionspace_distance_ptrtype M_spaceDistance;
 
         fastmarching_ptrtype M_fastMarching;
+
+        mutable std::unordered_map< size_type, Eigen::Matrix<value_type,3,3> > M_meshSurfaceTriangleTransformationMatrices;
 
         std::unordered_set< size_type > M_intersectingElements;
         std::unordered_map< size_type, std::unordered_set< size_type > > M_eltsIntersectedBySurfaceElt;
@@ -126,14 +126,14 @@ DistanceToMesh< MeshType, FunctionSpaceType >::fastMarching() const
 }
 
 template< typename MeshType, typename FunctionSpaceType >
-    bool
+bool
 DistanceToMesh< MeshType, FunctionSpaceType >::segmentsIntersect( matrix_node_type const& seg1, matrix_node_type const& seg2 )
 {
     return boost::geometry::intersects( Feel::detail::geometry::segmentWrap<nRealDim>( seg1 ), Feel::detail::geometry::segmentWrap<nRealDim>( seg2 ) );
 }
 
 template< typename MeshType, typename FunctionSpaceType >
-    bool
+bool
 DistanceToMesh< MeshType, FunctionSpaceType >::trianglesIntersect( matrix_node_type const& poly1, matrix_node_type const& poly2 )
 {
     typedef Eigen::Matrix<value_type, nRealDim, Eigen::Dynamic, Eigen::ColMajor> PointsMatrix;
@@ -147,15 +147,43 @@ DistanceToMesh< MeshType, FunctionSpaceType >::trianglesIntersect( matrix_node_t
 }
 
 template< typename MeshType, typename FunctionSpaceType >
-    bool
+bool
 DistanceToMesh< MeshType, FunctionSpaceType >::facesIntersect( matrix_node_type const& face1, matrix_node_type const& face2 )
 {
+    static_assert( nRealDim == 2 || nRealDim == 3, "nRealDim must be 2 or 3" );
     if constexpr ( nRealDim == 2 )
         return segmentsIntersect( face1, face2 );
     else if constexpr ( nRealDim == 3 )
         return trianglesIntersect( face1, face2 );
-    else
-        CHECK( false ) << "nRealDim must be 2 or 3" << std::endl;
+}
+
+template< typename MeshType, typename FunctionSpaceType >
+typename DistanceToMesh< MeshType, FunctionSpaceType >::value_type 
+DistanceToMesh< MeshType, FunctionSpaceType >::distanceDofToSurfaceElt( size_type dofId, size_type surfEltId ) const
+{
+    auto const& surfElt = this->meshSurface()->element( surfEltId );
+    auto const& pt = boost::get<0>( this->functionSpaceDistance()->dof()->dofPoint( dofId ) );
+    auto const& face = surfElt.vertices();
+
+    auto P = eigenMap<nRealDim>( pt );
+    auto F = eigenMap<nRealDim>( face );
+
+    if constexpr ( nRealDim == 2 )
+    {
+        return Feel::detail::geometry::distancePointToSegment( P, F.col(0), F.col(1) );
+    }
+    else if constexpr ( nRealDim == 3 )
+    {
+        auto const& P1 = F.col(0);
+        auto const& P2 = F.col(1);
+        auto const& P3 = F.col(2);
+        auto surfaceTriangleTransformationMatrixIt = M_meshSurfaceTriangleTransformationMatrices.find( surfEltId );
+        if( surfaceTriangleTransformationMatrixIt == M_meshSurfaceTriangleTransformationMatrices.end() ) 
+        {
+            surfaceTriangleTransformationMatrixIt = M_meshSurfaceTriangleTransformationMatrices.insert( { surfEltId, Feel::detail::geometry::triangleFrameTransformationMatrix( P1, P2, P3 ) } ).first;
+        }
+        return Feel::detail::geometry::distancePointToTriangleWithTransformationMatrix( P, P1, P2, P3, surfaceTriangleTransformationMatrixIt->second );
+    }
 }
 
 template< typename MeshType, typename FunctionSpaceType >
@@ -378,9 +406,8 @@ DistanceToMesh< MeshType, FunctionSpaceType >::updateUnsignedDistance()
             for( uint16_type j = 0; j < nDofPerEltDistance; j++ )
             {
                 size_type const eltDofGlobalId = dofTable->localToGlobal( elt, j, 0 ).index();
-                auto const pt = boost::get<0>( dofTable->dofPoint( eltDofGlobalId ) );
 
-                auto dist = Feel::detail::geometry::distancePointToFace<nRealDim>( pt, surfElt.vertices() );
+                auto dist = this->distanceDofToSurfaceElt( eltDofGlobalId, surfEltId );
                 if( dist < M_unsignedDistance->localToGlobal( eltId, j, 0 ) )
                     M_unsignedDistance->assign( eltId, j, 0, dist );
             }
