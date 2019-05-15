@@ -1352,7 +1352,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if (this->isMoveDomain())
-        M_meshALE->updateBdf();
+        M_meshALE->updateTimeStep();
 #endif
 
     bool rebuildCstAssembly = false;
