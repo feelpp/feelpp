@@ -242,6 +242,9 @@ namespace FeelModels
         sparse_matrix_ptrtype M_Prec;
         sparse_matrix_ptrtype M_Extended;
 
+        double M_dofElimination_valueOnDiagonal;
+        Feel::Context M_dofElimination_strategy;
+
         bool M_hasBuildLinearJacobian;
         bool M_hasBuildResidualCst;
         bool M_hasBuildLinearSystemCst;
