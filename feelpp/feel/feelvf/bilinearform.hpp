@@ -260,6 +260,8 @@ public:
     typedef typename space_2_type::gm1_type gm1_2_type;
     typedef typename space_2_type::gm1_ptrtype gm1_2_ptrtype;
 
+    using index_type = typename mesh_1_type::index_type;
+    
     using matrix_ptrtype = typename super::matrix_ptrtype;
     
     template<typename SpaceType, bool UseMortar = false>
@@ -705,14 +707,14 @@ public:
                     for (uint16_type f=0;f< M_form.testSpace()->mesh()->numLocalFaces();++f)
                         {
                             const size_type idFind = M_form.trialSpace()->mesh()->meshToSubMesh( eltTest.face(f).id() );
-                            if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
+                            if ( idFind != invalid_v<size_type> ) idsFind.insert( idFind );
                         }
                     if ( idsFind.size()>1 ) std::cout << " TODO trialElementId " << std::endl;
 
                     if ( idsFind.size()>0 )
                         domain_eid = *idsFind.begin();
                     else
-                        domain_eid = invalid_size_type_value;
+                        domain_eid = invalid_v<size_type>;
 
                     DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
                 }
@@ -729,7 +731,7 @@ public:
         bool isZero( size_type i ) const
             {
                 size_type domain_eid = trialElementId( i );
-                if ( domain_eid == invalid_size_type_value )
+                if ( domain_eid == invalid_v<size_type> )
                     return true;
                 return false;
             }
@@ -749,7 +751,7 @@ public:
         void updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& gmcTest,
                                         map_trial_geometric_mapping_context_type const& gmcTrial,
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
-                                        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad );
+                                        std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad );
 
         void update( map_test_geometric_mapping_context_type const& gmcTest,
                      map_trial_geometric_mapping_context_type const& _gmcTrial,
@@ -769,7 +771,7 @@ public:
                                         map_trial_geometric_mapping_context_type const& gmcTrial,
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
                                         IM const& im,
-                                        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
+                                        std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad )
         {
             M_integrator = im;
             updateInCaseOfInterpolate( gmcTest, gmcTrial, gmcExpr, indexLocalToQuad );
@@ -788,7 +790,7 @@ public:
         {
             integrate( mpl::int_<fusion::result_of::size<GeomapTestContext>::type::value>() );
         }
-        void integrateInCaseOfInterpolate( std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+        void integrateInCaseOfInterpolate( std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad,
                                            bool isFirstExperience )
         {
             integrateInCaseOfInterpolate( mpl::int_<fusion::result_of::size<GeomapTestContext>::type::value>(),
@@ -801,21 +803,21 @@ public:
         {
             assemble( fusion::at_key<gmc<0> >( M_test_gmc )->id() );
         }
-        void assemble( size_type elt_0 );
+        void assemble( index_type elt_0 );
 
         void assemble( mpl::int_<2> )
         {
             assemble( fusion::at_key<gmc<0> >( M_test_gmc )->id(),
                       fusion::at_key<test_gmc1>( M_test_gmc )->id() );
         }
-        void assemble( size_type elt_0, size_type elt_1  );
+        void assemble( index_type elt_0, index_type elt_1  );
 
         /**
          * local to global assembly given a pair of test and trial element ids
          *  - \p elt.first provides the test element
          *  - \p elt.second provides the trial element
          */
-        void assemble( std::pair<size_type,size_type> const& elt );
+        void assemble( std::pair<index_type,index_type> const& elt );
 
         /**
          * local to global assembly associated to internal faces given a pair of
@@ -824,8 +826,8 @@ public:
          *  - \p elt.first provides the test element
          *  - \p elt.second provides the trial element
          */
-        void assemble( std::pair<size_type,size_type> const& elt_0,
-                       std::pair<size_type,size_type> const& elt_1 );
+        void assemble( std::pair<index_type,index_type> const& elt_0,
+                       std::pair<index_type,index_type> const& elt_1 );
 
         void assembleInCaseOfInterpolate();
 
@@ -1004,7 +1006,7 @@ public:
         void integrate( mpl::int_<2> );
 
         void integrateInCaseOfInterpolate( mpl::int_<1>,
-                                           std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                                           std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad,
                                            bool isFirstExperience );
     private:
 

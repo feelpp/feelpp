@@ -42,7 +42,7 @@
 
 namespace Feel
 {
-class SubMeshData;
+template <typename IndexT> class SubMeshData;
 
 //!
 //! @brief Mesh components enum
@@ -78,6 +78,7 @@ const uint16_type MESH_COMPONENTS_DEFAULTS = MESH_RENUMBER | MESH_CHECK;
 //! @author Christophe Prud'homme
 //! @see
 //!/
+template<typename IndexT = uint32_type>
 class FEELPP_EXPORT MeshBase : public CommObject
 {
 public:
@@ -87,7 +88,14 @@ public:
      */
     //@{
     using super = CommObject;
-    
+
+    //!
+    //! type of indices : default to uint32_type
+    //!
+    using index_type = IndexT;
+    using index_t = index_type;
+    using size_type = index_type;
+
     /**
      * Tuple that contains
      *
@@ -95,10 +103,10 @@ public:
      *
      * -# the processor id the face belongs to
      */
-    typedef boost::tuple<size_type, size_type> face_processor_type;
+    typedef boost::tuple<index_type, index_type> face_processor_type;
 
 
-    typedef SubMeshData smd_type;
+    typedef SubMeshData<index_type> smd_type;
     typedef std::shared_ptr<smd_type> smd_ptrtype;
 
     //@}
@@ -451,7 +459,7 @@ public:
             if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
                 return M_smd->bm.right.find( id )->second;
             // the submesh element id has not been found, return invalid value
-            return invalid_size_type_value;
+            return invalid_v<size_type>;
         }
 
     //! \return ids in sub mesh given the ids in the parent mesh
@@ -466,11 +474,11 @@ public:
                     else
                     {
                         if ( add_invalid_indices )
-                            sid.push_back( invalid_size_type_value );
+                            sid.push_back( invalid_v<size_type> );
                         has_invalid_values = true;
                     }
                     // the submesh element id has not been found, return invalid value
-                    //return invalid_size_type_value;
+                    //return invalid_v<size_type>;
                 });
             return std::make_pair(sid,has_invalid_values);
         }
@@ -494,7 +502,7 @@ public:
                     return id_in_sibling;
                 }
             }
-            return invalid_size_type_value;
+            return invalid_v<size_type>;
         }
 
     //! \return id in sub mesh given the id in the parent mesh
@@ -518,9 +526,9 @@ public:
                     return id_in_sibling;
                 }
                 // the submesh element id has not been found, return invalid value
-                // will return invalid_size_type_value
+                // will return invalid_v<size_type>
             }
-            return invalid_size_type_value;
+            return invalid_v<size_type>;
         }
 
     //!
@@ -554,7 +562,7 @@ public:
     bool
     hasMarker( std::string const& marker ) const
         {
-            return markerName( marker ) != invalid_size_type_value;
+            return markerName( marker ) != invalid_v<size_type>;
         }
 
     /**
@@ -619,7 +627,7 @@ public:
         auto mit = M_markername.find( marker );
         if (  mit != M_markername.end() )
             return mit->second[0];
-        return invalid_size_type_value;
+        return invalid_v<size_type>;
     }
     /**
      * @return the marker name associated to the \p marker id
@@ -642,7 +650,7 @@ public:
         auto mit = M_markername.find( marker );
         if (  mit != M_markername.end() )
             return mit->second[1];
-        return invalid_size_type_value;
+        return invalid_v<size_type>;
     }
 
     /**
@@ -807,5 +815,8 @@ private:
 
 
 };
+#if !defined(FEELPP_INSTANTIATE_NOEXTERN_MESHBASE)
+extern template class MeshBase<uint32_type>;
+#endif
 }
 #endif /* __MeshBase_H */

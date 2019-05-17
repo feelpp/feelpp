@@ -53,6 +53,7 @@
 #endif
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
+#include <feel/feelmodels/modelcore/rangedistributionbymaterialname.hpp>
 
 
 namespace Feel
@@ -496,6 +497,8 @@ public :
     //element_fluid_velocity_scalar_type & meshVelocityScalOnInterface() { return *M_meshVelocityScalarOnInterface; }
     //___________________________________________________________________________________//
 
+    bool applyMovingMeshBeforeSolve() const { return M_applyMovingMeshBeforeSolve; }
+    void setApplyMovingMeshBeforeSolve( bool b ) { M_applyMovingMeshBeforeSolve = b; }
     bool isMoveDomain() const { return M_isMoveDomain; }
 
     std::string const& modelName() const;
@@ -520,8 +523,10 @@ public :
 
     bool useFSISemiImplicitScheme() const { return M_useFSISemiImplicitScheme; }
     void useFSISemiImplicitScheme(bool b) { M_useFSISemiImplicitScheme=b; }
-    std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
-    void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
+    /*FEELPP_DEPRECATED*/ std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
+    /*FEELPP_DEPRECATED*/ void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
+
+    std::set<std::string> const& markersFSI() const { return M_markersFSI; }
     //___________________________________________________________________________________//
     // stabilization
     bool stabilizationGLS() const { return M_stabilizationGLS; }
@@ -683,15 +688,15 @@ public :
     space_fluidoutlet_windkessel_ptrtype const& fluidOutletWindkesselSpace() { return M_fluidOutletWindkesselSpace; }
 
 
-    
     bool hasStrongDirichletBC() const
         {
-            bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet() || this->hasMarkerPressureBC();
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-            hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
-#endif
+            bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet() || M_bcMarkersMovingBoundaryImposed.hasMarkerDirichletBCelimination() || this->hasMarkerPressureBC();
             return hasStrongDirichletBC;
         }
+
+    //___________________________________________________________________________________//
+
+    void updateRangeDistributionByMaterialName( std::string const& key, range_faces_type const& rangeFaces );
     //___________________________________________________________________________________//
 
     std::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ const& velocityDiv() const { return M_velocityDiv; }
@@ -703,7 +708,7 @@ public :
     // update normal stress in reference ALE mesh
     void updateNormalStressOnCurrentMesh( std::set<std::string> const& listMarkers = std::set<std::string>() );
     // update normal stress in reference ALE mesh
-    void updateNormalStressOnReferenceMesh( element_normalstress_ptrtype & fieldToUpdate );
+    void updateNormalStressOnReferenceMesh( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate );
 private :
     // update normal stress (subfunctions)
     void updateNormalStressOnReferenceMeshStandard( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces, element_normalstress_ptrtype & fieldToUpdate );
@@ -826,9 +831,12 @@ public :
     //___________________________________________________________________________________//
 
     void initInHousePreconditioner();
-    void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const override;
+    void updateInHousePreconditioner( DataUpdateLinear & data ) const override;
+    void updateInHousePreconditioner( DataUpdateJacobian & data ) const override;
+private :
     void updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
-    void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
+    void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol, DataUpdateBase & data ) const;
+public :
 
     //___________________________________________________________________________________//
 
@@ -892,7 +900,6 @@ protected:
     virtual size_type initStartBlockIndexFieldsInMatrix();
     virtual int initBlockVector();
 
-    bool M_isUpdatedForUse;
     //----------------------------------------------------
     // mesh
     mesh_ptrtype M_mesh;
@@ -948,10 +955,13 @@ protected:
     map_scalar_field<2> M_bcNeumannScalar, M_bcPressure;
     map_vector_field<nDim,1,2> M_bcNeumannVectorial;
     map_matrix_field<nDim,nDim,2> M_bcNeumannTensor2;
+    map_vector_field<nDim,1,2> M_bcMovingBoundaryImposed;
+    MarkerManagementDirichletBC M_bcMarkersMovingBoundaryImposed;
     map_vector_field<nDim,1,2> M_volumicForcesProperties;
     //---------------------------------------------------
+    std::shared_ptr<RangeDistributionByMaterialName<mesh_type> > M_rangeDistributionByMaterialName;
     // range of mesh faces by material : (type -> ( matName -> ( faces range ) )
-    std::map<std::string,std::map<std::string,faces_reference_wrapper_t<mesh_type>>> M_rangeMeshFacesByMaterial;
+    //std::map<std::string,std::map<std::string,faces_reference_wrapper_t<mesh_type>>> M_rangeMeshFacesByMaterial;
     //---------------------------------------------------
     space_vectorial_PN_ptrtype M_XhSourceAdded;
     element_vectorial_PN_ptrtype M_SourceAdded;
@@ -967,9 +977,11 @@ protected:
 
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
+    std::set<std::string> M_markersFSI;
 
     bool M_startBySolveNewtonian, M_hasSolveNewtonianAtKickOff;
     bool M_startBySolveStokesStationary, M_hasSolveStokesStationaryAtKickOff;
+    bool M_applyMovingMeshBeforeSolve;
     //----------------------------------------------------
     // stabilization
     bool M_stabilizationGLS, M_stabilizationGLSDoAssembly;
@@ -1065,7 +1077,6 @@ protected:
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
-    std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
     //----------------------------------------------------
     // overwrite assembly process : source terms
     typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;

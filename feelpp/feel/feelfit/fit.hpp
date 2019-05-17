@@ -63,8 +63,7 @@ public:
     using trial_basis = typename expression_type::trial_basis;
 
     typedef typename expression_type::value_type value_type;
-    // scalar, vectorial (to be checked)
-    typedef typename expression_type::evaluate_type evaluate_type;
+    typedef value_type evaluate_type;
 
     typedef Fit<ExprT,InterpOperator> this_type;
 
@@ -94,6 +93,15 @@ public:
 
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
+
+    evaluate_type
+    evaluate( bool parallel, worldcomm_ptr_t const& worldcomm ) const
+        {
+            if constexpr ( InterpOperator == 0 )
+                return this->interpolator()( M_expr.evaluate( parallel,worldcomm ) );
+            else
+                return this->interpolator().diff( M_expr.evaluate( parallel,worldcomm ) );
+        }
 
     // geo_t : transformation geométrique
     // basis_i_t : fonctions tests
@@ -211,6 +219,7 @@ public:
         {
             return this->evalq( c1,c2,q, mpl::int_<InterpOperator>() );
         }
+
     private :
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> /**/ ) const

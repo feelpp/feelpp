@@ -268,6 +268,9 @@ private :
     void transfertStressS2F();
     void transfertVelocityF2S( int iterationFSI, bool _useExtrapolation );
 
+    void transfertGradVelocityF2S();
+
+
     double couplingRNG_coeffForm2() const { return M_couplingRNG_coeffForm2; }
     typename fluid_type::element_meshvelocityonboundary_ptrtype const& couplingRNG_evalForm1() const { return M_couplingRNG_evalForm1; }
 
@@ -310,7 +313,8 @@ public :
     void updateResidual_Solid( DataUpdateResidual & data ) const;
     void updateLinearPDEDofElimination_Fluid( DataUpdateLinear & data ) const;
     void updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess & data ) const;
-    //void updateJacobianStrongDirichletBC_Fluid( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
+    void updateJacobianDofElimination_Fluid( DataUpdateJacobian & data ) const;
+    void updateResidualDofElimination_Fluid( DataUpdateResidual & data ) const;
 
     void updateLinearPDE_Solid1dReduced( DataUpdateLinear & data ) const;
 
@@ -332,6 +336,10 @@ private :
     fs::path M_mshfilepathFluidPartN,M_mshfilepathSolidPartN;
     std::set<std::string> M_markersNameFluid,M_markersNameSolid;
     std::string M_tagFileNameMeshGenerated;
+
+    range_fluid_face_type M_rangeFSI_fluid;
+    range_solid_face_type M_rangeFSI_solid;
+    std::map<std::string,range_fluid_face_type> M_rangeMeshFacesByMaterial_fluid;
 
     std::string M_fsiCouplingType; // implicit,semi-implicit
     std::string M_fsiCouplingBoundaryCondition; // dirichlet-neumann, robin-robin, ...
@@ -403,6 +411,25 @@ private :
     space_solid1dreduced_normalstressfromfluid_vect_ptrtype M_spaceNormalStressFromFluid_solid1dReduced;
     element_solid1dreduced_normalstressfromfluid_scal_ptrtype M_fieldNormalStressFromFluidScalar_solid1dReduced;
     element_solid1dreduced_normalstressfromfluid_vect_ptrtype  M_fieldNormalStressFromFluidVectorial_solid1dReduced;
+
+    // gradient of velocity from fluid into solid model (use normal spress function space and store the matric field by a vector of vectorial field)
+    std::vector<typename fluid_type::element_normalstress_ptrtype> M_fieldsGradVelocity_fluid;
+    std::vector<typename space_solid_normalstressfromfluid_type::/*component_functionspace_type::*/element_ptrtype> M_fieldsGradVelocity_solid;
+
+    auto
+    gradVelocityExpr_fluid2solid(  hana::int_<2> /**/ ) const
+        {
+            return mat<2,2>( idv(M_fieldsGradVelocity_solid[0])(0),idv(M_fieldsGradVelocity_solid[0])(1),
+                             idv(M_fieldsGradVelocity_solid[1])(0),idv(M_fieldsGradVelocity_solid[1])(1) );
+        }
+    auto
+    gradVelocityExpr_fluid2solid(  hana::int_<3> /**/ ) const
+        {
+            return mat<3,3>( idv(M_fieldsGradVelocity_solid[0])(0),idv(M_fieldsGradVelocity_solid[0])(1),idv(M_fieldsGradVelocity_solid[0])(2),
+                             idv(M_fieldsGradVelocity_solid[1])(0),idv(M_fieldsGradVelocity_solid[1])(1),idv(M_fieldsGradVelocity_solid[1])(2),
+                             idv(M_fieldsGradVelocity_solid[2])(0),idv(M_fieldsGradVelocity_solid[2])(1),idv(M_fieldsGradVelocity_solid[2])(2) );
+        }
+
 };
 
 } // namespace FeelModels

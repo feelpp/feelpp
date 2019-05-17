@@ -74,7 +74,7 @@
   -# invalid_uint64_type_value
   -# invalid_dim_type_value
   -# invalid_rank_type_value
-  -# invalid_size_type_value
+  -# invalid_v<size_type>
 
 */
 
@@ -225,10 +225,14 @@ const int32_type invalid_flag_type_value = std::numeric_limits<int32_type>::min(
 typedef uint16_type dim_type;
 
 //! Indices (starting from 0)
-typedef size_t size_type;
+//typedef size_t size_type;
+using size_type = size_t;
+//using size_type = uint32_type;
+
+using index_type = uint32_type;
 
 //! dof id type
-typedef size_type dof_id_type;
+using dof_id_type = index_type;
 
 //! type for mpi rank ids
 typedef uint16_type rank_type;
@@ -244,6 +248,12 @@ typedef unsigned int uint;
  * @name Constants
  */
 //@{
+
+//!
+//! get invalid value from type \p T
+//!
+template<typename T>
+inline const T invalid_v = T(-1);
 
 /**
  * Invalid uint8_type value

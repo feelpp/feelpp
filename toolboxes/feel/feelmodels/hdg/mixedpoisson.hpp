@@ -174,7 +174,8 @@ protected:
     integral_boundary_list_type M_IBCList;
 
     bool M_isPicard;
-
+    std::map<std::string,value_type> M_paramValues;
+    
 public:
 
     // constructor
@@ -268,7 +269,7 @@ public:
     template<typename ExprT> void assembleRhsNeumann( Expr<ExprT> expr, std::string marker);
     template<typename ExprT> void assembleRhsInterfaceCondition( Expr<ExprT> expr, std::string marker);
     // u.n + g1.p = g2
-    template<typename ExprT1, typename ExprT2> void assembleRobin( Expr<ExprT1> expr1, Expr<ExprT2> expr2, std::string marker);
+    template<typename ExprT1, typename ExprT2> void assembleRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker);
     void assembleIBC(int i, std::string marker = "");
     virtual void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
 
@@ -436,7 +437,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsInterfaceCondition( Expr<
 template<int Dim, int Order, int G_Order, int E_Order>
 template<typename ExprT1, typename ExprT2>
 void
-MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> expr1, Expr<ExprT2> expr2, std::string marker)
+MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker)
 {
     tic();
     auto bbf = blockform2( *M_ps, M_A_cst);
@@ -458,15 +459,15 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> expr1, E
     // stabilisation parameter
     auto tau_constant = cst(doption(prefixvm(prefix(), "tau_constant")));
 
-    // // <j.n,mu>_Gamma_R
-    // bbf( 2_c, 0_c ) += integrate(_range=markedfaces(M_mesh,marker),
-    //                              _expr=( id(l)*(trans(idt(u))*N()) ));
-    // // <tau p, mu>_Gamma_R
-    // bbf( 2_c, 1_c ) += integrate(_range=markedfaces(M_mesh,marker),
-    //                              _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
-    // // <-tau phat, mu>_Gamma_R
-    // bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
-    //                              _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
+    // <j.n,mu>_Gamma_R
+    bbf( 2_c, 0_c ) += integrate(_range=markedfaces(M_mesh,marker),
+                                 _expr=( id(l)*(trans(idt(u))*N()) ));
+    // <tau p, mu>_Gamma_R
+    bbf( 2_c, 1_c ) += integrate(_range=markedfaces(M_mesh,marker),
+                                 _expr=tau_constant * id(l) * ( pow(idv(H),M_tauOrder)*idt(p) ) );
+    // <-tau phat, mu>_Gamma_R
+    bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+                                 _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tauOrder) ) );
     // <g_R^1 phat, mu>_Gamma_R
     bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
                                  _expr=expr1*idt(phat) * id(l) );

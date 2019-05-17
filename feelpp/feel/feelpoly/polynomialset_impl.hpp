@@ -227,7 +227,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
             for ( uint16_type q = 0; q < Q; ++q )
             {
                 if constexpr(!gmc_type::is_linear)
-                                new (&B) tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type>(thegmc->B( q ).data(), gmc_type::NDim, gmc_type::PDim );
+                    new (&B) tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type>(thegmc->B( q ).data(), gmc_type::NDim, gmc_type::PDim );
                 // grad = (gradphi_1,...,gradphi_nRealDim) * B^T
                 //M_grad[i][q].reshape( tensorGradShapeAfterContract ) = ((*M_gradphi)[i][q].contract( B,dims ));
                 M_grad[i][q] = (g_phi_i[q].contract( B,dims ));
@@ -374,11 +374,13 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
         const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
         const uint16_type I = M_normal_component.shape()[0];
         Eigen::array<dimpair_t, 1> dims = {{dimpair_t(0, 0)}};
+        tensor_map_fixed_size_matrix_t<gmc_type::NDim,1,value_type> N ( thegmc->unitNormal( 0 ).data(),gmc_type::NDim,1 );
         
         for ( uint16_type i = 0; i < I; ++i )
             for ( uint16_type q = 0; q < Q; ++q )
             {
-                tensor_map_fixed_size_matrix_t<gmc_type::NDim,1,value_type> N ( thegmc->unitNormal( q ).data(),gmc_type::NDim,1 );
+                if constexpr(!gmc_type::is_linear)
+                    new (&N) tensor_map_fixed_size_matrix_t<gmc_type::NDim, 1,value_type>(thegmc->unitNormal( q ).data(), gmc_type::NDim, 1 );
                 auto &r = M_normal_component[i][q](0,0);
                 r= 0;
                 auto* p = M_phi[i][q].data();

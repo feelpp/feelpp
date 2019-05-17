@@ -366,7 +366,7 @@ public:
                     int* cols, int ncols,
                     value_type* data,
                     size_type K  = 0,
-                    size_type K2 = invalid_size_type_value );
+                    size_type K2 = invalid_v<size_type> );
 
 
     /**

@@ -78,13 +78,17 @@ int main( int argc, char** argv )
     tic();
     a = integrate( _range = elements( mesh ),
                    _expr = mu * inner( gradt( u ), grad( v ) ), _quad = _Q<>( 3 ) );
-    toc( "a" );
+    toc( "a.gradgrad" );
+    tic();
     a += integrate( _range = markedfaces( mesh, "Robin" ), _expr = r_1 * idt( u ) * id( v ), _quad = im( mesh, 4 ) );
+    toc( "a.robin" );
+    tic();
     a += on( _range = markedfaces( mesh, "Dirichlet" ), _rhs = l, _element = u, _expr = g );
     //! if no markers Robin Neumann or Dirichlet are present in the mesh then
     //! impose Dirichlet boundary conditions over the entire boundary
     if ( !mesh->hasAnyMarker( {"Robin", "Neumann", "Dirichlet"} ) )
         a += on( _range = boundaryfaces( mesh ), _rhs = l, _element = u, _expr = g );
+    toc( "a.dirichlet" );
     toc( "a" );
     // end::forms[]
 
