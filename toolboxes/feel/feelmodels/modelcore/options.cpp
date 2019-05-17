@@ -210,6 +210,8 @@ fluidMechanics_options(std::string const& prefix)
 
         (prefixvm(prefix,"use-gravity-force").c_str(), Feel::po::value<bool>()->default_value(false), "use-gravity-force")
         (prefixvm(prefix,"gravity-force").c_str(), Feel::po::value<std::string>(), "gravity-force : (default is {0,-9.80665} or {0,0,-9.80665}")
+
+        (prefixvm(prefix,"pcd.apply-homogeneous-dirichlet-in-newton").c_str(), Feel::po::value<bool>()->default_value(false), "use-gravity-force")
         ;
 
     fluidOptions

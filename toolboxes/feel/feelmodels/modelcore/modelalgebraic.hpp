@@ -66,6 +66,7 @@ public :
         DataUpdateBase() = default;
         DataUpdateBase( DataUpdateBase const& ) = default;
         DataUpdateBase( DataUpdateBase && ) = default;
+        virtual ~DataUpdateBase() {}
         void addInfo( std::string const& info ) { M_infos.insert( info ); }
         bool hasInfo( std::string const& info ) const { return M_infos.find( info ) != M_infos.end(); }
         void addDoubleInfo( std::string const& info, double val ) { M_doubleInfos[info] = val; }
@@ -333,7 +334,8 @@ public :
                          sparse_matrix_ptrtype& A_extended,
                          sparse_matrix_ptrtype& Prec) const;
 
-    virtual void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
+    virtual void updateInHousePreconditioner( DataUpdateLinear & data ) const;
+    virtual void updateInHousePreconditioner( DataUpdateJacobian & data ) const;
 
     virtual BlocksBaseGraphCSR buildBlockMatrixGraph() const;
     virtual graph_ptrtype buildMatrixGraph() const;

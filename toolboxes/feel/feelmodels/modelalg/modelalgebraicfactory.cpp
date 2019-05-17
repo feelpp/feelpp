@@ -544,7 +544,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         // set preconditioner
         //M_PrecondManage->setMatrix(M_Prec);
 
-        this->model()->updateInHousePreconditioner( M_J, U );
+        this->model()->updateInHousePreconditioner( dataLinearNonCst );
 
         pre_solve_type pre_solve = std::bind(&model_type::preSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
         post_solve_type post_solve = std::bind(&model_type::postSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
@@ -637,7 +637,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         for ( auto const& func : M_addFunctionJacobianPostAssembly )
             func.second( dataJacobianNonCst );
 
-        model->updateInHousePreconditioner( J, X );
+        model->updateInHousePreconditioner( dataJacobianNonCst );
 
         double tElapsed = model->timerTool("Solve").stop();
         model->timerTool("Solve").addDataValue("algebraic-jacobian",tElapsed);
@@ -1038,7 +1038,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             this->model()->updatePreconditioner(U,M_J,M_Extended,M_Prec);
 
             // update in-house preconditioners
-            this->model()->updateInHousePreconditioner( M_J, U );
+            this->model()->updateInHousePreconditioner( dataLinearNonCst );
 
             // set pre/post solve functions
             pre_solve_type pre_solve = std::bind(&model_type::preSolvePicard, this->model(), std::placeholders::_1, std::placeholders::_2);
