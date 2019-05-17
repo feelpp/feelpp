@@ -16,6 +16,7 @@
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/print.hpp>
 
 using namespace Feel;
 
@@ -137,10 +138,17 @@ void test2dTo2d()
     LOG( INFO ) << "meshSize=" << meshSize << "\n";
     BOOST_TEST_MESSAGE( "meshSize=" << meshSize );
     GeoTool::Node x1( 0, 0 );
+    
+#if 0
     GeoTool::Node x2( 0.6, 0 );
     GeoTool::Circle C( meshSize, "OMEGA", x1, x2 );
     C.setMarker( _type = "line", _name = "Sortie", _markerAll = true );
     C.setMarker( _type = "surface", _name = "OmegaFluide", _markerAll = true );
+#else
+    GeoTool::Node x2( 1, 0 );
+    GeoTool::Node x31( 0, 1 );
+    GeoTool::Triangle C( meshSize, "OMEGA", x1, x2, x31 );
+#endif    
     auto mesh = C.createMesh( _mesh = new mesh_type,
                               _name = "test2dTo2d_domain" + mesh_type::shape_type::name(),
                               _partitions = myWorldComm.localSize() );
@@ -151,7 +159,8 @@ void test2dTo2d()
     auto u2 = Xh2->element();
     auto u2a = Xh2->element();
 
-    auto exprProj = vec( cos( M_PI * Px() ), sin( M_PI * Py() ) );
+    //auto exprProj = vec( cos( M_PI * Px() ), sin( M_PI * Py() ) );
+    auto exprProj = one();
     u1 = vf::project( _space = Xh1,
                       _range = elements( mesh ),
                       _expr = exprProj );
@@ -228,6 +237,12 @@ void test2dTo2d()
                           .evaluate()( 0, 0 );
         BOOST_CHECK_SMALL( std::abs( s1 - sRT ), 1e-2 );
         BOOST_CHECK_SMALL( std::abs( s1 - sRTt ), 1e-2 );
+        BOOST_TEST_MESSAGE( "sRT=" << sRT << "(vs s1=" << s1 << ")" );
+        uRT.on( _range = elements( mesh ), _expr = exprProj );
+        sRT = integrate( _range = elements( mesh ),
+                         _expr = inner( idv( uRT ), idv( uRT ), mpl::int_<InnerProperties::IS_SAME>() ) )
+            .evaluate()( 0, 0 );
+        BOOST_CHECK_SMALL( std::abs( s1 - sRT ), 1e-2 );
         BOOST_TEST_MESSAGE( "sRT=" << sRT << "(vs s1=" << s1 << ")" );
         auto opIRT2 = opInterpolation( _domainSpace = XhRT,
                                        _imageSpace = Xh1 );
