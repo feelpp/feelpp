@@ -1285,8 +1285,8 @@ void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::updateWithCtx( QuadType const& 
 
         for ( uint16_type f = 0; f < numTopologicalFaces; ++f )
         {
-            //ctxf->update( dynamic_cast<typename CtxFaceType::element_type const&>( *this ), f );
-            ctxf->template updateOnFace<vm::NORMAL|vm::KB|vm::JACOBIAN>( f, true );
+            ctxf->update( dynamic_cast<typename CtxFaceType::element_type const&>( *this ), f );
+            //ctxf->template updateOnFace<vm::NORMAL|vm::KB|vm::JACOBIAN>( f, true );
             value_type meas = 0.;
             for ( int q = 0; q < thequad.nPointsOnFace( f ); ++q )
                 meas += thequad.weight( f, q ) * ctxf->J( q ) * ctxf->normalNorm( q );
