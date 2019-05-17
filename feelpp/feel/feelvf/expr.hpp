@@ -567,43 +567,43 @@ public:
         {
             M_tensor_expr.init( im );
         }
-        void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+        void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) noexcept
         {
             M_tensor_expr.update( geom, fev, feu );
         }
-        void update( Geo_t const& geom, Basis_i_t const& fev )
+        void update( Geo_t const& geom, Basis_i_t const& fev ) noexcept 
         {
             M_tensor_expr.update( geom, fev );
         }
-        void update( Geo_t const& geom )
+        void update( Geo_t const& geom ) noexcept 
         {
             M_tensor_expr.update( geom );
         }
-        void update( Geo_t const& geom, uint16_type face )
+        void update( Geo_t const& geom, uint16_type face ) noexcept
         {
             M_tensor_expr.update( geom, face );
         }
         template<typename ... CTX>
-        void updateContext( CTX const& ... ctx )
+        void updateContext( CTX const& ... ctx ) noexcept 
         {
             M_tensor_expr.updateContext( ctx... );
         }
 
 
         value_type
-        evalij( uint16_type i, uint16_type j ) const
+        evalij( uint16_type i, uint16_type j ) const noexcept
         {
             return M_tensor_expr.evalij( i, j );
         }
 
         Eigen::Map<const Eigen::Matrix<value_type, shape::M,shape::N>>
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const noexcept 
         {
             return M_tensor_expr.evalijq( i, j, q );
         }
 
         value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const noexcept 
         {
             return M_tensor_expr.evalijq( i, j, c1, c2, q );
         }
@@ -611,31 +611,31 @@ public:
         template<int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
-                 mpl::int_<PatternContext> ) const
+                 mpl::int_<PatternContext> ) const noexcept
         {
             return M_tensor_expr.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() );
         }
 
 
         value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const noexcept
         {
             return M_tensor_expr.evaliq( i, c1, c2, q );
         }
         Eigen::Map<const Eigen::Matrix<value_type, shape::M,shape::N>>
-        evaliq( uint16_type i, uint16_type q ) const
+        evaliq( uint16_type i, uint16_type q ) const noexcept
         {
             return M_tensor_expr.evaliq( i, q );
         }
 
         value_type
-        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const noexcept
         {
             value_type e = M_tensor_expr.evalq( c1, c2, q );
             return e;
         }
         Eigen::Map<const Eigen::Matrix<value_type, shape::M,shape::N>>
-        evalq( uint16_type q ) const
+        evalq( uint16_type q ) const noexcept
         {
             return M_tensor_expr.evalq( q );
         }

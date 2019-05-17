@@ -42,12 +42,12 @@ void StaticCondensation<T,IndexT>::addLocalMatrix ( int* rows, int nrows,
     auto entry = this->M_local_matrices[this->M_block_rowcol].find(key);
     if ( entry == this->M_local_matrices[this->M_block_rowcol].end() )
     {
-        this->M_local_matrices[this->M_block_rowcol][key] = raw_matrix_map_t( data, nrows, ncols );
+        this->M_local_matrices[this->M_block_rowcol][key].noalias() = raw_matrix_map_t( data, nrows, ncols );
         //cout << "SC inserting matrix entry [" << this->M_block_rowcol << "][" << key << "]=" << this->M_local_matrices[this->M_block_rowcol][key] << std::endl;
     }
     else
     {
-        this->M_local_matrices[this->M_block_rowcol][key]+=raw_matrix_map_t( data, nrows, ncols );
+        this->M_local_matrices[this->M_block_rowcol][key].noalias()+=raw_matrix_map_t( data, nrows, ncols );
         //cout << "SC adding matrix entry [" << this->M_block_rowcol << "][" << key << "]=" << this->M_local_matrices[this->M_block_rowcol][key] << std::endl;
     }
     //LOG(INFO) << "[" << this->M_block_rowcol << "][" << key << "]=" << this->M_local_matrices[this->M_block_rowcol][key];
@@ -72,12 +72,12 @@ void StaticCondensation<T,IndexT>::addLocalVector ( int* rows, int nrows,
     auto entry = this->M_local_vectors[this->M_block_row].find(K);
     if ( entry == this->M_local_vectors[this->M_block_row].end() )
     {
-        this->M_local_vectors[this->M_block_row][K] = raw_vector_map_t( data, nrows );
+        this->M_local_vectors[this->M_block_row][K].noalias() = raw_vector_map_t( data, nrows );
         //cout << "SC vec inserting F entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
     }
     else
     {
-        this->M_local_vectors[this->M_block_row][K]+=raw_vector_map_t( data, nrows );
+        this->M_local_vectors[this->M_block_row][K].noalias()+=raw_vector_map_t( data, nrows );
         //cout << "SC vec add F entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
     }
 #if 0
