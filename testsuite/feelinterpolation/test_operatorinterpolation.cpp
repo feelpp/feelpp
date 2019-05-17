@@ -139,7 +139,7 @@ void test2dTo2d()
     BOOST_TEST_MESSAGE( "meshSize=" << meshSize );
     GeoTool::Node x1( 0, 0 );
     
-#if 0
+#if 1
     GeoTool::Node x2( 0.6, 0 );
     GeoTool::Circle C( meshSize, "OMEGA", x1, x2 );
     C.setMarker( _type = "line", _name = "Sortie", _markerAll = true );
