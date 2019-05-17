@@ -97,6 +97,15 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     $ENV{GMSH_DIR}
     ${CMAKE_BINARY_DIR}/contrib/gmsh
     ${CMAKE_SYSTEM_PREFIX_PATH}
+    NO_SYSTEM_ENVIRONMENT_PATH
+    PATH_SUFFIXES
+    lib lib/x86_64-linux-gnu/ )
+
+  FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
+    PATHS
+    $ENV{GMSH_DIR}
+    ${CMAKE_BINARY_DIR}/contrib/gmsh
+    ${CMAKE_SYSTEM_PREFIX_PATH}
     PATH_SUFFIXES
     lib lib/x86_64-linux-gnu/ )
 
@@ -218,7 +227,9 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     )
 
   if ( GMSH_FOUND )
-    _gmsh_get_version( GMSH_MAJOR_VERSION GMSH_MINOR_VERSION GMSH_PATCH_VERSION ${GMSH_INCLUDE_PATH}/GmshVersion.h)
+    if(GMSH_INCLUDE_PATH)
+      _gmsh_get_version( GMSH_MAJOR_VERSION GMSH_MINOR_VERSION GMSH_PATCH_VERSION ${GMSH_INCLUDE_PATH}/GmshVersion.h)
+    endif()
     set(FEELPP_HAS_GMSH_LIBRARY 1)
     MESSAGE( STATUS "GMSH found: header(${GMSH_INCLUDE_DIR}) lib(${GMSH_LIBRARY}) executable(${GMSH_EXECUTABLE})" )
     MESSAGE( STATUS "GL2PS found: lib(${GL2PS_LIBRARY})" )
