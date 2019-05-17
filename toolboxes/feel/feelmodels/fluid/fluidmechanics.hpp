@@ -831,9 +831,12 @@ public :
     //___________________________________________________________________________________//
 
     void initInHousePreconditioner();
-    void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const override;
+    void updateInHousePreconditioner( DataUpdateLinear & data ) const override;
+    void updateInHousePreconditioner( DataUpdateJacobian & data ) const override;
+private :
     void updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
-    void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
+    void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol, DataUpdateBase & data ) const;
+public :
 
     //___________________________________________________________________________________//
 

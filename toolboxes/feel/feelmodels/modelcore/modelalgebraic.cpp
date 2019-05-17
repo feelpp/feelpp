@@ -193,8 +193,10 @@ ModelAlgebraic::buildMatrixGraph() const
 }
 
 void
-ModelAlgebraic::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
-                                             vector_ptrtype const& vecSol ) const
+ModelAlgebraic::updateInHousePreconditioner( DataUpdateLinear & data ) const
+{}
+void
+ModelAlgebraic::updateInHousePreconditioner( DataUpdateJacobian & data ) const
 {}
 
 void

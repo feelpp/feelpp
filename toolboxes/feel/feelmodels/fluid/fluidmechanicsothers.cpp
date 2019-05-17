@@ -1050,21 +1050,36 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postSolveLinear( vector_ptrtype rhs, vector_
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
-                                                                 vector_ptrtype const& vecSol ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( DataUpdateLinear & data ) const
 {
     if ( this->algebraicFactory() )
     {
+        sparse_matrix_ptrtype const& mat = data.matrix();
+        vector_ptrtype const& vecSol = data.currentSolution();
         if ( M_preconditionerAttachPMM )
             this->updateInHousePreconditionerPMM( mat, vecSol );
         if ( M_preconditionerAttachPCD )
-            this->updateInHousePreconditionerPCD( mat,vecSol );
+            this->updateInHousePreconditionerPCD( mat,vecSol, data );
+    }
+}
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( DataUpdateJacobian & data ) const
+{
+    if ( this->algebraicFactory() )
+    {
+        sparse_matrix_ptrtype const& mat = data.jacobian();
+        vector_ptrtype const& vecSol = data.currentSolution();
+        if ( M_preconditionerAttachPMM )
+            this->updateInHousePreconditionerPMM( mat, vecSol );
+        if ( M_preconditionerAttachPCD )
+            this->updateInHousePreconditionerPCD( mat,vecSol,data );
     }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& /*mat*/,vector_ptrtype const& vecSol) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& /*mat*/,vector_ptrtype const& vecSol ) const
 {
     bool hasAlreadyBuiltPMM = this->algebraicFactory()->preconditionerTool()->hasAuxiliarySparseMatrix( "pmm" );
     if ( hasAlreadyBuiltPMM && !M_pmmNeedUpdate )
@@ -1088,7 +1103,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPMM( sparse_matri
 }
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol,  DataUpdateBase & data ) const
 {
     this->log("FluidMechanics","updateInHousePreconditionerPCD", "start" );
 
@@ -1097,8 +1112,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
     typedef Feel::Alternatives::OperatorPCD<space_fluid_velocity_type,space_fluid_pressure_type> op_pcd_type;
     std::shared_ptr<op_pcd_type> myOpPCD =
         std::dynamic_pointer_cast<op_pcd_type>( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
-    bool hasAlpha = !this->isStationaryModel();
-    double coeffAlpha = (this->isStationaryModel())? 0. : this->timeStepBDF()->polyDerivCoefficient(0);
 
     auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
     auto u = U.template element<0>();
@@ -1115,18 +1128,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         //auto rhoExpr = this->materialProperties()->density( matName ).expr();
         auto const& fieldRho = this->materialProperties()->fieldRho();
         auto rhoExpr = idv( fieldRho );
-        auto alpha = rhoExpr*coeffAlpha;
         if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
         {
             if (this->isMoveDomain() )
             {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->updateDiffConvectionMass( therange, rhoExpr, muExpr, -rhoExpr*idv(this->meshVelocity()), alpha, true, hasAlpha );
+                myOpPCD->updateFpDiffusionConvection( therange, muExpr, -rhoExpr*idv(this->meshVelocity()), true );
 #endif
             }
             else
             {
-                myOpPCD->updateDiffConvectionMass( therange, rhoExpr, muExpr, zero<nDim,1>(), alpha, false, hasAlpha );
+                myOpPCD->updateFpDiffusionConvection( therange, muExpr, zero<nDim,1>(), false );
             }
         }
         else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
@@ -1136,12 +1148,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
             if (this->isMoveDomain() )
             {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->updateDiffConvectionMass( therange, rhoExpr, muExpr, rhoExpr*( idv(betaU)-idv(this->meshVelocity()) ), alpha, true, hasAlpha );
+                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(betaU)-idv(this->meshVelocity()) ), true );
 #endif
             }
             else
             {
-                myOpPCD->updateDiffConvectionMass( therange, rhoExpr, muExpr, rhoExpr*idv(betaU) , alpha, true, hasAlpha );
+                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*idv(betaU), true );
             }
         }
         else if ( this->modelName() == "Navier-Stokes" )
@@ -1149,29 +1161,54 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
             if (this->isMoveDomain() )
             {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->updateDiffConvectionMass( therange, rhoExpr, muExpr, rhoExpr*( idv(u)-idv(this->meshVelocity()) ), alpha, true, hasAlpha );
+                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(u)-idv(this->meshVelocity()) ), true );
 #endif
             }
             else
             {
-                myOpPCD->updateDiffConvectionMass( therange, rhoExpr, muExpr, rhoExpr*idv(u) , alpha, true, hasAlpha );
+                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*idv(u), true );
             }
         }
 
+        if ( !this->isStationaryModel() )
+        {
+            myOpPCD->updateFpMass( therange, rhoExpr*this->timeStepBDF()->polyDerivCoefficient(0) );
+        }
+        if ( data.hasInfo( "use-pseudo-transient-continuation" ) )
+        {
+            //Feel::cout << "updsate PCD : use-pseudo-transient-continuation\n";
+            //Warning : it's a copy past, should be improve : TODO!
+            double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
+            auto norm2_uu = this->materialProperties()->fieldRho().functionSpace()->element(); // TODO : improve this (maybe create an expression instead)
+            //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
+            auto fieldNormu = u.functionSpace()->compSpace()->element( norm2(idv(u)) );
+            auto maxu = fieldNormu.max( this->materialProperties()->fieldRho().functionSpace() );
+            //auto maxux = u[ComponentType::X].max( this->materialProperties()->fieldRho().functionSpace() );
+            //auto maxuy = u[ComponentType::Y].max( this->materialProperties()->fieldRho().functionSpace() );
+            //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(vec(idv(maxux),idv(maxux)))/h());
+            norm2_uu.on(_range=M_rangeMeshElements,_expr=idv(maxu)/h());
+
+            myOpPCD->updateFpMass( therange, (1./pseudoTimeStepDelta)*idv(norm2_uu) );
+        }
     }
 
-    auto const& fieldRho = this->materialProperties()->fieldRho();
-    auto rhoExpr = idv( fieldRho );
-    for( auto const& d : M_bcDirichlet )
-        myOpPCD->updateInflowBC( rhoExpr, name(d), expression(d,this->symbolsExpr()) );
-    for( auto const& d : M_bcMovingBoundaryImposed )
-        myOpPCD->updateInflowBC( rhoExpr, name(d), idv(M_meshALE->velocity()) );
-    for ( auto const& inletbc : M_fluidInletDesc )
+    if ( !dynamic_cast<DataUpdateJacobian*>(&data) || !boption(_name="pcd.apply-homogeneous-dirichlet-in-newton",_prefix=this->prefix()) )
     {
-        std::string const& marker = std::get<0>( inletbc );
-        auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
-        myOpPCD->updateInflowBC( rhoExpr, marker, -idv(inletVel)*N() );
+        auto const& fieldRho = this->materialProperties()->fieldRho();
+        auto rhoExpr = idv( fieldRho );
+        for( auto const& d : M_bcDirichlet )
+            myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, name(d), expression(d,this->symbolsExpr()) );
+        for( auto const& d : M_bcMovingBoundaryImposed )
+            myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, name(d), idv(M_meshALE->velocity()) );
+        for ( auto const& inletbc : M_fluidInletDesc )
+        {
+            std::string const& marker = std::get<0>( inletbc );
+            auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
+            myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, marker, -idv(inletVel)*N() );
+        }
     }
+    else
+        Feel::cout << "PCD NOT UP BC \n";
 
     myOpPCD->updateFinish();
 

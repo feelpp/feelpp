@@ -186,7 +186,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         //auto maxuy = u[ComponentType::Y].max( this->materialProperties()->fieldRho().functionSpace() );
         //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(vec(idv(maxux),idv(maxux)))/h());
         norm2_uu.on(_range=M_rangeMeshElements,_expr=idv(maxu)/h());
-        
+
         bilinearForm_PatternDefault +=
             integrate(_range=M_rangeMeshElements,
                       _expr=(1./pseudoTimeStepDelta)*idv(norm2_uu)*inner(idt(u),id(u)),
