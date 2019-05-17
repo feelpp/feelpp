@@ -885,7 +885,7 @@ class GeoMap
             {
                 M_gm->gradient( node_t_type(), M_g_linear );
             }
-
+            updateGradient<>( 0 );
             if ( M_pc && !this->isOnSubEntity() )
                 update( __e );
 
@@ -2210,7 +2210,8 @@ class GeoMap
                     em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
                     tensor_map_t<2,value_type> TPts( M_G.data().begin(), M_G.size1(), M_G.size2() );
                     bool _gradient_needs_update = resizeGradient<CTX>();
-                    
+                    em_matrix_col_type<value_type> GradPhi( M_g.data().begin(),
+                                                            M_G.size2(), PDim );
 
                     for ( int q = 0; q < nComputedPoints(); ++q )
                     {
@@ -2219,12 +2220,12 @@ class GeoMap
                         }
                         else
                         {
-                            
-                            updateGradient<CTX>( q );
-
-                            em_matrix_col_type<value_type> GradPhi( M_g.data().begin(),
-                                                                    M_G.size2(), PDim );
-
+                            if constexpr(!gmc_type::is_linear)
+                            {
+                                updateGradient<CTX>( q );
+                                new (&GradPhi) em_matrix_col_type<value_type>(M_g.data().begin(),
+                                                                              M_G.size2(), PDim );
+                            }
                             M_K[q].noalias() = Pts * GradPhi;
 
                             updateJacobian( M_K[q], M_B[q], M_J[q] );
