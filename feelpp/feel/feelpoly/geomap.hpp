@@ -867,9 +867,9 @@ class GeoMap
               M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
               M_id( __e.id() ),
               M_e_markers( __e.markers() ),
-              M_elem_id_1( invalid_size_type_value ),          // __e.ad_first() ),
+              M_elem_id_1( invalid_v<size_type> ),          // __e.ad_first() ),
               M_pos_in_elem_id_1( invalid_uint16_type_value ), //__e.pos_first() ),
-              M_elem_id_2( invalid_size_type_value ),          //__e.ad_second() ),
+              M_elem_id_2( invalid_v<size_type> ),          //__e.ad_second() ),
               M_pos_in_elem_id_2( invalid_uint16_type_value ), //__e.pos_second() ),
               M_face_id( __f ),
               M_h( 0 ),
@@ -885,7 +885,7 @@ class GeoMap
             {
                 M_gm->gradient( node_t_type(), M_g_linear );
             }
-
+            updateGradient<>( 0 );
             if ( M_pc && !this->isOnSubEntity() )
                 update( __e );
 
@@ -1148,8 +1148,11 @@ class GeoMap
                 updateJKBN<CTX>();
             }
 
+        //!
+        //! update geomap data only on face, element has not been changed
+        //!
         template<size_type CTX=context>
-        void update( uint16_type __f, bool updatePC = true )
+        void updateOnFace( uint16_type __f, bool updatePC = true )
             {
                 M_face_id = __f;
                 if ( this->isOnSubEntity() && updatePC )
@@ -2207,7 +2210,8 @@ class GeoMap
                     em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
                     tensor_map_t<2,value_type> TPts( M_G.data().begin(), M_G.size1(), M_G.size2() );
                     bool _gradient_needs_update = resizeGradient<CTX>();
-                    
+                    em_matrix_col_type<value_type> GradPhi( M_g.data().begin(),
+                                                            M_G.size2(), PDim );
 
                     for ( int q = 0; q < nComputedPoints(); ++q )
                     {
@@ -2216,12 +2220,12 @@ class GeoMap
                         }
                         else
                         {
-                            
-                            updateGradient<CTX>( q );
-
-                            em_matrix_col_type<value_type> GradPhi( M_g.data().begin(),
-                                                                    M_G.size2(), PDim );
-
+                            if constexpr(!gmc_type::is_linear)
+                            {
+                                updateGradient<CTX>( q );
+                                new (&GradPhi) em_matrix_col_type<value_type>(M_g.data().begin(),
+                                                                              M_G.size2(), PDim );
+                            }
                             M_K[q].noalias() = Pts * GradPhi;
 
                             updateJacobian( M_K[q], M_B[q], M_J[q] );

@@ -1,3 +1,9 @@
 TurekHron-cfd1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd1.cfg
 TurekHron-cfd2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd2.cfg
-TurekHron-cfd3 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd3.cfg --ts.time-final=0.1
+TurekHron-cfd1-transient-BDF2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd1.cfg --ts.time-step=0.5 --ts.time-final=10 --fluid.time-stepping=BDF --fluid.bdf.order=2
+TurekHron-cfd2-transient-BDF2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd2.cfg --ts.time-step=0.5 --ts.time-final=10 --fluid.time-stepping=BDF --fluid.bdf.order=2
+TurekHron-cfd1-transient-CN --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd1.cfg --ts.time-step=0.5 --ts.time-final=10 --fluid.time-stepping=Theta
+TurekHron-cfd2-transient-CN --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd2.cfg --ts.time-step=0.5 --ts.time-final=10 --fluid.time-stepping=Theta
+
+Pipe-Pressure-Stokes --case github:{repo:toolbox,path:examples/modules/cfd/examples/pipestokes/case_corrections/pression}
+Pipe-Pressure-Navier-Stokes --case github:{repo:toolbox,path:examples/modules/cfd/examples/pipestokes/case_corrections/pression} --fluid.json-editions=Models.equations:Navier-Stokes

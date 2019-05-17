@@ -571,7 +571,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
     eigen->setPositionOfSpectrum( spectrum );
     eigen->setNumberOfEigenValues( nev );
     eigen->setNumberOfEigenValuesConverged( ncv );
-    eigen->setMaximumProjectedDimension( (mpd>0)?mpd:invalid_size_type_value );
+    eigen->setMaximumProjectedDimension( (mpd>0)?mpd:invalid_v<size_type> );
     eigen->setInterval( interval_a, interval_b );
     eigen->setMaxIterations( maxit );
     eigen->setSpectralTransform( transform );
@@ -647,7 +647,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename compute_eigs_return_type<Args>::type
     eigen->setPositionOfSpectrum( (PositionOfSpectrum)EigenMap[spectrum] );
     eigen->setNumberOfEigenValues( nev );
     eigen->setNumberOfEigenValuesConverged( ncv );
-    eigen->setMaximumProjectedDimension( (mpd>0)?mpd:invalid_size_type_value );
+    eigen->setMaximumProjectedDimension( (mpd>0)?mpd:invalid_v<size_type> );
     eigen->setInterval( interval_a, interval_b );
     eigen->setMaxIterations( maxit );
     eigen->setSpectralTransform( (SpectralTransformType)EigenMap[transform] );

@@ -166,7 +166,23 @@ public :
         M_ps(ps),
         M_matrix(m)
         {}
-    BlockBilinearForm& operator=( BlockBilinearForm const& a ) = default;
+    BlockBilinearForm& operator=( BlockBilinearForm const& a )
+        {
+            if ( this == &a )
+                return *this;
+
+            bool same_spaces = (M_ps == a.M_ps);
+            M_ps = a.M_ps;
+            if ( !this->isMatrixAllocated() || !same_spaces )
+            {
+                this->allocateMatrix( a.M_matrix->solveStrategy(), a.M_matrix->backend() );
+                M_matrix->setBackend( a.M_matrix->backend()->clone() );
+            }
+            M_matrix->zero();
+            M_matrix->addMatrix( 1.,(MatrixSparse<value_type> const&)*a.M_matrix->getSparseMatrix() );
+            
+            return *this;
+        }
     BlockBilinearForm& operator=( BlockBilinearForm && a ) = default;
     BlockBilinearForm& operator+=( BlockBilinearForm& a )
         {
@@ -179,6 +195,23 @@ public :
             M_matrix->addMatrix( 1.0, a.M_matrix );
 
             return *this;
+        }
+
+    //!
+    //! allocate algebraic representation of the bilinear form
+    //! @param s the solve strategy (monolithic, static condensation or local)
+    //! @param b the algebraic backend to use (petsc or eigen)
+    //!
+    void allocateMatrix( solve::strategy s = solve::strategy::monolithic, backend_ptrtype const& b = backend() )
+        {
+            M_matrix = std::make_shared<condensed_matrix_type>( s, csrGraphBlocks(M_ps, (s==solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), b, (s==solve::strategy::static_condensation)?false:true );
+        }
+    //!
+    //! @return true if allocated, false otherwise
+    //!
+    bool isMatrixAllocated() const
+        {
+            return (bool)M_matrix;
         }
 #if 0
     template<typename N1,typename N2>
@@ -694,8 +727,15 @@ public :
             if ( this == &lf )
                 return *this;
 
+            bool same_spaces = ( M_ps == lf.M_ps );
             M_ps = lf.M_ps;
-            M_vector = lf.M_vector;
+            if ( !M_vector || !same_spaces )
+            {
+                M_vector = std::make_shared<condensed_vector_type>( lf.M_vector->solveStrategy(), blockVector(M_ps), lf.M_vector->backend(), false );
+                M_vector->setBackend( lf.M_vector->backend()->clone() );
+            }
+            M_vector->zero();
+            M_vector->add( 1., *lf.M_vector->getVector() );
             
             return *this;
         }

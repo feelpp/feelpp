@@ -1586,7 +1586,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& me
     :
     super( _worldComm ),
     M_fe( _fe ),
-    M_n_el( invalid_size_type_value ),
+    M_n_el( invalid_v<size_type> ),
     M_n_dof_per_face_on_bdy( invalid_uint16_type_value ),
     M_n_dof_per_face( invalid_uint16_type_value ),
     M_el_l2g(),
@@ -2122,7 +2122,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
     std::map<size_type,periodic_dof_map_type> periodic_dof;
     /*
      * Generate the periodic dof, assign a gid to the tag1 dof and set
-     * the tag2 dof to invalid_size_type_value for now.
+     * the tag2 dof to invalid_v<size_type> for now.
      */
     periodic_element_list_iterator it_periodic = periodic_elements.begin();
     periodic_element_list_iterator en_periodic = periodic_elements.end();
@@ -2214,7 +2214,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
         }
 #endif
         it_dof2 = periodic_dof[M_periodicity.tag2()].begin();
-        size_type corresponding_gid = invalid_size_type_value;
+        size_type corresponding_gid = invalid_v<size_type>;
 
         for ( ; it_dof2 != en_dof2; ++ it_dof2 )
         {
@@ -2670,7 +2670,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
     __face_en = M.facesWithProcessId( M.worldComm().localRank() ).second;
     for ( ; __face_it != __face_en; ++__face_it )
         for ( int face_dof_id = 0; face_dof_id < int( ntldof ); ++face_dof_id )
-            FEELPP_ASSERT( boost::get<0>( M_face_l2g[face.id()][face_dof_id] ) != invalid_size_type_value )( face.id() )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
+            FEELPP_ASSERT( boost::get<0>( M_face_l2g[face.id()][face_dof_id] ) != invalid_v<size_type> )( face.id() )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
 
 #endif
     
@@ -2999,7 +2999,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoin
         face_type const& __face = *it_elt->template get<1>();
 
         size_type iElAd = __face.ad_first();
-        FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[periodic]invalid face/element in face" );
+        FEELPP_ASSERT( iElAd != invalid_v<size_type> )( __face.id() ).error( "[periodic]invalid face/element in face" );
         Feel::detail::ignore_unused_variable_warning( iElAd );
 
         // local id of the face in its adjacent element

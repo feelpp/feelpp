@@ -83,8 +83,6 @@ using THch_velocity_t = typename THch_type<Order,MeshType>::element_type::templa
 template<int Order,typename MeshType>
 using THch_pressure_t = typename THch_type<Order,MeshType>::element_type::template sub_element_type<1>;
 
-
-
 template<int Order,typename MeshType>
 using THch_velocity_space_ptr_t = typename THch_type<Order,MeshType>::template sub_functionspace_ptrtype<0>;
 template<int Order,typename MeshType>

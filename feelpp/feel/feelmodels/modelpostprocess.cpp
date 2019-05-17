@@ -144,7 +144,6 @@ ModelPostprocessNorm::setup( std::string const& name )
             M_gradExpr.setExpr( "grad_expr", M_p, this->worldComm(), M_directoryLibExpr );
     }
 
-    M_markers = ModelMarkers(M_name);
     if ( auto ptmarkers = M_p.get_child_optional("markers") )
         M_markers.setPTree(*ptmarkers);
 
@@ -195,7 +194,6 @@ ModelPostprocessStatistics::setup( std::string const& name )
         M_expr.setExpr( "expr", M_p, this->worldComm(), M_directoryLibExpr );
     }
 
-    M_markers = ModelMarkers(M_name);
     if ( auto ptmarkers = M_p.get_child_optional("markers") )
         M_markers.setPTree(*ptmarkers);
 

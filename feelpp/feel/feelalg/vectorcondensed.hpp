@@ -102,6 +102,11 @@ public:
     bool localSolve() const { return M_strategy == solve::strategy::local; }
 
     //!
+    //! get the strategy 
+    //!
+    solve::strategy solveStrategy() const { return M_strategy; }
+    
+    //!
     //! set the strategy \p s
     //!
     void setStrategy( solve::strategy s ) { M_strategy = s; }

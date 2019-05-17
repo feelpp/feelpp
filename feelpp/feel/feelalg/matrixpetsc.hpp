@@ -369,7 +369,7 @@ public:
                      int* cols, int ncols,
                      value_type* data,
                      size_type K = 0,
-                     size_type K2 = invalid_size_type_value);
+                     size_type K2 = invalid_v<size_type>);
 
     /**
      * Same, but assumes the row and column maps are the same.
@@ -679,7 +679,7 @@ public :
 
     void addMatrix( int* rows, int nrows,
                     int* cols, int ncols,
-                    value_type* data, size_type K = 0, size_type K2 = invalid_size_type_value );
+                    value_type* data, size_type K = 0, size_type K2 = invalid_v<size_type> );
 
     //void addMatrix( const T a, MatrixSparse<T> const&X );
 

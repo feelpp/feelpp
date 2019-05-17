@@ -474,7 +474,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
 
 
 
-    size_type nbFaceDof = invalid_size_type_value;
+    size_type nbFaceDof = invalid_v<size_type>;
 
     for ( int e = 0; __face_it != __face_en; ++__face_it, ++e )
     {

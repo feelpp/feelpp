@@ -410,6 +410,19 @@ public :
 
     bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
 
+    // return true one of fluid material use a non newtonian law
+    bool hasNonNewtonianLaw() const
+        {
+            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+            {
+                std::string const& matName = rangeData.first;
+                auto const& dynamicViscosity = this->dynamicViscosity( matName );
+                if ( !dynamicViscosity.isNewtonianLaw() )
+                    return true;
+            }
+            return false;
+        }
+
 
     //! return dynamic viscosity projection field
     element_type const& fieldMu() const { return this->fieldDynamicViscosity(); }

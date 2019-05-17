@@ -339,6 +339,12 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                         \
             element_type const& e() const { return M_v; }              \
             bool useInterpWithConfLoc() const { return M_useInterpWithConfLoc; } \
+                                                                        \
+            evaluate_type                                               \
+                evaluate( bool, worldcomm_ptr_t const& ) const          \
+            {                                                           \
+                return 0;                                               \
+            }                                                           \
             template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
                 struct tensor                                           \
             {                                                           \
@@ -884,6 +890,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
 // Generate the code
 //
 BOOST_PP_LIST_FOR_EACH_PRODUCT(
+
 
     VF_ARRAY_OPERATOR, 2, (
         VF_OPERATORS, VF_OPERATORS_TYPE ) )

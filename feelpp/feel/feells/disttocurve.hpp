@@ -568,17 +568,17 @@ private :
 
     size_type getIdEltContainingNode( node_type const& t )
         {
-            // invalid_size_type_value
+            // invalid_v<size_type>
             /* copied from context::add */
             typename FunctionSpaceP0Type::Context::matrix_node_type m( mesh_type::nDim, 1 );
             for(int i = 0; i < mesh_type::nDim; ++i )
                 m(i,0) = t(i);
             auto loc =  M_spaceP0->mesh()->tool_localization();
             loc->setExtrapolation( false );
-            auto analysis = loc->run_analysis( m, invalid_size_type_value );
+            auto analysis = loc->run_analysis( m, invalid_v<size_type> );
             auto found_points = analysis.template get<0>();
             const bool found = found_points[0];
-            size_type elt = found ? analysis.template get<1>() : invalid_size_type_value;
+            size_type elt = found ? analysis.template get<1>() : invalid_v<size_type>;
             return elt;
         }
 
@@ -630,7 +630,7 @@ private :
                 {
                     const size_type index = getIdEltContainingNode( nodeToAdd );
                     // if point located on this proc
-                    if ( index!=invalid_size_type_value )
+                    if ( index!=invalid_v<size_type> )
                     {
                         idxEltsContainingNode.push_back( index );
                         ++tnode;
@@ -862,7 +862,7 @@ private :
             // all the elements which are on the proc (ghost or not) have to be set to the min value
             for (auto const& idValue : idOnClusterAndMinValue)
             {
-                size_type locId=invalid_size_type_value;
+                size_type locId=invalid_v<size_type>;
 
                 if ( (M_spaceP1->dof()->dofGlobalClusterIsOnProc( idValue.first )) )
                     locId = clusterToProcessor(idValue.first);
@@ -870,7 +870,7 @@ private :
                 else if ( ghostClusterToProc.count(idValue.first) )
                     locId = ghostClusterToProc[ idValue.first ];
 
-                if ( locId != invalid_size_type_value )
+                if ( locId != invalid_v<size_type> )
                     (*shape)(locId) = idValue.second;
             }
 
@@ -1312,14 +1312,14 @@ private :
 
                         for (std::pair< size_type, int > const& eltSign : all_globalClusterDofDone[i])
                         {
-                            size_type index = invalid_size_type_value;
+                            size_type index = invalid_v<size_type>;
                             if (M_spaceP1->dof()->dofGlobalClusterIsOnProc( eltSign.first ))
                                 index = clusterToProcessor( eltSign.first );
 
                             else if (M_spaceP1->dof()->dofGlobalProcessIsGhost(eltSign.first))
                                 index = ghostClusterToProc[ eltSign.first ];
 
-                            if ( index != invalid_size_type_value ) // if the dof is on the proc or ghost
+                            if ( index != invalid_v<size_type> ) // if the dof is on the proc or ghost
                                 if ( !dofDONE.count(index) )
                                 {
                                     (*phi)( index ) = eltSign.second * std::abs((*phi)(index));
