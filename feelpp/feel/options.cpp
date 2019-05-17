@@ -775,6 +775,21 @@ error_options( std::string const& prefix )
     return _options;
 }
 
+po::options_description
+pcd_options( std::string const& prefix )
+{
+    po::options_description _options( "PCD options (" + prefix + ")" );
+    _options.add_options()
+        ( prefixvm( prefix, "pcd.bc-type-with-Dirichlet" ).c_str(), Feel::po::value<std::string>()->default_value("Robin"), "Type of boundary conditions with Dirichlet in NS : Robin or Dirichlet" )
+        ( prefixvm( prefix, "pcd.bc-type-with-Neumann" ).c_str(), Feel::po::value<std::string>()->default_value("Dirichlet"), "Type of boundary conditions with Neumann in NS : Neumann or Dirichlet" )
+        ( prefixvm( prefix, "pcd.order" ).c_str(), Feel::po::value<int>()->default_value(1), "order for pcd operator 1:Ap^-1 Fp Mp^-1 other: Mp^-1 Fp Ap^-1" )
+        ( prefixvm( prefix, "pcd.diffusion" ).c_str(), Feel::po::value<std::string>()->default_value("Laplacian"), "Laplacian or BTBt" )
+        ( prefixvm( prefix, "pcd.diffusion.weakdir" ).c_str(), Feel::po::value<bool>()->default_value(0), "set to true for Weak dirichlet conditions for Fp and Ap, false otherwise" )
+        ( prefixvm( prefix, "pcd.diffusion.weakdir.penaldir" ).c_str(), Feel::po::value<double>()->default_value(10.), "Penalisation parameter for weak bc" )
+        ;
+    return _options;
+}
+
 // preconditioner for Navier-Stokes
 po::options_description
 blockns_options( std::string const& prefix )

@@ -298,7 +298,6 @@ class Heat : public ModelNumerical,
         backend_ptrtype M_backend;
         model_algebraic_factory_ptrtype M_algebraicFactory;
         BlocksBaseVector<double> M_blockVectorSolution;
-        std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
 
         // post-process
         std::set<std::string> M_postProcessFieldExported;

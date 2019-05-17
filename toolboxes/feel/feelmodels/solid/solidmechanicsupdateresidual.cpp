@@ -495,7 +495,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialG
     }
 
     // update info for synchronization
-    this->updateDofEliminationIdsMultiProcess( "displacement", data );
+    this->updateDofEliminationIds( "displacement", data );
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateNewtonInitialGuess", "finish",
                                                this->worldComm(),this->verboseAllProc());
@@ -615,14 +615,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResi
 
     this->log("SolidMechanics","updateResidualDofElimination","start" );
 
-    vector_ptrtype& R = data.residual();
-
-    auto resFeViewDisp = M_XhDisplacement->element(R,this->rowStartInVector());
-    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("displacement");
-    auto const& dofsWithValueImposedDisp = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
-    for ( size_type thedof : dofsWithValueImposedDisp )
-        resFeViewDisp.set( thedof,0. );
-    sync( resFeViewDisp, "=", dofsWithValueImposedDisp );
+    this->updateDofEliminationIds( "displacement", data );
 
     this->log("SolidMechanics","updateResidualDofElimination","finish" );
 }

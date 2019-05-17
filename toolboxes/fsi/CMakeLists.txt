@@ -34,3 +34,4 @@ feelpp_add_application( fsi_3d_g2 SRCS main_fsi.cpp
 feelpp_add_testcase( TurekHron PREFIX feelmodels_fsi CATEGORY FSI)
 feelpp_add_testcase( wavepressure2d PREFIX feelmodels_fsi CATEGORY FSI)      
 feelpp_add_testcase( wavepressure3d PREFIX feelmodels_fsi CATEGORY FSI)      
+feelpp_add_testcase( movingboundary PREFIX feelmodels_fsi CATEGORY FSI)

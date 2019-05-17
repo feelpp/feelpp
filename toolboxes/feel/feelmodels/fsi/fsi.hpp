@@ -313,7 +313,8 @@ public :
     void updateResidual_Solid( DataUpdateResidual & data ) const;
     void updateLinearPDEDofElimination_Fluid( DataUpdateLinear & data ) const;
     void updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess & data ) const;
-    //void updateJacobianStrongDirichletBC_Fluid( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
+    void updateJacobianDofElimination_Fluid( DataUpdateJacobian & data ) const;
+    void updateResidualDofElimination_Fluid( DataUpdateResidual & data ) const;
 
     void updateLinearPDE_Solid1dReduced( DataUpdateLinear & data ) const;
 
@@ -335,6 +336,10 @@ private :
     fs::path M_mshfilepathFluidPartN,M_mshfilepathSolidPartN;
     std::set<std::string> M_markersNameFluid,M_markersNameSolid;
     std::string M_tagFileNameMeshGenerated;
+
+    range_fluid_face_type M_rangeFSI_fluid;
+    range_solid_face_type M_rangeFSI_solid;
+    std::map<std::string,range_fluid_face_type> M_rangeMeshFacesByMaterial_fluid;
 
     std::string M_fsiCouplingType; // implicit,semi-implicit
     std::string M_fsiCouplingBoundaryCondition; // dirichlet-neumann, robin-robin, ...
