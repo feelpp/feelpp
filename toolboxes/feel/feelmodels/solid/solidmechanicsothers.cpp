@@ -1491,7 +1491,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     {
         auto therange = markedfaces( mesh,listMarkedFacesDisp );
         auto dofsToAdd = XhDisp->dofs( therange );
-        dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+        this->dofEliminationIdsAll("displacement",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
         auto dofsMultiProcessToAdd = XhDisp->dofs( therange, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("displacement",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
@@ -1501,7 +1502,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     {
         auto therange = markededges(mesh,listMarkedEdgesDisp );
         auto dofsToAdd = XhDisp->dofs( therange );
-        dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+        this->dofEliminationIdsAll("displacement",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
         auto dofsMultiProcessToAdd = XhDisp->dofs( therange, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("displacement",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
@@ -1511,7 +1513,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     {
         auto therange = markedpoints(mesh,listMarkedPointsDisp );
         auto dofsToAdd = XhDisp->dofs( therange );
-        dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+        this->dofEliminationIdsAll("displacement",MESH_POINTS).insert( dofsToAdd.begin(), dofsToAdd.end() );
         auto dofsMultiProcessToAdd = XhDisp->dofs( therange, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("displacement",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
@@ -1526,7 +1529,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         {
             auto therange = markedfaces(mesh,listMarkedFacesCompDisp );
             auto dofsToAdd = XhDisp->dofs( therange, comp );
-            dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+            this->dofEliminationIdsAll("displacement",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
             auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
             this->dofEliminationIdsMultiProcess("displacement",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
@@ -1536,7 +1540,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         {
             auto therange = markededges(mesh,listMarkedEdgesCompDisp );
             auto dofsToAdd = XhDisp->dofs( therange, comp );
-            dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+            this->dofEliminationIdsAll("displacement",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
             auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
             this->dofEliminationIdsMultiProcess("displacement",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
@@ -1546,7 +1551,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         {
             auto therange = markedpoints(mesh,listMarkedPointsCompDisp );
             auto dofsToAdd = XhDisp->dofs( therange, comp );
-            dofsWithValueImposedDisp.insert( dofsToAdd.begin(), dofsToAdd.end() );
+            XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+            this->dofEliminationIdsAll("displacement",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
             auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
             this->dofEliminationIdsMultiProcess("displacement",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }

@@ -29,6 +29,7 @@
 
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelalg/vectorublas.hpp>
+#include <feel/feelalg/enums.hpp>
 
 namespace Feel
 {
@@ -37,6 +38,8 @@ namespace FeelModels
 
 ModelAlgebraicFactory::ModelAlgebraicFactory( std::string const& prefix )
     :
+    M_dofElimination_strategy( Feel::ContextOnMap[soption(_prefix=prefix,_name="on.type")] ),
+    M_dofElimination_valueOnDiagonal( doption(_prefix=prefix,_name="on.value_on_diagonal") ),
     M_hasBuildLinearJacobian(false),
     M_hasBuildResidualCst(false),
     M_hasBuildLinearSystemCst(false),
@@ -541,7 +544,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         // set preconditioner
         //M_PrecondManage->setMatrix(M_Prec);
 
-        this->model()->updateInHousePreconditioner( M_J, U );
+        this->model()->updateInHousePreconditioner( dataLinearNonCst );
 
         pre_solve_type pre_solve = std::bind(&model_type::preSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
         post_solve_type post_solve = std::bind(&model_type::postSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
@@ -623,10 +626,18 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         for ( auto const& func : M_addFunctionJacobianDofElimination )
             func.second( dataJacobianNonCst );
 
+        if ( dataJacobianNonCst.hasDofEliminationIds() )
+        {
+            // we assume that all shared dofs are present, not need to appy a sync
+            std::vector<int> _dofs;_dofs.assign( dataJacobianNonCst.dofEliminationIds().begin(), dataJacobianNonCst.dofEliminationIds().end());
+            auto tmp = dataJacobianNonCst.vectorUsedInStrongDirichlet();
+            J->zeroRows( _dofs, *tmp, *tmp, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
+        }
+
         for ( auto const& func : M_addFunctionJacobianPostAssembly )
             func.second( dataJacobianNonCst );
 
-        model->updateInHousePreconditioner( J, X );
+        model->updateInHousePreconditioner( dataJacobianNonCst );
 
         double tElapsed = model->timerTool("Solve").stop();
         model->timerTool("Solve").addDataValue("algebraic-jacobian",tElapsed);
@@ -678,6 +689,13 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         for ( auto const& func : M_addFunctionResidualDofElimination )
             func.second( dataResidualNonCst );
 
+        if ( dataResidualNonCst.hasDofEliminationIds() )
+        {
+            for ( size_type k : dataResidualNonCst.dofEliminationIds() )
+                R->set( k, 0. );
+            // we assume that all shared dofs are present, not need to appy a sync
+        }
+
         for ( auto const& func : M_addFunctionResidualPostAssembly )
             func.second( dataResidualNonCst );
 
@@ -708,7 +726,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         for ( auto const& func : M_addFunctionNewtonInitialGuess )
             func.second( dataInitialGuess );
 
-        if ( dataInitialGuess.hasDofIdsMultiProcessModified() )
+        if ( dataInitialGuess.hasDofEliminationIds() )
         {
             // create view in order to avoid mpi comm inside petsc
             auto UView = VectorUblas<value_type>::createView( *U );
@@ -716,8 +734,8 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             std::vector<ElementsType> fromEntities = { MESH_ELEMENTS, MESH_FACES, MESH_EDGES, MESH_POINTS };
             for ( ElementsType entity : fromEntities )
             {
-                if ( dataInitialGuess.hasDofIdsMultiProcessModified( entity ) )
-                    sync( UView, "=", dataInitialGuess.dofIdsMultiProcessModified( entity ) );
+                if ( dataInitialGuess.hasDofEliminationIds( entity ) )
+                    sync( UView, "=", dataInitialGuess.dofEliminationIds( entity ) );
             }
         }
 
@@ -854,6 +872,11 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             model->updateResidualDofElimination( dataResidual );
             for ( auto const& func : M_addFunctionResidualDofElimination )
                 func.second( dataResidual );
+            if ( dataResidual.hasDofEliminationIds() )
+            {
+                for ( size_type k : dataResidual.dofEliminationIds() )
+                    R->set( k, 0. );
+            }
         }
 
         for ( auto const& func : M_addFunctionResidualPostAssembly )
@@ -1015,7 +1038,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             this->model()->updatePreconditioner(U,M_J,M_Extended,M_Prec);
 
             // update in-house preconditioners
-            this->model()->updateInHousePreconditioner( M_J, U );
+            this->model()->updateInHousePreconditioner( dataLinearNonCst );
 
             // set pre/post solve functions
             pre_solve_type pre_solve = std::bind(&model_type::preSolvePicard, this->model(), std::placeholders::_1, std::placeholders::_2);

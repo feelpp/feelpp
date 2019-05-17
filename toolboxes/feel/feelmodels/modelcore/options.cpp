@@ -78,7 +78,7 @@ Feel::po::options_description modelalgebraic_options(std::string const& prefix)
         (prefixvm(prefix,"pseudo-transient-continuation.expur.beta-low").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "pseudo-transient-continuation parameter : beta-low")
 
         ;
-    return appliBaseOptions.add( modelbase_options(prefix ) );//.add( backend_options( prefix ) );
+    return appliBaseOptions.add( modelbase_options(prefix ) ).add( on_options( prefix ) );//.add( backend_options( prefix ) );
 }
 
 
@@ -210,6 +210,8 @@ fluidMechanics_options(std::string const& prefix)
 
         (prefixvm(prefix,"use-gravity-force").c_str(), Feel::po::value<bool>()->default_value(false), "use-gravity-force")
         (prefixvm(prefix,"gravity-force").c_str(), Feel::po::value<std::string>(), "gravity-force : (default is {0,-9.80665} or {0,0,-9.80665}")
+
+        (prefixvm(prefix,"pcd.apply-homogeneous-dirichlet-in-newton").c_str(), Feel::po::value<bool>()->default_value(false), "use-gravity-force")
         ;
 
     fluidOptions
@@ -219,6 +221,7 @@ fluidMechanics_options(std::string const& prefix)
         .add( alemesh_options( prefix ) )
         .add( backend_options( prefixvm(prefix,"fluidinlet") ) )
         .add( densityviscosity_options( prefix ) )
+        .add( pcd_options( prefix ) )
         ;
 
 
@@ -264,7 +267,7 @@ solidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"use-near-null-space").c_str(), Feel::po::value<bool>()->default_value( true ), "use-near-null-space")
         ;
     solidOptions.add( gmsh_options( prefixvm(prefix,"1dreduced") ) );
-    return solidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).add( on_options( prefix ) );
+    return solidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
 
 Feel::po::options_description
