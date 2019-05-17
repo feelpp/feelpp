@@ -494,14 +494,15 @@ public:
     void addRangeDirichletBC( std::string const& name, range_faces_type const& r ) { M_rangeFacesDirichletBC[name] = r; }
 
     void updateStart();
-    template < typename ExprRho, typename ExprMu, typename ExprConvection, typename ExprAlpha >
-    void updateDiffConvectionMass( elements_reference_wrapper_t<mesh_type> rangeElt,
-                                   ExprRho const& expr_rho, ExprMu const& expr_mu,
-                                   ExprConvection const& expr_b,
-                                   ExprAlpha const& expr_alpha,
-                                   bool hasConvection, bool hasAlpha );
+    template < typename ExprMu, typename ExprConvection >
+    void updateFpDiffusionConvection( elements_reference_wrapper_t<mesh_type> rangeElt,
+                                      ExprMu const& expr_mu,
+                                      ExprConvection const& expr_b, bool hasConvection );
+    template < typename ExprAlpha >
+    void updateFpMass( elements_reference_wrapper_t<mesh_type> rangeElt,
+                       ExprAlpha const& expr_alpha );
     template < typename ExprRho, typename ExprDirichletBC >
-    void updateInflowBC( ExprRho const& expr_rho, std::string const& name, ExprDirichletBC const& expr_bc );
+    void updateFpBoundaryConditionWithDirichlet( ExprRho const& expr_rho, std::string const& name, ExprDirichletBC const& expr_bc );
     void updateFinish();
 
 
@@ -603,13 +604,12 @@ OperatorPCD<SpaceVelocityType,SpacePressureType>::updateStart()
 }
 
 template<typename SpaceVelocityType,typename SpacePressureType>
-template < typename ExprRho, typename ExprMu, typename ExprConvection, typename ExprAlpha >
+template < typename ExprMu, typename ExprConvection >
 void
-OperatorPCD<SpaceVelocityType,SpacePressureType>::updateDiffConvectionMass( elements_reference_wrapper_t<mesh_type> rangeElt,
-                                                                            ExprRho const& expr_rho, ExprMu const& expr_mu,
-                                                                            ExprConvection const& expr_b,
-                                                                            ExprAlpha const& expr_alpha,
-                                                                            bool hasConvection, bool hasAlpha )
+OperatorPCD<SpaceVelocityType,SpacePressureType>::updateFpDiffusionConvection( elements_reference_wrapper_t<mesh_type> rangeElt,
+                                                                               ExprMu const& expr_mu,
+                                                                               ExprConvection const& expr_b,
+                                                                               bool hasConvection )
 {
     auto form2_conv = form2( _test=M_Ph, _trial=M_Ph, _matrix=M_conv );
     tic();
@@ -622,20 +622,24 @@ OperatorPCD<SpaceVelocityType,SpacePressureType>::updateDiffConvectionMass( elem
         form2_conv += integrate( _range=rangeElt, _expr=(trans(expr_b)*trans(gradt(M_p)))*id(M_p));
         toc("OperatorPCD::update apply convection",FLAGS_v>0);
     }
+}
 
-    if ( hasAlpha )
-    {
-        LOG(INFO) << "[OperatorPCD] Add mass matrix...\n";
-        tic();
-        form2_conv += integrate( _range=rangeElt, _expr=expr_alpha*idt(M_p)*id(M_p) );
-        toc("OperatorPCD::update apply mass",FLAGS_v>0);
-    }
+template<typename SpaceVelocityType,typename SpacePressureType>
+template < typename ExprAlpha >
+void
+OperatorPCD<SpaceVelocityType,SpacePressureType>::updateFpMass( elements_reference_wrapper_t<mesh_type> rangeElt,
+                                                                ExprAlpha const& expr_alpha )
+{
+    auto form2_conv = form2( _test=M_Ph, _trial=M_Ph, _matrix=M_conv );
+    tic();
+    form2_conv += integrate( _range=rangeElt, _expr=expr_alpha*idt(M_p)*id(M_p) );
+    toc("OperatorPCD::update apply mass",FLAGS_v>0);
 }
 
 template<typename SpaceVelocityType,typename SpacePressureType>
 template < typename ExprRho, typename ExprDirichletBC >
 void
-OperatorPCD<SpaceVelocityType,SpacePressureType>::updateInflowBC( ExprRho const& expr_rho, std::string const& name, ExprDirichletBC const& expr_bc )
+OperatorPCD<SpaceVelocityType,SpacePressureType>::updateFpBoundaryConditionWithDirichlet( ExprRho const& expr_rho, std::string const& name, ExprDirichletBC const& expr_bc )
 {
     if ( M_bcTypeWithDirichlet == "Robin" )
     {
