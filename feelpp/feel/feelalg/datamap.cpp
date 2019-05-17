@@ -434,38 +434,34 @@ DataMap::searchGlobalProcessDof( size_type gcdof ) const
     return boost::make_tuple( find,gpdof );
 }
 
-void
-DataMap::updateIndexSetWithParallelMissingDof( std::vector<size_type> & _indexSet ) const
-{
-    auto res = this->buildIndexSetWithParallelMissingDof( _indexSet );
-    _indexSet.assign( res.begin(), res.end() );
-}
-
 std::vector<size_type>
 DataMap::buildIndexSetWithParallelMissingDof( std::vector<size_type> const& _indexSet ) const
 {
-    std::vector<size_type> indexSet;
-    indexSet.insert( indexSet.begin(), _indexSet.begin(), _indexSet.end() );
-
+    if ( this->worldComm().localSize() == 1 )
+        return _indexSet;
+    std::set<size_type> indexSet;
+    indexSet.insert( _indexSet.begin(), _indexSet.end() );
+    this->updateIndexSetWithParallelMissingDof( indexSet );
+    std::vector<size_type> res;
+    res.assign( indexSet.begin(), indexSet.end() );
+    return res;
+}
+void
+DataMap::updateIndexSetWithParallelMissingDof( std::set<size_type> & indexSet ) const
+{
     // if sequential return identical index set
     if ( this->worldComm().localSize() == 1 )
-        return indexSet;
+        return;
 
     // init data used in mpi comm
     std::map< rank_type, std::vector< size_type > > dataToSend, dataToRecv;
     for ( rank_type p : this->neighborSubdomains() )
         dataToSend[p].clear();
 
-    // up data used in mpi comm
+    // up data used in mpi comm : send ghost dofs to correponding active dofs
     for ( auto const& id : indexSet )
     {
-        if ( !this->dofGlobalProcessIsGhost(id) )
-        {
-            if ( this->activeDofSharedOnCluster().find( id ) != this->activeDofSharedOnCluster().end() )
-                for ( rank_type pNeighborId : this->activeDofSharedOnCluster().find( id )->second )
-                    dataToSend[pNeighborId].push_back( this->mapGlobalProcessToGlobalCluster( id ) );
-        }
-        else
+        if ( this->dofGlobalProcessIsGhost(id) )
         {
             size_type gcdof = this->mapGlobalProcessToGlobalCluster( id );
             rank_type procIdFinded = procOnGlobalCluster( gcdof );
@@ -482,30 +478,60 @@ DataMap::buildIndexSetWithParallelMissingDof( std::vector<size_type> const& _ind
     for ( rank_type p : this->neighborSubdomains() )
     {
         CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
-        reqs[cptRequest] = this->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
-        ++cptRequest;
-        reqs[cptRequest] = this->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
-        ++cptRequest;
+        reqs[cptRequest++] = this->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
+        reqs[cptRequest++] = this->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + nbRequest);
-    delete [] reqs;
 
-    // update indexSet : can be usefull for fix missing dof entries in input at interprocess zone!
+    // clear data
+    for ( rank_type p : this->neighborSubdomains() )
+        dataToSend[p].clear();
+
+    // active dofs send to all ghost dofs shared
     for ( auto const& dataR : dataToRecv )
     {
         rank_type theproc = dataR.first;
         for ( size_type dataRfromproc : dataR.second )
         {
-            //size_type thelocdof = this->mapGlobalClusterToGlobalProcess( dataRfromproc );
             auto thelocdof = this->searchGlobalProcessDof( dataRfromproc );
             CHECK( thelocdof.get<0>() ) << "local dof not find with cluster id : " << dataRfromproc;
-            //indexSet.insert( thelocdof.get<1>() );
-            indexSet.push_back( thelocdof.get<1>() );
+            size_type gpdof = thelocdof.get<1>();
+            //indexSet.push_back( gpdof );
+            indexSet.insert( gpdof );
+            auto itFindDofShared = this->activeDofSharedOnCluster().find( gpdof ) ;
+            if ( itFindDofShared == this->activeDofSharedOnCluster().end() )
+                continue;
+            for ( rank_type pNeighborId : itFindDofShared->second )
+                dataToSend[pNeighborId].push_back( dataRfromproc );
         }
     }
+    // apply isend/irecv
+    cptRequest=0;
+    for ( rank_type p : this->neighborSubdomains() )
+        dataToRecv[p].clear();
+    for ( rank_type p : this->neighborSubdomains() )
+    {
+        CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
+        reqs[cptRequest++] = this->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
+        reqs[cptRequest++] = this->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + nbRequest);
+    delete [] reqs;
 
-    return indexSet;
+    // insert ghost dofs from active dofs request
+    for ( auto const& dataR : dataToRecv )
+    {
+        for ( size_type dataRfromproc : dataR.second )
+        {
+            auto thelocdof = this->searchGlobalProcessDof( dataRfromproc );
+            CHECK( thelocdof.get<0>() ) << "local dof not find with cluster id : " << dataRfromproc;
+            size_type gpdof = thelocdof.get<1>();
+            //indexSet.push_back( gpdof );
+            indexSet.insert( gpdof );
+        }
+    }
 }
 
 std::map<size_type, std::set<rank_type> >

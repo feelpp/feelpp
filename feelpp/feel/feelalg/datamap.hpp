@@ -639,7 +639,7 @@ public:
     void close() const;
 
     // add missing dof entries in // ( typically a ghost dof present in index set but not active dof associated )
-    void updateIndexSetWithParallelMissingDof( std::vector<size_type> & _indexSet ) const;
+    void updateIndexSetWithParallelMissingDof( std::set<size_type> & _indexSet ) const;
     std::vector<size_type> buildIndexSetWithParallelMissingDof( std::vector<size_type> const& _indexSet ) const;
     // get process ids of active dof index (in cluster view) used in the input index set
     std::map<size_type, std::set<rank_type> >
