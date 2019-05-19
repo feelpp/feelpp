@@ -114,6 +114,12 @@ public:
             double v = integrate( _range=boundaryfaces(mesh), _expr=e ).evaluate()( 0, 0 );
             BOOST_CHECK_CLOSE( v, expected_value, tolerance );
         }
+    template<typename ExprT>
+    void checkSmallOnBoundary( ExprT const& e, double tolerance = 1e-10 )
+        {
+            double v = integrate( _range=boundaryfaces(mesh), _expr=e ).evaluate()( 0, 0 );
+            BOOST_CHECK_SMALL( v, tolerance );
+        }
     std::shared_ptr<mesh_type> mesh;
 };
 
@@ -179,23 +185,34 @@ BOOST_AUTO_TEST_CASE( t2 )
 {
     using namespace Feel::vf;
 
-    //TestIntegrate<3> t;
-    for ( auto s : {"nx:nx", "ny:ny", "nz:nz", "nx+ny:nx:ny", "nx+ny+nz:nx:ny:nz"} )
+    TestIntegrate<3> t;
+    double expected_v = 0.;
+    for ( std::string s : {"nx:nx", "ny:ny", "nz:nz", "nx+ny:nx:ny", "nx+ny+nz:nx:ny:nz", "2*x*nx+y*ny-2*z*nz:x:y:z:nx:ny:nz"} )
     {
+        BOOST_TEST_MESSAGE( "testing expression " << s );
         auto e3 = expr( s );
         BOOST_CHECK_EQUAL( hasDynamicContext( e3 ), true );
         BOOST_CHECK_EQUAL( vm::hasJACOBIAN( dynamicContext( e3 ) ), false );
         BOOST_CHECK_EQUAL( vm::hasNORMAL( dynamicContext( e3 ) ), true );
         BOOST_CHECK_EQUAL( vm::hasKB( dynamicContext( e3 ) ), true );
-        //expected_v = t.evaluateOnBoundary( Nx() );
-        //t.checkOnBoundary( e3, expected_v, 1e-2 );
+
+        if ( s == "2*x*nx+y*ny-2*z*nz:x:y:z:nx:ny:nz" )
+        {
+            BOOST_CHECK_EQUAL( vm::hasPOINT( dynamicContext( e3 ) ), true );
+            expected_v = t.evaluateOnBoundary( 2*Px()*Nx()+Py()*Ny()-2*Pz()*Nz() );
+            double expected_v2 = t.evaluateWithSympy( "1" );
+            BOOST_CHECK_CLOSE( expected_v, expected_v2, 1e-10 );
+            t.checkOnBoundary( e3, expected_v, 1e-10 );
+        }
+        else // integrals are equals to 0
+            t.checkSmallOnBoundary( e3, 1e-10 );
     }
 }
 
 BOOST_AUTO_TEST_CASE( t3 )
 {
     using namespace Feel::vf;
-    TestIntegrate<1> t;
+    TestIntegrate<3> t;
     auto mesh = t.mesh;
     auto Vh = Pch<1>( mesh );
     auto u = Vh->element();
@@ -243,5 +260,27 @@ BOOST_AUTO_TEST_CASE( t3 )
     BOOST_CHECK_EQUAL( vm::hasNORMAL( dynamicContext( e3v ) ), true );
     expected_v = t.evaluateOnBoundary( 2*Px()*dxv(u)*Nx() );
     t.checkOnBoundary( e3v, expected_v );
+
+    auto e40 = expr("2*x*nx+3*y*ny+4*z*nz:x:y:z:nx:ny:nz");
+    BOOST_CHECK_EQUAL( hasDynamicContext( e40 ), true );
+    BOOST_CHECK_EQUAL( vm::hasJACOBIAN( dynamicContext( e40 ) ), false );
+    BOOST_CHECK_EQUAL( vm::hasGRAD( dynamicContext( e40 ) ), false );
+    BOOST_CHECK_EQUAL( vm::hasKB( dynamicContext( e40 ) ), true );
+    BOOST_CHECK_EQUAL( vm::hasPOINT( dynamicContext( e40 ) ), true );
+    BOOST_CHECK_EQUAL( vm::hasNORMAL( dynamicContext( e40 ) ), true );
+    expected_v = t.evaluateWithSympy( "9" );
+    t.checkOnBoundary( e40, expected_v );
+    
+    u.on(_range=elements(mesh), _expr=expr( "x+y+z:x:y:z" ) );
+    auto e4 = expr( "u*nx+u*ny+u*nz:u:nx:ny:nz", "u", idv( u ) );
+    BOOST_CHECK_EQUAL( hasDynamicContext( e4 ), true );
+    BOOST_CHECK_EQUAL( vm::hasJACOBIAN( dynamicContext( e4 ) ), false );
+    BOOST_CHECK_EQUAL( vm::hasGRAD( dynamicContext( e4 ) ), false );
+    BOOST_CHECK_EQUAL( vm::hasKB( dynamicContext( e4 ) ), true );
+    BOOST_CHECK_EQUAL( vm::hasPOINT( dynamicContext( e4 ) ), false );
+    BOOST_CHECK_EQUAL( vm::hasNORMAL( dynamicContext( e4 ) ), true );
+    expected_v = t.evaluateWithSympy( "3" );
+    t.checkOnBoundary( e4, expected_v );
 }
 BOOST_AUTO_TEST_SUITE_END()
+
