@@ -108,11 +108,7 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
     bool hasAnySymbolN() const { return !M_indexSymbolN.empty(); }
     size_type dynamicContext() const
     {
-        if ( hasSymbol( "x" ) || hasSymbol( "y" ) || hasSymbol( "z" ) )
-            return vm::POINT;
-        if ( hasSymbol( "nx" ) || hasSymbol( "ny" ) || hasSymbol( "nz" ) )
-            return vm::NORMAL|vm::KB;
-        return 0;
+        return M_context;
     }
 
     void setParameterFromOption()
