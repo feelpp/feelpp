@@ -700,8 +700,9 @@ void
 OperatorPCD<SpaceVelocityType,SpacePressureType>::assembleMass()
 {
     tic();
+    auto rangeElt = M_Ph->template rangeElements<0>();
     auto m = form2( _test=M_Ph, _trial=M_Ph, _matrix=M_mass );
-    m = integrate( _range=elements(M_Ph->mesh()), _expr=idt(M_p)*id(M_p) );
+    m = integrate( _range=rangeElt, _expr=idt(M_p)*id(M_p) );
     M_mass->close();
     if ( !M_applyInPETSc )
         massOp = op( M_mass, "Mp" );
