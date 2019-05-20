@@ -443,6 +443,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportFields( double time )
 
         this->upload( M_exporter->path() );
     }
+
+    bool hasFieldOnTraceToExport = this->updateExportedFieldsOnTrace( M_exporterTrace, M_postProcessFieldOnTraceExported, time );
+    if ( hasFieldOnTraceToExport )
+    {
+        M_exporterTrace->save();
+    }
+
+    if  ( hasFieldToExport || hasFieldOnTraceToExport )
+    {
+        if ( M_exporter )
+            this->upload( M_exporter->path() );
+        else
+            this->upload( M_exporterTrace->path() );
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -481,23 +495,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
                                      this->fieldVorticity() );
         hasFieldToExport = true;
     }
-#if 0
-    if ( fields.find( "normal-stress" ) != fields.end() )
-    {
-        this->updateNormalStressOnCurrentMesh();
-        exporter->step( time )->add( prefixvm(this->prefix(),"normalstress"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"normalstress")),
-                                     this->fieldNormalStress() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "wall-shear-stress" ) != fields.end() )
-    {
-        this->updateWallShearStress();
-        exporter->step( time )->add( prefixvm(this->prefix(),"wallshearstress"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"wallshearstress")),
-                                     this->fieldWallShearStress() );
-    }
-#endif
     if ( fields.find( "density" ) != fields.end() )
     {
         exporter->step( time )->add( prefixvm(this->prefix(),"density"),
@@ -719,6 +716,33 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 #endif
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+bool
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFieldsOnTrace( export_trace_ptrtype exporter, std::set<std::string> const& fields, double time )
+{
+    if ( !exporter ) return false;
+    if ( !exporter->doExport() ) return false;
+    bool hasFieldToExport = false;
+
+    if ( fields.find( "normal-stress" ) != fields.end() )
+    {
+        this->updateNormalStressOnCurrentMesh( "trace_mesh", this->fieldNormalStressPtr() );
+        exporter->step( time )->add( prefixvm(this->prefix(),"normalstress"),
+                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"normalstress")),
+                                     this->fieldNormalStress() );
+        hasFieldToExport = true;
+    }
+    if ( fields.find( "wall-shear-stress" ) != fields.end() )
+    {
+        this->updateWallShearStress( "trace_mesh", this->fieldWallShearStressPtr() );
+        exporter->step( time )->add( prefixvm(this->prefix(),"wallshearstress"),
+                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"wallshearstress")),
+                                     this->fieldWallShearStress() );
+        hasFieldToExport = true;
+    }
+
+    return hasFieldToExport;
+}
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -1459,33 +1483,44 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::set<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate )
 {
     this->log("FluidMechanics","updateNormalStressOnCurrentMesh", "start" );
-
-    // current solution
     auto const& u = this->fieldVelocity();
     auto const& p = this->fieldPressure();
-    if( !M_fieldNormalStress )
-        this->createFunctionSpacesNormalStress();
-
-    auto const Id = eye<nDim,nDim>();
-    // deformations tensor
-    auto defv = sym(gradv(u));
-    // stress tensor
-    auto Sigmav = -idv(p)*Id + 2*idv(this->materialProperties()->fieldMu())*defv;
-
-    M_fieldNormalStress->zero();
-    if ( listMarkers.empty() )
-        M_fieldNormalStress->on(_range=boundaryfaces(this->mesh()),
-                                       _expr=Sigmav*N(),
-                                       _geomap=this->geomap() );
-    else
-        M_fieldNormalStress->on(_range=markedfaces(this->mesh(),listMarkers),
-                                _expr=Sigmav*N(),
-                                _geomap=this->geomap() );
-
+    CHECK( M_rangeDistributionByMaterialName ) << "M_rangeDistributionByMaterialName is not init";
+    for ( auto const& rangeFacesMat : M_rangeDistributionByMaterialName->rangeMeshFacesByMaterial( nameOfRange ) )
+    {
+        std::string matName = rangeFacesMat.first;
+        auto const& rangeFaces = rangeFacesMat.second;
+        auto const sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->materialProperties(),matName,true);
+        fieldToUpdate->on(_range=rangeFaces,
+                          _expr=sigmav*N(),
+                          _geomap=this->geomap() );
+    }
     this->log("FluidMechanics","updateNormalStressOnCurrentMesh", "finish" );
+}
+
+//---------------------------------------------------------------------------------------------------------//
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateWallShearStress( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate )
+{
+    this->log("FluidMechanics","updateWallShearStress", "start" );
+    auto const& u = this->fieldVelocity();
+    auto const& p = this->fieldPressure();
+    CHECK( M_rangeDistributionByMaterialName ) << "M_rangeDistributionByMaterialName is not init";
+    for ( auto const& rangeFacesMat : M_rangeDistributionByMaterialName->rangeMeshFacesByMaterial( nameOfRange ) )
+    {
+        std::string matName = rangeFacesMat.first;
+        auto const& rangeFaces = rangeFacesMat.second;
+        auto const sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->materialProperties(),matName,true);
+        fieldToUpdate->on(_range=rangeFaces,
+                          _expr=sigmav*vf::N() - (trans(sigmav*vf::N())*vf::N())*vf::N(),
+                          _geomap=this->geomap() );
+    }
+    this->log("FluidMechanics","updateWallShearStress", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -1498,7 +1533,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::stri
     if ( !meshIsOnRefAtBegin )
         this->meshALE()->revertReferenceMesh( false );
 
-    //M_fieldNormalStressRefMesh->zero();
     //auto itFindRange = M_rangeMeshFacesByMaterial.find( "moving-boundary" );
     //CHECK( itFindRange != M_rangeMeshFacesByMaterial.end() ) << "not find range moving-boundary";
     CHECK( M_rangeDistributionByMaterialName ) << "M_rangeDistributionByMaterialName is not init";
@@ -1630,37 +1664,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( std:
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateWallShearStress()
-{
-    using namespace Feel::vf;
-
-    this->log("FluidMechanics","updateWallShearStress", "start" );
-
-    if ( !M_fieldWallShearStress ) this->createFunctionSpacesNormalStress();
-
-    // current solution
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto u = solFluid->template element<0>();
-    auto p = solFluid->template element<1>();
-
-    //Tenseur des deformations
-    auto defv = sym(gradv(u));
-    //Identity Matrix
-    auto const Id = eye<nDim,nDim>();
-    // Tenseur des contraintes (trial)
-    auto Sigmav = (-idv(p)*Id + 2*idv(this->materialProperties()->fieldMu())*defv);
-
-    M_fieldWallShearStress->on(_range=boundaryfaces(this->mesh()),
-                               _expr=Sigmav*vf::N() - (trans(Sigmav*vf::N())*vf::N())*vf::N(),
-                               _geomap=this->geomap() );
-
-    this->log("FluidMechanics","updateWallShearStress", "finish" );
-}
-
-
-//---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
