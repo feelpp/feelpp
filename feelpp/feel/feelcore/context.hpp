@@ -53,6 +53,11 @@ using clear_value = mpl::size_t<Contextv & ( ~Value )>;
 template<size_type Contextv, size_type Value>
 constexpr size_type clear_value_v = clear_value<Contextv,Value>::value;
 
+template<size_type Contextv>
+inline bool hasValue( size_type c ) { return (c & Contextv) != 0; }
+
+inline bool hasValue( size_type c, size_type v ) { return (c & v) != 0; }
+
 namespace meta
 {
 /*!

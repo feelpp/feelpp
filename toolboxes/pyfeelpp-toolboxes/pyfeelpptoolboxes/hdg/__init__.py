@@ -1,24 +1,28 @@
-from pyfeelpp import core
-from pyfeelpp.toolboxes.modelcore import *
-from _heat import *
+from pyfeelpp import core,mesh,discr,models
+from pyfeelpptoolboxes.modelcore import *
+from _hdg import *
 
-_heats={
-    'heat(2,1)':Heat_2DP1,
-    'heat(2,2)':Heat_2DP2,
-    'heat(3,1)':Heat_3DP1,
-    'heat(3,2)':Heat_3DP2,
+_hdgs={
+    'hdg(2,1)':HDGPoisson_2DP1,
+    'hdg(2,2)':HDGPoisson_2DP2,
+    'hdg(3,1)':HDGPoisson_3DP1,
+    'hdg(3,2)':HDGPoisson_3DP2,
 }
 
-def heat( dim=2, order=1, buildMesh=True, worldComm=core.Environment.worldCommPtr() ):
-    """create a heat toolbox solver
+def hdgpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldComm=None ):
+    """create a hdg toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
-    orderTemperature -- the polynomial order for the temperature (default: 1)
+    order -- the polynomial order for the fields : potential, flux, displacement, stress and associated traces (default: 1)
+    prefix -- application prefix for the HDG poisson
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     """
-    key='heat('+str(dim)+','+str(order)+')'
+    if worldComm is None:
+        worldComm=core.Environment.worldCommPtr()
+    key='hdg('+str(dim)+','+str(order)+')'
     if worldComm.isMasterRank():
         print(key)
-    if key not in _heats:
-        raise RuntimeError('Heat solver '+key+' not existing')
-    return _heats[key]( "heat", buildMesh, worldComm )
+    if key not in _hdgs:
+        raise RuntimeError('HDG solver '+key+' not existing')
+    _prefix= prefix_toolbox+"."+prefix if prefix else prefix_toolbox
+    return _hdgs[key]( _prefix, worldComm )

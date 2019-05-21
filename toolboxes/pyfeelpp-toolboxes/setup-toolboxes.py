@@ -85,7 +85,7 @@ setup(
               'pyfeelpptoolboxes.electric',
               'pyfeelpptoolboxes.heat',
               #'pyfeelpptoolboxes.maxwell',
-              #'pyfeelpptoolboxes.hdg',
+              'pyfeelpptoolboxes.hdg',
               #'pyfeelpptoolboxes.levelset','pyfeelpptoolboxes.multifluid',
               #'pyfeelpptoolboxes.thermoelectric','pyfeelpptoolboxes.fsi',
               
@@ -99,7 +99,7 @@ setup(
                  CMakeExtension('_electric','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/electric'),
                  CMakeExtension('_heat','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/heat'),
                  #CMakeExtension('_maxwell','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/maxwell'),
-                 #CMakeExtension('_hdg','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/hdg'),
+                 CMakeExtension('_hdg','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/hdg'),
                  #CMakeExtension('_levelset','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/levelset'),
                  #CMakeExtension('_multifluid','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/multifluid'),
                  #CMakeExtension('_thermoelectric','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpptoolboxes/thermoelectric'),

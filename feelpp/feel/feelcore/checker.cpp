@@ -55,7 +55,9 @@ hp::hp( double h, int p )
                 int order = boost::lexical_cast<int>(v.first);
 
                 M_data[fn.first][order].exact = v.second.get("exact",false);
-
+                if ( M_data[fn.first][order].exact )
+                    for( auto o : irange( order, 20 ) )
+                        M_data[fn.first][o].exact = true;
                 if ( M_data[fn.first][order].exact == false )
                 {
                     std::vector<double> hs;
@@ -156,7 +158,15 @@ hp::operator()( std::string const& solution, std::pair<std::string,double> const
 } // rate
 
 Checker
-checker( std::string const& name ) { return Checker{ name }; }
+checker( std::string const& s, std::string const& p )
+{
+    if ( p.empty() && soption("checker.solution" ).empty() )
+        throw std::logic_error("Invalid setup of Checker system, no solution provided");
+    auto sol = p.empty()?soption("checker.solution" ):p;
+    Checker c{s};
+    c.setSolution( sol );
+    return c;
+}
 
 Checker::Checker( std::string const& name )
     :
@@ -167,7 +177,6 @@ Checker::Checker( std::string const& name )
     M_etol( doption("checker.tolerance.exact" ) ),
     M_otol( doption("checker.tolerance.order" ) )
 {
-
 }
 
 }

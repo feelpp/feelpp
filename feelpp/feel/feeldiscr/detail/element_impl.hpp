@@ -513,25 +513,18 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
         ublas::column( pts, 0 ) = __x_ref;
         geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
 
-
-        typedef typename gm_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, geoelement_type> gmc_type;
-        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-        gmc_ptrtype __c( new gmc_type( __gm,
-                                       functionSpace()->mesh()->element( __cv_id ),
-                                       __geopc ) );
-
+        const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+        const size_type fec_v = gmc_v;
+        gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                               this->functionSpace()->mesh()->element( __cv_id ),
+                                                               __geopc );
+        pc_ptrtype pc( new pc_type( this->functionSpace()->fe(), pts ) );
+        fec_ptr_t<fec_v,gmc_v> fectx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                             __c,
+                                                                             pc );
         DCHECK( ublas::norm_2( __x-__c->xReal(0) ) < 1e-6 ) << "Point " << __x <<  " was not properly found, got " << __c->xReal(0);
         DVLOG(2) << "Point x=" << __x << " and c->xreal = " << __c->xReal(0);
-
-        pc_ptrtype pc( new pc_type( this->functionSpace()->fe(), pts ) );
-
-        typedef typename mesh_type::element_type geoelement_type;
-        typedef typename functionspace_type::fe_type fe_type;
-        typedef typename fe_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, fe_type, gm_type, geoelement_type> fectx_type;
-        typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-        fectx_ptrtype fectx( new fectx_type( this->functionSpace()->fe(),
-                                             __c,
-                                             pc ) );
+        
         found_pt[ rank ] = 1;
 
 #if defined(FEELPP_HAS_MPI)
@@ -627,59 +620,34 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
-//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
 {
-    if ( !this->areGlobalValuesUpdated() )
-        this->updateGlobalValues();
-
-    size_type elt_id = context.eId();
+    if ( is_hcurl_conforming && ( ( context.gmContext()->context & vm::KB ) == 0 ) )
+        throw std::logic_error("invalid geometric mapping context for hcurl " + std::to_string(context.gmContext()->context) );
+    if ( is_hdiv_conforming && ( ( context.gmContext()->context & vm::JACOBIAN ) == 0  ) )
+        throw std::logic_error("invalid geometric mapping context for hdiv " + std::to_string(context.gmContext()->context) );
+    index_type elt_id = context.eId();
     if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<index_type> )
         return;
 
     const uint16_type nq = context.xRefs().size2();
-
-    //double vsum=0;
     auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
-    //array_type v( boost::extents[nComponents1][nComponents2][context.xRefs().size2()] );
-    for ( int l = 0; l < basis_type::nDof; ++l )
+
+    for( auto const& ldof : M_functionspace->dof()->localDof( elt_id ) )
     {
-        const int ncdof = is_product?nComponents:1;
-
-        for ( typename array_type::index c1 = 0; c1 < ncdof; ++c1 )
+        size_type index = ldof.second.index();
+        uint16_type local_dof = ldof.first.localDof();
+        auto v_ = super::operator[]( index )*s(local_dof);
+        for ( uint16_type q = 0; q < nq; ++q )
         {
-            typename array_type::index ldof = basis_type::nDof*c1+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
-            //std::cout << "ldof = " << ldof << "\n";
-            //std::cout << "gdof = " << gdof << "\n";
-
-            DLOG_IF(WARNING, !( gdof < this->size() ) ) << "FunctionSpace::Element invalid access index "
-                                                        << context.eId()
-                                                        << "    l=" << l
-                                                        << "   c1=" << c1
-                                                        << " ldof=" << ldof
-                                                        << " gdof=" << gdof
-                                                        << " size=" << this->size()
-                                                        << " localSize=" << this->localSize();
-
-            value_type v_ = this->globalValue( gdof );
-
-            //std::cout << "v_ =" << v_ << "\n";
-            //for( typename array_type::index c2 = 0; c2 < nComponents2; ++c2 )
-            for ( uint16_type q = 0; q < nq; ++q )
-            {
-                v[q] += context.id(ldof,q)*(s(ldof)*v_);
-            }
+            v[q] += context.id(local_dof,q)*v_;
         }
     }
-
-    //LOG( INFO ) << "vsum : "<<vsum;
-    //return v;
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -691,9 +659,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -712,17 +680,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
 
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
+    gmc_ptr_t<> __c = std::make_shared<gmc_t<>>( __gm,
+                                                 this->functionSpace()->mesh()->element( it->first ),
+                                                 __geopc );
 
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::JACOBIAN|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    fec_ptr_t<> __ctx = std::make_shared<fec_t<>>( this->functionSpace()->fe(),
+                                                   __c,
+                                                   __pc );
 
     for ( ; it!=it_end; ++it )
     {
@@ -792,20 +756,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
         ublas::column( pts, 0 ) = __x_ref;
         geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
 
-
-        typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::KB, geoelement_type> gmc_type;
-        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-        gmc_ptrtype __c( new gmc_type( __gm,
-                                       functionSpace()->mesh()->element( __cv_id ),
-                                       __geopc ) );
+        const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+        const size_type fec_v = gmc_v|vm::GRAD;
+        gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                               this->functionSpace()->mesh()->element( __cv_id ),
+                                                               __geopc );
         pc_ptrtype pc( new pc_type( this->functionSpace()->fe(), pts ) );
-        typedef typename mesh_type::element_type geoelement_type;
-        typedef typename functionspace_type::fe_type fe_type;
-        typedef typename fe_type::template Context<vm::GRAD, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-        typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-        fectx_ptrtype fectx( new fectx_type( this->functionSpace()->fe(),
-                                             __c,
-                                             pc ) );
+        fec_ptr_t<fec_v,gmc_v> fectx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                             __c,
+                                                                             pc );
 
         found_pt[ functionSpace()->mesh()->comm().rank() ] = 1;
 
@@ -890,12 +849,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
-    size_type elt_id = context.eId();
+    index_type elt_id = context.eId();
     if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<index_type> )
         return;
 
     //std::cout << "coeff=" << coeff << "\n";
@@ -922,11 +881,18 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
 
             for ( size_type q = 0; q < context.xRefs().size2(); ++q )
             {
+#if 0
+                em_fixed_size_matrix_t<nComponents1,nRealDim> mv( v[q].data() );
+                em_fixed_size_cmatrix_t<nComponents1,nRealDim> mg( context.grad( ldof, q ).data() );
+                mv.noalias()= v_*mg;
+#else
+                //v[q] = v_*context.grad( ldof, q );
                 for ( int k = 0; k < nComponents1; ++k )
                     for ( int j = 0; j < nRealDim; ++j )
                     {
                         v[q]( k,j ) += v_*context.grad( ldof, k, j, q );
                     }
+#endif
             }
         }
     }
@@ -974,15 +940,51 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
+template<typename ContextType,typename EType>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::symmetricGradient( ContextType const & context,
+                                                                       grad_array_type& v,
+                                                                       std::enable_if_t<EType::is_vectorial>* ) const
+{
+    index_type elt_id = context.eId();
+    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
+        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
+    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
+        elt_id = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elt_id == invalid_v<index_type> )
+        return;
+
+    for ( int l = 0; l < basis_type::nDof; ++l )
+    {
+        const int ncdof = is_product?nComponents1:1;
+
+        for ( int c1 = 0; c1 < ncdof; ++c1 )
+        {
+            int ldof = c1*basis_type::nDof+l;
+            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+
+            value_type v_ = this->globalValue( gdof );
+
+            for ( size_type q = 0; q < context.xRefs().size2(); ++q )
+            {
+                v[q] = v_*context.symmetricGradient( ldof, q );
+            }
+        }
+    }
+
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_node_type __ptsReal, grad_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -997,17 +999,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_nod
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
 
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::GRAD|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::GRAD;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
 
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
     for ( ; it!=it_end; ++it )
     {
         nbPtsElt = it->second.size();
@@ -1056,12 +1056,12 @@ template<typename ContextType>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dn_( ContextType const & context, dn_array_type& v ) const
 {
-    size_type elt_id = context.eId();
+    index_type elt_id = context.eId();
     if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<index_type> )
         return;
 
     const size_type Q = context.xRefs().size2();
@@ -1111,12 +1111,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
-    size_type elt_id = context.eId();
+    index_type elt_id = context.eId();
     if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<index_type> )
         return;
 
     const size_type Q = context.xRefs().size2();
@@ -1156,9 +1156,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -1176,17 +1176,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::DIV|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::DIV|vm::FIRST_DERIVATIVE;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
 
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
+    
     for ( ; it!=it_end; ++it )
     {
         nbPtsElt = it->second.size();
@@ -1234,12 +1233,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
-    size_type elt_id = context.eId();
+    index_type elt_id = context.eId();
     if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<index_type> )
         return;
 
     auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
@@ -1265,6 +1264,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
 
             for ( uint16_type q = 0; q < nq ; ++q )
             {
+#if 0
+                v[q] += s(ldof)*v_*context.curl( ldof, q );
+#else
                 if ( nRealDim == 3 )
                 {
                     for ( typename array_type::index i = 0; i < nRealDim; ++i )
@@ -1277,7 +1279,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
                 {
                     v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, 0, 0, q );
                 }
-
+#endif
             }
         }
     }
@@ -1299,7 +1301,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<index_type> )
         return;
 
     auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
@@ -1349,9 +1351,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -1369,17 +1371,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
 
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
 
     for ( ; it!=it_end; ++it )
     {
@@ -1440,9 +1440,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( matrix_nod
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -1460,17 +1460,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( matrix_nod
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
 
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
 
     for ( ; it!=it_end; ++it )
     {
@@ -1530,9 +1528,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -1550,16 +1548,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
+
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
 
     for ( ; it!=it_end; ++it )
     {
@@ -1619,9 +1616,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -1639,16 +1636,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
+
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
 
     for ( ; it!=it_end; ++it )
     {
@@ -1748,9 +1744,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_t
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
     auto it = __loc->result_analysis_begin();
     auto it_end = __loc->result_analysis_end();
 
@@ -1768,17 +1764,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_t
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::GRAD|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::GRAD;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
 
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
     for ( ; it!=it_end; ++it )
     {
         nbPtsElt = it->second.size();
@@ -1828,9 +1822,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -1849,16 +1843,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::GRAD|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::GRAD;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
+
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
 
     for ( ; it!=it_end; ++it )
     {
@@ -1909,9 +1902,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -1930,17 +1923,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::GRAD|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::KB|vm::POINT;
+    const size_type fec_v = gmc_v|vm::GRAD;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
 
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
+    
     for ( ; it!=it_end; ++it )
     {
         nbPtsElt = it->second.size();
@@ -2041,9 +2033,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -2062,17 +2054,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT|vm::HESSIAN;
+    const size_type fec_v = gmc_v|vm::GRAD;
+    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
+                                                           this->functionSpace()->mesh()->element( it->first ),
+                                                           __geopc );
 
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
     for ( ; it!=it_end; ++it )
     {
         nbPtsElt = it->second.size();
@@ -2211,9 +2201,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacianInterpolate( matrix
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
     else
-        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -2263,7 +2253,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacianInterpolate( matrix
         //update precompute of basis functions
         __pc->update( pts );
         __ctx->update( __c, __pc );
-
+        
         //evaluate element for these points
         laplacian_type __lap( this->laplacian( *__ctx ) );
 
@@ -2353,8 +2343,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         return;
 
     auto const& initElt = boost::unwrap_ref( *it );
-    gm_context_ptrtype __c( new gm_context_type( this->functionSpace()->gm(),initElt,__geopc ) );
-    gm1_context_ptrtype __c1( new gm1_context_type( this->mesh()->gm1(),initElt,__geopc1 ) );
+    gm_context_ptrtype __c( new gm_context_type( this->functionSpace()->gm(),initElt,__geopc, invalid_uint16_type_value, ex.dynamicContext() ) );
+    gm1_context_ptrtype __c1( new gm1_context_type( this->mesh()->gm1(),initElt,__geopc1, invalid_uint16_type_value, ex.dynamicContext() ) );
 
     typedef typename t_expr_type::shape shape;
     static const bool is_rank_ok = ( shape::M == nComponents1 &&
@@ -2562,8 +2552,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     }
     face_type const& firstFace = *__face_it;
     uint16_type __face_id = firstFace.pos_first();
-    gmc_ptrtype __c( new gmc_type( __gm, firstFace.element( 0 ), __geopc, __face_id ) );
-    gmc1_ptrtype __c1( new gmc1_type( __gm1, firstFace.element( 0 ), __geopc1, __face_id ) );
+    gmc_ptrtype __c( new gmc_type( __gm, firstFace.element( 0 ), __geopc, __face_id, ex.dynamicContext() ) );
+    gmc1_ptrtype __c1( new gmc1_type( __gm1, firstFace.element( 0 ), __geopc1, __face_id, ex.dynamicContext() ) );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     t_expr_type expr( ex, mapgmc );
@@ -2575,7 +2565,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     bool hasDofTableMPIExtended = __dof->buildDofTableMPIExtended();
 
 #if 0
-    size_type nbFaceDof = invalid_size_type_value;
+    size_type nbFaceDof = invalid_v<size_type>;
 
     if ( !fe_type::is_modal )
         nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
@@ -2731,7 +2721,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     const size_type context = mpl::if_< mpl::or_<mpl::bool_<is_hdiv_conforming>, mpl::bool_<is_hcurl_conforming> >,
                                         mpl::int_<ExprType::context|vm::POINT|vm::JACOBIAN>,
                                         mpl::int_<ExprType::context|vm::POINT> >::type::value;
-    auto gmcRange = gmRange->template context<context,1>( eltConnectedToFirstFace, geopcRange, fid_in_element );
+    auto gmcRange = gmRange->template context<context,1>( eltConnectedToFirstFace, geopcRange, fid_in_element, ex.dynamicContext() );
     auto expr_evaluator = ex.evaluatorWithPermutation( vf::mapgmc(gmcRange) );
 
     // geomap context on fe (allow to get relation between geomap context on face range )
@@ -2827,7 +2817,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     auto const& firstEntity = boost::unwrap_ref( *entity_it );
     DVLOG(3) << "entity " << firstEntity.id() << " with hasMarker "
              << firstEntity.hasMarker() << " nb: " << std::distance(entity_it,entity_en);
-    size_type eid = firstEntity.elements().begin()->first;
+    index_type eid = firstEntity.elements().begin()->first;
     uint16_type eid_in_element = firstEntity.elements().begin()->second;
     auto const& elt = mesh->element( eid );
     //auto geopc = gm->preCompute( __fe->edgePoints(eid_in_element) );
@@ -2844,7 +2834,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             geopc[__f][__p] = gm->preCompute( __fe->edgePoints(__f) );
         }
     }
-    auto ctx = gm->template context<context,2>( elt, geopc, eid_in_element );
+    auto ctx = gm->template context<context,2>( elt, geopc, eid_in_element, ex.dynamicContext() );
 
     auto expr_evaluator = ex.evaluator( vf::mapgmc(ctx) );
 
@@ -2852,10 +2842,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     for ( ; entity_it != entity_en; ++entity_it )
     {
         auto const& curEntity = boost::unwrap_ref(*entity_it);
-        eid = invalid_size_type_value;
+        //std::cout << "ok2: " << curEntity.elements().size()  << std::endl;
+        eid = invalid_v<index_type>;
         for ( auto const& eltConnectedToEdge : curEntity.elements() )
         {
-            size_type eltIdConnected = eltConnectedToEdge.first;
+            index_type eltIdConnected = eltConnectedToEdge.first;
+            //std::cout << "eltIdConnected: " << eltIdConnected << std::endl;
             if ( __dof->isElementDone( eltIdConnected ) )
             {
                 eid = eltIdConnected;
@@ -2863,15 +2855,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                 break;
             }
         }
-        if ( eid == invalid_size_type_value )
+        if ( eid == invalid_v<index_type> )
             continue;
-        DVLOG(3) << "entity " << curEntity.id() << " element " << eid << " id in element "
-                 << eid_in_element<< " with hasMarker " << curEntity.hasMarker();
+        std::cout << "entity " << curEntity.id() << " element " << eid << " id in element "
+                  << eid_in_element<< " with hasMarker " << curEntity.hasMarker() << std::endl;
         auto const& elt = mesh->element( eid );
         ctx->update( elt, eid_in_element );
-
+        
         expr_evaluator.update( vf::mapgmc( ctx ) );
         __fe->edgeInterpolate( expr_evaluator, IhLoc );
+        std::cout << "Ihloc: " << IhLoc << " eid: " << eid << " eid_in_element:" << eid_in_element << std::endl;
         if ( accumulate )
             this->plus_assign( curEntity, IhLoc, std::make_pair(eid,eid_in_element) );
         else
@@ -2913,7 +2906,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     DVLOG(3) << "point " << firstPt.id() << " with hasMarker " << firstPt.hasMarker() << " nb: " << std::distance(pt_it,pt_en);
     google::FlushLogFiles(google::GLOG_INFO);
 
-    size_type eid = firstPt.elements().begin()->first;
+    index_type eid = firstPt.elements().begin()->first;
     uint16_type ptid_in_element = firstPt.elements().begin()->second;
     auto const& elt = mesh->element( eid );
     //auto geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
@@ -2931,7 +2924,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             geopc[__f][__p] = gm->preCompute( __fe->vertexPoints(__f) );
         }
     }
-    auto ctx = gm->template context<context,geoelement_type::nDim>( elt, geopc, ptid_in_element );
+    auto ctx = gm->template context<context,geoelement_type::nDim>( elt, geopc, ptid_in_element, ex.dynamicContext() );
 
     //t_expr_type expr( ex, mapgmc(ctx) );
     auto expr_evaluator = ex.evaluator( vf::mapgmc(ctx) );
@@ -2944,7 +2937,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     {
         auto const& curPt = boost::unwrap_ref(*pt_it);
         DVLOG(3) << "point " << curPt.id() << " with hasMarker " << curPt.hasMarker();
-        eid = invalid_size_type_value;
+        eid = invalid_v<index_type>;
         for ( auto const& eltConnectedToPoint : curPt.elements() )
         {
             size_type eltIdConnected = eltConnectedToPoint.first;
@@ -2955,7 +2948,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                 break;
             }
         }
-        if ( eid == invalid_size_type_value )
+        if ( eid == invalid_v<index_type> )
             continue;
 
         auto const& elt = mesh->element( eid );

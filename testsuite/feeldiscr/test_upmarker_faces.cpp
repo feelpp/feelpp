@@ -95,8 +95,8 @@ public:
         auto e2 = chi( ((Py()-0.5)*(Py()-0.5) + (Pz()-0.5)*(Pz()-0.5)) < R*R );
 
         int rank = Environment::worldComm().rank();
-        parts.on( elements(M_mesh), cst(rank) );
-        mark.on( boundaryelements( M_mesh ), chi( (e1 + e2) > 0 ) );
+        parts.on( _range=elements(M_mesh), _expr=cst(rank) );
+        mark.on( _range=boundaryelements( M_mesh ), _expr=chi( (e1 + e2) > 0 ) );
 
         M_mesh->updateMarker2( mark );
         M_mesh->addMarkerName( "select_elements", fid, DIM );
@@ -127,10 +127,10 @@ public:
         M_mesh->updateMarker2WithRangeFaces( myrangefaces, 666 );
         M_mesh->addMarkerName( "select_faces", 666, DIM-1 );
 
-        test_boundary.on( boundaryelements(M_mesh), cst(42) );
-        test_elements0.on( marked2elements(M_mesh,"select_elements"), cst(42) );
-        test_elements1.on( marked2elements(M_mesh,"select_elements"), cst(42) );
-        test_faces.on( marked2faces(M_mesh,"select_faces"), cst(42) );
+        test_boundary.on( _range=boundaryelements(M_mesh), _expr=cst(42) );
+        test_elements0.on( _range=marked2elements(M_mesh,"select_elements"), _expr=cst(42) );
+        test_elements1.on( _range=marked2elements(M_mesh,"select_elements"), _expr=cst(42) );
+        test_faces.on( _range=marked2faces(M_mesh,"select_faces"), _expr=cst(42) );
 
         // ----------------------------------
         // CHECK

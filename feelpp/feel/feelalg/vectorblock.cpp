@@ -171,7 +171,9 @@ VectorBlockBase<T>::VectorBlockBase( BlocksBaseVector<T> const & blockVec,
                                      backend_type &backend,
                                      bool copy_values )
     :
+    M_backend( backend.shared_from_this() ),
     M_vec()
+    
 {
     auto nRow = blockVec.nRow();
 

@@ -26,6 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-28
  */
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/datamap.hpp>
 //#include <boost/thread/thread.hpp>
 
@@ -92,7 +93,7 @@ DataMap::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& _worldC
                    0 );
     }
 
-    if ( n == invalid_size_type_value )
+    if ( n == invalid_v<size_type> )
         M_n_dofs = n_local;
 
     this->initNumberOfDofIdToContainerId( 1 );
@@ -107,7 +108,7 @@ DataMap::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& _worldC
     for ( int p=0; p< this->worldComm().size(); p++ )
         sum += M_n_localWithoutGhost_df[p];
 
-    if ( n != invalid_size_type_value )
+    if ( n != invalid_v<size_type> )
         FEELPP_ASSERT ( sum == static_cast<int>( n ) )
         ( sum )( n )
         ( this->worldComm().rank() )
@@ -414,7 +415,7 @@ DataMap::procOnGlobalCluster( size_type globDof ) const
 boost::tuple<bool,size_type>
 DataMap::searchGlobalProcessDof( size_type gcdof ) const
 {
-    size_type gpdof = invalid_size_type_value;
+    size_type gpdof = invalid_v<size_type>;
     if ( this->dofGlobalClusterIsOnProc( gcdof ) )
     {
         gpdof = gcdof - this->firstDofGlobalCluster();
@@ -696,7 +697,7 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
             CHECK ( procIdFinded != invalid_rank_type_value ) << " proc not find for gcdof : " << gcdof;
             dataToSend[procIdFinded].push_back( gcdof );
             memoryDataToSend[procIdFinded].push_back( idLocalDof );
-            dataMapRes->M_mapGlobalProcessToGlobalCluster[idLocalDof]=invalid_size_type_value;
+            dataMapRes->M_mapGlobalProcessToGlobalCluster[idLocalDof]=invalid_v<size_type>;
         }
         ++idLocalDof;
     }
@@ -737,7 +738,7 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
 
                 CHECK( dofTableRelationGP.find( gpdof ) != dofTableRelationGP.end() ) << "active dof gpdof not register";
                 size_type gcdoffinded = dataMapRes->mapGlobalProcessToGlobalCluster( dofTableRelationGP.find( gpdof )->second );
-                CHECK( gcdoffinded != invalid_size_type_value ) << " active dof not register in map";
+                CHECK( gcdoffinded != invalid_v<size_type> ) << " active dof not register in map";
                 dataToReSend[theproc].push_back( gcdoffinded );
             }
         }

@@ -470,7 +470,7 @@ VectorUblas<T,Storage>::VectorUblas( typename VectorUblas<value_type>::shallow_a
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type const& range )
     :
-    super1( invalid_size_type_value, range.size() ),
+    super1( invalid_v<size_type>, range.size() ),
     M_vec( detail::fake<Storage>( m, range ) ),
     M_vecNonContiguousGhosts( detail::fake<Storage>( m, range_type(0,0) ) )
 {
@@ -487,13 +487,13 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type co
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type const& range )
     :
-    super1( invalid_size_type_value, range.size() ),
+    super1( invalid_v<size_type>, range.size() ),
     M_vec( detail::fake<Storage>( m.vec(), range ) ),
     M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), slice_type(0,1,0) ) )
 {
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << M_vec.size() << "\n";
-    this->init( invalid_size_type_value, M_vec.size(), true );
+    this->init( invalid_v<size_type>, M_vec.size(), true );
 
 }
 
@@ -508,7 +508,7 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type co
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type const& range )
     :
-    super1( invalid_size_type_value, range.size() ),
+    super1( invalid_v<size_type>, range.size() ),
     M_vec( detail::fake<Storage>( m, range ) ),
     M_vecNonContiguousGhosts( detail::fake<Storage>( m, slice_type(0,1,0) ) )
 {

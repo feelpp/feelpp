@@ -52,7 +52,7 @@ void defSM(py::module &m)
         .def(py::init<std::string const&,std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
              py::arg("keyword")=std::string("solid"),
-             py::arg("worldComm")=Environment::worldCommPtr(),
+             py::arg("worldComm"),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize the solid mechanics toolbox"
@@ -60,7 +60,7 @@ void defSM(py::module &m)
         .def_static( "create", &sm_t::New,
                      py::arg("prefix"),
                      py::arg("keyword")=std::string("solid"),
-                     py::arg("worldComm")=Environment::worldCommPtr(),
+                     py::arg("worldComm"),
                      py::arg("subprefix")=std::string(""),
                      py::arg("modelRep") = ModelBaseRepository(),
                      "Initialize the solid mechanics toolbox"
