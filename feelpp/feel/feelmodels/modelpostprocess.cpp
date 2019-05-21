@@ -110,7 +110,7 @@ ModelPostprocessPointPosition::setup( std::string const& name )
         else
         {
             LOG(INFO) << "point coord is a symbolic expr : " << coordExpr;
-            this->pointPosition().setExpression( coordExpr, M_directoryLibExpr, M_worldComm );
+            this->pointPosition().setExpression( coordExpr, M_directoryLibExpr, this->worldComm() );
         }
     } // hasCoord
 
@@ -139,9 +139,9 @@ ModelPostprocessNorm::setup( std::string const& name )
         M_field = *itField;
     else if ( auto ptexpr = M_p.get_child_optional("expr") )
     {
-        M_expr.setExpr( "expr", M_p, M_worldComm, M_directoryLibExpr );
+        M_expr.setExpr( "expr", M_p, this->worldComm(), M_directoryLibExpr );
         if ( auto ptgradexpr = M_p.get_child_optional("grad_expr") )
-            M_gradExpr.setExpr( "grad_expr", M_p, M_worldComm, M_directoryLibExpr );
+            M_gradExpr.setExpr( "grad_expr", M_p, this->worldComm(), M_directoryLibExpr );
     }
 
     if ( auto ptmarkers = M_p.get_child_optional("markers") )
@@ -156,10 +156,10 @@ ModelPostprocessNorm::setup( std::string const& name )
     }
 
     if ( auto itSol = M_p.get_optional<std::string>("solution") )
-        M_solution.setExpr( "solution", M_p, M_worldComm, M_directoryLibExpr );
+        M_solution.setExpr( "solution", M_p, this->worldComm(), M_directoryLibExpr );
 
     if ( auto itSol = M_p.get_optional<std::string>("grad_solution") )
-        M_gradSolution.setExpr( "grad_solution", M_p, M_worldComm, M_directoryLibExpr );
+        M_gradSolution.setExpr( "grad_solution", M_p, this->worldComm(), M_directoryLibExpr );
 
     if ( auto itQuad = M_p.get_optional<int>("quad") )
     {
@@ -191,7 +191,7 @@ ModelPostprocessStatistics::setup( std::string const& name )
         M_field = *itField;
     else if ( auto ptexpr = M_p.get_child_optional("expr") )
     {
-        M_expr.setExpr( "expr", M_p, M_worldComm, M_directoryLibExpr );
+        M_expr.setExpr( "expr", M_p, this->worldComm(), M_directoryLibExpr );
     }
 
     if ( auto ptmarkers = M_p.get_child_optional("markers") )
@@ -254,15 +254,15 @@ ModelPostprocessCheckerMeasure::run( double val ) const
 }
 
 
-ModelPostprocess::ModelPostprocess( WorldComm const& world )
+ModelPostprocess::ModelPostprocess( worldcomm_ptr_t const& world )
     :
-    M_worldComm( world ),
+    super( world ),
     M_useModelName( false )
 {}
 
-ModelPostprocess::ModelPostprocess(pt::ptree const& p, WorldComm const& world )
+ModelPostprocess::ModelPostprocess(pt::ptree const& p, worldcomm_ptr_t const& world )
     :
-    M_worldComm( world ),
+    super( world ),
     M_useModelName( false )
 {}
 
@@ -322,7 +322,7 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
         {
             for( auto const& evalPoint : *evalPoints )
             {
-                ModelPostprocessPointPosition myPpPtPos( M_worldComm );
+                ModelPostprocessPointPosition myPpPtPos( this->worldCommPtr() );
                 myPpPtPos.setDirectoryLibExpr( M_directoryLibExpr );
                 myPpPtPos.setPTree( evalPoint.second, evalPoint.first );
                 if ( !myPpPtPos.fields().empty() )
@@ -335,7 +335,7 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
         {
             for( auto const& ptreeNorm : *ptreeNorms )
             {
-                ModelPostprocessNorm ppNorm( M_worldComm );
+                ModelPostprocessNorm ppNorm( this->worldCommPtr() );
                 ppNorm.setDirectoryLibExpr( M_directoryLibExpr );
                 ppNorm.setPTree( ptreeNorm.second, ptreeNorm.first );
                 if ( ppNorm.hasField() || ppNorm.hasExpr() )
@@ -347,7 +347,7 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
         {
             for( auto const& ptreeStatistic : *ptreeStatistics )
             {
-                ModelPostprocessStatistics ppStatistics( M_worldComm );
+                ModelPostprocessStatistics ppStatistics( this->worldCommPtr() );
                 ppStatistics.setDirectoryLibExpr( M_directoryLibExpr );
                 ppStatistics.setPTree( ptreeStatistic.second, ptreeStatistic.first );
                 if ( ppStatistics.hasField() || ppStatistics.hasExpr() )

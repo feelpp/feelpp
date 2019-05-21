@@ -338,6 +338,7 @@ template<typename Args>
 struct compute_meshale_return
 {
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::mesh>::type>::type::element_type mesh_type;
+    using index_type = typename mesh_type::index_type;
     typedef typename mesh_type::shape_type convex_type;
     typedef MeshALE<convex_type> type;
     typedef std::shared_ptr<type> ptrtype;
@@ -348,7 +349,7 @@ BOOST_PARAMETER_FUNCTION(
     meshale,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
-      ( mesh,    *( boost::is_convertible<mpl::_,std::shared_ptr<MeshBase> > ) )
+      ( mesh,    *( boost::is_convertible<mpl::_,std::shared_ptr<MeshBase<>> > ) )
       ) // required
     ( optional
       ( prefix,            (std::string), std::string("") )

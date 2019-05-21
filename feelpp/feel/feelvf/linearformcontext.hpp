@@ -197,7 +197,7 @@ void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& _gmcTest,
         map_trial_geometric_mapping_context_type const & _gmcTrial,
         map_geometric_mapping_expr_context_type const& _gmcExpr,
-        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
+        std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad )
 {
     M_gmc = _gmcTest;
     M_gmc_left = fusion::at_key<gmc<0> >( _gmcTest );
@@ -317,7 +317,7 @@ template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
 void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::integrateInCaseOfInterpolate( mpl::int_<1>,
-        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+        std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad,
         bool isFirstExperience )
 {
     typedef typename eval0_expr_type::shape shape;
@@ -361,7 +361,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
 void
-LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( size_type elt_0 )
+LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( index_type elt_0 )
 {
 
     if ( !UseMortar )
@@ -398,7 +398,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
 void
-LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( size_type elt_0, size_type elt_1 )
+LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( index_type elt_0, index_type elt_1 )
 {
     M_local_rows_2.template head<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerId() ).array();
     M_local_rows_2.template tail<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalIndices( elt_1, M_form.dofIdToContainerId() ).array();

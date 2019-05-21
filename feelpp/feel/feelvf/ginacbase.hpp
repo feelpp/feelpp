@@ -29,148 +29,165 @@
 #ifndef FEELPP_GINACBASE_HPP
 #define FEELPP_GINACBASE_HPP
 
-
-namespace Feel {
-namespace vf {
-
-class GiNaCBase
+namespace Feel::vf
 {
-public:
+
+//class ExprDynamicBase;
+
+class GiNaCBase : public Feel::vf::ExprDynamicBase
+{
+  public:
     typedef double value_type;
-    typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
+    typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> vec_type;
 
-    GiNaCBase() {}
+    GiNaCBase() = default;
     GiNaCBase( std::vector<GiNaC::symbol> const& syms )
-        :
-        M_syms( syms),
-        M_params( vec_type::Zero( M_syms.size() ) ),
-        M_indexSymbolXYZ(),
-        M_indexSymbolN()
+        : M_syms( syms ),
+          M_params( vec_type::Zero( M_syms.size() ) ),
+          M_indexSymbolXYZ(),
+          M_indexSymbolN(),
+          M_context( 0 )
+    {
+        // detect if symbol x,y,z are present and get index access in M_params
+        std::map<int, std::string> lstxyz{{0, "x"}, {1, "y"}, {2, "z"}};
+        for ( auto const& str : lstxyz )
         {
-            // detect if symbol x,y,z are present and get index access in M_params
-            std::map<int,std::string> lstxyz { {0,"x"}, {1,"y"}, {2,"z"} };
-            for ( auto const& str :  lstxyz )
-            {
-                auto itSym = std::find_if( M_syms.begin(), M_syms.end(),
-                                           [&str]( GiNaC::symbol const& s ) { return s.get_name() == str.second; } );
-                if ( itSym != M_syms.end() )
-                    M_indexSymbolXYZ.insert( std::make_pair( str.first,std::distance(M_syms.begin(),itSym) ) );
-            }
-            std::map<int,std::string> lstN { {3,"nx"}, {4,"ny"}, {5,"nz"} };
-            for ( auto const& str :  lstN )
-            {
-                auto itSym = std::find_if( M_syms.begin(), M_syms.end(),
-                                           [&str]( GiNaC::symbol const& s ) { return s.get_name() == str.second; } );
-                if ( itSym != M_syms.end() )
-                    M_indexSymbolN.insert( std::make_pair( str.first,std::distance(M_syms.begin(),itSym) ) );
-            }
-
-            for ( auto const& is : M_indexSymbolXYZ )
-                VLOG(1) << "index symbol relation:  " << is.first << " -> " << is.second << "\n";
-            for ( auto const& is : M_indexSymbolN )
-                VLOG(1) << "index symbol relation:  " << is.first << " -> " << is.second << "\n";
-
-            this->setParameterFromOption();
+            auto itSym = std::find_if( M_syms.begin(), M_syms.end(),
+                                       [&str]( GiNaC::symbol const& s ) { return s.get_name() == str.second; } );
+            if ( itSym != M_syms.end() )
+                M_indexSymbolXYZ.insert( std::make_pair( str.first, std::distance( M_syms.begin(), itSym ) ) );
         }
+        std::map<int, std::string> lstN{{3, "nx"}, {4, "ny"}, {5, "nz"}};
+        for ( auto const& str : lstN )
+        {
+            auto itSym = std::find_if( M_syms.begin(), M_syms.end(),
+                                       [&str]( GiNaC::symbol const& s ) { return s.get_name() == str.second; } );
+            if ( itSym != M_syms.end() )
+                M_indexSymbolN.insert( std::make_pair( str.first, std::distance( M_syms.begin(), itSym ) ) );
+        }
+
+        for ( auto const& is : M_indexSymbolXYZ )
+        {
+            VLOG( 1 ) << "index symbol relation:  " << is.first << " -> " << is.second << "\n";
+        }
+        for ( auto const& is : M_indexSymbolN )
+            VLOG( 1 ) << "index symbol relation:  " << is.first << " -> " << is.second << "\n";
+
+        this->setParameterFromOption();
+        if ( hasSymbol( "x" ) || hasSymbol( "y" ) || hasSymbol( "z" ) )
+            M_context = M_context | vm::POINT;
+        if ( hasAnySymbolN() )
+            M_context = M_context | vm::KB | vm::NORMAL;
+    }
 
     GiNaCBase( GiNaCBase const& g ) = default;
 
     virtual ~GiNaCBase() {}
 
     const std::vector<GiNaC::symbol>& symbols() const
-        {
-            return M_syms;
-        }
+    {
+        return M_syms;
+    }
 
     bool hasSymbol( std::string const& symb ) const
-        {
-            for ( auto const& s : M_syms )
-                if ( s.get_name() == symb)
-                    return true;
-            return false;
-        }
+    {
+        for ( auto const& s : M_syms )
+            if ( s.get_name() == symb )
+                return true;
+        return false;
+    }
 
     vec_type const& parameterValue() const { return M_params; }
     value_type parameterValue( int p ) const { return M_params[p]; }
 
-    std::map<std::string,value_type> const& symbolNameToValue() const { return M_symbolNameToValue; }
+    std::map<std::string, value_type> const& symbolNameToValue() const { return M_symbolNameToValue; }
 
-    std::set<std::pair<uint16_type,uint16_type> > const& indexSymbolXYZ() const { return M_indexSymbolXYZ; }
-    std::set<std::pair<uint16_type,uint16_type> > const& indexSymbolN() const { return M_indexSymbolN; }
+    std::set<std::pair<uint16_type, uint16_type>> const& indexSymbolXYZ() const { return M_indexSymbolXYZ; }
+    std::set<std::pair<uint16_type, uint16_type>> const& indexSymbolN() const { return M_indexSymbolN; }
+    bool hasAnySymbolXYZ() const { return !M_indexSymbolXYZ.empty(); }
+    bool hasAnySymbolN() const { return !M_indexSymbolN.empty(); }
+    size_type dynamicContext() const
+    {
+        return M_context;
+    }
 
     void setParameterFromOption()
+    {
+        using namespace GiNaC;
+        std::map<std::string, value_type> m;
+        for ( auto const& s : M_syms )
         {
-            using namespace GiNaC;
-            std::map<std::string,value_type> m;
-            for( auto const& s : M_syms )
+            if ( Environment::vm().count( s.get_name() ) )
             {
-                if ( Environment::vm().count( s.get_name() ) )
+                // use try/catch in order to catch casting exception for
+                // option that do not return double. Indeed we are only
+                // collecting symbols in option database which can be cast
+                // to numerical types
+                try
                 {
-                    // use try/catch in order to catch casting exception for
-                    // option that do not return double. Indeed we are only
-                    // collecting symbols in option database which can be cast
-                    // to numerical types
-                    try
-                    {
-                        value_type v = option( _name=s.get_name() ).as<double>();
-                        m.insert( std::make_pair( s.get_name(), v ) );
-                        VLOG(1) << "symbol " << s.get_name() << " found in option with value " << v;
-                    }
-                    catch(...)
-                    {}
-
-//                    try
-//                    {
-//                        expression_type e( soption( _name=s.get_name() ), 0 );
-//                        if( is_a<numeric>(e) )
-//                        {
-//                            LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
-//                        }
-//                        else
-//                        {
-//                            ;
-//                        }
-//                    }
-//                    catch(...)
-//                    {}
+                    value_type v = option( _name = s.get_name() ).as<double>();
+                    m.insert( std::make_pair( s.get_name(), v ) );
+                    VLOG( 1 ) << "symbol " << s.get_name() << " found in option with value " << v;
                 }
+                catch ( ... )
+                {
+                }
+
+                //                    try
+                //                    {
+                //                        expression_type e( soption( _name=s.get_name() ), 0 );
+                //                        if( is_a<numeric>(e) )
+                //                        {
+                //                            LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
+                //                        }
+                //                        else
+                //                        {
+                //                            ;
+                //                        }
+                //                    }
+                //                    catch(...)
+                //                    {}
             }
-            this->setParameterValues( m );
         }
+        this->setParameterValues( m );
+    }
 
     void setParameterValues( vec_type const& p )
+    {
+        CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
+        M_params = p;
+    }
+    void setParameterValues( std::map<std::string, value_type> const& mp )
+    {
+        CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
+        for ( auto const& p : mp )
         {
-            CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
-            M_params = p;
-        }
-    void setParameterValues( std::map<std::string,value_type> const& mp )
-        {
-            CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
-            for( auto const& p : mp )
+            auto it = std::find_if( M_syms.begin(), M_syms.end(),
+                                    [&p]( GiNaC::symbol const& s ) { return s.get_name() == p.first; } );
+            if ( it != M_syms.end() )
             {
-                auto it = std::find_if( M_syms.begin(), M_syms.end(),
-                                        [&p]( GiNaC::symbol const& s ) { return s.get_name() == p.first; } );
-                if ( it != M_syms.end() )
-                {
-                    M_params[it-M_syms.begin()] = p.second;
-                    M_symbolNameToValue[p.first] = p.second;
-                    VLOG(2) << "setting parameter : " << p.first << " with value: " << p.second;
-                    VLOG(2) << "parameter: \n" << M_params;
-                }
-                else
-                {
-                    VLOG(1) << "Invalid parameters : " << p.first << " with value: " << p.second;
-                }
+                M_params[it - M_syms.begin()] = p.second;
+                M_symbolNameToValue[p.first] = p.second;
+                VLOG( 2 ) << "setting parameter : " << p.first << " with value: " << p.second;
+                VLOG( 2 ) << "parameter: \n"
+                          << M_params;
+            }
+            else
+            {
+                VLOG( 1 ) << "Invalid parameters : " << p.first << " with value: " << p.second;
             }
         }
-protected:
+    }
+
+  protected:
     std::vector<GiNaC::symbol> M_syms;
     vec_type M_params;
-    std::set<std::pair<uint16_type,uint16_type> > M_indexSymbolXYZ;
-    std::set<std::pair<uint16_type,uint16_type> > M_indexSymbolN;
-    std::map<std::string,value_type> M_symbolNameToValue;
+    std::set<std::pair<uint16_type, uint16_type>> M_indexSymbolXYZ;
+    std::set<std::pair<uint16_type, uint16_type>> M_indexSymbolN;
+    std::map<std::string, value_type> M_symbolNameToValue;
+    size_type M_context;
 };
 
-}} // vf / Feel
+} // namespace Feel::vf
 
 #endif /* __GiNaCBase_H */

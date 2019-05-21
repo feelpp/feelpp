@@ -312,11 +312,14 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         int edgeid = 0;
-        BOOST_FOREACH( std::string edge, edges )
+        for( std::string const& edge:  edges )
         {
             CHECK( oneelement_mesh->hasMarkers({edge}) );
-            auto int_u_t = integrate( markedelements(edgeMesh, edge),
-                                      trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*idv( u_vec[i] ) ).evaluate()(0,0);
+            BOOST_CHECK_MESSAGE( (decltype(idv( u_vec[i] ))::context & vm::KB) != 0, "invalid context " << decltype(idv( u_vec[i] ))::context << " should be " << vm::KB );
+            BOOST_CHECK_MESSAGE( ( decltype(trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*idv( u_vec[i] ))::context & vm::KB ) != 0, "invalid context " << decltype(trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*idv( u_vec[i] ))::context << " should have " << vm::KB );
+            //BOOST_CHECK( decltype(trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid]))::context == vm::DYNAMIC, "invalid context " << decltype(idv( u_vec[i] ))::context << " should be " << vm::KB );
+            auto int_u_t = integrate( _range=markedelements(edgeMesh, edge),
+                                      _expr=trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*idv( u_vec[i] ) ).evaluate()(0,0);
 
             if ( edgeid == i )
                 BOOST_CHECK_CLOSE( int_u_t, 1, 1e-13 );
@@ -325,8 +328,8 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
 
             checkidv[Xh->nLocalDof()*i+edgeid] = int_u_t;
 
-            form1( _test=Xh, _vector=F, _init=true ) = integrate( markedelements(edgeMesh, edge),
-                                                                  trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*id( V_ref ) );
+            form1( _test=Xh, _vector=F, _init=true ) = integrate( _range=markedelements(edgeMesh, edge),
+                                                                  _expr=trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*id( V_ref ) );
             auto form_v_t = inner_product( u_vec[i], *F );
 
             if ( edgeid == i )

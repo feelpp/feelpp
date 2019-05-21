@@ -239,7 +239,7 @@ private :
                     if ( space==T::value )
                     {
                         gpdof = m_Xh->dof()->containerIdToDofId( space, gpdof );
-                        CHECK( gpdof!=invalid_size_type_value ) <<"Dof not found\n";
+                        CHECK( gpdof!=invalid_v<size_type> ) <<"Dof not found\n";
                         for ( auto const& dof : subXh->dof()->globalDof( gpdof ) )
                         {
                             size_type eltId = dof.second.elementId();

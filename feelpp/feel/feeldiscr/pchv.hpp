@@ -64,6 +64,13 @@ template<typename MeshType,
          int Tag = 0>
 using Pchv_ptrtype = typename meta::Pchv<MeshType,Order,Pts,Tag>::ptrtype;
 
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+using Pchv_element_t=typename Pchv_type<MeshType,Order,Pts>::element_type;
+
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+using Pchv_element_type=Pchv_element_t<MeshType,Order,Pts>;
+
+
 /**
    Given a \p mesh, build a function space of vectorial continuous function
    which are piecewise polynomial of degree (total or in each variable) less

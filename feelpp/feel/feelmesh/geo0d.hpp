@@ -24,14 +24,15 @@
 
 #include <boost/operators.hpp>
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelmesh/geoentity.hpp>
-#include <feel/feelmesh/meshbase.hpp>
 #include <feel/feelmesh/marker.hpp>
+#include <feel/feelmesh/meshbase.hpp>
 
 namespace Feel
 {
+template <typename IndexT>
 class MeshBase;
 
 /**
@@ -53,26 +54,28 @@ class MeshBase;
  *
  * \ingroup GeoXD
  */
-template<uint16_type Dim, typename T = double>
+template <uint16_type Dim, typename T = double, typename IndexT = uint32_type>
 class Geo0D
-    :
-public boost::equality_comparable<Geo0D<Dim,T> >,
-public boost::less_than_comparable<Geo0D<Dim,T> >,
-public boost::less_than_comparable<Geo0D<Dim,T>, size_type>,
-public GeoEntity<Simplex<0, 1, Dim>,T >,
-public node<T, Dim>::type
+    : public boost::equality_comparable<Geo0D<Dim, T>>,
+      public boost::less_than_comparable<Geo0D<Dim, T>>,
+      public boost::less_than_comparable<Geo0D<Dim, T>, IndexT>,
+      public GeoEntity<Simplex<0, 1, Dim>, T, IndexT>,
+      public node<T, Dim>::type
 {
-    typedef GeoEntity<Simplex<0, 1, Dim>,T > super;
+    typedef GeoEntity<Simplex<0, 1, Dim>, T, IndexT> super;
     typedef typename node<T, Dim>::type super2;
-public:
 
-    typedef Geo0D<Dim,T> self_type;
+  public:
+    typedef Geo0D<Dim, T, IndexT> self_type;
     static const uint16_type nDim = Dim;
     static const bool is_simplex = true;
     typedef T value_type;
     typedef typename matrix_node<value_type>::type matrix_node_type;
     typedef super2 node_type;
     typedef typename node<T, 2>::type parametric_node_type;
+    using index_type = typename super::index_type;
+    using size_type = typename super::size_type;
+    using meshbase_type = MeshBase<index_type>;
     /**
      * default constructor
      *
@@ -89,7 +92,7 @@ public:
      *
      * @return
      */
-    explicit Geo0D( size_type id, bool boundary = false, bool is_vertex = false );
+    explicit Geo0D( index_type id, bool boundary = false, bool is_vertex = false );
 
     /**
      * constructor where I give the id, the point coordinate and I declare
@@ -103,7 +106,7 @@ public:
      * @param is_vertex true if the point is a vertex
      *
      */
-    explicit Geo0D( size_type id, value_type x, value_type y, value_type z, bool boundary = false, bool is_vertex = false );
+    explicit Geo0D( index_type id, value_type x, value_type y, value_type z, bool boundary = false, bool is_vertex = false );
 
     /**
      * give the point coordinate
@@ -113,21 +116,19 @@ public:
      * @param z z-coordinate of the node
      */
     Geo0D( value_type x, value_type y, value_type z )
-        :
-        super( 0, MESH_ENTITY_INTERNAL ),
-        super2( Dim ),
-        M_is_vertex( false ),
-        M_mesh( nullptr )
+        : super( 0, MESH_ENTITY_INTERNAL ),
+          super2( Dim ),
+          M_is_vertex( false ),
+          M_mesh( nullptr )
     {
         this->operator[]( 0 ) = x;
 
-        if (  Dim >= 2 )
+        if ( Dim >= 2 )
             this->operator[]( 1 ) = y;
 
         if ( Dim == 3 )
             this->operator[]( 2 ) = z;
     }
-
 
     /**
      * constructor where I give the id, the point coordinate and I declare
@@ -139,7 +140,7 @@ public:
      * @param is_vertex true if the point is a vertex
      *
      */
-    Geo0D( size_type id, node_type const& __x, bool boundary = false, bool is_vertex = false );
+    Geo0D( index_type id, node_type const& __x, bool boundary = false, bool is_vertex = false );
 
     /**
      * the point coordinate
@@ -148,11 +149,10 @@ public:
      *
      */
     Geo0D( node_type const& __x )
-        :
-        super( 0, MESH_ENTITY_INTERNAL ),
-        super2( __x ),
-        M_is_vertex( false ),
-        M_mesh( nullptr )
+        : super( 0, MESH_ENTITY_INTERNAL ),
+          super2( __x ),
+          M_is_vertex( false ),
+          M_mesh( nullptr )
     {
     }
 
@@ -162,35 +162,34 @@ public:
      * @param __expr expression for the coordinates
      *
      */
-    template<typename AE>
+    template <typename AE>
     Geo0D( ublas::vector_expression<AE> const& __expr )
-        :
-        super( 0, MESH_ENTITY_INTERNAL ),
-        super2( __expr ),
-        M_is_vertex( false )
+        : super( 0, MESH_ENTITY_INTERNAL ),
+          super2( __expr ),
+          M_is_vertex( false )
     {
     }
 
     /**
      * copy/move constructors
      */
-    Geo0D( Geo0D const & G ) = default;
-    Geo0D( Geo0D && G ) = default;
+    Geo0D( Geo0D const& G ) = default;
+    Geo0D( Geo0D&& G ) = default;
 
     /**
      * assignement operators
      */
-    Geo0D & operator=( Geo0D const& G ) = default;
-    Geo0D & operator=( Geo0D && G ) = default;
+    Geo0D& operator=( Geo0D const& G ) = default;
+    Geo0D& operator=( Geo0D&& G ) = default;
 
-    template<typename AE>
-    Geo0D & operator=( ublas::vector_expression<AE> const& expr )
+    template <typename AE>
+    Geo0D& operator=( ublas::vector_expression<AE> const& expr )
     {
         super2::operator=( expr );
         return *this;
     }
-    template<typename AE>
-    Geo0D & operator+=( ublas::vector_expression<AE> const& expr )
+    template <typename AE>
+    Geo0D& operator+=( ublas::vector_expression<AE> const& expr )
     {
         super2::operator+=( expr );
         return *this;
@@ -201,7 +200,7 @@ public:
         return this->operator[]( i );
     }
 
-    value_type  operator()( int i ) const
+    value_type operator()( int i ) const
     {
         return this->operator[]( i );
     }
@@ -211,7 +210,7 @@ public:
      * boundary conditions on the slave side
      * @return the master id
      */
-    size_type masterId() const
+    index_type masterId() const
     {
         return M_master_id;
     }
@@ -238,7 +237,7 @@ public:
     /**
      * set the point as a vertex or not using \p v
      */
-    void  setAsVertex( bool v )
+    void setAsVertex( bool v )
     {
         M_is_vertex = v;
     }
@@ -246,7 +245,7 @@ public:
     /**
      * set the mesh to which this geometric entity belongs to
      */
-    void setMesh( MeshBase const* m )
+    void setMesh( meshbase_type const* m )
     {
         M_mesh = m;
     }
@@ -254,7 +253,7 @@ public:
     /**
      * \return the mesh to which this geometric entity belongs to
      */
-    MeshBase const* mesh() const
+    meshbase_type const* mesh() const
     {
         return M_mesh;
     }
@@ -364,7 +363,7 @@ public:
         return this->id() < e.id();
     }
 
-    bool operator<( size_type __i ) const
+    bool operator<( index_type __i ) const
     {
         return this->id() < __i;
     }
@@ -377,10 +376,9 @@ public:
      *
      * @return the output stream
      */
-    std::ostream & showMe( bool verbose = false, std::ostream & c = std::cout ) const;
+    std::ostream& showMe( bool verbose = false, std::ostream& c = std::cout ) const;
 
-
-    void setMasterId( size_type id )
+    void setMasterId( index_type id )
     {
         M_master_id = id;
     }
@@ -393,7 +391,7 @@ public:
      * set the point coordinates. This will typically be called when
      * creating faces (points) in 1D.
      */
-    void setPoint( uint16_type const /*i*/, self_type const & p )
+    void setPoint( uint16_type const /*i*/, self_type const& p )
     {
         *this = p;
     }
@@ -411,12 +409,12 @@ public:
         return *this;
     }
 
-    std::map<uint16_type,Marker1> const&
+    std::map<uint16_type, Marker1> const&
     markers() const
     {
         return M_markers;
     }
-    void setMarkers( std::map<uint16_type,Marker1> const& markers )
+    void setMarkers( std::map<uint16_type, Marker1> const& markers )
     {
         M_markers = markers;
     }
@@ -511,13 +509,13 @@ public:
     }
 
     std::vector<int> tags() const
-        {
-            std::vector<int> thetags(3);
-            thetags[0] = (this->hasMarker(1))? this->marker(1).value() : 0;//M_marker1.value();
-            thetags[1] = (this->hasMarker(2))? this->marker(2).value() : 0;//M_marker2.value();
-            thetags[2] = this->processId();
-            return thetags;
-        }
+    {
+        std::vector<int> thetags( 3 );
+        thetags[0] = ( this->hasMarker( 1 ) ) ? this->marker( 1 ).value() : 0; //M_marker1.value();
+        thetags[1] = ( this->hasMarker( 2 ) ) ? this->marker( 2 ).value() : 0; //M_marker2.value();
+        thetags[2] = this->processId();
+        return thetags;
+    }
     /**
      * set the geometric dimension of the entity the points belongs to
      */
@@ -557,37 +555,34 @@ public:
         M_is_parametric = true;
     }
 
-private:
-
+  private:
     friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-        {
-            ar & boost::serialization::base_object<super>( *this );
-            ar & boost::serialization::base_object<super2>( *this );
-            //ar & M_is_vertex;
-            //ar & M_is_parametric;
-            ar & M_markers;
-            /*
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version )
+    {
+        ar& boost::serialization::base_object<super>( *this );
+        ar& boost::serialization::base_object<super2>( *this );
+        //ar & M_is_vertex;
+        //ar & M_is_parametric;
+        ar& M_markers;
+        /*
             ar & M_gdim;
             ar & M_gtag;
             ar & M_uv;
             */
-        }
+    }
 
-private:
-
-    size_type M_master_id;
+  private:
+    index_type M_master_id;
     self_type const* M_master_vertex;
 
     bool M_is_vertex;
     bool M_is_parametric;
 
     // mesh to which the geond element belongs to
-    MeshBase const* M_mesh;
+    meshbase_type const* M_mesh;
 
-
-    std::map<uint16_type,Marker1> M_markers;
+    std::map<uint16_type, Marker1> M_markers;
 
     int M_gdim;
     int M_gtag;
@@ -597,58 +592,54 @@ private:
 // Alias for Geo0D<3>
 typedef Geo0D<3> Point;
 
-
 /*--------------------------------------------------------------
   Geo0D
   ---------------------------------------------------------------*/
-template<uint16_type Dim, typename T>
-Geo0D<Dim, T>::Geo0D()
-    :
-    super( 0, MESH_ENTITY_INTERNAL ),
-    super2( Dim ),
-    M_master_id( 0 ),
-    M_is_vertex( false ),
-    M_is_parametric( false ),
-    M_mesh( nullptr ),
-    M_gdim( 0 ),
-    M_gtag( 0 ),
-    M_uv( 2 )
+template <uint16_type Dim, typename T, typename IndexT>
+Geo0D<Dim, T, IndexT>::Geo0D()
+    : super( 0, MESH_ENTITY_INTERNAL ),
+      super2( Dim ),
+      M_master_id( 0 ),
+      M_is_vertex( false ),
+      M_is_parametric( false ),
+      M_mesh( nullptr ),
+      M_gdim( 0 ),
+      M_gtag( 0 ),
+      M_uv( 2 )
 {
     this->clear();
 }
 
-template<uint16_type Dim, typename T>
-Geo0D<Dim, T>::Geo0D( size_type id, bool boundary, bool is_vertex )
-    :
-    super( id, MESH_ENTITY_INTERNAL ),
-    super2( Dim ),
-    M_master_id( id ),
-    M_is_vertex( is_vertex ),
-    M_mesh( nullptr ),
-    M_gdim( 0 ),
-    M_gtag( 0 ),
-    M_uv( 2 )
+template <uint16_type Dim, typename T, typename IndexT>
+Geo0D<Dim, T, IndexT>::Geo0D( index_type id, bool boundary, bool is_vertex )
+    : super( id, MESH_ENTITY_INTERNAL ),
+      super2( Dim ),
+      M_master_id( id ),
+      M_is_vertex( is_vertex ),
+      M_mesh( nullptr ),
+      M_gdim( 0 ),
+      M_gtag( 0 ),
+      M_uv( 2 )
 {
     this->clear();
     this->setOnBoundary( boundary );
 }
 
-template<uint16_type Dim, typename T>
-Geo0D<Dim, T>::Geo0D( size_type id, value_type x, value_type y, value_type z, bool boundary, bool is_vertex )
-    :
-    super( id, MESH_ENTITY_INTERNAL ),
-    super2( Dim ),
-    M_master_id( id ),
-    M_is_vertex( is_vertex ),
-    M_is_parametric( false ),
-    M_mesh( nullptr ),
-    M_gdim( 0 ),
-    M_gtag( 0 ),
-    M_uv( 2 )
+template <uint16_type Dim, typename T, typename IndexT>
+Geo0D<Dim, T, IndexT>::Geo0D( index_type id, value_type x, value_type y, value_type z, bool boundary, bool is_vertex )
+    : super( id, MESH_ENTITY_INTERNAL ),
+      super2( Dim ),
+      M_master_id( id ),
+      M_is_vertex( is_vertex ),
+      M_is_parametric( false ),
+      M_mesh( nullptr ),
+      M_gdim( 0 ),
+      M_gtag( 0 ),
+      M_uv( 2 )
 {
     this->operator[]( 0 ) = x;
 
-    if (  Dim >= 2 )
+    if ( Dim >= 2 )
         this->operator[]( 1 ) = y;
 
     if ( Dim == 3 )
@@ -657,28 +648,27 @@ Geo0D<Dim, T>::Geo0D( size_type id, value_type x, value_type y, value_type z, bo
     this->setOnBoundary( boundary );
 }
 
-template<uint16_type Dim, typename T>
-Geo0D<Dim, T>::Geo0D( size_type id, node_type const& __p, bool boundary, bool is_vertex )
-    :
-    super( id, MESH_ENTITY_INTERNAL ),
-    super2( __p ),
-    M_master_id( id ),
-    M_is_vertex( is_vertex ),
-    M_is_parametric( false ),
-    M_mesh( nullptr ),
-    M_gdim( 0 ),
-    M_gtag( 0 ),
-    M_uv( 2 )
+template <uint16_type Dim, typename T, typename IndexT>
+Geo0D<Dim, T, IndexT>::Geo0D( index_type id, node_type const& __p, bool boundary, bool is_vertex )
+    : super( id, MESH_ENTITY_INTERNAL ),
+      super2( __p ),
+      M_master_id( id ),
+      M_is_vertex( is_vertex ),
+      M_is_parametric( false ),
+      M_mesh( nullptr ),
+      M_gdim( 0 ),
+      M_gtag( 0 ),
+      M_uv( 2 )
 {
-    FEELPP_ASSERT( __p.size() == Dim )( __p )( Dim ).error( "invalid node" );
+    FEELPP_ASSERT( __p.size() == Dim )
+    ( __p )( Dim ).error( "invalid node" );
 
     this->setOnBoundary( boundary );
 }
 
-
-template<uint16_type Dim, typename T>
-std::ostream &
-Geo0D<Dim, T>::showMe( bool /*verbose*/, std::ostream & out ) const
+template <uint16_type Dim, typename T, typename IndexT>
+std::ostream&
+Geo0D<Dim, T, IndexT>::showMe( bool /*verbose*/, std::ostream& out ) const
 {
     out.setf( std::ios::scientific, std::ios::floatfield );
     out << "----- BEGIN of Geo0D ---\n";
@@ -688,10 +678,9 @@ Geo0D<Dim, T>::showMe( bool /*verbose*/, std::ostream & out ) const
     return out;
 }
 
-template<uint16_type Dim, typename T>
-inline
-std::ostream&
-operator<<( std::ostream& __os, Geo0D<Dim, T> const& __n )
+template <uint16_type Dim, typename T, typename IndexT>
+inline std::ostream&
+operator<<( std::ostream& __os, Geo0D<Dim, T, IndexT> const& __n )
 {
     __os.setf( std::ios::scientific, std::ios::floatfield );
     __os << "----- BEGIN of Geo0D ---\n";
@@ -701,10 +690,9 @@ operator<<( std::ostream& __os, Geo0D<Dim, T> const& __n )
     return __os;
 }
 
-template<uint16_type Dim, typename T>
-inline
-FEELPP_DEPRECATED DebugStream&
-operator<<( DebugStream& __os, Geo0D<Dim, T> const& __n )
+template <uint16_type Dim, typename T, typename IndexT>
+inline FEELPP_DEPRECATED DebugStream&
+operator<<( DebugStream& __os, Geo0D<Dim, T, IndexT> const& __n )
 {
     if ( __os.doPrint() )
     {
@@ -717,91 +705,80 @@ operator<<( DebugStream& __os, Geo0D<Dim, T> const& __n )
 
     return __os;
 }
-template<uint16_type Dim, typename T>
-inline
-FEELPP_DEPRECATED NdebugStream&
-operator<<( NdebugStream& __os, Geo0D<Dim, T> const& __n )
+template <uint16_type Dim, typename T, typename IndexT>
+inline FEELPP_DEPRECATED NdebugStream&
+operator<<( NdebugStream& __os, Geo0D<Dim, T, IndexT> const& __n )
 {
     return __os;
 }
 
-
-template<typename T>
-inline
-T
-distance( Geo0D<1,T> const& p1, Geo0D<1,T> const& p2 )
+template <typename T, typename IndexT>
+inline T
+    distance( Geo0D<1, T, IndexT> const& p1, Geo0D<1, T, IndexT> const& p2 )
 {
-    return ublas::norm_2( p1-p2 );
+    return ublas::norm_2( p1 - p2 );
 }
 
-template<typename T>
-inline
-T
-distance( Geo0D<2,T> const& p1, Geo0D<2,T> const& p2 )
+template <typename T, typename IndexT>
+inline T
+distance( Geo0D<2, T, IndexT> const& p1, Geo0D<2, T, IndexT> const& p2 )
 {
-    return ublas::norm_2( p1-p2 );
+    return ublas::norm_2( p1 - p2 );
 }
 
-template<typename T>
-inline
-T
-distance( Geo0D<3,T> const& p1, Geo0D<3,T> const& p2 )
+template <typename T, typename IndexT>
+inline T
+distance( Geo0D<3, T, IndexT> const& p1, Geo0D<3, T, IndexT> const& p2 )
 {
-    return ublas::norm_2( p1-p2 );
+    return ublas::norm_2( p1 - p2 );
 }
-template<typename T>
-inline
-Geo0D<1,T>
-middle( Geo0D<1,T> const& p1, Geo0D<1,T> const& p2 )
+template <typename T, typename IndexT>
+inline Geo0D<1, T, IndexT>
+middle( Geo0D<1, T, IndexT> const& p1, Geo0D<1, T, IndexT> const& p2 )
 {
-    return ( p1+p2 )/2;
+    return ( p1 + p2 ) / 2;
 }
 
-template<typename T>
-inline
-Geo0D<2,T>
-middle( Geo0D<2,T> const& p1, Geo0D<2,T> const& p2 )
+template <typename T, typename IndexT>
+inline Geo0D<2, T, IndexT>
+middle( Geo0D<2, T, IndexT> const& p1, Geo0D<2, T, IndexT> const& p2 )
 {
-    return ( p1+p2 )/2;
+    return ( p1 + p2 ) / 2;
 }
 
-template<typename T>
-inline
-Geo0D<3,T>
-middle( Geo0D<3,T> const& p1, Geo0D<3,T> const& p2 )
+template <typename T, typename IndexT>
+inline Geo0D<3, T, IndexT>
+middle( Geo0D<3, T, IndexT> const& p1, Geo0D<3, T, IndexT> const& p2 )
 {
-    return ( p1+p2 )/2;
+    return ( p1 + p2 ) / 2;
 }
 
-template<typename E1,typename E2>
-inline
-ublas::vector<double>
-cross( ublas::vector_expression<E1>  _p1,
-       ublas::vector_expression<E2>  _p2 )
+template <typename E1, typename E2>
+inline ublas::vector<double>
+cross( ublas::vector_expression<E1> _p1,
+       ublas::vector_expression<E2> _p2 )
 {
     ublas::vector<double> v( 3 );
     ublas::vector<double> p1( _p1 );
     ublas::vector<double> p2( _p2 );
-    v( 0 ) = p1( 1 )*p2( 2 )-p1( 2 )*p2( 1 );
-    v( 1 ) = p1( 2 )*p2( 0 )-p1( 0 )*p2( 2 );
-    v( 2 ) = p1( 0 )*p2( 1 )-p1( 1 )*p2( 0 );
+    v( 0 ) = p1( 1 ) * p2( 2 ) - p1( 2 ) * p2( 1 );
+    v( 1 ) = p1( 2 ) * p2( 0 ) - p1( 0 ) * p2( 2 );
+    v( 2 ) = p1( 0 ) * p2( 1 ) - p1( 1 ) * p2( 0 );
     return v;
 }
 
-template<typename T>
-inline
-ublas::vector<double>
-cross( Geo0D<3,T> p1,
-       Geo0D<3,T> p2 )
+template <typename T, typename IndexT>
+inline ublas::vector<double>
+cross( Geo0D<3, T, IndexT> p1,
+       Geo0D<3, T, IndexT> p2 )
 {
     ublas::vector<double> v( 3 );
-    v( 0 ) = p1( 1 )*p2( 2 ) - p1( 2 )*p2( 1 );
-    v( 1 ) = p1( 2 )*p2( 0 ) - p1( 0 )*p2( 2 );
-    v( 2 ) = p1( 0 )*p2( 1 ) - p1( 1 )*p2( 0 );
+    v( 0 ) = p1( 1 ) * p2( 2 ) - p1( 2 ) * p2( 1 );
+    v( 1 ) = p1( 2 ) * p2( 0 ) - p1( 0 ) * p2( 2 );
+    v( 2 ) = p1( 0 ) * p2( 1 ) - p1( 1 ) * p2( 0 );
     return v;
 }
 
-
-} // Feel
+} // namespace Feel
 
 #endif

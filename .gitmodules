@@ -22,3 +22,6 @@
 [submodule "contrib/viewer"]
 	path = contrib/viewer
 	url = https://github.com/feelpp/viewer.git
+[submodule "benchmarks/benchmark"]
+	path = benchmarks/benchmark
+	url = https://github.com/feelpp/benchmark

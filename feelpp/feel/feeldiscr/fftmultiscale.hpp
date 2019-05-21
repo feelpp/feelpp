@@ -191,9 +191,9 @@ void gradImage (holo3_image<float> const& im )
             tabFFTY[i][j]= holo3_image<float>(meshp+1,meshp+1);
             fftw_complex* image = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*(meshp+1)*(meshp+1));
             
-            for (int k=0;k<meshp+1;k++)
+            for (int k=0;k<meshp;k++)
             {
-                for (int l=0;l<meshp+1;l++)
+                for (int l=0;l<meshp;l++)
                 {
                     image[(meshp+1)*k+l][0]=im((i)*(meshp)+k,(j)*(meshp)+l);
                     image[(meshp+1)*k+l][1]=0;

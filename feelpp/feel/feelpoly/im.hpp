@@ -86,10 +86,10 @@ template<int Dim,
          template<uint16_type, uint16_type, uint16_type> class Entity = Simplex>
 class IMGeneral
     :
-        public PointSetQuadrature<Entity<Dim,1,Dim> , T>
+        public PointSetQuadrature<Entity<Dim,1,Dim> , T, index_type>
 
 {
-    using super = PointSetQuadrature<Entity<Dim,1,Dim> , T>;
+    using super = PointSetQuadrature<Entity<Dim,1,Dim> , T, index_type>;
     
 public:
     static const bool is_exact = false;
