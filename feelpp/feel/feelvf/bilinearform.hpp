@@ -50,6 +50,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/stencil.hpp>
 
+#include <feel/feelvf/bilinearformbase.hpp>
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/block.hpp>
 #include <feel/feelvf/fec.hpp>
@@ -199,19 +200,14 @@ make_bfassign3( BFType& lf,
     return BFAssign3<BFType,ExprType,TrialSpaceType>( lf, expr, trial_space, trial_index );
 }
 
-class BilinearFormBase {};
 
-/*!
-  \class BilinearForm
-  \brief brief description
-
-  @author Christophe Prud'homme
-  @see
-*/
+//!
+//! BilinearForm class
+//!
 template<typename FE1,
          typename FE2,
          typename ElemContType = VectorUblas<typename FE1::value_type> >
-class BilinearForm : public BilinearFormBase
+class BilinearForm : public BilinearFormBase<typename FE1::value_type>
 {
 public:
 
@@ -219,7 +215,10 @@ public:
      */
     //@{
     enum { nDim = FE1::nDim };
-
+    
+    using value_type = typename FE1::value_type;
+    using super = BilinearFormBase<value_type>;
+        
     using space_1_type = functionspace_type<FE1>;
     typedef std::shared_ptr<space_1_type> space_1_ptrtype;
     typedef space_1_type test_space_type;
@@ -230,21 +229,13 @@ public:
     typedef space_2_type trial_space_type;
     typedef std::shared_ptr<space_2_type> trial_space_ptrtype;
 
-    typedef typename space_1_type::value_type value_type;
+    
     typedef typename space_1_type::template Element<value_type,ElemContType> element_1_type;
 
     typedef typename space_2_type::template Element<value_type,ElemContType> element_2_type;
 
     using self_type = BilinearForm<FE1, FE2, ElemContType>;
 
-    using pre_solve_type = typename Backend<value_type>::pre_solve_type;
-    using post_solve_type = typename Backend<value_type>::post_solve_type;
-#if 0
-    typedef typename space_1_type::component_fespace_type component_space_1_type;
-    typedef typename element_1_type::component_type component_1_type;
-    typedef typename space_2_type::component_fespace_type component_space_2_type;
-    typedef typename element_2_type::component_type component_2_type;
-#endif // 0
 
     typedef typename space_1_type::mesh_type mesh_1_type;
     typedef typename mesh_1_type::element_type mesh_element_1_type;
@@ -269,15 +260,10 @@ public:
     typedef typename space_2_type::gm1_type gm1_2_type;
     typedef typename space_2_type::gm1_ptrtype gm1_2_ptrtype;
 
-    //typedef ublas::compressed_matrix<value_type, ublas::row_major> csr_matrix_type;
-    typedef MatrixSparse<value_type> matrix_type;
-    typedef std::shared_ptr<matrix_type> matrix_ptrtype;
-    static const bool is_row_major = true;//matrix_type::is_row_major;
-
-    typedef typename mpl::if_<mpl::equal_to<mpl::bool_<is_row_major>, mpl::bool_<true> >,
-            mpl::identity<ublas::row_major>,
-            mpl::identity<ublas::column_major> >::type::type layout_type;
-
+    using index_type = typename mesh_1_type::index_type;
+    
+    using matrix_ptrtype = typename super::matrix_ptrtype;
+    
     template<typename SpaceType, bool UseMortar = false>
     struct finite_element
     {
@@ -721,14 +707,14 @@ public:
                     for (uint16_type f=0;f< M_form.testSpace()->mesh()->numLocalFaces();++f)
                         {
                             const size_type idFind = M_form.trialSpace()->mesh()->meshToSubMesh( eltTest.face(f).id() );
-                            if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
+                            if ( idFind != invalid_v<size_type> ) idsFind.insert( idFind );
                         }
                     if ( idsFind.size()>1 ) std::cout << " TODO trialElementId " << std::endl;
 
                     if ( idsFind.size()>0 )
                         domain_eid = *idsFind.begin();
                     else
-                        domain_eid = invalid_size_type_value;
+                        domain_eid = invalid_v<size_type>;
 
                     DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
                 }
@@ -745,7 +731,7 @@ public:
         bool isZero( size_type i ) const
             {
                 size_type domain_eid = trialElementId( i );
-                if ( domain_eid == invalid_size_type_value )
+                if ( domain_eid == invalid_v<size_type> )
                     return true;
                 return false;
             }
@@ -765,7 +751,7 @@ public:
         void updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& gmcTest,
                                         map_trial_geometric_mapping_context_type const& gmcTrial,
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
-                                        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad );
+                                        std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad );
 
         void update( map_test_geometric_mapping_context_type const& gmcTest,
                      map_trial_geometric_mapping_context_type const& _gmcTrial,
@@ -785,7 +771,7 @@ public:
                                         map_trial_geometric_mapping_context_type const& gmcTrial,
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
                                         IM const& im,
-                                        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
+                                        std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad )
         {
             M_integrator = im;
             updateInCaseOfInterpolate( gmcTest, gmcTrial, gmcExpr, indexLocalToQuad );
@@ -804,7 +790,7 @@ public:
         {
             integrate( mpl::int_<fusion::result_of::size<GeomapTestContext>::type::value>() );
         }
-        void integrateInCaseOfInterpolate( std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+        void integrateInCaseOfInterpolate( std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad,
                                            bool isFirstExperience )
         {
             integrateInCaseOfInterpolate( mpl::int_<fusion::result_of::size<GeomapTestContext>::type::value>(),
@@ -817,21 +803,21 @@ public:
         {
             assemble( fusion::at_key<gmc<0> >( M_test_gmc )->id() );
         }
-        void assemble( size_type elt_0 );
+        void assemble( index_type elt_0 );
 
         void assemble( mpl::int_<2> )
         {
             assemble( fusion::at_key<gmc<0> >( M_test_gmc )->id(),
                       fusion::at_key<test_gmc1>( M_test_gmc )->id() );
         }
-        void assemble( size_type elt_0, size_type elt_1  );
+        void assemble( index_type elt_0, index_type elt_1  );
 
         /**
          * local to global assembly given a pair of test and trial element ids
          *  - \p elt.first provides the test element
          *  - \p elt.second provides the trial element
          */
-        void assemble( std::pair<size_type,size_type> const& elt );
+        void assemble( std::pair<index_type,index_type> const& elt );
 
         /**
          * local to global assembly associated to internal faces given a pair of
@@ -840,8 +826,8 @@ public:
          *  - \p elt.first provides the test element
          *  - \p elt.second provides the trial element
          */
-        void assemble( std::pair<size_type,size_type> const& elt_0,
-                       std::pair<size_type,size_type> const& elt_1 );
+        void assemble( std::pair<index_type,index_type> const& elt_0,
+                       std::pair<index_type,index_type> const& elt_1 );
 
         void assembleInCaseOfInterpolate();
 
@@ -1020,7 +1006,7 @@ public:
         void integrate( mpl::int_<2> );
 
         void integrateInCaseOfInterpolate( mpl::int_<1>,
-                                           std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                                           std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad,
                                            bool isFirstExperience );
     private:
 
@@ -1091,7 +1077,7 @@ public:
     //@{
 
 
-    BilinearForm(){}
+    BilinearForm() = default;
     /**
 
 
@@ -1141,15 +1127,13 @@ public:
     {
         if ( this != &form )
         {
-            M_name = form.M_name;
-            M_pattern = form.M_pattern;
-            CHECK( M_X1 == form.M_X1 ) << "Invalid test function spaces";
-            CHECK( M_X2 == form.M_X2 ) << "Invalid trial function spaces";
-            M_matrix->zero();
-            M_matrix->addMatrix( 1.0, form.M_matrix );
-            M_row_startInMatrix = form.M_row_startInMatrix;
-            M_col_startInMatrix = form.M_col_startInMatrix;
-            M_lb = form.M_lb;
+            bool same_spaces = (M_X1 == form.M_X1) && ( M_X2 == form.M_X2 );
+            M_X1 = form.M_X1;
+            M_X2 = form.M_X2;
+            if ( !this->isMatrixAllocated() || !same_spaces )
+                this->allocateMatrix( M_X1, M_X2 );
+            super::operator=( form );
+            
         }
 
         return *this;
@@ -1167,21 +1151,7 @@ public:
     template <class ExprT>
     BilinearForm& operator+=( Expr<ExprT> const& expr );
 
-    BilinearForm& operator+=( BilinearForm& a )
-        {
-            if ( this == &a )
-                return *this;
-
-            M_matrix->addMatrix( 1.0, a.M_matrix );
-
-            return *this;
-        }
-
-    BilinearForm& add( double alpha, BilinearForm&  a )
-        {
-            M_matrix->addMatrix( alpha, a.M_matrix );
-            return *this;
-        }
+    
     /**
      * Computes the energy norm associated with the bilinear form
      *
@@ -1191,7 +1161,7 @@ public:
      */
     value_type operator()( element_1_type const& __v,  element_2_type const& __u ) const
     {
-        return M_matrix->energy( __v, __u );
+        return this->M_matrix->energy( __v, __u );
     }
 
     /**
@@ -1204,57 +1174,6 @@ public:
      */
     //@{
 
-    //!
-    //! @return the name of the bilinear form
-    //!
-    std::string const& name() const { return M_name; }
-    
-    /**
-     * return the pattern
-     */
-    size_type pattern() const
-    {
-        return M_pattern;
-    }
-
-    /**
-     * \return true if the pattern is coupled with respect to the components,
-     * false otherwise
-     */
-    bool isPatternCoupled() const
-    {
-        Feel::Context ctx( M_pattern );
-        return ctx.test( Pattern::COUPLED );
-    }
-
-    /**
-     * \return true if the pattern is the default one, false otherwise
-     */
-    bool isPatternDefault() const
-    {
-        Feel::Context ctx( M_pattern );
-        return ctx.test( Pattern::DEFAULT );
-    }
-
-    /**
-     * \return true if the pattern adds the neighboring elements, false otherwise
-     */
-    bool isPatternNeighbor() const
-    {
-        Feel::Context ctx( M_pattern );
-        return ctx.test( Pattern::EXTENDED );
-    }
-    bool isPatternExtended() const
-    {
-        Feel::Context ctx( M_pattern );
-        return ctx.test( Pattern::EXTENDED );
-    }
-
-    bool isPatternSymmetric() const
-    {
-        Feel::Context ctx( M_pattern );
-        return ctx.test( Pattern::PATTERN_SYMMETRIC );
-    }
 
     /**
      * \return the trial function space
@@ -1305,84 +1224,6 @@ public:
     }
 
 
-    /**
-     * \return the matrix associated to the bilinear form
-     */
-    matrix_type const& matrix() const
-    {
-        return *M_matrix;
-    }
-
-    matrix_type& matrix()
-    {
-        return *M_matrix;
-    }
-
-    matrix_ptrtype const& matrixPtr() const
-    {
-        return M_matrix;
-    }
-
-    matrix_ptrtype& matrixPtr()
-    {
-        return M_matrix;
-    }
-
-    list_block_type const& blockList() const
-    {
-        return M_lb;
-    }
-
-    size_type rowStartInMatrix() const
-    {
-        return M_row_startInMatrix;
-    }
-
-    size_type colStartInMatrix() const
-    {
-        return M_col_startInMatrix;
-    }
-    /**
-     * @brief set the bilinear form to zero
-     * @details set the bilinear form and its
-     * algebraic representation to zero
-     */
-    void zero()
-    {
-        M_matrix->zero();
-    }
-    /**
-     * \return the threshold
-     */
-    value_type threshold() const
-    {
-        return M_threshold;
-    }
-
-    /**
-     * \return \c true if threshold applies, false otherwise
-     */
-    bool doThreshold( value_type const& v ) const
-    {
-        return ( math::abs( v ) > M_threshold );
-    }
-
-    /**
-     * return true if do threshold. false otherwise
-     */
-    bool doThreshold() const
-    {
-        return M_do_threshold;
-    }
-
-    /**
-     * \return the mapping from test dof id to container id with global process numbering
-     */
-    std::vector<size_type> const& dofIdToContainerIdTest() const { return *M_dofIdToContainerIdTest; }
-    /**
-     * \return the mapping from trial dof id to container id with global process numbering
-     */
-    std::vector<size_type> const& dofIdToContainerIdTrial() const { return *M_dofIdToContainerIdTrial; }
 
     //@}
 
@@ -1390,31 +1231,6 @@ public:
      */
     //@{
 
-    /**
-     * set a threshold value for the matrix entries associated with the
-     * bilinear form
-     */
-    void setThreshold( value_type eps )
-    {
-        M_threshold = eps;
-    }
-
-    /**
-     * set the threshold strategy, true threshold the matrix entries,
-     * false do not threshold
-     */
-    void setDoThreshold( bool do_threshold )
-    {
-        M_do_threshold = do_threshold;
-    }
-    /**
-     * set mapping from test dof id to container id with global process numbering
-     */
-    void setDofIdToContainerIdTest( std::vector<size_type> const& gpmap ) { M_dofIdToContainerIdTest = std::addressof( gpmap ); }
-    /**
-     * set mapping from trial dof id to container id with global process numbering
-     */
-    void setDofIdToContainerIdTrial( std::vector<size_type> const& gpmap ) { M_dofIdToContainerIdTrial = std::addressof( gpmap ); }
 
     //@}
 
@@ -1423,139 +1239,6 @@ public:
     //@{
 
 
-    // close matrix
-    void close() { M_matrix->close(); }
-
-
-    /**
-     * Diagonalize representation(matrix) associated to the \p
-     * BilinearForm at selected dofs \p dofs by putting 0 on
-     * the extra diagonal terms and 1 on the diagonal.
-     *
-     * If \p ON_ELIMINATION_KEEP_DIAGONAL is set in \p on_context then
-     * the diagonal value of the matrix is kept and the right habd
-     * side \p rhs is modified accordingly.
-     */
-    void zeroRows( std::vector<int> const& __dofs,
-                   Vector<value_type> const& __values,
-                   Vector<value_type>& rhs,
-                   Feel::Context const& on_context,
-                   double value_on_diagonal );
-
-    /**
-     * add value \p v at position (\p i, \p j) of the matrix
-     * associated with the bilinear form
-     */
-    void add( size_type i,  size_type j,  value_type const& v )
-    {
-        if ( M_do_threshold )
-        {
-            if ( doThreshold( v ) )
-                M_matrix->add( i+this->rowStartInMatrix(),
-                                j+this->colStartInMatrix(),
-                                v );
-        }
-
-        else
-            M_matrix->add( i+this->rowStartInMatrix(),
-                            j+this->colStartInMatrix(),
-                            v );
-
-    }
-    /**
-     * add value \p v at position (\p i, \p j) of the matrix
-     * associated with the bilinear form
-     */
-    void addMatrix( int* rows, int nrows,
-                    int* cols, int ncols,
-                    value_type* data,
-                    size_type K  = 0,
-                    size_type K2 = invalid_size_type_value)
-    {
-#if 0
-        if ( this->rowStartInMatrix()!=0 )
-            for ( int i=0; i<nrows; ++i )
-                rows[i]+=this->rowStartInMatrix();
-
-        if ( this->colStartInMatrix()!=0 )
-            for ( int i=0; i<ncols; ++i )
-                cols[i]+=this->colStartInMatrix();
-#endif
-
-        M_matrix->addMatrix( rows, nrows, cols, ncols, data, K, K2 );
-    }
-
-
-
-    /**
-     * set value \p v at position (\p i, \p j) of the matrix
-     * associated with the bilinear form
-     */
-    void set( size_type i,  size_type j,  value_type const& v )
-    {
-        M_matrix->set( i, j, v );
-    }
-
-    void addToNOz( size_type i, size_type n )
-    {
-        M_n_oz[i] += n;
-    }
-    void addToNNz( size_type i, size_type n )
-    {
-        M_n_nz[i] += n;
-    }
-    size_type nOz( size_type i ) const
-    {
-        return M_n_oz[i];
-    }
-    size_type nNz( size_type i ) const
-    {
-        return M_n_nz[i];
-    }
-
-
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
-                                     solve,
-                                     tag,
-                                     ( required
-                                       ( in_out( solution ),* )
-                                       ( rhs, * ) )
-                                     ( optional
-                                       ( name,           ( std::string ), "" )
-                                       ( kind,           ( std::string ), soption(_prefix=name,_name="backend") )
-                                       ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                                       ( pre, (pre_solve_type), pre_solve_type() )
-                                       ( post, (post_solve_type), post_solve_type() )
-                                         ) )
-        {
-            return backend( _name=name, _kind=kind, _rebuild=rebuild,
-                            _worldcomm=this->M_X1->worldCommPtr() )->solve( _matrix=this->matrixPtr(),
-                                                                         _rhs=rhs.vectorPtr(),
-                                                                         _solution=solution,
-                                                                         _pre=pre,
-                                                                         _post=post
-                                                                         );
-        }
-
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
-                                     solveb,
-                                     tag,
-                                     ( required
-                                       ( in_out( solution ),* )
-                                       ( rhs, * )
-                                       ( backend, *) )
-                                     ( optional
-                                       ( prec,           ( preconditioner_ptrtype ),
-                                         preconditioner( _prefix=backend->prefix(),
-                                                         _matrix=this->matrixPtr(),
-                                                         _pc=backend->pcEnumType()/*LU_PRECOND*/,
-                                                         _pcfactormatsolverpackage=backend->matSolverPackageEnumType(),
-                                                         _backend=backend ) )
-                                         ) )
-        {
-            return backend->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
-                                   _solution=solution, _prec = prec );
-        }
 
     //@}
 
@@ -1571,26 +1254,9 @@ private:
 
 private:
 
-    std::string M_name;
-    size_type M_pattern;
     space_1_ptrtype M_X1;
     space_2_ptrtype M_X2;
 
-    matrix_ptrtype M_matrix;
-
-    bool M_do_build;
-
-    list_block_type M_lb;
-    size_type M_row_startInMatrix,M_col_startInMatrix;
-
-    bool M_do_threshold;
-    value_type M_threshold;
-
-    std::vector<size_type> M_n_nz;
-    std::vector<size_type> M_n_oz;
-
-    std::vector<size_type> const* M_dofIdToContainerIdTest;
-    std::vector<size_type> const* M_dofIdToContainerIdTrial;
 };
 template<typename FE1,  typename FE2, typename ElemContType>
 BilinearForm<FE1, FE2, ElemContType>::BilinearForm( std::string name,
@@ -1604,34 +1270,10 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( std::string name,
                                                     value_type threshold,
                                                     size_type graph_hints )
 :
-    M_name( name ),
-    M_pattern( graph_hints ),
+    super( name, Xh, Yh, __M, rowstart, colstart, build, do_threshold, threshold, graph_hints ),
     M_X1( Xh ),
-    M_X2( Yh ),
-    M_matrix( __M ),
-    M_do_build( build ),
-    M_lb(),
-    M_row_startInMatrix( rowstart ),
-    M_col_startInMatrix( colstart ),
-    M_do_threshold( do_threshold ),
-    M_threshold( threshold )
-{
-    //tic();
-    boost::timer tim;
-    DVLOG(2) << "begin constructor with default listblock\n";
-
-    if ( !this->M_X1->worldComm().isActive() ) return;
-
-    if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=M_X1, _trial=M_X2 );
-    M_lb.push_back( Block ( 0, 0, 0, 0 ) );
-    datamap_ptrtype dmTest = (true)? M_matrix->mapRowPtr() : M_X1->dof();
-    datamap_ptrtype dmTrial = (true)? M_matrix->mapColPtr() : M_X2->dof();
-    this->setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_row_startInMatrix ) );
-    this->setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_col_startInMatrix ) );
-
-    DVLOG(2) << " - form init in " << tim.elapsed() << "\n";
-    DVLOG(2) << "begin constructor with default listblock done\n";
-}
+    M_X2( Yh )
+{}
 
 template<typename FE1,  typename FE2, typename ElemContType>
 BilinearForm<FE1, FE2, ElemContType>::BilinearForm( std::string name,
@@ -1645,32 +1287,18 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( std::string name,
                                                     value_type threshold,
                                                     size_type graph_hints )
 :
-    M_name( name ),
-    M_pattern( graph_hints ),
+    super( name, Xh, Yh, __M, __lb, rowstart, colstart, do_threshold, threshold, graph_hints ),
     M_X1( Xh ),
-    M_X2( Yh ),
-    M_matrix( __M ),
-    M_do_build( false ),
-    M_lb( __lb ),
-    M_row_startInMatrix( rowstart ),
-    M_col_startInMatrix( colstart ),
-    M_do_threshold( do_threshold ),
-    M_threshold( threshold )
-{
-    //tic();
-    // do nothing if process not active for this space
-    if ( !this->M_X1->worldComm().isActive() )
-        return;
+    M_X2( Yh )
+{}
 
-    if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=M_X1, _trial=M_X2 );
-}
 
 template<typename FE1,  typename FE2,  typename ElemContType>
 template<typename ExprT>
 void
 BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
-        bool init,
-        mpl::bool_<false> )
+                                              bool init,
+                                              mpl::bool_<false> )
 {
     // do nothing if process not active for this space
     if ( !this->M_X1->worldComm().isActive() )
@@ -1678,21 +1306,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
 
     if ( init )
     {
-        M_matrix->zero();
-#if 0
-        DVLOG(2) << "[BilinearForm::assign<false>] start\n";
-        typedef ublas::matrix_range<matrix_type> matrix_range_type;
-        typename list_block_type::const_iterator __bit = M_lb.begin();
-        typename list_block_type::const_iterator __ben = M_lb.end();
-
-        for ( ; __bit != __ben; ++__bit )
-        {
-            size_type g_ic_start = M_row_startInMatrix + __bit->globalRowStart();
-            size_type g_jc_start = M_col_startInMatrix + __bit->globalColumnStart();
-            M_matrix->zero( g_ic_start, g_ic_start + M_X1->nDof(),
-                            g_jc_start, g_jc_start + M_X2->nDof() );
-        }
-#endif
+        this->M_matrix->zero();
     }
 
     __expr.assemble( M_X1, M_X2, *this );
@@ -1704,8 +1318,8 @@ template<typename FE1,  typename FE2,  typename ElemContType>
 template<typename ExprT>
 void
 BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
-        bool init,
-        mpl::bool_<true> )
+                                              bool init,
+                                              mpl::bool_<true> )
 {
     // do nothing if process not active for this space
     if ( !this->M_X1->worldComm().isActive() )
@@ -1713,7 +1327,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
 
     DVLOG(2) << "BilinearForm::assign() start loop on test spaces\n";
 
-    if ( init ) M_matrix->zero();
+    if ( init ) this->M_matrix->zero();
 
     assign( __expr, mpl::bool_<true>(), mpl::bool_<( space_1_type::nSpaces > 1 && space_2_type::nSpaces > 1 )>() );
     DVLOG(2) << "BilinearForm::assign() stop loop on test spaces\n";
@@ -1766,8 +1380,17 @@ BilinearForm<FE1, FE2, ElemContType>::operator=( Expr<ExprT> const& __expr )
 {
     // loop(fusion::for_each) over sub-functionspaces in SpaceType
     // pass expression and initialize
+#if 1
     this->assign( __expr, true, mpl::bool_<mpl::or_< mpl::bool_< ( space_1_type::nSpaces > 1 )>,
                   mpl::bool_< ( space_2_type::nSpaces > 1 )> >::type::value >() );
+#else
+    using has_multiple_spaces_t = mpl::bool_<mpl::or_< mpl::bool_< ( space_1_type::nSpaces > 1 )>,
+                                             mpl::bool_< ( space_2_type::nSpaces > 1 )> >::type::value >;
+                     
+    //M_futs_assign.push_back( std::async( std::launch::async, &BilinearForm<FE1, FE2, ElemContType>::template assign<ExprT>, this, __expr, true, has_multiple_spaces_t() ) );
+    this->push_back( std::async( std::launch::async, [this,__expr](){ this->assign( __expr, true, has_multiple_spaces_t() ); } ) );
+    std::cout << "futs: " << this->M_fut_assign.size() << std::endl;
+#endif
     return *this;
 }
 
@@ -1781,18 +1404,6 @@ BilinearForm<FE1, FE2, ElemContType>::operator+=( Expr<ExprT> const& __expr )
                   mpl::bool_< ( space_2_type::nSpaces > 1 )> >::type::value >() );
     DVLOG(2) << "[BilinearForm::operator+=] stop\n";
     return *this;
-}
-
-
-template<typename FE1,  typename FE2, typename ElemContType>
-void
-BilinearForm<FE1,FE2,ElemContType>::zeroRows( std::vector<int> const& __dofs,
-                                              Vector<value_type> const&__values,
-                                              Vector<value_type>& rhs,
-                                              Feel::Context const& on_context,
-                                              double value_on_diagonal )
-{
-    M_matrix->zeroRows( __dofs, __values, rhs, on_context, value_on_diagonal );
 }
 
 
@@ -1973,6 +1584,12 @@ template<typename FE1,
          typename FE2,
          typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type> >
 using form2_type = Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType>;
+
+template<typename FE1,
+         typename FE2,
+         typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type> >
+using form2_t = form2_type<FE1,FE2,ElemContType>;
+
 } // feel
 
 #include <feel/feelvf/bilinearformcontext.hpp>

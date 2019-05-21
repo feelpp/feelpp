@@ -38,6 +38,11 @@ using Pdh_type=FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,
 template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
 using Pdh_ptrtype=std::shared_ptr<Pdh_type<MeshType,Order,Pts>>;
     
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+using Pdh_element_t=typename Pdh_type<MeshType,Order,Pts>::element_type;
+
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+using Pdh_element_type=Pdh_element_t<MeshType,Order,Pts>;
 
 /**
    Given a \p mesh, build a function space of discontinuous function which are

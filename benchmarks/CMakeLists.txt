@@ -1,37 +1,49 @@
-set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
+###  CMakeLists.txt; coding: utf-8 --- 
 
-project( benchmarks )
-
-set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
-feelpp_get_environment()
-
-add_custom_target(benchmarks)
-# set(petsc_SOLVER_OPTIONS "-ksp_monitor -pc_type asm -pc_asm_blocks 2" )
-#set(petsc_SOLVER_OPTIONS "-pc_type lu -pc_factor_mat_solver_package umfpack" )
-set(petsc_SOLVER_OPTIONS "-pc_type lu" )
-
-# When PETSc is compiled with external direct solvers (UMFPACK, SuperLU, etc.),
-# they can be selected like this:
-set(petsc_LU_SOLVER_OPTIONS " -pc_type lu " )
-set(petsc_LU_UMFPACK_SOLVER_OPTIONS " -pc_type lu -pc_factor_mat_solver_package umfpack -ksp_monitor " )
-
-set(petsc_JACOBI_SOLVER_OPTIONS " -pc_type jacobi" )
-
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#       Date: 07 Apr 2019
 #
-# By default, we use the following options (GMRES with ILU(6) preconditioner and
-# RCMK renumbering):
-set(petsc_ILU_SOLVER_OPTIONS " -pc_type ilu -pc_factor_levels 6 -pc_factor_mat_ordering rcm " )
+#  Copyright (C) 2019 Feel++ Consortium
+#
+# Distributed under the GPL(GNU Public License):
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#
 
-macro(feel_add_bench examplename)
 
-  set(targetname feel_bench_${examplename})
-  set(filename ${examplename}.cpp)
-  add_executable(${targetname} ${filename})
-  target_link_libraries(${targetname} feelpp ${FEELPP_LIBRARIES} )
-  set_property(TARGET ${targetname} PROPERTY LABELS benchmarks)
-  add_dependencies( benchmarks ${targetname} )
-endmacro(feel_add_bench)
+cmake_minimum_required(VERSION 3.7.2)
 
-foreach( DIR navierstokes darcy curl perf wrapper/python python compilation magnetostatic hdg mesh)
-  add_subdirectory( ${DIR} )
-endforeach()
+project(benchmarks)
+set(PROJECT_SHORTNAME "bench")
+
+# with this it is possible to compile applications/models from an installed
+# version of feel++. This is useful also for staged compilation for docker
+if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+  find_package(Feel++ PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
+  if(NOT FEELPP_FOUND)
+      message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+  endif()
+else()
+  feelpp_get_environment()
+  # usefull for pyfeelpp-toolboxes
+  set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
+endif()
+
+option(BENCHMARK_ENABLE_GTEST_TESTS "Enable building the unit tests which depend on gtest" OFF)
+set( BENCHMARK_ENABLE_GTEST_TESTS OFF )
+feelppGitSubmodulePrepare( benchmark )
+include_directories(${CMAKE_SOURCE_DIR}/benchmarks/benchmark/include)
+add_subdirectory(benchmark)
+add_subdirectory(feelpp)

@@ -16,7 +16,7 @@ _meshes={
     #'mesh(1,2,1)':Mesh_1DG2R1
 }
 
-def mesh( dim=2, geo=1, realdim=2, worldComm=core.Environment.worldCommPtr() ):
+def mesh( dim=2, geo=1, realdim=2, worldComm=None ):
     """create a mesh 
     The mesh is of topological dimension 'dim', in real dimension 'realdim' with geometric order 'geo'.
     The mesh is configured with a WorldComm which provides the parallel process layout.
@@ -26,6 +26,8 @@ def mesh( dim=2, geo=1, realdim=2, worldComm=core.Environment.worldCommPtr() ):
     realdim -- the real dimension (default: 2)
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     """
+    if worldComm is None:
+        worldComm=core.Environment.worldCommPtr()
     key='mesh('+str(dim)+','+str(geo)+','+str(realdim)+')'
     if key not in _meshes:
         raise RuntimeError('Mesh '+key+' no existing')

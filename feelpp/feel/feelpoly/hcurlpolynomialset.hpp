@@ -37,9 +37,17 @@ class HCurlPolynomialSet {};
  * @return true_type if hcurl conforming polynomialset, false_type otherwise
  */
 template<typename P>
-class is_hcurl_conforming : public boost::is_base_of<HCurlPolynomialSet,P>
+using is_hcurl_conforming = boost::is_base_of<HCurlPolynomialSet,P>;
+template<typename P>
+using is_hcurl_conforming_t = boost::is_base_of<HCurlPolynomialSet,P>;
+template<typename P>
+constexpr bool is_hcurl_conforming_v = boost::is_base_of<HCurlPolynomialSet,P>::value;
+
+template<typename P>
+constexpr bool isHCurlConforming()
 {
-};
+    return is_hcurl_conforming_v<P>;
+}
 
 }
 #endif

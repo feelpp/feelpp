@@ -52,7 +52,7 @@ class MeshStructured: public Mesh<Hypercube<2>>
     MeshStructured( MeshStructured const& ) = default;
     MeshStructured( MeshStructured && ) = default;
     MeshStructured& operator=( MeshStructured const& ) = default;
-    MeshStructured& operator=( MeshStructured && ) = default;
+    MeshStructured& operator=( MeshStructured && ) = delete;
 
     //!
     //!

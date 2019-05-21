@@ -101,7 +101,7 @@ struct TensorEvaluator<const TensorTraceOp<Dims, ArgType>, Device>
   };
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorEvaluator(const XprType& op, const Device& device)
-    : m_impl(op.expression(), device), m_traceDim(1), m_device(device)
+     : m_impl(op.expression(), device), m_device(device), m_traceDim(1)
   {
 
     EIGEN_STATIC_ASSERT((NumOutputDims >= 0), YOU_MADE_A_PROGRAMMING_MISTAKE);

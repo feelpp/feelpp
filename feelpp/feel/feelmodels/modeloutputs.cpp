@@ -28,14 +28,14 @@
 
 namespace Feel {
 
-ModelOutput::ModelOutput( WorldComm const& worldComm )
+ModelOutput::ModelOutput( worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( &worldComm )
+    super( worldComm )
 {}
 
-ModelOutput::ModelOutput( std::string name, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr )
+ModelOutput::ModelOutput( std::string name, pt::ptree const& p, worldcomm_ptr_t const& worldComm, std::string const& directoryLibExpr )
     :
-    M_worldComm( &worldComm ),
+    super( worldComm ),
     M_p( p ),
     M_directoryLibExpr( directoryLibExpr ),
     M_name( name ),
@@ -87,14 +87,14 @@ std::ostream& operator<<( std::ostream& os, ModelOutput const& o )
     return os;
 }
 
-ModelOutputs::ModelOutputs( WorldComm const& worldComm )
+ModelOutputs::ModelOutputs( worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( &worldComm )
+    super( worldComm )
 {}
 
-ModelOutputs::ModelOutputs( pt::ptree const& p, WorldComm const& worldComm )
+ModelOutputs::ModelOutputs( pt::ptree const& p, worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( &worldComm ),
+    super( worldComm ),
     M_p( p )
 {
     setup();
@@ -129,7 +129,7 @@ ModelOutputs::setup()
 ModelOutput
 ModelOutputs::getOutput( pt::ptree const& v, std::string const& name )
 {
-    ModelOutput o( name, v, *M_worldComm, M_directoryLibExpr );
+    ModelOutput o( name, v, this->worldCommPtr(), M_directoryLibExpr );
     LOG(INFO) << "adding output " << o;
     return o;
 }

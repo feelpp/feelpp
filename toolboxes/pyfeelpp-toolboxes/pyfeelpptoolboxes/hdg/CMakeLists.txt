@@ -33,4 +33,4 @@ endif()
 
 
 pybind11_add_module(_hdg  hdg.cpp )
-target_link_libraries( _hdg PRIVATE Feelpp::feelpp_toolbox_hdg_lib )
+target_link_libraries( _hdg PRIVATE Feelpp::feelpp_toolbox_hdg_poisson_lib )

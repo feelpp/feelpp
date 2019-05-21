@@ -451,22 +451,15 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
     // We cast to pointers so we can be sure that they succeeded
     // by comparing the result against NULL.
-    FEELPP_ASSERT( matrix   != NULL ).error( "non petsc matrix structure" );
-    FEELPP_ASSERT( precond  != NULL ).error( "non petsc matrix structure" );
-    FEELPP_ASSERT( solution != NULL ).error( "non petsc vector structure" );
-    FEELPP_ASSERT( rhs      != NULL ).error( "non petsc vector structure" );
+    DCHECK( matrix   != nullptr ) << "non petsc matrix structure";
+    DCHECK( precond  != nullptr ) << "non petsc matrix structure";
+    DCHECK( solution != nullptr ) << "non petsc vector structure";
+    DCHECK( rhs      != nullptr ) << "non petsc vector structure";
 
     int ierr=0;
     int its=0;
     PetscReal final_resid=0.;
 
-    // Close the matrices and vectors in case this wasn't already done.
-    if ( false ) // close already done in backend::solve()
-    {
-        matrix->close ();
-        precond->close ();
-        rhs->close ();
-    }
     solution->close ();
 
 

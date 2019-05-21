@@ -503,7 +503,7 @@ public:
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
      */
-    void addVector( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_size_type_value ) override;
+    void addVector( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_v<size_type> ) override;
 
     /**
      * \f$ U+=v \f$ where \p v is a std::vector<T>
@@ -920,7 +920,7 @@ public:
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen] (i1,i2,... is global process index)
      */
-    void addVector( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_size_type_value ) override;
+    void addVector( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_v<size_type> ) override;
 
     /**
      *  \f$v = x*y\f$: coefficient-wise multiplication

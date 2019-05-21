@@ -509,7 +509,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
     auto en = std::get<1>( rangeElements );
 
     // memory nodes
-    std::vector<size_type> new_node_numbers( this->domainSpace()->nLocalDof(),invalid_size_type_value );
+    std::vector<size_type> new_node_numbers( this->domainSpace()->nLocalDof(),invalid_v<size_type> );
     // the number of nodes on the new mesh, will be incremented
     size_type nNewNodes = 0, nNewElem  = 0, nNewFaces = 0;
     // memory for parallelism
@@ -543,7 +543,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
         if ( doParallelBuild && curelt.numberOfNeighborPartitions() > 0 )
         {
             // memory elt wich is send
-            mapActiveEltWhichAreGhostInOtherPartition[curelt.id()] = std::vector<size_type>(std::distance(itl,enl),invalid_size_type_value);
+            mapActiveEltWhichAreGhostInOtherPartition[curelt.id()] = std::vector<size_type>(std::distance(itl,enl),invalid_v<size_type>);
             // counter of mpi msg recv
             auto itneighbor = curelt.neighborPartitionIds().begin();
             auto const enneighbor = curelt.neighborPartitionIds().end();
@@ -559,7 +559,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
             for ( size_type localFaceDof = 0 ; localFaceDof < this->domainSpace()->dof()->nLocalDofOnFace() ; ++localFaceDof )
             {
                 const size_type globFaceDof = this->domainSpace()->dof()->localToGlobal( theFaceBase,localFaceDof,0 ).template get<0>();
-                if ( globFaceDof != invalid_size_type_value )
+                if ( globFaceDof != invalid_v<size_type> )
                     dofsInFace[f].insert( globFaceDof );
             }
         }
@@ -596,7 +596,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
                     mapGhostDofIdClusterToProcess[this->domainSpace()->dof()->mapGlobalProcessToGlobalCluster(ptid)] = ptid;
 
                 // add new node if not inserted before
-                if ( new_node_numbers[ptid] == invalid_size_type_value )
+                if ( new_node_numbers[ptid] == invalid_v<size_type> )
                     {
                         new_node_numbers[ptid] = nNewNodes;
 
@@ -913,18 +913,18 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
                     for ( int p = 0 ; itpt!=enpt ; ++itpt,++p )
                     {
                         auto const globclusterdofRecv = mapLocalToGlobalPointId[ mapPointIdToContainerId[(int)*itpt] ].template get<0>();
-                        size_type thenewptid=invalid_size_type_value;
+                        size_type thenewptid=invalid_v<size_type>;
                         if ( this->domainSpace()->dof()->dofGlobalClusterIsOnProc(globclusterdofRecv))
                         {
                             const size_type theoldptid = globclusterdofRecv - this->domainSpace()->dof()->firstDofGlobalCluster();
                             thenewptid = new_node_numbers[theoldptid];
-                            CHECK( thenewptid!=invalid_size_type_value ) << "--1---invalid point id theoldptid="<<theoldptid << " thenewptid="<<thenewptid<< "\n";
+                            CHECK( thenewptid!=invalid_v<size_type> ) << "--1---invalid point id theoldptid="<<theoldptid << " thenewptid="<<thenewptid<< "\n";
                         }
                         else if (mapGhostDofIdClusterToProcess.find(globclusterdofRecv) != mapGhostDofIdClusterToProcess.end() )
                         {
                             const size_type theoldptid = mapGhostDofIdClusterToProcess[globclusterdofRecv];
                             thenewptid = new_node_numbers[theoldptid];
-                            CHECK( thenewptid!=invalid_size_type_value ) << "--2---invalid point id\n";
+                            CHECK( thenewptid!=invalid_v<size_type> ) << "--2---invalid point id\n";
                         }
                         else
                         {
@@ -933,7 +933,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
                                 // add a new ghost point
                                 new_ghost_node_numbers[globclusterdofRecv] = nNewNodes;
                                 thenewptid = nNewNodes;
-                                CHECK( thenewptid!=invalid_size_type_value ) << "--3---invalid point id\n";
+                                CHECK( thenewptid!=invalid_v<size_type> ) << "--3---invalid point id\n";
                                 point_type __pt( nNewNodes, mapLocalToGlobalPointId[ mapPointIdToContainerId[(int)*itpt] ].template get<1>() );
                                 __pt.setProcessId( invalid_uint16_type_value );
                                 __pt.setProcessIdInPartition( myGhostEltBase.pidInPartition() );
@@ -944,11 +944,11 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
                             {
                                 // use present ghost point
                                 thenewptid = new_ghost_node_numbers[globclusterdofRecv];
-                                CHECK( thenewptid!=invalid_size_type_value ) << "--4---invalid point id\n";
+                                CHECK( thenewptid!=invalid_v<size_type> ) << "--4---invalid point id\n";
                             }
                             //elt.setPoint( p, M_mesh->point( new_ghost_node_numbers[globclusterdofRecv] ) );
                         }
-                        CHECK( thenewptid!=invalid_size_type_value ) << "invalid point id\n";
+                        CHECK( thenewptid!=invalid_v<size_type> ) << "invalid point id\n";
                         // add point to elt
                         elt.setPoint( p, M_mesh->point( thenewptid ) );
 

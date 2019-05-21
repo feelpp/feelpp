@@ -540,7 +540,7 @@ GraphCSR::createSubGraph( std::vector<size_type> const& _rows, std::vector<size_
     CHECK( idExtractCol.size() == subMapCol->nLocalDofWithGhost() ) << "invalid size " << idExtractCol.size() << " vs "<< subMapCol->nLocalDofWithGhost();
 
     // container ( with optimized access ) for global dof active on proc ( pair : globalProcessDof, globalClusterDof )
-    std::vector<std::pair<size_type,size_type> > relationDofActiveRow( theMapRow.nLocalDofWithoutGhost(),std::make_pair(invalid_size_type_value,invalid_size_type_value) );
+    std::vector<std::pair<size_type,size_type> > relationDofActiveRow( theMapRow.nLocalDofWithoutGhost(),std::make_pair(invalid_v<size_type>,invalid_v<size_type>) );
     // container ( map ) for non active global dof ( pair : globalProcessDof, globalClusterDof )
     std::map<size_type,std::pair<size_type,size_type> > relationDofNonActiveRow;
     size_type subDofGPCounter = 0;
@@ -556,7 +556,7 @@ GraphCSR::createSubGraph( std::vector<size_type> const& _rows, std::vector<size_
     }
 
     // container ( with optimized access ) for global dof active on proc
-    std::vector<size_type> relationDofActiveCol( theMapCol.nLocalDofWithoutGhost(),invalid_size_type_value );
+    std::vector<size_type> relationDofActiveCol( theMapCol.nLocalDofWithoutGhost(),invalid_v<size_type> );
     // container ( map ) for non active global dof
     std::map<size_type,size_type> relationDofNonActiveCol;
     subDofGPCounter = 0;
@@ -578,7 +578,7 @@ GraphCSR::createSubGraph( std::vector<size_type> const& _rows, std::vector<size_
     {
         size_type gdofRow = it->first;
 
-        size_type subDofRowGP = invalid_size_type_value, subDofRowGC = invalid_size_type_value;
+        size_type subDofRowGP = invalid_v<size_type>, subDofRowGC = invalid_v<size_type>;
         if ( theMapRow.dofGlobalClusterIsOnProc( gdofRow ) )
         {
             subDofRowGP = relationDofActiveRow[gdofRow-firstDofGCrow].first;
@@ -594,7 +594,7 @@ GraphCSR::createSubGraph( std::vector<size_type> const& _rows, std::vector<size_
             }
         }
         // ignore this row if dof not present in extraction
-        if ( subDofRowGC == invalid_size_type_value ) continue;
+        if ( subDofRowGC == invalid_v<size_type> ) continue;
 
         // Get the row of the sparsity pattern
         row_type const& datarow = it->second;
@@ -606,7 +606,7 @@ GraphCSR::createSubGraph( std::vector<size_type> const& _rows, std::vector<size_
         // iterate on each column dof
         for ( size_type dofColGC : datarow.get<2>() )
         {
-            size_type subDofColGC = invalid_size_type_value;
+            size_type subDofColGC = invalid_v<size_type>;
             if ( theMapCol.dofGlobalClusterIsOnProc( dofColGC ) )
             {
                 subDofColGC = relationDofActiveCol[dofColGC-firstDofGCcol];
@@ -620,7 +620,7 @@ GraphCSR::createSubGraph( std::vector<size_type> const& _rows, std::vector<size_
                 }
             }
             // add column indice if dof present in extraction
-            if ( subDofColGC != invalid_size_type_value )
+            if ( subDofColGC != invalid_v<size_type> )
                 subdatarow.get<2>().insert( subDofColGC );
         }
     }

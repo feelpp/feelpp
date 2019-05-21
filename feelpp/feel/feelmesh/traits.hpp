@@ -98,6 +98,16 @@ struct MeshTraits
     //@}
 };
 
+template<typename T>
+struct dimension_t : mpl::int_<decay_type<T>::nDim> {};
+template<typename T>
+constexpr uint16_type dimension_v = dimension_t<T>::value;
+
+template<typename T>
+struct real_dimension_t : mpl::int_<decay_type<T>::nRealDim> {};
+template<typename T>
+constexpr uint16_type real_dimension_v = real_dimension_t<T>::value;
+
 
 template<typename T>
 struct is_3d : mpl::bool_<decay_type<T>::nDim == 3 /*|| decay_type<T>::nRealDim ==3*/> {};

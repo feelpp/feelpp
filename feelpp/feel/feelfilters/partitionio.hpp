@@ -121,6 +121,8 @@ public:
     //@{
     typedef MeshType mesh_type;
     typedef typename mesh_type::value_type value_type;
+    using index_type = typename mesh_type::index_type;
+    using size_type = typename mesh_type::size_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type meshparts_type;
     typedef std::shared_ptr<meshparts_type> meshparts_ptrtype;

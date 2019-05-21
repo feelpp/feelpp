@@ -28,25 +28,26 @@
 
 namespace Feel {
 
-template<typename T>
-void StaticCondensation<T>::addLocalMatrix ( int* rows, int nrows,
-                                          int* cols, int ncols,
-                                          value_type* data,
+template<typename T, typename IndexT>
+void StaticCondensation<T,IndexT>::addLocalMatrix ( int* rows, int nrows,
+                                             int* cols, int ncols,
+                                             value_type* data,
                                              size_type K, size_type K2  )
 {
     std::lock_guard<std::mutex> guard(mutex_add_m);
-    if ( K == invalid_size_type_value ) return;
-    if ( K2 == invalid_size_type_value ) return;
+    //tic();
+    if ( K == invalid_v<size_type> ) return;
+    if ( K2 == invalid_v<size_type> ) return;
     auto key = std::make_pair(K,K2);
     auto entry = this->M_local_matrices[this->M_block_rowcol].find(key);
     if ( entry == this->M_local_matrices[this->M_block_rowcol].end() )
     {
-        this->M_local_matrices[this->M_block_rowcol][key] = raw_matrix_map_t( data, nrows, ncols );
+        this->M_local_matrices[this->M_block_rowcol][key].noalias() = raw_matrix_map_t( data, nrows, ncols );
         //cout << "SC inserting matrix entry [" << this->M_block_rowcol << "][" << key << "]=" << this->M_local_matrices[this->M_block_rowcol][key] << std::endl;
     }
     else
     {
-        this->M_local_matrices[this->M_block_rowcol][key]+=raw_matrix_map_t( data, nrows, ncols );
+        this->M_local_matrices[this->M_block_rowcol][key].noalias()+=raw_matrix_map_t( data, nrows, ncols );
         //cout << "SC adding matrix entry [" << this->M_block_rowcol << "][" << key << "]=" << this->M_local_matrices[this->M_block_rowcol][key] << std::endl;
     }
     //LOG(INFO) << "[" << this->M_block_rowcol << "][" << key << "]=" << this->M_local_matrices[this->M_block_rowcol][key];
@@ -57,25 +58,26 @@ void StaticCondensation<T>::addLocalMatrix ( int* rows, int nrows,
     //LOG(INFO) << "ROWS=" << raw_index_map_t( rows, nrows );
     //LOG(INFO) << "COLS=" << raw_index_map_t( cols, ncols );
 #endif
-
+    //toc("sc.addLocalMatrix",FLAGS_v>0);
 }
 
-template<typename T>
-void StaticCondensation<T>::addLocalVector ( int* rows, int nrows,
+template<typename T, typename IndexT>
+void StaticCondensation<T,IndexT>::addLocalVector ( int* rows, int nrows,
                                              value_type* data,
                                              size_type K, size_type K2  )
 {
     std::lock_guard<std::mutex> guard(mutex_add_v);
-    if ( K == invalid_size_type_value ) return;
+    //tic();
+    if ( K == invalid_v<size_type> ) return;
     auto entry = this->M_local_vectors[this->M_block_row].find(K);
     if ( entry == this->M_local_vectors[this->M_block_row].end() )
     {
-        this->M_local_vectors[this->M_block_row][K] = raw_vector_map_t( data, nrows );
+        this->M_local_vectors[this->M_block_row][K].noalias() = raw_vector_map_t( data, nrows );
         //cout << "SC vec inserting F entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
     }
     else
     {
-        this->M_local_vectors[this->M_block_row][K]+=raw_vector_map_t( data, nrows );
+        this->M_local_vectors[this->M_block_row][K].noalias()+=raw_vector_map_t( data, nrows );
         //cout << "SC vec add F entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
     }
 #if 0
@@ -83,6 +85,7 @@ void StaticCondensation<T>::addLocalVector ( int* rows, int nrows,
     // cout << "F add entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
     this->M_local_vrows[this->M_block_row][K] = raw_index_map_t( rows, nrows );
 #endif
+    //toc("sc.addLocalVector",FLAGS_v>0);
 }
 
 template class StaticCondensation<double>;

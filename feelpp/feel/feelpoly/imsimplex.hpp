@@ -58,9 +58,9 @@ typename mpl::if_<Feel::is_simplex<Convex>,
 template<int Dim,typename T>
 class IMSimplex
     :
-        public PointSetQuadrature<Simplex<Dim,1> , T>
+        public PointSetQuadrature<Simplex<Dim,1> , T, index_type>
 {
-    typedef PointSetQuadrature<Simplex<Dim,1> , T> super;
+    typedef PointSetQuadrature<Simplex<Dim,1> , T, index_type> super;
 public:
 
     /** @name Typedefs

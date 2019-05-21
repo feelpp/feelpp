@@ -20,11 +20,9 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#define USE_BOOST_TEST 1
-#if defined(USE_BOOST_TEST)
+
 #define BOOST_TEST_MODULE test_projtangent
 #include <feel/feelcore/testsuite.hpp>
-#endif
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelts/bdf.hpp>
@@ -36,6 +34,7 @@
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelfilters/unitcube.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/print.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
@@ -49,14 +48,13 @@ makeAbout()
                      "0.2",
                      "nD(n=2,3) test projtangent",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2014 Feel++ Consortium" );
+                     "Copyright (c) 2014-2017 Feel++ Consortium" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
 
-#if defined(USE_BOOST_TEST)
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() )
 BOOST_AUTO_TEST_SUITE( projtangent_suite )
 
@@ -130,25 +128,51 @@ BOOST_AUTO_TEST_CASE( test_2 )
 
 }
 
-BOOST_AUTO_TEST_SUITE_END()
-#else
-int main(int argc, char** argv )
+BOOST_AUTO_TEST_CASE( test_3 )
 {
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _desc=feel_options() );
+    BOOST_TEST_MESSAGE( "test_square" );
+    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_unitsquare/h_%2%/" )
+                                         % Feel::Environment::about().appName()
+                                         % option(_name="gmsh.hsize").as<double>() );
+    auto mesh = unitSquare();
+    double a0 = integrate( _range= boundaryfaces( mesh ), _expr= trans(one())*N() ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( a0, 1e-13);
+    BOOST_TEST_MESSAGE( "int 1^T*N=" << a0 << " (must be zero)");
+    double a = integrate( _range= boundaryfaces( mesh ), _expr= trans(one())*basisN() ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( a, 1e-13);
+    BOOST_TEST_MESSAGE( "int 1^T*N=" << a << " (must be zero)");
+    double b = integrate( _range= boundaryfaces( mesh ), _expr= trans(one())*basisT() ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( b, 1e-13);
+    BOOST_TEST_MESSAGE( "int 1^T*T=" << b << " (must be zero)");
+    BOOST_TEST_MESSAGE( "test_square done" );
+}
 
+BOOST_AUTO_TEST_CASE( test_4 )
+{
+    BOOST_TEST_MESSAGE( "test_cube" );
     Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_cube/h_%2%/" )
                                          % Feel::Environment::about().appName()
-                                         % doption(_name="gmsh.hsize") );
+                                         % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitCube();
-    double a = integrate( _range= boundaryfaces( mesh ), _expr= norm2(pT()*N()) ).evaluate()( 0,0 );
-    LOG_IF(WARNING, math::abs(a) < 1e-13 ) << "should be 0 and the value is " << a;
-
-    boost::mpi::timer ti;
-    integrate( _range= boundaryfaces( mesh ), _expr= norm2(pT()*N()) ).evaluate()( 0,0 );
-    LOG(INFO) << "time project tangent : " << ti.elapsed();
-    ti.restart();
-    integrate( _range= boundaryfaces( mesh ), _expr= norm2((eye<3,3>()-N()*trans(N()))*N()) ).evaluate()( 0,0 );
-    LOG(INFO) << "time project tangent by hand : " << ti.elapsed();
+    double a0 = integrate( _range= boundaryfaces( mesh ), _expr= trans(one())*N() ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( a0, 1e-13);
+    BOOST_TEST_MESSAGE( "int 1^T*N=" << a0 << " (must be zero)");
+    double a = integrate( _range= boundaryfaces( mesh ), _expr= trans(one())*basisN() ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( a, 1e-13);
+    BOOST_TEST_MESSAGE( "int 1^T*N=" << a << " (must be zero)");
+    double a1 = integrate( _range= boundaryfaces( mesh ), _expr= trans(basisT1())*basisN() ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( a1, 1e-13);
+    BOOST_TEST_MESSAGE( "int T1 . N=" << a1 << " (must be zero)");
+    double a2 = integrate( _range= boundaryfaces( mesh ), _expr= trans(basisT2())*basisN() ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( a2, 1e-13);
+    BOOST_TEST_MESSAGE( "int T2 . N=" << a2 << " (must be zero)");
+    // we have a unitary local basis where N=T1 \times T2, so N \cdot T1\times
+    // T2 = 1 and hence the integral should be equal to 1 on each 1 and 6
+    // over all the the cube
+    double b = integrate( _range= boundaryfaces( mesh ), _expr= trans(cross(basisT1(),basisT2()))*basisN() ).evaluate()( 0,0 );
+    BOOST_CHECK_CLOSE( b, 6, 1e-13);
+    BOOST_TEST_MESSAGE( "int 1^T*T=" << b << " (must be zero)");
+    BOOST_TEST_MESSAGE( "test_square done" );
 }
-#endif
+
+BOOST_AUTO_TEST_SUITE_END()
