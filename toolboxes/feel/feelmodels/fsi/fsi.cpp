@@ -796,7 +796,14 @@ FSI<FluidType,SolidType>::initInHousePreconditionerPCD_fluid( operatorpcdbase_fl
     CHECK( opPCD ) << "fails to cast OperatorPCD";
 
     if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
-        opPCD->addRangeDirichletBC( "FSI_FluidDirichlet", M_rangeFSI_fluid );
+    {
+        for ( auto const& rangeFacesMat : this->fluidModel()->rangeDistributionByMaterialName()->rangeMeshFacesByMaterial( "interface_fsi" ) )
+        {
+            std::string matName = rangeFacesMat.first;
+            auto const& rangeFaces = rangeFacesMat.second;
+            opPCD->addRangeDirichletBC( "FSI_FluidDirichlet_" + matName, rangeFaces );
+        }
+    }
     else
         opPCD->addRangeNeumannBC( "FSI_FluidNeumann", M_rangeFSI_fluid );
 }
@@ -806,8 +813,15 @@ FSI<FluidType,SolidType>::updateInHousePreconditionerPCD_fluid( operatorpcdbase_
 {
     if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
     {
-        CHECK( false ) << "TODO";
-        //myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, "FSI_FluidDirichlet", idv(M_fluidModel->meshVelocity2()) );
+        typedef Feel::Alternatives::OperatorPCD<typename fluid_type::space_fluid_velocity_type,typename fluid_type::space_fluid_pressure_type> op_pcd_type;
+        op_pcd_type * opPCD = dynamic_cast<op_pcd_type*>(&opPCDBase);
+        CHECK( opPCD ) << "fails to cast OperatorPCD";
+        for ( auto const& rangeFacesMat : this->fluidModel()->rangeDistributionByMaterialName()->rangeMeshFacesByMaterial( "interface_fsi" ) )
+        {
+            std::string matName = rangeFacesMat.first;
+            auto rhoExpr = this->fluidModel()->materialProperties()->density( matName ).expr();
+            opPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, "FSI_FluidDirichlet_" + matName, idv(M_fluidModel->meshVelocity2()) );
+        }
     }
 }
 
