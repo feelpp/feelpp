@@ -33,14 +33,15 @@ class VectorialBase {};
 class Tensor2Base {};
 
 template<typename T>
-struct polynomial_order: std::integral_constant<int,T::nOrder> {};
+struct polynomial_order: std::integral_constant<int,T::order()> {};
 
 template<typename T>
 constexpr bool polynomial_order_v = polynomial_order<T>::value;
 
 
 template<typename T>
-struct is_linear_polynomial: std::integral_constant<bool,(polynomial_order_v<T> == 1)> {};
+struct is_linear_polynomial: std::integral_constant<bool,T::is_linear> {};
+//struct is_linear_polynomial: std::integral_constant<bool,(polynomial_order_v<T> == 1)> {};
 
 template<typename T>
 constexpr bool is_linear_polynomial_v = is_linear_polynomial<T>::value;

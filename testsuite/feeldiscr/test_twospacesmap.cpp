@@ -27,7 +27,7 @@ BOOST_AUTO_TEST_CASE( onespace )
     auto Xh = Pchv<2>( mesh );
     auto u = Xh->element();
 
-    u.on( elements(mesh), 20*abs(sin(2*Pi*Px())*exp(Px()*Py()+Py()*Py()))*oneX()
+    u.on( _range=elements(mesh), _expr=20*abs(sin(2*Pi*Px())*exp(Px()*Py()+Py()*Py()))*oneX()
           + 20*abs(cos(2*Pi*Px())*exp(Px()*Py()+Py()*Py()))*oneY() );
 
     int size = u.size();
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE( onespace )
     auto my_map = TwoSpacesMap<space_type>( Rh, Xh );
 
     auto ur = Rh->element();
-    ur.on( elements(seqmesh), 20*abs(sin(2*Pi*Px())*exp(Px()*Py()+Py()*Py()))*oneX()
+    ur.on( _range=elements(seqmesh), _expr=20*abs(sin(2*Pi*Px())*exp(Px()*Py()+Py()*Py()))*oneX()
            + 20*abs(cos(2*Pi*Px())*exp(Px()*Py()+Py()*Py())
                     )*oneY() );
 
@@ -114,8 +114,8 @@ BOOST_AUTO_TEST_CASE( composite )
     auto p = U.template element<1>();
     auto expr_u = 20*sin(2*Pi*Px())*exp(Px()*Py()+Py()*Py())*oneX() + 20*cos(2*Pi*Px())*exp(Px()*Py()+Py()*Py())*oneY();
     auto expr_p = cos(Pi*Px()*pow(Py(),3))*exp( Px()-Py()*(Px() - Py() ) );
-    u.on( elements(mesh), expr_u );
-    p.on( elements(mesh), expr_p  );
+    u.on( _range=elements(mesh), _expr=expr_u );
+    p.on( _range=elements(mesh), _expr=expr_p  );
 
     int size = U.size();
     std::vector<int> randoms;
@@ -174,8 +174,8 @@ BOOST_AUTO_TEST_CASE( composite )
     auto Ur = Rh->element();
     auto ur = Ur.template element<0>();
     auto pr = Ur.template element<1>();
-    ur.on( elements(seqmesh), expr_u );
-    pr.on( elements(seqmesh), expr_p );
+    ur.on( _range=elements(seqmesh), _expr=expr_u );
+    pr.on( _range=elements(seqmesh), _expr=expr_p );
 
     for ( auto index : randoms )
     {
@@ -213,8 +213,8 @@ BOOST_AUTO_TEST_CASE( composite )
     auto vr = Rh0->element();
     auto qr = Rh1->element();
 
-    v.on( elements(mesh), expr_u );
-    q.on( elements(mesh), expr_p );
+    v.on( _range=elements(mesh), _expr=expr_u );
+    q.on( _range=elements(mesh), _expr=expr_p );
 
     my_map.template project<0>( vr, v );
     my_map.template project<1>( qr, q );

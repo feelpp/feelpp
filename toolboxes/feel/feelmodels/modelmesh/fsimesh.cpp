@@ -120,7 +120,7 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
 
 
 
-#if 1
+#if defined(FEELPP_HAS_GMSH_H)
         auto/*gmsh_ptrtype*/ geodesc = geo( _filename=this->geoPathFSI().string(),
                                             _prefix=this->prefix(),
                                             _worldcomm=this->worldComm().subWorldCommSeqPtr() );
@@ -136,8 +136,11 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
                                       _rebuild_partitions=false,
                                       _update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES),
                                       _directory=meshesdirectories.string() );
-
 #else
+        
+#endif
+#if 0
+        
         // copy geofile
         std::string nameMeshFile = this->mshPathFSI().stem().string() + ".geo";
         fs::path geoPathFSIcopy = meshesdirectories / fs::path(nameMeshFile);

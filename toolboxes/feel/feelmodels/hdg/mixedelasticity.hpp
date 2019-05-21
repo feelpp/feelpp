@@ -230,14 +230,18 @@ public:
 
     // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
-    Vh_ptr_t fluxSpace() const { return M_Vh; }
-    Wh_ptr_t potentialSpace() const { return M_Wh; }
+    FEELPP_DEPRECATED Vh_ptr_t fluxSpace() const { return M_Vh; }
+    Vh_ptr_t stressSpace() const { return M_Vh; }
+    FEELPP_DEPRECATED Wh_ptr_t potentialSpace() const { return M_Wh; }
+    Wh_ptr_t displacementSpace() const { return M_Wh; }
     Mh_ptr_t traceSpace() const { return M_Mh; }
     M0h_ptr_t traceSpaceOrder0() const { return M_M0h; }
     Ch_ptr_t constantSpace() const {return M_Ch;}
 
-    Vh_element_t fluxField() const { return M_up; }
-    Wh_element_t potentialField() const { return M_pp; }
+    FEELPP_DEPRECATED Vh_element_t const& fluxField() const { return M_up; }
+    Vh_element_t const& fieldStress() const { return M_up; }
+    FEELPP_DEPRECATED Wh_element_t potentialField() const { return M_pp; }
+    Wh_element_t fieldDisplacement() const { return M_pp; }
 
     integral_boundary_list_type integralBoundaryList() const { return M_IBCList; }
     int integralCondition() const { return M_integralCondition; }

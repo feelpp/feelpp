@@ -1,35 +1,35 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2010-05-06
-
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file refhypercube.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2010-05-06
- */
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 19 Aug 2017
+//! @copyright 2017 Feel++ Consortium
+//!
 #ifndef FEELPP_REFHYPERCUBE_HPP
 #define FEELPP_REFHYPERCUBE_HPP 1
 
+
+#include <memory>
+
+#include <feel/feelalg/glas.hpp>
+
+#include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/marker.hpp>
 
 namespace Feel
@@ -84,13 +84,19 @@ public:
     static const uint16_type nbPtsPerFace = super::nbPtsPerFace;
     static const uint16_type nbPtsPerVolume = super::nbPtsPerVolume;
 
+    
     typedef typename node<value_type>::type node_type;
     typedef typename matrix_node<value_type>::type points_type;
     typedef points_type matrix_node_type;
 
-    typedef typename node<value_type>::type normal_type;
-    typedef ublas::vector<normal_type> normals_type;
+    using normal_type = eigen_vector_type<RDim,value_type>;
+    using normals_type = vector_eigen_vector_type<RDim,value_type>;
     typedef typename normals_type::const_iterator normal_const_iterator;
+    
+    using edge_tangent_type = eigen_vector_type<RDim,value_type>;
+    using edge_tangents_type = vector_eigen_vector_type<RDim,value_type>;
+    typedef typename edge_tangents_type::const_iterator edge_tangent_const_iterator;
+
     typedef typename super::permutation_type permutation_type;
     //@}
 
@@ -325,6 +331,23 @@ public:
         return M_meas;
     }
 
+    template<typename ConvexType = GeoShape>
+    double faceMeasure( uint16_type f, std::enable_if_t<dimension_v<ConvexType> == 1>* = nullptr ) const
+        {
+            return 0;
+        }
+    template<typename ConvexType = GeoShape>
+    double faceMeasure( uint16_type f, std::enable_if_t<dimension_v<ConvexType> == 2>* = nullptr ) const
+        {
+            return 2;
+        }
+
+    template<typename ConvexType = GeoShape>
+    double faceMeasure( uint16_type f, std::enable_if_t<dimension_v<ConvexType> == 3>* = nullptr ) const
+        {
+            return 4;
+        }
+    
     /**
      * \return the vertices of the face \p f
      */
@@ -394,7 +417,7 @@ public:
      *
      * @return the n-th normal of the quad
      */
-    node_type const& normal( uint16_type __n ) const
+    normal_type const& normal( uint16_type __n ) const
     {
         return M_normals[__n];
     }
@@ -428,7 +451,7 @@ public:
      *
      * @return the n-th normal of the triangle
      */
-    node_type const& tangent( uint16_type __n ) const
+    edge_tangent_type const& tangent( uint16_type __n ) const
     {
         return M_tangents[__n];
     }
@@ -485,6 +508,10 @@ public:
     {
         return permutation_type();
     }
+    permutation_type permutation( uint16_type /*f*/, mpl::int_<1> ) const
+        {
+            return permutation_type();
+        }
     double h() const
     {
         // FIXME: should be computed once for all in constructor
@@ -859,31 +886,31 @@ private:
         {
             //M_normals[n].resize( nDim );
             //M_normals[n].clear();
-            M_normals[n] = ublas::scalar_vector<value_type>( nDim, 0. );
+            M_normals[n].setZero();
         }
 
         if ( nDim == 1 )
         {
-            M_normals[0][0] = -1;
-            M_normals[1][0] =  1;
+            M_normals[0](0) = -1;
+            M_normals[1](0) =  1;
         }
 
         if ( nDim == 2 )
         {
-            M_normals[0][1] = -1;
-            M_normals[1][0] =  1;
-            M_normals[2][1] =  1;
-            M_normals[3][0] = -1;
+            M_normals[0](1) = -1;
+            M_normals[1](0) =  1;
+            M_normals[2](1) =  1;
+            M_normals[3](0) = -1;
         }
 
         if ( nDim == 3 )
         {
-            M_normals[0][2] = -1;
-            M_normals[1][1] = -1;
-            M_normals[2][0] =  1;
-            M_normals[3][1] =  1;
-            M_normals[4][0] = -1;
-            M_normals[5][2] =  1;
+            M_normals[0](2) = -1;
+            M_normals[1](1) = -1;
+            M_normals[2](0) =  1;
+            M_normals[3](1) =  1;
+            M_normals[4](0) = -1;
+            M_normals[5](2) =  1;
         }
     }
 

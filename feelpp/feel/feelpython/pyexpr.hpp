@@ -21,6 +21,8 @@
 //! @date 17 Sep 2017
 //! @copyright 2017 Feel++ Consortium
 //!
+#ifndef FEELPP_PYEXPR_HPP
+#define FEELPP_PYEXPR_HPP 1
 
 #include <pybind11/embed.h>
 #include <iostream>
@@ -39,7 +41,7 @@ using namespace py::literals;
 //! expressions are of the form : \c f(x,y,z):x:y:z
 //!
 std::map<std::string,std::string> 
-pyexpr( std::string const& pycode, std::vector<std::string> const& vars );
+pyexpr( std::string const& pycode, std::vector<std::string> const& vars, std::map<std::string,std::string> const& locals );
 
 //!
 //! evaluate python code  from file \p pyfilename using local variables \p locals
@@ -71,3 +73,5 @@ void
 pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::map<std::string,std::string>> & locals );
 
 }
+
+#endif

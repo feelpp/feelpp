@@ -27,6 +27,7 @@
 
 #include <vector>
 #include <boost/property_tree/ptree.hpp>
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
 #include <feel/feelmodels/modelmarkers.hpp>
 
@@ -34,8 +35,9 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
-struct FEELPP_EXPORT ModelMaterial
+struct FEELPP_EXPORT ModelMaterial : public CommObject
 {
+    using super = CommObject;
     typedef ModelExpression mat_property_expr_type;
     static const uint16_type expr_order = mat_property_expr_type::expr_order;
     typedef mat_property_expr_type::expr_scalar_type expr_scalar_type;
@@ -44,13 +46,13 @@ struct FEELPP_EXPORT ModelMaterial
     typedef mat_property_expr_type::expr_matrix22_type expr_matrix22_type;
     typedef mat_property_expr_type::expr_matrix33_type expr_matrix33_type;
 
-    ModelMaterial( WorldComm const& worldComm = Environment::worldComm() );
+    ModelMaterial( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ModelMaterial( ModelMaterial const& ) = default;
     ModelMaterial( ModelMaterial&& ) = default;
     ModelMaterial& operator=( ModelMaterial const& ) = default;
     ModelMaterial& operator=( ModelMaterial && ) = default;
     ModelMaterial( std::string const& name, pt::ptree const& p,
-                   WorldComm const& worldComm = Environment::worldComm(),
+                   worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                    std::string const& directoryLibExpr = "" );
 
     std::string const& name() const { return M_name; }
@@ -69,6 +71,7 @@ struct FEELPP_EXPORT ModelMaterial
     void addPhysics( std::string const& s) { M_physics.insert( s ); }
 
     void setProperty( std::string const& property, pt::ptree const& p );
+    void setProperty( std::string const& property, std::string const& e );
 
     bool hasProperty( std::string const& prop ) const;
     bool hasPropertyConstant( std::string const& prop ) const;
@@ -85,6 +88,8 @@ struct FEELPP_EXPORT ModelMaterial
         return matProp.template hasExprMatrix<M,N>();
     }
 
+    std::map<std::string,mat_property_expr_type>& properties() { return M_materialProperties; }
+    std::map<std::string,mat_property_expr_type> const& properties() const { return M_materialProperties; }
     mat_property_expr_type const& property( std::string const& prop ) const;
     double propertyConstant( std::string const& prop ) const;
     expr_scalar_type const& propertyExprScalar( std::string const& prop ) const;
@@ -377,7 +382,6 @@ struct FEELPP_EXPORT ModelMaterial
 
 private:
 
-    WorldComm const * M_worldComm;
     std::string M_name; /*!< Material name*/
     pt::ptree M_p;
     std::string M_directoryLibExpr;
@@ -398,12 +402,13 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m );
  * key: mesh marker
  * name -> name of the materials - can be different
  */
-class FEELPP_EXPORT ModelMaterials: public std::map<std::string,ModelMaterial>
+class FEELPP_EXPORT ModelMaterials: public std::map<std::string,ModelMaterial>, public CommObject
 {
 public:
+    using super = CommObject;
     using value_type = std::map<std::string,ModelMaterial>::value_type;
-    ModelMaterials( WorldComm const& worldComm = Environment::worldComm() );
-    ModelMaterials( pt::ptree const& p, WorldComm const& worldComm = Environment::worldComm() );
+    ModelMaterials( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ModelMaterials( pt::ptree const& p, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     virtual ~ModelMaterials() = default;
     void setPTree( pt::ptree const& _p ) { M_p = _p; setup(); }
 
@@ -453,7 +458,6 @@ public:
 private:
     void setup();
 private:
-    WorldComm const* M_worldComm;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
 

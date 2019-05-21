@@ -41,6 +41,8 @@ public:
     using mesh_type = MeshType;
     typedef std::weak_ptr<mesh_type> mesh_ptrtype;
 
+    using index_type = typename MeshType::index_type;
+    using size_type = typename MeshType::size_type;
     using node_type = typename MeshType::node_type;
     typedef typename matrix_node<typename node_type::value_type>::type matrix_node_type;
     
@@ -602,7 +604,7 @@ Localization<MeshType>::isIn( std::vector<size_type> _ids, const node_type & _pt
 
 
 template<typename MeshType>
-boost::tuple<bool, size_type, typename MeshType::node_type>
+boost::tuple<bool, typename Localization<MeshType>::size_type, typename MeshType::node_type>
 Localization<MeshType>::searchElement( const node_type & p )
 {
 
@@ -655,9 +657,9 @@ Localization<MeshType>::searchElement( const node_type & p )
 }
 
 template<typename MeshType>
-boost::tuple<std::vector<bool>, size_type>
+boost::tuple<std::vector<bool>, typename Localization<MeshType>::size_type>
 Localization<MeshType>::run_analysis( const matrix_node_type & m,
-                                            const size_type & eltHypothetical )
+                                      const size_type & eltHypothetical )
 {
     // if no init then init with all geo point
     if ( !( this->isInit() || this->isInitBoundaryFaces() ) )
@@ -683,7 +685,7 @@ Localization<MeshType>::run_analysis( const matrix_node_type & m,
         {
             bool testHypothetical_find = false;
 
-            if ( eltHypothetical!=invalid_size_type_value )
+            if ( eltHypothetical!=invalid_v<size_type> )
                 {
                     boost::tie( testHypothetical_find,x_ref,dmin ) = this->isIn( currentEltHypothetical,ublas::column( m, i ) );
                 }
@@ -764,7 +766,7 @@ Localization<MeshType>::run_analysis( const matrix_node_type & m,
 
 
 template<typename MeshType>
-boost::tuple<bool, std::list<boost::tuple<size_type, typename MeshType::node_type> > >
+boost::tuple<bool, std::list<boost::tuple<typename Localization<MeshType>::size_type, typename MeshType::node_type> > >
 Localization<MeshType>::searchElements( const node_type & p )
 {
 
@@ -898,8 +900,8 @@ Localization<MeshType>::searchInKdTree( const node_type & p,
     //ListTri will contain the indices of elements (size_type)
     //and the number of occurence(uint)
     //std::list< std::pair<size_type, uint> > ListTri;
-    std::list< std::pair<size_type, uint> >::iterator itLT;
-    std::list< std::pair<size_type, uint> >::iterator itLT_end;
+    typename std::list< std::pair<size_type, uint> >::iterator itLT;
+    typename std::list< std::pair<size_type, uint> >:: iterator itLT_end;
 
     //create of ListTri : sort largest to smallest occurrences
     //In case of equality : if the point is closer than another then it will be before
@@ -1009,7 +1011,7 @@ Localization<MeshType>::isIn( size_type _id,
 
 
 template<typename MeshType>
-boost::tuple<bool, size_type, typename MeshType::node_type>
+boost::tuple<bool, typename Localization<MeshType>::size_type, typename MeshType::node_type>
 Localization<MeshType>::searchElement( const node_type & p,
         const matrix_node_type & setPoints,
         mpl::int_<1> /**/ )
@@ -1022,7 +1024,7 @@ Localization<MeshType>::searchElement( const node_type & p,
     double dmin=0.;
     node_type x_ref;
     auto mesh=this->mesh().lock();
-    size_type idEltFound = invalid_size_type_value;//mesh->beginElementWithId(mesh->worldComm().localRank())->id();
+    size_type idEltFound = invalid_v<size_type>;//mesh->beginElementWithId(mesh->worldComm().localRank())->id();
 
     std::list< std::pair<size_type, uint> > ListTri;
     searchInKdTree( p,ListTri );
@@ -1060,7 +1062,7 @@ Localization<MeshType>::searchElement( const node_type & p,
                 }
             else
                 {
-                    // idEltFound = invalid_size_type_value;//mesh->beginElementWithId(mesh->worldComm().localRank())->id();
+                    // idEltFound = invalid_v<size_type>;//mesh->beginElementWithId(mesh->worldComm().localRank())->id();
                     isin = false;
                     //x_ref=?
                 }
@@ -1072,7 +1074,7 @@ Localization<MeshType>::searchElement( const node_type & p,
 
 
 template<typename MeshType>
-boost::tuple<std::vector<bool>, size_type>
+boost::tuple<std::vector<bool>, typename Localization<MeshType>::size_type>
 Localization<MeshType>::run_analysis( const matrix_node_type & m,
         const size_type & eltHypothetical,
         const matrix_node_type & setPoints,
@@ -1093,7 +1095,7 @@ Localization<MeshType>::run_analysis( const matrix_node_type & m,
     {
 
         bool testHypothetical_find = false;
-        if ( eltHypothetical!=invalid_size_type_value )
+        if ( eltHypothetical!=invalid_v<size_type> )
         {
             boost::tie( testHypothetical_find,x_ref,dmin ) = this->isIn( currentEltHypothetical,ublas::column( m, i ),setPoints,mpl::int_<1>() );
         }

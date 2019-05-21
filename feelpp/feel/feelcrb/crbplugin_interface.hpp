@@ -105,7 +105,7 @@ public:
     //!
     //! @return the meshes
     //!
-    virtual std::vector<std::shared_ptr<MeshBase>> meshes() const = 0;
+    virtual std::vector<std::shared_ptr<MeshBase<>>> meshes() const = 0;
 
     //!
     //! @return the doftable with datamap
