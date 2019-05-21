@@ -29,6 +29,8 @@
 #ifndef __FEM_Context_HPP
 #define __FEM_Context_HPP 1
 
+
+#include <boost/preprocessor/cat.hpp>
 #include <feel/feelcore/context.hpp>
 #include <boost/mpl/vector_c.hpp>
 
@@ -56,105 +58,45 @@ const size_type DIV                      = ( 1<<15 );
 const size_type CURL                     = ( 1<<16 );
 const size_type MASS                     = ( 1<<20 );
 const size_type STIFFNESS                = ( 1<<21 );
+const size_type NORMAL_COMPONENT         = ( 1<<22 );
+const size_type LOCAL_BASIS              = ( 1<<23 );
+const size_type TRACE                    = ( 1<<24 );
+const size_type DYNAMIC                  = ( 1<<25 );
 
+#define FEELPP_DEFINE_CONTEXT(ctx_v,ctx)                                \
+    template<size_type Context>                                         \
+    using BOOST_PP_CAT(has_,ctx) = has_value<Context, ctx_v>;           \
+    template<size_type Context>                                         \
+    using BOOST_PP_CAT(BOOST_PP_CAT(has_,ctx),_t) = has_value<Context, ctx_v>; \
+    template<size_type Context>                                         \
+    constexpr bool BOOST_PP_CAT(has_,BOOST_PP_CAT(ctx,_v)) = has_value<Context, ctx_v>::value; \
+    inline bool BOOST_PP_CAT(has,ctx_v)( size_type c ) { return hasValue<ctx_v>( c ); }
 
-
-typedef mpl::vector_c<size_type,
-                      JACOBIAN, KB, KB2, FIRST_DERIVATIVE, GRAD, SECOND_DERIVATIVE, HESSIAN, LAPLACIAN,
-                      MEASURE, NORMAL, TANGENT, FIRST_DERIVATIVE_NORMAL, POINT,
-                      SYMM, UNSYMM,
-                      DIV,CURL,
-                      MASS, STIFFNESS> contexts;
-
-template<size_type Context>
-using has_jacobian = has_value<Context, JACOBIAN>;
-
-template<size_type Context>
-using has_kb = has_value<Context, KB>;
-
-template<size_type Context>
-using has_kb2 = has_value<Context, KB2>;
-
-template<size_type Context>
-using has_first_derivative = has_value<Context, FIRST_DERIVATIVE>;
-
-template<size_type Context>
-using has_grad = has_value<Context, GRAD>;
-
-template<size_type Context>
-struct has_second_derivative
-{
-    static const bool value = has_value<Context, SECOND_DERIVATIVE>::value;
-};
-template<size_type Context>
-struct has_hessian
-{
-    static const bool value = has_value<Context, HESSIAN>::value;
-};
-template<size_type Context>
-struct has_laplacian
-{
-    static const bool value = has_value<Context, LAPLACIAN>::value;
-};
-
-template<size_type Context>
-struct has_normal
-{
-    static const bool value = has_value<Context, NORMAL>::value;
-};
-template<size_type Context>
-struct has_tangent
-{
-    static const bool value = has_value<Context, TANGENT>::value;
-};
-
-template<size_type Context>
-struct has_first_derivative_normal
-{
-    static const bool value = has_value<Context, FIRST_DERIVATIVE_NORMAL>::value;
-};
-
-template<size_type Context>
-struct has_point
-{
-    static const bool value = has_value<Context, POINT>::value;
-};
-template<size_type Context>
-struct has_symm
-{
-    static const bool value = has_value<Context, SYMM>::value;
-};
-template<size_type Context>
-struct has_unsymm
-{
-    static const bool value = has_value<Context, UNSYMM>::value;
-};
-template<size_type Context>
-using has_div = has_value<Context, DIV>;
-
-template<size_type Context>
-using has_curl = has_value<Context, CURL>;
-
-template<size_type Context>
-struct has_mass
-{
-    static const bool value = has_value<Context, MASS>::value;
-};
-template<size_type Context>
-struct has_stifness
-{
-    static const bool value = has_value<Context, STIFFNESS>::value;
-};
-
-template<size_type Context>
-struct has_measure
-{
-    static const bool value = has_value<Context, MEASURE>::value;
-};
-
+FEELPP_DEFINE_CONTEXT(JACOBIAN,jacobian)
+FEELPP_DEFINE_CONTEXT(KB,kb)
+FEELPP_DEFINE_CONTEXT(KB2,kb2)
+FEELPP_DEFINE_CONTEXT(FIRST_DERIVATIVE,first_derivative)
+FEELPP_DEFINE_CONTEXT(GRAD,grad)
+FEELPP_DEFINE_CONTEXT(SECOND_DERIVATIVE,second_derivative)
+FEELPP_DEFINE_CONTEXT(HESSIAN,hessian)
+FEELPP_DEFINE_CONTEXT(LAPLACIAN,laplacian)
+FEELPP_DEFINE_CONTEXT(MEASURE,measure)
+FEELPP_DEFINE_CONTEXT(NORMAL,normal)
+FEELPP_DEFINE_CONTEXT(TANGENT,tangent)
+FEELPP_DEFINE_CONTEXT(FIRST_DERIVATIVE_NORMAL,first_derivative_normal)
+FEELPP_DEFINE_CONTEXT(POINT,point)
+FEELPP_DEFINE_CONTEXT(SYMM,symm)
+FEELPP_DEFINE_CONTEXT(UNSYMM,unsymm)
+FEELPP_DEFINE_CONTEXT(DIV,div)
+FEELPP_DEFINE_CONTEXT(CURL,curl)
+FEELPP_DEFINE_CONTEXT(MASS,mass)
+FEELPP_DEFINE_CONTEXT(STIFFNESS,stiffness)
+FEELPP_DEFINE_CONTEXT(NORMAL_COMPONENT,normal_component)
+FEELPP_DEFINE_CONTEXT(LOCAL_BASIS,local_basis)
+FEELPP_DEFINE_CONTEXT(TRACE,trace)
+FEELPP_DEFINE_CONTEXT(DYNAMIC,dynamic)
 
 } // vm
-
 using namespace vm;
 
 } // Feel

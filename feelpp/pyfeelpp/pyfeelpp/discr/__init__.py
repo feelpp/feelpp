@@ -2,6 +2,7 @@ import pyfeelpp.core as core
 import pyfeelpp.mesh as mesh
 from _discr import *
 
+
 _spaces={
     # Pch
     'Pch(1,1)':Pch_1D_P1,
@@ -33,10 +34,14 @@ _spaces={
     'Pdh(3,3)':Pdh_3D_P3,
 }
 
-def functionSpace( space="Pch", mesh=mesh.mesh(2,1), order=1):
+def functionSpace( mesh, space="Pch", order=1, worldscomm=None):
     """create a function space
     """
+    if worldscomm is None:
+        worldscomm=core.Environment.worldsComm(1)
     key=space+'('+str(mesh.dimension())+','+str(order)+')'
     if key not in _spaces:
         raise RuntimeError('FunctionSpace '+key+' not existing in dictionary')
-    return _spaces[key]( mesh )
+    return _spaces[key]( mesh=mesh, worldsComm=worldscomm )
+
+

@@ -127,7 +127,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
     // if same mesh but not same function space (different order)
     //if ( f.functionSpace()->mesh() == space->mesh() )
     //if ( same_mesh == INTERPOLATE_SAME_MESH )
-    if ( ( MeshBase* )f.functionSpace()->mesh().get() == ( MeshBase* )space->mesh().get() )
+    if ( ( MeshBase<>* )f.functionSpace()->mesh().get() == ( MeshBase<>* )space->mesh().get() )
     {
         elements_reference_wrapper_t<typename FunctionType::functionspace_type::mesh_type> rangeElt;
         bool hasMeshSupportPartialDomain = f.functionSpace()->dof()->hasMeshSupport() && f.functionSpace()->dof()->meshSupport()->isPartialSupport();
@@ -178,7 +178,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
 
 
 
-        typename f_fectx_type::id_type m_id( basis_type::nComponents1, basis_type::nComponents2);
+        typename f_fectx_type::id_type m_id;
         for ( ; it != en; ++ it )
         {
             domain_geoelement_type const& curElt = boost::unwrap_ref(*it);
@@ -267,7 +267,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
         typedef boost::multi_array<typename f_fectx_type::id_type,1> array_type;
         array_type fvalues( f.idExtents( *fectx ) );
 
-
+        using index_type = typename domain_mesh_type::index_type;
         typename domain_mesh_type::Inverse meshinv( f.functionSpace()->mesh() );
 
         /* initialisation of the mesh::inverse data structure */
@@ -285,10 +285,10 @@ interpolate( std::shared_ptr<SpaceType> const& space,
 
         std::vector<bool> dof_done( nbpts );
         std::fill( dof_done.begin(), dof_done.end(), false );
-        std::vector<boost::tuple<size_type,uint16_type > > itab;
+        std::vector<boost::tuple<index_type,uint16_type > > itab;
 
         size_type first_dof = space->dof()->firstDof();
-        typename f_fectx_type::id_type m_id( SpaceType::nComponents1, SpaceType::nComponents2 );
+        typename f_fectx_type::id_type m_id;
         for ( ; it != en; ++ it )
         {
             domain_geoelement_type const& curElt = boost::unwrap_ref(*it);

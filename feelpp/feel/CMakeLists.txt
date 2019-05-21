@@ -25,9 +25,10 @@ CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
 CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 
 
-SET(DIRS core timing math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models fmi hwsys event)
+SET(DIRS core timing math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models python fmi hwsys event)
 foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
+  message(STATUS "${dir}: ${FEELPP_SRCS}")
 endforeach()
 
 # add_subdirectory (feelcore)
@@ -52,13 +53,14 @@ endforeach()
 
 # Add target for dynamic library
 #add_library(feelpp-dynamic SHARED $<TARGET_OBJECTS:feelpp-core>)
-if(FEELPP_ENABLE_BUILD_STATIC)
-  add_library(feelpp STATIC options.cpp ${FEELPP_SRCS})
-else()
+#if(FEELPP_ENABLE_BUILD_STATIC)
+#  add_library(feelpp STATIC options.cpp ${FEELPP_SRCS})
+#else()
   add_library(feelpp SHARED options.cpp ${FEELPP_SRCS})
   set_target_properties(feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
-  set_property(TARGET ${target} PROPERTY MACOSX_RPATH ON)
-endif()
+  set_property(TARGET feelpp PROPERTY MACOSX_RPATH ON)
+  set_property(TARGET feelpp PROPERTY CXX_STANDARD ${FEELPP_STD_CPP})
+#endif()
 add_library(Feelpp::feelpp ALIAS feelpp )  # to match exported target
 set_target_properties(feelpp PROPERTIES OUTPUT_NAME "feelpp")
 #set_target_properties(feelpp PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")

@@ -9,17 +9,18 @@ _csms={
     'solid(3,2)':Solid_3DP2,
 }
 
-def solid( dim=2, orderDisp=1, buildMesh=True, worldComm=core.Environment.worldCommPtr() ):
+def solid( dim=2, orderDisp=1, buildMesh=True, worldComm=None):
     """create a solid toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
     orderDisp -- the polynomial order for the displacement (default: 1)
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     """
+    if worldComm is None:
+        worldComm=core.Environment.worldCommPtr()
     key='solid('+str(dim)+','+str(orderDisp)+')'
     if worldComm.isMasterRank():
         print(key)
     if key not in _csms:
         raise RuntimeError('Solid solver '+key+' not existing')
     return _csms[key]( "solid", buildMesh, worldComm )
-

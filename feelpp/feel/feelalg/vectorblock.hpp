@@ -85,14 +85,12 @@ public :
                                           {
                                               for( int i = 0; i < x->numberOfSpaces(); ++i, ++n )
                                               {
-                                                  cout << "creating dyn vector block (" << n << "," << i  << ")\n";
                                                   (*this)(n,0) = (*x)[i]->elementPtr();
                                               }
 
                                           },
                                           [&]( auto&& x )
                                           {
-                                              cout << "creating vector block (" << n  << ")\n";
                                               (*this)(n,0) = x->elementPtr();
                                               ++n;
                                           } )(e);
@@ -286,6 +284,9 @@ public:
      */
     //@{
 
+    void setBackend( backend_ptrtype const& b ) { M_backend = b; } 
+    backend_ptrtype backend() const { return M_backend; }
+    
     VectorBlockBase& operator=( VectorBlockBase const& vb ) = default;
     VectorBlockBase& operator=( VectorBlockBase && vb ) = default;
 
@@ -375,6 +376,7 @@ protected:
 
 private:
 
+    backend_ptrtype M_backend;
     vector_ptrtype M_vec;
 };
 
