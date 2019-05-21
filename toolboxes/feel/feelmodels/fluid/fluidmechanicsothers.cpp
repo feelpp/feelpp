@@ -1761,7 +1761,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
     // update operator PCD
     if ( M_preconditionerAttachPCD && this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") )
     {
-        Feel::cout << "rebuild M_preconditionerAttachPCD\n";
+        this->log("FluidMechanics","updateALEmesh", "rebuild operatorPCD");
         CHECK( this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") ) << "operator PCD does not init";
         typedef Feel::Alternatives::OperatorPCD<space_fluid_velocity_type,space_fluid_pressure_type> op_pcd_type;
         std::shared_ptr<op_pcd_type> myOpPCD =

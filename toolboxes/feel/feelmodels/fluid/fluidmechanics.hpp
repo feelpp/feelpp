@@ -391,6 +391,7 @@ public :
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    std::shared_ptr<RangeDistributionByMaterialName<mesh_type> > rangeDistributionByMaterialName() const { return M_rangeDistributionByMaterialName; }
 
     space_fluid_ptrtype const& functionSpace() const { return M_Xh; }
     space_fluid_ptrtype const& spaceVelocityPressure() const { return M_Xh; }
