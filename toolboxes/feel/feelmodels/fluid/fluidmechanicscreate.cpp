@@ -547,6 +547,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     this->initFluidOutlet();
     // init fluid inlet
     this->initFluidInlet();
+
+
+    this->updateBoundaryConditionsForUse();
 }
 //---------------------------------------------------------------------------------------------------------//
 
@@ -991,6 +994,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
         M_meshALE->init();
 
+        M_dofsVelocityInterfaceOnMovingBoundary = M_XhMeshVelocityInterface->dofs( markedfaces(this->mesh(),this->markersNameMovingBoundary() ) );
+
         // if restart else move submesh define from fluid mesh
         if ( this->hasFluidOutletWindkesselImplicit() )
         {
@@ -1014,8 +1019,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 #endif
     }
 
-    // call here because need meshale markers
-    this->updateBoundaryConditionsForUse();
 
     //-------------------------------------------------//
     // define start dof index ( lm , windkessel )
@@ -1786,6 +1789,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
             markersNeumann.insert( std::get<0>(bcOutlet) );
         }
         opPCD->addRangeNeumannBC( "FluidNeumann", markedfaces( this->mesh(), markersNeumann ) );
+
+        for ( auto const& f : M_addUpdateInHousePreconditionerPCD )
+            f.second.first( *opPCD );
 
         opPCD->initialize();
         this->algebraicFactory()->preconditionerTool()->attachOperatorPCD("pcd",opPCD);

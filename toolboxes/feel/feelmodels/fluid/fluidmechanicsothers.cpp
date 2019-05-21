@@ -1234,6 +1234,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
     else
         Feel::cout << "PCD NOT UP BC \n";
 
+    // updated from the outside
+    for ( auto const& f : M_addUpdateInHousePreconditionerPCD )
+        f.second.second( *myOpPCD, data );
+
     myOpPCD->updateFinish();
 
     this->log("FluidMechanics","updateInHousePreconditionerPCD", "finish" );
@@ -1753,6 +1757,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
             this->log("FluidMechanics","updateALEmesh",
                       (boost::format( "normWind %1% normDisp %2% normDispImposed %3% ") %normWind %normDisp %normDispImposed ).str() );
         }
+    }
+    // update operator PCD
+    if ( M_preconditionerAttachPCD && this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") )
+    {
+        Feel::cout << "rebuild M_preconditionerAttachPCD\n";
+        CHECK( this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") ) << "operator PCD does not init";
+        typedef Feel::Alternatives::OperatorPCD<space_fluid_velocity_type,space_fluid_pressure_type> op_pcd_type;
+        std::shared_ptr<op_pcd_type> myOpPCD =
+            std::dynamic_pointer_cast<op_pcd_type>( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
+        myOpPCD->assemble();
     }
 
     this->log("FluidMechanics","updateALEmesh", "finish");
@@ -2454,35 +2468,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         auto dofsMultiProcessToAdd = M_spaceLagrangeMultiplierPressureBC->dofs( therange, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("pressurebc-lm",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
-
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    if ( this->isMoveDomain() )
-    {
-        M_dofsVelocityInterfaceOnMovingBoundary = M_XhMeshVelocityInterface->dofs( markedfaces(mesh,this->markersNameMovingBoundary() ) );
-#if 0
-        for ( auto const& faceWrap : markedfaces(mesh,this->markersNameMovingBoundary() ) )
-        {
-            auto const& face = unwrap_ref( faceWrap );
-            auto facedof = M_XhMeshVelocityInterface->dof()->faceLocalDof( face.id() );
-            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-            {
-                M_dofsVelocityInterfaceOnMovingBoundary.insert( it->index() );
-            }
-        }
-#endif
-    }
-#endif
-
-#if 0
-    // update rangeDistributionByMaterialName
-    if ( this->isMoveDomain() )
-    {
-        RangeDistributionByMaterialName<mesh_type> rangeDistributionByMaterialName;
-        rangeDistributionByMaterialName.init( this->materialProperties()->rangeMeshElementsByMaterial() );
-        rangeDistributionByMaterialName.update( "moving-boundary", markedfaces(mesh,this->markersNameMovingBoundary()) );
-        M_rangeMeshFacesByMaterial[ "moving-boundary"] = rangeDistributionByMaterialName.rangeMeshFacesByMaterial( "moving-boundary" );
-    }
-#endif
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
