@@ -39,6 +39,7 @@
 #endif
 
 
+
 namespace Feel
 {
 
@@ -52,8 +53,8 @@ public :
 
     //static const size_type context = Expr::context|vm::POINT;
     static const size_type context = mpl::if_< boost::is_same< mpl::int_<iDim>, mpl::int_<MESH_FACES> >,
-                           mpl::int_<Expr::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT>,
-                           mpl::int_<Expr::context|vm::POINT> >::type::value;
+                                               mpl::int_<Expr::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT>,
+                                               mpl::int_<Expr::context|vm::POINT|vm::JACOBIAN> >::type::value;
 
 
     //expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT
@@ -71,7 +72,8 @@ public :
     typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
     typedef the_element_type geoelement_type;
     typedef typename geoelement_type::gm_type gm_type;
-
+    using index_type = typename geoelement_type::index_type;
+    using size_type = typename geoelement_type::size_type;
 
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
@@ -297,7 +299,7 @@ public :
         // get only usefull quad point and reoder
         const uint16_type nContextPt = indexLocalToQuad.size();
         const uint16_type __face_id_in_elt_0 = faceCur.pos_first();
-
+        DCHECK( __face_id_in_elt_0 != invalid_uint16_type_value ) << "Invalid face id fooor element " << faceCur.id() << " from element " << faceCur.element( 0 ).id();
         auto const __perm = faceCur.element( 0 ).permutation( __face_id_in_elt_0 );
         matrix_node_type const& quadPtsRef =  M_ppts[ __face_id_in_elt_0].find( __perm )->second;
         //matrix_node_type quadPtsRef = this->im().points();
@@ -320,12 +322,10 @@ public :
                                                  newquadPtsRef ) );
             }
         }
-
         gmc_ptrtype gmc( new gmc_type( faceCur.element( 0 ).gm(),
                                        faceCur.element( 0 ),
                                        __geopc,
                                        __face_id_in_elt_0  ) );
-
         return gmc;
     }
 
@@ -508,7 +508,7 @@ public :
                     testNodeRef = testAnalysis.template get<2>();
 #else
                     ublas::column(ptsReal,0 ) = gmc->xReal( q );
-                    if (notUseOptLocTest) testIdElt=invalid_size_type_value;
+                    if (notUseOptLocTest) testIdElt=invalid_v<size_type>;
                     auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,faceCur.vertices(),mpl::int_<0>());
                     testIdElt = resLocalisationTest.template get<1>();
                     testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
@@ -572,7 +572,7 @@ public :
                     testNodeRef = testAnalysis.template get<2>();
 #else
                     ublas::column(ptsReal,0 ) = gmc->xReal( q );
-                    if (notUseOptLocTest) testIdElt=invalid_size_type_value;
+                    if (notUseOptLocTest) testIdElt=invalid_v<size_type>;
                     auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,eltCur.vertices(),mpl::int_<0>());
                     testIdElt = resLocalisationTest.template get<1>();
                     testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
@@ -641,9 +641,9 @@ public :
         node_type trialNodeRef,testNodeRef;
 
         bool quadMeshIsSameThatTrialMesh=false,quadMeshIsSameThatTestMesh=false;
-        if ( dynamic_cast<void*>( const_cast<MeshBase*>( faceInit.mesh() ) ) == dynamic_cast<void*>( meshTrial.get() ) )
+        if ( dynamic_cast<void*>( const_cast<MeshBase<>*>( faceInit.mesh() ) ) == dynamic_cast<void*>( meshTrial.get() ) )
             quadMeshIsSameThatTrialMesh=true;
-        if ( dynamic_cast<void*>( const_cast<MeshBase*>( faceInit.mesh() ) ) == dynamic_cast<void*>( meshTest.get() ) )
+        if ( dynamic_cast<void*>( const_cast<MeshBase<>*>( faceInit.mesh() ) ) == dynamic_cast<void*>( meshTest.get() ) )
             quadMeshIsSameThatTestMesh=true;
 
 #if FEELPP_EXPORT_QUADLOCALIZATION
@@ -678,7 +678,7 @@ public :
                     ublas::column(ptsReal,0 ) = gmc->xReal( q );
                     if (!quadMeshIsSameThatTrialMesh)
                     {
-                        if (notUseOptLocTrial) trialIdElt=invalid_size_type_value;
+                        if (notUseOptLocTrial) trialIdElt=invalid_v<size_type>;
                         auto resLocalisationTrial = meshTrialLocalization->run_analysis(ptsReal,trialIdElt,faceCur.vertices(),mpl::int_<0>());
                         trialIdElt = resLocalisationTrial.template get<1>();
                         trialNodeRef = meshTrialLocalization->result_analysis().begin()->second.begin()->template get<1>();
@@ -693,7 +693,7 @@ public :
                     // search in test mesh
                     if (!quadMeshIsSameThatTestMesh)
                     {
-                        if (notUseOptLocTest) testIdElt=invalid_size_type_value;
+                        if (notUseOptLocTest) testIdElt=invalid_v<size_type>;
                         auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,faceCur.vertices(),mpl::int_<0>());
                         testIdElt = resLocalisationTest.template get<1>();
                         testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
@@ -782,9 +782,9 @@ public :
         node_type trialNodeRef,testNodeRef;
 
         bool quadMeshIsSameThatTrialMesh=false,quadMeshIsSameThatTestMesh=false;
-        if ( dynamic_cast<void*>( const_cast<MeshBase*>( eltInit.mesh() ) ) == dynamic_cast<void*>( meshTrial.get() ) )
+        if ( dynamic_cast<void*>( const_cast<MeshBase<>*>( eltInit.mesh() ) ) == dynamic_cast<void*>( meshTrial.get() ) )
             quadMeshIsSameThatTrialMesh=true;
-        if ( dynamic_cast<void*>( const_cast<MeshBase*>( eltInit.mesh() ) ) == dynamic_cast<void*>( meshTest.get() ) )
+        if ( dynamic_cast<void*>( const_cast<MeshBase<>*>( eltInit.mesh() ) ) == dynamic_cast<void*>( meshTest.get() ) )
             quadMeshIsSameThatTestMesh=true;
 
         element_iterator_type elt_it, elt_en;
@@ -809,7 +809,7 @@ public :
                     ublas::column(ptsReal,0 ) = gmc->xReal( q );
                     if (!quadMeshIsSameThatTrialMesh)
                     {
-                        if (notUseOptLocTrial) trialIdElt=invalid_size_type_value;
+                        if (notUseOptLocTrial) trialIdElt=invalid_v<size_type>;
                         auto resLocalisationTrial = meshTrialLocalization->run_analysis(ptsReal,trialIdElt,eltCur.vertices(),mpl::int_<0>());
                         trialIdElt = resLocalisationTrial.template get<1>();
                         trialNodeRef = meshTrialLocalization->result_analysis().begin()->second.begin()->template get<1>();
@@ -825,7 +825,7 @@ public :
                     // search in test mesh
                     if (!quadMeshIsSameThatTestMesh)
                     {
-                        if (notUseOptLocTest) testIdElt=invalid_size_type_value;
+                        if (notUseOptLocTest) testIdElt=invalid_v<size_type>;
                         auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,eltCur.vertices(),mpl::int_<0>());
                         testIdElt = resLocalisationTest.template get<1>();
                         testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
@@ -856,7 +856,7 @@ public :
                     for ( uint16_type ms=0; ms < geoeltTrial.nNeighbors(); ms++ )
                     {
                         const size_type neighborTrial_id = geoeltTrial.neighbor( ms ).first;
-                        if ( neighborTrial_id==invalid_size_type_value ) continue;
+                        if ( neighborTrial_id==invalid_v<size_type> ) continue;
 
                         auto resNeighboor = meshTrialLocalization->isIn( neighborTrial_id,gmc->xReal( q ),eltCur.vertices(),mpl::int_<1>() );
                         if (resNeighboor.get<0>())
@@ -877,7 +877,7 @@ public :
                     for ( uint16_type ms=0; ms < geoeltTest.nNeighbors(); ms++ )
                     {
                         const size_type neighborTest_id = geoeltTest.neighbor( ms ).first;
-                        if ( neighborTest_id==invalid_size_type_value ) continue;
+                        if ( neighborTest_id==invalid_v<size_type> ) continue;
 
                         auto resNeighboor = meshTestLocalization->isIn( neighborTest_id,gmc->xReal( q ),eltCur.vertices(),mpl::int_<1>() );
                         if (resNeighboor.get<0>())
@@ -1156,7 +1156,7 @@ struct bilinearformContext
     // test
     typedef typename FormType::gm_1_type gm_formTest_type;
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
-    typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc_formTest_type;
+    typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_formTest_type> gmc_formTest_type;
     typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
     typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
@@ -1164,7 +1164,7 @@ struct bilinearformContext
     // trial
     typedef typename FormType::gm_2_type gm_formTrial_type;
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
-    typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc_formTrial_type;
+    typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_formTrial_type> gmc_formTrial_type;
     typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
@@ -1248,7 +1248,7 @@ struct linearformContext
     typedef vf::detail::LinearForm<FE,VectorType,ElemContType> FormType;
     typedef typename FormType::gm_type gm_form_type;
     typedef typename FormType::mesh_test_element_type geoelement_form_type;
-    typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
+    typedef typename gm_form_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_form_type> gmc_form_type;
     typedef std::shared_ptr<gmc_form_type> gmc_form_ptrtype;
     typedef typename gm_form_type::precompute_type pc_form_type;
     typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;

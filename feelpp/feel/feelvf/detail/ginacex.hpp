@@ -52,7 +52,7 @@ public:
     //@{
     typedef Feel::vf::GiNaCBase super;
 
-    static const size_type context = vm::POINT|vm::JACOBIAN|vm::KB|vm::NORMAL;
+    static const size_type context = vm::DYNAMIC;
     static const bool is_terminal = false;
     static const uint16_type imorder = Order;
     static const bool imIsPoly = false;

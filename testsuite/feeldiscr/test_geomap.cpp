@@ -93,7 +93,7 @@ public:
                 refelem.points() ) );
 
         typename mesh_type::Inverse meshinv( M_mesh );
-
+        using size_type = typename mesh_type::size_type;
         /* initialisation of the mesh::inverse data structure */
         meshinv.addPoints( M_mesh->points() );
         meshinv.distribute();

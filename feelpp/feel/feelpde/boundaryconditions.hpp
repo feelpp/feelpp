@@ -27,6 +27,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelfilters/loadcsv.hpp>
@@ -162,26 +163,28 @@ ExpressionStringAtMarker::data( double time, double epsilon ) const
  */
 class BoundaryConditions
     :
-        public std::map<std::string,std::map<std::string,std::vector<ExpressionStringAtMarker>>>
+        public std::map<std::string,std::map<std::string,std::vector<ExpressionStringAtMarker>>>,
+        public CommObject
 {
     typedef std::map<std::string,std::map<std::string,std::vector<ExpressionStringAtMarker>>> super;
     
   public:
+    using super2 = CommObject;
     using value_type = typename super::value_type;
 
-    BoundaryConditions( WorldComm const& world = Environment::worldComm(), bool tryLoadBcFile = true );
+    BoundaryConditions( worldcomm_ptr_t const& world = Environment::worldCommPtr(), bool tryLoadBcFile = true );
     
     /**
      * constructor from an \c initializer_list<>
      */
-    BoundaryConditions( std::initializer_list<value_type> l, WorldComm const& world = Environment::worldComm() )
+    BoundaryConditions( std::initializer_list<value_type> l, worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
         super(l),
-        M_worldComm( world ),
+        super2( world ),
         M_prefix()
         {}
     
-    BoundaryConditions( std::string const& prefix, WorldComm const& world = Environment::worldComm(), bool tryLoadBcFile = true );
+    BoundaryConditions( std::string const& prefix, worldcomm_ptr_t const& world = Environment::worldCommPtr(), bool tryLoadBcFile = true );
     BoundaryConditions( BoundaryConditions const& b ) = default;
     BoundaryConditions( BoundaryConditions && b ) = default;
     BoundaryConditions& operator=( BoundaryConditions const& bc ) = default;
@@ -242,7 +245,7 @@ class BoundaryConditions
         for ( auto f : itFindType->second )
         {
             LOG(INFO) << "Building expr " << f.expression() << " for " << f.name();
-            m_f[f.name()] = std::make_pair(expr<Order>( f.expression(), "", M_worldComm, M_directoryLibExpr ), f.markers());
+            m_f[f.name()] = std::make_pair(expr<Order>( f.expression(), "", this->worldComm(), M_directoryLibExpr ), f.markers());
         }
         return std::move(m_f);
     }
@@ -274,11 +277,11 @@ class BoundaryConditions
             {
                 CHECK( f.hasExpression1() && f.hasExpression2() ) << "Invalid call";
                 LOG(INFO) << "Building expr1 " << f.expression1() << " for " << f.name();
-                m_f[f.name()] = std::make_pair(std::vector<Expr<GinacEx<2>>>(1,expr<Order>( f.expression1(), "", M_worldComm, M_directoryLibExpr )), f.markers() );
-                // m_f[f.name()].push_back( std::make_pair(expr<Order>( f.expression1(), "", M_worldComm, M_directoryLibExpr ), f.markers()) );
+                m_f[f.name()] = std::make_pair(std::vector<Expr<GinacEx<2>>>(1,expr<Order>( f.expression1(), "", this->worldComm(), M_directoryLibExpr )), f.markers() );
+                // m_f[f.name()].push_back( std::make_pair(expr<Order>( f.expression1(), "", this->worldComm(), M_directoryLibExpr ), f.markers()) );
                 LOG(INFO) << "Building expr2 " << f.expression2() << " for " << f.name();
-                m_f[f.name()].first.push_back(expr<Order>( f.expression2(), "", M_worldComm, M_directoryLibExpr ));
-                // m_f[f.name()].push_back( std::make_pair(expr<Order>( f.expression2(), "", M_worldComm, M_directoryLibExpr ), f.markers()) );
+                m_f[f.name()].first.push_back(expr<Order>( f.expression2(), "", this->worldComm(), M_directoryLibExpr ));
+                // m_f[f.name()].push_back( std::make_pair(expr<Order>( f.expression2(), "", this->worldComm(), M_directoryLibExpr ), f.markers()) );
             }
             return std::move(m_f);
         }
@@ -305,7 +308,7 @@ class BoundaryConditions
         for ( auto f : itFindType->second )
         {
             LOG(INFO) << "Building expr " << f.expression() << " for " << f.name();
-            m_f[f.name()] = std::make_pair(expr<d,1,2>( f.expression(), "", M_worldComm, M_directoryLibExpr ), f.markers());
+            m_f[f.name()] = std::make_pair(expr<d,1,2>( f.expression(), "", this->worldComm(), M_directoryLibExpr ), f.markers());
         }
         return std::move(m_f);
     }
@@ -334,10 +337,10 @@ class BoundaryConditions
         {
             CHECK( f.hasExpression1() && f.hasExpression2() ) << "Invalid call";
             LOG(INFO) << "Building expr " << f.expression() << " for " << f.name();
-            m_f[f.name()] = std::make_pair(std::vector<Expr<GinacMatrix<d,1,2>>>(1,expr<d,1,2>( f.expression1(), "", M_worldComm, M_directoryLibExpr )), f.markers() );
-            m_f[f.name()].first.push_back(expr<d,1,2>( f.expression2(), "", M_worldComm, M_directoryLibExpr ));
-            // m_f[f.marker()].push_back( expr<d,1,2>( f.expression1(), "", M_worldComm, M_directoryLibExpr ) );
-            // m_f[f.marker()].push_back( expr<d,1,2>( f.expression2(), "", M_worldComm, M_directoryLibExpr ) );
+            m_f[f.name()] = std::make_pair(std::vector<Expr<GinacMatrix<d,1,2>>>(1,expr<d,1,2>( f.expression1(), "", this->worldComm(), M_directoryLibExpr )), f.markers() );
+            m_f[f.name()].first.push_back(expr<d,1,2>( f.expression2(), "", this->worldComm(), M_directoryLibExpr ));
+            // m_f[f.marker()].push_back( expr<d,1,2>( f.expression1(), "", this->worldComm(), M_directoryLibExpr ) );
+            // m_f[f.marker()].push_back( expr<d,1,2>( f.expression2(), "", this->worldComm(), M_directoryLibExpr ) );
         }
         return std::move(m_f);
     }
@@ -364,7 +367,7 @@ class BoundaryConditions
         for ( auto f : itFindType->second )
         {
             LOG(INFO) << "Building expr " << f.expression() << " for " << f.name();
-            m_f[f.name()] = std::make_pair(expr<d,d,2>( f.expression(), "", M_worldComm, M_directoryLibExpr ), f.markers());
+            m_f[f.name()] = std::make_pair(expr<d,d,2>( f.expression(), "", this->worldComm(), M_directoryLibExpr ), f.markers());
         }
         return std::move(m_f);
     }
@@ -376,7 +379,6 @@ class BoundaryConditions
     std::pair<bool,CastType> param( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param, CastType const& defaultValue ) const;
 
   private:
-    WorldComm const& M_worldComm;
     std::string M_prefix;
     pt::ptree M_pt;
     std::string M_directoryLibExpr;

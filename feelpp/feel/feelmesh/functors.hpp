@@ -34,13 +34,14 @@
 
 namespace Feel
 {
-class MeshBase;
+template<typename IndexT> class MeshBase;
 /// \cond detail
 namespace detail
 {
+template<typename MeshT>
 struct UpdateMesh
 {
-    UpdateMesh( MeshBase const* m )
+    UpdateMesh( MeshT const* m )
         :
         M_mesh( m )
     {}
@@ -50,7 +51,7 @@ struct UpdateMesh
         element.setMesh( M_mesh );
     }
 private:
-    MeshBase const* M_mesh;
+    MeshT const* M_mesh;
 
 };
 

@@ -42,7 +42,9 @@ enum class strategy
     //! monolithic solve
     monolithic=0,
     // static condensation solve strategy
-    static_condensation=1
+    static_condensation=1,
+    //! local solve
+    local=2
 };
 
 }

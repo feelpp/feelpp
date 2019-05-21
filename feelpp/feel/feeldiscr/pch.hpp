@@ -63,6 +63,14 @@ template<typename MeshType,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
          int Tag = 0>
 using Pch_ptrtype = typename meta::Pch<MeshType,Order,T,Pts,Tag>::ptrtype;
+
+template<typename MeshType,int Order,typename T = double, template<class, uint16_type, class> class Pts = PointSetEquiSpaced, int Tag = 0>
+using Pch_element_t=typename Pch_type<MeshType,Order, T,Pts, Tag>::element_type;
+
+template<typename MeshType,int Order,typename T = double,template<class, uint16_type, class> class Pts = PointSetEquiSpaced, int Tag = 0>
+using Pch_element_type=Pch_element_t<MeshType,Order,T,Pts, Tag>;
+
+
 /**
  * \fn Pch<k,MeshType>
  *

@@ -1090,7 +1090,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
     /* Write faces */
     if ( boption( _name="exporter.ensightgold.save-face" ) )
     {
-        for( std::pair<const std::string, std::vector<size_type> > & m : mesh->markerNames() )
+        for( auto & m : mesh->markerNames() )
         {
             this->writeGeoMarkedFaces(fh, mesh, m);
         }
@@ -1157,7 +1157,7 @@ ExporterEnsightGold<MeshType, N>::writeGeoHeader(MPI_File fh) const
 
 template<typename MeshType, int N>
 void
-ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<size_type> > & m) const
+ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<index_type> > & m) const
 {
     int size;
     char buffer[80];

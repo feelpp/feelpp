@@ -69,7 +69,7 @@ namespace detail
   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   @see
 */
-template<typename ElementType, typename T = double>
+template<typename ElementType, typename T = double, typename IndexT = uint32_type>
 class Elements 
 {
 public:
@@ -79,6 +79,8 @@ public:
      */
     //@{
 
+    using index_type = IndexT;
+    using size_type = index_type;
     
     /**
      * Element type depending on the dimension, @see geoelement.hpp
@@ -86,12 +88,12 @@ public:
      * dimension of the geometric space.
      */
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<3> >,
-                              mpl::identity<GeoElement3D<ElementType::nRealDim, ElementType, T> >,
+                              mpl::identity<GeoElement3D<ElementType::nRealDim, ElementType, T, IndexT> >,
             typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<2> >,
-                              mpl::identity<GeoElement2D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim>, T> >,
+                              mpl::identity<GeoElement2D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim,IndexT>, T, IndexT> >,
             typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<1> >,
-                              mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim>, T> >,
-                              mpl::identity<GeoElement0D<ElementType::nRealDim, SubFaceOfNone<ElementType::nDim>/*ElementType*/, T> > >::type>::type>::type::type element_type;
+                              mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim, IndexT>, T, IndexT> >,
+                              mpl::identity<GeoElement0D<ElementType::nRealDim, SubFaceOfNone<ElementType::nDim, IndexT>/*ElementType*/, T, IndexT> > >::type>::type>::type::type element_type;
 
 
     typedef std::unordered_map<size_type,element_type> elements_type;

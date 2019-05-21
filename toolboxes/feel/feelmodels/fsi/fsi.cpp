@@ -202,7 +202,7 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
         submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
 
-    typedef SubMeshData smd_type;
+    typedef SubMeshData<typename FluidType::mesh_type::index_type> smd_type;
     typedef std::shared_ptr<smd_type> smd_ptrtype;
     smd_ptrtype smd( new smd_type(FM->mesh()) );
     for ( auto const& ew : elements(submeshStruct) )
@@ -212,7 +212,8 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
         size_type idElt2 = FM->meshALE()->dofRelationShipMap()->geoElementMap().at( theface.element0().id() ).first;
         //std::cout << " e.G() " << e.G() << " other.G() " <<  theface.G() << std::endl;
         auto const& theface2 = FM->mesh()->element(idElt2).face(theface.pos_first());
-        smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), theface2.id() ) );
+        //smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), theface2.id() ) );
+        smd->bm.insert( { e.id(), theface2.id() } );
     }
     submeshStruct->setSubMeshData( smd );
 
