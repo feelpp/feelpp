@@ -391,6 +391,7 @@ public :
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    std::shared_ptr<RangeDistributionByMaterialName<mesh_type> > rangeDistributionByMaterialName() const { return M_rangeDistributionByMaterialName; }
 
     space_fluid_ptrtype const& functionSpace() const { return M_Xh; }
     space_fluid_ptrtype const& spaceVelocityPressure() const { return M_Xh; }
@@ -408,8 +409,6 @@ public :
 
     element_normalstress_ptrtype & fieldNormalStressPtr() { return M_fieldNormalStress; }
     element_normalstress_type const& fieldNormalStress() const { return *M_fieldNormalStress; }
-    element_normalstress_ptrtype & fieldNormalStressRefMeshPtr() { return M_fieldNormalStressRefMesh; }
-    element_normalstress_type const& fieldNormalStressRefMesh() const { return *M_fieldNormalStressRefMesh; }
     element_normalstress_ptrtype & fieldWallShearStressPtr() { return M_fieldWallShearStress; }
     element_normalstress_type const& fieldWallShearStress() const { return *M_fieldWallShearStress; }
 
@@ -465,10 +464,14 @@ public :
     // post process
     std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
     bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
+    std::set<std::string> postProcessFieldOnTraceExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+    bool hasPostProcessFieldOnTraceExported( std::string const& fieldName ) const { return M_postProcessFieldOnTraceExported.find( fieldName ) != M_postProcessFieldOnTraceExported.end(); }
+
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
     void exportFields( double time );
     bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
+    bool updateExportedFieldsOnTrace( export_trace_ptrtype exporter, std::set<std::string> const& fields, double time );
     void setDoExport(bool b);
     void exportMeasures( double time );
 private :
@@ -705,8 +708,9 @@ public :
 
     //___________________________________________________________________________________//
 
-    // update normal stress in reference ALE mesh
-    void updateNormalStressOnCurrentMesh( std::set<std::string> const& listMarkers = std::set<std::string>() );
+    // update normal stress
+    //void updateNormalStressOnCurrentMesh();
+    void updateNormalStressOnCurrentMesh( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate );
     // update normal stress in reference ALE mesh
     void updateNormalStressOnReferenceMesh( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate );
 private :
@@ -716,7 +720,7 @@ private :
 public :
     void updateNormalStressOnReferenceMeshOptPrecompute( faces_reference_wrapper_t<mesh_type> const& rangeFaces );
 
-    void updateWallShearStress();
+    void updateWallShearStress( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate );
     void updateVorticity();
 
     template < typename ExprT >
@@ -833,6 +837,13 @@ public :
     void initInHousePreconditioner();
     void updateInHousePreconditioner( DataUpdateLinear & data ) const override;
     void updateInHousePreconditioner( DataUpdateJacobian & data ) const override;
+    typedef OperatorPCDBase<typename space_fluid_velocity_type::value_type> operatorpcdbase_type;
+    //typedef std::shared_ptr<operatorpcdbase_type> operatorpcdbase_ptrtype;
+    void addUpdateInHousePreconditionerPCD( std::string const& name, std::function<void(operatorpcdbase_type &)> const& init,
+                                            std::function<void(operatorpcdbase_type &,DataUpdateBase &)> const& up = std::function<void(operatorpcdbase_type &,DataUpdateBase &)>() )
+        {
+            M_addUpdateInHousePreconditionerPCD[name] = std::make_pair(init,up);
+        }
 private :
     void updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
     void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol, DataUpdateBase & data ) const;
@@ -905,6 +916,7 @@ protected:
     mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
     MeshMover<mesh_type> M_mesh_mover;
+    trace_mesh_ptrtype M_meshTrace;
     // fluid space and solution
     space_fluid_ptrtype M_Xh;
     element_fluid_ptrtype M_Solution;
@@ -925,7 +937,7 @@ protected:
     //----------------------------------------------------
     // normak boundary stress ans WSS
     space_normalstress_ptrtype M_XhNormalBoundaryStress;
-    element_normalstress_ptrtype M_fieldNormalStress, M_fieldNormalStressRefMesh;
+    element_normalstress_ptrtype M_fieldNormalStress;
     element_normalstress_ptrtype M_fieldWallShearStress;
     // vorticity space
     space_vorticity_ptrtype M_XhVorticity;
@@ -1034,12 +1046,14 @@ protected:
     //----------------------------------------------------
     // post-process field exported
     std::set<std::string> M_postProcessFieldExported;
+    std::set<std::string> M_postProcessFieldOnTraceExported;
     std::set<std::string> M_postProcessUserFieldExported;
 
     // exporter option
     bool M_isHOVisu;
     // exporter fluid
     export_ptrtype M_exporter;
+    export_trace_ptrtype M_exporterTrace;
     export_trace_ptrtype M_exporterFluidOutlet;
     export_trace_ptrtype M_exporterLagrangeMultiplierPressureBC;
     // exporter fluid ho
@@ -1086,6 +1100,7 @@ protected:
     //----------------------------------------------------
     bool M_preconditionerAttachPMM, M_preconditionerAttachPCD;
     mutable bool M_pmmNeedUpdate;
+     std::map<std::string,std::pair<std::function<void(operatorpcdbase_type &)>,std::function<void(operatorpcdbase_type &, DataUpdateBase &)> > > M_addUpdateInHousePreconditionerPCD;
 
 }; // FluidMechanics
 
