@@ -325,7 +325,9 @@ private :
     void solveImpl3();
 
     //---------------------------------------------------------------------------------------------------------//
-
+    typedef typename fluid_type::operatorpcdbase_type operatorpcdbase_fluid_type;
+    void initInHousePreconditionerPCD_fluid( operatorpcdbase_fluid_type & opPCD ) const;
+    void updateInHousePreconditionerPCD_fluid( operatorpcdbase_fluid_type & opPCD, DataUpdateBase & data ) const;
 private :
 
     fluid_ptrtype M_fluidModel;
