@@ -179,13 +179,13 @@ protected:
 public:
 
     // constructor
-    MixedPoisson( std::string const& prefix = "mixedpoisson",
+    MixedPoisson( std::string const& prefix = "hdg.poisson",
                   worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                   std::string const& subPrefix = "",
                   ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     MixedPoisson( self_type const& MP ) = default;
-    static self_ptrtype New( std::string const& prefix = "mixedpoisson",
+    static self_ptrtype New( std::string const& prefix = "hdg.poisson",
                              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );

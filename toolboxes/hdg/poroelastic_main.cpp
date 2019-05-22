@@ -35,7 +35,7 @@ runApplicationPoroelastic()
     decltype( IPtr( _domainSpace=Pdhms<OrderT>(mesh), _imageSpace=Pdhms<OrderT>(mesh) ) ) Idhv_el;
 
     std::list<std::string> listSubmesh;
-    std::string unseparatedList = soption( "mixedelasticity.gmsh.submesh");
+    std::string unseparatedList = soption( "hdg.elasticity.gmsh.submesh");
 
     char help;
     std::string nameSubmesh;
@@ -57,14 +57,14 @@ runApplicationPoroelastic()
     }
 
 
-    if ( soption( "gmsh.submesh" ).empty() && soption("mixedelasticity.gmsh.submesh").empty() )
+    if ( soption( "gmsh.submesh" ).empty() && soption("hdg.elasticity.gmsh.submesh").empty() )
     {
         mpe_type MPE( mesh, mesh, mesh, mesh);
         MPE.run( Idh_el, Idhv_el, Idh_poi, Idhv_poi );
     }
     else if ( soption( "gmsh.submesh" ).empty() )
     {
-        Feel::cout << "Using submesh for Elasticity: " << soption("mixedelasticity.gmsh.submesh") << std::endl;
+        Feel::cout << "Using submesh for Elasticity: " << soption("hdg.elasticity.gmsh.submesh") << std::endl;
         auto cmeshElasticity = createSubmesh( mesh, markedelements(mesh,listSubmesh ), Environment::worldComm() );
 
         Idh_el = IPtr( _domainSpace=Pdhv<OrderT>(cmeshElasticity), _imageSpace=Pdhv<OrderT>(mesh) );
@@ -74,7 +74,7 @@ runApplicationPoroelastic()
         MPE.run( Idh_el, Idhv_el, Idh_poi, Idhv_poi );
 
     }
-    else if ( soption("mixedelasticity.gmsh.submesh").empty() )
+    else if ( soption("hdg.elasticity.gmsh.submesh").empty() )
     {
         Feel::cout << "Using submesh for Poisson: " << soption("gmsh.submesh") << std::endl;
         auto cmeshPoisson = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
@@ -88,7 +88,7 @@ runApplicationPoroelastic()
     else
     {
         Feel::cout << "Using submesh for Poisson: " << soption("gmsh.submesh") << std::endl;
-        Feel::cout << "Using submesh for Elasticity: " << soption("mixedelasticity.gmsh.submesh") << std::endl;
+        Feel::cout << "Using submesh for Elasticity: " << soption("hdg.elasticity.gmsh.submesh") << std::endl;
 
         auto cmeshPoisson = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
         auto cmeshElasticity = createSubmesh( mesh, markedelements(mesh,listSubmesh ), Environment::worldComm() );
@@ -99,7 +99,7 @@ runApplicationPoroelastic()
         Idh_el = IPtr( _domainSpace=Pdhv<OrderT>(cmeshElasticity), _imageSpace=Pdhv<OrderT>(mesh) );
         Idhv_el = IPtr( _domainSpace=Pdhms<OrderT>(cmeshElasticity), _imageSpace=Pdhms<OrderT>(mesh) );
 
-        auto meshCommon = (soption("gmsh.submesh")<soption("mixedelasticity.gmsh.submesh")) ? cmeshPoisson : cmeshElasticity ;
+        auto meshCommon = (soption("gmsh.submesh")<soption("hdg.elasticity.gmsh.submesh")) ? cmeshPoisson : cmeshElasticity ;
 
         mpe_type MPE( cmeshPoisson, cmeshElasticity, meshCommon, mesh);
         MPE.run( Idh_el, Idhv_el, Idh_poi, Idhv_poi );
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
                            _argv=argv,
                            _about=makeAbout(),
                            _desc=peoptions,
-                           _desc_lib=FeelModels::makeMixedPoissonElasticityLibOptions("mixedpoissonelasticity").add(feel_options())
+                           _desc_lib=FeelModels::makeMixedPoissonElasticityLibOptions("hdg.poroelasticity").add(feel_options())
                            );
 
     int dimension = ioption(_name="case.dimension");
