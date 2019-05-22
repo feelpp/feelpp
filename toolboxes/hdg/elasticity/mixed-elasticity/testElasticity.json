@@ -6,7 +6,7 @@
     {
         "omega":
         {
-            "name":"copper",
+            "name":"simulation_domain",
 			"rho":"1",
             "lambda":"1",
 	    	"mu":"1"
@@ -27,7 +27,7 @@
             {
                 "top":
                 {
-                     "expr":"{0, 0, 3+2*x}:x" // "{1+6*x,2*y,0, 2*y,1+2*x,0, 0,0,3+2*x}:x:y:z"
+                     "expr":"{0, 0, 3+2*x}:x"
                 },
                 "bottom":
                 {
