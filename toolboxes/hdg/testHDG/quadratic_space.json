@@ -18,14 +18,14 @@
 			{
 				"omega":
 				{
-					"expr":"-3*x*x*10:x:t"
+					"expr":"-3*x*x*(10-t):x:t"
 				}
 			},
             "SourceTerm":
             {
                 "omega":
                 {
-					"expr":"3*x+6*1*(10-t):x:y:t"
+					"expr":"3*x*x+6*1*(10-t):x:y:t"
                 }
             },
             "Dirichlet":

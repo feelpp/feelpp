@@ -30,10 +30,7 @@
             },
             "Dirichlet":
             {
-                "top":
-				{
-					"expr":"-3*x*(10-t*t):x:t"
-				},
+
                 "bottom":
 				{
 					"expr":"-3*x*(10-t*t):x:t"
@@ -46,6 +43,16 @@
 					"expr":"0.0"
 				}
 			}
+        },
+        "flux":
+        {
+            "Integral":
+            {
+                "top":
+                {
+                    "expr":"3*(10-t*t):t"
+                }
+            }
         },
 		"Exact solution":
 		{
