@@ -785,6 +785,23 @@ public:
             auto upper = M_el_l2g.right.upper_bound( globaldof_type(GlobalDofId,2) );
             return std::make_pair( lower, upper );
         }
+    //!
+    //! get the neighbor dofs
+    //!
+    std::set<globaldof_type> globalNeighbors( size_type GlobalDofId, bool add_self = true ) const
+        {
+            std::set<globaldof_type> neigh;
+            auto const& [beg,end] = globalDof( GlobalDofId );
+            //neigh.reserve( std::distance( beg, end ) * nLocalDof() );
+            for( auto it = beg; it != end; ++ it )
+            {
+                for( auto const& [lid,gid]  : localDof( it->second.elementId() ) )
+                    if ( gid.index() != GlobalDofId || add_self )
+                        neigh.emplace( gid.index() );
+            }
+
+            return neigh;
+        }
     /**
      * \return the specified entries of the globalToLocal table
      *
