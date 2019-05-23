@@ -700,7 +700,8 @@ Geo0D<Dim, T, IndexT>::Geo0D( index_type id, std::shared_ptr<node_type> const& _
       M_gtag( 0 ),
       M_uv( 2 )
 {
-    DCHECK( __p.size() == Dim ) << "invalid node dimension : " << __p.size() << " and should be " << Dim;
+
+    DCHECK( __p && __p->size() == Dim ) << "invalid node dimension : " << __p->size() << " and should be " << Dim;
 
     this->setOnBoundary( boundary );
 }
