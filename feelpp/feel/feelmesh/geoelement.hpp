@@ -553,6 +553,12 @@ public:
         super2(),
         M_facept( nullptr )
     {}
+    GeoElement0D( size_type id, geo0d_type const& n,  bool boundary = false, bool isView = false )
+        :
+        super( id, n, boundary, false, isView ),
+        super2(),
+        M_facept( nullptr )
+    {}
 
     //! Declares item id and if it is on boundary, and provides coordinate
     //! data.

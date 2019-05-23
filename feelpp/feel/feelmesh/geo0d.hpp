@@ -59,11 +59,9 @@ class Geo0D
     : public boost::equality_comparable<Geo0D<Dim, T>>,
       public boost::less_than_comparable<Geo0D<Dim, T>>,
       public boost::less_than_comparable<Geo0D<Dim, T>, IndexT>,
-      public GeoEntity<Simplex<0, 1, Dim>, T, IndexT>,
-      public node<T, Dim>::type
+      public GeoEntity<Simplex<0, 1, Dim>, T, IndexT>
 {
     typedef GeoEntity<Simplex<0, 1, Dim>, T, IndexT> super;
-    typedef typename node<T, Dim>::type super2;
 
   public:
     typedef Geo0D<Dim, T, IndexT> self_type;
@@ -71,7 +69,7 @@ class Geo0D
     static const bool is_simplex = true;
     typedef T value_type;
     typedef typename matrix_node<value_type>::type matrix_node_type;
-    typedef super2 node_type;
+    using node_type = typename node<T, Dim>::type;
     typedef typename node<T, 2>::type parametric_node_type;
     using index_type = typename super::index_type;
     using size_type = typename super::size_type;
@@ -117,7 +115,7 @@ class Geo0D
      */
     Geo0D( value_type x, value_type y, value_type z )
         : super( 0, MESH_ENTITY_INTERNAL ),
-          super2( Dim ),
+        M_node( std::make_shared<node_type>( Dim ) ),
           M_is_vertex( false ),
           M_mesh( nullptr )
     {
@@ -140,7 +138,37 @@ class Geo0D
      * @param is_vertex true if the point is a vertex
      *
      */
-    Geo0D( index_type id, node_type const& __x, bool boundary = false, bool is_vertex = false );
+    Geo0D( index_type id, node_type const& __x, bool boundary = false, bool is_vertex = false )
+        :
+        Geo0D( id, std::make_shared<node_type>( __x ), boundary, is_vertex )
+    {}
+
+    /**
+     * constructor where I give the id, the point coordinate and I declare
+     * if the Geo0D object is on a boundary
+     *
+     * @param id identifier
+     * @param __x node coordinate (shared_ptr)
+     * @param boundary true if on the boundary, false otherwise
+     * @param is_vertex true if the point is a vertex
+     */
+
+    Geo0D( index_type id, std::shared_ptr<node_type> const& __x, bool boundary = false, bool is_vertex = false );
+
+    /**
+     * constructor where I give the id, the point coordinate and I declare
+     * if the Geo0D object is on a boundary
+     *
+     * @param id identifier
+     * @param __x another Geo0D object
+     * @param boundary true if on the boundary, false otherwise
+     * @param is_vertex true if the point is a vertex
+     * @param isView true if the node is shared
+     */
+    Geo0D( index_type id, self_type const& __x, bool boundary = false, bool is_vertex = false, bool isView = false )
+        :
+        Geo0D( id, isView? __x.M_node : std::make_shared<node_type>( __x.node() ), boundary, is_vertex )
+    {}
 
     /**
      * the point coordinate
@@ -150,7 +178,7 @@ class Geo0D
      */
     Geo0D( node_type const& __x )
         : super( 0, MESH_ENTITY_INTERNAL ),
-          super2( __x ),
+        M_node( std::make_shared<node_type>( __x ) ),
           M_is_vertex( false ),
           M_mesh( nullptr )
     {
@@ -165,7 +193,7 @@ class Geo0D
     template <typename AE>
     Geo0D( ublas::vector_expression<AE> const& __expr )
         : super( 0, MESH_ENTITY_INTERNAL ),
-          super2( __expr ),
+        M_node( std::make_shared<node_type>( __expr ) ),
           M_is_vertex( false )
     {
     }
@@ -185,14 +213,24 @@ class Geo0D
     template <typename AE>
     Geo0D& operator=( ublas::vector_expression<AE> const& expr )
     {
-        super2::operator=( expr );
+        M_node->operator=( expr );
         return *this;
     }
     template <typename AE>
     Geo0D& operator+=( ublas::vector_expression<AE> const& expr )
     {
-        super2::operator+=( expr );
+        M_node->operator+=( expr );
         return *this;
+    }
+
+    value_type& operator[]( int i )
+    {
+        return M_node->operator[]( i );
+    }
+
+    value_type operator[]( int i ) const
+    {
+        return M_node->operator[]( i );
     }
 
     value_type& operator()( int i )
@@ -261,9 +299,9 @@ class Geo0D
     /**
      * @return the node data structure
      */
-    Geo0D const& node() const
+    /*Geo0D*/node_type const& node() const
     {
-        return *this;
+        return *M_node;//*this;
     }
 
     /**
@@ -272,7 +310,7 @@ class Geo0D
     matrix_node_type G() const
     {
         matrix_node_type __G( Dim, 1 );
-        ublas::column( __G, 0 ) = *this;
+        ublas::column( __G, 0 ) = *M_node;//this;
         return __G;
     }
 
@@ -347,7 +385,7 @@ class Geo0D
      */
     void setNode( node_type const& __n )
     {
-        *this = __n;
+        *M_node = __n;
     }
 
     /**
@@ -561,9 +599,9 @@ class Geo0D
     void serialize( Archive& ar, const unsigned int version )
     {
         ar& boost::serialization::base_object<super>( *this );
-        ar& boost::serialization::base_object<super2>( *this );
         //ar & M_is_vertex;
         //ar & M_is_parametric;
+        ar & M_node;
         ar& M_markers;
         /*
             ar & M_gdim;
@@ -573,6 +611,8 @@ class Geo0D
     }
 
   private:
+    std::shared_ptr<node_type> M_node;
+
     index_type M_master_id;
     self_type const* M_master_vertex;
 
@@ -598,7 +638,7 @@ typedef Geo0D<3> Point;
 template <uint16_type Dim, typename T, typename IndexT>
 Geo0D<Dim, T, IndexT>::Geo0D()
     : super( 0, MESH_ENTITY_INTERNAL ),
-      super2( Dim ),
+      M_node( std::make_shared<node_type>( Dim ) ),
       M_master_id( 0 ),
       M_is_vertex( false ),
       M_is_parametric( false ),
@@ -607,13 +647,13 @@ Geo0D<Dim, T, IndexT>::Geo0D()
       M_gtag( 0 ),
       M_uv( 2 )
 {
-    this->clear();
+    M_node->clear();
 }
 
 template <uint16_type Dim, typename T, typename IndexT>
 Geo0D<Dim, T, IndexT>::Geo0D( index_type id, bool boundary, bool is_vertex )
     : super( id, MESH_ENTITY_INTERNAL ),
-      super2( Dim ),
+      M_node( std::make_shared<node_type>( Dim ) ),
       M_master_id( id ),
       M_is_vertex( is_vertex ),
       M_mesh( nullptr ),
@@ -621,14 +661,14 @@ Geo0D<Dim, T, IndexT>::Geo0D( index_type id, bool boundary, bool is_vertex )
       M_gtag( 0 ),
       M_uv( 2 )
 {
-    this->clear();
+    M_node->clear();
     this->setOnBoundary( boundary );
 }
 
 template <uint16_type Dim, typename T, typename IndexT>
 Geo0D<Dim, T, IndexT>::Geo0D( index_type id, value_type x, value_type y, value_type z, bool boundary, bool is_vertex )
     : super( id, MESH_ENTITY_INTERNAL ),
-      super2( Dim ),
+      M_node( std::make_shared<node_type>( Dim ) ),
       M_master_id( id ),
       M_is_vertex( is_vertex ),
       M_is_parametric( false ),
@@ -649,9 +689,9 @@ Geo0D<Dim, T, IndexT>::Geo0D( index_type id, value_type x, value_type y, value_t
 }
 
 template <uint16_type Dim, typename T, typename IndexT>
-Geo0D<Dim, T, IndexT>::Geo0D( index_type id, node_type const& __p, bool boundary, bool is_vertex )
+Geo0D<Dim, T, IndexT>::Geo0D( index_type id, std::shared_ptr<node_type> const& __p, bool boundary, bool is_vertex )
     : super( id, MESH_ENTITY_INTERNAL ),
-      super2( __p ),
+      M_node( __p ),
       M_master_id( id ),
       M_is_vertex( is_vertex ),
       M_is_parametric( false ),
@@ -660,8 +700,7 @@ Geo0D<Dim, T, IndexT>::Geo0D( index_type id, node_type const& __p, bool boundary
       M_gtag( 0 ),
       M_uv( 2 )
 {
-    FEELPP_ASSERT( __p.size() == Dim )
-    ( __p )( Dim ).error( "invalid node" );
+    DCHECK( __p.size() == Dim ) << "invalid node dimension : " << __p.size() << " and should be " << Dim;
 
     this->setOnBoundary( boundary );
 }
@@ -716,41 +755,41 @@ template <typename T, typename IndexT>
 inline T
     distance( Geo0D<1, T, IndexT> const& p1, Geo0D<1, T, IndexT> const& p2 )
 {
-    return ublas::norm_2( p1 - p2 );
+    return ublas::norm_2( p1.node() - p2.node() );
 }
 
 template <typename T, typename IndexT>
 inline T
 distance( Geo0D<2, T, IndexT> const& p1, Geo0D<2, T, IndexT> const& p2 )
 {
-    return ublas::norm_2( p1 - p2 );
+    return ublas::norm_2( p1.node() - p2.node() );
 }
 
 template <typename T, typename IndexT>
 inline T
 distance( Geo0D<3, T, IndexT> const& p1, Geo0D<3, T, IndexT> const& p2 )
 {
-    return ublas::norm_2( p1 - p2 );
+    return ublas::norm_2( p1.node() - p2.node() );
 }
 template <typename T, typename IndexT>
 inline Geo0D<1, T, IndexT>
 middle( Geo0D<1, T, IndexT> const& p1, Geo0D<1, T, IndexT> const& p2 )
 {
-    return ( p1 + p2 ) / 2;
+    return ( p1.node() + p2.node() ) / 2;
 }
 
 template <typename T, typename IndexT>
 inline Geo0D<2, T, IndexT>
 middle( Geo0D<2, T, IndexT> const& p1, Geo0D<2, T, IndexT> const& p2 )
 {
-    return ( p1 + p2 ) / 2;
+    return ( p1.node() + p2.node() ) / 2;
 }
 
 template <typename T, typename IndexT>
 inline Geo0D<3, T, IndexT>
 middle( Geo0D<3, T, IndexT> const& p1, Geo0D<3, T, IndexT> const& p2 )
 {
-    return ( p1 + p2 ) / 2;
+    return ( p1.node() + p2.node() ) / 2;
 }
 
 template <typename E1, typename E2>
