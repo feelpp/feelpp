@@ -155,16 +155,6 @@ public:
     // mesh velocity (whole domain)
     typedef typename mesh_ale_type::ale_map_element_type element_meshvelocity_type;
     typedef std::shared_ptr<element_meshvelocity_type> element_meshvelocity_ptrtype;
-    // mesh velocity on FSI boundary
-    typedef FunctionSpace<mesh_type, bases<basis_fluid_u_type> > space_meshvelocityonboundary_type;
-    typedef std::shared_ptr<space_meshvelocityonboundary_type> space_meshvelocityonboundary_ptrtype;
-    typedef typename space_meshvelocityonboundary_type::element_type element_meshvelocityonboundary_type;
-    typedef std::shared_ptr<element_meshvelocityonboundary_type> element_meshvelocityonboundary_ptrtype;
-    // save a ALE part of normal stress (usefull semi implicit)
-    typedef typename mesh_ale_type::ale_map_functionspacedisc_type space_alemapdisc_type;
-    typedef typename mesh_ale_type::ale_map_functionspacedisc_ptrtype space_alemapdisc_ptrtype;
-    typedef typename mesh_ale_type::ale_map_elementdisc_type element_alemapdisc_type;
-    typedef typename mesh_ale_type::ale_map_elementdisc_ptrtype element_alemapdisc_ptrtype;
     // case where structure displacement is scalar!
     typedef typename space_mesh_disp_type::component_functionspace_type space_mesh_disp_scalar_type;
     typedef std::shared_ptr<space_mesh_disp_scalar_type> space_mesh_disp_scalar_ptrtype;
@@ -484,20 +474,10 @@ public :
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     mesh_ale_ptrtype meshALE() { return M_meshALE; }
     mesh_ale_ptrtype const& meshALE() const { return M_meshALE; }
-
     element_mesh_disp_ptrtype meshDisplacementOnInterface() { return M_meshDisplacementOnInterface; }
     element_meshvelocity_type & meshVelocity() { return *M_meshALE->velocity(); }
-    element_meshvelocityonboundary_type & meshVelocity2() { return *M_meshVelocityInterface; }
-    element_meshvelocityonboundary_ptrtype meshVelocity2Ptr() { return M_meshVelocityInterface; }
-
     element_meshvelocity_type const & meshVelocity() const { return *M_meshALE->velocity(); }
-    element_meshvelocityonboundary_type const & meshVelocity2() const { return *M_meshVelocityInterface; }
-    element_meshvelocityonboundary_ptrtype const & meshVelocity2Ptr() const { return M_meshVelocityInterface; }
-
-    //element_stress_ptrtype normalStressFromStruct() { return M_normalStressFromStruct; }
-    //element_stress_ptrtype const& normalStressFromStruct() const { return M_normalStressFromStruct; }
 #endif
-    //element_fluid_velocity_scalar_type & meshVelocityScalOnInterface() { return *M_meshVelocityScalarOnInterface; }
     //___________________________________________________________________________________//
 
     bool applyMovingMeshBeforeSolve() const { return M_applyMovingMeshBeforeSolve; }
@@ -713,12 +693,6 @@ public :
     void updateNormalStressOnCurrentMesh( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate );
     // update normal stress in reference ALE mesh
     void updateNormalStressOnReferenceMesh( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate );
-private :
-    // update normal stress (subfunctions)
-    void updateNormalStressOnReferenceMeshStandard( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces, element_normalstress_ptrtype & fieldToUpdate );
-    void updateNormalStressOnReferenceMeshOptSI( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces, element_normalstress_ptrtype & fieldToUpdate );
-public :
-    void updateNormalStressOnReferenceMeshOptPrecompute( faces_reference_wrapper_t<mesh_type> const& rangeFaces );
 
     void updateWallShearStress( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate );
     void updateVorticity();
@@ -951,12 +925,6 @@ protected:
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     mesh_ale_ptrtype M_meshALE;
     element_mesh_disp_ptrtype M_meshDisplacementOnInterface;
-    space_meshvelocityonboundary_ptrtype M_XhMeshVelocityInterface;
-    element_meshvelocityonboundary_ptrtype M_meshVelocityInterface;
-    //element_stress_ptrtype M_normalStressFromStruct;
-    space_alemapdisc_ptrtype M_XhMeshALEmapDisc;
-    element_alemapdisc_ptrtype M_saveALEPartNormalStress;
-    std::set<size_type> M_dofsVelocityInterfaceOnMovingBoundary;
 #endif
     //----------------------------------------------------
     // physical properties/parameters and space
