@@ -28,6 +28,9 @@
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelvf/expressionevaluator.hpp>
 #include <feel/feelopt/glpk.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 #include <numeric>
 
 #if defined(FEELPP_HAS_GLPK_H)
@@ -205,7 +208,7 @@ EmpiricalQuadrature<RangeType>::loadDatabase()
     dbFilenamePath /= "db_" + std::to_string(Environment::rank());
     if( fs::exists(dbFilenamePath) )
     {
-        std::ifstream is(M_dbFilename, ios::binary);
+        std::ifstream is(dbFilenamePath, ios::binary);
         boost::archive::binary_iarchive iar(is);
         iar >> M_indexes;
         iar >> M_weights;
@@ -248,19 +251,6 @@ EmpiricalQuadrature<RangeType>::offline()
     if( M_exprevals.size() == 0 )
         return 0;
 
-    if( M_dbLoad && this->loadDatabase() )
-        return 0;
-
-    M_numElts = nelements(M_range);
-    if( M_numElts <= 0 )
-        return 0;
-
-    M_trainset = M_Dmu->sampling();
-    M_trainset->randomize(M_J);
-
-    tic();
-    auto const eltForInit = boost::unwrap_ref(*boost::get<1>(M_range));
-
     if( M_order < 0 )
     {
         int max_order = std::accumulate(M_exprevals.begin(), M_exprevals.end(), 0,
@@ -272,6 +262,22 @@ EmpiricalQuadrature<RangeType>::offline()
     }
     for( auto const& ee : M_exprevals )
         ee->init(M_order);
+
+    if( M_dbLoad && this->loadDatabase() )
+    {
+        this->initPoints();
+        return 0;
+    }
+
+    M_numElts = nelements(M_range);
+    if( M_numElts <= 0 )
+        return 0;
+
+    M_trainset = M_Dmu->sampling();
+    M_trainset->randomize(M_J);
+
+    tic();
+    auto const eltForInit = boost::unwrap_ref(*boost::get<1>(M_range));
 
     int nPts = M_exprevals[0]->nPoints();
     M_N = M_numElts*nPts;
@@ -396,7 +402,7 @@ EmpiricalQuadrature<RangeType>::evaluate( parameterelement_type const& mu, int m
     tic();
     double res = 0.0, loc = 0.0;
     M_exprevals[m]->update(mu);
-    toc("update");
+    toc("update", M_verbosity > 1 );
     tic();
     for( int i = 0; i < M_weights.size(); ++i )
     {
@@ -404,7 +410,7 @@ EmpiricalQuadrature<RangeType>::evaluate( parameterelement_type const& mu, int m
         loc += M_weights[i]*M_exprevals[m]->eval(M_points[i].first, M_exprevals[m]->component());
     }
     mpi::all_reduce(Environment::worldComm().globalComm(), loc, res, std::plus<double>());
-    toc("compute");
+    toc("compute", M_verbosity > 0 );
     return res;
 }
 
