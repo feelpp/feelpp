@@ -61,6 +61,11 @@ resizeAndSet( rank_t<1> )
     Eigen::Tensor<value_type,3> i_grad( nComponents1, nRealDim, 1 );
     std::fill( M_grad.data(), M_grad.data()+M_grad.num_elements(), i_grad.constant(0.) );
 
+    if ( vm::has_symm<context>::value )
+    {
+        Eigen::Tensor<value_type,2> i_symm( nComponents1, nRealDim );
+        std::fill( M_symm_grad.data(), M_symm_grad.data()+M_symm_grad.num_elements(), i_symm.constant(0.) );
+    }
     if ( vm::has_first_derivative_normal<context>::value )
     {
         Eigen::Tensor<value_type,2> i_dn( nComponents1,1 );
@@ -75,7 +80,7 @@ resizeAndSet( rank_t<1> )
 
     if ( vm::has_curl<context>::value )
     {
-        Eigen::Tensor<value_type,2> i_curl( nComponents1, 1 );
+        Eigen::Tensor<value_type,2> i_curl( (nComponents1==3)?nComponents1:1, 1 );
         std::fill( M_curl.data(), M_curl.data()+M_curl.num_elements(), i_curl.constant(0.) );
     }
 
@@ -140,6 +145,13 @@ update( geometric_mapping_context_ptrtype const& __gmc,
         M_phi.resize( boost::extents[ntdof][M_npoints] );
         //M_gradphi.resize( boost::extents[ntdof][M_npoints] );
 
+        if ( vm::has_normal_component_v<context> )
+        {
+            M_normal_component.resize( boost::extents[ntdof][M_npoints] );
+            int n_components = (rank==2)?nComponents1:1;
+            Eigen::Tensor<value_type,2> i_n( n_components,1 );
+            std::fill( M_normal_component.data(), M_normal_component.data()+M_normal_component.num_elements(), i_n.constant(0.) );
+        }
         if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
         {
             if ( do_optimization_p1 )
@@ -147,6 +159,13 @@ update( geometric_mapping_context_ptrtype const& __gmc,
             else
                 M_grad.resize( boost::extents[ntdof][M_npoints] );
 
+            if ( vm::has_symm<context>::value )
+            {
+                if ( do_optimization_p1 )
+                    M_symm_grad.resize( boost::extents[ntdof][1] );
+                else
+                    M_symm_grad.resize( boost::extents[ntdof][M_npoints] );
+            }
             if ( vm::has_div<context>::value )
             {
                 if ( do_optimization_p1 )
@@ -193,22 +212,25 @@ void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
 {
-    geometric_mapping_context_type* thegmc = __gmc.get();
-
     if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  ||
          vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
     {
+        geometric_mapping_context_type* thegmc = __gmc.get();
+        tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> B( thegmc->B( 0 ).data(), gmc_type::NDim, gmc_type::PDim );
         const uint16_type Q = do_optimization_p1?1:M_npoints;
         const uint16_type I = nDof;
-        Eigen::array<int, 3> tensorGradShapeAfterContract{{1, 1, nRealDim}};
+        //Eigen::array<int, 3> tensorGradShapeAfterContract{{1, 1, nRealDim}};
         Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 1)}};
         for ( uint16_type i = 0; i < I; ++i )
         {
+            auto const& g_phi_i = (*M_gradphi)[i];
             for ( uint16_type q = 0; q < Q; ++q )
             {
-                tensor_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+                if constexpr(!gmc_type::is_linear)
+                    new (&B) tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type>(thegmc->B( q ).data(), gmc_type::NDim, gmc_type::PDim );
                 // grad = (gradphi_1,...,gradphi_nRealDim) * B^T
-                M_grad[i][q].reshape( tensorGradShapeAfterContract ) = ((*M_gradphi)[i][q].contract( B,dims ));
+                //M_grad[i][q].reshape( tensorGradShapeAfterContract ) = ((*M_gradphi)[i][q].contract( B,dims ));
+                M_grad[i][q] = (g_phi_i[q].contract( B,dims ));
 #if 0
                 M_dx[i][q] = M_grad[i][q].col( 0 );
 
@@ -255,22 +277,49 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
         hess_type L;
         Eigen::array<int, 3> tensorHessShapeAfterContract{{nRealDim, 1, nRealDim}};
         Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(1, 1)}};
-        Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 0)}};
+        Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(0, 1)}};
+        Eigen::array<dimpair_t, 1> dimsh = {{dimpair_t(0, 0)}};
+        Eigen::array<dimpair_t, 1> tracedims = {{dimpair_t(0, 1)}};
         for ( uint16_type q = 0; q < Q; ++q )
         {
-            tensor_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+            tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim ,value_type> B ( thegmc->B( q ).data(), gmc_type::NDim, gmc_type::PDim );
             for ( uint16_type i = 0; i < I; ++i )
             {
                 //M_hessian[i][q] = B.contract( __pc->hessian(i,q).contract(B,dims1), dims2);
-                auto H1 = __pc->hessian(i,q).contract(B,dims1);
-                M_hessian[i][q].reshape( tensorHessShapeAfterContract ) = B.contract( H1, dims2 );
+
+                if ( Geo_t::nOrder > 1 || !convex_type::is_simplex )
+                {
+                    // gmc hessian NxPxP
+                    // pc hessian PxP
+                    // grad N
+                    // B NxP
+                    // hessian: N x N
+                    std::cout << "Grad=" << M_grad[i][q].chip(0,0).chip(0,1) << "\n";
+                    tensor2_fixed_size_t<PDim,PDim,value_type> H0 = thegmc->hessian(q).contract( M_grad[i][q].chip(0,0).chip(0,1), dimsh );
+                    //std::cout << "H0=" << H0 << std::endl;
+                    tensor2_fixed_size_t<PDim,PDim,value_type> H00 = __pc->hessian(i,q).chip(0,2);
+                    //std::cout << "H00=" << H00 << std::endl;
+                    tensor2_fixed_size_t<PDim,PDim,value_type> H1 = H00 - H0;
+                    //std::cout << "H1=" << H1 << std::endl;
+                    M_hessian[i][q].chip(0,2) = H1.contract( B, dims1 ).contract( B, dims2 );
+                    //std::cout << "H=" << M_hessian[i][q] << std::endl;
+                }
+                else
+                {
+                    auto H1 = __pc->hessian(i,q).contract(B,dims1);
+                    M_hessian[i][q] = H1.contract( B, dims2 );
+                }
 
                 if ( vm::has_laplacian<context>::value  )
                 {
+#if 0
+                    M_laplacian[i][q] = M_hessian[i][q].trace(tracedims);
+#else
                     M_laplacian[i][q].setZero();
                     for( int c = 0; c < nRealDim; ++c )
                         M_laplacian[i][q](0,0) += M_hessian[i][q]( c, c, 0 );
                         //M_laplacian[i][q](0,0) = M_hessian[i][q].trace();
+#endif
                 }
             } // q
         } // i
@@ -295,8 +344,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
         {
             for ( uint16_type q = 0; q < Qid; ++q )
             {
-                tensor_eigen_ublas_type K ( thegmc->K( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-                tensor_eigen_ublas_type Bt ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+                tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> K ( thegmc->K( q ).data(), gmc_type::NDim, gmc_type::PDim );
+                tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> Bt ( thegmc->B( q ).data(), gmc_type::NDim, gmc_type::PDim );
 
                 // covariant piola transform
                 Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
@@ -310,8 +359,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
         {
             for ( uint16_type q = 0; q < Qid; ++q )
             {
-                tensor_eigen_ublas_type K ( thegmc->K( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-                tensor_eigen_ublas_type Bt ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+                tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> K( thegmc->K( q ).data(), gmc_type::NDim, gmc_type::PDim );
+                tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> Bt( thegmc->B( q ).data(), gmc_type::NDim, gmc_type::PDim );
 
                 // piola transform
                 Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
@@ -320,20 +369,41 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
         }
     }
 
+    if ( vm::has_normal_component_v<context>)
+    {
+        const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
+        const uint16_type I = M_normal_component.shape()[0];
+        Eigen::array<dimpair_t, 1> dims = {{dimpair_t(0, 0)}};
+        tensor_map_fixed_size_matrix_t<gmc_type::NDim,1,value_type> N ( thegmc->unitNormal( 0 ).data(),gmc_type::NDim,1 );
+        
+        for ( uint16_type i = 0; i < I; ++i )
+            for ( uint16_type q = 0; q < Q; ++q )
+            {
+                if constexpr(!gmc_type::is_linear)
+                    new (&N) tensor_map_fixed_size_matrix_t<gmc_type::NDim, 1,value_type>(thegmc->unitNormal( q ).data(), gmc_type::NDim, 1 );
+                auto &r = M_normal_component[i][q](0,0);
+                r= 0;
+                auto* p = M_phi[i][q].data();
+                auto* n = N.data();
+                for( int c = 0; c < gmc_type::NDim; ++c )
+                    r += *(p+c)*(*(n+c));
+            }
+    }
+
     if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value )
     {
         const uint16_type Q = do_optimization_p1?1:M_npoints;//__gmc->nPoints();//M_grad.size2();
         const uint16_type I = M_grad.shape()[0];
 
         typedef typename boost::multi_array<value_type,4>::index_range range;
-        Eigen::array<int, 3> tensorGradShapeAfterContract{{nComponents1, 1, nRealDim}};
+        //Eigen::array<int, 3> tensorGradShapeAfterContract{{nComponents1, 1, nRealDim}};
         Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(1, 1)}};
         Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 0)}};
 
         for ( uint16_type q = 0; q < Q; ++q )
         {
-            tensor_eigen_ublas_type K ( thegmc->K( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-            tensor_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+            tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> K ( thegmc->K( q ).data(),gmc_type::NDim, gmc_type::PDim );
+            tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> B ( thegmc->B( q ).data(),gmc_type::NDim, gmc_type::PDim );
             for ( uint16_type i = 0; i < I; ++i )
             {
                 //M_grad[i][q] = (*M_gradphi)[i][q].contract( B,dims );
@@ -349,8 +419,20 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                     M_grad[i][q] =  B.contract((*M_gradphi)[i][q].contract(B,dims1),dims2);
                 }
                 else
-                    M_grad[i][q].reshape( tensorGradShapeAfterContract ) = (*M_gradphi)[i][q].contract(B,dims1);
+                {
+                    //std::cout << "left : " << M_grad[i][q].dimensions() << std::endl;
+                    //std::cout << "right : " << (*M_gradphi)[i][q].contract(B,dims1).dimensions() << std::endl;
+                    
+                    M_grad[i][q] = (*M_gradphi)[i][q].contract(B,dims1);
+                }
+                    //M_grad[i][q].reshape( tensorGradShapeAfterContract ) = (*M_gradphi)[i][q].contract(B,dims1);
 
+                if ( vm::has_symm<context>::value )
+                {
+                    em_fixed_size_matrix_t<nComponents1,NDim,value_type> sg( M_symm_grad[i][q].data() );
+                    em_fixed_size_cmatrix_t<nComponents1,NDim,value_type> g( M_grad[i][q].data() );
+                    sg = (g+g.transpose())/2;
+                }
                 // update divergence if needed
                 if ( vm::has_div<context>::value )
                 {
@@ -377,7 +459,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                     if ( NDim == 2 )
                     {
                         M_curl[i][q]( 0 ) =  M_grad[i][q]( 1,0,0 ) - M_grad[i][q]( 0,1,0 );
-                        M_curl[i][q]( 1 ) =  M_curl[i][q]( 0 );
+                        //M_curl[i][q]( 1 ) =  M_curl[i][q]( 0 );
                         //M_curl[i][q]( 2 ) =  M_curl[i][q]( 0 );
                     }
 
@@ -429,12 +511,35 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
         {
             for ( uint16_type q = 0; q < Q; ++q )
             {
-                tensor_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+                tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> B ( thegmc->B( q ).data(),gmc_type::NDim, gmc_type::PDim );
                 Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(2, 1)}};
                 Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 1)}};
-                auto H1 = __pc->hessian(i,q).contract(B,dims1);
-                Eigen::array<int, 3> myperm = {{1, 0, 2}};
-                M_hessian[i][q] = (B.contract( H1, dims2)).shuffle( myperm );
+                Eigen::array<dimpair_t, 1> dimsh = {{dimpair_t(0, 1)}};
+
+                if ( Geo_t::nOrder > 1 || !convex_type::is_simplex )
+                {
+                    // gmc hessian NxPxP
+                    // pc hessian PxP
+                    // grad N
+                    // B NxP
+                    // hessian: N x N
+                    tensor3_fixed_size_t<nComponents1,PDim,PDim,value_type> H0 = thegmc->hessian(q).contract( M_grad[i][q].chip(0,2), dimsh );
+                    //std::cout << "H0=" << H0 << std::endl;
+                    tensor3_fixed_size_t<nComponents1,PDim,PDim,value_type> H00 = __pc->hessian(i,q);
+                    //std::cout << "H00=" << H00 << std::endl;
+                    tensor3_fixed_size_t<nComponents1,PDim,PDim,value_type> H1 = H00 - H0;
+                    //std::cout << "H1=" << H1 << std::endl;
+                    M_hessian[i][q] = H1.contract( B, dims1 ).contract( B, dims2 );
+                    //std::cout << "H=" << M_hessian[i][q] << std::endl;
+                }
+                else
+                {
+                    auto H1 = __pc->hessian(i,q).contract(B,dims1);
+                    M_hessian[i][q] = H1.contract( B, dims2 );
+                    //M_hessian[i][q] = (B.contract( H1, dims2)).shuffle( myperm );
+                }
+
+                
                 //M_hessian[i][q] = B.contract( H1, dims2);
 
                 M_laplacian[i][q].setZero();
@@ -458,6 +563,37 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
     const uint16_type I = M_grad.shape()[0];
     geometric_mapping_context_type* thegmc = __gmc.get();
 
+    if ( vm::has_normal_component_v<context>)
+    {
+        const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
+        const uint16_type I = M_normal_component.shape()[0];
+        Eigen::array<dimpair_t, 1> dims = {{dimpair_t(0, 0)}};
+        const int ndim = thegmc->N();
+        for ( uint16_type i = 0; i < I; ++i )
+            for ( uint16_type q = 0; q < Q; ++q )
+            {
+                tensor_map_fixed_size_matrix_t<gmc_type::NDim,1,value_type> N ( thegmc->unitNormal( q ).data(), gmc_type::NDim,1 );
+                auto &r = M_normal_component[i][q](0,0);
+                r= 0;
+                auto* p = M_phi[i][q].data();
+                auto* n = N.data();
+                for( int c = 0; c < ndim; ++c )
+                    r += *(p+c)*(*(n+c));
+            }
+    }
+    if ( vm::has_trace_v<context>)
+    {
+        const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
+        const uint16_type I = M_normal_component.shape()[0];
+        Eigen::array<dimpair_t, 1> dims = {{dimpair_t(0, 1)}};
+        Eigen::Tensor<value_type, 0> res;
+        for ( uint16_type i = 0; i < I; ++i )
+            for ( uint16_type q = 0; q < Q; ++q )
+            {
+                res=M_phi[i][q].trace();
+                M_trace[i][q]=res();
+            }
+    }
     if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
     {
 
@@ -467,7 +603,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
         {
             for ( uint16_type q = 0; q < Q; ++q )
             {
-                tensor_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+                tensor_map_fixed_size_matrix_t<gmc_type::NDim,gmc_type::PDim,value_type> B ( thegmc->B( q ).data(),gmc_type::NDim,gmc_type::PDim );
                 Eigen::array<dimpair_t, 1> dims = {{dimpair_t(2, 1)}};
                 M_grad[i][q] = (*M_gradphi)[i][q].contract( B,dims );
                 // update divergence if needed

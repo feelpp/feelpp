@@ -110,6 +110,7 @@ createMeshModel( ModelNumerical & model, std::shared_ptr<MeshType> & mesh, std::
 
             if (rebuildPartition) model.setMeshFile(mshfileRebuildPartitions);
         }
+#if defined( FEELPP_HAS_GMSH_H )        
         else if (model.hasGeoFile())
         {
             std::string path = model.rootRepository();
@@ -140,6 +141,7 @@ createMeshModel( ModelNumerical & model, std::shared_ptr<MeshType> & mesh, std::
             // if ( hasChangedRep )
             //     Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
         }
+#endif // FEELPP_HAS_GMSH_H
 #if 0
         else
         {

@@ -68,7 +68,8 @@ public:
 
     typedef MeshType mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-
+    using index_type = typename mesh_type::index_type;
+    using size_type = typename mesh_type::size_type;
     typedef typename super::timeset_type timeset_type;
     typedef typename super::timeset_ptrtype timeset_ptrtype;
     typedef typename super::timeset_iterator timeset_iterator;
@@ -231,7 +232,7 @@ private:
     FEELPP_NO_EXPORT void writeGeoFiles() const;
     FEELPP_NO_EXPORT void writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh) const;
     FEELPP_NO_EXPORT void writeGeoHeader(MPI_File fh) const;
-    FEELPP_NO_EXPORT void writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<size_type> > & m) const;
+    FEELPP_NO_EXPORT void writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<index_type> > & m) const;
     FEELPP_NO_EXPORT void writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, size_type markerid) const;
 
     /**

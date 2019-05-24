@@ -13,6 +13,7 @@ namespace Feel
 class TimerToolBase
 {
 public:
+    virtual ~TimerToolBase() = default;
     virtual bool isActive() = 0;
 
     virtual void start() = 0;
@@ -34,8 +35,8 @@ public:
 
     TimerTool( std::string fileName = "timers.data", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     TimerTool( TimerTool const& e ) = default;
+    ~TimerTool() = default;
     //TimerTool( TimerTool && e ) = default;
-    virtual ~TimerTool() = default;
     bool isActive() { return true; }
 
     void setReinitSaveFile( bool b );

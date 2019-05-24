@@ -196,7 +196,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     typedef typename fectx_type::id_type m_type;
     typedef boost::multi_array<m_type,1> array_type;
     array_type uvalues( u.idExtents( *__ctx ) );
-    m_type m(fe_type::nComponents1,fe_type::nComponents2);
+    m_type m;
     std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m.constant(0.) );
     u.id( *__ctx, uvalues );
 

@@ -49,10 +49,10 @@ PYBIND11_MODULE(_vf, m )
     py::class_<Expr<GinacEx<2>> >(m,pyclass_name.c_str())
         .def(py::init<>());
 
-    m.def( "expr", static_cast<Expr<GinacEx<2>> (*)( std::string const&, std::string const&, WorldComm const&, std::string const&)>(&expr),
+    m.def( "expr_", static_cast<Expr<GinacEx<2>> (*)( std::string const&, std::string const&, WorldComm const&, std::string const&)>(&expr),
            py::arg("expr"),
            py::arg("filename")="",
-           py::arg("worldComm")=Environment::worldComm(),
+           py::arg("worldComm"),
            py::arg("dir")="",
            "create an expression out of a string" );
                                                       

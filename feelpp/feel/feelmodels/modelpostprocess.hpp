@@ -29,6 +29,7 @@
 
 #include <boost/property_tree/ptree.hpp>
 
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
 #include <feel/feelmodels/modelmarkers.hpp>
 
@@ -106,25 +107,26 @@ private:
 
 };
 
-class FEELPP_EXPORT ModelPostprocessPointPosition : public std::pair< ModelPointPosition, std::set<std::string> >
+class FEELPP_EXPORT ModelPostprocessPointPosition : public std::pair< ModelPointPosition, std::set<std::string> >, public CommObject
 {
     typedef std::pair< ModelPointPosition, std::set<std::string> > super_type;
 public :
-    ModelPostprocessPointPosition( WorldComm const& world = Environment::worldComm() )
+    using super2 = CommObject;
+    ModelPostprocessPointPosition( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
         super_type(),
-        M_worldComm( world )
+        super2( world )
         {}
-    ModelPostprocessPointPosition( ModelPointPosition const& ptPos, WorldComm const& world = Environment::worldComm() )
+    ModelPostprocessPointPosition( ModelPointPosition const& ptPos, worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
         super_type( ptPos,std::set<std::string>() ),
-        M_worldComm( world )
+        super2( world )
         {}
     ModelPostprocessPointPosition( ModelPointPosition const& ptPos, std::set<std::string> const& fields,
-                                   WorldComm const& world = Environment::worldComm() )
+                                   worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
         super_type( ptPos,fields ),
-        M_worldComm( world )
+        super2( world )
         {}
     ModelPostprocessPointPosition( ModelPostprocessPointPosition const& ) = default;
     ModelPostprocessPointPosition( ModelPostprocessPointPosition&& ) = default;
@@ -144,18 +146,18 @@ public :
 private:
     void setup( std::string const& name );
 private:
-    WorldComm const& M_worldComm;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
 };
 
 //! store informations require by the postprocessing Norm
-class FEELPP_EXPORT ModelPostprocessNorm
+class FEELPP_EXPORT ModelPostprocessNorm : public CommObject
 {
 public :
-    ModelPostprocessNorm( WorldComm const& world = Environment::worldComm() )
+    using super = CommObject;
+    ModelPostprocessNorm( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
-        M_worldComm( world ),
+        super( world ),
         M_quadOrder( 5 ),
         M_quad1Order( 5 )
         {}
@@ -197,7 +199,6 @@ public :
 private:
     void setup( std::string const& name );
 private:
-    WorldComm const& M_worldComm;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
     std::string M_name, M_field;
@@ -208,12 +209,13 @@ private:
 };
 
 //! store informations require by the postprocessing Statistics
-class FEELPP_EXPORT ModelPostprocessStatistics
+class FEELPP_EXPORT ModelPostprocessStatistics : public CommObject
 {
 public :
-    ModelPostprocessStatistics( WorldComm const& world = Environment::worldComm() )
+    using super = CommObject;
+    ModelPostprocessStatistics( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
-        M_worldComm( world ),
+        super( world ),
         M_quadOrder( 5 ),
         M_quad1Order( 5 )
         {}
@@ -249,7 +251,6 @@ public :
 private:
     void setup( std::string const& name );
 private:
-    WorldComm const& M_worldComm;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
     std::string M_name, M_field;
@@ -292,12 +293,12 @@ class FEELPP_EXPORT ModelPostprocessCheckerMeasure
     double M_tolerance;
 };
 
-class FEELPP_EXPORT ModelPostprocess
+class FEELPP_EXPORT ModelPostprocess : public CommObject
 {
 public:
-
-    ModelPostprocess( WorldComm const& world = Environment::worldComm() );
-    ModelPostprocess( pt::ptree const& p, WorldComm const& world = Environment::worldComm() );
+    using super = CommObject;
+    ModelPostprocess( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
+    ModelPostprocess( pt::ptree const& p, worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     virtual ~ModelPostprocess();
     pt::ptree const& pTree() const { return M_p; }
     pt::ptree & pTree() { return M_p; }
@@ -338,7 +339,6 @@ private:
     void setup();
     void setup( std::string const& name, pt::ptree const& p );
 private:
-    WorldComm const& M_worldComm;
     pt::ptree M_p;
     bool M_useModelName;
     std::map<std::string,ModelPostprocessExports> M_exports;

@@ -257,7 +257,7 @@ struct RemoteData
     struct FolderInfo : public std::tuple<std::string,std::string,size_type>
     {
         using super = std::tuple<std::string,std::string,size_type>;
-        FolderInfo( std::string const& name = "",std::string const& id = "", size_type size = invalid_size_type_value )
+        FolderInfo( std::string const& name = "",std::string const& id = "", size_type size = invalid_v<size_type> )
             :
             super( name,id,size )
             {}
@@ -283,7 +283,7 @@ struct RemoteData
     struct ItemInfo : public std::tuple<std::string,std::string,size_type>
     {
         using super = std::tuple<std::string,std::string,size_type>;
-        ItemInfo( std::string const& name = "",std::string const& id = "", size_type size = invalid_size_type_value )
+        ItemInfo( std::string const& name = "",std::string const& id = "", size_type size = invalid_v<size_type> )
             :
             super( name,id,size )
             {}
@@ -305,7 +305,7 @@ struct RemoteData
     struct FileInfo : public std::tuple<std::string,std::string,size_type>
     {
         using super = std::tuple<std::string,std::string,size_type>;
-        FileInfo( std::string const& name = "",std::string const& id = "", size_type size = invalid_size_type_value )
+        FileInfo( std::string const& name = "",std::string const& id = "", size_type size = invalid_v<size_type> )
             :
             super( name,id,size )
             {}

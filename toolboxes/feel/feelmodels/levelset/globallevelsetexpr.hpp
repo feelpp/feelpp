@@ -97,7 +97,7 @@ public:
         typedef shape_type shape;
         // scalar array
         typedef Shape<shape_type::nDim, Scalar, false, false> shape_scalar;
-        typedef Eigen::Tensor<value_type, 2> loc_scalar_type;
+        typedef Eigen::TensorFixedSize<value_type, Eigen::Sizes<shape_scalar::M,shape_scalar::N>> loc_scalar_type;
         typedef boost::multi_array<loc_scalar_type, 1> array_scalar_type;
 
         struct is_zero
@@ -113,7 +113,7 @@ public:
                 M_ctxLevelset( new ctx_levelset_type( expr.levelsets(0)->functionSpace()->fe(), fusion::at_key<key_type>(geom), M_pcLevelset ) ),
                 M_hasRelationMesh( expr.levelsets().size() ),
                 M_isSameMesh( expr.levelsets().size() ),
-                M_zeroLocScalar( shape_scalar::M, shape_scalar::N ),
+                M_zeroLocScalar(),
                 M_locLevelsets( expr.levelsets().size(), array_scalar_type(expr.levelsets(0)->idExtents(*fusion::at_key<key_type>(geom))) ),
                 M_locRes( expr.levelsets(0)->idExtents(*fusion::at_key<key_type>(geom)) )
         {
@@ -135,7 +135,7 @@ public:
                 M_ctxLevelset( new ctx_levelset_type( expr.levelsets(0)->functionSpace()->fe(), fusion::at_key<key_type>(geom), M_pcLevelset ) ),
                 M_hasRelationMesh( expr.levelsets().size() ),
                 M_isSameMesh( expr.levelsets().size() ),
-                M_zeroLocScalar( shape_scalar::M, shape_scalar::N ),
+                M_zeroLocScalar(),
                 M_locLevelsets( expr.levelsets().size(), array_scalar_type(expr.levelsets(0)->idExtents(*fusion::at_key<key_type>(geom))) ),
                 M_locRes( expr.levelsets(0)->idExtents(*fusion::at_key<key_type>(geom)) )
         {
@@ -156,7 +156,7 @@ public:
                 M_ctxLevelset( new ctx_levelset_type( expr.levelsets(0)->functionSpace()->fe(), fusion::at_key<key_type>(geom), M_pcLevelset ) ),
                 M_hasRelationMesh( expr.levelsets().size() ),
                 M_isSameMesh( expr.levelsets().size() ),
-                M_zeroLocScalar( shape_scalar::M, shape_scalar::N ),
+                M_zeroLocScalar(),
                 M_locLevelsets( expr.levelsets().size(), array_scalar_type(expr.levelsets(0)->idExtents(*fusion::at_key<key_type>(geom))) ),
                 M_locRes( expr.levelsets(0)->idExtents(*fusion::at_key<key_type>(geom)) )
         {

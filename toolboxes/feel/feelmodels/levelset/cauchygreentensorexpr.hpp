@@ -122,19 +122,19 @@ public:
         typedef Eigen::Matrix<value_type,shape_type::M,1> vector_shape_type;
         // scalar
         typedef Shape<shape_type::nDim, Scalar, false, false> shape_scalar;
-        typedef Eigen::Tensor<value_type,2> loc_scalar_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<shape_scalar::M,shape_scalar::N>> loc_scalar_type;
         typedef boost::multi_array<loc_scalar_type,1> array_scalar_type;
         // vectorial
         typedef Shape<shape_type::nDim, Vectorial, false, false> shape_vectorial;
-        typedef Eigen::Tensor<value_type,2> loc_vectorial_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<shape_vectorial::M,shape_vectorial::N>> loc_vectorial_type;
         typedef boost::multi_array<loc_vectorial_type,1> array_vectorial_type;
         // vectorial transpose
         typedef Shape<shape_type::nDim, Vectorial, true, false> shape_vectorial_transpose;
-        typedef Eigen::Tensor<value_type,2> loc_vectorial_transpose_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<shape_vectorial_transpose::M,shape_vectorial_transpose::N>> loc_vectorial_transpose_type;
         typedef boost::multi_array<loc_vectorial_transpose_type,1> array_vectorial_transpose_type;
         // tensor2
         typedef Shape<shape_type::nDim, Tensor2, false, false> shape_tensor2;
-        typedef Eigen::Tensor<value_type,2> loc_tensor2_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<shape_tensor2::M,shape_tensor2::N>> loc_tensor2_type;
         typedef boost::multi_array<loc_tensor2_type,1> array_tensor2_type;
 
         tensor( expr_type const& expr,
@@ -149,10 +149,10 @@ public:
                 M_locRes( expr.normal().idExtents(*fusion::at_key<key_type>( geom )) ),
                 M_locNormal( expr.normal().idExtents(*fusion::at_key<key_type>( geom )) ),
                 M_locGradBackwardCharacteristics( expr.backwardCharacteristics().gradExtents(*fusion::at_key<key_type>( geom )) ),
-                M_zeroLocScalar( shape_scalar::M,shape_scalar::N ),
-                M_zeroLocVectorial( shape_vectorial::M,shape_vectorial::N ),
-                M_zeroLocVectorialTranspose( shape_vectorial_transpose::M, shape_vectorial_transpose::N ),
-                M_zeroLocTensor2( shape_tensor2::M,shape_tensor2::N )
+                M_zeroLocScalar(),
+                M_zeroLocVectorial(),
+                M_zeroLocVectorialTranspose( ),
+                M_zeroLocTensor2()
         {
             M_zeroLocScalar.setZero();
             M_zeroLocVectorial.setZero();
@@ -172,10 +172,10 @@ public:
                 M_locRes( expr.normal().idExtents(*fusion::at_key<key_type>( geom )) ),
                 M_locNormal( expr.normal().idExtents(*fusion::at_key<key_type>( geom )) ),
                 M_locGradBackwardCharacteristics( expr.backwardCharacteristics().gradExtents(*fusion::at_key<key_type>( geom )) ),
-                M_zeroLocScalar( shape_scalar::M,shape_scalar::N ),
-                M_zeroLocVectorial( shape_vectorial::M,shape_vectorial::N ),
-                M_zeroLocVectorialTranspose( shape_vectorial_transpose::M, shape_vectorial_transpose::N ),
-                M_zeroLocTensor2( shape_tensor2::M,shape_tensor2::N )
+                M_zeroLocScalar(),
+                M_zeroLocVectorial(),
+                M_zeroLocVectorialTranspose(),
+                M_zeroLocTensor2()
         {
             M_zeroLocScalar.setZero();
             M_zeroLocVectorial.setZero();
@@ -194,10 +194,10 @@ public:
                 M_locRes( expr.normal().idExtents(*fusion::at_key<key_type>( geom )) ),
                 M_locNormal( expr.normal().idExtents(*fusion::at_key<key_type>( geom )) ),
                 M_locGradBackwardCharacteristics( expr.backwardCharacteristics().gradExtents(*fusion::at_key<key_type>( geom )) ),
-                M_zeroLocScalar( shape_scalar::M,shape_scalar::N ),
-                M_zeroLocVectorial( shape_vectorial::M,shape_vectorial::N ),
-                M_zeroLocVectorialTranspose( shape_vectorial_transpose::M, shape_vectorial_transpose::N ),
-                M_zeroLocTensor2( shape_tensor2::M,shape_tensor2::N )
+                M_zeroLocScalar(),
+                M_zeroLocVectorial(),
+                M_zeroLocVectorialTranspose(),
+                M_zeroLocTensor2()
         {
             M_zeroLocScalar.setZero();
             M_zeroLocVectorial.setZero();

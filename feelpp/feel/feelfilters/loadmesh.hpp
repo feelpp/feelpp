@@ -129,7 +129,8 @@ BOOST_PARAMETER_FUNCTION(
             auto json_fname = mesh_name.stem().string()+".json";
             if( fs::exists(json_fname) )
             {
-                cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(json_fname) << "\n";
+                if ( verbose ) 
+                    cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(json_fname) << "\n";
                 LOG(INFO) << " Loading mesh in format json+h5: " << json_fname;
                 CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
                 _mesh_ptrtype m( mesh );
@@ -140,8 +141,9 @@ BOOST_PARAMETER_FUNCTION(
         }
 #endif
 
-        cout << "[loadMesh] Loading mesh in format geo+msh: " << fs::system_complete(mesh_name) << "\n";
-        if ( !desc )
+        if ( verbose )
+            cout << "[loadMesh] Loading mesh in format geo+msh: " << fs::system_complete(mesh_name) << "\n";
+        if ( !desc && verbose )
             cout << "[loadMesh] Use default geo desc: " << mesh_name.string() << " " << h << " " << depends << "\n";
 
         auto thedesc = (!desc) ? geo( _filename=mesh_name.string(),
@@ -186,7 +188,8 @@ BOOST_PARAMETER_FUNCTION(
          ( mesh_name.extension() == ".med"  ) )
 
     {
-        cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << "\n";
+        if ( verbose )
+            cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << "\n";
         
         tic();
         auto m = loadGMSHMesh( _mesh=mesh,
@@ -207,7 +210,8 @@ BOOST_PARAMETER_FUNCTION(
                                );
 
         toc("loadMesh.loadGMSHMesh", FLAGS_v>0);
-        cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << " done\n";
+        if ( verbose )
+            cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << " done\n";
 
 #if defined(FEELPP_HAS_HDF5)
 
@@ -216,7 +220,8 @@ BOOST_PARAMETER_FUNCTION(
             tic();
             m->saveHDF5( mesh_name.stem().string()+".json" );
             toc("loadMesh.saveHDF5", FLAGS_v>0);
-            cout << "[loadMesh] Saving HDF5 mesh: " << fs::system_complete(mesh_name.stem().string()+".json") << std::endl;
+            if ( verbose )
+                cout << "[loadMesh] Saving HDF5 mesh: " << fs::system_complete(mesh_name.stem().string()+".json") << std::endl;
         }
 #endif
         return m;
@@ -225,7 +230,8 @@ BOOST_PARAMETER_FUNCTION(
 #if defined(FEELPP_HAS_HDF5)
     if ( mesh_name.extension() == ".json"  )
     {
-        cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(mesh_name) << "\n";
+        if ( verbose )
+            cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(mesh_name) << "\n";
         LOG(INFO) << " Loading mesh in json+h5 format " << fs::system_complete(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         _mesh_ptrtype m( mesh );
@@ -238,7 +244,8 @@ BOOST_PARAMETER_FUNCTION(
     // Acusim Raw Mesh
     if ( mesh_name.extension() == ".arm"  )
     {
-        cout << "[loadMesh] Loading mesh in format arm(acusolve)h5: " << fs::system_complete(mesh_name) << "\n";
+        if ( verbose )
+            cout << "[loadMesh] Loading mesh in format arm(acusolve)h5: " << fs::system_complete(mesh_name) << "\n";
         LOG(INFO) << " Loading mesh in arm(acusolve) format " << fs::system_complete(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         _mesh_ptrtype m( mesh );
@@ -257,9 +264,10 @@ BOOST_PARAMETER_FUNCTION(
 #if defined( FEELPP_HAS_GMSH_H )
     mesh_name = soption(_name="gmsh.domain.shape");
 
-    cout << "[loadMesh] no file name or unrecognized extension provided\n"
-         << "[loadMesh] automatically generating amesh from gmsh.domain.shape in format geo+msh: "
-         << mesh_name << ".geo\n";
+    if ( verbose) 
+        cout << "[loadMesh] no file name or unrecognized extension provided\n"
+             << "[loadMesh] automatically generating amesh from gmsh.domain.shape in format geo+msh: "
+             << mesh_name << ".geo\n";
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
     auto m = createGMSHMesh(_mesh=mesh,
                             _desc=domain( _name=mesh_name.string(), _h=h, _worldcomm=worldcomm ),
