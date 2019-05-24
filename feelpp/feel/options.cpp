@@ -52,7 +52,7 @@ file_options( std::string const& appname )
 {
     po::options_description file( "File options" );
     file.add_options()
-        ( "config-file", po::value<std::string>()->default_value(appname+".cfg"), "specify .cfg file" )
+        ( "config-file", po::value<std::vector<std::string> >()->multitoken(), "specify a list of .cfg file" )
         ( "config-files", po::value<std::vector<std::string> >()->multitoken(), "specify a list of .cfg file" )
         ( "bc-file", po::value<std::string>()->default_value(appname+".bc"), "specify boundary condition (.bc) file" )
         ( "mod-file", po::value<std::string>()->default_value(appname+".mod"), "specify model (.mod) file" )
@@ -96,6 +96,7 @@ generic_options()
         ( "serialization-library", po::value<std::string>()->default_value("boost"), "Library used for serialization" )
         ( "display-stats", po::value<bool>()->default_value(false), "display statistics (timers, iterations counts...)" )
         ( "subdir.expr", po::value<std::string>()->default_value("exprs"), "subdirectory for expressions" )
+        ( "demo", po::value<bool>()->default_value(false), "demo mode: try to load appname.cfg")
         ;
     return generic;
 }
@@ -200,7 +201,7 @@ gmsh_options( std::string const& prefix )
 
     _options.add_options()
     // gmsh options
-        ( prefixvm( prefix,"gmsh.filename" ).c_str(), Feel::po::value<std::string>()->default_value( "untitled.geo" ), "Gmsh filename" )
+        ( prefixvm( prefix,"gmsh.filename" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Gmsh filename" )
         ( prefixvm( prefix,"gmsh.depends" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "list of files separated by , or ; that are dependencies of a loaded Gmsh geometry" )
         ( prefixvm( prefix,"gmsh.hsize" ).c_str(), Feel::po::value<double>()->default_value( 0.1 ), "default characteristic mesh size" )
         ( prefixvm( prefix,"gmsh.scale" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "scale the mesh after loading" )

@@ -656,6 +656,12 @@ Environment::clearSomeMemory()
 // Destructor.
 Environment::~Environment()
 {
+    Environment::finalize();
+}
+
+void
+Environment::finalize()
+{
     if ( boption( "display-stats" ) )
         Environment::saveTimers( true );
 
@@ -757,7 +763,7 @@ Environment::~Environment()
     GmshFinalize();
 #endif
 
-    if ( i_initialized )
+    if ( Environment::initialized() )
     {
         VLOG( 2 ) << "clearing known paths\n";
         S_paths.clear();
@@ -797,11 +803,16 @@ Environment::~Environment()
             cout << tc::red << "Removing all files (--rm)  in " << appRepository() << "..." << tc::reset << std::endl;
             fs::remove_all( S_appdir );
         }
-        
     }
-    
 }
 
+void
+Environment::destruct()
+{
+    Environment::finalize();
+    MPI_Finalize();
+    exit(0);
+}
 
 void
 Environment::generateOLFiles( int argc, char** argv, std::string const& appName )
@@ -1359,6 +1370,7 @@ Environment::doOptions( int argc, char** argv,
 
         std::vector<std::string> configFiles;
 
+        bool hasConfig = false;
         if ( S_vm.count( "case" ) )
         {
             std::vector<std::string> cfgsInCaseDir;
@@ -1389,13 +1401,17 @@ Environment::doOptions( int argc, char** argv,
                 }
             }
             if ( cfgsInCaseDir.size() == 1 )
+            {
+                hasConfig = true;
                 configFiles.push_back( cfgsInCaseDir.front() );
+            }
             else
             {
                 for ( std::string const& cfgFile : cfgsInCaseDir )
                 {
                     if ( fs::path( cfgFile ).filename().string() == caseConfigFile )
                     {
+                        hasConfig = true;
                         configFiles.push_back( cfgFile );
                         break;
                     }
@@ -1405,9 +1421,13 @@ Environment::doOptions( int argc, char** argv,
          // parse config file if given to command line
         if ( S_vm.count( "config-file" ) || S_vm.count( "config-files" ) )
         {
+            hasConfig = true;
             std::vector<std::string> configFilesFromCmd;
             if ( S_vm.count( "config-file" ) )
-                configFilesFromCmd.push_back( S_vm["config-file"].as<std::string>() );
+            {
+                std::vector<std::string> configFilesOptVec = S_vm["config-file"].as<std::vector<std::string> >();
+                configFilesFromCmd.insert( configFilesFromCmd.end(), configFilesOptVec.begin(), configFilesOptVec.end() );
+            }
             if ( S_vm.count( "config-files" ) )
             {
                 std::vector<std::string> configFilesOptVec = S_vm["config-files"].as<std::vector<std::string> >();
@@ -1426,6 +1446,10 @@ Environment::doOptions( int argc, char** argv,
                     configFiles.push_back( cfgFile );
             }
         }
+        if( !hasConfig && boption("demo") && fs::exists(appName+".cfg") )
+        {
+            configFiles.push_back(appName+".cfg");
+        }
 #if 0
         std::cout << "CONFIG-FILES\n";
         for ( std::string const& cfgFile : configFiles )
@@ -1435,7 +1459,13 @@ Environment::doOptions( int argc, char** argv,
         std::reverse(configFiles.begin(),configFiles.end());
         for ( std::string const& cfgfile : configFiles )
         {
-            if ( !fs::exists( cfgfile ) ) continue;
+            if ( !fs::exists( cfgfile ) )
+            {
+                Environment::worldComm().barrier();
+                Feel::cout << tc::red << "Invalid config filename '" << cfgfile << "' aborting!" << tc::reset << std::endl;
+                MPI_Finalize();
+                exit(0);
+            }
             fs::path cfgAbsolutePath = fs::absolute( cfgfile );
             cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
             // LOG( INFO ) << "Reading " << cfgfile << "...";
