@@ -44,7 +44,7 @@ BiotSavartAlphaElectricCRB<te_rb_model_type>::makeOptions( std::string const& pr
         ( "biotsavart.db.base", po::value<std::string>()->default_value("alphabiotsavart"), "basename for crb db")
         ( "biotsavart.use-rb-in-deim", po::value<bool>()->default_value(true), "" )
         ( "biotsavart.verbose", po::value<int>()->default_value(0), "" )
-        ( "biotsavart.use-eq", po::value<bool>()->default_value(true), "use empirical quadrature" )
+        ( "biotsavart.use-eq", po::value<bool>()->default_value(false), "use empirical quadrature" )
         ;
     opt.add(deimOptions("bs"));
     opt.add(crbOptions(prefix));
