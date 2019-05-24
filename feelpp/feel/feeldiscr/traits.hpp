@@ -37,11 +37,11 @@ namespace Feel {
  * @{
  */
 /**
- * if \p T has base class \p MeshBase (hense if it is a function space)
+ * if \p T has base class \p MeshBase<> (hense if it is a function space)
  * then provides the member constant value equal to true, false otherwise
  */
 template<typename MeshType>
-using is_mesh = typename std::is_base_of<MeshBase,MeshType>::type;
+using is_mesh = typename std::is_base_of<MeshBase<>,MeshType>::type;
 
 /**
  * provides the mesh  type

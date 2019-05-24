@@ -40,7 +40,7 @@
 
 namespace Feel
 {
-class MeshBase;
+template <typename IndexT> class MeshBase;
 
 /**
  * \class SubMeshData
@@ -49,15 +49,18 @@ class MeshBase;
  * \author Christophe Prud'homme
  * \see Mesh
  */
+
+template<typename IndexT = uint32_type>
 class SubMeshData
 {
 public:
     /** @name Typedefs
      */
     //@{
-    typedef const MeshBase mesh_type;
-    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef boost::bimap< size_type, size_type > bm_type;
+    using mesh_type = const MeshBase<IndexT>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type> ;
+    using index_type = IndexT;
+    using bm_type = boost::bimap< index_type, index_type >;
     //@}
 
     /** @name Constructors, destructor
@@ -69,11 +72,11 @@ public:
 
     ~SubMeshData()
         {
-            VLOG(2) << "delete sub mesh data\n";
+            VLOG(3) << "delete sub mesh data\n";
         }
 
-    //MeshBase* meshBase() { return dynamic_cast<MeshBase *>( mesh.get() ); }
-    //MeshBase const* meshBase() const { return dynamic_cast<MeshBase const*>( mesh.get() ); }
+    //MeshBase* meshBase() { return dynamic_cast<MeshBase<> *>( mesh.get() ); }
+    //MeshBase<> const* meshBase() const { return dynamic_cast<MeshBase<> const*>( mesh.get() ); }
 
     //@}
 

@@ -252,10 +252,10 @@ public :
 
 
     struct nodim { static const int nDim = -1; static const int nRealDim = -1; };
-    static const uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+    static const uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                              mpl::identity<meshes_list >,
                                              mpl::identity<nodim> >::type::type::nDim;
-    static const uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+    static const uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                                  mpl::identity<meshes_list>,
                                                  mpl::identity<nodim> >::type::type::nRealDim;
 
@@ -1314,7 +1314,7 @@ public :
     template<typename T = double,  typename Cont = Eigen::Matrix<T,Eigen::Dynamic,1> >
     class Element
         :
-        public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >
+        public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, public FunctionSpaceBase::ElementBase
     {
     public:
         typedef ReducedBasisSpace<SpaceType> rbspace_type;
@@ -1374,8 +1374,8 @@ public :
         typedef Eigen::Matrix<value_type,nComponents1,1> _id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nRealDim> _grad_type;
 #else
-        using _id_type = Eigen::Tensor<value_type,2>;
-        using _grad_type = Eigen::Tensor<value_type,2>;
+        using _id_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nComponents2>>;
+        using _grad_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nRealDim>>;
         using eigen_matrix_to_tensor_map = Eigen::TensorMap<Eigen::Matrix<value_type, nComponents1, 1> >;
 #endif
         typedef boost::multi_array<_id_type,1> id_array_type;
@@ -2005,7 +2005,7 @@ ReducedBasisSpace<SpaceType>::Element<Y,Cont>::id_( Context_t const & context, i
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<size_type> )
         return;
 
     const uint16_type nq = context.xRefs().size2();
@@ -2068,7 +2068,7 @@ ReducedBasisSpace<SpaceType>::Element<Y,Cont>::grad_( Context_t const & context,
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<size_type> )
         return;
 
     int rb_size = this->size();

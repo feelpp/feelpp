@@ -179,10 +179,10 @@ public:
             DCHECK( M_crb ) << "DB not loaded";
             return M_crb->model();
         }
-    std::vector<std::shared_ptr<MeshBase>> meshes() const override
+    std::vector<std::shared_ptr<MeshBase<>>> meshes() const override
         {
             DCHECK( M_crb ) << "DB not loaded";
-            std::vector<std::shared_ptr<MeshBase>> m;
+            std::vector<std::shared_ptr<MeshBase<>>> m;
             m.push_back( M_crb->model()->rBFunctionSpace()->functionSpace()->mesh() );
             // TODO composite case with several meshes
             return m;

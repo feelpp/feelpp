@@ -575,8 +575,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
     auto mesh = this->mesh();
     auto XhTemperature = this->spaceTemperature();
-    auto & dofsWithValueImposedTemperature = M_dofsWithValueImposed["temperature"];
-    dofsWithValueImposedTemperature.clear();
     std::set<std::string> temperatureMarkers;
 
     // strong Dirichlet bc on temperature from expression
@@ -593,7 +591,8 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     {
         auto therange = markedfaces(mesh,listMarkedFacesTemperature );
         auto dofsToAdd = XhTemperature->dofs( therange );
-        dofsWithValueImposedTemperature.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        XhTemperature->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+        this->dofEliminationIdsAll("temperature",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
         auto dofsMultiProcessToAdd = XhTemperature->dofs( therange, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("temperature",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }

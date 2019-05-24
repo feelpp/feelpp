@@ -1219,9 +1219,9 @@ public:
         /**
          * \brief add new parameter \p mu in sampling and store \p index in super sampling
          */
-        void push_back( element_type const& mu, size_type index = invalid_size_type_value )
+        void push_back( element_type const& mu, size_type index = invalid_v<size_type> )
             {
-                if ( M_supersampling && index != invalid_size_type_value )
+                if ( M_supersampling && index != invalid_v<size_type> )
                     M_superindices.push_back( index );
 
                 super::push_back( mu );

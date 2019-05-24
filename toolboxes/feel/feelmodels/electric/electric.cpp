@@ -206,8 +206,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     auto mesh = this->mesh();
     auto XhElectricPotential = this->spaceElectricPotential();
 
-    auto & dofsWithValueImposedElectricPotential = M_dofsWithValueImposed["electric-potential"];
-    dofsWithValueImposedElectricPotential.clear();
     std::set<std::string> electricPotentialMarkers;
 
     // strong Dirichlet bc on electric-potential from expression
@@ -224,7 +222,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     {
         auto therange = markedfaces( mesh,listMarkedFacesElectricPotential );
         auto dofsToAdd = XhElectricPotential->dofs( therange );
-        dofsWithValueImposedElectricPotential.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        XhElectricPotential->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+        this->dofEliminationIdsAll("potential-electric",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
         auto dofsMultiProcessToAdd = XhElectricPotential->dofs( therange, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("potential-electric",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
@@ -691,7 +690,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess &
     }
 
     // update info for synchronization
-    this->updateDofEliminationIdsMultiProcess( "potential-electric", data );
+    this->updateDofEliminationIds( "potential-electric", data );
 
     this->log("Electric","updateNewtonInitialGuess","finish" );
 }
@@ -764,24 +763,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian &
 
     this->log("Electric","updateJacobianDofElimination","start" );
 
-    sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
-
-    auto mesh = this->mesh();
-    auto XhV = this->spaceElectricPotential();
-    auto const& v = this->fieldElectricPotential();
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
-    auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
-                                              _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
-
-    for( auto const& d : this->M_bcDirichlet )
-    {
-        bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
-                _element=v,_rhs=RBis,_expr=cst(0.) );
-    }
+    this->updateDofEliminationIds( "potential-electric", data );
 
     this->log("Electric","updateJacobianDofElimination","finish" );
 }
@@ -897,17 +879,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual &
 
     this->log("Electric","updateResidualDofElimination","start" );
 
-    vector_ptrtype& R = data.residual();
-
-    auto XhV = this->spaceElectricPotential();
-    auto mesh = XhV->mesh();
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
-    auto v = this->spaceElectricPotential()->element( R,this->rowStartInVector()+startBlockIndexElectricPotential );
-    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("electric-potential");
-    auto const& dofsWithValueImposedElectricPotential = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
-    for ( size_type thedof : dofsWithValueImposedElectricPotential )
-        v.set( thedof,0. );
-    sync( v, "=", dofsWithValueImposedElectricPotential );
+    this->updateDofEliminationIds( "potential-electric", data );
 
     this->log("Electric","updateResidualDofElimination","finish" );
 }

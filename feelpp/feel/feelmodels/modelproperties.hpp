@@ -27,6 +27,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelmodels/modelmodels.hpp>
 #include <feel/feelmodels/modelparameters.hpp>
 #include <feel/feelmodels/modelmaterials.hpp>
@@ -41,16 +42,15 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
-class FEELPP_EXPORT ModelProperties
+class FEELPP_EXPORT ModelProperties : public CommObject
 {
 public:
+    using super = CommObject;
     ModelProperties( std::string const& filename = Environment::expand(soption("mod-file")),
                      std::string const& directoryLibExpr = "",
-                     WorldComm const& world = Environment::worldComm(),
+                     worldcomm_ptr_t const& world = Environment::worldCommPtr(),
                      std::string const& prefix="" );
     virtual ~ModelProperties();
-
-    WorldComm const& worldComm() const { return M_worldComm; }
 
     pt::ptree const& pTree() const { return M_p; }
     pt::ptree & pTree() { return M_p; }
@@ -107,7 +107,6 @@ public:
     void write(std::string const &filename);
 
 private:
-    WorldComm const& M_worldComm;
     pt::ptree M_p;
 
     std::string M_name, M_shortname, M_description, M_prefix, M_unit;

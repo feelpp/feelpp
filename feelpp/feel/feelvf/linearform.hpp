@@ -199,6 +199,7 @@ public:
         typedef ExprT expression_type;
 
         typedef typename space_type::mesh_type mesh_type;
+        using index_type = typename mesh_type::index_type;
         typedef typename mesh_type::element_type mesh_element_type;
         typedef typename mesh_element_type::permutation_type permutation_type;
         typedef typename test_precompute<0,UseMortar>::type test_precompute_type;
@@ -325,7 +326,7 @@ public:
                  IM2 const& im2,
                  mpl::int_<2> );
 
-        size_type trialElementId( size_type trial_eid ) const { return invalid_size_type_value; }
+        size_type trialElementId( size_type trial_eid ) const { return invalid_v<size_type>; }
         bool trialElementIsOnBoundary( size_type trial_eid ) const { return false; }
 
         bool isZero( size_type i ) const
@@ -349,7 +350,7 @@ public:
         void updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& gmcTest,
                                         map_trial_geometric_mapping_context_type const & gmcTrial,
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
-                                        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad );
+                                        std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad );
 
         void update( map_test_geometric_mapping_context_type const& _gmcTest,
                      map_trial_geometric_mapping_context_type const & gmcTrial,
@@ -366,7 +367,7 @@ public:
                                         map_trial_geometric_mapping_context_type const & gmcTrial,
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
                                         IM const& im,
-                                        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
+                                        std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad )
         {
             M_integrator = im;
             this->updateInCaseOfInterpolate( gmcTest, gmcTrial, gmcExpr, indexLocalToQuad );
@@ -384,7 +385,7 @@ public:
             integrate( mpl::int_<fusion::result_of::size<GeomapContext>::type::value>() );
         }
 
-        void integrateInCaseOfInterpolate( std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+        void integrateInCaseOfInterpolate( std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad,
                                            bool isFirstExperience )
         {
             integrateInCaseOfInterpolate( mpl::int_<fusion::result_of::size<GeomapContext>::type::value>(),
@@ -396,13 +397,13 @@ public:
         {
             assemble( M_gmc_left->id() );
         }
-        void assemble( size_type elt_0 );
+        void assemble( index_type elt_0 );
 
         void assemble( mpl::int_<2> )
         {
             assemble( M_gmc_left->id(), M_gmc_right->id() );
         }
-        void assemble( size_type elt_0, size_type elt_1 );
+        void assemble( index_type elt_0, index_type elt_1 );
 
         /**
          * precompute the basis function associated with the test and
@@ -490,7 +491,7 @@ public:
         void integrate( mpl::int_<2> );
 
         void integrateInCaseOfInterpolate( mpl::int_<1>,
-                                           std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                                           std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad,
                                            bool isFirstExperience );
 
     private:
@@ -837,7 +838,7 @@ public:
      * add data \p v at indices \c i of the vector
      * associated with the linear form
      */
-    void addVector( int* i, int n,  value_type* v, size_type K = 0, size_type K2 = invalid_size_type_value )
+    void addVector( int* i, int n,  value_type* v, size_type K = 0, size_type K2 = invalid_v<size_type> )
     {
         M_F->addVector( i, n, v, K, K2 );
     }

@@ -54,6 +54,8 @@ public:
      */
     //@{
     typedef typename FaceType::value_type value_type;
+    using index_type = typename FaceType::index_type;
+    using size_type = typename FaceType::size_type;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<EdgeType::nRealDim>, mpl::int_<3> >,
                               mpl::identity<GeoElement1D<3, EdgeType,SubFaceOfMany<FaceType>,value_type > >,
                               mpl::identity<boost::none_t> >::type::type edge_type;

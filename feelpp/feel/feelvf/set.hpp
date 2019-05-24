@@ -247,7 +247,7 @@ ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
                   << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
                   << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
 
-        size_type nbFaceDof = invalid_size_type_value;
+        size_type nbFaceDof = invalid_v<size_type>;
 
         if ( !fe_type::is_modal )
             nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +

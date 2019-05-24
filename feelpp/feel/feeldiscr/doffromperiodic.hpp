@@ -231,7 +231,7 @@ DofFromPeriodic<DofTableType,FEType>::addVertexPeriodicDof( element_type const& 
     // id of the element adjacent to the face
 
     size_type iElAd = __face.ad_first();
-    FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[periodic]invalid face/element in face" );
+    FEELPP_ASSERT( iElAd != invalid_v<size_type> )( __face.id() ).error( "[periodic]invalid face/element in face" );
     Feel::detail::ignore_unused_variable_warning( iElAd );
 
     // local id of the face in its adjacent element
@@ -291,7 +291,7 @@ DofFromPeriodic<DofTableType,FEType>::addEdgePeriodicDof( element_type const& __
     // id of the element adjacent to the face
     // \warning NEED TO INVESTIGATE THIS
     size_type iElAd = __face.ad_first();
-    FEELPP_ASSERT( iElAd != invalid_size_type_value )
+    FEELPP_ASSERT( iElAd != invalid_v<size_type> )
     ( __face.id() ).error( "[DofTable::buildBoundaryDof] invalid face/element in face" );
 #endif // 0
 
@@ -345,7 +345,7 @@ DofFromPeriodic<DofTableType,FEType>::addEdgePeriodicDof( element_type const& __
     // \warning NEED TO INVESTIGATE THIS
     size_type iElAd = __face.ad_first();
     Feel::detail::ignore_unused_variable_warning( iElAd );
-    FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+    FEELPP_ASSERT( iElAd != invalid_v<size_type> )( __face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
     // local id of the face in its adjacent element
     uint16_type iFaEl = __face.pos_first();
@@ -414,7 +414,7 @@ DofFromPeriodic<DofTableType,FEType>::addFacePeriodicDof( element_type const& __
     // id of the element adjacent to the face
     // \warning NEED TO INVESTIGATE THIS
     size_type iElAd = __face.ad_first();
-    FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+    FEELPP_ASSERT( iElAd != invalid_v<size_type> )( __face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
     // local id of the face in its adjacent element
     uint16_type iFaEl = __face.pos_first();

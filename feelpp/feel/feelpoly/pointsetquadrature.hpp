@@ -58,20 +58,21 @@ enum IntegrationFaceEnum
  * @author Gilles Steiner <gilles.steiner@epfl.ch>
  * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
-template<class Convex, typename T>
+template<class Convex, typename T, typename IndexT = uint32_type>
 class PointSetQuadrature : public PointSet<Convex,T>
 {
 public :
 
-    static const bool is_face_im = false;
+    static inline const bool is_face_im = false;
     typedef T value_type;
+    using index_type = IndexT;
     typedef PointSet<Convex,value_type> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vector_type;
     typedef ublas::vector<value_type> weights_type;
-    static const uint16_type nDim = Convex::nDim;
+    static inline const uint16_type nDim = Convex::nDim;
     typedef PointSetQuadrature<Convex, T> self_type;
 
     typedef self_type parent_quadrature_type;
@@ -86,7 +87,7 @@ public :
           M_order( order ),
           M_name( (boost::format("im(%1%,%2%,%3%)")%nDim %order%Convex::type() ).str() ),
           M_quad(),
-          M_w(), M_prod(), M_exprq()
+          M_w(), M_w_sum(0), M_prod(), M_exprq()
         {
             if ( nDim > 0 )
             {
@@ -113,6 +114,7 @@ public :
         :
         super( Wts.size() ),
         M_w( Wts ),
+        M_w_sum( Wts.sum() ),
         M_prod( Wts.size() ),
         M_exprq( Wts.size() )
     {}
@@ -148,6 +150,11 @@ public :
                 }
                 
                 this->M_w( i ) = M_quad.q[( nDim+1 )*i+nDim];
+            }
+            M_w_sum = 0;
+            for ( size_type i=0; i< M_quad.numberOfPoints(); i++ )
+            {
+                M_w_sum += this->M_w( i );
             }
         }
 
@@ -213,6 +220,10 @@ public :
     weights_type const& weights() const
     {
         return M_w;
+    }
+    value_type weightsSum() const
+    {
+        return M_w_sum;
     }
     value_type const& weight( int q ) const
     {
@@ -399,13 +410,13 @@ public :
                            IndexTrial  const& indj,
                            uint16_type c1,
                            uint16_type c2,
-                           std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad ) const
+                           std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad ) const
     {
         value_type res = value_type( 0 );
 
         for ( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
         {
-            auto qReal = indexLocalToQuad[q].get<0>();
+            auto qReal = indexLocalToQuad[q].template get<0>();
             const value_type val_expr = expr.evalijq( indi, indj, c1, c2, q );
             res += M_prod[qReal]*val_expr;
         }
@@ -417,13 +428,13 @@ public :
                            IndexTest  const& indi,
                            uint16_type c1,
                            uint16_type c2,
-                           std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad ) const
+                           std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad ) const
     {
         value_type res = value_type( 0 );
 
         for ( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
         {
-            auto qReal = indexLocalToQuad[q].get<0>();
+            auto qReal = indexLocalToQuad[q].template get<0>();
             const value_type val_expr = expr.evaliq( indi, c1, c2, q );
             res += M_prod[qReal]*val_expr;
         }
@@ -449,20 +460,20 @@ public :
 
     template<typename GMC>
     void update( GMC const& gmc,
-                 std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
+                 std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad )
     {
 
         if ( this->isFaceIm() )
             for ( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
             {
-                auto qReal = indexLocalToQuad[q].get<0>();
+                auto qReal = indexLocalToQuad[q].template get<0>();
                 M_prod[qReal] = M_w( qReal )*gmc.J( q )*gmc.normalNorm( q );
             }
 
         else
             for ( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
             {
-                auto qReal = indexLocalToQuad[q].get<0>();
+                auto qReal = indexLocalToQuad[q].template get<0>();
                 M_prod[qReal] = M_w( qReal )*gmc.J( q );
             }
     }
@@ -475,7 +486,7 @@ public :
         using super = PointSetQuadrature<typename Convex::topological_face_type,T>;
     public:
         using parent_quadrature_type = super;
-        static const bool is_face_im = true;
+        static inline const bool is_face_im = true;
 
         Face()
             :
@@ -628,7 +639,8 @@ protected:
     quad_type M_quad;
 
     weights_type M_w;
-
+    value_type M_w_sum;
+    
     std::vector<std::map<uint16_type,weights_type> > M_w_face;
     std::vector<std::map<uint16_type,nodes_type > > M_n_face;
 
@@ -640,13 +652,11 @@ protected:
 
 
 };
-template<class Convex, typename T>
-const uint16_type PointSetQuadrature<Convex,T>::nDim;
 
-template<class Convex, typename T>
+template<class Convex, typename T, typename IndexT>
 template<typename Elem, typename GM, typename IM>
 void
-PointSetQuadrature<Convex,T>::constructQROnFace( Elem const& ref_convex,
+PointSetQuadrature<Convex,T,IndexT>::constructQROnFace( Elem const& ref_convex,
         std::shared_ptr<GM> const& __gm,
         std::shared_ptr<IM> const& __qr_face,
         mpl::bool_<true>  )
@@ -713,13 +723,13 @@ PointSetQuadrature<Convex,T>::constructQROnFace( Elem const& ref_convex,
 }
 
 
-template<class Convex, typename T>
+template<class Convex, typename T, typename IndexT>
 template<typename Elem, typename GM, typename IM>
 void
-PointSetQuadrature<Convex,T>::constructQROnEdge( Elem const& ref_convex,
-                                                 std::shared_ptr<GM> const& __gm,
-                                                                    std::shared_ptr<IM> const& __qr_edge,
-                                                                    mpl::bool_<true>  )
+PointSetQuadrature<Convex,T, IndexT>::constructQROnEdge( Elem const& ref_convex,
+                                                         std::shared_ptr<GM> const& __gm,
+                                                         std::shared_ptr<IM> const& __qr_edge,
+                                                         mpl::bool_<true>  )
 {
     M_n_edge.resize( Elem::numEdges );
     M_w_edge.resize( Elem::numEdges );
@@ -785,8 +795,8 @@ PointSetQuadrature<Convex,T>::constructQROnEdge( Elem const& ref_convex,
 
 namespace std
 {
-template<class Convex, typename T>
-std::ostream& operator<<( std::ostream& os, Feel::PointSetQuadrature<Convex,T> const& qps )
+template<class Convex, typename T, typename IndexT>
+std::ostream& operator<<( std::ostream& os, Feel::PointSetQuadrature<Convex,T, IndexT> const& qps )
 {
     os << "quadrature point set:\n"
        << "number of points: " << qps.nPoints() << "\n"

@@ -563,7 +563,9 @@ public:
 
             typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
             VLOG(4) << "tangent " << e << ":" << M_convex_ref.tangent( e ) << "\n";
-            node_type dir= M_convex_ref.tangent(e);
+            node_type dir(nDim);
+            em_node_type<value_type> edir( dir.data().begin(), dir.size());
+            edir = M_convex_ref.tangent(e);
 
             //dcpe_type __dcpe( primal, dir, M_pts_per_face[e] );
             dcpe_type __dcpe( primal, dir, Gt );

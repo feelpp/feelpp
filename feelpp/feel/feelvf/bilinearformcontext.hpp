@@ -433,7 +433,7 @@ void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& _gmcTest,
         map_trial_geometric_mapping_context_type const& _gmcTrial,
         map_geometric_mapping_expr_context_type const& _gmcExpr,
-        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
+        std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad )
 {
     M_test_gmc = _gmcTest;
     M_trial_gmc = _gmcTrial;
@@ -683,7 +683,7 @@ template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::integrateInCaseOfInterpolate( mpl::int_<1>,
-        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+        std::vector<boost::tuple<index_type,index_type> > const& indexLocalToQuad,
         bool isFirstExperience )
 {
 
@@ -766,7 +766,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( size_type elt_0 )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( index_type elt_0 )
 {
     //size_type row_start = M_lb.front().globalRowStart();
     //size_type col_start = M_lb.front().globalColumnStart();
@@ -814,7 +814,7 @@ template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::
-assemble( std::pair<size_type,size_type> const& elt )
+assemble( std::pair<index_type, index_type> const& elt )
 {
     size_type elt_0 = elt.first;
     size_type row_start = M_lb.front().globalRowStart();
@@ -822,7 +822,7 @@ assemble( std::pair<size_type,size_type> const& elt )
 
     size_type trial_eid= elt.second;
     //
-    DCHECK( trial_eid != invalid_size_type_value )
+    DCHECK( trial_eid != invalid_v<size_type> )
         << "this case should have been taken care of earlier before the assembly process\n";
 
     DVLOG(2) << "local Assembly for element " << elt_0
@@ -896,7 +896,7 @@ assemble( std::pair<size_type,size_type> const& elt )
 template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( size_type elt_0, size_type elt_1  )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( index_type elt_0, index_type elt_1  )
 {
     //size_type row_start = M_lb.front().globalRowStart();
     //size_type col_start = M_lb.front().globalColumnStart();
@@ -911,8 +911,8 @@ template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::
-assemble( std::pair<size_type,size_type> const& elt_0,
-          std::pair<size_type,size_type> const& elt_1 )
+assemble( std::pair<index_type,index_type> const& elt_0,
+          std::pair<index_type,index_type> const& elt_1 )
 {
 
     size_type test_elt_0 = elt_0.first;
