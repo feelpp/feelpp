@@ -605,7 +605,6 @@ GreplDEIM<Order,Dim>::updateResidualMonolithic(vector_ptrtype const& X,
     auto u = Xh->element();
     auto v = Xh->element();
     u=*X;
-    auto g = exp( mu(1)*idv(u) );
 
     R->zero();
     form1( _test=Xh, _vector=R ) =

@@ -134,6 +134,8 @@ EmpiricalQuadrature<RangeType>::EmpiricalQuadrature( range_type const& range,
     M_tol(doption(_prefix=M_prefix,_name="eq.tolerance")),
     M_M(0),
     M_J(ioption(_prefix=M_prefix,_name="eq.sampling-size")),
+    M_numElts(0),
+    M_N(0),
     M_order(ioption(_prefix=M_prefix, _name="eq.order")),
     M_maxOrder(ioption(_prefix=M_prefix, _name="eq.max-order")),
     M_tolZero(doption(_prefix=M_prefix, _name="eq.tolerance-zero"))

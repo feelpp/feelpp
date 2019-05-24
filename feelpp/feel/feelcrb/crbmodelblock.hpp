@@ -116,7 +116,7 @@ struct InitEnergtMatrixByBlock
     typedef std::shared_ptr<SpaceType> space_ptrtype;
     typedef typename Backend<double>::sparse_matrix_ptrtype sparse_matrix_ptrtype;
 
-    InitEnergtMatrixByBlock( space_ptrtype Xh ) :
+    explicit InitEnergtMatrixByBlock( space_ptrtype Xh ) :
         m_Xh( Xh )
         {
             m_mats.resize(SpaceType::nSpaces);

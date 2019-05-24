@@ -342,7 +342,7 @@ private :
 
     struct ComputeNormL2InCompositeCase
     {
-        ComputeNormL2InCompositeCase( element_type const composite_u )
+        explicit ComputeNormL2InCompositeCase( element_type const composite_u )
             :
             M_composite_u( composite_u )
             {}

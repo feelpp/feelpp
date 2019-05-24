@@ -142,7 +142,7 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
   public:
     static po::options_description makeOptions( std::string const& prefix = "");
     static self_ptrtype New(crb::stage stage = crb::stage::online, std::string const& prefix = "");
-    BiotSavartAlphaElectricCRB(std::string const& prefix = "");
+    explicit BiotSavartAlphaElectricCRB(std::string const& prefix = "");
     BiotSavartAlphaElectricCRB(crb::stage stage, std::string const& prefix = "");
 
     void initModel();

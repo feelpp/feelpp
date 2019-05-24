@@ -91,7 +91,7 @@ public :
             return modelAssemble(mu,u,online);
         }
 
-    void updateRb( rbspace_ptrtype const& XN, std::vector<std::vector<int>> subN ) override
+    void updateRb( rbspace_ptrtype const& XN, std::vector<std::vector<int>> const& subN ) override
         {
             M_subN = subN;
             return updateRb( XN, mpl::bool_<by_block>() );

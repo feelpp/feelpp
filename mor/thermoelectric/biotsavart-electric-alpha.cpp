@@ -104,9 +104,9 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::initModel()
     int N = M_trainsetDeimSize;
     std::string supersampling = (boost::format("DmuDeimBS-P%1%-N%2%") % this->parameterSpace()->dimension() % N ).str();
     std::ifstream file( supersampling);
-    bool all_proc_same_sampling=true;
     if( ! file )
     {
+        bool all_proc_same_sampling=true;
         Pset->randomize( N , all_proc_same_sampling , supersampling );
         Pset->writeOnFile( supersampling );
     }
