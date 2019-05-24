@@ -99,7 +99,7 @@ public :
             BOOST_TEST_MESSAGE( "Check integral with mesh dim " << Dim << " order " << O << " convex " << (C<Dim,O,Dim>::type()) );
 
         ti.restart();
-        auto c = normL2( _range=elements(mesh), _expr=laplacianv(u)-lapg );
+        auto c = normL2( _range=elements(mesh), _expr=laplacianv(u)-lapg, _quad=_Q<4>() );
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "  . [time normL2 laplacianv(u)-" << lapg <<" =" << ti.elapsed() << "s] c=" <<  c );
 

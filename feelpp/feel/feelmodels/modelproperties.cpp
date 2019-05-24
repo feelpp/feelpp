@@ -33,9 +33,9 @@ namespace Feel {
 
 
 
-ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, WorldComm const& world, std::string const& prefix )
+ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix )
     :
-    M_worldComm( world ),
+    super( world ),
     M_prefix( prefix ),
     M_params( world ),
     M_mat( world ),

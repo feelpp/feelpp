@@ -20,13 +20,16 @@ makeAbout()
 
 template<int nDim, int OrderT>
 void
-runApplicationMixedPoisson()
+runApplicationMixedPoisson( std::string  const& prefix )
 {
     using namespace Feel;
 
     typedef FeelModels::MixedPoisson<nDim,OrderT> mp_type;
 
-    auto MP = mp_type::New("mixedpoisson");
+    std::string p = "hdg.poisson";
+    if( !prefix.empty() )
+        p += "."+prefix;
+    auto MP = mp_type::New(p);
     auto mesh = loadMesh( _mesh=new typename mp_type::mesh_type );
     decltype( IPtr( _domainSpace=Pdh<OrderT>(mesh), _imageSpace=Pdh<OrderT>(mesh) ) ) Idh ;
     decltype( IPtr( _domainSpace=Pdhv<OrderT>(mesh), _imageSpace=Pdhv<OrderT>(mesh) ) ) Idhv;
@@ -70,8 +73,8 @@ int main(int argc, char *argv[])
 {
     using namespace Feel;
 
-    po::options_description mpoptions( "mixedpoisson options" );
-    mpoptions.add( FeelModels::makeMixedPoissonOptions("mixedpoisson") );
+    po::options_description mpoptions( "hdg.poisson options" );
+    mpoptions.add( FeelModels::makeMixedPoissonOptions("","hdg.poisson") );
     mpoptions.add_options()
         ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
         ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
@@ -81,7 +84,7 @@ int main(int argc, char *argv[])
                            _argv=argv,
                            _about=makeAbout(),
                            _desc=mpoptions,
-                           _desc_lib=FeelModels::makeMixedPoissonLibOptions("mixedpoisson").add(feel_options())
+                           _desc_lib=FeelModels::makeMixedPoissonLibOptions("","hdg.poisson").add(feel_options())
                            );
 
     int dimension = ioption(_name="case.dimension");
@@ -105,7 +108,7 @@ int main(int argc, char *argv[])
                                                                                              std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
                                                                                              constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
                                                                                              if ( dimension == _dim && discretization == _discretization )
-                                                                                                 runApplicationMixedPoisson<_dim,_torder>();
+                                                                                                 runApplicationMixedPoisson<_dim,_torder>( "" );
                                                                                          } );
 
     return 0;

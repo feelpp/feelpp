@@ -44,7 +44,7 @@ public:
 
     //BOOST_STATIC_ASSERT( ::boost::is_arithmetic<T>::value );
 
-    static const size_type context = vm::JACOBIAN;
+    static const size_type context = 0;
     static const bool is_terminal = false;
 
     template<typename Func>

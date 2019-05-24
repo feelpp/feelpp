@@ -9,7 +9,7 @@ _cfds={
     'fluid(3,3,2,1)':Fluid_3DP3P2G1,
 }
 
-def fluid( dim=2, orderVelocity=2, orderPressure=1, orderGeometry=1, buildMesh=True, worldComm=core.Environment.worldCommPtr() ):
+def fluid( dim=2, orderVelocity=2, orderPressure=1, orderGeometry=1, buildMesh=True, worldComm=None ):
     """create a fluid toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -18,6 +18,8 @@ def fluid( dim=2, orderVelocity=2, orderPressure=1, orderGeometry=1, buildMesh=T
     orderGeometry -- the polynomial order for the geometry (default: 1)
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     """
+    if worldComm is None:
+        worldComm=core.Environment.worldCommPtr()
     key='fluid('+str(dim)+','+str(orderVelocity)+','+str(orderPressure)+','+str(orderGeometry)+')'
     if worldComm.isMasterRank():
         print(key)

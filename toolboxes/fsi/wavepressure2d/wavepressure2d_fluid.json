@@ -56,7 +56,7 @@
     {
         "Exports":
         {
-            "fields":["velocity","pressure","displacement"]
+            "fields":["velocity","pressure","displacement","pid"]
         }
     }
 
