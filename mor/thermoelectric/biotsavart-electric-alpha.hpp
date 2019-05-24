@@ -33,6 +33,7 @@
 #include <feel/feelcrb/crbmodel.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelcrb/empiricalquadrature.hpp>
 #include <electric-alpha.hpp>
 
 namespace Feel
@@ -134,6 +135,10 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
     using mat_type = ModelMaterial;
     using map_mat_type = std::map<std::string,mat_type>;
 
+    using eq_type = EmpiricalQuadrature<elements_reference_wrapper_t<mesh_type> >;
+    using eq_ptrtype = std::shared_ptr<eq_type>;
+    using eq_vectype = std::vector<eq_ptrtype>;
+
   public:
     static po::options_description makeOptions( std::string const& prefix = "");
     static self_ptrtype New(crb::stage stage = crb::stage::online, std::string const& prefix = "");
@@ -155,6 +160,7 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
     // void runBS();
     void setupCommunicatorsBS();
     vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag );
+    vector_ptrtype assembleWithEQ( parameter_type const& mu );
     vectorN_type beta( parameter_type const& mu, int M = -1 ) { return this->deim()->beta(mu, M); }
     std::vector<vector_ptrtype> q() { return this->deim()->q(); }
     void online( parameter_type const& mu, int M = -1 );
@@ -182,7 +188,9 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
     cond_space_ptrtype spaceCond() const { return M_XhCond; }
     space_ptrtype spaceMgn() const { return this->Xh; }
     cond_element_type alpha( parameter_type const& mu );
-    void setIndices( std::vector<int> const& index ) { M_indexR = index; }
+    void setIndices( std::vector<int> const& index );
+    void setEmpiricalQuadrature();
+    void offlineEq();
 
 protected:
     te_rb_model_ptrtype M_teCrbModel;
@@ -209,6 +217,7 @@ protected:
     int M_N;
     int M_M;
 
+    eq_vectype M_eqs;
 
     std::vector< mpi::communicator > M_commsC1M;
     std::map<int, dof_points_type> M_dofMgn;
@@ -225,6 +234,7 @@ protected:
     std::string M_dbBasename;
     int M_verbose;
     bool M_useRbInDeim;
+    bool M_useEQ;
 }; // class BiotSavartAlphaElectroCRB
 
 #if !defined(FEELPP_INSTANTIATE_BIOTSAVARTALPHAELECTRIC_ELECTRIC)

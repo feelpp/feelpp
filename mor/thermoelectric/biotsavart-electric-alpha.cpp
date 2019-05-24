@@ -24,7 +24,7 @@
 //!
 #define FEELPP_INSTANTIATE_BIOTSAVART_ALPHA_ELECTRIC
 #include <feel/feelcrb/crbplugin.hpp>
-
+#include <feel/feelmesh/concatenate.hpp>
 
 #include "biotsavart-electric-alpha.hpp"
 #include "electric-alpha.hpp"
@@ -44,10 +44,12 @@ BiotSavartAlphaElectricCRB<te_rb_model_type>::makeOptions( std::string const& pr
         ( "biotsavart.db.base", po::value<std::string>()->default_value("alphabiotsavart"), "basename for crb db")
         ( "biotsavart.use-rb-in-deim", po::value<bool>()->default_value(true), "" )
         ( "biotsavart.verbose", po::value<int>()->default_value(0), "" )
+        ( "biotsavart.use-eq", po::value<bool>()->default_value(true), "use empirical quadrature" )
         ;
     opt.add(deimOptions("bs"));
     opt.add(crbOptions(prefix));
     opt.add(crbSEROptions(prefix));
+    opt.add(eq_options());
     opt.add(AlphaElectric::makeOptions("electric"));
     return opt;
 }
@@ -71,7 +73,8 @@ BiotSavartAlphaElectricCRB<te_rb_model_type>::BiotSavartAlphaElectricCRB(crb::st
       M_trainsetDeimSize(ioption("biotsavart.trainset-deim-size")),
       M_dbBasename(soption("biotsavart.db.base")),
       M_useRbInDeim(boption("biotsavart.use-rb-in-deim")),
-      M_verbose(ioption("biotsavart.verbose"))
+      M_verbose(ioption("biotsavart.verbose")),
+      M_useEQ(boption("biotsavart.use-eq"))
 {
 }
 
@@ -129,9 +132,15 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::initModel()
     this->deim()->run();
     Feel::cout << tc::green << "Construction of BiotSavart DEIM finished!!"
                << tc::reset << std::endl;
-    auto online_model = d->onlineModel();
-    online_model->setupCRB(M_crb);
-    online_model->setIndices(d->indexR());
+
+    auto onlineModel = d->onlineModel();
+    onlineModel->setupCRB(M_crb);
+    onlineModel->setIndices(d->indexR());
+    if( M_useEQ )
+    {
+        onlineModel->setEmpiricalQuadrature();
+        onlineModel->offlineEq();
+    }
 }
 
 template<typename te_rb_model_type>
@@ -152,6 +161,9 @@ typename BiotSavartAlphaElectricCRB<te_rb_model_type>::vector_ptrtype
 BiotSavartAlphaElectricCRB<te_rb_model_type>::assembleForDEIM( parameter_type const& mu, int const& tag )
 {
     tic();
+    if( this->isOnlineModel() && this->M_useEQ )
+        return this->assembleWithEQ(mu);
+
     if( this->isOnlineModel() || M_useRbInDeim )
     {
         int timeSteps = 1;
@@ -285,6 +297,58 @@ BiotSavartAlphaElectricCRB<te_rb_model_type>::assembleForDEIM( parameter_type co
     B.close();
 
     toc("assembleBiotSavart", M_verbose > 0);
+
+    return Bvec;
+}
+
+template<typename te_rb_model_type>
+typename BiotSavartAlphaElectricCRB<te_rb_model_type>::vector_ptrtype
+BiotSavartAlphaElectricCRB<te_rb_model_type>::assembleWithEQ( parameter_type const& mu )
+{
+    tic();
+    auto mesh = M_XhCond->mesh();
+    vector_ptrtype Bvec = backend()->newVector( this->Xh );
+    auto B = this->Xh->element( Bvec );
+
+    std::vector<double> intLocD, intSumD;
+    for(int i = 0; i < M_dofMgn.size(); ++i)
+    {
+        if( M_commsC1M[i] )
+        {
+            int dofSize = M_indexR.size();
+
+            intLocD.resize( dofSize, 0 );
+            intSumD.resize( dofSize, 0 );
+
+            if( M_XhCond->nLocalDof() > 0 )
+            {
+                int i = 0;
+                if( !M_teCrbModel->materialsWithoutGeo().empty() )
+                {
+                    auto eq = M_eqs[i++];
+                    for( int m = 0; m < eq->nbExpressions(); ++m )
+                        intLocD[m] += eq->evaluate(mu, m);
+                }
+                for( auto const& material : M_teCrbModel->materialsWithGeo() )
+                {
+                    auto eq = M_eqs[i++];
+                    for( int m = 0; m < eq->nbExpressions(); ++m )
+                        intLocD[m] += eq->evaluate(mu, m);
+                }
+            }
+
+            mpi::reduce(M_commsC1M[i], intLocD.data(), dofSize, intSumD.data(), std::plus<double>(), 0);
+            if( M_commsC1M[i].rank() == 0 )
+            {
+                for(int d=0; d<dofSize; d++)
+                    B.set(this->Xh->dof()->dofPoint(M_indexR[d]).template get<1>(), intSumD[d]);
+            }
+        }
+        Environment::worldComm().barrier();
+    }
+
+
+    toc("assembleWithEQ", M_verbose > 0);
 
     return Bvec;
 }
@@ -634,6 +698,115 @@ typename BiotSavartAlphaElectricCRB<te_rb_model_type>::value_type
 BiotSavartAlphaElectricCRB<te_rb_model_type>::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
 {
     return 0;
+}
+
+template<typename te_rb_model_type>
+void
+BiotSavartAlphaElectricCRB<te_rb_model_type>::setIndices( std::vector<int> const& index )
+{
+    M_indexR = index;
+}
+
+template<typename te_rb_model_type>
+void
+BiotSavartAlphaElectricCRB<te_rb_model_type>::setEmpiricalQuadrature()
+{
+    auto mesh = this->M_XhCond->mesh();
+    M_V = this->M_XhCond->element();
+    auto mu = this->newParameter();
+    auto Dmu = this->parameterSpace();
+
+    auto coeff = 1/(4*M_PI);
+    auto mu0 = 4*M_PI*1e-7; //SI unit : H.m-1 = m.kg.s-2.A-2
+
+    auto matWithoutGeo = M_teCrbModel->materialsWithoutGeo();
+    if( !matWithoutGeo.empty() )
+    {
+        auto it = matWithoutGeo.begin();
+        auto r = markedelements(mesh, it->first);
+        for( ++it; it != matWithoutGeo.end(); ++it )
+            r = concatenate(r, markedelements(mesh, it->first) );
+
+        M_eqs.push_back(std::make_shared<eq_type>(r, Dmu));
+
+        auto sigma = matWithoutGeo.begin()->second.getDouble("sigma");
+        for(int m = 0; m < M_indexR.size(); ++m )
+        {
+            auto dofCoord = this->Xh->dof()->dofPoint(M_indexR[m]).template get<0>();
+            auto dofComp = this->Xh->dof()->dofPoint(M_indexR[m]).template get<2>();
+            auto coord = vec(cst(dofCoord[0]),cst(dofCoord[1]),cst(dofCoord[2]));
+            auto dist = inner( coord-P(), coord-P(), mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
+            auto ex = -mu0*coeff*sigma*cross(trans(gradv(M_V)), coord-P())/(dist*dist*dist);
+            using fn_t = std::function<void(parameter_type const&, cond_element_type&)>;
+            fn_t lambda = [this](parameter_type const& mu, cond_element_type& v) mutable {
+                              Feel::cout << "lambda" << std::endl;
+                              this->computeVRB(mu);
+                              this->expandV();
+                              Feel::cout << "lambda end" << std::endl;
+                          };
+            M_eqs.back()->addExpression(ex,mu,M_V,lambda, dofComp);
+        }
+        Feel::cout << "add EQ without geo" << std::endl;
+    }
+
+    auto matWithGeo = M_teCrbModel->materialsWithGeo();
+    for( auto const& matp : matWithGeo )
+    {
+        auto marker = matp.first;
+        auto material = matp.second;
+        auto r = markedelements(mesh, marker);
+
+        M_eqs.push_back(std::make_shared<eq_type>(r, Dmu));
+
+        auto sigma = material.getDouble("sigma");
+        auto paramNames = material.getVecString("params");
+        std::vector<Expr<Feel::vf::Cst<boost::reference_wrapper<double> > >> paramRefs;
+        for(int i = 0; i < paramNames.size(); ++i )
+            paramRefs.push_back(cst_ref(mu.parameterNamed(paramNames[i])));
+
+        auto alphaStr = M_teCrbModel->alphaRef(material);
+        auto alphaExpr = expr(alphaStr, paramNames, paramRefs);
+        auto alphaPrimeStr = M_teCrbModel->alphaPrime(material);
+        auto alphaPrimeExpr = expr(alphaPrimeStr, paramNames, paramRefs);
+
+        auto Jinv = mat<3,3>( cos(alphaExpr), -sin(alphaExpr), -alphaPrimeExpr*Py(),
+                              sin(alphaExpr), cos(alphaExpr), alphaPrimeExpr*Px(),
+                              cst(0.), cst(0.), cst(1.) );
+
+        auto psi = vec( cos(alphaExpr)*Px() + sin(alphaExpr)*Py(),
+                        -sin(alphaExpr)*Px() + cos(alphaExpr)*Py(),
+                        Pz() );
+
+        for(int m = 0; m < M_indexR.size(); ++m )
+        {
+            auto dofCoord = this->Xh->dof()->dofPoint(M_indexR[m]).template get<0>();
+            auto dofComp = this->Xh->dof()->dofPoint(M_indexR[m]).template get<2>();
+            auto coord = vec(cst(dofCoord[0]),cst(dofCoord[1]),cst(dofCoord[2]));
+            auto dist = inner( coord-psi,coord-psi,
+                               mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
+            auto ex = -mu0*coeff*sigma*cross(trans(gradv(M_V)*Jinv), coord-psi)/(dist*dist*dist);
+
+            using fn_t = std::function<void(parameter_type const&, cond_element_type&)>;
+            fn_t lambda = [this](parameter_type const& mu, cond_element_type& v) mutable {
+                               this->computeVRB(mu);
+                              this->expandV();
+                              v = this->potential();
+                          };
+            M_eqs.back()->addExpression(ex,mu,M_V,lambda,dofComp);
+        }
+        Feel::cout << "add EQ with geo for material " << marker << std::endl;
+    }
+}
+
+template<typename te_rb_model_type>
+void
+BiotSavartAlphaElectricCRB<te_rb_model_type>::offlineEq()
+{
+    int err = 0;
+    for( auto const& eq : M_eqs )
+        err = eq->offline();
+    if( err )
+        Feel::cout << "error in offline EQ" << std::endl;
 }
 
 using alphabiotsavartcrbelectric = BiotSavartAlphaElectricCRB<AlphaElectric>;

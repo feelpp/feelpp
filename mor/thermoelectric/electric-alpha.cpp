@@ -211,7 +211,34 @@ AlphaElectric::parameter_type AlphaElectric::param0()
     return this->paramFromVec(x);
 }
 
-std::string AlphaElectric::alpha( parameter_type const& mu, ModelMaterial const& material )
+std::string AlphaElectric::alphaRef( parameter_type const& mu, ModelMaterial const& material )
+{
+    using boost::math::binomial_coefficient;
+
+    double zb = material.getDouble("zmin");
+    double zt = material.getDouble("zmax");
+    auto paramNames = material.getVecString("params");
+
+    int n = paramNames.size() + 1;
+
+    std::stringstream alphaStream;
+    alphaStream << "0 + (z<" << zt << ")*(z>" << zb << ")*(";
+    for( int k = 1; k < n; ++k )
+    {
+        double ckn = binomial_coefficient<double>(n,k);
+        alphaStream << " + " << ckn
+                    << "*((z-" << zb << ")/" << zt-zb << ")^" << k
+                    << "*(1-(z-" << zb << ")/" << zt-zb << ")^" << n-k
+                    << "*" << paramNames[k-1];
+    }
+    alphaStream << "):x:y:z";
+    for( auto const& p : paramNames )
+        alphaStream << ":" << p;
+
+    return alphaStream.str();
+}
+
+std::string AlphaElectric::alpha( ModelMaterial const& material )
 {
     using boost::math::binomial_coefficient;
 
@@ -237,6 +264,35 @@ std::string AlphaElectric::alpha( parameter_type const& mu, ModelMaterial const&
     alphaStream << "):x:y:z";
 
     return alphaStream.str();
+}
+
+std::string AlphaElectric::alphaPrimeRef( ModelMaterial const& material )
+{
+    using boost::math::binomial_coefficient;
+
+    double zb = material.getDouble("zmin");
+    double zt = material.getDouble("zmax");
+    auto paramNames = material.getVecString("params");
+    paramNames.insert(paramNames.begin(), "0");
+    paramNames.push_back("0");
+
+    int n = paramNames.size() - 1;
+
+    std::stringstream alphaPrimeStream;
+    alphaPrimeStream << "0 + (z<" << zt << ")*(z>" << zb << ")*(";
+    alphaPrimeStream << n << "/" << zt-zb << "*(";
+    for( int k = 0; k < n; ++k )
+    {
+        double ckn1 = binomial_coefficient<double>(n-1,k);
+        alphaPrimeStream << " + (" << paramNames[k+1] << "-" << paramNames[k] << ")*" << ckn1
+                         << "*((z-" << zb << ")/" << zt-zb << ")^" << k
+                         << "*(1-(z-" << zb << ")/" << zt-zb << ")^" << n-1-k;
+    }
+    alphaPrimeStream << ")):x:y:z";
+    for( int k = 1; k < n; ++k )
+        alphaPrimeStream << ":" << paramNames[k];
+
+    return alphaPrimeStream.str();
 }
 
 std::string AlphaElectric::alphaPrime( parameter_type const& mu, ModelMaterial const& material )
