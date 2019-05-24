@@ -278,105 +278,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJaco
 
     this->timerTool("Solve").start();
 
-    sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
-    auto mesh = this->mesh();
-    auto Xh = this->functionSpace();
-    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=J,
-                               _rowstart=this->rowStartInMatrix(),
-                               _colstart=this->colStartInMatrix() );
-    auto const& u = this->fieldVelocity();
-
-    for( auto const& d : this->M_bcDirichlet )
-    {
-        auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",name(d) ) );
-        auto const& listMarkerFaces = std::get<0>( ret );
-        auto const& listMarkerEdges = std::get<1>( ret );
-        auto const& listMarkerPoints = std::get<2>( ret );
-        auto exprUsed = vf::zero<nDim,1>();// 0*vf::one();
-        if ( !listMarkerFaces.empty() )
-            bilinearForm +=
-                on( _range=markedfaces( mesh, listMarkerFaces ),
-                    _element=u, _rhs=RBis, _expr=exprUsed );
-        if ( !listMarkerEdges.empty() )
-            bilinearForm +=
-                on( _range=markededges(mesh, listMarkerEdges),
-                    _element=u,_rhs=RBis,_expr=exprUsed );
-        if ( !listMarkerPoints.empty() )
-            bilinearForm +=
-                on( _range=markedpoints(mesh, listMarkerPoints),
-                    _element=u,_rhs=RBis,_expr=exprUsed );
-    }
-    for ( auto const& bcDirComp : this->M_bcDirichletComponents )
-    {
-        ComponentType comp = bcDirComp.first;
-        for( auto const& d : bcDirComp.second )
-        {
-            auto bilinearFormComp = form2( _test=this->functionSpaceVelocity(),_trial=this->functionSpaceVelocity(),_matrix=J,
-                                           _rowstart=this->rowStartInMatrix(),
-                                           _colstart=this->colStartInMatrix() );
-            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",name(d),comp ) );
-            auto const& listMarkerFaces = std::get<0>( ret );
-            auto const& listMarkerEdges = std::get<1>( ret );
-            auto const& listMarkerPoints = std::get<2>( ret );
-            auto exprUsed = cst(0.);
-            if ( !listMarkerFaces.empty() )
-                bilinearFormComp +=
-                    on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
-                        _rhs=RBis,_expr=exprUsed );
-            if ( !listMarkerEdges.empty() )
-                bilinearFormComp +=
-                    on( _range=markededges(this->mesh(), listMarkerEdges),
-                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
-                        _rhs=RBis,_expr=exprUsed );
-            if ( !listMarkerPoints.empty() )
-                bilinearFormComp +=
-                    on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
-                        _rhs=RBis,_expr=exprUsed );
-        }
-    }
-
-
-    std::list<std::string> markerDirichletEliminationOthers;
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
-    {
-        for (std::string const& marker : this->markersNameMovingBoundary() )
-            markerDirichletEliminationOthers.push_back( marker );
-    }
-#endif
-    for ( auto const& inletbc : M_fluidInletDesc )
-    {
-        std::string const& marker = std::get<0>( inletbc );
-        markerDirichletEliminationOthers.push_back( marker );
-    }
-
-    if ( !markerDirichletEliminationOthers.empty() )
-        bilinearForm +=
-            on( _range=markedfaces(mesh, markerDirichletEliminationOthers ),
-                _element=u,_rhs=RBis,
-                _expr= vf::zero<nDim,1>() );
-
+    this->updateDofEliminationIds( "velocity", data );
 
     if ( this->hasMarkerPressureBC() )
     {
-        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
-        form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,
-               _rowstart=this->rowStartInMatrix()+startBlockIndexPressureLM1,
-               _colstart=this->rowStartInMatrix()+startBlockIndexPressureLM1 ) +=
-            on( _range=boundaryfaces(M_meshLagrangeMultiplierPressureBC), _rhs=RBis,
-                _element=*M_fieldLagrangeMultiplierPressureBC1, _expr=cst(0.));
+        this->updateDofEliminationIds( "pressurelm1", this->dofEliminationIds( "pressurebc-lm" ), data );
         if ( nDim == 3 )
-        {
-            size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
-            form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,
-                   _rowstart=this->rowStartInMatrix()+startBlockIndexPressureLM2,
-                   _colstart=this->rowStartInMatrix()+startBlockIndexPressureLM2 ) +=
-                on( _range=boundaryfaces(M_meshLagrangeMultiplierPressureBC), _rhs=RBis,
-                    _element=*M_fieldLagrangeMultiplierPressureBC2, _expr=cst(0.));
-        }
+            this->updateDofEliminationIds( "pressurelm2", this->dofEliminationIds( "pressurebc-lm" ), data );
     }
 
     double timeElapsed = this->timerTool("Solve").stop();

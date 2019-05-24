@@ -229,8 +229,11 @@ public:
     //!
     //! @return order of the finite element
     //!
-    int order() const { return M_primal.nOrder; }
+    static constexpr int order() { return super::nOrder; }
 
+    //! return true if finite element is linear, false otherwise
+    static constexpr bool isLinear() { return islinear; }
+    
     /**
      * \return the domain shape of the finite element
      */

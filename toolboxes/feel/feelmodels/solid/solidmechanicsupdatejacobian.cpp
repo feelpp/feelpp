@@ -411,65 +411,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJaco
 {
     if ( !this->hasMarkerDirichletBCelimination() ) return;
 
-    sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
+    this->log("SolidMechanics","updateJacobianDofElimination","start" );
 
-    //auto RBis = this->backend()->newVector( J->mapRowPtr() );
-    auto bilinearForm_PatternCoupled = form2( _test=this->functionSpace(),_trial=this->functionSpace(),_matrix=J,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix(),
-                                              _colstart=this->colStartInMatrix() );
-    auto const& u = this->fieldDisplacement();
-    for( auto const& d : this->M_bcDirichlet )
-    {
-        auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",name(d) ) );
-        auto const& listMarkerFaces = std::get<0>( ret );
-        auto const& listMarkerEdges = std::get<1>( ret );
-        auto const& listMarkerPoints = std::get<2>( ret );
-        auto exprUsed = vf::zero<nDim,1>();// 0*vf::one();
-        if ( !listMarkerFaces.empty() )
-            bilinearForm_PatternCoupled +=
-                on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                    _element=u,_rhs=RBis,_expr=exprUsed/*Expression-idv(u)*/,
-                    _prefix=this->prefix() );
-        if ( !listMarkerEdges.empty() )
-            bilinearForm_PatternCoupled +=
-                on( _range=markededges(this->mesh(), listMarkerEdges),
-                    _element=u,_rhs=RBis,_expr=exprUsed/*Expression-idv(u)*/,
-                    _prefix=this->prefix() );
-        if ( !listMarkerPoints.empty() )
-            bilinearForm_PatternCoupled +=
-                on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                    _element=u,_rhs=RBis,_expr=exprUsed/*Expression-idv(u)*/,
-                    _prefix=this->prefix() );
-    }
-    for ( auto const& bcDirComp : this->M_bcDirichletComponents )
-    {
-        ComponentType comp = bcDirComp.first;
-        for( auto const& d : bcDirComp.second )
-        {
-            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",name(d),comp ) );
-            auto const& listMarkerFaces = std::get<0>( ret );
-            auto const& listMarkerEdges = std::get<1>( ret );
-            auto const& listMarkerPoints = std::get<2>( ret );
-            if ( !listMarkerFaces.empty() )
-                bilinearForm_PatternCoupled +=
-                    on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                        _element=u[comp],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/,
-                        _prefix=this->prefix() );
-            if ( !listMarkerEdges.empty() )
-                bilinearForm_PatternCoupled +=
-                    on( _range=markededges(this->mesh(), listMarkerEdges),
-                        _element=u[comp],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/,
-                        _prefix=this->prefix() );
-            if ( !listMarkerPoints.empty() )
-                bilinearForm_PatternCoupled +=
-                    on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                        _element=u[comp],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/,
-                        _prefix=this->prefix() );
+    this->updateDofEliminationIds( "displacement", data );
 
-        }
-    }
+    this->log("SolidMechanics","updateJacobianDofElimination","finish" );
 }
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

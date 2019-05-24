@@ -42,6 +42,7 @@ public:
     using clone_ptrtype = typename super::clone_ptrtype;
     using element_type = typename super::element_type;
     using range_element_type = typename super::range_element_type;
+    using size_type = typename mesh_type::size_type;
     /**
      * Constructor.
      */
@@ -60,7 +61,7 @@ public:
 
 protected:
     /**
-     * Partition the \p MeshBase into \p n subdomains.
+     * Partition the \p MeshBase<> into \p n subdomains.
      */
     void partitionImpl ( mesh_ptrtype mesh, rank_type n, std::vector<range_element_type> const& partitionByRange ) override;
 

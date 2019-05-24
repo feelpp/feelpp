@@ -303,7 +303,7 @@ template<typename MeshType>
 inline
 MeshBoundingBox
 processorBoundingBox ( const MeshType& mesh,
-                       const size_type pid = invalid_size_type_value )
+                       const size_type pid = invalid_v<size_type> )
 {
     FEELPP_ASSERT ( mesh.numPoints() != 0 ).error( "mesh has no points" );
 
@@ -312,7 +312,7 @@ processorBoundingBox ( const MeshType& mesh,
 
     // By default no processor is specified and we compute
     // the bounding box for the whole domain.
-    if ( pid == invalid_size_type_value )
+    if ( pid == invalid_v<size_type> )
     {
         DVLOG(2) << "[processorBoundingBox] np pid given\n";
 
@@ -361,7 +361,7 @@ template<typename MeshType>
 inline
 Sphere
 processorBoundingSphere ( const MeshType& mesh,
-                          const size_type pid = invalid_size_type_value )
+                          const size_type pid = invalid_v<size_type> )
 {
     MeshBoundingBox bbox = processorBoundingBox( mesh,pid );
 

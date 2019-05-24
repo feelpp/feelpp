@@ -30,14 +30,14 @@
 
 namespace Feel {
 
-ModelParameters::ModelParameters( WorldComm const& world )
+ModelParameters::ModelParameters( worldcomm_ptr_t const& world )
     :
-    M_worldComm( world )
+    super( world )
 {}
 
-ModelParameters::ModelParameters( pt::ptree const& p, WorldComm const& world )
+ModelParameters::ModelParameters( pt::ptree const& p, worldcomm_ptr_t const& world )
     :
-    M_worldComm( world )
+    super( world )
 {}
 
 ModelParameters::~ModelParameters()
@@ -69,7 +69,7 @@ ModelParameters::setup()
             else if ( boost::optional<std::string> s = f.get_value_optional<std::string>() )
             {
                 LOG(INFO) << "adding parameter " << t << " with expr " << *s;
-                this->operator[](t) = ModelParameter( t, *s, M_directoryLibExpr, M_worldComm );
+                this->operator[](t) = ModelParameter( t, *s, M_directoryLibExpr, this->worldComm() );
             }
             else
             {
@@ -97,7 +97,7 @@ ModelParameters::setup()
                 if( boost::optional<double> d = f.get_optional<double>("value") )
                     this->operator[](t) = ModelParameter( name, *d, min, max );
                 else if ( boost::optional<std::string> s = f.get_optional<std::string>("value") )
-                    this->operator[](t) = ModelParameter( name, *s, M_directoryLibExpr, M_worldComm, min, max );
+                    this->operator[](t) = ModelParameter( name, *s, M_directoryLibExpr, this->worldComm(), min, max );
                 else
                     this->operator[](t) = ModelParameter( name, 0., min, max );
             }
@@ -128,9 +128,9 @@ ModelParameters::setup()
                 if( boost::optional<std::string> d = f.get_optional<std::string>("ordinate") )
                     ordinate = *d;
 
-
-                std::shared_ptr<Interpolator> interpolator = Interpolator::New( /*interpType*/interpolatorEnumType, filename, abscissa, ordinate, M_worldComm );
-                this->operator[](t) = ModelParameter( name, interpolator, exprStr, M_directoryLibExpr, M_worldComm );
+                
+                std::shared_ptr<Interpolator> interpolator = Interpolator::New( /*interpType*/interpolatorEnumType, filename, abscissa, ordinate, this->worldComm() );
+                this->operator[](t) = ModelParameter( name, interpolator, exprStr, M_directoryLibExpr, this->worldComm() );
             }
         }
     }

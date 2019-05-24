@@ -29,6 +29,7 @@
 
 #include <feel/feelmodels/fsi/fsi.hpp>
 #include <feel/feelmodels/modelmesh/fsimesh.hpp>
+#include <feel/feelpde/operatorpcd.hpp>
 
 namespace Feel
 {
@@ -197,12 +198,12 @@ template <typename FluidType,typename SolidType>
 typename SolidType::mesh_1dreduced_ptrtype
 createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, mpl::bool_<false> /**/ )
 {
-    auto submeshStruct = createSubmesh( FM->meshALE()->referenceMesh(), markedfaces( FM->meshALE()->referenceMesh(), FM->markersNameMovingBoundary()/*"Paroi"*/) );
+    auto submeshStruct = createSubmesh( FM->meshALE()->referenceMesh(), markedfaces( FM->meshALE()->referenceMesh(), FM->markersFSI() ) );
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
         submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
 
-    typedef SubMeshData smd_type;
+    typedef SubMeshData<typename FluidType::mesh_type::index_type> smd_type;
     typedef std::shared_ptr<smd_type> smd_ptrtype;
     smd_ptrtype smd( new smd_type(FM->mesh()) );
     for ( auto const& ew : elements(submeshStruct) )
@@ -212,7 +213,8 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
         size_type idElt2 = FM->meshALE()->dofRelationShipMap()->geoElementMap().at( theface.element0().id() ).first;
         //std::cout << " e.G() " << e.G() << " other.G() " <<  theface.G() << std::endl;
         auto const& theface2 = FM->mesh()->element(idElt2).face(theface.pos_first());
-        smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), theface2.id() ) );
+        //smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), theface2.id() ) );
+        smd->bm.insert( { e.id(), theface2.id() } );
     }
     submeshStruct->setSubMeshData( smd );
 
@@ -223,7 +225,7 @@ template <typename FluidType,typename SolidType>
 typename FluidType::mesh_type::trace_mesh_ptrtype
 createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, mpl::bool_<true> /**/ )
 {
-    auto submeshStruct = createSubmesh( FM->mesh(), markedfaces( FM->mesh(),FM->markersNameMovingBoundary() ) );
+    auto submeshStruct = createSubmesh( FM->mesh(), markedfaces( FM->mesh(),FM->markersFSI() ) );
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
         submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
@@ -275,7 +277,6 @@ FSI<FluidType,SolidType>::init()
 
         // temporary fix (else use in dirichle-neunamm bc in residual) TODO !!!!
         M_fluidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
-
         M_fluidModel->init( false );
     }
 
@@ -295,7 +296,7 @@ FSI<FluidType,SolidType>::init()
         bool doExtractSubmesh = boption(_name="solid-mesh.extract-1d-from-fluid-mesh",_prefix=this->prefix() );
         if ( doExtractSubmesh )
         {
-            CHECK( !M_fluidModel->markersNameMovingBoundary().empty() ) << "no marker moving boundary in fluid model";
+            CHECK( !M_fluidModel->markersFSI().empty() ) << "no marker moving boundary in fluid model";
 
             //if ( M_fluidModel->doRestart() )
             //M_fluidModel->meshALE()->revertReferenceMesh();
@@ -332,7 +333,7 @@ FSI<FluidType,SolidType>::init()
     M_fluidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
     M_solidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
 
-    M_fluidModel->initAlgebraicFactory();
+    M_fluidModel->setApplyMovingMeshBeforeSolve( false );
 
     if (this->fsiCouplingType()=="Semi-Implicit")
     {
@@ -340,15 +341,24 @@ FSI<FluidType,SolidType>::init()
         M_solidModel->useFSISemiImplicitScheme(true);
     }
 
-
-    auto submeshfsi_fluid = createSubmesh( this->fluidModel()->mesh(),markedfaces( this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary()) );
+    M_rangeFSI_fluid = markedfaces( this->fluidModel()->mesh(),this->fluidModel()->markersFSI() );
+    auto submeshfsi_fluid = createSubmesh( this->fluidModel()->mesh(),M_rangeFSI_fluid );
     M_spaceNormalStress_fluid = fluid_type::space_normalstress_type::New(_mesh=submeshfsi_fluid );
     M_fieldNormalStressRefMesh_fluid.reset( new typename fluid_type::element_normalstress_type( M_spaceNormalStress_fluid ) );
 
+    this->fluidModel()->updateRangeDistributionByMaterialName( "interface_fsi", M_rangeFSI_fluid );
+
+    M_fluidModel->addUpdateInHousePreconditionerPCD( "fsi",
+                                                     std::bind( &self_type::initInHousePreconditionerPCD_fluid, std::ref( *this ), std::placeholders::_1 ),
+                                                     std::bind( &self_type::updateInHousePreconditionerPCD_fluid, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 ) );
+    M_fluidModel->initAlgebraicFactory();
+
+
     if ( M_solidModel->isStandardModel() )
     {
+        M_rangeFSI_solid = markedfaces(this->solidModel()->mesh(),this->solidModel()->markerNameFSI());
         //M_spaceNormalStressFromFluid_solid = space_solid_normalstressfromfluid_type::New( _mesh=M_solidModel->mesh() );
-        auto subfsimesh = createSubmesh(this->solidModel()->mesh(),markedfaces(this->solidModel()->mesh(),this->solidModel()->markerNameFSI()) );
+        auto subfsimesh = createSubmesh( this->solidModel()->mesh(),M_rangeFSI_solid) ;
         M_spaceNormalStressFromFluid_solid = space_solid_normalstressfromfluid_type::New( _mesh=subfsimesh );
         M_fieldNormalStressFromFluid_solid.reset(new element_solid_normalstressfromfluid_type( M_spaceNormalStressFromFluid_solid ) );
         if ( this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
@@ -400,8 +410,11 @@ FSI<FluidType,SolidType>::init()
     }
     else if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
     {
-        auto rangeFSIfluid = markedfaces( this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary() );
-        auto dofsMultiProcessToAdd = M_fluidModel->functionSpaceVelocity()->dofs( rangeFSIfluid, ComponentType::NO_COMPONENT, true );
+        auto XhFluidVelocity = this->fluidModel()->functionSpaceVelocity();
+        auto dofsToAdd = XhFluidVelocity->dofs(  M_rangeFSI_fluid );
+        XhFluidVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+        this->dofEliminationIdsAll("fluid.velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhFluidVelocity->dofs( M_rangeFSI_fluid, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("fluid.velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
 
@@ -435,6 +448,10 @@ FSI<FluidType,SolidType>::init()
                                                                                   std::ref( *this ), std::placeholders::_1 ) );
     M_fluidModel->algebraicFactory()->addFunctionNewtonInitialGuess( std::bind( &self_type::updateNewtonInitialGuess_Fluid,
                                                                                 std::ref( *this ), std::placeholders::_1 ) );
+    M_fluidModel->algebraicFactory()->addFunctionJacobianDofElimination( std::bind( &self_type::updateJacobianDofElimination_Fluid,
+                                                                                    std::ref( *this ), std::placeholders::_1 ) );
+    M_fluidModel->algebraicFactory()->addFunctionResidualDofElimination( std::bind( &self_type::updateResidualDofElimination_Fluid,
+                                                                                    std::ref( *this ), std::placeholders::_1 ) );
     if ( M_solidModel->isStandardModel() )
     {
         M_solidModel->algebraicFactory()->addFunctionLinearAssembly( std::bind( &self_type::updateLinearPDE_Solid,
@@ -464,8 +481,8 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
     if ( M_fluidModel->doRestart() )
     {
         if ( M_fluidModel->useFSISemiImplicitScheme() )
-            M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute(markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()));
-        M_fluidModel->updateNormalStressOnReferenceMesh( M_fieldNormalStressRefMesh_fluid );
+            M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( M_rangeFSI_fluid );
+        M_fluidModel->updateNormalStressOnReferenceMesh( "interface_fsi", M_fieldNormalStressRefMesh_fluid );
     }
 
     if ( this->solidModel()->isStandardModel() )
@@ -482,7 +499,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         M_coulingRNG_operatorDiagonalOnFluid = this->fluidModel()->meshVelocity2().functionSpace()->elementPtr();
 
         //--------------------------------------------------------
-        auto rangeFSI = markedfaces(mesh,this->solidModel()->markerNameFSI());
+        auto rangeFSI = M_rangeFSI_solid;
         double areaFSI = measure(_range=rangeFSI);
 
         std::set<size_type> dofsIdOnFSI;
@@ -594,16 +611,15 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
     {
         auto VhFluid = this->fluidModel()->meshVelocity2().functionSpace();
         M_coulingRNG_operatorDiagonalOnFluid = VhFluid->elementPtr();
-        auto rangeFSIFluid = markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary());
         std::set<size_type> dofsIdOnFSIFluid;
-        for ( auto const& faceWrap : rangeFSIFluid )
+        for ( auto const& faceWrap : M_rangeFSI_fluid )
         {
             auto const& face = unwrap_ref( faceWrap );
             auto facedof = VhFluid->dof()->faceLocalDof( face.id() );
             for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
                 dofsIdOnFSIFluid.insert( it->index() );
         }
-        M_coulingRNG_operatorDiagonalOnFluid->on(_range=rangeFSIFluid,_expr=one());
+        M_coulingRNG_operatorDiagonalOnFluid->on(_range=M_rangeFSI_fluid,_expr=one());
         sync( *M_coulingRNG_operatorDiagonalOnFluid, "=", dofsIdOnFSIFluid );
     }
 
@@ -615,8 +631,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         M_coulingRNG_vectorTimeDerivative = this->fluidModel()->backend()->newVector( dmFullFluidSpace );
         int nBlock = this->fluidModel()->nBlockMatrixGraph();
         auto VhFluid = this->fluidModel()->spaceVelocityPressure();
-        auto rangeFSIFluid = markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary());
-        auto ru = stencilRange<0,0>(rangeFSIFluid);
+        auto ru = stencilRange<0,0>(M_rangeFSI_fluid);
         auto const& u = M_fluidModel->fieldVelocity();
         if ( useAlgebraicInnerProductWithLumping )
         {
@@ -649,7 +664,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
             M_coulingRNG_matrixTimeDerivative = this->fluidModel()->backend()->newBlockMatrix(_block=myblockGraphTimeDerivative);
             auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
             form2(_test=VhFluid,_trial=VhFluid,_matrix=M_coulingRNG_matrixTimeDerivative/*,_pattern=size_type(Pattern::DEFAULT)*/ ) +=
-                integrate( _range=rangeFSIFluid,
+                integrate( _range=M_rangeFSI_fluid,
                            _expr=inner(myB*idt(u),id(u)),
                            _geomap=this->geomap() );
             M_coulingRNG_matrixTimeDerivative->close();
@@ -676,7 +691,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         M_coulingRNG_matrixStress = this->fluidModel()->backend()->newBlockMatrix(_block=myblockGraph);
         // assembly stress matrix
         form2(_test=VhFluid,_trial=VhStress,_matrix=M_coulingRNG_matrixStress ) +=
-            integrate( _range=rangeFSIFluid,
+            integrate( _range=M_rangeFSI_fluid,
                        _expr= inner( idt(M_fieldNormalStressRefMesh_fluid),id(u)),
                        _geomap=this->geomap() );
     }
@@ -774,6 +789,46 @@ FSI<FluidType,SolidType>::updateBackendOptimisation( int iterationFSI, double la
 
 template< class FluidType, class SolidType >
 void
+FSI<FluidType,SolidType>::initInHousePreconditionerPCD_fluid( operatorpcdbase_fluid_type & opPCDBase ) const
+{
+    typedef Feel::Alternatives::OperatorPCD<typename fluid_type::space_fluid_velocity_type,typename fluid_type::space_fluid_pressure_type> op_pcd_type;
+    op_pcd_type * opPCD = dynamic_cast<op_pcd_type*>(&opPCDBase);
+    CHECK( opPCD ) << "fails to cast OperatorPCD";
+
+    if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
+    {
+        for ( auto const& rangeFacesMat : this->fluidModel()->rangeDistributionByMaterialName()->rangeMeshFacesByMaterial( "interface_fsi" ) )
+        {
+            std::string matName = rangeFacesMat.first;
+            auto const& rangeFaces = rangeFacesMat.second;
+            opPCD->addRangeDirichletBC( "FSI_FluidDirichlet_" + matName, rangeFaces );
+        }
+    }
+    else
+        opPCD->addRangeNeumannBC( "FSI_FluidNeumann", M_rangeFSI_fluid );
+}
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateInHousePreconditionerPCD_fluid( operatorpcdbase_fluid_type & opPCDBase, DataUpdateBase & data ) const
+{
+    if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
+    {
+        typedef Feel::Alternatives::OperatorPCD<typename fluid_type::space_fluid_velocity_type,typename fluid_type::space_fluid_pressure_type> op_pcd_type;
+        op_pcd_type * opPCD = dynamic_cast<op_pcd_type*>(&opPCDBase);
+        CHECK( opPCD ) << "fails to cast OperatorPCD";
+        for ( auto const& rangeFacesMat : this->fluidModel()->rangeDistributionByMaterialName()->rangeMeshFacesByMaterial( "interface_fsi" ) )
+        {
+            std::string matName = rangeFacesMat.first;
+            auto rhoExpr = this->fluidModel()->materialProperties()->density( matName ).expr();
+            opPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, "FSI_FluidDirichlet_" + matName, idv(M_fluidModel->meshVelocity2()) );
+        }
+    }
+}
+
+//---------------------------------------------------------------------------------------------------------//
+
+template< class FluidType, class SolidType >
+void
 FSI<FluidType,SolidType>::solveImpl1()
 {
 
@@ -781,7 +836,7 @@ FSI<FluidType,SolidType>::solveImpl1()
     {
         this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
-        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()) );
+        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( M_rangeFSI_fluid );
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
@@ -887,7 +942,7 @@ FSI<FluidType,SolidType>::solveImpl2()
     {
         this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
-        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()) );
+        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( M_rangeFSI_fluid );
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
@@ -997,7 +1052,7 @@ FSI<FluidType,SolidType>::solveImpl2()
     {
         this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
-        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()) );
+        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( M_rangeFSI_fluid );
     }
 
 
@@ -1013,7 +1068,7 @@ FSI<FluidType,SolidType>::solveImpl3()
     {
         this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
-        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( markedfaces(M_fluidModel->mesh(),M_fluidModel->markersNameMovingBoundary()) );
+        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( M_rangeFSI_fluid );
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);

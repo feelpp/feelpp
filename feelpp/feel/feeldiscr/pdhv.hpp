@@ -64,6 +64,12 @@ template<typename MeshType,
          int Tag = 0>
 using Pdhv_ptrtype = typename meta::Pdhv<MeshType,Order,Pts,Tag>::ptrtype;
 
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+using Pdhv_element_t=typename Pdhv_type<MeshType,Order,Pts>::element_type;
+
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+using Pdhv_element_type=Pdhv_element_t<MeshType,Order,Pts>;
+
 /**
    Given a \p mesh, build a function space of vectorial discontinuous function
    which are piecewise polynomial of degree (total or in each variable) less

@@ -1,34 +1,33 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 19 Aug 2017
+//! @copyright 2017 Feel++ Consortium
+//!
+#ifndef FEELPP_REFSIMPLEX_HPP
+#define FEELPP_REFSIMPLEX_HPP 1
 
-  This file is part of the Feel library
+#include <memory>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2010-05-06
-
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file refsimplex.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2010-05-06
- */
-#ifndef __refsimplex_H
-#define __refsimplex_H 1
-
+#include <feel/feelalg/glas.hpp>
+#include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/marker.hpp>
 
 namespace Feel
@@ -88,12 +87,13 @@ public:
     typedef typename matrix_node<value_type>::type points_type;
     typedef points_type matrix_node_type;
 
-    typedef node_type normal_type;
-    typedef ublas::vector<normal_type> normals_type;
+    using normal_type = eigen_vector_type<RDim,value_type>;
+    using normals_type = vector_eigen_vector_type<RDim,value_type>;
     typedef typename normals_type::const_iterator normal_const_iterator;
 
-    typedef node_type edge_tangent_type;
-    typedef ublas::vector<edge_tangent_type> edge_tangents_type;
+    
+    using edge_tangent_type = eigen_vector_type<RDim,value_type>;
+    using edge_tangents_type = vector_eigen_vector_type<RDim,value_type>;
     typedef typename edge_tangents_type::const_iterator edge_tangent_const_iterator;
 
     using permutation_type = typename super::permutation_type;
@@ -427,7 +427,7 @@ public:
      *
      * @return the n-th normal of the triangle
      */
-    node_type const& normal( uint16_type __n ) const
+    normal_type const& normal( uint16_type __n ) const
     {
         return M_normals[__n];
     }
@@ -503,6 +503,23 @@ public:
         return M_meas;
     }
 
+    template<typename ConvexType = GeoShape>
+    double faceMeasure( uint16_type f, std::enable_if_t<dimension_v<ConvexType> == 1>* = nullptr ) const
+        {
+            return 0;
+        }
+    template<typename ConvexType = GeoShape>
+    double faceMeasure( uint16_type f, std::enable_if_t<dimension_v<ConvexType> == 2>* = nullptr ) const
+        {
+            return 2;
+        }
+
+    template<typename ConvexType = GeoShape>
+    double faceMeasure( uint16_type f, std::enable_if_t<dimension_v<ConvexType> == 3>* = nullptr ) const
+        {
+            return 4;
+        }
+    
     size_type id() const
     {
         return 0;
@@ -543,6 +560,10 @@ public:
     {
         return permutation_type();
     }
+    permutation_type permutation( uint16_type i, mpl::int_<1> ) const
+        {
+            return permutation_type();
+        }
     double h() const
     {
         // FIXME: should be computed once for all in constructor
@@ -996,15 +1017,22 @@ private:
         for ( uint16_type __n = 0; __n < numEdges; ++__n )
         {
             //const int ind_normal = reindex1[nDim-1][__n];
-            M_edge_tangents[__n].resize( nDim );
+            M_edge_tangents[__n].setZero();
         }
+        node_t<value_type> _n1(nDim),_n0(nDim);
+        
         for(int edge = 0; edge < numEdges; ++edge )
         {
-            M_edge_tangents[edge] = edgeVertex(edge,1)-edgeVertex(edge,0);
+            _n1 = edgeVertex(edge,1);
+            _n0 = edgeVertex(edge,0);
+            
+            em_node_type<value_type> n1( _n1.data().begin(), nRealDim, 1 );
+            em_node_type<value_type> n0( _n0.data().begin(), nRealDim, 1 ); 
+            M_edge_tangents[edge] = n1-n0;
             //M_edge_tangents[edge] /= ublas::norm_2( M_edge_tangents[edge] );
         }
 #if 0
-[0]=-1/math::sqrt( 2. );
+        [0]=-1/math::sqrt( 2. );
             M_edge_tangents[0][1]= 1/math::sqrt( 2. );
         M_edge_tangents[1][0]=  0;
         M_edge_tangents[1][1]= -1;
@@ -1036,25 +1064,20 @@ private:
         const uint16_type d = (nDim==0)?0:nDim-1;
         for ( uint16_type __n = 0; __n < numNormals; ++__n )
         {
-            //const uint16_type ind_normal = reindex[nDim-1][__n];
             const int ind_normal = reindex1[d][__n];
-            M_normals[ind_normal].resize( nDim );
-            M_normals[ind_normal].clear();// = ublas::zero_vector<value_type>( nDim );
+            //M_normals[ind_normal].resize( nDim );
+            M_normals[ind_normal].setZero();
 
             if ( __n > 0 )
             {
-                M_normals[ind_normal][__n-1] = -1;
+                M_normals[ind_normal](__n-1) = -1;
             }
 
             else
             {
-                typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<0> >,
-                        mpl::int_<1>,
-                        mpl::int_<nDim> >::type denom;
-                M_normals[ind_normal] = ublas::scalar_vector<value_type>( nDim, math::sqrt( value_type( 1.0 )/value_type( denom::value ) ) );
+                constexpr int factor = (nDim==0)?1:nDim;
+                M_normals[ind_normal].setConstant( sqrt( 1./factor ) );
             }
-
-            //DVLOG(2) << "normal[" << ind_normal << "]=" << M_normals[ind_normal] << "\n";
         }
     }
 

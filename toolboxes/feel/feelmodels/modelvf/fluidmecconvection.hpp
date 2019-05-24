@@ -205,17 +205,17 @@ public:
         // output and usefull containter
         typedef Shape<gmc_type::nDim, Scalar, false, false> shape_scalar;
         //typedef Eigen::Matrix<value_type,shape_scalar::M,shape_scalar::N> loc_scalar_type;
-        typedef Eigen::Tensor<value_type,2> loc_scalar_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<1,1>> loc_scalar_type;
         typedef boost::multi_array<loc_scalar_type,1> array_scalar_type;
 
         typedef Shape<gmc_type::nDim, Vectorial, false, false> shape_vectorial;
         //typedef Eigen::Matrix<value_type,shape_vectorial::M,shape_vectorial::N> loc_vectorial_type;
-        typedef Eigen::Tensor<value_type,2> loc_vectorial_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<shape_vectorial::M,shape_vectorial::N>> loc_vectorial_type;
         typedef boost::multi_array<loc_vectorial_type,1> array_vectorial_type;
 
         typedef Shape<gmc_type::nDim, Tensor2, false, false> shape_tensor2;
         //typedef Eigen::Matrix<value_type,shape_tensor2::M,shape_tensor2::N> loc_tensor2_type;
-        typedef Eigen::Tensor<value_type,2> loc_tensor2_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<shape_tensor2::M,shape_tensor2::N>> loc_tensor2_type;
         typedef boost::multi_array<loc_tensor2_type,1> array_tensor2_type;
 
         typedef loc_vectorial_type loc_id_type;
@@ -226,6 +226,8 @@ public:
         typedef Eigen::Matrix<value_type,shape_vectorial::M,shape_vectorial::N> loc_matrix_vectorial_type;
         typedef boost::multi_array<loc_matrix_vectorial_type,1> array_matrix_vectorial_type;
 
+        using ret_type = Eigen::Map<loc_matrix_vectorial_type const>;
+        
         typedef typename mpl::if_<mpl::or_< boost::is_same<SpecificExprType,mpl::int_<0> >,
                                             boost::is_same<SpecificExprType,mpl::int_<1> > >,
                                   shape_vectorial,
@@ -251,9 +253,9 @@ public:
             M_locId( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locGrad( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
             M_locMuP0( expr.muP0().idExtents(*fusion::at_key<key_type>( geom )) ),
-            M_zeroLocGrad( shape_tensor2::M,shape_tensor2::N ),
-            M_zeroLocId( shape_vectorial::M,shape_vectorial::N ),
-            M_zeroLocScalar( shape_scalar::M,shape_scalar::N )
+            M_zeroLocGrad(),
+            M_zeroLocId(),
+            M_zeroLocScalar()
             //M_zero( ret_type::Zero() )
             {
                 M_zeroLocGrad.setZero();
@@ -275,9 +277,9 @@ public:
             M_locId( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locGrad( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
             M_locMuP0( expr.muP0().idExtents(*fusion::at_key<key_type>( geom )) ),
-            M_zeroLocGrad( shape_tensor2::M,shape_tensor2::N ),
-            M_zeroLocId( shape_vectorial::M,shape_vectorial::N ),
-            M_zeroLocScalar( shape_scalar::M,shape_scalar::N )
+            M_zeroLocGrad(),
+            M_zeroLocId(),
+            M_zeroLocScalar()
             //M_zero( ret_type::Zero() )
             {
                 M_zeroLocGrad.setZero();
@@ -297,9 +299,9 @@ public:
             M_locId( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locGrad( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
             M_locMuP0( expr.muP0().idExtents(*fusion::at_key<key_type>( geom )) ),
-            M_zeroLocGrad( shape_tensor2::M,shape_tensor2::N ),
-            M_zeroLocId( shape_vectorial::M,shape_vectorial::N ),
-            M_zeroLocScalar( shape_scalar::M,shape_scalar::N )
+            M_zeroLocGrad(),
+            M_zeroLocId(),
+            M_zeroLocScalar()
             //M_zero( ret_type::Zero() )
             {
                 M_zeroLocGrad.setZero();
@@ -527,10 +529,10 @@ public:
         {
             return evalq( c1, c2, q );
         }
-        loc_matrix_vectorial_type const&
+        ret_type
         evaliq( uint16_type i, uint16_type q ) const
         {
-            return M_loc[q];
+            return ret_type(M_loc[q].data());
         }
 
         value_type
@@ -538,10 +540,11 @@ public:
         {
             return M_loc[q](c1,0);
         }
-        loc_matrix_vectorial_type const&
+        
+        ret_type
         evalq( uint16_type q ) const
         {
-            return M_loc[q];
+            return ret_type(M_loc[q].data());
         }
 
     private:

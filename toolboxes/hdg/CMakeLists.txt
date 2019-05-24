@@ -22,6 +22,7 @@
 #
 #
 
+set(FEELPP_HDG_PATH ${CMAKE_SOURCE_DIR}/toolboxes/feel/feelmodels/hdg )
 #feelpp_add_application( hdg_darcy main.cpp )
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
@@ -56,12 +57,7 @@ feelpp_add_application( hdg_poroelastic
 #  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
 #  )
 
-feelpp_add_testcase(bitter CATEGORY hdg)
-#feelpp_add_testcase(eye2brain_level1 CATEGORY hdg)
-#feelpp_add_testcase(eye2brain_level2 CATEGORY hdg)
-feelpp_add_testcase(cylinder CATEGORY hdg )
-feelpp_add_testcase(testDarcy CATEGORY hdg )
-feelpp_add_testcase(mixed-poisson CATEGORY hdg )
-feelpp_add_testcase(mixed-elasticity CATEGORY hdg )
-feelpp_add_testcase(mp-red CATEGORY hdg )
-feelpp_add_testcase(HL-31)
+
+feelpp_add_testcase(poisson PREFIX hdg CATEGORY HDG )
+feelpp_add_testcase(elasticity PREFIX hdg CATEGORY HDG )
+feelpp_add_testcase(thermoelectric PREFIX hdg CATEGORY HDG)

@@ -124,16 +124,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                                _expr= inner( expression(d,this->symbolsExpr()),id(lambdaBC) ),
                                _geomap=this->geomap() );
             }
-
-#if 0 //defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" )
-            {
-                form1( _test=this->XhDirichletLM(),_vector=F,
-                       _rowstart=rowStartInVector+startBlockIndexDirichletLM ) +=
-                    integrate( _range=markedfaces(mesh,this->markersNameMovingBoundary() ),
-                               _expr= inner( idv(this->meshVelocity2()),id(lambdaBC) ) );
-            }
-#endif
         }
     }
 
@@ -158,17 +148,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                                _expr= timeSteppingScaling*this->dirichletBCnitscheGamma()*inner( expression(d,this->symbolsExpr()),id(v) )/hFace(),
                                _geomap=this->geomap() );
             }
-
-#if 0 //defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" )
-            {
-                form1( _test=Xh, _vector=F,
-                       _rowstart=rowStartInVector) +=
-                    integrate( _range=markedfaces(mesh,this->markersNameMovingBoundary() ),
-                               _expr= this->dirichletBCnitscheGamma()*trans(idv(this->meshVelocity2()))*id(v)/hFace(),
-                               _geomap=this->geomap() );
-            }
-#endif
         }
     }
 

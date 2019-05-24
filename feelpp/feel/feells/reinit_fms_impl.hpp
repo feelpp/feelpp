@@ -477,14 +477,14 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 
         if (M_periodicity.isPeriodic())
             {
-                size_type idOnClusterPeriodicPoint = invalid_size_type_value;
+                size_type idOnClusterPeriodicPoint = invalid_v<size_type>;
                 // look from tag1 to tag 2
                 if (M_idTag1_idTag2.left.count( newIdOnCluster ) )
                     idOnClusterPeriodicPoint = M_idTag1_idTag2.left.at( newIdOnCluster );
                 else if (M_idTag1_idTag2.right.count( newIdOnCluster ) )
                     idOnClusterPeriodicPoint = M_idTag1_idTag2.right.at( newIdOnCluster );
 
-                if ( idOnClusterPeriodicPoint != invalid_size_type_value )
+                if ( idOnClusterPeriodicPoint != invalid_v<size_type> )
                     {
                         if ( M_functionspace->dof()->dofGlobalClusterIsOnProc( idOnClusterPeriodicPoint ) )
                             newIdsOnProc.push_back( clusterToProcessor(idOnClusterPeriodicPoint) );

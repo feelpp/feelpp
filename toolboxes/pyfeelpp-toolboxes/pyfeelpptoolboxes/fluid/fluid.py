@@ -1,16 +1,10 @@
-from pyfeelpp import core
 import sys
-
-import pyfeelpptoolboxes.modelcore as modelcore
-
-e=core.Environment(sys.argv,opts=modelcore.toolboxes_options("fluid"))
-
-# from pyfeelpp import discr,ts,filters
 from pyfeelpptoolboxes.fluid import *
+e=core.Environment(sys.argv,opts=toolboxes_options("fluid"))
+
 
 # 2D fluid solver using P2P1G1 approximation
-f=fluid(dim=2,orderVelocity=2,orderPressure=1,
-        worldComm=core.Environment.worldCommPtr())
+f=fluid(dim=2,orderVelocity=2,orderPressure=1)
 f.init()
 f.printAndSaveInfo()
 if f.isStationary():

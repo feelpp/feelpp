@@ -26,12 +26,14 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-11-09
  */
+#define FEELPP_INSTANTIATE_NOEXTERN_MESHBASE 1
 #include <feel/feelmesh/meshbase.hpp>
 
 namespace Feel
 {
 
-MeshBase::MeshBase( uint16_type topoDim, uint16_type realDim, worldcomm_ptr_t const& worldComm )
+template <typename IndexT>
+MeshBase<IndexT>::MeshBase( uint16_type topoDim, uint16_type realDim, worldcomm_ptr_t const& worldComm )
     :
     super( worldComm ),
     M_topodim( topoDim ),
@@ -48,11 +50,14 @@ MeshBase::MeshBase( uint16_type topoDim, uint16_type realDim, worldcomm_ptr_t co
 }
 
 
-MeshBase::~MeshBase()
+template <typename IndexT>
+MeshBase<IndexT>::~MeshBase()
 {}
 
+
+template <typename IndexT>
 void
-MeshBase::clear()
+MeshBase<IndexT>::clear()
 {
     M_is_updated = false;
 
@@ -63,15 +68,17 @@ MeshBase::clear()
 
     M_components = MESH_ALL_COMPONENTS;
 }
+template <typename IndexT>
 void
-MeshBase::updateForUse( size_type components )
+MeshBase<IndexT>::updateForUse( size_type components )
 {
     this->setComponents( components );
     this->updateForUse();
 }
 
+template <typename IndexT>
 bool
-MeshBase::isPartitioned() const
+MeshBase<IndexT>::isPartitioned() const
 {
     if ( mpi::environment::initialized() )
         return M_n_parts == this->worldComm().localSize();
@@ -80,8 +87,10 @@ MeshBase::isPartitioned() const
         return M_n_parts == 1;
 }
 
+
+template <typename IndexT>
 flag_type
-MeshBase::markerId ( boost::any const& __marker ) const
+MeshBase<IndexT>::markerId ( boost::any const& __marker ) const
 {
     flag_type theflag = -1;
     if ( boost::any_cast<flag_type>( &__marker ) )
@@ -113,9 +122,9 @@ MeshBase::markerId ( boost::any const& __marker ) const
     return theflag;
 }
 
-
+template <typename IndexT>
 std::set<flag_type>
-MeshBase::markersId( boost::any const& markerAny ) const
+MeshBase<IndexT>::markersId( boost::any const& markerAny ) const
 {
     std::set<flag_type> theflags;
     if ( boost::any_cast<std::vector<flag_type> >( &markerAny ) )
@@ -170,5 +179,5 @@ MeshBase::markersId( boost::any const& markerAny ) const
     return theflags;
 }
 
-
+template class MeshBase<uint32_type>;
 } // Feel
