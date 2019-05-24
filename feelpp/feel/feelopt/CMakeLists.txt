@@ -23,7 +23,7 @@
 #
 
 if (FEELPP_HAS_NLOPT )
-  set(SRC nlopt.cpp enums.cpp)
+  set(SRC glpk.cpp nlopt.cpp enums.cpp)
   feel_append_src(feelopt "${SRC}")
 endif()
 

@@ -174,6 +174,24 @@ nlopt_options( std::string const& prefix )
 }
 
 po::options_description
+glpk_options( std::string const& prefix )
+{
+    po::options_description _options( "Glpk " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"glpk.verbosity").c_str(), po::value<int>()->default_value(2), "level of verbosity (between 1 and 4)" )
+        ( prefixvm( prefix,"glpk.method").c_str(), po::value<int>()->default_value(1), "method (1=primal,2=dualprimal,3=dual)" )
+        ( prefixvm( prefix,"glpk.tolerance-bounds").c_str(), po::value<double>()->default_value(1e-7), "Tolerance used to check if the basic solution is primal feasible" )
+        ( prefixvm( prefix,"glpk.tolerance-dual").c_str(), po::value<double>()->default_value(1e-7), "Tolerance used to check if the basic solution is dual feasible" )
+        ( prefixvm( prefix,"glpk.tolerance-pivot").c_str(), po::value<double>()->default_value(1e-10), "Tolerance used to choose eligble pivotal elements of the simplex table" )
+        ( prefixvm( prefix,"glpk.iteration-limit").c_str(), po::value<int>()->default_value(INT_MAX), "Simplex iteration limit" )
+        ( prefixvm( prefix,"glpk.time-limit").c_str(), po::value<int>()->default_value(INT_MAX), "Searching time limit, in milliseconds" )
+        ( prefixvm( prefix,"glpk.presolve").c_str(), po::value<int>()->default_value(0), "enable presolver (0 or 1)" )
+        ( prefixvm( prefix,"glpk.scaling").c_str(), po::value<int>()->default_value(128), "scaling options (1=geometric scaling, 16=equilibration scaling, 32=round scale factors to power of two, 64=skip scaling, 0x80=choose automatically)")
+        ;
+    return _options;
+}
+
+po::options_description
 mesh_options( std::string const& prefix )
 {
     po::options_description _options( "Mesh " + prefix + " options" );
@@ -1038,9 +1056,14 @@ eq_options( std::string const& prefix )
 {
     po::options_description _options( "EQ " + prefix + " options" );
     _options.add_options()
+        ( prefixvm( prefix,"eq.verbosity" ).c_str(), po::value<int>()->default_value(0), "level of verbosity" )
+        ( prefixvm( prefix,"eq.db.load").c_str(), po::value<bool>()->default_value(true), "load the database" )
+        ( prefixvm( prefix,"eq.db.filename").c_str(), po::value<std::string>()->default_value("eq"), "directory in which save/load the database" )
         ( prefixvm( prefix,"eq.tolerance" ).c_str(), po::value<double>()->default_value(1e-6), "tolerance to reach for offline empirical quadrature" )
         ( prefixvm( prefix, "eq.sampling-size").c_str(), po::value<int>()->default_value(100), "sampling size for offline empirical quadrature" )
-        ( prefixvm( prefix, "eq.test").c_str(), po::value<bool>()->default_value(true) )
+        ( prefixvm( prefix, "eq.max-order").c_str(), po::value<int>()->default_value(30), "maximum order of quadrature" )
+        ( prefixvm( prefix, "eq.order").c_str(), po::value<int>()->default_value(-1), "force order of quadrature" )
+        ( prefixvm( prefix, "eq.tolerance-zero").c_str(), po::value<double>()->default_value(1e-12), "tolerance to decide if weight is zero or not")
         ;
     return _options;
 }
@@ -1084,6 +1107,10 @@ feel_options( std::string const& prefix  )
         /* nlopt options */
 #if defined(FEELPP_HAS_NLOPT)
         .add( nlopt_options( prefix ) )
+#endif
+        /* glpk options */
+#if defined(FEELPP_HAS_GLPK_H)
+        .add( glpk_options( prefix ) )
 #endif
 
         .add( mesh_options( prefix ) )

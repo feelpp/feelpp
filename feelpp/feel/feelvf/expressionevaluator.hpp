@@ -39,17 +39,19 @@ protected:
     using parameterelement_type = typename parameterspace_type::element_type;
 
 public:
-    ExpressionEvaluatorBase(range_type const& r) : M_range(r) {};
+    ExpressionEvaluatorBase(range_type const& r, int comp = 0) : M_range(r), M_comp(comp) {};
     virtual void init(int o) = 0;
     virtual void update(element_type const& elt) = 0;
-    virtual void update(parameterelement_type const& mu) = 0;
+    virtual bool update(parameterelement_type const& mu) = 0;
     virtual int nPoints() = 0;
     virtual double weight(int i) = 0;
     virtual double eval(int q, int comp) = 0;
     virtual int order() = 0;
+    int component() { return M_comp; }
 
 protected:
     range_type M_range;
+    int M_comp;
 };
 
 template<typename EltT, typename ExprT>
@@ -74,14 +76,15 @@ protected:
     using parameterelement_type = typename super::parameterelement_type;
 
 public:
-    ExpressionEvaluator( range_type const& r, expr_type const& ex );
+    ExpressionEvaluator( range_type const& r, expr_type const& ex, int comp = 0);
     void init(int o) override;
     void update(element_type const& elt) override;
-    virtual void update(parameterelement_type const& mu) override {};
+    virtual bool update(parameterelement_type const& mu) override { return true; }
     int nPoints() override;
     double weight(int i) override;
     double eval(int q, int comp) override;
     int order() override;
+    ExprT expression() const { return M_expr; }
 
     expr_type M_expr;
 
@@ -92,8 +95,8 @@ protected:
 };
 
 template<typename RangeType, typename ExprT>
-ExpressionEvaluator<RangeType, ExprT>::ExpressionEvaluator( range_type const& r, expr_type const& ex )
-    : super(r),
+ExpressionEvaluator<RangeType, ExprT>::ExpressionEvaluator( range_type const& r, expr_type const& ex, int comp )
+    : super(r, comp),
       M_expr(ex)
 {}
 
@@ -176,16 +179,23 @@ protected:
 
 public:
     ExpressionEvaluatorParam( range_type const& r, expr_type const& ex,
-                              parameterelement_type const& mu ):
-        super(r,ex),
+                              parameterelement_type const& mu, int comp = 0 ):
+        super(r,ex,comp),
         M_mu(mu)
         {}
 
-    virtual void update(parameterelement_type const& mu) override { M_mu = mu; };
+    virtual bool update(parameterelement_type const& mu) override;
 
 protected:
     parameterelement_type M_mu;
 };
+
+template<typename EltT, typename ExprT>
+bool ExpressionEvaluatorParam<EltT, ExprT>::update(parameterelement_type const& mu)
+{
+    M_mu = mu;
+    return true;
+}
 
 template<typename EltT, typename ExprT, typename FctT>
 class ExpressionEvaluatorNonLinear : public ExpressionEvaluatorParam<EltT, ExprT>
@@ -209,16 +219,16 @@ public:
     using parameterelement_type = typename super::parameterelement_type;
 
     using function_element_type = FctT;
-    using update_function_type = std::function<void(parameterelement_type const&, function_element_type&)>;
+    using update_function_type = std::function<bool(parameterelement_type const&, function_element_type&)>;
 
 public:
     ExpressionEvaluatorNonLinear( range_type const& r, expr_type const& ex,
-                                  parameterelement_type& mu, FctT& u )
-            : super(r,ex,mu),
+                                  parameterelement_type& mu, FctT& u, int comp = 0 )
+        : super(r,ex,mu,comp),
               M_u(u)
         {}
 
-    void update(parameterelement_type const& mu) override;
+    bool update(parameterelement_type const& mu) override;
 
     update_function_type M_fct;
 protected:
@@ -226,15 +236,18 @@ protected:
 };
 
 template<typename EltT, typename ExprT, typename FctT>
-void
+bool
 ExpressionEvaluatorNonLinear< EltT, ExprT, FctT>::update( parameterelement_type const& mu )
 {
     this->M_mu = mu;
     if( M_fct )
     {
-        M_fct(this->M_mu, M_u);
-        this->M_expr(idv(M_u));
+        if( M_fct(this->M_mu, M_u) )
+            this->M_expr(idv(M_u));
+        else
+            return false;
     }
+    return true;
 }
 
 
