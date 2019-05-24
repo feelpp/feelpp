@@ -303,7 +303,7 @@ CRBBlock<TruthModelType>::addBasis( element_type& U, element_type& Udu, paramete
 template <typename CRBType>
 struct OrthonormalizeBasisByBlock
 {
-    OrthonormalizeBasisByBlock( CRBType* crb ) :
+    explicit OrthonormalizeBasisByBlock( CRBType* crb ) :
         m_crb( crb )
         {}
 
@@ -808,7 +808,7 @@ struct ExportBasisFunctionsByBlock
 {
     typedef typename CRBType::mesh_type mesh_type;
 
-    ExportBasisFunctionsByBlock( CRBType* crb ):
+    explicit ExportBasisFunctionsByBlock( CRBType* crb ):
         m_crb( crb )
         {
             m_e = exporter( _mesh=m_crb->model()->functionSpace()->mesh(), _name="basis-functions" );

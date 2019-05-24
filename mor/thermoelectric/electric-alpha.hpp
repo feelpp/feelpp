@@ -152,7 +152,6 @@ private:
     parameter_type M_mu;
 
     double M_sigma;
-    double M_potDif;
 
     int M_trainsetDeimSize;
     int M_trainsetMdeimSize;
@@ -165,7 +164,7 @@ private:
 public:
     static po::options_description makeOptions( std::string const& prefix="" );
     // Constructors
-    AlphaElectric(std::string const& prefix = "");
+    explicit AlphaElectric(std::string const& prefix = "");
     AlphaElectric( mesh_ptrtype mesh, std::string const& prefix = "" );
 
     // Helpers

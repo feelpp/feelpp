@@ -78,7 +78,7 @@ void writeErrors(fs::ofstream& out, std::vector<std::vector<double> > const& err
     }
 }
 
-void writeStats(std::ostream& out, std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double> > const& stat, std::string base = "M")
+void writeStats(std::ostream& out, std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double> > const& stat, std::string const& base = "M")
 {
     auto min = std::get<0>(stat);
     auto max = std::get<1>(stat);

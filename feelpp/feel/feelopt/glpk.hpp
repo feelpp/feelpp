@@ -59,7 +59,7 @@ private:
 
 struct FeelGlpkException : std::exception
 {
-    FeelGlpkException(int e);
+    explicit FeelGlpkException(int e);
     const char* what() const noexcept;
 
     int M_e;

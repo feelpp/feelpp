@@ -188,7 +188,7 @@ private:
 public:
     static po::options_description makeOptions( std::string const& prefix="thermoelectric" );
     // Constructors
-    ThermoElectric( std::string const& prefix = "thermoelectric" );
+    explicit ThermoElectric( std::string const& prefix = "thermoelectric" );
     ThermoElectric( mesh_ptrtype mesh, std::string const& prefix = "thermoelectric" );
 
     int indexOfMatV(std::string mat ) const { return std::distance(M_elecMaterials.begin(),M_elecMaterials.find(mat)); }
