@@ -93,20 +93,18 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     DOC "Directory where GMSH header files are stored" )
 
 
+  # first pass :search form GMSH_DIR cmake or env variable
   FIND_LIBRARY(GMSH_LIBRARY NAMES gmsh Gmsh gmsh-2.5.1 gmsh1
     HINTS
+    ${GMSH_DIR}
     $ENV{GMSH_DIR}
-    ${CMAKE_BINARY_DIR}/contrib/gmsh
-    ${CMAKE_SYSTEM_PREFIX_PATH}
-    NO_SYSTEM_ENVIRONMENT_PATH
+    #${CMAKE_BINARY_DIR}/contrib/gmsh
+    NO_DEFAULT_PATH
     PATH_SUFFIXES
     lib lib/x86_64-linux-gnu/ )
 
-  FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
-    PATHS
-    $ENV{GMSH_DIR}
-    ${CMAKE_BINARY_DIR}/contrib/gmsh
-    ${CMAKE_SYSTEM_PREFIX_PATH}
+  # second pass : search in system
+  FIND_LIBRARY(GMSH_LIBRARY NAMES gmsh Gmsh gmsh-2.5.1 gmsh1
     PATH_SUFFIXES
     lib lib/x86_64-linux-gnu/ )
 

@@ -18,7 +18,7 @@ if ( WGET )
       COMMAND ${WGET} -N -q --timeout=5 ${gmsh_gitlab_url}/Common/OpenFile.h -O OpenFile.h )
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/BasisFactory.h ${CMAKE_CURRENT_BINARY_DIR}/Field.h ${CMAKE_CURRENT_BINARY_DIR}/OpenFile.h DESTINATION include/feelpp/gmsh COMPONENT Devel )
   else()
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    #file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     add_custom_command(
       TARGET gmsh_get_files
       COMMAND ${WGET} -N -q --timeout=5 ${gmsh_gitlab_url}/api/gmsh.h -O gmsh.h )
