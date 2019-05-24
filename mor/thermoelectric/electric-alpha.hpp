@@ -183,6 +183,8 @@ public:
 
     std::string alpha( parameter_type const& mu, ModelMaterial const& mat );
     std::string alphaPrime( parameter_type const& mu, ModelMaterial const& mat );
+    std::string alphaRef( ModelMaterial const& mat );
+    std::string alphaPrimeRef( ModelMaterial const& mat );
     sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag ) override;
     vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag ) override;
     void initModel() override;

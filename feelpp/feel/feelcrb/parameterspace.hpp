@@ -170,6 +170,12 @@ public:
                 auto it = std::find(paramNames.begin(), paramNames.end(), name);
                 return this->operator()( it - paramNames.begin() );
             }
+        double& parameterNamed( std::string name )
+            {
+                auto paramNames = M_space->parameterNames();
+                auto it = std::find(paramNames.begin(), paramNames.end(), name);
+                return this->operator()( it - paramNames.begin() );
+            }
 
         void setParameterNamed( std::string name, double value )
             {
@@ -638,6 +644,8 @@ public:
                 if( all_procs_have_same_sampling )
                 {
                     boost::mpi::broadcast( M_space->worldComm() , /**this*/boost::serialization::base_object<super>( *this ) , M_space->worldComm().masterRank() );
+                    for(auto& _mu : *this )
+                        _mu.setParameterSpace(M_space);
                 }
                 else
                 {
