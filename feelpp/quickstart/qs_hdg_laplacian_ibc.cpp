@@ -79,6 +79,17 @@ int hdg_laplacian()
     tic();
     auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
     int nbIbc = nelements(markedfaces(mesh,"Ibc"),true) >= 1 ? 1 : 0;
+    int nbIbcOde = nelements(markedfaces(mesh,"IbcOde"),true) >= 1 ? 2 : 0;
+    std::map<std::string,std::pair<int,std::string>> ibcs;
+    if ( nbIbc )
+    {
+        ibcs["Ibc"]= std::pair{0,"Ibc"};
+    }
+    if ( nbIbcOde )
+    {
+        ibcs["Ibc"]= std::pair{0,"IbcOde"};
+        ibcs["Ode"]= std::pair{1,"IbcOde"};
+    }
     toc("mesh",true);
 
     int proc_rank = Environment::worldComm().globalRank();
@@ -101,8 +112,13 @@ int hdg_laplacian()
     auto u_exact = expr<Dim,1>( u_exact_str );
     auto un_exact = expr( locals.at("un") );
     auto f_exact = expr( locals.at("f") );
-    auto ibc_exact_d = integrate(markedfaces(mesh,"Ibc"), un_exact).evaluate()(0,0);
-    auto ibc_exact = cst(ibc_exact_d);
+    std::map<std::string,double> ibc_exact_map;
+    for( auto const& [ibc_type, ibc_data ] : ibcs )
+        if ( ibc_data.second == "IbcOde" && ibc_type == "Ibc" )
+            ibc_exact_map[ibc_type] = 0;
+        else
+            ibc_exact_map[ibc_type] = integrate(markedfaces(mesh,ibc_data.second), un_exact).evaluate()(0,0);
+
 #else
     std::string p_exact_str = soption("solution.p");
     std::string u_exact_str = soption("solution.u");
@@ -121,7 +137,8 @@ int hdg_laplacian()
     auto Wh = Pdh<OrderP>( mesh, true );
     auto select_faces = [mesh]( auto const& ewrap ) {
         auto const& e = unwrap_ref( ewrap );
-        if ( e.hasMarker() && e.marker().value() == mesh->markerName( "Ibc" ) )
+        if ( e.hasMarker() && ( e.marker().value() == mesh->markerName( "Ibc" )  ||
+                                e.marker().value() == mesh->markerName( "IbcOde" ) ) )
             return true;
         return false; };
     auto complement_integral_bdy = complement(faces(mesh),select_faces);
@@ -130,7 +147,7 @@ int hdg_laplacian()
     auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
     // auto face_mesh = createSubmesh( mesh, faces(mesh ), EXTRACTION_KEEP_MESH_RELATION, 0 );
     auto Mh = Pdh<OrderP>( face_mesh,true );
-    auto ibc_mesh = createSubmesh( mesh, markedfaces(mesh, "Ibc"), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto ibc_mesh = createSubmesh( mesh, markedfaces(mesh, {"Ibc","IbcOde"}), EXTRACTION_KEEP_MESH_RELATION, 0 );
     auto Ch = Pch<0>( ibc_mesh, true );
 
     toc("spaces",true);
@@ -148,7 +165,7 @@ int hdg_laplacian()
          << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
          << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
          << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
-    if( nbIbc > 0 )
+    if( nbIbc > 0 || nbIbcOde)
         cout << "Ch<0> : " << Ch->nDof() << std::endl;
     cout << mesh->numGlobalElements()  << " " << mesh->numGlobalFaces() << " "
          << Vh->nDof() << " " << Wh->nDof() << " " << Mh->nDof() << " "
@@ -204,7 +221,17 @@ int hdg_laplacian()
     auto nu = Ch->element( "nu" );
 
     tic();
-    auto ibcSpaces = std::make_shared<ProductSpace<decltype(Ch),true> >( nbIbc, Ch);
+    auto ibcSpaces = dynProductPtr( nbIbc+nbIbcOde, Ch);
+    //ibcSpaces->setProperties( {"Ibc","Ode" } );
+    std::vector<std::string> props;
+    if ( nbIbc )
+        props.push_back( "Ibc" );
+    if ( nbIbcOde )
+    {
+        props.push_back( "Ibc" );
+        props.push_back( "Ode" );
+    }
+    ibcSpaces->setProperties( props );
     auto ps = product2( ibcSpaces, Vh, Wh, Mh );
     toc("space",true);
     tic();
@@ -226,10 +253,15 @@ int hdg_laplacian()
                           _expr=id(l)*un_exact );
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                           _expr=id(l)*p_exact);
-    double meas = integrate( _range=markedfaces(mesh, "Ibc"),
-                             _expr=cst(1.)).evaluate()(0,0);
-    rhs(3_c,0) += integrate( _range=markedfaces(mesh,"Ibc"),
-                            _expr=ibc_exact*id(nu)/meas);
+    for( auto const& [ ibc_type, ibc_data ]  : ibcs )
+    {
+        auto const& [ibc_space_index,ibc_marker] = ibc_data;
+        Feel::cout << "rhs assembly " << ibc_type << " -- block:" << ibc_space_index << " -- marker: " << ibc_marker << " -- value:" << ibc_exact_map[ibc_type] << std::endl;
+        double meas = integrate( _range=markedfaces(mesh, ibc_marker ),
+                                 _expr=cst(1.)).evaluate()(0,0);
+        rhs(3_c,ibc_space_index) += integrate( _range=markedfaces(mesh, ibc_marker ),
+                                               _expr=ibc_exact_map[ibc_type]*id(nu)/meas);
+    }
 
     toc("rhs",true);
     tic();
@@ -254,8 +286,13 @@ int hdg_laplacian()
     toc("a(0,2)",FLAGS_v>0);
 
     tic();
-    a(0_c,3_c,0,0) += integrate(_range=markedfaces(mesh,"Ibc"),
-                                _expr=idt(mu)*(trans(id(u))*N()) );
+    for( auto const& [ibc_type,ibc_data]  : ibcs )
+    {
+        auto const& [ibc_space_index,ibc_marker] = ibc_data;
+        if ( ibc_type == "Ibc" )
+            a(0_c,3_c,0,ibc_space_index) += integrate(_range=markedfaces(mesh,ibc_marker),
+                                                      _expr=idt(mu)*(trans(id(u))*N()) );
+    }
     toc("a(0,3)",FLAGS_v>0);
 
     //
@@ -285,8 +322,14 @@ int hdg_laplacian()
     toc("a(1,2)",FLAGS_v>0);
 
     tic();
-    a(1_c,3_c,1,0) += integrate( _range=markedfaces(mesh,"Ibc"),
-                                 _expr=tau_constant*idt(mu)*id(w) );
+    for( auto const& [ibc_type,ibc_data]  : ibcs )
+    {
+        auto const& [ibc_space_index,ibc_marker] = ibc_data;
+        if ( ibc_type == "Ibc" )
+            a(1_c,3_c,0,ibc_space_index) += integrate( _range=markedfaces(mesh,ibc_marker),
+                                                       _expr=tau_constant*idt(mu)*id(w) );
+        
+    }
     toc("a(1,3)", FLAGS_v>0);
 
     //
@@ -326,22 +369,37 @@ int hdg_laplacian()
     //
     // Fourth row a(3_c,:)
     //
-    tic();
-    a(3_c,0_c,0,0) += integrate( _range=markedfaces(mesh,"Ibc"),
-                                 _expr=(trans(idt(u))*N())*id(nu) );
-    toc("a(3,0)",FLAGS_v>0);
+    
+    for( auto const& [ibc_type,ibc_data]  : ibcs )
+    {
+        auto const& [ibc_space_index,ibc_marker] = ibc_data;
+        Feel::cout << "row 3_c assembly " << ibc_type << " -- block:" << ibc_space_index << " -- marker: " << ibc_marker << std::endl;
+        tic();
+        if ( ibc_type == "Ibc" )
+            a(3_c,0_c,ibc_space_index,0) += integrate( _range=markedfaces(mesh,ibc_marker),
+                                                       _expr=(trans(idt(u))*N())*id(nu) );
+        toc("a(3,0)",FLAGS_v>0);
 
-    tic();
-    a(3_c,1_c,0,1) += integrate( _range=markedfaces(mesh,"Ibc"),
-                                 _expr=tau_constant*idt(p)*id(nu) );
-    toc("a(3,1)",FLAGS_v>0);
+        tic();
+        if ( ibc_type == "Ibc" )
+            a(3_c,1_c,ibc_space_index,0) += integrate( _range=markedfaces(mesh,ibc_marker),
+                                                       _expr=tau_constant*idt(p)*id(nu) );
+        toc("a(3,1)",FLAGS_v>0);
 
-    tic();
-    a(3_c,3_c,0,0) += integrate( _range=markedfaces(mesh,"Ibc"),
-                                 _expr=-tau_constant*id(nu)*idt(mu) );
-    toc("a(3,3)",FLAGS_v>0);
+        if ( ibc_type == "Ode" )
+            a(3_c,3_c,ibc_space_index-1,ibc_space_index) += integrate( _range=markedfaces(mesh,ibc_marker),
+                                                                       _expr=-id(nu)*idt(mu) );
+        
+        tic();
+        double c = 1.;
+        if ( ibc_type == "Ibc" )
+            c = -tau_constant.expression().value();
+        a(3_c,3_c,ibc_space_index,ibc_space_index) += integrate( _range=markedfaces(mesh,ibc_marker),
+                                                                 _expr=c*id(nu)*idt(mu) );
+        toc("a(3,3)",FLAGS_v>0);
+    }
     toc("matrices",true);
-
+        
     
     
     tic();
