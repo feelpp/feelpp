@@ -286,7 +286,7 @@ BOOST_PARAMETER_FUNCTION(
                             _verbose=verbose);
 
 #if defined(FEELPP_HAS_HDF5)
-    if ( savehdf5 )
+    if ( savehdf5 && partitions == 1 )
         m->saveHDF5( fs::path(filenameExpand).stem().string()+".json" );
 #endif
     return m;
