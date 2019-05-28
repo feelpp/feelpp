@@ -48,6 +48,7 @@
 #include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feelfilters/importergmsh.hpp>
 #include <feel/feelfilters/detail/mesh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
 
 
 
@@ -1212,7 +1213,7 @@ public :
         ( required
           ( mesh, * )
           ( name, ( std::string ) )
-        ) //required
+          ) //required
         ( optional
           ( format,         *, ioption(_name="gmsh.format") )
           ( straighten,     *( boost::is_integral<mpl::_> ), 1 )
@@ -1225,72 +1226,38 @@ public :
           ( hmax,     ( double ), 1e22 )
           ( optimize3d_netgen, *( boost::is_integral<mpl::_> ), true )
           ( update,          *( boost::is_integral<mpl::_> ), MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
-        ) //optional
-    )
-    {
-        typedef typename Feel::detail::mesh<Args>::type _mesh_type;
-        typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
-
-        _mesh_ptrtype _mesh( mesh );
-        _mesh->setWorldComm( worldcomm );
-
-        if ( worldcomm->isActive() )
+          ) //optional
+                                    )
         {
+            typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+            typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
             this->cleanOstr();
             this->zeroCpt();
-            Gmsh gmsh( _mesh_type::nDim, _mesh_type::nOrder, worldcomm );
-            gmsh.setRecombine( _mesh_type::shape_type::is_hypercube );
-            gmsh.setRefinementLevels( refine );
-            gmsh.setFileFormat( (GMSH_FORMAT)format );
-            gmsh.setNumberOfPartitions( partitions );
-            gmsh.setPartitioner( partitioner );
-            gmsh.setMshFileByPartition( partition_file );
-            this->init( _mesh_type::nOrder,gmsh.version(),
-                        hmin,hmax,refine,
-                        optimize3d_netgen,
-                        partitioner,partitions,partition_file );
 
-            std::string geostring;
+            auto gmshDesc = std::make_shared<Gmsh>( _mesh_type::nDim, _mesh_type::nOrder, worldcomm );
+            gmshDesc->setRecombine( _mesh_type::shape_type::is_hypercube );
+            gmshDesc->setPrefix( name );
 
             if ( M_geoIsDefineByUser )
             {
-                geostring= M_ostrDefineByUser->str();
+                gmshDesc->setDescription( M_ostrDefineByUser->str() );
             }
-
             else
             {
                 this->geoStr();
-                geostring = M_ostr->str();
+                gmshDesc->setDescription( gmshDesc->preamble() + M_ostr->str() );
             }
 
-
-            std::string fname;
-            bool gen;
-            boost::tie( fname, gen ) = gmsh.generate( name,
-                                                      geostring,
-                                                      false,false,false );
-
-            ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
-            _mesh->accept( import );
-
-            if ( update )
-            {
-                _mesh->components().reset();
-                _mesh->components().set( update );
-                _mesh->updateForUse();
-            }
-            else
-            {
-                _mesh->components().reset();
-            }
-
-            if ( straighten && _mesh_type::nOrder > 1 )
-                return straightenMesh( _mesh, worldcomm->subWorldCommPtr(), false, false );
-
-        } // if (worldcomm->isActive())
-
-        return _mesh;
+            _mesh_ptrtype m = createGMSHMesh( _mesh=mesh,
+                                              _desc=gmshDesc,
+                                              _format=format,
+                                              _straighten=straighten,
+                                              _refine=refine,
+                                              _worldcomm=worldcomm,
+                                              _partitions=partitions,
+                                              _update=update );
+            return m;
     }
 
 
@@ -1673,75 +1640,6 @@ BOOST_PP_FOR( ( 0, BOOST_PP_SUB( BOOST_PP_ARRAY_SIZE( GEOTOOL_SHAPE ),1 ) ),
               GEOTOOL_FOR_COMP,
               GEOTOOL_FOR_INCR,
               GEOTOOL_SHAPE_CLASS )
-
-
-
-template<typename mesh_type>
-std::shared_ptr<mesh_type>
-createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int straighten = 1,
-                       int partitions=1, worldcomm_ptr_t const& worldcomm=Environment::worldCommPtr(),
-                       int partition_file = 0, GMSH_PARTITIONER partitioner = GMSH_PARTITIONER_CHACO )
-{
-
-    std::shared_ptr<mesh_type> mesh( new mesh_type );
-    mesh->setWorldComm( worldcomm );
-
-    if ( !worldcomm->isActive() ) return mesh;
-
-    Gmsh gmsh( mesh_type::nDim,mesh_type::nOrder,worldcomm );
-    gmsh.setCharacteristicLength( meshSize );
-    gmsh.setNumberOfPartitions( partitions );
-    gmsh.setPartitioner( partitioner );
-    gmsh.setMshFileByPartition( partition_file );
-    gmsh.setRecombine( mesh_type::shape_type::is_hypercube );
-
-    std::ostringstream ostr;
-
-    // preambule :
-    ostr << "Mesh.MshFileVersion = " << gmsh.version() << ";\n"
-         << "Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
-         << "Mesh.CharacteristicLengthFromPoints=1;\n"
-         << "Mesh.ElementOrder=" << gmsh.order() << ";\n"
-         << "Mesh.SecondOrderIncomplete = 0;\n"
-         << "Mesh.Algorithm = 6;\n" // 2D mesh algorithm (1=MeshAdapt, 2=Automatic, 5=Delaunay, 6=Frontal, 7=bamg, 8=delquad)
-         << "Mesh.Algorithm3D = 4;\n" // 3D mesh algorithm (1=Delaunay, 4=Frontal, 5=Frontal Delaunay, 6=Frontal Hex, 7=MMG3D)
-         << "Mesh.OptimizeNetgen=1;\n"
-         << "// partitioning data\n"
-         << "Mesh.Partitioner=" << partitioner << ";\n"
-         << "Mesh.NbPartitions=" << partitions << ";\n"
-         << "Mesh.MshFilePartitioned=" << partition_file << ";\n";
-
-
-    std::string contenu;
-    std::ifstream ifstr( geofile.c_str(), std::ios::in );
-
-    if ( ifstr )
-    {
-        // each line of the stream is appended in contenu
-        while ( getline( ifstr, contenu ) )
-            ostr << contenu<<"\n";
-
-        ifstr.close();
-    }
-
-
-    std::string fname;
-    bool generated;
-    boost::tie( fname, generated ) = gmsh.generate( name,
-                                                    ostr.str(),false,false,true );
-
-    ImporterGmsh<mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
-
-    mesh->accept( import );
-    mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-    mesh->updateForUse();
-
-    if ( straighten && mesh_type::nOrder > 1 )
-        return straightenMesh( mesh, worldcomm->subWorldComm() );
-
-    return mesh;
-}
-
 
 
 }//GeoTool
