@@ -43,6 +43,9 @@ runApplicationMixedPoisson( std::string  const& prefix )
         Idhv = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
         MP -> init( cmesh, mesh );
     }
+	
+	// Feel::cout << "Stationary: " << MP -> isStationary() << std::endl;
+	// Feel::cout << "boption steady: " << boption("ts.steady") << std::endl;
 
     if ( MP -> isStationary() )
     {
