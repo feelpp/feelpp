@@ -37,6 +37,8 @@
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/importergmsh.hpp>
 
+#include <feel/feelmesh/partitionmesh.hpp>
+
 namespace Feel {
 
 /**
@@ -100,8 +102,8 @@ BOOST_PARAMETER_FUNCTION(
     {
         desc->setDimension( mesh->nDim );
         desc->setOrder( mesh->nOrder );
-        desc->setWorldComm( worldcomm );
-        desc->setNumberOfPartitions( partitions );
+        desc->setWorldComm( Environment::worldCommSeqPtr()/*worldcomm*/ );
+        desc->setNumberOfPartitions( 1/*partitions*/ );
         desc->setPartitioner( (GMSH_PARTITIONER) partitioner );
         desc->setMshFileByPartition( partition_file );
         desc->setRefinementLevels( refine );
@@ -113,47 +115,74 @@ BOOST_PARAMETER_FUNCTION(
         desc->setVerbosity( verbose );
 
         std::string fname;
-        bool generated_or_modified;
-        boost::tie( fname, generated_or_modified ) = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes, true, directory );
-
-        // refinement if option is enabled to a value greater or equal to 1
-        // do not refine if the mesh/geo file was previously generated or modified
-        if ( refine && !generated_or_modified )
+        if ( worldcomm->isMasterRank() )
         {
-            VLOG(1) << "Refine mesh ( level: " << refine << ")\n";
-            fname = desc->refine( fname, refine, parametricnodes );
+            bool generated_or_modified;
+            boost::tie( fname, generated_or_modified ) = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes, true, directory );
+
+            // refinement if option is enabled to a value greater or equal to 1
+            // do not refine if the mesh/geo file was previously generated or modified
+            if ( refine && !generated_or_modified )
+            {
+                VLOG(1) << "Refine mesh ( level: " << refine << ")\n";
+                fname = desc->refine( fname, refine, parametricnodes );
+            }
+
+#if 0
+            if ( rebuild_partitions && partitions > 1 && !generated_or_modified )
+            {
+                VLOG(1) << "Rebuild partitions\n";
+                std::string fnamePartitioned = rebuild_partitions_filename;
+                if ( fnamePartitioned.empty() )
+                    fnamePartitioned = fname;
+                desc->rebuildPartitionMsh(fname,rebuild_partitions_filename);
+                fname = fnamePartitioned;
+            }
+#endif
+            ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
+
+            // need to replace physical_regions by elementary_regions for specific meshes
+            if ( physical_are_elementary_regions )
+            {
+                import.setElementRegionAsPhysicalRegion( physical_are_elementary_regions );
+            }
+            import.setRespectPartition( respect_partition );
+
+            if ( in_memory )
+            {
+                import.setGModelName( desc->gModelName() );
+                import.setDeleteGModelAfterUse( true );
+                import.setInMemory( in_memory );
+            }
+
+            if ( partitions > 1 )
+            {
+                _mesh_ptrtype _meshSeq = std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
+                _meshSeq->accept( import );
+                _meshSeq->components().reset();
+                _meshSeq->components().set( size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED) );
+                _meshSeq->updateForUse();
+
+                using io_t = PartitionIO<_mesh_type>;
+                fname = fs::path(fname).replace_extension( ".json" ).string();
+                io_t io( fname/*outputPathMesh*/ );
+                std::vector<elements_reference_wrapper_t<_mesh_type>> partitionByRange;
+                io.write( partitionMesh( _meshSeq, partitions, partitionByRange ) );
+            }
+            else
+            {
+                _mesh->accept( import );
+                _mesh->components().reset();
+                _mesh->components().set( update );
+                _mesh->updateForUse();
+            }
         }
 
-        if ( rebuild_partitions && partitions > 1 && !generated_or_modified )
+        if ( partitions > 1 )
         {
-            VLOG(1) << "Rebuild partitions\n";
-            std::string fnamePartitioned = rebuild_partitions_filename;
-            if ( fnamePartitioned.empty() )
-                fnamePartitioned = fname;
-            desc->rebuildPartitionMsh(fname,rebuild_partitions_filename);
-            fname = fnamePartitioned;
+            mpi::broadcast( worldcomm->globalComm(), fname, worldcomm->masterRank() );
+            _mesh->loadHDF5( fname, update );
         }
-
-        ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
-
-        // need to replace physical_regions by elementary_regions for specific meshes
-        if ( physical_are_elementary_regions )
-        {
-            import.setElementRegionAsPhysicalRegion( physical_are_elementary_regions );
-        }
-        import.setRespectPartition( respect_partition );
-
-        if ( in_memory )
-        {
-            import.setGModelName( desc->gModelName() );
-            import.setDeleteGModelAfterUse( true );
-            import.setInMemory( in_memory );
-        }
-        _mesh->accept( import );
-
-        _mesh->components().reset();
-        _mesh->components().set( update );
-        _mesh->updateForUse();
 
         if ( straighten && _mesh_type::nOrder > 1 )
             return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
