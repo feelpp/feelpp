@@ -693,11 +693,18 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
     // mesh partitioning
     if ( M_partitions > 1 )
     {
+        VLOG(1) << "Partitioning mesh into " << M_partitions << "paritions\n";
+        gmshLog.clear();
+        gmsh::logger::start( gmshLog );
         gmsh::option::setNumber( "Mesh.PartitionCreatePhysicals", 0);
         gmsh::option::setNumber( "Mesh.PartitionCreateTopology", 1);
         gmsh::option::setNumber( "Mesh.PartitionCreateGhostCells", 1 );
         gmsh::option::setNumber( "Mesh.PartitionOldStyleMsh2",0 );
         gmsh::model::mesh::partition( M_partitions );
+         gmsh::logger::stop();
+         std::cout << "\n\n INFO PARTITIONER\n";
+         for ( std::string const& msg : gmshLog )
+             std::cout << msg << "\n";
 
         gmsh::vectorpair dimTags;
         gmsh::model::getEntities( dimTags,dim );
