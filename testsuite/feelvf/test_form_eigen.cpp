@@ -46,9 +46,8 @@ BOOST_AUTO_TEST_SUITE( eigen_suite )
 
     for ( auto const& it : elements(mesh) )
     {
-        auto submesh = createSubmesh( mesh, idedelements(mesh, it.id()), Environment::worldCommSeq() );
-        auto Ph = space_t::New( submesh,
-                                _worldscomm=std::vector<WorldComm>(space_t::nSpaces,Environment::worldCommSeq()));
+        auto submesh = createSubmesh( _mesh=mesh, _range=idedelements(mesh, it.id()), _worldcomm=Environment::worldCommSeq() );
+        auto Ph = space_t::New( _mesh=submesh );
 
         auto w = Ph->element( "W" );
         auto fA = form2( _trial=Ph, _test=Ph, _backend=backend_eigen );

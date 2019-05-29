@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE( onespace )
         }
     }
 
-    auto newmesh = createSubmesh( mesh, idelements(mesh,element_ids.begin(), element_ids.end()) );
+    auto newmesh = createSubmesh( _mesh=mesh, _range=idelements(mesh,element_ids.begin(), element_ids.end()) );
     saveGMSHMesh(_mesh=newmesh, _filename="submesh.msh" );
     Environment::worldComm().barrier();
 
@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE( composite )
         }
     }
 
-    auto newmesh = createSubmesh( mesh, idelements(mesh,element_ids.begin(), element_ids.end()) );
+    auto newmesh = createSubmesh( _mesh=mesh, _range=idelements(mesh,element_ids.begin(), element_ids.end()) );
     saveGMSHMesh(_mesh=newmesh, _filename="submesh.msh" );
     Environment::worldComm().barrier();
 
