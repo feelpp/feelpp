@@ -171,7 +171,7 @@ BOOST_PARAMETER_FUNCTION(
                                 );
 
 #if defined(FEELPP_HAS_HDF5)
-        if ( savehdf5 )
+        if ( savehdf5 && partitions == 1 )
             m->saveHDF5( mesh_name.stem().string()+".json" );
 #endif
         return m;
