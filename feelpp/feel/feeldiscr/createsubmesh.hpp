@@ -150,10 +150,7 @@ public :
             if ( c.test( EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT ) )
                  m->removeMarkerNameWithoutEntity();
             if ( M_isView )
-            {
                 m->addMeshWithNodesShared( M_mesh );
-                M_mesh->addMeshWithNodesShared( m );
-            }
             return m;
         }
 
@@ -1337,7 +1334,7 @@ BOOST_PARAMETER_FUNCTION(
       ) // 4. one required parameter, and
     ( optional
       ( worldcomm,  *, mesh->worldCommPtr() )
-      ( context,    *(boost::is_integral<mpl::_>), EXTRACTION_KEEP_MESH_RELATION )
+      ( context,    *(boost::is_integral<mpl::_>), EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT )
       ( update,     *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
       ( only_on_boundary_faces, (bool), false )
       ( view, (bool), false )
