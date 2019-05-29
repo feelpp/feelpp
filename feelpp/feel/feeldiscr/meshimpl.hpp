@@ -1311,25 +1311,28 @@ void
     toc( "Mesh.updateEntitiesCoDimensionOne.add_faces_from_elements", FLAGS_v > 1 );
     DVLOG( 2 ) << "[Mesh::updateFaces] finish elements loop";
 
-    tic();
-    // clean faces not connected to an element
-    face_iterator f_it = this->beginFace();
-    face_iterator f_en = this->endFace();
-    for ( ; f_it != f_en; )
+    if ( !(nDim == 1 && nOrder > 1) ) // not remove faces in this case (can be internal point)
     {
-        auto const& face = f_it->second;
-        // cleanup the face data structure :
-        if ( !face.isConnectedTo0() )
+        tic();
+        // clean faces not connected to an element
+        face_iterator f_it = this->beginFace();
+        face_iterator f_en = this->endFace();
+        for ( ; f_it != f_en; )
         {
-            DLOG( INFO ) << "removing face id : " << face.id();
-            // remove all faces that are not connected to any elements
-            f_it = this->eraseFace( f_it );
-            //++f_it;
+            auto const& face = f_it->second;
+            // cleanup the face data structure :
+            if ( !face.isConnectedTo0() )
+            {
+                DLOG( INFO ) << "removing face id : " << face.id();
+                // remove all faces that are not connected to any elements
+                f_it = this->eraseFace( f_it );
+                //++f_it;
+            }
+            else
+                ++f_it;
         }
-        else
-            ++f_it;
+        toc( "Mesh.updateEntitiesCoDimensionOne.clean_faces", FLAGS_v > 1 );
     }
-    toc( "Mesh.updateEntitiesCoDimensionOne.clean_faces", FLAGS_v > 1 );
 
     LOG( INFO ) << "We have now " << std::distance( this->beginFace(), this->endFace() ) << " faces in the mesh";
 }
