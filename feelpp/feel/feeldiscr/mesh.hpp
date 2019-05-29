@@ -1677,7 +1677,7 @@ Mesh<Shape, T, Tag, IndexT>::trace( RangeT const& range ) const
 {
     DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh<const mesh_type, RangeT, Tag>( this->shared_from_this(), range );
+    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT>
@@ -1687,7 +1687,7 @@ Mesh<Shape, T, Tag, IndexT>::wireBasket( RangeT const& range ) const
 {
     DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh<const mesh_type, RangeT, Tag>( this->shared_from_this(), range );
+    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
 }
 
 template <int TheTag>
@@ -1702,7 +1702,7 @@ Mesh<Shape, T, Tag, IndexT>::trace( RangeT const& range, mpl::int_<TheTag> ) con
 {
     DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh<const mesh_type, RangeT, TheTag>( this->shared_from_this(), range );
+    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT>
@@ -1712,7 +1712,7 @@ Mesh<Shape, T, Tag, IndexT>::wireBasket( RangeT const& range, mpl::int_<TheTag> 
 {
     DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh<const mesh_type, RangeT, TheTag>( this->shared_from_this(), range );
+    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT>
