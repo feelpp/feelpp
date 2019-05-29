@@ -2545,28 +2545,19 @@ template<typename MeshType>
 int
 ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement const& __e, mpl::int_<1> )
 {
-    face_type pf;
-    pf.setProcessIdInPartition( this->worldComm().localRank() );
-    pf.setId( mesh->numFaces() );
+    auto pit = mesh->pointIterator(__e.indices[0]);
+    CHECK( pit != mesh->endPoint() ) <<  "point not register in mesh";
+    auto & pt = pit->second;
+
     if ( !__e.physical.empty() )
-        pf.setMarker( __e.physical[0] );
-    pf.setMarker2( __e.elementary );
-    //pf.setProcessId( __e.partition );
-    pf.setNeighborPartitionIds( __e.ghosts );
+        pt.setMarker( __e.physical[0] );
+    pt.setMarker2( __e.elementary );
+    //pt.setProcessId( __e.partition );
+    pt.setNeighborPartitionIds( __e.ghosts );
 
-    pf.setPoint( 0, mesh->point( __e.indices[0] ) );
-//    ptseen[mesh->point( __e.indices[0] ).id()]=1;
-    if ( mesh->point( __e.indices[0] ).isOnBoundary() )
-    {
-        pf.setOnBoundary( true );
-    }
-
-    auto fit = mesh->addFace( std::move(pf) ).first;
-
-    DVLOG(4) << "added point on boundary ("
-                  << fit->second.isOnBoundary() << ") with id :" << fit->second.id() << " and marker " << fit->second.marker()
-                  << " n1: " << mesh->point( __e.indices[0] ).node() << "\n";
-    return fit->second.id();
+    DVLOG(2) << "update point with id :" << pt.id() << " and marker " << pt.marker()
+             << " n1: " << pt.node() << "\n";
+    return pt.id();
 }
 template<typename MeshType>
 int
@@ -2582,7 +2573,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement con
     pt.setNeighborPartitionIds( __e.ghosts );
 
     DVLOG(2) << "update point with id :" << pt.id() << " and marker " << pt.marker()
-             << " n1: " << mesh->point( __e.indices[0] ).node() << "\n";
+             << " n1: " << pt.node() << "\n";
     return pt.id();
 }
 template<typename MeshType>
@@ -2599,7 +2590,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement con
     pt.setNeighborPartitionIds( __e.ghosts );
 
     DVLOG(2) << "update point with id :" << pt.id() << " and marker " << pt.marker()
-             << " n1: " << mesh->point( __e.indices[0] ).node() << "\n";
+             << " n1: " << pt.node() << "\n";
     return pt.id();
 }
 
