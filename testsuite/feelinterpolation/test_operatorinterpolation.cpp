@@ -88,7 +88,7 @@ void test2dTo1d()
     T.setMarker( _type = "surface", _name = "Omega2dFor1d", _markerAll = true );
     auto mesh2dFor1d = T.createMesh( _mesh = new mesh_2d_type,
                                      _name = "test2dTo1d_domain2dFor1d" + mesh_2d_type::shape_type::name(), _straighten = 0 );
-    auto mesh1d = createSubmesh( mesh2dFor1d, markedfaces( mesh2dFor1d, "Boundary1" ) );
+    auto mesh1d = createSubmesh( _mesh=mesh2dFor1d, _range=markedfaces( mesh2dFor1d, "Boundary1" ) );
 #endif
 
     //-----------------------------------------------------------//
@@ -361,7 +361,7 @@ void testSMD()
     BOOST_TEST_MESSAGE( "start test SMD " << Dim << "d Geo" << OrderGeo );
     auto mesh = buildMeshSMD<OrderGeo>( mpl::int_<Dim>() );
     BOOST_TEST_MESSAGE( "mesh done" );
-    auto submesh = createSubmesh( mesh, markedfaces( mesh, "BoundaryInterp" ) );
+    auto submesh = createSubmesh( _mesh=mesh, _range=markedfaces( mesh, "BoundaryInterp" ) );
     BOOST_TEST_MESSAGE( "submesh done" );
     auto Xh1 = Pch<3 /*,PointSetFekete*/>( mesh );
     BOOST_TEST_MESSAGE( "spaces Xh1 done" );

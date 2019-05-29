@@ -45,8 +45,8 @@ run()
                                                _convex="Hypercube",_structured=2,
                                                _xmin=0., _xmax=1., _ymin=1., _ymax=2. ) );
 
-    auto mesh_1 = createSubmesh(mesh1, markedfaces(mesh1,(boost::any)4),Environment::worldComm() );
-    auto mesh_2 = createSubmesh(mesh2, markedfaces(mesh2,(boost::any)2),Environment::worldComm() );
+    auto mesh_1 = createSubmesh(_mesh=mesh1, _range=markedfaces(mesh1,(boost::any)4) );
+    auto mesh_2 = createSubmesh(_mesh=mesh2, _range=markedfaces(mesh2,(boost::any)2) );
 #else
 
     double meshSize = option(_name="gmsh.hsize2").as<double>();
