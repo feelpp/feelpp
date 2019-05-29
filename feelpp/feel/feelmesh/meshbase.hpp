@@ -546,7 +546,17 @@ public:
         auto foundMesh = std::find_if( M_meshesWithNodesShared.begin(), M_meshesWithNodesShared.end(),
                                        [&m](auto const& wptr) { return m == wptr.lock(); });
         if ( foundMesh == M_meshesWithNodesShared.end() )
+        {
             M_meshesWithNodesShared.push_back( m );
+            m->addMeshWithNodesShared( this->shared_from_this_meshbase() );
+        }
+    }
+
+    //! store a mesh which has nodes shared with the current mesh
+    template<typename MeshType>
+    void addMeshWithNodesShared( std::shared_ptr<const MeshType> m )
+    {
+        this->addMeshWithNodesShared( std::const_pointer_cast<MeshType>( m ) );
     }
 
     //! get all meshes which share the nodes with the current mesh (current mesh is also include)
