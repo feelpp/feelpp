@@ -399,6 +399,31 @@ void Mesh<Shape, T, Tag, IndexT>::updateForUse()
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT>
+void Mesh<Shape, T, Tag, IndexT>::updateForUseAfterMovingNodes( bool upMeasures )
+{
+    // reset geomap cache
+    if ( this->gm()->isCached() )
+    {
+        this->gm()->initCache( this/*imesh.get()*/ );
+        if ( mesh_type::nOrder > 1 )
+            this->gm1()->initCache( this/*imesh.get()*/ );
+    }
+
+    // update measures
+    if ( upMeasures )
+        this->updateMeasures();
+
+    // reset localisation tool
+    this->tool_localization()->reset();
+
+#if !defined( __INTEL_COMPILER )
+    // notify observers that the mesh has changed
+    LOG(INFO) << "Notify observers that the mesh has changed\n";
+    this->meshChanged( MESH_CHANGES_POINTS_COORDINATES );
+#endif
+}
+
+template <typename Shape, typename T, int Tag, typename IndexT>
 void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
 {
     if ( this->components().test( MESH_NO_UPDATE_MEASURES ) )
