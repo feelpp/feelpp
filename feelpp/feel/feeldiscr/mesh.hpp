@@ -320,6 +320,13 @@ class Mesh
         M_tool_localization.reset();
         super::clear();
     }
+
+    //! return current shared_ptr of type MeshBase
+    std::shared_ptr<MeshBase<IndexT>> shared_from_this_meshbase() override { return std::dynamic_pointer_cast<MeshBase<IndexT>>( this->shared_from_this() );  }
+
+    //! return current shared_ptr of type MeshBase
+    std::shared_ptr<const MeshBase<IndexT>> shared_from_this_meshbase() const override { return std::dynamic_pointer_cast<const MeshBase<IndexT>>( this->shared_from_this() );  }
+
     //!
     //! @brief allocate a new Mesh
     //! @param worldcomm communicator defaulting to Environment::worldComm()
@@ -1327,6 +1334,9 @@ class Mesh
     //!  properly \p setComponents(), \p components()
     //!
     void updateForUse() override;
+
+    //! update the mesh when nodes have moved
+    void updateForUseAfterMovingNodes( bool upMeasures = true ) override;
 
     //!
     //!  update hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh

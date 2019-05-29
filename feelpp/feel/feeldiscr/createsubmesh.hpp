@@ -149,6 +149,11 @@ public :
                 m->setSubMeshData( this->subMeshData() );
             if ( c.test( EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT ) )
                  m->removeMarkerNameWithoutEntity();
+            if ( M_isView )
+            {
+                m->addMeshWithNodesShared( M_mesh );
+                M_mesh->addMeshWithNodesShared( m );
+            }
             return m;
         }
 
