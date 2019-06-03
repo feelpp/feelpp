@@ -4322,9 +4322,15 @@ public:
                                            ( prefix,   ( std::string ), "" )
                                            ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
                                            ( accumulate,     *( boost::is_integral<mpl::_> ), false )
+                                           ( close,  (bool), false )
                                            ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
             {
-                return onImpl( range, expr, prefix, Feel::detail::geomapStrategy(range,geomap), accumulate, verbose );
+                onImpl( range, expr, prefix, Feel::detail::geomapStrategy(range,geomap), accumulate, verbose );
+                if ( close )
+                {
+                    std::string opUsed = ( accumulate )? "+" : "=";
+                    sync( *this, opUsed, this->functionSpace()->dofs( range, ComponentType::NO_COMPONENT, true ) );
+                }
             }
 
         BOOST_PARAMETER_MEMBER_FUNCTION( (void),
@@ -4338,9 +4344,10 @@ public:
                                            ( range, *, elements(this->mesh())  )
                                            ( prefix,   ( std::string ), "" )
                                            ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
+                                           ( close,  (bool), false )
                                            ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
             {
-                return onImpl( range, expr, prefix, geomap, true, verbose );
+                this->on(_range=range,_expr=expr,_prefix=prefix,_geomap=geomap,_accumulate=true,_close=close, _verbose=verbose );
             }
 
 
@@ -5596,7 +5603,7 @@ private:
         }
     template <typename RangeType>
     void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               typename std::enable_if< std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+               typename std::enable_if< boost::tuples::template element<0, RangeType>::type::value == MESH_FACES && std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
         {
             if ( c1 == ComponentType::NO_COMPONENT )
             {
@@ -5635,6 +5642,13 @@ private:
 
             }
         }
+    template <typename RangeType>
+    void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
+               typename std::enable_if< boost::tuples::template element<0, RangeType>::type::value == MESH_FACES && !std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+        {
+            CHECK(false) << "TODO";
+        }
+
     template <typename RangeType>
     void dofs( RangeType const& rangeEdge, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
                typename std::enable_if< std::is_same<RangeType,edges_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
