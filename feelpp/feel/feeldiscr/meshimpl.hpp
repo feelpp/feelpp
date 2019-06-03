@@ -3518,7 +3518,11 @@ void
             break;
         case 0:
             markersEntity[0].push_back( markerName );
+#if 0 // should be revert when mesh1d will be fixed
             nMarkedEntity[0].push_back( nelements( markedpoints( *this, markerName ), false ) );
+#else
+            nMarkedEntity[0].push_back( nelements( markedfaces( *this, markerName ), false )+nelements( markedpoints( *this, markerName ), false ) );
+#endif
             break;
         default:
             markersToRemove.push_back( markerName );
