@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE( listofrange1 )
     double intu = integrate( _range=markedelements( mesh,myElementMarkers ), _expr=idv(u) ).evaluate()( 0,0 );
     BOOST_CHECK_SMALL( intu-3*measSurfaceRef,1e-12 );
     auto v = Vh->element();
-    v.on(_range=markedfaces( mesh,myFaceMarkers ),_expr=cst(4.) );
+    v.on(_range=markedfaces( mesh,myFaceMarkers ),_expr=cst(4.),_close=true );
     double intv = integrate( _range=markedfaces( mesh,myFaceMarkers ), _expr=idv(v) ).evaluate()( 0,0 );
     BOOST_CHECK_SMALL( intv-4*measBoundaryRef,1e-12 );
 
