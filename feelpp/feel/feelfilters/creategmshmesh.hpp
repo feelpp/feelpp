@@ -82,7 +82,7 @@ BOOST_PARAMETER_FUNCTION(
       ( periodic,        *, PeriodicEntities() )
       ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition") )
       ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition") )
-      ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, desc->prefix()+".msh" )
+      ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, "" )
       ( worldcomm,      (worldcomm_ptr_t), Environment::worldCommPtr() )
       ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm->localSize() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
@@ -128,18 +128,7 @@ BOOST_PARAMETER_FUNCTION(
                 fname = desc->refine( fname, refine, parametricnodes );
             }
 
-#if 0
-            if ( rebuild_partitions && partitions > 1 && !generated_or_modified )
-            {
-                VLOG(1) << "Rebuild partitions\n";
-                std::string fnamePartitioned = rebuild_partitions_filename;
-                if ( fnamePartitioned.empty() )
-                    fnamePartitioned = fname;
-                desc->rebuildPartitionMsh(fname,rebuild_partitions_filename);
-                fname = fnamePartitioned;
-            }
-#endif
-            ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
+            ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, (partitions > 1)? Environment::worldCommSeqPtr() : worldcomm );
 
             // need to replace physical_regions by elementary_regions for specific meshes
             if ( physical_are_elementary_regions )
@@ -164,8 +153,12 @@ BOOST_PARAMETER_FUNCTION(
                 _meshSeq->updateForUse();
 
                 using io_t = PartitionIO<_mesh_type>;
-                fname = fs::path(fname).replace_extension( ".json" ).string();
-                io_t io( fname/*outputPathMesh*/ );
+                std::string fnamePartitioned = rebuild_partitions_filename;
+                if ( fnamePartitioned.empty() )
+                    fname = fs::path( fname ).replace_extension( ".json" ).string();
+                else
+                    fname = fs::path( fnamePartitioned ).replace_extension( ".json" ).string();
+                io_t io( fname );
                 std::vector<elements_reference_wrapper_t<_mesh_type>> partitionByRange;
                 io.write( partitionMesh( _meshSeq, partitions, partitionByRange ) );
             }
