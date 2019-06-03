@@ -190,7 +190,7 @@ BOOST_PARAMETER_FUNCTION(
     {
         if ( verbose )
             cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << "\n";
-        
+
         tic();
         auto m = loadGMSHMesh( _mesh=mesh,
                                _filename=mesh_name.string(),
@@ -214,7 +214,6 @@ BOOST_PARAMETER_FUNCTION(
             cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << " done\n";
 
 #if defined(FEELPP_HAS_HDF5)
-
         if ( savehdf5 )
         {
             tic();
@@ -237,6 +236,8 @@ BOOST_PARAMETER_FUNCTION(
         _mesh_ptrtype m( mesh );
         m->setWorldComm( worldcomm );
         m->loadHDF5( mesh_name.string(), update );
+        if ( straighten && _mesh_type::nOrder > 1 )
+            return straightenMesh( m, worldcomm->subWorldCommPtr() );
         return m;
     }
 #endif
