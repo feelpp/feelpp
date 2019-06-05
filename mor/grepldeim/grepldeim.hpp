@@ -578,7 +578,6 @@ GreplDEIM<Order,Dim>::updateJacobianMonolithic( vector_ptrtype const& X,
     u=*X;
 
     double gamma = doption(_name="gamma");
-    auto g = exp( mu(1)*idv(u) );
 
     J->zero();
     form2( _test=Xh, _trial=Xh, _matrix=J ) =

@@ -225,7 +225,7 @@ public :
      * Update the RB stored in DEIM. This RB is projected on the interpolation mesh
      * \p XN the reduced basis space containing the RB
      */
-    virtual void updateRb( rbspace_ptrtype const& XN, std::vector<std::vector<int>> subN )=0;
+    virtual void updateRb( rbspace_ptrtype const& XN, std::vector<std::vector<int>> const& subN )=0;
 
     //! Set the value of M_offline_step. Used with SER
     void setOfflineStep( bool b ) { M_offline_step = b; }
