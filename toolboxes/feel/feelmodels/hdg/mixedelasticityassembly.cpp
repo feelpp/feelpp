@@ -121,7 +121,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assemble()
     M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
     //    M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     //M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
-    toc("creating matrices and vectors");
+    toc("creating matrices and vectors", this->verbose() || FLAGS_v > 0);
 
 
 }
@@ -134,13 +134,13 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleCst()
     tic();
     M_A_cst->zero();
     this->assembleSTD();
-    M_timers["asbStd"].push_back(toc("assembleStandardMatrix"));
+    M_timers["asbStd"].push_back(toc("assembleStandardMatrix", this->verbose() || FLAGS_v > 0));
 
     // Assembling ibc part
     tic();
     for ( int i = 0; i < M_IBCList.size(); i++ )
         this->assembleMatrixIBC( i );
-    M_timers["asbIbc"].push_back(toc("assembleIbcMatrix"));
+    M_timers["asbIbc"].push_back(toc("assembleIbcMatrix", this->verbose() || FLAGS_v > 0));
 
     M_A_cst->close();
 }
@@ -157,7 +157,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleNonCst()
     for ( int i = 0; i < M_IBCList.size(); i++ )
         this->assembleRhsIBC( i );
     M_F->close();
-    M_timers["asbRHS"].push_back(toc("assembleRHS"));
+    M_timers["asbRHS"].push_back(toc("assembleRHS", this->verbose() || FLAGS_v > 0));
 
 }
 
@@ -188,8 +188,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::solve()
     tic();
     tic();
     bbf.solve(_solution=U, _rhs=blf, _rebuild=false, _condense=M_useSC, _name= this->prefix());
-    M_timers["solver"].push_back(toc("solver"));
-    toc(solver_string);
+    M_timers["solver"].push_back(toc("solver", this->verbose() || FLAGS_v > 0));
+    toc(solver_string, this->verbose() || FLAGS_v > 0);
 
     M_up = U(0_c);
     M_pp = U(1_c);
