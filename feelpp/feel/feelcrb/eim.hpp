@@ -1328,9 +1328,10 @@ public:
                      sampling_ptrtype const& sampling,
                      std::string const& modelname,
                      std::string const& name,
-                     uuids::uuid const& uid )
+                     uuids::uuid const& uid,
+                     std::string const& prefix )
         :
-        EIMFunctionBase( pspace, sampling, modelname, name, uid )
+        EIMFunctionBase( pspace, sampling, modelname, name, uid, prefix )
         {
             M_fspace = fspace;
         }
@@ -1832,8 +1833,8 @@ public:
         M_B(),
         M_offline_error(),
         M_eim(),
-        M_write_nl_solutions( boption(_prefix=this->M_prefix, "eim.elements.write") ),
-        M_write_nl_directory( soption(_prefix=this->M_prefix, "eim.elements.directory") )
+        M_write_nl_solutions( boption(_prefix=this->M_prefix, _name="eim.elements.write") ),
+        M_write_nl_directory( soption(_prefix=this->M_prefix, _name="eim.elements.directory") )
         {
             if ( model )
                 M_eimFeSpaceDb.setModel( model );
@@ -1901,7 +1902,7 @@ public:
                 if ( this->worldComm().isMasterRank() )
                 {
                     boost::filesystem::path dir( M_write_nl_directory );
-                    if ( boost::filesystem::exists(dir) && boption(_prefix=this->M_prefix, "eim.elements.clean-directory" ) )
+                    if ( boost::filesystem::exists(dir) && boption(_prefix=this->M_prefix, _name="eim.elements.clean-directory" ) )
                     {
                         boost::filesystem::remove_all(dir);
                         boost::filesystem::create_directory(dir);
@@ -3448,9 +3449,10 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
                                                      fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
                                                      >::type >::type >::type index_vector_type;
 
-    EimFunctionNoSolve( model_ptrtype const& model )
+    EimFunctionNoSolve( model_ptrtype const& model, std::string const& prefix = "" )
         :
-        M_model( model )
+        M_model( model ),
+        M_prefix( prefix )
         {
             if ( model->functionSpace() )
             {
@@ -3488,6 +3490,7 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
 #endif
 
     std::string /*const&*/ modelName() const { return M_model.lock()->modelName(); }
+    std::string prefix() const { return M_prefix; }
     uuids::uuid uuid() const { return M_model.lock()->uuid(); }
     functionspace_ptrtype const& functionSpace() const { return M_model.lock()->functionSpace(); }
     parameterspace_ptrtype const& parameterSpace() const { return M_model.lock()->parameterSpace(); }
@@ -3520,6 +3523,7 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
 #endif
     // model_ptrtype M_model;
     model_weakptrtype M_model;
+    std::string M_prefix;
     element_ptrtype M_elt;
 };
 

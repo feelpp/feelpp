@@ -59,14 +59,6 @@ public :
     typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
-    typedef Pch_type<mesh_type,POrder> scalarspace_type;
-    typedef Pchv_type<mesh_type,POrder> vectorialspace_type;
-    typedef typename mpl::if_< mpl::bool_<is_vect>,
-                               vectorialspace_type,
-                               scalarspace_type>::type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef typename space_type::element_type element_type;
-
     typedef Backend<double> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef backend_type::vector_type vector_type;
@@ -87,10 +79,11 @@ public :
     typedef std::shared_ptr<deim_type> deim_ptrtype;
 
 
-    DeimTest() :
+    DeimTest( std::string const& prefix = "") :
         M_backend( backend() ),
         Dmu( parameterspace_type::New(2) ),
-        M_uuid( Environment::randomUUID( true ) )
+        M_uuid( Environment::randomUUID( true ) ),
+        M_prefix(prefix)
     {
         auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
         Xh = space_type::New( mesh );
@@ -112,7 +105,9 @@ public :
     }
 
     uuids::uuid uuid() const { return M_uuid; }
+    std::string prefix() const { return M_prefix; }
     parameterspace_ptrtype parameterSpace() { return Dmu;}
+    void setOnlineModel() {}
 
     void run()
     {
@@ -327,6 +322,7 @@ private :
     deim_ptrtype M_deim;
     std::vector<vectorN_type> betas;
 
+    std::string M_prefix;
 };
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
