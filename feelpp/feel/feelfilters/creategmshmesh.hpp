@@ -83,7 +83,7 @@ BOOST_PARAMETER_FUNCTION(
       ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition") )
       ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition") )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, "" )
-      ( worldcomm,      (worldcomm_ptr_t), Environment::worldCommPtr() )
+      ( worldcomm,      (worldcomm_ptr_t), mesh->worldCommPtr() )
       ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm->localSize() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( partitioner,   *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )

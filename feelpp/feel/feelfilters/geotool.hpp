@@ -1246,7 +1246,10 @@ public :
             else
             {
                 this->geoStr();
-                gmshDesc->setDescription( gmshDesc->preamble() + M_ostr->str() );
+                std::ostringstream ostrPreamble;
+                ostrPreamble << "Mesh.CharacteristicLengthMin=" << hmin << ";\n"
+                             << "Mesh.CharacteristicLengthMax=" << hmax << ";\n";
+                gmshDesc->setDescription( gmshDesc->preamble() + ostrPreamble.str() + M_ostr->str() );
             }
 
             _mesh_ptrtype m = createGMSHMesh( _mesh=mesh,
