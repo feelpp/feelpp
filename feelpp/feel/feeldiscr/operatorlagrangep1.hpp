@@ -37,6 +37,7 @@
 #ifdef FEELPP_HAS_GMSH
 #include <feel/feelfilters/loadgmshmesh.hpp>
 #endif
+//#include <feel/feelfilters/savegmshmesh.hpp>
 
 namespace Feel
 {
@@ -135,7 +136,7 @@ public:
     typedef typename detailOpLagP1::SpaceToLagrangeP1Space<SpaceType>::domain_reference_convex_type domain_reference_convex_type;
     typedef typename detailOpLagP1::SpaceToLagrangeP1Space<SpaceType>::image_convex_type image_convex_type;
     //typedef PointSetWarpBlend<domain_convex_type, domain_space_type::basis_type::nOrder, value_type> pset_type;
-    typedef PointSetFekete<domain_reference_convex_type/*domain_convex_type*/, domain_space_type::basis_type::nOrder, value_type> pset_type;
+    //typedef PointSetFekete<domain_reference_convex_type/*domain_convex_type*/, domain_space_type::basis_type::nOrder, value_type> pset_type;
     typedef PointSetToMesh<domain_reference_convex_type/*domain_convex_type*/, value_type> p2m_type;
     typedef typename p2m_type::mesh_ptrtype domain_reference_mesh_ptrtype;
 
@@ -188,7 +189,6 @@ public:
         {
             M_el2el = lp1.M_el2el;
             M_el2pt = lp1.M_el2pt;
-            M_pset = lp1.M_pset;
             M_gmpc = lp1.M_gmpc;
             M_p2m = lp1.M_p2m;
         }
@@ -291,7 +291,6 @@ private:
     el2el_type M_el2el;
     std::vector<std::vector<size_type> > M_el2pt;
 
-    pset_type M_pset;
     gmpc_ptrtype M_gmpc;
     gmc_ptrtype M_gmc;
 
@@ -320,9 +319,8 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
     M_mesh( new image_mesh_type(space->worldCommPtr()) ),
     M_el2el(),
     M_el2pt(),
-    M_pset( 0 ),
     M_gmpc( new typename gm_type::precompute_type( this->domainSpace()->mesh()->gm(),
-                                                   /*space->fe()->points()*/M_pset.points() ) ),
+                                                   space->fe()->points()/*M_pset.points()*/ ) ),
     M_p2m()
 {
 
@@ -350,11 +348,25 @@ template<typename space_type>
 void
 OperatorLagrangeP1<space_type>::buildReferenceMesh( bool rebuild, std::string pathMeshLagP1, std::string prefix )
 {
-    std::string tagMeshLagP1base = this->domainSpace()->basisName() + (boost::format("-order%1%")%domain_space_type::basis_type::nOrder).str();
+    std::string tagMeshLagP1base = this->domainSpace()->basisName() + (boost::format("-order%1%")%domain_fe_type::nOrder).str();
+    if constexpr ( is_lagrange_polynomialset_v<domain_fe_type> )
+        {
+            if ( domain_convex_type::is_simplex && domain_fe_type::nOrder > 2 )
+            {
+                if ( domain_fe_type::dual_space_type::template is_pointset_v<PointSetEquiSpaced> )
+                    tagMeshLagP1base += "-equispaced";
+                else if ( domain_fe_type::dual_space_type::template is_pointset_v<PointSetWarpBlend> )
+                    tagMeshLagP1base += "-warpblend";
+                else if ( domain_fe_type::dual_space_type::template is_pointset_v<PointSetFeketeSimplex> ) //PointSetFeketeSimplex // PointSetFekete
+                    tagMeshLagP1base += "-fekete";
+            }
+        }
+
     std::string fileNameMeshDataBase = (boost::format("%1%-%2%d-%3%.msh")%domain_reference_convex_type::type() %domain_reference_convex_type::topological_dimension %tagMeshLagP1base).str();
     // WARNING, if we use a feelpp installed lib, datadir is wrong and can be not exist
     std::string pathMeshDataBase = Environment::expand("$datadir/operatorlagrangep1/"+fileNameMeshDataBase);
 
+    VLOG(1) << "search reference mesh in : "<< pathMeshDataBase;
     bool useMeshInDataBase = false;
 
     if ( fs::exists( pathMeshDataBase ) )
@@ -388,7 +400,8 @@ OperatorLagrangeP1<space_type>::buildReferenceMesh( bool rebuild, std::string pa
                 // using equispaced points defined on the reference
                 // element
                 //M_p2m.addBoundaryPoints( M_pset.points() );
-                M_p2m.visit( &M_pset );
+                PointSet<domain_reference_convex_type,double> thepset( this->domainSpace()->fe()->points() );
+                M_p2m.visit( &thepset );
 
                 // #if !defined( NDEBUG )
                 //     ExporterQuick<image_mesh_type> exp( "vtk", "ensight" );
