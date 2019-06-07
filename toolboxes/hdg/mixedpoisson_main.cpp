@@ -38,7 +38,7 @@ runApplicationMixedPoisson( std::string  const& prefix )
     else
     {
         Feel::cout << "Using submesh: " << soption("gmsh.submesh") << std::endl;
-        auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
+        auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldCommPtr() );
         Idh = IPtr( _domainSpace=Pdh<OrderT>(cmesh), _imageSpace=Pdh<OrderT>(mesh) );
         Idhv = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
         MP -> init( cmesh, mesh );
