@@ -87,7 +87,7 @@ public:
 template<int Dim, int Order, int G_Order, int E_Order>
 ConvergenceTest<Dim,Order,G_Order,E_Order>::ConvergenceTest()
 {
-    M_model = mixed_poisson_type::New("mixedpoisson");
+    M_model = mixed_poisson_type::New();
     auto solution = expr<expr_order>( checker().solution(), "solution");
     M_p_exact = checker().check() ? solution : expr<expr_order>(soption("cvg.p_exact"));
     Feel::cout << "using conductivity: " << doption("cvg.cond") << std::endl;
@@ -294,10 +294,10 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::run()
             cvg_p << fmter % h % nDofP % errP;
         }
 
-        u_ex.on( elements(M_mesh), u_exact);
-        p_ex.on( elements(M_mesh), M_p_exact);
-        p_ex_mean.on( elements(M_mesh), M_p_exact-cst(mean_p_exact));
-        p_mean.on( elements(M_mesh), idv(M_p)-cst(mean_p));
+        u_ex.on( _range=elements(M_mesh), _expr=u_exact);
+        p_ex.on( _range=elements(M_mesh), _expr=M_p_exact);
+        p_ex_mean.on( _range=elements(M_mesh), _expr=M_p_exact-cst(mean_p_exact));
+        p_mean.on( _range=elements(M_mesh), _expr=idv(M_p)-cst(mean_p));
 
         e->step(i)->setMesh(M_mesh);
         e->step(i)->add("u", M_u);
