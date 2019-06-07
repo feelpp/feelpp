@@ -140,8 +140,7 @@ public:
 
         template <typename TheEltType >
         /*explicit*/ SubFaceOf( SubFaceOf<TheEltType> const& /*sf*/,
-                                std::enable_if_t< !std::is_same<TheEltType, entity_type>::value >* = nullptr
-                                )
+                                std::enable_if_t< !std::is_same<TheEltType, entity_type>::value >* = nullptr )
         :
         M_element0( 0, invalid_uint16_type_value ),
         M_element1( 0, invalid_uint16_type_value )
@@ -149,9 +148,8 @@ public:
     }
 
     template <int SFoD >
-    /*explicit*/ SubFaceOf( SubFaceOfNone<SFoD> const& /*sf*/,
-                            std::enable_if_t<SFoD == nDim || SFoD == 0>* = nullptr
-                        )
+    explicit SubFaceOf( SubFaceOfNone<SFoD> const& /*sf*/,
+                        std::enable_if_t<SFoD == nDim || SFoD == 0>* = nullptr )
         :
         M_element0( 0, invalid_uint16_type_value ),
         M_element1( 0, invalid_uint16_type_value )
