@@ -31,15 +31,15 @@
 namespace Feel
 {
 
-BoundaryConditions::BoundaryConditions( WorldComm const& world, bool tryLoadBcFile )
+BoundaryConditions::BoundaryConditions( worldcomm_ptr_t const& world, bool tryLoadBcFile )
     :
     BoundaryConditions( "", world, tryLoadBcFile )
 {}
 
-BoundaryConditions::BoundaryConditions( std::string const& p, WorldComm const& world, bool tryLoadBcFile )
+BoundaryConditions::BoundaryConditions( std::string const& p, worldcomm_ptr_t const& world, bool tryLoadBcFile )
     :
     super(),
-    M_worldComm( world ),
+    super2( world ),
     M_prefix( p )
 {
     if ( tryLoadBcFile )

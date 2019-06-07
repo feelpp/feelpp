@@ -26,6 +26,7 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelmodels/modelmarkers.hpp>
 
@@ -44,16 +45,17 @@ namespace pt =  boost::property_tree;
  *   "topodim": 2
  * }
  */
-class FEELPP_EXPORT ModelOutput
+class FEELPP_EXPORT ModelOutput : public CommObject
 {
   public:
-    ModelOutput( WorldComm const& worldComm = Environment::worldComm() );
+    using super = CommObject;
+    ModelOutput( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ModelOutput( ModelOutput const& ) = default;
     ModelOutput( ModelOutput&& ) = default;
     ModelOutput& operator=( ModelOutput const& ) = default;
     ModelOutput& operator=( ModelOutput && ) = default;
     ModelOutput( std::string name, pt::ptree const& p,
-                 WorldComm const& worldComm = Environment::worldComm(),
+                 worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                  std::string const& directoryLibExpr = "" );
 
     std::string name() const { return M_name; }
@@ -63,7 +65,6 @@ class FEELPP_EXPORT ModelOutput
     std::string getString( std::string const& key ) const;
 
   private:
-    WorldComm const * M_worldComm;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
 
@@ -86,12 +87,13 @@ std::ostream& operator<<( std::ostream& os, ModelOutput const& o );
  *   "myoutput2":{...}
  * }
  */
-class FEELPP_EXPORT ModelOutputs: public std::map<std::string,ModelOutput>
+class FEELPP_EXPORT ModelOutputs: public std::map<std::string,ModelOutput>, public CommObject
 {
   public:
+    using super = CommObject;
     using value_type = std::map<std::string,ModelOutput>::value_type;
-    ModelOutputs( WorldComm const& worldComm = Environment::worldComm() );
-    ModelOutputs( pt::ptree const& p, WorldComm const& worldComm = Environment::worldComm() );
+    ModelOutputs( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ModelOutputs( pt::ptree const& p, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     virtual ~ModelOutputs() = default;
     void setPTree( pt::ptree const& _p ) { M_p = _p; setup(); }
     ModelOutput loadOutput( std::string const&, std::string const& );
@@ -110,7 +112,6 @@ class FEELPP_EXPORT ModelOutputs: public std::map<std::string,ModelOutput>
   private:
     void setup();
 
-    WorldComm const* M_worldComm;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
 

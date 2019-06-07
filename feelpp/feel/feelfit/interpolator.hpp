@@ -47,6 +47,7 @@ public:
     static std::unique_ptr<Interpolator> New( InterpolationType type, std::vector<pair_type> const& data );
 
     static std::unique_ptr<Interpolator> New( InterpolationType type, std::string const& dataFile,
+                                              std::string const& abscissa, std::string const& ordinate,
                                               WorldComm const& worldComm = Environment::worldComm() );
 
     /**

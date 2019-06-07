@@ -523,9 +523,18 @@ Environment::Environment( int argc, char** argv,
     {
         if ( S_vm.count( "directory" ) )
             directory = S_vm["directory"].as<std::string>();
+        if ( S_vm.count( "repository.prefix" ) )
+            directory = S_vm["repository.prefix"].as<std::string>();
+        if ( S_vm.count( "repository.case" ) )
+        {
+            fs::path d( directory );
+            d /= S_vm["repository.case"].as<std::string>();
+            directory = d.string();
+        }
 
         boost::format f( directory );
-        bool createSubdir = add_subdir_np && S_vm["npdir"].as<bool>();
+        bool createSubdir = add_subdir_np &&
+            ( S_vm["repository.npdir"].as<bool>() || S_vm["npdir"].as<bool>() );
         changeRepository( _directory=f,_subdir=createSubdir );
     }
 
@@ -1583,7 +1592,7 @@ Environment::findFile( std::string const& filename )
     auto it = std::find_if( S_paths.rbegin(), S_paths.rend(),
                             [&filename] ( fs::path const& p ) -> bool
     {
-        std::cout << " looking for " << p/filename << std::endl;
+        LOG(INFO) << " looking for " << p/filename << std::endl;
 
         if ( fs::exists( p/filename ) )
             return true;
@@ -2378,6 +2387,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "${cfgdir}", cfgDir );
     boost::replace_all( res, "${home}", homeDir );
     boost::replace_all( res, "${repository}", Environment::rootRepository() );
+    boost::replace_all( res, "${appdir}", Environment::appRepository() );
     boost::replace_all( res, "${datadir}", dataDir );
     boost::replace_all( res, "${exprdbdir}", exprdbDir );
     boost::replace_all( res, "${h}", std::to_string(doption("gmsh.hsize") ) );
@@ -2391,6 +2401,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$cfgdir", cfgDir );
     boost::replace_all( res, "$home", homeDir );
     boost::replace_all( res, "$repository", Environment::rootRepository() );
+    boost::replace_all( res, "$appdir", Environment::appRepository() );
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );
     boost::replace_all( res, "$h", std::to_string(doption("gmsh.hsize") ) );
@@ -2398,7 +2409,7 @@ Environment::expand( std::string const& expr )
 
     typedef std::vector< std::string > split_vector_type;
 
-#if defined FEELPP_ENABLED_PROJECTS
+#if defined(FEELPP_ENABLED_PROJECTS)
     split_vector_type SplitVec; // #2: Search for tokens
     boost::split( SplitVec, FEELPP_ENABLED_PROJECTS, boost::is_any_of(" "), boost::token_compress_on );
     for( auto const& s : SplitVec )

@@ -32,13 +32,13 @@
 
 namespace Feel {
 
-ModelMaterial::ModelMaterial( WorldComm const& worldComm )
+ModelMaterial::ModelMaterial( worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( &worldComm )
+    super( worldComm )
 {}
-ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr )
+ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, worldcomm_ptr_t const& worldComm, std::string const& directoryLibExpr )
     :
-    M_worldComm( &worldComm ),
+    super( worldComm ),
     M_name( name ),
     M_p( p ),
     M_directoryLibExpr( directoryLibExpr ),
@@ -173,14 +173,14 @@ void
 ModelMaterial::setProperty( std::string const& property, pt::ptree const& p )
 {
     M_materialProperties[property] = mat_property_expr_type();
-    M_materialProperties[property].setExpr( property,p,*M_worldComm,M_directoryLibExpr );
+    M_materialProperties[property].setExpr( property,p,this->worldComm(),M_directoryLibExpr );
 }
 
 void
 ModelMaterial::setProperty( std::string const& property, std::string const& e )
 {
     M_materialProperties[property] = mat_property_expr_type();
-    M_materialProperties[property].setExpr( e,*M_worldComm,M_directoryLibExpr );
+    M_materialProperties[property].setExpr( e,this->worldComm(),M_directoryLibExpr );
 }
 
 void
@@ -222,14 +222,14 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m )
     return os;
 }
 
-ModelMaterials::ModelMaterials( WorldComm const& worldComm )
+ModelMaterials::ModelMaterials( worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( &worldComm )
+    super( worldComm )
 {}
 
-ModelMaterials::ModelMaterials( pt::ptree const& p, WorldComm const& worldComm )
+ModelMaterials::ModelMaterials( pt::ptree const& p, worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( &worldComm ),
+    super( worldComm ),
     M_p( p )
 {
     setup();
@@ -242,7 +242,7 @@ ModelMaterials::setup()
     {
         LOG(INFO) << "Material Physical/Region :" << v.first  << "\n";
         std::string name = v.first;
-        this->insert( std::make_pair( name, ModelMaterial( name, v.second, *M_worldComm, M_directoryLibExpr ) ) );
+        this->insert( std::make_pair( name, ModelMaterial( name, v.second, this->worldCommPtr(), M_directoryLibExpr ) ) );
     }
 }
 

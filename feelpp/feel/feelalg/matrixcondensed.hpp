@@ -107,6 +107,11 @@ public:
     bool localSolve() const { return M_strategy == solve::strategy::local; }
 
     //!
+    //! get the strategy 
+    //!
+    solve::strategy solveStrategy() const { return M_strategy; }
+    
+    //!
     //! set the strategy \p s
     //!
     void setStrategy( solve::strategy s ) { M_strategy = s; }
@@ -124,6 +129,10 @@ public:
             else
                 super::addMatrix( rows, nrows, cols, ncols, data );
             toc("addMatrix",FLAGS_v>2);
+        }
+    void addMatrix( const value_type a, MatrixSparse<value_type> const& M, Feel::MatrixStructure matStruc = Feel::SAME_NONZERO_PATTERN ) override
+        {
+            super::addMatrix( a, M, matStruc );
         }
     sc_ptrtype sc() { return M_sc; }
     sc_ptrtype const& sc() const { return M_sc; }

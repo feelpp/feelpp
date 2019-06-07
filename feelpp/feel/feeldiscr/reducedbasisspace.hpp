@@ -252,10 +252,10 @@ public :
 
 
     struct nodim { static const int nDim = -1; static const int nRealDim = -1; };
-    static const uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+    static const uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                              mpl::identity<meshes_list >,
                                              mpl::identity<nodim> >::type::type::nDim;
-    static const uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+    static const uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                                  mpl::identity<meshes_list>,
                                                  mpl::identity<nodim> >::type::type::nRealDim;
 
@@ -2005,7 +2005,7 @@ ReducedBasisSpace<SpaceType>::Element<Y,Cont>::id_( Context_t const & context, i
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<size_type> )
         return;
 
     const uint16_type nq = context.xRefs().size2();
@@ -2068,7 +2068,7 @@ ReducedBasisSpace<SpaceType>::Element<Y,Cont>::grad_( Context_t const & context,
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
     if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
         elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_size_type_value )
+    if ( elt_id == invalid_v<size_type> )
         return;
 
     int rb_size = this->size();

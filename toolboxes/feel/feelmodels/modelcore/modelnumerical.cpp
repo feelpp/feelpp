@@ -91,7 +91,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         //-----------------------------------------------------------------------//
         std::string modelPropFilename = Environment::expand( soption( _name=prefixvm(this->prefix(),"filename")) );
         if ( !modelPropFilename.empty() )
-            M_modelProps = std::make_shared<ModelProperties>( modelPropFilename, this->repository().expr(), this->worldComm(), this->prefix() );
+            M_modelProps = std::make_shared<ModelProperties>( modelPropFilename, this->repository().expr(), this->worldCommPtr(), this->prefix() );
     }
 
    void

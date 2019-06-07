@@ -943,6 +943,14 @@ public:
      */
     //@{
 
+    //!
+    //! build a new backend with the same properties
+    //!
+    backend_ptrtype clone()
+    {
+        return build( enumToKind( this->type() ), this->prefix(), this->worldCommPtr() );
+    }
+
     /**
      * clean up
      */
