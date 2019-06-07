@@ -2,12 +2,11 @@
 #define BOOST_TEST_MODULE operatorlagrangep1 testsuite
 #include <feel/feelcore/testsuite.hpp>
 
+
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/geotool.hpp>
-//#include <feel/feelfilters/unithypercube.hpp>
-//#include <feel/feelfilters/exporter.hpp>
-//#include <feel/feelmesh/meshmover.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
