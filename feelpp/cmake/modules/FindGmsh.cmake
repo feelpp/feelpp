@@ -107,54 +107,36 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   FIND_LIBRARY(GMSH_LIBRARY NAMES gmsh Gmsh gmsh-2.5.1 gmsh1
     PATH_SUFFIXES
     lib lib/x86_64-linux-gnu/ )
-
-  # if( NOT GMSH_LIBRARY )
-  #   if(APPLE)
-  #     set( GMSHLIB libGmsh.dylib )
-  #   else(APPLE)
-  #     set( GMSHLIB libGmsh.so )
-  #   endif(APPLE)
-  #   FIND_PATH(GMSH_LIBRARY_PATH ${GMSHLIB}
-  #     PATHS
-  #     $ENV{GMSH_DIR}/lib
-  #     ${CMAKE_BINARY_DIR}/contrib/gmsh/lib
-  #     NO_DEFAULT_PATH)
-
-  #   if(GMSH_LIBRARY_PATH)
-  #       set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/${GMSHLIB}" )
-  #   else(GMSH_LIBRARY_PATH)
-  #       set(GMSH_LIBRARY "GMSH_LIBRARY-NOTFOUND" )
-  #   endif(GMSH_LIBRARY_PATH)
-  # endif(NOT GMSH_LIBRARY)
   
-    if ( GMSH_LIBRARY )
+  if ( GMSH_LIBRARY )
     if (GMSH_INCLUDE_PATH )
       _gmsh_get_version( GMSH_MAJOR_VERSION GMSH_MINOR_VERSION GMSH_PATCH_VERSION ${GMSH_INCLUDE_PATH})
     else()
+
       get_filename_component( GMSH_LIBRARY_REALPATH ${GMSH_LIBRARY} REALPATH )
-      message("GMSH_LIBRARY_REALPATH=${GMSH_LIBRARY_REALPATH}")
       get_filename_component( GMSH_LIBRARY_NAME_WE ${GMSH_LIBRARY_REALPATH} NAME_WE )
-      message("GMSH_LIBRARY_NAME_WE=${GMSH_LIBRARY_NAME_WE}")
       get_filename_component( GMSH_LIBRARY_EXT ${GMSH_LIBRARY_REALPATH} EXT )
-      message("GMSH_LIBRARY_EXT=${GMSH_LIBRARY_EXT}")
 
       string(REGEX MATCH "[0-9]+\.[0-9]+\.[0-9]" GMSH_LIBRARY_VERSION ${GMSH_LIBRARY_EXT})
-      message( "GMSH_LIBRARY_VERSION=${GMSH_LIBRARY_VERSION}")
-
       string(REGEX REPLACE "^([0-9]*)([.][0-9]*[.][0-9]*)$" "\\1" GMSH_MAJOR_VERSION ${GMSH_LIBRARY_VERSION})
-      message( "GMSH_MAJOR_VERSION=${GMSH_MAJOR_VERSION}")
       string(REGEX REPLACE "^([0-9]*[.])([0-9]*)([.][0-9]*)$" "\\2" GMSH_MINOR_VERSION ${GMSH_LIBRARY_VERSION})
-      message( "GMSH_MINOR_VERSION=${GMSH_MINOR_VERSION}")
       string(REGEX REPLACE "^([0-9]*[.][0-9]*[.])([0-9]*)$" "\\2" GMSH_PATCH_VERSION ${GMSH_LIBRARY_VERSION})
-      message( "GMSH_PATCH_VERSION=${GMSH_PATCH_VERSION}")
+
+      if ( 0 )
+        message("GMSH_LIBRARY_REALPATH=${GMSH_LIBRARY_REALPATH}")
+        message("GMSH_LIBRARY_NAME_WE=${GMSH_LIBRARY_NAME_WE}")
+        message("GMSH_LIBRARY_EXT=${GMSH_LIBRARY_EXT}")
+        message("GMSH_LIBRARY_VERSION=${GMSH_LIBRARY_VERSION}")
+        message("GMSH_MAJOR_VERSION=${GMSH_MAJOR_VERSION}")
+        message("GMSH_MINOR_VERSION=${GMSH_MINOR_VERSION}")
+        message("GMSH_PATCH_VERSION=${GMSH_PATCH_VERSION}")
+      endif()
 
       if ( GMSH_MAJOR_VERSION VERSION_GREATER_EQUAL 4 )
         set( GMSH_INCLUDE_PATH ${Feelpp_BINARY_DIR}/contrib/gmsh )
         set( FEELPP_GMSH_API_MISSING_HEADERS 1 )
       endif()
 
-      #string(REGEX REPLACE "[.]" "_" BLAB2 ${GMSH_LIBRARY_VERSION})
-      #message( "BLAB2=${BLAB2}")
     endif()
   endif()
 
