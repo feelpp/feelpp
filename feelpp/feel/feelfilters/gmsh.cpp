@@ -824,7 +824,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
     std::string _name;
 
-    if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().isMasterRank() ) )
+    if ( this->worldComm().isMasterRank() )
     {
 #if BOOST_FILESYSTEM_VERSION == 3
 		_name = fs::path( nameMshOutput ).stem().string();

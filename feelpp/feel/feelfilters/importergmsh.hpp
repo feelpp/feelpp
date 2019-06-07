@@ -184,7 +184,7 @@ struct FEELPP_NO_EXPORT GMSHElement
         }
 #if defined( FEELPP_HAS_GMSH_H )
     template<typename T>
-    GMSHElement( T* ele, int n, int elementary, std::vector<int> _physicals )
+    GMSHElement( T* ele, int n, int elementary, std::vector<int> const& _physicals )
         :
         GMSHElement(n,
                     ele->getTypeForMSH(),
@@ -878,7 +878,6 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
         {
             int id = it->first.second;
             int topodim = it->first.first;
-            std::vector<int> data = {id, topodim};
             std::string marker = it->second.c_str();
             boost::trim(marker); // get rid of eventual trailing spaces
             mesh->addMarkerName( marker, id, topodim );
@@ -2120,14 +2119,14 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         size_type elementTag = 0;
 
         // partitioning data
-        int numPartitions = 1, partition = procId;
+        int numPartitionsElt = 1, partition = procId;
         int parent =0 , dom1 = 0, dom2 = 0;
         std::vector<rank_type> ghosts;
 
         int numVertices = 0;
         std::vector<int> indices;
         Feel::detail::GMSHElement it_gmshElt( elementTag, elementType, physicalTag, entityTag,    //   num, type, physical, elementary,
-                                              numPartitions, partition, ghosts,
+                                              numPartitionsElt, partition, ghosts,
                                               parent, dom1, dom2,
                                               numVertices, indices,
                                               this->worldComm().localRank(),
@@ -2525,7 +2524,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                         point_type & pt = mesh->pointIterator( dataRecvGhostElement[jj+1] )->second;
                         e.setPoint(  jj, pt );
                     }
-                    auto const& eltInserted = mesh->addElement( /*mesh->endElement(), */std::move(e) );
+                    mesh->addElement( /*mesh->endElement(), */std::move(e) );
                 }
             }
         }
