@@ -27,8 +27,9 @@ BOOST_AUTO_TEST_CASE( test_0 )
     auto Vh = space_type::New( mesh );
 
     auto e = expr(soption("functions.e")); // error with respect to h
-
+    BOOST_CHECK_EQUAL( e.dynamicContext(), vm::POINT|vm::DYNAMIC );
     auto g = expr(soption("functions.g")); // p exact
+    BOOST_CHECK_EQUAL( g.dynamicContext(), vm::POINT|vm::DYNAMIC );
 
     auto h = grad<FEELPP_DIM>(g);          // u exact
     auto lhs = laplacian(g);               // f
@@ -64,9 +65,9 @@ BOOST_AUTO_TEST_CASE( test_0 )
 
     a.solve(_rhs=l, _solution=U);
 
-    auto err1 = normL2( boundaryfaces(mesh), trans(idv(u))*N() );
-    auto err2 = normL2( boundaryfaces(mesh), h*N());
-    auto err = normL2( elements(mesh), _expr=idv(u)- trans(h) );
+    auto err1 = normL2( _range=boundaryfaces(mesh), _expr=trans(idv(u))*N() );
+    auto err2 = normL2( _range=boundaryfaces(mesh), _expr=h*N());
+    auto err = normL2( _range=elements(mesh), _expr=idv(u)- trans(h) );
     if ( Environment::isMasterRank() )
     {
         auto est = e.evaluate({{"x",doption("gmsh.hsize")}});

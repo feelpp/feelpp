@@ -16,7 +16,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    if ( M_pdeType=="Generalised-String" )
+    if ( M_modelName == "Generalised-String" )
     {
         this->updateLinearGeneralizedString( data );
         return;

@@ -136,12 +136,12 @@ public :
     /**
      * \return the reference mesh
      */
-    mesh_ref_ptrtype referenceMesh();
+    mesh_ref_ptrtype referenceMesh() const { return M_referenceMesh; }
 
     /**
      * \return the moving mesh
      */
-    mesh_ptrtype movingMesh();
+    mesh_ptrtype movingMesh() const { return M_movingMesh; }
 
     /**
      * \return true is reverted on reference mesh, else false
@@ -151,17 +151,17 @@ public :
     /**
      * \return the functionspace
      */
-    ale_map_functionspace_ptrtype functionSpace();
+    ale_map_functionspace_ptrtype functionSpace() const { return M_Xhmove; }
 
     /**
      * \return the functionspace in reference mesh
      */
-    ale_map_functionspace_ref_ptrtype functionSpaceInRef();
+    ale_map_functionspace_ref_ptrtype functionSpaceInRef() const { return M_Xhref; }
 
     /**
      * \return ale object define (only!) on P1_ref
      */
-    ale_map_ptrtype const& aleFactory() const;
+    ale_map_ptrtype const& aleFactory() const { return M_aleFactory; }
 
     /**
      * \return the ale map in P1_ref
@@ -176,45 +176,42 @@ public :
     /**
      *
      */
-    ale_map_element_ptrtype identityALE();
+    ale_map_element_ptrtype identityALE() const { return M_identity_ale; }
 
     /**
      * \return the distance between P1_ref and HO_ref
      */
-    ale_map_element_ref_ptrtype dispP1ToHO_ref();
+    ale_map_element_ref_ptrtype dispP1ToHO_ref() const { return M_dispP1ToHO_ref; }
 
     /**
      *
      */
-    ale_map_element_ptrtype displacementOnMovingBoundary();
+    ale_map_element_ptrtype displacementOnMovingBoundary() const { return M_displacementOnMovingBoundary_HO_ref; }
 
     /**
      *
      */
-    ale_map_element_ref_ptrtype displacementOnMovingBoundaryInRef();
+    ale_map_element_ref_ptrtype displacementOnMovingBoundaryInRef() const { return M_displacementOnMovingBoundary_P1_ref; }
 
     /**
      * \return the displacement
      */
-    ale_map_element_ref_ptrtype displacementInRef();
+    ale_map_element_ref_ptrtype displacementInRef() const { return M_displacement_ref; }
 
     /**
      * \return the displacement
      */
-    ale_map_element_ptrtype displacement();
+    ale_map_element_ptrtype displacement() const { return M_displacement; }
 
     /**
      * \return the velocity mesh
      */
-    ale_map_element_ptrtype velocity();
-    ale_map_element_ptrtype const& velocity() const;
+    ale_map_element_ptrtype velocity() const { return M_meshVelocity; }
 
     /*
      * \ return dofRelationShipMap
      */
-    DofRelationshipMap_ptrtype dofRelationShipMap();
-
-    //bool doExport() const { return M_doExport; }
+    DofRelationshipMap_ptrtype dofRelationShipMap() const { return M_drm; }
 
 
     /**
@@ -224,8 +221,6 @@ public :
     void update( std::vector<elem_type> const& polyDisplacementSet );
     template< typename elem_type >
     void update( elem_type const& polyDisplacementSet );
-
-    void updateImpl();
 
     /**
      * \Revert mesh_ho in reference state
@@ -240,7 +235,7 @@ public :
     /**
      * \Revert mesh_ho in moving state
      */
-    void updateBdf();
+    void updateTimeStep();
 
     /**
      * \Export
@@ -260,6 +255,7 @@ private :
 
     void updateIdentityMap();
     void initTimeStep();
+    void updateImpl();
 
 private :
 
@@ -288,6 +284,7 @@ private :
     std::shared_ptr<ale_map_element_ref_type> M_displacement_ref;
     std::shared_ptr<ale_map_element_ref_type> M_map_ref;
     std::shared_ptr<ale_map_element_type> M_meshVelocity;
+    std::shared_ptr<ale_map_element_type> M_fieldTmp;
 
     bdf_ale_displacement_ref_ptrtype M_bdf_ale_displacement_ref;
     bdf_ale_displacement_ptrtype M_bdf_ale_identity;
@@ -297,12 +294,11 @@ private :
 
     exporter_ptrtype M_exporter;
     exporter_ref_ptrtype M_exporter_ref;
-    int M_cpt_export;
 
     bool M_isARestart;
     std::string M_restartPath;
 
-    std::set<size_type> M_dofsOnMovingBoundary_HO;
+    std::set<size_type> M_dofsMultiProcessOnMovingBoundary_HO;
 };
 
 //------------------------------------------------------------------------------------------------//
@@ -326,7 +322,7 @@ MeshALE<Convex>::update( elem_type const& polyDisplacementSet )
 
     M_displacementOnMovingBoundary_HO_ref->on(_range=markedfaces(M_movingMesh,this->aleFactory()->flagSet("moving")),
         _expr=vf::idv(polyDisplacementSet) );
-    sync( *M_displacementOnMovingBoundary_HO_ref, "=", M_dofsOnMovingBoundary_HO );
+    sync( *M_displacementOnMovingBoundary_HO_ref, "=", M_dofsMultiProcessOnMovingBoundary_HO );
 
     this->updateImpl();
 
@@ -342,6 +338,7 @@ template<typename Args>
 struct compute_meshale_return
 {
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::mesh>::type>::type::element_type mesh_type;
+    using index_type = typename mesh_type::index_type;
     typedef typename mesh_type::shape_type convex_type;
     typedef MeshALE<convex_type> type;
     typedef std::shared_ptr<type> ptrtype;
@@ -352,7 +349,7 @@ BOOST_PARAMETER_FUNCTION(
     meshale,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
-      ( mesh,    *( boost::is_convertible<mpl::_,std::shared_ptr<MeshBase> > ) )
+      ( mesh,    *( boost::is_convertible<mpl::_,std::shared_ptr<MeshBase<>> > ) )
       ) // required
     ( optional
       ( prefix,            (std::string), std::string("") )

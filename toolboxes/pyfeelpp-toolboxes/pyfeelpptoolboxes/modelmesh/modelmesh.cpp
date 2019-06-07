@@ -57,7 +57,7 @@ void defToolbox(py::module &m)
         .def("init",&toolbox_t::init, "initialize the meshALE  toolbox")
 
         // mesh
-        .def( "addBoundaryFlags", &toolbox_t::addBoundaryFlags, py::arg("boundary"), py::arg("marker"), "add the boundary flags" )
+        .def( "addBoundaryFlags", (void (toolbox_t::*)(std::string const&,std::string const&)) &toolbox_t::addBoundaryFlags, py::arg("boundary"), py::arg("marker"), "add the boundary flags" )
         .def( "referenceMesh", &toolbox_t::referenceMesh, "get the reference mesh" )
         .def( "movingMesh", &toolbox_t::movingMesh, "get the moving mesh" )
         .def( "isOnReferenceMesh", &toolbox_t::isOnReferenceMesh, "return true if on reference mesh, false otherwise" )

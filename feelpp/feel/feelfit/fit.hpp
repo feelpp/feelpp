@@ -63,19 +63,10 @@ public:
     using trial_basis = typename expression_type::trial_basis;
 
     typedef typename expression_type::value_type value_type;
-    // scalar, vectorial (to be checked)
-    typedef typename expression_type::evaluate_type evaluate_type;
+    typedef value_type evaluate_type;
 
     typedef Fit<ExprT,InterpOperator> this_type;
 
-    explicit Fit( expression_type const & __expr,
-                  std::string const& dataFile,
-                  InterpolationType interpType,
-                  WorldComm const& worldComm )
-        :
-        M_expr(__expr),
-        M_interpolator( Interpolator::New( interpType, dataFile, worldComm) )
-        {}
     Fit( expression_type const & expr,
          std::shared_ptr<Interpolator> const& interpolator )
         :
@@ -102,6 +93,15 @@ public:
 
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
+
+    evaluate_type
+    evaluate( bool parallel, worldcomm_ptr_t const& worldcomm ) const
+        {
+            if constexpr ( InterpOperator == 0 )
+                return this->interpolator()( M_expr.evaluate( parallel,worldcomm ) );
+            else
+                return this->interpolator().diff( M_expr.evaluate( parallel,worldcomm ) );
+        }
 
     // geo_t : transformation geométrique
     // basis_i_t : fonctions tests
@@ -219,6 +219,7 @@ public:
         {
             return this->evalq( c1,c2,q, mpl::int_<InterpOperator>() );
         }
+
     private :
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> /**/ ) const
@@ -244,22 +245,13 @@ private:
 /**
  * \brief Fit
  **/
-template<typename ExprT>
-inline
-Expr< Fit<ExprT,0> >
-fit( ExprT const& v, std::string const& dataFile, int intType,
-     WorldComm const& worldComm = Environment::worldComm() )
-{
-    LOG(INFO) << "Fit "<< dataFile << " with " << intType;
-    typedef Fit<ExprT,0> fit_t;
-    return Expr< fit_t >(  fit_t( v, dataFile, static_cast<InterpolationType>( intType ), worldComm ) );
-}
 
 template<typename ExprT>
 inline
 Expr< Fit<ExprT,0> >
 fit( ExprT const& v,
      std::string const& dataFile = soption("fit.datafile"),
+     std::string const& abscissa = "", std::string const& ordinate = "",
      std::string const& type = soption("fit.type"),
      WorldComm const& worldComm = Environment::worldComm() )
 {
@@ -268,7 +260,7 @@ fit( ExprT const& v,
     InterpolationType interpolatorEnumType = itFindType->second;
     LOG(INFO) << "Fit "<< dataFile << " with " << type;
     typedef Fit<ExprT,0> fit_t;
-    return Expr< fit_t >(  fit_t( v, dataFile, interpolatorEnumType, worldComm ) );
+    return Expr< fit_t >(  fit_t( v, Interpolator::New( interpolatorEnumType, dataFile, abscissa, ordinate, worldComm ) ) );
 }
 
 template<typename ExprT>
@@ -285,18 +277,9 @@ fit( ExprT const& v,
 template<typename ExprT>
 inline
 Expr< Fit<ExprT,1> >
-fitDiff( ExprT v, std::string dataFile, int intType,
-         WorldComm const& worldComm = Environment::worldComm() )
-{
-    LOG(INFO) << "Fit Diff "<< dataFile << " with " << intType;
-    typedef Fit<ExprT,1> fit_t;
-    return Expr< fit_t >(  fit_t( v, dataFile, intType, worldComm ) );
-}
-template<typename ExprT>
-inline
-Expr< Fit<ExprT,1> >
 fitDiff( ExprT const& v,
          std::string const& dataFile = soption("fit.datafile"),
+         std::string const& abscissa = "", std::string const& ordinate = "",
          std::string const& type = soption("fit.type"),
          WorldComm const& worldComm = Environment::worldComm() )
 {
@@ -305,7 +288,7 @@ fitDiff( ExprT const& v,
     InterpolationType interpolatorEnumType = itFindType->second;
     LOG(INFO) << "Fit Diff"<< dataFile << " with " << type;
     typedef Fit<ExprT,1> fit_t;
-    return Expr< fit_t >(  fit_t( v, dataFile, interpolatorEnumType, worldComm ) );
+    return Expr< fit_t >(  fit_t( v, Interpolator::New( interpolatorEnumType, dataFile, abscissa, ordinate, worldComm ) ) );
 }
 
 template<typename ExprT>

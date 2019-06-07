@@ -210,6 +210,7 @@ const size_type mctx = vm::MEASURE;
                                                                         \
         constexpr uint16_type polynomialOrder() const { return VF_GD_IMORDER(O); } \
         constexpr bool isPolynomial() const { return true; }            \
+        evaluate_type evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const { return 0; } \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \

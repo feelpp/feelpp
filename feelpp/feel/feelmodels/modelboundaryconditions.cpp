@@ -30,9 +30,9 @@ namespace Feel
 ModelBoundaryCondition::ModelBoundaryCondition( pt::ptree const& p, std::string const& name,
                                                 std::string const& material, std::string const& e1,
                                                 std::string const& e2,
-                                                WorldComm const& worldComm )
+                                                worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm(&worldComm),
+    super(worldComm),
     M_pt(p),
     M_name(name),
     M_material(material),
@@ -49,9 +49,9 @@ ModelBoundaryCondition::ModelBoundaryCondition( pt::ptree const& p, std::string 
         M_modelExpr2.setExpr(M_expr2);
 }
 
-ModelBoundaryConditions::ModelBoundaryConditions( WorldComm const& worldComm )
+ModelBoundaryConditions::ModelBoundaryConditions( worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( &worldComm )
+    super( worldComm )
 {}
 
 void

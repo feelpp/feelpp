@@ -43,17 +43,17 @@ namespace Feel
    @author Christophe Prud'homme
    @see
 */
-template<typename Entity, typename T = double>
+template<typename Entity, typename T = double, typename IndexT = uint32_type>
 class GeoEntity
     :
-    boost::equality_comparable<GeoEntity<Entity,T> >,
-    boost::less_than_comparable<GeoEntity<Entity,T> >,
-    boost::less_than_comparable<GeoEntity<Entity,T>, size_type>,
+        boost::equality_comparable<GeoEntity<Entity,T,IndexT> >,
+    boost::less_than_comparable<GeoEntity<Entity,T,IndexT> >,
+    boost::less_than_comparable<GeoEntity<Entity,T,IndexT>, IndexT>,
     public Entity
 {
-    static const uint16_type nBitShiftedGeoEntityContext = 0;
-    static const uint16_type nBitShiftedReferenceGeometry = 2;
-    static const uint16_type nBitShiftedReferenceShapes = 8;
+    static inline const uint16_type nBitShiftedGeoEntityContext = 0;
+    static inline const uint16_type nBitShiftedReferenceGeometry = 2;
+    static inline const uint16_type nBitShiftedReferenceShapes = 8;
 public:
 
 
@@ -62,39 +62,41 @@ public:
     //@{
 
     typedef Entity super;
-    typedef GeoEntity<Entity,T> GeoShape;
-    typedef GeoEntity<Entity,T> self_type;
+    typedef GeoEntity<Entity,T,IndexT> GeoShape;
+    typedef GeoEntity<Entity,T,IndexT> self_type;
     typedef T value_type;
+    using index_type = IndexT;
+    using size_type = index_type;
     typedef typename super::topological_face_type face_type;
     typedef face_type GeoBShape;
     typedef typename Entity::edge_permutation_type edge_permutation_type;
     typedef typename Entity::face_permutation_type face_permutation_type;
 
-    static const size_type Shape = super::Shape;
-    static const size_type Geometry = super::Geometry;
+    static inline const size_type Shape = super::Shape;
+    static inline const size_type Geometry = super::Geometry;
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder = super::nOrder;
-    static const uint16_type nRealDim = super::nRealDim;
+    static inline const uint16_type nDim = super::nDim;
+    static inline const uint16_type nOrder = super::nOrder;
+    static inline const uint16_type nRealDim = super::nRealDim;
 
 
-    static const uint16_type numVertices = super::numVertices;
-    static const uint16_type numFaces = super::numFaces;
-    static const uint16_type numGeometricFaces = super::numGeometricFaces;
-    static const uint16_type numTopologicalFaces = super::numTopologicalFaces;
-    static const uint16_type numEdges = super::numEdges;
-    static const uint16_type numNormals = super::numNormals;
+    static inline const uint16_type numVertices = super::numVertices;
+    static inline const uint16_type numFaces = super::numFaces;
+    static inline const uint16_type numGeometricFaces = super::numGeometricFaces;
+    static inline const uint16_type numTopologicalFaces = super::numTopologicalFaces;
+    static inline const uint16_type numEdges = super::numEdges;
+    static inline const uint16_type numNormals = super::numNormals;
 
-    static const uint16_type numPoints = super::numPoints;
-    static const uint16_type nbPtsPerVertex = super::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = super::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = super::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = super::nbPtsPerVolume;
+    static inline const uint16_type numPoints = super::numPoints;
+    static inline const uint16_type nbPtsPerVertex = super::nbPtsPerVertex;
+    static inline const uint16_type nbPtsPerEdge = super::nbPtsPerEdge;
+    static inline const uint16_type nbPtsPerFace = super::nbPtsPerFace;
+    static inline const uint16_type nbPtsPerVolume = super::nbPtsPerVolume;
 
     typedef Entity convex_type;
 
-    static const bool is_simplex = super::is_simplex;
-    static const bool is_hypercube = super::is_hypercube;
+    static inline const bool is_simplex = super::is_simplex;
+    static inline const bool is_hypercube = super::is_hypercube;
 
     /**
      * helper class to construct the associated reference convex.
@@ -217,7 +219,7 @@ public:
      *
      * @return the dimension of the reference shape
      */
-    uint16_type refDim() const
+    constexpr uint16_type refDim() const
     {
         return super::nDim;
     }
@@ -227,7 +229,7 @@ public:
      *
      * @return the number of points on the reference shape
      */
-    uint16_type nPoints() const
+    constexpr uint16_type nPoints() const
     {
         return super::numPoints;
     }
@@ -237,7 +239,7 @@ public:
      *
      * @return the number of vertices on the reference shape
      */
-    uint16_type nVertices() const
+    constexpr uint16_type nVertices() const
     {
         return super::numVertices;
     }
@@ -247,7 +249,7 @@ public:
      *
      * @return the number of edges on the reference shape
      */
-    uint16_type nEdges() const
+    constexpr uint16_type nEdges() const
     {
         return super::numEdges;
     }
@@ -257,7 +259,7 @@ public:
      *
      * @return the number of edges on the reference shape
      */
-    uint16_type nFaces() const
+    constexpr uint16_type nFaces() const
     {
         return super::numFaces;
     }
@@ -277,7 +279,7 @@ public:
      *
      * @return the number of edges on the reference shape
      */
-    uint16_type nGeometricFaces() const
+    constexpr uint16_type nGeometricFaces() const
     {
         return super::numGeometricFaces;
     }
@@ -287,7 +289,7 @@ public:
      *
      * @return the number of normals on the reference shape
      */
-    uint16_type nNormals() const
+    constexpr uint16_type nNormals() const
     {
         return super::numNormals;
     }

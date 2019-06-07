@@ -834,7 +834,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
             if ( boption(_name="partition.linear" ) )
             {
                 for ( size_type i=0 ; i< elt.nNeighbors(); ++i )
-                    if ( elt.neighbor(i) != invalid_size_type_value )
+                    if ( elt.neighbor(i) != invalid_v<size_type> )
                         f.push_back( elt.neighbor(i) );
 
                 nbTag+=f.size()+1;

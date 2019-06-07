@@ -867,9 +867,9 @@ class GeoMap
               M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
               M_id( __e.id() ),
               M_e_markers( __e.markers() ),
-              M_elem_id_1( invalid_size_type_value ),          // __e.ad_first() ),
+              M_elem_id_1( invalid_v<size_type> ),          // __e.ad_first() ),
               M_pos_in_elem_id_1( invalid_uint16_type_value ), //__e.pos_first() ),
-              M_elem_id_2( invalid_size_type_value ),          //__e.ad_second() ),
+              M_elem_id_2( invalid_v<size_type> ),          //__e.ad_second() ),
               M_pos_in_elem_id_2( invalid_uint16_type_value ), //__e.pos_second() ),
               M_face_id( __f ),
               M_h( 0 ),
@@ -885,7 +885,7 @@ class GeoMap
             {
                 M_gm->gradient( node_t_type(), M_g_linear );
             }
-
+            updateGradient<>( 0 );
             if ( M_pc && !this->isOnSubEntity() )
                 update( __e );
 
@@ -1102,7 +1102,8 @@ class GeoMap
         template<size_type CTX=context>
         void updateGradient( int q )
             {
-                if ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> )
+                if ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> ||
+                     ( vm::has_dynamic_v<CTX> && ( hasJACOBIAN( M_dynamic_context ) || hasKB( M_dynamic_context ) ) ) )
                 {
                     //if ( !is_linear )
                     M_gm->gradient( q, M_g, M_pc.get() );
@@ -1125,6 +1126,7 @@ class GeoMap
         template<size_type CTX=context>
         void update( element_type const& __e, uint16_type __f = invalid_uint16_type_value, bool updatePC = true )
             {
+
                 M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
                 M_element = boost::addressof( __e );
                 M_id = __e.id();
@@ -1142,6 +1144,23 @@ class GeoMap
                 DCHECK( M_pc ) << "invalid precompute data structure";
 
                 updateMeasures<CTX>();
+                updatePoints<CTX>();
+                updateJKBN<CTX>();
+            }
+
+        //!
+        //! update geomap data only on face, element has not been changed
+        //!
+        template<size_type CTX=context>
+        void updateOnFace( uint16_type __f, bool updatePC = true )
+            {
+                M_face_id = __f;
+                if ( this->isOnSubEntity() && updatePC )
+                {
+                    M_perm = M_element->permutation( M_face_id, mpl::int_<subEntityCoDim>() );
+                    //M_perm = __e.permutation( M_face_id );
+                    M_pc = M_pc_faces[__f][M_perm];
+                }
                 updatePoints<CTX>();
                 updateJKBN<CTX>();
                 
@@ -2091,26 +2110,29 @@ class GeoMap
                             eigen_vector_n_type& N, eigen_vector_n_type& unitN, value_type& Nnorm )
         {
             //if constexpr ( ( NDim != PDim ) || ( vm::has_normal_v<CTX> ) )
-            if constexpr ( vm::has_normal_v<CTX> )
+            if constexpr ( vm::has_normal_v<CTX> || vm::has_dynamic_v<CTX> )
             {
-                if ( vm::has_normal_v<CTX> && !this->isOnFace() )
+                
+                if ( !this->isOnFace() )
                     return; //throw std::logic_error( "normal computation defined only on faces" );
                 //if ( M_gm->hasUnitNormalAtFace( M_id, M_face_id ) == false )
-                if (1)
+                if ( vm::has_normal_v<CTX> || ( vm::has_dynamic_v<CTX> && hasNORMAL( M_dynamic_context ) ) )
                 {
-                    N = B * M_gm->referenceConvex().normal( M_face_id );
+                    N.noalias() = B * M_gm->referenceConvex().normal( M_face_id );
                     Nnorm = N.norm();
                     unitN = N/Nnorm;
 
                     //M_gm->setNormalNormAtFace( M_id, M_face_id, M_n_norm );
                     //M_gm->setUnitNormalAtFace( M_id, M_face_id, M_un_real );
                 }
+#if 0
                 else
                 {
                     Nnorm = M_gm->normalNormAtFace( M_id, M_face_id );
                     unitN = M_gm->unitNormalAtFace( M_id, M_face_id );
                     
                 }
+#endif
             }
         }
 
@@ -2148,7 +2170,7 @@ class GeoMap
                 if  ( !this->isOnFace() )
                     return;//throw std::logic_error("Local basis defined only on faces ");
                 local_basis_ref = eigen_matrix_pp_type::Identity();
-                eigen_vector_n_type Np = M_gm->referenceConvex().normal( M_face_id );
+                eigen_vector_p_type Np = M_gm->referenceConvex().normal( M_face_id );
                 int max_col;
                 Np.array().abs().maxCoeff( &max_col );
                 if ( max_col != 0 )
@@ -2180,16 +2202,17 @@ class GeoMap
         //! as jacobian, jacobian matrix its inverse or the normals
         //!
         template<int CTX=context>
-        void updateJKBN()
+        void updateJKBN() noexcept
             {
-                if constexpr ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> )
+                if constexpr ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_dynamic_v<CTX> )
                 {
                     Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
                     em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
                     tensor_map_t<2,value_type> TPts( M_G.data().begin(), M_G.size1(), M_G.size2() );
                     bool _gradient_needs_update = resizeGradient<CTX>();
-                    
-                            
+                    em_matrix_col_type<value_type> GradPhi( M_g.data().begin(),
+                                                            M_G.size2(), PDim );
+
                     for ( int q = 0; q < nComputedPoints(); ++q )
                     {
                         if ( 0 ) //is_linear && M_gm->cache( M_id, M_K[q], M_B[q], M_J[q] ) )
@@ -2197,17 +2220,23 @@ class GeoMap
                         }
                         else
                         {
-                            updateGradient<CTX>( q );
-                            em_matrix_col_type<value_type> GradPhi( M_g.data().begin(),
-                                                                    M_G.size2(), PDim );
+                            if constexpr(!gmc_type::is_linear)
+                            {
+                                updateGradient<CTX>( q );
+                                new (&GradPhi) em_matrix_col_type<value_type>(M_g.data().begin(),
+                                                                              M_G.size2(), PDim );
+                            }
                             M_K[q].noalias() = Pts * GradPhi;
+
                             updateJacobian( M_K[q], M_B[q], M_J[q] );
+#if 0                                                                                                                     
                             //std::cout << "CTX=" << CTX << std::endl;
                             //std::cout << "K[" << q << "]=" << M_K[q] << std::endl;
                             //std::cout << "B[" << q << "]=" << M_B[q] << std::endl;
                             //std::cout << "J[" << q << "]=" << M_J[q] << std::endl;
                             //if ( 0 && is_linear )
                                 //M_gm->updateCache( M_id, M_K[q], M_B[q], M_J[q] );
+#endif                                                    
                         }
                         if constexpr ( vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
                         {
@@ -2217,13 +2246,16 @@ class GeoMap
                             //std::cout << "M_hessian[" << q << "]=" << M_hessian[q] << std::endl;
                         }
 
-                        
                         updateHessian<CTX>( M_B[q] );
                         updateNormals<CTX>( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
                         updateTangents<CTX>( M_K[q], M_unit_normals[q], M_tangents[q], M_unit_tangents[q], M_tangent_norms[q], M_Ptangent[q] );
                         updateLocalBasis<CTX>(  M_B[q], M_local_basis_ref[q], M_local_basis_real[q] );
                     }
+
                 }
+                else if constexpr ( vm::has_normal_v<CTX> )
+                    for ( int q = 0; q < nComputedPoints(); ++q )
+                        updateNormals<CTX>( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
             }
 
         Context();

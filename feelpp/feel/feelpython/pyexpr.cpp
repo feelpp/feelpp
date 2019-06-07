@@ -47,7 +47,7 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::map<std
     {
         py::scoped_interpreter guard{}; // start the interpreter and keep it alive
         py::module::import("sys").attr("path").cast<py::list>().append(Environment::expand("$top_srcdir/feelpp/feel/feelpython/"));
-        py::print(py::module::import("sys").attr("path"));
+        //py::print(py::module::import("sys").attr("path"));
         py::dict locals = py::cast(_locals);
         py::print(locals);
         py::eval_file( pyfilename.c_str(), py::globals(), locals );
@@ -85,16 +85,24 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::string>
     {
         py::scoped_interpreter guard{}; // start the interpreter and keep it alive
         py::module::import("sys").attr("path").cast<py::list>().append(Environment::expand("$top_srcdir/feelpp/feel/feelpython/"));
-        py::print(py::module::import("sys").attr("path"));
+        //py::print(py::module::import("sys").attr("path"));
         py::dict locals = py::cast(_locals);
         py::print(locals);
         py::eval_file( pyfilename.c_str(), py::globals(), locals );
 
-        for( auto l : _locals )
+#if 0
+        for( auto const& [key,value] : _locals )
         {
-            std::string cmd = l.first + "= sympytoginac(" + l.first +" );";
+            std::cout << key << "," << value << std::endl;
+        }
+#endif
+        for( auto const& [key,value] : _locals )
+        {
+            if ( key.empty() ) continue;
+            std::string cmd = key + "= sympytoginac(" + key +" );";
+            //std::cout << "cmd:" << cmd << std::endl;
             py::exec(cmd, py::globals(), locals );
-            _locals[l.first] = locals[l.first.c_str()].cast<std::string>();
+            _locals[key] = locals[key.c_str()].cast<std::string>();
         }
     }
     mpi::broadcast( Environment::worldComm(), _locals, 0 );

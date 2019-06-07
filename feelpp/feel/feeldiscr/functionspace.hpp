@@ -758,7 +758,7 @@ struct updateDataMapProcessStandard
 struct NbDof
 {
     typedef size_type result_type;
-    NbDof( size_type start = 0, size_type size = invalid_size_type_value )
+    NbDof( size_type start = 0, size_type size = invalid_v<size_type> )
         :
         M_cursor( start ),
         M_finish( size )
@@ -805,7 +805,7 @@ private:
 #if 0
 struct NLocalDof
 {
-    NLocalDof( size_type start = 0, size_type size = invalid_size_type_value )
+    NLocalDof( size_type start = 0, size_type size = invalid_v<size_type> )
         :
         M_cursor( start ),
         M_finish( size )
@@ -851,7 +851,7 @@ struct NLocalDof
 
     NLocalDof( worldscomm_ptr_t const & worldsComm = Environment::worldsComm(1),
                bool useOffSubSpace = false,
-               size_type start = 0, size_type size = invalid_size_type_value )
+               size_type start = 0, size_type size = invalid_v<size_type> )
         :
         M_cursor( start ),
         M_finish( size ),
@@ -931,7 +931,7 @@ struct NLocalDofOnProc
     NLocalDofOnProc( const int proc,
                      worldscomm_ptr_t const & worldsComm = Environment::worldsComm(1),
                      bool useOffSubSpace = false,
-                     size_type start = 0, size_type size = invalid_size_type_value )
+                     size_type start = 0, size_type size = invalid_v<size_type> )
         :
         M_proc(proc),
         M_cursor( start ),
@@ -1288,7 +1288,7 @@ struct createWorldsComm
 
     typedef typename SpaceType::mesh_ptrtype mesh_ptrtype;
     typedef typename SpaceType::meshes_list meshes_list;
-    static const bool useMeshesList = !boost::is_base_of<MeshBase, meshes_list >::value;
+    static const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
 
     struct UpdateWorldsComm
     {
@@ -1349,7 +1349,7 @@ struct createMeshSupport
     typedef typename mesh_support_type::range_elements_type range_elements_type;
 
     typedef typename SpaceType::meshes_list meshes_list;
-    static const bool useMeshesList = !boost::is_base_of<MeshBase, meshes_list >::value;
+    static const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
 
     struct HasAllMeshSupportDefined
     {
@@ -1556,7 +1556,7 @@ struct Order
 };
 
 typedef parameter::parameters<
-    parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase,_> >
+    parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase<>,_> >
     , parameter::optional<parameter::deduced<tag::bases_list>, boost::is_base_and_derived<Feel::detail::bases_base,_> >
     , parameter::optional<parameter::deduced<tag::value_type>, boost::is_floating_point<_> >
     , parameter::optional<parameter::deduced<tag::mortar_type>, boost::is_base_and_derived<Feel::detail::mortar_base,_> >
@@ -1646,12 +1646,12 @@ public:
     template<typename BasisType>
     struct ChangeBasis
     {
-        //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
+        //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase<>, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
         typedef typename boost::remove_reference<bases_list>::type bases_list_noref;
         typedef typename fusion::result_of::distance<typename fusion::result_of::begin<bases_list_noref>::type,
                                                      typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
 
-        typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+        typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                   mpl::identity<mpl::identity<std::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<BasisType>,value_type, Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type>, mortars<typename GetMortar<mortar_list,pos::value>::type > > > > >,
                                   mpl::identity<ChangeMesh<BasisType> > >::type::type::type type;
 
@@ -1681,8 +1681,8 @@ public:
     struct ChangeBasisToComponentBasis
     {
         typedef typename BasisType::component_basis_type component_basis_type;
-        //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
-        typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+        //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase<>, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
+        typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                   mpl::identity<mpl::identity<std::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<component_basis_type>,value_type, periodicity_type, mortar_list> > > >,
                                   mpl::identity<ChangeMeshToComponentBasis<BasisType> > >::type::type::type type;
     };
@@ -1713,7 +1713,7 @@ public:
     template<typename MeshListType,int N>
     struct GetMesh
     {
-        typedef typename mpl::if_<mpl::or_<boost::is_base_of<MeshBase, MeshListType >,
+        typedef typename mpl::if_<mpl::or_<boost::is_base_of<MeshBase<>, MeshListType >,
                                            is_shared_ptr<MeshListType> >,
                                   mpl::identity<mpl::identity<MeshListType> >,
                                   mpl::identity<mpl::at_c<MeshListType,N> > >::type::type::type type;
@@ -1729,7 +1729,9 @@ public:
     // mesh
     typedef meshes_list MeshesListType;
     typedef typename GetMesh<meshes_list,0>::type mesh_0_type;
-    typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+    using index_type = typename mesh_0_type::index_type;
+    //using size_type = typename mesh_0_type::size_type;
+    typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                               mpl::identity<meshes_list>,
                               mpl::identity<mesh_0_type> >::type::type mesh_type;
 
@@ -1739,10 +1741,10 @@ public:
         typedef std::shared_ptr<MeshType> type;
     };
 
-    typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+    typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                               mpl::identity<std::shared_ptr<mesh_type> >,
                               mpl::identity<typename mpl::transform<meshes_list, ChangeToMeshPtr<mpl::_1>, mpl::back_inserter<meshes<> > >::type  > >::type::type mesh_ptrtype;
-    typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+    typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
             mpl::identity<typename mesh_type::element_type>,
             mpl::identity<typename mesh_0_type::element_type> >::type::type convex_type;
 
@@ -1767,10 +1769,10 @@ public:
                 typename mesh_type::element_type>::type::nComponents> type;
     };
     struct nodim { static const int nDim = -1; static const int nRealDim = -1; };
-    static constexpr uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+    static constexpr uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                           mpl::identity<meshes_list >,
                                           mpl::identity<nodim> >::type::type::nDim;
-    static constexpr uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+    static constexpr uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                               mpl::identity<meshes_list>,
                                               mpl::identity<nodim> >::type::type::nRealDim;
 
@@ -2051,7 +2053,7 @@ public:
                 m(i,0) = t(i);
             auto loc =  M_Xh->mesh()->tool_localization();
             loc->setExtrapolation( false );
-            auto analysis = loc->run_analysis( m, invalid_size_type_value );
+            auto analysis = loc->run_analysis( m, invalid_v<index_type> );
             auto found_points = analysis.template get<0>();
             bool found = found_points[0];
 
@@ -2239,7 +2241,8 @@ public:
         using mesh_type = typename functionspace_type::mesh_type;
         using mesh_ptrtype = typename functionspace_type::mesh_ptrtype;
         typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
-
+        using index_type = typename mesh_type::index_type;
+        
         static const uint16_type nDim = mesh_type::nDim;
         static const uint16_type nRealDim = mesh_type::nRealDim;
         static const bool is_composite = functionspace_type::is_composite;
@@ -2649,25 +2652,25 @@ public:
                 return comp( i, ComponentType::NO_COMPONENT );//, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
             }
         value_type&
-        operator[]( size_type i )
+        operator[]( index_type i )
             {
                 return super::operator[]( i );
             }
         value_type
-        operator[]( size_type i )  const
+        operator[]( index_type i )  const
             {
                 return super::operator[]( i );
             }
 
-        value_type localToGlobal( size_type e, size_type l, int c ) const
+        value_type localToGlobal( index_type e, index_type l, int c ) const
         {
-            size_type index=boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
+            index_type index=boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
             return super::operator()( index );
         }
 #if 0
-        value_type& localToGlobal( size_type e, size_type l, int c )
+        value_type& localToGlobal( index_type e, index_type l, int c )
         {
-            size_type index=boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
+            index_type index=boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
             return super::operator()( index );
         }
 #endif
@@ -2698,12 +2701,12 @@ public:
                 for ( auto const& rangeElt : elements( this->mesh() ) )
                 {
                     auto const& meshElt = boost::unwrap_ref( rangeElt );
-                    size_type e = meshElt.id();
+                    index_type e = meshElt.id();
                     auto p0_eid = _e.functionSpace()->dof()->localDof( e ).first->second.index();
                     auto _v = _e.operator[](p0_eid);
                     for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
                     {
-                        size_type index = ldof.second.index();
+                        index_type index = ldof.second.index();
                         super::operator[]( index ) += sign*_v;
                     }
                 }
@@ -2722,7 +2725,7 @@ public:
         
         Element& operator-=( Element const& _e )
         {
-            for ( size_type i=0; i < _e.nLocalDof(); ++i )
+            for ( index_type i=0; i < _e.nLocalDof(); ++i )
                 this->operator()( i ) -= _e( i );
 
             return *this;
@@ -2748,17 +2751,17 @@ public:
         {
             return super::assign( ae );
         }
-        void assign( size_type ie, uint16_type il, uint16_type c, value_type const& __v )
+        void assign( index_type ie, uint16_type il, uint16_type c, value_type const& __v )
         {
-            size_type index = M_functionspace->dof()->localToGlobal( ie, il, c ).index();
+            index_type index = M_functionspace->dof()->localToGlobal( ie, il, c ).index();
             super::operator[]( index ) = __v;
         }
-        void plus_assign( size_type ie, uint16_type il, uint16_type c, value_type const& __v )
+        void plus_assign( index_type ie, uint16_type il, uint16_type c, value_type const& __v )
         {
-            size_type index = M_functionspace->dof()->localToGlobal( ie, il, c ).index();
+            index_type index = M_functionspace->dof()->localToGlobal( ie, il, c ).index();
             super::operator[]( index ) += __v;
         }
-        local_interpolant_type element( std::vector<size_type> const& e ) const
+        local_interpolant_type element( std::vector<index_type> const& e ) const
             {
                 local_interpolant_type l( M_functionspace->basis()->localInterpolant(e.size()) ) ;
                 element( e, l );
@@ -2772,7 +2775,7 @@ public:
         //! @endcode
         //!
         template<typename B = basis_0_type>
-        void element( std::vector<size_type> const& e, Eigen::Ref<local_interpolant_t<B>> l, std::enable_if_t<!B::is_modal>* = nullptr ) const
+        void element( std::vector<index_type> const& e, Eigen::Ref<local_interpolant_t<B>> l, std::enable_if_t<!B::is_modal>* = nullptr ) const
             {
                 int s = l.size()/e.size();
                 int n = 0;
@@ -2780,7 +2783,7 @@ public:
 
                         for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
                         {
-                            size_type index = ldof.second.index();
+                            index_type index = ldof.second.index();
                             l( n*s+ldof.first.localDof() ) = super::operator[]( index );
                         }
                         ++n;
@@ -2791,7 +2794,7 @@ public:
         //! @note the vector of components is already allocated
         //!
         template<typename B = basis_0_type>
-        void element( std::vector<size_type> const& e, local_interpolant_type& l, std::enable_if_t<!B::is_modal>* = nullptr ) const
+        void element( std::vector<index_type> const& e, local_interpolant_type& l, std::enable_if_t<!B::is_modal>* = nullptr ) const
             {
                 int s = l.size()/e.size();
                 int n = 0;
@@ -2799,13 +2802,13 @@ public:
 
                         for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
                         {
-                            size_type index = ldof.second.index();
+                            index_type index = ldof.second.index();
                             l( n*s+ldof.first.localDof() ) = super::operator[]( index );
                         }
                         ++n;
                     });
             }
-        std::vector<int> dofs( std::vector<size_type> const& e ) const
+        std::vector<int> dofs( std::vector<index_type> const& e ) const
             {
                 std::vector<int> d;
                 int N = M_functionspace->dof()->nRealLocalDof();
@@ -2820,7 +2823,7 @@ public:
                 return d;
 
             }
-        std::vector<int> dofs( std::vector<size_type> const& e, DataMap const& dm, int block  ) const
+        std::vector<int> dofs( std::vector<index_type> const& e, DataMap const& dm, int block  ) const
             {
                 std::vector<int> d;
                 int N = M_functionspace->dof()->nRealLocalDof();
@@ -2836,14 +2839,14 @@ public:
 
             }
         template<typename Tloc>
-        void assignE( size_type e, Tloc&& loc, bool symm = true )
+        void assignE( index_type e, Tloc&& loc, bool symm = true )
             {
                 int N0 = M_functionspace->dof()->nRealLocalDof();
                 int N0c = M_functionspace->dof()->nRealLocalDof( true );
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
                     for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
                     {
-                        size_type index = ldof.second.index();
+                        index_type index = ldof.second.index();
                         if ( is_tensor2symm )
                         {
                             int i = M_functionspace->dof()->fe().unsymmToSymm(ldof.first.localDof());
@@ -2855,21 +2858,21 @@ public:
                         }
                     }
             }
-        void assign( size_type e, local_interpolant_type const& Ihloc )
+        void assign( index_type e, local_interpolant_type const& Ihloc )
             {
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
                 for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
                 {
-                    size_type index = ldof.second.index();
+                    index_type index = ldof.second.index();
                     super::operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
                 }
             }
-        void plus_assign( size_type e, local_interpolant_type const& Ihloc )
+        void plus_assign( index_type e, local_interpolant_type const& Ihloc )
             {
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
                 for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
                 {
-                    size_type index = ldof.second.index();
+                    index_type index = ldof.second.index();
                     super::operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
                 }
             }
@@ -2879,7 +2882,7 @@ public:
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
             for( auto const& ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
-                size_type index = ldof.second.index();
+                index_type index = ldof.second.index();
                 super::operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
@@ -2890,12 +2893,12 @@ public:
                 // we assume here that we are in CG
                 // TODO : adapt to DG and loop over all element to which the point belongs to
                 // TODO : check if the doftable is computed for this eid
-                size_type eid = e.elements().begin()->first;
+                index_type eid = e.elements().begin()->first;
                 uint16_type edgeid_in_element = e.elements().begin()->second;
                 this->assign( e, Ihloc, std::make_pair( eid,edgeid_in_element ) );
             }
         template<typename EltType>
-        void assign( EltType const& e, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo,
+        void assign( EltType const& e, local_interpolant_type const& Ihloc, std::pair<index_type, uint16_type> const& eltsInfo,
                      typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
             {
                 const auto [ eid,edgeid_in_element ]  = eltsInfo;
@@ -2903,7 +2906,7 @@ public:
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
                 {
-                    size_type index= ldof.index();
+                    index_type index= ldof.index();
                     //super::operator[]( index ) = s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
                     super::operator[]( index ) = Ihloc( ldof.localDofInFace() );
                 }
@@ -2914,18 +2917,18 @@ public:
                 // we assume here that we are in CG
                 // TODO : adapt to DG and loop over all element to which the point belongs to
                 // TODO : check if the doftable is computed for this eid
-                size_type eid = p.elements().begin()->first;
+                index_type eid = p.elements().begin()->first;
                 uint16_type ptid_in_element = p.elements().begin()->second;
                 this->assign( p, Ihloc, std::make_pair( eid, ptid_in_element ) );
             }
-        void assign( geopoint_type const& p, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo )
+        void assign( geopoint_type const& p, local_interpolant_type const& Ihloc, std::pair<index_type, uint16_type> const& eltsInfo )
             {
-                size_type eid = eltsInfo.first;
+                index_type eid = eltsInfo.first;
                 uint16_type ptid_in_element = eltsInfo.second;
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( int c = 0; c < (is_product?nComponents:1); ++c )
                 {
-                    size_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+                    index_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
                     super::operator[]( index ) = s(ptid_in_element)*Ihloc( c );
                 }
             }
@@ -2935,7 +2938,7 @@ public:
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element( faceConnectionId ).id() );
             for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
-                size_type index = ldof.index();
+                index_type index = ldof.index();
                 super::operator[]( index ) = s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
@@ -2944,7 +2947,7 @@ public:
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
             for( auto const& ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
-                size_type index = ldof.second.index();
+                index_type index = ldof.second.index();
                 super::operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
@@ -2953,7 +2956,7 @@ public:
              auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element( faceConnectionId ).id() );
             for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
-                size_type index = ldof.index();
+                index_type index = ldof.index();
                 super::operator[]( index ) += s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
@@ -2965,20 +2968,20 @@ public:
             // we assume here that we are in CG
             // TODO : adapt to DG and loop over all element to which the point belongs to
             // TODO : check if the doftable is computed for this eid
-            size_type eid = e.elements().begin()->first;
+            index_type eid = e.elements().begin()->first;
             uint16_type edgeid_in_element = e.elements().begin()->second;
             this->plus_assign( e, Ihloc, std::make_pair( eid,edgeid_in_element ) );
         }
         template<typename EltType>
-        void plus_assign( EltType const& e, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo,
+        void plus_assign( EltType const& e, local_interpolant_type const& Ihloc, std::pair<index_type, uint16_type> const& eltsInfo,
                      typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
         {
-            size_type eid = eltsInfo.first;
+            index_type eid = eltsInfo.first;
             uint16_type edgeid_in_element = eltsInfo.second;
             auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
             for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
             {
-                size_type index= ldof.index();
+                index_type index= ldof.index();
                 super::operator[]( index ) += s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
             }
         }
@@ -2988,19 +2991,19 @@ public:
                 // we assume here that we are in CG
                 // TODO : adapt to DG and loop over all element to which the point belongs to
                 // TODO : check if the doftable is computed for this eid
-                size_type eid = p.elements().begin()->first;
+                index_type eid = p.elements().begin()->first;
                 uint16_type ptid_in_element = p.elements().begin()->second;
                 this->plus_assign( p, Ihloc, std::make_pair( eid,ptid_in_element ) );
             }
 
-        void plus_assign( geopoint_type const& p, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo )
+        void plus_assign( geopoint_type const& p, local_interpolant_type const& Ihloc, std::pair<index_type, uint16_type> const& eltsInfo )
             {
-                size_type eid = eltsInfo.first;
+                index_type eid = eltsInfo.first;
                 uint16_type ptid_in_element = eltsInfo.second;
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( int c = 0; c < (is_product?nComponents:1); ++c )
                 {
-                    size_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+                    index_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
                     super::operator[]( index ) += s(ptid_in_element)*Ihloc( c );
                 }
             }
@@ -3099,12 +3102,12 @@ public:
             for ( auto const& rangeElt : elements( P0h->mesh() ) )
             {
                 auto const& meshElt = boost::unwrap_ref( rangeElt );
-                size_type eid = meshElt.id();
+                index_type eid = meshElt.id();
 
-                size_type dofp0 = boost::get<0>( P0h->dof()->localToGlobal( eid, 0, 0 ) );
+                index_type dofp0 = boost::get<0>( P0h->dof()->localToGlobal( eid, 0, 0 ) );
                 std::vector<value_type> values ( functionspace_type::fe_type::nLocalDof );
 
-                size_type dofpn = 0;
+                index_type dofpn = 0;
 
                 for ( uint16_type local_id=0; local_id < functionspace_type::fe_type::nLocalDof; ++local_id )
                 {
@@ -3865,9 +3868,9 @@ public:
                                  std::shared_ptr<BackendType> backend )
             {
                 auto r =  functionSpace()->dof()->markerToDof( m );
-                size_type s = std::distance( r.first, r.second );
+                index_type s = std::distance( r.first, r.second );
                 vector_ptrtype res = backend->newVector(s, s);
-                size_type i = 0;
+                index_type i = 0;
                 for( auto it = r.first, en = r.second; it != en; ++it, ++i )
                     res->set( i, super::operator[]( it->second ) );
                 return res;
@@ -3880,9 +3883,9 @@ public:
             {
                 auto r1 =  functionSpace()->dof()->markerToDofLessThan( m );
                 auto r2 =  functionSpace()->dof()->markerToDofGreaterThan( m );
-                size_type s = std::distance( r1.first, r1.second ) + std::distance( r2.first, r2.second );
+                index_type s = std::distance( r1.first, r1.second ) + std::distance( r2.first, r2.second );
                 vector_ptrtype res = backend->newVector(s, s);
-                size_type i = 0;
+                index_type i = 0;
                 for( auto it = r1.first, en = r1.second; it != en; ++it, ++i )
                     res->set( i, super::operator[]( it->second ) );
                 for( auto it = r2.first, en = r2.second; it != en; ++it, ++i )
@@ -4843,7 +4846,7 @@ public:
     /**
      * \return the starting value of the global dof numbering
      */
-    size_type nDofStart( size_type i = /*invalid_size_type_value*/0 ) const
+    size_type nDofStart( size_type i = /*invalid_v<size_type>*/0 ) const
     {
         size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), Feel::detail::NbDof( 0, i ) );
         return start;
@@ -5636,7 +5639,7 @@ private:
     void dofs( RangeType const& rangeEdge, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
                typename std::enable_if< std::is_same<RangeType,edges_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
         {
-            size_type eid = invalid_size_type_value;
+            size_type eid = invalid_v<size_type>;
             uint16_type edgeid_in_element;
             if ( c1 == ComponentType::NO_COMPONENT )
             {
@@ -5646,7 +5649,7 @@ private:
                     auto itEltInfo = edge.elements().begin();
                     if ( itEltInfo == edge.elements().end() )
                         continue;
-                    eid = invalid_size_type_value;
+                    eid = invalid_v<size_type>;
                     for ( auto const& eltConnectedToEdge : edge.elements() )
                     {
                         size_type eltIdConnected = eltConnectedToEdge.first;
@@ -5657,7 +5660,7 @@ private:
                             break;
                         }
                     }
-                    if ( eid == invalid_size_type_value )
+                    if ( eid == invalid_v<size_type> )
                         continue;
 
                     for( auto const& ldof : this->dof()->edgeLocalDof( eid, edgeid_in_element ) )
@@ -5681,7 +5684,7 @@ private:
                     auto itEltInfo = edge.elements().begin();
                     if ( itEltInfo == edge.elements().end() )
                         continue;
-                    eid = invalid_size_type_value;
+                    eid = invalid_v<size_type>;
                     for ( auto const& eltConnectedToEdge : edge.elements() )
                     {
                         size_type eltIdConnected = eltConnectedToEdge.first;
@@ -5692,7 +5695,7 @@ private:
                             break;
                         }
                     }
-                    if ( eid == invalid_size_type_value )
+                    if ( eid == invalid_v<size_type> )
                         continue;
 
                     for( auto const& ldof : XhComp->dof()->edgeLocalDof( eid, edgeid_in_element ) )
@@ -5720,7 +5723,7 @@ private:
             else
                 compUsed.push_back( (int)c1 );
 
-            size_type eid = invalid_size_type_value;
+            size_type eid = invalid_v<size_type>;
             uint16_type ptid_in_element;
             for ( auto const& pointWrap : rangePoint )
             {
@@ -5728,7 +5731,7 @@ private:
                 auto itPointInfo = point.elements().begin();
                 if ( itPointInfo == point.elements().end() )
                     continue;
-                eid = invalid_size_type_value;
+                eid = invalid_v<size_type>;
                 for ( auto const& eltConnectedToPoint : point.elements() )
                 {
                     size_type eltIdConnected = eltConnectedToPoint.first;
@@ -5739,7 +5742,7 @@ private:
                         break;
                     }
                 }
-                if ( eid == invalid_size_type_value )
+                if ( eid == invalid_v<size_type> )
                     continue;
 
                 for( uint16_type c : compUsed )
@@ -6292,7 +6295,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
     typedef typename gm_type::Inverse inv_trans_type;
     typename gm_type::reference_convex_type refelem;
 
-    std::pair<size_type,value_type> closest = std::make_pair( invalid_size_type_value, -1e30 );
+    std::pair<size_type,value_type> closest = std::make_pair( invalid_v<size_type>, -1e30 );
 
     region_tree_type::pbox_set_type::const_iterator it = boxlst.begin();
     region_tree_type::pbox_set_type::const_iterator ite = boxlst.end();
