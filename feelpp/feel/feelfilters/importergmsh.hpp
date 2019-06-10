@@ -2360,9 +2360,85 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         __is >> __buf;
     }
 
+    std::vector<PeriodicEntity> periodic_entities;
     if ( std::string( __buf ) == "$Periodic" )
     {
-        CHECK( false ) <<  "$Periodic part not implemented";
+        VLOG(2) << "Reading $Periodic ...";
+        // eat  '\n' in binary mode otherwise the next binary read will get screwd
+        if ( binary )
+            __is.get();
+
+        size_type numPeriodicLinks;
+        int entityDim, entityTag, entityTagMaster;
+        if ( !binary )
+            __is >> numPeriodicLinks;
+        else
+            __is.read( (char*)&numPeriodicLinks, sizeof(size_type) );
+        for(size_type i = 0; i < numPeriodicLinks; i++)
+        {
+            if ( !binary )
+                __is >> entityDim >> entityTag >> entityTagMaster;
+            else
+            {
+                __is.read( (char*)&entityDim, sizeof(int) );
+                __is.read( (char*)&entityTag, sizeof(int) );
+                __is.read( (char*)&entityTagMaster, sizeof(int) );
+            }
+            PeriodicEntity e( entityDim, entityTag, entityTagMaster );
+            if ( version >= 4.1 )
+            {
+                size_type numAffine;
+                if ( !binary )
+                    __is >> numAffine;
+                else
+                    __is.read( (char*)&numAffine, sizeof(size_type) );
+                std::vector<double> valuesAffineTransfo( numAffine );
+                if ( !binary )
+                {
+                    for (size_type k=0;k<numAffine;++k )
+                        __is >> valuesAffineTransfo[k];
+                }
+                else
+                {
+                    if ( numAffine > 0 )
+                        __is.read( (char*)&valuesAffineTransfo[0], numAffine*sizeof(double) );
+                }
+            }
+            size_type numCorrespondingNodes;
+            if ( !binary )
+                __is >> numCorrespondingNodes;
+            else
+                __is.read( (char*)&numCorrespondingNodes, sizeof(size_type) );
+            if ( !binary )
+            {
+                for(size_type j = 0; j < numCorrespondingNodes; j++)
+                {
+                    size_type v1,v2;
+                    __is >> v1 >> v2;
+                    e.correspondingVertices[v1] = v2;
+                }
+            }
+            else
+            {
+                _vectmpsizet.resize( 2*numCorrespondingNodes );
+                __is.read( (char*)&_vectmpsizet, 2*numCorrespondingNodes*sizeof(size_type) );
+                for (int k=0;k<numCorrespondingNodes;++k)
+                    e.correspondingVertices[_vectmpsizet[k]] = _vectmpsizet[k+1];
+            }
+            CHECK( e.correspondingVertices.size() == numCorrespondingNodes ) << "Invalid number of vertices in periodic entity"
+                                                                             << " dim: " << e.dim
+                                                                             << " slave: " << e.slave
+                                                                             << " master: " << e.master
+                                                                             << " got: " << e.correspondingVertices.size()
+                                                                             << " expected : " << numCorrespondingNodes << "\n";
+            periodic_entities.push_back( e );
+        }
+        __is >> __buf;
+        CHECK( std::string( __buf ) == "$EndPeriodic" )
+            << "invalid end $Periodic string " << __buf
+            << " in gmsh importer. It should be either $EndPeriodic\n";
+        VLOG(2) << "Reading $Periodic done";
+        __is >> __buf;
     }
 
 
