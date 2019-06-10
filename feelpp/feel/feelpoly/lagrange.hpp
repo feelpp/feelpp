@@ -83,6 +83,9 @@ public:
     // point set type associated with the functionals
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
+    template< template<class, uint16_type, class> class TestPointSetType >
+    static const bool is_pointset_v = std::is_base_of_v<TestPointSetType<convex_type, nOrder, value_type>,pointset_type >;
+
     static const uint16_type numPoints = reference_convex_type::numPoints;
     static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
     static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
@@ -296,6 +299,7 @@ private:
 }// details
 /// \endcond detail
 
+    class LagrangePolynomialSet {};
 /**
  * \class Lagrange
  * \brief Lagrange polynomial set
@@ -322,6 +326,7 @@ template<uint16_type N,
          uint16_type TheTAG = 0 >
 class Lagrange
     :
+    public LagrangePolynomialSet,
     public FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts >
 {
     typedef FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts > super;
@@ -824,6 +829,12 @@ template<uint16_type Order,
          template<class, uint16_type, class> class Pts,
          uint16_type TheTAG>
 const uint16_type Lagrange<Order,PolySetType,ContinuityType,Pts,TheTAG>::nOrder;
+
+
+template<typename P>
+using is_lagrange_polynomialset = std::is_base_of<fem::LagrangePolynomialSet,P>;
+template<typename P>
+constexpr bool is_lagrange_polynomialset_v = boost::is_base_of<fem::LagrangePolynomialSet,P>::value;
 
 } // namespace Feel
 #endif /* __lagrange_H */
