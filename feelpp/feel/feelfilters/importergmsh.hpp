@@ -532,6 +532,7 @@ private:
     FEELPP_NO_EXPORT void readFromFile( mesh_type* mesh );
     FEELPP_NO_EXPORT void readFromFileVersion2( mesh_type* mesh, std::ifstream & __is, char __buf[],
                                                 double version, bool binary, bool swap );
+    template <typename gmsh_size_type,typename gmsh_size_partition_type,typename gmsh_size_periodiclink_type,typename gmsh_elttag_type>
     FEELPP_NO_EXPORT void readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, char __buf[],
                                                 double version, bool binary, bool swap );
 
@@ -1101,9 +1102,10 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
 
     if ( version >= 2 && version < 4 )
         this->readFromFileVersion2( mesh, __is, __buf, version, binary, swap );
+    else if ( version == 4 )
+        this->readFromFileVersion4<unsigned long,int,int,int>( mesh, __is, __buf, version, binary, swap );
     else
-        this->readFromFileVersion4( mesh, __is, __buf, version, binary, swap );
-    
+        this->readFromFileVersion4<size_t,size_t,size_t,size_t>( mesh, __is, __buf, version, binary, swap );
 
     toc("read msh from file", FLAGS_v > 0);
 }
@@ -1617,6 +1619,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
 }
 
 template<typename MeshType>
+template <typename gmsh_size_type,typename gmsh_size_partition_type,typename gmsh_size_periodiclink_type,typename gmsh_elttag_type>
 void
 ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, char __buf[],
                                               double version, bool binary, bool swap )
@@ -1626,7 +1629,8 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
     //usefull for binary read
     std::vector<int> _vectmpint;
-    std::vector<size_type> _vectmpsizet;
+    std::vector<gmsh_size_type> _vectmpsizet;
+    std::vector<gmsh_elttag_type> _vectmpelttag;
 
     std::vector<std::map<int,std::set<int>>> entityTagToPhysicalMarkers(4);
     if ( std::string( __buf ) == "$Entities" )
@@ -1636,15 +1640,15 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         if ( binary )
             __is.get();
 
-        std::vector<size_type> nGeoEntities(4); // points, curves, surfaces, volumes
+        std::vector<gmsh_size_type> nGeoEntities(4); // points, curves, surfaces, volumes
         if ( !binary )
         {
             __is >> nGeoEntities[0] >> nGeoEntities[1] >> nGeoEntities[2] >> nGeoEntities[3];
         }
         else
         {
-            __is.read( (char*)&nGeoEntities[0], 4*sizeof(size_type) );
-            CHECK( !swap ) << "TODO BINARY";
+            __is.read( (char*)&nGeoEntities[0], 4*sizeof(gmsh_size_type) );
+            CHECK( !swap ) << "TODO SWAP BINARY";
             //if(swap) SwapBytes((char*)&nGeoEntities[0], sizeof(size_type), 4);
             //__is.read( (char*)&x[0], 3*sizeof(double) );
             //if(swap) SwapBytes((char*)&x[0], sizeof(double), 3);
@@ -1654,7 +1658,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         std::vector<double> coordGeoPoints(3);
         if ( version == 4 )
             coordGeoPoints.resize( 6 );
-        size_type numPhysicalTags = 0;
+        gmsh_size_type numPhysicalTags = 0;
         for ( size_type k=0; k<nGeoEntities[0]; ++k )
         {
             if ( !binary )
@@ -1674,7 +1678,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             {
                 __is.read( (char*)&entityTag, sizeof(int) );
                 __is.read( (char*)&coordGeoPoints[0], coordGeoPoints.size()*sizeof(double) );
-                __is.read( (char*)&numPhysicalTags, sizeof(size_type) );
+                __is.read( (char*)&numPhysicalTags, sizeof(gmsh_size_type) );
                 _vectmpint.resize( numPhysicalTags );
                 __is.read( (char*)&_vectmpint[0], numPhysicalTags*sizeof(int) );
                 entityTagToPhysicalMarkers[0][entityTag].insert( _vectmpint.begin(), _vectmpint.end() );
@@ -1682,7 +1686,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         }
 
         std::vector<double> coordMinMax(6);
-        size_type nBoundingEntity;
+        gmsh_size_type nBoundingEntity;
         for (int e = 1;e<4;++e)
         {
             for ( size_type k=0; k<nGeoEntities[e]; ++k )
@@ -1706,11 +1710,11 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 {
                     __is.read( (char*)&entityTag, sizeof(int) );
                     __is.read( (char*)&coordMinMax[0], 6*sizeof(double) );
-                    __is.read( (char*)&numPhysicalTags, sizeof(size_type) );
+                    __is.read( (char*)&numPhysicalTags, sizeof(gmsh_size_type) );
                     _vectmpint.resize( numPhysicalTags );
                     __is.read( (char*)&_vectmpint[0], numPhysicalTags*sizeof(int) );
                     entityTagToPhysicalMarkers[e][entityTag].insert( _vectmpint.begin(), _vectmpint.end() );
-                    __is.read( (char*)&nBoundingEntity, sizeof(size_type) );
+                    __is.read( (char*)&nBoundingEntity, sizeof(gmsh_size_type) );
                     _vectmpint.resize( nBoundingEntity );
                     __is.read( (char*)&_vectmpint[0], nBoundingEntity*sizeof(int) );
                 }
@@ -1727,7 +1731,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         __is >> __buf;
     }
 
-    size_type numPartitions = 1;
+    gmsh_size_partition_type numPartitions = 1;
     std::vector< std::map<int,std::set<int>>> entityTagInCurrentPartitionToPartitions;
 
     if ( std::string( __buf ) == "$PartitionedEntities" )
@@ -1737,13 +1741,13 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         if ( binary )
             __is.get();
 
-        size_type numGhostEntities;
+        gmsh_size_partition_type numGhostEntities;
         if ( !binary )
             __is >> numPartitions >> numGhostEntities;
         else
         {
-            __is.read( (char*)&numPartitions, sizeof(size_type) );
-            __is.read( (char*)&numGhostEntities, sizeof(size_type) );
+            __is.read( (char*)&numPartitions, sizeof(gmsh_size_partition_type) );
+            __is.read( (char*)&numGhostEntities, sizeof(gmsh_size_partition_type) );
         }
 
         // ghost partitions tag
@@ -1767,12 +1771,12 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         if ( worldSize > 1 )
             CHECK( allPartitionTags.size() == numPartitions ) << "the partitioning in Gmsh should be run with Create Ghost Cells options";
 
-        std::vector<size_type> nGeoEntities(4); // points, curves, surfaces, volumes
+        std::vector<gmsh_size_type> nGeoEntities(4); // points, curves, surfaces, volumes
         if ( !binary )
             __is >> nGeoEntities[0] >> nGeoEntities[1] >> nGeoEntities[2] >> nGeoEntities[3];
         else
         {
-            __is.read( (char*)&nGeoEntities[0], 4*sizeof(size_type) );
+            __is.read( (char*)&nGeoEntities[0], 4*sizeof(gmsh_size_type) );
         }
 
         if ( nGeoEntities[0] > 0 || nGeoEntities[1] > 0 || nGeoEntities[2] > 0 || nGeoEntities[3] > 0 )
@@ -1780,7 +1784,8 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
         std::vector<double> coordGeoPoints(3);
         int entityTag, parentDim, parentTag, partitionTag, physicalTag, boundingEntityTag;
-        size_type numPartitionsForThisEntity, numPhysicalTags;
+        gmsh_size_partition_type numPartitionsForThisEntity;
+        gmsh_size_type numPhysicalTags;
         std::set<int> partitionTags;
         for ( size_type k=0; k<nGeoEntities[0]; ++k )
         {
@@ -1793,7 +1798,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 __is.read( (char*)&entityTag, sizeof(int) );
                 __is.read( (char*)&parentDim, sizeof(int) );
                 __is.read( (char*)&parentTag, sizeof(int) );
-                __is.read( (char*)&numPartitionsForThisEntity, sizeof(size_type) );
+                __is.read( (char*)&numPartitionsForThisEntity, sizeof(gmsh_size_partition_type) );
             }
             partitionTags.clear();
             bool isOnCurrentPartition = false;
@@ -1829,7 +1834,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             else
             {
                 __is.read( (char*)&coordGeoPoints[0], 3*sizeof(double) );
-                __is.read( (char*)&numPhysicalTags, sizeof(size_type) );
+                __is.read( (char*)&numPhysicalTags, sizeof(gmsh_size_type) );
                 _vectmpint.resize( numPhysicalTags );
                 __is.read( (char*)&_vectmpint[0], numPhysicalTags*sizeof(int) );
             }
@@ -1844,7 +1849,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         }
 
         std::vector<double> coordMinMax(6);
-        size_type numBoundingSubentity;
+        gmsh_size_type numBoundingSubentity;
         for ( int e=1;e<4;++e )
         {
             for ( size_type k=0; k<nGeoEntities[e]; ++k )
@@ -1858,7 +1863,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     __is.read( (char*)&entityTag, sizeof(int) );
                     __is.read( (char*)&parentDim, sizeof(int) );
                     __is.read( (char*)&parentTag, sizeof(int) );
-                    __is.read( (char*)&numPartitionsForThisEntity, sizeof(size_type) );
+                    __is.read( (char*)&numPartitionsForThisEntity, sizeof(gmsh_size_partition_type) );
                 }
                 partitionTags.clear();
                 bool isOnCurrentPartition = false;
@@ -1893,10 +1898,10 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 else
                 {
                     __is.read( (char*)&coordMinMax[0], 6*sizeof(double) );
-                    __is.read( (char*)&numPhysicalTags, sizeof(size_type) );
+                    __is.read( (char*)&numPhysicalTags, sizeof(gmsh_size_type) );
                     _vectmpint.resize( numPhysicalTags );
                     __is.read( (char*)&_vectmpint[0], numPhysicalTags*sizeof(int) );
-                    __is.read( (char*)&numBoundingSubentity, sizeof(size_type) );
+                    __is.read( (char*)&numBoundingSubentity, sizeof(gmsh_size_type) );
                     _vectmpint.resize( numBoundingSubentity );
                     __is.read( (char*)&_vectmpint[0], numBoundingSubentity*sizeof(int) );
                 }
@@ -1932,7 +1937,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         if ( binary )
             __is.get();
 
-        size_type nEntityBlocks, nNodes, minNodeTag, maxNodeTag;
+        gmsh_size_type nEntityBlocks, nNodes, minNodeTag, maxNodeTag;
         if ( !binary )
         {
             __is >> nEntityBlocks >> nNodes;
@@ -1941,17 +1946,17 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         }
         else
         {
-            __is.read( (char*)&nEntityBlocks, sizeof(size_type) );
-            __is.read( (char*)&nNodes, sizeof(size_type) );
+            __is.read( (char*)&nEntityBlocks, sizeof(gmsh_size_type) );
+            __is.read( (char*)&nNodes, sizeof(gmsh_size_type) );
             if ( version >= 4.1 )
             {
-                __is.read( (char*)&minNodeTag, sizeof(size_type) );
-                __is.read( (char*)&maxNodeTag, sizeof(size_type) );
+                __is.read( (char*)&minNodeTag, sizeof(gmsh_size_type) );
+                __is.read( (char*)&maxNodeTag, sizeof(gmsh_size_type) );
             }
         }
 
         int entityDim, entityTag, parametric;
-        size_type numNodesInBlock;
+        gmsh_size_type numNodesInBlock;
         Eigen::Vector3d x;
         for ( size_type k=0;k<nEntityBlocks;++k )
         {
@@ -1964,7 +1969,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     __is.read( (char*)&entityDim, sizeof(int) );
                     __is.read( (char*)&entityTag, sizeof(int) );
                     __is.read( (char*)&parametric, sizeof(int) );
-                    __is.read( (char*)&numNodesInBlock, sizeof(size_type) );
+                    __is.read( (char*)&numNodesInBlock, sizeof(gmsh_size_type) );
                 }
             }
             else // version == 4.0
@@ -1976,7 +1981,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     __is.read( (char*)&entityTag, sizeof(int) );
                     __is.read( (char*)&entityDim, sizeof(int) );
                     __is.read( (char*)&parametric, sizeof(int) );
-                    __is.read( (char*)&numNodesInBlock, sizeof(size_type) );
+                    __is.read( (char*)&numNodesInBlock, sizeof(gmsh_size_type) );
                 }
 
             }
@@ -2002,7 +2007,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 }
             }
 
-            std::vector<size_type> nodeIds;
+            std::vector<gmsh_elttag_type> nodeIds;
             if ( version >= 4.1 )
             {
                 nodeIds.resize( numNodesInBlock );
@@ -2013,7 +2018,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 }
                 else
                 {
-                    __is.read( (char*)&nodeIds[0], numNodesInBlock*sizeof(size_type) );
+                    __is.read( (char*)&nodeIds[0], numNodesInBlock*sizeof(gmsh_elttag_type) );
                 }
             }
             for ( size_type p=0;p<numNodesInBlock;++p )
@@ -2094,7 +2099,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         if ( binary )
             __is.get();
 
-        size_type numEntityBlocks, numElements, minElementTag, maxElementTag;
+        gmsh_size_type numEntityBlocks, numElements, minElementTag, maxElementTag;
         if ( !binary )
         {
             __is >> numEntityBlocks >> numElements;
@@ -2103,20 +2108,20 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         }
         else
         {
-            __is.read( (char*)&numEntityBlocks, sizeof(size_type) );
-            __is.read( (char*)&numElements, sizeof(size_type) );
+            __is.read( (char*)&numEntityBlocks, sizeof(gmsh_size_type) );
+            __is.read( (char*)&numElements, sizeof(gmsh_size_type) );
             if ( version >= 4.1 )
             {
-                __is.read( (char*)&minElementTag, sizeof(size_type) );
-                __is.read( (char*)&maxElementTag, sizeof(size_type) );
+                __is.read( (char*)&minElementTag, sizeof(gmsh_size_type) );
+                __is.read( (char*)&maxElementTag, sizeof(gmsh_size_type) );
             }
         }
 
 
         int entityDim = 0, entityTag = 0, elementType = 0;//, physicalTag = 0;
         std::vector<int> physicalTag;
-        size_type numElementsInBlock = 0;
-        size_type elementTag = 0;
+        gmsh_size_type numElementsInBlock = 0;
+        gmsh_elttag_type elementTag = 0;
 
         // partitioning data
         int numPartitionsElt = 1, partition = procId;
@@ -2144,7 +2149,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     __is.read( (char*)&entityDim, sizeof(int) );
                     __is.read( (char*)&entityTag, sizeof(int) );
                     __is.read( (char*)&elementType, sizeof(int) );
-                    __is.read( (char*)&numElementsInBlock, sizeof(size_type) );
+                    __is.read( (char*)&numElementsInBlock, sizeof(gmsh_size_type) );
                 }
             }
             else // version == 4.0
@@ -2156,7 +2161,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     __is.read( (char*)&entityTag, sizeof(int) );
                     __is.read( (char*)&entityDim, sizeof(int) );
                     __is.read( (char*)&elementType, sizeof(int) );
-                    __is.read( (char*)&numElementsInBlock, sizeof(size_type) );
+                    __is.read( (char*)&numElementsInBlock, sizeof(gmsh_size_type) );
                 }
             }
 
@@ -2202,7 +2207,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             it_gmshElt.numVertices = numVertices;
 
             indices.resize( numVertices );
-            _vectmpsizet.resize( numVertices );
+            _vectmpelttag.resize( numVertices );
 
             for ( size_type p=0;p<numElementsInBlock;++p )
             {
@@ -2214,9 +2219,9 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 }
                 else
                 {
-                    __is.read( (char*)&elementTag, sizeof(size_type) );
-                    __is.read( (char*)&_vectmpsizet[0], numVertices*sizeof(size_type) );
-                    indices.assign( _vectmpsizet.begin(),_vectmpsizet.end() );
+                    __is.read( (char*)&elementTag, sizeof(gmsh_elttag_type) );
+                    __is.read( (char*)&_vectmpelttag[0], numVertices*sizeof(gmsh_elttag_type) );
+                    indices.assign( _vectmpelttag.begin(),_vectmpelttag.end() );
                 }
 
                 // update current gmsh element with read data
@@ -2368,12 +2373,12 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         if ( binary )
             __is.get();
 
-        size_type numPeriodicLinks;
+        gmsh_size_periodiclink_type numPeriodicLinks;
         int entityDim, entityTag, entityTagMaster;
         if ( !binary )
             __is >> numPeriodicLinks;
         else
-            __is.read( (char*)&numPeriodicLinks, sizeof(size_type) );
+            __is.read( (char*)&numPeriodicLinks, sizeof(gmsh_size_periodiclink_type) );
         for(size_type i = 0; i < numPeriodicLinks; i++)
         {
             if ( !binary )
@@ -2387,11 +2392,11 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             PeriodicEntity e( entityDim, entityTag, entityTagMaster );
             if ( version >= 4.1 )
             {
-                size_type numAffine;
+                gmsh_size_type numAffine;
                 if ( !binary )
                     __is >> numAffine;
                 else
-                    __is.read( (char*)&numAffine, sizeof(size_type) );
+                    __is.read( (char*)&numAffine, sizeof(gmsh_size_type) );
                 std::vector<double> valuesAffineTransfo( numAffine );
                 if ( !binary )
                 {
@@ -2404,26 +2409,26 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                         __is.read( (char*)&valuesAffineTransfo[0], numAffine*sizeof(double) );
                 }
             }
-            size_type numCorrespondingNodes;
+            gmsh_size_type numCorrespondingNodes;
             if ( !binary )
                 __is >> numCorrespondingNodes;
             else
-                __is.read( (char*)&numCorrespondingNodes, sizeof(size_type) );
+                __is.read( (char*)&numCorrespondingNodes, sizeof(gmsh_size_type) );
             if ( !binary )
             {
                 for(size_type j = 0; j < numCorrespondingNodes; j++)
                 {
-                    size_type v1,v2;
+                    gmsh_elttag_type v1,v2;
                     __is >> v1 >> v2;
                     e.correspondingVertices[v1] = v2;
                 }
             }
             else
             {
-                _vectmpsizet.resize( 2*numCorrespondingNodes );
-                __is.read( (char*)&_vectmpsizet, 2*numCorrespondingNodes*sizeof(size_type) );
+                _vectmpelttag.resize( 2*numCorrespondingNodes );
+                __is.read( (char*)&_vectmpelttag[0], 2*numCorrespondingNodes*sizeof(gmsh_elttag_type) );
                 for (int k=0;k<numCorrespondingNodes;++k)
-                    e.correspondingVertices[_vectmpsizet[k]] = _vectmpsizet[k+1];
+                    e.correspondingVertices[_vectmpelttag[k]] = _vectmpelttag[k+1];
             }
             CHECK( e.correspondingVertices.size() == numCorrespondingNodes ) << "Invalid number of vertices in periodic entity"
                                                                              << " dim: " << e.dim
@@ -2452,14 +2457,15 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         if ( binary )
             __is.get();
 
-        size_type numGhostElements, elementTag, numGhostPartitions;
+        gmsh_size_partition_type numGhostElements, numGhostPartitions;
+        gmsh_elttag_type elementTag;
         int partitionTag;
         std::vector<int> ghostPartitionTags;
         if ( !binary )
             __is >> numGhostElements;
         else
         {
-            __is.read( (char*)&numGhostElements, sizeof(size_type) );
+            __is.read( (char*)&numGhostElements, sizeof(gmsh_size_partition_type) );
         }
         for ( size_type g=0;g<numGhostElements;++g )
         {
@@ -2472,9 +2478,9 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             }
             else
             {
-                __is.read( (char*)&elementTag, sizeof(size_type) );
+                __is.read( (char*)&elementTag, sizeof(gmsh_elttag_type) );
                 __is.read( (char*)&partitionTag, sizeof(int) );
-                __is.read( (char*)&numGhostPartitions, sizeof(size_type) );
+                __is.read( (char*)&numGhostPartitions, sizeof(gmsh_size_partition_type) );
                 ghostPartitionTags.resize( numGhostPartitions );
                 __is.read( (char*)&ghostPartitionTags[0], numGhostPartitions*sizeof(int) );
             }
