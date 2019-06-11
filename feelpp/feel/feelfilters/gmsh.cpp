@@ -686,9 +686,10 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
 #if GMSH_VERSION_GREATER_OR_EQUAL_THAN(4,2,0)
     gmsh::logger::get( gmshLog );
 #endif
-    for ( std::string const& msg : gmshLog )
-        std::cout << msg << "\n";
-    
+    if ( FLAGS_v >= 1 )
+        for ( std::string const& msg : gmshLog )
+            std::cout << msg << "\n";
+
     // mesh refine
     for( int l = 0; l < M_refine_levels; ++l )
     {
@@ -715,9 +716,12 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
 #if GMSH_VERSION_GREATER_OR_EQUAL_THAN(4,2,0)
          gmsh::logger::get( gmshLog );
 #endif
-         std::cout << "\n\n INFO PARTITIONER\n";
-         for ( std::string const& msg : gmshLog )
-             std::cout << msg << "\n";
+         if ( FLAGS_v >= 1 )
+         {
+             std::cout << "\n\n INFO PARTITIONER\n";
+             for ( std::string const& msg : gmshLog )
+                 std::cout << msg << "\n";
+         }
 
         gmsh::vectorpair dimTags;
         gmsh::model::getEntities( dimTags,dim );
@@ -904,7 +908,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
         CTX::instance()->mesh.binary = M_format;
         //M_gmodel.mesh.binary = M_format;
 
-        std::cout << "nameMshOutput+" << nameMshOutput << "\n";
+        //std::cout << "nameMshOutput+" << nameMshOutput << "\n";
         //M_gmodel->writeMSH( nameMshOutput );
         M_gmodel->writeMSH( nameMshOutput, 2.2, CTX::instance()->mesh.binary );
 
@@ -964,7 +968,6 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
     Gmsh::preamble() const
     {
         std::ostringstream ostr;
-        std::cout << "GMSH file version " << this->version() << std::endl;
         ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
              << "Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
              << "Mesh.CharacteristicLengthFromPoints=1;\n"
