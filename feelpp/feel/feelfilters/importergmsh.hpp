@@ -541,9 +541,6 @@ private:
                                        std::map<int, Feel::detail::GMSHPoint > const& gmshpts );
 
     FEELPP_NO_EXPORT int addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
-    FEELPP_NO_EXPORT int addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<1> );
-    FEELPP_NO_EXPORT int addPoint( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, mpl::int_<2> );
-    FEELPP_NO_EXPORT int addPoint( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, mpl::int_<3> );
 
     FEELPP_NO_EXPORT int addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
     FEELPP_NO_EXPORT int addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<1> );
@@ -643,7 +640,7 @@ ImporterGmsh<MeshType>::addVertices( mesh_type* mesh, Feel::detail::GMSHElement 
         for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
             coords[j] = gmshpt.x[j]*M_scale;
 
-        point_type pt( ptid, coords, gmshpt.onbdy );
+        point_type pt( ptid, coords );
         pt.setProcessIdInPartition( this->worldComm().localRank() );
         if ( gmshpt.parametric )
         {
@@ -748,7 +745,7 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
             for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
                 coordFeel[j] = coord[k*3+j]*M_scale;
 
-            point_type pt( ptId, coordFeel /*, gmshpt.onbdy*/ );
+            point_type pt( ptId, coordFeel );
             pt.setProcessIdInPartition( procId/*this->worldComm().localRank()*/ );
             pt.setProcessId( procId );
             mesh->addPoint( pt );
@@ -2583,7 +2580,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     node_type coords( mesh_type::nRealDim );
                     for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
                         coords[j] = coordsRecv[j];
-                    point_type pt( ptId, coords /*, gmshpt.onbdy*/ );
+                    point_type pt( ptId, coords );
                     pt.setProcessIdInPartition( procId/*this->worldComm().localRank()*/ );
                     mesh->addPoint( pt );
                 }
@@ -2620,53 +2617,14 @@ template<typename MeshType>
 int
 ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e )
 {
-    return addPoint( mesh, __e, mpl::int_<mesh_type::nDim>() );
-}
-template<typename MeshType>
-int
-ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement const& __e, mpl::int_<1> )
-{
     auto pit = mesh->pointIterator(__e.indices[0]);
     CHECK( pit != mesh->endPoint() ) <<  "point not register in mesh";
     auto & pt = pit->second;
 
     if ( !__e.physical.empty() )
         pt.setMarker( __e.physical[0] );
-    pt.setMarker2( __e.elementary );
-    //pt.setProcessId( __e.partition );
-    pt.setNeighborPartitionIds( __e.ghosts );
-
-    DVLOG(2) << "update point with id :" << pt.id() << " and marker " << pt.marker()
-             << " n1: " << pt.node() << "\n";
-    return pt.id();
-}
-template<typename MeshType>
-int
-ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<2> )
-{
-    auto pit = mesh->pointIterator(__e.indices[0]);
-    CHECK( pit != mesh->endPoint() ) <<  "point not register in mesh";
-    auto & pt = pit->second;
-    if ( !__e.physical.empty() )
-        pt.setMarker( __e.physical[0] );
-    pt.setMarker2( __e.elementary );
-    //pt.setProcessId( __e.partition );
-    pt.setNeighborPartitionIds( __e.ghosts );
-
-    DVLOG(2) << "update point with id :" << pt.id() << " and marker " << pt.marker()
-             << " n1: " << pt.node() << "\n";
-    return pt.id();
-}
-template<typename MeshType>
-int
-ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<3> )
-{
-    auto pit = mesh->pointIterator(__e.indices[0]);
-    CHECK( pit != mesh->endPoint() ) <<  "point not register in mesh";
-    auto & pt = pit->second;
-    if ( !__e.physical.empty() )
-        pt.setMarker( __e.physical[0] );
-    pt.setMarker2( __e.elementary );
+    if ( false )
+        pt.setMarker2( __e.elementary );
     //pt.setProcessId( __e.partition );
     pt.setNeighborPartitionIds( __e.ghosts );
 
@@ -2691,7 +2649,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     e.setProcessIdInPartition( this->worldComm().localRank() );
     if ( !__e.physical.empty() )
         e.setMarker( __e.physical[0] );
-    e.setMarker2( __e.elementary );
+    if ( false )
+        e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 
@@ -2701,22 +2660,13 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
          __e.type == GMSH_LINE_4 ||
          __e.type == GMSH_LINE_5 )
     {
-        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
             point_type & pt = mesh->pointIterator( __e.indices[jj] )->second;
             if (!e.isGhostCell())
                 pt.setProcessId( e.processId() );
             e.setPoint( jj, pt );
-            //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
-            if ( pt.isOnBoundary() )
-                ++count_pt_on_boundary;
         }
-        if ( count_pt_on_boundary >= 1 )
-        {
-            e.setOnBoundary( true );
-        }
-
     }
     DVLOG(2) << "added edge with id :" << e.id()
              << " n1: " << mesh->point( __e.indices[0] ).node()
@@ -2736,7 +2686,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setId( mesh->numFaces() );
     if ( !__e.physical.empty() )
         e.setMarker( __e.physical[0] );
-    e.setMarker2( __e.elementary );
+    if ( false )
+        e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 
@@ -2749,26 +2700,19 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
         DCHECK( __e.indices.size() == npoints_per_edge )
             << "Invalid element indices, "
             << "indices size : " << __e.indices.size() << " points per edge : " << npoints_per_edge;
-        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
         {
             DCHECK( mesh->hasPoint( __e.indices[jj] ) ) << "points not registered in mesh";
             point_type & pt = mesh->pointIterator( __e.indices[jj] )->second;
             e.setPoint( jj, pt );
-            if ( pt.isOnBoundary() )
-                ++count_pt_on_boundary;
         }
-        if ( count_pt_on_boundary >= 2 )
-            e.setOnBoundary( true );
-
     }
 
     auto fit = mesh->addFace( std::move(e) ).first;
 
-    DVLOG(2) << "added edge on boundary ("
-                  << fit->second.isOnBoundary() << ") with id :" << fit->second.id()
-                  << " n1: " << mesh->point( __e.indices[0] ).node()
-                  << " n2: " << mesh->point( __e.indices[1] ).node() << "\n";
+    DVLOG(2) << "added edge with id :" << fit->second.id()
+             << " n1: " << mesh->point( __e.indices[0] ).node()
+             << " n2: " << mesh->point( __e.indices[1] ).node() << "\n";
 
     return fit->second.id();
 }
@@ -2781,7 +2725,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     e.setId( mesh->numEdges() );
     if ( !__e.physical.empty() )
         e.setMarker( __e.physical[0] );
-    e.setMarker2( __e.elementary );
+    if ( false )
+        e.setMarker2( __e.elementary );
     // warning : process id is define after (when call mesh->updateForUse()
     // and only for edges which belong to an active 3d element )
     e.setProcessId( invalid_rank_type_value/*__e.partition*/ );
@@ -2793,17 +2738,10 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
          __e.type == GMSH_LINE_4 ||
          __e.type == GMSH_LINE_5 )
     {
-        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
         {
             point_type & pt = mesh->pointIterator( __e.indices[jj] )->second;
             e.setPoint( jj, pt );
-            if ( pt.isOnBoundary() )
-                ++count_pt_on_boundary;
-        }
-        if ( count_pt_on_boundary >= 2 )
-        {
-            e.setOnBoundary( true );
         }
     }
 
@@ -2811,10 +2749,9 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     auto const& eit = res.first->second;
 
     if ( npoints_per_edge == 2 )
-        DVLOG(2) << "added edge on boundary ("
-                      << eit.isOnBoundary() << ") with id :" << eit.id()
-                      << " n1: " << eit.point( 0 ).node()
-                      << " n2: " << eit.point( 1 ).node() << "\n";
+        DVLOG(2) << "added edge with id :" << eit.id()
+                 << " n1: " << eit.point( 0 ).node()
+                 << " n2: " << eit.point( 1 ).node() << "\n";
 
     return eit.id();
 }
@@ -2845,7 +2782,8 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setProcessIdInPartition( this->worldComm().localRank() );
     if ( !__e.physical.empty() )
         e.setMarker( __e.physical[0] );
-    e.setMarker2( __e.elementary );
+    if ( false )
+        e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 
@@ -2857,31 +2795,13 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
          __e.type == GMSH_TRIANGLE_4 ||
          __e.type == GMSH_TRIANGLE_5 )
     {
-        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
-            //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
             point_type & pt = mesh->pointIterator( __e.indices[jj] )->second;
             if ( !e.isGhostCell() )
                 pt.setProcessId( e.processId() );
             e.setPoint( ordering.fromGmshId( jj ), pt );
-            if ( pt.isOnBoundary() )
-                ++count_pt_on_boundary;
         }
-        if ( ( __e.type == GMSH_TRIANGLE ||
-               __e.type == GMSH_TRIANGLE_2 ||
-               __e.type == GMSH_TRIANGLE_3 ||
-               __e.type == GMSH_TRIANGLE_4 ||
-               __e.type == GMSH_TRIANGLE_5 ) &&
-             count_pt_on_boundary >= 2 )
-        {
-            e.setOnBoundary( true );
-        }
-        if ( (__e.type == GMSH_QUADRANGLE ||
-              __e.type == GMSH_QUADRANGLE_2) &&
-             count_pt_on_boundary >= 2 )
-            e.setOnBoundary( true );
-
     }
     auto const& eltInserted = mesh->addElement( /*mesh->endElement(), */std::move(e) );
 
@@ -2898,14 +2818,10 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setId( mesh->numFaces() );
     if ( !__e.physical.empty() )
         e.setMarker( __e.physical[0] );
-    e.setMarker2( __e.elementary );
+    if ( false )
+        e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
-
-    // we consider in 3D that all faces provided by Gmsh are on the boundary
-    // which might not be true
-    // \warning there might be a bug here
-    e.setOnBoundary( true );
 
     if ( __e.type == GMSH_QUADRANGLE ||
          __e.type == GMSH_QUADRANGLE_2 ||
@@ -2920,8 +2836,6 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
             //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
             e.setPoint( ordering.fromGmshId( jj ), mesh->point( __e.indices[jj] ) );
         }
-
-        //e.setPoint( jj, mesh->point( __e[jj] ) );
     }
     auto fit = mesh->addFace( std::move(e) ).first;
 
@@ -2958,7 +2872,8 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
     GmshOrdering<element_type> ordering;
     if ( !__e.physical.empty() )
         e.setMarker( __e.physical[0] );
-    e.setMarker2( __e.elementary );
+    if ( false )
+        e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 
@@ -2974,7 +2889,6 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
          __e.type == GMSH_TETRAHEDRON_4 ||
          __e.type == GMSH_TETRAHEDRON_5 )
     {
-        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
             //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
@@ -2982,23 +2896,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
             if (!e.isGhostCell()) pt.setProcessId( e.processId() );
             //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
             e.setPoint( ordering.fromGmshId( jj ), pt );
-
-            if ( pt.isOnBoundary() )
-                ++count_pt_on_boundary;
         }
-        // the tet share a face with the boundary
-        if ( ( __e.type == GMSH_TETRAHEDRON ||
-               __e.type == GMSH_TETRAHEDRON_2 ||
-               __e.type == GMSH_TETRAHEDRON_3 ||
-               __e.type == GMSH_TETRAHEDRON_4 ||
-               __e.type == GMSH_TETRAHEDRON_5 )
-             && count_pt_on_boundary >= 3)
-            e.setOnBoundary( true );
-        // the hex share a face with the boundary
-        if ( ( __e.type == GMSH_HEXAHEDRON ||
-               __e.type == GMSH_HEXAHEDRON_2 )
-             && count_pt_on_boundary >= 4)
-            e.setOnBoundary( true );
     }
 
     auto const& eltInserted = mesh->addElement( /*mesh->endElement(), */std::move(e) );
