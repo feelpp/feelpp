@@ -410,8 +410,6 @@ Environment::initPetsc( int * argc, char *** argv )
 
     if ( !is_petsc_initialized )
     {
-        i_initialized = true;
-
         int ierr;
         if( (*argc > 0) && ( argv != nullptr ) )
         {
@@ -769,49 +767,42 @@ Environment::~Environment()
 #endif
 #endif
 
-    if ( i_initialized )
-    {
-        VLOG( 2 ) << "clearing known paths\n";
-        S_paths.clear();
 
-        VLOG( 2 ) << "[~Environment] cleaning up global excompiler\n";
+    VLOG( 2 ) << "clearing known paths\n";
+    S_paths.clear();
 
-        GiNaC::cleanup_ex( false );
+    VLOG( 2 ) << "[~Environment] cleaning up global excompiler\n";
+    GiNaC::cleanup_ex( false );
 
-        VLOG( 2 ) << "[~Environment] finalizing slepc,petsc and mpi\n";
+    VLOG( 2 ) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )
-        PetscTruth is_petsc_initialized;
-        PetscInitialized( &is_petsc_initialized );
-
-        if ( is_petsc_initialized )
-        {
+    PetscTruth is_petsc_initialized;
+    PetscInitialized( &is_petsc_initialized );
+    if ( is_petsc_initialized )
+    {
 #if defined( FEELPP_HAS_SLEPC )
-            SlepcFinalize();
+        SlepcFinalize();
 #else
-            PetscFinalize();
+        PetscFinalize();
 #endif // FEELPP_HAS_SLEPC
-        }
-
+    }
 #endif // FEELPP_HAS_PETSC_H
 
-        stopLogging();
-        generateSummary( S_about.appName(), "end", true );
+    stopLogging();
+    generateSummary( S_about.appName(), "end", true );
 
-        JournalManager::journalFinalize();
-        S_timers.reset();
-        S_hwSysInstance.reset(); // call deleter
-        S_informationObject.reset();
+    JournalManager::journalFinalize();
+    S_timers.reset();
+    S_hwSysInstance.reset(); // call deleter
+    S_informationObject.reset();
 
-        // make sure everybody is here
-        Environment::worldComm().barrier();
-        if ( Environment::isMasterRank() && S_vm.count("rm") )
-        {
-            cout << tc::red << "Removing all files (--rm)  in " << appRepository() << "..." << tc::reset << std::endl;
-            fs::remove_all( S_appdir );
-        }
-        
+    // make sure everybody is here
+    Environment::worldComm().barrier();
+    if ( Environment::isMasterRank() && S_vm.count("rm") )
+    {
+        cout << tc::red << "Removing all files (--rm)  in " << appRepository() << "..." << tc::reset << std::endl;
+        fs::remove_all( S_appdir );
     }
-    
 }
 
 
@@ -1535,26 +1526,13 @@ Environment::doOptions( int argc, char** argv,
 bool
 Environment::initialized()
 {
-
-#if defined( FEELPP_HAS_PETSC_H )
-    PetscTruth is_petsc_initialized;
-    PetscInitialized( &is_petsc_initialized );
-    return mpi::environment::initialized() && is_petsc_initialized ;
-#else
     return mpi::environment::initialized() ;
-#endif
 }
 
 bool
 Environment::finalized()
 {
-#if defined( FEELPP_HAS_PETSC_H )
-    PetscTruth is_petsc_initialized;
-    PetscInitialized( &is_petsc_initialized );
-    return mpi::environment::finalized() && !is_petsc_initialized;
-#else
     return mpi::environment::finalized();
-#endif
 }
 
 
