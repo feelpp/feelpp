@@ -457,7 +457,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
 {
     std::string fname;
     bool generated = false;
-    if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().isMasterRank() ) )
+    if ( this->worldComm().isMasterRank() )
     {
         LOG(INFO) << "Generate mesh on processor " <<  this->worldComm().globalRank() << "/" << this->worldComm().globalSize() << "\n";
         if ( !outputDirectory.empty() && !fs::exists( fs::path(outputDirectory) ) )
