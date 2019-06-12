@@ -28,7 +28,7 @@ CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 SET(DIRS core timing math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models python fmi hwsys event)
 foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
-  message(STATUS "${dir}: ${FEELPP_SRCS}")
+  # message(STATUS "${dir}: ${FEELPP_SRCS}")
 endforeach()
 
 # add_subdirectory (feelcore)
