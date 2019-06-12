@@ -510,7 +510,7 @@ Gmsh::refine( std::string const& name, int /*level*/, bool parametric  ) const
 	std::string _name = fs::path( name ).stem().string();
     std::string nameMshOutput = (boost::format("%1%-refine-%2%.msh")%_name %M_refine_levels).str();
 
-    if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().isMasterRank() ) )
+    if ( this->worldComm().isMasterRank() )
     {
 #if defined( FEELPP_HAS_GMSH_API )
         gmsh::model::add( _name );

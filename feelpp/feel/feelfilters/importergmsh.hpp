@@ -1074,7 +1074,6 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
 
             if ( meshMarkerNameMap.empty() )
             {
-                std::vector<int> data = {id, topodim};
                 mesh->addMarkerName( name, id, topodim );
             }
             if ( M_ignorePhysicalName.find( name )!=M_ignorePhysicalName.end() ) this->setIgnorePhysicalGroup( id );
