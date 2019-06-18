@@ -55,17 +55,18 @@ SensorDescriptionMap::read()
         if ( readerCSV_measures.hasName( sensorName ) )
             sensorUsedInPosFile.insert( std::make_pair( k, sensorName ) );
     }
-    double radius = doption(_name="sensor.radius");
-    std::shared_ptr<GeoTool::GeoGMSHTool> geoAllSpheres;
+    std::vector<double> center(3);
     for ( auto const& [k, sensorName] : sensorUsedInPosFile )
     {
+
+
         center[0] = readerCSV_position.value<double>( k, "X_m"/*"x"*/ );
         center[1] = readerCSV_position.value<double>( k, "Y_m"/*"y"*/ );
         center[2] = readerCSV_position.value<double>( k, "Z_m"/*"z"*/ );
 
     }
 
-    
+
     if ( Environment::isMasterRank() )
     {
         std::cout << "---------------------------------------------------\n";
@@ -74,7 +75,7 @@ SensorDescriptionMap::read()
             std::cout << sensorName << "\n";
         std::cout << "---------------------------------------------------\n";
     }
-    
+
 
 
 }
