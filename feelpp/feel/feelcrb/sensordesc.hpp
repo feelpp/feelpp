@@ -26,35 +26,144 @@
 #include <array>
 #include <string>
 #include <map>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/importercsv.hpp>
 
 
-
-namespace Feel {
+namespace Feel
+{
 
 template<int Dim = 3>
 class SensorDescription
 {
 public:
-    SensorDescription();
-    std::string type() const;
-    std::string name() const;
-    std::array<double,Dim> const& position() const;
-    double radius() const;
 
+    SensorDescription(std::string const name, std::string type="gaussian", double raduis=1.0, std::array<double,Dim> const pos):
+        M_name(name),
+        M_type(type),
+        M_radius(raduis),
+        M_pos(pos)
+    {}
+
+    void setName(std::string const name)
+    {
+        M_name = name;
+    }
+
+    void setType(std::string type)
+    {
+        M_type = type;
+    }
+
+    void setRadius(double raduis)
+    {
+        M_radius = raduis;
+    }
+
+    void setPosition(std::array<double,Dim> const pos)
+    {
+        M_pos = pos;
+    }
+    std::string type() const
+    {
+        return M_type;
+    }
+    std::string name() const
+    {
+        return M_name;
+    }
+    std::array<double,Dim> const& position() const
+    {
+        return M_pos;
+    }
+
+    double radius() const
+    {
+        return M_radius;
+    }
+    virtual ~SensorDescription(){}
 private:
     std::string M_name;
+    std::string M_type;
     std::array<double,Dim> M_pos;
     double M_radius;
 };
 
-class SensorDescriptionMap: public std::map<std::string,SensorDescription>
+template<int Dim=3>
+class SensorDescriptionMap: public std::map<std::string,SensorDescription<Dim>>
 {
-public:
-    SensorDescriptionMap();
 
-    void read();
+public:
+    SensorDescriptionMap(std::string  file, int N):
+        M_file(file),
+        M_numberOfSensors(N)
+    {
+      read();
+    }
+
+    void setFile(std::string file)
+    {
+        M_file = file;
+    }
+
+    void setNumberOfSensors(int numberOfSensors)
+    {
+        M_numberOfSensors = numberOfSensors;
+    }
+    std::string file() const ()
+    {
+        return M_file;
+    }
+
+    int M_numberOfSensors() const()
+    {
+        return M_numberOfSensors;
+    }
+
+    virtual ~SensorDescriptionMap(){}
+    
+    std::set<std::pair<size_type,std::string>> read()
+    {
+        this->reserve( M_numberOfSensors );
+        std::array<double,Dim> const center;
+        ImporterCSV readerCSV_position( M_file );
+        std::set<std::pair<size_type,std::string>> sensorUsedInPosFile;
+        for ( size_type k=0;k< readerCSV_position.numberOfLineInMemory();++k )
+        {
+            std::string isInBatBStr = readerCSV_position.value<std::string>( k, "isInBatB" );
+            if ( isInBatBStr.empty() )
+                continue;
+            if ( !readerCSV_position.value<bool>( k, "isInBatB" ) )
+                continue;
+
+            std::string sensorArchi = readerCSV_position.value<std::string>( k, "archi" );
+            std::vector<std::string> sensorArchiSplitted;
+            boost::split( sensorArchiSplitted, sensorArchi, boost::is_any_of(":"), boost::token_compress_on );
+            if ( sensorArchiSplitted.empty() )
+                continue;
+
+            //std::string sensorName = "zigduino-" + readerCSV_position.value<std::string>( k, "node_id" );
+            std::string sensorName = sensorArchiSplitted[0] + "-" + readerCSV_position.value<std::string>( k, "custom_id" );
+            if ( readerCSV_measures.hasName( sensorName ) )
+            {
+               sensorUsedInPosFile.insert( std::make_pair( k, sensorName ) );
+               center[0] = readerCSV_position.value<double>( k, "X_m"/*"x"*/ );
+               center[1] = readerCSV_position.value<double>( k, "Y_m"/*"y"*/ );
+               center[2] = readerCSV_position.value<double>( k, "Z_m"/*"z"*/ );
+               SensorDescription<Dim> new newElement( (sensorName, type="gaussian", raduis=1.0, center));
+               this->insert(newElement);
+            }
+
+        }
+
+    }
+
+private:
+    std::string M_file;
+    int M_numberOfSensors;
+
 };
 
 
-
-}
+}//namespace feel
