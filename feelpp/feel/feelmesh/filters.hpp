@@ -32,6 +32,7 @@
 #define __FEELPP_FILTERS_HPP 1
 
 #include <utility>
+#include <unordered_set>
 #if BOOST_VERSION >= 105600
 #include <boost/phoenix/stl/algorithm/detail/is_std_list.hpp>
 #else

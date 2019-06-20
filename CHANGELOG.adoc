@@ -16,6 +16,10 @@
 
 * use C++17 language features, {uri-issue}/1282[#1282]
 
+=== Fixes
+
+* [**feelpp**] refactoring of OperatorLagrangeP1 see {uri-pull}/1331[#1331]
+
 [[v0.106.0-2019-02-05]]
 == v0.106.0
 https://github.com/feelpp/feelpp/tree/v0.106.0[v0.106.0] (2019-02-05)
