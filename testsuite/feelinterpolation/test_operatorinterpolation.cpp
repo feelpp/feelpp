@@ -513,58 +513,6 @@ void testSMD()
 #endif
 }
 
-#if defined( FEELPP_HAS_VTK )
-template <uint32_type OrderGeo>
-void test2dOpLagrangeP1()
-{
-    typedef Mesh<Simplex<2, OrderGeo, 2>> mesh_type;
-    double meshSize = doption( _name = "hsize" );
-    GeoTool::Node x1( 0, 0 );
-    GeoTool::Node x2( 0.6, 0 );
-    GeoTool::Circle C( meshSize, "OMEGA", x1, x2 );
-    C.setMarker( _type = "line", _name = "Sortie", _markerAll = true );
-    C.setMarker( _type = "surface", _name = "OmegaFluide", _markerAll = true );
-    auto mesh = C.createMesh( _mesh = new mesh_type,
-                              _name = "test2dOpLagrangeP1_domain" + mesh_type::shape_type::name(),
-                              _partitions = Environment::worldComm().localSize() );
-
-    auto Xh = Pchv<3, PointSetFekete>( mesh );
-    auto exprProj = vec( cos( M_PI * Px() ), sin( M_PI * Py() ) );
-    auto u = vf::project( _space = Xh,
-                          _range = elements( mesh ),
-                          _expr = exprProj );
-
-    auto mybackend = backend( _rebuild = true );
-
-    auto opLagP1 = lagrangeP1( _space = Xh );
-    auto meshLagP1 = opLagP1->mesh();
-
-    auto XhLagP1 = Pchv<1>( meshLagP1 );
-    auto uLagP1interp = XhLagP1->element();
-
-    auto uLagP1proj = vf::project( _space = XhLagP1,
-                                   _range = elements( meshLagP1 ),
-                                   _expr = exprProj );
-
-    auto opI = opInterpolation( _domainSpace = Xh,
-                                _imageSpace = XhLagP1,
-                                _range = elements( meshLagP1 ) );
-    opI->apply( u, uLagP1interp );
-
-    auto s1 = integrate( _range = elements( meshLagP1 ),
-                         _expr = inner( idv( uLagP1interp ) - idv( uLagP1proj ), idv( uLagP1interp ) - idv( uLagP1proj ) ) )
-                  .evaluate()( 0, 0 );
-    BOOST_CHECK_SMALL( s1, 1e-6 );
-
-#if 0
-    auto myexporter = exporter( _mesh=meshLagP1, _name="test2dOpLagrangeP1_MyExport" );
-    myexporter->add( "test2dOpLagrangeP1_uLagP1", uLagP1 );
-    myexporter->save();
-#endif
-}
-
-#endif // FEELPP_HAS_VTK
-
 } // namespace test_operatorinterpolation
 
 /**
@@ -631,18 +579,5 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_smd )
     test_operatorinterpolation::testSMD<3, 1>();
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_smd done" );
 }
-
-#if defined( FEELPP_HAS_VTK )
-BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_oplagp1_geo1 )
-{
-    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_oplagp1_geo1" );
-    using namespace test_operatorinterpolation;
-
-    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/oplagp1geo1" ) % Environment::about().appName() );
-
-    test_operatorinterpolation::test2dOpLagrangeP1<1>();
-    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_oplagp1_geo1 done" );
-}
-#endif // FEELPP_HAS_VTK
 
 BOOST_AUTO_TEST_SUITE_END()
