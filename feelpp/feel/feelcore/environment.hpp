@@ -838,7 +838,6 @@ private:
 
 private:
     /// Whether this environment object called MPI_Init
-    bool i_initialized;
     std::unique_ptr<mpi::environment> M_env;
 
     //! number of arguments in command line

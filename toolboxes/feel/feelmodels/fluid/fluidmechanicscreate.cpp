@@ -1353,9 +1353,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initUserFunctions()
 {
-    if ( this->modelProperties().functions().empty() )
-        return;
-
     for ( auto const& modelfunc : this->modelProperties().functions() )
     {
         auto const& funcData = modelfunc.second;
@@ -1383,6 +1380,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initUserFunctions()
         }
     }
 
+    // update custom field given by registerCustomField
+    for ( auto & [name,uptr] : M_fieldsUserScalar )
+        if ( !uptr )
+            uptr = this->functionSpaceVelocity()->compSpace()->elementPtr();
+    for ( auto & [name,uptr] : M_fieldsUserVectorial )
+        if ( !uptr )
+            uptr = this->functionSpaceVelocity()->elementPtr();
+
     this->updateUserFunctions();
 }
 
@@ -1405,19 +1410,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSy
         if ( funcData.isScalar() )
         {
             CHECK( this->hasFieldUserScalar( funcName ) ) << "user function " << funcName << "not registered";
-            M_fieldsUserScalar[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionScalar() );
+            M_fieldsUserScalar[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionScalar() );
         }
         else if ( funcData.isVectorial2() )
         {
             if ( nDim != 2 ) continue;
             CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
-            M_fieldsUserVectorial[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionVectorial2() );
+            M_fieldsUserVectorial[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionVectorial2() );
         }
         else if ( funcData.isVectorial3() )
         {
             if ( nDim != 3 ) continue;
             CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
-            M_fieldsUserVectorial[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionVectorial3() );
+            M_fieldsUserVectorial[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionVectorial3() );
         }
     }
 }
