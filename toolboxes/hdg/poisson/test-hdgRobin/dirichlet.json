@@ -20,13 +20,13 @@
     {
         "potential":
         {
-	    "SourceTerm":
-	    {
-		"Omega":
-		{
-		    "expr":"0.0"
-		}
-	    },
+	        "SourceTerm":
+	        {
+		        "Omega":
+		        {
+		            "expr":"0.0"
+		        }
+	        },
             "Dirichlet":
             {
                 "Dirichlet":
