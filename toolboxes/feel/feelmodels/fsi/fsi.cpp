@@ -29,6 +29,7 @@
 
 #include <feel/feelmodels/fsi/fsi.hpp>
 #include <feel/feelmodels/modelmesh/fsimesh.hpp>
+#include <feel/feelpde/operatorpcd.hpp>
 
 namespace Feel
 {
@@ -276,7 +277,6 @@ FSI<FluidType,SolidType>::init()
 
         // temporary fix (else use in dirichle-neunamm bc in residual) TODO !!!!
         M_fluidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
-
         M_fluidModel->init( false );
     }
 
@@ -333,7 +333,6 @@ FSI<FluidType,SolidType>::init()
     M_fluidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
     M_solidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
 
-    M_fluidModel->initAlgebraicFactory();
     M_fluidModel->setApplyMovingMeshBeforeSolve( false );
 
     if (this->fsiCouplingType()=="Semi-Implicit")
@@ -348,6 +347,12 @@ FSI<FluidType,SolidType>::init()
     M_fieldNormalStressRefMesh_fluid.reset( new typename fluid_type::element_normalstress_type( M_spaceNormalStress_fluid ) );
 
     this->fluidModel()->updateRangeDistributionByMaterialName( "interface_fsi", M_rangeFSI_fluid );
+
+    M_fluidModel->addUpdateInHousePreconditionerPCD( "fsi",
+                                                     std::bind( &self_type::initInHousePreconditionerPCD_fluid, std::ref( *this ), std::placeholders::_1 ),
+                                                     std::bind( &self_type::updateInHousePreconditionerPCD_fluid, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 ) );
+    M_fluidModel->initAlgebraicFactory();
+
 
     if ( M_solidModel->isStandardModel() )
     {
@@ -778,6 +783,46 @@ FSI<FluidType,SolidType>::updateBackendOptimisation( int iterationFSI, double la
                   (boost::format("backend solid reuse jac (RebuildAtFirstNewtonStep) : %1%")%M_solidModel->backend()->reuseJacRebuildAtFirstNewtonStep() ).str());
 
 
+}
+
+//---------------------------------------------------------------------------------------------------------//
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::initInHousePreconditionerPCD_fluid( operatorpcdbase_fluid_type & opPCDBase ) const
+{
+    typedef Feel::Alternatives::OperatorPCD<typename fluid_type::space_fluid_velocity_type,typename fluid_type::space_fluid_pressure_type> op_pcd_type;
+    op_pcd_type * opPCD = dynamic_cast<op_pcd_type*>(&opPCDBase);
+    CHECK( opPCD ) << "fails to cast OperatorPCD";
+
+    if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
+    {
+        for ( auto const& rangeFacesMat : this->fluidModel()->rangeDistributionByMaterialName()->rangeMeshFacesByMaterial( "interface_fsi" ) )
+        {
+            std::string matName = rangeFacesMat.first;
+            auto const& rangeFaces = rangeFacesMat.second;
+            opPCD->addRangeDirichletBC( "FSI_FluidDirichlet_" + matName, rangeFaces );
+        }
+    }
+    else
+        opPCD->addRangeNeumannBC( "FSI_FluidNeumann", M_rangeFSI_fluid );
+}
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateInHousePreconditionerPCD_fluid( operatorpcdbase_fluid_type & opPCDBase, DataUpdateBase & data ) const
+{
+    if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
+    {
+        typedef Feel::Alternatives::OperatorPCD<typename fluid_type::space_fluid_velocity_type,typename fluid_type::space_fluid_pressure_type> op_pcd_type;
+        op_pcd_type * opPCD = dynamic_cast<op_pcd_type*>(&opPCDBase);
+        CHECK( opPCD ) << "fails to cast OperatorPCD";
+        for ( auto const& rangeFacesMat : this->fluidModel()->rangeDistributionByMaterialName()->rangeMeshFacesByMaterial( "interface_fsi" ) )
+        {
+            std::string matName = rangeFacesMat.first;
+            auto rhoExpr = this->fluidModel()->materialProperties()->density( matName ).expr();
+            opPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, "FSI_FluidDirichlet_" + matName, idv(M_fluidModel->meshVelocity2()) );
+        }
+    }
 }
 
 //---------------------------------------------------------------------------------------------------------//
