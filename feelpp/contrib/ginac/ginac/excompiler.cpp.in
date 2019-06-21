@@ -207,9 +207,16 @@ public:
 			//std::cout << "ginac::compile_src_file fails (" << WEXITSTATUS(status) << ")\n";
 			// try the compiler in Feel++ source
 			namespace fs = boost::filesystem;
-			if ( fs::exists( fs::path( "@FEELPP_BUILD_DIR@/feelpp/contrib/ginac/tools/ginac-excompiler" ) ) )
+
+            std::string firstPathToTry = "@FEELPP_BUILD_DIR@/feelpp/contrib/ginac/tools/ginac-excompiler";
+
+            const char * pathFromEnv = getenv( "FEELPP_EXPRESSION_COMPILER_PATH" );
+            if ( pathFromEnv != NULL && pathFromEnv[0] != '\0' )
+                firstPathToTry = pathFromEnv;
+
+			if ( fs::exists( fs::path( firstPathToTry ) ) )
 			{
-				std::string strcompile = "@FEELPP_BUILD_DIR@/feelpp/contrib/ginac/tools/ginac-excompiler " + filename;
+				std::string strcompile = firstPathToTry + " " + filename;
 
 				int status = system(strcompile.c_str());
 				if (status)
