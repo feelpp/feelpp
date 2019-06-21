@@ -611,12 +611,9 @@ ImporterGmsh<MeshType>::addVertices( mesh_type* mesh, Feel::detail::GMSHElement 
         pt.setProcessIdInPartition( this->worldComm().localRank() );
         if ( gmshpt.parametric )
         {
-            pt.setGDim( gmshpt.gdim );
-            pt.setGTag( gmshpt.gtag );
-
             if ( gmshpt.gdim < 3 )
             {
-                pt.setParametricCoordinates( gmshpt.uv[0], gmshpt.uv[1] );
+                pt.setParametricCoordinates( gmshpt.gdim, gmshpt.gtag, gmshpt.uv[0], gmshpt.uv[1] );
                 mesh->setParametric( true );
             }
         }
@@ -1257,12 +1254,9 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
             pt.setProcessIdInPartition( this->worldComm().localRank() );
             if ( gmshpt.parametric )
             {
-                pt.setGDim( gmshpt.gdim );
-                pt.setGTag( gmshpt.gtag );
-
                 if ( gmshpt.gdim < 3 )
                 {
-                    pt.setParametricCoordinates( gmshpt.uv[0], gmshpt.uv[1] );
+                    pt.setParametricCoordinates( gmshpt.gdim, gmshpt.gtag, gmshpt.uv[0], gmshpt.uv[1] );
                     mesh->setParametric( true );
                 }
             }

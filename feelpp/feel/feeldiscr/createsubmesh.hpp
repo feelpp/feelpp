@@ -400,7 +400,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
             } // for (unsigned int n=0 ... )
 
             // Add an equivalent element type to the new_mesh
-            auto const& e = newMesh->addElement( newElem,true );
+            auto eit = newMesh->addElement( newElem,true );
+            auto const& e = eit.first->second;
             new_element_id[oldElem.id()]= e.id();
             M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
 
@@ -649,7 +650,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
             } // end for n
 
             // Add an equivalent element type to the new_mesh
-            auto const& e = newMesh->addElement( newElem, true );
+            auto eit = newMesh->addElement( newElem, true );
+            auto const& e = eit.first->second;
             // update mesh relation
             new_element_id[oldElem.id()]= e.id();
             M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
@@ -854,7 +856,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
             CHECK( newElem.facePtr(1) ) << "invalid face 1 in edge";
 #endif
             // Add an equivalent element type to the new_mesh
-            auto const& e = newMesh->addElement( newElem, true );
+            auto eit = newMesh->addElement( newElem, true );
+            auto const& e = eit.first->second;
             // update mesh relation
             new_element_id[oldElem.id()]= e.id();
             M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
@@ -1199,7 +1202,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
                 newElem.setIdInOtherPartitions( rankRecv, idEltActiveInOtherProc );
 
                 // Add an equivalent element type to the new_mesh
-                auto const& e = newMesh->addElement( newElem, true );
+                auto eit = newMesh->addElement( newElem, true );
+                auto const& e = eit.first->second;
 
                 const size_type newEltId = e.id();
                 ghostOldEltDone[oldElem.id()]= std::make_pair(newEltId,e.processId());
