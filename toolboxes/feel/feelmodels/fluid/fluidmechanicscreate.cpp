@@ -517,7 +517,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         //std::cout << "createTraceMesh\n"<<std::endl;
         bool useSubMeshRelation = boption(_name="dirichletbc.lm.use-submesh-relation",_prefix=this->prefix());
         size_type useSubMeshRelationKey = (useSubMeshRelation)? EXTRACTION_KEEP_MESH_RELATION : 0;
-        M_meshDirichletLM = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),this->markerDirichletBClm()), _context=useSubMeshRelationKey );
+        M_meshDirichletLM = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),this->markerDirichletBClm()), _context=useSubMeshRelationKey,_view=true );
         if ( boption(_name="dirichletbc.lm.savemesh",_prefix=this->prefix()) )
         {
             std::string nameMeshDirichletLM = "nameMeshDirichletLM.msh";
@@ -531,7 +531,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // lagrange multiplier for pressure bc
     if ( this->hasMarkerPressureBC() )
     {
-        M_meshLagrangeMultiplierPressureBC = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),this->markerPressureBC()) );
+        M_meshLagrangeMultiplierPressureBC = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),this->markerPressureBC()),_view=true );
         M_spaceLagrangeMultiplierPressureBC = space_trace_velocity_component_type::New( _mesh=M_meshLagrangeMultiplierPressureBC, _worldscomm=this->localNonCompositeWorldsComm() );
         M_fieldLagrangeMultiplierPressureBC1.reset( new element_trace_velocity_component_type( M_spaceLagrangeMultiplierPressureBC ) );
         if ( nDim == 3 )
@@ -760,7 +760,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidInlet()
         std::string const& marker = std::get<0>( inletbc );
         std::string const& type = std::get<1>( inletbc );
         auto const& valMaxExpr = std::get<2>( inletbc );
-        auto meshinlet = createSubmesh( _mesh=this->mesh(),_range=markedfaces(this->mesh(),marker) );
+        auto meshinlet = createSubmesh( _mesh=this->mesh(),_range=markedfaces(this->mesh(),marker), _view=true );
         auto spaceinlet = space_fluidinlet_type::New( _mesh=meshinlet,_worldscomm=this->localNonCompositeWorldsComm() );
         auto velinlet = spaceinlet->elementPtr();
         auto velinletInterpolated = functionSpaceVelocity()->compSpace()->elementPtr();
@@ -989,27 +989,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
         M_meshALE->init();
 
-        //M_dofsVelocityInterfaceOnMovingBoundary = M_XhMeshVelocityInterface->dofs( markedfaces(this->mesh(),this->markersNameMovingBoundary() ) );
-
-        // if restart else move submesh define from fluid mesh
-        if ( this->hasFluidOutletWindkesselImplicit() )
-        {
-            M_fluidOutletWindkesselSpaceMeshDisp = space_fluidoutlet_windkessel_mesh_disp_type::New( _mesh=M_fluidOutletWindkesselMesh,
-                                                                                                     _worldscomm=this->localNonCompositeWorldsComm() );
-            M_fluidOutletWindkesselMeshDisp = M_fluidOutletWindkesselSpaceMeshDisp->elementPtr();
-            M_fluidOutletWindkesselOpMeshDisp = opInterpolation(_domainSpace=M_meshALE->functionSpace(),
-                                                                _imageSpace=M_fluidOutletWindkesselSpaceMeshDisp,
-                                                                _range=elements(M_fluidOutletWindkesselMesh),
-                                                                _backend=M_backend );
-            if ( this->doRestart() )
-            {
-                // interpolate disp
-                M_fluidOutletWindkesselOpMeshDisp->apply( *M_meshALE->displacement(), *M_fluidOutletWindkesselMeshDisp );
-                // apply disp
-                M_fluidOutletWindkesselMeshMover.apply( M_fluidOutletWindkesselMesh, *M_fluidOutletWindkesselMeshDisp );
-            }
-        }
-
         this->log("FluidMechanics","init", "meshALE done" );
 #endif
     }
@@ -1201,7 +1180,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidOutlet()
                 markerNameBFOutletForSubmesh.push_back( std::get<0>( M_fluidOutletsBCType[k] ) );
         }
 
-        M_fluidOutletWindkesselMesh = createSubmesh( _mesh=this->mesh(), _range=markedfaces(this->mesh(),markerNameBFOutletForSubmesh) );
+        M_fluidOutletWindkesselMesh = createSubmesh( _mesh=this->mesh(), _range=markedfaces(this->mesh(),markerNameBFOutletForSubmesh), _view=true );
         M_fluidOutletWindkesselSpace = space_fluidoutlet_windkessel_type::New( _mesh=M_fluidOutletWindkesselMesh,
                                                                                _worldscomm=makeWorldsComm(2,this->worldCommPtr()) );
     }
@@ -1514,7 +1493,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
             if ( !M_materialProperties->isDefinedOnWholeMesh() )
                 this->functionSpaceVelocity()->dof()->meshSupport()->updateBoundaryInternalFaces();
             auto rangeTrace = ( M_materialProperties->isDefinedOnWholeMesh() )? boundaryfaces(this->mesh()) : this->functionSpaceVelocity()->dof()->meshSupport()->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
-            M_meshTrace = createSubmesh( _mesh=this->mesh(), _range=rangeTrace, _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT) );
+            M_meshTrace = createSubmesh( _mesh=this->mesh(), _range=rangeTrace, _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),_view=true );
 
             this->updateRangeDistributionByMaterialName( "trace_mesh", rangeTrace );
             std::string geoExportType = "static";//change_coords_only, change, static

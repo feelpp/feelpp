@@ -363,7 +363,7 @@ FSI<FluidType,SolidType>::init()
     {
         M_rangeFSI_solid = markedfaces(this->solidModel()->mesh(),this->solidModel()->markerNameFSI());
         //M_spaceNormalStressFromFluid_solid = space_solid_normalstressfromfluid_type::New( _mesh=M_solidModel->mesh() );
-        auto subfsimesh = createSubmesh( _mesh=this->solidModel()->mesh(),_range=M_rangeFSI_solid) ;
+        auto subfsimesh = createSubmesh( _mesh=this->solidModel()->mesh(),_range=M_rangeFSI_solid, _view=true ) ;
         M_spaceNormalStressFromFluid_solid = space_solid_normalstressfromfluid_type::New( _mesh=subfsimesh );
         M_fieldNormalStressFromFluid_solid.reset(new element_solid_normalstressfromfluid_type( M_spaceNormalStressFromFluid_solid ) );
         if ( this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
