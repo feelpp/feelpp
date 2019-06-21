@@ -1062,12 +1062,6 @@ protected:
     std::map<int,std::vector<double> > M_fluidOutletWindkesselPressureDistal_old;
     trace_mesh_ptrtype M_fluidOutletWindkesselMesh;
     space_fluidoutlet_windkessel_ptrtype M_fluidOutletWindkesselSpace;
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    space_fluidoutlet_windkessel_mesh_disp_ptrtype M_fluidOutletWindkesselSpaceMeshDisp;
-    element_fluidoutlet_windkessel_mesh_disp_ptrtype M_fluidOutletWindkesselMeshDisp;
-    op_interpolation_fluidoutlet_windkessel_meshdisp_ptrtype M_fluidOutletWindkesselOpMeshDisp;
-    MeshMover<trace_mesh_type> M_fluidOutletWindkesselMeshMover;
-#endif
     //----------------------------------------------------
     vector_field_expression<nDim,1,2> M_gravityForce;
     bool M_useGravityForce;

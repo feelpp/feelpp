@@ -353,28 +353,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResults( double time )
 #endif
     }
 
-#if 0
-    if ( false )
-    {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-        //ExporterGeometry::EXPORTER_GEOMETRY_STATIC
-        std::string geoExportType="static";//change_coords_only, change, static
-
-        if ( !M_exporterFluidOutlet )
-            M_exporterFluidOutlet = exporter( _mesh=M_fluidOutletWindkesselMesh,
-                                              _name="ExportFluidOutet",
-                                              _geo=geoExportType,
-                                              _worldcomm=M_Xh->worldComm(),
-                                              _path=this->exporterPath() );
-
-        M_exporterFluidOutlet->step( time )->add( prefixvm(this->prefix(),"fluidoutlet-disp"),
-                                                  prefixvm(this->prefix(),prefixvm(this->subPrefix(),"fluidoutlet-disp")),
-                                                  *M_fluidOutletWindkesselMeshDisp );
-        M_exporterFluidOutlet->save();
-#endif
-    }
-#endif
-
     if ( nOrderGeo == 1 )
     {
         this->exportFields( time );
@@ -1657,26 +1635,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
         sync( *M_fieldMeshVelocityUsedWithStabCIP, "=" );
     }
     //-------------------------------------------------------------------//
-    // move winkessel submesh
-    if ( this->hasFluidOutletWindkesselImplicit() )
-    {
-        // revert on reference mesh
-        M_fluidOutletWindkesselMeshDisp->scale(-1);
-        M_fluidOutletWindkesselMeshMover.apply( M_fluidOutletWindkesselMesh, *M_fluidOutletWindkesselMeshDisp );
-        // interpolate disp
-        M_fluidOutletWindkesselOpMeshDisp->apply( *M_meshALE->displacement(), *M_fluidOutletWindkesselMeshDisp );
-        // apply disp
-        M_fluidOutletWindkesselMeshMover.apply( M_fluidOutletWindkesselMesh, *M_fluidOutletWindkesselMeshDisp );
-
-        if (this->verbose())
-        {
-            double normWind = M_fluidOutletWindkesselMeshDisp->l2Norm();
-            double normDisp = M_meshALE->displacement()->l2Norm();
-            double normDispImposed = M_meshDisplacementOnInterface->l2Norm();
-            this->log("FluidMechanics","updateALEmesh",
-                      (boost::format( "normWind %1% normDisp %2% normDispImposed %3% ") %normWind %normDisp %normDispImposed ).str() );
-        }
-    }
     // update operator PCD
     if ( M_preconditionerAttachPCD && this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") )
     {
