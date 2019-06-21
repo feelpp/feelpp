@@ -82,16 +82,17 @@ class GeoNDCommon
     typedef GeoNDType geond_type;
     typedef typename geond_type::gm_ptrtype gm_ptrtype;
     typedef typename geond_type::gm1_ptrtype gm1_ptrtype;
+    typedef typename geond_type::index_type index_type;
 
     GeoNDCommon()
         : M_mesh( nullptr )
     {
     }
-    explicit GeoNDCommon( MeshBase<> const* mesh )
+    explicit GeoNDCommon( MeshBase<index_type> const* mesh )
         : M_mesh( mesh )
     {
     }
-    GeoNDCommon( MeshBase<> const* mesh, gm_ptrtype const& gm, gm1_ptrtype const& gm1 )
+    GeoNDCommon( MeshBase<index_type> const* mesh, gm_ptrtype const& gm, gm1_ptrtype const& gm1 )
         : M_mesh( mesh ),
           M_gm( gm ),
           M_gm1( gm1 )
@@ -100,11 +101,11 @@ class GeoNDCommon
     GeoNDCommon( GeoNDCommon const& e ) = default;
     GeoNDCommon( GeoNDCommon&& e ) = default;
 
-    MeshBase<> const* mesh() const { return M_mesh; }
+    MeshBase<index_type> const* mesh() const { return M_mesh; }
     gm_ptrtype const& gm() const { return M_gm; }
     gm1_ptrtype const& gm1() const { return M_gm1; }
 
-    void setMesh( MeshBase<> const* mesh ) { M_mesh = mesh; }
+    void setMesh( MeshBase<index_type> const* mesh ) { M_mesh = mesh; }
     void setGm( gm_ptrtype const& gm, gm1_ptrtype const& gm1 )
     {
         M_gm = gm;
@@ -113,10 +114,69 @@ class GeoNDCommon
 
   private:
     // mesh to which the geond element belongs to
-    MeshBase<> const* M_mesh;
+    MeshBase<index_type> const* M_mesh;
     // geometric mapping
     gm_ptrtype M_gm;
     gm1_ptrtype M_gm1;
+};
+
+template< typename T>
+class GeoNDMeasuresStorage
+{
+    typedef T value_type;
+public :
+    GeoNDMeasuresStorage( uint16_type nF ) : M_face_measures( nF ) {}
+
+    GeoNDMeasuresStorage( GeoNDMeasuresStorage const& ) = default;
+    GeoNDMeasuresStorage( GeoNDMeasuresStorage && ) = default;
+
+    //! \return the measure of the element
+    value_type measureBIS() const
+    {
+        return M_measure.value_or( 0. );
+    }
+
+    //! \return the measure of the element face \p f
+    value_type faceMeasureBIS( uint16_type f ) const
+    {
+        return M_face_measures[f].value_or( 0. );
+    }
+
+    //! set the measure of point element neighbors
+    void setMeasurePointElementNeighborsBIS( value_type meas )
+    {
+        M_measurePointElementNeighbors = meas;
+    }
+    //! \return the measure of point element neighbors
+    value_type measurePointElementNeighbors() const
+    {
+        return M_measurePointElementNeighbors.value_or( 0. );
+    }
+
+    void setMeasure( value_type meas ) const
+        {
+            M_measure = meas;
+        }
+
+    void setFaceMeasure( uint16_type f, value_type meas ) const
+        {
+            M_face_measures[f] = meas;
+        }
+private :
+
+    mutable std::optional<value_type> M_measure;
+    mutable std::vector<std::optional<value_type>> M_face_measures;
+    mutable std::optional<value_type> M_measurePointElementNeighbors;
+};
+
+template< typename T>
+class GeoNDNoMeasuresStorage
+{
+public :
+    GeoNDNoMeasuresStorage( uint16_type nF ) {}
+    GeoNDNoMeasuresStorage( GeoNDNoMeasuresStorage const& ) = default;
+    GeoNDNoMeasuresStorage( GeoNDNoMeasuresStorage && ) = default;
+private :
 };
 
 /**
@@ -128,17 +188,20 @@ template <uint16_type Dim,
           typename GEOSHAPE,
           typename T = double,
           typename IndexT = uint32_type,
-          typename POINTTYPE = Geo0D<Dim, T, IndexT>>
+          typename POINTTYPE = Geo0D<Dim, T, IndexT>,
+          bool UseMeasuresStorage = false >
 class GeoND
-    : public GeoEntity<GEOSHAPE, T>
+    : public GeoEntity<GEOSHAPE, T>,
+      public mpl::if_<mpl::bool_<UseMeasuresStorage>,  mpl::identity<GeoNDMeasuresStorage<T>>,  mpl::identity<GeoNDNoMeasuresStorage<T>>>::type::type
 {
     typedef GeoEntity<GEOSHAPE, T> super;
+    typedef typename mpl::if_<mpl::bool_<UseMeasuresStorage>,  mpl::identity<GeoNDMeasuresStorage<T>>,  mpl::identity<GeoNDNoMeasuresStorage<T>>>::type::type super2;
 
   public:
     typedef T value_type;
     using index_type = IndexT;
     using size_type = index_type;
-    typedef GeoND<Dim, GEOSHAPE, value_type, index_type, POINTTYPE> self_type;
+    typedef GeoND<Dim, GEOSHAPE, value_type, index_type, POINTTYPE, UseMeasuresStorage> self_type;
     typedef self_type element_type;
 
     typedef GEOSHAPE GeoShape;
@@ -217,9 +280,10 @@ class GeoND
      */
     GeoND()
         : super( 0 ),
+          super2( numTopologicalFaces ),
           M_points( numPoints, nullptr ),
-          M_face_measures( numTopologicalFaces ),
-          M_neighbors( 0 )
+        M_neighbors( 0 ),
+        M_commonData( nullptr )
     {
     }
 
@@ -231,17 +295,18 @@ class GeoND
      */
     explicit GeoND( size_type id )
         : super( id ),
+          super2( numTopologicalFaces ),
           M_points( numPoints, nullptr ),
-          M_face_measures( numTopologicalFaces ),
-          M_neighbors( 0 )
+        M_neighbors( 0 ),
+        M_commonData( nullptr )
     {
     }
 
     GeoND( GeoND const& e ) = default;
     GeoND( GeoND&& e )
         : super( std::move( e ) ),
+          super2( std::move( e ) ),
           M_points( std::move( e.M_points ) ),
-          M_face_measures( std::move( e.M_face_measures ) ),
           M_neighbors( std::move( e.M_neighbors ) ),
           M_markers( std::move( e.M_markers ) ),
           M_commonData( std::move( e.M_commonData ) )
@@ -253,11 +318,12 @@ class GeoND
     GeoND& operator=( GeoND&& e )
     {
         super::operator=( std::move( e ) );
+        super2::operator=( std::move( e ) );
         M_points = std::move( e.M_points );
         M_neighbors = std::move( e.M_neighbors );
         M_markers = std::move( e.M_markers );
         M_commonData = std::move( e.M_commonData );
-        M_face_measures = std::move( e.M_face_measures );
+        //M_face_measures = std::move( e.M_face_measures );
         //std::cout << "GeoND move assign\n";
         return *this;
     }
@@ -272,7 +338,7 @@ class GeoND
     /**
      * set common data
      */
-    void setCommonData( std::shared_ptr<GeoNDCommon<self_type>> const& commonData )
+    void setCommonData( GeoNDCommon<self_type> * commonData )
     {
         M_commonData = commonData;
     }
@@ -280,7 +346,7 @@ class GeoND
     //! return the geometric mapping if a mesh was set
     gm_ptrtype gm() const
     {
-        if ( M_commonData )
+        if ( M_commonData != nullptr )
             return M_commonData->gm();
         return gm_ptrtype();
     }
@@ -288,7 +354,7 @@ class GeoND
     //! return the geometric mapping if a mesh was set
     gm1_ptrtype gm1() const
     {
-        if ( M_commonData )
+        if ( M_commonData != nullptr )
             return M_commonData->gm1();
         return gm1_ptrtype();
     }
@@ -298,7 +364,7 @@ class GeoND
      */
     MeshBase<> const* mesh() const
     {
-        if ( M_commonData )
+        if ( M_commonData != nullptr )
             return M_commonData->mesh();
         return nullptr;
     }
@@ -688,55 +754,6 @@ class GeoND
         }
     };
 
-    /**
-     * \return the measure of the element
-     */
-    value_type measure() const
-    {
-#if 0
-        //return M_measure;
-        auto itFindMeasure = M_measures.find( GEOND_MEASURES::MEAS_ELEMENT );
-        if ( itFindMeasure != M_measures.end() )
-            return M_measures.find( GEOND_MEASURES::MEAS_ELEMENT )->second[0];
-        else
-        {
-            LOG(WARNING) << "element measure in mesh not updated : return 0 value";
-            return 0.;
-        }
-#else
-        return M_measure.value_or( 0. );
-#endif
-    }
-
-    /**
-     * \return the measure of the element face \p f
-     */
-    value_type faceMeasure( uint16_type f ) const
-    {
-#if 0
-        //return M_measurefaces[f];
-        auto itFindMeasure = M_measures.find( GEOND_MEASURES::MEAS_FACES );
-        if ( itFindMeasure != M_measures.end() )
-            return M_measures.find( GEOND_MEASURES::MEAS_FACES )->second[f];
-        else
-        {
-            LOG(WARNING) << "faces measure in mesh not updated : return 0 value";
-            return 0.;
-        }
-#else
-        return M_face_measures[f].value_or( 0. );
-#endif
-    }
-
-    /**
-     * \return the measure of the element faces
-     */
-    std::vector<value_type> const& faceMeasures() const
-    {
-        //return M_measurefaces;
-        CHECK( M_measures.find( GEOND_MEASURES::MEAS_FACES ) != M_measures.end() ) << "FACE_MEASURES is not computed";
-        return M_measures.find( GEOND_MEASURES::MEAS_FACES )->second;
-    }
 
     /**
      * \return the normals at the barycenter of the faces
@@ -1015,24 +1032,44 @@ class GeoND
         }
         return n;
     }
-    //! set the measure of point element neighbors
-    void setMeasurePointElementNeighbors( value_type meas )
-    {
-        if ( M_measures.find( GEOND_MEASURES::MEAS_NEIGHBORS_ELEMENT ) == M_measures.end() )
+
+    value_type measure() const override
         {
-            M_measures[GEOND_MEASURES::MEAS_NEIGHBORS_ELEMENT].reserve( 1 );
-            M_measures[GEOND_MEASURES::MEAS_NEIGHBORS_ELEMENT].resize( 1 );
+            if constexpr ( UseMeasuresStorage )
+                return this->measureBIS();
+            else
+            {
+                gm_ptrtype gm = this->gm();
+                if ( !gm.use_count() )
+                    gm = gm_ptrtype( new gm_type );
+
+                quad_meas_type thequad( meas_quad_order );
+                auto pc = gm->preCompute( gm, thequad.points() );
+                auto ctx = gm->template context<vm::JACOBIAN>( *this, pc );
+                return this->computeMeasureImpl( thequad, ctx );
+            }
+        }
+    value_type faceMeasure( uint16_type f ) const
+        {
+            if constexpr ( UseMeasuresStorage )
+                return this->faceMeasureBIS( f );
+            else
+            {
+                                gm_ptrtype gm = this->gm();
+                if ( !gm.use_count() )
+                    gm = gm_ptrtype( new gm_type );
+
+                quad_meas_type thequad( meas_quad_order );
+                auto pcf = gm->preComputeOnFaces( gm, thequad.allfpoints() );
+                auto ctxf = gm->template context<vm::NORMAL | vm::KB | vm::JACOBIAN>( *this, pcf, f );
+                return this->computeFaceMeasureImpl( thequad, ctxf, f );
+            }
         }
 
-        //M_meas_pneighbors = meas;
-        M_measures[GEOND_MEASURES::MEAS_NEIGHBORS_ELEMENT][0] = meas;
-    }
-    //! \return the measure of point element neighbors
-    value_type measurePointElementNeighbors() const
+    void setMeasurePointElementNeighbors( value_type meas )
     {
-        //return M_meas_pneighbors;
-        CHECK( M_measures.find( GEOND_MEASURES::MEAS_NEIGHBORS_ELEMENT ) != M_measures.end() ) << "MEAS_NEIGHBORS_ELEMENT is not computed";
-        return M_measures.find( GEOND_MEASURES::MEAS_NEIGHBORS_ELEMENT )->second[0];
+        if constexpr ( UseMeasuresStorage )
+            this->setMeasurePointElementNeighborsBIS( meas );
     }
 
     /**
@@ -1052,41 +1089,26 @@ class GeoND
     bool isValid() const;
 
     void update();
-    void updateWithPc( typename gm_type::precompute_ptrtype const& pc,
-                       typename gm_type::faces_precompute_type& pcf,
-                       quad_meas_type const& thequad );
+
     template <typename QuadType, typename CtxType, typename CtxFaceType>
     void updateWithCtx( QuadType const& thequad,
                         std::shared_ptr<CtxType>& ctx,
                         std::shared_ptr<CtxFaceType>& ctxf ) const;
-
-    void updateWithPc1( typename gm1_type::precompute_ptrtype const& pc,
-                        typename gm1_type::faces_precompute_type& pcf,
-                        quad_meas1_type const& thequad );
     template <typename CtxType, typename CtxFaceType>
     void updateWithCtx1( quad_meas1_type const& thequad,
                          std::shared_ptr<CtxType>& ctx,
                          std::shared_ptr<CtxFaceType>& ctxf ) const;
 
   private:
-    template <typename GmType, typename QuadType>
-    void updateMeasureImpl( std::shared_ptr<GmType> gm, typename GmType::precompute_ptrtype const& pc,
-                            QuadType const& thequad );
-    template <typename GmType, typename QuadType>
-    void updateMeasureFaceImpl( std::shared_ptr<GmType> gm, typename GmType::faces_precompute_type& pcf,
-                                QuadType const& thequad, mpl::bool_<true> );
-    template <typename GmType, typename QuadType>
-    void updateMeasureFaceImpl( std::shared_ptr<GmType> gm, typename GmType::faces_precompute_type& pcf,
-                                QuadType const& thequad, mpl::bool_<false> );
 
     template <typename QuadType, typename CtxType>
-    void updateMeasureImpl( QuadType const& thequad, std::shared_ptr<CtxType>& ) const;
+        value_type computeMeasureImpl( QuadType const& thequad,
+                                       std::shared_ptr<CtxType>& ctx ) const;
     template <typename QuadType, typename CtxType>
-    void updateMeasureFaceImpl( QuadType const& thequad, std::shared_ptr<CtxType>&, mpl::bool_<true> ) const;
-    template <typename QuadType, typename CtxType>
-    void updateMeasureFaceImpl( QuadType const& thequad, std::shared_ptr<CtxType>&, mpl::bool_<false> ) const;
+        value_type computeFaceMeasureImpl( QuadType const& thequad,
+                                           std::shared_ptr<CtxType>& ctxf,
+                                           uint16_type f ) const;
 
-  private:
   private:
     friend class boost::serialization::access;
     template <class Archive>
@@ -1110,8 +1132,6 @@ class GeoND
         }
         // DVLOG(2) << "  - G...\n";
         // ar & M_G;
-        DVLOG( 2 ) << "  - measures...\n";
-        ar& M_measures;
         DVLOG( 2 ) << "  - markers...\n";
         ar& M_markers;
     }
@@ -1120,19 +1140,6 @@ class GeoND
     /** geometric nodes of the element */
     std::vector<point_type*> M_points;
 
-    enum GEOND_MEASURES
-    {
-        MEAS_ELEMENT = 0,
-        MEAS_FACES = 1,
-        MEAS_NEIGHBORS_ELEMENT = 2 // measure of the set of point element neighbors
-    };
-
-    mutable std::optional<value_type> M_measure;
-    mutable std::vector<std::optional<value_type>> M_face_measures;
-
-    //! store some measures on geometrical entity
-    mutable std::map<GEOND_MEASURES, std::vector<value_type>> M_measures;
-
     //! store neighbor element id
     std::vector<size_type> M_neighbors;
 
@@ -1140,20 +1147,20 @@ class GeoND
     std::map<uint16_type, Marker1> M_markers;
 
     //! common data shared in a collection of multi-dimensional geometrical entity
-    mutable std::shared_ptr<GeoNDCommon<self_type>> M_commonData;
+    mutable GeoNDCommon<self_type> * M_commonData;
 };
 
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
 inline void
-GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::setPoint( uint16_type i, point_type& p )
+GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::setPoint( uint16_type i, point_type& p )
 {
     M_points[i] = std::addressof( p );
     DCHECK( M_points[i] != nullptr ) << "invalid point added to element at index " << i;
 }
 
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
 std::ostream&
-GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::showMe( bool verbose, std::ostream& out ) const
+GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::showMe( bool verbose, std::ostream& out ) const
 {
     out << "----- BEGIN OF GeoND data ---" << std::endl
         << std::endl;
@@ -1174,8 +1181,8 @@ GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::showMe( bool verbose, std::ostream& 
     return out;
 }
 
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
-void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::swapPoints( const uint16_type& pt1, const uint16_type& pt2 )
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
+void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::swapPoints( const uint16_type& pt1, const uint16_type& pt2 )
 {
     point_type* tmp( M_points[pt1] );
     M_points[pt1] = M_points[pt2];
@@ -1185,8 +1192,8 @@ void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::swapPoints( const uint16_type& 
     // ublas::column( M_G, pt1 ).swap( ublas::column( M_G, pt2 ) );
 }
 
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
-void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::exchangePoints( const uint16_type otn[numPoints] )
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
+void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::exchangePoints( const uint16_type otn[numPoints] )
 {
     point_type* tmp[numPoints];
 
@@ -1202,16 +1209,19 @@ void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::exchangePoints( const uint16_ty
     }
 }
 
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
-bool GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::isValid() const
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
+bool GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::isValid() const
 {
     auto it = std::find( M_points.begin(), M_points.end(), nullptr );
     DCHECK( it == M_points.end() ) << "element with invalid point : " << this->id();
     return it == M_points.end();
 }
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
-void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::update()
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
+void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::update()
 {
+    if constexpr ( !UseMeasuresStorage )
+       return;
+
     gm_ptrtype gm = this->gm();
     if ( !gm.use_count() )
         gm = gm_ptrtype( new gm_type );
@@ -1225,205 +1235,76 @@ void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::update()
     this->updateWithCtx( thequad, ctx, ctxf );
 }
 
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
-void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::updateWithPc( typename gm_type::precompute_ptrtype const& pc,
-                                                       typename gm_type::faces_precompute_type& pcf,
-                                                       quad_meas_type const& thequad )
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
+template <typename QuadType, typename CtxType>
+typename GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::value_type
+GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::computeMeasureImpl( QuadType const& thequad,
+                                                                                    std::shared_ptr<CtxType>& ctx ) const
 {
-    updateMeasureImpl( pc->fePtr(), pc, thequad );
-    updateMeasureFaceImpl( pcf->fePtr(), pcf, thequad, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim>>::type() );
-}
-
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
-void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::updateWithPc1( typename gm1_type::precompute_ptrtype const& pc,
-                                                        typename gm1_type::faces_precompute_type& pcf,
-                                                        quad_meas1_type const& thequad )
-{
-    updateMeasureImpl( pc->fePtr(), pc, thequad );
-    updateMeasureFaceImpl( pcf->fePtr(), pcf, thequad, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim>>::type() );
-}
-
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
-template <typename QuadType, typename CtxType, typename CtxFaceType>
-void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::updateWithCtx( QuadType const& thequad,
-                                                        std::shared_ptr<CtxType>& ctx,
-                                                        std::shared_ptr<CtxFaceType>& ctxf ) const
-{
-    //updateMeasureImpl( thequad, ctx );
-    //updateMeasureFaceImpl( thequad, ctxf, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
-#if 0
-    if ( M_measures.find( GEOND_MEASURES::MEAS_ELEMENT ) == M_measures.end() )
-    {
-        //M_measures[GEOND_MEASURES::MEAS_ELEMENT].reserve( 1 );
-        M_measures[GEOND_MEASURES::MEAS_ELEMENT].resize( 1 );
-    }
-#endif
+    value_type meas = 0.;
     if constexpr ( CtxType::is_linear )
     {
-        M_measure = thequad.weightsSum() * ctx->J( 0 );
+        meas = thequad.weightsSum() * ctx->J( 0 );
     }
     else
     {
-        value_type meas = 0.;
         for ( int q = 0; q < thequad.nPoints(); ++q )
             meas += thequad.weight( q ) * ctx->J( q );
-        M_measure = meas;
     }
-#if 0
-    DVLOG(2) << "meas element " << this->id() << " : " << meas;
-    M_measures[GEOND_MEASURES::MEAS_ELEMENT][0] = meas;
+    return meas;
+}
 
-    if ( M_measures.find( GEOND_MEASURES::MEAS_FACES ) == M_measures.end() )
-    {
-        // must be resize before ctx because used into
-        //M_measures[GEOND_MEASURES::MEAS_FACES].reserve( numTopologicalFaces );
-        M_measures[GEOND_MEASURES::MEAS_FACES].resize( numTopologicalFaces );
-    }
-#endif
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
+template <typename QuadType, typename CtxFaceType>
+typename GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::value_type
+GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::computeFaceMeasureImpl( QuadType const& thequad,
+                                                                                        std::shared_ptr<CtxFaceType>& ctxf,
+                                                                                        uint16_type f ) const
+{
+    value_type measFace = 0.;
     if constexpr ( nDim == nRealDim )
     {
+        for ( int q = 0; q < thequad.nPointsOnFace( f ); ++q )
+            measFace += thequad.weight( f, q ) * ctxf->J( q ) * ctxf->normalNorm( q );
+    }
+    return measFace;
+}
 
-        for ( uint16_type f = 0; f < numTopologicalFaces; ++f )
+
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
+template <typename QuadType, typename CtxType, typename CtxFaceType>
+void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::updateWithCtx( QuadType const& thequad,
+                                                        std::shared_ptr<CtxType>& ctx,
+                                                        std::shared_ptr<CtxFaceType>& ctxf ) const
+{
+    if constexpr ( UseMeasuresStorage )
+    {
+        this->setMeasure( this->computeMeasureImpl( thequad,ctx ) );
+
+        if constexpr ( nDim == nRealDim )
         {
-            ctxf->update( dynamic_cast<typename CtxFaceType::element_type const&>( *this ), f );
-            //ctxf->template updateOnFace<vm::NORMAL|vm::KB|vm::JACOBIAN>( f, true );
-            value_type meas = 0.;
-            for ( int q = 0; q < thequad.nPointsOnFace( f ); ++q )
-                meas += thequad.weight( f, q ) * ctxf->J( q ) * ctxf->normalNorm( q );
-            M_face_measures[f] = meas;
-            //M_measures[GEOND_MEASURES::MEAS_FACES][f] = meas;
+            for ( uint16_type f = 0; f < numTopologicalFaces; ++f )
+            {
+                ctxf->update( dynamic_cast<typename CtxFaceType::element_type const&>( *this ), f );
+                this->setFaceMeasure( f, computeFaceMeasureImpl( thequad,ctxf, f ) );
+            }
         }
     }
 }
 
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
 template <typename CtxType, typename CtxFaceType>
-void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::updateWithCtx1( quad_meas1_type const& thequad,
+void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::updateWithCtx1( quad_meas1_type const& thequad,
                                                          std::shared_ptr<CtxType>& ctx,
                                                          std::shared_ptr<CtxFaceType>& ctxf ) const
 {
     updateWithCtx( thequad, ctx, ctxf );
-    //updateMeasureImpl( thequad, ctx );
-    //updateMeasureFaceImpl( thequad, ctxf, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
-}
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
-template <typename GmType, typename QuadType>
-void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::updateMeasureImpl( std::shared_ptr<GmType> gm,
-                                                            typename GmType::precompute_ptrtype const& pc,
-                                                            QuadType const& thequad )
-{
-    if ( M_measures.find( GEOND_MEASURES::MEAS_ELEMENT ) == M_measures.end() )
-    {
-        M_measures[GEOND_MEASURES::MEAS_ELEMENT].reserve( 1 );
-        M_measures[GEOND_MEASURES::MEAS_ELEMENT].resize( 1 );
-    }
-
-    auto ctx = gm->template context<vm::JACOBIAN>( *this, pc );
-    value_type meas = 0.;
-    for ( int q = 0; q < thequad.nPoints(); ++q )
-        meas += thequad.weight( q ) * ctx->J( q );
-    DVLOG( 2 ) << "meas element " << this->id() << " : " << meas;
-    M_measures[GEOND_MEASURES::MEAS_ELEMENT][0] = meas;
-}
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
-template <typename QuadType, typename CtxType>
-void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::updateMeasureImpl( QuadType const& thequad,
-                                                            std::shared_ptr<CtxType>& ctx ) const
-{
-    if ( M_measures.find( GEOND_MEASURES::MEAS_ELEMENT ) == M_measures.end() )
-    {
-        M_measures[GEOND_MEASURES::MEAS_ELEMENT].reserve( 1 );
-        M_measures[GEOND_MEASURES::MEAS_ELEMENT].resize( 1 );
-    }
-
-    value_type meas = 0.;
-    for ( int q = 0; q < thequad.nPoints(); ++q )
-        meas += thequad.weight( q ) * ctx->J( q );
-    DVLOG( 2 ) << "meas element " << this->id() << " : " << meas;
-    M_measures[GEOND_MEASURES::MEAS_ELEMENT][0] = meas;
 }
 
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
-template <typename GmType, typename QuadType>
-void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::updateMeasureFaceImpl( std::shared_ptr<GmType> gm,
-                                                                typename GmType::faces_precompute_type& pcf,
-                                                                QuadType const& thequad,
-                                                                mpl::bool_<true> )
-{
-    if ( M_measures.find( GEOND_MEASURES::MEAS_FACES ) == M_measures.end() )
-    {
-        // must be resize before ctx because used into
-        M_measures[GEOND_MEASURES::MEAS_FACES].reserve( numTopologicalFaces );
-        M_measures[GEOND_MEASURES::MEAS_FACES].resize( numTopologicalFaces );
-    }
-
-    auto ctx = gm->template context</*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN>( *this, pcf, 0 );
-    for ( int f = 0; f < numTopologicalFaces; ++f )
-    {
-        ctx->update( *this, f );
-        value_type meas = 0.;
-        for ( int q = 0; q < thequad.nPointsOnFace( f ); ++q )
-            meas += thequad.weight( f, q ) * ctx->J( q ) * ctx->normalNorm( q );
-        M_measures[GEOND_MEASURES::MEAS_FACES][f] = meas;
-    }
-}
-
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
-template <typename QuadType, typename CtxType>
-void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::updateMeasureFaceImpl( QuadType const& thequad,
-                                                                std::shared_ptr<CtxType>& ctx,
-                                                                mpl::bool_<true> ) const
-{
-    if ( M_measures.find( GEOND_MEASURES::MEAS_FACES ) == M_measures.end() )
-    {
-        // must be resize before ctx because used into
-        M_measures[GEOND_MEASURES::MEAS_FACES].reserve( numTopologicalFaces );
-        M_measures[GEOND_MEASURES::MEAS_FACES].resize( numTopologicalFaces );
-    }
-
-    for ( int f = 0; f < numTopologicalFaces; ++f )
-    {
-        ctx->update( dynamic_cast<typename CtxType::element_type const&>( *this ), f );
-        value_type meas = 0.;
-        for ( int q = 0; q < thequad.nPointsOnFace( f ); ++q )
-            meas += thequad.weight( f, q ) * ctx->J( q ) * ctx->normalNorm( q );
-        M_measures[GEOND_MEASURES::MEAS_FACES][f] = meas;
-    }
-}
-
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
-template <typename GmType, typename QuadType>
-void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::updateMeasureFaceImpl( std::shared_ptr<GmType> gm,
-                                                                typename GmType::faces_precompute_type& pcf,
-                                                                QuadType const& thequad,
-                                                                mpl::bool_<false> )
-{
-    // need because M_measurefaces is used in Geomap::Context
-    if ( M_measures.find( GEOND_MEASURES::MEAS_FACES ) == M_measures.end() )
-    {
-        M_measures[GEOND_MEASURES::MEAS_FACES].reserve( numTopologicalFaces );
-        M_measures[GEOND_MEASURES::MEAS_FACES].resize( numTopologicalFaces );
-    }
-}
-
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
-template <typename QuadType, typename CtxType>
-void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE>::updateMeasureFaceImpl( QuadType const& thequad,
-                                                                std::shared_ptr<CtxType>& ctx,
-                                                                mpl::bool_<false> ) const
-{
-    // need because M_measurefaces is used in Geomap::Context
-    if ( M_measures.find( GEOND_MEASURES::MEAS_FACES ) == M_measures.end() )
-    {
-        M_measures[GEOND_MEASURES::MEAS_FACES].reserve( numTopologicalFaces );
-        M_measures[GEOND_MEASURES::MEAS_FACES].resize( numTopologicalFaces );
-    }
-}
-
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
 inline FEELPP_DEPRECATED
     DebugStream&
-    operator<<( DebugStream& __os, GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE> const& __n )
+operator<<( DebugStream& __os, GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE,UseMeasuresStorage> const& __n )
 {
     if ( __os.doPrint() )
     {
@@ -1437,16 +1318,16 @@ inline FEELPP_DEPRECATED
     return __os;
 }
 
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
 inline NdebugStream& FEELPP_DEPRECATED
-operator<<( NdebugStream& __os, GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE> const& __n )
+operator<<( NdebugStream& __os, GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage> const& __n )
 {
     return __os;
 }
 
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE>
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
 inline std::ostream&
-operator<<( std::ostream& __os, GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE> const& __n )
+operator<<( std::ostream& __os, GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE,UseMeasuresStorage> const& __n )
 {
     return __n.showMe( true, __os );
 }

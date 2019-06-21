@@ -245,7 +245,8 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
             if ( neighborProcessId != invalid_rank_type_value )
                 e.addNeighborPartitionId( neighborProcessId );
 
-            auto const& eltInserted = this->addElement( e, true ); // e.id() is defined by Feel++
+            auto eit = this->addElement( e, true ); // e.id() is defined by Feel++
+            auto const& eltInserted = eit.first->second;
             idStructuredMeshToFeelMesh.insert( std::make_pair(eid,eltInserted.id()));
             }
             inPoly=false;
@@ -313,7 +314,8 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
                 e.setPoint( k, this->point( ptid[k]  ) );
             }
 
-            auto const& eltInserted = this->addElement( e, true ); // e.id() is defined by Feel++
+            auto eit = this->addElement( e, true ); // e.id() is defined by Feel++
+            auto const& eltInserted = eit.first->second;
 
             idStructuredMeshToFeelMesh.insert( std::make_pair(eid,eltInserted.id()));
             mapGhostElt.insert( std::make_pair( eid,boost::make_tuple( idStructuredMeshToFeelMesh[eid], partIdGhost ) ) );
