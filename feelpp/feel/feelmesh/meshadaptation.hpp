@@ -59,6 +59,9 @@
 #include <fstream>
 
 #if defined( FEELPP_HAS_GMSH_H )
+#if defined( FEELPP_HAS_GMSH_API )
+#include <gmsh.h>
+#else
 #include <Gmsh.h>
 #include <GModel.h>
 #include <Context.h>
@@ -68,6 +71,7 @@
 #include <Field.h>
 #include <PView.h>
 #include <PViewData.h>
+#endif
 #endif
 
 namespace Feel
@@ -754,7 +758,7 @@ namespace Feel
             }
         }
 
-        if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  &&  Environment::worldComm().globalRank() == Environment::worldComm().masterRank() ) )
+        if ( Environment::worldComm().isMasterRank() )
             {
                 /// *********** GMSH call to build new mesh ********** ///
 #if FEELPP_HAS_GMSH
@@ -762,6 +766,65 @@ namespace Feel
                 //#if 0
 
                 std::string geofileNameWE = (boost::format( "%1%.geo" ) % geofileName).str();
+
+#if defined( FEELPP_HAS_GMSH_API )
+                std::string gmodelName = "feelpp_gmsh_model";
+                gmsh::model::add( gmodelName );
+                gmsh::open( geofileNameWE );
+                //gmsh::option::setNumber( "Mesh.Algorithm", (double)5. );
+                for (int i=0; i<nbPosfiles; i++)
+                    gmsh::merge( posfiles[i] );
+
+                std::vector<int> viewTags;
+                gmsh::view::getTags(viewTags);
+
+                std::vector<double> idList;
+                for ( int i = 0; i<viewTags.size() ;++i )
+                {
+#if 0
+                    int _tag = viewTags[i];
+                    std::vector<std::string> dataType;
+                    std::vector<int> numElements;
+                    std::vector<std::vector<double> > data;
+                    gmsh::view::getListData( _tag,dataType,numElements,data );
+                    for ( std::string aa : dataType )
+                        std::cout << "dataType="<<aa<<"\n";
+#endif
+                    int id = gmsh::model::mesh::field::add( "PostView" );
+                    gmsh::model::mesh::field::setNumber( id, "IView", (double)i );
+                    idList.push_back((double)id);
+                }
+
+                int id = -1;
+                if (aniso)
+                    id = gmsh::model::mesh::field::add( "MinAniso" );
+                else
+                    id = gmsh::model::mesh::field::add( "Min" );
+
+                gmsh::model::mesh::field::setNumbers( id, "FieldsList", idList );
+                gmsh::model::mesh::field::setAsBackgroundMesh( id );
+
+                 /// Algo for remeshing
+                if (aniso)
+                {
+                    gmsh::option::setNumber( "Mesh.Algorithm", (double)GMSH_ALGORITHM_2D::BAMG );
+                    if (Dim == 3)
+                        gmsh::option::setNumber( "Mesh.Algorithm3D", (double)GMSH_ALGORITHM_3D::MMG3D );
+                }
+                else
+                {
+                    gmsh::option::setNumber( "Mesh.Algorithm", (double)GMSH_ALGORITHM_2D::MESHADAPT );
+                    if (Dim == 3)
+                        gmsh::option::setNumber( "Mesh.Algorithm3D", (double)GMSH_ALGORITHM_3D::DELAUNAY );
+                }
+                //newGmshModel->deleteMesh(); //Delete current mesh
+                gmsh::model::mesh::generate(Dim);
+                LOG(INFO) << "[MeshAdaptation] New mesh built : " << newMeshName << "\n";
+                Feel::cout << "[MeshAdaptation] New mesh built : " << newMeshName << std::endl;
+                gmsh::write( newMeshName );
+
+                gmsh::model::remove();
+#else
 
                 CTX _backup = *(CTX::instance());
                 Msg::SetVerbosity( ioption("gmsh.verbosity") );
@@ -869,6 +932,7 @@ namespace Feel
                 delete newGmshModel;
                 // copy context (in order to allow multiple calls)
                 *(CTX::instance()) = _backup ;
+#endif
 
 #else
                 std::string newAccessGeofile = createAdaptedGeo(geofile, name, posfiles, aniso);

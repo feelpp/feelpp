@@ -27,6 +27,24 @@
 #include <feel/feelcore/feel.hpp>
 
 #if defined( FEELPP_HAS_GMSH_H )
+
+#if defined( FEELPP_HAS_GMSH_API )
+#include <gmsh.h>
+
+#define GMSH_VERSION_LESS_THAN(major,minor,subminor)                   \
+    ((GMSH_API_VERSION_MAJOR < (major) ||             \
+      (GMSH_API_VERSION_MAJOR == (major) && (GMSH_API_VERSION_MINOR < (minor)))) ? 1 : 0)
+
+#define GMSH_VERSION_GREATER_THAN(major,minor,subminor)                \
+    ((GMSH_API_VERSION_MAJOR > (major) ||             \
+      (GMSH_API_VERSION_MAJOR == (major) && (GMSH_API_VERSION_MINOR > (minor)))) ? 1 : 0)
+
+#define GMSH_VERSION_GREATER_OR_EQUAL_THAN(major,minor,subminor)       \
+    ((GMSH_API_VERSION_MAJOR > (major) ||             \
+      ((GMSH_API_VERSION_MAJOR == (major)) && ((GMSH_API_VERSION_MINOR >= (minor))))) ? 1 : 0)
+
+#else
+
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmacro-redefined"
@@ -47,8 +65,6 @@
 #pragma clang diagnostic pop
 #endif
 
-
-
 #define GMSH_VERSION_LESS_THAN(major,minor,subminor)                   \
     ((GMSH_MAJOR_VERSION < (major) ||                                  \
       (GMSH_MAJOR_VERSION == (major) && (GMSH_MINOR_VERSION < (minor) || \
@@ -66,6 +82,10 @@
       ((GMSH_MAJOR_VERSION == (major)) && ((GMSH_MINOR_VERSION > (minor)) || \
                                          ((GMSH_MINOR_VERSION == (minor)) && \
                                           ( GMSH_PATCH_VERSION >= (subminor))) ))) ? 1 : 0)
+
+#endif
+
+
 #else
 
 #define GMSH_VERSION_LESS_THAN(major,minor,subminor)
