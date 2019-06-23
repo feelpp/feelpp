@@ -55,11 +55,21 @@ public :
 private :
     std::vector<crbmodel_ptrtype> M_models;
     std::vector<crb_ptrtype> M_crbs;
+    std::string M_prefix;
+    int M_nbLevels;
+    bool M_useRbInEimMuSelect;
+    bool M_useRbInEimBasis;
+    int M_eimFreq;
 }; //class SER
 
 
 template <typename CRBType>
 SER<CRBType>::SER( crb_ptrtype crb, crbmodel_ptrtype crbmodel )
+    : M_prefix(crbmodel->prefix()),
+      M_nbLevels(ioption( _prefix=M_prefix,_name="ser.nb-levels" )),
+      M_useRbInEimMuSelect(boption(_prefix=M_prefix,_name="ser.use-rb-in-eim-mu-selection")),
+      M_useRbInEimBasis(boption(_prefix=M_prefix,_name="ser.use-rb-in-eim-basis-build")),
+      M_eimFreq(ioption(_prefix=M_prefix,_name="ser.eim-frequency"))
 {
     M_models.push_back( crbmodel );
     M_crbs.push_back( crb );
@@ -71,9 +81,8 @@ void
 SER<CRBType>::run()
 {
     bool do_offline_eim = false;
-    int nb_levels = ioption( _name="ser.nb-levels" );
 
-    for( int ser_level=0; ser_level < nb_levels; ++ser_level )
+    for( int ser_level=0; ser_level < M_nbLevels; ++ser_level )
     {
         if ( ser_level > 0 ) // create new crb and model
         {
@@ -117,7 +126,7 @@ SER<CRBType>::run()
             toc("SER - crb offline", FLAGS_v>0);
 
             crb->setRebuild( false ); //do not rebuild since co-build is not finished
-            int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection") || boption(_name="ser.use-rb-in-eim-basis-build");
+            int use_rb = M_useRbInEimMuSelect || M_useRbInEimBasis;
 
             tic();
             if( do_offline_eim && crb->offlineStep() ) //Continue to enrich EIM functionspace only is RB is not complete
@@ -164,7 +173,7 @@ SER<CRBType>::run()
                 for ( auto const& deim : deim_vector )
                 {
                     deim->setRestart( false );
-                    deim->setSerFrequency( ioption(_name="ser.eim-frequency") );
+                    deim->setSerFrequency( M_eimFreq );
                     deim->setSerUseRB( use_rb );
 
                     if ( use_rb )
@@ -181,7 +190,7 @@ SER<CRBType>::run()
                 for ( auto const& mdeim : mdeim_vector )
                 {
                     mdeim->setRestart( false );
-                    mdeim->setSerFrequency( ioption(_name="ser.eim-frequency") );
+                    mdeim->setSerFrequency( M_eimFreq );
                     mdeim->setSerUseRB( use_rb );
 
                     if ( use_rb )
@@ -201,7 +210,7 @@ SER<CRBType>::run()
 
         } while( crb->offlineStep() );
 
-    } // for( int ser_level=0; ser_level < nb_levels; ++ser_level )
+    } // for( int ser_level=0; ser_level < nbLevels; ++ser_level )
 
 
 } // run
