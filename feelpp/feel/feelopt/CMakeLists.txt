@@ -22,10 +22,18 @@
 #
 #
 
-if (FEELPP_HAS_NLOPT )
-  set(SRC glpk.cpp nlopt.cpp enums.cpp)
-  feel_append_src(feelopt "${SRC}")
+if (FEELPP_HAS_NLOPT)
+  set(SRC_NLOPT nlopt.cpp enums.cpp)
 endif()
+
+if (FEELPP_HAS_GLPK)
+  set(SRC_GLPK glpk.cpp )
+endif()
+
+set(SRC ${SRC_NLOPT} ${SRC_GLPK})
+
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+feel_append_src(feelalg "${SRC};${HDR}")
 
 if ( 0 )
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
