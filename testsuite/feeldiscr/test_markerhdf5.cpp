@@ -51,7 +51,7 @@ run()
         );
     /// Load mesh given by gmsh.filename
     std::cout << "Check with " << p << std::endl;
-    auto mesh1 = loadMesh(_mesh = new mesh_type, _filename=p.string());
+    auto mesh1 = loadMesh(_mesh = new mesh_type, _filename=p.string(),_savehdf5=true);
     checkMarker(mesh1);
     /// Load the generated msh file
     p.replace_extension("msh");

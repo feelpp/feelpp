@@ -78,7 +78,7 @@ int main(int argc, char**argv )
         BS->computeFE(mu);
         auto V0 = BS->potentialFE();
         auto B0 = BS->magneticFluxFE();
-        mu = BS->paramFromOption();
+        mu = BS->paramFromProperties();
         BS->computeFE(mu);
 
         boost::format fmter("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5%\n");
@@ -87,17 +87,21 @@ int main(int argc, char**argv )
             file << fmter % "M" % "errV" % "relErrV" % "errB" % "relErrB";
 
         int size = ( BS->dimension() < BS->crbDimension() ) ? BS->dimension() : BS->crbDimension();
-        for( int m = 1; m < size; ++m)
+        std::vector<std::vector<double> > errs(size);
+        for( int m = 1; m <= size; ++m)
         {
             Feel::cout << "M = " << m << std::endl;
             BS->online(mu, m);
             BS->expand(m);
-            auto err = BS->computeErrors();
+            errs[m] = BS->computeErrors();
             if( Environment::isMasterRank() )
-                file << fmter % m % err[0] % err[1] % err[2] % err[3];
+                file << fmter % m % errs[m][0] % errs[m][1] % errs[m][2] % errs[m][3];
         }
 
         file.close();
+        Feel::cout << fmter % "M" % "errV" % "relErrV" % "errB" % "relErrB";
+        for( int m = 1; m <= size; ++m)
+            Feel::cout << fmter % m % errs[m][0] % errs[m][1] % errs[m][2] % errs[m][3];
 
         auto alpha = BS->alpha(mu);
         auto V = BS->potential();
