@@ -92,7 +92,7 @@ public:
             typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<2> >,
                               mpl::identity<GeoElement2D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim,IndexT>, T, IndexT, true> >,
             typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<1> >,
-                              mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim, IndexT>, T, IndexT, true> >,
+                              mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim, IndexT>, T, IndexT, true, true> >,
                               mpl::identity<GeoElement0D<ElementType::nRealDim, SubFaceOfNone<ElementType::nDim, IndexT>/*ElementType*/, T, IndexT> > >::type>::type>::type::type element_type;
 
 
