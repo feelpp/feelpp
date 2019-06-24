@@ -55,7 +55,6 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleAll()
     this->modelProperties().materials().setParameterValues( M_paramValues );
     //this->modelProperties().boundaryConditions().setParameterValues( paramValues );
     this->modelProperties().postProcess().setParameterValues( M_paramValues );
-    tic();
     M_A_cst->zero();
     M_F->zero();
     tic();
@@ -69,7 +68,7 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleAll()
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::copyCstPart()
 {
-    this->setVectorToZero();
+    // this->setVectorToZero();
 
 #ifndef USE_SAME_MAT
     Feel::cout << tc::red << "Warning use of copyCstPart" << std::endl;

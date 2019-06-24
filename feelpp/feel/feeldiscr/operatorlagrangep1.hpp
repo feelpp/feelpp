@@ -700,12 +700,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
                     {
                         point_type __pt( ptId, M_gmc->xReal( this->localDof( ptIdInRef ) ) );
                         __pt.setProcessIdInPartition( procId );
-#if 0 // TODO : to revert when new addPoint return will be merged
                         ptIterator = M_mesh->addPoint( __pt ).first;
-#else
-                        auto ptInserted = M_mesh->addPoint( __pt );
-                        ptIterator = M_mesh->pointIterator( ptInserted.id() );
-#endif
                     }
                     else if ( ptIterator->second.processId() != invalid_v<rank_type> )
                         isConnectedToActiveAnElement = true;

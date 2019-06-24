@@ -221,7 +221,7 @@ endif()
 
 
 # MongoCXX
-option( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" ON )
+option( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if ( FEELPP_ENABLE_MONGOCXX )
   feelppContribPrepare( mongocxx )
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )

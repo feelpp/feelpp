@@ -7,7 +7,7 @@
         "omega":
         {
             "name": "copper",
-            "physics": "thermoelectric",
+            "physics": ["thermic","electric"],
             "sigmaKey": "sigma",
             "kKey": "k"
         }
@@ -78,6 +78,15 @@
                     "expr2":"h*Tw:h:Tw"
                 }
             }
+        }
+    },
+    "Outputs":
+    {
+        "average_temp":
+        {
+            "type":"averageTemp",
+            "range":"omega",
+            "topodim":3
         }
     }
 }
