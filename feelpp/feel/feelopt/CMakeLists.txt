@@ -33,7 +33,7 @@ endif()
 set(SRC ${SRC_NLOPT} ${SRC_GLPK})
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
-feel_append_src(feelalg "${SRC};${HDR}")
+feel_append_src(feelopt "${SRC};${HDR}")
 
 if ( 0 )
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
