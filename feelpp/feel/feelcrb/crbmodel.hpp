@@ -230,18 +230,28 @@ public:
         M_Mqm(),
         M_Fqm(),
         M_model( model ),
+        M_prefix( model->prefix() ),
         M_is_initialized( false ),
         M_backend( (stage==crb::stage::offline)?backend():nullptr ),
         M_backend_primal( (stage==crb::stage::offline)?backend( _name="backend-primal"):nullptr ),
         M_backend_dual( (stage==crb::stage::offline)?backend( _name="backend-dual"):nullptr ),
         M_backend_l2( (stage==crb::stage::offline)?backend( _name="backend-l2"):nullptr ),
-        M_fixedpointUseAitken( boption(_name="crb.fixedpoint.aitken") ),
+        M_fixedpointUseAitken( boption(_prefix=M_prefix,_name="crb.fixedpoint.aitken") ),
         M_alreadyCountAffineDecompositionTerms( false ),
-        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
+        M_isSteadyModel( !model_type::is_time_dependent || boption(_prefix=M_prefix,_name="crb.is-model-executed-in-steady-mode") ),
         M_numberOfTimeStep( 1 ),
         M_has_eim( false ),
-        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
-
+        M_useSER( ioption(_prefix=M_prefix,_name="ser.rb-frequency") || ioption(_prefix=M_prefix,_name="ser.eim-frequency") ),
+        M_usePrimalPc(boption(_prefix=M_prefix,_name="crb.use-primal-pc")),
+        M_useSymmMat(boption(_prefix=M_prefix,_name="crb.use-symmetric-matrix")),
+        M_stockMatrices(boption(_prefix=M_prefix,_name="crb.stock-matrices")),
+        M_serErrorEstimation(boption(_prefix=M_prefix,_name="ser.error-estimation")),
+        M_crbUseNewton(boption(_prefix=M_prefix,_name="crb.use-newton")),
+        M_fixedpointMaxIt(ioption(_prefix=M_prefix,_name="crb.fixedpoint.maxit")),
+        M_fixedpointIncrTol(doption(_prefix=M_prefix,_name="crb.fixedpoint.increment-tol")),
+        M_fixedpointVerbose(boption(_prefix=M_prefix,_name="crb.fixedpoint.verbose")),
+        M_outputIndex(ioption(_prefix=M_prefix,_name="crb.output-index")),
+        M_useLinearModel(boption(_prefix=M_prefix,_name="crb.use-linear-model"))
         {
             if ( stage == crb::stage::offline )
                 this->init();
@@ -312,7 +322,7 @@ public:
 
         M_has_eim=false;
 
-        if( boption(_name="crb.use-primal-pc") )
+        if( M_usePrimalPc )
         {
             M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                                      _backend= M_backend_primal,
@@ -349,8 +359,8 @@ public:
         M_u = Xh->element();
         M_v = Xh->element();
 
-        bool symmetric = boption(_name="crb.use-symmetric-matrix");
-        bool stock = boption(_name="crb.stock-matrices");
+        bool symmetric = M_useSymmMat;
+        bool stock = M_stockMatrices;
 
         // Access to eim eventually built in initModel
         M_has_eim = this->scalarContinuousEim().size() > 0 || this->scalarDiscontinuousEim().size() > 0 || M_model->hasDeim();
@@ -435,8 +445,9 @@ public:
      */
     //@{
 
+    std::string const& prefix() const { return M_prefix; }
 
-    virtual bool useMonolithicRbSpace() { return true; }
+    virtual bool useMonolithicRbSpace() { return !model_type::by_block; }
 
     //!
     //! world communicator
@@ -988,7 +999,7 @@ public:
     {
         auto all_beta = this->computeBetaQm( mu , time , only_time_dependent_terms );
         offline_merge_type offline_merge;
-        if( boption(_name="crb.stock-matrices") )
+        if( M_stockMatrices )
             offline_merge = offlineMerge( all_beta , only_time_dependent_terms );
         else
             offline_merge = offlineMergeOnFly( all_beta, only_time_dependent_terms );
@@ -1005,7 +1016,7 @@ public:
 
         offline_merge_type offline_merge;
 
-        if( boption(_name="crb.stock-matrices") )
+        if( M_stockMatrices )
             offline_merge = offlineMerge( all_beta , only_time_dependent_terms );
         else
             offline_merge = offlineMergeOnFly( all_beta, only_time_dependent_terms );
@@ -1020,7 +1031,7 @@ public:
 #endif
         auto all_beta = this->computeBetaQm( urb, mu , time , only_time_dependent_terms );
         offline_merge_type offline_merge;
-        if( boption(_name="crb.stock-matrices") )
+        if( M_stockMatrices )
             offline_merge = offlineMerge( all_beta , only_time_dependent_terms );
         else
             offline_merge = offlineMergeOnFly( all_beta, only_time_dependent_terms );
@@ -1245,15 +1256,15 @@ public:
     {
         return M_model->mdeimVector();
     }
-    void updateRbInDeim()
+    void updateRbInDeim( std::vector<std::vector<int>> subN={} )
     {
         auto deim_vector = this->deimVector();
         auto mdeim_vector = this->mdeimVector();
 
         for ( auto deim : deim_vector )
-            deim->updateRb( rBFunctionSpace() );
+            deim->updateRb( rBFunctionSpace(), subN );
         for ( auto mdeim : mdeim_vector )
-            mdeim->updateRb( rBFunctionSpace() );
+            mdeim->updateRb( rBFunctionSpace(), subN );
     }
 
     struct ComputeNormL2InCompositeCase
@@ -1865,7 +1876,7 @@ public:
         if( Aq.size() == 0 )
         {
             boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
-            if( boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+            if( M_serErrorEstimation && M_crbUseNewton )
             {
                 auto RF = M_model->computePicardAffineDecomposition();
                 M_RF_Aqm = RF.template get<1>();
@@ -2009,7 +2020,7 @@ public:
         {
             boost::tie( M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
 
-            if( boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+            if( M_serErrorEstimation && M_crbUseNewton )
             {
                 auto RF = M_model->computePicardAffineDecomposition();
                 M_RF_Aqm = RF.template get<0>();
@@ -2158,7 +2169,7 @@ public:
      */
     sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false )
     {
-        if( boption(_name="crb.stock-matrices") )
+        if( M_stockMatrices )
         {
             //in this case matrices have already been stocked
             if ( transpose )
@@ -2217,7 +2228,7 @@ public:
      */
     const sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false ) const
     {
-        if( boption(_name="crb.stock-matrices") )
+        if( M_stockMatrices )
         {
             //in this case matrices have already been stocked
             if ( transpose )
@@ -2267,7 +2278,7 @@ public:
      */
     sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false )
     {
-        if( boption(_name="crb.stock-matrices") )
+        if( M_stockMatrices )
         {
             //in this case matrices have already been stocked
             if ( transpose )
@@ -2331,7 +2342,7 @@ public:
      */
     value_type linearDecompositionAqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
     {
-        bool stock = boption(_name="crb.stock-matrices");
+        bool stock = M_stockMatrices;
         if( stock )
         {
             //in this case matrices have already been stocked
@@ -2355,7 +2366,7 @@ public:
      */
     value_type Aqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
     {
-        if( boption(_name="crb.stock-matrices") )
+        if( M_stockMatrices )
         {
             //in this case matrices have already been stocked
             return M_Aqm[q][m]->energy( xi_j, xi_i, transpose );
@@ -2402,7 +2413,7 @@ public:
      */
     value_type Mqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
     {
-        if( boption(_name="crb.stock-matrices") )
+        if( M_stockMatrices )
         {
             //in this case matrices have already been stocked
             //M_Mqm[q][m]->printMatlab("mass_matrix.m");
@@ -2451,7 +2462,7 @@ public:
      */
     vector_ptrtype Fqm( uint16_type l, uint16_type q, int m ) const
     {
-        if( boption(_name="crb.stock-matrices") )
+        if( M_stockMatrices )
         {
             return M_Fqm[l][q][m];
         }
@@ -2484,7 +2495,7 @@ public:
 
     value_type Jqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
     {
-        if( boption(_name="crb.stock-matrices") )
+        if( M_stockMatrices )
         {
             //in this case matrices have already been stocked
             if ( M_Jqm.empty() )
@@ -2520,7 +2531,7 @@ public:
 
         value_type result=0;
 
-        if( boption(_name="crb.stock-matrices") )
+        if( M_stockMatrices )
         {
             result = inner_product( *M_Fqm[l][q][m] , xi );
         }
@@ -2568,7 +2579,7 @@ public:
     {
         value_type result=0;
 
-        if( boption(_name="crb.stock-matrices") )
+        if( M_stockMatrices )
         {
             result = inner_product( *M_Fqm[l][q][m] , xi );
         }
@@ -2815,6 +2826,12 @@ public:
         return is_linear ;
     }
 
+    virtual bool isTrilinear() const
+        {return false;}
+
+    bool hasZeroMeanPressure()
+        { return this->M_model->hasZeroMeanPressure(); }
+
     void initializationField( element_ptrtype& initial_field,parameter_type const& mu )
     {
         return initializationField( initial_field,mu,mpl::bool_<model_type::is_time_dependent>() );
@@ -2837,6 +2854,7 @@ public:
 
 protected:
 
+    std::string M_prefix;
     int M_level = 0;
 
     //! affine decomposition terms for the left hand side
@@ -2866,7 +2884,7 @@ protected:
     std::vector< std::vector< std::vector<vector_ptrtype> > > M_RF_Fqm;
 
 
-private:
+protected:
 
 
     bool M_is_initialized = false;
@@ -2929,6 +2947,16 @@ private:
     bool M_has_eim;
     bool M_useSER;
 
+    bool M_usePrimalPc;
+    bool M_useSymmMat;
+    bool M_stockMatrices;
+    bool M_serErrorEstimation;
+    bool M_crbUseNewton;
+    int M_fixedpointMaxIt;
+    double M_fixedpointIncrTol;
+    bool M_fixedpointVerbose;
+    int M_outputIndex;
+    bool M_useLinearModel;
 };
 
 
@@ -3495,7 +3523,7 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
             A->addMatrix( bdf_coeff, M );
             Rhs->addVector( *vec_bdf_poly, *M );
         }
-        if( boption(_name="crb.use-primal-pc") )
+        if( M_usePrimalPc )
         {
             M_preconditioner_primal->setMatrix( A );
             M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
@@ -3583,7 +3611,7 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
                 F[0]->addVector( *vec_bdf_poly, *M );
             }
             uold=u;
-            if( boption(_name="crb.use-primal-pc") )
+            if( M_usePrimalPc )
             {
                 M_preconditioner_primal->setMatrix( A );
                 M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
@@ -3618,9 +3646,9 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
     sparse_matrix_ptrtype A;
     std::vector<vector_ptrtype> F;
 
-    int max_fixedpoint_iterations = ioption(_name="crb.fixedpoint.maxit");
-    double increment_fixedpoint_tol = doption(_name="crb.fixedpoint.increment-tol");
-    bool fixedPointVerbose = boption(_name="crb.fixedpoint.verbose");
+    int max_fixedpoint_iterations = M_fixedpointMaxIt;
+    double increment_fixedpoint_tol = M_fixedpointIncrTol;
+    bool fixedPointVerbose = M_fixedpointVerbose;
     double norm=0;
     int iter=0;
 
@@ -3630,14 +3658,21 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
         if ( is_linear )
         {
             boost::tie(boost::tuples::ignore, A, F) = this->update( mu );
-            if( boption(_name="crb.use-primal-pc") )
+            if( M_usePrimalPc )
             {
                 M_preconditioner_primal->setMatrix( A );
                 M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
             }
             else
             {
-                backend( _name="backend-primal")->solve( _matrix=A , _solution=u, _rhs=F[0] );
+                auto ret = M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] );
+                if  ( !ret.template get<0>() )
+                {
+                    LOG(INFO)<<"[CRB] WARNING : we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
+                    Feel::cout << "Rebuild backend primal\n";
+                    M_backend_primal = backend(_name="backend-primal", _rebuild=true );
+                    M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] );
+                }
             }
         }
         else
@@ -3655,7 +3690,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
 
                 boost::tie(boost::tuples::ignore, A, F) = this->update( mu , u );
 
-                if( boption(_name="crb.use-primal-pc") )
+                if( M_usePrimalPc )
                 {
                     M_preconditioner_primal->setMatrix( A );
                     M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
@@ -3746,7 +3781,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                 Rhs->addVector( *vec_bdf_poly, *M );
             }
             uold = u;
-            if( boption(_name="crb.use-primal-pc") )
+            if( M_usePrimalPc )
             {
                 M_preconditioner_primal->setMatrix( A );
                 M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
@@ -3788,7 +3823,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionNewton( parameter_type
     //M_backend_primal->nlSolver()->setType( TRUST_REGION );
 
     auto solution = this->functionSpace()->element();
-    if( boption(_name="crb.use-primal-pc") )
+    if( M_usePrimalPc )
     {
         M_preconditioner_primal->setMatrix( J );
         M_backend_primal->nlSolve(_jacobian=J, _solution=solution, _residual=R,_prec=M_preconditioner_primal);
@@ -3867,7 +3902,7 @@ template<typename TruthModelType>
 typename CRBModel<TruthModelType>::element_type
 CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type const& mu )
 {
-    int output_index = ioption(_name="crb.output-index");
+    int output_index = M_outputIndex;
 
     auto Xh= this->functionSpace();
 
@@ -3947,7 +3982,7 @@ CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type cons
             Rhs->scale( -1 );
         }
 
-        if( boption("crb.use-symmetric-matrix") )
+        if( M_useSymmMat )
             Adu = A;
         else
             A->transpose( Adu );
@@ -3967,7 +4002,7 @@ template<typename TruthModelType>
 typename CRBModel<TruthModelType>::element_type
 CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu )
 {
-    int output_index = ioption(_name="crb.output-index");
+    int output_index = M_outputIndex;
 
     auto Xh= this->functionSpace();
     auto udu = Xh->element();
@@ -3976,9 +4011,9 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     std::vector<vector_ptrtype> F;
     vector_ptrtype Rhs = M_backend_dual->newVector( Xh );
 
-    int max_fixedpoint_iterations  = ioption(_name="crb.fixedpoint.maxit");
-    double increment_fixedpoint_tol  = doption(_name="crb.fixedpoint.increment-tol");
-    bool fixedPointVerbose = boption(_name="crb.fixedpoint.verbose");
+    int max_fixedpoint_iterations  = M_fixedpointMaxIt;
+    double increment_fixedpoint_tol  = M_fixedpointIncrTol;
+    bool fixedPointVerbose = M_fixedpointVerbose;
 
     double norm=0;
     int iter=0;
@@ -3992,7 +4027,7 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
             *Rhs = *F[output_index];
             Rhs->scale( -1 );
 
-            if( boption("crb.use-symmetric-matrix") )
+            if( M_useSymmMat )
                 Adu = A;
             else
             {
@@ -4117,7 +4152,7 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
                 Rhs->scale( -1 );
             }
 
-            if( boption("crb.use-symmetric-matrix") )
+            if( M_useSymmMat )
                 Adu = A;
             else
                 A->transpose( Adu );
@@ -4126,7 +4161,7 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
             M_preconditioner_dual->setMatrix( Adu );
             M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual);
 
-            if( boption(_name="crb.use-linear-model") )
+            if( M_useLinearModel )
                 norm = 0;
             else
                 norm = this->computeNormL2( uold , udu );
