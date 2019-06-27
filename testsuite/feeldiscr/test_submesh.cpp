@@ -463,6 +463,18 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh_view, T, dim2_types )
             BOOST_CHECK_CLOSE( measureParent, measureSubmesh2, 1e-10  );
         BOOST_CHECK_CLOSE( measureParent, measureInitial[k], 1e-10  );
     }
+
+    // check meshesWithNodesShared data
+    int nMeshWithNodeShared = 2 + submesh.size();
+    BOOST_CHECK_EQUAL( mesh->meshesWithNodesShared().size(), nMeshWithNodeShared );
+    for ( int k=0;k< submesh.size();++k )
+        BOOST_CHECK_EQUAL( submesh[k]->meshesWithNodesShared().size(), nMeshWithNodeShared );
+    BOOST_CHECK_EQUAL( submeshFace->meshesWithNodesShared().size(), nMeshWithNodeShared );
+    submeshFace->clear();
+    --nMeshWithNodeShared;
+    BOOST_CHECK_EQUAL( mesh->meshesWithNodesShared().size(), nMeshWithNodeShared );
+    for ( int k=0;k< submesh.size();++k )
+        BOOST_CHECK_EQUAL( submesh[k]->meshesWithNodesShared().size(), nMeshWithNodeShared );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
