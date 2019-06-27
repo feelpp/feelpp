@@ -31,6 +31,7 @@
 #define BOOST_TEST_MODULE submesh testsuite
 #include <feel/feelcore/testsuite.hpp>
 
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/geotool.hpp>
