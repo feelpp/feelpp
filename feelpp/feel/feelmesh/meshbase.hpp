@@ -802,6 +802,8 @@ private:
     {
         for ( std::weak_ptr<MeshBase<IndexT>> m : M_meshesWithNodesShared )
         {
+            if ( m.expired() )
+                continue;
             auto otherPtr = m.lock();
             auto foundOther = std::find_if(ret.begin(), ret.end(),
                                            [&otherPtr](auto const& ptr) { return otherPtr == ptr; });
@@ -812,6 +814,9 @@ private:
             }
         }
     }
+
+    //! remove a mesh which has nodes shared with the current mesh (typically when the mesh is deleted)
+    void removeMeshWithNodesShared( MeshBase<IndexT> * m );
 
 protected:
 
