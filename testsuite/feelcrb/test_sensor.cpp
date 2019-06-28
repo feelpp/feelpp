@@ -22,3 +22,50 @@
 //! @copyright 2019 Feel++ Consortium
 //!
 
+
+#define BOOST_TEST_MODULE test_sensor
+#include <feel/feelcore/testsuite.hpp>
+
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelfilters/unitsegment.hpp>
+#include <feel/feelvf/vf.hpp>
+#include <feel/feelpython/pyexpr.hpp>
+#include <feel/feelfilters/geotool.hpp>
+#include <feel/feelcrb/sensordesc.hpp>
+
+/** use Feel namespace */
+using namespace Feel;
+
+inline
+Feel::po::options_description
+makeOptions()
+{
+    Feel::po::options_description options("test_sensor options");
+    options.add_options()
+        ("sensor.filename", Feel::po::value<std::string>()->default_value( "sensordesc.csv" ), "file describing sensor network")
+        ;
+    return options.add( Feel::feel_options() );
+}
+
+inline AboutData
+makeAbout()
+{
+    AboutData about( "test_sensor",
+                     "test_sensor",
+                     "0.1",
+                     "test sensor",
+                     Feel::AboutData::License_GPL,
+                     "Copyright (c) 2019 Feel++ Consortium" );
+
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
+    return about;
+}
+
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
+BOOST_AUTO_TEST_SUITE( sensor_suite )
+BOOST_AUTO_TEST_CASE( t0 )
+{
+    using namespace Feel::vf;
+}
+BOOST_AUTO_TEST_SUITE_END()
+
