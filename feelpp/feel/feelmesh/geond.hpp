@@ -125,7 +125,7 @@ class GeoNDMeasuresStorage
 {
     typedef T value_type;
 public :
-    GeoNDMeasuresStorage( uint16_type nF ) : M_face_measures( nF ) {}
+    explicit GeoNDMeasuresStorage( uint16_type nF ) : M_face_measures( nF ) {}
 
     GeoNDMeasuresStorage( GeoNDMeasuresStorage const& ) = default;
     GeoNDMeasuresStorage( GeoNDMeasuresStorage && ) = default;
@@ -173,7 +173,7 @@ template< typename T>
 class GeoNDNoMeasuresStorage
 {
 public :
-    GeoNDNoMeasuresStorage( uint16_type nF ) {}
+    explicit GeoNDNoMeasuresStorage( uint16_type nF ) {}
     GeoNDNoMeasuresStorage( GeoNDNoMeasuresStorage const& ) = default;
     GeoNDNoMeasuresStorage( GeoNDNoMeasuresStorage && ) = default;
 private :
