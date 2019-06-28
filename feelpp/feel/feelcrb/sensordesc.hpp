@@ -39,29 +39,41 @@ class SensorDescription
 {
 public:
 
-    SensorDescription(std::string const name, std::string type="gaussian", double raduis=1.0, std::array<double,Dim> const pos):
+    static constexpr std::array<double,Dim> zero() 
+        {
+            if constexpr ( Dim == 1 )
+                return {0};
+            if constexpr ( Dim == 2 )
+                return {0,0};
+            if constexpr ( Dim == 3 )                
+                return {0,0,0};
+        }
+    SensorDescription(std::string const& name,
+                      std::string const& type="gaussian",
+                      double raduis=1.0,
+                      std::array<double,Dim> const& pos = zero() ):
         M_name(name),
         M_type(type),
         M_radius(raduis),
         M_pos(pos)
     {}
 
-    void setName(std::string const name)
+    void setName(std::string const& name)
     {
         M_name = name;
     }
 
-    void setType(std::string type)
+    void setType(std::string const& type)
     {
         M_type = type;
     }
 
-    void setRadius(double raduis)
+    void setRadius(double radius)
     {
-        M_radius = raduis;
+        M_radius = radius;
     }
 
-    void setPosition(std::array<double,Dim> const pos)
+    void setPosition(std::array<double,Dim> const& pos)
     {
         M_pos = pos;
     }
@@ -111,17 +123,17 @@ public:
     {
         M_numberOfSensors = numberOfSensors;
     }
-    std::string file() const ()
+    std::string file() const
     {
         return M_file;
     }
 
-    int M_numberOfSensors() const()
+    int numberOfSensors() const
     {
         return M_numberOfSensors;
     }
 
-    virtual ~SensorDescriptionMap(){}
+    virtual ~SensorDescriptionMap() = default;
     
     std::set<std::pair<size_type,std::string>> read()
     {
@@ -145,14 +157,14 @@ public:
 
             //std::string sensorName = "zigduino-" + readerCSV_position.value<std::string>( k, "node_id" );
             std::string sensorName = sensorArchiSplitted[0] + "-" + readerCSV_position.value<std::string>( k, "custom_id" );
-            if ( readerCSV_measures.hasName( sensorName ) )
+            if ( readerCSV_position.hasName( sensorName ) )
             {
                sensorUsedInPosFile.insert( std::make_pair( k, sensorName ) );
                center[0] = readerCSV_position.value<double>( k, "X_m"/*"x"*/ );
                center[1] = readerCSV_position.value<double>( k, "Y_m"/*"y"*/ );
                center[2] = readerCSV_position.value<double>( k, "Z_m"/*"z"*/ );
-               SensorDescription<Dim> new newElement( (sensorName, type="gaussian", raduis=1.0, center));
-               this->insert(newElement);
+               SensorDescription<Dim> newElement( (sensorName, "gaussian", 1.0, center));
+              this->insert(newElement);
             }
 
         }
