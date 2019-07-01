@@ -52,22 +52,19 @@ readHBF( std::string const& s )
         header += ch;
         ++count;
     }
-    if ( Environment::isMasterRank() )
-    {
-        std::cout << "header: " << header << "\n";
-        std::cout << count << std::endl;
-    }
+    Feel::cout << "header: " << header << "\n";
+    Feel::cout << count << std::endl;
+
     int32_t version = 0;
     in.read( (char*)&version, sizeof( int32_t ) );
     int32_t rows=0, cols=0;
     in.read( (char*)&rows, sizeof( int32_t ) );
     in.read( (char*)&cols, sizeof( int32_t ) );
-    if ( Environment::isMasterRank() )
-        std::cout << "rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
+    Feel::cout << "rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
     Eigen::MatrixXf x( cols, rows  );
     in.read( (char*)x.data(), x.size()*sizeof(float) );
     if(x.rows() <= 6 && x.cols() <= 6)
-        std::cout << x << std::endl;
+        Feel::cout << x << std::endl;
    // if ( Environment::isMasterRank() )
        // std::cout << "x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
     return x.transpose();
@@ -83,37 +80,29 @@ writeHBF( std::string const& s, holo3_image<float> const& x )
     #endif    
     if ( !out )
     {
-        std::cout << "Error opening file " << s.c_str() << std::endl;
+        Feel::cout << "Error opening file " << s.c_str() << std::endl;
         exit(0);
     }
     const char* header = "class CH3Array2D<float> *";
     out.write( header, strlen(header) );
     out.write( "\0",sizeof(char) );
 
-    if ( Environment::isMasterRank() )
-    {
-        std::cout << "writeHBF: write header " << header << "\n";
-    }
+    Feel::cout << "writeHBF: write header " << header << "\n";
+
     int32_t version = 100;
     out.write( (char*)&version, sizeof(int32_t) );
     int32_t rows=x.rows(), cols=x.cols();
     out.write( (char*)&rows, sizeof(int32_t) );
     out.write( (char*)&cols, sizeof(int32_t) );
-    if ( Environment::isMasterRank() )
-    {
-        std::cout << "writeHBF: rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
-    }
-
+    Feel::cout << "writeHBF: rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
 
     out.write( (char*)x.data(),x.size()*sizeof(float) );
-    if ( Environment::isMasterRank() )
-    {
-        std::cout << "writeHBF: array written to disk" << std::endl;
-    }
+
+    Feel::cout << "[≈writeHBF]: array written to disk" << std::endl;
+
     if(x.rows() <= 6 && x.cols() <= 6)
-        std::cout << x << std::endl;
-    if ( Environment::isMasterRank() )
-        std::cout << "x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
+        Feel::cout << x << std::endl;
+    Feel::cout << "[writehbf] x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
 }
 
 
@@ -171,7 +160,7 @@ Hbf2Feelpp::q1_element_type
 Hbf2Feelpp::operator()( holo3_image<float> const& x )
 {
     q1_element_type u( M_Xh );
-    for( auto dof : M_relation.left )
+    for( auto const& dof : M_relation.left )
     {
         u( dof.second ) = x(dof.first.first,dof.first.second);
     }
@@ -189,8 +178,8 @@ Hbf2Feelpp::operator()( holo3_image<float> const& x )
 Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh ):M_rows(ny), M_cols(nx), M_Xh( Yh )
 {
     tic();
-    std::cout << "Hbf2FeelppStruc relation creation \n";
-    std::cout << nx << " : " << ny <<std::endl;
+    Feel::cout << "Hbf2FeelppStruc relation creation \n";
+    Feel::cout << nx << " : " << ny <<std::endl;
     
     int procSize = Environment::worldComm().godSize();
     rank_type partId = Environment::worldComm().localRank(); 
