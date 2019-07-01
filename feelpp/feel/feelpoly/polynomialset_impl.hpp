@@ -287,14 +287,14 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
             {
                 //M_hessian[i][q] = B.contract( __pc->hessian(i,q).contract(B,dims1), dims2);
 
-                if ( Geo_t::nOrder > 1 || !convex_type::is_simplex )
+                if constexpr ( Geo_t::nOrder > 1 || !convex_type::is_simplex )
                 {
                     // gmc hessian NxPxP
                     // pc hessian PxP
                     // grad N
                     // B NxP
                     // hessian: N x N
-                    std::cout << "Grad=" << M_grad[i][q].chip(0,0).chip(0,1) << "\n";
+                    //std::cout << "Grad=" << M_grad[i][q].chip(0,0).chip(0,1) << "\n";
                     tensor2_fixed_size_t<PDim,PDim,value_type> H0 = thegmc->hessian(q).contract( M_grad[i][q].chip(0,0).chip(0,1), dimsh );
                     //std::cout << "H0=" << H0 << std::endl;
                     tensor2_fixed_size_t<PDim,PDim,value_type> H00 = __pc->hessian(i,q).chip(0,2);
