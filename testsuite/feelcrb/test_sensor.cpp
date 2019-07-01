@@ -78,5 +78,26 @@ BOOST_AUTO_TEST_CASE( t0 )
     BOOST_CHECK_EQUAL( 1, 1 );
 #endif
 }
+BOOST_AUTO_TEST_CASE( t1 )
+{
+    using namespace Feel::vf;
+    auto mesh = loadmesh( _mesh=new Mesh<Simplex<3>> );
+    auto Vh = Pch<1>( mesh );
+    
+#if 0
+    SensorDescriptionMap<3> desc( "sensordescmap.csv" );
+    SensorMap<Pch_type<Mesh<Simplex<3>>>> sensors( Vh, sensordesc );
+
+    auto v = Vh->element();
+    v.on(_range=elements(mesh), _expr=cst(1.));
+    double zig10_v = sensors.at("zigiuino-10")->operator()(v);
+    // BOOST_CHECK_CLOSE( zig10_v, zig10_v_exact, 1e-10 );
+    // if close to 0, use _SMALL
+    // BOOST_CHECK_SMALL( zig10_v, 1e-10 );
+#else
+    BOOST_CHECK_EQUAL( 1, 1 );
+#endif
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
