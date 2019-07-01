@@ -32,6 +32,7 @@
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/detail/mesh.hpp>
 #include <feel/feelfilters/importergmsh.hpp>
+#include <feel/feelmesh/partitionmesh.hpp>
 
 namespace Feel {
 /**
