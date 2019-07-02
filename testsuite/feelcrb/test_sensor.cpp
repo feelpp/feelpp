@@ -27,7 +27,7 @@
 #include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feeldiscr/pch.hpp>
-#include <feel/feelfilters/unitsegment.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include <feel/feelfilters/geotool.hpp>
@@ -81,9 +81,8 @@ BOOST_AUTO_TEST_CASE( t0 )
 BOOST_AUTO_TEST_CASE( t1 )
 {
     using namespace Feel::vf;
-    auto mesh = loadmesh( _mesh=new Mesh<Simplex<3>> );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>> );
     auto Vh = Pch<1>( mesh );
-    
 #if 0
     SensorDescriptionMap<3> desc( "sensordescmap.csv" );
     SensorMap<Pch_type<Mesh<Simplex<3>>>> sensors( Vh, sensordesc );
