@@ -74,7 +74,7 @@ public:
 
     typedef boost::shared_ptr<space_type> space_ptrtype;
 
-    SensorBase( space_ptrtype space, std::string const& n = "sensor" ):
+    SensorBase( space_ptrtype const& space, std::string const& n = "sensor" ):
         super_type(space),
         M_name( n )
     {}
@@ -110,7 +110,7 @@ public:
 
     typedef boost::shared_ptr<space_type> space_ptrtype;
 
-    SensorPointwise( space_ptrtype space, node_t<double> const& p, std::string const& n = "pointwise"):
+    SensorPointwise( space_ptrtype const& space, node_t<double> const& p, std::string const& n = "pointwise"):
         super_type(space,n),
         M_point(p)
     {
@@ -158,7 +158,7 @@ public:
     typedef boost::shared_ptr<space_type> space_ptrtype;
 
 
-    SensorGaussian( space_ptrtype space, node_t const& center, double radius = 0., std::string const& n = "gaussian"):
+    SensorGaussian( space_ptrtype const& space, node_t const& center, double radius = 0., std::string const& n = "gaussian"):
         super_type(space,n),
         M_center(center),
         M_radius(radius)
@@ -170,7 +170,7 @@ public:
 
     void setCenter( node_t const& center )
     {
-        M_center=center;
+        M_center = center;
     }
 
     void setRadius( double radius )
@@ -178,12 +178,12 @@ public:
         M_radius = radius;
     }
 
-    std::vector<double> center() const
+    std::vector<double> const& center()
     {
         return M_center;
     }
 
-    double radius() const
+    double radius()
     {
         return M_radius;
     }
@@ -216,7 +216,7 @@ private:
 };
 
 template<typename Space>
-class SensorMap : public std::map<std::string,SensorBase<Space>>
+class SensorMap : public std::map<std::string,boost::shared_ptr<SensorBase<Space>>>
 {
 
 public:
@@ -229,29 +229,31 @@ public:
 
     typedef boost::shared_ptr<space_type> space_ptrtype;
 
-    SensorMap( space_ptrtype space, SensorDescriptionMap  sensor_desc):
+    static int nDim = space_type::nDim;
+
+    SensorMap( space_ptrtype const& space, SensorDescriptionMap  const& sensor_desc):
         M_sensor_desc(sensor_desc),
         M_space(space)
     {
       init();
     }
 
-    space_ptrtype space space() const ()
+    space_ptrtype const&  space space()
     {
         return M_space;
     }
 
-    SensorDescriptionMap sensor_desc() const
+    SensorDescriptionMap const& sensor_desc()
     {
         return M_sensor_desc;
     }
 
-    void setSpace( space_ptrtype space )
+    void setSpace( space_ptrtype const& space )
     {
         M_space = space;
     }
 
-    void setSensor_desc( SensorDescriptionMap sensor_desc)
+    void setSensor_desc( SensorDescriptionMap const& sensor_desc)
     {
         M_sensor_desc = sensor_desc;
     }
@@ -271,24 +273,22 @@ public:
         {
             if (sensor_desc.type().compare("gaussian")==0)
             {
-               SensorGaussian newElement<space_type>(M_space, sensor_desc.position(), sensor_desc.radius(),sensor_desc.name());
+               SensorGaussian<space_type> newElement(M_space, sensor_desc.position(), sensor_desc.radius(),sensor_desc.name());
             }
             else
             {
                if (sensor_desc.type().compare("pointwise")==0)
                {
-                  SensorPointwise newElement<space_type>(M_space, sensor_desc.position());
-                  newElement.setName(sensor_desc.name());
-
+                  SensorPointwise<space_type> newElement(M_space, sensor_desc.position(),sensor_desc.name());
                }
             }
             this->insert( newElement);
         }
     }
-    
+
 private:
 
-    SensorDescriptionMap M_sensor_desc;
+    SensorDescriptionMap<nDim> M_sensor_desc;
     space_ptrtype M_space;
 
 };

@@ -39,13 +39,13 @@ class SensorDescription
 {
 public:
 
-    static constexpr std::array<double,Dim> zero() 
+    static constexpr std::array<double,Dim> zero()
         {
             if constexpr ( Dim == 1 )
                 return {0};
             if constexpr ( Dim == 2 )
                 return {0,0};
-            if constexpr ( Dim == 3 )                
+            if constexpr ( Dim == 3 )
                 return {0,0,0};
         }
     SensorDescription(std::string const& name,
@@ -77,20 +77,20 @@ public:
     {
         M_pos = pos;
     }
-    std::string type() const
+    std::string const& type()
     {
         return M_type;
     }
-    std::string name() const
+    std::string const& name()
     {
         return M_name;
     }
-    std::array<double,Dim> const& position() const
+    std::array<double,Dim> const& position()
     {
         return M_pos;
     }
 
-    double radius() const
+    double radius()
     {
         return M_radius;
     }
@@ -103,7 +103,7 @@ private:
 };
 
 template<int Dim=3>
-class SensorDescriptionMap: public std::map<std::string,SensorDescription<Dim>>
+class SensorDescriptionMap: public std::map<std::string,boost::shared_ptr<SensorDescription<Dim>>>
 {
 
 public:
@@ -134,13 +134,14 @@ public:
     }
 
     virtual ~SensorDescriptionMap() = default;
-    
+
     std::set<std::pair<size_type,std::string>> read()
     {
         this->reserve( M_numberOfSensors );
         std::array<double,Dim> const center;
         ImporterCSV readerCSV_position( M_file );
         std::set<std::pair<size_type,std::string>> sensorUsedInPosFile;
+        double r;
         for ( size_type k=0;k< readerCSV_position.numberOfLineInMemory();++k )
         {
             std::string isInBatBStr = readerCSV_position.value<std::string>( k, "isInBatB" );
@@ -163,7 +164,9 @@ public:
                center[0] = readerCSV_position.value<double>( k, "X_m"/*"x"*/ );
                center[1] = readerCSV_position.value<double>( k, "Y_m"/*"y"*/ );
                center[2] = readerCSV_position.value<double>( k, "Z_m"/*"z"*/ );
-               SensorDescription<Dim> newElement( (sensorName, "gaussian", 1.0, center));
+               r = readerCSV_position.value<double>( k, "radius"/*"r_m"*/ );
+               std::string type = readerCSV_position.value<std::string>( k, "type" );
+               SensorDescription<Dim> newElement( (sensorName, type, r, center));
               this->insert(newElement);
             }
 
