@@ -300,7 +300,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
                     interfaceElts->push_back( boost::cref(elt) );
             }
 
-            auto interfaceElements = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+            elements_reference_wrapper_t<mesh_type> interfaceElements = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                     interfaceElts->begin(),
                     interfaceElts->end(),
                     interfaceElts
