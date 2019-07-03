@@ -21,6 +21,8 @@
 //! @date 18 Jun 2019
 //! @copyright 2019 Feel++ Consortium
 //!
+#ifndef FEELPP_SENSORDESC_HPP
+#define FEELPP_SENSORDESC_HPP 1
 
 
 #include <array>
@@ -186,3 +188,4 @@ private:
 
 
 }//namespace feel
+#endif
