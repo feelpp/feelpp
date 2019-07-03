@@ -107,7 +107,11 @@ class SensorDescriptionMap: public std::map<std::string,boost::shared_ptr<Sensor
 {
 
 public:
-    SensorDescriptionMap(std::string  file, int N):
+   //!
+    //! \p file provides the name of the csv file describing the sensor network
+    //! if \p N is set to -1 then we read and store all the sensor data dsc
+    //!
+    SensorDescriptionMap(std::string  file, int N=-1):
         M_file(file),
         M_numberOfSensors(N)
     {
@@ -137,8 +141,8 @@ public:
 
     std::set<std::pair<size_type,std::string>> read()
     {
-        this->reserve( M_numberOfSensors );
-        std::array<double,Dim> const center;
+        //this->reserve( M_numberOfSensors );
+        std::array<double,Dim> center;
         ImporterCSV readerCSV_position( M_file );
         std::set<std::pair<size_type,std::string>> sensorUsedInPosFile;
         double r;
@@ -166,7 +170,7 @@ public:
                center[2] = readerCSV_position.value<double>( k, "Z_m"/*"z"*/ );
                r = readerCSV_position.value<double>( k, "radius"/*"r_m"*/ );
                std::string type = readerCSV_position.value<std::string>( k, "type" );
-               SensorDescription<Dim> newElement( (sensorName, type, r, center));
+               SensorDescription<Dim> newElement( sensorName, type, r, center );
               this->insert(newElement);
             }
 
