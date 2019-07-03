@@ -76,12 +76,13 @@ BOOST_AUTO_TEST_CASE( t0 )
 }
 BOOST_AUTO_TEST_CASE( t1 )
 {
+    using namespace Feel;
     using namespace Feel::vf;
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>> );
     auto Vh = Pch<1>( mesh );
 
-    SensorDescriptionMap<3> desc( "sensordesc.csv", 5 );
-    SensorMap<Pch_type<Mesh<Simplex<3>>>> sensors( Vh, sensordesc );
+    SensorDescriptionMap<3> sensordesc( "sensordesc.csv", 5 );
+    SensorMap<Pch_type<Mesh<Simplex<3>>,1>> sensors( Vh, sensordesc );
 
     auto v = Vh->element();
     v.on(_range=elements(mesh), _expr=cst(1.));
