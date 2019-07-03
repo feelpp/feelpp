@@ -135,10 +135,10 @@ public:
 
     virtual ~SensorDescriptionMap() = default;
 
-    std::set<std::pair<size_type,std::string>> read()
+    void read()
     {
-        this->reserve( M_numberOfSensors );
-        std::array<double,Dim> const center;
+       
+        std::array<double,Dim>  center;
         ImporterCSV readerCSV_position( M_file );
         std::set<std::pair<size_type,std::string>> sensorUsedInPosFile;
         double r;
@@ -165,9 +165,9 @@ public:
                center[1] = readerCSV_position.value<double>( k, "Y_m"/*"y"*/ );
                center[2] = readerCSV_position.value<double>( k, "Z_m"/*"z"*/ );
                r = readerCSV_position.value<double>( k, "radius"/*"r_m"*/ );
-               std::string type = readerCSV_position.value<std::string>( k, "type" );
-               SensorDescription<Dim> newElement( (sensorName, type, r, center));
-              this->insert(newElement);
+               std::string sensorType = readerCSV_position.value<std::string>( k, "type" );
+               boost::shared_ptr<SensorDescription<Dim>> newElement( sensorName, sensorType, r, center);
+               this->insert(newElement);
             }
 
         }

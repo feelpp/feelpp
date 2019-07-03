@@ -31,7 +31,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include <feel/feelfilters/geotool.hpp>
-#include <feel/feelcrb/sensordesc.hpp>
+#include <feel/feelcrb/sensors.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
@@ -66,25 +66,21 @@ BOOST_AUTO_TEST_SUITE( sensor_suite )
 BOOST_AUTO_TEST_CASE( t0 )
 {
     using namespace Feel::vf;
-#if 0
-    SensorDescriptionMap<3> desc( "sensordescmap.csv" );
+    SensorDescriptionMap<3> desc( "sensordesc.csv",5 );
     // verify that those keys / sensors exist
-    BOOST_CHECK_EQUAL( desc.count( "ziiguino-10" ), 1 );
-    BOOST_CHECK_EQUAL( desc.count( "ziiguino-11" ), 1 );
-    BOOST_CHECK_EQUAL( desc.count( "ziiguino-12" ), 1 );
-    
-    BOOST_CHECK_EQUAL( desc.at( "zigduino-10" ), "gaussian" );
-#else
-    BOOST_CHECK_EQUAL( 1, 1 );
-#endif
+    BOOST_CHECK_EQUAL( desc.count( "ziiguino-1" ), 1 );
+    BOOST_CHECK_EQUAL( desc.count( "ziiguino-2" ), 1 );
+    BOOST_CHECK_EQUAL( desc.count( "ziiguino-25" ), 1 );
+   
+    BOOST_CHECK_EQUAL( desc.at( "zigduino-1" )->type(), "gaussian" );
 }
 BOOST_AUTO_TEST_CASE( t1 )
 {
     using namespace Feel::vf;
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>> );
     auto Vh = Pch<1>( mesh );
-#if 0
-    SensorDescriptionMap<3> desc( "sensordescmap.csv" );
+
+    SensorDescriptionMap<3> desc( "sensordesc.csv", 5 );
     SensorMap<Pch_type<Mesh<Simplex<3>>>> sensors( Vh, sensordesc );
 
     auto v = Vh->element();
@@ -92,10 +88,8 @@ BOOST_AUTO_TEST_CASE( t1 )
     double zig10_v = sensors.at("zigiuino-10")->operator()(v);
     // BOOST_CHECK_CLOSE( zig10_v, zig10_v_exact, 1e-10 );
     // if close to 0, use _SMALL
-    // BOOST_CHECK_SMALL( zig10_v, 1e-10 );
-#else
-    BOOST_CHECK_EQUAL( 1, 1 );
-#endif
+    BOOST_CHECK_SMALL( zig10_v, 1e-10 );
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()

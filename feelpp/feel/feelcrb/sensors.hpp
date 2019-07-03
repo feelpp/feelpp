@@ -103,7 +103,7 @@ class SensorPointwise: public SensorBase<Space>
 public:
 
     // -- TYPEDEFS --
-    typedef SensorPoint<Space> this_type;
+    typedef SensorPointwise<Space> this_type;
     typedef SensorBase<Space> super_type;
 
     typedef Space space_type;
@@ -119,25 +119,25 @@ public:
 
     virtual ~SensorPointwise(){}
 
-    void setPoint( node_t const& p )
+    void setPoint( node_t<double> const& p )
     {
         M_point = p;
     }
 
-    node_t const& point() const
+    node_t<double> const& point()
     {
         return M_point;
     }
 
     void init()
     {
-        auto v=this->M_space->element();
-        //auto expr=integrate(_range=elements(M_space->mesh()), _expr=id(v)*phi);
+        auto v = this->space()->element();
+        //auto expr=integrate(_range=elements(this->space()->mesh()), _expr=id(v)*phi);
         //super_type::operator=( expr );
         this->close();
     }
 private:
-    node_t M_point;
+    node_t<double> M_point;
 };
 
 
@@ -158,7 +158,7 @@ public:
     typedef boost::shared_ptr<space_type> space_ptrtype;
 
 
-    SensorGaussian( space_ptrtype const& space, node_t const& center, double radius = 0., std::string const& n = "gaussian"):
+    SensorGaussian( space_ptrtype const& space, node_t<double> const& center, double radius = 0., std::string const& n = "gaussian"):
         super_type(space,n),
         M_center(center),
         M_radius(radius)
@@ -168,7 +168,7 @@ public:
 
     virtual ~SensorGaussian(){}
 
-    void setCenter( node_t const& center )
+    void setCenter( node_t<double> const& center )
     {
         M_center = center;
     }
@@ -178,7 +178,7 @@ public:
         M_radius = radius;
     }
 
-    std::vector<double> const& center()
+    node_t<double> const& center()
     {
         return M_center;
     }
@@ -190,9 +190,9 @@ public:
 
     void init()
     {
-        auto v = M_space->element();
+        auto v = this->space()->element();
         auto phi = this->phiExpr( mpl::int_< space_type::nDim >() );
-        auto expr = integrate(_range=elements(M_space->mesh()), _expr=id(v)*phi);
+        auto expr = integrate(_range=elements(this->space()->mesh()), _expr=id(v)*phi);
         super_type::operator= ( expr );
         this->close();
     }
@@ -210,7 +210,7 @@ private:
     {
          return exp(( pow(Px()-M_center[0],2)+pow(Py()-M_center[1],2)+pow(Pz()-M_center[2],2))/(2*std::pow(M_radius,2)));
     }
-    node_t M_center;
+    node_t<double> M_center;
     double M_radius;
 
 };
@@ -229,21 +229,21 @@ public:
 
     typedef boost::shared_ptr<space_type> space_ptrtype;
 
-    static int nDim = space_type::nDim;
+    static int const nDim = space_type::nDim;
 
-    SensorMap( space_ptrtype const& space, SensorDescriptionMap  const& sensor_desc):
+    SensorMap( space_ptrtype const& space, SensorDescriptionMap<nDim>  const& sensor_desc):
         M_sensor_desc(sensor_desc),
         M_space(space)
     {
       init();
     }
 
-    space_ptrtype const&  space space()
+    space_ptrtype const&  space()
     {
         return M_space;
     }
 
-    SensorDescriptionMap const& sensor_desc()
+    SensorDescriptionMap<nDim> const& sensor_desc()
     {
         return M_sensor_desc;
     }
@@ -253,7 +253,7 @@ public:
         M_space = space;
     }
 
-    void setSensor_desc( SensorDescriptionMap const& sensor_desc)
+    void setSensor_desc( SensorDescriptionMap<nDim> const& sensor_desc)
     {
         M_sensor_desc = sensor_desc;
     }
@@ -269,20 +269,23 @@ public:
     void init()
     {
         this->reserve( this->size() );
-        for( auto const& sensor_desc : M_sensor_desc_map )
+        for( auto const& sensor_desc : M_sensor_desc )
         {
             if (sensor_desc.type().compare("gaussian")==0)
             {
                SensorGaussian<space_type> newElement(M_space, sensor_desc.position(), sensor_desc.radius(),sensor_desc.name());
+               this->insert( newElement);
+
             }
             else
             {
                if (sensor_desc.type().compare("pointwise")==0)
                {
                   SensorPointwise<space_type> newElement(M_space, sensor_desc.position(),sensor_desc.name());
+                  this->insert( newElement);
+
                }
             }
-            this->insert( newElement);
         }
     }
 
