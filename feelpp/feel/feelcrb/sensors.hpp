@@ -275,7 +275,7 @@ public:
 
     void init()
     {
-        Feel::cout << "init " << sensor_desc.size() << " sensors" << std::endl;
+        Feel::cout << "init " << M_sensor_desc.size() << " sensors" << std::endl;
         //this->reserve( this->size() );
         for( auto const& [sensor_name, sensor_desc]  : M_sensor_desc )
         {
@@ -295,7 +295,7 @@ public:
                    newElement = std::make_shared<SensorPointwise<space_type>> (M_space, n,sensor_desc.name());
                }
             }
-            this->at( sensor_name ) = newElement;
+            this->insert( std::pair( sensor_name, newElement ) );
             Feel::cout << "Sensor " << sensor_name << " added to map" << std::endl;
         }
     }
