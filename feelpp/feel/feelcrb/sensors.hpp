@@ -70,9 +70,9 @@ public:
     typedef SensorBase<Space> this_type;
     typedef FsFunctionalLinear<Space> super_type;
 
-    typedef Space space_type;
-
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    using space_type = typename super_type::space_type;
+    using space_ptrtype = typename super_type::space_ptrtype;
+    using node_t = typename space_type::mesh_type::node_type;
 
     SensorBase( space_ptrtype const& space, std::string const& n = "sensor" ):
         super_type(space),
@@ -103,14 +103,14 @@ class SensorPointwise: public SensorBase<Space>
 public:
 
     // -- TYPEDEFS --
-    typedef SensorPoint<Space> this_type;
+    typedef SensorPointwise<Space> this_type;
     typedef SensorBase<Space> super_type;
 
-    typedef Space space_type;
-
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-
-    SensorPointwise( space_ptrtype const& space, node_t<double> const& p, std::string const& n = "pointwise"):
+    using space_type = typename super_type::space_type;
+    using space_ptrtype = typename super_type::space_ptrtype;
+    using node_t = typename space_type::mesh_type::node_type;
+    
+    SensorPointwise( space_ptrtype const& space, node_t const& p, std::string const& n = "pointwise"):
         super_type(space,n),
         M_point(p)
     {
@@ -131,7 +131,7 @@ public:
 
     void init()
     {
-        auto v=this->M_space->element();
+        auto v=this->space()->element();
         //auto expr=integrate(_range=elements(M_space->mesh()), _expr=id(v)*phi);
         //super_type::operator=( expr );
         this->close();
@@ -153,10 +153,9 @@ public:
     typedef SensorGaussian<Space> this_type;
     typedef SensorBase<Space> super_type;
 
-    typedef Space space_type;
-
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-
+    using space_type = typename super_type::space_type;
+    using space_ptrtype = typename super_type::space_ptrtype;
+    using node_t = typename space_type::mesh_type::node_type;
 
     SensorGaussian( space_ptrtype const& space, node_t const& center, double radius = 0., std::string const& n = "gaussian"):
         super_type(space,n),
@@ -190,16 +189,21 @@ public:
 
     void init()
     {
-        auto v = M_space->element();
+        auto v = this->space()->element();
         auto phi = this->phiExpr( mpl::int_< space_type::nDim >() );
-        auto expr = integrate(_range=elements(M_space->mesh()), _expr=id(v)*phi);
-        super_type::operator= ( expr );
+        if constexpr ( space_type::nDim == 1 )
+            form1( _test=this->space(), _vector=this->containerPtr() ) = integrate(_range=elements(this->space()->mesh()), _expr=id(v)*exp( pow(Px()-M_center[0],2)/(2*std::pow(M_radius,2))) );
+        if constexpr ( space_type::nDim == 2 )
+            form1( _test=this->space(), _vector=this->containerPtr() ) = integrate(_range=elements(this->space()->mesh()), _expr=id(v)*exp(( pow(Px()-M_center[0],2)+pow(Py()-M_center[1],2))/(2*std::pow(M_radius,2))) );
+        if constexpr ( space_type::nDim == 3 )
+            form1( _test=this->space(), _vector=this->containerPtr() ) = integrate(_range=elements(this->space()->mesh()), _expr=id(v)*exp(( pow(Px()-M_center[0],2)+pow(Py()-M_center[1],2)+pow(Pz()-M_center[2],2))/(2*std::pow(M_radius,2))) );
+        //super_type::operator= ( expr );
         this->close();
     }
 
 private:
     auto phiExpr( mpl::int_<1> /**/ )
-    {
+        {
          return exp( pow(Px()-M_center[0],2)/(2*std::pow(M_radius,2)));
     }
     auto phiExpr( mpl::int_<2> /**/ )
@@ -212,11 +216,10 @@ private:
     }
     node_t M_center;
     double M_radius;
-
 };
 
 template<typename Space>
-class SensorMap : public std::map<std::string,boost::shared_ptr<SensorBase<Space>>>
+class SensorMap : public std::map<std::string,std::shared_ptr<SensorBase<Space>>>
 {
 
 public:
@@ -227,23 +230,27 @@ public:
 
     typedef Space space_type;
 
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
-    static int nDim = space_type::nDim;
+    static const int nDim = space_type::mesh_type::nDim;
+    
+    using sensor_type = SensorBase<Space>;
+    using node_t = typename sensor_type::node_t;
+    using sensor_ptrtype = std::shared_ptr<sensor_type>;
 
-    SensorMap( space_ptrtype const& space, SensorDescriptionMap  const& sensor_desc):
+    SensorMap( space_ptrtype const& space, SensorDescriptionMap<nDim>  const& sensor_desc):
         M_sensor_desc(sensor_desc),
         M_space(space)
     {
-      init();
+        this->init();
     }
 
-    space_ptrtype const&  space space()
+    space_ptrtype const&  space()
     {
         return M_space;
     }
 
-    SensorDescriptionMap const& sensor_desc()
+    SensorDescriptionMap<nDim> const& sensor_desc()
     {
         return M_sensor_desc;
     }
@@ -253,7 +260,7 @@ public:
         M_space = space;
     }
 
-    void setSensor_desc( SensorDescriptionMap const& sensor_desc)
+    void setSensor_desc( SensorDescriptionMap<nDim> const& sensor_desc)
     {
         M_sensor_desc = sensor_desc;
     }
@@ -268,26 +275,31 @@ public:
 
     void init()
     {
-        this->reserve( this->size() );
-        for( auto const& sensor_desc : M_sensor_desc_map )
+        //this->reserve( this->size() );
+        for( auto const& [sensor_name, sensor_desc]  : M_sensor_desc )
         {
-            if (sensor_desc.type().compare("gaussian")==0)
+            sensor_ptrtype newElement;
+            node_t n( sensor_desc.position().size() );
+            for ( int i = 0; i < sensor_desc.position().size(); ++i )
+                n( i ) = sensor_desc.position()[i];
+            if (sensor_desc.type() == "gaussian" )
             {
-               SensorGaussian<space_type> newElement(M_space, sensor_desc.position(), sensor_desc.radius(),sensor_desc.name());
+                newElement = std::make_shared<SensorGaussian<space_type>> (M_space, n, sensor_desc.radius(),sensor_desc.name());
             }
             else
             {
-               if (sensor_desc.type().compare("pointwise")==0)
+               if (sensor_desc.type() == "pointwise" )
                {
-                  SensorPointwise<space_type> newElement(M_space, sensor_desc.position(),sensor_desc.name());
+                   newElement = std::make_shared<SensorPointwise<space_type>> (M_space, n,sensor_desc.name());
                }
             }
-            this->insert( newElement);
+            this->at( sensor_name ) = newElement;
+            Feel::cout << "Sensor " << sensor_name << " added to map" << std::endl;
         }
     }
 
 private:
-
+    
     SensorDescriptionMap<nDim> M_sensor_desc;
     space_ptrtype M_space;
 

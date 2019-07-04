@@ -41,4 +41,4 @@ if (FEELPP_HAS_GLPK)
   feelpp_add_test( empiricalquadrature )
 endif()
 
-feelpp_add_test( sensor CFG sensordesc.csv )
+feelpp_add_test( sensor CFG test_sensor.cfg sensordesc.csv )

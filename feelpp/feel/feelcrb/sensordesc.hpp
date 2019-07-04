@@ -79,24 +79,24 @@ public:
     {
         M_pos = pos;
     }
-    std::string const& type()
+    std::string const& type() const
     {
         return M_type;
     }
-    std::string const& name()
+    std::string const& name() const
     {
         return M_name;
     }
-    std::array<double,Dim> const& position()
+    std::array<double,Dim> const& position() const
     {
         return M_pos;
     }
 
-    double radius()
+    double radius() const
     {
         return M_radius;
     }
-    virtual ~SensorDescription(){}
+    virtual ~SensorDescription() = default;
 private:
     std::string M_name;
     std::string M_type;
@@ -105,7 +105,7 @@ private:
 };
 
 template<int Dim=3>
-class SensorDescriptionMap: public std::map<std::string,boost::shared_ptr<SensorDescription<Dim>>>
+class SensorDescriptionMap: public std::map<std::string,SensorDescription<Dim>>
 {
 
 public:
@@ -141,7 +141,8 @@ public:
 
     virtual ~SensorDescriptionMap() = default;
 
-    std::set<std::pair<size_type,std::string>> read()
+    //
+    void read()
     {
         //this->reserve( M_numberOfSensors );
         std::array<double,Dim> center;
@@ -164,7 +165,7 @@ public:
 
             //std::string sensorName = "zigduino-" + readerCSV_position.value<std::string>( k, "node_id" );
             std::string sensorName = sensorArchiSplitted[0] + "-" + readerCSV_position.value<std::string>( k, "custom_id" );
-            if ( readerCSV_position.hasName( sensorName ) )
+            //if ( readerCSV_position.hasName( sensorName ) )
             {
                sensorUsedInPosFile.insert( std::make_pair( k, sensorName ) );
                center[0] = readerCSV_position.value<double>( k, "X_m"/*"x"*/ );
@@ -172,8 +173,11 @@ public:
                center[2] = readerCSV_position.value<double>( k, "Z_m"/*"z"*/ );
                r = readerCSV_position.value<double>( k, "radius"/*"r_m"*/ );
                std::string type = readerCSV_position.value<std::string>( k, "type" );
-               SensorDescription<Dim> newElement( sensorName, type, r, center );
-              this->insert(newElement);
+               auto [it,inserted] = this->try_emplace(sensorName, sensorName, type, r, center );
+               if ( !inserted )
+                   Feel::cout << "Sensor description for " << sensorName << " has been already added" << std::endl;
+               else
+                   Feel::cout << "Added sensor " << sensorName << std::endl;
             }
 
         }
