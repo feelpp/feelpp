@@ -275,9 +275,11 @@ public:
 
     void init()
     {
+        Feel::cout << "init " << sensor_desc.size() << " sensors" << std::endl;
         //this->reserve( this->size() );
         for( auto const& [sensor_name, sensor_desc]  : M_sensor_desc )
         {
+            Feel::cout << "sensor " << sensor_name << std::endl;
             sensor_ptrtype newElement;
             node_t n( sensor_desc.position().size() );
             for ( int i = 0; i < sensor_desc.position().size(); ++i )
