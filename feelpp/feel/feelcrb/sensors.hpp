@@ -268,12 +268,12 @@ public:
 
     void init()
     {
-        this->reserve( this->size() );
+        //this->reserve( this->size() );
         for( auto const& sensor_desc : M_sensor_desc )
         {
             if (sensor_desc.type().compare("gaussian")==0)
             {
-               SensorGaussian<space_type> newElement(M_space, sensor_desc.position(), sensor_desc.radius(),sensor_desc.name());
+               SensorGaussian<space_type> newElement(M_space, sensor_desc.position(), sensor_desc.radius(), sensor_desc.name());
                this->insert( newElement);
 
             }
@@ -281,8 +281,8 @@ public:
             {
                if (sensor_desc.type().compare("pointwise")==0)
                {
-                  SensorPointwise<space_type> newElement(M_space, sensor_desc.position(),sensor_desc.name());
-                  this->insert( newElement);
+                  SensorPointwise<space_type> newElement(M_space, sensor_desc.position(), sensor_desc.name());
+                  this->insert(std::pair(sensor_desc.name(), newElement));
 
                }
             }

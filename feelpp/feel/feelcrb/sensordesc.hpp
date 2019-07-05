@@ -109,7 +109,7 @@ class SensorDescriptionMap: public std::map<std::string,boost::shared_ptr<Sensor
 {
 
 public:
-    SensorDescriptionMap(std::string  file, int N):
+    SensorDescriptionMap(std::string  file, int N=-1):
         M_file(file),
         M_numberOfSensors(N)
     {
@@ -144,6 +144,7 @@ public:
         ImporterCSV readerCSV_position( M_file );
         std::set<std::pair<size_type,std::string>> sensorUsedInPosFile;
         double r;
+        int N = 0;
         for ( size_type k=0;k< readerCSV_position.numberOfLineInMemory();++k )
         {
             std::string isInBatBStr = readerCSV_position.value<std::string>( k, "isInBatB" );
@@ -162,17 +163,21 @@ public:
             std::string sensorName = sensorArchiSplitted[0] + "-" + readerCSV_position.value<std::string>( k, "custom_id" );
             if ( readerCSV_position.hasName( sensorName ) )
             {
+               N = N + 1;
                sensorUsedInPosFile.insert( std::make_pair( k, sensorName ) );
                center[0] = readerCSV_position.value<double>( k, "X_m"/*"x"*/ );
                center[1] = readerCSV_position.value<double>( k, "Y_m"/*"y"*/ );
                center[2] = readerCSV_position.value<double>( k, "Z_m"/*"z"*/ );
                r = readerCSV_position.value<double>( k, "radius"/*"r_m"*/ );
                std::string sensorType = readerCSV_position.value<std::string>( k, "type" );
-               boost::shared_ptr<SensorDescription<Dim>> newElement( sensorName, sensorType, r, center);
-               this->insert(newElement);
+               SensorDescription<Dim> newElement( sensorName, sensorType, r, center);
+               this->insert(std::pair(sensorName,newElement));
             }
 
         }
+
+        if (N < M_numberOfSensors)
+            M_numberOfSensors = N; 
 
     }
 

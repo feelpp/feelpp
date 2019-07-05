@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE( t1 )
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>> );
     auto Vh = Pch<1>( mesh );
 
-    SensorDescriptionMap<3> sensordesc( "sensordesc.csv", 5 );
+    SensorDescriptionMap<3> sensordesc( "sensordesc.csv", 3 );
     SensorMap<Pch_type<Mesh<Simplex<3>>,1>> sensors( Vh, sensordesc );
 
     auto v = Vh->element();
