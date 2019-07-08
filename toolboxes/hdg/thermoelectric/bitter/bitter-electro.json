@@ -1,16 +1,16 @@
 {
-    "Name": "HL-31_H1 ",
-    "ShortName":"H1",
+    "Name": "HDG-Electro-Thermo ",
+    "ShortName":"ET",
     "Model":"hdg",
     "Materials":
     {
-        "Cu":
+        "omega":
         {
             "name":"copper",
             "alpha":"3.5e-3",
             "T0":"293",
-            "sigma0":"52e6",
-            "k0":"400",//"0.37",
+            "sigma0":"58e+3",
+            "k0":"0.38",
             "sigma":"sigma0/(1+alpha*(T-T0)):sigma0:alpha:T:T0",
             "k":"k0*T/((1+alpha*(T-T0))*T0):k0:T:alpha:T0"
         }
@@ -29,11 +29,18 @@
         // },
         "potential":
         {
+            "SourceTerm":
+            {
+                "omega":
+                {
+                    "expr":"0"
+                }
+            },
             "Dirichlet":
             {
                 "V1":
                 {
-                    "expr":"9"//"9"
+                    "expr":"-0.04"
                 },
                 "V0":
                 {
@@ -42,19 +49,27 @@
             },
             "Neumann":
             {
-                "Rint":
+                "Channel0":
                 {
                     "expr":"0"
                 },
-                "Rext":
+                "Channel1":
                 {
                     "expr":"0"
                 },
-                "Interface":
+                "CoolingHoles":
                 {
                     "expr":"0"
                 },
-                "GR_1_Interface":
+                "TieRods":
+                {
+                    "expr":"0"
+                },
+                "top":
+                {
+                    "expr":"0"
+                },
+                "bottom":
                 {
                     "expr":"0"
                 }
