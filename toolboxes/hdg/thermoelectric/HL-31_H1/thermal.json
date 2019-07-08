@@ -8,8 +8,8 @@
         {
             "alpha":"3.5e-3",
             "T0":"293",
-            "sigma0":"52e6",
-            "k0":"400"// ,//"0.37",
+            "sigma0":"52e3",
+            "k0":"0.400"// ,//"0.37",
             // "sigma":"sigma0/(1+alpha*(T-T0)):sigma0:alpha:T:T0",
             // "k":"k0*T/((1+alpha*(T-T0))*T0):k0:T:alpha:T0"
             // "k":"sigma*L*T:sigma:L:T"
@@ -23,13 +23,13 @@
             {
                 "Rint":
                 {
-                    "expr1":"8.5e6",
-                    "expr2":"8.5e6*293"
+                    "expr1":"8.5e-2",
+                    "expr2":"8.5e-2*293"
                 },
                 "Rext":
                 {
-                    "expr1":"8.5e6",
-                    "expr2":"8.5e6*293"
+                    "expr1":"8.5e-2",
+                    "expr2":"8.5e-2*293"
                 }
             },
             "Neumann":
