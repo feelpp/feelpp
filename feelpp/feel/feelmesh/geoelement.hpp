@@ -1758,8 +1758,11 @@ hasFaceWithMarker( EltType const& e, boost::any const& flag )
     flag_type theflag = e.mesh()->markerId( flag );
     for( auto const& f : e.faces() )
     {
-        if ( f.marker().value() == theflag )
-            return true;
+        if ( f && f->hasMarker() )
+        {
+            if ( f->marker().value() == theflag )
+                return true;
+        }
     }
     return false;
 }
