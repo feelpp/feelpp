@@ -572,13 +572,11 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
         for ( uint16_type i = 0; i < I; ++i )
             for ( uint16_type q = 0; q < Q; ++q )
             {
+                M_normal_component[i][q].setZero();
                 tensor_map_fixed_size_matrix_t<gmc_type::NDim,1,value_type> N ( thegmc->unitNormal( q ).data(), gmc_type::NDim,1 );
-                auto &r = M_normal_component[i][q](0,0);
-                r= 0;
-                auto* p = M_phi[i][q].data();
-                auto* n = N.data();
-                for( int c = 0; c < ndim; ++c )
-                    r += *(p+c)*(*(n+c));
+                for( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
+                    for( int c = 0; c < gmc_type::NDim; ++c )
+                        M_normal_component[i][q]( c1,0 ) +=  M_phi[i][q]( c1, c ) * N( c );
             }
     }
     if ( vm::has_trace_v<context>)

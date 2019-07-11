@@ -453,6 +453,7 @@ int hdg_laplacian()
     q.on( _range=elements(mesh), _expr=p_exact );
     auto e = exporter( _mesh=mesh );
     e->setMesh( mesh );
+    e->addRegions();
     e->add( "flux", U(0_c) );
     e->add( "potential", U(1_c) );
     e->add( "potentialpp", PP(0_c) );
