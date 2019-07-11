@@ -1756,11 +1756,13 @@ bool
 hasFaceWithMarker( EltType const& e, boost::any const& flag )
 {
     flag_type theflag = e.mesh()->markerId( flag );
-    for( auto const& f : e.faces() )
+    // for( auto const& f : e.faces() )
+    auto [ fbegin, fend ] = e.faces();
+    for( auto f = fbegin; f != fend; ++f )
     {
-        if ( f && f->hasMarker() )
+        if ( *f && (*f)->hasMarker() )
         {
-            if ( f->marker().value() == theflag )
+            if ( (*f)->marker().value() == theflag )
                 return true;
         }
     }
