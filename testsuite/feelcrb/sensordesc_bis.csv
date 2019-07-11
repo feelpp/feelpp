@@ -1,3 +1,3 @@
-node_id,custom_id,archi,uid,x,y,z,hwaddr,midspan_ip,midspan_port,mobile,mobility_type,circuit_name,node-rack,sensors,isInBatB,X_mm,Y_mm,Z_mm,X_m,Y_m,Z_m,r_m,type
-35,26,zigduino:atmega128rfa1,001a,28.02,-29.84,12.6,b8:27:eb:c3:98:7f,130.79.48.118,6,0,,,,,1,31283.04,-11292.08,6650,31.28304,-11.29208,6.65,1,gaussian
-37,28,zigduino:atmega128rfa1,001c,11.14,-29.42,12.6,b8:27:eb:7a:24:b8,130.79.48.118,3,0,,,,,1,14748.68,-14630.36,6650,14.74868,-14.63036,6.65,1,gaussian
+node_id,custom_id,archi,uid,x,y,z,hwaddr,midspan_ip,midspan_port,mobile,mobility_type,circuit_name,node-rack,sensors,isInBatB,X_mm,Y_mm,Z_mm,X_m,Y_m,Z_m,radius,type
+44,35,zigduino:atmega128rfa1,23,53.23,3.23,12.6,b8:27:eb:97:67:4b,130.79.48.117,18,0,,,,,1,50900,22300,6650,50.9,22.3,6.65,1,gaussian
+46,37,zigduino:atmega128rfa1,25,56.86,3.72,12.6,b8:27:eb:ac:f3:c7,130.79.48.117,17,0,,,,,1,53400,23500,6650,53.4,23.5,6.65,1,gaussian
