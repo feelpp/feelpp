@@ -62,7 +62,7 @@ namespace Feel
 //!
 //! base class for sensors
 //!
-template<typename Space, typename ValueT = double>
+template<typename Space, typename ValueT = double, typename p0_space_type>
 class SensorBase: public FsFunctionalLinear<Space>
 {
 public:
@@ -74,10 +74,13 @@ public:
     using space_type = typename super_type::space_type;
     using space_ptrtype = typename super_type::space_ptrtype;
     using node_t = typename space_type::mesh_type::node_type;
+    using p0_space_ptrtype = std::shared_ptr<p0_space_type>;
 
-    SensorBase( space_ptrtype const& space, std::string const& n = "sensor" ):
-        super_type(space),
-        M_name( n )
+
+    SensorBase( space_ptrtype const& space, p0_space_ptrtype const& p0_space, std::string const& n = "sensor" ):
+        super_type( space ),
+        M_name( n ),
+        M_p0_space( p0_space )
     {}
 
     virtual ~SensorBase() = default;
@@ -92,14 +95,14 @@ public:
     //!
 private:
     std::string M_name;
-
+    p0_space_ptrtype M_p0_space;
 };
 
 //!
 //! pointwise type sensor
 //!
-template<typename Space>
-class SensorPointwise: public SensorBase<Space>
+template<typename Space, typename p0_space_type>
+class SensorPointwise: public SensorBase<Space, p0_space_type>
 {
 public:
 
@@ -110,9 +113,11 @@ public:
     using space_type = typename super_type::space_type;
     using space_ptrtype = typename super_type::space_ptrtype;
     using node_t = typename space_type::mesh_type::node_type;
-    
-    SensorPointwise( space_ptrtype const& space, node_t const& p, std::string const& n = "pointwise"):
-        super_type(space,n),
+    using p0_space_ptrtype = typename super_type::p0_space_ptrtype;
+    using p0_element_type = typename p0_space_type::element_type;
+
+    SensorPointwise( space_ptrtype const& space, p0_space_ptrtype const& p0_space, node_t const& p, std::string const& n = "pointwise"):
+        super_type( space, p0_space, n ),
         M_point(p)
     {
         init();
@@ -145,8 +150,8 @@ private:
 //!
 //! gaussian type sensor
 //!
-template<typename Space>
-class SensorGaussian: public SensorBase<Space>
+template<typename Space, typename p0_space_type>
+class SensorGaussian: public SensorBase<Space,p0_space_type>
 {
 public:
 
@@ -158,14 +163,14 @@ public:
     using space_ptrtype = typename super_type::space_ptrtype;
     using node_t = typename space_type::mesh_type::node_type;
     using mesh_type = typename space_type::mesh_type;
-    using p0_space_ptrtype = Pdh_ptrtype<mesh_type,0>;
-    using p0_element_t = pdh_element_type<mesh_type,0>;
+    using p0_space_ptrtype = typename super_type::p0_space_ptrtype;
+    using p0_element_type = typename pdh_element_type<mesh_type,0>;
     
-    SensorGaussian( space_ptrtype const& space, p0_space_ptrtype space_p0,
+    SensorGaussian( space_ptrtype const& space, p0_space_ptrtype const& p0_space,
                     node_t const& center, double radius = 0., std::string const& n = "gaussian"):
-        super_type(space,n),
-        M_center(center),
-        M_radius(radius)
+        super_type( space, p0_space, n ),
+        M_center( center ),
+        M_radius( radius )
     {
         init();
     }
@@ -208,7 +213,7 @@ public:
 
 private:
     auto phiExpr( mpl::int_<1> /**/ )
-        {
+    {
          return exp( pow(Px()-M_center[0],2)/(2*std::pow(M_radius,2)));
     }
     auto phiExpr( mpl::int_<2> /**/ )
