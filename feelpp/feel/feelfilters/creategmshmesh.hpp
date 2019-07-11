@@ -149,7 +149,7 @@ BOOST_PARAMETER_FUNCTION(
                 _mesh_ptrtype _meshSeq = std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
                 _meshSeq->accept( import );
                 _meshSeq->components().reset();
-                _meshSeq->components().set( size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED) );
+                _meshSeq->components().set( size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_UPDATE_FACES|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED) );
                 _meshSeq->updateForUse();
 
                 using io_t = PartitionIO<_mesh_type>;
