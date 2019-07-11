@@ -1403,7 +1403,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             int n2 = 0;
             std::for_each( dK.faces2().begin(), dK.faces2().end(), [&]( auto dKi )
                            {
-                               std::cout << "face2 key.first=" << key.first << " dKi=" << dKi << std::endl;
+                               // std::cout << "face2 key.first=" << key.first << " dKi=" << dKi << std::endl;
                                auto key2 = std::make_pair(key.first, dKi );
                                auto key3 = std::make_pair(dKi,key.first);
                                auto key4 = std::make_pair(dKi, dKi);
@@ -1604,7 +1604,7 @@ StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCon
     Feel::cout << "\n";
     std::for_each( dK.faces2().begin(), dK.faces2().end(), [&]( auto dKi )
                    {
-                       Feel::cout << "face2 dKi=" << dKi << std::endl;
+                       // Feel::cout << "face2 dKi=" << dKi << std::endl;
                        auto key = std::make_pair(dKi, dKi);
                        Feel::cout << "A34(" << key.first << "):" << A34K.at(key) << "\n";
                        Feel::cout << "A43(" << key.first << "):" << A43K.at(key) << "\n";
