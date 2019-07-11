@@ -118,17 +118,19 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
 #ifndef NDEBUG
             std::size_t graph_size=0;
 #endif
-            for( auto const& eltWrap : rangeMeshElt )
+            if( boption("sc.ibc_partitioning") )
             {
-                auto const& elt = unwrap_ref( eltWrap );
-                // (1) first pass - get the row sizes for each element by counting the number
-                // of face neighbors.  Also populate the vwght array if necessary
-                const dof_id_type gid = global_index_map[elt.id()].first;
-                if ( hasFaceWithMarker( elt, "Ibc" ) )
+                for( auto const& eltWrap : rangeMeshElt )
                 {
-                    vibc.push_back( gid );
+                    auto const& elt = unwrap_ref( eltWrap );
+                    // (1) first pass - get the row sizes for each element by counting the number
+                    // of face neighbors.  Also populate the vwght array if necessary
+                    const dof_id_type gid = global_index_map[elt.id()].first;
+                    if ( hasFaceWithMarker( elt, soption("sc.ibc_partitioning.marker") ) )
+                    {
+                        vibc.push_back( gid );
+                    }
                 }
-
             }
             // build the graph in CSR format.  Note that
             // the edges in the graph will correspond to
@@ -165,7 +167,7 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
                         num_neighbors++;
                     }
                 }
-                if ( hasFaceWithMarker( elt, "Ibc" ) )
+                if ( boption("sc.ibc_partitioning") && hasFaceWithMarker( elt, soption("sc.ibc_partitioning.marker") ) )
                 {
                     num_neighbors += vibc.size()-1;
                 }
@@ -203,7 +205,7 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
 
                     }
                 }
-                if ( hasFaceWithMarker( elt, "Ibc" ) )
+                if ( boption("sc.ibc_partitioning") && hasFaceWithMarker(elt, soption("sc.ibc_partitioning.marker")) )
                 {
                     if ( usePartitionByRange )
                         continue;
