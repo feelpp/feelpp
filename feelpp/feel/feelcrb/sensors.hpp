@@ -62,7 +62,7 @@ namespace Feel
 //!
 //! base class for sensors
 //!
-template<typename Space, typename ValueT = double, typename p0_space_type>
+template<typename Space, typename ValueT = double>
 class SensorBase: public FsFunctionalLinear<Space>
 {
 public:
@@ -74,7 +74,9 @@ public:
     using space_type = typename super_type::space_type;
     using space_ptrtype = typename super_type::space_ptrtype;
     using node_t = typename space_type::mesh_type::node_type;
-    using p0_space_ptrtype = std::shared_ptr<p0_space_type>;
+    using mesh_type = typename space_type::mesh_type;
+    using p0_space_ptrtype = Pdh_ptrtype<mesh_type,0>;
+    using p0_element_type = Pdh_element_type<mesh_type,0>;
 
 
     SensorBase( space_ptrtype const& space, p0_space_ptrtype const& p0_space, std::string const& n = "sensor" ):
@@ -88,6 +90,11 @@ public:
     void setName( std::string const& n ) { M_name = n; }
     std::string const& name() const { return M_name; }
 
+    p0_space_ptrtype spaceP0() { return M_p0_space; }
+
+    p0_element_type& marker() { return M_c; }
+    p0_element_type const& marker() const { return M_c; }
+    
     //!
     //! other interface may include:
     //!  - DB storage for past measurements
@@ -96,13 +103,15 @@ public:
 private:
     std::string M_name;
     p0_space_ptrtype M_p0_space;
+    // caracteristic function for localize the sensor
+    p0_element_type M_c;
 };
 
 //!
 //! pointwise type sensor
 //!
-template<typename Space, typename p0_space_type>
-class SensorPointwise: public SensorBase<Space, p0_space_type>
+template<typename Space>
+class SensorPointwise: public SensorBase<Space>
 {
 public:
 
@@ -114,13 +123,14 @@ public:
     using space_ptrtype = typename super_type::space_ptrtype;
     using node_t = typename space_type::mesh_type::node_type;
     using p0_space_ptrtype = typename super_type::p0_space_ptrtype;
-    using p0_element_type = typename p0_space_type::element_type;
+    using p0_element_type = typename super_type::p0_element_type;
 
     SensorPointwise( space_ptrtype const& space, p0_space_ptrtype const& p0_space, node_t const& p, std::string const& n = "pointwise"):
         super_type( space, p0_space, n ),
         M_point(p)
     {
         init();
+        
     }
 
     virtual ~SensorPointwise(){}
@@ -150,8 +160,8 @@ private:
 //!
 //! gaussian type sensor
 //!
-template<typename Space, typename p0_space_type>
-class SensorGaussian: public SensorBase<Space,p0_space_type>
+template<typename Space>
+class SensorGaussian: public SensorBase<Space>
 {
 public:
 
@@ -164,7 +174,7 @@ public:
     using node_t = typename space_type::mesh_type::node_type;
     using mesh_type = typename space_type::mesh_type;
     using p0_space_ptrtype = typename super_type::p0_space_ptrtype;
-    using p0_element_type = typename pdh_element_type<mesh_type,0>;
+    using p0_element_type = typename super_type::p0_element_type;
     
     SensorGaussian( space_ptrtype const& space, p0_space_ptrtype const& p0_space,
                     node_t const& center, double radius = 0., std::string const& n = "gaussian"):
@@ -173,6 +183,7 @@ public:
         M_radius( radius )
     {
         init();
+        this->marker().on( _range=elements(space->mesh()), _expr=cst(1.0));
     }
 
     virtual ~SensorGaussian(){}
@@ -241,7 +252,7 @@ public:
     typedef Space space_type;
 
     typedef std::shared_ptr<space_type> space_ptrtype;
-    using mesh_type = space_type::mesh_type;
+    using mesh_type = typename space_type::mesh_type;
     using p0_space_ptrtype = Pdh_ptrtype<mesh_type,0>;
 
     static const int nDim = space_type::mesh_type::nDim;
@@ -303,13 +314,13 @@ public:
                 n( i ) = sensor_desc.position()[i];
             if (sensor_desc.type() == "gaussian" )
             {
-                newElement = std::make_shared<SensorGaussian<space_type>> (M_space, n, sensor_desc.radius(),sensor_desc.name());
+                newElement = std::make_shared<SensorGaussian<space_type>> (M_space, M_space_p0, n, sensor_desc.radius(),sensor_desc.name());
             }
             else
             {
                if (sensor_desc.type() == "pointwise" )
                {
-                   newElement = std::make_shared<SensorPointwise<space_type>> (M_space, n,sensor_desc.name());
+                   newElement = std::make_shared<SensorPointwise<space_type>> (M_space, M_space_p0, n,sensor_desc.name());
                }
             }
             this->insert( std::pair( sensor_name, newElement ) );

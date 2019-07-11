@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE( t0 )
     BOOST_CHECK_EQUAL( desc.count( "zigduino-1" ), 1 );
     BOOST_CHECK_EQUAL( desc.count( "zigduino-2" ), 1 );
     BOOST_CHECK_EQUAL( desc.count( "zigduino-12" ), 0 );
-    
+
     BOOST_CHECK_EQUAL( desc.at( "zigduino-1" ).type(), "gaussian" );
 }
 BOOST_AUTO_TEST_CASE( t1 )
@@ -88,8 +88,12 @@ BOOST_AUTO_TEST_CASE( t1 )
 
     auto v = Vh->element();
     v.on(_range=elements(mesh), _expr=cst(1.));
-    double zig10_v = sensors.at("zigduino-1")->operator()(v);
-    BOOST_TEST_MESSAGE( "v : " << zig10_v );
+    if ( sensors.count("zigduino-35") )
+    {
+        double zig10_v = sensors.at("zigduino-35")->operator()(v);
+        BOOST_TEST_MESSAGE( "v : " << zig10_v );
+    }
+        
     // BOOST_CHECK_CLOSE( zig10_v, zig10_v_exact, 1e-10 );
     // if close to 0, use _SMALL
     // BOOST_CHECK_SMALL( zig10_v, 1e-10 );
