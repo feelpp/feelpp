@@ -52,6 +52,7 @@
 #include <feel/feelcrb/crbmodel.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feeldiscr/geometricspace.hpp>
+#include <feel/feeldiscr/pdh.hpp>
 
 #include <Eigen/Core>
 #include <feel/feelcrb/sensordesc.hpp>
@@ -156,8 +157,12 @@ public:
     using space_type = typename super_type::space_type;
     using space_ptrtype = typename super_type::space_ptrtype;
     using node_t = typename space_type::mesh_type::node_type;
-
-    SensorGaussian( space_ptrtype const& space, node_t const& center, double radius = 0., std::string const& n = "gaussian"):
+    using mesh_type = typename space_type::mesh_type;
+    using p0_space_ptrtype = Pdh_ptrtype<mesh_type,0>;
+    using p0_element_t = pdh_element_type<mesh_type,0>;
+    
+    SensorGaussian( space_ptrtype const& space, p0_space_ptrtype space_p0,
+                    node_t const& center, double radius = 0., std::string const& n = "gaussian"):
         super_type(space,n),
         M_center(center),
         M_radius(radius)
@@ -231,6 +236,8 @@ public:
     typedef Space space_type;
 
     typedef std::shared_ptr<space_type> space_ptrtype;
+    using mesh_type = space_type::mesh_type;
+    using p0_space_ptrtype = Pdh_ptrtype<mesh_type,0>;
 
     static const int nDim = space_type::mesh_type::nDim;
     
@@ -240,7 +247,8 @@ public:
 
     SensorMap( space_ptrtype const& space, SensorDescriptionMap<nDim>  const& sensor_desc):
         M_sensor_desc(sensor_desc),
-        M_space(space)
+        M_space(space),
+        M_space_p0( Pdh<0>( space->mesh() ) )
     {
         this->init();
     }
@@ -248,6 +256,10 @@ public:
     space_ptrtype const&  space()
     {
         return M_space;
+    }
+    p0_space_ptrtype const&  spaceP0()
+    {
+        return M_space_p0;
     }
 
     SensorDescriptionMap<nDim> const& sensor_desc()
@@ -304,7 +316,7 @@ private:
     
     SensorDescriptionMap<nDim> M_sensor_desc;
     space_ptrtype M_space;
-
+    p0_space_ptrtype M_space_p0;
 };
 
 
