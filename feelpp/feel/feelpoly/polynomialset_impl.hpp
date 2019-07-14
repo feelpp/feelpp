@@ -582,7 +582,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
     if ( vm::has_trace_v<context>)
     {
         const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
-        const uint16_type I = M_normal_component.shape()[0];
+        const uint16_type I = M_trace.shape()[0];
         Eigen::array<dimpair_t, 1> dims = {{dimpair_t(0, 1)}};
         Eigen::Tensor<value_type, 0> res;
         for ( uint16_type i = 0; i < I; ++i )
