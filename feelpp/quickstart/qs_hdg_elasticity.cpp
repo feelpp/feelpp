@@ -156,7 +156,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
         H.on( _range=elements(face_mesh), _expr=pow(h(),tau_order) );
 
     tic();
-    rhs(1_c) += integrate(_range=elements(mesh), _expr=trans(expr<Dim,1>(rhs_f))*id(w));
+    rhs(1_c) += integrate(_range=elements(mesh), _expr=-trans(expr<Dim,1>(rhs_f))*id(w));
 #if 0
     else
     {
@@ -194,7 +194,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     
     toc("a(0,0).1", true);
     tic();
-    a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=expr(c2)*trace(idt(sigma))*trace(id(v)) );
+    a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=expr(c2)*tracet(sigma)*trace(v));
     toc("a(0,0).2", true);
 
 #endif
@@ -203,10 +203,10 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     toc("a(0,1)", true);
     tic();
     a( 0_c, 2_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
-                                       trans(idt(uhat))*rightface(id(v)*N())) );
+                              _expr=-( trans(idt(uhat))*leftface(normal(v))+
+                                       trans(idt(uhat))*rightface(normal(v))) );
     a( 0_c, 2_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=-trans(idt(uhat))*(id(v)*N()));
+                              _expr=-trans(idt(uhat))*(normal(v)));
     toc("a(0,2)", true);
     tic();
     a( 1_c, 0_c) += integrate(_range=elements(mesh),
@@ -214,28 +214,30 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     toc("a(1,0)", true);
     tic();
     // begin dp: here we need to put the projection of u on the faces
-    a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=-tau_constant*
-                              inner(leftfacet(idt(u)),leftface(id(w))) +
-                              inner(rightfacet(idt(u)),rightface(id(w) )));
+    a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=-tau_constant*(
+                                  trans(leftfacet(idt(u)))*leftface(id(w)) +
+                                  trans(rightfacet(idt(u)))*rightface(id(w) )) );
 
     a( 1_c, 1_c) += integrate(_range=boundaryfaces(mesh),
                               _expr=-(tau_constant * trans(idt(u))*id(w)));
     toc("a(1,1)", true);
     tic();
+
     a( 1_c, 2_c) += integrate(_range=internalfaces(mesh),
-                              _expr=tau_constant*inner(idt(uhat),leftface( id(w))+rightface(id(w)))  );
+                              _expr=tau_constant*trans(idt(uhat))*(leftface(id(w))+rightface(id(w)))  );
 
     a( 1_c, 2_c) += integrate(_range=boundaryfaces(mesh),
                               _expr=tau_constant * trans(idt(uhat)) * id(w) );
+
     toc("a(1,2)", true);
     tic();
     a( 2_c, 0_c) += integrate(_range=internalfaces(mesh),
-                              _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
-                                                    rightfacet(idt(sigma)*N())) ) );
+                              _expr=( trans(id(m))*(leftfacet(normalt(sigma))+
+                                                    rightfacet(normalt(sigma))) ) );
     toc("a(2,0)", true);
     tic();
     a( 2_c, 1_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-tau_constant * inner(id(m), leftfacet( idt(u) )+rightfacet( idt(u) )) );
+                              _expr=-tau_constant * trans(id(m))*(leftfacet( idt(u) )+rightfacet( idt(u) )) );
     toc("a(2,1)", true);
     tic();
     a( 2_c, 2_c) += integrate(_range=internalfaces(mesh),
@@ -250,7 +252,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     //for( auto part: stressn )
     {
         a( 2_c, 0_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                                  _expr=( trans(id(m))*(idt(sigma)*N()) ));
+                                  _expr=( trans(id(m))*(normalt(sigma)) ));
 
         a( 2_c, 1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                                   _expr=tau_constant * trans(id(m)) * ( idt(u) ) );
@@ -272,7 +274,6 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     auto sigmap = U(0_c);
     auto up = U(1_c);
     auto uhatp = U(2_c);
-    U.vector()->printMatlab("u.m");
     int status = 1;
     //if ( displ.count("exact" ) )
     {
@@ -281,7 +282,8 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
         auto grad_displ_exact = locals.at("grad_displ");
         Ue(0_c).on( _range=elements(mesh), _expr=expr<Dim,Dim>( sigma_exact ) );
         Ue(1_c).on( _range=elements(mesh), _expr=expr<Dim,1>( displ_exact ) );
-        Ue.vector()->printMatlab("ue.m");
+        Ue(2_c).on( _range=faces(mesh), _expr=expr<Dim,1>( displ_exact ) );
+        
         auto l2err_sigma = normL2( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) - idv(sigmap) );
         Feel::cout << "L2 Error sigma: " << l2err_sigma << std::endl;
         toc("error");
@@ -363,7 +365,7 @@ int main( int argc, char** argv )
     for( auto d: locals )
         cout << d.first << ":" << d.second << std::endl;
     
-    int status = hdg_elasticity<FEELPP_DIM,2>( locals );
+    int status = hdg_elasticity<FEELPP_DIM,1>( locals );
     return !status;
 
 }
