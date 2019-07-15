@@ -363,8 +363,8 @@ int main( int argc, char** argv )
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals  );
 
     for( auto d: locals )
-        cout << d.first << ":" << d.second << std::endl;
-    
+        Feel::cout << d.first << ":" << d.second << std::endl;
+
     int status = hdg_elasticity<FEELPP_DIM,1>( locals );
     return !status;
 
