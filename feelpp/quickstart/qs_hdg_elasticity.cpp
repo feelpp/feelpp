@@ -35,21 +35,31 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description testhdivoptions( "test qs_hdg_elasticity options" );
-    testhdivoptions.add_options()
+    po::options_description hdgoptions( "test qs_hdg_elasticity options" );
+    hdgoptions.add_options()
         ( "pyexpr.filename", po::value<std::string>()->default_value("${top_srcdir}/feelpp/quickstart/elasticity.py"), "python file to evaluate" )
         ( "hsize", po::value<double>()->default_value( 0.8 ), "mesh size" )
         ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
         ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
         ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
-        ( "displ", po::value<std::string>()->default_value( "0" ), "displacement is given" )
+#if FEELPP_DIM==2
+        ( "displ", po::value<std::string>()->default_value( "Array([0,0])" ), "displacement is given" )
+        ( "f", po::value<std::string>()->default_value( "Array([0,0])" ), "external volumic load" )
+        ( "stressn", po::value<std::string>()->default_value( "Array([0,0])" ), "external surfacic load" )
+#else
+        ( "displ", po::value<std::string>()->default_value( "Array([0,0,0])" ), "displacement is given" )
+        ( "f", po::value<std::string>()->default_value( "Array([0,0,0])" ), "external volumic load" )
+        ( "stressn", po::value<std::string>()->default_value( "Array([0,0,0])" ), "external surfacic load" )
+#endif
         ( "Lambda", po::value<std::string>()->default_value( "1" ), "Lame coefficient" )
         ( "Mu", po::value<std::string>()->default_value( "1" ), "Lame coefficient" )
         ( "hface", po::value<int>()->default_value( 0 ), "hface" )
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
+        ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
+        ( "exact", po::value<bool>()->default_value( true ), "displacement is give and provides the exact solution or an approximation"  )
         ;
-    return testhdivoptions.add( Feel::feel_options() ).add( backend_options("sc"));
+    return hdgoptions;
 }
 
 inline
@@ -61,7 +71,7 @@ makeAbout()
                      "0.1",
                      "Quickstart for HDG method for linear elasticity",
                      AboutData::License_GPL,
-                     "Copyright (c) 2016-2017 Feel++ Consortium" );
+                     "Copyright (c) 2016-2019 Feel++ Consortium" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Daniele Prada", "developer", "daniele.prada85@gmail.com", "" );
     about.addAuthor( "Lorenzo Sala", "developer", "sala@unistra.fr", "" );
@@ -176,7 +186,6 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"), _expr=trans(id(m))*(expr<Dim,1>(displ)));
 #endif
     toc("rhs",true);
-    rhs.vectorPtr()->printMatlab("f.m");
     // Building the matrix
     tic();
 #if 0
@@ -262,8 +271,6 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     }
     toc("a(2,{0,1,2})", true);
     toc("matrices",true);
-    a.matrixPtr()->close();
-    a.matrixPtr()->printMatlab("a.m");
     tic();
     auto U = ps.element();
     auto Ue = ps.element();
@@ -274,8 +281,8 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     auto sigmap = U(0_c);
     auto up = U(1_c);
     auto uhatp = U(2_c);
-    int status = 1;
-    //if ( displ.count("exact" ) )
+    int status_displ = 1, status_stress = 1;
+    if ( boption( "exact" ) )
     {
         auto displ_exact = displ;
         auto sigma_exact = locals.at("stress");
@@ -289,21 +296,30 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
         toc("error");
                     
         // CHECKER
+        auto norms_stress = [&]( std::string const& solution ) ->std::map<std::string,double>
+            {
+                tic();
+                double l2 = normL2( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) - idv(sigmap) );
+                toc("L2 stress error norm");
+                
+                return { { "L2", l2 } };
+            };
         // compute l2 and h1 norm of u-u_h where u=solution
         auto norms_displ = [&]( std::string const& solution ) ->std::map<std::string,double>
             {
 			tic();
 			double l2 = normL2( _range=elements(mesh), _expr=expr<Dim,1>(displ_exact) - idv(up) );
-			toc("L2 error norm");
+			toc("L2 displ error norm");
 
 			tic();
 			double h1 = normH1(_range=elements(mesh), _expr=idv(up)- expr<Dim,1>(displ_exact), _grad_expr=gradv(up)-expr<Dim,Dim>(grad_displ_exact) );
-			toc("H1 error norm");
+			toc("H1 displ error norm");
 
 			return { { "L2", l2 } , {  "H1", h1 } };
             };
 
-        status = checker(displ_exact).runOnce( norms_displ, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
+        status_displ = checker("L2/H1 displacement norms",displ_exact).runOnce( norms_displ, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
+        status_stress = checker("L2 stress norms",displ_exact).runOnce( norms_stress, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
         v.on( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) );
         w.on( _range=elements(mesh), _expr=expr<Dim,1>(displ_exact) );
     }
@@ -320,7 +336,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     e->add( sigmaName, sigmap );
     e->add( uName, up );
     
-    //if ( displ.count("exact" ) )
+    if ( boption("exact" ) )
     {
         e->add( sigma_exName, v );
         e->add( u_exName, w );
@@ -330,7 +346,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
 
     toc("export");
 
-    return !status;
+    return status_stress || status_displ;
 }
 
 } // Feel
@@ -350,22 +366,25 @@ int main( int argc, char** argv )
     // Exact solutions
     std::map<std::string,std::string> locals{
         {"dim",std::to_string(FEELPP_DIM)},
+        {"exact",std::to_string(boption("exact"))}, 
         {"lam1",soption("Mu")},
         {"lam2",soption("Lambda")},
         {"displ", soption("displ")},
         {"grad_displ",""},
         {"strain",""},
         {"stress",""},
-        {"stressn",""},
-        {"f",""},
+        {"stressn",soption("stressn")},
+        {"f",soption("f")},
         {"c1",""},
         {"c2",""}};
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals  );
 
     for( auto d: locals )
         Feel::cout << d.first << ":" << d.second << std::endl;
+    if ( ioption( "order" ) == 1 )
+        return !hdg_elasticity<FEELPP_DIM,1>( locals );
+    if ( ioption( "order" ) == 2 )
+        return !hdg_elasticity<FEELPP_DIM,2>( locals );
 
-    int status = hdg_elasticity<FEELPP_DIM,1>( locals );
-    return !status;
-
+    return 1;
 }
