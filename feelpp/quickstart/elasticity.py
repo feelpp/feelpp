@@ -11,7 +11,7 @@ else:
     dim=2
 
 if 'exact' in locals():
-    exact=bool(locals()['exact']);
+    exact=True if locals()['exact']=="1" else False;
 else:
     exact=False
 
