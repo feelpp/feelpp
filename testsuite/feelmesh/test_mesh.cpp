@@ -28,15 +28,12 @@
    \date 2005-09-03
  */
 
-// Boost.Test
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh testsuite
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelmesh/geoentity.hpp>
@@ -52,7 +49,7 @@ namespace Feel
 namespace detail
 {
 typedef Mesh<Simplex<2> > mesh_type;
-typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 }
 }
 struct test_mesh_filters
@@ -102,7 +99,6 @@ struct test_mesh_filters
     void operator()()
     {
         BOOST_TEST_MESSAGE( "testing mesh for h=" << meshSize );
-        Feel::Assert::setLog( "test_mesh_filters.assert" );
 
 
         using namespace Feel;
@@ -110,58 +106,60 @@ struct test_mesh_filters
         BOOST_TEST_MESSAGE( "testing mesh faces" );
         // location faces
         {
-            Feel::MeshTraits<Feel::detail::mesh_type>::location_face_const_iterator it = mesh->beginInternalFace();
-            Feel::MeshTraits<Feel::detail::mesh_type>::location_face_const_iterator en = mesh->endInternalFace();
-
+            auto rangeInternalFaces = mesh->internalFaces();
+            auto it = std::get<0>( rangeInternalFaces );
+            auto en = std::get<1>( rangeInternalFaces );
             //BOOST_CHECK( std::distance( it, en ) == 1 );
             for ( ; it != en; ++it )
             {
+                auto const& iface = boost::unwrap_ref( *it );
                 // the face must be connected with two elements
-                BOOST_CHECK( it->isConnectedTo0() &&
-                             it->isConnectedTo1() );
+                BOOST_CHECK( iface.isConnectedTo0() &&
+                             iface.isConnectedTo1() );
                 // check that the points coordinates are the same for the face vertices
-                int face_0 = it->pos_first();
-                int face_1 = it->pos_second();
-                Feel::node<double>::type n00 = it->element( 0 ).point( it->element( 0 ).fToP( face_0, 0 ) ).node();
-                Feel::node<double>::type n10 = it->element( 1 ).point( it->element( 1 ).fToP( face_1, 1 ) ).node();
+                int face_0 = iface.pos_first();
+                int face_1 = iface.pos_second();
+                Feel::node<double>::type n00 = iface.element( 0 ).point( iface.element( 0 ).fToP( face_0, 0 ) ).node();
+                Feel::node<double>::type n10 = iface.element( 1 ).point( iface.element( 1 ).fToP( face_1, 1 ) ).node();
                 FEELPP_ASSERT( ublas::norm_2( n00 - n10 ) < 1e-15 )
-                ( it->id() )
-                ( it->element( 0 ).G() )
+                ( iface.id() )
+                ( iface.element( 0 ).G() )
                 ( face_0 )
-                ( it->element( 0 ).fToP( face_0, 0 ) )
-                ( it->element( 1 ).G() )
+                ( iface.element( 0 ).fToP( face_0, 0 ) )
+                ( iface.element( 1 ).G() )
                 ( face_1 )
-                ( it->element( 1 ).fToP( face_1, 1 ) )
+                ( iface.element( 1 ).fToP( face_1, 1 ) )
                 ( n00 )
                 ( n10 )
                 ( ublas::norm_2( n00 - n10 ) ).warn( "check failed" );
                 BOOST_CHECK( ublas::norm_2( n00 - n10 ) < 1e-15 );
-                Feel::node<double>::type n01 = it->element( 0 ).point( it->element( 0 ).fToP( face_0, 1 ) ).node();
-                Feel::node<double>::type n11 = it->element( 1 ).point( it->element( 1 ).fToP( face_1, 0 ) ).node();
+                Feel::node<double>::type n01 = iface.element( 0 ).point( iface.element( 0 ).fToP( face_0, 1 ) ).node();
+                Feel::node<double>::type n11 = iface.element( 1 ).point( iface.element( 1 ).fToP( face_1, 0 ) ).node();
                 FEELPP_ASSERT( ublas::norm_2( n01 - n11 ) < 1e-15 )
-                ( it->id() )
-                ( it->element( 0 ).G() )
+                ( iface.id() )
+                ( iface.element( 0 ).G() )
                 ( face_0 )
-                ( it->element( 0 ).fToP( face_0, 1 ) )
-                ( it->element( 1 ).G() )
+                ( iface.element( 0 ).fToP( face_0, 1 ) )
+                ( iface.element( 1 ).G() )
                 ( face_1 )
-                ( it->element( 1 ).fToP( face_1, 0 ) )
+                ( iface.element( 1 ).fToP( face_1, 0 ) )
                 ( face_1 )
                 ( n01 )( n11 )( ublas::norm_2( n01 - n11 ) ).warn( "check failed" );
                 BOOST_CHECK( ublas::norm_2( n01 - n11 ) < 1e-15 );
             }
 
-            it = mesh->beginFaceOnBoundary();
-            en = mesh->endFaceOnBoundary();
-
+            auto rangeBoundaryFaces = mesh->facesOnBoundary();
+            it = std::get<0>( rangeBoundaryFaces );
+            en = std::get<1>( rangeBoundaryFaces );
             //BOOST_CHECK( std::distance( it, en ) == 4 );
             for ( ; it != en; ++it )
             {
-                BOOST_CHECK( it->isConnectedTo0() &&
-                             !it->isConnectedTo1() );
-                BOOST_CHECK( it->marker().value() == mesh->markerName("Gamma1") ||
-                             it->marker().value() == mesh->markerName("Gamma2") ||
-                             it->marker().value() == mesh->markerName("Gamma3") );
+                auto const& bface = boost::unwrap_ref( *it );
+                BOOST_CHECK( bface.isConnectedTo0() &&
+                             !bface.isConnectedTo1() );
+                BOOST_CHECK( bface.marker().value() == mesh->markerName("Gamma1") ||
+                             bface.marker().value() == mesh->markerName("Gamma2") ||
+                             bface.marker().value() == mesh->markerName("Gamma3") );
             }
         }
         BOOST_TEST_MESSAGE( "testing mesh elements" );
@@ -172,7 +170,7 @@ struct test_mesh_filters
             typedef gm_type::precompute_ptrtype geopc_ptrtype;
             typedef gm_type::precompute_type geopc_type;
             typedef gm_type::Context<vm::POINT, Feel::detail::mesh_type::element_type> gmc_type;
-            typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+            typedef std::shared_ptr<gmc_type> gmc_ptrtype;
             //
             // Precompute some data in the reference element for
             // geometric mapping and reference finite element
@@ -185,12 +183,13 @@ struct test_mesh_filters
             //BOOST_CHECK( std::distance( it, en ) == 1 );
             for ( ; it != en; ++it )
             {
+                auto const& elt = it->second;
                 // check that the geometric transformation from
                 // the current gives back the vertices of the
                 // element
-                gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
+                gmc_ptrtype __c( new gmc_type( __gm, elt, __geopc ) );
 
-                BOOST_CHECK( ublas::norm_frobenius( __c->xReal() - it->G() ) < 1e-15 );
+                BOOST_CHECK( ublas::norm_frobenius( __c->xReal() - elt.G() ) < 1e-15 );
             }
         }
         BOOST_TEST_MESSAGE( "testing mesh for h=" << meshSize << " done" );

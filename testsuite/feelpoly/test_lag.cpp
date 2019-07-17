@@ -32,7 +32,7 @@
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 
-#include <testlagrange.hpp>
+#include "testlagrange.hpp"
 
 #if 1
 BOOST_AUTO_TEST_SUITE( lagrange_testsuite )
@@ -85,11 +85,13 @@ BOOST_AUTO_TEST_CASE( lag25scr64s )
     TestLagrange<fem::Lagrange<2, 2, 5, Scalar, Continuous, real64_type, Simplex> > t;
     t();
 }
+#if defined( NDEBUG )
 BOOST_AUTO_TEST_CASE( lag210scr64s )
 {
     TestLagrange<fem::Lagrange<2, 2, 10, Scalar, Continuous, real64_type, Simplex> > t;
     t();
 }
+#endif
 
 BOOST_AUTO_TEST_SUITE_END() // lagrange_2d_simplex_testsuite
 
@@ -110,12 +112,13 @@ BOOST_AUTO_TEST_CASE( lag35scr64s )
     TestLagrange<fem::Lagrange<3, 3, 5, Scalar, Continuous, real64_type, Simplex> > t;
     t();
 }
+#if defined( NDEBUG )
 BOOST_AUTO_TEST_CASE( lag310scr64s )
 {
     TestLagrange<fem::Lagrange<3, 3, 10, Scalar, Continuous, real64_type, Simplex> > t( 1e-9 );
     t();
 }
-
+#endif
 BOOST_AUTO_TEST_SUITE_END() // lagrange_3d_simplex_testsuite
 
 BOOST_AUTO_TEST_SUITE( lagrange_1d_hypercube_testsuite )
@@ -161,11 +164,13 @@ BOOST_AUTO_TEST_CASE( lag25scr64s )
     TestLagrange<fem::Lagrange<2, 2,5, Scalar, Continuous, real64_type, Hypercube> > t;
     t();
 }
+#if defined( NDEBUG )
 BOOST_AUTO_TEST_CASE( lag210scr64s )
 {
     TestLagrange<fem::Lagrange<2, 2,10, Scalar, Continuous, real64_type, Hypercube> > t;
     t();
 }
+#endif
 
 BOOST_AUTO_TEST_SUITE_END() // lagrange_2d_hypercube_testsuite
 
@@ -186,12 +191,13 @@ BOOST_AUTO_TEST_CASE( lag35scr64s )
     TestLagrange<fem::Lagrange<3, 3, 5, Scalar, Continuous, real64_type, Hypercube> > t;
     t();
 }
+#if defined( NDEBUG )
 BOOST_AUTO_TEST_CASE( lag310scr64s )
 {
     TestLagrange<fem::Lagrange<3, 3, 7, Scalar, Continuous, real64_type, Hypercube> > t;
     t();
 }
-
+#endif
 BOOST_AUTO_TEST_SUITE_END() // lagrange_3d_hypercube_testsuite
 
 

@@ -26,14 +26,10 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-10-21
  */
-#define USE_BOOST_TEST 1
-// Boost.Test
 
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE submesh testsuite
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feel.hpp>
 
@@ -46,7 +42,7 @@ struct imesh
 {
     typedef Simplex<Dim, Order> convex_type;
     typedef Mesh<convex_type, T > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 template<typename value_type = double, int Dim=2>
@@ -56,9 +52,9 @@ struct test_submesh: public Application
     typedef typename imesh<value_type,Dim>::type mesh_type;
     typedef typename imesh<value_type,Dim>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<3, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef typename mesh_type::location_element_const_iterator location_element_const_iterator;
+    //typedef typename mesh_type::location_element_const_iterator location_element_const_iterator;
     typedef Backend<value_type> backend_type;
 
     test_submesh()
@@ -81,11 +77,9 @@ struct test_submesh: public Application
     }
     void operator()()
     {
-        location_element_const_iterator it,en;
-        boost::tie( it,en ) = mesh->boundaryElements( mesh->worldComm().localRank() );
-        mesh_ptrtype meshbdy( new mesh_type );
-        meshbdy = createSubmesh( mesh, boundaryelements( mesh ) );
-        BOOST_CHECK_EQUAL( nelements(elements(meshbdy),false), std::distance( it, en ) );
+        //mesh_ptrtype meshbdy( new mesh_type );
+        auto meshbdy = createSubmesh( mesh, boundaryelements( mesh ) );
+        BOOST_CHECK_EQUAL( nelements(elements(meshbdy),false), nelements( boundaryelements( mesh ) ) );
         //saveGMSHMesh( _mesh=meshbdy, _filename=shape+"_sub.msh" );
         using namespace Feel::vf;
         double intm1 = integrate( elements( meshbdy ), cst( 1. ) ).evaluate()( 0,0 );
@@ -103,10 +97,9 @@ struct test_submesh: public Application
         BOOST_CHECK_CLOSE( intm13, intm23, 1e-12 );
 
 
-        mesh_ptrtype meshint( new mesh_type );
-        boost::tie( it,en ) = mesh->internalElements( mesh->worldComm().localRank() );
-        meshint = createSubmesh( mesh, internalelements(mesh) );
-        BOOST_CHECK_EQUAL( nelements(elements(meshint),false), std::distance( it, en ) );
+        //mesh_ptrtype meshint( new mesh_type );
+        auto meshint = createSubmesh( mesh, internalelements(mesh) );
+        BOOST_CHECK_EQUAL( nelements(elements(meshint),false), nelements(internalelements(mesh)) );
         //saveGMSHMesh( _mesh=meshbdy, _filename="meshbdy" );
 
         using namespace Feel::vf;
@@ -136,7 +129,7 @@ struct test_submesh: public Application
 
         backend->solve( _matrix=Di, _rhs=Fi, _solution=ui );
 
-        boost::shared_ptr<Exporter<mesh_type> > exporter( Exporter<mesh_type>::New( "gmsh", std::string( "submesh" )
+        std::shared_ptr<Exporter<mesh_type> > exporter( Exporter<mesh_type>::New( "gmsh", std::string( "submesh" )
                 + "_"
                 + mesh_type::shape_type::name() ) );
 
@@ -151,7 +144,7 @@ struct test_submesh: public Application
         BOOST_CHECK_CLOSE( D->energy( u, u ), Di->energy( ui, ui ), 5e-12 );
 #endif
     }
-    boost::shared_ptr<backend_type> backend;
+    std::shared_ptr<backend_type> backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -369,15 +362,3 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
 
 }
 BOOST_AUTO_TEST_SUITE_END()
-
-#if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_submesh.assert" );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}
-#endif

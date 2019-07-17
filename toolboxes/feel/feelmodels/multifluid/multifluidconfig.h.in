@@ -1,0 +1,13 @@
+
+#include <feel/feelmodels/fluid/@FLUIDMECHANICS_LIB_VARIANTS@/fluidmechanicsconfig.h>
+#include <feel/feelmodels/levelset/@LEVELSET_LIB_VARIANTS@/levelsetconfig.h>
+
+#define MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS \
+    template< typename FluidType, typename LevelSetType > \
+    /**/ 
+#define MULTIFLUID_CLASS_TEMPLATE_TYPE \
+    MultiFluid<FluidType, LevelSetType> \
+    /**/ 
+#define MULTIFLUID_CLASS_INSTANTIATION \
+    MultiFluid< FLUIDMECHANICS_CLASS_TYPE, LEVELSET_CLASS_TYPE > \
+    /**/

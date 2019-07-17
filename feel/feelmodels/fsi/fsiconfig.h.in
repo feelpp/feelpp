@@ -1,3 +1,0 @@
-
-#include <feel/feelmodels/fluid/@FLUID_MODEL_SPECIFIC_NAME_SUFFIX@/fluidmecconfig.h>
-#include <feel/feelmodels/solid/@SOLID_MODEL_SPECIFIC_NAME_SUFFIX@/solidmecconfig.h>

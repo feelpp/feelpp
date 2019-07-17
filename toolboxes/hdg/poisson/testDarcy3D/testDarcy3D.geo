@@ -1,0 +1,45 @@
+h=0.1;
+
+Point(1) = {0,0,0,h};
+Point(2) = {0,2,0,h};
+Point(3) = {2,2,0,h};
+Point(4) = {2,0,0,h};
+Point(5) = {0,0,2,h};
+Point(6) = {0,2,2,h};
+Point(7) = {2,2,2,h};
+Point(8) = {2,0,2,h};
+Line(1) = {1,2};
+Line(2) = {2,3};
+Line(3) = {3,4};
+Line(4) = {4,1};
+Line Loop(5) = {1,2,3,4};
+Plane Surface(1) = {5};
+Line(6) = {5,6};
+Line(7) = {6,7};
+Line(8) = {7,8};
+Line(9) = {8,5};
+Line Loop(10) = {6,7,8,9};
+Plane Surface(2) = {10};
+Line(11) = {1,5};
+Line(12) = {6,2};
+Line Loop(13) = {11,6,12,-1};
+Plane Surface(3) = {13};
+Line(14) = {3,7};
+Line Loop(15) = {2,14,-7,12};
+Plane Surface(4) = {15};
+Line(16) = {8,4};
+Line Loop(17) = {14,8,16,-3};
+Plane Surface(5) = {17};
+Line Loop(18) = {16,4,11,-9};
+Plane Surface(6) = {18};
+
+Surface Loop(7) = {1,2,3,4,5,6};
+Volume(1) = {7};
+
+Physical Surface("bottom") = {1};
+Physical Surface("top") = {2};
+Physical Surface("left") = {3};
+Physical Surface("back") = {4};
+Physical Surface("right") = {5};
+Physical Surface("front") = {6};
+Physical Volume("omega") = {1};

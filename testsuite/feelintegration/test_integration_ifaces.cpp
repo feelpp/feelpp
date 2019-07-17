@@ -27,17 +27,13 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-08-25
  */
-#define USE_BOOST_TEST 1
-// Boost.Test
 
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE 3D integration testsuite
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
 
@@ -60,7 +56,7 @@ struct imesh
 {
     typedef Simplex<Dim, Order> convex_type;
     typedef Mesh<convex_type, T > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 template<typename value_type = double, int Dim=2>
@@ -70,7 +66,7 @@ struct test_integration_internal_faces_v: public Application
     typedef typename imesh<value_type,Dim>::type mesh_type;
     typedef typename imesh<value_type,Dim>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<3, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     test_integration_internal_faces_v()
@@ -116,7 +112,7 @@ struct test_integration_internal_faces_v: public Application
         BOOST_CHECK_SMALL( v1, eps );
         BOOST_TEST_MESSAGE( "int left(2*X^t) =" << v1l << "\n" );
         BOOST_TEST_MESSAGE( "int right(2*X^t) =" << v1r << "\n" );
-        BOOST_CHECK_CLOSE( v1l, -v1r, eps );
+        BOOST_CHECK_SMALL( v1l+v1r, eps );
 #else
         FEELPP_ASSERT( math::abs( v1-0.0 ) < eps )( v1 )( math::abs( v1-0.0 ) )( eps ).warn ( "v1 != 0" );
 #endif /* USE_BOOST_TEST */
@@ -185,7 +181,7 @@ struct test_integration_internal_faces_v: public Application
         BOOST_CHECK_CLOSE( 2*avgv_1, sumv_1, eps );
 
     }
-    boost::shared_ptr<Feel::Backend<double> > backend;
+    std::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -199,7 +195,7 @@ struct test_integration_internal_faces_lf : public Application
     typedef typename imesh<value_type,Dim>::type mesh_type;
     typedef typename imesh<value_type,Dim>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<3, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     test_integration_internal_faces_lf()
@@ -233,13 +229,13 @@ struct test_integration_internal_faces_lf : public Application
         //auto u_exact = Px()*Px()+Py()*Py()+Pz()*Pz();
         auto u_exact = Px()*Px()*Pz()+Py()*Py()*Px()+Pz()*Pz()*Py();
         auto v_exact = u_exact *unitX() + u_exact*unitY()+ u_exact*unitZ();
-        u = vf::project( Xh, elements( mesh ), u_exact );
-
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=u_exact );
+        sync(u);
 
         auto F = backend->newVector( Xh );
-        auto _F_ = integrate( internalfaces( mesh ),
-                trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() ) );
-        form1( _test=Xh, _vector=F, _init=true ) = _F_;
+        form1( _test=Xh, _vector=F ) =
+            integrate( internalfaces( mesh ),
+                       trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() ) );
         //  integrate( internalfaces( mesh ),
         //        //print(trans(print(leftface(id(u)*print(N(),"leftN:")),"leftuN=")+print(rightface(id(u)*print(N(),"rightN:")),"rightuN=")),"leftuN+rightuN=" )*print(leftfacev(N()),"leftN=")
         //        trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() )
@@ -253,38 +249,58 @@ struct test_integration_internal_faces_lf : public Application
         BOOST_CHECK_SMALL( jumpu_F, eps );
 
 #if 1
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ),
-                ( jump( grad( u ) ) ) );
+        form1( _test=Xh, _vector=F ) =
+            integrate( _range=internalfaces( mesh ),
+                       _expr=( jump( grad( u ) ) ) );
+        F->close();
         double jump_gradu_F = inner_product( u, *F );
         BOOST_TEST_MESSAGE ( "jump(grad(u) u^T F = " << jump_gradu_F << "\n" );
         BOOST_CHECK_SMALL( jump_gradu_F, eps );
 
-        form1(_test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), leftface( grad( u )*N() ) );
+        form1(_test=Xh, _vector=F ) =
+            integrate( _range=internalfaces( mesh ),
+                       _expr=leftface( grad( u )*N() ) );
+        F->close();
         double left_gradu_n = inner_product( u, *F );
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), rightface( grad( u )*N() ) );
+        form1( _test=Xh, _vector=F ) =
+            integrate( _range=internalfaces( mesh ),
+                       _expr=rightface( grad( u )*N() ) );
+        F->close();
         double right_gradu_n = inner_product( u, *F );
         BOOST_TEST_MESSAGE(  "jump(left(grad(u)*N)) u^T F = " << left_gradu_n << "\n" );
         BOOST_TEST_MESSAGE(  "jump(right(grad(u)*N)) u^T F = " << right_gradu_n << "\n" );
         BOOST_CHECK_CLOSE( left_gradu_n, -right_gradu_n, eps*100 );
 
-        u = vf::project( Xh, elements( mesh ), cst( 1. ) );
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), leftface( id( u ) ) );
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=cst( 1. ) );
+        form1( _test=Xh, _vector=F ) =
+            integrate( _range=internalfaces( mesh ),
+                       _expr=leftface( id( u ) ) );
+        F->close();
         double left_1 = inner_product( u, *F );
         BOOST_TEST_MESSAGE(  "left(id(u)) u^T F = " << left_1 << "\n" );
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), rightface( id( u ) ) );
+        form1( _test=Xh, _vector=F ) =
+            integrate( _range=internalfaces( mesh ),
+                       _expr=rightface( id( u ) ) );
+        F->close();
         double right_1 = inner_product( u, *F );
         BOOST_TEST_MESSAGE(  "right(id(u)) u^T F = " << right_1 << "\n" );
         BOOST_CHECK_CLOSE( left_1, right_1, eps );
 
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), trans( N() )*jump( id( u ) ) );
+        form1( _test=Xh, _vector=F ) =
+            integrate( _range=internalfaces( mesh ),
+                       _expr=trans( N() )*jump( id( u ) ) );
+        F->close();
         BOOST_CHECK_SMALL( inner_product( u, *F ), eps );
 
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), jump( grad( u ) ) );
+        form1( _test=Xh, _vector=F ) =
+            integrate( _range=internalfaces( mesh ),
+                       _expr=jump( grad( u ) ) );
+        F->close();
         BOOST_CHECK_SMALL( inner_product( u, *F ), eps );
 #endif
 
     }
-    boost::shared_ptr<Feel::Backend<double> > backend;
+    std::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -347,25 +363,13 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_lf, T, dim_types )
 BOOST_AUTO_TEST_SUITE_END()
 
 #if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_integration_ifaces.assert" );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}
-#endif
-
-#if 0
 #if defined(USE_BOOST_TEST)
-boost::shared_ptr<Feel::Application> mpi;
+std::shared_ptr<Feel::Application> mpi;
 test_suite*
 init_unit_test_suite( int argc, char** argv )
 {
-    mpi = boost::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
-    Feel::Assert::setLog( "test_integration.assert" );
+    mpi = std::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
+
     test_suite* test = BOOST_TEST_SUITE( "2D Generic finite element solver test suite" );
 
     test->add( BOOST_TEST_CASE( ( test_integration_internal_faces<double>( mpi->vm()["hsize"].as<double>() ) ) ) );
@@ -377,7 +381,6 @@ int
 main( int argc, char** argv )
 {
     Feel::Application mpi( argc, argv, makeAbout(), makeOptions() );
-    Feel::Assert::setLog( "test_integration_ifaces.assert" );
 
     test_integration_internal_faces<double> c ( mpi.vm()["hsize"].as<double>() );
     c();

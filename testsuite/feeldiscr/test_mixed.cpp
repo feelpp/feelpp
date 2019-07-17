@@ -26,13 +26,10 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-07-07
  */
-#define USE_BOOST_TEST 1
 
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE function space testsuite
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 
 
@@ -124,7 +121,7 @@ public:
     //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
 
     //! sparse matrix type associated with backend
@@ -141,7 +138,7 @@ public:
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! function space that holds piecewise constant (\f$P_0\f$) functions (e.g. to store material properties or partitioning
     typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar, Discontinuous> > > p0_space_type;
@@ -156,8 +153,8 @@ public:
     typedef FunctionSpace<mesh_type, v_basis_type> v_space_type;
     typedef FunctionSpace<mesh_type, p_basis_type> p_space_type;
     //! the approximation function space type (shared_ptr<> type)
-    typedef boost::shared_ptr<v_space_type> v_space_ptrtype;
-    typedef boost::shared_ptr<p_space_type> p_space_ptrtype;
+    typedef std::shared_ptr<v_space_type> v_space_ptrtype;
+    typedef std::shared_ptr<p_space_type> p_space_ptrtype;
     //! an element type of the approximation function space
     typedef typename v_space_type::element_type v_element_type;
     typedef typename p_space_type::element_type p_element_type;
@@ -275,8 +272,8 @@ TestMixed<Dim,Order>::run()
 
     {
         auto D = M_backend->newMatrix( Xh, Yh );
-        BOOST_CHECK_EQUAL( D->size1(), Yh->nLocalDof() );
-        BOOST_CHECK_EQUAL( D->size2(), Xh->nLocalDof() );
+        BOOST_CHECK_EQUAL( D->size1(), Yh->nDof() );
+        BOOST_CHECK_EQUAL( D->size2(), Xh->nDof() );
         form2( _trial=Xh, _test=Yh, _matrix=D, _init=true )= integrate( elements( mesh ), divt( u )*id( p ) );
         D->close();
         //D->printMatlab( "D.m" );
@@ -319,8 +316,8 @@ TestMixed<Dim,Order>::run()
     }
     {
         sparse_matrix_ptrtype D( M_backend->newMatrix( Yh, Xh ) );
-        BOOST_CHECK_EQUAL( D->size1(), Xh->nLocalDof() );
-        BOOST_CHECK_EQUAL( D->size2(), Yh->nLocalDof() );
+        BOOST_CHECK_EQUAL( D->size1(), Xh->nDof() );
+        BOOST_CHECK_EQUAL( D->size2(), Yh->nDof() );
         form2( _test=Xh, _trial=Yh, _matrix=D, _init=true )= integrate( elements( mesh ), div( u )*idt( p ) );
 
         D->close();
@@ -345,8 +342,8 @@ TestMixed<Dim,Order>::run()
     }
     {
         sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
-        BOOST_CHECK_EQUAL( D->size1(), Xh->nLocalDof() );
-        BOOST_CHECK_EQUAL( D->size2(), Xh->nLocalDof() );
+        BOOST_CHECK_EQUAL( D->size1(), Xh->nDof() );
+        BOOST_CHECK_EQUAL( D->size2(), Xh->nDof() );
         form2( _trial=Xh, _test=Xh, _matrix=D, _init=true )= integrate( elements( mesh ), divt( u )*div( u ) );
         D->close();
         //D->printMatlab( "divdiv.m" );
@@ -373,7 +370,7 @@ TestMixed<Dim,Order>::run()
 }
 #if USE_BOOST_TEST
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( mixed )
 
@@ -411,18 +408,6 @@ BOOST_AUTO_TEST_CASE( test_mixed2_33 )
 #endif
 BOOST_AUTO_TEST_SUITE_END()
 
-
-#if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_mixed.assert" );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}
-#endif
 #else
 
 /**

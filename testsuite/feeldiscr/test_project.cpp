@@ -34,7 +34,7 @@
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE project discr testsuite
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <boost/mpl/list.hpp>
 
@@ -79,16 +79,16 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project1, T, dim_types )
     double measure = 0.;
     for ( int i = 0; i < P1h->nLocalDof(); ++i )
     {
-        BOOST_CHECK_CLOSE( p1meas( i ), mesh->beginElement/*WithProcessId*/()->measure(), 1e-13 );
-        measure += mesh->beginElement/*WithProcessId*/()->measure();
+        BOOST_CHECK_CLOSE( p1meas( i ), mesh->beginElement/*WithProcessId*/()->second.measure(), 1e-13 );
+        measure += mesh->beginElement/*WithProcessId*/()->second.measure();
     }
 
 
     if ( mesh->numElements()>0 )
     {
         BOOST_CHECK_CLOSE( p1measSum, measure, 1e-13 );
-        BOOST_CHECK_EQUAL( mesh->beginElement()->numberOfPointElementNeighbors(), 1 );
-        BOOST_CHECK_CLOSE( mesh->beginElement()->measurePointElementNeighbors(), mesh->beginElement()->measure(), 1e-13 );
+        BOOST_CHECK_EQUAL( mesh->beginElement()->second.numberOfPointElementNeighbors(), 1 );
+        BOOST_CHECK_CLOSE( mesh->beginElement()->second.measurePointElementNeighbors(), mesh->beginElement()->second.measure(), 1e-13 );
     }
 }
 
@@ -116,34 +116,35 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project2, T, dim_types )
 
     for ( ; elit != elen; ++elit )
     {
-        BOOST_TEST_MESSAGE( "  check element " << elit->id() << "\n" );
-        BOOST_FOREACH( auto elid, elit->pointElementNeighborIds() )
+        auto const& elt = elit->second;
+        BOOST_TEST_MESSAGE( "  check element " << elt.id() << "\n" );
+        BOOST_FOREACH( auto elid, elt.pointElementNeighborIds() )
         {
-            BOOST_TEST_MESSAGE( "  element " << elit->id() << " -> element " << elid << "\n" );
+            BOOST_TEST_MESSAGE( "  element " << elt.id() << " -> element " << elid << "\n" );
         }
 
         switch ( T::value )
         {
         case 1:
-            BOOST_CHECK_EQUAL( elit->numberOfPointElementNeighbors(), elit->isInternal()?3:2 );
+            BOOST_CHECK_EQUAL( elt.numberOfPointElementNeighbors(), elt.isInternal()?3:2 );
 
             break;
 
         case 2:
-            BOOST_CHECK_GE( elit->numberOfPointElementNeighbors(), 2 );
-            BOOST_CHECK_LE( elit->numberOfPointElementNeighbors(), nEltOnMesh );
+            BOOST_CHECK_GE( elt.numberOfPointElementNeighbors(), 2 );
+            BOOST_CHECK_LE( elt.numberOfPointElementNeighbors(), nEltOnMesh );
 
             break;
 
         case 3:
-            BOOST_CHECK_GE( elit->numberOfPointElementNeighbors(), 2 );
-            BOOST_CHECK_LE( elit->numberOfPointElementNeighbors(), nEltOnMesh );
+            BOOST_CHECK_GE( elt.numberOfPointElementNeighbors(), 2 );
+            BOOST_CHECK_LE( elt.numberOfPointElementNeighbors(), nEltOnMesh );
             break;
         }
 
-        if ( elit->numberOfPointElementNeighbors() == nEltOnMesh )
+        if ( elt.numberOfPointElementNeighbors() == nEltOnMesh )
         {
-            BOOST_CHECK_CLOSE( elit->measurePointElementNeighbors(), mesh->measure(), 1e-13 );
+            BOOST_CHECK_CLOSE( elt.measurePointElementNeighbors(), mesh->measure(), 1e-13 );
             //findEltConnectToAll=true;
         }
 

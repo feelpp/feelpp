@@ -1,0 +1,63 @@
+= Mixed Poisson HDG Model
+
+== Materials
+
+The materials need to have the expression for the conductivity as a property. By default, this property is named `cond`, but it can be override with the option `conductivity_json`. +
+If the problem is non linear, the materials also need to have the non linear conductivity expression. By default, this property is named `condNL`, but it can be override with the option `conductivityNL_json`.
+
+== Boundary Conditions
+
+The boundary conditions are on the fields `potential` or `flux`. +
+On the potential, you can have:
+
+- `SourceTerm`
+- `Dirichlet`
+- `Neumann`
+- `Robin`
+
+On the flux:
+
+- `SourceTerm`
+- `Integral`
+
+== Advance usage
+
+The constructor can take a string paramter, if not empty, this string is used as a prefix for all options.
+
+The right hand side can be updated with `updatePotentialRHS` or `updateFluxRHS`, the former is to update $$\nabla\cdot\mathbf{u} = f$$ and the latter for $$\mathbf{u}+\sigma\nabla p = g$$. +
+The term containing the conductivity $$(\mathbf{u}/\sigma, \mathbf{v})$$ can be updated with `updateConductivityTerm`. +
+All these functions take an expression and a marker for parameters, if no marker is provided, the expression is applied on all the volume. The expression represents $$f$$, $$g$$ or $$\sigma$$. +
+For the conductivity, the json file can be used instead by using the override function with a `bool` for parameter. If false, the conductivity will be set according to the option `conductivity_json`, if true, the conductivity will be set according to the option `conductivityNL_json`.
+
+== Examples
+
+The simpliest way to use it:
+
+[source,c++]
+----
+auto MP = MixedPoisson<2,1>();
+MP.init();
+MP.assembleAll();
+M.solve();
+MP.exportResults();
+----
+
+A more involved example:
+
+[source,c++]
+----
+auto mesh = loadMesh(new mesh_type);
+auto MP = MixedPoisson<3,2>("MyPrefix");
+MP.init(mesh);
+MP.assembleCstPart();
+auto v = MP.potentialSpace()->element();
+auto ex = cst(2.)*idv(v);
+MP.updateConductivityTerm(ex);
+MP.assembleRHS();
+MP.assembleBoundaryCond();
+MP.solve();
+auto e = export(mesh);
+e->add("myflux", MP.fluxField());
+e->add("mypotential", MP.potentialField());
+e->save();
+----

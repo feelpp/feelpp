@@ -1,0 +1,48 @@
+= ThermoElectric CRB problem
+
+The goal is to solve the following problem:
+[stem]
+++++
+\begin{align}
+-\nabla\cdot\sigma\nabla V &= 0 &\text{in } \Omega\\
+V &= 0 &\text{on } \Gamma_{in}\\
+V &= g_I &\text{on } \Gamma_{out}\\
+-\sigma\nabla V \cdot \boldsymbol{n} &= 0 &\text{on } \Gamma_e\\
+-\nabla\cdot k\nabla T &= \sigma\nabla V\cdot \nabla V &\text{in } \Omega\\
+-k \nabla T \cdot \boldsymbol{n} &= h(T-T_w) &\text{on } \Gamma_{cool}\\
+-k \nabla T \cdot \boldsymbol{n} &= 0 &\text{on } \Gamma_{t}
+\end{align}
+++++
+by using the reduced basis method.
+
+There is two applications, `feelpp_crb_thermoelectricCRB` the linear one, and `feelpp_crb_nl-thermoelectricCRB`, the non-linear application.
+
+== Linear application
+
+In this case the parameters are stem:[(\sigma, k, g_I, h, T_w)]. They are given via the json file by the following keywords: `sigma`, `k`, `current`, `h` and `Tw`.
+
+The right hand side stem:[\sigma\nabla V\cdot\nabla V] is handle with the empirical interpolation method.
+
+== Non-linear application
+
+In this case, the electric and thermal conductivities depend on the temperature by the following laws:
+
+[stem]
+++++
+\begin{align}
+\sigma(T) &= \frac{\sigma_0}{1+\alpha(T-T_0)} & k(T) &= \sigma(T)LT
+\end{align}
+++++
+
+The parameters are stem:[(\sigma_0, \alpha, L, g_I, h, T_w)]. They are given via the json file by the following keywords: `sigma`, `alpha`, `L`, `current`, `h` and `Tw`.
+
+The right hand side stem:[\sigma\nabla V\cdot\nabla V] and the conductivities are handle with the empirical interpolation method.
+
+This application is still not working, the EIM approximations are 0 for the right hand side and the thermal conductivity. The problem seems to be that when we try to solve the problem stem:[(q_j(t_i))\beta = g(t_i)], stem:[g(t_i)] returns always 0. +
+
+The command line to launch quickly the application and see the problem is:
+`./feelpp_crb_nl-thermoelectricCRB --config-file th-crb-quarterturn/nl-quarterturn.cfg --thermoelectric.trainset-eim-size 1 --thermoelectric.maxit 2 --eim.dimension-max 2 --crb.dimension-max 2`
+
+You need to do `make feelpp_add_testcase th-crb-quarterturn` first.
+
+

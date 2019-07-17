@@ -32,7 +32,7 @@ using boost::unit_test::test_suite;
 #define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_integrateQuadra
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #endif
 
 #include <feel/feelcore/feel.hpp>
@@ -48,9 +48,9 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "test_integrateQuadra" ,
-                     "test_integrateQuadra" ,
-                     "0.2",
+    AboutData about( "test_immultiscale" ,
+                     "test_immultiscale" ,
+                     "8.9e-3",
                      "test integrate Quadra",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2015 Feel++ Consortium" );
@@ -120,7 +120,8 @@ public:
     {
         using namespace Feel;
 
-        IMGeneral<D, N, T, Hypercube, MultiScaleQuadrature> im;
+        //IMGeneral<D, T, Hypercube, MultiScaleQuadrature> im( N );
+        IMGeneral<D, T, Hypercube> im( N );
 
         value_type res = math::abs( im.integrateAtPoints( M_func ) - M_res );
 
@@ -148,8 +149,8 @@ public:
 //BOOST_FIXTURE_TEST_SUITE( im1d_double_suite, F )
 
 //#if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
-BOOST_AUTO_TEST_SUITE( integrQuadra_suite )
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() )
+BOOST_AUTO_TEST_SUITE( immultiscale_suite )
 BOOST_AUTO_TEST_CASE( im1d_test1 )
 {
     TestImQK<1,1, double> t1( 2.0, one<double> );

@@ -26,16 +26,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   \date 2007-12-19
   */
-#define USE_BOOST_TEST 1
 
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE interpolation operator testsuite
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -63,7 +60,7 @@ template<int Dim, int Order=1, int RDim=Dim>
 struct imesh
 {
   typedef Mesh<Simplex<Dim,Order,RDim>, double > type;
-  typedef boost::shared_ptr<type> ptrtype;
+  typedef std::shared_ptr<type> ptrtype;
 };
 
 template<int Dim, int Order, int RDim>
@@ -107,7 +104,7 @@ struct test_interpolation_op
 
     typedef fusion::vector<Lagrange<Order+2+GeoOrder-1, Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+    auto Xh = space_type::New( _mesh=mesh );
 
     typename space_type::element_type u( Xh, "u" );
 
@@ -119,12 +116,12 @@ struct test_interpolation_op
 
     typedef fusion::vector<Lagrange<Order+GeoOrder-1, Scalar> > imagebasis_type;
     typedef FunctionSpace<mesh1_type, imagebasis_type> imagespace_type;
-    boost::shared_ptr<imagespace_type> Yh( new imagespace_type( mesh1 ) );
+    auto Yh = imagespace_type::New( _mesh=mesh1 );
     typename imagespace_type::element_type v( Yh, "v" );
     BOOST_MESSAGE(  "[test_interpolation_op] functionspace allocated\n" );
 
     typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 #if 0
 #if defined( FEELPP_HAS_PETSC_H )
     backend_ptrtype backend( backend_type::build( BACKEND_PETSC ) );
@@ -207,7 +204,7 @@ template<int DimDomain, int OrderDomain, int RealDimDomain,
 #if 0
     typedef fusion::vector<Lagrange<OrderDomain, Scalar> > domain_basis_type;
     typedef FunctionSpace<mesh_type, domain_basis_type> domain_space_type;
-    boost::shared_ptr<domain_space_type> Xh( new domain_space_type( mesh ) );
+    std::shared_ptr<domain_space_type> Xh( new domain_space_type( mesh ) );
 
     typename domain_space_type::element_type u( Xh, "u" );
 
@@ -217,11 +214,11 @@ template<int DimDomain, int OrderDomain, int RealDimDomain,
 
     typedef fusion::vector<Lagrange<Order, Scalar> > imagebasis_type;
     typedef FunctionSpace<mesh_type, imagebasis_type> imagespace_type;
-    boost::shared_ptr<imagespace_type> Yh( new imagespace_type( mesh1 ) );
+    std::shared_ptr<imagespace_type> Yh( new imagespace_type( mesh1 ) );
     typename imagespace_type::element_type v( Yh, "v" );
 
     typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     backend_ptrtype backend( Backend<double>::build( BACKEND_GMM ) );
     OperatorInterpolation<space_type, imagespace_type> I( Xh, Yh, backend );
 
@@ -279,7 +276,7 @@ struct test_lagrange_p1_op
 
     typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+    std::shared_ptr<space_type> Xh( new space_type( mesh ) );
 
     typename space_type::element_type u( Xh, ( boost::format( "u_%1%.%2%.%3%" ) % Dim % Order % GeoOrder ).str() );
 
@@ -294,9 +291,9 @@ struct test_lagrange_p1_op
 
     typedef Backend<value_type> backend_type;
 #if defined( FEELPP_HAS_PETSC_H )
-    boost::shared_ptr<backend_type> backend( backend_type::build( BACKEND_PETSC ) );
+    std::shared_ptr<backend_type> backend( backend_type::build( BACKEND_PETSC ) );
 #else
-    boost::shared_ptr<backend_type> backend( backend_type::build( BACKEND_GMM ) );
+    std::shared_ptr<backend_type> backend( backend_type::build( BACKEND_GMM ) );
 #endif
     OperatorLagrangeP1<space_type> I( Xh, backend );
     typedef typename OperatorLagrangeP1<space_type>::dual_image_space_type::mesh_type image_mesh_type;
@@ -362,13 +359,13 @@ makeAbout()
 
 #if defined(USE_BOOST_TEST)
 #if 0
-boost::shared_ptr<Feel::Application> mpiapp;
+std::shared_ptr<Feel::Application> mpiapp;
   test_suite*
 init_unit_test_suite( int argc, char** argv )
 {
   //boost::mpi::environment( argc, argv );
-  mpiapp = boost::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
-  Feel::Assert::setLog( "test_integration.assert" );
+  mpiapp = std::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
+
   test_suite* test = BOOST_TEST_SUITE( "Interpolation test suite" );
 
 #if 1
@@ -393,12 +390,12 @@ init_unit_test_suite( int argc, char** argv )
   return test;
 }
 #else
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( interpolation_op_suite )
 
   typedef Feel::Application Application_type;
-  typedef boost::shared_ptr<Application_type> Application_ptrtype;
+  typedef std::shared_ptr<Application_type> Application_ptrtype;
 
 BOOST_AUTO_TEST_CASE( test_interpolation_op_121 )
 {
@@ -433,7 +430,6 @@ main( int argc, char** argv )
       _desc=makeOptions(),
       _about=makeAbout() );
   Feel::Application mpiapp;
-  Feel::Assert::setLog( "test_interpolation.assert" );
 
 #if 1
   test_interpolation_op<1,1,1,1> t( mpiapp.vm()["hsize"].as<double>() );

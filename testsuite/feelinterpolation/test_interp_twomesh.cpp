@@ -1,7 +1,7 @@
 
 #if 1
 #define BOOST_TEST_MODULE interp_twomesh tests
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #endif
 
 #include <feel/options.hpp>
@@ -21,7 +21,7 @@ namespace test_interp_twomesh
 {
   /*
 typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
+typedef std::shared_ptr<Application_type> Application_ptrtype;
 
 enum type_champs
 {
@@ -82,7 +82,7 @@ run_test_geomap()
     //-----------------------------------------------------------------------------------//
 
     typedef Mesh<Simplex<Dim,OrderGeo,Dim> > mesh_type;
-    typedef boost::shared_ptr<  mesh_type > mesh_ptrtype;
+    typedef std::shared_ptr<  mesh_type > mesh_ptrtype;
 
     //-----------------------------------------------------------------------------------//
 
@@ -103,13 +103,13 @@ run_test_geomap()
 
     //geomap
     typedef typename mesh_type::gm_type gm_type;
-    typedef typename boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef typename std::shared_ptr<gm_type> gm_ptrtype;
     gm_ptrtype __gm = mesh->gm();
 
     //geomap context
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename gm_type::template Context<vm::POINT, geoelement_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
     //-----------------------------------------------------------------------------------//
 
@@ -178,8 +178,8 @@ run_test_geomap()
 template<uint32_type Dim,uint32_type OrderChamp,uint32_type OrderGeo>
 void
 test_interp_boundary( boost::tuple<
-                      boost::shared_ptr< Mesh<Simplex<Dim,OrderGeo,Dim> > >,
-                      boost::shared_ptr< Mesh<Simplex<Dim,OrderGeo,Dim> > >,
+                      std::shared_ptr< Mesh<Simplex<Dim,OrderGeo,Dim> > >,
+                      std::shared_ptr< Mesh<Simplex<Dim,OrderGeo,Dim> > >,
                       bool> __mesh/*,
                                     boost::mpl::int_<ScalarTest>*/
                     )
@@ -359,7 +359,7 @@ void
 run_test_interp()
 {
     typedef Mesh<Simplex<Dim,OrderGeo,Dim> > mesh_type;
-    typedef boost::shared_ptr<  mesh_type > mesh_ptrtype;
+    typedef std::shared_ptr<  mesh_type > mesh_ptrtype;
 
     //-----------------------------------------------------------------------------------//
 
@@ -490,15 +490,16 @@ BOOST_AUTO_TEST_CASE( interp_twomesh_geomap )
 #endif
 
 // problem with this test case
-#if 1
-BOOST_AUTO_TEST_CASE( interp_twomesh_interp )
+BOOST_AUTO_TEST_CASE( interp_twomesh_interp_241 )
 {
-
     using namespace test_interp_twomesh;
-
-    BOOST_MESSAGE(   "[main] ----------TEST_INTERP_START-----------\n" );
     BOOST_MESSAGE(   "[main] ----------------<2,4,1>---------------\n" );
     run_test_interp<2,4,1>();
+}
+
+BOOST_AUTO_TEST_CASE( interp_twomesh_interp_242 )
+{
+    using namespace test_interp_twomesh;
     BOOST_MESSAGE(   "[main] ----------------<2,4,2>---------------\n" );
     run_test_interp<2,4,2>();
     //BOOST_MESSAGE(   "[main] ----------------<2,9,3>---------------\n" );
@@ -508,9 +509,9 @@ BOOST_AUTO_TEST_CASE( interp_twomesh_interp )
     //run_test_interp<2,10,4>();
     //BOOST_MESSAGE(   "[main] ----------------<2,11,5>---------------\n");
     //run_test_interp<2,11,5>();
-    BOOST_MESSAGE(   "[main] ----------TEST_INTERP_FINISH----------\n" );
+    //BOOST_MESSAGE(   "[main] ----------TEST_INTERP_FINISH----------\n" );
 }
-#endif
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #else

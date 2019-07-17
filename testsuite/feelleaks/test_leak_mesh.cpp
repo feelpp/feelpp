@@ -51,7 +51,7 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    boost::shared_ptr<Mesh<Simplex<2>>> aMesh;
+    std::shared_ptr<Mesh<Simplex<2>>> aMesh;
 #if defined(FEELPP_HAS_GPERFTOOLS)
     HeapLeakChecker check0("checker 0");
 #endif /* FEELPP_HAS_GPERFTOOLS */
@@ -70,7 +70,7 @@ int main(int argc, char**argv )
 
         for(int i = 0; i < 2; ++i )
         {
-            auto mesh = loadMesh(_mesh=boost::make_shared<>(new Mesh<Simplex<2>>));
+            auto mesh = loadMesh(_mesh=std::make_shared<>(new Mesh<Simplex<2>>));
             mesh->clear();
         }
     }
@@ -95,7 +95,7 @@ int main(int argc, char**argv )
     HeapLeakChecker check3("checker 3");
 #endif /* FEELPP_HAS_GPERFTOOLS */
     {
-        //boost::shared_ptr<Mesh<Simplex<2>>> m( new Mesh<Simplex<2>> );
+        //std::shared_ptr<Mesh<Simplex<2>>> m( new Mesh<Simplex<2>> );
         aMesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
         CHECK( aMesh.use_count() == 1 ) << "Invalid shared_ptr, count: " << aMesh.use_count();
         aMesh.reset();

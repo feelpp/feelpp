@@ -25,7 +25,7 @@
 
 #define BOOST_TEST_MODULE integration_relatedmesh testsuite
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 
@@ -97,8 +97,7 @@ void run( bool useSMD )
                            _expr=idt(u1)*id(u2) );
     double energyElementA = bfElementA(u2,u1);
     BOOST_CHECK_CLOSE( energyElementA, 0.36, 1e-12 );
-    if ( Environment::isMasterRank() )
-        std::cout << "energyElementA " << energyElementA << " [0.36]\n";
+    Feel::cout << "energyElementA " << energyElementA << " [0.36]\n";
 
     //-----------------------------------------------------------//
     auto rElementB = stencilRange<0,0>(elements(mesh2));
@@ -112,8 +111,7 @@ void run( bool useSMD )
                            _expr=idt(u2)*id(u1) );
     double energyElementB = bfElementB(u1,u2);
     BOOST_CHECK_CLOSE( energyElementB, 0.36, 1e-12 );
-    if ( Environment::isMasterRank() )
-        std::cout << "energyElementB " << energyElementB << " [0.36]\n";
+    Feel::cout << "energyElementB " << energyElementB << " [0.36]\n";
 
     //-----------------------------------------------------------//
     auto rElementC = stencilRange<0,0>(markedelements(mesh1,listMarkers));
@@ -126,8 +124,7 @@ void run( bool useSMD )
                            _expr=idt(u1)*id(u3) );
     double energyElementC = bfElementC(u3,u1);
     BOOST_CHECK_CLOSE( energyElementC, 1., 1e-12 );
-    if ( Environment::isMasterRank() )
-        std::cout << "energyElementC " << energyElementC << " [1]\n";
+    Feel::cout << "energyElementC " << energyElementC << " [1]\n";
 
 
     auto matElementD = backend()->newMatrix(_test=Xh3,_trial=Xh3);
@@ -135,111 +132,109 @@ void run( bool useSMD )
     bfElementD = integrate(_range=elements(mesh3),
                            _expr=idt(u3)*id(u3) );
     double energyElementD = bfElementD(u3,u3);
-    if ( Environment::isMasterRank() )
-        std::cout << "energyElementD " << energyElementD << " [1]\n";
+    Feel::cout << "energyElementD " << energyElementD << " [1]\n";
 
     //-----------------------------------------------------------//
     //-----------------------------------------------------------//
     //-----------------------------------------------------------//
 
-    auto rFacesStandart = stencilRange<0,0>(boundaryfaces(mesh2));
-    auto graphFacesStandart = stencil(_test=Xh2,_trial=Xh2,
-                                      _range=stencilRangeMap(rFacesStandart) )->graph();
-    auto matFacesStandart = backend()->newMatrix(0,0,0,0,graphFacesStandart);
-    auto bfFacesStandart = form2(_test=Xh2,_trial=Xh2,_matrix=matFacesStandart);
-    bfFacesStandart = integrate(_range=boundaryfaces(mesh2),
+    auto rFacesStandard = stencilRange<0,0>(boundaryfaces(mesh2));
+    auto graphFacesStandard = stencil(_test=Xh2,_trial=Xh2,
+                                      _range=stencilRangeMap(rFacesStandard) )->graph();
+    auto matFacesStandard = backend()->newMatrix(0,0,0,0,graphFacesStandard);
+    auto bfFacesStandard = form2(_test=Xh2,_trial=Xh2,_matrix=matFacesStandard);
+    bfFacesStandard = integrate(_range=boundaryfaces(mesh2),
                                 _expr=idt(u2)*id(u2) );
-    double energyFacesStandart = bfFacesStandart(u2,u2);
-    BOOST_CHECK_CLOSE( energyFacesStandart, 2.4, 1e-12 );
-    if ( Environment::isMasterRank() )
-        std::cout << "energyFacesStandart " << energyFacesStandart << " [2.4]\n";
+    double energyFacesStandard = bfFacesStandard(u2,u2);
+    BOOST_CHECK_CLOSE( energyFacesStandard, 2.4, 1e-12 );
+    Feel::cout << "energyFacesStandard " << energyFacesStandard << " [2.4]\n";
 
     //-----------------------------------------------------------//
-    auto rFacesNonStandartA = stencilRange<0,0>( boundaryfaces(mesh2) );
+    auto rFacesNonStandardA = stencilRange<0,0>( boundaryfaces(mesh2) );
 #if 0
-    //auto rFacesNonStandartAA = stencilRange<0,0>( markedfaces(mesh1,"cylinder") ); // Bug with this!!
-    auto rFacesNonStandartAA = stencilRange<0,0>(markedelements(mesh1,"LocInterior"));
-    auto graphFacesNonStandartA = ( ctxRelationLoc )?
-        stencil(_test=Xh1,_trial=Xh2,_range=stencilRangeMap(rFacesNonStandartA) )->graph() :
-        stencil(_test=Xh1,_trial=Xh2,_range=stencilRangeMap(rFacesNonStandartAA) )->graph() ;
+    //auto rFacesNonStandardAA = stencilRange<0,0>( markedfaces(mesh1,"cylinder") ); // Bug with this!!
+    auto rFacesNonStandardAA = stencilRange<0,0>(markedelements(mesh1,"LocInterior"));
+    auto graphFacesNonStandardA = ( ctxRelationLoc )?
+        stencil(_test=Xh1,_trial=Xh2,_range=stencilRangeMap(rFacesNonStandardA) )->graph() :
+        stencil(_test=Xh1,_trial=Xh2,_range=stencilRangeMap(rFacesNonStandardAA) )->graph() ;
 #else
-    auto graphFacesNonStandartA = ( ctxRelationLoc )?
-        stencil(_test=Xh1,_trial=Xh2,_range=stencilRangeMap(rFacesNonStandartA) )->graph() :
-        stencil(_test=Xh2,_trial=Xh1,_range=stencilRangeMap(rFacesNonStandartA) )->graph()->transpose();
+    auto graphFacesNonStandardA = ( ctxRelationLoc )?
+        stencil(_test=Xh1,_trial=Xh2,_range=stencilRangeMap(rFacesNonStandardA) )->graph() :
+        stencil(_test=Xh2,_trial=Xh1,_range=stencilRangeMap(rFacesNonStandardA) )->graph()->transpose();
 #endif
-    auto matFacesNonStandartA = backend()->newMatrix(0,0,0,0,graphFacesNonStandartA);
-    auto bfFacesNonStandartA = form2(_test=Xh1,_trial=Xh2,_matrix=matFacesNonStandartA);
-    bfFacesNonStandartA = integrate(_range=boundaryfaces(mesh2),
+    auto matFacesNonStandardA = backend()->newMatrix(0,0,0,0,graphFacesNonStandardA);
+    auto bfFacesNonStandardA = form2(_test=Xh1,_trial=Xh2,_matrix=matFacesNonStandardA);
+    bfFacesNonStandardA = integrate(_range=boundaryfaces(mesh2),
                                     _expr=idt(u2)*id(u1) );
-    double energyFacesNonStandartA = bfFacesNonStandartA(u1,u2);
-    BOOST_CHECK_CLOSE( energyFacesNonStandartA, 2.4, 1e-12 );
-    if ( Environment::isMasterRank() )
-        std::cout << "energyFacesNonStandartA " << energyFacesNonStandartA << " [2.4]\n";
+    double energyFacesNonStandardA = bfFacesNonStandardA(u1,u2);
+    BOOST_CHECK_CLOSE( energyFacesNonStandardA, 2.4, 1e-12 );
+    Feel::cout << "energyFacesNonStandardA " << energyFacesNonStandardA << " [2.4]\n";
 
     //-----------------------------------------------------------//
 
-    auto rFacesNonStandartB = stencilRange<0,0>(markedfaces(mesh1,"cylinder"));// initial
-    //auto rFacesNonStandartB = stencilRange<0,0>(boundaryfaces(mesh2)); // bad also
-    //auto rFacesNonStandartB = stencilRange<0,0>(markedelements(mesh1,"LocInterior"));
-    auto graphFacesNonStandartB = stencil(_test=Xh1,_trial=Xh2,_range=stencilRangeMap(rFacesNonStandartB) )->graph();
-    auto matFacesNonStandartB = backend()->newMatrix(0,0,0,0,graphFacesNonStandartB);
-    auto bfFacesNonStandartB = form2(_test=Xh1,_trial=Xh2,_matrix=matFacesNonStandartB);
-    bfFacesNonStandartB = integrate(_range=markedfaces(mesh1,"cylinder"),//boundaryfaces(mesh2),
+    auto rFacesNonStandardB = stencilRange<0,0>(markedfaces(mesh1,"cylinder"));// initial
+    //auto rFacesNonStandardB = stencilRange<0,0>(boundaryfaces(mesh2)); // bad also
+    //auto rFacesNonStandardB = stencilRange<0,0>(markedelements(mesh1,"LocInterior"));
+    auto graphFacesNonStandardB = stencil(_test=Xh1,_trial=Xh2,_range=stencilRangeMap(rFacesNonStandardB) )->graph();
+    auto matFacesNonStandardB = backend()->newMatrix(0,0,0,0,graphFacesNonStandardB);
+    auto bfFacesNonStandardB = form2(_test=Xh1,_trial=Xh2,_matrix=matFacesNonStandardB);
+    bfFacesNonStandardB = integrate(_range=markedfaces(mesh1,"cylinder"),//boundaryfaces(mesh2),
                                     _expr=idt(u2)*id(u1) );
-    double energyFacesNonStandartB = bfFacesNonStandartB(u1,u2);
-    BOOST_CHECK_CLOSE( energyFacesNonStandartB, 2.4, 1e-12 );
-    if ( Environment::isMasterRank() )
-        std::cout << "energyFacesNonStandartB " << energyFacesNonStandartB << " [2.4]\n";
+    double energyFacesNonStandardB = bfFacesNonStandardB(u1,u2);
+    BOOST_CHECK_CLOSE( energyFacesNonStandardB, 2.4, 1e-12 );
+    Feel::cout << "energyFacesNonStandardB " << energyFacesNonStandardB << " [2.4]\n";
 
     //-----------------------------------------------------------//
-    auto rFacesNonStandartC = stencilRange<0,0>(markedfaces(mesh1,"cylinder"));
-    auto rFacesNonStandartCC = stencilRange<0,0>(boundaryfaces(mesh2));
-    auto graphFacesNonStandartC = ( ctxRelationLoc )?
-        stencil(_test=Xh2,_trial=Xh1,_range=stencilRangeMap(rFacesNonStandartC) )->graph() :
-        stencil(_test=Xh2,_trial=Xh1,_range=stencilRangeMap(rFacesNonStandartCC) )->graph();
-    auto matFacesNonStandartC = backend()->newMatrix(0,0,0,0,graphFacesNonStandartC);
-    auto bfFacesNonStandartC = form2(_test=Xh2,_trial=Xh1,_matrix=matFacesNonStandartC );
-    bfFacesNonStandartC = integrate(_range=markedfaces(mesh1,"cylinder"),
+    auto rFacesNonStandardC = stencilRange<0,0>(markedfaces(mesh1,"cylinder"));
+    auto rFacesNonStandardCC = stencilRange<0,0>(boundaryfaces(mesh2));
+    auto graphFacesNonStandardC = ( ctxRelationLoc )?
+        stencil(_test=Xh2,_trial=Xh1,_range=stencilRangeMap(rFacesNonStandardC) )->graph() :
+        stencil(_test=Xh2,_trial=Xh1,_range=stencilRangeMap(rFacesNonStandardCC) )->graph();
+    auto matFacesNonStandardC = backend()->newMatrix(0,0,0,0,graphFacesNonStandardC);
+    auto bfFacesNonStandardC = form2(_test=Xh2,_trial=Xh1,_matrix=matFacesNonStandardC );
+    bfFacesNonStandardC = integrate(_range=markedfaces(mesh1,"cylinder"),
                                     _expr=idt(u1)*id(u2) );
-    double energyFacesNonStandartC = bfFacesNonStandartC(u2,u1);
-    BOOST_CHECK_CLOSE( energyFacesNonStandartC, 2.4, 1e-12 );
-    if ( Environment::isMasterRank() )
-        std::cout << "energyFacesNonStandartC " << energyFacesNonStandartC << " [2.4]\n";
+    double energyFacesNonStandardC = bfFacesNonStandardC(u2,u1);
+    BOOST_CHECK_CLOSE( energyFacesNonStandardC, 2.4, 1e-12 );
+    Feel::cout << "energyFacesNonStandardC " << energyFacesNonStandardC << " [2.4]\n";
 
     //-----------------------------------------------------------//
     if ( ctxRelationLoc )
     {
-        auto rFacesNonStandartD = stencilRange<0,0>(markedfaces(mesh3,"cylinder"));
-        auto graphFacesNonStandartD = stencil(_test=Xh1,_trial=Xh3,
+        auto rFacesNonStandardD = stencilRange<0,0>(markedfaces(mesh3,"cylinder"));
+        auto graphFacesNonStandardD = stencil(_test=Xh1,_trial=Xh3,
                                               _pattern=(size_type)Pattern::EXTENDED,
-                                              _range=stencilRangeMap(rFacesNonStandartD) )->graph();
-        auto matFacesNonStandartD = backend()->newMatrix(0,0,0,0,graphFacesNonStandartD);
-        auto bfFacesNonStandartD = form2(_test=Xh1,_trial=Xh3,_matrix=matFacesNonStandartD);
-        bfFacesNonStandartD = integrate(_range=markedfaces(mesh3,"cylinder"),//boundaryfaces(mesh2),
+                                              _range=stencilRangeMap(rFacesNonStandardD) )->graph();
+        auto matFacesNonStandardD = backend()->newMatrix(0,0,0,0,graphFacesNonStandardD);
+        auto bfFacesNonStandardD = form2(_test=Xh1,_trial=Xh3,_matrix=matFacesNonStandardD);
+        bfFacesNonStandardD = integrate(_range=markedfaces(mesh3,"cylinder"),//boundaryfaces(mesh2),
                                         _expr=idt(u3)*id(u1) );
-        double energyFacesNonStandartD = bfFacesNonStandartD(u1,u3);
-        BOOST_CHECK_CLOSE( energyFacesNonStandartD, 9.6, 1e-12 );
-        if ( Environment::isMasterRank() )
-            std::cout << "energyFacesNonStandartD " << energyFacesNonStandartD << " [9.6]\n";
+        double energyFacesNonStandardD = bfFacesNonStandardD(u1,u3);
+        double v = integrate(_range=markedfaces(mesh3,"cylinder"),//boundaryfaces(mesh2),
+                             _expr=cst(1.) ).evaluate()(0,0);
+        // faces are connected to 2 elements (left and right)
+        double v1 = integrate(_range=markedfaces(mesh3,"cylinder"),//boundaryfaces(mesh2),
+                              _expr=leftfacev(cst(1.))+rightfacev(cst(1.)) ).evaluate()(0,0);
+        BOOST_CHECK_CLOSE( energyFacesNonStandardD, v1, 1e-12 ); // use to be 9.6
+        Feel::cout << "energyFacesNonStandardD " << energyFacesNonStandardD << " [4.8] v=" << v << " v1=" << v1 << "\n";
     }
 
     //-----------------------------------------------------------//
 
     if ( ctxRelationLoc )
     {
-        auto rFacesNonStandartE = stencilRange<0,0>(boundaryfaces(mesh2));
-        auto rFacesNonStandartEE = stencilRange<0,0>(markedfaces(mesh1,"cylinder"));
-        auto graphFacesNonStandartE = ( ctxRelationLoc )?
-            stencil(_test=Xh1,_trial=Xh3,_range=stencilRangeMap(rFacesNonStandartE) )->graph() :
-            stencil(_test=Xh1,_trial=Xh3,_range=stencilRangeMap(rFacesNonStandartEE) )->graph();
-        auto matFacesNonStandartE = backend()->newMatrix(0,0,0,0,graphFacesNonStandartE);
-        auto bfFacesNonStandartE = form2(_test=Xh1,_trial=Xh3,_matrix=matFacesNonStandartE);
-        bfFacesNonStandartE = integrate(_range=boundaryfaces(mesh2),//markedfaces(mesh3,"cylinder"),//
+        auto rFacesNonStandardE = stencilRange<0,0>(boundaryfaces(mesh2));
+        auto rFacesNonStandardEE = stencilRange<0,0>(markedfaces(mesh1,"cylinder"));
+        auto graphFacesNonStandardE = ( ctxRelationLoc )?
+            stencil(_test=Xh1,_trial=Xh3,_range=stencilRangeMap(rFacesNonStandardE) )->graph() :
+            stencil(_test=Xh1,_trial=Xh3,_range=stencilRangeMap(rFacesNonStandardEE) )->graph();
+        auto matFacesNonStandardE = backend()->newMatrix(0,0,0,0,graphFacesNonStandardE);
+        auto bfFacesNonStandardE = form2(_test=Xh1,_trial=Xh3,_matrix=matFacesNonStandardE);
+        bfFacesNonStandardE = integrate(_range=boundaryfaces(mesh2),//markedfaces(mesh3,"cylinder"),//
                                         _expr=idt(u3)*id(u1) );
-        double energyFacesNonStandartE = bfFacesNonStandartE(u1,u3);
-        BOOST_CHECK_CLOSE( energyFacesNonStandartE, 2.4, 1e-12 );
-        if ( Environment::isMasterRank() )
-            std::cout << "energyFacesNonStandartE " << energyFacesNonStandartE << " [2.4]\n";
+        double energyFacesNonStandardE = bfFacesNonStandardE(u1,u3);
+        BOOST_CHECK_CLOSE( energyFacesNonStandardE, 2.4, 1e-12 );
+        Feel::cout << "energyFacesNonStandardE " << energyFacesNonStandardE << " [2.4]\n";
     }
 
 }
@@ -261,4 +256,3 @@ BOOST_AUTO_TEST_CASE( integration_relatedmesh_notuseSMD )
 
 
 BOOST_AUTO_TEST_SUITE_END()
-

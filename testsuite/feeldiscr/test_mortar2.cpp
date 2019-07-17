@@ -28,7 +28,7 @@
    \date 2015-04-25
  */
 #define BOOST_TEST_MODULE test_mortar2
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feeldiscr/stencil.hpp>
@@ -118,25 +118,25 @@ void run( int benchId, bool useVariantIntegrate = false )
 
     if ( !useVariantIntegrate )
     {
-        form1( _test=Mh, _vector=F,_rowstart=Vh->nLocalDofWithGhost())
+        form1( _test=Mh, _vector=F,_rowstart=1)
             += integrate(_range=elements(submesh),
                          _expr=g*id(lambda) );
-        form2( _trial=Mh, _test=Vh, _matrix=A,_colstart=Vh->nLocalDofWithGhost())
+        form2( _trial=Mh, _test=Vh, _matrix=A,_colstart=1)
             += integrate( _range=elements(submesh),
                           _expr=idt(lambda)*id(u) );
-        form2( _trial=Vh, _test=Mh, _matrix=A,_rowstart=Vh->nLocalDofWithGhost())
+        form2( _trial=Vh, _test=Mh, _matrix=A,_rowstart=1)
             += integrate(_range=elements(submesh),
                          _expr=id(lambda)*idt(u) );
     }
     else
     {
-        form1( _test=Mh, _vector=F,_rowstart=Vh->nLocalDofWithGhost())
+        form1( _test=Mh, _vector=F,_rowstart=1)
             += integrate(_range=markedfaces(mesh,"Boundary1"),
                          _expr=g*id(lambda) );
-        form2( _trial=Mh, _test=Vh, _matrix=A,_colstart=Vh->nLocalDofWithGhost())
+        form2( _trial=Mh, _test=Vh, _matrix=A,_colstart=1)
             += integrate( _range=markedfaces(mesh,"Boundary1"),
                           _expr=idt(lambda)*id(u) );
-        form2( _trial=Vh, _test=Mh, _matrix=A,_rowstart=Vh->nLocalDofWithGhost())
+        form2( _trial=Vh, _test=Mh, _matrix=A,_rowstart=1)
             += integrate(_range=markedfaces(mesh,"Boundary1"),
                          _expr=id(lambda)*idt(u) );
     }

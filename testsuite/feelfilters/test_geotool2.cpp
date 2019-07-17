@@ -1,7 +1,7 @@
 
 #if 1
 #define BOOST_TEST_MODULE test_geotool2
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #endif
 
 #if defined(USE_BOOST_TEST)

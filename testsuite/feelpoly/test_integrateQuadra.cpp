@@ -23,7 +23,7 @@
 #define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_integrateQuadra
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #endif
 
 
@@ -60,99 +60,99 @@ class Test
 {
  public :
        
-        void run(std::string s)
+    void run(std::string s)
 
         {
-          /// [mesh] 
-        auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,  
-                                 _desc=domain(_name="polymere",
-                                              _xmax=1,
-                                              _ymax=1));
+            /// [mesh] 
+            auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,  
+                                        _desc=domain(_name="polymere",
+                                                     _xmax=1,
+                                                     _ymax=1));
 
   
-    /// [expression]
-    // our function to integrate
-    auto g = expr( s  );
+            /// [expression]
+            // our function to integrate
+            auto g = expr( s  );
 
-    /// [integrals]
-    // compute on \Omega
-    auto intf_1 = integrate( _range = elements( mesh ),
-                                 _expr = g,
-                                 _quad=_Q<1,MultiScaleQuadrature>() ).evaluate();
-    auto intf_12 = integrate( _range = elements( mesh ),
-                                 _expr = g).evaluate();
-    // compute on boundary
-    auto intf_2 = integrate( _range = boundaryfaces( mesh ),
-                             _expr = g,
-                             _quad=_Q<1,MultiScaleQuadrature>()  ).evaluate();
-    auto intf_22 = integrate( _range = boundaryfaces( mesh ),
-                             _expr = g).evaluate();
+            /// [integrals]
+            // compute on \Omega
+            auto intf_1 = integrate( _range = elements( mesh ),
+                                     _expr = g,
+                                     _quad=_Q<1,MultiScaleQuadrature>() ).evaluate();
+            auto intf_12 = integrate( _range = elements( mesh ),
+                                      _expr = g).evaluate();
+            // compute on boundary
+            auto intf_2 = integrate( _range = boundaryfaces( mesh ),
+                                     _expr = g,
+                                     _quad=_Q<1,MultiScaleQuadrature>()  ).evaluate();
+            auto intf_22 = integrate( _range = boundaryfaces( mesh ),
+                                      _expr = g).evaluate();
     
-    // compute integral of grad f
-    auto grad_g = grad<2>(g);
-    auto intgrad_f = integrate( _range = elements( mesh ),
-                                _expr = grad_g,
-                                _quad=_Q<1,MultiScaleQuadrature>()  ).evaluate();
-    auto intgrad_f2 = integrate( _range = elements( mesh ),
-                                _expr = grad_g).evaluate();
+            // compute integral of grad f
+            auto grad_g = grad<2>(g);
+            auto intgrad_f = integrate( _range = elements( mesh ),
+                                        _expr = grad_g,
+                                        _quad=_Q<1,MultiScaleQuadrature>()  ).evaluate();
+            auto intgrad_f2 = integrate( _range = elements( mesh ),
+                                         _expr = grad_g).evaluate();
 
-   // values view    
-        std::cout << "int_Omega " << g << " = " << intf_1  << std::endl
-                  << "int_{boundary of Omega} " << g << " = " << intf_2 << std::endl
-                  << "int_Omega grad " << g << " = "
-                  << "int_Omega  " << grad_g << " = "
-                  << intgrad_f  << std::endl;
+            // values view    
+            std::cout << "int_Omega " << g << " = " << intf_1  << std::endl
+                      << "int_{boundary of Omega} " << g << " = " << intf_2 << std::endl
+                      << "int_Omega grad " << g << " = "
+                      << "int_Omega  " << grad_g << " = "
+                      << intgrad_f  << std::endl;
 
-        BOOST_CHECK_CLOSE( intf_1(0,0), intf_12(0,0), 5 );
-        BOOST_CHECK_CLOSE( intf_2(0,0), intf_22(0,0), 5 );
+            BOOST_CHECK_CLOSE( intf_1(0,0), intf_12(0,0), 5 );
+            BOOST_CHECK_CLOSE( intf_2(0,0), intf_22(0,0), 5 );
 
-        std::cout <<"" << std::endl;
+            std::cout <<"" << std::endl;
 
-    }
+        }
     
-     void resol(std::string s)
+    void resol(std::string s)
 
         {
-          /// [mesh] 
-        auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,  
-                                 _desc=domain(_name="polymere",
-                                              _xmax=1,
-                                              _ymax=1));
+            /// [mesh] 
+            auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,  
+                                        _desc=domain(_name="polymere",
+                                                     _xmax=1,
+                                                     _ymax=1));
 
-        auto Vh = Pch<1>( mesh );
-        auto u=Vh->element();
-        auto v=Vh->element();
+            auto Vh = Pch<1>( mesh );
+            auto u=Vh->element();
+            auto v=Vh->element();
          
-        /// [expression]
-        // our function to integrate
-        auto g = expr( s );
-        auto gProj = vf::project( _space=Vh, _range=elements( mesh ), _expr=g);
+            /// [expression]
+            // our function to integrate
+            auto g = expr( s );
+            auto gProj = vf::project( _space=Vh, _range=elements( mesh ), _expr=g);
 
-        auto a = form2( _trial=Vh, _test=Vh );
-        a=integrate( _range=elements( mesh ),
-                     _expr=idt(u)*id(v),
-                     _quad=_Q<1,MultiScaleQuadrature>() );
+            auto a = form2( _trial=Vh, _test=Vh );
+            a=integrate( _range=elements( mesh ),
+                         _expr=idt(u)*id(v),
+                         _quad=_Q<1,MultiScaleQuadrature>() );
 
-        auto l = form1( _test=Vh );
-        l= integrate( _range=elements( mesh ),
-                      _expr=g*id(v),
-                      _quad=_Q<1,MultiScaleQuadrature>() ); 
+            auto l = form1( _test=Vh );
+            l= integrate( _range=elements( mesh ),
+                          _expr=g*id(v),
+                          _quad=_Q<1,MultiScaleQuadrature>() ); 
        
-        a.solve( _rhs=l, _solution=u );
+            a.solve( _rhs=l, _solution=u );
 
-        std::cout << "|| u-f ||^2 =" << normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(gProj)) << std::endl;
+            std::cout << "|| u-f ||^2 =" << normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(gProj)) << std::endl;
 
-        std::cout <<"" << std::endl;
+            std::cout <<"" << std::endl;
 
 
-//        BOOST_CHECK_CLOSE( idv(u), idv(gProj), 1e-2 );
-       }
+            //        BOOST_CHECK_CLOSE( idv(u), idv(gProj), 1e-2 );
+        }
 
 
 };
 
 #if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() )
 BOOST_AUTO_TEST_SUITE( integrQuadra_suite )
 
 BOOST_AUTO_TEST_CASE( test_run0 )

@@ -12,7 +12,7 @@
 #
 set_directory_properties(PROPERTIES LABEL testinterpolation )
 
-feelpp_add_test( interpolation_type NO_FEELPP_LIBRARY)
+feelpp_add_test( interpolation_type )
 feelpp_add_test( form_interpolation NO_MPI_TEST )
 feelpp_add_test( interpolation NO_MPI_TEST   )
 feelpp_add_test( interpolation_op NO_MPI_TEST )
@@ -30,4 +30,3 @@ feelpp_add_test( interpolation_Nedelec3d CFG test_interpolation_Nedelec3d.cfg NO
 feelpp_add_test( darcy_on_2d SRCS test_darcy_on.cpp CFG test_darcy_on.cfg DEFS FEELPP_DIM=2 CLI "--gmsh.hsize=0.1" )
 feelpp_add_test( darcy_on_3d SRCS test_darcy_on.cpp CFG test_darcy_on.cfg DEFS FEELPP_DIM=3  CLI "--gmsh.hsize=0.2" )
 
-feelpp_add_test( on_project SRCS test_on_project GEO square_mmarked.geo CFG test_on_project.cfg )

@@ -21,5 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 feelpp_add_application( doc_magnetostatic_2d SRCS magnetostatic.cpp LABELS doc CFG magnetostatic2d.cfg DEFS FEELPP_DIM=2)
 feelpp_add_application( doc_magnetostatic_3d SRCS magnetostatic.cpp LABELS doc CFG magnetostatic3d.cfg DEFS FEELPP_DIM=3)

@@ -1,5 +1,5 @@
 #define BOOST_TEST_MODULE test_normal3d
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 
 #include <feel/options.hpp>
@@ -63,23 +63,22 @@ runtest()
 
     typedef Simplex<3,orderGeo,3> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<  mesh_type > mesh_ptrtype;
+    typedef std::shared_ptr<  mesh_type > mesh_ptrtype;
 
-    typedef bases<Lagrange<2+orderGeo,Vectorial,Continuous,PointSetFekete> > basis_type;
+    typedef bases<Lagrange</*2*/1+orderGeo,Vectorial,Continuous,PointSetFekete> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     //typedef typename space_type::element_type element_type;
 
     //-----------------------------------------------------------//
 
     double meshSize = doption(_name="hsize");
-    bool exportResults = boption(_name="exporter.export");
     int straighten = ioption(_name="straighten");
     GeomapStrategyType geomap = ( GeomapStrategyType )ioption(_name="geomap");
     GeoTool::Node Centre( 0,0,0 );
     GeoTool::Node Rayon( 1 );
     GeoTool::Node Dir( 1,0,0 );
-    GeoTool::Node Lg( 3,0,0 );
+    GeoTool::Node Lg( 1,0,0 );
     GeoTool::Cylindre C( meshSize,"UnCylindre",Centre,Dir,Rayon,Lg );
     C.setMarker( _type="surface",_name="Inlet",_marker1=true );
     C.setMarker( _type="surface",_name="Outlet",_marker2=true );
@@ -93,7 +92,7 @@ runtest()
     auto mesh=mesh_;
 
     if ( straighten )
-        mesh = straightenMesh( mesh_, Environment::worldComm(), false, true );
+        mesh = straightenMesh( mesh_, Environment::worldCommPtr(), false, true );
 
     //-----------------------------------------------------------//
 
@@ -110,13 +109,15 @@ runtest()
 
     BOOST_MESSAGE( "testing Gauss formula on ( cos(M_PI*Px()/5.),cos(M_PI*Py()/5.),cos(M_PI*Py()/5.))\n" );
     u = project( Xh,elements( mesh ),vec( cos( M_PI*Px()/5. ),cos( M_PI*Py()/5. ),cos( M_PI*Py()/5. ) ) );
-    value1 = integrate( _range=elements( mesh ),_expr=divv( u ), _quad=_Q<8>(),_quad1=_Q<8>(),_geomap=geomap ).evaluate()( 0,0 );
-    value2 = integrate( _range=boundaryfaces( mesh ),_expr=trans( idv( u ) )*N(),_quad=_Q<8>(),_quad1=_Q<8>(),_geomap=geomap ).evaluate()( 0,0 );
+    value1 = integrate( _range=elements( mesh ),_expr=divv( u )/*, _quad=_Q<8>(),_quad1=_Q<8>()*/,_geomap=geomap ).evaluate()( 0,0 );
+    value2 = integrate( _range=boundaryfaces( mesh ),_expr=trans( idv( u ) )*N()/*,_quad=_Q<8>(),_quad1=_Q<8>()*/,_geomap=geomap ).evaluate()( 0,0 );
     BOOST_MESSAGE( "\n value (div) =" << value1 << "\n value (n) =" << value2 <<"\n" );
     BOOST_CHECK_CLOSE( value1, value2, 1e-8 );
     //BOOST_CHECK_SMALL( value1-value2,1e-8);
 
 
+#if 0
+    bool exportResults = boption(_name="exporter.export");
     if ( exportResults )
     {
         auto nnn = Xh->element();
@@ -127,6 +128,7 @@ runtest()
         UNexporter->step( 0 )->add( "n", nnn );
         UNexporter->save();
     }
+#endif
 }
 
 }

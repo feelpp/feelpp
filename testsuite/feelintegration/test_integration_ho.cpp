@@ -28,19 +28,8 @@
    \date 2006-08-25
  */
 
-#define USE_BOOST_TEST 1
-#define BOOST_TEST_MAIN
-#if 0
-// Boost.Test
-
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
-#endif
-#else
-#include <testsuite/testsuite.hpp>
-#endif
+#define BOOST_TEST_MODULE integration_ho testsuite
+#include <feel/feelcore/testsuite.hpp>
 
 #include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <feel/options.hpp>
@@ -122,7 +111,7 @@ template<typename T, int Dim = 2,int Order = 1>
 struct imesh
 {
     typedef Mesh<Simplex<Dim, Order>, T > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 template<typename T>
@@ -412,7 +401,7 @@ struct test_integration_circle
         typedef typename imesh<value_type,2,Order>::type mesh_type;
         typedef fusion::vector<Lagrange<Order+1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        auto Xh = space_type::New( _mesh=mesh );
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
@@ -504,19 +493,19 @@ struct test_integration_sin
 
         typedef fusion::vector<Lagrange<1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        auto Xh = space_type::New(_mesh=mesh);
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
         u = vf::project( Xh, elements( mesh ), constant( 1.0 ) );
-        double v3 = integrate( _range=elements( mesh ), _expr=cst( 1.0 ), _quad=_Q<15>(), _geomap=geomap  ).evaluate()( 0, 0 );
-        double v0 = integrate( _range=elements( mesh ), _expr=idv( u ), _quad=_Q<15>(), _geomap=geomap ).evaluate()( 0, 0 );
-        double v2 = integrate( _range=boundaryfaces( mesh ), _expr=idv( u ), _quad=_Q<15>(), _geomap=geomap  ).evaluate()( 0, 0 );
+        double v3 = integrate( _range=elements( mesh ), _expr=cst( 1.0 ), _quad=15, _geomap=geomap  ).evaluate()( 0, 0 );
+        double v0 = integrate( _range=elements( mesh ), _expr=idv( u ), _quad=15, _geomap=geomap ).evaluate()( 0, 0 );
+        double v2 = integrate( _range=boundaryfaces( mesh ), _expr=idv( u ), _quad=15, _geomap=geomap  ).evaluate()( 0, 0 );
         //double v0 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
         std::cout << "int( 1 )=" << v3 << "  (=pi) error= " << math::abs( v3 - M_PI ) << std::endl;
         std::cout << "int( u=1 )=" << v0 << "  (=pi) error= " << math::abs( v0 - M_PI ) << std::endl;
         std::cout << "int(boundary, 1 )=" << v2 << "  (=2*pi) error= " << math::abs( v2 - 2*M_PI ) << std::endl;
-        double v1 = integrate( _range=boundaryfaces( mesh ), _expr=trans( vec( cst( 1. ),cst( 1. ) ) )*N(), _quad=_Q<( Order-1 )*( Order-1 )>()  ).evaluate()( 0, 0 );
+        double v1 = integrate( _range=boundaryfaces( mesh ), _expr=trans( vec( cst( 1. ),cst( 1. ) ) )*N(), _quad=(Order-1 )*( Order-1 )  ).evaluate()( 0, 0 );
         std::cout << "int( 1 .N )=" << v1 << "  (=pi) error= " << math::abs( v1 ) << std::endl;
         BOOST_CHECK_SMALL( v1, 1e-12 );
         //BOOST_CHECK_SMALL( math::abs( v0 - M_PI ), 3*exp(-4*Order));
@@ -574,7 +563,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ho, T, order_types )
 {
     std::cout << "============================================================\n";
     Feel::Application mpi;
-    Feel::Assert::setLog( "test_integration_ho.assert" );
     std::cout << "Order=" << T::value << "/5,"
               << " hsize=" << mpi.vm()["hsize"].as<double>() << ","
               << " straighten=" << mpi.vm()["straighten"].as<int>() << ","
@@ -591,7 +579,6 @@ int
 main( int argc, char** argv )
 {
     Feel::Application mpi( argc, argv, makeAbout(), makeOptions() );
-    Feel::Assert::setLog( "test_integration.assert" );
 
     std::cout << "Order = " << mpi.vm()["order"].as<int>() << " / " << FEELPP_MESH_MAX_ORDER << "\n";
 

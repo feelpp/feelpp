@@ -1,10 +1,15 @@
 set_directory_properties(PROPERTIES LABEL testfilters )
-foreach(TEST importergmsh geotool geotool2)
+
+foreach(TEST importergmsh importerarm geotool geotool2 exporter_sanitize gmsh)
 
   feelpp_add_test( ${TEST} )
 
 endforeach()
-IF(NOT APPLE AND EXISTS "${CMAKE_SOURCE_DIR}/data")
-	add_dependencies(feelpp_test_importergmsh feelpp_mesh_data)
+
+
+if(FEELPP_HAS_MED)
+  message(STATUS "[testsuite] feelpp_test_med enabled" )
+  feelpp_add_test( med SRCS test_med.cpp CFG test_med.cfg NO_MPI_TEST)
 endif()
-# add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS ${TESTS} )
+
+feelpp_add_test( exporter_disc CLI "--exporter.element-spaces=P1")

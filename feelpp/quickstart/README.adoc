@@ -1,0 +1,10 @@
+= Quickstarts
+Feel++ Consortium <https://github.com/feelpp[@feelpp]>
+v1.0 
+
+include::laplacian/README.adoc[]
+
+include::adr/README.adoc[]
+
+include::stokes/README.adoc[]
+

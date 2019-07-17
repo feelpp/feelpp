@@ -27,7 +27,7 @@
 */
 
 #define BOOST_TEST_MODULE test_slepc
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <fstream>
 
@@ -82,7 +82,7 @@ testSlepc()
 #if 0
     auto backend = backend_type::build( BACKEND_PETSC );
 #else
-    auto backend = backend_type::build( );
+    auto backend = backend_type::build( "petsc" );
 #endif
 
     auto u = Xh->element();
@@ -130,7 +130,7 @@ testSlepc()
  * main code
  */
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( slepc )
 

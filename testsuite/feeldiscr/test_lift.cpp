@@ -27,7 +27,7 @@
 */
 
 #define BOOST_TEST_MODULE test_lift
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -90,7 +90,7 @@ public:
     static const uint16_type Order = 2;
     typedef double value_type;
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef Simplex<Dim,1,Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef bases<Lagrange<Order,Scalar> > basis_type;
@@ -250,20 +250,18 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     std::cout << " -- ||u-glift||_H1  =" << math::sqrt( L2error2+semi_H1error2 ) << "\n";
 
     /** export results */
-    auto exporter( export_type::New( this->vm(),
-                                     ( boost::format( "%1%-%2%-%3%" )
-                                       % this->about().appName()
-                                       % shape
-                                       % Dim ).str() ) );
-
-    if ( exporter->doExport() )
+    std::string exporterName = ( boost::format( "%1%-%2%-%3%" )
+                                 % this->about().appName()
+                                 % shape
+                                 % Dim ).str();
+    auto myexporter = exporter(_mesh=mesh,_name=exporterName );
+    if ( myexporter->doExport() )
         {
             LOG(INFO) << "exportResults starts\n";
-            exporter->step( 0 )->setMesh( mesh );
-            exporter->step( 0 )->add( "u", u );
-            exporter->step( 0 )->add( "glift", glift2 );
-            exporter->step( 0 )->add( "g", gproj );
-            exporter->save();
+            myexporter->step( 0 )->add( "u", u );
+            myexporter->step( 0 )->add( "glift", glift2 );
+            myexporter->step( 0 )->add( "g", gproj );
+            myexporter->save();
             LOG(INFO) << "exportResults done\n";
         }
 } // TestLift::run
@@ -272,7 +270,7 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 /**
  * main code
  */
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( lift )
 BOOST_AUTO_TEST_CASE( MyLiftCase )
 {

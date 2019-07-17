@@ -22,7 +22,7 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #define BOOST_TEST_MODULE test_interpolation_grad
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feel.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
@@ -65,7 +65,7 @@ class Test:
     public Simget
 {
     typedef Mesh<Simplex<Dim>> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
   
     //! Hcurl space
     using curl_space_type = Ned1h_type<mesh_type,0>;
@@ -215,7 +215,7 @@ public :
 };
 
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( test_interpolation_grad )
 
 

@@ -22,10 +22,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 //#define USE_BOOST_TEST 1
-#if defined(USE_BOOST_TEST)
+
 #define BOOST_TEST_MODULE test_bdf2
-#include <testsuite/testsuite.hpp>
-#endif
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelts/bdf.hpp>
@@ -37,24 +36,7 @@
 
 /** use Feel namespace */
 using namespace Feel;
-using Feel::project;
-
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "test_bdf2" ,
-                     "test_bdf2" ,
-                     "0.2",
-                     "nD(n=2,3) test bdf2",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2013 Feel++ Consortium" );
-
-    about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    return about;
-
-}
+//using Feel::project;
 
 template<int Dim>
 class Test:
@@ -68,7 +50,6 @@ public :
                                     _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,
                                                   _dim=Dim ) );
 
-
         auto Xh = Pch<2>( mesh );
         auto u = Xh->element();
         auto ue = Xh->element();
@@ -76,20 +57,12 @@ public :
         auto solution = Xh->element();
         auto mybdf = bdf( _space=Xh, _name="mybdf" );
 
-        auto g=soption(_name="functions.g");
-        auto vars = Symbols{"x","y","t","alpha","beta"};
-        auto eg = parse(g,vars);
-        GiNaC::matrix fg = -laplacian( eg, {vars[0],vars[1]} ) + diff( eg,  {vars[2]},1);
-        LOG(INFO) << "fg= " << fg;
+        double alpha = doption(_name="parameters.alpha");
+        double beta = doption(_name="parameters.beta");
 
-        auto fe = expr( fg, vars, "fg" );
-        LOG(INFO) << "fe: "<< fe << std::endl;
-        auto ue_g = expr( eg, vars, "eg" );
-        LOG(INFO) << "ue_g: "<< ue_g << std::endl;
-
-        //stiffness matrix
-        auto a = form2( _test=Xh, _trial=Xh ), at=form2(_test=Xh, _trial=Xh);
-        a = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) + mybdf->polyDerivCoefficient(0)*idt(u)*id(u));
+        std::string g = soption(_name="functions.g");
+        auto ue_g= expr( g );
+        auto fe = -laplacian( ue_g ) + diff( ue_g,"t" );
 
         auto e = exporter(_mesh=mesh);
 
@@ -97,38 +70,37 @@ public :
         // (initialTime included)
         for( auto time : mybdf->priorTimes() )
         {
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            {
+            if( Environment::worldComm().isMasterRank() )
                 std::cout << "Initialize prior times (from timeInitial()) : " << time.second << "s index: " << time.first << "\n";
-            }
+
             ue_g.setParameterValues( {
                     {"t", time.second},
-                    {"alpha", doption(_name="parameters.alpha")},
-                    {"beta", doption(_name="parameters.beta")} } );
+                    {"alpha", alpha},
+                    {"beta", beta} } );
             ue = project( _space=Xh, _expr=ue_g );
             mybdf->setUnknown( time.first, ue );
         }
 
         fe.setParameterValues( {
                 {"t", mybdf->timeInitial()},
-                {"alpha", doption(_name="parameters.alpha")},
-                {"beta", doption(_name="parameters.beta")} } );
+                {"alpha", alpha},
+                {"beta", beta} } );
 
         solution.on( _range=elements(mesh), _expr=ue_g );
         ue.on(_range=elements(mesh), _expr=ue_g );
-        // compute max error which should be 0
         auto error = vf::project( _space=Xh, _expr=idv(ue)-idv(solution) );
+
         e->step(0)->add("exact",ue);
         e->step(0)->add("solution",solution);
         e->step(0)->add("error",error);
+
         e->save();
         double maxerror = error.linftyNorm();
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( Environment::worldComm().isMasterRank() )
         {
             std::cout << "max error at time " << mybdf->timeInitial() << "s :" << std::setprecision(16) << maxerror << "\n";
         }
 
-        auto ft = form1(_test=Xh);
         for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(solution) )
         {
             // update time value in expression
@@ -136,8 +108,13 @@ public :
             fe.setParameterValues( {{"t", mybdf->time()}} );
 
             auto bdf_poly = mybdf->polyDeriv();
+
+            auto ft = form1(_test=Xh);
             ft = integrate( _range=elements(mesh), _expr=(fe+idv(bdf_poly))*id(u) );
-            at = a;
+            auto at = form2( _test=Xh, _trial=Xh );
+            at = integrate( _range= elements( mesh ),
+                            _expr= gradt( u )*trans( grad( v ) ) + mybdf->polyDerivCoefficient(0)*idt(u)*id(u));
+
             at += on(_range=boundaryfaces(mesh),_element=solution,_rhs=ft,_expr=ue_g);
             at.solve( _solution=solution, _rhs=ft );
 
@@ -147,22 +124,23 @@ public :
             // compute max error which should be 0
             auto error = vf::project( _space=Xh, _expr=idv(ue)-idv(solution) );
             double maxerror = error.linftyNorm();
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            if( Environment::worldComm().isMasterRank() )
                 std::cout << "max error at time " << mybdf->time() << "s :" << std::setprecision(16) << maxerror << "\n";
+            BOOST_CHECK_SMALL( maxerror,1e-9 );
+
             e->step(mybdf->time())->add("exact",ue);
             e->step(mybdf->time())->add("solution",solution);
             e->step(mybdf->time())->add("error",error);
             e->save();
         }
-
-   }
+    }
 };
 
 
 
 
-#if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
 BOOST_AUTO_TEST_SUITE( bdf2 )
 
 BOOST_AUTO_TEST_CASE( test_1 )
@@ -172,12 +150,3 @@ BOOST_AUTO_TEST_CASE( test_1 )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-#else
-int main(int argc, char** argv )
-{
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _desc=feel_options() );
-    Test<2>  test;
-    test.run();
-}
-#endif

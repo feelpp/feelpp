@@ -45,7 +45,7 @@ int main( int argc, char** argv )
     const bool isperiodic = true;
 
     typedef Mesh< Simplex<dim> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef mpl::if_c< isperiodic,
                        Periodic<>,
@@ -63,6 +63,7 @@ int main( int argc, char** argv )
     // defines the translation
     node_type transl( dim );
     transl[0]=1.;
+    transl[1]=0.;
 
     // defines the periodicity
     periodicity_type theperiodicity(4,2, transl);

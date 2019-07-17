@@ -28,7 +28,7 @@
 #define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_multiscaleimage
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #endif
 
 #include <feel/feeldiscr/multiscaleimage.hpp>
@@ -119,7 +119,7 @@ class Test_MultiScale
 };
 
 #if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() )
 BOOST_AUTO_TEST_SUITE( multiscale_suite )
 
 double ps=8.9e-3;
@@ -148,11 +148,14 @@ BOOST_AUTO_TEST_CASE( test_run3 )
     tms3.run(2*ps,10*ps,2);
 }
 
+/*
+this size is really too big for a test
 BOOST_AUTO_TEST_CASE( test_run4 )
 {
     Test_MultiScale tms4(12345,67890);
     tms4.run(90*ps,1234*ps,4);
 }
+ */
 
 BOOST_AUTO_TEST_CASE( test_run5 )
 {

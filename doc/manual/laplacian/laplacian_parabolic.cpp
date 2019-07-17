@@ -79,29 +79,29 @@ class Laplacian_parabolic
   //! mesh type
   typedef Mesh<convex_type> mesh_type;
   //! mesh shared_ptr<> type
-  typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+  typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
   //! the basis type of our approximation space
   typedef bases<Lagrange<Order,Scalar> > basis_type;
   //! the approximation function space type
   typedef FunctionSpace<mesh_type, basis_type> space_type;
   //! the approximation function space type (shared_ptr<> type)
-  typedef boost::shared_ptr<space_type> space_ptrtype;
+  typedef std::shared_ptr<space_type> space_ptrtype;
   //! an element type of the approximation function space
   typedef typename space_type::element_type element_type;
 
   //! the exporter factory type
   typedef Exporter<mesh_type> export_type;
   //! the exporter factory (shared_ptr<> type)
-  typedef boost::shared_ptr<export_type> export_ptrtype;
+  typedef std::shared_ptr<export_type> export_ptrtype;
 
   /* BDF discretization */
   typedef Bdf<space_type>  bdf_type;
-  typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+  typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
   /* ErrorBase */
   typedef ErrorBase<Dim, Order> error_type;
-  typedef boost::shared_ptr<error_type> error_ptrtype;
+  typedef std::shared_ptr<error_type> error_ptrtype;
 
   /**
    * Constructor

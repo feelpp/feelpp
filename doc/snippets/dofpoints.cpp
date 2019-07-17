@@ -62,9 +62,9 @@ int main( int argc, char** argv )
         //   - the dof point coordinate
         //   - the dof index
         //   - the dof component associated with the dofpoint
-        auto dofpt_coord = dofpt_it->get<0>();
-        auto dofpt_id = dofpt_it->get<1>();
-        auto dofpt_comp = dofpt_it->get<2>();
+        auto dofpt_coord = dofpt_it->second.get<0>();
+        auto dofpt_id = dofpt_it->second.get<1>();
+        auto dofpt_comp = dofpt_it->second.get<2>();
 
         // do something with the coordinate and store it in the proper vector entry in B
         auto r = vec( ( Px()-dofpt_coord[0] )*( Px()-dofpt_coord[0] ),

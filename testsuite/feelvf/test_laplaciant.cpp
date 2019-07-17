@@ -20,11 +20,8 @@
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#define USE_BOOST_TEST 0
-#if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_laplacian
-#include <testsuite/testsuite.hpp>
-#endif
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelts/bdf.hpp>
@@ -89,9 +86,10 @@ public :
             std::string convex = is_hypercube ? "Hypercube":"Simplex";
 
             auto mesh = createGMSHMesh( _mesh=new Mesh<ConvexType>,
-                                        _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,
+                                        _desc=domain( _name=( boost::format( "%1%-%2%-%3%-%4%" ) % soption(_name="gmsh.domain.shape") % Dim  % ConvexType::nOrder % ConvexType::type() ).str() ,
                                                       _dim=Dim,
-                                                      _convex=convex ),
+                                                      _convex=convex,
+                                                      _order= ConvexType::nOrder),
                                         _structured = structured );
 
             auto Xh = Pch<2>( mesh );
@@ -104,24 +102,24 @@ public :
             v.on(_range=elements(mesh), _expr=cst(1.) );
 
             boost::mpi::timer ti;
-            if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "Scalar Laplacian "<<Dim<<"D" );
+            if ( Environment::isMasterRank() )
+                BOOST_TEST_MESSAGE( "Scalar Laplacian "<< ConvexType::name() );
 
             ti.restart();
             auto f2 = form2( _test=Xh, _trial=Xh );
             f2 = integrate( _range=elements(mesh), _expr=laplaciant(u)*id(u) );
-            if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time assemble laplaciant(u)*id(u)=" << ti.elapsed() << "s]" );
+            if ( Environment::isMasterRank()  )
+                BOOST_TEST_MESSAGE( "  . [time assemble laplaciant(u)*id(u)=" << ti.elapsed() << "s]" );
 
             ti.restart();
             auto a = f2.matrixPtr()->energy(v,u);
-            if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time compute energy  =" << ti.elapsed() << "s] a=" <<  a );
+            if ( Environment::isMasterRank()  )
+                BOOST_TEST_MESSAGE( "  . [time compute energy  =" << ti.elapsed() << "s] a=" <<  a );
 
             ti.restart();
             auto b = integrate( _range= elements( mesh ), _expr= lapf ).evaluate()(0,0);
-            if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time int " << lapf <<" =" << ti.elapsed() << "s] b=" <<  b );
+            if ( Environment::isMasterRank()  )
+                BOOST_TEST_MESSAGE( "  . [time int " << lapf <<" =" << ti.elapsed() << "s] b=" <<  b );
 
             BOOST_CHECK_SMALL( a-b, 1e-9 );
         }
@@ -140,8 +138,9 @@ public :
             std::string convex = is_hypercube ? "Hypercube":"Simplex";
 
             auto mesh = createGMSHMesh( _mesh=new Mesh<ConvexType>,
-                                        _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,
+                                        _desc=domain( _name=( boost::format( "%1%-%2%-%3%-%4%" ) % soption(_name="gmsh.domain.shape") % Dim % ConvexType::nOrder  % ConvexType::type()  ).str() ,
                                                       _dim=Dim,
+                                                      _order=ConvexType::nOrder,
                                                       _convex=convex ),
                                         _structured = structured );
 
@@ -156,40 +155,45 @@ public :
             v.on( _range=elements(mesh), _expr=one() );
 
             boost::mpi::timer ti;
-            if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "Vectorial Laplacian "<<Dim<<"D" );
+            if ( Environment::isMasterRank() )
+                BOOST_TEST_MESSAGE( "Vectorial Laplacian "<< ConvexType::name() );
 
             ti.restart();
             auto f2 = form2( _test=Xh, _trial=Xh );
             f2 = integrate( _range=elements(mesh), _expr=trans(laplaciant(u))*id(u) );
-            if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time assemble laplaciant(u)*id(u)=" << ti.elapsed() << "s]" );
+            if ( Environment::isMasterRank() )
+                BOOST_TEST_MESSAGE( "  . [time assemble laplaciant(u)*id(u)=" << ti.elapsed() << "s]" );
 
             ti.restart();
             auto a = f2.matrixPtr()->energy(v,u);
-            if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time compute  energy =" << ti.elapsed() << "s] a=" <<  a );
+            if ( Environment::isMasterRank() )
+                BOOST_TEST_MESSAGE( "  . [time compute  energy =" << ti.elapsed() << "s] a=" <<  a );
 
             ti.restart();
             auto b = integrate( _range= elements( mesh ), _expr= inner(lapf,one()) ).evaluate()(0,0);
-            if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time int " << lapf <<" =" << ti.elapsed() << "s] b=" <<  b );
+            if ( Environment::isMasterRank() )
+                BOOST_TEST_MESSAGE( "  . [time int " << lapf <<" =" << ti.elapsed() << "s] b=" <<  b );
 
             BOOST_CHECK_SMALL( a-b, 1e-9 );
         }
 };
 
 
-#if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( inner_suite )
 
 
- BOOST_AUTO_TEST_CASE( test_21 )
- {
-     Test<2> test;
-     test.run();
- }
+BOOST_AUTO_TEST_CASE( test_21 )
+{
+    Test<2> test;
+    test.run();
+}
+
+BOOST_AUTO_TEST_CASE( test_22 )
+{
+    Test<2,Simplex<2,2>> test;
+    test.run();
+}
 
 BOOST_AUTO_TEST_CASE( test_31 )
 {
@@ -197,15 +201,33 @@ BOOST_AUTO_TEST_CASE( test_31 )
     test.run();
 }
 
-BOOST_AUTO_TEST_CASE( test_22 )
+BOOST_AUTO_TEST_CASE( test_32 )
+{
+    Test<3,Simplex<3,2>> test;
+    test.run();
+}
+
+BOOST_AUTO_TEST_CASE( testv_21 )
 {
     TestV<2> test;
     test.run();
 }
 
-BOOST_AUTO_TEST_CASE( test_33 )
+BOOST_AUTO_TEST_CASE( testv_22 )
+{
+    TestV<2,Simplex<2,2>> test;
+    test.run();
+}
+
+BOOST_AUTO_TEST_CASE( testv_31 )
 {
     TestV<3> test;
+    test.run();
+}
+
+BOOST_AUTO_TEST_CASE( testv_32 )
+{
+    TestV<3,Simplex<3,2>> test;
     test.run();
 }
 
@@ -214,46 +236,51 @@ BOOST_AUTO_TEST_CASE( testH_21 )
     Test<2,Hypercube<2> > test;
     test.run();
 }
+#if 0
+BOOST_AUTO_TEST_CASE( testH_22 )
+{
+    Test<2,Hypercube<2,2> > test;
+    test.run();
+}
+#endif
 
 BOOST_AUTO_TEST_CASE( testH_31 )
 {
     Test<3,Hypercube<3>> test;
     test.run();
 }
+#if 0
+BOOST_AUTO_TEST_CASE( testH_32 )
+{
+    Test<3,Hypercube<3,2>> test;
+    test.run();
+}
+#endif
 
-BOOST_AUTO_TEST_CASE( testH_22 )
+BOOST_AUTO_TEST_CASE( testHv_21 )
 {
     TestV<2,Hypercube<2>> test;
     test.run();
 }
-
-BOOST_AUTO_TEST_CASE( testH_33 )
+#if 0
+BOOST_AUTO_TEST_CASE( testHv_22 )
+{
+    TestV<2,Hypercube<2,2>> test;
+    test.run();
+}
+#endif
+BOOST_AUTO_TEST_CASE( testHv_31 )
 {
     TestV<3,Hypercube<3>> test;
     test.run();
  }
-
+#if 0
+BOOST_AUTO_TEST_CASE( testHv_32 )
+{
+    TestV<3,Hypercube<3,2>> test;
+    test.run();
+}
+#endif
 
 
 BOOST_AUTO_TEST_SUITE_END()
-#else
-
-int main(int argc, char** argv )
-{
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _desc=makeOptions() );
-
-    Test<2>  test2s;
-    test2s.run();
-
-    Test<3>  test3s;
-    test3s.run();
-
-    TestV<2>  test2v;
-    test2v.run();
-
-    TestV<3>  test3v;
-    test3v.run();
-
-}
-#endif

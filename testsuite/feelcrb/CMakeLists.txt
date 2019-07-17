@@ -22,10 +22,20 @@
 #
 #
 set_directory_properties(PROPERTIES LABEL testcrb )
-feelpp_add_test( eim )
-feelpp_add_test( eim_grepl TIMEOUT 90 )
-feelpp_add_test( eim_composite CFG test_eim_composite.cfg ) 
+feelpp_add_test( eim NO_MPI_TEST )
+feelpp_add_test( eim_grepl CLI "--eim.dimension-max=15 --trainset-eim-size=10 --eim.rebuild-database=true" )
+feelpp_add_test( eim_composite CFG test_eim_composite.cfg NO_MPI_TEST )
 
+feelpp_add_test( deim GEO test_deim.geo NO_MPI_TEST)
 
 feelpp_add_test( rbspace )
 feelpp_add_test( rbspacevector )
+
+feelpp_add_test( db CFG test_db.cfg GEO test_db.geo CLI "-st_pc_factor_mat_solver_package mumps" )
+
+feelpp_add_test( parameterspace )
+feelpp_add_test( reducedglobaldof )
+
+if (FEELPP_HAS_GLPK)
+  feelpp_add_test( empiricalquadrature )
+endif()

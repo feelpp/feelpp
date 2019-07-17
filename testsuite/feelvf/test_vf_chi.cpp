@@ -2,7 +2,7 @@
 
 #define BOOST_TEST_MODULE test_vf_chi
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelvf/vf.hpp>

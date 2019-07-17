@@ -1,3 +1,27 @@
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
+ 
+ This file is part of the Feel++ library
+ 
+ Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ Date: 15 janv. 2016
+ 
+ Copyright (C) 2016 Feel++ Consortium
+ 
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+ 
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ 
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/filters.hpp>
 #include <feel/feeldiscr/projector.hpp>
@@ -22,35 +46,35 @@ namespace Feel
       typedef double value_type;
 
       typedef Backend<value_type> backend_type;
-      typedef boost::shared_ptr<backend_type> backend_ptrtype;
+      typedef std::shared_ptr<backend_type> backend_ptrtype;
       //** Mesh **
       typedef Mesh<Simplex<Dim>> mesh_type;
-      typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+      typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
       //** Basis **
       //Scalar
       typedef bases<Lagrange<Order,Scalar>> basis_type;
-      typedef boost::shared_ptr<basis_type> basis_ptrtype;
+      typedef std::shared_ptr<basis_type> basis_ptrtype;
 
       //Scalar P0
       typedef bases<Lagrange<0,Scalar,Discontinuous>> basis_pm1_type;
-      typedef boost::shared_ptr<basis_pm1_type> basis_pm1_ptrtype;
+      typedef std::shared_ptr<basis_pm1_type> basis_pm1_ptrtype;
 
       //Vectorial P0
       typedef bases<Lagrange<0,Vectorial,Discontinuous>> basis_pm1vec_type;
-      typedef boost::shared_ptr<basis_pm1vec_type> basis_pm1vec_ptrtype;
+      typedef std::shared_ptr<basis_pm1vec_type> basis_pm1vec_ptrtype;
 
       //Scalar space
       typedef FunctionSpace<mesh_type,basis_type> space_type;
-      typedef boost::shared_ptr<space_type> space_ptrtype;
+      typedef std::shared_ptr<space_type> space_ptrtype;
 
       //Scalar space P0
       typedef FunctionSpace<mesh_type,basis_pm1_type> space_pm1_type;
-      typedef boost::shared_ptr<space_pm1_type> space_pm1_ptrtype;
+      typedef std::shared_ptr<space_pm1_type> space_pm1_ptrtype;
 
       //Vectorial space P0
       typedef FunctionSpace<mesh_type,basis_pm1vec_type> space_pm1vec_type;
-      typedef boost::shared_ptr<space_pm1vec_type> space_pm1vec_ptrtype;
+      typedef std::shared_ptr<space_pm1vec_type> space_pm1vec_ptrtype;
 
       /**
        * Constructor

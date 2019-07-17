@@ -1,0 +1,70 @@
+:feelpp: Feel++
+= feelpp_dockerize(1)
+Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>;
+:manmanual: feelpp_dockerize.
+:man-linkstyle: pass:[blue R < >]
+
+
+== NAME
+
+{manmanual} - a tool to create container from {feelpp} based projects
+
+
+== SYNOPSIS
+
+{manmanual} is a script that allows to create Docker containers from {feelpp} based projects.
+
+
+== DESCRIPTION
+
+== OPTIONS
+
+=== Options
+
+{manmanual} requires some options.
+
+
+
+.Table of command-line {manmanual} options
+|===
+| Name | Description | Default value
+| PROJECT | name of the project |
+| TARGET | os:version description | ubuntu:16.10
+| BRANCH  | branch of the {feelpp} based project to build from | master
+| {feelpp} container | FROM container  | `feelpp/feelpp-toolboxes`
+| FEELPP_BRANCH  | branch of {feelpp} container to build from | develop
+| BUILD_JOBS | number of jobs for make process when building container | 10
+|===
+
+== EXAMPLES
+
+Suppose that we want to build the {feelpp} based project holo3 from a `ubuntu:16.10` system, we would invoke {manmanual} as follows
+
+|===
+| Name | Value
+| PROJECT | holo3
+| TARGET |  ubuntu:16.10
+| BRANCH  | master
+| {feelpp} container   | `feelpp/feelpp-toolboxes`
+| FEELPP_BRANCH  | develop
+| BUILD_JOBS | 10
+|===
+
+[source,shell]
+----
+feelpp_dockersize.sh holo3 ubuntu:16.10 master feelpp/feelpp-toolboxes  develop 10
+----
+
+TIP: The options must currently be entered in this specific order
+
+NOTE: a future version will include a better handling of command-line options.
+
+
+== SEE ALSO
+
+*{feelpp} Book:* http://book.feelpp.org
+
+== COPYING
+
+Copyright \(C) 2017 {feelpp} Consortium. +
+Free use of this software is granted under the terms of the GPLv3 License.

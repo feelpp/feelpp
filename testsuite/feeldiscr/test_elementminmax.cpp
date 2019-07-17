@@ -37,7 +37,7 @@
 //#define BOOST_TEST_NO_MAIN
 
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax1, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "check function min and max for dim = " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
 
     // The mesh created is either the [0,1] interval,
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax1, T, dim_types )
                                         _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<1, Scalar> > > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     space_ptrtype Xh = space_type::New( mesh );
     auto u = Xh->element();
     u = vf::project( Xh, elements( mesh ), vf::sqrt( Px()*Px() + Py()*Py() + Pz()*Pz() ) );
@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax2, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "check broken function min and max for dim = " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
 
     // The mesh created is either the [0,1] interval,
@@ -105,13 +105,13 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax2, T, dim_types )
 
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<4, Scalar> > > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     space_ptrtype Xh = space_type::New( mesh );
     auto u = Xh->element();
     u = vf::project( Xh, elements( mesh ), vf::sqrt( Px()*Px() + Py()*Py() + Pz()*Pz() ) );
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<0, Scalar, Discontinuous> > > p0_space_type;
-    typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
+    typedef std::shared_ptr<p0_space_type> p0_space_ptrtype;
     p0_space_ptrtype P0h = p0_space_type::New( mesh );
 
     auto maxPerElem = P0h->element();

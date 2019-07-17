@@ -1,0 +1,32 @@
+{
+    "Name": "VesicleRest2d",
+    "ShortName": "VesicleRest2d",
+    "Models":
+    {
+        "equations":"Advection"
+    },
+    "Parameters":
+    {
+        "x0": "0.",
+        "y0": "0.",
+        "a0": "0.650",
+        "b0": "2.244"
+    },
+    "InitialConditions":
+    {
+        "multifluid.levelset1":
+        {
+            "Dirichlet":
+            {
+                "":
+                {
+                    "expr":"sqrt( (x-x0)*(x-x0)/(a0*a0) + (y-y0)*(y-y0)/(b0*b0) ) - 1 :x:x0:y:y0:a0:b0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "PhysicalQuantities": ["volume", "perimeter"]
+    }
+}

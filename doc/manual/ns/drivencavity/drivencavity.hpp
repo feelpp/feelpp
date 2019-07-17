@@ -44,7 +44,7 @@ public:
 
     typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
 
@@ -60,12 +60,12 @@ public:
 
     typedef bases<basis_u_type> basis_type_U;
     typedef FunctionSpace<mesh_type, basis_type_U> space_type_U;
-    typedef boost::shared_ptr<space_type_U> space_ptrtype_U;
+    typedef std::shared_ptr<space_type_U> space_ptrtype_U;
 
     /*space*/
     //# marker2 #
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     //# endmarker2 #
 
     /* functions */
@@ -98,7 +98,7 @@ private:
     mesh_ptrtype mesh;
     space_ptrtype Vh;
 
-    boost::shared_ptr<export_type> exporter;
+    std::shared_ptr<export_type> exporter;
 }; // DrivenCavity
 } // namespace Feel
 #endif /* FEELPP_DRIVENCAVITY_HPP_H */

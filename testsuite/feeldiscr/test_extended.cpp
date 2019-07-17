@@ -17,17 +17,17 @@ int main(int argc, char**argv )
     // Define mesh
     typedef Simplex<MY_DIM> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // Define spaces (Velocity,Pressure,Lagrange)
     typedef Lagrange<ORDER_U, Vectorial,Continuous,PointSetFekete> basis_u_type;
     typedef Lagrange<ORDER_P, Scalar,Continuous,PointSetFekete> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
     typedef bases< basis_u_type , basis_p_type, basis_l_type  > basis_type_F;
     typedef FunctionSpace<mesh_type, basis_type_F> space_type_F;
-    typedef boost::shared_ptr<space_type_F> space_ptrtype_F;
+    typedef std::shared_ptr<space_type_F> space_ptrtype_F;
     // Define backend
     typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
 
     auto mesh = loadMesh(_mesh=new mesh_type );

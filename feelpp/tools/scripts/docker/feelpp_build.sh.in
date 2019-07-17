@@ -1,0 +1,51 @@
+#!/bin/bash
+
+set -e
+#set -x
+# bash functions
+feelpp_build()
+{
+    PROJECT=$1
+    URL=$2
+    BRANCH=$3
+    NJOBS=${4:-10}
+    CMAKE_FLAGS=${5:-}
+    MAKE_FLAGS=${6:-VERBOSE=0}
+    FEELPP_SRC_DIR=${7:-$HOME/src/}
+    FEELPP_DIR=@CMAKE_INSTALL_PREFIX@
+    
+  echo "--- Building Project $1 ..."
+  if [ -d ${FEELPP_SRC_DIR}/feelpp ]
+  then
+        cd /tmp
+        mkdir -p $1
+        cd $1
+        if [ ! -d .git ]; then
+            git init
+        fi
+        if [ ! -f .lfsconfig ]; then 
+            git config -f .lfsconfig lfs.url https://${GITHUB_OAUTH}@github.com/feelpp/$1.git/info/lfs
+        fi 
+        git pull https://${GITHUB_OAUTH}@github.com/feelpp/$1.git $3
+        #git clone $2 $1
+        # /tmp should only have the directory of our project
+        # so we can do cd `ls`
+        pwd
+        mkdir -p build && cd build
+        echo "$FEELPP_SRC_DIR/feelpp/configure -r --root=\"/tmp/$1\" --cmakeflags=\"-DCMAKE_INSTALL_PREFIX=${FEELPP_DIR} ${CMAKE_FLAGS}\";"
+        $FEELPP_SRC_DIR/feelpp/configure -r --root="/tmp/$1" --cmakeflags="-DCMAKE_INSTALL_PREFIX=${FEELPP_DIR} ${CMAKE_FLAGS}";
+        make -j $NJOBS ${MAKE_FLAGS}
+        # install requires sudo
+        sudo make install
+#        if [ -f ../WELCOME.$1 ]; then
+#            sudo cat ../WELCOME.$1 >> $HOME/WELCOME;
+#        fi
+        feelpp_clean $PROJECT
+  else
+	   echo "Feel++ source cannot be found. Please run pull_feelpp first."
+  fi
+}
+feelpp_clean(){
+    rm -rf /tmp/$PROJECT
+}
+

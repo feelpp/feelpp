@@ -1,0 +1,67 @@
+{
+    "Name": "Thermoelectric",
+    "ShortName": "Thermoelectric",
+    "Model": "thermoelectric-crb",
+    "Materials":
+    {
+        "cond":
+        {
+            "name":"copper",
+            "physics":"electric",
+            "sigma":58000,
+            "zmin":0.5,
+            "zmax":4.5,
+            "params":["p1","p2"]
+        }
+    },
+    "Parameters":
+    {
+        "p1":
+        {
+            "value":1.5,
+            "min":-2,
+            "max":2
+        },
+        "p2":
+        {
+            "value":-1,
+            "min":-2,
+            "max":2
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "Dirichlet":
+            {
+                "base":
+                {
+                    "expr":"0.2",
+                    "material":"cond"
+                },
+                "top":
+                {
+                    "expr":"0",
+                    "material":"cond"
+                }
+            }
+        },
+        "temperature":
+        {
+            "Robin":
+            {
+                "Rext":
+                {
+                    "expr1":"h:h",
+                    "expr2":"h*Tw:h:Tw"
+                },
+                "Rint":
+                {
+                    "expr1":"h:h",
+                    "expr2":"h*Tw:h:Tw"
+                }
+            }
+        }
+    }
+}

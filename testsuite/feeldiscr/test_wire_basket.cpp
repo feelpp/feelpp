@@ -1,7 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-*/
 
 #define BOOST_TEST_MODULE test_wire_basket
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -19,62 +19,18 @@ namespace test_wire_basket
 {
 
 using namespace Feel;
-using namespace Feel::vf;
-
-typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
-
-/*_________________________________________________*
- * Options
- *_________________________________________________*/
-
-inline
-po::options_description
-makeOptions()
-{
-    po::options_description desc_options( "test_wire_basket options" );
-    desc_options.add_options()
-        ( "hsize", po::value<double>()->default_value( 0.075 ), "mesh size" )
-        ;
-    return desc_options.add( Feel::feel_options() );
-}
-
-/*_________________________________________________*
- * About
- *_________________________________________________*/
-
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "Test_Wire_Basket" ,
-                     "Test_Wire_Basket" ,
-                     "0.1",
-                     "test wire basket for three fields domain decomposition method ",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2011 Universite Joseph Fourier" );
-
-    about.addAuthor( "Abdoulaye Samake", "developer", "Abdoulaye.Samake@imag.fr", "" );
-    return about;
-}
-
 /*_________________________________________________*
  * Run
  *_________________________________________________*/
 
 template <uint16_type OrderPoly>
-void run( Application_ptrtype & theApp )
+void run()
 {
 
     /* change parameters below */
     const int nDim = 3;
     const int nOrderPoly = OrderPoly;
-    double meshSize = theApp->vm()["hsize"].as<double>();
-
-    theApp->changeRepository( boost::format( "testsuite/feeldiscr/%1%/P%2%/h_%3%/" )
-                              % theApp->about().appName()
-                              % OrderPoly
-                              % meshSize );
+    double meshSize = doption(_name="gmsh.hsize");
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -139,7 +95,6 @@ void run( Application_ptrtype & theApp )
     auto op_lift = opLift( _domainSpace=Xh,_backend=backend,_penaldir=100. );
     auto glift = op_lift->project( _expr=idv( const_extension ), _range=markedfaces( mesh,6 ) );
 
-
     double boundary_error = integrate( _range=markedfaces( mesh,6 ), _expr=idv( glift )-idv( const_extension ) ).evaluate()( 0,0 );
     //auto laplacian_error = integrate( elements( mesh ), trace( hessv( glift ) ) ).evaluate()( 0,0 );
 
@@ -159,12 +114,6 @@ void run( Application_ptrtype & theApp )
     BOOST_CHECK_CLOSE( trace_trace_measure, 4, 1e-12 );
     BOOST_CHECK_SMALL( const_extention_error1,1e-10 );
     BOOST_CHECK_SMALL( const_extention_error2,5e-4 );
-
-    auto exporter = export_type::New( theApp->vm(), "Export" );
-
-    auto trace_exporter = trace_export_type::New( theApp->vm(), "Trace_Export" ) ;
-
-    auto trace_trace_exporter = trace_trace_export_type::New( theApp->vm(), "Trace_Trace_Export" );
 
 
     //-------------------------------------------------------------------------------------------------------
@@ -200,18 +149,17 @@ void run( Application_ptrtype & theApp )
     FEELPP_ASSERT( std::distance(dft.first,dft.second) != 0 )( std::distance(dft.first,dft.second) ).error( "invalid wirebasket nDof" );
 
     //-------------------------------------------------------------------------------------------------------
+    auto myexporter = exporter(_mesh=mesh,_name="Export" );
+    myexporter->step( 0 )->add( "g", projection_g );
+    myexporter->step( 0 )->add( "glift", glift );
+    myexporter->save();
 
-    exporter->step( 0 )->setMesh( mesh );
-    exporter->step( 0 )->add( "g", projection_g );
-    exporter->step( 0 )->add( "glift", glift );
-    exporter->save();
-
-    trace_exporter->step( 0 )->setMesh( TXh->mesh() );
+    auto trace_exporter = exporter(_mesh=TXh->mesh() ,_name="Trace_Export" );
     trace_exporter->step( 0 )->add( "traceg", trace_projection_g );
     trace_exporter->step( 0 )->add( "const_extension", const_extension );
     trace_exporter->save();
 
-    trace_trace_exporter->step( 0 )->setMesh( TTXh->mesh() );
+    auto trace_trace_exporter = exporter(_mesh=TTXh->mesh() ,_name="Trace_Trace_Export" );
     trace_trace_exporter->step( 0 )->add( "tracetrace_g", trace_trace_projection_g );
     trace_trace_exporter->save();
 
@@ -224,41 +172,12 @@ void run( Application_ptrtype & theApp )
  * Main
  *_________________________________________________*/
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( test_wire_basket::makeAbout(), test_wire_basket::makeOptions() )
+FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( wire_basket )
 
-typedef Feel::Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
-
-
-
 BOOST_AUTO_TEST_CASE( wire_basket1 )
 {
-    auto theApp = Application_ptrtype( new Application_type );
-
-    test_wire_basket::run<2>( theApp );
-
+    test_wire_basket::run<2>();
 }
 BOOST_AUTO_TEST_SUITE_END()
-
-
-#if 0
-int
-main( int argc, char** argv )
-{
-    auto theApp = Application_ptrtype( new Application_type( argc,argv,
-                                       test_wire_basket::makeAbout(),
-                                       test_wire_basket::makeOptions() ) );
-
-
-    if ( theApp->vm().count( "help" ) )
-    {
-        std::cout << theApp->optionsDescription() << "\n";
-        exit( 0 );
-    }
-
-    test_wire_basket::run<2>( theApp );
-
-}
-#endif

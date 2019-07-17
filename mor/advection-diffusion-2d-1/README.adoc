@@ -1,0 +1,24 @@
+= Advection-Diffusion
+:feelpp: Feel++
+Christophe Prud'homme
+
+ We consider an advection-diffusion example in a rectangular domain stem:[\Omega (\mu) = ]0, L[ × ]0, 1[] representing a channel.
+ The governing equation  for the passive-scalar field (say, temperature) is the advection-diffusion  equation with imposed Couette velocity stem:[(y,0)].
+
+ Neumann (flux) boundary conditions are imposed on the bottom wall  stem:[\Gamma_{bot}].
+ Homogeneous Dirichlet conditions are imposed on the top  wall stem:[\Gamma_{top}] and on the “inflow” left boundary stem:[\Gamma_{in}].
+ Homogeneous (zero flux) Neumann conditions are imposed on the “outflow”  right boundary stem:[\Gamma_{out}] .
+
+ The output of interest is the integral of the temperature over the heated  (bottom) surface stem:[\Gamma_{bot}].
+ This example is a simplified version of  a Couette- Graetz problem [1].
+ We consider two parameters: the length of the  channel, stem:[L], and the Peclet number, stem:[Pe] [2].
+ Hence stem:[P = 2] and  stem:[\mu = (\mu_1 , \mu_2 )]: stem:[\mu_1] is the channel length stem:[L], and  stem:[\mu_2] is the Peclet number stem:[Pe]; the parameter domain is given by  stem:[D = [1, 10] \times [0.1, 100]].
+ We now choose stem:[\mu_{ref} = (1, 1)],  which in turn defines the reference domain stem:[\Omega = \Omega (\mu_{ref} )].
+
+
+ 1.Schiesser WE, Silebi CA (1997) Computational transport phenomena:
+ numerical methods for the solution of transport problems. Cambridge
+ University Press, Cambridge
+
+ 2. Gunzburger MD (1989) Finite element methods for viscous incompressible
+ flows. Academic Press, San Diego

@@ -56,7 +56,7 @@ public:
     //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     //! vector type associated with backend
     typedef typename backend_type::vector_type vector_type;
     //! vector type associated with backend (shared_ptr<> type)
@@ -72,7 +72,7 @@ public:
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
 
     //! the basis type of our approximation space
@@ -81,13 +81,13 @@ public:
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     //! the approximation function space type (shared_ptr<> type)
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
     typedef std::vector<element_type> vector_of_element_type;
 
     /**
@@ -746,7 +746,7 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructStiffMatrixSnapshot( space
      integrate( _range=elements(Xh->mesh()), _expr=gradt(ui)*trans(grad(uj)));
     */
     Eigen::MatrixXd S ( NbSnapshot,NbSnapshot ); //Dense RB stiffness matrix S
-    cout << " Dans ConstructStiffMatrixSnapshot " << endl;
+    std::cout << " Dans ConstructStiffMatrixSnapshot " << std::endl;
     //boost::filesystem::path full_path_Sol( boost::filesystem::current_path() );
     //cout << "Path where the sol are load " << full_path_Sol << endl;
 
@@ -764,7 +764,7 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructStiffMatrixSnapshot( space
             std::cerr << "In 'ConstructStiffMatrixSnapshot': ERROR IN LOADING FILE " << path <<std::endl;
             auto t = Xh->element();
             t.load(_path=path);
-            cout << "Reloading of ui done -> L2norm(ui)= " << t.l2Norm() << endl;
+            std::cout << "Reloading of ui done -> L2norm(ui)= " << t.l2Norm() << std::endl;
             exit( 0 );
         }
 

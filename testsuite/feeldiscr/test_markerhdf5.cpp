@@ -1,7 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-*/
 
 #define BOOST_TEST_MODULE test_markerhdf5
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -26,7 +26,7 @@ using namespace Feel;
 using namespace Feel::vf;
 
 typedef Mesh<Simplex<CHECKH5_DIM>> mesh_type;
-typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
 void checkMarker(mesh_ptrtype mesh)
 {
@@ -51,7 +51,7 @@ run()
         );
     /// Load mesh given by gmsh.filename
     std::cout << "Check with " << p << std::endl;
-    auto mesh1 = loadMesh(_mesh = new mesh_type, _filename=p.string());
+    auto mesh1 = loadMesh(_mesh = new mesh_type, _filename=p.string(),_savehdf5=true);
     checkMarker(mesh1);
     /// Load the generated msh file
     p.replace_extension("msh");
@@ -82,7 +82,7 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::about(Feel::_name="test_markerHDF5", //st
 BOOST_AUTO_TEST_SUITE( markerhdf5 )
 
 typedef Feel::Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
+typedef std::shared_ptr<Application_type> Application_ptrtype;
 
 BOOST_AUTO_TEST_CASE( markerhdf5 )
 {

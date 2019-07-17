@@ -1,0 +1,7 @@
+= Laplacian
+:icons: font
+
+NOTE: see link:http://book.feelpp.org/math/fem/[] or link:http://book.feelpp.org/user-manual/[] for more mathematical and user details respectively.
+
+include::circle/README.adoc[]
+

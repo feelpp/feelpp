@@ -6,7 +6,7 @@
         Date: 2010-05-08
 
    Copyright (C) 2010 Universite Joseph Fourier (Grenoble I)
-   Copyright (C) 2010-2015 Feel++ Constructs
+   Copyright (C) 2010-2019 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -304,7 +304,6 @@ BOOST_AUTO_TEST_CASE( ravth_3d_0 )
 }
 BOOST_AUTO_TEST_CASE( ravth_2d_1 )
 {
-    Feel::Assert::setLog( "test_ravth.log" );
     using namespace Feel;
     BOOST_TEST_MESSAGE( "start" );
     typedef RaviartThomas<1>::apply<2>::type rt0_type;

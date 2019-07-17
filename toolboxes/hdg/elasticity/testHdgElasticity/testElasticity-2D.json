@@ -1,0 +1,77 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Models": { "equations":"hdg" },
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+			"rho":"1",
+            "lambda":"1",
+	    	"mu":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "stress":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+					"expr":"{8,0}"
+                }
+            },
+            "Neumann_exact":
+            {
+                "int":
+                {
+		     		"expr":"{x^2+y^2,1}:x:y" 
+                },
+                "out":
+                {
+		     		"expr":"{x^2+y^2,1}:x:y" 
+                }
+            },
+			"Integral":
+			{
+				"ext":
+				{
+					"expr":"{8*Pi,8}"
+				}
+			}
+		},
+		"displacement":
+		{
+	    	"Dirichlet":
+	    	{
+        		"in":
+                {
+		     		"expr":"{x^2+y^2,1}:x:y" 
+                }
+ 	    	}
+    	},
+		"ExactSolution":
+		{
+			"u_exact":
+			{
+				"omega":
+				{
+		     		"expr":"{x^2+y^2,1}:x:y" 
+				}
+			}
+		}
+     },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["stress","displacement"]
+        }
+    }
+}
+
+
+
+

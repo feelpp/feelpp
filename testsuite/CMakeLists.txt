@@ -21,13 +21,36 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+cmake_minimum_required(VERSION 3.7.2)
+project(testsuite)
+set(PROJECT_SHORTNAME "test")
+
+if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+  find_package(Feel++ PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
+  if(NOT FEELPP_FOUND)
+    message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+  endif()
+else()
+  feelpp_get_environment()
+endif()
+
+enable_testing()
+
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 add_custom_target( testsuite )
 
-add_subdirectory(contrib)
+include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/..)
 
-foreach( testdir core math alg mesh poly filters material models interpolation integration discr crb ts vf leaks opt ls)
+option(FEELPP_DISABLE_COMPILE_FAILURE "disable compilation failure in testsuite" OFF)
+if (FEELPP_DISABLE_COMPILE_FAILURE )
+  add_definitions(-DFEELPP_DISABLE_COMPILE_FAILURE=1)
+endif()
+message(STATUS "[feelpp/testsuite] disable compile failure: ${FEELPP_DISABLE_COMPILE_FAILURE}")
+
+
+
+foreach( testdir core python math alg mesh poly filters material models interpolation integration discr crb ts vf leaks opt ls pde fit fmi event)
   add_custom_target( test${testdir} )
   add_subdirectory( feel${testdir} )
 

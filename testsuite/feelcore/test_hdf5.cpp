@@ -28,7 +28,7 @@
  */
 
 #define BOOST_TEST_MODULE test_hdf5
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/hdf5.hpp>
 

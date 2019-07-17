@@ -23,7 +23,7 @@
 #define USE_BOOST_TEST 1
 #if USE_BOOST_TEST
 #define BOOST_TEST_MODULE test_laplacian
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #endif
 
 #include <feel/feelalg/backend.hpp>
@@ -68,13 +68,14 @@ makeAbout()
                      "0.2",
                      "nD(n=2,3) test laplacian",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2014 Feel++ Consortium" );
+                     "Copyright (c) 2014-2016 Feel++ Consortium" );
 
     about.addAuthor( "JB Wahl", "developer", "wahl.jb@gmail.com", "" );
+    about.addAuthor( "C Prud'homme", "developer", "christophe.prudhomme@cemosis.fr", "" );
     return about;
 }
 
-template<int Dim>
+template<int Dim, typename ConvexT = Simplex<Dim>>
 class Test:
     public Simget
 {
@@ -82,9 +83,11 @@ public :
 
     void run()
         {
-            auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim,1>>,
-                                        _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,
-                                                      _dim=Dim ) );
+            auto mesh = createGMSHMesh( _mesh=new Mesh<ConvexT>,
+                                        _desc=domain( _name=( boost::format( "%1%-%2%-%3%-%4%" ) % soption(_name="gmsh.domain.shape") % Dim % ConvexT::nOrder % ConvexT::type() ).str() ,
+                                                      _dim=Dim,
+                                                      _order=ConvexT::nOrder,
+                                                      _convex=ConvexT::type() ) );
 
             auto Xh = Pch<2>( mesh );
             auto u = Xh->element();
@@ -95,40 +98,37 @@ public :
             u.on(_range=elements(mesh), _expr=expr( f ));
 
             boost::mpi::timer ti;
-#if USE_BOOST_TEST
+
             if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "Scalar Laplacian "<<Dim<<"D" );
-#endif
+                BOOST_TEST_MESSAGE( "Scalar Laplacian "<< ConvexT::name() );
+            
             ti.restart();
             auto f1 = form1( _test=Xh );
             f1 = integrate( _range=elements(mesh), _expr=laplacian(u) );
-#if USE_BOOST_TEST
+
             if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time assemble laplacian(u)=" << ti.elapsed() << "s]" );
-#endif
+                BOOST_TEST_MESSAGE( "  . [time assemble laplacian(u)=" << ti.elapsed() << "s]" );
+
 
             ti.restart();
             auto a = f1(u);
-#if USE_BOOST_TEST
+
             if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time inner product  =" << ti.elapsed() << "s] a=" <<  a );
-#endif
+                BOOST_TEST_MESSAGE( "  . [time inner product  =" << ti.elapsed() << "s] a=" <<  a );
+
 
             ti.restart();
             auto b = integrate( _range= elements( mesh ), _expr= lapf ).evaluate()(0,0);
-#if USE_BOOST_TEST
+
             if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time int " << lapf <<" =" << ti.elapsed() << "s] b=" <<  b );
+                BOOST_TEST_MESSAGE( "  . [time int " << lapf <<" =" << ti.elapsed() << "s] b=" <<  b );
 
 
             BOOST_CHECK_SMALL( a-b, 1e-9 );
-#else
-            CHECK(math::abs(a-b) < 1e-9) << "check failed a=" << a << "  != b =" << b;
-#endif
         }
 };
 
-template<int Dim>
+template<int Dim, typename ConvexT=Simplex<Dim>>
 class TestV:
     public Simget
 {
@@ -136,9 +136,11 @@ public :
 
     void run()
         {
-            auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim,1>>,
-                                        _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,
-                                                      _dim=Dim ) );
+            auto mesh = createGMSHMesh( _mesh=new Mesh<ConvexT>,
+                                        _desc=domain( _name=( boost::format( "%1%-%2%-%3%-%4%" ) % soption(_name="gmsh.domain.shape") % Dim % ConvexT::nOrder % ConvexT::type()  ).str() ,
+                                                      _dim=Dim,
+                                                      _order=ConvexT::nOrder,
+                                                      _convex=ConvexT::type()) );
 
             auto Xh = Pchv<2>( mesh );
             auto u = Xh->element();
@@ -149,41 +151,37 @@ public :
             u.on(_range=elements(mesh), _expr=expr<Dim,1>( f ));
 
             boost::mpi::timer ti;
-#if USE_BOOST_TEST
+
             if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "Vectorial Laplacian "<<Dim<<"D" );
-#endif
+                BOOST_TEST_MESSAGE( "Vectorial Laplacian "<< ConvexT::name() );
 
             ti.restart();
             auto f1 = form1( _test=Xh );
             f1 = integrate( _range=elements(mesh), _expr=inner(laplacian(u),one()) );
-#if USE_BOOST_TEST
+
             if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time assemble laplacian(u)=" << ti.elapsed() << "s]" );
-#endif
+                BOOST_TEST_MESSAGE( "  . [time assemble laplacian(u)=" << ti.elapsed() << "s]" );
 
             ti.restart();
             auto a = f1(u);
-#if USE_BOOST_TEST
+
             if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time inner product  =" << ti.elapsed() << "s] a=" <<  a );
-#endif
+                BOOST_TEST_MESSAGE( "  . [time inner product  =" << ti.elapsed() << "s] a=" <<  a );
 
             ti.restart();
             auto b = integrate( _range= elements( mesh ), _expr= inner(lapf,one()) ).evaluate()(0,0);
-#if USE_BOOST_TEST
+
             if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time int " << lapf <<" =" << ti.elapsed() << "s] b=" <<  b );
+                BOOST_TEST_MESSAGE( "  . [time int " << lapf <<" =" << ti.elapsed() << "s] b=" <<  b );
 
 
             BOOST_CHECK_SMALL( a-b, 1e-9 );
-#endif
+
         }
 };
 
 
-#if USE_BOOST_TEST
- FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+ FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
  BOOST_AUTO_TEST_SUITE( inner_suite )
 
 
@@ -192,6 +190,17 @@ public :
      Test<2> test;
      test.run();
  }
+BOOST_AUTO_TEST_CASE( test_22 )
+{
+    Test<2,Simplex<2,2>> test;
+    test.run();
+}
+
+BOOST_AUTO_TEST_CASE( testH_21 )
+{
+    Test<2,Hypercube<2>> test;
+    test.run();
+}
 
 BOOST_AUTO_TEST_CASE( test_31 )
 {
@@ -199,46 +208,51 @@ BOOST_AUTO_TEST_CASE( test_31 )
     test.run();
 }
 
-BOOST_AUTO_TEST_CASE( test_22 )
+BOOST_AUTO_TEST_CASE( test_32 )
+{
+    Test<3,Simplex<3,2>> test;
+    test.run();
+}
+BOOST_AUTO_TEST_CASE( testH_31 )
+{
+    Test<3,Hypercube<3,1>> test;
+    test.run();
+}
+
+BOOST_AUTO_TEST_CASE( testv_21 )
 {
     TestV<2> test;
     test.run();
 }
 
-BOOST_AUTO_TEST_CASE( test_33 )
+BOOST_AUTO_TEST_CASE( testv_22 )
+{
+    TestV<2,Simplex<2,2>> test;
+    test.run();
+}
+
+BOOST_AUTO_TEST_CASE( testHv_21 )
+{
+    TestV<2,Hypercube<2>> test;
+    test.run();
+}
+
+BOOST_AUTO_TEST_CASE( testv_31 )
 {
     TestV<3> test;
     test.run();
 }
 
-BOOST_AUTO_TEST_SUITE_END()
-#else
-
-int main(int argc, char** argv )
+BOOST_AUTO_TEST_CASE( testv_32 )
 {
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _desc=makeOptions() );
-
-    std::cout<<"test scalair\n"
-             << "2D\n";
-
-    Test<2>  test2s;
-    test2s.run();
-
-    std::cout<<"3D\n";
-    Test<3>  test3s;
-    test3s.run();
-
-    std::cout<<"test vectoriel\n"
-             << "2D\n";
-
-    TestV<2>  test2v;
-    test2v.run();
-
-    std::cout<<"3D\n";
-    TestV<3>  test3v;
-    test3v.run();
-
-
+    TestV<3,Simplex<3,2>> test;
+    test.run();
 }
-#endif
+
+BOOST_AUTO_TEST_CASE( testHv_31 )
+{
+    TestV<3,Hypercube<3,1>> test;
+    test.run();
+}
+
+BOOST_AUTO_TEST_SUITE_END()

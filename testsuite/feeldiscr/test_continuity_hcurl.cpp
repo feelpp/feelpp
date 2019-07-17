@@ -30,7 +30,7 @@
 #include <boost/timer.hpp>
 
 #define BOOST_TEST_MODULE continuity testsuite
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <boost/mpl/list.hpp>
 
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( HCurlNed1, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "check continuity for HCurlNED1 in  " << T::value << "D\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type );
 

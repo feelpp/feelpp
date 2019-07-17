@@ -24,13 +24,17 @@
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-feelpp_add_application(doc_residualestimator SRCS residualestimator.cpp LABELS doc)
+feelpp_add_application(residualestimator SRCS residualestimator.cpp LABELS doc)
 if (OCTAVE_FOUND)
   add_octave_module(residualestimator)
 endif()
 
-if(GMSH_ADAPTMESH_INCLUDE_DIR)
-  feelpp_add_application(doc_LShape SRCS Lshape.cpp  CFG Lshape.cfg Lshape3D.cfg LABELS doc )
+if(FEELPP_HAS_GMSH_H)
+  feelpp_add_application(LShape SRCS Lshape.cpp  CFG Lshape.cfg Lshape3D.cfg LABELS doc )
 else()
   message(STATUS "doc_LShape: compilation cancelled. Some headers (Openfile.h Field.h) needed for meshadaptation are missing.")
 endif()
+
+feelpp_add_application(meshadaptfromparamcurve SRCS meshadaptfromparamcurve.cpp CFG meshadaptfromls.cfg )
+feelpp_add_application(meshadaptfromsimplels_d2 SRCS meshadaptfromsimplels.cpp DEFS FEELPP_DIM=2 CFG meshadaptfromls.cfg )
+feelpp_add_application(meshadaptfromsimplels_d3 SRCS meshadaptfromsimplels.cpp DEFS FEELPP_DIM=3 CFG meshadaptfromls.cfg )

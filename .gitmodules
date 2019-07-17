@@ -1,105 +1,27 @@
-[submodule "dot"]
-	path = projects/dot
-	url = https://github.com/feelpp/dot
-    fetchRecurseSubmodules = on-demand
-[submodule "fsi"]
-	path = projects/fsi
-	url = https://github.com/feelpp/fsi
-    fetchRecurseSubmodules = on-demand
-[submodule "hifimagnet"]
-	path = projects/hifimagnet
-	url = https://github.com/feelpp/hifimagnet
-    fetchRecurseSubmodules = on-demand
-[submodule "pmp"]
-	path = projects/pmp
-	url = https://github.com/feelpp/pmp
-    fetchRecurseSubmodules = on-demand
-[submodule "rb"]
-	path = projects/rb
-	url = https://github.com/feelpp/rb
-    fetchRecurseSubmodules = on-demand
-[submodule "cemosis"]
-	path = projects/cemosis
-	url = https://github.com/feelpp/cemosis
-    fetchRecurseSubmodules = on-demand
-[submodule "bubble"]
-	path = projects/bubble
-	url = https://github.com/feelpp/bubble
-    fetchRecurseSubmodules = on-demand
-[submodule "gazomat"]
-	path = projects/gazomat
-	url = https://github.com/feelpp/gazomat
-    fetchRecurseSubmodules = on-demand
-[submodule "po"]
-	path = projects/po
-	url = https://github.com/feelpp/po
-    fetchRecurseSubmodules = on-demand
-[submodule "chorus"]
-	path = projects/chorus
-	url = https://github.com/feelpp/chorus
-    fetchRecurseSubmodules = on-demand
-    branch = master
-[submodule "projects/map"]
-	path = projects/map
-	url = https://github.com/feelpp/map.git
-    fetchRecurseSubmodules = on-demand
-[submodule "projects/cerema"]
-	path = projects/cerema
-	url = https://github.com/cemosis/seme-cerema.git
-    fetchRecurseSubmodules = on-demand
-[submodule "data/bigdata"]
-	path = data/bigdata
-	url = https://github.com/feelpp/bigdata.git
-    fetchRecurseSubmodules = on-demand
 [submodule "contrib/nlopt"]
-	path = contrib/nlopt
+	path = feelpp/contrib/nlopt
 	url = https://github.com/feelpp/nlopt.git
-[submodule "contrib/ipopt"]
-	path = contrib/ipopt
-	url = https://github.com/feelpp/ipopt.git
-[submodule "contrib/nt2"]
-	path = contrib/nt2
-	url = https://github.com/feelpp/nt2.git
-	fetchRecurseSubmodules = on-demand
-[submodule "projects/tr"]
-	path = projects/tr
-	url = https://github.com/feelpp/tr.git
-	fetchRecurseSubmodules = on-demand
-[submodule "contrib/cereal"]
-	path = contrib/cereal
-	url = https://github.com/USCiLab/cereal
-	fetchRecurseSubmodules = on-demand
-[submodule "projects/lncmi"]
-	path = projects/lncmi
-	url = https://github.com/feelpp/lncmi.git
-	fetchRecurseSubmodules = on-demand
-[submodule "projects/eye2brain"]
-	path = projects/eye2brain
-	url = https://github.com/feelpp/eye2brain.git
-	fetchRecurseSubmodules = on-demand
-[submodule "quickstart"]
-	path = quickstart
-	url = https://github.com/feelpp/quickstart.git
-	branch=develop
 [submodule "contrib/hpddm"]
-	path = contrib/hpddm
+	path = feelpp/contrib/hpddm
 	url = https://github.com/feelpp/hpddm.git
-[submodule "projects/solodem"]
-	path = projects/solodem
-	url = https://github.com/feelpp/solodem.git
-[submodule "contrin/paralution"]
-	path = contrin/paralution
-	url = https://github.com/feelpp/paralution.git
-[submodule "contrib/paralution"]
-	path = contrib/paralution
-	url = https://github.com/feelpp/paralution.git
-[submodule "projects/holo3"]
-	path = projects/holo3
-	url = https://github.com/feelpp/holo3
-	fetchRecurseSubmodules = on-demand
 [submodule "contrib/jsonlab"]
-	path = contrib/jsonlab
+	path = feelpp/contrib/jsonlab
 	url = https://github.com/fangq/jsonlab.git
-[submodule "projects/hamm"]
-	path = projects/hamm
-	url = https://github.com/feelpp/hamm.git
+[submodule "contrib/ipopt"]
+	path = feelpp/contrib/ipopt
+	url = https://github.com/feelpp/ipopt.git
+[submodule "contrib/pybind11"]
+	path = feelpp/contrib/pybind11
+	url = https://github.com/feelpp/pybind11.git
+[submodule "contrib/mongodb"]
+	path = feelpp/contrib/mongocxx
+	url = https://github.com/feelpp/mongo-cxx-driver.git
+[submodule "contrib/kwsys"]
+	path = feelpp/contrib/kwsys
+	url = https://github.com/feelpp/kwsys.git
+[submodule "contrib/viewer"]
+	path = contrib/viewer
+	url = https://github.com/feelpp/viewer.git
+[submodule "benchmarks/benchmark"]
+	path = benchmarks/benchmark
+	url = https://github.com/feelpp/benchmark

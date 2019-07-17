@@ -6,7 +6,7 @@
 namespace Feel
 {
 
-boost::shared_ptr<Mesh<Simplex<2> > >
+std::shared_ptr<Mesh<Simplex<2> > >
 createMeshLaplacianLM()
 {
     typedef Mesh<Simplex<2> > mesh_type;
@@ -49,7 +49,6 @@ void runLaplacianLMV1()
     myblockGraph(0,0) = stencil( _test=Vh1,_trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(1,0) = stencil( _test=Vh2,_trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(0,1) = stencil( _test=Vh1,_trial=Vh2, _diag_is_nonzero=false, _close=false)->graph();
-    myblockGraph(1,1) = stencil( _test=Vh2,_trial=Vh2, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     auto A = backend()->newBlockMatrix(_block=myblockGraph);
 
     BlocksBaseVector<double> myblockVec(2);
@@ -70,12 +69,12 @@ void runLaplacianLMV1()
                      _expr=gradt(u1)*trans(grad(u1)) );
 
     form2( _trial=Vh2, _test=Vh1 ,_matrix=A,
-           _rowstart=0, _colstart=Vh1->nLocalDofWithGhost() )
+           _rowstart=0, _colstart=1 )
         += integrate( _range=elements(submesh),
                       _expr=idt(u2)*id(u1) );
 
     form2( _trial=Vh1, _test=Vh2 ,_matrix=A,
-           _rowstart=Vh1->nLocalDofWithGhost(), _colstart=0 )
+           _rowstart=1, _colstart=0 )
         += integrate( _range=elements(submesh),
                       _expr=idt(u1)*id(u2) );
 
@@ -84,7 +83,7 @@ void runLaplacianLMV1()
                     _expr=id(u1));
 
     form1( _test=Vh2, _vector=F,
-           _rowstart=Vh1->nLocalDofWithGhost() )
+           _rowstart=1 )
         += integrate(_range=elements(submesh),
                     _expr=g*id(u2));
 

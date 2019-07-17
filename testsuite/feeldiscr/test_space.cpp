@@ -27,16 +27,13 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-11-08
  */
-#define USE_BOOST_TEST 1
 
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE function space testsuite
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <boost/timer.hpp>
 
@@ -79,7 +76,7 @@ public:
         BOOST_STATIC_ASSERT( vectorial_space_type::nDim == Dim );
         BOOST_STATIC_ASSERT( vectorial_space_type::N_COMPONENTS == Dim );
 
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        typedef std::shared_ptr<mesh_type> mesh_ptrtype;
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                             _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
                                                     _usenames=true,
@@ -87,10 +84,10 @@ public:
                                                     _dim=Dim,
                                                     _h=0.2 ) );
 
-        boost::shared_ptr<scalar_space_type> Xh( new scalar_space_type( mesh ) );
+        std::shared_ptr<scalar_space_type> Xh( new scalar_space_type( mesh ) );
         auto u = Xh->element( "u" );
 
-        boost::shared_ptr<vectorial_space_type> Xhv( new vectorial_space_type( mesh ) );
+        std::shared_ptr<vectorial_space_type> Xhv( new vectorial_space_type( mesh ) );
         auto U = Xhv->element( "U" );
 
 
@@ -131,7 +128,7 @@ public:
     {
         using namespace Feel;
 
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        typedef std::shared_ptr<mesh_type> mesh_ptrtype;
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                             _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
                                                     _usenames=true,
@@ -140,7 +137,7 @@ public:
                                                     _h=0.2 ) );
 
 
-        boost::shared_ptr<space_type> Xh( space_type::New( mesh ) );
+        std::shared_ptr<space_type> Xh( space_type::New( mesh ) );
         auto U = Xh->element( "U" );
 
 #if !defined( USE_BOOST_TEST )
@@ -248,7 +245,7 @@ public:
     {
         using namespace Feel;
 
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        typedef std::shared_ptr<mesh_type> mesh_ptrtype;
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                             _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
                                                     _usenames=true,
@@ -258,7 +255,7 @@ public:
 
 
 
-        boost::shared_ptr<space_type> Xh( space_type::New( mesh ) );
+        std::shared_ptr<space_type> Xh( space_type::New( mesh ) );
         typename space_type::element_type U( Xh, "U" );
 
 #if !defined( USE_BOOST_TEST )
@@ -304,7 +301,7 @@ public:
         //	BOOST_STATIC_ASSERT( vectorial_space_type::nDim == Dim );
         //        BOOST_STATIC_ASSERT( vectorial_space_type::N_COMPONENTS == Dim );
 
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
         std::string fname;
 #if 1
@@ -323,7 +320,7 @@ public:
 
         std::cout << "Construct Space ...\n";
 
-        boost::shared_ptr<scalar_space_type> Xh( new scalar_space_type( mesh ) );
+        std::shared_ptr<scalar_space_type> Xh( new scalar_space_type( mesh ) );
         auto u = Xh->element( "u" );
 
         Xh.get()->dof().get()->showMe();
@@ -526,24 +523,12 @@ BOOST_AUTO_TEST_CASE( test_spaceprod3_1 )
 //BOOST_AUTO_TEST_CASE( test_space_rt_2 ) { BOOST_TEST_MESSAGE( "test_space_rt_2" );   Feel::TestSpaceRT<3> t;t(); BOOST_TEST_MESSAGE( "test_space_rt_2 done" );}
 
 BOOST_AUTO_TEST_SUITE_END()
-#if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_space.assert" );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}
-#endif
 
 #else
 int main( int argc, char** argv )
 {
     Feel::Environment env( argc, argv );
 
-    Feel::Assert::setLog( "test_space.assert" );
 #if 0
     Feel::TestSpace1<1, 2, double> t11;
     t11();

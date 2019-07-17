@@ -67,13 +67,13 @@ namespace Feel
 			typedef Lagrange<1,Vectorial> basis_v_type;
 
 			typedef FunctionSpace<mesh_type, basis_1_type> space_P1_type;
-			typedef boost::shared_ptr<space_P1_type> space_P1_ptrtype;
+			typedef std::shared_ptr<space_P1_type> space_P1_ptrtype;
 
 			typedef FunctionSpace<mesh_type, basis_2_type> space_P2_type;
-			typedef boost::shared_ptr<space_P2_type> space_P2_ptrtype;
+			typedef std::shared_ptr<space_P2_type> space_P2_ptrtype;
 
 			typedef FunctionSpace<mesh_type, basis_v_type> space_v_type;
-			typedef boost::shared_ptr<space_v_type> space_v_ptrtype;
+			typedef std::shared_ptr<space_v_type> space_v_ptrtype;
 
 			typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
 							typename MeshTraits<mesh_type>::element_const_iterator,
@@ -83,7 +83,7 @@ namespace Feel
 							space_P2_type, //espace arrivee
 							range_visu_ho_type> op_inte_P1_to_P2_type;
 
-			typedef boost::shared_ptr<backend_type> backend_ptrtype;
+			typedef std::shared_ptr<backend_type> backend_ptrtype;
 			backend_ptrtype M_proj_backend;
 
 			normal();
@@ -145,7 +145,7 @@ namespace Feel
 				doption("gamma"));
 		auto n_phi_p   = vf::project(_space=XhV, _range=boundaryfaces(mesh), _expr=trans(gradv(phi_P2))/sqrt( gradv(phi_P2) * trans(gradv(phi_P2))));
 		auto n_phi_s = l2pv->project(_space=XhV, _range=boundaryfaces(mesh), _expr=trans(gradv(phi_P2)));
-		n_phi_s = vf::project(XhV, boundaryfaces(mesh),idv(n_phi_s)/sqrt(idv(n_phi_s.comp(X))*idv(n_phi_s.comp(X))+idv(n_phi_s.comp(Y))*idv(n_phi_s.comp(Y))));
+		n_phi_s = vf::project(XhV, boundaryfaces(mesh),idv(n_phi_s)/sqrt(idv(n_phi_s[Component::X])*idv(n_phi_s[Component::X])+idv(n_phi_s[Component::Y])*idv(n_phi_s[Component::Y])));
 
 		auto Nmesh = vf::project(XhV, boundaryfaces(mesh),-N());
 		auto Nexact = vf::project( _space=XhV, _range=boundaryfaces(mesh), _expr=vec(Px(),Py())/sqrt(Px()*Px()+Py()*Py()));

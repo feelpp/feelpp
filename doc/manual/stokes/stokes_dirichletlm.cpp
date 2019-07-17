@@ -1,13 +1,12 @@
 // -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
 #include <feel/feel.hpp>
-#include <feel/feelalg/vectorblock.hpp>
 
 namespace Feel
 {
 
 template <uint16_type OrderGeo>
-boost::shared_ptr<Mesh<Simplex<2,OrderGeo> > >
+std::shared_ptr<Mesh<Simplex<2,OrderGeo> > >
 createMeshStokesDirichletLM( mpl::int_<2> /**/ )
 {
     typedef Mesh<Simplex<2,OrderGeo> > mesh_type;
@@ -20,14 +19,14 @@ createMeshStokesDirichletLM( mpl::int_<2> /**/ )
     R.setMarker(_type="line",_name="outlet",_marker3=true);
     R.setMarker(_type="surface",_name="OmegaFluide",_markerAll=true);
 
-    auto mesh = R.createMesh(_mesh=new mesh_type,_name="mymesh2d.msh");
+    auto mesh = R.createMesh(_mesh=new mesh_type,_name="mymesh2d");
 
     return mesh;
 }
 
 
 template <uint16_type OrderGeo>
-boost::shared_ptr<Mesh<Simplex<3,OrderGeo> > >
+std::shared_ptr<Mesh<Simplex<3,OrderGeo> > >
 createMeshStokesDirichletLM( mpl::int_<3> /**/ )
 {
     typedef Mesh<Simplex<3,OrderGeo> > mesh_type;
@@ -50,7 +49,7 @@ createMeshStokesDirichletLM( mpl::int_<3> /**/ )
     S.setMarker(_type="volume",_name="OmegaStruct",_markerAll=true);
 
     auto mesh = (C-S).createMesh(_mesh=new mesh_type,
-                                 _name="mymesh3d.msh",
+                                 _name="mymesh3d",
                                  _hmax=meshSize );
 
     return mesh;
@@ -126,19 +125,19 @@ void runStokesDirichletLM()
                          _expr=-div(u)*idt(p) + divt(u)*id(p) );
 
     form2( _trial=Vh2, _test=Vh1 ,_matrix=A,
-           _rowstart=0, _colstart=Vh1->nLocalDofWithGhost() )
+           _rowstart=0, _colstart=2 )
         += integrate( //_range=elements(submesh),
                      _range=markedfaces(mesh,listMarker),
                      _expr=inner(idt(lambda),id(u)) );
 
     form2( _trial=Vh1, _test=Vh2 ,_matrix=A,
-           _rowstart=Vh1->nLocalDofWithGhost(), _colstart=0 )
+           _rowstart=2, _colstart=0 )
         += integrate( _range=elements(submesh),
                       //_range=markedfaces(mesh,listMarker),
                       _expr=inner(idt(u),id(lambda)) );
 
     form1( _test=Vh2, _vector=F,
-           _rowstart=Vh1->nLocalDofWithGhost() )
+           _rowstart=2 )
         += integrate(//_range=markedelements(submesh,"inlet"),
                      _range=markedfaces(mesh,"inlet"),
                      _expr=inner(u_in,id(lambda) ) );

@@ -42,7 +42,7 @@
 #define USE_BOOST_TEST 1
 #define BOOST_TEST_MODULE eim_composite testsuite
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <boost/timer.hpp>
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
@@ -78,7 +78,7 @@ makeOptions()
     ( "n-eval", po::value<int>()->default_value( 10 ), "number of evaluations" )
     ( "cvg-study" , po::value<bool>()->default_value( false ), "run a convergence study if true" )
     ;
-    return eimCompositeoptions.add( eimOptions() ).add( Feel::feel_options() );
+    return eimCompositeoptions.add( eimOptions() ).add( crbSEROptions() );
 }
 
 
@@ -103,19 +103,19 @@ makeAbout()
  *
  */
 class EimModel:
-        public boost::enable_shared_from_this<EimModel>
+        public std::enable_shared_from_this<EimModel>
 {
-    typedef boost::enable_shared_from_this<EimModel> super;
+    typedef std::enable_shared_from_this<EimModel> super;
 public:
     typedef Mesh<Simplex<2> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     //typedef FunctionSpace<mesh_type,bases<Lagrange<1> > > space_type;
     typedef Lagrange<1> basis_type;
     typedef bases<basis_type,basis_type> prod_basis_type;
     typedef FunctionSpace<mesh_type, bases< Lagrange<1> > > u1_space_type;
     typedef FunctionSpace<mesh_type, prod_basis_type > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef boost::shared_ptr<u1_space_type> u1_space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<u1_space_type> u1_space_ptrtype;
     typedef space_type functionspace_type;
     typedef space_ptrtype functionspace_ptrtype;
     typedef space_type::element_type element_type;
@@ -125,14 +125,14 @@ public:
     typedef u1_space_type::element_ptrtype u1_element_ptrtype;
 
     typedef ParameterSpace<2> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
     typedef parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef parameterspace_type::sampling_type sampling_type;
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
     typedef EIMFunctionBase<u1_space_type, space_type, parameterspace_type> fun_type;
-    typedef boost::shared_ptr<fun_type> fun_ptrtype;
+    typedef std::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
     typedef Eigen::VectorXd vectorN_type;
@@ -171,7 +171,7 @@ public:
 
             auto Pset = Dmu->sampling();
             //specify how many elements we take in each direction
-            std::vector<int> N(2);
+            std::vector<size_type> N(2);
             //40 elements in each direction
             N[0]=40; N[1]=40;
             Pset->equidistributeProduct( N );
@@ -182,7 +182,7 @@ public:
 
             std::cout << "before eim" << std::endl;
             auto e = eim( _model=eim_no_solve(this->shared_from_this()),
-                          _element=u,
+                          _element=u.element<0>(),//u,
                           _space=Xh1,
                           _parameter=mu,
                           _expr=1/sqrt( (Px()-cst_ref(mu(0)))*(Px()-cst_ref(mu(0))) + (Py()-cst_ref(mu(1)))*(Py()-cst_ref(mu(1))) ),
@@ -193,13 +193,14 @@ public:
             M_funs.push_back( e );
         }
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const
+    parameterspace_ptrtype const& parameterSpace() const
         {
             return Dmu;
         }
     std::string modelName() const { return std::string("test_eim_composite" );}
-
-    space_ptrtype functionSpace() { return Xh; }
+    std::string prefix() const { return ""; }
+    uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
+    space_ptrtype const& functionSpace() const { return Xh; }
 
     element_type solve( parameter_type const& mu )
         {
@@ -298,7 +299,7 @@ BOOST_AUTO_TEST_CASE( test_eim_composite )
 {
     BOOST_TEST_MESSAGE( "test_eim_composite starts..." );
 
-    boost::shared_ptr<EimModel> m( new EimModel);
+    std::shared_ptr<EimModel> m( new EimModel);
     m->init();
     m->run();
 

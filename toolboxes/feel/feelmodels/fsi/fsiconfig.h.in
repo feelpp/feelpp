@@ -1,0 +1,3 @@
+
+#include <feel/feelmodels/fluid/@FLUIDMECHANICS_LIB_VARIANTS@/fluidmechanicsconfig.h>
+#include <feel/feelmodels/solid/@SOLIDMECHANICS_LIB_VARIANTS@/solidmechanicsconfig.h>

@@ -1,0 +1,5 @@
+Electro Magnets Examples
+========================
+
+This directory contain examples modeling electro magnets, some of them are
+developed at LNCMI.

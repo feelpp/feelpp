@@ -1,73 +1,31 @@
 
 #define BOOST_TEST_MODULE test_meshmarker
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
-#include <feel/options.hpp>
-#include <feel/feelalg/backend.hpp>
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/geotool.hpp>
+#include <feel/feelvf/vf.hpp>
 
 
+FEELPP_ENVIRONMENT_NO_OPTIONS
 
-using namespace Feel;
-using namespace Feel::vf;
+BOOST_AUTO_TEST_SUITE( test_meshmarker )
 
-namespace test_meshmarker
+BOOST_AUTO_TEST_CASE( test_meshmarker1 )
 {
-
-/*_________________________________________________*
- * Options
- *_________________________________________________*/
-
-inline
-po::options_description
-makeOptions()
-{
-    po::options_description desc_options( "test_meshmarker options" );
-    desc_options.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
-    ;
-    return desc_options.add( Feel::feel_options() );
-}
-
-/*_________________________________________________*
- * About
- *_________________________________________________*/
-
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "Test_meshmarker" ,
-                     "Test_meshmarker" ,
-                     "0.1",
-                     "test meshmarker",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2012 Universite Joseph Fourier" );
-
-    about.addAuthor( "Vincent Chabannes", "developer", "vincent.chabannes@imag.fr", "" );
-    return about;
-}
-
-void
-test_meshmarker()
-{
+    using namespace Feel;
     typedef Mesh<Simplex<3,1,3> > mesh_type;
-
-    auto meshSize = doption(_name="hsize");
-
-    GeoTool::Node x1(-1,-1,-1);
-    GeoTool::Node x2( 1,-1,-1);
-    GeoTool::Node x3( 1, 1,-1);
-    GeoTool::Node x4(-1, 1,-1);
-    GeoTool::Node x5(-1,-1, 1);
-    GeoTool::Node x6( 1,-1, 1);
-    GeoTool::Node x7( 1, 1, 1);
-    GeoTool::Node x8(-1, 1, 1);
-    GeoTool::Hexahedron H(meshSize,"UnHexa",x1,x2,x3,x4,x5,x6,x7,x8);
+    double l = 0.3;
+    GeoTool::Node x1(-l,-l,-l);
+    GeoTool::Node x2( l,-l,-l);
+    GeoTool::Node x3( l, l,-l);
+    GeoTool::Node x4(-l, l,-l);
+    GeoTool::Node x5(-l,-l, l);
+    GeoTool::Node x6( l,-l, l);
+    GeoTool::Node x7( l, l, l);
+    GeoTool::Node x8(-l, l, l);
+    GeoTool::Hexahedron H(doption(_name="gmsh.hsize"),"UnHexa",x1,x2,x3,x4,x5,x6,x7,x8);
+    H.setMarker(_type="point",_name="markPoints",_markerAll=true);
+    H.setMarker(_type="line",_name="markLines",_markerAll=true);
     H.setMarker(_type="surface",_name="GammaDirichlet",_marker2=true,_marker3=true,_marker4=true,_marker5=true,_marker6=true);
     H.setMarker(_type="surface",_name="GammaNeumann",_marker1=true);
     H.setMarker(_type="volume",_name="OmegaFluid",_markerAll=true);
@@ -75,33 +33,48 @@ test_meshmarker()
     auto mesh = H.createMesh(_mesh= new mesh_type,
                              _name="un_cube" );
 
+    double intSurf1 = integrate(_range=markedfaces(mesh, "GammaDirichlet" ),_expr=cst(1.) ).evaluate()(0,0);
+    double intSurf2 = integrate(_range=markedfaces(mesh, "GammaNeumann" ),_expr=cst(1.) ).evaluate()(0,0);
+    BOOST_CHECK_SMALL( intSurf1-5*(2*l*2*l),1e-12 );
+    BOOST_CHECK_SMALL( intSurf2-1*(2*l*2*l),1e-12 );
+
+    auto submeshFaces = createSubmesh(mesh,markedfaces(mesh,"GammaNeumann"));
+    double intSubmeshFaces = integrate(_range=elements(submeshFaces),_expr=cst(1.) ).evaluate()(0,0);
+    BOOST_CHECK_SMALL( intSubmeshFaces-1*(2*l*2*l),1e-12 );
+    double intMarkedLinesSubmeshFaces = integrate(_range=markedfaces(submeshFaces,"markLines"),_expr=cst(1.) ).evaluate()(0,0);
+    BOOST_CHECK_SMALL( intMarkedLinesSubmeshFaces-4*2*l,1e-12 );
+    size_type nMarkedPointsSubmeshFaces = nelements( markedpoints(submeshFaces,"markPoints"), true );
+    if ( Environment::numberOfProcessors() > 1 )
+        BOOST_CHECK( nMarkedPointsSubmeshFaces >= 4 );
+    else
+        BOOST_CHECK( nMarkedPointsSubmeshFaces == 4 );
+
+    auto submeshLines = createSubmesh(mesh,markededges(mesh,"markLines"),1,size_type(0));
+    double intSubmeshLines = integrate(_range=elements(submeshLines),_expr=cst(1.) ).evaluate()(0,0);
+    BOOST_CHECK_SMALL( intSubmeshLines-12*2*l,1e-12 );
+    size_type nMarkedPointsSubmeshLines = nelements( markedpoints(submeshLines,"markPoints"), true );
+    if ( Environment::numberOfProcessors() > 1 )
+        BOOST_CHECK( nMarkedPointsSubmeshLines >= 8 );
+    else
+        BOOST_CHECK( nMarkedPointsSubmeshLines == 8 );
+
+    size_type nMarkedPoints = nelements( markedpoints(mesh,"markPoints"), true );
+    if ( Environment::numberOfProcessors() > 1 )
+        BOOST_CHECK( nMarkedPoints >= 8 );
+    else
+        BOOST_CHECK( nMarkedPoints == 8 );
 
     mesh->updateMarker3WithRange(markedfaces(mesh,"GammaNeumann"),1);
     mesh->updateMarkersFromFaces();
-
     auto submesh = createSubmesh(mesh,marked3elements(mesh,1));
+    double intSubmesh = integrate(_range=markedfaces(submesh,"GammaNeumann"),_expr=cst(1.) ).evaluate()(0,0);
+    BOOST_CHECK_SMALL( intSubmesh-1*(2*l*2*l),1e-12 );
+    size_type nMarkedPointsSubmesh = nelements( markedpoints(submesh,"markPoints"), true );
+    if ( Environment::numberOfProcessors() > 1 )
+        BOOST_CHECK( nMarkedPointsSubmesh >= 4 );
+    else
+        BOOST_CHECK( nMarkedPointsSubmesh == 4 );
 
-    auto myexporter = exporter(_mesh=submesh,_name="test_meshmarker_export");
-    //myexporter->step(0)->add( "test2dP1mesh_uP1", u );
-    myexporter->save();
-}
-
-
-} // namespace test_meshmarker
-
-/**
- * main code
- */
-FEELPP_ENVIRONMENT_WITH_OPTIONS( test_meshmarker::makeAbout(), test_meshmarker::makeOptions() )
-
-BOOST_AUTO_TEST_SUITE( test_meshmarker )
-
-BOOST_AUTO_TEST_CASE( test_meshmarker1 )
-{
-    using namespace Feel::vf;
-    using namespace test_meshmarker;
-
-    test_meshmarker::test_meshmarker();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

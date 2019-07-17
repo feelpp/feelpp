@@ -105,25 +105,25 @@ typedef Feel::Singleton< Feel::FactoryClone< A > > AFactoryClone;
 
 namespace
 {
-A* createB()
+std::unique_ptr<A> createB()
 {
-    return new B;
+    return std::make_unique< B>();
 }
-A* createC()
+std::unique_ptr<A> createC()
 {
-    return new C;
+    return std::make_unique< C>();
 }
-A* createD()
+std::unique_ptr<A> createD()
 {
-    return new D;
+    return std::make_unique< D>();
 }
-A* createE()
+std::unique_ptr<A> createE()
 {
-    return new E;
+    return std::make_unique< E>();
 }
-A* createF()
+std::unique_ptr<A> createF()
 {
-    return new F;
+    return std::make_unique< F>();
 }
 const bool regB = AFactory::instance().registerProduct( "B", &createB );
 const bool regC = AFactory::instance().registerProduct( "C", &createC );
@@ -132,9 +132,9 @@ const bool regE = AFactory::instance().registerProduct( "E", &createE );
 const bool regF = AFactory::instance().registerProduct( "F", &createF );
 
 // cloning: dolly is not far away ;)
-A* createFc( A const* f )
+std::unique_ptr<A> createFc( A const* f )
 {
-    return new F( ( F const& )*f );
+    return std::make_unique< F>( ( F const& )*f );
 }
 const bool regFc = AFactoryClone::instance().registerProduct( typeid( F ), &createFc );
 }

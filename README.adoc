@@ -1,0 +1,326 @@
+:feelpp: Feel++
+:cpp: C++
+= {feelpp}: Finite Element Embedded Library in {cpp}
+Feel++ Consortium <https://github.com/feelpp[@feelpp]>
+:toc: macro
+:toclevels: 2
+:uri-rel-file-base: link:
+:uri-rel-tree-base: link:
+ifdef::env-site[]
+:uri-rel-file-base: {uri-repo}/blob/develop/
+:uri-rel-tree-base: {uri-repo}/tree/develop/
+endif::[]
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:status:
+:outfilesuffix: .adoc
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+ifdef::env-github,env-browser[:outfilesuffix: .adoc]
+// URIs:
+:uri-org: https://github.com/feelpp
+:uri-repo: {uri-org}/feelpp
+:uri-www: http://www.feelpp.org
+:uri-project: http://book.feelpp.org
+:uri-docs: {uri-project}/
+:uri-news: {uri-www}/news
+:uri-manpage: {uri-project}/man/asciidoctor
+:uri-help-base: https://help.github.com/articles
+:uri-contribute: {uri-rel-file-base}CONTRIBUTING.adoc
+:uri-license: {uri-rel-file-base}LICENSE.adoc
+:uri-issues: {uri-repo}/issues
+:uri-contributors: {uri-repo}/graphs/contributors
+:uri-fork-help: {uri-help-base}/fork-a-repo
+:uri-branch-help: {uri-fork-help}#create-branches
+:uri-pr-help: {uri-help-base}/using-pull-requests
+:uri-gist: https://gist.github.com
+:uri-freesoftware: https://www.gnu.org/philosophy/free-sw.html
+
+
+toc::[]
+
+image:https://github-basic-badges.herokuapp.com/release/feelpp/feelpp.svg[link=https://github.com/feelpp/feelpp/releases/latest]
+image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+image:https://api.codacy.com/project/badge/Grade/ee741577e2454024a18d44603be62a6d[link="https://www.codacy.com/app/prudhomm/feelpp?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=feelpp/feelpp&amp;utm_campaign=Badge_Grade"]
+
+link:http://www.feelpp.org[{feelpp}] is a {cpp} library for continuous or discontinuous Galerkin methods including finite element method(FEM), spectral element methods(SEM), reduced basis methods, discontinuous galerkin methods (DG and HDG) in 1D 2D and 3D and in parallel.
+
+== {feelpp} Documentation
+
+.link:http://book.feelpp.org[{feelpp} Book web site]
+image::https://media.githubusercontent.com/media/feelpp/book.feelpp.org/master/images/cover_small.jpg[{feelpp} Book,link=http://book.feelpp.org]
+
+== Gitter Discussion Forum
+
+We encourage you to ask questions and discuss any aspects of the project on the link:http://gitter.im/feelpp/feelpp[{feelpp}
+  Gitter forum].
+New contributors are always welcome!
+
+image:https://badges.gitter.im/Join%20Chat.svg["Join the chat at", https://gitter.im/feelpp/feelpp",link="https://gitter.im/feelpp/feelpp"]
+
+
+== Continuous Integration
+
+{feelpp} maintains various branches.
+At the core, the development model is greatly inspired by existing models out there.
+The central repo holds two main branches with an infinite lifetime: `master` and `develop`
+
+`master`::
+Main branch where the source code of HEAD always reflects a _production-ready_ state.
+
+`develop`::
+Main branch where the source code of HEAD always reflects a state with the latest delivered development changes for the next release.
+Some would call this the “integration branch”. This is where any automatic nightly builds are built from.
+
+`feature/*`::
+Feature branches (or sometimes called topic branches) are used to develop new features for the upcoming or a distant future release.
+When starting development of a feature, the target release in which this feature will be incorporated may well be unknown at that point.
+The essence of a feature branch is that it exists as long as the feature is in development, but will eventually be merged back into develop (to definitely add the new feature to the upcoming release) or discarded (in case of a disappointing experiment).
+
+|===
+| Platform & Compiler | `master` | `develop`
+
+| Buildkite Ubuntu 16.04 clang6
+|  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+
+| Buildkite Ubuntu 16.04 clang5
+| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=master[link="https://buildkite.com/feelpp/feelpp-clang5"]
+| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=develop[link="https://buildkite.com/feelpp/feelpp-clang5"]
+
+| Buildkite Ubuntu 16.04 clang4
+| image:https://badge.buildkite.com/70be862a4a14334363d173068c7b0c7caf63adc8e1555bd813.svg?branch=master[link="https://buildkite.com/feelpp/feelpp-clang4"]
+| image:https://badge.buildkite.com/70be862a4a14334363d173068c7b0c7caf63adc8e1555bd813.svg?branch=develop[link="https://buildkite.com/feelpp/feelpp-clang4"]
+
+| Buildkite MacOsX Homebrew
+| image:https://badge.buildkite.com/8957ffa3255c088997196cfe0743e43e3c4fca200d39755f4b.svg?branch=master[link=https://buildkite.com/feelpp/feelpp-homebrew]
+| image:https://badge.buildkite.com/8957ffa3255c088997196cfe0743e43e3c4fca200d39755f4b.svg?branch=develop[link=https://buildkite.com/feelpp/feelpp-homebrew]
+
+|===
+
+== What is {feelpp}?
+
+link:http://www.feelpp.org[{feelpp}] is a {cpp} library for continuous or discontinuous Galerkin methods including finite element method(FEM), spectral element methods(SEM), reduced basis methods, discontinuous galerkin methods (DG and HDG) in 1D 2D and 3D and in parallel.
+The objectives of this framework is quite ambitious; ambitions which could be express in various ways such as :
+
+ * the creation of a versatile mathematical kernel solving easily problems using different techniques thus allowing testing and comparing methods, e.g. cG versus dG,
+ * the creation of a small and manageable library which shall nevertheless encompass a wide range of numerical methods and techniques,
+ * build mathematical software that follows closely the mathematical abstractions associated with partial differential equations (PDE),
+ * the creation of a library entirely in C++ allowing to create complex and typically multi-physics applications such as fluid-structure interaction or mass transport in haemodynamic.
+
+
+Some basic installation procedure are available in the link:INSTALL.md[INSTALL] file, the detailled process is available link:http://www.feelpp.org/docs/develop/BuildingP.html[here].
+
+== Releases
+
+Here are the latest releases of {feelpp}
+
+* {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.104.0-beta.2[v0.104.0-beta.2] image:https://zenodo.org/badge/DOI/10.5281/zenodo.1239039.svg["DOI",link="https://doi.org/10.5281/zenodo.1239039"]
+
+
+* {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.104.0-beta.1[v0.104.0-beta.1] image:https://zenodo.org/badge/DOI/10.5281/zenodo.1227144.svg["DOI",link="https://doi.org/10.5281/zenodo.1227144"]
+
+ * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.103.2[v0.103.2] image:https://zenodo.org/badge/DOI/10.5281/zenodo.581705.svg["DOI",link="https://doi.org/10.5281/zenodo.581705"]
+
+ * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.102.0[v0.102.0]
+ image:https://zenodo.org/badge/doi/10.5281/zenodo.495740.svg["DOI",link="https://doi.org/10.5281/zenodo.495740"]
+
+ * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.100.0[v0.100.0]
+ image:https://zenodo.org/badge/doi/10.5281/zenodo.45132.svg["DOI",link="https://doi.org/10.5281/zenodo.45132"]
+
+ * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1[v0.99.0] image:https://zenodo.org/badge/doi/10.5281/zenodo.11624.svg["DOI",link="https://doi.org/10.5281/zenodo.11624"]
+
+== Features
+
+ * 1D 2D and 3D (including high order) geometries and also lower topological dimension 1D(curve) in 2D and 3D or 2D(surface) in 3D
+ * continuous and discontinuous arbitrary order Galerkin Methods in 1D, 2D and 3D including finite and spectral element methods
+ * domain specific embedded language in C++ for variational formulations
+ * interfaced with link:http://www.mcs.anl.gov/petsc/[PETSc] for linear and non-linear solvers
+ * seamless parallel computations using PETSc
+ * interfaced with link:http://www.grycap.upv.es/slepc/[SLEPc] for large-scale sparse standard and generalized eigenvalue  solvers
+ * supports link:http://www.geuz.org/gmsh[Gmsh] for mesh generation
+ * supports link:http://www.geuz.org/gmsh[Gmsh] for post-processing (including on high order geometries)
+ * supports link:http://www.paraview.org[Paraview] and CEI/Ensight for post-processing and the following file formats: ensight gold, gmsh, xdmf.
+
+
+== Contributing
+
+In the spirit of {uri-freesoftware}[free software], _everyone_ is encouraged to help improve this project.
+If you discover errors or omissions in the source code, documentation, or website content, please don't hesitate to submit an issue or open a pull request with a fix.
+ New contributors are always welcome!
+
+Here are some ways *you* can contribute:
+
+* by using develop versions
+* by {uri-issues}[reporting bugs]
+* by {uri-issues}[suggesting new features]
+ * by writing or editing documentation
+ * by writing specifications
+ * by writing code -- _No patch is too small._
+ ** fix typos
+ ** add comments
+ ** write examples!
+ ** write tests!
+ * by refactoring code
+ * by fixing {uri-issues}[issues]
+ * by reviewing Pull Requests
+
+The {uri-contribute}[Contributing] guide provides information on how to create, style, and submit issues, feature requests, code, and documentation to the {feelpp} Project.
+
+== Getting Help
+
+The {feelpp} project is developed to help you easily do _(i)_ modelisation simulation and optimisation and _(ii)_ high performance computing.
+But we can't do it without your feedback!
+We encourage you to ask questions and discuss any aspects of the project on the discussion list, on Twitter or in the chat room.
+
+Twitter:: #feelpp hashtag or @feelpp mention
+Chat (Gitter):: image:https://badges.gitter.im/Join%20In.svg[Gitter, link=https://gitter.im/feelpp/feelpp]
+
+ifdef::env-github[]
+Further information and documentation about {feelpp} can be found on the project's website.
+
+{uri-project}/[Home] | {uri-news}[News] | {uri-docs}[Docs]
+endif::[]
+
+The {feelpp} organization on GitHub hosts the project's source code, issue tracker, and sub-projects.
+
+Source repository (git):: {uri-repo}
+Issue tracker:: {uri-issues}
+{feelpp} organization on GitHub:: {uri-org}
+
+== Copyright and Licensing
+
+Copyright (C) 2011-2017 {feelpp} Consortium.
+Free use of this software is granted under the terms of the GPL License.
+
+See the {uri-license}[LICENSE] file for details.
+
+== Authors
+
+{feelpp} is led by https://github.com/prudhomm[Christophe Prud'homme] and has received contributions from {uri-contributors}[many other individuals].
+The project was initiated in 2006 by https://github.com/prudhomm[Christophe Prud'homme] and based initially on link:https://cmcsforge.epfl.ch/projects/lifev/[lifeV] and completely re-written since then.
+
+== Examples
+
+=== Laplacian in 2D using P3 Lagrange basis functions
+
+Here is a full example to solve
+$$-\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega$$
+
+[source,cpp]
+----
+#include <feel/feel.hpp>
+
+int main(int argc, char**argv )
+{
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=feel_options(),
+                     _about=about(_name="qs_laplacian",
+                                  _author="Feel++ Consortium",
+                                  _email="feelpp-devel@feelpp.org"));
+
+    auto mesh = unitSquare();
+    auto Vh = Pch<1>( mesh );
+    auto u = Vh->element();
+    auto v = Vh->element();
+
+    auto l = form1( _test=Vh );
+    l = integrate(_range=elements(mesh),
+                  _expr=id(v));
+
+    auto a = form2( _trial=Vh, _test=Vh );
+    a = integrate(_range=elements(mesh),
+                  _expr=gradt(u)*trans(grad(v)) );
+    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
+          _expr=constant(0.) );
+    a.solve(_rhs=l,_solution=u);
+
+    auto e = exporter( _mesh=mesh, _name="qs_laplacian" );
+    e->add( "u", u );
+    e->save();
+    return 0;
+}
+----
+
+
+=== Bratu equation in 2D
+
+Here is a full non-linear example - the Bratu equation - to solve
+$$-\Delta u + e^u = 0 \mbox{ in } \Omega,\quad u=0 \mbox{ on } \partial \Omega$$.
+
+[source,cpp]
+----
+#include <feel/feel.hpp>
+
+inline
+Feel::po::options_description
+makeOptions()
+{
+    Feel::po::options_description bratuoptions( "Bratu problem options" );
+    bratuoptions.add_options()
+    ( "lambda", Feel::po::value<double>()->default_value( 1 ),
+                "exp() coefficient value for the Bratu problem" )
+    ( "penalbc", Feel::po::value<double>()->default_value( 30 ),
+                 "penalisation parameter for the weak boundary conditions" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ),
+               "first h value to start convergence" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
+    return bratuoptions.add( Feel::feel_options() );
+}
+
+/**
+ * Bratu Problem
+ *
+ * solve \f$ -\Delta u + \lambda \exp(u) = 0, \quad u_\Gamma = 0\f$ on \f$\Omega\f$
+ */
+int
+main( int argc, char** argv )
+{
+
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="bratu",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org"));
+    auto mesh = unitSquare();
+    auto Vh = Pch<3>( mesh );
+    auto u = Vh->element();
+    auto v = Vh->element();
+    double penalbc = option(_name="penalbc").as<double>();
+    double lambda = option(_name="lambda").as<double>();
+
+    auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+        {
+            auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
+            a = integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
+            a += integrate( elements( mesh ), lambda*( exp( idv( u ) ) )*idt( u )*id( v ) );
+            a += integrate( boundaryfaces( mesh ),
+               ( - trans( id( v ) )*( gradt( u )*N() ) - trans( idt( u ) )*( grad( v )*N()  + penalbc*trans( idt( u ) )*id( v )/hFace() ) );
+        };
+    auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
+        {
+            auto u = Vh->element();
+            u = *X;
+            auto r = form1( _test=Vh, _vector=R );
+            r = integrate( elements( mesh ), gradv( u )*trans( grad( v ) ) );
+            r +=  integrate( elements( mesh ),  lambda*exp( idv( u ) )*id( v ) );
+            r +=  integrate( boundaryfaces( mesh ),
+               ( - trans( id( v ) )*( gradv( u )*N() ) - trans( idv( u ) )*( grad( v )*N() ) + penalbc*trans( idv( u ) )*id( v )/hFace() ) );
+        };
+    u.zero();
+    backend()->nlSolver()->residual = Residual;
+    backend()->nlSolver()->jacobian = Jacobian;
+    backend()->nlSolve( _solution=u );
+
+    auto e = exporter( _mesh=mesh );
+    e->add( "u", u );
+    e->save();
+}
+----

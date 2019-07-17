@@ -38,7 +38,7 @@
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #include <feel/feel.hpp>
 #include <feel/feelvf/print.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
@@ -96,7 +96,7 @@ public:
     //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
-    typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
+    typedef typename std::shared_ptr<backend_type> backend_ptrtype ;
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order G_order
     typedef Simplex<3,1> convex_type;
@@ -104,8 +104,8 @@ public:
     typedef Mesh<convex_type> mesh_type;
     typedef Mesh< Simplex<1,1,3> > submesh1d_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef boost::shared_ptr<submesh1d_type> submesh1d_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<submesh1d_type> submesh1d_ptrtype;
 
     //! the basis type of our approximation space
     typedef bases<Nedelec<0,NedelecKind::NED1> > basis_type;
@@ -116,16 +116,16 @@ public:
     typedef FunctionSpace<mesh_type, lagrange_basis_s_type> lagrange_space_s_type;
     typedef FunctionSpace<mesh_type, lagrange_basis_v_type> lagrange_space_v_type;
     //! the approximation function space type (shared_ptr<> type)
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef boost::shared_ptr<lagrange_space_s_type> lagrange_space_s_ptrtype;
-    typedef boost::shared_ptr<lagrange_space_v_type> lagrange_space_v_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<lagrange_space_s_type> lagrange_space_s_ptrtype;
+    typedef std::shared_ptr<lagrange_space_v_type> lagrange_space_v_ptrtype;
     //! an element type of the approximation function space
     typedef typename space_type::element_type element_type;
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     /**
      * Constructor
@@ -133,8 +133,7 @@ public:
     TestHCurl3DOneElt()
         :
         super(),
-        M_backend( backend_type::build( soption( _name="backend" ) ) ),
-        exporter( Exporter<mesh_type>::New( this->vm() ) )
+        M_backend( backend_type::build( soption( _name="backend" ) ) )
     {
         std::cout << "[TestHCurl3DOneElt]\n";
 
@@ -150,9 +149,6 @@ public:
 private:
     //! linear algebra backend
     backend_ptrtype M_backend;
-
-    //! exporter factory
-    export_ptrtype exporter;
 
 }; //TestHDiv
 
@@ -215,13 +211,11 @@ TestHCurl3DOneElt::testProjector(std::string one_element_mesh )
 #endif
 
     std::string proj_name = "projection";
-    export_ptrtype exporter_proj( export_type::New( this->vm(),
-                                  ( boost::format( "%1%-%2%-%3%" )
-                                    % this->about().appName()
-                                    % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
-                                    % proj_name ).str() ) );
-
-    exporter_proj->step( 0 )->setMesh( mesh );
+    std::string exporter_proj_name = ( boost::format( "%1%-%2%-%3%" )
+                                       % this->about().appName()
+                                       % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
+                                       % proj_name ).str();
+    auto exporter_proj = exporter( _mesh=mesh,_name=exporter_proj_name );
     exporter_proj->step( 0 )->add( "proj_L2_E[Lagrange]", E_pL2_lag );
     exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag );
     exporter_proj->step( 0 )->add( "proj_HDiv_E[Lagrange]", E_pHCURL_lag );
@@ -258,14 +252,11 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
     std::vector<element_type> u_vec( Xh->nLocalDof() );
 
     std::string shape_name = "shape_functions";
-    export_ptrtype exporter_shape( export_type::New( this->vm(),
-                                   ( boost::format( "%1%-%2%-%3%" )
-                                     % this->about().appName()
-                                     % mesh_path.stem().string()
-                                     % shape_name ).str() ) );
-
-    exporter_shape->step( 0 )->setMesh( mesh );
-
+    std::string exporter_shape_name = ( boost::format( "%1%-%2%-%3%" )
+                                        % this->about().appName()
+                                        % mesh_path.stem().string()
+                                        % shape_name ).str();
+    auto exporter_shape = exporter( _mesh=mesh,_name=exporter_shape_name );
     for ( size_type i = 0; i < Xh->nLocalDof(); ++i )
     {
         // U_ref corresponds to shape function (on reference element)
@@ -290,7 +281,7 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
     std::vector<std::string> edges = {"zAxis","yAxis","yzAxis","xyAxis","xzAxis","xAxis"};
 
     submesh1d_ptrtype edgeMesh( new submesh1d_type );
-    edgeMesh = createSubmesh(oneelement_mesh, boundaryedges(oneelement_mesh) ); //submesh of edges
+    edgeMesh = createSubmesh(oneelement_mesh, boundaryedges(oneelement_mesh), 0 ); //submesh of edges
 
     double div1sqrt2 = 1/sqrt(2.);
 
@@ -321,11 +312,14 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         int edgeid = 0;
-        BOOST_FOREACH( std::string edge, edges )
+        for( std::string const& edge:  edges )
         {
             CHECK( oneelement_mesh->hasMarkers({edge}) );
-            auto int_u_t = integrate( markedelements(edgeMesh, edge),
-                                      trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*idv( u_vec[i] ) ).evaluate()(0,0);
+            BOOST_CHECK_MESSAGE( (decltype(idv( u_vec[i] ))::context & vm::KB) != 0, "invalid context " << decltype(idv( u_vec[i] ))::context << " should be " << vm::KB );
+            BOOST_CHECK_MESSAGE( ( decltype(trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*idv( u_vec[i] ))::context & vm::KB ) != 0, "invalid context " << decltype(trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*idv( u_vec[i] ))::context << " should have " << vm::KB );
+            //BOOST_CHECK( decltype(trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid]))::context == vm::DYNAMIC, "invalid context " << decltype(idv( u_vec[i] ))::context << " should be " << vm::KB );
+            auto int_u_t = integrate( _range=markedelements(edgeMesh, edge),
+                                      _expr=trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*idv( u_vec[i] ) ).evaluate()(0,0);
 
             if ( edgeid == i )
                 BOOST_CHECK_CLOSE( int_u_t, 1, 1e-13 );
@@ -334,8 +328,8 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
 
             checkidv[Xh->nLocalDof()*i+edgeid] = int_u_t;
 
-            form1( _test=Xh, _vector=F, _init=true ) = integrate( markedelements(edgeMesh, edge),
-                                                                  trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*id( V_ref ) );
+            form1( _test=Xh, _vector=F, _init=true ) = integrate( _range=markedelements(edgeMesh, edge),
+                                                                  _expr=trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*id( V_ref ) );
             auto form_v_t = inner_product( u_vec[i], *F );
 
             if ( edgeid == i )

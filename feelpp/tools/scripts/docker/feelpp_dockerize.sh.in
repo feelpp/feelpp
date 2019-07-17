@@ -1,0 +1,125 @@
+#!/bin/bash
+
+set -eo pipefail
+#set -x
+
+
+# default values
+TARGET=ubuntu:16.10
+BRANCH=master
+URL=https://www.github.com/feelpp/
+FEELPP_BRANCH=develop
+BUILD_JOBS=10
+FROM=feelpp/feelpp-base
+FEELPP_DIR=@CMAKE_INSTALL_PREFIX@
+FEELPP_VERSION=v@FEELPP_VERSION_STRING@
+CMAKE_FLAGS=""
+MAKE_FLAGS=""
+PROJECT=
+PROJECT_VERSION=${FEELPP_VERSION}
+
+for i in "$@"
+do
+    case $i in
+        -p=*|--project=*)
+            PROJECT="${i#*=}"
+            shift # past argument=value
+            ;;
+        -t=*|--target=*)
+            TARGET="${i#*=}"
+            shift # past argument=value
+            ;;
+        -b=*|--branch=*)
+            BRANCH="${i#*=}"
+            shift # past argument=value
+            ;;
+        -f=*|--from=*)
+            FROM="${i#*=}"
+            shift # past argument=value
+            ;;
+        --feelpp-branch=*)
+            FEELPP_BRANCH="${i#*=}"
+            shift # past argument=value
+            ;;
+        -j=*|--jobs=*)
+            BUILD_JOBS="${i#*=}"
+            shift # past argument=value
+            ;;
+        -c=*|--cmake-flags=*)
+            CMAKE_FLAGS="${i#*=}"
+            shift # past argument=value
+            ;;
+        -m=*|--make-flags=*)
+            MAKE_FLAGS="${i#*=}"
+            shift # past argument=value
+            ;;
+        -d=*|--feelpp-dir=*)
+            FEELPP_DIR="${i#*=}"
+            shift # past argument=value
+            ;;
+        --feelpp-version=*)
+            FEELPP_VERSION="v${i#*=}"
+            shift # past argument=value
+            ;;
+        --project-version=*)
+            PROJECT_VERSION="v${i#*=}"
+            shift # past argument=value
+            ;;                     
+        *)
+            # unknown option
+            ;;
+    esac
+done
+
+echo "PROJECT=${PROJECT}"
+echo "PROJECT_VERSION=${PROJECT_VERSION}"
+echo "TARGET=${TARGET}"
+echo "BRANCH=${BRANCH}"
+echo "URL=${URL}"
+echo "FROM=${FROM}"
+echo "FEELPP_BRANCH=${FEELPP_BRANCH}"
+echo "BUILD_JOBS=${BUILD_JOBS}"
+echo "CMAKE_FLAGS=${CMAKE_FLAGS}"
+echo "FEELPP_DIR=${FEELPP_DIR}"
+echo "FEELPP_VERSION=${FEELPP_VERSION}"
+
+export FEELPP_DIR
+source $(dirname $0)/../share/feelpp/scripts/common.sh
+
+
+tag=$(tag_from_target $TARGET $BRANCH $PROJECT_VERSION)
+echo "tag: $tag"
+basetag=$(tag_from_target $TARGET $FEELPP_BRANCH $FEELPP_VERSION)
+echo "basetag: $basetag" 
+echo "--- Building $PROJECT:${tag}"
+
+mkdir -p docker
+cp ${FEELPP_DIR}/bin/feelpp_build.sh docker/
+dockerfile_from "${FEELPP_DIR}/share/feelpp/docker/Dockerfile.template" "${FROM}:${basetag}" > docker/dockerfile.tmp
+
+${ECHO} docker build \
+       --tag=feelpp/$PROJECT:${tag} \
+       --build-arg=BUILD_JOBS="${BUILD_JOBS}"\
+       --build-arg=URL="${URL}"\
+       --build-arg=BRANCH="${BRANCH}"\
+       --build-arg=PROJECT="${PROJECT}"\
+       --build-arg=GITHUB_OAUTH=${GITHUB_OAUTH}\
+       --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}"\
+       --build-arg=MAKE_FLAGS="${MAKE_FLAGS}"\
+       --build-arg=CXX="${CXX}"\
+       --build-arg=CC="${CC}" \
+       --no-cache=true \
+       -f docker/dockerfile.tmp \
+       docker
+
+
+# if [ "${BRANCH}" = "master" ]; then
+#     echo "--- Tagging $PROJECT:${tag}"
+#     extratags=`extratags_from_target $TARGET $BRANCH`
+#     # add extra tags
+#     for tagalias in ${extratags[@]}; do
+#         echo "Tagging feelpp/$PROJECT:$tag as feelpp/$PROJECT:$tagalias"
+#         ${ECHO} docker tag "feelpp/$PROJECT:$tag" "feelpp/$PROJECT:$tagalias"
+#         ${ECHO} docker push feelpp/$PROJECT:$tagalias
+#     done
+# fi

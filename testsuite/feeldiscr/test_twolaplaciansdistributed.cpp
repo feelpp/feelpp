@@ -2,7 +2,7 @@
 
 #if 1
 #define BOOST_TEST_MODULE test_twolaplaciansdistributed
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #else
 #define USE_BOOST_TEST 0
 #endif
@@ -73,8 +73,8 @@ void run()
     const int domainColor2=2;
     const int nTotalProc = Environment::worldComm().size();
 
-    auto worldCommDomain1 = Environment::worldComm();
-    auto worldCommDomain2 = Environment::worldComm();
+    auto worldCommDomain1 = Environment::worldCommPtr();
+    auto worldCommDomain2 = Environment::worldCommPtr();
 
     if ( nTotalProc>1)
     {
@@ -103,7 +103,7 @@ void run()
     Omega1.setMarker( _type="surface",_name="Omega",_markerAll=true );
     auto mesh1 = Omega1.createMesh(_mesh=new mesh_type,
                                    _name ="omega1_"+ mesh_type::shape_type::name(),
-                                   _partitions=worldCommDomain1.localSize(),
+                                   _partitions=worldCommDomain1->localSize(),
                                    _worldcomm=worldCommDomain1 );
 
     GeoTool::Node x21( -1,0.3 );
@@ -113,7 +113,7 @@ void run()
     Omega2.setMarker( _type="surface",_name="Omega",_markerAll=true );
     auto mesh2 = Omega2.createMesh(_mesh=new mesh_type,
                                    _name ="omega2_"+ mesh_type::shape_type::name(),
-                                   _partitions=worldCommDomain2.localSize(),
+                                   _partitions=worldCommDomain2->localSize(),
                                    _worldcomm=worldCommDomain2 );
     //---------------------------------------------------------------------------------------//
     // functionspaces
@@ -123,46 +123,37 @@ void run()
     auto u2 = Xh2->element();
     //---------------------------------------------------------------------------------------//
     // backends
-    auto backend1 = backend(_rebuild=true,_worldcomm=Xh1->worldComm());
-    auto backend2 = backend(_rebuild=true,_worldcomm=Xh2->worldComm());
+    auto backend1 = backend(_rebuild=true,_worldcomm=Xh1->worldCommPtr());
+    auto backend2 = backend(_rebuild=true,_worldcomm=Xh2->worldCommPtr());
     //---------------------------------------------------------------------------------------//
     // init matrix and vectors
     auto A1 = backend1->newMatrix(_test=Xh1,_trial=Xh1);
     auto A2 = backend2->newMatrix(_test=Xh2,_trial=Xh2);
     auto F1 = backend1->newVector(Xh1);
     auto F2 = backend2->newVector(Xh2);
+
     //---------------------------------------------------------------------------------------//
     // assembly
     form2( _test=Xh1, _trial=Xh1, _matrix=A1 ) +=
         integrate( _range=elements(mesh1), _expr=gradt(u1)*trans(grad(u1)) );
     form1( _test=Xh1, _vector=F1 ) +=
         integrate( _range=elements(mesh1), _expr=id(u1) );
-
-    if (Xh1->worldComm().isActive())  //(todo vincent : simplifier)
-    {
-        //A1->close();F1->close();
-        form2( _test=Xh1, _trial=Xh1, _matrix=A1 ) +=
-            on( _range=boundaryfaces(mesh1),
-                _element=u1,_rhs=F1,
-                _expr=cst(0.) );
-    }
+    form2( _test=Xh1, _trial=Xh1, _matrix=A1 ) +=
+        on( _range=boundaryfaces(mesh1),
+            _element=u1,_rhs=F1,
+            _expr=cst(0.) );
 
     form2( _test=Xh2, _trial=Xh2, _matrix=A2 ) +=
         integrate( _range=elements(mesh2), _expr=gradt(u2)*trans(grad(u2)) );
     form1( _test=Xh2, _vector=F2 ) +=
         integrate( _range=elements(mesh2), _expr=id(u2) );
-
-    if (Xh2->worldComm().isActive())  //(todo vincent : simplifier)
-    {
-        //A2->close();F2->close();
-        form2( _test=Xh2, _trial=Xh2, _matrix=A2 ) +=
-            on( _range=boundaryfaces(mesh2),
-                _element=u2,_rhs=F2,
-                _expr=cst(0.) );
-    }
+    form2( _test=Xh2, _trial=Xh2, _matrix=A2 ) +=
+        on( _range=boundaryfaces(mesh2),
+            _element=u2,_rhs=F2,
+            _expr=cst(0.) );
 
     //---------------------------------------------------------------------------------------//
-    // solve (todo vincent : simplifier (+rajouter le worldcomm automatiquement dans prec defaut de la fonction solve et nlsolve  )
+    // solve
     if (Xh1->worldComm().isActive())
     {
         backend1->solve(_matrix=A1,_solution=u1,_rhs=F1/*,_prec=prec1*/);
@@ -193,7 +184,6 @@ void run()
     auto myexporter2 = exporter( _mesh=mesh2, _name="MyExportDomain2" );
     myexporter2->step(0)->add( "u2", u2 );
     myexporter2->save();
-
 }
 
 } //namespace test_twolaplaciansdistributed

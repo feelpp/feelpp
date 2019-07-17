@@ -6,7 +6,7 @@
 
 #define USE_BOOST_TEST 1
 #define BOOST_TEST_MODULE boostmpi
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 //____________________________________________________________________________//
 
@@ -20,6 +20,9 @@ BOOST_AUTO_TEST_CASE( test_case1 )
 	BOOST_TEST_MESSAGE( "test_case1" );
 	mpi::communicator world;
 
+    if ( world.size() == 1 )
+        return;
+
 	if ( world.rank() == 0 )
 	{
 		world.send( 1, 0, std::string( "Hello" ) );
@@ -27,14 +30,14 @@ BOOST_AUTO_TEST_CASE( test_case1 )
 		world.recv( 1, 1, msg );
 		BOOST_TEST_MESSAGE( msg << "!" );
 	}
-
-	else
+	else if ( world.rank() == 1 )
 	{
 		std::string msg;
 		world.recv( 0, 0, msg );
 		BOOST_TEST_MESSAGE( msg << ", " );
 		world.send( 0, 1, std::string( "world" ) );
 	}
+
 
 	world.barrier();
 	std::string value;

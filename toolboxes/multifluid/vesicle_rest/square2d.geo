@@ -1,0 +1,30 @@
+h = 0.16;
+xmin = -4;
+xmax = 4;
+ymin = -4;
+ymax = 4;
+Point(1) = {xmin,ymin,0.0,h};
+Point(2) = {xmax,ymin,0.0,h};
+Point(3) = {xmax,ymax,0.0,h};
+Point(4) = {xmin,ymax,0.0,h};
+Line(1) = {4,1};
+Line(2) = {1,2};
+Line(3) = {2,3};
+Line(4) = {3,4};
+Line Loop(5) = {1,2,3,4};
+Plane Surface(6) = {5};
+
+Field[1] = Box;
+Field[1].VIn = h/4;
+Field[1].VOut = h;
+Field[1].XMin = -1;
+Field[1].XMax = 1;
+Field[1].YMin = -3;
+Field[1].YMax = 3;
+Background Field = 1;
+
+Physical Line("Left") = {1};
+Physical Line("Bottom") = {2};
+Physical Line("Right") = {3};
+Physical Line("Top") = {4};
+Physical Surface("OmegaFluid") = {6};

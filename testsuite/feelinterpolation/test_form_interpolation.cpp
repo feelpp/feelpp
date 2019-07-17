@@ -29,7 +29,7 @@
 // give a name to the testsuite
 #define BOOST_TEST_MODULE form_interpolation testsuite
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 
@@ -45,7 +45,7 @@ using namespace Feel;
 using namespace Feel::vf;
 
 typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
+typedef std::shared_ptr<Application_type> Application_ptrtype;
 
 
 namespace test_form_interpolation

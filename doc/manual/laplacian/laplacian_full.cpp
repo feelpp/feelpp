@@ -113,7 +113,7 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -124,7 +124,7 @@ public:
     /*mesh*/
     typedef Entity<Dim, 1,Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
@@ -143,7 +143,7 @@ public:
 #endif
         /*space*/
         typedef FunctionSpace<mesh_type, basis_type, Conti, value_type> type;
-        typedef boost::shared_ptr<type> ptrtype;
+        typedef std::shared_ptr<type> ptrtype;
         typedef typename type::element_type element_type;
         //typedef typename element_type::template sub_element<0>::type element_0_type;
         //typedef typename element_type::template sub_element<1>::type element_1_type;
@@ -151,7 +151,7 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     Laplacian()
         :
@@ -551,10 +551,7 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
     //exporter->step(time)->setMesh( this->createMesh( meshSize, 0, 1 ) );
     if ( !this->vm().count( "export-mesh-only" ) )
     {
-        exporter->step( time )->add( "pid",
-                                     regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
-
-
+        exporter->step( time )->addRegions();
         exporter->step( time )->add( "u", U );
         exporter->step( time )->add( "v", V );
         exporter->step( time )->add( "e", E );
@@ -568,23 +565,24 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
         std::ostringstream fname_u;
         fname_u << "u-" << Application::processId() << ".dat";
         std::ofstream ofs3( fname_u.str().c_str() );
-        typename mesh_type::element_iterator it = U.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
-        typename mesh_type::element_iterator en = U.functionSpace()->mesh()->endElementWithProcessId( Application::processId() );
+        // typename mesh_type::element_iterator it = U.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
+        // typename mesh_type::element_iterator en = U.functionSpace()->mesh()->endElementWithProcessId( Application::processId() );
 
         if ( !U.areGlobalValuesUpdated() )
             U.updateGlobalValues();
 
-        for ( ; it!=en; ++it )
+        for ( auto const& eltWrap : elements(U.functionSpace()->mesh()) )
         {
+            auto const& elt = unwrap_ref( eltWrap );
             for ( size_type i = 0; i < space<Cont>::type::basis_type::nLocalDof; ++i )
             {
-                size_type dof0 = boost::get<0>( U.functionSpace()->dof()->localToGlobal( it->id(), i ) );
-                ofs3 << std::setw( 5 ) << it->id() << " "
+                size_type dof0 = boost::get<0>( U.functionSpace()->dof()->localToGlobal( elt.id(), i ) );
+                ofs3 << std::setw( 5 ) << elt.id() << " "
                      << std::setw( 5 ) << i << " "
                      << std::setw( 5 ) << dof0 << " "
                      << std::setw( 15 ) << U.globalValue( dof0 ) << " ";
-                value_type a = it->point( 0 ).node()[0];
-                value_type b = it->point( 1 ).node()[0];
+                value_type a = elt.point( 0 ).node()[0];
+                value_type b = elt.point( 1 ).node()[0];
 
                 if ( i == 0 )
                     ofs3 << a;
@@ -605,25 +603,24 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
         std::ostringstream fname_v;
         fname_v << "values-" << Application::processId() << ".dat";
         std::ofstream ofs2( fname_v.str().c_str() );
-        it = V.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
-        en = V.functionSpace()->mesh()->endElementWithProcessId(  Application::processId() );
 
         if ( !V.areGlobalValuesUpdated() ) V.updateGlobalValues();
 
         if ( !E.areGlobalValuesUpdated() ) E.updateGlobalValues();
 
-        for ( ; it!=en; ++it )
+        for ( auto const& eltWrap : elements(V.functionSpace()->mesh()) )
         {
+            auto const& elt = unwrap_ref( eltWrap );
             for ( size_type i = 0; i < space<Continuous>::type::basis_type::nLocalDof; ++i )
             {
-                size_type dof0 = boost::get<0>( V.functionSpace()->dof()->localToGlobal( it->id(), i ) );
-                ofs2 << std::setw( 5 ) << it->id() << " "
+                size_type dof0 = boost::get<0>( V.functionSpace()->dof()->localToGlobal( elt.id(), i ) );
+                ofs2 << std::setw( 5 ) << elt.id() << " "
                      << std::setw( 5 ) << i << " "
                      << std::setw( 5 ) << dof0 << " "
                      << std::setw( 15 ) << V.globalValue( dof0 ) << " "
                      << std::setw( 15 ) << E.globalValue( dof0 ) << " ";
-                value_type a = it->point( 0 ).node()[0];
-                value_type b = it->point( 1 ).node()[0];
+                value_type a = elt.point( 0 ).node()[0];
+                value_type b = elt.point( 1 ).node()[0];
 
                 if ( i == 0 )
                     ofs2 << a;

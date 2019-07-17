@@ -21,7 +21,6 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include <functional>
 
 #include <feel/feel.hpp>
 #include <feel/feelopt/nlopt.hpp>
@@ -90,7 +89,7 @@ int main(int argc, char**argv )
                                 _email="feelpp-devel@feelpp.org"));
 
 
-    ::nlopt::opt opt(::nlopt::LN_NEWUOA_BOUND, 2);
+    opt::OptimizationNonLinear opt(nlopt::LN_NEWUOA_BOUND, 2);
 
     std::vector<double> lb(2),ub(2);
     lb[0] = 1e-3;lb[1] = 1e-3;
@@ -101,8 +100,8 @@ int main(int argc, char**argv )
 
     myf F;
     // we don't want to copy myf around so use std::ref()
-    ::nlopt::func f = std::ref(F);
-    opt.set_min_objective( f, NULL);
+    //::nlopt::func f = std::ref(F);
+    opt.set_min_objective( F, NULL);
     opt.set_maxeval( ioption("nlopt.maxeval") );
 
     opt.set_xtol_rel(1e-4);

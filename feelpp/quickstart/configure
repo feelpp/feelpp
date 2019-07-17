@@ -1,0 +1,269 @@
+#!/bin/sh
+
+usage()
+{
+  msg=$1
+  if [ -n "$msg" ]; then
+    echo "Error: $msg"
+  fi
+  cat <<EOT
+$0 [options...]
+Options:
+ -b, --build                         build type: Debug, Release, RelWithDebInfo
+ -d, --debug                         debug mode
+-rd, --relwithdebinfo                relwithdebinfo mode
+ -r, --release                       release mode
+     --std=c++xx                     c++ standard c++14, c++1z (default: c++14)
+     --stdlib=libxx                  c++ standard library libstdc++, libc++ (default: libstdc++)
+     --max-order=x                   maximum polynomial order to instantiate(default: 3)
+     --cxxflags                      override cxxflags 
+     --cmakeflags                    add extra cmake flags 
+     --prefix=PATH                   define install path
+     --root=PATH                     define root path
+ -v, --verbose                       enable verbose output
+ -h, --help                          help page
+     --<package>-dir=PACKAGE_PATH    define <package> install directory
+     --disable-<package>             disable <package>
+     --generator=GENERATOR           cmake generator
+EOT
+}
+
+
+_HAS_ERROR=no
+_WANT_HELP=no
+PROJECT_INSTALL_PREFIX=`pwd`
+PROJECT_STD_CPP=14
+PROJECT_MAX_ORDER=3
+PROJECTSRCROOT=`dirname $0`
+GENERATOR="Unix Makefiles"
+
+# If an environment variable PWD exists, use first that one because it is
+# preferable than the command `pwd` which does not take into account linls and
+# may show NFS mountpoints (on some platforms)
+
+if [ "X${BUILDROOT}" = "X" ]; then
+  if [ "X${PWD}" = "X" ]; then
+    BUILDROOT=`pwd`
+  else
+    BUILDROOT=${PWD}
+  fi
+fi
+BUILDTYPE=Release
+_WANT_VERBOSE=no
+_WANT_DEBUG=no
+_WANT_RELWITHDEBINFO=no
+_WANT_OG=no
+_WANT_CHECK=no
+_HAS_CONFIG=no
+_WANT_DEV_WARNINGS=
+_WANT_NUMERICS=TRUE
+_WANT_LOCAL_CONFIG=no
+CXXFLAGS=
+CMAKEFLAGS=
+ENABLE_NUMA=TRUE
+ENABLE_CUDA=TRUE
+PROJECT_STDLIB_CPP=stdc++
+THISCOMMAND="$0 $@"
+
+while [ -n "$1" ]; do
+   case $1 in
+   --build=*)
+       BUILDTYPE=`echo $1 | sed "s,^--build=\(.*\),\1,"`
+       export BUILDTYPE
+       ;;
+   --generator=*)
+       GENERATOR=`echo $1 | sed "s,^--generator=\(.*\),\1,"`
+       export GENERATOR
+       ;;
+   --prefix=*)
+       PROJECT_INSTALL_PREFIX=`echo $1 | sed "s,^--prefix=\(.*\),\1,"`
+       export PROJECT_INSTALL_PREFIX
+       ;;
+   --root=*)
+       PROJECTSRCROOT=`echo $1 | sed "s,^--root=\(.*\),\1,"`
+       export PROJECTSRCROOT
+       ;;   
+   --mpi-dir=*)
+       MPI_ROOT=`echo $1 | sed "s,^--mpi-dir=\(.*\),\1,"`
+       export MPI_ROOT
+       ;;
+   --tbb-dir=*)
+       TBB_ROOT=`echo $1 | sed "s,^--tbb-dir=\(.*\),\1,"`
+       export MPI_ROOT
+       ;;
+   --mkl-dir=*)
+       MKL_ROOT=`echo $1 | sed "s,^--mkl-dir=\(.*\),\1,"`
+       export MKL_ROOT
+       ;;
+   --numa-dir=*)
+       NUMA_ROOT=`echo $1 | sed "s,^--numa-dir=\(.*\),\1,"`
+       export NUMA_ROOT
+       ;;
+   --disable-numa)
+       ENABLE_NUMA=FALSE
+       ;;
+   --cuda-dir=*)
+       CUDA_ROOT=`echo $1 | sed "s,^--cuda-dir=\(.*\),\1,"`
+       export CUDA_ROOT
+       ;;
+   --disable-cuda)
+       ENABLE_CUDA=FALSE
+       ;;
+   --boost-dir=*)
+       BOOST_ROOT=`echo $1 | sed "s,^--boost-dir=\(.*\),\1,"`
+       export BOOST_ROOT
+       ;;
+   --eigen3-dir=*)
+       EIGEN3_ROOT=`echo $1 | sed "s,^--eigen3-dir=\(.*\),\1,"`
+       export EIGEN3_ROOT
+       ;;
+   --gmsh-dir=*)
+       GMSH_DIR=`echo $1 | sed "s,^--gmsh-dir=\(.*\),\1,"`
+       export GMSH_DIR
+       ;;
+   --petsc-dir=*)
+       PETSC_DIR=`echo $1 | sed "s,^--petsc-dir=\(.*\),\1,"`
+       export PETSC_DIR
+       ;;
+   --debug|-d)
+       BUILDTYPE=Debug    
+       _WANT_CHECK=yes
+       ;;
+   --relwithdebinfo|-rd)
+       BUILDTYPE=Relwithdebinfo
+       ;;
+   --check)
+       _WANT_CHECK=yes
+       ;;
+   --verbose|-v)
+       _WANT_VERBOSE=yes
+       ;;
+   --release|-r)
+       BUILDTYPE=Release
+       ;;
+#   --og)
+   #       _WANT_OG=no
+   #       ;;
+   --max-order=*)
+           PROJECT_MAX_ORDER=`echo $1 | sed "s,^--max-order=\(.*\),\1,"`
+           echo "using max polynomial order instantiate $PROJECT_MAX_ORDER..."
+           export PROJECT_MAX_ORDER
+           ;;  
+   --std=c++*)
+       PROJECT_STD_CPP=`echo $1 | sed "s,^--std=c++\(.*\),\1,"`
+       echo "using c++$PROJECT_STD_CPP..."
+       export PROJECT_STD_CPP
+       ;;
+   --stdlib=lib*)
+       PROJECT_STDLIB_CPP=`echo $1 | sed "s,^--stdlib=lib\(.*\),\1,"`
+       echo "using lib$PROJECT_STDLIB_CPP..."
+       export PROJECT_STDLIB_CPP
+       ;;  
+   --cxxflags=*)
+       CXXFLAGS=`echo $1 | sed "s,^--cxxflags=\(.*\),\1,"`
+       ;;
+   --cmakeflags=*)
+       CMAKEFLAGS=`echo $1 | sed "s,^--cmakeflags=\(.*\),\1,"`
+       ;;
+   --local-config)
+      _WANT_LOCAL_CONFIG=yes
+       LOCAL_CONFIG_DIR=CMake.local
+       ;;
+   --no-projects|--no-research)
+       _DISABLE_RESEARCH=yes
+       ;;
+
+   -Wno-dev)
+       _WANT_DEV_WARNINGS="-Wno-dev"
+       ;;
+   -h | -help | --help | -?)
+       _WANT_HELP=yes
+        usage
+        exit 0
+	;;
+   *)
+       echo $1: param�tre inconnu
+       _WANT_HELP=yes;
+       _HAS_ERROR=yes
+       usage
+       exit 0
+	;;
+   esac
+   shift
+done
+
+cat <<EOT >reconfigure
+#!/bin/sh
+echo "Execute: CC=\"$CC\" CXX=\"$CXX\" $THISCOMMAND"
+CC="$CC" CXX="$CXX" $THISCOMMAND
+EOT
+`chmod +x reconfigure`
+
+# switch to ifp config when hostname is irlin*
+if [ "${_WANT_LOCAL_CONFIG}" = "yes" ] ; then
+  CMAKE_FIND_DIR=${LOCAL_CONFIG_DIR}
+else
+  CMAKE_FIND_DIR=CMake
+fi
+
+echo BUILDROOT=${BUILDROOT}
+echo INSTALL_PREFIX=${PROJECT_INSTALL_PREFIX}
+echo CMAKE_FIND_DIR=${CMAKE_FIND_DIR}
+
+echo "# Do not edit" > cmake.configure
+if [ "X${PROJECT_INSTALL_PREFIX}" != "X" ]; then
+  echo "SET(CMAKE_INSTALL_PREFIX \"${PROJECT_INSTALL_PREFIX}\" CACHE PATH \"Installation directory\" FORCE)" >> cmake.configure
+  echo "SET(CMAKE_SKIP_RPATH ON)" >> cmake.configure
+fi
+echo "SET(BUILDROOT ${BUILDROOT} CACHE PATH \"Compilation directory\")" >> cmake.configure
+echo "SET(CMAKE_INSTALL_PREFIX \"${PROJECT_INSTALL_PREFIX}\" CACHE PATH \"Installation directory\" FORCE)" >> cmake.configure
+echo "SET(FEELPP_STD_CPP \"$PROJECT_STD_CPP\" CACHE PATH \"Feel++ c++ standard c++14 or c++1z\")"  >> cmake.configure
+echo "SET(FEELPP_STDLIB_CPP \"$PROJECT_STDLIB_CPP\" CACHE PATH \"Feel++ c++ standard library stdc++ or c++\")"  >> cmake.configure
+echo "SET(FEELPP_INSTANTIATION_ORDER_MAX \"$PROJECT_MAX_ORDER\" CACHE PATH \"Feel++ maximum polynomial order instantiation\")"  >> cmake.configure
+echo "SET(PROJECT_ROOT ${PROJECTSRCROOT} CACHE PATH \"Project root\")" >> cmake.configure
+echo "SET(ARCH \"`arch`\" CACHE STRING \"Project ARCH\" FORCE)" >> cmake.configure
+if [ "X${MKL_ROOT}" != "X" ]; then
+echo "set(MKL_INCLUDE_PATH             \"${MKL_ROOT}/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+echo "set(MKL_LIBRARY_PATH             \"${MKL_ROOT}/lib/em64t\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+if [ "X${EIGEN3_ROOT}" != "X" ]; then
+echo "set(EIGEN3_INCLUDE_PATH          \"${EIGEN3_ROOT}/include/eigen3\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+if [ "X${CUDA_ROOT}" != "X" ]; then
+echo "set(CUDA_INCLUDE_PATH            \"${CUDA_ROOT}/cuda/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+echo "set(CUDA_LIBRARY_PATH            \"${CUDA_ROOT}/cuda/lib64\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+if [ "X${TBB_ROOT}" != "X" ]; then
+echo "set(TBB_INCLUDE_PATH             \"${TBB_ROOT}/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+echo "set(TBB_LIBRARY_PATH             \"${TBB_ROOT}/lib\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+if [ "X${BOOST_ROOT}" != "X" ]; then
+echo "set(BOOST_INCLUDE_PATH           \"${BOOST_ROOT}/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+echo "set(BOOST_LIBRARY_PATH           \"${BOOST_ROOT}/lib\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+if [ "X${NUMA_ROOT}" != "X" ]; then
+echo "set(NUMA_INCLUDE_PATH            \"${NUMA_ROOT}/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+echo "set(NUMA_LIBRARY_PATH            \"${NUMA_ROOT}/lib64\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+echo "SET(ENABLE_NUMA ${ENABLE_NUMA} CACHE BOOL \"Project enable numa\" FORCE)" >> cmake.configure
+echo "SET(ENABLE_CUDA ${ENABLE_CUDA} CACHE BOOL \"Project enable cuda\" FORCE)" >> cmake.configure
+if [ "X${GMSH_DIR}" != "X" ]; then
+echo "set(GMSH_INCLUDE_DIR           \"${GMSH_DIR}/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+echo "set(GMSH_LIBRARY_PATH          \"${GMSH_DIR}/lib\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+if [ "X${_DISABLE_RESEARCH}" != "X" ]; then
+echo "option(FEELPP__ENABLE_RESEARCH OFF CACHE PATH \"enable research projects\" FORCE)" >> cmake.configure
+fi
+if [ "X${CXXFLAGS}" != "X" ]; then
+    echo "set(CMAKE_CXX_FLAGS_RELEASE \"${CXXFLAGS}\" CACHE STRING \"cxx flags\" FORCE)" >> cmake.configure
+    echo "set(CMAKE_CXX_FLAGS_DEBUG \"${CXXFLAGS}\" CACHE STRING \"cxxflags \" FORCE)" >> cmake.configure
+fi
+#if [ "X${_WANT_OG}" != "X" ]; then
+#echo "set( CMAKE_CXX_FLAGS_RELEASE \"-Og -DNDEBUG\" CACHE PATH \"CXX Release Flags \" FORCE)" >> cmake.configure
+#fi
+
+if [ -f CMakeCache.txt ]; then
+  /bin/rm CMakeCache.txt
+fi
+
+cmake -Ccmake.configure -G "${GENERATOR}" -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} ${CMAKEFLAGS} TRUE ${PROJECTSRCROOT}

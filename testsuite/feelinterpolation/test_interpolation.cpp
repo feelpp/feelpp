@@ -26,19 +26,17 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   \date 2007-12-19
   */
-#define USE_BOOST_TEST 1
 
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE interpolation testsuite
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/serialization.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelmesh/geoentity.hpp>
@@ -65,7 +63,7 @@ template<int Dim, int Order=1, int RDim=Dim>
 struct imesh
 {
   typedef Mesh<Simplex<Dim,Order,RDim>, double > type;
-  typedef boost::shared_ptr<type> ptrtype;
+  typedef std::shared_ptr<type> ptrtype;
 };
 
 template<int Dim, int Order, int RDim>
@@ -222,13 +220,13 @@ makeAbout()
 
 #if defined(USE_BOOST_TEST)
 #if 0
-    boost::shared_ptr<Feel::Application> mpiapp;
+    std::shared_ptr<Feel::Application> mpiapp;
     test_suite*
         init_unit_test_suite( int argc, char** argv )
     {
         //boost::mpi::environment( argc, argv );
-        mpiapp = boost::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
-        Feel::Assert::setLog( "test_integration.assert" );
+        mpiapp = std::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
+
         test_suite* test = BOOST_TEST_SUITE( "Interpolation test suite" );
 
 #if 1
@@ -253,12 +251,12 @@ makeAbout()
         return test;
     }
 #else
-    FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+    FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
     BOOST_AUTO_TEST_SUITE( interpolation_suite )
 
         typedef Feel::Application Application_type;
-    typedef boost::shared_ptr<Application_type> Application_ptrtype;
+    typedef std::shared_ptr<Application_type> Application_ptrtype;
 
     BOOST_AUTO_TEST_CASE( test_interpolation12 )
     {
@@ -299,7 +297,6 @@ makeAbout()
                                _desc=makeOptions(),
                                _about=makeAbout() );
         Feel::Application mpiapp;
-        Feel::Assert::setLog( "test_interpolation.assert" );
 
         //test_interpolation<2,1,2> t212( mpiapp.vm()["hsize"].as<double>() );
         //t212();

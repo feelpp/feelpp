@@ -27,7 +27,7 @@
 */
 
 #define BOOST_TEST_MODULE test_matrix_destructor
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <fstream>
 
@@ -131,7 +131,7 @@ testMatrixDestructor()
  * main code
  */
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( matrix_destructor )
 

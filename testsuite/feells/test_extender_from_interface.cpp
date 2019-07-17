@@ -27,7 +27,7 @@
 //#define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE levelset
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #endif
 
 #include <feel/feelfilters/exporter.hpp>
@@ -79,7 +79,7 @@ class TestExtenderFromInterface
 {
 public:
     using mesh_type = Mesh< Simplex<DIM,G_ORDER> >;
-    using mesh_ptrtype = boost::shared_ptr< mesh_type >;
+    using mesh_ptrtype = std::shared_ptr< mesh_type >;
 
     /// Init the geometry with a circle/sphere from radius and characteristic length
     ///     \param radius   Circle or sphere radius.

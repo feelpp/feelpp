@@ -102,7 +102,7 @@ public:
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -110,7 +110,7 @@ public:
     typedef Simplex<2> convex_type;
 
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
 
@@ -126,7 +126,7 @@ public:
     /*space*/
     //# marker2 #
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     //# endmarker2 #
 
     /* functions */
@@ -136,7 +136,7 @@ public:
 
     /* BDF */
     typedef Bdf<space_type >  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
 
     /* export */
@@ -181,7 +181,7 @@ private:
     /*BDF */
     bdf_ptrtype M_bdf;
 
-    boost::shared_ptr<export_type> exporter;
+    std::shared_ptr<export_type> exporter;
 }; // Steady_Ns
 
 Steady_Ns::Steady_Ns( )
@@ -347,7 +347,7 @@ void Steady_Ns::run()
             LOG(INFO) << "p_exact = " << p_exact_g;
 
             auto u_exact = expr<2,1,7>( u_exact_g, vars, "u_exact" );
-            auto p_exact = expr<7>( p_exact_g, vars, "p_exact" );
+            auto p_exact = expr<1,1,7>( p_exact_g, vars, "p_exact" );
             auto beta=u_exact;
 
             auto gradu_exact_g = grad( u_exact_g, vars );
@@ -434,7 +434,7 @@ void Steady_Ns::run()
     u_exact_g = u1,u2 ;
     auto p_exact_g = parse( p_str, vars );
     auto u_exact = expr<2,1,7>( u_exact_g, vars, "u_exact" );
-    auto p_exact = expr<7>( p_exact_g, vars, "p_exact" );
+    auto p_exact = expr<1,1,7>( p_exact_g, vars, "p_exact" );
     auto beta=u_exact;
 
     auto gradu_exact_g = grad( u_exact_g, vars );

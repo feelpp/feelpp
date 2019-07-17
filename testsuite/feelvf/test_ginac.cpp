@@ -27,12 +27,8 @@
    \date 2013-04-04
 */
 
-#define USE_BOOST_TEST 1
-//#undef USE_BOOST_TEST
-#if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_ginac
-#include <testsuite/testsuite.hpp>
-#endif
+#include <feel/feelcore/testsuite.hpp>
 
 #include <iostream>
 #include <string>
@@ -44,6 +40,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/pchm.hpp>
 #include <feel/feelvf/vf.hpp>
 
 
@@ -280,114 +277,156 @@ void runTest0()
     auto g = expr(exact, vars);
 }
 
+template <typename ElementType>
+void checkEqualElements( std::string const& info, ElementType const& u1, ElementType const& u2, double tol = 1e-10  )
+{
+    BOOST_TEST_MESSAGE( "checkEqualElements start  : "<< info );
+    auto Xh = u1.functionSpace();
+    for ( size_type k=0;k<Xh->nLocalDof();++k )
+    {
+#if defined(USE_BOOST_TEST)
+        BOOST_CHECK_CLOSE( u1(k), u2(k), tol );
+#endif
+        if ( std::abs(u1(k)-u2(k) ) > tol )
+            break;
+    }
+    BOOST_TEST_MESSAGE( "checkEqualElements finish : "<< info );
+}
 void runTest1()
 {
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
     auto XhScalar = Pch<3>( mesh );
     auto XhVectorial = Pchv<3>( mesh );
+    auto XhTensor2 = Pchm<3>( mesh );
 
-    // id scalar
-    auto exprScalarFeel = Px()*Px()*cos(M_PI*Py()) + 2*Py()*sin(Px())*exp(Px()*Px());
-    auto exprScalarGinac = expr( "x*x*cos(pi*y)+2*y*sin(x)*exp(x*x):x:y"/*, "scalarExpr"*/ );
-    auto uFeel = XhScalar->element( exprScalarFeel );
-    auto uGinac = XhScalar->element( exprScalarGinac );
-    for ( size_type k=0;k<XhScalar->nLocalDof();++k )
-    {
-#if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( uFeel(k), uGinac(k), 1e-10 );
-#endif
-        if ( std::abs(uFeel(k)-uGinac(k) ) > 1e-10 )
-            break;
-    }
+    double a=2, b=4.5;
+    std::map<std::string,double> params = { { "a", a }, { "b",b } };
+    std::map<std::string,double> paramsV2 = { { "a", a } };
 
-    // grad scalar
-    auto exprScalarFeelGrad = vec( 2*Px()*cos(M_PI*Py()) + 2*Py()*( cos(Px())*exp(Px()*Px()) + sin(Px())*2*Px()*exp(Px()*Px()) ),
-                                   -M_PI*Px()*Px()*sin(M_PI*Py()) + 2*sin(Px())*exp(Px()*Px()) );
-    auto exprScalarGinacGrad = trans( grad<2>( exprScalarGinac/*, "scalarExprGrad"*/ ) );
-    auto uFeelGrad = XhVectorial->element( exprScalarFeelGrad );
-    auto uGinacGrad = XhVectorial->element( exprScalarGinacGrad );
-    for ( size_type k=0;k<XhVectorial->nLocalDof();++k )
-    {
-#if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( uFeelGrad(k), uGinacGrad(k), 1e-10 );
-#endif
-        if ( std::abs(uFeelGrad(k)-uGinacGrad(k) ) > 1e-10 )
-            break;
-    }
+    auto exprScalarGinacV1 = expr( "a*x*x*cos(pi*y)+b*2*y*sin(x)*exp(x*x):x:y:a:b"/*, "scalarExpr"*/ );
+    exprScalarGinacV1.setParameterValues( params );
+    auto exprScalarGinacV2 = expr( exprScalarGinacV1, symbolExpr("b",cst(b)) );
+    exprScalarGinacV2.setParameterValues( paramsV2 );
+    auto exprScalarGinacV3 = expr( exprScalarGinacV1, symbolExpr("a",cst(a)), symbolExpr("b",cst(b)) );
 
-    // laplacian scalar
-    auto exprScalarFeelLaplacian = 2*exp(Px()*Px())*(4*Px()*Px()+1)*Py()*sin(Px())+8*exp(Px()*Px())*Px()*Py()*cos(Px())+(2-M_PI*M_PI*Px()*Px())*cos(M_PI*Py());
-    auto exprScalarGinacLaplacian = laplacian( exprScalarGinac/*, "scalarExprLaplacian"*/ );
-    auto uFeelLaplacian = XhScalar->element( exprScalarFeelLaplacian );
-    auto uGinacLaplacian = XhScalar->element( exprScalarGinacLaplacian );
-    for ( size_type k=0;k<XhScalar->nLocalDof();++k )
-    {
-#if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( uFeelLaplacian(k), uGinacLaplacian(k), 1e-10 );
-#endif
-        if ( std::abs(uFeelLaplacian(k)-uGinacLaplacian(k) ) > 1e-10 )
-            break;
-    }
+    auto testExprScalar = hana::make_tuple( std::make_pair("V1 scalar",exprScalarGinacV1),
+                                            std::make_pair("V2 scalar",exprScalarGinacV2),
+                                            std::make_pair("V3 scalar",exprScalarGinacV3) );
+    hana::for_each( testExprScalar, [&](auto const& t )
+                    {
+                        std::string testTag = t.first;
+                        auto const& exprScalarGinac = t.second;
+                        // id scalar
+                        auto exprScalarFeel = a*Px()*Px()*cos(M_PI*Py()) + b*2*Py()*sin(Px())*exp(Px()*Px());
+                        auto uFeel = XhScalar->element( exprScalarFeel );
+                        auto uGinac = XhScalar->element( exprScalarGinac );
+                        checkEqualElements( testTag + " id", uFeel, uGinac );
+                        // grad scalar
+                        auto exprScalarFeelGrad = vec( 2*a*Px()*cos(M_PI*Py()) + 4*b*Px()*Py()*exp(Px()*Px())*sin(Px()) + 2*b*Py()*exp(Px()*Px())*cos(Px()),
+                                                       -M_PI*a*Px()*Px()*sin(M_PI*Py()) + 2*b*exp(Px()*Px())*sin(Px()) );
+                        auto exprScalarGinacGrad = trans( grad<2>( exprScalarGinac/*, "scalarExprGrad"*/ ) );
+                        auto uFeelGrad = XhVectorial->element( exprScalarFeelGrad );
+                        auto uGinacGrad = XhVectorial->element( exprScalarGinacGrad );
+                        checkEqualElements( testTag + " grad", uFeelGrad, uGinacGrad );
+                        // laplacian scalar
+                        auto exprScalarFeelLaplacian = 2*(a*cos(M_PI*Py())+4*b*Px()*Px()*Py()*exp(Px()*Px())*sin(Px()) + 4*b*Px()*Py()*exp(Px()*Px())*cos(Px()) + b*Py()*exp(Px()*Px())*sin(Px()))  - M_PI*M_PI*a*Px()*Px()*cos(M_PI*Py());
+                        auto exprScalarGinacLaplacian = laplacian( exprScalarGinac/*, "scalarExprLaplacian"*/ );
+                        auto uFeelLaplacian = XhScalar->element( exprScalarFeelLaplacian );
+                        auto uGinacLaplacian = XhScalar->element( exprScalarGinacLaplacian );
+                        checkEqualElements( testTag + " laplacian", uFeelLaplacian, uGinacLaplacian );
+                        // diff scalar
+                        auto exprScalarFeelDiff = vec( Px()*Px()*cos(M_PI*Py()), 2*Py()*exp(Px()*Px())*sin(Px()) );
+                        auto exprScalarGinacDiffA = diff( exprScalarGinac, "a" );
+                        auto exprScalarGinacDiffB = diff( exprScalarGinac, "b" );
+                        auto uFeelDiff = XhVectorial->element( exprScalarFeelDiff );
+                        auto uGinacDiff = XhVectorial->element( vec( exprScalarGinacDiffA, exprScalarGinacDiffB ) );
+                        checkEqualElements( testTag + " diff", uFeelDiff, uGinacDiff );
+                        auto exprScalarGinacDiffX = diff( exprScalarGinac, "x" );
+                        auto exprScalarGinacDiffY = diff( exprScalarGinac, "y" );
+                        auto uGinacDiffX_Y = XhVectorial->element( vec( exprScalarGinacDiffX, exprScalarGinacDiffY ) );
+                        checkEqualElements( testTag + " diff (grad)", uFeelGrad, uGinacDiffX_Y );
+                        auto exprScalarGinacDiffXX = diff( exprScalarGinac, "x", 2 );
+                        auto exprScalarGinacDiffYY = diff( exprScalarGinac, "y", 2 );
+                        auto uGinacDiffXX_YY = XhScalar->element( exprScalarGinacDiffXX + exprScalarGinacDiffYY );
+                        checkEqualElements( testTag + " diff (laplacian)", uFeelLaplacian, uGinacDiffXX_YY );
+                    });
 
-    // id vectorial
-    auto exprVectorialFeel = vec( Px()*Px()*cos(M_PI*Py()),
-                                  2*Py()*sin(Px())*exp(Px()*Px()) );
-    auto exprVectorialGinac = expr<2,1>( "{x*x*cos(pi*y),2*y*sin(x)*exp(x*x)}:x:y"/*, "vectorialExpr"*/ );
-    auto uVectorialFeel = XhVectorial->element( exprVectorialFeel );
-    auto uVectorialGinac = XhVectorial->element( exprVectorialGinac );
-    for ( size_type k=0;k<XhVectorial->nLocalDof();++k )
-    {
-#if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( uVectorialFeel(k), uVectorialGinac(k), 1e-10 );
-#endif
-        if ( std::abs(uVectorialFeel(k)-uVectorialGinac(k) ) > 1e-10 )
-            break;
-    }
 
-    // div vectorial
-    auto exprVectorialFeelDiv = 2*Px()*cos(M_PI*Py()) + 2*sin(Px())*exp(Px()*Px());
-    auto exprVectorialGinacDiv = div<2>( exprVectorialGinac/*, "vectorialExprDiv"*/ );
-    auto uVectorialFeelDiv = XhScalar->element( exprVectorialFeelDiv );
-    auto uVectorialGinacDiv = XhScalar->element( exprVectorialGinacDiv );
-    for ( size_type k=0;k<XhScalar->nLocalDof();++k )
-    {
-#if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( uVectorialFeelDiv(k), uVectorialGinacDiv(k), 1e-10 );
-#endif
-        if ( std::abs(uVectorialFeelDiv(k)-uVectorialGinacDiv(k) ) > 1e-10 )
-            break;
-    }
+
+    auto exprVectorialGinacV1 = expr<2,1>( "{a*x*x*cos(pi*y),b*2*y*sin(x)*exp(x*x)}:x:y:a:b"/*, "vectorialExpr"*/ );
+    exprVectorialGinacV1.setParameterValues( params );
+    auto exprVectorialGinacV2 = expr( exprVectorialGinacV1, symbolExpr("b",cst(b)) );
+    exprVectorialGinacV2.setParameterValues( paramsV2 );
+    auto exprVectorialGinacV3 = expr( exprVectorialGinacV1, symbolExpr("a",cst(a)), symbolExpr("b",cst(b)) );
+
+    auto testExprVectorial = hana::make_tuple( std::make_pair("V1 vectorial",exprVectorialGinacV1),
+                                               std::make_pair("V2 vectorial",exprVectorialGinacV2),
+                                               std::make_pair("V3 vectorial",exprVectorialGinacV3) );
+    hana::for_each( testExprVectorial, [&](auto const& t )
+                    {
+                        std::string testTag = t.first;
+                        auto const& exprVectorialGinac = t.second;
+                        // id vectorial
+                        auto exprVectorialFeel = vec( a*Px()*Px()*cos(M_PI*Py()),
+                                                      b*2*Py()*sin(Px())*exp(Px()*Px()) );
+                        auto uVectorialFeel = XhVectorial->element( exprVectorialFeel );
+                        auto uVectorialGinac = XhVectorial->element( exprVectorialGinac );
+                        checkEqualElements( testTag+" id", uVectorialFeel, uVectorialGinac );
+                        // div vectorial
+                        auto exprVectorialFeelDiv = 2*a*Px()*cos(M_PI*Py()) + 2*b*sin(Px())*exp(Px()*Px());
+                        auto exprVectorialGinacDiv = div/*<2>*/( exprVectorialGinac/*, "vectorialExprDiv"*/ );
+                        auto uVectorialFeelDiv = XhScalar->element( exprVectorialFeelDiv );
+                        auto uVectorialGinacDiv = XhScalar->element( exprVectorialGinacDiv );
+                        checkEqualElements( testTag+" div", uVectorialFeelDiv, uVectorialGinacDiv );
+                        // grad vectorial
+                        auto exprVectorialFeelGrad = mat<2,2>( 2*a*Px()*cos(M_PI*Py()), -M_PI*a*Px()*Px()*sin(M_PI*Py()),
+                                                               4*b*Px()*Py()*exp(Px()*Px())*sin(Px()) + 2*b*Py()*exp(Px()*Px())*cos(Px()), 2*b*sin(Px())*exp(Px()*Px()) );
+                        auto exprVectorialGinacGrad = grad/*<2>*/( exprVectorialGinac );
+                        auto uVectorialFeelGrad = XhTensor2->element( exprVectorialFeelGrad );
+                        auto uVectorialGinacGrad = XhTensor2->element( exprVectorialGinacGrad );
+                        checkEqualElements( testTag+" grad", uVectorialFeelGrad, uVectorialGinacGrad );
+                        // laplacian vectorial
+                        auto exprVectorialFeelLaplacian = vec( -M_PI*M_PI*a*Px()*Px()*cos(M_PI*Py()) + 2*a*cos(M_PI*Py()),
+                                                               2*b*Py()*(4*Px()*Px()*sin(Px())+4*Px()*cos(Px())+sin(Px()))*exp(Px()*Px()) );
+                        auto exprVectorialGinacLaplacian = laplacian( exprVectorialGinac/*, "toto"*/ );
+                        auto uVectorialFeelLaplacian = XhVectorial->element( exprVectorialFeelLaplacian );
+                        auto uVectorialGinacLaplacian = XhVectorial->element( exprVectorialGinacLaplacian );
+                        checkEqualElements( testTag+" laplacian", uVectorialFeelLaplacian, uVectorialGinacLaplacian, 1e-8 );
+                        // diff vectorial
+                        auto exprVectorialFeelDiffA = vec(Px()*Px()*cos(M_PI*Py()),cst(0.) );
+                        auto exprVectorialFeelDiffB = vec(cst(0.),2*Py()*sin(Px())*exp(Px()*Px()) );
+                        auto exprVectorialGinacDiffA = diff( exprVectorialGinac, "a" );
+                        auto exprVectorialGinacDiffB = diff( exprVectorialGinac, "b" );
+                        auto uVectorialFeelDiffA = XhVectorial->element( exprVectorialFeelDiffA );
+                        auto uVectorialGinacDiffA = XhVectorial->element( exprVectorialGinacDiffA );
+                        auto uVectorialFeelDiffB = XhVectorial->element( exprVectorialFeelDiffB );
+                        auto uVectorialGinacDiffB = XhVectorial->element( exprVectorialGinacDiffB );
+                        checkEqualElements( testTag+" diff a", uVectorialFeelDiffA, uVectorialGinacDiffA, 1e-8 );
+                        checkEqualElements( testTag+" diff b", uVectorialFeelDiffB, uVectorialGinacDiffB, 1e-8 );
+                    });
 
     // id vf
     auto exprScalarField = Px()*Px()*cos(M_PI*Py()) + 2*Py()*sin(Px())*exp(Px()*Px());
     auto scalarField = XhScalar->element( exprScalarField );
-    auto exprScalarFeelVF = 2*Px()*sin(Py())*exp(pow(idv(scalarField),2));
-    auto exprScalarGinacVF = expr( "2*x*sin(y)*exp(u^2):x:y:u", "u", idv(scalarField) );
+    auto exprScalarFeelVF = a*2*Px()*sin(Py()*b)*exp(pow(idv(scalarField),2));
+    auto exprScalarGinacVF = expr( "a*2*x*sin(y*b)*exp(u^2):x:y:a:b:u", "u", idv(scalarField) );
+    exprScalarGinacVF.setParameterValues( params );
     auto uScalarFeelVF = XhScalar->element( exprScalarFeelVF );
     auto uScalarFeelGinacVF = XhScalar->element( exprScalarGinacVF );
-    for ( size_type k=0;k<XhScalar->nLocalDof();++k )
-    {
-#if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( uScalarFeelVF(k), uScalarFeelGinacVF(k), 1e-10 );
-#endif
-        if ( std::abs(uScalarFeelVF(k)-uScalarFeelGinacVF(k) ) > 1e-10 )
-            break;
-    }
-
+    checkEqualElements( "id vf", uScalarFeelVF, uScalarFeelGinacVF );
     // diff vf
-    auto exprScalarFeelVFDiff = 2*Px()*sin(Py())*2*idv(scalarField)*exp(pow(idv(scalarField),2));
-    auto exprScalarGinacVFDiff = diff( "2*x*sin(y)*exp(u^2):x:u:y", "u", "u", idv(scalarField) );
+    auto exprScalarFeelVFDiff = a*2*Px()*sin(Py()*b)*2*idv(scalarField)*exp(pow(idv(scalarField),2));
+    auto exprScalarGinacVFDiffStr = diff( "a*2*x*sin(y*b)*exp(u^2):x:y:a:b:u", "u", "u", idv(scalarField) );
+    exprScalarGinacVFDiffStr.setParameterValues( params );
     auto uScalarFeelVFDiff = XhScalar->element( exprScalarFeelVFDiff );
+    auto uScalarGinacVFDiffStr = XhScalar->element( exprScalarGinacVFDiffStr );
+    checkEqualElements( "diff vf str", uScalarFeelVFDiff, uScalarGinacVFDiffStr );
+#if 1
+    // diff vf str
+    auto exprScalarGinacVFDiff = diff( exprScalarGinacVF , "u" );
     auto uScalarGinacVFDiff = XhScalar->element( exprScalarGinacVFDiff );
-    for ( size_type k=0;k<XhScalar->nLocalDof();++k )
-    {
-#if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( uScalarFeelVFDiff(k), uScalarGinacVFDiff(k), 1e-10 );
+    checkEqualElements( "diff vf", uScalarFeelVFDiff, uScalarGinacVFDiff );
 #endif
-        if ( std::abs(uScalarFeelVFDiff(k)-uScalarGinacVFDiff(k) ) > 1e-10 )
-            break;
-    }
-
 }
 
 void runTest2()
@@ -434,6 +473,217 @@ void runTest2()
 #endif
 }
 
+void runTest3()
+{
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2,1>>);
+    auto Vh1 = Pch<1>( mesh );
+    auto Vh2 = Pch<2>( mesh );
+    auto Vh3 = Pch<3>( mesh );
+    auto u1 = Vh1->element(Px());
+    auto u1b = Vh1->element(Py());
+    auto u2 = Vh2->element(Py());
+    auto u3 = Vh3->element(Px()*Px()*Py());
+
+    // scalar expressions
+    auto exprA = expr("2*x*y+x*x*y:x:y");
+    auto exprB = expr("2*u*y+x*x*y:u:x:y");
+    auto exprBvf = expr(exprB, symbolExpr("u",idv(u1)) );
+
+    auto exprC = expr("2*u*v+x*x*y:u:v:x:y");
+    auto exprCvf = expr(exprC,symbolExpr("u",idv(u1)), symbolExpr("v",idv(u2)) );
+    auto exprD = expr("2*u*v+w:u:v:w");
+    auto exprDvf = expr(exprD,symbolExpr("u",idv(u1)), symbolExpr("v",idv(u2) ), symbolExpr("w",idv(u3) ) );
+    auto exprE = expr("2*u*v+w:u:v:w");
+    auto exprEvf = expr(exprE, symbolsExpr( symbolExpr("u",idv(u1)), symbolExpr("v",idv(u2) ), symbolExpr("w",idv(u1)*idv(u1)*idv(u2) ) ) );
+
+    auto exprF = expr("2*u*v+x*u*v:u:v:x:y");
+    //auto exprFvf = expr(exprC,symbolExpr( { { "u",idv(u1) }, { "v",idv(u1b) } }) );
+    //auto exprFvf = expr(exprC,symbolExpr( { std::make_pair("u",idv(u1)) , std::make_pair("v",idv(u1b)) }) );
+    auto exprFvf = expr(exprC,symbolExpr( { std::make_pair( std::string("u"),idv(u1)) , std::make_pair( std::string("v"),idv(u1b)) }) );
+
+    double intA = integrate(_range=elements(mesh),_expr=exprA,_quad=5).evaluate()(0,0);
+    double intB = integrate(_range=elements(mesh),_expr=exprBvf,_quad=5).evaluate()(0,0);
+    double intC = integrate(_range=elements(mesh),_expr=exprCvf,_quad=5).evaluate()(0,0);
+    double intD = integrate(_range=elements(mesh),_expr=exprDvf,_quad=5).evaluate()(0,0);
+    double intE = integrate(_range=elements(mesh),_expr=exprEvf,_quad=5).evaluate()(0,0);
+    double intF = integrate(_range=elements(mesh),_expr=exprFvf,_quad=5).evaluate()(0,0);
+
+    BOOST_CHECK_CLOSE( intA, intB, 1e-8 );
+    BOOST_CHECK_CLOSE( intA, intC, 1e-8 );
+    BOOST_CHECK_CLOSE( intA, intD, 1e-8 );
+    BOOST_CHECK_CLOSE( intA, intE, 1e-8 );
+    BOOST_CHECK_CLOSE( intA, intF, 1e-8 );
+
+    // vectorial expressions
+    auto exprVecA = expr<2,1>("{2*x*y+x*x*y,4*x-y}:x:y");
+    auto exprVecAvf = expr(exprVecA);
+    auto exprVecB = expr<2,1>("{2*u*y+u*x*y,4*u-y}:u:x:y");
+    auto exprVecBvf = expr(exprVecB, symbolExpr( "u",idv(u1) ) );
+    auto exprVecC = expr<2,1>("{2*u*v+x*x*y,4*u-v}:u:v:x:y");
+    auto exprVecCvf = expr(exprVecC, symbolExpr( "u",idv(u1) ), symbolExpr("v",idv(u2) ) );
+    auto exprVecD = expr<2,1>("{2*u*v+w,4*u-v}:u:v:w");
+    auto exprVecDvf = expr(exprVecD, symbolExpr("u",idv(u1)), symbolExpr("v",idv(u2)), symbolExpr("w",idv(u3)) );
+    auto exprVecE = expr<2,1>("{2*u*v+w,4*u-v}:u:v:w");
+    auto exprVecEvf = expr(exprVecE,symbolsExpr( symbolExpr( "u",idv(u1) ), symbolExpr("v",idv(u2) ), symbolExpr("w",idv(u1)*idv(u1)*idv(u2) ) ) );
+
+    double intVecA = integrate(_range=elements(mesh),_expr=inner(exprVecA),_quad=5).evaluate()(0,0);
+    double intVecB = integrate(_range=elements(mesh),_expr=inner(exprVecBvf),_quad=5).evaluate()(0,0);
+    double intVecC = integrate(_range=elements(mesh),_expr=inner(exprVecCvf),_quad=5).evaluate()(0,0);
+    double intVecD = integrate(_range=elements(mesh),_expr=inner(exprVecDvf),_quad=5).evaluate()(0,0);
+    double intVecE = integrate(_range=elements(mesh),_expr=inner(exprVecEvf),_quad=5).evaluate()(0,0);
+
+    BOOST_CHECK_CLOSE( intVecA, intVecB, 1e-8 );
+    BOOST_CHECK_CLOSE( intVecA, intVecC, 1e-8 );
+    BOOST_CHECK_CLOSE( intVecA, intVecD, 1e-8 );
+    BOOST_CHECK_CLOSE( intVecA, intVecE, 1e-8 );
+}
+
+void runTest4()
+{
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2,1>>);
+    auto Vh = Pch<3>( mesh );
+    auto u = Vh->element( Px()*Px()*Py() );
+
+    std::map<std::string,double> params;
+    params["a"]=2;
+    params["b"]=4.5;
+
+    // scalar
+    auto exprA = expr("2*a*b:a:b");
+    exprA.setParameterValues( params );
+    BOOST_CHECK( exprA.expression().isConstant() );
+    BOOST_CHECK( exprA.isPolynomial() );
+    BOOST_CHECK( exprA.polynomialOrder() == 0 );
+    BOOST_CHECK_CLOSE( exprA.evaluate(), 2*2*4.5, 1e-12 );
+    double intA1 = integrate(_range=elements(mesh),_expr=cst(2*2*4.5)).evaluate()(0,0);
+    double intA2 = integrate(_range=elements(mesh),_expr=exprA).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( intA1, intA2, 1e-12 );
+
+    auto exprAu = expr(exprA, symbolsExpr( symbolExpr( "u",idv(u) ) ) );
+    BOOST_CHECK( exprAu.expression().isConstant() );
+    BOOST_CHECK( exprAu.isPolynomial() );
+    BOOST_CHECK( exprAu.polynomialOrder() == 0 );
+    BOOST_CHECK_CLOSE( exprAu.evaluate(), 2*2*4.5, 1e-12 );
+    double intAu2 = integrate(_range=elements(mesh),_expr=exprAu).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( intA1, intAu2, 1e-12 );
+
+    auto exprB = expr("2*a*b+x^2*y+(x+y)^4:a:b:x:y");
+    exprB.setParameterValues( params );
+    BOOST_CHECK( !exprB.expression().isConstant() );
+    BOOST_CHECK( exprB.isPolynomial() );
+    BOOST_CHECK( exprB.polynomialOrder() == 4 );
+
+    auto exprC = expr<3>("2*a+x^2*y+(x+y)^4+cos(y):a:x:y");
+    exprC.setParameterValues( params );
+    BOOST_CHECK( !exprC.expression().isConstant() );
+    BOOST_CHECK( !exprC.isPolynomial() );
+    BOOST_CHECK( exprC.polynomialOrder() == 3 );
+
+
+    auto exprDtmp = expr("2*a+x^2*y+u*(x+y)^4:a:x:y:u");
+    auto exprD = expr( exprDtmp,symbolsExpr( symbolExpr( "u",idv(u) ) ) );
+    exprD.setParameterValues( params );
+    BOOST_CHECK( !exprD.expression().isConstant() );
+    BOOST_CHECK( exprD.isPolynomial() );
+    BOOST_CHECK( exprD.polynomialOrder() == 7 );
+
+    auto exprEtmp = expr<3>("2*a+x^2*y+u*(x+y)^4:a:x:y:u");
+    auto exprE = expr( exprEtmp,symbolsExpr( symbolExpr( "u",cos(Px()) ) ) );
+    BOOST_CHECK( !exprE.expression().isConstant() );
+    BOOST_CHECK( !exprE.isPolynomial() );
+    BOOST_CHECK( exprE.polynomialOrder() == 3 );
+
+    auto exprF = expr("4*sin(3*Pi/2)*exp(3):x:a:u");
+    BOOST_CHECK( exprF.expression().isConstant() );
+    BOOST_CHECK( exprF.isPolynomial() );
+    BOOST_CHECK( exprF.polynomialOrder() == 0 );
+    double evalFvalue = 4*std::sin(3*M_PI/2.)*std::exp(3.);
+    BOOST_CHECK_CLOSE( exprF.evaluate(), evalFvalue, 1e-12 );
+    double intF1 = integrate(_range=elements(mesh),_expr=cst(evalFvalue)).evaluate()(0,0);
+    double intF2 = integrate(_range=elements(mesh),_expr=exprF).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( intF1, intF2, 1e-12 );
+    auto exprFu = expr( exprF,symbolExpr( "u",idv(u) ) );
+    BOOST_CHECK( exprFu.expression().isConstant() );
+    BOOST_CHECK( exprFu.isPolynomial() );
+    BOOST_CHECK( exprFu.polynomialOrder() == 0 );
+    BOOST_CHECK_CLOSE( exprFu.evaluate(), evalFvalue, 1e-12 );
+
+    // vectorial
+    auto exprVA = expr<2,1>("{2*a*b,a+b}:a:b");
+    exprVA.setParameterValues( params );
+    BOOST_CHECK( exprVA.expression().isConstant() );
+    BOOST_CHECK( exprVA.isPolynomial() );
+    BOOST_CHECK( exprVA.polynomialOrder() == 0 );
+    auto evalVA = exprVA.evaluate();
+    BOOST_CHECK_CLOSE( evalVA(0,0), 2*2*4.5, 1e-12 );
+    BOOST_CHECK_CLOSE( evalVA(1,0), 2+4.5, 1e-12 );
+    auto intVA1 = integrate(_range=elements(mesh),_expr=vec(cst(2*2*4.5),cst(2+4.5))).evaluate();
+    auto intVA2 = integrate(_range=elements(mesh),_expr=exprVA).evaluate();
+    BOOST_CHECK_CLOSE( intVA1(0,0), intVA2(0,0), 1e-12 );
+    BOOST_CHECK_CLOSE( intVA1(1,0), intVA2(1,0), 1e-12 );
+
+    auto exprVB = expr<2,1>("{2*a*b+x^2*y,(x+y)^4}:a:b:x:y");
+    exprVB.setParameterValues( params );
+    BOOST_CHECK( !exprVB.expression().isConstant() );
+    BOOST_CHECK( exprVB.isPolynomial() );
+    BOOST_CHECK( exprVB.polynomialOrder() == 4 );
+
+    auto exprVC = expr<2,1,3>("{2*a*b+x^2*cos(y),(x+y)^4}:a:b:x:y");
+    exprVC.setParameterValues( params );
+    BOOST_CHECK( !exprVC.expression().isConstant() );
+    BOOST_CHECK( !exprVC.isPolynomial() );
+    BOOST_CHECK( exprVC.polynomialOrder() == 3 );
+
+    auto exprVDtmp = expr<2,1>("{2*a*b+x^2*y*u,(x+y)^4}:a:b:x:y:u");
+    auto exprVD = expr( exprVDtmp,symbolsExpr( symbolExpr( "u",idv(u) ) ) );
+    exprVD.setParameterValues( params );
+    BOOST_CHECK( !exprVD.expression().isConstant() );
+    BOOST_CHECK( exprVD.isPolynomial() );
+    BOOST_CHECK( exprVD.polynomialOrder() == 6 );
+
+    auto exprVEtmp = expr<2,1,3>("{2*a*b+x^2*y*u,(x+y)^4}:a:b:x:y:u");
+    auto exprVE = expr( exprVEtmp,symbolsExpr( symbolExpr( "u",cos(Px()) ) ) );
+    exprVE.setParameterValues( params );
+    BOOST_CHECK( !exprVE.expression().isConstant() );
+    BOOST_CHECK( !exprVE.isPolynomial() );
+    BOOST_CHECK( exprVE.polynomialOrder() == 3 );
+
+    // tensor2
+    auto exprMA = expr<2,2>("{2*a*b,a+b,a-b,a/b}:a:b");
+    exprMA.setParameterValues( params );
+    BOOST_CHECK( exprMA.expression().isConstant() );
+    BOOST_CHECK( exprMA.isPolynomial() );
+    BOOST_CHECK( exprMA.polynomialOrder() == 0 );
+    auto evalMA = exprMA.evaluate();
+    BOOST_CHECK_CLOSE( evalMA(0,0), 2*2*4.5, 1e-12 );
+    BOOST_CHECK_CLOSE( evalMA(0,1), 2+4.5, 1e-12 );
+    BOOST_CHECK_CLOSE( evalMA(1,0), 2-4.5, 1e-12 );
+    BOOST_CHECK_CLOSE( evalMA(1,1), 2/4.5, 1e-12 );
+    auto intMA1 = integrate(_range=elements(mesh),_expr=mat<2,2>(cst(2*2*4.5),cst(2+4.5),cst(2-4.5),cst(2/4.5))).evaluate();
+    auto intMA2 = integrate(_range=elements(mesh),_expr=exprMA).evaluate();
+    for ( int i=0;i<2;++i )
+        for ( int j=0;j<2;++j )
+            BOOST_CHECK_CLOSE( intMA1(i,j), intMA2(i,j), 1e-12 );
+
+
+    auto exprMB = expr<2,2>("{cos(Pi/3),exp(2),sin(2),4*16}:a:x");
+    BOOST_CHECK( exprMB.expression().isConstant() );
+    BOOST_CHECK( exprMB.isPolynomial() );
+    BOOST_CHECK( exprMB.polynomialOrder() == 0 );
+    auto evalMB = exprMB.evaluate();
+    BOOST_CHECK_CLOSE( evalMB(0,0), std::cos(M_PI/3.), 1e-12 );
+    BOOST_CHECK_CLOSE( evalMB(0,1), std::exp(2.), 1e-12 );
+    BOOST_CHECK_CLOSE( evalMB(1,0), std::sin(2.), 1e-12 );
+    BOOST_CHECK_CLOSE( evalMB(1,1), 4*16, 1e-12 );
+    auto evalMBvalue = mat<2,2>( cst(std::cos(M_PI/3.)), cst(std::exp(2.)),
+                                 cst(std::sin(2.)), cst(4.*16) );
+    auto intMB1 = integrate(_range=elements(mesh),_expr=evalMBvalue).evaluate();
+    auto intMB2 = integrate(_range=elements(mesh),_expr=exprMB).evaluate();
+    for ( int i=0;i<2;++i )
+        for ( int j=0;j<2;++j )
+            BOOST_CHECK_CLOSE( intMB1(i,j), intMB2(i,j), 1e-12 );
+}
+
 #if defined(USE_BOOST_TEST)
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
@@ -450,6 +700,14 @@ BOOST_AUTO_TEST_CASE( test_2 )
 {
     runTest2();
 }
+BOOST_AUTO_TEST_CASE( test_3 )
+{
+    runTest3();
+}
+BOOST_AUTO_TEST_CASE( test_4 )
+{
+    runTest4();
+}
 BOOST_AUTO_TEST_SUITE_END()
 
 #else
@@ -463,5 +721,7 @@ int main( int argc, char* argv[] )
     runTest0();
     runTest1();
     runTest2();
+    runTest3();
+    runTest4();
 }
 #endif

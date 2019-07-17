@@ -1,0 +1,63 @@
+/* this header is generated automatically by Feelpp to wrap OM library*/
+#include <string>
+
+extern "C"
+{
+#include <@OMWRAPPER_NAME@_model.h>
+
+    void @OMWRAPPER_NAME@_setupDataStruc(DATA *data, threadData_t *threadData);
+
+    static int rml_execution_failed()
+    {
+        fflush(NULL);
+        fprintf(stderr, "Execution failed!\n");
+        fflush(NULL);
+        return 1;
+    }
+}
+
+#include "feel@OMWRAPPER_NAME@.hpp"
+
+int
+Feel::Feel@OMWRAPPER_NAME@::run()
+{
+    if ( M_input_edited )
+    {
+        boost::property_tree::write_xml( "@OMWRAPPER_NAME@_init.xml", M_input_ptree );
+        M_input_edited=false;
+    }
+
+    int argc=0;
+    char** argv=new char*[1];
+    argv[0] = NULL;
+    int res;
+    DATA data;
+    MODEL_DATA modelData;
+    SIMULATION_INFO simInfo;
+    data.modelData = &modelData;
+    data.simulationInfo = &simInfo;
+    measure_time_flag = 0;
+    compiledInDAEMode = 0;
+    MMC_INIT(0);
+    omc_alloc_interface.init();
+    {
+        MMC_TRY_TOP()
+            MMC_TRY_STACK()
+            @OMWRAPPER_NAME@_setupDataStruc( &data, threadData );
+        res = _main_SimulationRuntime(argc, argv, &data, threadData);
+
+        MMC_ELSE()
+            rml_execution_failed();
+        fprintf(stderr, "Stack overflow detected and was not caught.\nSend us a bug report at https://trac.openmodelica.org/OpenModelica/newticket\n    Include the following trace:\n");
+        printStacktraceMessages();
+        fflush(NULL);
+        return 1;
+        MMC_CATCH_STACK()
+            MMC_CATCH_TOP(return rml_execution_failed());
+    }
+
+    free(argv[0]);
+    fflush(NULL);
+    EXIT(res);
+    return res;
+}

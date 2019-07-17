@@ -26,15 +26,13 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-08-13
  */
-#define USE_BOOST_TEST 1
-// Boost.Test
-//#define BOOST_TEST_MAIN
+
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh_codim1 testsuite
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 
 #include <feel/feelcore/feel.hpp>
@@ -51,7 +49,7 @@ namespace Feel
 namespace detail
 {
 typedef Mesh<Simplex<1, 1, 2> > mesh_type;
-typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 }
 Feel::detail::mesh_ptrtype
 createMesh( double hsize )
@@ -102,8 +100,6 @@ struct test_mesh_filters
     void operator()()
     {
         BOOST_TEST_MESSAGE( "test_mesh_filters starts" );
-        Feel::Assert::setLog( "test_mesh_filters.assert" );
-
 
         using namespace Feel;
 
@@ -115,7 +111,7 @@ struct test_mesh_filters
             typedef gm_type::precompute_ptrtype geopc_ptrtype;
             typedef gm_type::precompute_type geopc_type;
             typedef gm_type::Context<vm::POINT, Feel::detail::mesh_type::element_type> gmc_type;
-            typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+            typedef std::shared_ptr<gmc_type> gmc_ptrtype;
             BOOST_TEST_MESSAGE( "test_mesh_filters check elements" );
             //
             // Precompute some data in the reference element for
@@ -130,41 +126,46 @@ struct test_mesh_filters
 
             for ( ; it != en; ++it )
             {
+                auto const& elt = it->second;
                 // check that the geometric transformation from
                 // the current gives back the vertices of the
                 // element
-                gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
+                gmc_ptrtype __c( new gmc_type( __gm, elt, __geopc ) );
 
-                FEELPP_ASSERT( ublas::norm_frobenius( __c->xReal() - it->G() ) < 1e-15 )( it->id() )( __c->xReal() )( it->G() ).error( "invalid element" );
-                FEELPP_ASSERT( it->marker().value() == 3 )( it->id() )( it->marker().value() ).error( "invalid element marker" );
+                FEELPP_ASSERT( ublas::norm_frobenius( __c->xReal() - elt.G() ) < 1e-15 )( elt.id() )( __c->xReal() )( elt.G() ).error( "invalid element" );
+                FEELPP_ASSERT( elt.marker().value() == 3 )( elt.id() )( elt.marker().value() ).error( "invalid element marker" );
 
                 //BOOST_CHECK_SMALL( ublas::norm_frobenius( __c->xReal() - it->G() ), 1e-15 );
-                BOOST_CHECK_EQUAL( it->marker().value(), 3 );
+                BOOST_CHECK_EQUAL( elt.marker().value(), 3 );
 
             }
         }
         // location faces
         {
 
-            Feel::MeshTraits<Feel::detail::mesh_type>::location_face_const_iterator it = mesh->beginFaceOnBoundary();
-            Feel::MeshTraits<Feel::detail::mesh_type>::location_face_const_iterator en = mesh->endFaceOnBoundary();
+            auto rangeBoundaryFaces = mesh->facesOnBoundary();
+            auto it = std::get<0>( rangeBoundaryFaces );
+            auto en = std::get<1>( rangeBoundaryFaces );
 
             BOOST_TEST_MESSAGE( "Checking " << std::distance( it, en ) << " boundary faces...\n" );
 
             for ( ; it != en; ++it )
             {
+                auto const& bface = boost::unwrap_ref( *it );
 #if defined(USE_BOOST_TEST)
-                BOOST_CHECK( it->isConnectedTo0() &&
-                             !it->isConnectedTo1() );
-                BOOST_CHECK( it->marker().value() == 31 ||
-                             it->marker().value() == 32 ||
-                             it->marker().value() == 33 );
+
+                BOOST_CHECK( bface.isConnectedTo0() &&
+                             !bface.isConnectedTo1() );
+                BOOST_CHECK( bface.marker().value() == 31 ||
+                             bface.marker().value() == 32 ||
+                             bface.marker().value() == 33 );
 #endif
             }
 
 
-            it = mesh->beginInternalFace();
-            en = mesh->endInternalFace();
+            auto rangeInternalFaces = mesh->internalFaces();
+            it = std::get<0>( rangeInternalFaces );
+            en = std::get<1>( rangeInternalFaces );
             std::cout << "Checking " << std::distance( it, en ) << " internal faces...\n";
 
 #if defined(USE_BOOST_TEST)
@@ -173,24 +174,25 @@ struct test_mesh_filters
 
             for ( ; it != en; ++it )
             {
+                auto const& iface = boost::unwrap_ref( *it );
 #if defined(USE_BOOST_TEST)
                 // the face must be connected with two elements
-                BOOST_CHECK( it->isConnectedTo0() &&
-                             it->isConnectedTo1() );
+                BOOST_CHECK( iface.isConnectedTo0() &&
+                             iface.isConnectedTo1() );
 #endif
                 // check that the points coordinates are the same for the face vertices
-                int face_0 = it->pos_first();
-                int face_1 = it->pos_second();
-                Feel::node<double>::type n00 = it->element( 0 ).point( it->element( 0 ).fToP( face_0, 0 ) ).node();
-                Feel::node<double>::type n10 = it->element( 1 ).point( it->element( 1 ).fToP( face_1, 0 ) ).node();
+                int face_0 = iface.pos_first();
+                int face_1 = iface.pos_second();
+                Feel::node<double>::type n00 = iface.element( 0 ).point( iface.element( 0 ).fToP( face_0, 0 ) ).node();
+                Feel::node<double>::type n10 = iface.element( 1 ).point( iface.element( 1 ).fToP( face_1, 0 ) ).node();
                 FEELPP_ASSERT( ublas::norm_2( n00 - n10 ) < 1e-15 )
-                ( it->id() )
-                ( it->element( 0 ).G() )
+                ( iface.id() )
+                ( iface.element( 0 ).G() )
                 ( face_0 )
-                ( it->element( 0 ).fToP( face_0, 0 ) )
-                ( it->element( 1 ).G() )
+                ( iface.element( 0 ).fToP( face_0, 0 ) )
+                ( iface.element( 1 ).G() )
                 ( face_1 )
-                ( it->element( 1 ).fToP( face_1, 0 ) )
+                ( iface.element( 1 ).fToP( face_1, 0 ) )
                 ( n00 )
                 ( n10 )
                 ( ublas::norm_2( n00 - n10 ) ).warn( "check failed" );
@@ -204,23 +206,23 @@ struct test_mesh_filters
 #if defined(USE_BOOST_TEST)
                 BOOST_CHECK_SMALL( ublas::norm_2( n00 - n10 ), 1e-15 );
 #endif
-                //FEELPP_ASSERT( it->element(0).nGeometricFaces() == 2 )( it->element(0).nGeometricFaces() ).error( "invalid number of faces" );
-                Feel::node<double>::type n01 = it->element( 0 ).point( it->element( 0 ).fToP( face_0, 0 ) ).node();
-                Feel::node<double>::type n11 = it->element( 1 ).point( it->element( 1 ).fToP( face_1, 0 ) ).node();
+                //FEELPP_ASSERT( iface.element(0).nGeometricFaces() == 2 )( iface.element(0).nGeometricFaces() ).error( "invalid number of faces" );
+                Feel::node<double>::type n01 = iface.element( 0 ).point( iface.element( 0 ).fToP( face_0, 0 ) ).node();
+                Feel::node<double>::type n11 = iface.element( 1 ).point( iface.element( 1 ).fToP( face_1, 0 ) ).node();
                 FEELPP_ASSERT( ublas::norm_2( n01 - n11 ) < 1e-15 )
-                ( it->id() )
-                ( it->element( 0 ).G() )
+                ( iface.id() )
+                ( iface.element( 0 ).G() )
                 ( face_0 )
-                ( it->element( 0 ).fToP( face_0, 0 ) )
-                ( it->element( 1 ).G() )
+                ( iface.element( 0 ).fToP( face_0, 0 ) )
+                ( iface.element( 1 ).G() )
                 ( face_1 )
-                ( it->element( 1 ).fToP( face_1, 0 ) )
+                ( iface.element( 1 ).fToP( face_1, 0 ) )
                 ( face_1 )
                 ( n01 )( n11 )( ublas::norm_2( n01 - n11 ) ).warn( "check failed" );
 #if defined(USE_BOOST_TEST)
                 BOOST_CHECK_SMALL( ublas::norm_2( n01 - n11 ), 1e-15 );
 
-                BOOST_CHECK_EQUAL( it->marker().value(), 3 );
+                BOOST_CHECK_EQUAL( iface.marker().value(), 3 );
 #endif
             }
         }

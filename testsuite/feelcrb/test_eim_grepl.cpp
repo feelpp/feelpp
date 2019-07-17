@@ -40,7 +40,7 @@
 #define USE_BOOST_TEST 1
 #define BOOST_TEST_MODULE eim_grepl testsuite
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <boost/timer.hpp>
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
@@ -55,14 +55,6 @@
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelcrb/eim.hpp>
 
-#define FEELAPP( argc, argv, about, options )                           \
-    Feel::Application app( argc, argv, about, options );                \
-    if ( app.vm().count( "help" ) )                                     \
-    {                                                                   \
-        std::cout << app.optionsDescription() << "\n";                  \
-    }
-
-
 namespace Feel
 {
 inline
@@ -71,57 +63,40 @@ makeOptions()
 {
     po::options_description simgetoptions( "test_eim options" );
     simgetoptions.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+    ( "trainset-eim-size", Feel::po::value<int>()->default_value( 40 ), "EIM trainset is built using a equidistributed grid 40 * 40 by default")
     ( "chrono-online-step" , po::value<bool>()->default_value( false ), "give access to computational time during online step if true" )
     ( "n-eval", po::value<int>()->default_value( 10 ), "number of evaluations" )
     ( "cvg-study" , po::value<bool>()->default_value( false ), "run a convergence study if true" )
     ;
-    return simgetoptions.add( eimOptions() ).add( Feel::feel_options() );
-}
-
-
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "test_simget" ,
-                     "test_simget" ,
-                     "0.1",
-                     "SimGet tests",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2012 Université Joseph Fourier" );
-
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    return about;
-
+    return simgetoptions.add( eimOptions() ).add( crbSEROptions() );
 }
 
 /**
  *
  */
 class EimModel:
-        public boost::enable_shared_from_this<EimModel>
+        public std::enable_shared_from_this<EimModel>
 {
-    typedef boost::enable_shared_from_this<EimModel> super;
+    typedef std::enable_shared_from_this<EimModel> super;
 public:
     typedef Mesh<Simplex<2> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef FunctionSpace<mesh_type,bases<Lagrange<1> > > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef space_type functionspace_type;
     typedef space_ptrtype functionspace_ptrtype;
     typedef space_type::element_type element_type;
 
 
     typedef ParameterSpace<2> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
     typedef parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef parameterspace_type::sampling_type sampling_type;
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
     typedef EIMFunctionBase<space_type, space_type, parameterspace_type> fun_type;
-    typedef boost::shared_ptr<fun_type> fun_ptrtype;
+    typedef std::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
     typedef Eigen::VectorXd vectorN_type;
@@ -151,9 +126,10 @@ public:
 
             auto Pset = Dmu->sampling();
             //specify how many elements we take in each direction
-            std::vector<int> N(2);
+            std::vector<size_type> N(2);
             //40 elements in each direction
-            N[0]=40; N[1]=40;
+            int Ne = ioption(_name="trainset-eim-size");
+            N[0]=Ne; N[1]=Ne;
             Pset->equidistributeProduct( N );
             BOOST_TEST_MESSAGE( "Allocation done" );
             BOOST_TEST_MESSAGE( "pushing function to be empirically interpolated" );
@@ -171,13 +147,17 @@ public:
             M_funs.push_back( e );
         }
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const
+    parameterspace_ptrtype const& parameterSpace() const
         {
             return Dmu;
         }
     std::string modelName() const { return std::string("test_eim_grepl" );}
-
-    space_ptrtype functionSpace() { return Xh; }
+    std::string prefix() const { return ""; }
+    uuids::uuid uuid() const
+        {
+            return Environment::nameUUID( boost::uuids::nil_uuid(), (boost::format("%1%_%2%")%this->modelName() %Environment::worldComm().localSize()).str() );
+        }
+    space_ptrtype const& functionSpace() const { return Xh; }
 
     element_type solve( parameter_type const& mu )
         {
@@ -252,7 +232,6 @@ public:
         }
     void run( const double*, long unsigned int, double*, long unsigned int ) {}
 private:
-    double meshSize;
     mesh_ptrtype mesh;
     space_ptrtype Xh;
     element_type u;
@@ -266,7 +245,7 @@ private:
 
 using namespace Feel;
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAboutDefault("test_eim_grepl"), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( eimsuite_grepl )
 
@@ -274,7 +253,7 @@ BOOST_AUTO_TEST_CASE( test_eim_grepl )
 {
     BOOST_TEST_MESSAGE( "test_eim_grepl starts..." );
 
-    boost::shared_ptr<EimModel> m( new EimModel);
+    std::shared_ptr<EimModel> m( new EimModel);
     m->init();
     m->run();
 

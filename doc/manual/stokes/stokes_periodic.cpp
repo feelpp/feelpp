@@ -83,13 +83,13 @@ public:
     /*mesh*/
     typedef Entity<Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef bases<Lagrange<Order+1, Vectorial>, Lagrange<Order, Scalar> > basis_composite_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_composite_type, Periodicity<Periodic<>, NoPeriodicity > > functionspace_composite_type;
-    typedef boost::shared_ptr<functionspace_composite_type> functionspace_composite_ptrtype;
+    typedef std::shared_ptr<functionspace_composite_type> functionspace_composite_ptrtype;
     //BOOST_MPL_ASSERT( ( boost::is_same<mpl::bool_<functionspace_composite_type::template sub_functionspace<0>::type::element_type::is_periodic>,mpl::bool_<true> > ) );
     //BOOST_MPL_ASSERT( ( boost::is_same<mpl::bool_<functionspace_composite_type::template sub_functionspace<1>::type::element_type::is_periodic>,mpl::bool_<false> > ) );
 
@@ -98,7 +98,7 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     /** constructor */
     PeriodicStokes();

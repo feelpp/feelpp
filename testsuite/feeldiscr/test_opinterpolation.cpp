@@ -24,7 +24,7 @@
 
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_opinterpolation
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #endif
 
 #include <feel/feel.hpp>
@@ -62,7 +62,7 @@ class TestOpInterpolation
 {
 public:
     using mesh_type = Mesh< Simplex<DIM> >;
-    using mesh_ptrtype = boost::shared_ptr< mesh_type >;
+    using mesh_ptrtype = std::shared_ptr< mesh_type >;
 
     // Create a test on default cube geometry.
     TestOpInterpolation() :

@@ -29,14 +29,12 @@
  */
 
 
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE integration testsuite
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -46,6 +44,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
@@ -66,12 +65,18 @@ struct f_Px
     typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 1;
-    static const bool imIsPoly = true;
+    uint16_type polynomialOrder() const { return 0; }
+    bool isPolynomial() const { return true; }
+
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
     {
         return x[0];
     }
+    template<int Dim>
+    double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, eigen_vector_type<Dim,double> const& /*n*/ ) const
+        {
+            return x[0];
+        }
 };
 struct f_Nx
 {
@@ -80,9 +85,10 @@ struct f_Nx
     typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 1;
-    static const bool imIsPoly = true;
-    double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, ublas::vector<double> const& n ) const
+    uint16_type polynomialOrder() const { return 1; }
+    bool isPolynomial() const { return true; }
+    template<int Dim>
+    double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, eigen_vector_type<Dim,double> const& n ) const
     {
         return n[0];
     }
@@ -94,12 +100,13 @@ struct f_Ny
     typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 1;
-    static const bool imIsPoly = true;
-    double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, ublas::vector<double> const& n ) const
-    {
-        return n[1];
-    }
+    template<int Dim>
+    double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, eigen_vector_type<Dim,double> const& n ) const
+        {
+            return n[1];
+        }
+    uint16_type polynomialOrder() const { return 1; }
+    bool isPolynomial() const { return true; }
 };
 struct f_sinPx
 {
@@ -108,12 +115,13 @@ struct f_sinPx
     typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 2;
-    static const bool imIsPoly = false;
-    double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
-    {
-        return math::sin( x[0] );
-    }
+    template<int Dim>
+    double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, eigen_vector_type<Dim,double> const& n ) const
+        {
+            return math::sin( x[0] );
+        }
+    uint16_type polynomialOrder() const { return 2; }
+    bool isPolynomial() const { return false; }
 };
 
 #if 0
@@ -124,8 +132,8 @@ struct f_matheval
     typedef double value_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
-    static const uint16_type imorder = 2;
-    static const bool imIsPoly = false;
+    uint16_type polynomialOrder() const { return 2; }
+    bool isPolynomial() const { return false; }
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
     {
         /* introduce matheval function */
@@ -144,14 +152,10 @@ struct f_matheval
 template<typename T, int Dim, int Order = 1>
 struct imesh
 {
-#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, Order )
-    static const uint16_type geoOrder = Order;
-#else
-    static const uint16_type geoOrder = FEELPP_MESH_MAX_ORDER;
-#endif
+    static const uint16_type geoOrder = (FEELPP_MESH_MAX_ORDER > Order)? Order : FEELPP_MESH_MAX_ORDER;
     typedef Simplex<Dim, geoOrder> convex_type;
     typedef Mesh<convex_type, T > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 template<typename T>
@@ -188,7 +192,7 @@ struct test_integration_circle: public Application
     typedef typename imesh<value_type,2,4>::type mesh_type;
     typedef typename imesh<value_type,2,4>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<4, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef bases<Lagrange<4, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
@@ -214,97 +218,191 @@ struct test_integration_circle: public Application
     }
 
     void operator()()
+        {
+            using namespace Feel;
+            using namespace Feel::vf;
+
+            saveGMSHMesh(_mesh=mesh,_filename="ellipsoid.msh");
+
+            int Order=2;
+            double t = 0.0;
+            AUTO( mycst, cst_ref( t ) );
+
+            t = 1.0;
+            //value_type v0 = integrate( elements(mesh), mycst, _Q<2>() ).evaluate()( 0, 0 );
+            value_type v0 = integrate( _range=elements( mesh ), _expr=mycst,_quad=_Q<10>(10) ).evaluate()( 0, 0 );
+            value_type v0x = integrate( _range=elements( mesh ), _expr=mycst, _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate()( 0, 0 );
+            value_type v0y = integrate( _range=elements( mesh ), _expr=mycst, _geomap=GeomapStrategyType::GEOMAP_OPT).evaluate()( 0, 0 );
+            value_type v0z = integrate( _range=elements( mesh ), _expr=mycst, _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate()( 0, 0 );
+            BOOST_TEST_MESSAGE( "v0=" << v0 << "\n" );
+            value_type v00 = ( integrate( _range=boundaryelements( mesh ), _expr=mycst, _quad=_Q<10>(10) ).evaluate()( 0, 0 )+
+                               integrate( _range=internalelements( mesh ), _expr=mycst, _quad=_Q<10>(10) ).evaluate()( 0, 0 ) );
+            BOOST_TEST_MESSAGE( "v00=" << v00 << "\n" );
+
+            BOOST_TEST_MESSAGE( "[circle] v0 0 = " << integrate( boundaryfaces( mesh ),  N(), _Q<4>(4) ).evaluate() << "\n" );
+            BOOST_TEST_MESSAGE( "[circle] v0 1 = " << integrate( boundaryfaces( mesh ),  vec( idf( f_Nx() ), idf( f_Ny() ) ), _Q<4>(4) ).evaluate() << "\n" );
+            BOOST_TEST_MESSAGE( "[circle] v0 2 = " << integrate( boundaryfaces( mesh ),
+                                                                 trans( vec( constant( 1 ),Ny() ) )*one(), _Q<4>(4) ).evaluate() << "\n" );
+
+            BOOST_TEST_MESSAGE( "[circle] v0 3 = " << integrate( boundaryfaces( mesh ),
+                                                                 mat<2,2>( Nx(),constant( 1 ),constant( 1 ),Ny() )*vec( constant( 1 ),constant( 1 ) ), _Q<4>(4) ).evaluate() << "\n" );
+            BOOST_TEST_MESSAGE( "[circle] v0 4 (==v0 3) = " << integrate( boundaryfaces( mesh ),
+                                                                          mat<2,2>( idf( f_Nx() ),constant( 1 ),
+                                                                                    constant( 1 ),idf( f_Ny() ) )*vec( constant( 1 ),constant( 1 ) ), _Q<4>(4) ).evaluate() << "\n" );
+            value_type pi = M_PI;//4.0*math::atan(1.0);
+            const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
+#if defined(USE_BOOST_TEST)
+            BOOST_CHECK_CLOSE( v0, pi, 2e-1 );
+            BOOST_CHECK_CLOSE( v0x, pi, 2e-1 );
+            BOOST_CHECK_CLOSE( v0y, pi, 2e-1 );
+            BOOST_CHECK_CLOSE( v0z, pi, 2e-1 );
+            BOOST_CHECK_CLOSE( v0, v00, eps  );
+            BOOST_CHECK_CLOSE( v00, pi, 5e-4  );
+#else
+            FEELPP_ASSERT( math::abs( v0-pi ) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi ) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
+            FEELPP_ASSERT( math::abs( v0-v00 ) < eps )( v0 )( v00 )( math::abs( v0-v00 ) )( eps ).warn ( "v0 != pi" );
+#endif /* USE_BOOST_TEST */
+
+            auto v1 = integrate( elements( mesh ), Px()*Px()+Py()*Py(), _Q<2>(2) ).evaluate()( 0, 0 );
+#if defined(USE_BOOST_TEST)
+            BOOST_CHECK_CLOSE( v1, pi/2, 2e-1 );
+            BOOST_CHECK_CLOSE( v1, v0/2, 2e-1 );
+#endif
+
+            auto Xh = space_type::New( _mesh=mesh );
+            auto u = Xh->element();
+
+            u = project( Xh, elements( mesh ), constant( 1.0 ) );
+            v0 = integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 );
+#if defined(USE_BOOST_TEST)
+            BOOST_TEST_MESSAGE( "[circle] v0(~pi)=" << v0 << " pi=" << pi << " should be equal \n" );
+            BOOST_CHECK_CLOSE( v0, pi, 2e-1 );
+#else
+            FEELPP_ASSERT( math::abs( v0-pi ) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi ) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
+#endif /* USE_BOOST_TEST */
+
+            u = project( Xh, elements( mesh ), Px()*Px()+Py()*Py() );
+            v0 = integrate( elements( mesh ), idv( u ), _Q<2>(2) ).evaluate()( 0, 0 );
+#if defined(USE_BOOST_TEST)
+            BOOST_TEST_MESSAGE( "[circle] v0(~pi/2)=" << v0 << " pi/2=" << pi/2 << " should be equal \n" );
+            BOOST_CHECK_CLOSE( v0, pi/2, 2e-1 );
+#endif /* USE_BOOST_TEST */
+
+
+            auto Xvh = vector_space_type::New(_mesh=mesh);
+            auto U = Xvh->element();
+
+            
+            auto testint = [&U,this]( std::string const& mesg, double eps, bool small = false )
+                {
+                    auto mesh = this->mesh;
+                    double v0 = integrate( boundaryfaces( mesh ), trans( idv( U ) )*N() ).evaluate()( 0, 0 );
+                    double v00 = integrate( elements( mesh ), divv( U ) ).evaluate()( 0, 0 );
+                    BOOST_TEST_MESSAGE( "[circle] v0=" << v0 << " v00=" << v00 << " should be equal thanks to gauss " << mesg <<" \n" );
+                    if (small )
+                    {
+                        BOOST_CHECK_SMALL( v0, eps );
+                        BOOST_CHECK_SMALL( v00, eps );
+                    }
+                    else
+                        BOOST_CHECK_CLOSE( v0, v00, eps );
+            
+                    v0 = integrate( boundaryfaces( mesh ), trans( idv( U ) )*basisN() ).evaluate()( 0, 0 );
+                    v00 = integrate( elements( mesh ), divv( U ) ).evaluate()( 0, 0 );
+                    BOOST_TEST_MESSAGE( "[circle] v0=" << v0 << " v00=" << v00 << " should be equal thanks to gauss " << mesg <<" \n" );
+                    if (small )
+                    {
+                        BOOST_CHECK_SMALL( v0, eps );
+                        BOOST_CHECK_SMALL( v00, eps );
+                    }
+                    else
+                        BOOST_CHECK_CLOSE( v0, v00, eps );
+
+                    // check below the computation of the derivatives but they need to be summed
+                    v0 = integrate( boundaryfaces( mesh ), trans( idv( U ) )*N() ).evaluate()( 0, 0 );
+                    v00 = integrate( elements( mesh ), dxv( U )+dyv(U) ).evaluate().sum();
+                    BOOST_TEST_MESSAGE( "[circle] v0=" << v0 << " v00=" << v00 << " should be equal thanks to gauss " << mesg <<" \n" );
+                    if (small )
+                    {
+                        BOOST_CHECK_SMALL( v0, eps );
+                        BOOST_CHECK_SMALL( v00, eps );
+                    }
+                    else
+                        BOOST_CHECK_CLOSE( v0, v00, eps );
+
+                    v0 = integrate( boundaryfaces( mesh ), trans( idv( U ) )*basisN() ).evaluate()( 0, 0 );
+                    double v00x = integrate( elements( mesh ), dxv( U ) ).evaluate()( 0, 0 );
+                    double v00y = integrate( elements( mesh ), dyv(U) ).evaluate()( 1, 0 );
+                    BOOST_TEST_MESSAGE( "[circle] v0=" << v0 << " v00=" << v00x+v00y << " (" << v00x << "+" << v00y << ") should be equal thanks to gauss " << mesg <<" \n" );
+                    if (small )
+                    {
+                        BOOST_CHECK_SMALL( v0, eps );
+                        BOOST_CHECK_SMALL( v00x+v00y, eps );
+                    }
+                    else
+                        BOOST_CHECK_CLOSE( v0, v00x+v00y, eps );
+                };
+            U.on(_range=elements( mesh ), _expr=vec( constant( 1.0 ),constant( 1.0 ) ) );
+            double refv = integrate( _range=boundaryfaces( mesh ), _expr=trans( one() )*N() ).evaluate()( 0, 0 );
+            BOOST_TEST_MESSAGE( "[circle] refv=" << refv << " should be close to 0" );
+            testint("int 1.N() != int div 1",eps, true );
+
+            U.on( _range=elements( mesh ), _expr=P() );
+            double refv1 = integrate( _range=boundaryfaces( mesh ), _expr=trans( P() )*N() ).evaluate()( 0, 0 );
+            double refv2 = integrate( _range=elements( mesh ), _expr=cst(2.) ).evaluate()( 0, 0 );
+            BOOST_TEST_MESSAGE( "[circle] refv1=" << refv1 << " should be close to refv2 " << refv2 << " and close to " << 2*pi );
+            BOOST_CHECK_CLOSE( refv1, refv2, 1 );
+            BOOST_CHECK_CLOSE( refv1, 2*pi, 1 );
+            testint( "int (x,y).N() != int div (x,y)", 1 );
+        }
+    std::shared_ptr<Feel::Backend<double> > M_backend;
+    double meshSize;
+    std::string shape;
+    mesh_ptrtype mesh;
+};
+
+
+template<typename value_type = double>
+struct test_integration_circle2: public Application
+{
+    typedef typename imesh<value_type,2,4>::convex_type convex_type;
+    typedef typename imesh<value_type,2,4>::type mesh_type;
+    typedef typename imesh<value_type,2,4>::ptrtype mesh_ptrtype;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<4, Scalar> >, double> space_type;
+    typedef std::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+    typedef bases<Lagrange<4, Vectorial> > vector_basis_type;
+    typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
+
+    test_integration_circle2()
+        :
+        Application(),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( "ellipsoid" ),
+        mesh()
+    {
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % 2 ).str() ,
+                                             _usenames=true,
+                                             _convex=( convex_type::is_hypercube )?"Hypercube":"Simplex",
+                                             _shape=shape,
+                                             _dim=2,
+                                             _order=mesh_type::nOrder,
+                                             _xmin=-1.,_ymin=-1.,
+                                             _h=meshSize ),
+                               _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+    }
+
+    void operator()()
     {
         using namespace Feel;
         using namespace Feel::vf;
-
-        saveGMSHMesh(_mesh=mesh,_filename="ellipsoid.msh");
-
-        int Order=2;
-        double t = 0.0;
-        AUTO( mycst, cst_ref( t ) );
-
-        t = 1.0;
-        //value_type v0 = integrate( elements(mesh), mycst, _Q<2>() ).evaluate()( 0, 0 );
-        value_type v0 = integrate( _range=elements( mesh ), _expr=mycst,_quad=_Q<10>() ).evaluate()( 0, 0 );
-        value_type v0x = integrate( _range=elements( mesh ), _expr=mycst, _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate()( 0, 0 );
-        value_type v0y = integrate( _range=elements( mesh ), _expr=mycst, _geomap=GeomapStrategyType::GEOMAP_OPT).evaluate()( 0, 0 );
-        value_type v0z = integrate( _range=elements( mesh ), _expr=mycst, _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate()( 0, 0 );
-        BOOST_TEST_MESSAGE( "v0=" << v0 << "\n" );
-        value_type v00 = ( integrate( _range=boundaryelements( mesh ), _expr=mycst, _quad=_Q<10>() ).evaluate()( 0, 0 )+
-                           integrate( _range=internalelements( mesh ), _expr=mycst, _quad=_Q<10>() ).evaluate()( 0, 0 ) );
-        BOOST_TEST_MESSAGE( "v00=" << v00 << "\n" );
-
-        BOOST_TEST_MESSAGE( "[circle] v0 0 = " << integrate( boundaryfaces( mesh ),  N(), _Q<4>() ).evaluate() << "\n" );
-        BOOST_TEST_MESSAGE( "[circle] v0 1 = " << integrate( boundaryfaces( mesh ),  vec( idf( f_Nx() ), idf( f_Ny() ) ), _Q<4>() ).evaluate() << "\n" );
-        BOOST_TEST_MESSAGE( "[circle] v0 2 = " << integrate( boundaryfaces( mesh ),
-                            trans( vec( constant( 1 ),Ny() ) )*one(), _Q<4>() ).evaluate() << "\n" );
-
-        BOOST_TEST_MESSAGE( "[circle] v0 3 = " << integrate( boundaryfaces( mesh ),
-                            mat<2,2>( Nx(),constant( 1 ),constant( 1 ),Ny() )*vec( constant( 1 ),constant( 1 ) ), _Q<4>() ).evaluate() << "\n" );
-        BOOST_TEST_MESSAGE( "[circle] v0 4 (==v0 3) = " << integrate( boundaryfaces( mesh ),
-                            mat<2,2>( idf( f_Nx() ),constant( 1 ),
-                                      constant( 1 ),idf( f_Ny() ) )*vec( constant( 1 ),constant( 1 ) ), _Q<4>() ).evaluate() << "\n" );
-        value_type pi = M_PI;//4.0*math::atan(1.0);
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
-#if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( v0, pi, 2e-1 );
-        BOOST_CHECK_CLOSE( v0x, pi, 2e-1 );
-        BOOST_CHECK_CLOSE( v0y, pi, 2e-1 );
-        BOOST_CHECK_CLOSE( v0z, pi, 2e-1 );
-        BOOST_CHECK_CLOSE( v0, v00, eps  );
-        BOOST_CHECK_CLOSE( v00, pi, eps  );
-#else
-        FEELPP_ASSERT( math::abs( v0-pi ) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi ) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
-        FEELPP_ASSERT( math::abs( v0-v00 ) < eps )( v0 )( v00 )( math::abs( v0-v00 ) )( eps ).warn ( "v0 != pi" );
-#endif /* USE_BOOST_TEST */
+        double v0 = integrate( _range=boundaryfaces( mesh ), _expr=trans( P() )*N(), _verbose=true, _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate()( 0, 0 );
+        double v00 = integrate( _range=elements( mesh ), _expr=cst(2.0), _verbose=true, _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate()( 0, 0 );
 
-        auto v1 = integrate( elements( mesh ), Px()*Px()+Py()*Py(), _Q<2>() ).evaluate()( 0, 0 );
-#if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( v1, pi/2, 2e-1 );
-        BOOST_CHECK_CLOSE( v1, v0/2, 2e-1 );
-#endif
-
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
-        auto u = Xh->element();
-
-        u = project( Xh, elements( mesh ), constant( 1.0 ) );
-        v0 = integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 );
-#if defined(USE_BOOST_TEST)
-        BOOST_TEST_MESSAGE( "[circle] v0(~pi)=" << v0 << " pi=" << pi << " should be equal \n" );
-        BOOST_CHECK_CLOSE( v0, pi, 2e-1 );
-#else
-        FEELPP_ASSERT( math::abs( v0-pi ) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi ) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
-#endif /* USE_BOOST_TEST */
-
-        u = project( Xh, elements( mesh ), Px()*Px()+Py()*Py() );
-        v0 = integrate( elements( mesh ), idv( u ), _Q<2>() ).evaluate()( 0, 0 );
-#if defined(USE_BOOST_TEST)
-        BOOST_TEST_MESSAGE( "[circle] v0(~pi/2)=" << v0 << " pi/2=" << pi/2 << " should be equal \n" );
-        BOOST_CHECK_CLOSE( v0, pi/2, 2e-1 );
-#endif /* USE_BOOST_TEST */
-
-
-        boost::shared_ptr<vector_space_type> Xvh( new vector_space_type( mesh ) );
-        auto U = Xvh->element();
-
-        U = project( Xvh, elements( mesh ), vec( constant( 1.0 ),constant( 1.0 ) ) );
-        v0 = integrate( boundaryfaces( mesh ), trans( idv( U ) )*N() ).evaluate()( 0, 0 );
-        v00 = integrate( elements( mesh ), divv( U ) ).evaluate()( 0, 0 );
-
-        BOOST_TEST_MESSAGE( "[circle] v0=" << v0 << " v00=" << v00 << " should be equal thanks to gauss int 1.N() != int div 1\n" );
-#if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v0, eps );
-        BOOST_CHECK_SMALL( v00, eps );
-#else
-        FEELPP_ASSERT( math::abs( v0-v00 ) < eps )( v0 )( v00 )( math::abs( v0-v00 ) ).warn ( "int 1.N() != int div 1" );
-#endif /* USE_BOOST_TEST */
-
-        U = project( Xvh, elements( mesh ), vec( Px(),Py() ) );
-        v0 = integrate( boundaryfaces( mesh ), trans( idv( U ) )*N() ).evaluate()( 0, 0 );
-        v00 = integrate( elements( mesh ), divv( U ) ).evaluate()( 0, 0 );
-
-        BOOST_TEST_MESSAGE( "[circle] v0=" << v0 << " v00=" << v00 << " should be equal thanks to gauss int (x,y).N() != int div (x,y)\n" );
+        BOOST_TEST_MESSAGE( "[circle] v0=" << v0 << " v00=" << v00 << " should be equal thanks to gauss int (x,y).N() != int div (x,y), order: " << mesh_type::nOrder << "\n" );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v0, v00, eps );
 #else
@@ -312,11 +410,12 @@ struct test_integration_circle: public Application
 #endif /* USE_BOOST_TEST */
 
     }
-    boost::shared_ptr<Feel::Backend<double> > M_backend;
+    std::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
 };
+
 template<typename value_type = double>
 struct test_integration_simplex: public Application
 {
@@ -324,7 +423,7 @@ struct test_integration_simplex: public Application
     typedef typename imesh<value_type,2>::type mesh_type;
     typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef bases<Lagrange<2, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
@@ -360,7 +459,7 @@ struct test_integration_simplex: public Application
 
         typedef bases<Lagrange<3, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        auto Xh = space_type::New(_mesh=mesh);
         typename space_type::element_type u( Xh );
 
         value_type meas = integrate( elements( mesh ), constant( 1.0 ) ).evaluate()( 0, 0 );
@@ -372,7 +471,7 @@ struct test_integration_simplex: public Application
 #endif /* USE_BOOST_TEST */
 
         auto in1 = integrate( boundaryfaces( mesh ), N() ).evaluate();
-        auto in2 = integrate( boundaryfaces( mesh ), vec( idf( f_Nx() ), idf( f_Ny() ) ), _Q<2>() ).evaluate();
+        auto in2 = integrate( boundaryfaces( mesh ), vec( idf( f_Nx() ), idf( f_Ny() ) ), _Q<2>(2) ).evaluate();
 #if defined( USE_BOOST_TEST )
         BOOST_CHECK_CLOSE( in1( 0,0 ), in2( 0,0 ), eps );
         BOOST_CHECK_CLOSE( in1( 1,0 ), in2( 1,0 ), eps );
@@ -451,18 +550,18 @@ struct test_integration_simplex: public Application
 
         typedef bases<Lagrange<3, Vectorial> > v_basis_type;
         typedef FunctionSpace<mesh_type, v_basis_type, value_type> v_space_type;
-        boost::shared_ptr<v_space_type> Yh( new v_space_type( mesh ) );
+        auto Yh = v_space_type::New( _mesh=mesh );
         typename v_space_type::element_type v( Yh );
 
         auto p2 = Px()*Px()*Py()+Py()*Py()+cos( Px() );
         v = project( Yh, elements( mesh ), vec( p2,p2 ) );
-        double divp2 = integrate( elements( mesh ), divv( v ), _Q<2>() ).evaluate()( 0, 0 );
-        double unp2 = integrate( boundaryfaces( mesh ), trans( idv( v ) )*N(), _Q<2>() ).evaluate()( 0, 0 );
+        double divp2 = integrate( elements( mesh ), divv( v ), _Q<2>(2) ).evaluate()( 0, 0 );
+        double unp2 = integrate( boundaryfaces( mesh ), trans( idv( v ) )*N(), _Q<2>(2) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST )
         BOOST_CHECK_CLOSE( divp2, unp2, eps );
 #endif
     }
-    boost::shared_ptr<Feel::Backend<double> > M_backend;
+    std::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -474,7 +573,7 @@ struct test_integration_domain: public Application
     typedef typename imesh<value_type,2>::type mesh_type;
     typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef bases<Lagrange<2, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
@@ -548,11 +647,11 @@ struct test_integration_domain: public Application
 
 
         // int ([-1,1],[-1,1]) abs(x) dx
-        value_type vsin = integrate( elements( mesh ), sin( Px() ), _Q<5>() ).evaluate()( 0, 0 );
-        value_type vsin1 = integrate( elements( mesh ), idf( f_sinPx() ), _Q<5>() ).evaluate()( 0, 0 );
+        value_type vsin = integrate( elements( mesh ), sin( Px() ), _Q<5>(5) ).evaluate()( 0, 0 );
+        value_type vsin1 = integrate( elements( mesh ), idf( f_sinPx() ), _Q<5>(5) ).evaluate()( 0, 0 );
         std::cout << vsin << " " << vsin1 << " [f_sinPx()] " << std::flush;
 #if 0
-        value_type vmatheval = integrate( elements( mesh ), idf( f_matheval() ), _Q<5>() ).evaluate()( 0, 0 );
+        value_type vmatheval = integrate( elements( mesh ), idf( f_matheval() ), _Q<5>(5) ).evaluate()( 0, 0 );
         std::cout << vmatheval << " [matheval]\n";
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( vsin- 2*( -math::cos( 1.0 )+math::cos( -1.0 ) ), eps );
@@ -567,7 +666,7 @@ struct test_integration_domain: public Application
 #endif /* USE_BOOST_TEST */
 #endif
         // int ([-1,1],[-1,1]) abs(x) dx
-        value_type vabs = integrate( elements( mesh ), abs( Px() )+abs( Py() ), _Q<5>() ).evaluate()( 0, 0 );
+        value_type vabs = integrate( elements( mesh ), abs( Px() )+abs( Py() ), _Q<5>(5) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( vabs, 4.0, 1e-2 );
 #else
@@ -585,7 +684,7 @@ struct test_integration_domain: public Application
 #endif /* USE_BOOST_TEST */
 
     }
-    boost::shared_ptr<Feel::Backend<double> > M_backend;
+    std::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -598,7 +697,7 @@ struct test_integration_boundary: public Application
     typedef typename imesh<value_type,2>::type mesh_type;
     typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef bases<Lagrange<2, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
@@ -663,7 +762,7 @@ struct test_integration_boundary: public Application
 #endif /* USE_BOOST_TEST */
 
         // int_20 exp(Py) dx
-        value_type v6 = integrate( markedfaces( mesh,"Dirichlet" ), exp( Py() ), _Q<5>() ).evaluate()( 0, 0 );
+        value_type v6 = integrate( markedfaces( mesh,"Dirichlet" ), exp( Py() ), _Q<5>(5) ).evaluate()( 0, 0 );
         value_type v6_ex = 2.0*( math::exp( 1.0 )-math::exp( -1.0 ) );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v6, v6_ex, eps );
@@ -673,7 +772,7 @@ struct test_integration_boundary: public Application
 
 
     }
-    boost::shared_ptr<Feel::Backend<double> > M_backend;
+    std::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -686,7 +785,7 @@ struct test_integration_functions: public Application
     typedef typename imesh<value_type,2>::type mesh_type;
     typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<Order, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef bases<Lagrange<Order, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
@@ -700,14 +799,15 @@ struct test_integration_functions: public Application
         mesh()
     {
         mesh = createGMSHMesh( _mesh=new mesh_type,
-                               _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % 2 ).str() ,
+                               _desc=domain( _name=( boost::format( "test_integration_functions_%1%-%2%-%3%" ) % shape % 2 % convex_type::type() ).str() ,
                                              _usenames=true,
-                                             _convex=( convex_type::is_hypercube )?"Hypercube":"Simplex",
+                                             _convex=convex_type::type(),
                                              _shape=shape,
                                              _dim=2,
+                                             _order=convex_type::nOrder,
                                              _xmin=-1.,_ymin=-1.,
-                                             _h=meshSize ),
-                               _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+                                             _h=meshSize ) );
+                               
     }
     void operator()()
     {
@@ -716,7 +816,7 @@ struct test_integration_functions: public Application
 
         const value_type eps = 1e-9;
 
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        auto Xh = space_type::New(_mesh=mesh);
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
@@ -751,7 +851,7 @@ struct test_integration_functions: public Application
 #endif /* USE_BOOST_TEST */
 
         u = project( Xh, elements( mesh ), exp( Px() )*exp( Py() ) );
-        value_type v4 = integrate( elements( mesh ), idv( u ), _Q<2>() ).evaluate()( 0, 0 );
+        value_type v4 = integrate( elements( mesh ), idv( u ), _Q<2>(2) ).evaluate()( 0, 0 );
         value_type v4_ex = ( math::exp( 1.0 )-math::exp( -1.0 ) )*( math::exp( 1.0 )-math::exp( -1.0 ) );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v4, v4_ex, std::pow( 10.0,-2.0*Order ) );
@@ -781,7 +881,7 @@ struct test_integration_functions: public Application
         ( math::abs( v4_y-v4_ex ) )( std::pow( 10.0,-2.0*Order ) ).warn ( "v4_y != v4_ex" );
 #endif /* USE_BOOST_TEST */
 
-        value_type v5 = integrate( markedfaces( mesh,"Neumann" ), idv( u ), _Q<2>() ).evaluate()( 0, 0 );
+        value_type v5 = integrate( markedfaces( mesh,"Neumann" ), idv( u ), _Q<2>(2) ).evaluate()( 0, 0 );
         value_type v5_ex = ( math::exp( 1.0 )-math::exp( -1.0 ) )*( math::exp( 1.0 )+math::exp( -1.0 ) );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v5, v5_ex, std::pow( 10.0,-2.0*Order ) );
@@ -826,7 +926,7 @@ struct test_integration_functions: public Application
 #endif /* USE_BOOST_TEST */
 #endif
     }
-    boost::shared_ptr<Feel::Backend<double> > M_backend;
+    std::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -839,7 +939,7 @@ struct test_integration_vectorial_functions: public Application
     typedef typename imesh<value_type,2>::type mesh_type;
     typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<Order, Vectorial> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     test_integration_vectorial_functions()
@@ -867,7 +967,7 @@ struct test_integration_vectorial_functions: public Application
 
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        auto Xh = space_type::New(_mesh=mesh);
         typename space_type::element_type u( Xh );
 
         u = project( Xh, elements( mesh ), P() );
@@ -931,7 +1031,7 @@ struct test_integration_vectorial_functions: public Application
         BOOST_CHECK_SMALL( int_ut, eps );
 #endif
     }
-    boost::shared_ptr<Feel::Backend<double> > M_backend;
+    std::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -1037,7 +1137,7 @@ struct test_integration_composite_functions: public Application
 
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        auto Xh = space_type::New(_mesh=mesh);
         element_type u( Xh );
 
         u.template element<0>() = project( _space=Xh->template functionSpace<0>(), _range=elements( mesh ), _expr=P() );
@@ -1147,7 +1247,7 @@ struct test_integration_composite_functions: public Application
         BOOST_CHECK_CLOSE( vf,vv1+vv2+vv3, eps );
 #endif
     }
-    boost::shared_ptr<Feel::Backend<double> > M_backend;
+    std::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -1189,7 +1289,11 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( integration )
 
-#if 1
+BOOST_AUTO_TEST_CASE( t0 )
+{
+    Feel::test_integration_circle2<double> t;
+    t();
+}
 BOOST_AUTO_TEST_CASE( test_integration_1 )
 {
     BOOST_TEST_MESSAGE( "Test integration Circle" );
@@ -1262,30 +1366,20 @@ BOOST_AUTO_TEST_CASE( test_integration_8 )
     BOOST_TEST_MESSAGE( "test_integration_8" );
     Feel::test_integration_matricial_functions<2,double> t;
     t();
-
 }
-#else
-BOOST_AUTO_TEST_CASE( test_integration_3 )
+
+BOOST_AUTO_TEST_CASE( test_integration_9 )
 {
-    BOOST_TEST_MESSAGE( "test_integration_3" );
-    Feel::test_integration_boundary<double> t;
-    t();
+    BOOST_TEST_MESSAGE( "test_integration_9" );
+    using namespace Feel;
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2,1>>);
+    double int1 = integrate(_range=elements(mesh),_expr=cst(1.),_quad=50).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( int1, mesh->measure(), 1e-8 );
 }
 
-#endif
+
 BOOST_AUTO_TEST_SUITE_END()
 
-#if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_integration.assert" );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}
-#endif
 
 #else
 int

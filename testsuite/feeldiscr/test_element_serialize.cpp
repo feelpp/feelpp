@@ -27,7 +27,7 @@
 */
 
 #define BOOST_TEST_MODULE test_element_serialize
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <fstream>
 
@@ -100,7 +100,7 @@ public:
     typedef double value_type;
     typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef bases<Lagrange<Order,Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef typename space_type::element_type element_type;
@@ -376,7 +376,7 @@ TestElementSerialize<Dim>::setRebuildDatabase( bool b )
  * main code
  */
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( element_serialize )
 

@@ -26,36 +26,19 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-09-12
  */
-#define USE_BOOST_TEST 1
 
 // give a name to the testsuite
 #define BOOST_TEST_MODULE simget testsuite
-
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
-#endif
-
-#include <boost/timer.hpp>
-
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/application.hpp>
 #include <feel/options.hpp>
 
-#define FEELAPP()                                                       \
-    Feel::Application app;                                              \
-    if ( app.vm().count( "help" ) )                                     \
-    {                                                                   \
-        std::cout << app.optionsDescription() << "\n";                  \
-    }
 
+using namespace Feel;
 
-
-namespace Feel
+namespace test_simget
 {
 inline
 po::options_description
@@ -65,7 +48,7 @@ makeOptions()
     simgetoptions.add_options()
     ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
     ;
-    return simgetoptions.add( Feel::feel_options() );
+    return simgetoptions;
 }
 
 
@@ -94,7 +77,7 @@ public:
     sim()
         :
         Simget(),
-        meshSize( this->vm()["hsize"].as<double>() )
+        meshSize( doption(_name="hsize") )
     {
     }
     void run() {}
@@ -102,25 +85,20 @@ public:
 private:
     double meshSize;
 };
-} // Feel
+} // test_simget
 
 BOOST_AUTO_TEST_SUITE( simget )
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_simget::makeAbout(), test_simget::makeOptions() )
+
 BOOST_AUTO_TEST_CASE( test_sim1 )
 {
-    using namespace Feel;
-    Feel::Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
-                           _argv=boost::unit_test::framework::master_test_suite().argv,
-                           _desc=makeOptions(), _about=makeAbout() );
-
     BOOST_TEST_MESSAGE( "test_sim1" );
     BOOST_CHECK( Feel::Environment::initialized() );
-    BOOST_CHECK( Feel::mpi::environment::initialized() );
-    FEELAPP();
-    app.add( new Feel::sim );
+    Feel::Application app;
+    app.add( new test_simget::sim );
     app.run();
     BOOST_TEST_MESSAGE( "test_sim1 done" );
-
 }
 
 BOOST_AUTO_TEST_SUITE_END()

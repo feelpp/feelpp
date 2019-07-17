@@ -1,0 +1,55 @@
+// -*- mode: c++ -*-
+#ifndef FEELPP_FEELINFO_H
+#define FEELPP_FEELINFO_H 1
+
+/* buildid */
+#cmakedefine01 FEELPP_BUILDID @FEELPP_BUILDID@ //
+
+/* revision */
+#cmakedefine01 FEELPP_REVISION @FEELPP_REVISION@ //
+
+/* full blown version */
+#cmakedefine FEELPP_VERSION @FEELPP_VERSION@
+
+/* metadata version information: git ... */
+#cmakedefine01 FEELPP_VERSION_METADATA @FEELPP_VERSION_METADATA@ //
+
+/* prerelease version information: -alpha.1, -beta.1 -rc.1, ... */
+#cmakedefine01 FEELPP_VERSION_PRERELEASE @FEELPP_VERSION_PRERELEASE@ //
+
+/* major version number */
+#cmakedefine01 FEELPP_VERSION_MAJOR @FEELPP_VERSION_MAJOR@ //
+
+/* micro version number */
+#cmakedefine01 FEELPP_VERSION_MICRO @FEELPP_VERSION_MICRO@ //
+
+/* minor version number */
+#cmakedefine01 FEELPP_VERSION_MINOR @FEELPP_VERSION_MINOR@ //
+
+/* Feel version string */
+#cmakedefine FEELPP_VERSION_STRING @FEELPP_VERSION_STRING@
+
+/* the cmake install prefix */
+#cmakedefine INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@
+
+/* define prefix dir for feel installation */
+#cmakedefine FEELPP_PREFIX @FEELPP_PREFIX@
+
+/* define prefix dir for feel installation */
+#cmakedefine FEELPP_INSTALL_DIR @FEELPP_INSTALL_DIR@
+
+/* define lib dir for feel installation */
+#cmakedefine FEELPP_LIBDIR @FEELPP_LIBDIR@
+
+/* define data dir for feel installation */
+#cmakedefine FEELPP_DATADIR @FEELPP_DATADIR@
+
+/* define dir for source */
+#cmakedefine FEELPP_SOURCE_DIR @FEELPP_SOURCE_DIR@
+
+/* define dir for build */
+#cmakedefine FEELPP_BUILD_DIR @FEELPP_BUILD_DIR@
+
+#cmakedefine FEELPP_ENABLED_PROJECTS "@FEELPP_ENABLED_PROJECTS@"
+
+#endif

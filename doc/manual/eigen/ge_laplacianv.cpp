@@ -25,19 +25,19 @@ public Simget
 public:
     typedef double value_type;
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::vector_type vector_type;
     typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 #if defined(USE_LM)
     typedef bases<Lagrange<Order,Vectorial>,Lagrange<Order-1,Scalar>,Lagrange<0,Scalar,Continuous> > basis_type;
 #else
     typedef bases<Lagrange<Order,Vectorial>,Lagrange<Order-1,Scalar> > basis_type;
 #endif
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef Exporter<mesh_type> export_type;
 

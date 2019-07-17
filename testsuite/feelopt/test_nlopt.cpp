@@ -22,17 +22,16 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file test_nlopt.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2014-07-15
+ \file test_nlopt.cpp
+ \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ \author Vincent Chabannes <vincent.chabannes@feelpp.org>
+ \date 2014-07-15
  */
-#include <iostream>
 
-#include <feel/feelconfig.h>
+#define BOOST_TEST_MODULE nlopt
+#include <feel/feelcore/testsuite.hpp>
 
-#if defined( FEELPP_HAS_NLOPT )
-
-#include <nlopt.hpp>
+#include <feel/feelopt/nlopt.hpp>
 
 double myfunc(unsigned n, const double *x, double *grad, void *my_func_data)
 {
@@ -42,6 +41,7 @@ double myfunc(unsigned n, const double *x, double *grad, void *my_func_data)
     }
     return std::sqrt(x[1]);
 }
+
 typedef struct {
     double a, b;
 } my_constraint_data;
@@ -57,14 +57,13 @@ double myconstraint(unsigned n, const double *x, double *grad, void *data)
     return ((a*x[0] + b) * (a*x[0] + b) * (a*x[0] + b) - x[1]);
  }
 
-int main(int argc, char** argv)
+void runNLOptTest1()
 {
     nlopt::opt opt(nlopt::LD_MMA, 2);
 
     std::vector<double> lb(2);
     lb[0] = -HUGE_VAL; lb[1] = 0;
     opt.set_lower_bounds(lb);
-
     opt.set_min_objective(myfunc, NULL);
 
     my_constraint_data data[2] = { {2,0}, {-1,1} };
@@ -85,4 +84,68 @@ int main(int argc, char** argv)
         std::cout << "found minimum at f(" << x[0] << "," << x[1] << ") = " << minf << "\n";
     }
 }
-#endif
+
+void runNLOptTest2()
+{
+    using namespace Feel;
+    opt::OptimizationNonLinear opt(nlopt::LD_MMA, 2);
+    std::vector<double> lb(2);
+    lb[0] = -HUGE_VAL; lb[1] = 0;
+    opt.set_lower_bounds(lb);
+
+    auto mylambdafunc = [&]( unsigned n, const double* x, double* grad, void *my_func_data )->double
+        {
+            if (grad) {
+                grad[0] = 0.0;
+                grad[1] = 0.5 / std::sqrt(x[1]);
+            }
+            return std::sqrt(x[1]);
+        };
+    opt.set_min_objective(mylambdafunc, NULL);
+
+    auto mylambdaconstraint = [&] (unsigned n, const double *x, double *grad, void *data)->double
+        {
+            my_constraint_data *d = (my_constraint_data *) data;
+            double a = d->a, b = d->b;
+            if (grad) {
+                grad[0] = 3 * a * (a*x[0] + b) * (a*x[0] + b);
+                grad[1] = -1.0;
+            }
+            return ((a*x[0] + b) * (a*x[0] + b) * (a*x[0] + b) - x[1]);
+        };
+
+    my_constraint_data data[2] = { {2,0}, {-1,1} };
+    opt.add_inequality_constraint(mylambdaconstraint, &data[0], 1e-8);
+    opt.add_inequality_constraint(mylambdaconstraint, &data[1], 1e-8);
+
+    opt.set_xtol_rel(1e-4);
+
+    std::vector<double> x(2);
+    x[0] = 1.234; x[1] = 5.678;
+    double minf;
+
+    nlopt::result result = opt.optimize(x, minf);
+
+    BOOST_CHECK( !(result < 0) );
+    if (result < 0) {
+        std::cout << "nlopt failed!\n";
+    }
+    else {
+        std::cout << "found minimum at f(" << x[0] << "," << x[1] << ") = " << minf << "\n";
+    }
+}
+
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_SUITE( nlopt )
+
+BOOST_AUTO_TEST_CASE( nlopt_test1 )
+{
+    runNLOptTest1();
+}
+BOOST_AUTO_TEST_CASE( nlopt_test2 )
+{
+    runNLOptTest2();
+}
+BOOST_AUTO_TEST_SUITE_END()

@@ -20,20 +20,19 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#define USE_BOOST_TEST 1
-#if defined(USE_BOOST_TEST)
-#define BOOST_TEST_MODULE test_laplacianv
-#include <testsuite/testsuite.hpp>
-#endif
+#define BOOST_TEST_MODULE test_laplacian
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelts/bdf.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/thch.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/operations.hpp>
@@ -41,6 +40,7 @@
 #include <feel/feelvf/norm2.hpp>
 #include <feel/feelvf/on.hpp>
 #include <feel/feelvf/matvec.hpp>
+
 
 /** use Feel namespace */
 using namespace Feel;
@@ -74,7 +74,7 @@ makeAbout()
 
 }
 
-template<int Dim>
+template<int Dim, int O = 1, template<uint16_type,uint16_type,uint16_type> class C = Simplex>
 class Test:
     public Simget
 {
@@ -82,11 +82,11 @@ public :
 
     void run()
     {
-        auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim,1>>,
-                                    _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,
-                                                  _dim=Dim ) );
+        auto mesh = createGMSHMesh( _mesh=new Mesh<C<Dim,O,Dim>>,
+                                    _desc=domain( _name=( boost::format( "%1%-%2%-%3%-%4%" ) % soption(_name="gmsh.domain.shape") % Dim % O  % C<Dim,O,Dim>::type() ).str() ,
+                                                  _dim=Dim, _order=O, _convex=C<Dim,O,Dim>::type()  ) );
 
-        auto Xh = Pch<2>( mesh );
+        auto Xh = Pch<3>( mesh );
         auto u = Xh->element();
         auto v = Xh->element();
 
@@ -95,26 +95,20 @@ public :
         u.on(_range=elements(mesh), _expr=expr( g ));
 
         boost::mpi::timer ti;
-        if ( Environment::rank() == 0 )
-            BOOST_TEST_MESSAGE( "Check integral" );
+        if ( Environment::isMasterRank()  )
+            BOOST_TEST_MESSAGE( "Check integral with mesh dim " << Dim << " order " << O << " convex " << (C<Dim,O,Dim>::type()) );
 
         ti.restart();
-        auto a = integrate( _range= elements( mesh ), _expr=laplacianv(u) ).evaluate();
-
+        auto c = normL2( _range=elements(mesh), _expr=laplacianv(u)-lapg, _quad=_Q<4>() );
         if ( Environment::rank() == 0 )
-            BOOST_TEST_MESSAGE( "[time int laplacian(u)=" << ti.elapsed() << "s] a=" << a );
+            BOOST_TEST_MESSAGE( "  . [time normL2 laplacianv(u)-" << lapg <<" =" << ti.elapsed() << "s] c=" <<  c );
 
-        ti.restart();
-        auto b = integrate( _range= elements( mesh ), _expr= lapg ).evaluate();
-
-        if ( Environment::rank() == 0 )
-            BOOST_TEST_MESSAGE( "[time int " << lapg <<" =" << ti.elapsed() << "s] b=" <<  b );
-        BOOST_CHECK_SMALL( (a-b).norm(), 1e-10 );
+        BOOST_CHECK_SMALL( c, 1e-9 );
     }
 };
 
 
-template<int Dim>
+template<int Dim, int O = 1, template<uint16_type,uint16_type,uint16_type> class C = Simplex>
 class TestV:
     public Simget
 {
@@ -122,9 +116,9 @@ public :
 
     void run()
     {
-        auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim,1>>,
-                                    _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,
-                                                  _dim=Dim ) );
+        auto mesh = createGMSHMesh( _mesh=new Mesh<C<Dim,O,Dim>>,
+                                    _desc=domain( _name=( boost::format( "%1%-%2%-%3%-%4%" ) % soption(_name="gmsh.domain.shape") % Dim % O % C<Dim,O,Dim>::type() ).str() ,
+                                                  _dim=Dim, _order=O, _convex=(C<Dim,O,Dim>::type() )) );
 
         auto Xh = Pchv<2>( mesh );
         auto u = Xh->element();
@@ -136,60 +130,117 @@ public :
 
         boost::mpi::timer ti;
         if ( Environment::rank() == 0 )
-            BOOST_TEST_MESSAGE( "Check integral" );
+            BOOST_TEST_MESSAGE( "Check integral mesh dim " << Dim << " order " << O << " convex " << (C<Dim,O,Dim>::type())  );
 
         ti.restart();
-        auto a = integrate( _range= elements( mesh ), _expr=laplacianv(u) ).evaluate();
+        auto c = normL2( _range=elements(mesh), _expr=laplacianv(u)-lapg );
 
         if ( Environment::rank() == 0 )
-            BOOST_TEST_MESSAGE( "[time int laplacian(" << g << ")=" << ti.elapsed() << "s] a=" << a );
+            BOOST_TEST_MESSAGE( "  . [time normL2 laplacianv(u)-" << lapg <<" =" << ti.elapsed() << "s] c=" <<  c );
 
-        ti.restart();
-        auto b = integrate( _range= elements( mesh ), _expr= lapg ).evaluate();
-
-        if ( Environment::rank() == 0 )
-            BOOST_TEST_MESSAGE( "[time int " << lapg <<" =" << ti.elapsed() << "s] b=" <<  b );
-        BOOST_CHECK_SMALL( (a-b).norm(), 1e-10 );
+        BOOST_CHECK_SMALL( c, 1e-9 );
     }
 };
 
 
-#if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( inner_suite )
 
-
-BOOST_AUTO_TEST_CASE( test_21 )
+#if 1
+BOOST_AUTO_TEST_CASE( test_21_s )
 {
-    Test<2> test;
+    Test<2,1> test;
     test.run();
+    BOOST_TEST_MESSAGE( "test_21" << tc::green << " OK" << tc::reset);
 }
 
-BOOST_AUTO_TEST_CASE( test_22 )
+BOOST_AUTO_TEST_CASE( test_22_s )
 {
-    TestV<2> test;
+    Test<2,2> test;
     test.run();
+    BOOST_TEST_MESSAGE( "test_22_s" << tc::green << " OK" << tc::reset);
 }
 
-BOOST_AUTO_TEST_CASE( test_31 )
+BOOST_AUTO_TEST_CASE( test_31_s )
 {
-    Test<3> test;
+    Test<3,1> test;
     test.run();
+    BOOST_TEST_MESSAGE( "test_31_s" << tc::green << " OK" << tc::reset);
 }
 
-BOOST_AUTO_TEST_CASE( test_33 )
+BOOST_AUTO_TEST_CASE( test_21_h )
 {
-    TestV<3> test;
+    Test<2,1,Hypercube> test;
     test.run();
+    BOOST_TEST_MESSAGE( "test_21_h" << tc::green << " OK" << tc::reset);
 }
 
-BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_CASE( test_22_h )
+{
+    Test<2,2,Hypercube> test;
+    test.run();
+    BOOST_TEST_MESSAGE( "test_22_h" << tc::green << " OK" << tc::reset);
+}
+
+BOOST_AUTO_TEST_CASE( test_31_h )
+{
+    Test<3,1,Hypercube> test;
+    test.run();
+    BOOST_TEST_MESSAGE( "test_31_h" << tc::green << " OK" << tc::reset);
+}
+
+
+// Vectorial
+
+BOOST_AUTO_TEST_CASE( testv_21_s )
+{
+    TestV<2,1> testv;
+    testv.run();
+    BOOST_TEST_MESSAGE( "testv_21" << tc::green << " OK" << tc::reset);
+}
+
+BOOST_AUTO_TEST_CASE( testv_22_s )
+{
+    TestV<2,2> testv;
+    testv.run();
+    BOOST_TEST_MESSAGE( "testv_22_s" << tc::green << " OK" << tc::reset);
+}
+
+BOOST_AUTO_TEST_CASE( testv_31_s )
+{
+    TestV<3,1> testv;
+    testv.run();
+    BOOST_TEST_MESSAGE( "testv_31_s" << tc::green << " OK" << tc::reset);
+}
+
+BOOST_AUTO_TEST_CASE( testv_21_h )
+{
+    TestV<2,1,Hypercube> testv;
+    testv.run();
+    BOOST_TEST_MESSAGE( "testv_21_h" << tc::green << " OK" << tc::reset);
+}
+
+BOOST_AUTO_TEST_CASE( testv_22_h )
+{
+    TestV<2,2,Hypercube> testv;
+    testv.run();
+    BOOST_TEST_MESSAGE( "testv_22_h" << tc::green << " OK" << tc::reset);
+}
+
+BOOST_AUTO_TEST_CASE( testv_31_h )
+{
+    TestV<3,1,Hypercube> testv;
+    testv.run();
+    BOOST_TEST_MESSAGE( "testv_31_h" << tc::green << " OK" << tc::reset);
+}
+
+
 #else
-int main(int argc, char** argv )
+BOOST_AUTO_TEST_CASE( test_21_g2 )
 {
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _desc=feel_options() );
-    Test<2>  test;
+    Test<2,1,Hypercube> test;
     test.run();
 }
+
 #endif
+BOOST_AUTO_TEST_SUITE_END()

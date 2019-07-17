@@ -1,0 +1,82 @@
+{
+    "Name": "HDG-Mixed-Poisson",
+    "ShortName":"MP",
+    "Models": { "equations":"hdg"},
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+	    	"k":"1"
+        }/*,
+        "omega2":
+        {
+            "name":"copper",
+	    	"k":"1"
+        }*/
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+                   "expr":"4*( (x^2+y^2)*sin(x^2+y^2)-cos(x^2+y^2) ):x:y"
+                   //"expr":"0.0"
+                }/*,
+                "omega2":
+                {
+                   "expr":"4*( (x^2+y^2)*sin(x^2+y^2)-cos(x^2+y^2) ):x:y"
+                   //"expr":"0.0"
+                }*/
+            },
+            "Dirichlet":
+	    	{
+	    		"dirichlet1":
+        		{
+                	"expr":"2+sin(x^2+y^2):x:y" 
+                	//"expr":"4.0" 
+               	},
+	    		"dirichlet2":
+        		{
+                	"expr":"2+sin(x^2+y^2):x:y" 
+                	//"expr":"4.0" 
+               	}/*,
+                "interface":
+                {
+                	"expr":"2+sin(x^2+y^2):x:y" 
+                    // "expr":"4.0"
+                }*/
+	    	}
+    	},
+		"Exact solution":
+		{
+	    	"p_exact":
+	    	{
+				"omega":
+				{
+                	"expr":"2+sin(x^2+y^2):x:y" 
+		     		//"expr":"4.0" 
+				}/*,
+				"omega2":
+				{
+		     		//"expr":"4.0" 
+                	"expr":"2+sin(x^2+y^2):x:y" 
+				}*/
+	    	}
+		}
+     },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["potential","flux"]
+        }
+    }
+}
+
+
+
+

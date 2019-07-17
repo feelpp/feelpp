@@ -4,10 +4,20 @@ int main( int argc, char* argv[] )
 {
   using namespace Feel;
 
-  Environment env( _argc=argc, _argv=argv,
-		   _about=about( _name="env",
-				 _author="Feel++ Consortium",
-				 _email="feelpp-devel@feelpp.org") );
+  po::options_description advectionoptions( "advection options" );
+  advectionoptions.add_options()
+      ("epsilon", Feel::po::value<double>()->default_value(0.), "diffusion coefficient")
+      ("mu", Feel::po::value<double>()->default_value(0.), "reaction coefficient")
+      ("betax", Feel::po::value<double>()->default_value(1.), "x advection velocity")
+      ("betay", Feel::po::value<double>()->default_value(0.), "y advection velocity")
+      ;
+
+  Environment env( 
+          _argc=argc, _argv=argv,
+          _desc=advectionoptions,
+          _about=about( _name="feelpp_advection",
+              _author="Feel++ Consortium",
+              _email="feelpp-devel@feelpp.org") );
   // create mesh
   auto mesh = unitSquare();
   // function space
@@ -17,7 +27,7 @@ int main( int argc, char* argv[] )
   // diffusion coeff.
   double epsilon = doption(_name="epsilon");
   // reaction coeff.
-  double mu = doption(_name="epsilon");
+  double mu = doption(_name="mu");
   auto beta = vec( cst(doption(_name="betax")),
 		   cst(doption(_name="betay")) );
   auto f = cst(1.);

@@ -1,0 +1,43 @@
+{
+    "velocity":
+    {
+        
+        "Dirichlet":
+        {
+            "inlet":
+            {
+                "expr":"{0,0,(1-exp(-7*t))*0.09255063132*(1-4*(x*x+y*y)/(0.012*0.012))}:x:y:z:t"
+            },
+            "wall":
+            {
+                "expr":"{0,0,0}"
+            }
+        },
+        "Neumann":
+        {
+            "outlet":
+            {}
+        }
+    },
+    "increment":
+    {
+        "Dirichlet":
+        {
+            "inlet":
+            {
+                "expr":"{0,0,0}"
+            },
+            "wall":
+            {
+                "expr":"{0,0,0}"
+            }
+        },
+        "Neumann":
+        {
+            "outlet":
+            {
+                
+            }
+        }
+    }
+}

@@ -29,7 +29,7 @@
 #define USE_BOOST_TEST 1
 #define BOOST_TEST_MODULE eim testsuite
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <boost/timer.hpp>
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
@@ -65,7 +65,7 @@ makeOptions()
     ( "n-eval", po::value<int>()->default_value( 10 ), "number of evaluations" )
     ( "cvg-study" , po::value<bool>()->default_value( false ), "run a convergence study if true" )
     ;
-    return simgetoptions.add( eimOptions() ).add( Feel::feel_options() );
+    return simgetoptions.add( eimOptions() ).add( crbSEROptions() );
 }
 
 
@@ -89,28 +89,28 @@ makeAbout()
  *
  */
 class EimModel:
-        public boost::enable_shared_from_this<EimModel>
+        public std::enable_shared_from_this<EimModel>
 {
-    typedef boost::enable_shared_from_this<EimModel> super;
+    typedef std::enable_shared_from_this<EimModel> super;
 public:
     typedef Mesh<Simplex<2> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef FunctionSpace<mesh_type,bases<Lagrange<3> > > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef space_type functionspace_type;
     typedef space_ptrtype functionspace_ptrtype;
     typedef space_type::element_type element_type;
 
 
     typedef ParameterSpace<1> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
     typedef parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef parameterspace_type::sampling_type sampling_type;
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
     typedef EIMFunctionBase<space_type, space_type, parameterspace_type> fun_type;
-    typedef boost::shared_ptr<fun_type> fun_ptrtype;
+    typedef std::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
     typedef Eigen::VectorXd vectorN_type;
@@ -218,13 +218,15 @@ public:
 
         }
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const
+    parameterspace_ptrtype const& parameterSpace() const
         {
             return Dmu;
         }
     std::string modelName() const { return std::string("test_eim_model1" );}
+    std::string prefix() const { return ""; }
+    uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
 
-    space_ptrtype functionSpace() { return Xh; }
+    space_ptrtype const& functionSpace() const { return Xh; }
 
     element_type solve( parameter_type const& mu )
         {
@@ -321,26 +323,26 @@ private:
 //model circle
 class EimModelCircle:
     public Simget,
-    public boost::enable_shared_from_this<EimModelCircle>
+    public std::enable_shared_from_this<EimModelCircle>
 {
 public:
     typedef Mesh<Simplex<2> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef FunctionSpace<mesh_type,bases<Lagrange<1> > > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef space_type functionspace_type;
     typedef space_ptrtype functionspace_ptrtype;
     typedef space_type::element_type element_type;
 
     typedef ParameterSpace<4> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
     typedef parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef parameterspace_type::sampling_type sampling_type;
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
     typedef EIMFunctionBase<space_type, space_type, parameterspace_type> fun_type;
-    typedef boost::shared_ptr<fun_type> fun_ptrtype;
+    typedef std::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
     EimModelCircle()
@@ -402,13 +404,16 @@ public:
 
         }
     std::string modelName() const { return std::string("test_eim_model2" );}
+    std::string prefix() const { return ""; }
+    uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
+
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const
+    parameterspace_ptrtype const& parameterSpace() const
     {
         return Dmu;
     }
 
-    space_ptrtype functionSpace() { return Xh; }
+    space_ptrtype const& functionSpace() const { return Xh; }
 
     element_type solve( parameter_type const& mu )
         {
@@ -462,7 +467,7 @@ BOOST_AUTO_TEST_CASE( test_eim1 )
     BOOST_TEST_MESSAGE( "test_eim1 starts..." );
 
 
-    boost::shared_ptr<EimModel> m( new EimModel);
+    std::shared_ptr<EimModel> m( new EimModel);
     m->init();
     m->run();
 
@@ -473,7 +478,7 @@ BOOST_AUTO_TEST_CASE( test_eim2 )
 {
     BOOST_TEST_MESSAGE( "test_eim2 starts..." );
 
-    boost::shared_ptr<EimModelCircle> m( new EimModelCircle );
+    std::shared_ptr<EimModelCircle> m( new EimModelCircle );
     m->init();
     m->run();
 

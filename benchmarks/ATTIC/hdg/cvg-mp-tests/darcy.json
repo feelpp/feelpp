@@ -1,0 +1,13 @@
+{
+    "Name": "HDG-Mixed-Poisson",
+    "ShortName":"MP",
+    "Model":"hdg",
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+            "k":"-1"
+        }
+    }
+}

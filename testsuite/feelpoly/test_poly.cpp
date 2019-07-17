@@ -73,9 +73,9 @@ BOOST_AUTO_TEST_CASE( test_polynomial1D )
     //pts(1,0 ) = 0;
     pts( 0,1 ) = -1;
     pts( 0,2 ) = 1;
-    detail::OrthonormalPolynomialSet<1,1,2,Scalar> ps;
-    Polynomial<detail::OrthonormalPolynomialSet<1,1,2,Scalar>, Scalar> p1 = project( ps, x2(), IM<1,3>() );
-    PolynomialSet<detail::OrthonormalPolynomialSet<1,1,2,Scalar>, Scalar> p( ps );
+    Feel::detail::OrthonormalPolynomialSet<1,1,2,Scalar> ps;
+    Polynomial<Feel::detail::OrthonormalPolynomialSet<1,1,2,Scalar>, Scalar> p1 = project( ps, x2(), IM<1,3>() );
+    PolynomialSet<Feel::detail::OrthonormalPolynomialSet<1,1,2,Scalar>, Scalar> p( ps );
     p.insert( p1.toSet( true ) );
     p.insert( p1.toSet( true ) );
     std::cout << "p=" << p.coeff() << "\n"
@@ -99,9 +99,9 @@ BOOST_AUTO_TEST_CASE( test_polynomial2D )
     pts( 1,2 ) =  1;
     pts( 0,3 ) =  0;
     pts( 1,3 ) =  0;
-    detail::OrthonormalPolynomialSet<2,2,2,Scalar> ps;
-    Polynomial<detail::OrthonormalPolynomialSet<2,2,2,Scalar>, Scalar> p1 = project( ps, x2(), IM<2,3>() );
-    PolynomialSet<detail::OrthonormalPolynomialSet<2,2,2,Scalar>, Scalar> p( ps );
+    Feel::detail::OrthonormalPolynomialSet<2,2,2,Scalar> ps;
+    Polynomial<Feel::detail::OrthonormalPolynomialSet<2,2,2,Scalar>, Scalar> p1 = project( ps, x2(), IM<2,3>() );
+    PolynomialSet<Feel::detail::OrthonormalPolynomialSet<2,2,2,Scalar>, Scalar> p( ps );
     p.insert( p1.toSet( true ) );
     p.insert( p1.toSet( true ) );
     std::cout << "p=" << p.coeff() << "\n"
@@ -163,8 +163,8 @@ BOOST_AUTO_TEST_CASE( test_polynomial3D )
     pts( 0,3 ) =  0;
     pts( 1,3 ) =  0;
     pts( 2,3 ) =  0;
-    detail::OrthonormalPolynomialSet<3,3,3,Scalar> ps;
-    Polynomial<detail::OrthonormalPolynomialSet<3,3,3,Scalar>, Scalar> p = project( ps, x2(), IM<3,5>() );
+    Feel::detail::OrthonormalPolynomialSet<3,3,3,Scalar> ps;
+    Polynomial<Feel::detail::OrthonormalPolynomialSet<3,3,3,Scalar>, Scalar> p = project( ps, x2(), IM<3,5>() );
     std::cout << "p=" << p.toSet().coeff() << "\n"
               << "grad(p)(0)=" << p.toSet().gradient().evaluate( pts ) << "\n";
     std::cout << "hess(p)=" << p.toSet().gradient().gradient().coeff() << "\n"

@@ -27,7 +27,7 @@
 */
 
 #define BOOST_TEST_MODULE test_sub_matrix
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -84,7 +84,7 @@ public:
     static const uint16_type Order = 2;
     typedef double value_type;
     typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef Simplex<Dim,1,Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef bases<Lagrange<Order,Scalar> > basis_type;
@@ -186,7 +186,7 @@ TestSubMatrix<Dim>::run()
 /**
  * main code
  */
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( submatrix )
 BOOST_AUTO_TEST_CASE( SubmatrixCase )
 {

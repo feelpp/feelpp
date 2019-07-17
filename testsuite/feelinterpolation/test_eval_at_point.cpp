@@ -24,11 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define BOOST_TEST_MODULE eval_at_point testsuite
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 
 #include <feel/feelalg/backend.hpp>
+#include <feel/feelcore/serialization.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelfilters/gmsh.hpp>
@@ -40,7 +41,7 @@ using namespace Feel;
 using namespace Feel::vf;
 
 typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
+typedef std::shared_ptr<Application_type> Application_ptrtype;
 
 namespace test_eval_at_point
 {
@@ -67,8 +68,8 @@ void run()
         pt[1] = 0.5;
     if ( DimGeo >= 3 )
         pt[2] = 0.5;
-    auto eval = u(pt)[0];
-
+    auto evaltensor = u(pt)[0];
+    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> eval( evaltensor.data(), evaltensor.dimension(0), evaltensor.dimension(1) );
     if ( DimGeo >= 2 )
     {
         e.setParameterValues( { { "x", 0.5 },{ "y", 0.5 } } );

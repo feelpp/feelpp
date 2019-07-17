@@ -24,7 +24,7 @@
 #define USE_BOOST_TEST 1
 #if USE_BOOST_TEST
 #define BOOST_TEST_MODULE test_integrals
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #endif
 
 #include <feel/feelalg/backend.hpp>

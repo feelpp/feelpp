@@ -1,7 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-*/
 
 #define BOOST_TEST_MODULE test_matching
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -109,7 +109,7 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::about(Feel::_name="test_matching",
 BOOST_AUTO_TEST_SUITE( matching )
 
 typedef Feel::Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
+typedef std::shared_ptr<Application_type> Application_ptrtype;
 
 BOOST_AUTO_TEST_CASE( matching )
 {

@@ -1,0 +1,57 @@
+{
+    "Name": "ShearedSphere3d",
+    "ShortName": "ShearedSphere3d",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
+    "Materials":
+    {
+        "OmegaFluid":
+        {
+            "rho":"1e-5",
+            "mu":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "Left":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Top":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Bottom":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Right":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Front":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Back":
+                {
+                    "expr":"{0,0,0}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["velocity","pressure","density", "viscosity", "pid"]
+        }
+    }
+
+}

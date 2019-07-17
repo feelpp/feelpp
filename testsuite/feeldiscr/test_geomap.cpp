@@ -28,9 +28,10 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-02-07
  */
+#define BOOST_TEST_MODULE geomap testsuite
+#include <feel/feelcore/testsuite.hpp>
+
 #include <feel/feelcore/feel.hpp>
-
-
 #include <feel/feelcore/debug.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/importergmsh.hpp>
@@ -58,11 +59,11 @@ struct TestInterp
     typedef Entity<Dim, 1,Dim> entity_type;
     typedef Reference<entity_type,Dim,1,Dim> ref_entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptr_type;
+    typedef std::shared_ptr<mesh_type> mesh_ptr_type;
 
     typedef typename mesh_type::gm_type gm_type;
     typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN, typename mesh_type::element_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename gm_type::Inverse gic_type;
 public:
     TestInterp()
@@ -83,31 +84,32 @@ public:
         import.setVersion( version );
         M_mesh->accept( import );
 
-        typename mesh_type::element_iterator el_it;
-        typename mesh_type::element_iterator el_en;
-        boost::tie( boost::tuples::ignore, el_it, el_en ) = elements( *M_mesh );
+        auto rangeElement = elements( *M_mesh );
+        auto el_it = boost::get<1>( rangeElement );
+        auto el_en = boost::get<2>( rangeElement );
 
         ref_entity_type refelem;
         typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( M_mesh->gm(),
                 refelem.points() ) );
 
         typename mesh_type::Inverse meshinv( M_mesh );
-
+        using size_type = typename mesh_type::size_type;
         /* initialisation of the mesh::inverse data structure */
         meshinv.addPoints( M_mesh->points() );
         meshinv.distribute();
 
         std::vector<boost::tuple<size_type, uint16_type > > itab;
 
-        boost::tie( boost::tuples::ignore, el_it, el_en ) = elements( *M_mesh );
+        //boost::tie( boost::tuples::ignore, el_it, el_en ) = elements( *M_mesh );
         std::cout << "refelem = " << refelem.points() << "\n";
 
         for ( ; el_it != el_en; ++el_it )
         {
-            gmc_type gmc( M_mesh->gm(), *el_it, __geopc );
-            gic_type gic( M_mesh->gm(), *el_it );
+            auto const& meshElt = boost::unwrap_ref( *el_it );
+            gmc_type gmc( M_mesh->gm(), meshElt, __geopc );
+            gic_type gic( M_mesh->gm(), meshElt );
 
-            meshinv.pointsInConvex( el_it->id(), itab );
+            meshinv.pointsInConvex( meshElt.id(), itab );
 
             for ( int q = 0; q < itab.size(); ++q )
             {
@@ -129,7 +131,7 @@ public:
 
             FEELPP_ASSERT( gic.isIn() )
             ( refelem.points() )( gmc.xReal() )
-            ( el_it->id() ).error( "invalid geometric transformation inversion" );
+            ( meshElt.id() ).error( "invalid geometric transformation inversion" );
         }
 
         VLOG(1) << "testing Interp with file format version " << version << " done\n";
@@ -138,21 +140,15 @@ public:
 private:
     mesh_ptr_type M_mesh;
 };
-int
-main( int argc, char** argv )
+
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_SUITE( test_geomap )
+
+BOOST_AUTO_TEST_CASE( test_geomap )
 {
-    Feel::Environment env( argc,argv);
-
-
-    Feel::Assert::setLog( "assertions.log" );
-    //boost::mpi::environment env( argc, argv );
     TestInterp<2,Simplex> test_interp;
-
-    if ( argc == 2 )
-    {
-        test_interp.test( std::atof( argv[1] ), FEELPP_GMSH_FORMAT_VERSION );
-    }
-
-    else
-        test_interp.test( 2.0, FEELPP_GMSH_FORMAT_VERSION );
+    test_interp.test( doption(_name="gmsh.hsize"), FEELPP_GMSH_FORMAT_VERSION );
 }
+BOOST_AUTO_TEST_SUITE_END()

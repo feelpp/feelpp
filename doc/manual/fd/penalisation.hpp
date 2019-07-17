@@ -62,7 +62,7 @@ class Penalisation : public Application
 	typedef Simplex<Dim,1,Dim> entity_type;
 
 	typedef Mesh<entity_type> mesh_type;
-	typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+	typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
 	// bases
 	typedef Lagrange<VELOCITY_ORDER, Vectorial> basis_veloc_type;
@@ -77,36 +77,36 @@ class Penalisation : public Application
 
 	// space
 	typedef FunctionSpace<mesh_type, basis_type> space_type;
-	typedef boost::shared_ptr<space_type> space_ptrtype;
+	typedef std::shared_ptr<space_type> space_ptrtype;
 	typedef FunctionSpace<mesh_type, basis_carac_type,Discontinuous> space_carac_type;
-	typedef boost::shared_ptr<space_carac_type> space_carac_ptrtype;
+	typedef std::shared_ptr<space_carac_type> space_carac_ptrtype;
 	typedef FunctionSpace<mesh_type, basis_p0_type,Discontinuous> space_p0_type;
-	typedef boost::shared_ptr<space_p0_type> space_p0_ptrtype;
+	typedef std::shared_ptr<space_p0_type> space_p0_ptrtype;
 
 	// elements
 	typedef typename space_type::element_type element_type;
-	typedef boost::shared_ptr<element_type> element_ptrtype;
+	typedef std::shared_ptr<element_type> element_ptrtype;
 	typedef typename element_type::template sub_element<0>::type element_veloc_type;
 	typedef typename element_type::template sub_element<1>::type element_pressure_type;
 	typedef typename element_type::template sub_element<2>::type element_lag_type;
 	typedef typename space_carac_type::element_type element_carac_type;
-	typedef boost::shared_ptr<element_carac_type> element_carac_ptrtype;
+	typedef std::shared_ptr<element_carac_type> element_carac_ptrtype;
 	typedef typename space_p0_type::element_type element_p0_type;
-	typedef boost::shared_ptr<element_p0_type> element_p0_ptrtype;
+	typedef std::shared_ptr<element_p0_type> element_p0_ptrtype;
 
 	// backend
 	typedef Backend<double> backend_type;
-	typedef boost::shared_ptr<backend_type> backend_ptrtype;
+	typedef std::shared_ptr<backend_type> backend_ptrtype;
 
 	//algebra
 	typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
 	typedef typename backend_type::vector_type vector_type;
-	typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
-	typedef boost::shared_ptr<vector_type> vector_ptrtype;
+	typedef std::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
+	typedef std::shared_ptr<vector_type> vector_ptrtype;
 
 	//export
 	typedef Exporter<mesh_type> export_type;
-	typedef boost::shared_ptr<export_type> export_ptrtype;
+	typedef std::shared_ptr<export_type> export_ptrtype;
 
 public :
 	Penalisation();

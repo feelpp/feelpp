@@ -1,5 +1,5 @@
 #define BOOST_TEST_MODULE test_geotool
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelfilters/straightenmesh_impl.hpp>
@@ -16,7 +16,7 @@ namespace test_geotool
 {
 
 typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
+typedef std::shared_ptr<Application_type> Application_ptrtype;
 
 /*_________________________________________________*
  * Options

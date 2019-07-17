@@ -26,24 +26,15 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2014-05-20
  */
-#include <sstream>
-#include <boost/timer.hpp>
 
 #define BOOST_TEST_MODULE continuity testsuite
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <boost/mpl/list.hpp>
 
-#include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
-#include <feel/feeldiscr/dh.hpp>
-#include <feel/feeldiscr/ned1h.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
-#include <feel/feelfilters/domain.hpp>
-#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
-#include <feel/feelvf/ginac.hpp>
-#include <feel/feelvf/print.hpp>
 
 using namespace Feel;
 
@@ -54,39 +45,34 @@ BOOST_AUTO_TEST_SUITE( continuitysuite )
                              boost::mpl::int_<2>,
                              boost::mpl::int_<3>
                              > dim_types;
-
 BOOST_AUTO_TEST_CASE_TEMPLATE( LagrangeCG, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "check continuity for LagrangeCG in  " << T::value << "D\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type );
 
-    auto Xh = Pch<1>( mesh );
+    auto Xh = Pch<1>( mesh, true );
     auto u = Xh->element();
     auto a1 = form1( _test=Xh );
-    a1  = integrate( internalfaces( mesh ), (leftface(id(u))+rightface(-id(u)) ) );
-    a1.vector().printMatlab("LagrangeCG.m");
-    u.on( _range=elements(mesh), _expr=expr("x*y:x:y") );
-    u.printMatlab("uCG.m");
+    a1  = integrate( _range=internalfaces( mesh ), _expr=(leftface(id(u))+rightface(-id(u)) ) );
+    a1.vectorPtr()->close();
+    if ( mesh_type::nDim == 1 )
+        u.on( _range=elements(mesh), _expr=expr("x:x") );
+    else if ( mesh_type::nDim == 2 )
+        u.on( _range=elements(mesh), _expr=expr("x*y:x:y") );
+    else
+        u.on( _range=elements(mesh), _expr=expr("x*y*z:x:y:z") );
+    if ( Environment::numberOfProcessors() == 1 )
+    {
+        a1.vector().printMatlab("LagrangeCG.m");
+        u.printMatlab("uCG.m");
+    }
     BOOST_CHECK_SMALL( a1( u ), 1e-10 );
 
     BOOST_TEST_MESSAGE( "LagrangeCG, a1(u)=" << a1(u)  );
     BOOST_TEST_MESSAGE( "check continuity for LagrangeCG in  " << T::value << "D\n" );
 }
 
-
 BOOST_AUTO_TEST_SUITE_END()
-
-#if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}
-
-#endif

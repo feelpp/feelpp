@@ -46,7 +46,7 @@ int main(int argc, char**argv )
     HeapLeakChecker checkere("checker");
 #endif /* FEELPP_HAS_GPERFTOOLS */
 
-    boost::shared_ptr < MatrixSparse<double> > ptr_m;
+    std::shared_ptr < MatrixSparse<double> > ptr_m;
     {
         for(int i = 0; i < 2; ++i )
         {
@@ -55,7 +55,7 @@ int main(int argc, char**argv )
             auto u = Vh->element();
             auto v = Vh->element();
 
-            auto syms = symbols<3>();
+            auto syms = symbols<2>();
             auto g = option(_name="functions.g").as<std::string>();
             auto laplacian_g = laplacian( g, syms  );
 

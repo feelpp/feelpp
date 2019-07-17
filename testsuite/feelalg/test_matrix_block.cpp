@@ -28,7 +28,7 @@
  */
 #if 1
 #define BOOST_TEST_MODULE test_matrix_block
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #else
 #define USE_BOOST_TEST 0
 #endif
@@ -89,9 +89,9 @@ void run()
     myblockGraph(3,3) = stencil(_test=Vht,_trial=Vht, _diag_is_nonzero=false, _close=false)->graph();
     auto Abis = backend()->newBlockMatrix(_block=myblockGraph);
     size_type indexStart_u = 0;
-    size_type indexStart_p = indexStart_u + Vhu->nLocalDofWithGhost();
-    size_type indexStart_l = indexStart_p + Vhp->nLocalDofWithGhost();
-    size_type indexStart_t = indexStart_l + Vhl->nLocalDofWithGhost();
+    size_type indexStart_p = 1;
+    size_type indexStart_l = 2;
+    size_type indexStart_t = 3;
     form2( _test=Vhu, _trial=Vhu, _matrix=Abis,_rowstart=indexStart_u,_colstart=indexStart_u )
         += integrate(_range=elements(mesh),_expr=inner( gradt(u), grad(u) ) );
     form2( _test=Vhu, _trial=Vhp, _matrix=Abis,_rowstart=indexStart_u,_colstart=indexStart_p )
@@ -118,14 +118,10 @@ void run()
 #endif
 
     // extract submatrix : each block
-    std::vector<size_type> indiceExtract_u(Vhu->nLocalDofWithGhost());
-    std::iota( indiceExtract_u.begin(), indiceExtract_u.end(), indexStart_u );
-    std::vector<size_type> indiceExtract_p(Vhp->nLocalDofWithGhost());
-    std::iota( indiceExtract_p.begin(), indiceExtract_p.end(), indexStart_p );
-    std::vector<size_type> indiceExtract_l(Vhl->nLocalDofWithGhost());
-    std::iota( indiceExtract_l.begin(), indiceExtract_l.end(), indexStart_l );
-    std::vector<size_type> indiceExtract_t(Vht->nLocalDofWithGhost());
-    std::iota( indiceExtract_t.begin(), indiceExtract_t.end(), indexStart_t );
+    auto const& indiceExtract_u = A->mapRow().dofIdToContainerId( indexStart_u );
+    auto const& indiceExtract_p = A->mapRow().dofIdToContainerId( indexStart_p );
+    auto const& indiceExtract_l = A->mapRow().dofIdToContainerId( indexStart_l );
+    auto const& indiceExtract_t = A->mapRow().dofIdToContainerId( indexStart_t );
     auto A_uu = A->createSubMatrix(indiceExtract_u,indiceExtract_u);
     auto A_up = A->createSubMatrix(indiceExtract_u,indiceExtract_p);
     auto A_pu = A->createSubMatrix(indiceExtract_p,indiceExtract_u);
@@ -188,8 +184,13 @@ void run()
 #endif
 
     // extract another submatrix : a set of block
-    std::vector<size_type> indiceExtract_upl(Vhu->nLocalDofWithGhost()+Vhp->nLocalDofWithGhost()+Vhl->nLocalDofWithGhost());
-    std::iota( indiceExtract_upl.begin(), indiceExtract_upl.end(), indexStart_u );
+    std::vector<size_type> indiceExtract_upl;
+    for ( size_type k=0;k<Vhu->nLocalDofWithGhost();++k)
+        indiceExtract_upl.push_back( A->mapRow().dofIdToContainerId(indexStart_u,k) );
+    for ( size_type k=0;k<Vhp->nLocalDofWithGhost();++k)
+        indiceExtract_upl.push_back( A->mapRow().dofIdToContainerId(indexStart_p,k) );
+    for ( size_type k=0;k<Vhl->nLocalDofWithGhost();++k)
+        indiceExtract_upl.push_back( A->mapRow().dofIdToContainerId(indexStart_l,k) );
     auto A_uplupl = A->createSubMatrix(indiceExtract_upl,indiceExtract_upl);
     // build another block matrix for compare with extracted matrix
     BlocksBaseSparseMatrix<double> myblockMat2(3,3);

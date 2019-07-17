@@ -1,0 +1,104 @@
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+
+#include <feel/feelmesh/filters.hpp>
+
+namespace Feel
+{
+namespace FeelModels
+{
+
+template <typename MeshType>
+class RangeDistributionByMaterialName
+{
+public :
+    RangeDistributionByMaterialName() = default;
+    RangeDistributionByMaterialName( RangeDistributionByMaterialName const& ) = default;
+    RangeDistributionByMaterialName( RangeDistributionByMaterialName && ) = default;
+
+    //! init material range of elements
+    void init( std::map<std::string, elements_reference_wrapper_t<MeshType> > const& rangeMeshElementsByMaterial )
+        {
+            for ( auto const& rangeMat : rangeMeshElementsByMaterial )
+            {
+                std::string const& matName = rangeMat.first;
+                M_matNames.insert( matName );
+                for ( auto const& eltWrap : rangeMat.second )
+                {
+                    auto const& elt = unwrap_ref( eltWrap );
+                    M_mapEltIdToMatName[elt.id()] = matName;
+                }
+            }
+        }
+
+
+    //! return map of range of faces by material for a given type
+    std::map<std::string,faces_reference_wrapper_t<MeshType>> const& rangeMeshFacesByMaterial( std::string const& type ) const
+        {
+            auto itFindType = M_rangeMeshFacesByMaterial.find( type );
+            CHECK( itFindType != M_rangeMeshFacesByMaterial.end() ) << "type doesnot find " << type;
+            return itFindType->second;
+        }
+
+    //! update map of range of faces by material for a given type
+    void update( std::string const& type, faces_reference_wrapper_t<MeshType> const& rangeFaces )
+        {
+            auto & rangeMatFaces = M_rangeMeshFacesByMaterial[type];
+            for ( std::string const& matName : M_matNames )
+            {
+                if ( rangeMatFaces.find( matName ) == rangeMatFaces.end() )
+                {
+                    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myfaces( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
+                    rangeMatFaces[matName] = boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                                                                myfaces->begin(), myfaces->end(),
+                                                                myfaces );
+                }
+            }
+
+            for ( auto const& faceWrap : rangeFaces )
+            {
+                auto const& face = unwrap_ref( faceWrap );
+                std::vector<size_type> eltIdsConnected;
+                if ( face.isConnectedTo0() )
+                    eltIdsConnected.push_back( face.element0().id() );
+                if ( face.isConnectedTo1() )
+                    eltIdsConnected.push_back( face.element1().id() );
+                for ( size_type eltId : eltIdsConnected )
+                {
+                    auto itFindEltId = M_mapEltIdToMatName.find( eltId );
+                    if ( itFindEltId == M_mapEltIdToMatName.end() )
+                        continue;
+                    std::string const& matName = itFindEltId->second;
+                    CHECK( rangeMatFaces.find( matName ) != rangeMatFaces.end() ) << "invalid matName " << matName;
+                    boost::get<3>( rangeMatFaces[matName] )->push_back( faceWrap );
+                    boost::get<1>( rangeMatFaces[matName] ) = boost::get<3>( rangeMatFaces[matName] )->begin();
+                    boost::get<2>( rangeMatFaces[matName] ) = boost::get<3>( rangeMatFaces[matName] )->end();
+                }
+            }
+        }
+private :
+
+    std::set<std::string> M_matNames;
+    std::unordered_map<size_type,std::string> M_mapEltIdToMatName;
+    std::map<std::string,std::map<std::string,faces_reference_wrapper_t<MeshType>>> M_rangeMeshFacesByMaterial;
+
+};
+
+} // namespace FeelModels
+} // namespace Feel

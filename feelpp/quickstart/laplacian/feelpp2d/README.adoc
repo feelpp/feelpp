@@ -1,0 +1,29 @@
+:feelpp: Feel++
+= {feelpp} 2D
+Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>
+v1.0, 2017/04/06
+
+== Inputs
+
+[source,cfg]
+----
+include::feelpp2d.cfg[]
+----
+
+== Outputs
+
+Standard Output::
+The stem:[L^2] norm of the error stem:[\|u-u_h\|].
+
+Paraview::
+** stem:[u_h]
+** stem:[u]
+** mesh partitioning `pid` in Paraview
+
+== Execution
+
+----
+mpirun -np 4 feelpp_qs_laplacian_2d --config-file circle.cfg
+----
+
+

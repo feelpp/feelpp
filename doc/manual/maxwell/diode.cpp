@@ -253,7 +253,7 @@ public:
 
     //! Polynomial order \f$P_2\f$
     static const uint16_type Order = 4;
-    static const uint16_type OrderGeo = 4;
+    static const uint16_type OrderGeo = 2;
 
     //! numerical type is double
     typedef double value_type;
@@ -261,7 +261,7 @@ public:
     //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
 
 
     //! sparse matrix type associated with backend
@@ -280,7 +280,7 @@ public:
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! the basis type of our approximation space
     typedef bases<Lagrange<Order,Scalar,Discontinuous> > basis_type;
@@ -289,19 +289,19 @@ public:
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     //! the approximation function space type (shared_ptr<> type)
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     //! an element type of the approximation function space
     typedef space_type::element_type element_type;
 
     typedef bases<Lagrange<Order,Scalar> > c_basis_type;
     typedef FunctionSpace<mesh_type, c_basis_type> c_space_type;
-    typedef boost::shared_ptr<c_space_type> c_space_ptrtype;
+    typedef std::shared_ptr<c_space_type> c_space_ptrtype;
     typedef c_space_type::element_type c_element_type;
 
     //! the exporter factory type
     typedef Exporter<mesh_type,OrderGeo> export_type;
     //! the exporter factory (shared_ptr<> type)
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     /**
      * Constructor

@@ -21,10 +21,10 @@ main( int argc, char** argv )
 
     typedef Simplex<2> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef backend_type::vector_ptrtype vector_ptrtype;
 
@@ -36,7 +36,7 @@ main( int argc, char** argv )
     typedef bases< basis_u_type , basis_p_type , basis_l_type, basis_t_type> basis_type;
 
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
 
     Feel::Environment env( _argc=argc, _argv=argv,
                            _desc=feel_options() );

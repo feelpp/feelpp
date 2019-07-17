@@ -30,7 +30,7 @@
 #define DO_TEST 1
 // Boost.Test
 #define BOOST_TEST_MAIN
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelmesh/simplex.hpp>
@@ -245,15 +245,19 @@ BOOST_AUTO_TEST_CASE( test_triangle )
     BOOST_CHECK_SMALL( ublas::norm_2( tria.barycenter()-G1 ), 1e-14 );
     BOOST_CHECK_CLOSE( tria.measure(), 1, 1e-14 );
     // check normals
+    auto allnormals = tria.normals();
     G1( 0 )=1./math::sqrt( 2. );
     G1( 1 )=1./math::sqrt( 2. );
     BOOST_CHECK_SMALL( ublas::norm_2( tria.normal( 0 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 0 )-G1 ), 1e-14 );
     G1( 0 )=-1./math::sqrt( 2. );
     G1( 1 )=1./math::sqrt( 2. );
     BOOST_CHECK_SMALL( ublas::norm_2( tria.normal( 1 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 1 )-G1 ), 1e-14 );
     G1( 0 )=0;
     G1( 1 )=-1.;
     BOOST_CHECK_SMALL( ublas::norm_2( tria.normal( 2 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 2 )-G1 ), 1e-14 );
     // check face measures
     BOOST_CHECK_CLOSE( tria.faceMeasure( 0 ), math::sqrt( 2. ), 2e-14 );
     BOOST_CHECK_CLOSE( tria.faceMeasure( 1 ), math::sqrt( 2. ), 1e-14 );
@@ -297,25 +301,227 @@ BOOST_AUTO_TEST_CASE( test_tetra )
     BOOST_CHECK_SMALL( ublas::norm_2( tetra.barycenter()-G1 ), 1e-14 );
     BOOST_CHECK_CLOSE( tetra.measure(), 1./3., 1e-13 );
 
-    BOOST_CHECK_SMALL( ( double )ublas::norm_frobenius( tetra.G() - tetra.vertices() ), 1e-14 );
-#if 0
     // check normals
-    G1 = cross( V3-V2, V4-V2 );
-    std::cout << "G1 = " << G1 << "\n";
-
+    auto allnormals = tetra.normals();
+    G1( 0 )=1./math::sqrt( 2. );
+    G1( 1 )=1./math::sqrt( 2. );
+    G1( 2 )=0.;
     BOOST_CHECK_SMALL( ublas::norm_2( tetra.normal( 0 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 0 )-G1 ), 1e-14 );
     G1( 0 )=-1./math::sqrt( 2. );
     G1( 1 )=1./math::sqrt( 2. );
+    G1( 2 )=0.;
     BOOST_CHECK_SMALL( ublas::norm_2( tetra.normal( 1 )-G1 ), 1e-14 );
-    G1( 0 )=0;
-    G1( 1 )=-1.;
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 1 )-G1 ), 1e-14 );
+    G1( 0 )=0.;
+    G1( 1 )=-1./math::sqrt( 2. );
+    G1( 2 )=1./math::sqrt( 2. );
     BOOST_CHECK_SMALL( ublas::norm_2( tetra.normal( 2 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 2 )-G1 ), 1e-14 );
+    G1( 0 )=0.;
+    G1( 1 )=0.;
+    G1( 2 )=-1;
+    BOOST_CHECK_SMALL( ublas::norm_2( tetra.normal( 3 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 3 )-G1 ), 1e-14 );
+
     // check face measures
-    BOOST_CHECK_CLOSE( tetra.faceMeasure( 0 ), math::sqrt( 2. ), 2e-14 );
-    BOOST_CHECK_CLOSE( tetra.faceMeasure( 1 ), math::sqrt( 2. ), 1e-14 );
-    BOOST_CHECK_CLOSE( tetra.faceMeasure( 2 ), 2, 1e-14 );
-#endif
+    BOOST_CHECK_CLOSE( tetra.faceMeasure( 0 ), math::sqrt( 2. )/2. , 1e-12 );
+    BOOST_CHECK_CLOSE( tetra.faceMeasure( 1 ), math::sqrt( 2. )/2. , 1e-12 );
+    BOOST_CHECK_CLOSE( tetra.faceMeasure( 2 ), math::sqrt( 2. ), 1e-12 );
+    BOOST_CHECK_CLOSE( tetra.faceMeasure( 3 ), 1., 1e-12 );
+
+    BOOST_CHECK_SMALL( ( double )ublas::norm_frobenius( tetra.G() - tetra.vertices() ), 1e-14 );
 }
+BOOST_AUTO_TEST_CASE( test_interval_hypercube )
+{
+    using namespace Feel;
+
+    typedef GeoND<1,Hypercube<1, 1, 1> >::point_type point_type;
+    // interval
+    GeoND<1,Hypercube<1, 1, 1> > interval;
+    point_type V1( 1 );
+    V1( 0 )=1;
+    point_type V2( 1 );
+    V2( 0 )=3;
+    interval.setPoint( 0, V1 );
+    interval.setPoint( 1, V2 );
+    ublas::vector<double> G1( 1 );
+    G1( 0 )=2;
+    interval.update();
+    std::cout << "[interval] barycenter = " << interval.barycenter() << "\n";
+    BOOST_CHECK_SMALL( ublas::norm_2( interval.barycenter()-G1 ), 1e-14 );
+    BOOST_CHECK_CLOSE( interval.measure(), 2, 1e-14 );
+    G1( 0 )=-1;
+    BOOST_CHECK_SMALL( ublas::norm_2( interval.normal( 0 )-G1 ), 1e-14 );
+    G1( 0 )=1;
+    BOOST_CHECK_SMALL( ublas::norm_2( interval.normal( 1 )-G1 ), 1e-14 );
+
+    BOOST_CHECK_SMALL( ( double )ublas::norm_frobenius( interval.G() - interval.vertices() ), 1e-14 );
+}
+BOOST_AUTO_TEST_CASE( test_quadrangle )
+{
+    using namespace Feel;
+
+    typedef GeoND<2,Hypercube<2, 1, 2> >::point_type point_type;
+    // interval
+    GeoND<2,Hypercube<2, 1, 2> > quad;
+
+    point_type V1;
+    V1( 0 )=1;
+    V1( 1 )=0;
+    point_type V2;
+    V2( 0 )=3;
+    V2( 1 )=0;
+    point_type V3;
+    V3( 0 )=4;
+    V3( 1 )=2;
+    point_type V4;
+    V4( 0 )=2;
+    V4( 1 )=1;
+    quad.setPoint( 0, V1 );
+    quad.setPoint( 1, V2 );
+    quad.setPoint( 2, V3 );
+    quad.setPoint( 3, V4 );
+    ublas::vector<double> G1( 2 );
+    G1( 0 )=5./2.;
+    G1( 1 )=3./4.;
+    quad.update();
+    std::cout << "[quad] barycenter = " << quad.barycenter() << "\n";
+    BOOST_CHECK_SMALL( ublas::norm_2( quad.barycenter()-G1 ), 1e-14 );
+    BOOST_CHECK_CLOSE( quad.measure(), (5./2.), 1e-14 );
+
+    // check normals
+    auto allnormals = quad.normals();
+    G1( 0 )=0.;
+    G1( 1 )=-1.;
+    BOOST_CHECK_SMALL( ublas::norm_2( quad.normal( 0 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 0 )-G1 ), 1e-14 );
+    G1( 0 )=2./math::sqrt( 5. );
+    G1( 1 )=-1./math::sqrt( 5. );
+    BOOST_CHECK_SMALL( ublas::norm_2( quad.normal( 1 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 1 )-G1 ), 1e-14 );
+    G1( 0 )=-1/math::sqrt( 5. );
+    G1( 1 )=2./math::sqrt( 5. );
+    BOOST_CHECK_SMALL( ublas::norm_2( quad.normal( 2 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 2 )-G1 ), 1e-14 );
+    G1( 0 )=-1./math::sqrt( 2. );
+    G1( 1 )=1./math::sqrt( 2. );
+    BOOST_CHECK_SMALL( ublas::norm_2( quad.normal( 3 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 3 )-G1 ), 1e-14 );
+
+    // check face measures
+    BOOST_CHECK_CLOSE( quad.faceMeasure( 0 ), 2., 2e-14 );
+    BOOST_CHECK_CLOSE( quad.faceMeasure( 1 ), math::sqrt( 5. ), 1e-12 );
+    BOOST_CHECK_CLOSE( quad.faceMeasure( 2 ), math::sqrt( 5. ), 1e-12 );
+    BOOST_CHECK_CLOSE( quad.faceMeasure( 3 ), math::sqrt( 2. ), 1e-12 );
+
+    BOOST_CHECK_SMALL( ( double )ublas::norm_frobenius( quad.G() - quad.vertices() ), 1e-14 );
+}
+
+BOOST_AUTO_TEST_CASE( test_hexaedron )
+{
+    using namespace Feel;
+
+    typedef GeoND<3,Hypercube<3, 1, 3> >::point_type point_type;
+    // interval
+    GeoND<3,Hypercube<3, 1, 3> > hexa;
+
+    point_type V1;
+    V1( 0 )=1;
+    V1( 1 )=0;
+    V1( 2 )=0;
+    point_type V2;
+    V2( 0 )=3;
+    V2( 1 )=0;
+    V2( 2 )=0;
+    point_type V3;
+    V3( 0 )=4;
+    V3( 1 )=2;
+    V3( 2 )=0;
+    point_type V4;
+    V4( 0 )=2;
+    V4( 1 )=1;
+    V4( 2 )=0;
+    point_type V5;
+    V5( 0 )=1;
+    V5( 1 )=0;
+    V5( 2 )=1;
+    point_type V6;
+    V6( 0 )=3;
+    V6( 1 )=0;
+    V6( 2 )=1;
+    point_type V7;
+    V7( 0 )=4;
+    V7( 1 )=2;
+    V7( 2 )=1;
+    point_type V8;
+    V8( 0 )=2;
+    V8( 1 )=1;
+    V8( 2 )=1;
+
+    hexa.setPoint( 0, V1 );
+    hexa.setPoint( 1, V2 );
+    hexa.setPoint( 2, V3 );
+    hexa.setPoint( 3, V4 );
+    hexa.setPoint( 4, V5 );
+    hexa.setPoint( 5, V6 );
+    hexa.setPoint( 6, V7 );
+    hexa.setPoint( 7, V8 );
+    ublas::vector<double> G1( 3 );
+    G1( 0 )=5./2.;
+    G1( 1 )=3./4.;
+    G1( 2 )=1./2.;
+    hexa.update();
+    std::cout << "[hexa] barycenter = " << hexa.barycenter() << "\n";
+    BOOST_CHECK_SMALL( ublas::norm_2( hexa.barycenter()-G1 ), 1e-14 );
+    BOOST_CHECK_CLOSE( hexa.measure(), (5./2.), 1e-14 );
+
+    // check normals
+    auto allnormals = hexa.normals();
+    G1( 0 )=0.;
+    G1( 1 )=0;
+    G1( 2 )=-1.;
+    BOOST_CHECK_SMALL( ublas::norm_2( hexa.normal( 0 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 0 )-G1 ), 1e-14 );
+    G1( 0 )=0.;
+    G1( 1 )=-1.;
+    G1( 2 )=0.;
+    BOOST_CHECK_SMALL( ublas::norm_2( hexa.normal( 1 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 1 )-G1 ), 1e-14 );
+    G1( 0 )=2./math::sqrt( 5. );
+    G1( 1 )=-1./math::sqrt( 5. );
+    G1( 2 )=0.;
+    BOOST_CHECK_SMALL( ublas::norm_2( hexa.normal( 2 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 2 )-G1 ), 1e-14 );
+    G1( 0 )=-1/math::sqrt( 5. );
+    G1( 1 )=2./math::sqrt( 5. );
+    G1( 2 )=0.;
+    BOOST_CHECK_SMALL( ublas::norm_2( hexa.normal( 3 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 3 )-G1 ), 1e-14 );
+    G1( 0 )=-1./math::sqrt( 2. );
+    G1( 1 )=1./math::sqrt( 2. );
+    G1( 2 )=0.;
+    BOOST_CHECK_SMALL( ublas::norm_2( hexa.normal( 4 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 4 )-G1 ), 1e-14 );
+    G1( 0 )=0.;
+    G1( 1 )=0;
+    G1( 2 )=1.;
+    BOOST_CHECK_SMALL( ublas::norm_2( hexa.normal( 5 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 5 )-G1 ), 1e-14 );
+
+    // check face measures
+    BOOST_CHECK_CLOSE( hexa.faceMeasure( 0 ), (5./2.), 2e-12 );
+    BOOST_CHECK_CLOSE( hexa.faceMeasure( 1 ), 2., 2e-12 );
+    BOOST_CHECK_CLOSE( hexa.faceMeasure( 2 ), math::sqrt( 5. ), 1e-12 );
+    BOOST_CHECK_CLOSE( hexa.faceMeasure( 3 ), math::sqrt( 5. ), 1e-12 );
+    BOOST_CHECK_CLOSE( hexa.faceMeasure( 4 ), math::sqrt( 2. ), 1e-12 );
+    BOOST_CHECK_CLOSE( hexa.faceMeasure( 5 ), (5./2.), 2e-12 );
+
+    BOOST_CHECK_SMALL( ( double )ublas::norm_frobenius( hexa.G() - hexa.vertices() ), 1e-14 );
+
+
+}
+
 BOOST_AUTO_TEST_CASE( test_entity_range_ )
 {
     //test_entity_range<1,1>();
@@ -325,7 +531,6 @@ BOOST_AUTO_TEST_CASE( test_entity_range_ )
 test_suite*
 init_unit_test_suite( int argc, char* argv[] )
 {
-    Feel::Assert::setLog( "assertions.log" );
     test_suite* test = BOOST_TEST_SUITE( "2D Generic finite element solver test suite" );
 
     test->add( BOOST_TEST_CASE( ( test_entity_isin<2,1> ) ) );

@@ -26,18 +26,14 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-10-21
  */
-#define USE_BOOST_TEST 1
-// Boost.Test
 
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE discontinuity testsuite
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
 
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
 
@@ -62,7 +58,7 @@ struct imesh
 {
     typedef Simplex<Dim, Order> convex_type;
     typedef Mesh<convex_type, T > type;
-    typedef boost::shared_ptr<type> ptrtype;
+    typedef std::shared_ptr<type> ptrtype;
 };
 
 
@@ -75,7 +71,7 @@ struct test_disc: public Application
     typedef DiscontinuousInterfaces<fusion::vector<mpl::vector<mpl::int_<4>, mpl::int_<6>, mpl::int_<7> > > > discontinuity_type;
     typedef bases<Lagrange<Order, Scalar, discontinuity_type> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     test_disc()
@@ -186,7 +182,7 @@ struct test_disc: public Application
         BOOST_CHECK_SMALL( int3( 0,0 ), 1e-12 );
         BOOST_CHECK_SMALL( int3( 1,0 ), 1e-12 );
     }
-    boost::shared_ptr<Feel::Backend<double> > backend;
+    std::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -222,7 +218,7 @@ makeAbout()
 
 }
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( disc )
 
@@ -240,19 +236,3 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_disc, T, dim_types )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-
-
-#if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_disc.assert" );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}
-
-
-#endif

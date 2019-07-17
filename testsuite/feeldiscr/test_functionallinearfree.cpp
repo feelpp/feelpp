@@ -27,7 +27,7 @@
 */
 
 #define BOOST_TEST_MODULE test_functionallinearfree
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <fstream>
 
@@ -164,10 +164,9 @@ testFunctionalLinearComposite()
     double result_free = functionalfree->operator()( element );
 
     double epsilon=1e-13;
-    BOOST_CHECK_SMALL( math::abs(result_composite-result_compositefree), epsilon );
-    BOOST_CHECK_SMALL( math::abs(result-result_compositefree), epsilon );
-    BOOST_CHECK_SMALL( math::abs(result_free-result_compositefree), epsilon );
-
+    BOOST_CHECK_CLOSE( result_composite,result_compositefree, epsilon );
+    BOOST_CHECK_CLOSE( result,result_compositefree, epsilon );
+    BOOST_CHECK_CLOSE( result_free,result_compositefree, epsilon );
 
     //test access functions
     auto vector_composite1 = backend->newVector( Xh );
@@ -246,5 +245,3 @@ BOOST_AUTO_TEST_CASE( test_2 )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-

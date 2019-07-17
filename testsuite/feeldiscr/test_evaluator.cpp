@@ -30,7 +30,7 @@
 #include <boost/timer.hpp>
 
 #define BOOST_TEST_MODULE evaluate testsuite
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
 #include <boost/mpl/list.hpp>
 
@@ -42,32 +42,23 @@
 
 using namespace Feel;
 
-FEELPP_ENVIRONMENT_NO_OPTIONS
-
-BOOST_AUTO_TEST_SUITE( evaluatesuite )
-//typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
-typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
-//typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
-
-BOOST_AUTO_TEST_CASE_TEMPLATE( evaluate1, T, dim_types )
+template<typename T>
+void f( int nparts )
 {
-
-
-
-    BOOST_TEST_MESSAGE( "check 1 vf::sum and vf::evaluate for dim = " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "simplex-%1%" )  % T::value ).str() ,
-                                                _usenames=true,
-                                                _addmidpoint=false,
-                                                _shape="simplex",
-                                                _h=0.025 ),
+                                                      _usenames=true,
+                                                      _addmidpoint=false,
+                                                      _shape="simplex",
+                                                      _h=0.025 ),
+                                        _partitions=nparts,
                                         _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<1, Scalar> > > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef std::shared_ptr<space_type> space_ptrtype;
     space_ptrtype P1h = space_type::New( mesh );
     using namespace vf;
     auto e1 = normLinf( _range=elements(mesh), _pset=_Q<5>(), _expr=sin(2*constants::pi<double>()*Px()) );
@@ -79,7 +70,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( evaluate1, T, dim_types )
     BOOST_CHECK_CLOSE( e2.value(), 1., 1e-1 );
     BOOST_TEST_MESSAGE( "maximum over boundary absolute value atteined at " << e2.template get<1>() );
 
-    BOOST_TEST_MESSAGE("Checking on faces...");
+    size_type nfaces = nelements( boundaryfaces(mesh), false);
+    BOOST_TEST_MESSAGE("Checking on faces..." << nfaces );
+    LOG(INFO) << "Checking on faces..." << nfaces;
     auto e3 = minmax( _range=boundaryfaces(mesh), _pset=_Q<5>(), _expr=sin(2*constants::pi<double>()*Px()) );
     BOOST_CHECK_CLOSE( e3.min(), -1., 1e-1 );
     BOOST_CHECK_CLOSE( e3.max(), 1., 1e-1 );
@@ -87,17 +80,23 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( evaluate1, T, dim_types )
     BOOST_TEST_MESSAGE( "maximum over boundary absolute value atteined at " << e3.argmax() );
 
 }
+FEELPP_ENVIRONMENT_NO_OPTIONS
 
-BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE( evaluatesuite )
+//typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
+//typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 
-#if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
+BOOST_AUTO_TEST_CASE_TEMPLATE( evaluate1, T, dim_types )
 {
-    Feel::Environment env( argc, argv );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
+    BOOST_TEST_MESSAGE( "check 1 vf::sum and vf::evaluate for dim = " << T::value << "\n" );
+    f<T>( Environment::worldComm().localSize() );
+}
+BOOST_AUTO_TEST_CASE_TEMPLATE( evaluate2, T, dim_types )
+{
+    BOOST_TEST_MESSAGE( "check 2 vf::sum and vf::evaluate for dim = " << T::value << "\n" );
 
-    return ret;
+    f<T>( 2 );
 }
 
-#endif
+BOOST_AUTO_TEST_SUITE_END()

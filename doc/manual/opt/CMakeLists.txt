@@ -22,8 +22,7 @@
 #
 #
 
-
 if ( FEELPP_HAS_NLOPT )
-  feelpp_add_application( qs_nlopt SRCS qs_nlopt.cpp INCLUDE_IN_ALL  )
-  install(TARGETS feelpp_qs_nlopt DESTINATION bin/ COMPONENT Bin )
+  feelpp_add_application( opt_nlopt SRCS qs_nlopt.cpp INSTALL )
+  feelpp_add_application( opt_laplacian_nlopt SRCS laplacian_nlopt.cpp INSTALL )
 endif()

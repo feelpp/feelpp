@@ -26,15 +26,12 @@
    \author Vincent Doyeux <vdoyeux at gmail.com>
    \date 2015-06-12
  */
-#if defined(USE_BOOST_TEST)
 
 #define BOOST_TEST_MODULE projector
-#include <testsuite/testsuite.hpp>
+#include <feel/feelcore/testsuite.hpp>
 
-#else
-// if USE_BOOST_TEST non defined, only export the solutions
+#if !defined(USE_BOOST_TEST)
 #include <feel/feelfilters/exporter.hpp>
-
 #endif
 
 #include <feel/feeldiscr/projector.hpp>
@@ -43,22 +40,6 @@
 #include <feel/feelvf/vf.hpp>
 
 using namespace Feel;
-
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "test_projector" ,
-                     "test_projector" ,
-                     "0.1",
-                     "test projector",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2015 Feel++ Consortium" );
-
-    about.addAuthor( "Vincent Doyeux", "developer", "vdoyeux@gmail.com", "" );
-
-    return about;
-}
 
 /* ProjectorType are given in enum.hpp:
 enum ProjectorType
@@ -134,7 +115,9 @@ public:
 
 
 #if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() )
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
 BOOST_AUTO_TEST_SUITE( projector )
 const std::vector< std::pair<ProjectorType, std::string> > projToTest = { {L2, "L2"},
                                                                     {DIFF, "DIFF"} };
@@ -169,9 +152,7 @@ BOOST_AUTO_TEST_SUITE_END()
 
 int main(int argc, char** argv)
 {
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _about=makeAbout(),
-                           _desc=feel_options() );
+    Feel::Environment env( _argc=argc, _argv=argv );
 
     const std::vector< std::pair<ProjectorType, std::string> > projToTest = { {L2, "L2"},
                                                                         {DIFF, "DIFF"} };
