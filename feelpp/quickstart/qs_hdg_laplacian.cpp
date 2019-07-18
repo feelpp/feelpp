@@ -48,6 +48,7 @@ makeOptions()
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( "solvecg", po::value<bool>()->default_value( false ), "solve corresponding problem with CG"  )
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
+        ( "rhs_quad", po::value<int>()->default_value( 4 ), "quadrature order"  )
         ;
     return hdgoptions;
 }
@@ -141,8 +142,9 @@ int hdg_laplacian()
         tic();
         tic();
         auto l = form1( _test=cgXh );
-        l = integrate( _range=elements(mesh), _expr=-f_exact*id(u) );
+        l = integrate( _range=elements(mesh), _expr=-f_exact*id(u), _quad=ioption("rhs_quad") );
         l += integrate(_range=markedfaces(mesh,"Neumann"),
+                       _quad=ioption("rhs_quad"),
                        _expr=id(u)*un_exact );
         toc("cg.assembly.l",FLAGS_v>0);
         tic();
@@ -198,12 +200,12 @@ int hdg_laplacian()
     // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
     // How to identify Dirichlet/Neumann boundaries?
     rhs(1_c) += integrate(_range=elements(mesh),
-                          _expr=-f_exact*id(w));
+                          _expr=-f_exact*id(w), _quad=ioption("rhs_quad") );
 
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                          _expr=id(l)*un_exact );
+                          _expr=id(l)*un_exact, _quad=ioption("rhs_quad")  );
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                          _expr=id(l)*p_exact);
+                          _expr=id(l)*p_exact, _quad=ioption("rhs_quad") );
     
     toc("rhs",true);
     tic();
@@ -332,8 +334,8 @@ int hdg_laplacian()
     ppp += pp.ewiseMean(P0dh);
     toc("postprocessing.solve.correction.pp",FLAGS_v>0);
     toc("postprocessing.solve.correction",FLAGS_v>0);
-    toc("postprocessing.solve",FLAGS_v>0);
-    toc("postprocessing",FLAGS_v>0);
+    toc("postprocessing.solve");
+    toc("postprocessing");
 
     
 
@@ -425,7 +427,7 @@ int main( int argc, char** argv )
         return !hdg_laplacian<FEELPP_DIM,1>();
     if ( ioption( "order" ) == 2 )
         return !hdg_laplacian<FEELPP_DIM,2>();
-#if 0
+#if 1
 
     if ( ioption( "order" ) == 3 )
         return !hdg_laplacian<FEELPP_DIM,3>();
