@@ -1,0 +1,60 @@
+{
+    "Name":"Slotted Disk Benchmark",
+    "ShortName":"SlottedDisk",
+    "Models":
+    {
+	"equations":"Levelset"
+    },
+    "Parameters":
+    {
+	"centerx":"50.0",
+	"centery":"75.0",
+	"radius":"15.0",
+	"slotwidth":"5",
+	"slotlength":"25"
+	
+    },
+    "InitialConditions":
+    {
+	"levelset":
+	{
+	    "Dirichlet":
+	    {
+		"Omega":
+		{
+		    //"expr":"(x-centerx)*(x-centerx)+(y-centery)*(y-centery)-radius*radius:x:y:centerx:centery:radius"
+		    //"expr":"( ( x < centerx-slotwidth/2 ) + ( x > centerx+slotwidth/2 ) + ( y > centery - radius + slotlength ) ) * ( (x-centerx)*(x-centerx)+(y-centery)*(y-centery)-radius*radius ) :x:y:centerx:centery:radius:slotwidth:slotlength"
+		    //"expr":" ( 1 - (  ( 1 - (x < centerx-slotwidth/2) ) * ( 1 - (x > centerx+slotwidth/2) ) * ( 1 - ( y > centery - radius + slotlength ) ) ) * ( (x-centerx)*(x-centerx)+(y-centery)*(y-centery)-radius*radius ) + ( 1 - ( (x-centerx)*(x-centerx)+(y-centery)*(y-centery) > radius*radius ) ) * ( 1 - (x < centerx-slotwidth/2) ) * ( 1 - (x > centerx+slotwidth/2) ) * ( 1 - ( y > centery - radius + slotlength ) ) * ( x-(centerx-slotwidth/2) ) * ( x-(centerx+slotwidth/2) ) * ( y-(centery-radius+slotlength) ) ) :x:y:centerx:centery:radius:slotwidth:slotlength"
+		    "expr":" ( (x-centerx)*(x-centerx)+(y-centery)*(y-centery) > radius*radius )*( (x-centerx)*(x-centerx)+(y-centery)*(y-centery)-radius*radius ) + ( 1 - ( (x-centerx)*(x-centerx)+(y-centery)*(y-centery) > radius*radius ) ) * ( ( 1 - (  ( 1 - (x < centerx-slotwidth/2) ) * ( 1 - (x > centerx+slotwidth/2) ) * ( 1 - ( y > centery - radius + slotlength ) ) ) ) * ( (x-centerx)*(x-centerx)+(y-centery)*(y-centery)-radius*radius ) + ( 1 - (x < centerx-slotwidth/2) ) * ( 1 - (x > centerx+slotwidth/2) ) * ( 1 - ( y > centery - radius + slotlength ) ) * ( x-(centerx-slotwidth/2) ) * ( x-(centerx+slotwidth/2) ) * ( y-(centery-radius+slotlength) ) ) :x:y:centerx:centery:radius:slotwidth:slotlength"
+		}
+	    }//,
+//	    "shapes":
+//	    {
+//		"TestDrop":
+//		{
+//		    "shape":"sphere",
+//		    "xc":"15.0",
+//		    "yc":"15.0",
+//		    "radius":"10.0"
+//		}
+//	    }
+	}
+    },
+//    "BoundaryConditions":
+//    {
+//	"levelset":
+//	{
+//	    "inflow":
+//	    {
+//		"Bottom":
+//		{
+//		    "expr":"0"
+//		}
+//	    }
+//	}
+//    },
+    "PostProcess":
+    {
+	"PhysicalQuantities": ["volume,perimeter"]
+    }  
+}
