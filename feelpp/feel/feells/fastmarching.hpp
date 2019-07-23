@@ -336,10 +336,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateNeighborDofs( size_
                 dofIdsToProcess.emplace_back( dofId );
                 hasDofToProcess = true;
             }
-            else if( M_dofStatus[dofId] == FastMarchingDofStatus::DONE_FIX 
-                    || M_dofStatus[dofId] & FastMarchingDofStatus::DONE_OLD
-                    || M_dofStatus[dofId] & FastMarchingDofStatus::DONE_NEW
-                    )
+            else if( M_dofStatus[dofId] & FastMarchingDofStatus::DONE )
             {
                 dofDoneIds.emplace_back( dofId );
             }
@@ -438,14 +435,11 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & 
     for( auto const& dofShared: M_dofSharedOnCluster )
     {
         size_type const dofId = dofShared.first;
-        if( M_dofStatus[dofId] == FastMarchingDofStatus::CLOSE_NEW 
-                || M_dofStatus[dofId] == FastMarchingDofStatus::DONE_NEW )
+        if( M_dofStatus[dofId] & FastMarchingDofStatus::NEW )
         {
             // Set status to OLD
-            if( M_dofStatus[dofId] == FastMarchingDofStatus::CLOSE_NEW )
-                M_dofStatus[dofId] = FastMarchingDofStatus::CLOSE_OLD;
-            else
-                M_dofStatus[dofId] = FastMarchingDofStatus::DONE_OLD;
+            M_dofStatus[dofId] &= ~FastMarchingDofStatus::NEW;
+            M_dofStatus[dofId] |= FastMarchingDofStatus::OLD;
 
             size_type dofGCId = dofTable->mapGlobalProcessToGlobalCluster( dofId );
             value_type dofVal = sol(dofId);
