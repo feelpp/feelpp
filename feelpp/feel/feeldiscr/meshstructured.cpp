@@ -35,9 +35,12 @@ typedef boost::geometry::model::polygon<poly_point_type> polygon_type;
 namespace Feel
 {
 
-MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<float> cx, holo3_image<float> cy,
+MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
+                                std::optional<holo3_image<float>> const& cx,
+                                std::optional<holo3_image<float>> const& cy,
                                 worldcomm_ptr_t const& wc = Environment::worldCommPtr(),
-                                std::string pathPoly = "", bool withCoord = false, bool withPoly = false )
+                                bool withCoord,
+                                std::string pathPoly, bool withPoly )
     : super( wc ),
       M_nx( nx ),
       M_ny( ny ),
@@ -121,10 +124,10 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
         for ( int i = 0; i < M_nx; ++i )
         {
             int ptid = (M_ny)*i + j;
-            if ( withCoord )
+            if ( withCoord && M_cx && M_cy )
             {
-                coords[0] = M_cy( j, i );
-                coords[1] = M_cx( j, i );
+                coords[0] = (*M_cy)( j, i );
+                coords[1] = (*M_cx)( j, i );
             }
             else
             {
@@ -163,10 +166,10 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
         for ( int i = 0; i < M_nx; ++i )
         {
             int ptid = (M_ny)*i + j;
-            if ( withCoord )
+            if ( withCoord && M_cx && M_cy )
             {
-                coords[0] = M_cy( j, i );
-                coords[1] = M_cx( j, i );
+                coords[0] = (*M_cy)( j, i );
+                coords[1] = (*M_cx)( j, i );
             }
             else
             {
@@ -201,12 +204,12 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
                 poly_point_type p2;
                 poly_point_type p3;
                 poly_point_type p4;
-                if ( withCoord )
+                if ( withCoord && M_cx && M_cy )
                 {
-                    p1 = poly_point_type( M_cy( j, i + 1 ), M_cx( j, i + 1 ) );
-                    p2 = poly_point_type( M_cy( j + 1, i + 1 ), M_cx( j + 1, i + 1 ) );
-                    p3 = poly_point_type( M_cy( j + 1, i ), M_cx( j + 1, i ) );
-                    p4 = poly_point_type( M_cy( j, i ), M_cx( j, i ) );
+                    p1 = poly_point_type( (*M_cy)( j, i + 1 ), (*M_cx)( j, i + 1 ) );
+                    p2 = poly_point_type( (*M_cy)( j + 1, i + 1 ), (*M_cx)( j + 1, i + 1 ) );
+                    p3 = poly_point_type( (*M_cy)( j + 1, i ), (*M_cx)( j + 1, i ) );
+                    p4 = poly_point_type( (*M_cy)( j, i ), (*M_cx)( j, i ) );
                 }
                 else
                 {
@@ -268,12 +271,12 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
                 poly_point_type p2;
                 poly_point_type p3;
                 poly_point_type p4;
-                if ( withCoord )
+                if ( withCoord && M_cx && M_cy )
                 {
-                    p1 = poly_point_type( M_cy( j, i + 1 ), M_cx( j, i + 1 ) );
-                    p2 = poly_point_type( M_cy( j + 1, i + 1 ), M_cx( j + 1, i + 1 ) );
-                    p3 = poly_point_type( M_cy( j + 1, i ), M_cx( j + 1, i ) );
-                    p4 = poly_point_type( M_cy( j, i ), M_cx( j, i ) );
+                    p1 = poly_point_type( (*M_cy)( j, i + 1 ), (*M_cx)( j, i + 1 ) );
+                    p2 = poly_point_type( (*M_cy)( j + 1, i + 1 ), (*M_cx)( j + 1, i + 1 ) );
+                    p3 = poly_point_type( (*M_cy)( j + 1, i ), (*M_cx)( j + 1, i ) );
+                    p4 = poly_point_type( (*M_cy)( j, i ), (*M_cx)( j, i ) );
                 }
                 else
                 {
