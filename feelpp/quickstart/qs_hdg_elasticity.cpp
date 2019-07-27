@@ -29,6 +29,8 @@
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelpython/pyexpr.hpp>
+#include "nullspace-rigidbody.hpp"
+
 namespace Feel {
 
 inline
@@ -58,6 +60,9 @@ makeOptions()
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
         ( "exact", po::value<bool>()->default_value( true ), "displacement is give and provides the exact solution or an approximation"  )
+        ( "exact", po::value<bool>()->default_value( true ), "displacement is give and provides the exact solution or an approximation"  )
+        ( "use-near-null-space", po::value<bool>()->default_value( false ), "use near-null-space for AMG"  )
+        ( "use-null-space", po::value<bool>()->default_value( false ), "use null-space for AMG"  )
         ;
     return hdgoptions;
 }
@@ -272,9 +277,21 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     toc("a(2,{0,1,2})", true);
     toc("matrices",true);
     tic();
+
+    if ( boption( "use-near-null-space" ) ||  boption( "use-null-space" ) )
+    {
+        auto b = backend( _name="sc" );
+        std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(b,qsNullSpace(Mh,mpl::int_<FEELPP_DIM>())) );
+        if ( boption( "use-near-null-space" ) )
+            b->attachNearNullSpace( myNullSpace );
+        if ( boption( "use-null-space" ) )
+            b->attachNullSpace( myNullSpace );
+    }
+    
     auto U = ps.element();
     auto Ue = ps.element();
-    a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=boption("sc.condense"));
+    //a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=boption("sc.condense"));
+    a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
     toc("solve",true);
     cout << "[Hdg] solve done" << std::endl;
 
