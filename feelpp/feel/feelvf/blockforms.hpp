@@ -460,6 +460,8 @@ public :
 
             tic();
             this->syncLocalMatrix();
+            toc("blockform.sc.sync", FLAGS_v>0);
+            tic();
             sc->condense ( rhs.vectorPtr()->sc(), solution, S, V );
             toc("blockform.sc.condense", FLAGS_v>0);
             S.close();V.close();
