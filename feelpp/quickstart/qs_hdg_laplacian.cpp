@@ -25,6 +25,7 @@
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
+#include <feel/feelvf/operators2.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 namespace Feel {
 
@@ -49,6 +50,7 @@ makeOptions()
         ( "solvecg", po::value<bool>()->default_value( false ), "solve corresponding problem with CG"  )
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
         ( "rhs_quad", po::value<int>()->default_value( 4 ), "quadrature order"  )
+        ( "mass.quad", po::value<bool>()->default_value( true ), "use quadrature for mass matrix assembly"  )
         ;
     return hdgoptions;
 }
@@ -121,7 +123,6 @@ int hdg_laplacian()
     auto P0dh = Pdh<0>(mesh);
     auto Xh = Pdh<0>(face_mesh);
     auto uf = Xh->element(cst(1.));
-    auto cgXh = Pch<OrderP>(mesh);
 
     cout << "Exact potential if applicable: " << p_exact_str << "\n"
          << "Exact flux if applicable: " << u_exact_str << "\n";
@@ -133,13 +134,16 @@ int hdg_laplacian()
          << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
          << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
     cout << mesh->numGlobalElements()  << " " << mesh->numGlobalFaces() << " "
-         << Vh->nDof() << " " << Wh->nDof() << " " << Mh->nDof() << " "
-         << cgXh->nDof() << std::endl;
+         << Vh->nDof() << " " << Wh->nDof() << " " << Mh->nDof() << std::endl;
 
     if ( boption( "solvecg" ) == true )
     {
+        Feel::cout << "-- CG<" << OrderP+1 << "> starts ----------------------------------------------------------\n";
+        auto cgXh = Pch<OrderP+1>(mesh);
+        Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
         auto u = cgXh->element();
-        tic();
+        tic(); // assembly + solve
+        tic(); // assembly
         tic();
         auto l = form1( _test=cgXh );
         l = integrate( _range=elements(mesh), _expr=-f_exact*id(u), _quad=ioption("rhs_quad") );
@@ -149,32 +153,33 @@ int hdg_laplacian()
         toc("cg.assembly.l",FLAGS_v>0);
         tic();
         auto a = form2(_trial=cgXh, _test=cgXh );
-        a = integrate( _range=elements(mesh), _expr=gradt(u)*trans(grad(u)) );
+        a = integrate( _range=elements(mesh), _expr=-K*gradt(u)*trans(grad(u)) );
         a += on(_range=markedfaces(mesh,"Dirichlet"),
                 _rhs=l,
                 _element=u,
                 _expr=p_exact);
         toc("cg.assembly.a",FLAGS_v>0);
-        toc("cg.assembly",FLAGS_v>0);
+        toc("cg.assembly");
         tic();
         a.solve( _rhs=l,_solution=u );
-        toc("cg.solve",FLAGS_v>0);
+        toc("cg.solve");
+        toc("cg.assembly+cg.solve");
         auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
             {
                 tic();
                 double l2 = normL2(_range=elements(mesh), _expr=idv(u)-expr(solution) );
                 toc("L2 error norm");
                 tic();
-                double h1 = normH1(_range=elements(mesh), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-grad<2>(expr(solution)) );
+                double h1 = normH1(_range=elements(mesh), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-expr<1,Dim>(u_exact_str) );
                 toc("H1 error norm");
                 tic();
-                double semih1 = normL2(_range=elements(mesh), _expr=gradv(u)-grad<2>(expr(solution)) );
+                double semih1 = normL2(_range=elements(mesh), _expr=gradv(u)-expr<1,Dim>(u_exact_str) );
                 toc("semi H1 error norm");
                 return { { "L2", l2 }, {  "H1", h1 }, {"semih1",semih1} };
             };
 
-        int status = checker(p_exact_str).runOnce( norms, rate::hp( mesh->hMax(), cgXh->fe()->order() ) );
-
+        int status = checker("L2/H1 and SemiH1 norms on potential",p_exact_str).runOnce( norms, rate::hp( mesh->hMax(), cgXh->fe()->order() ) );
+        Feel::cout << "-- CG<" << OrderP+1 << "> done ----------------------------------------------------------\n";
     }
     auto u = Vh->element( "u" );
     auto v = Vh->element( "v" );
@@ -193,6 +198,8 @@ int hdg_laplacian()
     auto rhs = blockform1( ps, strategy, backend() );
     toc("forms",true);
 
+    tic(); // total
+    tic(); // assembly
     tic();
     // Building the RHS
     //
@@ -213,7 +220,11 @@ int hdg_laplacian()
     // First row a(0_c,:)
     //
     tic();
-    a(0_c,0_c) += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
+    if ( boption( "mass.quad" ) )
+        a(0_c,0_c) += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
+    else
+        a(0_c,0_c) += integrate(_range=elements(mesh),_expr=cst(-1.)*mass(u,v) );
+
     toc("a(0,0)",FLAGS_v>0);
 
     tic();
@@ -290,9 +301,9 @@ int hdg_laplacian()
     toc("a(2,2)",FLAGS_v>0);
 
     toc("matrices",true);
-
+    toc("assembly",true);
     
-    
+    tic(); // solver+postpro time
     tic();
     auto U=ps.element();
     a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
@@ -309,7 +320,7 @@ int hdg_laplacian()
     auto pps = product( Whp );
     auto PP = pps.element();
     auto ppp = PP(0_c);
-    toc("postprocessing.space",FLAGS_v>0);
+    toc("postproceSsing.space",FLAGS_v>0);
     tic();
     tic();
     auto b = blockform2( pps, solve::strategy::local, backend() );
@@ -337,6 +348,8 @@ int hdg_laplacian()
     toc("postprocessing.solve");
     toc("postprocessing");
 
+    toc("solver+postprocessing");
+    toc("assembly+solver+postprocessing");
     
 
     tic();
@@ -425,14 +438,16 @@ int main( int argc, char** argv )
     // end::env[]
     if ( ioption( "order" ) == 1 )
         return !hdg_laplacian<FEELPP_DIM,1>();
+
     if ( ioption( "order" ) == 2 )
         return !hdg_laplacian<FEELPP_DIM,2>();
-#if 1
+
 
     if ( ioption( "order" ) == 3 )
         return !hdg_laplacian<FEELPP_DIM,3>();
+
     if ( ioption( "order" ) == 4 )
         return !hdg_laplacian<FEELPP_DIM,4>();
-#endif
+
     return 1;
 }
