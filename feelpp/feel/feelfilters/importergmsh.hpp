@@ -2665,10 +2665,9 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
              << " n1: " << mesh->point( __e.indices[0] ).node()
              << " n2: " << mesh->point( __e.indices[1] ).node() << "\n";
 
-    auto eit = mesh->addElement( /*mesh->endElement(), */std::move(e) );
-    auto const& eltInserted = eit.first->second;
-
-    return eltInserted.id();
+    auto [eit,inserted] = mesh->addElement( /*mesh->endElement(), */std::move(e) );
+    auto const& [eid,eltInserted] = *eit;
+    return eid;
 }
 
 template<typename MeshType>
@@ -2702,13 +2701,12 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
         }
     }
 
-    auto fit = mesh->addFace( std::move(e) ).first;
-
-    DVLOG(2) << "added edge with id :" << fit->second.id()
+    auto [fit,inserted] = mesh->addFace( std::move(e) );
+    auto const& [fid,faceInserted] = *fit;
+    DVLOG(2) << "added edge with id :" << faceInserted.id()
              << " n1: " << mesh->point( __e.indices[0] ).node()
              << " n2: " << mesh->point( __e.indices[1] ).node() << "\n";
-
-    return fit->second.id();
+    return fid;
 }
 template<typename MeshType>
 int
@@ -2739,15 +2737,13 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
         }
     }
 
-    auto res = mesh->addEdge( e );
-    auto const& eit = res.first->second;
-
+    auto [edit,inserted] = mesh->addEdge( std::move(e) );
+    auto const& [edid,edgeInserted] = *edit;
     if ( npoints_per_edge == 2 )
-        DVLOG(2) << "added edge with id :" << eit.id()
-                 << " n1: " << eit.point( 0 ).node()
-                 << " n2: " << eit.point( 1 ).node() << "\n";
-
-    return eit.id();
+        DVLOG(2) << "added edge with id :" << edgeInserted.id()
+                 << " n1: " << edgeInserted.point( 0 ).node()
+                 << " n2: " << edgeInserted.point( 1 ).node() << "\n";
+    return edid;
 }
 
 template<typename MeshType>
@@ -2797,10 +2793,9 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
             e.setPoint( ordering.fromGmshId( jj ), pt );
         }
     }
-    auto eit = mesh->addElement( /*mesh->endElement(), */std::move(e) );
-    auto const& eltInserted = eit.first->second;
-
-    return eltInserted.id();
+    auto [eit,inserted] = mesh->addElement( /*mesh->endElement(), */std::move(e) );
+    auto const& [eid,eltInserted] = *eit;
+    return eid;
 }
 template<typename MeshType>
 int
@@ -2832,9 +2827,9 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
             e.setPoint( ordering.fromGmshId( jj ), mesh->point( __e.indices[jj] ) );
         }
     }
-    auto fit = mesh->addFace( std::move(e) ).first;
-
-    return fit->second.id();
+    auto [fit,inserted] = mesh->addFace( std::move(e) );
+    auto const& [fid,faceInserted] = *fit;
+    return fid;
 }
 
 template<typename MeshType>
@@ -2894,9 +2889,9 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
         }
     }
 
-    auto eit = mesh->addElement( /*mesh->endElement(), */std::move(e) );
-    auto const& eltInserted = eit.first->second;
-    return eltInserted.id();
+    auto [eit,inserted] = mesh->addElement( /*mesh->endElement(), */std::move(e) );
+    auto const& [eid,eltInserted] = *eit;
+    return eid;
 }
 
 template<typename MeshType>
