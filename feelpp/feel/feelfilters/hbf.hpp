@@ -142,10 +142,10 @@ public:
     operator()( ElementType const& u )
         {
             holo3_image<float> x( M_rows, M_cols );
-            for( auto dof : M_relation.left )
+            for( auto const& dof : M_relation.left )
             {
-                CHECK( dof.first.first < M_rows ) << "invalid row index " << dof.first.first;
-                CHECK( dof.first.second < M_cols ) << "invalid col index " << dof.first.second;
+                DCHECK( dof.first.first < M_rows ) << "invalid row index " << dof.first.first;
+                DCHECK( dof.first.second < M_cols ) << "invalid col index " << dof.first.second;
                 x( dof.first.first, dof.first.second ) = u(dof.second);
             }
             return x;
@@ -196,10 +196,10 @@ public:
     operator()( ElementType const& u )
         {
             holo3_image<float> x( M_rows, M_cols );
-            for( auto dof : M_relation.left )
+            for( auto const& dof : M_relation.left )
             {
-                CHECK( dof.first.first < M_rows ) << "invalid row index " << dof.first.first;
-                CHECK( dof.first.second < M_cols ) << "invalid col index " << dof.first.second;
+                DCHECK( dof.first.first < M_rows ) << "invalid row index " << dof.first.first;
+                DCHECK( dof.first.second < M_cols ) << "invalid col index " << dof.first.second;
                 x( dof.first.first, dof.first.second ) = u(dof.second);
             }
             return x;
