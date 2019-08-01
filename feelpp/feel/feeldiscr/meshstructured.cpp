@@ -315,7 +315,6 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
                 }
 
                 auto [eit,inserted] = this->addElement( e, true ); // e.id() is defined by Feel++
-
                 idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eit->second.id() ) );
                 mapGhostElt.insert( std::make_pair( eid, boost::make_tuple( idStructuredMeshToFeelMesh[eid], partIdGhost ) ) );
             }
