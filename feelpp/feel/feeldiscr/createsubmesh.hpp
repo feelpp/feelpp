@@ -400,10 +400,10 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
             } // for (unsigned int n=0 ... )
 
             // Add an equivalent element type to the new_mesh
-            auto eit = newMesh->addElement( newElem,true );
-            auto const& e = eit.first->second;
-            new_element_id[oldElem.id()]= e.id();
-            M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
+            auto [eit,inserted] = newMesh->addElement( newElem,true );
+            auto const& [eid,e] = *eit;
+            new_element_id[oldElem.id()] = eid;
+            M_smd->bm.insert( typename smd_type::bm_type::value_type( eid, oldElem.id() ) );
 
             // add marked faces for this element
             for ( uint16_type s=0; s<oldElem.numTopologicalFaces; s++ )
@@ -650,11 +650,11 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
             } // end for n
 
             // Add an equivalent element type to the new_mesh
-            auto eit = newMesh->addElement( newElem, true );
-            auto const& e = eit.first->second;
+            auto [eit,inserted] = newMesh->addElement( newElem, true );
+            auto const& [eid,e] = *eit;
             // update mesh relation
-            new_element_id[oldElem.id()]= e.id();
-            M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
+            new_element_id[oldElem.id()]= eid;
+            M_smd->bm.insert( typename smd_type::bm_type::value_type( eid, oldElem.id() ) );
             DVLOG(2) << "connecting new face to " << e.id() << " face " << oldElem.id();
             // add marked edges in 3d as marked faces for this element
             Feel::detail::addMarkedEdgesInSubMesh( M_mesh, oldElem, new_node_numbers, n_new_faces,
@@ -856,11 +856,11 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
             CHECK( newElem.facePtr(1) ) << "invalid face 1 in edge";
 #endif
             // Add an equivalent element type to the new_mesh
-            auto eit = newMesh->addElement( newElem, true );
-            auto const& e = eit.first->second;
+            auto [eit,inserted] = newMesh->addElement( newElem, true );
+            auto const& [eid,e] = *eit;
             // update mesh relation
-            new_element_id[oldElem.id()]= e.id();
-            M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
+            new_element_id[oldElem.id()]= eid;
+            M_smd->bm.insert( typename smd_type::bm_type::value_type( eid, oldElem.id() ) );
         } // end for it
     } // for ( ; itListRange!=enListRange ; ++itListRange)
 
@@ -1202,10 +1202,9 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
                 newElem.setIdInOtherPartitions( rankRecv, idEltActiveInOtherProc );
 
                 // Add an equivalent element type to the new_mesh
-                auto eit = newMesh->addElement( newElem, true );
-                auto const& e = eit.first->second;
+                auto [eit,inserted] = newMesh->addElement( newElem, true );
+                auto const& [newEltId,e] = *eit;
 
-                const size_type newEltId = e.id();
                 ghostOldEltDone[oldElem.id()]= std::make_pair(newEltId,e.processId());
                 // update mesh relation
                 M_smd->bm.insert( typename smd_type::bm_type::value_type( newEltId, oldEltId ) );
