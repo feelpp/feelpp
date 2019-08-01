@@ -246,7 +246,8 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
                 if ( neighborProcessId != invalid_rank_type_value )
                     e.addNeighborPartitionId( neighborProcessId );
 
-                auto const& eltInserted = this->addElement( e, true ); // e.id() is defined by Feel++
+                auto eit = this->addElement( e, true ); // e.id() is defined by Feel++
+                auto const& eltInserted = eit.first->second;
                 idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eltInserted.id() ) );
             }
             inPoly = false;
