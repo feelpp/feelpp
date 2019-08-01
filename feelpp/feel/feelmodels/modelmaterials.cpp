@@ -75,7 +75,8 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, world
 
     for( auto const& [k,v] : M_p )
     {
-        if ( (k!= "markers") &&  (k!= "physics") && (k!= "name") && v.empty() && !v.data().empty() )
+        if ( (k!= "markers") &&  (k!= "physics") && (k!= "name") && (k!= "filename")
+             && v.empty() && !v.data().empty() )
         {
             this->setProperty( k,M_p );
         }
