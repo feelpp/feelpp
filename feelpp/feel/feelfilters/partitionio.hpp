@@ -1145,11 +1145,12 @@ void PartitionIO<MeshType>::readElements( std::vector<rank_type> const& partIds,
                     DCHECK( M_meshPartIn->hasPoint( ptId ) ) << "point id " << ptId << " not present in mesh";
                     e.setPoint( k, M_meshPartIn->point( ptId ) );
                 }
-                auto const& eltInserted = M_meshPartIn->addElement( e, true/*false*/ );
+                auto [eit,inserted] = M_meshPartIn->addElement( e, true/*false*/ );
+                auto const& [eid,eltInserted] = *eit;
 
                 if ( j >= nActiveElement )
                 {
-                    mapGhostHdf5IdToFeelId[partId][j-nActiveElement] = eltInserted.id();
+                    mapGhostHdf5IdToFeelId[partId][j-nActiveElement] = eid;
                 }
 
             }

@@ -183,7 +183,7 @@ Darcy<PotSpaceType>::Darcy( std::string n, potential_space_ptrtype Wh_ptr_t )
     Wh( Wh_ptr_t ),
     mesh( Wh->mesh() ),
     Vh( Pdhv<order>( mesh, true ) ),
-    face_mesh( createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 ) ),
+    face_mesh( createSubmesh( _mesh=mesh, _range=faces(mesh), _update=0 ) ),
     Mh( Pdh<order>( face_mesh, true ) ),
     up( Vh->elementPtr() ),
     pp( Wh->elementPtr() ),

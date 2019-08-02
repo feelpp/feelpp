@@ -399,6 +399,31 @@ void Mesh<Shape, T, Tag, IndexT>::updateForUse()
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT>
+void Mesh<Shape, T, Tag, IndexT>::updateForUseAfterMovingNodes( bool upMeasures )
+{
+    // reset geomap cache
+    if ( this->gm()->isCached() )
+    {
+        this->gm()->initCache( this/*imesh.get()*/ );
+        if ( mesh_type::nOrder > 1 )
+            this->gm1()->initCache( this/*imesh.get()*/ );
+    }
+
+    // update measures
+    if ( upMeasures )
+        this->updateMeasures();
+
+    // reset localisation tool
+    this->tool_localization()->reset();
+
+#if !defined( __INTEL_COMPILER )
+    // notify observers that the mesh has changed
+    LOG(INFO) << "Notify observers that the mesh has changed\n";
+    this->meshChanged( MESH_CHANGES_POINTS_COORDINATES );
+#endif
+}
+
+template <typename Shape, typename T, int Tag, typename IndexT>
 void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
 {
     if ( this->components().test( MESH_NO_UPDATE_MEASURES ) )
@@ -696,9 +721,9 @@ template <typename TheShape>
 void
     Mesh<Shape, T, Tag, IndexT>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 1>* )
 {
-    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
-    for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
-        iv->second.setCommonData( geondEltCommon );
+    //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
+    //for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
+    //iv->second.setCommonData( M_geondEltCommon.get() );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++itf )
         itf->second.setMesh( this );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
@@ -709,12 +734,12 @@ template <typename TheShape>
 void
     Mesh<Shape, T, Tag, IndexT>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 2>* )
 {
-    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
-    auto geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
-    for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
-        iv->second.setCommonData( geondEltCommon );
+    //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
+    M_geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
+    //for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
+    // iv->second.setCommonData( M_geondEltCommon.get() );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++itf )
-        itf->second.setCommonData( geondFaceCommon );
+        itf->second.setCommonData( M_geondFaceCommon.get() );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
         itp->second.setMesh( this );
 }
@@ -723,15 +748,15 @@ template <typename TheShape>
 void
     Mesh<Shape, T, Tag, IndexT>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 3>* )
 {
-    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
-    auto geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
-    auto geondEdgeCommon = std::make_shared<GeoNDCommon<typename edge_type::super>>( this /*,this->gm(), this->gm1()*/ );
-    for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
-        iv->second.setCommonData( geondEltCommon );
+    //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
+    M_geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
+    M_geondEdgeCommon = std::make_shared<GeoNDCommon<typename edge_type::super>>( this /*,this->gm(), this->gm1()*/ );
+    //for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
+    //    iv->second.setCommonData( M_geondEltCommon.get() );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++itf )
-        itf->second.setCommonData( geondFaceCommon );
+        itf->second.setCommonData( M_geondFaceCommon.get() );
     for ( auto ite = this->beginEdge(), ene = this->endEdge(); ite != ene; ++ite )
-        ite->second.setCommonData( geondEdgeCommon );
+        ite->second.setCommonData( M_geondEdgeCommon.get() );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
         itp->second.setMesh( this );
 }

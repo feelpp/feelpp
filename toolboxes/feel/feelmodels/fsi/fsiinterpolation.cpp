@@ -1,3 +1,4 @@
+
 namespace Feel
 {
 namespace FeelModels
@@ -212,8 +213,8 @@ FSI<FluidType,SolidType>::initVelocityInterpolation()
         if (this->verbose() && this->fluidModel()->worldComm().isMasterRank())
             std::cout << "initVelocityInterpolation() CONFORME" << std::endl;
         M_opVelocity2dTo2dconf = opInterpolation(_domainSpace=this->solidModel()->fieldVelocity().functionSpace(),
-                                                 _imageSpace=this->fluidModel()->meshVelocity2().functionSpace(),
-                                                 _range=M_rangeFSI_fluid,
+                                                 _imageSpace=this->/*fluidModel()->*/meshVelocity2().functionSpace(),
+                                                 //_range=M_rangeFSI_fluid,
                                                  _type=InterpolationConforme(),
                                                  _backend=this->fluidModel()->backend() );
 
@@ -223,8 +224,8 @@ FSI<FluidType,SolidType>::initVelocityInterpolation()
         if (this->verbose() && this->fluidModel()->worldComm().isMasterRank())
             std::cout << "initVelocityInterpolation() NONCONFORME" << std::endl;
         M_opVelocity2dTo2dnonconf = opInterpolation(_domainSpace=this->solidModel()->fieldVelocity().functionSpace(),
-                                                    _imageSpace=this->fluidModel()->meshVelocity2().functionSpace(),
-                                                    _range=M_rangeFSI_fluid,
+                                                    _imageSpace=this->/*fluidModel()->*/meshVelocity2().functionSpace(),
+                                                    //_range=M_rangeFSI_fluid,
                                                     _type=InterpolationNonConforme(),
                                                     _backend=this->fluidModel()->backend() );
     }
@@ -241,8 +242,8 @@ FSI<FluidType,SolidType>::initVelocity1dToNdInterpolation()
         if (this->verbose() && this->fluidModel()->worldComm().isMasterRank())
             std::cout << "initVelocity1dToNdInterpolation() CONFORME" << std::endl;
         M_opVelocity1dToNdconf = opInterpolation(_domainSpace=this->solidModel()->fieldVelocityVect1dReduced().functionSpace(),
-                                                 _imageSpace=this->fluidModel()->meshVelocity2().functionSpace(),
-                                                 _range=M_rangeFSI_fluid,
+                                                 _imageSpace=this->/*fluidModel()->*/meshVelocity2().functionSpace(),
+                                                 //_range=M_rangeFSI_fluid,
                                                  _type=InterpolationConforme(),
                                                  _backend=this->fluidModel()->backend() );
     }
@@ -251,8 +252,8 @@ FSI<FluidType,SolidType>::initVelocity1dToNdInterpolation()
         if (this->verbose() && this->fluidModel()->worldComm().isMasterRank())
             std::cout << "initVelocity1dToNdInterpolation() NONCONFORME" << std::endl;
         M_opVelocity1dToNdnonconf = opInterpolation(_domainSpace=this->solidModel()->fieldVelocityVect1dReduced().functionSpace(),
-                                                    _imageSpace=this->fluidModel()->meshVelocity2().functionSpace(),
-                                                    _range=M_rangeFSI_fluid,
+                                                    _imageSpace=this->/*fluidModel()->*/meshVelocity2().functionSpace(),
+                                                    //_range=M_rangeFSI_fluid,
                                                     _type=InterpolationNonConforme(),
                                                     _backend=this->fluidModel()->backend() );
     }
@@ -357,6 +358,19 @@ FSI<FluidType,SolidType>::transfertDisplacement()
                                                this->worldComm(),this->verboseAllProc());
 }
 
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::transfertDisplacementAndApplyMeshMoving()
+{
+    this->transfertDisplacement();
+    M_fluidModel->updateALEmesh();
+    // up mesh velocity on interface from mesh velocity
+    M_meshVelocityInterface->on( _range=M_rangeFSI_fluid,
+                                 _expr=vf::idv(M_fluidModel->meshALE()->velocity()),
+                                 _geomap=this->geomap() );
+    //sync( *M_meshVelocityInterface, "=", M_dofsVelocityInterfaceOnMovingBoundary);
+}
+
 //-----------------------------------------------------------------------------------//
 
 template< class FluidType, class SolidType >
@@ -365,7 +379,6 @@ FSI<FluidType,SolidType>::transfertStress()
 {
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertStress", "start",
                                                this->worldComm(),this->verboseAllProc());
-
     M_fieldNormalStressRefMesh_fluid->zero();
     M_fluidModel->updateNormalStressOnReferenceMesh( "interface_fsi", M_fieldNormalStressRefMesh_fluid );
 
@@ -476,12 +489,12 @@ FSI<FluidType,SolidType>::transfertVelocity(bool useExtrap)
         if (M_interfaceFSIisConforme)
         {
             CHECK( M_opVelocity2dTo2dconf ) << "interpolation operator not build";
-            M_opVelocity2dTo2dconf->apply( *fieldToTransfert, M_fluidModel->meshVelocity2() );
+            M_opVelocity2dTo2dconf->apply( *fieldToTransfert, this/*M_fluidModel*/->meshVelocity2() );
         }
         else
         {
             CHECK( M_opVelocity2dTo2dnonconf ) << "interpolation operator not build";
-            M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert, M_fluidModel->meshVelocity2() );
+            M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert, this/*M_fluidModel*/->meshVelocity2() );
         }
     }
     else if ( M_solidModel->is1dReducedModel() )
@@ -508,13 +521,13 @@ FSI<FluidType,SolidType>::transfertVelocity(bool useExtrap)
         {
             CHECK( M_opVelocity1dToNdconf ) << "interpolation operator not build";
             M_opVelocity1dToNdconf->apply(*fieldToTransfert/*M_solid->fieldVelocityVect1dReduced()*/,
-                                          M_fluidModel->meshVelocity2() );
+                                          this/*M_fluidModel*/->meshVelocity2() );
         }
         else
         {
             CHECK( M_opVelocity1dToNdnonconf ) << "interpolation operator not build";
             M_opVelocity1dToNdnonconf->apply(*fieldToTransfert/*M_solid->fieldVelocityVect1dReduced()*/,
-                                             M_fluidModel->meshVelocity2() );
+                                             this/*M_fluidModel*/->meshVelocity2() );
         }
     }
 
@@ -835,16 +848,19 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F_BdfBdf( int iterat
         M_couplingRNG_coeffForm2 = 1./dt;
 
         // transfer solid to fluid
+        auto fieldInterpolatedOnInterface = M_XhMeshVelocityInterface->element();
         if (M_interfaceFSIisConforme)
         {
             CHECK( M_opVelocity2dTo2dconf ) << "interpolation operator not build";
-            M_opVelocity2dTo2dconf->apply( *fieldToTransfert, *this->couplingRNG_evalForm1() );
+            M_opVelocity2dTo2dconf->apply( *fieldToTransfert, fieldInterpolatedOnInterface );
         }
         else
         {
             CHECK( M_opVelocity2dTo2dnonconf ) << "interpolation operator not build";
-            M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert, *this->couplingRNG_evalForm1() );
+            M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert, fieldInterpolatedOnInterface );
         }
+        this->couplingRNG_evalForm1()->on( _range=M_rangeFSI_fluid,_expr=idv(fieldInterpolatedOnInterface));
+        sync( *this->couplingRNG_evalForm1(), "=", M_dofsMultiProcessVelocitySpaceOnFSI_fluid );
     }
    else if ( this->solidModel()->is1dReducedModel() )
    {
@@ -902,16 +918,20 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F_BdfNewmark( int it
         }
 
         // transfer solid to fluid
+        auto fieldInterpolatedOnInterface = M_XhMeshVelocityInterface->element();
         if (M_interfaceFSIisConforme)
         {
             CHECK( M_opVelocity2dTo2dconf ) << "interpolation operator not build";
-            M_opVelocity2dTo2dconf->apply( *fieldToTransfert, *this->couplingRNG_evalForm1() );
+            M_opVelocity2dTo2dconf->apply( *fieldToTransfert, fieldInterpolatedOnInterface );
         }
         else
         {
             CHECK( M_opVelocity2dTo2dnonconf ) << "interpolation operator not build";
-            M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert, *this->couplingRNG_evalForm1() );
+            M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert, fieldInterpolatedOnInterface );
         }
+        this->couplingRNG_evalForm1()->on( _range=M_rangeFSI_fluid,_expr=idv(fieldInterpolatedOnInterface));
+        sync( *this->couplingRNG_evalForm1(), "=", M_dofsMultiProcessVelocitySpaceOnFSI_fluid );
+
         // time derivative acceleration in fluid
 #if 0
         auto UPolyDeriv = this->fluidModel()->timeStepBDF()->polyDeriv();
@@ -972,18 +992,19 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F_BdfNewmark( int it
 
         fieldToTransfert = M_solidModel->extendVelocity1dReducedVectorial( *fieldExtrapolated2 );
         // transfer solid to fluid
+        auto fieldInterpolatedOnInterface = M_XhMeshVelocityInterface->element();
         if (M_interfaceFSIisConforme)
         {
             CHECK( M_opVelocity1dToNdconf ) << "interpolation operator not build";
-            M_opVelocity1dToNdconf->apply(*fieldToTransfert,
-                                          *this->couplingRNG_evalForm1() );
+            M_opVelocity1dToNdconf->apply(*fieldToTransfert,fieldInterpolatedOnInterface );
         }
         else
         {
             CHECK( M_opVelocity1dToNdnonconf ) << "interpolation operator not build";
-            M_opVelocity1dToNdnonconf->apply(*fieldToTransfert,
-                                             *this->couplingRNG_evalForm1() );
+            M_opVelocity1dToNdnonconf->apply(*fieldToTransfert,fieldInterpolatedOnInterface );
         }
+        this->couplingRNG_evalForm1()->on( _range=M_rangeFSI_fluid,_expr=idv(fieldInterpolatedOnInterface));
+        sync( *this->couplingRNG_evalForm1(), "=", M_dofsMultiProcessVelocitySpaceOnFSI_fluid );
         // time derivative acceleration in fluid
         //auto UPolyDeriv = this->fluidModel()->timeStepBDF()->polyDeriv();
         //auto uPolyDeriv = UPolyDeriv.template element<0>();
