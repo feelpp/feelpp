@@ -40,6 +40,7 @@
 #endif
 
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelmesh/meshbase.hpp>
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/iterator.hpp>
 #include <feel/feelmesh/detail/filters.hpp>
