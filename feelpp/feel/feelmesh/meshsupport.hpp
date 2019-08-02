@@ -34,7 +34,7 @@ namespace Feel
 
 /**
  * \brief Description of a mesh support.
- * A function space can use this object for built a space in a part of the mesh
+ * allows to build a function space on a range of elements
  */
 template<typename MeshType>
 class MeshSupport : public MeshSupportBase
@@ -56,7 +56,9 @@ public :
         M_isFullSupport( true ),
         M_hasUpdatedParallelData( false ),
         M_hasUpdatedBoundaryInternalFaces( false )
-        {}
+        {
+            this->updateBoundaryInternalFaces();
+        }
 
     MeshSupport( mesh_ptrtype const& mesh, range_elements_type const& rangeElements )
         :
@@ -68,6 +70,8 @@ public :
         {
             for (auto const& eltWrap : M_rangeElements )
                 M_rangeMeshElementsIdsPartialSupport.insert( unwrap_ref(eltWrap).id() );
+
+            this->updateBoundaryInternalFaces();
         }
 
     ~MeshSupport() = default;
@@ -118,7 +122,20 @@ public :
             range_elements_type rangeExtendedElements = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), myExtendedElements->begin(),myExtendedElements->end(),myExtendedElements );
             return rangeExtendedElements;
         }
+    //!
+    //! return the set of faces of marker type marker_t with marker flag 
+    //!
+    range_faces_type const& rangeMarkedFaces( uint16_type marker_t, boost::any flag );
 
+    bool hasAnyMarker( std::initializer_list<std::string> l )
+        {
+            for (auto n : l )
+            {
+                if ( nelements(rangeMarkedFaces(1,n) ) )
+                    return true;
+            }
+            return false;
+        }
     size_type numElements() const override
         {
             if ( M_isFullSupport )
@@ -366,6 +383,7 @@ private :
     range_faces_type M_rangeInterProcessFaces;
     range_faces_type M_rangeBoundaryFaces;
     range_faces_type M_rangeInternalFaces;
+    std::unordered_map<flag_type,range_faces_type> M_rangeMarkedFaces;
     std::unordered_set<size_type> M_rangeMeshElementsIdsPartialSupport;
     std::unordered_set<size_type> M_rangeMeshElementsGhostIdsPartialSupport;
 
@@ -374,6 +392,63 @@ private :
     bool M_hasUpdatedBoundaryInternalFaces;
 
 };
+
+template<typename MeshType>
+typename MeshSupport<MeshType>::range_faces_type const&
+MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
+{
+    std::set<flag_type> markerFlagSet = Feel::unwrap_ptr( M_mesh ).markersId( flag );
+    flag_type m = *markerFlagSet.begin();
+    if ( M_rangeMarkedFaces.count( m ) )
+        return M_rangeMarkedFaces.at( m );
+    typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype myfaces( new typename MeshTraits<mesh_type>::faces_reference_wrapper_type );
+    for ( auto const& eltWrap : this->rangeElements() )
+    {
+        auto const& elt = unwrap_ref( eltWrap );
+        for ( uint16_type i = 0; i < mesh_type::element_type::numTopologicalFaces; ++i )
+        {
+            if ( !elt.facePtr(i) )
+                continue;
+            const face_type* facePtr = elt.facePtr(i);
+            size_type faceId = facePtr->id();
+            auto const& face = elt.face(i);
+            if ( !face.hasMarker( marker_t ) )
+                continue;
+            if ( face.marker( marker_t ).isOff() )
+                continue;
+            if ( markerFlagSet.find( face.marker( marker_t ).value() ) == markerFlagSet.end() )
+                continue;
+            
+            myfaces->push_back( boost::cref( face ) );
+        }
+    }
+    M_rangeMarkedFaces[m] = boost::make_tuple( mpl::size_t<MESH_FACES>(),myfaces->begin(),myfaces->end(),myfaces );
+    return M_rangeMarkedFaces.at( m );
+}
+
+template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
+using support_mesh_t = typename unwrap_ptr_t<MeshSupportType>::mesh_type;
+
+template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
+elements_reference_wrapper_t<support_mesh_t<MeshSupportType>> 
+elements( MeshSupportType const& imesh )
+{
+    return imesh->rangeElements();
+}
+template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
+faces_reference_wrapper_t<support_mesh_t<MeshSupportType>> const&
+boundaryfaces( MeshSupportType const& imesh )
+{
+    return imesh->rangeBoundaryFaces();
+}
+
+
+template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
+faces_reference_wrapper_t<support_mesh_t<MeshSupportType>> const&
+markedfaces( MeshSupportType const& imesh, boost::any flag )
+{
+    return imesh->rangeMarkedFaces( 1, flag );
+}
 
 } // namespace Feel
 
