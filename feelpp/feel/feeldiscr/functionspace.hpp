@@ -6449,6 +6449,14 @@ operator<<( std::ostream& os, FunctionSpace<A0, A1, A2, A3, A4> const& Xh )
 
 #include <feel/feeldiscr/detail/element_impl.hpp>
 
-
+//!
+//! @return the support of a function space
+//!
+template<typename SpaceT>
+typename SpaceT::template GetMeshSupport<typename SpaceT::mesh_ptrtype,0>::ptrtype
+support( std::shared_ptr<SpaceT> const& X )
+{
+    return X->template meshSupport<0>();
+}
 
 #endif /* __FunctionSpace_H */
