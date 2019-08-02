@@ -474,7 +474,19 @@ public:
             }
         }
     void setDim4( int dim4 ) { M_dim4 = dim4; }
-    
+
+    //!
+    //! transpose block n1,n2
+    //! the local matrices are transposed and copied
+    //!
+    void transpose( int n1, int n2 )
+        {
+            for( auto const& [key,matrix]: M_local_matrices[std::make_pair(n1,n2)] )
+            {
+                auto const & [id1,id2] = key;
+                this->M_local_matrices[std::pair{n2,n1}][std::pair{id2,id1}].noalias() = matrix.transpose();
+            }
+        }
     using local_vector_t = Eigen::Matrix<value_type,Eigen::Dynamic,1>;
     using local_matrix_t = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
     using local_index_t = Eigen::Matrix<int,Eigen::Dynamic,1>;

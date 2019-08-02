@@ -310,6 +310,10 @@ public :
         {
             M_matrix->zero( n1, n2 );
         }
+    void transpose(int n1, int n2 )
+        {
+            M_matrix->transposeBlock( n1, n2 );
+        }
     //!
     //! @return the number of non-zero entries in matrix representation
     //!
