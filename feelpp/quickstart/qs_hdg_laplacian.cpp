@@ -121,7 +121,7 @@ int hdg_laplacian()
 
     auto Vh = Pdhv<OrderP>( mesh, true );
     auto Wh = Pdh<OrderP>( mesh, true );
-    auto face_mesh = createSubmesh( mesh, faces(mesh ), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh ), _update=0 );
     auto Mh = Pdh<OrderP>( face_mesh,true );
 
     toc("spaces",true);

@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
     typedef std::shared_ptr<face_mesh_type> face_mesh_ptrtype;
 
     auto mesh = loadMesh( new mesh_type);
-    auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh), _update=0 );
 
     auto Vh = Pdh<1>( mesh, true );
     auto Mh = Pdh<1>( face_mesh, true );

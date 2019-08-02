@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE( test_meshmarker1 )
     BOOST_CHECK_SMALL( intSurf1-5*(2*l*2*l),1e-12 );
     BOOST_CHECK_SMALL( intSurf2-1*(2*l*2*l),1e-12 );
 
-    auto submeshFaces = createSubmesh(mesh,markedfaces(mesh,"GammaNeumann"));
+    auto submeshFaces = createSubmesh(_mesh=mesh,_range=markedfaces(mesh,"GammaNeumann"));
     double intSubmeshFaces = integrate(_range=elements(submeshFaces),_expr=cst(1.) ).evaluate()(0,0);
     BOOST_CHECK_SMALL( intSubmeshFaces-1*(2*l*2*l),1e-12 );
     double intMarkedLinesSubmeshFaces = integrate(_range=markedfaces(submeshFaces,"markLines"),_expr=cst(1.) ).evaluate()(0,0);
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE( test_meshmarker1 )
     else
         BOOST_CHECK( nMarkedPointsSubmeshFaces == 4 );
 
-    auto submeshLines = createSubmesh(mesh,markededges(mesh,"markLines"),1,size_type(0));
+    auto submeshLines = createSubmesh(_mesh=mesh,_range=markededges(mesh,"markLines"),_update=size_type(0));
     double intSubmeshLines = integrate(_range=elements(submeshLines),_expr=cst(1.) ).evaluate()(0,0);
     BOOST_CHECK_SMALL( intSubmeshLines-12*2*l,1e-12 );
     size_type nMarkedPointsSubmeshLines = nelements( markedpoints(submeshLines,"markPoints"), true );
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE( test_meshmarker1 )
 
     mesh->updateMarker3WithRange(markedfaces(mesh,"GammaNeumann"),1);
     mesh->updateMarkersFromFaces();
-    auto submesh = createSubmesh(mesh,marked3elements(mesh,1));
+    auto submesh = createSubmesh(_mesh=mesh,_range=marked3elements(mesh,1));
     double intSubmesh = integrate(_range=markedfaces(submesh,"GammaNeumann"),_expr=cst(1.) ).evaluate()(0,0);
     BOOST_CHECK_SMALL( intSubmesh-1*(2*l*2*l),1e-12 );
     size_type nMarkedPointsSubmesh = nelements( markedpoints(submesh,"markPoints"), true );

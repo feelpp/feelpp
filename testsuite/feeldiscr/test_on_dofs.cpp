@@ -132,7 +132,7 @@ void runTestAssignMeshRelated()
 {
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<Dim,1>>);
     auto therange = markedfaces(mesh,"Wall1");
-    auto submesh = createSubmesh(mesh,therange);
+    auto submesh = createSubmesh(_mesh=mesh,_range=therange);
 
     auto g = Px()+Py()+Pz();
 

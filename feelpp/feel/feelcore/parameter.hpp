@@ -311,6 +311,13 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( rho )
     BOOST_PARAMETER_NAME( alpha )
     BOOST_PARAMETER_NAME( tag )
+
+// create submesh
+    BOOST_PARAMETER_NAME( only_on_boundary_faces )
+    BOOST_PARAMETER_NAME( view )
+
+
+
 } // Feel
 
 
