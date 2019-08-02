@@ -131,7 +131,7 @@ public :
         {
             for (auto n : l )
             {
-                if ( nelements(rangeMarkedFaces(1,n) ) )
+                if ( nelements(rangeMarkedFaces(1,n), true ) )
                     return true;
             }
             return false;
@@ -399,6 +399,13 @@ MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
 {
     std::set<flag_type> markerFlagSet = Feel::unwrap_ptr( M_mesh ).markersId( flag );
     flag_type m = *markerFlagSet.begin();
+    if ( M_isFullSupport )
+    {
+        M_rangeMarkedFaces[m] = markedfacesByType( M_mesh, marker_t, flag );
+        return M_rangeMarkedFaces.at(m);
+    }
+        
+    
     if ( M_rangeMarkedFaces.count( m ) )
         return M_rangeMarkedFaces.at( m );
     typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype myfaces( new typename MeshTraits<mesh_type>::faces_reference_wrapper_type );
