@@ -127,8 +127,13 @@ public :
     //!
     range_faces_type const& rangeMarkedFaces( uint16_type marker_t, boost::any flag );
 
+    //!
+    //! @return true if some markers in \p l are present in the mesh data structure, false otherwise
+    //!
     bool hasAnyMarker( std::initializer_list<std::string> l )
         {
+            if ( M_isFullSupport )
+                return M_mesh->hasAnyMarker( l );
             for (auto n : l )
             {
                 if ( nelements(rangeMarkedFaces(1,n), true ) )
