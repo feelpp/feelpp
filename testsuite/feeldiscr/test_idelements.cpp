@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE( listelements )
     LOG(INFO) << "l=" << l;
     // maybe some duplicated ids have been removed
     nEltForTest =  nelements( idelements( mesh, l ) );
-    auto newmesh = createSubmesh( mesh, idelements( mesh, l ) );
+    auto newmesh = createSubmesh( _mesh=mesh, _range=idelements( mesh, l ) );
     size_type nGlobalEltForTest = nEltForTest;
     mpi::all_reduce(Environment::worldComm(), mpi::inplace(nGlobalEltForTest), std::plus<size_type>());
     BOOST_CHECK_EQUAL( newmesh->numGlobalElements(), nGlobalEltForTest );
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE( space_fromlistelements )
     }
     // maybe some duplicated ids have been removed
     nEltForTest = nelements( idelements( mesh, l ) );
-    auto newmesh = createSubmesh( mesh, idelements( mesh, l ) );
+    auto newmesh = createSubmesh( _mesh=mesh, _range=idelements( mesh, l ) );
     auto Xh=Pdh<0>(newmesh);
     auto v = Xh->element(cst(1.));
     auto s = v.sum();

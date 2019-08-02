@@ -40,9 +40,9 @@ BOOST_AUTO_TEST_CASE( listofrange1 )
     BOOST_CHECK_SMALL( measBoundary-measBoundaryRef,1e-12 );
 
     // create submesh
-    auto submesh1 = createSubmesh( mesh, markedelements( mesh,myElementMarkers ) );
+    auto submesh1 = createSubmesh( _mesh=mesh, _range=markedelements( mesh,myElementMarkers ) );
     BOOST_CHECK_SMALL( submesh1->measure()-measSurfaceRef,1e-12 );
-    auto submesh2 = createSubmesh( mesh, markedfaces( mesh,myFaceMarkers ) );
+    auto submesh2 = createSubmesh( _mesh=mesh, _range=markedfaces( mesh,myFaceMarkers ) );
     BOOST_CHECK_SMALL( submesh2->measure()-measBoundaryRef,1e-12 );
 
     // projection
@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE( listofrange1 )
     double intu = integrate( _range=markedelements( mesh,myElementMarkers ), _expr=idv(u) ).evaluate()( 0,0 );
     BOOST_CHECK_SMALL( intu-3*measSurfaceRef,1e-12 );
     auto v = Vh->element();
-    v.on(_range=markedfaces( mesh,myFaceMarkers ),_expr=cst(4.) );
+    v.on(_range=markedfaces( mesh,myFaceMarkers ),_expr=cst(4.),_close=true );
     double intv = integrate( _range=markedfaces( mesh,myFaceMarkers ), _expr=idv(v) ).evaluate()( 0,0 );
     BOOST_CHECK_SMALL( intv-4*measBoundaryRef,1e-12 );
 

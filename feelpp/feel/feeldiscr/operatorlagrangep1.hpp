@@ -575,7 +575,8 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
             }
 
             // add element in mesh
-            auto const& theNewElt = M_mesh->addElement ( elt );
+            auto [eit,inserted] = M_mesh->addElement ( elt );
+            auto const& [eid,theNewElt] = *eit;
 
             // store // infos
             if ( doParallelBuild )
