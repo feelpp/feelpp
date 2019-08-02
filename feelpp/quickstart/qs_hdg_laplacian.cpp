@@ -37,6 +37,8 @@ makeOptions()
     po::options_description hdgoptions( "HDG options" );
     hdgoptions.add_options()
         ( "k", po::value<std::string>()->default_value( "-1" ), "diffusion coefficient" )
+        ( "r_1", po::value<std::string>()->default_value( "1" ), "Robin lhs coefficient" )
+        ( "r_2", po::value<std::string>()->default_value( "" ), "Robin rhs coefficient" )
         ( "pyexpr.filename", po::value<std::string>()->default_value( "${top_srcdir}/quickstart/laplacian.py" ), "python filename to execute" )
         ( "solution.p", po::value<std::string>()->default_value( "1" ), "solution p exact" )
         ( "solution.sympy.p", po::value<std::string>()->default_value( "1" ), "solution p exact (if we use sympy)" )        
@@ -87,7 +89,7 @@ int hdg_laplacian()
     
 #if defined(FEELPP_HAS_SYMPY)
 
-    std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}};
+    std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals );
 
     for( auto d: locals )
@@ -99,6 +101,8 @@ int hdg_laplacian()
     auto u_exact = expr<Dim,1>( u_exact_str );
     auto un_exact = expr( locals.at("un") );
     auto f_exact = expr( locals.at("f") );
+    auto r_1 = expr( locals.at("r_1") );
+    auto r_2 = expr( locals.at("r_2") );
 #else
     std::string p_exact_str = soption("solution.p");
     std::string u_exact_str = soption("solution.u");
@@ -151,10 +155,14 @@ int hdg_laplacian()
         l += integrate(_range=markedfaces(mesh,"Neumann"),
                        _quad=ioption("rhs_quad"),
                        _expr=id(u)*un_exact );
+        l += integrate( _range=markedfaces(mesh, "Robin"),
+                        _expr=id(u)*r_2);
         toc("cg.assembly.l",FLAGS_v>0);
         tic();
         auto a = form2(_trial=cgXh, _test=cgXh );
         a = integrate( _range=elements(mesh), _expr=-K*gradt(u)*trans(grad(u)) );
+        a += integrate( _range=markedfaces(mesh, "Robin"),
+                        _expr=id(u)*idt(u)*r_1);
         a += on(_range=markedfaces(mesh,"Dirichlet"),
                 _rhs=l,
                 _element=u,
@@ -168,15 +176,18 @@ int hdg_laplacian()
         auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
             {
                 tic();
+                double l2_p = normL2(_range=elements(mesh), _expr=expr(solution) );
                 double l2 = normL2(_range=elements(mesh), _expr=idv(u)-expr(solution) );
                 toc("L2 error norm");
                 tic();
+                double h1_p = normH1(_range=elements(mesh), _expr=expr(solution), _grad_expr=expr<1,Dim>(u_exact_str)  );
                 double h1 = normH1(_range=elements(mesh), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-expr<1,Dim>(u_exact_str) );
                 toc("H1 error norm");
                 tic();
                 double semih1 = normL2(_range=elements(mesh), _expr=gradv(u)-expr<1,Dim>(u_exact_str) );
+                double semih1_p = normL2(_range=elements(mesh), _expr=expr<1,Dim>(u_exact_str) );
                 toc("semi H1 error norm");
-                return { { "L2", l2 }, {  "H1", h1 }, {"semih1",semih1} };
+                return { { "L2", l2/l2_p }, {  "H1", h1/h1_p }, {"semih1",semih1/semih1_p} };
             };
 
         int status = checker("L2/H1 and SemiH1 norms on potential",p_exact_str).runOnce( norms, rate::hp( mesh->hMax(), cgXh->fe()->order() ) );
@@ -215,6 +226,8 @@ int hdg_laplacian()
                           _expr=id(l)*un_exact, _quad=ioption("rhs_quad")  );
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                           _expr=id(l)*p_exact, _quad=ioption("rhs_quad") );
+    rhs(2_c) += integrate( _range=markedfaces(mesh, "Robin"),
+                           _expr=id(l)*r_2);
     
     toc("rhs",true);
     tic();
@@ -413,17 +426,20 @@ int hdg_laplacian()
     auto norms_u = [=]( std::string const& solution ) ->std::map<std::string,double>
         {
             tic();
+            auto l2_u = normL2( _range=elements(mesh), _expr=u_exact );
             auto l2err_u = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
             toc("L2 error norm u");
-            return { { "L2", l2err_u }};
+            return { { "L2", l2err_u/l2_u }};
         };
 
     auto norms_p = [=]( std::string const& solution ) ->std::map<std::string,double>
         {
             tic();
+            double l2_p = 1;
             double l2err_p = 1e+30;
             if ( has_dirichlet )
             {
+                l2_p = normL2( _range=elements(mesh), _expr=expr(solution) );
                 l2err_p = normL2( _range=elements(mesh), _expr=expr(solution) - idv(pp) );
             }
             else
@@ -432,17 +448,19 @@ int hdg_laplacian()
                 auto mean_p = mean( elements(mesh), idv(pp) )(0,0);
                 l2err_p = normL2( elements(mesh),
                                   (expr(solution) - cst(mean_p_exact)) - (idv(pp) - cst(mean_p)) );
+                l2_p = normL2( _range=elements(mesh), _expr=expr(solution)- cst(mean_p_exact) );
             }
             toc("L2 error norm p");
-            return { { "L2", l2err_p }};
+            return { { "L2", l2err_p/l2_p }};
         };
     auto norms_ppp = [=]( std::string const& solution ) ->std::map<std::string,double>
         {
             tic();
+            double l2_p = normL2( elements(mesh), expr(solution) );
             double l2err_p = 1e+30;
             l2err_p = normL2( elements(mesh), expr(solution) - idv(ppp) );
             toc("L2 error norm ppp");
-            return { { "L2", l2err_p }};
+            return { { "L2", l2err_p/l2_p }};
         };
 #if 0
     int status = checker().runOnce( {norms_p,norms_u},
@@ -477,15 +495,16 @@ int main( int argc, char** argv )
     if ( ioption( "order" ) == 1 )
         return !hdg_laplacian<FEELPP_DIM,1>();
 
+    
     if ( ioption( "order" ) == 2 )
         return !hdg_laplacian<FEELPP_DIM,2>();
 
-
+#if 0
     if ( ioption( "order" ) == 3 )
         return !hdg_laplacian<FEELPP_DIM,3>();
 
     if ( ioption( "order" ) == 4 )
         return !hdg_laplacian<FEELPP_DIM,4>();
-
+#endif
     return 1;
 }

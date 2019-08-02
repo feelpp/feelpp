@@ -5,6 +5,12 @@ if 'k' in locals():
 else:
     k=sympify(-1)
 print("k=",k);
+if 'r_1' in locals():
+    r_1=sympify(locals()['r_1']);
+else:
+    r_1=sympify(1)
+
+print("r_1=",r_1);
 if 'p' in locals():
     p=sympify(locals()['p']);
 else:
@@ -24,6 +30,11 @@ flux=-k*grad(p,s);
 u=flux;
 un=n(flux,1,ns);
 f=div(flux,s);
-
+if 'r_2' in locals():
+    r_2=un+r_1*p #
+    #r_2=sympify(locals()['r_2']);
+else:
+    r_2=un+r_1*p
+print("r_2=",r_2)
 
 
