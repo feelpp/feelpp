@@ -29,7 +29,7 @@ FSI<FluidType,SolidType>::updateLinearPDEDofElimination_Fluid( DataUpdateLinear 
         bilinearForm +=
             on( _range=M_rangeFSI_fluid,
                 _element=u, _rhs=F,
-                _expr=idv(M_fluidModel->meshVelocity2()) );
+                _expr=idv(this/*M_fluidModel*/->meshVelocity2()) );
 
         this->log("FSI","updateLinearPDEDofElimination_Fluid", "finish" );
     }
@@ -49,7 +49,7 @@ FSI<FluidType,SolidType>::updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess
         auto up = Xh->element( U, M_fluidModel->rowStartInVector() );
         auto u = up.template element<0>();
         u.on(_range=M_rangeFSI_fluid,
-             _expr=idv( M_fluidModel->meshVelocity2() ) );
+             _expr=idv( this/*M_fluidModel*/->meshVelocity2() ) );
         // update info for synchronization
         M_fluidModel->updateDofEliminationIds( "velocity", this->dofEliminationIds( "fluid.velocity" ), data );
 
@@ -154,7 +154,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
             //M_fluidModel->meshALE()->revertReferenceMesh();
             linearForm +=
                 integrate( _range=rangeFSI,
-                           _expr= ( gammaRobinFSI*muExpr/hFace() )*inner(idv(M_fluidModel->meshVelocity2()),id(u)),
+                           _expr= ( gammaRobinFSI*muExpr/hFace() )*inner(idv(this/*M_fluidModel*/->meshVelocity2()),id(u)),
                            _geomap=this->geomap() );
             //M_fluidModel->meshALE()->revertMovingMesh();
         }
@@ -197,7 +197,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
                     //M_fluidModel->meshALE()->revertReferenceMesh();
                     linearForm +=
                         integrate( _range=rangeFSI,
-                                   _expr= -inner(idv(M_fluidModel->meshVelocity2()),vf::N())*id(p),
+                                   _expr= -inner(idv(this/*M_fluidModel*/->meshVelocity2()),vf::N())*id(p),
                                    _geomap=this->geomap() );
                 }
                 else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
@@ -205,7 +205,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
                     //M_fluidModel->meshALE()->revertReferenceMesh();
                     linearForm +=
                         integrate( _range=rangeFSI,
-                                   _expr= -inner(idv(M_fluidModel->meshVelocity2()),mysigma*vf::N()),
+                                   _expr= -inner(idv(this/*M_fluidModel*/->meshVelocity2()),mysigma*vf::N()),
                                    _geomap=this->geomap() );
                 }
                 //M_fluidModel->meshALE()->revertMovingMesh();
@@ -442,7 +442,7 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
                            _geomap=this->geomap() );
             linearForm +=
                 integrate( _range=rangeFSI,
-                           _expr= -(gammaRobinFSI*muExpr/hFace())*inner(idv(M_fluidModel->meshVelocity2()),id(u)),
+                           _expr= -(gammaRobinFSI*muExpr/hFace())*inner(idv(this/*M_fluidModel*/->meshVelocity2()),id(u)),
                            _geomap=this->geomap() );
         }
         if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
@@ -483,14 +483,14 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
                 {
                     linearForm +=
                         integrate( _range=rangeFSI,
-                                   _expr= inner(idv(M_fluidModel->meshVelocity2()),vf::N())*id(p),
+                                   _expr= inner(idv(this/*M_fluidModel*/->meshVelocity2()),vf::N())*id(p),
                                    _geomap=this->geomap() );
                 }
                 else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
                 {
                     linearForm +=
                         integrate( _range=rangeFSI,
-                                   _expr= inner(idv(M_fluidModel->meshVelocity2()),mysigma*vf::N()),
+                                   _expr= inner(idv(this/*M_fluidModel*/->meshVelocity2()),mysigma*vf::N()),
                                    _geomap=this->geomap() );
                 }
             }

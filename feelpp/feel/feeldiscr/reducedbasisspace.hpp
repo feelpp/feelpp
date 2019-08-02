@@ -922,10 +922,6 @@ public :
                     {
                         if ( !M_meshForRbContext->hasElement( meshEltCtx.id() ) )
                         {
-                            auto geondEltCommon = std::make_shared<GeoNDCommon<typename mesh_type::element_type::super>>( M_meshForRbContext.get(),
-                                                                                                                            M_meshForRbContext->gm(),
-                                                                                                                            M_meshForRbContext->gm1() );
-                            meshEltCtx.setCommonData( geondEltCommon );
                             M_meshForRbContext->addElement( meshEltCtx, false );
                         }
                         auto const& meshEltCtxRegister = M_meshForRbContext->element( meshEltCtx.id() );
@@ -1143,10 +1139,6 @@ public :
                 if ( !M_meshForRbContext->hasElement( modelMeshEltCtx.id(), modelMeshEltCtx.processId() ) )
                 {
                     geoelement_type meshEltCtx = modelMeshEltCtx;;
-                    auto geondEltCommon = std::make_shared<GeoNDCommon<typename mesh_type::element_type::super>>( M_meshForRbContext.get(),
-                                                                                                                    M_meshForRbContext->gm(),
-                                                                                                                    M_meshForRbContext->gm1() );
-                    meshEltCtx.setCommonData( geondEltCommon );
                     M_meshForRbContext->addElement( meshEltCtx, false );
                 }
             }

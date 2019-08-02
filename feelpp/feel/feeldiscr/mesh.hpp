@@ -320,6 +320,13 @@ class Mesh
         M_tool_localization.reset();
         super::clear();
     }
+
+    //! return current shared_ptr of type MeshBase
+    std::shared_ptr<MeshBase<IndexT>> shared_from_this_meshbase() override { return std::dynamic_pointer_cast<MeshBase<IndexT>>( this->shared_from_this() );  }
+
+    //! return current shared_ptr of type MeshBase
+    std::shared_ptr<const MeshBase<IndexT>> shared_from_this_meshbase() const override { return std::dynamic_pointer_cast<const MeshBase<IndexT>>( this->shared_from_this() );  }
+
     //!
     //! @brief allocate a new Mesh
     //! @param worldcomm communicator defaulting to Environment::worldComm()
@@ -937,6 +944,42 @@ class Mesh
     element_iterator eraseElement( element_iterator position, bool modify = true );
 
     //!
+    //! add a new element in the mesh
+    //! @param f a new point
+    //! @return the new point from the list
+    //!
+    std::pair<element_iterator,bool> addElement( element_type& f, bool setid = true )
+    {
+        auto ret = super::addElement( f, setid );
+        if ( ret.second )
+        {
+            if ( !M_geondEltCommon )
+                M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
+            auto & eltInserted = ret.first->second;
+            eltInserted.setCommonData( M_geondEltCommon.get() );
+        }
+        return ret;
+    }
+
+    //!
+    //! move an element into the mesh
+    //! @param f a new point
+    //! @return the new point from the list
+    //!
+    std::pair<element_iterator,bool> addElement( element_type&& f )
+    {
+        auto ret = super::addElement( f );
+        if ( ret.second )
+        {
+            if ( !M_geondEltCommon )
+                M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
+            auto & eltInserted = ret.first->second;
+            eltInserted.setCommonData( M_geondEltCommon.get() );
+        }
+        return ret;
+    }
+
+    //!
     //!  @brief compute the trace mesh
     //!  @details compute the trace mesh associated to the
     //!  range \p range and tag \p TheTag. The \p range provides
@@ -1328,6 +1371,9 @@ class Mesh
     //!
     void updateForUse() override;
 
+    //! update the mesh when nodes have moved
+    void updateForUseAfterMovingNodes( bool upMeasures = true ) override;
+
     //!
     //!  update hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh
     //!
@@ -1658,6 +1704,13 @@ class Mesh
     //!  tool for localize point in the mesh
     //!
     std::shared_ptr<Localization<self_type>> M_tool_localization;
+
+    //! data accessibles in each elements
+    std::shared_ptr<GeoNDCommon<typename element_type::super>> M_geondEltCommon;
+    //! data accessibles in each faces
+    std::shared_ptr<GeoNDCommon<typename face_type::super>> M_geondFaceCommon;
+    //! data accessibles in each edges
+    std::shared_ptr<GeoNDCommon<typename edge_type::super>> M_geondEdgeCommon;
 };
 
 template <typename Shape, typename T, int Tag, typename IndexT>
@@ -1667,7 +1720,7 @@ Mesh<Shape, T, Tag, IndexT>::trace( RangeT const& range ) const
 {
     DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh<const mesh_type, RangeT, Tag>( this->shared_from_this(), range );
+    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT>
@@ -1677,7 +1730,7 @@ Mesh<Shape, T, Tag, IndexT>::wireBasket( RangeT const& range ) const
 {
     DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh<const mesh_type, RangeT, Tag>( this->shared_from_this(), range );
+    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
 }
 
 template <int TheTag>
@@ -1692,7 +1745,7 @@ Mesh<Shape, T, Tag, IndexT>::trace( RangeT const& range, mpl::int_<TheTag> ) con
 {
     DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh<const mesh_type, RangeT, TheTag>( this->shared_from_this(), range );
+    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT>
@@ -1702,7 +1755,7 @@ Mesh<Shape, T, Tag, IndexT>::wireBasket( RangeT const& range, mpl::int_<TheTag> 
 {
     DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh<const mesh_type, RangeT, TheTag>( this->shared_from_this(), range );
+    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT>
@@ -1943,7 +1996,8 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( size_type ctxExtraction, size_type ct
         } //for ( uint16_type n=0; n < element_type::numVertices; n++ )
 
         //!  Add an equivalent element type to the new_mesh
-        auto const& e = new_mesh->addElement( new_elem );
+        auto eit = new_mesh->addElement( new_elem );
+        auto const& e = eit.first->second;
         if ( keepMeshRelation )
             smd->bm.insert( typename SubMeshData<>::bm_type::value_type( e.id(), old_elem.id() ) );
 

@@ -74,7 +74,7 @@ public:
     /// function on the 2D/3D domain.
     void testEdges()
     {
-        auto mesh1d = createSubmesh( M_mesh, markededges( M_mesh, "L" ) );
+        auto mesh1d = createSubmesh( _mesh=M_mesh, _range=markededges( M_mesh, "L" ) );
 
         auto Xh = Pch<H_ORDER>(M_mesh);
         auto Xh1d = Pch<H_ORDER>(mesh1d);
@@ -111,7 +111,7 @@ public:
     /// function on the 2D/3D domain.
     void testSurfaces()
     {
-        auto mesh2d = createSubmesh( M_mesh, markedfaces(M_mesh,"S") );
+        auto mesh2d = createSubmesh( _mesh=M_mesh, _range=markedfaces(M_mesh,"S") );
 
         auto Xh = Pch<H_ORDER>(M_mesh);
         auto Xh2d = Pch<H_ORDER>(mesh2d);

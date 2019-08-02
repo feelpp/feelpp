@@ -66,7 +66,7 @@ void run( int benchId, bool useVariantIntegrate = false )
     typedef mesh_type::trace_mesh_type trace_mesh_type;
 
     auto submesh = (benchId==1)?
-        createSubmesh( mesh, markedfaces(mesh,"Boundary1") ) :
+        createSubmesh( _mesh=mesh, _range=markedfaces(mesh,"Boundary1") ) :
         L.createMesh(_mesh=new trace_mesh_type,_name="domainLine" );
 
     auto Vh = Pch<1>( mesh );

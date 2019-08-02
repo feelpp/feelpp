@@ -281,7 +281,7 @@ test_tensor2(std::string const& name, std::shared_ptr<typename SpaceT::mesh_type
     using Mh_t = Pdhv_type<face_mesh_type, 2>;
     using Mh_ptr_t = Pdhv_ptrtype<face_mesh_type, 2>;
 
-    auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh),_update=0 );
     Mh_ptr_t Mh = Pdhv<2>( face_mesh, true );
     auto l = Mh->element();
     l.on( _range=elements(face_mesh), _expr=ones<2,1>());

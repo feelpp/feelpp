@@ -289,26 +289,8 @@ template<typename MeshType>
 void
 MeshMover<MeshType>::updateForUse( mesh_ptrtype& imesh )
 {
-    // reset geomap cache
-    if ( imesh->gm()->isCached() )
-    {
-        imesh->gm()->initCache( imesh.get() );
-        if ( mesh_type::nOrder > 1 )
-            imesh->gm1()->initCache( imesh.get() );
-    }
-
-    // update measures
-    if ( M_updateMeshMeasures )
-        imesh->updateMeasures();
-
-    // reset localisation tool
-    imesh->tool_localization()->reset();
-
-#if !defined( __INTEL_COMPILER )
-    // notify observers that the mesh has changed
-    LOG(INFO) << "Notify observers that the mesh has changed\n";
-    imesh->meshChanged(MESH_CHANGES_POINTS_COORDINATES );
-#endif
+    for ( auto m : imesh->meshesWithNodesShared() )
+        m->updateForUseAfterMovingNodes( M_updateMeshMeasures );
 }
 
 
