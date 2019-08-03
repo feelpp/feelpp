@@ -47,6 +47,7 @@
 #include <feel/feelcrb/parameterspace.hpp>
 
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/print.hpp>
 
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
@@ -218,7 +219,13 @@ public:
         if constexpr ( space_type::nDim == 2 )
             form1( _test=this->space(), _vector=this->containerPtr() ) = integrate(_range=elements(this->space()->mesh()), _expr=id(v)*exp(( pow(Px()-M_center[0],2)+pow(Py()-M_center[1],2))/(2*std::pow(M_radius,2))) );
         if constexpr ( space_type::nDim == 3 )
-            form1( _test=this->space(), _vector=this->containerPtr() ) = integrate(_range=elements(this->space()->mesh()), _expr=id(v)*exp(( pow(Px()-M_center[0],2)+pow(Py()-M_center[1],2)+pow(Pz()-M_center[2],2))/(2*std::pow(M_radius,2))) );
+        {
+            Feel::cout << "center: { " << M_center[0] << "," << M_center[1] << "," << M_center[2] << "}" << std::endl;
+            Feel::cout << "radius: " << M_radius << std::endl;
+            form1( _test=this->space(), _vector=this->containerPtr() ) = integrate(_range=elements(this->space()->mesh()), _expr=id(v)*exp(-inner(P()-vec(cst(M_center[0]),cst(M_center[1]),cst(M_center[2])))/(2*std::pow(M_radius,2)) ) );
+            if ( Environment::isSequential() )
+                this->containerPtr()->printMatlab(this->name()+".m");
+        }
         //super_type::operator= ( expr );
         this->close();
     }

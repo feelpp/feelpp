@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE( t1 )
     auto Vh = Pch<1>( mesh );
 
     //SensorDescriptionMap<3> desc( Environment::expand( soption( "sensor.filename" ) ) );
-    SensorDescriptionMap<3> desc( Environment::expand( "$cfgdir/sensordesc_bis.csv" ) );
+    SensorDescriptionMap<3> desc( Environment::expand( "$cfgdir/sensordesc_35_37.csv" ) );
     SensorMap<Pch_type<Mesh<Simplex<3>>,1>> sensors( Vh, desc );
 
     auto v = Vh->element();
