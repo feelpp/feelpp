@@ -23,52 +23,54 @@
  */
 #include <feel/feelconfig.h>
 
-
-#include <feel/feeldiscr/meshstructured.hpp>
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
+#include <feel/feeldiscr/meshstructured.hpp>
 
 typedef boost::geometry::model::d2::point_xy<double> poly_point_type;
 typedef boost::geometry::model::segment<poly_point_type> segment_type;
 typedef boost::geometry::model::polygon<poly_point_type> polygon_type;
 
-namespace Feel {
-
-MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<float> cx, holo3_image<float> cy,
-                                worldcomm_ptr_t const& wc = Environment::worldCommPtr(),
-                                std::string pathPoly="",  bool withCoord = false, bool withPoly = false)
-    :
-    super( wc ),
-    M_nx( nx ),
-    M_ny( ny ),
-    M_cx( cx ),
-    M_cy( cy ),
-    M_pixelsize( pixelsize )
+namespace Feel
 {
-    VLOG(1) << "nx x ny = " << nx << " x " << ny << "\t" << nx*ny << std::endl;
+
+MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
+                                std::optional<holo3_image<float>> const& cx,
+                                std::optional<holo3_image<float>> const& cy,
+                                worldcomm_ptr_t const& wc = Environment::worldCommPtr(),
+                                bool withCoord,
+                                std::string pathPoly, bool withPoly )
+    : super( wc ),
+      M_nx( nx ),
+      M_ny( ny ),
+      M_cx( cx ),
+      M_cy( cy ),
+      M_pixelsize( pixelsize )
+{
+    VLOG( 1 ) << "nx x ny = " << nx << " x " << ny << "\t" << nx * ny << std::endl;
 
     rank_type nProc = wc->localSize();
     rank_type partId = wc->localRank();
 
     // compute parallel distribution with column scheme partitioning
-    size_type nTotalPointsByCol = M_ny + (nProc-1);
-    size_type nPtByColByProc = ( M_ny + (nProc-1))/nProc;
-    if ( nTotalPointsByCol <= nPtByColByProc*(nProc-1) )
+    size_type nTotalPointsByCol = M_ny + ( nProc - 1 );
+    size_type nPtByColByProc = ( M_ny + ( nProc - 1 ) ) / nProc;
+    if ( nTotalPointsByCol <= nPtByColByProc * ( nProc - 1 ) )
         --nPtByColByProc;
-    std::vector<size_type> nPtByCol(nProc,nPtByColByProc);
-    if ( nPtByColByProc*nProc < nTotalPointsByCol )
+    std::vector<size_type> nPtByCol( nProc, nPtByColByProc );
+    if ( nPtByColByProc * nProc < nTotalPointsByCol )
     {
-        size_type nPointToDistribute = nTotalPointsByCol - nPtByColByProc*nProc;
-        for ( size_type k=0;k<nPointToDistribute;++k )
+        size_type nPointToDistribute = nTotalPointsByCol - nPtByColByProc * nProc;
+        for ( size_type k = 0; k < nPointToDistribute; ++k )
         {
             if ( k < nProc )
-                ++nPtByCol[nProc-1-k];
+                ++nPtByCol[nProc - 1 - k];
         }
     }
-    std::vector<size_type> startColPtId(nProc,0);
-    for (rank_type p=1;p<nProc;++p )
-        startColPtId[p]=startColPtId[p-1]+(nPtByCol[p-1]-1);
+    std::vector<size_type> startColPtId( nProc, 0 );
+    for ( rank_type p = 1; p < nProc; ++p )
+        startColPtId[p] = startColPtId[p - 1] + ( nPtByCol[p - 1] - 1 );
 
 #if 0
     if ( this->worldComm().isMasterRank() )
@@ -79,263 +81,257 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
         std::cout<< "\n";
     }
 #endif
-    std::map<int,boost::tuple<int,rank_type> > mapGhostElt;
-    std::map<int,int> idStructuredMeshToFeelMesh;
+    std::map<int, boost::tuple<int, rank_type>> mapGhostElt;
+    std::map<int, int> idStructuredMeshToFeelMesh;
     node_type coords( 2 );
 
-    
     // polygon build
-    std::vector<polygon_type> list_poly ;
+    std::vector<polygon_type> list_poly;
     //std::cout << list_poly.size() << std::endl;
     polygon_type poly;
     bool inPoly = false;
     bool testInPoly = false;
-    if (withPoly)
+    if ( withPoly )
     {
-        polygon_type p ;
-        std::ifstream flux(pathPoly) ;
-        int nbPolygons ;
-        int nbVertices ;
-        double coordX, coordY ;
-        flux >> nbPolygons ;
+        polygon_type p;
+        std::ifstream flux( pathPoly );
+        int nbPolygons;
+        int nbVertices;
+        double coordX, coordY;
+        flux >> nbPolygons;
         //std::cout<< "nP " << nbPolygons <<  std::endl;
-        for (int j = 0 ; j < nbPolygons ; j ++) {
-            flux >> nbVertices ;
+        for ( int j = 0; j < nbPolygons; j++ )
+        {
+            flux >> nbVertices;
             //std::cout<< "nV: " << nbVertices <<  std::endl;
-            for (int i = 0 ; i < nbVertices ; i ++) {
-                flux >> coordX ;
-                flux >> coordY ;
-                p.outer().push_back(poly_point_type(coordX*pixelsize, coordY*pixelsize)) ;
-
+            for ( int i = 0; i < nbVertices; i++ )
+            {
+                flux >> coordX;
+                flux >> coordY;
+                p.outer().push_back( poly_point_type( coordX * pixelsize, coordY * pixelsize ) );
             }
-            p.outer().push_back(poly_point_type(p.outer().at(0).x(), p.outer().at(0).y())) ;
+            p.outer().push_back( poly_point_type( p.outer().at( 0 ).x(), p.outer().at( 0 ).y() ) );
 
-            list_poly.push_back(p) ;
-            p.clear() ;
+            list_poly.push_back( p );
+            p.clear();
         }
     }
     //std::cout<< "poly build end"<< std::endl;
 
-
     // active points
-    for( int j = startColPtId[partId] ; j < startColPtId[partId]+nPtByCol[partId]; ++j )
+    for ( int j = startColPtId[partId]; j < startColPtId[partId] + nPtByCol[partId]; ++j )
     {
-        for( int i = 0 ; i < M_nx; ++i )
+        for ( int i = 0; i < M_nx; ++i )
         {
-            int ptid = (M_ny)*i+j;
-            if ( withCoord )
+            int ptid = (M_ny)*i + j;
+            if ( withCoord && M_cx && M_cy )
             {
-            coords[0]=M_cy(j,i);
-            coords[1]=M_cx(j,i);
+                coords[0] = (*M_cy)( j, i );
+                coords[1] = (*M_cx)( j, i );
             }
             else
             {
-            coords[0]=M_pixelsize*j;
-            coords[1]=M_pixelsize*i;
+                coords[0] = M_pixelsize * j;
+                coords[1] = M_pixelsize * i;
             }
-            if (withPoly)
+            if ( withPoly )
             {
-                poly_point_type p(coords[0],coords[1]);
-                for (int k=0;k<list_poly.size();k++)
+                poly_point_type p( coords[0], coords[1] );
+                for ( int k = 0; k < list_poly.size(); k++ )
                 {
-                    poly= list_poly[k];
-                    testInPoly=boost::geometry::within(p,poly);
-                    inPoly=(inPoly)||(testInPoly);
+                    poly = list_poly[k];
+                    testInPoly = boost::geometry::within( p, poly );
+                    inPoly = ( inPoly ) || ( testInPoly );
                 }
             }
-            if ( (!withPoly)||(!inPoly))
+            if ( ( !withPoly ) || ( !inPoly ) )
             {
-            point_type pt( ptid,coords );
-            pt.setProcessId( partId );
-            pt.setProcessIdInPartition( partId );
-            this->addPoint( pt );
+                point_type pt( ptid, coords );
+                pt.setProcessId( partId );
+                pt.setProcessIdInPartition( partId );
+                this->addPoint( pt );
             }
-            inPoly=false;
+            inPoly = false;
         }
     }
 
     // ghost points (not belong to active partition)
     std::vector<size_type> ghostPointColDesc;
     if ( partId > 0 )
-        ghostPointColDesc.push_back( startColPtId[partId]-1 );
-    if ( partId < (nProc-1) )
-        ghostPointColDesc.push_back( startColPtId[partId]+nPtByCol[partId] );
+        ghostPointColDesc.push_back( startColPtId[partId] - 1 );
+    if ( partId < ( nProc - 1 ) )
+        ghostPointColDesc.push_back( startColPtId[partId] + nPtByCol[partId] );
     for ( int j : ghostPointColDesc )
     {
-        for( int i = 0 ; i < M_nx; ++i )
+        for ( int i = 0; i < M_nx; ++i )
         {
-            int ptid = (M_ny)*i+j;
-            if ( withCoord )
+            int ptid = (M_ny)*i + j;
+            if ( withCoord && M_cx && M_cy )
             {
-            coords[0]=M_cy(j,i);
-            coords[1]=M_cx(j,i);
+                coords[0] = (*M_cy)( j, i );
+                coords[1] = (*M_cx)( j, i );
             }
             else
             {
-            coords[0]=M_pixelsize*j;
-            coords[1]=M_pixelsize*i;
+                coords[0] = M_pixelsize * j;
+                coords[1] = M_pixelsize * i;
             }
-            point_type pt( ptid,coords );
+            point_type pt( ptid, coords );
             pt.setProcessId( invalid_rank_type_value );
-            pt.setProcessIdInPartition( partId  );
+            pt.setProcessIdInPartition( partId );
             this->addPoint( pt );
         }
     }
-    
+
     // active elements
     size_type startColPtIdForElt = startColPtId[partId];
-    size_type stopColPtIdForElt = startColPtId[partId]+(nPtByCol[partId]-1);
-    for( int j = startColPtIdForElt ; j < stopColPtIdForElt; ++j )
+    size_type stopColPtIdForElt = startColPtId[partId] + ( nPtByCol[partId] - 1 );
+    for ( int j = startColPtIdForElt; j < stopColPtIdForElt; ++j )
     {
         rank_type neighborProcessId = invalid_rank_type_value;
         if ( partId > 0 )
             if ( j == startColPtIdForElt )
-                neighborProcessId=partId-1;
-        if ( partId < (nProc-1) )
-            if ( j == (stopColPtIdForElt-1) )
-                neighborProcessId=partId+1;
+                neighborProcessId = partId - 1;
+        if ( partId < ( nProc - 1 ) )
+            if ( j == ( stopColPtIdForElt - 1 ) )
+                neighborProcessId = partId + 1;
 
-        for( int i = 0 ; i < M_nx-1; ++i )
+        for ( int i = 0; i < M_nx - 1; ++i )
         {
-            if (withPoly)
+            if ( withPoly )
             {
                 poly_point_type p1;
                 poly_point_type p2;
                 poly_point_type p3;
                 poly_point_type p4;
-                if (withCoord)
+                if ( withCoord && M_cx && M_cy )
                 {
-                    p1=poly_point_type(M_cy(j,i+1),M_cx(j,i+1));
-                    p2=poly_point_type(M_cy(j+1,i+1),M_cx(j+1,i+1));
-                    p3=poly_point_type(M_cy(j+1,i),M_cx(j+1,i));
-                    p4=poly_point_type(M_cy(j,i),M_cx(j,i));
+                    p1 = poly_point_type( (*M_cy)( j, i + 1 ), (*M_cx)( j, i + 1 ) );
+                    p2 = poly_point_type( (*M_cy)( j + 1, i + 1 ), (*M_cx)( j + 1, i + 1 ) );
+                    p3 = poly_point_type( (*M_cy)( j + 1, i ), (*M_cx)( j + 1, i ) );
+                    p4 = poly_point_type( (*M_cy)( j, i ), (*M_cx)( j, i ) );
                 }
                 else
                 {
-                    p1=poly_point_type(M_pixelsize*j,M_pixelsize*(i+1));
-                    p2=poly_point_type(M_pixelsize*(j+1),M_pixelsize*(i+1));
-                    p3=poly_point_type(M_pixelsize*(j+1),M_pixelsize*i);
-                    p4=poly_point_type(M_pixelsize*j,M_pixelsize*i);
+                    p1 = poly_point_type( M_pixelsize * j, M_pixelsize * ( i + 1 ) );
+                    p2 = poly_point_type( M_pixelsize * ( j + 1 ), M_pixelsize * ( i + 1 ) );
+                    p3 = poly_point_type( M_pixelsize * ( j + 1 ), M_pixelsize * i );
+                    p4 = poly_point_type( M_pixelsize * j, M_pixelsize * i );
                 }
 
-                for (int k=0;k<list_poly.size();k++)
+                for ( int k = 0; k < list_poly.size(); k++ )
                 {
-                    poly= list_poly[k];
-                    bool testInPoly1=boost::geometry::within(p1,poly);
-                    bool testInPoly2=boost::geometry::within(p2,poly);
-                    bool testInPoly3=boost::geometry::within(p3,poly);
-                    bool testInPoly4=boost::geometry::within(p4,poly);
-                    inPoly=(inPoly)||(testInPoly1)||(testInPoly2)||(testInPoly3)||(testInPoly4);
+                    poly = list_poly[k];
+                    bool testInPoly1 = boost::geometry::within( p1, poly );
+                    bool testInPoly2 = boost::geometry::within( p2, poly );
+                    bool testInPoly3 = boost::geometry::within( p3, poly );
+                    bool testInPoly4 = boost::geometry::within( p4, poly );
+                    inPoly = ( inPoly ) || ( testInPoly1 ) || ( testInPoly2 ) || ( testInPoly3 ) || ( testInPoly4 );
                 }
-
             }
-            if ( (!withPoly)||(!inPoly))
+            if ( ( !withPoly ) || ( !inPoly ) )
             {
-            size_type eid = (M_ny-1)*i+j; // StructuredMesh Id
-            element_type e;
-            e.setProcessIdInPartition( partId );
-            e.setProcessId( partId );
-            size_type ptid[4] = { (M_ny)*(i+1)+j,   // 0
-                                  (M_ny)*(i+1)+j+1, // 1
-                                  (M_ny)*i+j+1,     // 2
-                                  (M_ny)*i+j     }; // 3
+                size_type eid = ( M_ny - 1 ) * i + j; // StructuredMesh Id
+                element_type e;
+                e.setMarker( 1, 1 );
+                e.setProcessIdInPartition( partId );
+                e.setProcessId( partId );
+                size_type ptid[4] = {( M_ny ) * ( i + 1 ) + j,     // 0
+                                     ( M_ny ) * ( i + 1 ) + j + 1, // 1
+                                     (M_ny)*i + j + 1,             // 2
+                                     (M_ny)*i + j};                // 3
 
-            for( uint16_type k = 0; k < 4; ++k )
-                e.setPoint( k, this->point( ptid[k]  ) );
-            if ( neighborProcessId != invalid_rank_type_value )
-                e.addNeighborPartitionId( neighborProcessId );
+                for ( uint16_type k = 0; k < 4; ++k )
+                    e.setPoint( k, this->point( ptid[k] ) );
+                if ( neighborProcessId != invalid_rank_type_value )
+                    e.addNeighborPartitionId( neighborProcessId );
 
-            auto const& eltInserted = this->addElement( e, true ); // e.id() is defined by Feel++
-            idStructuredMeshToFeelMesh.insert( std::make_pair(eid,eltInserted.id()));
+                auto [eit,inserted] = this->addElement( e, true ); // e.id() is defined by Feel++
+                idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eit->second.id() ) );
             }
-            inPoly=false;
+            inPoly = false;
         }
     }
 
     // ghost elements (touch active partition with a point)
-    std::vector<std::pair<size_type,rank_type> > ghostEltColDesc;
+    std::vector<std::pair<size_type, rank_type>> ghostEltColDesc;
     if ( partId > 0 )
-        ghostEltColDesc.push_back( std::make_pair( startColPtId[partId]-1, partId-1) );
-    if ( partId < (nProc-1) )
-        ghostEltColDesc.push_back( std::make_pair( startColPtId[partId]+nPtByCol[partId]-1, partId+1) );
+        ghostEltColDesc.push_back( std::make_pair( startColPtId[partId] - 1, partId - 1 ) );
+    if ( partId < ( nProc - 1 ) )
+        ghostEltColDesc.push_back( std::make_pair( startColPtId[partId] + nPtByCol[partId] - 1, partId + 1 ) );
     for ( auto const& ghostEltCol : ghostEltColDesc )
     {
         int j = ghostEltCol.first;
         rank_type partIdGhost = ghostEltCol.second;
-        for( int i = 0 ; i < M_nx-1; ++i )
+        for ( int i = 0; i < M_nx - 1; ++i )
         {
-            if (withPoly)
+            if ( withPoly )
             {
                 poly_point_type p1;
                 poly_point_type p2;
                 poly_point_type p3;
                 poly_point_type p4;
-                if (withCoord)
+                if ( withCoord && M_cx && M_cy )
                 {
-                    p1=poly_point_type(M_cy(j,i+1),M_cx(j,i+1));
-                    p2=poly_point_type(M_cy(j+1,i+1),M_cx(j+1,i+1));
-                    p3=poly_point_type(M_cy(j+1,i),M_cx(j+1,i));
-                    p4=poly_point_type(M_cy(j,i),M_cx(j,i));
+                    p1 = poly_point_type( (*M_cy)( j, i + 1 ), (*M_cx)( j, i + 1 ) );
+                    p2 = poly_point_type( (*M_cy)( j + 1, i + 1 ), (*M_cx)( j + 1, i + 1 ) );
+                    p3 = poly_point_type( (*M_cy)( j + 1, i ), (*M_cx)( j + 1, i ) );
+                    p4 = poly_point_type( (*M_cy)( j, i ), (*M_cx)( j, i ) );
                 }
                 else
                 {
-                    p1=poly_point_type(M_pixelsize*j,M_pixelsize*(i+1));
-                    p2=poly_point_type(M_pixelsize*(j+1),M_pixelsize*(i+1));
-                    p3=poly_point_type(M_pixelsize*(j+1),M_pixelsize*i);
-                    p4=poly_point_type(M_pixelsize*j,M_pixelsize*i);
+                    p1 = poly_point_type( M_pixelsize * j, M_pixelsize * ( i + 1 ) );
+                    p2 = poly_point_type( M_pixelsize * ( j + 1 ), M_pixelsize * ( i + 1 ) );
+                    p3 = poly_point_type( M_pixelsize * ( j + 1 ), M_pixelsize * i );
+                    p4 = poly_point_type( M_pixelsize * j, M_pixelsize * i );
                 }
-                for (int k=0;k<list_poly.size();k++)
+                for ( int k = 0; k < list_poly.size(); k++ )
                 {
-                    poly= list_poly[k];
-                    bool testInPoly1=boost::geometry::within(p1,poly);
-                    bool testInPoly2=boost::geometry::within(p2,poly);
-                    bool testInPoly3=boost::geometry::within(p3,poly);
-                    bool testInPoly4=boost::geometry::within(p4,poly);
-                    inPoly=(inPoly)||(testInPoly1)||(testInPoly2)||(testInPoly3)||(testInPoly4);
+                    poly = list_poly[k];
+                    bool testInPoly1 = boost::geometry::within( p1, poly );
+                    bool testInPoly2 = boost::geometry::within( p2, poly );
+                    bool testInPoly3 = boost::geometry::within( p3, poly );
+                    bool testInPoly4 = boost::geometry::within( p4, poly );
+                    inPoly = ( inPoly ) || ( testInPoly1 ) || ( testInPoly2 ) || ( testInPoly3 ) || ( testInPoly4 );
+                }
+            }
+            if ( ( !withPoly ) || ( !inPoly ) )
+            {
+                size_type eid = ( M_ny - 1 ) * i + j; // StructuredMesh Id
+                element_type e;
+                e.setMarker( 1, 1 );
+                e.setProcessIdInPartition( partId );
+                e.setProcessId( partIdGhost );
+
+                size_type ptid[4] = {( M_ny ) * ( i + 1 ) + j,     // 0
+                                     ( M_ny ) * ( i + 1 ) + j + 1, // 1
+                                     (M_ny)*i + j + 1,             // 2
+                                     (M_ny)*i + j};                // 3
+
+                for ( uint16_type k = 0; k < 4; ++k )
+                {
+                    CHECK( this->hasPoint( ptid[k] ) ) << "mesh doesnt have this point id : " << ptid[k];
+                    e.setPoint( k, this->point( ptid[k] ) );
                 }
 
+                auto [eit,inserted] = this->addElement( e, true ); // e.id() is defined by Feel++
+                idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eit->second.id() ) );
+                mapGhostElt.insert( std::make_pair( eid, boost::make_tuple( idStructuredMeshToFeelMesh[eid], partIdGhost ) ) );
             }
-            if ( (!withPoly)||(!inPoly))
-            {
-            size_type eid = (M_ny-1)*i+j; // StructuredMesh Id
-            element_type e;
-            e.setProcessIdInPartition( partId );
-            e.setProcessId( partIdGhost );
-
-            size_type ptid[4] = { (M_ny)*(i+1)+j,   // 0
-                                  (M_ny)*(i+1)+j+1, // 1
-                                  (M_ny)*i+j+1,     // 2
-                                  (M_ny)*i+j     }; // 3
-
-            for( uint16_type k = 0; k < 4; ++k )
-            {
-                CHECK( this->hasPoint( ptid[k] ) ) << "mesh doesnt have this point id : " << ptid[k];
-                e.setPoint( k, this->point( ptid[k]  ) );
-            }
-
-            auto const& eltInserted = this->addElement( e, true ); // e.id() is defined by Feel++
-
-            idStructuredMeshToFeelMesh.insert( std::make_pair(eid,eltInserted.id()));
-            mapGhostElt.insert( std::make_pair( eid,boost::make_tuple( idStructuredMeshToFeelMesh[eid], partIdGhost ) ) );
-            }
-            inPoly=false;
+            inPoly = false;
         }
     }
 
-    std::vector<int> nbMsgToRecv(nProc,0);
+    std::vector<int> nbMsgToRecv( nProc, 0 );
     // ghost elts on left
     if ( partId > 0 )
-        nbMsgToRecv[partId-1] = 1;
+        nbMsgToRecv[partId - 1] = 1;
     // ghost elts on right
-    if ( partId < (nProc-1) )
-        nbMsgToRecv[partId+1] = 1;
+    if ( partId < ( nProc - 1 ) )
+        nbMsgToRecv[partId + 1] = 1;
 
-    this->updateGhostCellInfoByUsingNonBlockingComm( idStructuredMeshToFeelMesh,mapGhostElt,nbMsgToRecv );
-
+    this->updateGhostCellInfoByUsingNonBlockingComm( idStructuredMeshToFeelMesh, mapGhostElt, nbMsgToRecv );
 }
-
-
-
 
 #if 0
 MeshStructured::MeshStructured( int nx, int ny, double pixelsize, worldcomm_ptr_t const& wc )
@@ -352,7 +348,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, worldcomm_ptr_
     rank_type partId = wc->localRank();
     std::vector<int> nbMsgToRecv(wc->godSize(),0);
     //std::vector<int> nbMsgToRecv((M_nx-1)*(M_ny-1),0);
-    int procSize = wc->godSize();
+    int procSize = wc->ogodSize();
     // cx[rank] = first point Id of partition
     int cx[procSize+1];
     rank_type id;
@@ -724,7 +720,6 @@ int eid=0;
     toc("setElementInPart", FLAGS_v>0);
     tic();
 
-
 #if 1
 /* Ghost management */
     int j_inf =cx[partId];
@@ -902,15 +897,12 @@ int eid=0;
 }
 #endif
 
-
-
 //template<typename MeshType>
-void
-MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int,int> const& idStructuredMeshToFeelMesh,
-                                                           std::map<int,boost::tuple<int,rank_type> > const& mapGhostElt,
-                                                           std::vector<int> const& nbMsgToRecv )
+void MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int, int> const& idStructuredMeshToFeelMesh,
+                                                                std::map<int, boost::tuple<int, rank_type>> const& mapGhostElt,
+                                                                std::vector<int> const& nbMsgToRecv )
 {
-    DVLOG(1) << "updateGhostCellInfoNonBlockingComm : start on rank "<< this->worldComm().localRank() << "\n";
+    DVLOG( 1 ) << "updateGhostCellInfoNonBlockingComm : start on rank " << this->worldComm().localRank() << "\n";
 
     const int nProc = this->worldComm().localSize();
 
@@ -918,22 +910,22 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int,int> con
 
     //-----------------------------------------------------------//
     // compute size of container to send
-    std::map< rank_type, int > nDataInVecToSend;
+    std::map<rank_type, int> nDataInVecToSend;
     auto it_map = mapGhostElt.begin();
     auto const en_map = mapGhostElt.end();
-    for ( ; it_map!=en_map ; ++it_map )
+    for ( ; it_map != en_map; ++it_map )
     {
         const rank_type idProc = it_map->second.template get<1>();
-        if ( nDataInVecToSend.find(idProc) == nDataInVecToSend.end() )
-            nDataInVecToSend[idProc]=0;
+        if ( nDataInVecToSend.find( idProc ) == nDataInVecToSend.end() )
+            nDataInVecToSend[idProc] = 0;
         nDataInVecToSend[idProc]++;
     }
     //-----------------------------------------------------------//
     // init and resize the container to send
-    std::map< rank_type, std::vector<int> > dataToSend;
+    std::map<rank_type, std::vector<int>> dataToSend;
     auto itNDataInVecToSend = nDataInVecToSend.begin();
     auto const enNDataInVecToSend = nDataInVecToSend.end();
-    for ( ; itNDataInVecToSend!=enNDataInVecToSend ; ++itNDataInVecToSend )
+    for ( ; itNDataInVecToSend != enNDataInVecToSend; ++itNDataInVecToSend )
     {
         const rank_type idProc = itNDataInVecToSend->first;
         const int nData = itNDataInVecToSend->second;
@@ -941,17 +933,17 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int,int> con
     }
     //-----------------------------------------------------------//
     // prepare container to send
-    std::map< rank_type, std::map<int,int> > memoryMsgToSend;
-    std::map< rank_type, int > nDataInVecToSendBis;
+    std::map<rank_type, std::map<int, int>> memoryMsgToSend;
+    std::map<rank_type, int> nDataInVecToSendBis;
     it_map = mapGhostElt.begin();
-    for ( ; it_map!=en_map ; ++it_map )
+    for ( ; it_map != en_map; ++it_map )
     {
         const int idGmsh = it_map->first;
         const int idFeel = it_map->second.template get<0>();
         const rank_type idProc = it_map->second.template get<1>();
 
-        if ( nDataInVecToSendBis.find(idProc) == nDataInVecToSendBis.end() )
-            nDataInVecToSendBis[idProc]=0;
+        if ( nDataInVecToSendBis.find( idProc ) == nDataInVecToSendBis.end() )
+            nDataInVecToSendBis[idProc] = 0;
         // save request
         memoryMsgToSend[idProc][nDataInVecToSendBis[idProc]] = idFeel;
         // update container
@@ -959,76 +951,75 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int,int> con
         // update counter
         nDataInVecToSendBis[idProc]++;
         // std::cout << idProc << std::endl;
-
     }
     //-----------------------------------------------------------//
     // counter of request
-    int nbRequest=0;
-    for ( rank_type proc=0; proc<nProc; ++proc )
+    int nbRequest = 0;
+    for ( rank_type proc = 0; proc < nProc; ++proc )
     {
-        if ( dataToSend.find(proc) != dataToSend.end() )
+        if ( dataToSend.find( proc ) != dataToSend.end() )
             ++nbRequest;
         if ( nbMsgToRecv[proc] > 0 )
             ++nbRequest;
     }
-    if ( nbRequest ==0 ) return;
+    if ( nbRequest == 0 ) return;
 
-    mpi::request * reqs = new mpi::request[nbRequest];
-    int cptRequest=0;
+    mpi::request* reqs = new mpi::request[nbRequest];
+    int cptRequest = 0;
     //-----------------------------------------------------------//
     // first send
     auto itDataToSend = dataToSend.begin();
     auto const enDataToSend = dataToSend.end();
-    for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
+    for ( ; itDataToSend != enDataToSend; ++itDataToSend )
     {
-        reqs[cptRequest] = this->worldComm().localComm().isend( itDataToSend->first , 0, itDataToSend->second );
+        reqs[cptRequest] = this->worldComm().localComm().isend( itDataToSend->first, 0, itDataToSend->second );
         ++cptRequest;
     }
     //-----------------------------------------------------------//
     // first recv
-    std::map<rank_type,std::vector<int> > dataToRecv;
-    for ( rank_type proc=0; proc<nProc; ++proc )
+    std::map<rank_type, std::vector<int>> dataToRecv;
+    for ( rank_type proc = 0; proc < nProc; ++proc )
     {
         if ( nbMsgToRecv[proc] > 0 )
         {
-            reqs[cptRequest] = this->worldComm().localComm().irecv( proc , 0, dataToRecv[proc] );
+            reqs[cptRequest] = this->worldComm().localComm().irecv( proc, 0, dataToRecv[proc] );
             ++cptRequest;
         }
     }
     //-----------------------------------------------------------//
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all( reqs, reqs + nbRequest );
     //-----------------------------------------------------------//
     // build the container to ReSend
-    std::map<rank_type, std::vector<int> > dataToReSend;
+    std::map<rank_type, std::vector<int>> dataToReSend;
     auto itDataRecv = dataToRecv.begin();
     auto const enDataRecv = dataToRecv.end();
-    for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
+    for ( ; itDataRecv != enDataRecv; ++itDataRecv )
     {
         const rank_type idProc = itDataRecv->first;
         const int nDataRecv = itDataRecv->second.size();
         dataToReSend[idProc].resize( nDataRecv );
         //store the idFeel corresponding
-        for ( int k=0; k<nDataRecv; ++k )
+        for ( int k = 0; k < nDataRecv; ++k )
         {
             dataToReSend[idProc][k] = idStructuredMeshToFeelMesh.find( itDataRecv->second[k] )->second;
         }
     }
     //-----------------------------------------------------------//
     // send respond to the request
-    cptRequest=0;
+    cptRequest = 0;
     auto itDataToReSend = dataToReSend.begin();
     auto const enDataToReSend = dataToReSend.end();
-    for ( ; itDataToReSend!=enDataToReSend ; ++itDataToReSend )
+    for ( ; itDataToReSend != enDataToReSend; ++itDataToReSend )
     {
-        reqs[cptRequest] = this->worldComm().localComm().isend( itDataToReSend->first , 0, itDataToReSend->second );
+        reqs[cptRequest] = this->worldComm().localComm().isend( itDataToReSend->first, 0, itDataToReSend->second );
         ++cptRequest;
     }
     //-----------------------------------------------------------//
     // recv the initial request
-    std::map<rank_type, std::vector<int> > finalDataToRecv;
+    std::map<rank_type, std::vector<int>> finalDataToRecv;
     itDataToSend = dataToSend.begin();
-    for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
+    for ( ; itDataToSend != enDataToSend; ++itDataToSend )
     {
         const rank_type idProc = itDataToSend->first;
         reqs[cptRequest] = this->worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc] );
@@ -1036,23 +1027,23 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int,int> con
     }
     //-----------------------------------------------------------//
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all( reqs, reqs + nbRequest );
     // delete reqs because finish comm
-    delete [] reqs;
+    delete[] reqs;
     //-----------------------------------------------------------//
     // update mesh : id in other partitions for the ghost cells
     auto itFinalDataToRecv = finalDataToRecv.begin();
     auto const enFinalDataToRecv = finalDataToRecv.end();
 
-    for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
+    for ( ; itFinalDataToRecv != enFinalDataToRecv; ++itFinalDataToRecv )
     {
         const rank_type idProc = itFinalDataToRecv->first;
         const int nDataRecv = itFinalDataToRecv->second.size();
         //std::cout << idProc << ":" << nDataRecv << std::endl;
-        for ( int k=0; k<nDataRecv; ++k )
+        for ( int k = 0; k < nDataRecv; ++k )
         {
-           /* std::cout << "I want element " << memoryMsgToSend[idProc][k] << ": " << idProc << std::endl;*/
-            auto & eltToUpdate = this->elementIterator( memoryMsgToSend[idProc][k]/*,idProc*/ )->second;
+            /* std::cout << "I want element " << memoryMsgToSend[idProc][k] << ": " << idProc << std::endl;*/
+            auto& eltToUpdate = this->elementIterator( memoryMsgToSend[idProc][k] /*,idProc*/ )->second;
 #if 0
             std::cout << "k = " << k << std::endl;
             std::cout << "itFinalDataToRecv->second[k]  " << itFinalDataToRecv->second[k]  << std::endl;
@@ -1066,10 +1057,7 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int,int> con
         }
     }
     //-----------------------------------------------------------//
-    DVLOG(1) << "updateGhostCellInfoNonBlockingComm : finish on rank "<< this->worldComm().localRank() << "\n";
+    DVLOG( 1 ) << "updateGhostCellInfoNonBlockingComm : finish on rank " << this->worldComm().localRank() << "\n";
 }
 
-
-
-
-}
+} // namespace Feel

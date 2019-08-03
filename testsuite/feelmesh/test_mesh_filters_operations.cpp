@@ -50,10 +50,10 @@ BOOST_AUTO_TEST_CASE( test_concatenate_elements )
     BOOST_CHECK( mesh->hasMarkers( {"left","right"} ) );
 
     auto e3 = concatenate( markedelements(mesh,"left"), markedelements(mesh,"right") );
-    auto submesh1 = createSubmesh( mesh, e3 );
+    auto submesh1 = createSubmesh( _mesh=mesh, _range=e3 );
     BOOST_CHECK_EQUAL( nelements(elements(submesh1)), nelements(elements(mesh)) );
 
-    auto submesh2 = createSubmesh( mesh, markedelements(mesh,{"left","right"}) );
+    auto submesh2 = createSubmesh( _mesh=mesh, _range=markedelements(mesh,{"left","right"}) );
     BOOST_CHECK_EQUAL( nelements(elements(submesh2)), nelements(elements(mesh)) );
 
     auto e4 = concatenate( markedelements(mesh,"left"), elements(mesh) );
@@ -73,8 +73,8 @@ BOOST_AUTO_TEST_CASE( test_intersect_elements )
     auto intersect1 = intersect( rLeft,rBe );
     auto intersect2 = intersect( rRight,rBe,rAll );
     BOOST_CHECK_EQUAL( nelements(intersect1)+nelements(intersect2), nelements(rBe) );
-    auto submesh1 = createSubmesh( mesh, intersect1 );
-    auto submesh2 = createSubmesh( mesh, intersect2 );
+    auto submesh1 = createSubmesh( _mesh=mesh, _range=intersect1 );
+    auto submesh2 = createSubmesh( _mesh=mesh, _range=intersect2 );
     double measSubmesh1 = measure(_range=elements(submesh1) );
     double measSubmesh2 = measure(_range=elements(submesh2) );
     double measMeshBe = measure(_range=rBe );

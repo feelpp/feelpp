@@ -570,6 +570,7 @@ class GeoMap
     template <typename MeshType>
     void initCache( MeshType const* mesh )
     {
+#if 0
         size_type nelts = mesh->numElements();
         LOG( INFO ) << "[Geomap] start caching J,K,B for " << nelts << " elements\n";
 
@@ -582,6 +583,7 @@ class GeoMap
         M_un_real.reserve( nelts*mesh->numLocalTopologicalFaces() );
         M_permutation_element_face_neighbor.reserve( nelts*mesh->numLocalTopologicalFaces() );
         M_is_cached = true;
+#endif
     }
     bool isCacheValid() const
     {
