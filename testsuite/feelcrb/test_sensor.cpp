@@ -68,7 +68,8 @@ BOOST_AUTO_TEST_CASE( t0 )
 {
     using namespace Feel::vf;
 
-    SensorDescriptionMap<3> desc( Environment::expand( soption( "sensor.filename" ) ) );
+    //SensorDescriptionMap<3> desc( Environment::expand( soption( "sensor.filename" ) ) );
+    SensorDescriptionMap<3> desc( Environment::expand( "$cfgdir/sensordesc.csv" ) );
     // verify that those keys / sensors exist
     BOOST_CHECK_EQUAL( desc.count( "zigduino-1" ), 1 );
     BOOST_CHECK_EQUAL( desc.count( "zigduino-2" ), 1 );
@@ -83,7 +84,8 @@ BOOST_AUTO_TEST_CASE( t1 )
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>> );
     auto Vh = Pch<1>( mesh );
 
-    SensorDescriptionMap<3> desc( Environment::expand( soption( "sensor.filename" ) ) );
+    //SensorDescriptionMap<3> desc( Environment::expand( soption( "sensor.filename" ) ) );
+    SensorDescriptionMap<3> desc( Environment::expand( "$cfgdir/sensordesc_bis.csv" ) );
     SensorMap<Pch_type<Mesh<Simplex<3>>,1>> sensors( Vh, desc );
 
     auto v = Vh->element();
