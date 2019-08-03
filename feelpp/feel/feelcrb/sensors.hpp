@@ -82,7 +82,8 @@ public:
     SensorBase( space_ptrtype const& space, p0_space_ptrtype const& p0_space, std::string const& n = "sensor" ):
         super_type( space ),
         M_name( n ),
-        M_p0_space( p0_space )
+        M_p0_space( p0_space ),
+        M_c( M_p0_space->element() )
     {}
 
     virtual ~SensorBase() = default;
@@ -103,7 +104,7 @@ public:
 private:
     std::string M_name;
     p0_space_ptrtype M_p0_space;
-    // caracteristic function for localize the sensor
+    //! characteristic function to localize the sensor
     p0_element_type M_c;
 };
 
