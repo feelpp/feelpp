@@ -215,9 +215,9 @@ public:
         auto v = this->space()->element();
         auto phi = this->phiExpr( mpl::int_< space_type::nDim >() );
         if constexpr ( space_type::nDim == 1 )
-            form1( _test=this->space(), _vector=this->containerPtr() ) = integrate(_range=elements(this->space()->mesh()), _expr=id(v)*exp( pow(Px()-M_center[0],2)/(2*std::pow(M_radius,2))) );
+            form1( _test=this->space(), _vector=this->containerPtr() ) = integrate(_range=elements(this->space()->mesh()), _expr=id(v)*exp( -inner(P()-vec(cst(M_center[0])))/(2*std::pow(M_radius,2))) );
         if constexpr ( space_type::nDim == 2 )
-            form1( _test=this->space(), _vector=this->containerPtr() ) = integrate(_range=elements(this->space()->mesh()), _expr=id(v)*exp(( pow(Px()-M_center[0],2)+pow(Py()-M_center[1],2))/(2*std::pow(M_radius,2))) );
+            form1( _test=this->space(), _vector=this->containerPtr() ) = integrate(_range=elements(this->space()->mesh()), _expr=id(v)*exp( -inner(P()-vec(cst(M_center[0]),cst(M_center[1])))/(2*std::pow(M_radius,2))) );
         if constexpr ( space_type::nDim == 3 )
         {
             Feel::cout << "center: { " << M_center[0] << "," << M_center[1] << "," << M_center[2] << "}" << std::endl;
