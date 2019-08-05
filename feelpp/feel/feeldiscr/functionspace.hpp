@@ -3099,7 +3099,7 @@ public:
 
             typename p0_space_type::element_type p0Element( P0h );
 
-            for ( auto const& rangeElt : elements( P0h->mesh() ) )
+            for ( auto const& rangeElt : P0h->template rangeElements<0>() /*elements( P0h->mesh() )*/ )
             {
                 auto const& meshElt = boost::unwrap_ref( rangeElt );
                 index_type eid = meshElt.id();
