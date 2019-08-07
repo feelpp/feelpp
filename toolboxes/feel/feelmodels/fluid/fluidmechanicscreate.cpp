@@ -1002,11 +1002,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->buildBlockVector();
 
     //-------------------------------------------------//
+    // InHousePreconditioner : operatorPCD
+    this->initInHousePreconditioner();
+
+    //-------------------------------------------------//
+    // algebraric data : solver, preconditioner, matrix, vector
     if ( buildModelAlgebraicFactory )
     {
         this->initAlgebraicFactory();
     }
-    this->initInHousePreconditioner();
 
     //-------------------------------------------------//
     //-------------------------------------------------//
@@ -1036,7 +1040,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpaceVelocity(), mpl::int_<nDim>() ) ;
         M_algebraicFactory->attachNearNullSpace( 0,userNullSpace, nearNullSpacePrefix ); // for block velocity in fieldsplit
     }
-    //this->initInHousePreconditioner();
+
+    bool attachMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-mass-matrix");
+    if ( attachMassMatrix )
+    {
+        auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
+        auto const& u = this->fieldVelocity();
+        if ( this->isStationaryModel() )
+            massbf += integrate( _range=M_rangeMeshElements, _expr=inner( idt(u),id(u) ) );
+        else
+        {
+            //double coeff = this->materialProperties()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
+            auto coeff = idv(this->materialProperties()->fieldDensity())*this->timeStepBDF()->polyDerivCoefficient(0);
+            massbf += integrate( _range=M_rangeMeshElements, _expr=coeff*inner( idt(u),id(u) ) );
+        }
+        massbf.matrixPtr()->close();
+        if ( this->algebraicFactory() )
+            this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
+    }
+
+    if ( this->hasOperatorPCD() )
+        this->algebraicFactory()->preconditionerTool()->attachOperatorPCD("pcd", this->operatorPCD());
 
     if ( M_timeStepping == "Theta" )
     {
@@ -1699,23 +1723,6 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 {
 
-    bool attachMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-mass-matrix");
-    if ( attachMassMatrix )
-    {
-        auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
-        auto const& u = this->fieldVelocity();
-        if ( this->isStationaryModel() )
-            massbf += integrate( _range=M_rangeMeshElements, _expr=inner( idt(u),id(u) ) );
-        else
-        {
-            //double coeff = this->materialProperties()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
-            auto coeff = idv(this->materialProperties()->fieldDensity())*this->timeStepBDF()->polyDerivCoefficient(0);
-            massbf += integrate( _range=M_rangeMeshElements, _expr=coeff*inner( idt(u),id(u) ) );
-        }
-        massbf.matrixPtr()->close();
-        if ( this->algebraicFactory() )
-            this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
-    }
 
     if ( M_preconditionerAttachPCD )
     {
@@ -1776,8 +1783,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 
         opPCD->initialize();
         M_operatorPCD = opPCD;
-        if ( this->algebraicFactory() )
-            this->algebraicFactory()->preconditionerTool()->attachOperatorPCD("pcd",opPCD);
     }
 
 }

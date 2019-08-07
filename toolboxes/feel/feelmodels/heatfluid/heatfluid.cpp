@@ -187,16 +187,22 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     else
         M_useSemiImplicitTimeScheme = false;
 
-    if ( !M_useNaturalConvection )
+    if ( !M_useNaturalConvection || M_useSemiImplicitTimeScheme )
     {
         M_heatModel->initAlgebraicFactory();
         M_fluidModel->initAlgebraicFactory();
+        if ( M_useSemiImplicitTimeScheme )
+        {
+            M_fluidModel->setSolverName("Oseen");
+            M_fluidModel->algebraicFactory()->addFunctionLinearAssembly( boost::bind( &self_type::updateLinearFluidSolver,
+                                                                                      boost::ref( *this ), _1 ) );
+        }
     }
     else
     {
         M_fluidModel->setStabilizationGLSDoAssembly( false );
-        if ( M_useSemiImplicitTimeScheme )
-            M_fluidModel->setSolverName("Oseen");
+        // if ( M_useSemiImplicitTimeScheme )
+        //     M_fluidModel->setSolverName("Oseen");
     }
 
     for ( auto const& rangeData : M_fluidModel->materialProperties()->rangeMeshElementsByMaterial() )
@@ -242,7 +248,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // algebraic solver
     if ( buildModelAlgebraicFactory )
     {
-        if ( M_useNaturalConvection )
+        if ( M_useNaturalConvection && !M_useSemiImplicitTimeScheme )
         {
             M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
             if ( M_fluidModel->hasOperatorPCD() )
@@ -417,19 +423,35 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
     }
     else
     {
-        this->updateParameterValues();
-
-        M_fluidModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
-        M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
-
-        M_blockVectorSolution.updateVectorFromSubVectors();
-
         if ( M_useSemiImplicitTimeScheme )
-            M_algebraicFactory->solve( "Linear", M_blockVectorSolution.vectorMonolithic() );
+        {
+            M_heatModel->setFieldVelocityConvectionIsUsed( true );
+            auto UConvection = M_fluidModel->timeStepBDF()->poly();
+            auto uConvection = UConvection.template element<0>();
+            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+            {
+                auto const& range = rangeData.second;
+                M_heatModel->updateFieldVelocityConvection( range,idv(uConvection) );
+            }
+            M_heatModel->solve();
+            M_fluidModel->solve();
+        }
         else
-            M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
+        {
+            this->updateParameterValues();
 
-        M_blockVectorSolution.localize();
+            M_fluidModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
+            M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
+
+            M_blockVectorSolution.updateVectorFromSubVectors();
+
+            if ( M_useSemiImplicitTimeScheme )
+                M_algebraicFactory->solve( "Linear", M_blockVectorSolution.vectorMonolithic() );
+            else
+                M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
+
+            M_blockVectorSolution.localize();
+        }
     }
 
     double tElapsed = this->timerTool("Solve").stop("solve");
@@ -836,6 +858,61 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual 
     M_fluidModel->updateResidualDofElimination( data );
 }
 
+
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data ) const
+{
+    const vector_ptrtype& vecCurrentPicardSolution = data.currentSolution();
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
+    if ( buildCstPart )
+        return;
+    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
+    this->log("HeatFluid","updateLinearFluidSolver", "start"+sc);
+
+
+    auto XhVP = M_fluidModel->spaceVelocityPressure();
+    auto const& U = M_fluidModel->fieldVelocityPressure();
+    auto u = U.template element<0>();
+    auto XhT = M_heatModel->spaceTemperature();
+    auto const& t = M_heatModel->fieldTemperature();
+
+    auto mylfVP = form1( _test=XhVP, _vector=F,
+                         _rowstart=M_fluidModel->rowStartInVector() );
+
+    for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+    {
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& rhoHeatCapacity = M_heatModel->thermalProperties()->rhoHeatCapacity( matName );
+
+        auto const& rho = M_heatModel->thermalProperties()->rho( matName );
+        auto const& thermalExpansion = M_heatModel->thermalProperties()->thermalExpansion( matName );
+        CHECK( rhoHeatCapacity.isConstant() && thermalExpansion.isConstant() ) << "TODO";
+        double rhoValue = rho.value();
+        double beta = thermalExpansion.value();
+        double T0 = M_BoussinesqRefTemperature;
+
+        mylfVP +=
+            integrate( _range=range,
+                       _expr= -rhoValue*beta*(idv(t)-T0)*inner(M_gravityForce,id(u)),
+                       _geomap=this->geomap() );
+
+        if ( M_fluidModel->stabilizationGLS() )
+        {
+            auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
+            //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+            auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
+            auto exprAddedInRhs = -rhoValue*beta*(idv(t)-T0)*M_gravityForce;
+            M_fluidModel->updateLinearPDEStabilisationGLS( data, rhoF, mu, matName, hana::make_tuple(exprAddedInRhs) );
+        }
+    }
+
+    this->log("HeatFluid","updateLinearFluidSolver", "finish"+sc);
+}
 
 } // end namespace FeelModels
 } // end namespace Feel
