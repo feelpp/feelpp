@@ -1006,6 +1006,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     {
         this->initAlgebraicFactory();
     }
+    this->initInHousePreconditioner();
 
     //-------------------------------------------------//
     //-------------------------------------------------//
@@ -1035,7 +1036,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpaceVelocity(), mpl::int_<nDim>() ) ;
         M_algebraicFactory->attachNearNullSpace( 0,userNullSpace, nearNullSpacePrefix ); // for block velocity in fieldsplit
     }
-    this->initInHousePreconditioner();
+    //this->initInHousePreconditioner();
 
     if ( M_timeStepping == "Theta" )
     {
@@ -1712,7 +1713,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
             massbf += integrate( _range=M_rangeMeshElements, _expr=coeff*inner( idt(u),id(u) ) );
         }
         massbf.matrixPtr()->close();
-        this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
+        if ( this->algebraicFactory() )
+            this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
     }
 
     if ( M_preconditionerAttachPCD )
@@ -1773,7 +1775,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
             f.second.first( *opPCD );
 
         opPCD->initialize();
-        this->algebraicFactory()->preconditionerTool()->attachOperatorPCD("pcd",opPCD);
+        M_operatorPCD = opPCD;
+        if ( this->algebraicFactory() )
+            this->algebraicFactory()->preconditionerTool()->attachOperatorPCD("pcd",opPCD);
     }
 
 }
