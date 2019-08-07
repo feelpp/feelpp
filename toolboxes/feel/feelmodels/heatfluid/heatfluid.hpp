@@ -133,6 +133,7 @@ public :
     void updateResidual( DataUpdateResidual & data ) const override;
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
+    void updateLinearFluidSolver( DataUpdateLinear & data ) const;
 private :
 
     heat_model_ptrtype M_heatModel;
