@@ -55,14 +55,17 @@ ImporterCSV::ImporterCSV( std::string const& filename, bool readOnlyHeader )
 void
 ImporterCSV::readLine( bool clearData )
 {
-    if ( this->readIsFinished() )
-        return;
-
     std::string line;
-    std::getline( M_ifs, line );
+
+    if ( this->readIsFinished() || !std::getline( M_ifs, line ) ) 
+    {
+        if ( clearData )
+            M_data.clear();
+        return;
+    }
+
     boost::trim(line);
     tokenizer_type tok( line );
-    
     std::vector<std::string> vec;
     vec.assign( tok.begin(), tok.end() );
     if ( vec.empty() && this->readIsFinished() )
@@ -77,7 +80,7 @@ ImporterCSV::readLine( bool clearData )
 bool
 ImporterCSV::readIsFinished() const
 {
-    return !M_ifs.is_open() || !M_ifs.good();
+    return !M_ifs.is_open() || !M_ifs.good() || M_ifs.eof();
 }
 
 std::string const&
