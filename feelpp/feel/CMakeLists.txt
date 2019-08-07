@@ -154,7 +154,7 @@ if ( FFTW_FOUND )
 endif()
 if ( ANN_FOUND )
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_ANN FEELPP_HAS_ANN_H )
-  target_include_directories( feelpp PRIVATE ${ANN_INCLUDE_DIR} )
+  target_include_directories( feelpp PUBLIC ${ANN_INCLUDE_DIR} )
   target_link_libraries( feelpp PUBLIC ${ANN_LIBRARIES} )
 endif()
 if ( GLPK_FOUND )
@@ -209,11 +209,13 @@ if ( GMSH_FOUND )
   endif()
   # GMSH_EXTERNAL_LIBRARIES may contain the med / cgns libs if they have been found
   target_link_libraries( feelpp PUBLIC ${GMSH_LIBRARIES} ${GMSH_EXTERNAL_LIBRARIES})
-  
-  target_include_directories( feelpp
-    PUBLIC
-    $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/feelpp/contrib/gmsh>
-    $<INSTALL_INTERFACE:include/feelpp/gmsh> )
+
+  if( ( NOT FEELPP_HAS_GMSH_API ) OR FEELPP_GMSH_API_MISSING_HEADERS )
+    target_include_directories( feelpp
+      PUBLIC
+      $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/feelpp/contrib/gmsh>
+      $<INSTALL_INTERFACE:include/feelpp/gmsh> )
+  endif()
 endif( GMSH_FOUND )
 
 # Paraview
