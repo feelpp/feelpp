@@ -848,6 +848,9 @@ public :
         {
             M_addUpdateInHousePreconditionerPCD[name] = std::make_pair(init,up);
         }
+
+    std::shared_ptr<operatorpcdbase_type> operatorPCD() const { return M_operatorPCD; }
+    bool hasOperatorPCD() const { return ( M_operatorPCD.use_count() > 0 ); }
 private :
     void updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
     void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol, DataUpdateBase & data ) const;
@@ -1122,7 +1125,8 @@ protected:
     //----------------------------------------------------
     bool M_preconditionerAttachPMM, M_preconditionerAttachPCD;
     mutable bool M_pmmNeedUpdate;
-     std::map<std::string,std::pair<std::function<void(operatorpcdbase_type &)>,std::function<void(operatorpcdbase_type &, DataUpdateBase &)> > > M_addUpdateInHousePreconditionerPCD;
+    std::shared_ptr<operatorpcdbase_type> M_operatorPCD;
+    std::map<std::string,std::pair<std::function<void(operatorpcdbase_type &)>,std::function<void(operatorpcdbase_type &, DataUpdateBase &)> > > M_addUpdateInHousePreconditionerPCD;
 
 }; // FluidMechanics
 

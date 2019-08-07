@@ -242,9 +242,11 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // algebraic solver
     if ( buildModelAlgebraicFactory )
     {
-        if ( M_useNaturalConvection /*M_solverName == "Newton"*/ )
+        if ( M_useNaturalConvection )
         {
             M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+            if ( M_fluidModel->hasOperatorPCD() )
+                M_algebraicFactory->preconditionerTool()->attachOperatorPCD( "pcd", M_fluidModel->operatorPCD() );
         }
     }
 
@@ -441,6 +443,20 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
 
 }
 
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( DataUpdateLinear & data ) const
+{
+    M_heatModel->updateInHousePreconditioner( data );
+    M_fluidModel->updateInHousePreconditioner( data );
+}
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( DataUpdateJacobian & data ) const
+{
+    M_heatModel->updateInHousePreconditioner( data );
+    M_fluidModel->updateInHousePreconditioner( data );
+}
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
