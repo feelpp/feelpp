@@ -1213,7 +1213,7 @@ getOptionsDescGAMG( std::string const& prefix, std::string const& sub )
           "number of smoothing steps" )
         ( prefixvm( prefix,pcctx+"gamg-coarse-grid-use-config-default-petsc").c_str(), Feel::po::value<bool>()->default_value( true ),
           "verbose internal petsc info for gamg" )
-        ( prefixvm( prefix,pcctx+"gamg-levels-use-config-default-petsc").c_str(), Feel::po::value<bool>()->default_value( true ),
+        ( prefixvm( prefix,pcctx+"gamg-levels-use-config-default-petsc").c_str(), Feel::po::value<bool>()->default_value( false ),
           "verbose internal petsc info for gamg" )
         ;
 
