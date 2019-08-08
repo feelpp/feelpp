@@ -134,7 +134,7 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleCstPart()
 
 
     // -(p,div(v))_Omega
-    bbf( 0_c, 1_c ) = integrate(_range=elements(M_mesh),_expr=-(idt(p)*div(v)));
+    bbf( 0_c, 1_c ) += integrate(_range=elements(M_mesh),_expr=-(idt(p)*div(v)));
 
     // <phat,v.n>_Gamma\Gamma_I
     bbf( 0_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
@@ -705,7 +705,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleIBC( int i, std::string markerOpt )
     bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(M_mesh,marker),
                                         _expr=-tau_constant * id(nu) *idt(uI) );
 
-    toc("assembleIbx");
+    toc("assembleIbc");
 }
 
 
