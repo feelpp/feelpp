@@ -36,8 +36,6 @@
  #include <feel/feelvf/operations.hpp>*/
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
-#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
-#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
 
 namespace Feel
 {
@@ -395,21 +393,7 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->log("Electric","exportResults", "start");
-    this->timerTool("PostProcessing").start();
-
-    this->exportFields( time );
-
-    this->exportMeasures( time );
-
-    this->timerTool("PostProcessing").stop("exportResults");
-    if ( this->scalabilitySave() )
-    {
-        if ( !this->isStationary() )
-            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
-        this->timerTool("PostProcessing").save();
-    }
-    this->log("Electric","exportResults", "finish");
+    this->exportResults( time, this->symbolsExpr() );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -471,43 +455,7 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
-    bool hasMeasure = false;
-
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
-
-    auto fieldTuple = hana::make_tuple( std::make_pair( "electric-potential",this->fieldElectricPotentialPtr() ) );
-    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
-    {
-        std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
-        for ( auto const& resPpNorm : resPpNorms )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
-            hasMeasure = true;
-        }
-    }
-    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
-    {
-        std::map<std::string,double> resPpStats;
-        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
-        for ( auto const& resPpStat : resPpStats )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
-            hasMeasure = true;
-        }
-    }
-
-
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
-
+    this->exportMeasures( time, this->symbolsExpr() );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
