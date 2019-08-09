@@ -423,8 +423,12 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
         }
     }
 
+    auto symbolExprField = Feel::vf::symbolsExpr( M_heatModel->symbolsExprField(), M_electricModel->symbolsExprField() );
+    auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
+    auto symbolExprMaterial = M_electricModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) );
+    auto symbolExpr = Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
     M_heatModel->exportResults( time );
-    M_electricModel->exportResults( time );
+    M_electricModel->exportResults( time, symbolExpr );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
