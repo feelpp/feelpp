@@ -72,6 +72,28 @@
             {
                 "fields":["heat.temperature","electric.electric-potential","electric.electric-field","electric.current-density","heat.pid"]
             }
+        },
+        "electric":
+        {
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "Intensity0":
+                    {
+                        "type":"integrate",
+                        "expr":"-electric_sigma_Cu*electric_dnP:electric_sigma_Cu:electric_dnP",
+                        "markers":"V0"
+                    },
+                    "Intensity1":
+                    {
+                        "type":"integrate",
+                        "expr":"-electric_sigma_Cu*electric_dnP:electric_sigma_Cu:electric_dnP",
+                        "markers":"V1"
+                    }
+                }
+            }
         }
+
     }
 }
