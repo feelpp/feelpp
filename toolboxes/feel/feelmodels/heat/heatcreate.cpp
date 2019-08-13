@@ -11,9 +11,6 @@
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 //#include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 
-#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
-#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
-
 namespace Feel
 {
 namespace FeelModels
@@ -382,29 +379,13 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // point measures
+    auto fieldNamesWithSpaceTemperature = std::make_pair( std::set<std::string>({"temperature"}), this->spaceTemperature() );
+    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceTemperature );
+    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
     for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-    {
-        auto const& ptPos = evalPoints.pointPosition();
-        node_type ptCoord(3);
-        for ( int c=0;c<3;++c )
-            ptCoord[c]=ptPos.value()(c);
+        M_measurePointsEvaluation->init( evalPoints );
 
-        auto const& fields = evalPoints.fields();
-        for ( std::string const& field : fields )
-        {
-            if ( field == "temperature" )
-            {
-                if ( !M_postProcessMeasuresContextTemperature )
-                    M_postProcessMeasuresContextTemperature.reset( new context_temperature_type( spaceTemperature()->context() ) );
-                int ctxId = M_postProcessMeasuresContextTemperature->nPoints();
-                M_postProcessMeasuresContextTemperature->add( ptCoord );
-                std::string ptNameExport = (boost::format("temperature_%1%")%ptPos.name()).str();
-                this->postProcessMeasuresEvaluatorContext().add("temperature", ctxId, ptNameExport );
-            }
-        }
-    }
-
-
+    // start or restart the export of measures
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
@@ -634,21 +615,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->log("Heat","exportResults", "start");
-    this->timerTool("PostProcessing").start();
-
-    this->exportFields( time );
-
-    this->exportMeasures( time );
-
-    this->timerTool("PostProcessing").stop("exportResults");
-    if ( this->scalabilitySave() )
-    {
-        if ( !this->isStationary() )
-            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
-        this->timerTool("PostProcessing").save();
-    }
-    this->log("Heat","exportResults", "finish");
+    this->exportResults( time, this->symbolsExpr() );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -711,89 +678,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
-    bool hasMeasure = false;
-
-    // compute measures
-    for ( auto const& ppForces : M_postProcessMeasuresForces )
-    {
-        CHECK( ppForces.meshMarkers().size() == 1 ) << "TODO";
-        auto const& u = this->fieldTemperature();
-        auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
-        double heatFlux = integrate(_range=markedfaces(this->mesh(),ppForces.meshMarkers() ),
-                                    _expr=kappa*gradv(u)*N() ).evaluate()(0,0);
-        std::string name = ppForces.name();
-        this->postProcessMeasuresIO().setMeasure("NormalHeatFlux_"+name,heatFlux);
-        hasMeasure = true;
-    }
-
-    // point measures
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-    {
-        auto const& ptPos = evalPoints.pointPosition();
-        if ( !ptPos.hasExpression() )
-            continue;
-        node_type ptCoord(3);
-        for ( int c=0;c<3;++c )
-            ptCoord[c]=ptPos.value()(c);
-
-        auto const& fields = evalPoints.fields();
-        for ( std::string const& field : fields )
-        {
-            if ( field == "temperature" )
-            {
-                std::string ptNameExport = (boost::format("temperature_%1%")%ptPos.name()).str();
-                int ptIdInCtx = this->postProcessMeasuresEvaluatorContext().ctxId("temperature",ptNameExport);
-                if ( ptIdInCtx >= 0 )
-                    M_postProcessMeasuresContextTemperature->replace( ptIdInCtx, ptCoord );
-            }
-        }
-    }
-    if ( M_postProcessMeasuresContextTemperature && this->postProcessMeasuresEvaluatorContext().has("temperature") )
-    {
-        auto evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextTemperature,
-                                                _expr=idv(this->fieldTemperature()) );
-        for ( int ctxId=0;ctxId<M_postProcessMeasuresContextTemperature->nPoints();++ctxId )
-        {
-            if ( !this->postProcessMeasuresEvaluatorContext().has( "temperature", ctxId ) ) continue;
-            std::string ptNameExport = this->postProcessMeasuresEvaluatorContext().name( "temperature",ctxId );
-            this->postProcessMeasuresIO().setMeasure( ptNameExport, evalAtNodes( ctxId ) );
-            hasMeasure = true;
-        }
-    }
-
-    auto fieldTuple = hana::make_tuple( std::make_pair( "temperature",this->fieldTemperaturePtr() ) );
-    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
-    {
-        std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
-        for ( auto const& resPpNorm : resPpNorms )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
-            hasMeasure = true;
-        }
-    }
-
-    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
-    {
-        std::map<std::string,double> resPpStats;
-        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
-        for ( auto const& resPpStat : resPpStats )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
-            hasMeasure = true;
-        }
-    }
-
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
+    this->exportMeasures( time, this->symbolsExpr() );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
