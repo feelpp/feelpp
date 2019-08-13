@@ -73,6 +73,71 @@
                 "fields":["heat.temperature","electric.electric-potential","electric.electric-field","electric.current-density","heat.pid"]
             }
         },
+        "heat":
+        {
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "FluxV0":
+                    {
+                        "type":"integrate",
+                        "expr":"-heat_k_Cu*heat_dnT:heat_k_Cu:heat_dnT",
+                        "markers":"V0"
+                    },
+                    "FluxV1":
+                    {
+                        "type":"integrate",
+                        "expr":"-heat_k_Cu*heat_dnT:heat_k_Cu:heat_dnT",
+                        "markers":"V1"
+                    }
+                },
+                "Points":
+                {
+                    "closeToV0":
+                    {
+                        "coord":"{0.6,22,108}",
+                        "fields":"temperature"
+                    },
+                    "closeToV1":
+                    {
+                        "coord":"{0.6,22,-226}",
+                        "fields":"temperature"
+                    },
+                    "middle":
+                    {
+                        "coord":"{0.6,22,0}",
+                        "fields":"temperature"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Statistics_FluxV0_integrate":
+                    {
+                        "value":3.1061371452223421e+00,
+                        "tolerance":1e-1
+                    },
+                    "Statistics_FluxV1_integrate":
+                    {
+                        "value":1.9858752627481331e+00,
+                        "tolerance":1e-1
+                    },
+                    "Points_closeToV0_temperature":
+                    {
+                        "value":2.9228730968105037e+02,
+                        "tolerance":1e-3
+                    },
+                    "Points_closeToV1_temperature":
+                    {
+                        "value": 2.9130483450540504e+02,
+                        "tolerance":1e-3
+                    }
+                }
+            }
+        },
         "electric":
         {
             "Measures":
