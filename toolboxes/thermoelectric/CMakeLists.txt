@@ -3,7 +3,7 @@ feelpp_add_application( thermoelectric SRCS main_thermoelectric.cpp
   feelpp_toolbox_thermoelectric_lib
   #feelpp_toolbox_thermoelectric_lib_3dP1G1_3dP1G1
   #feelpp_toolbox_thermoelectric_lib_2dP1G1_2dP1G1
-  INSTALL
+  INSTALL TESTS
   )
 
 feelpp_add_application( cvg_thermoelectric_2d SRCS cvg_thermoelectric.cpp

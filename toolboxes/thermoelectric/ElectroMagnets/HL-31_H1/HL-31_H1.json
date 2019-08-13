@@ -84,6 +84,50 @@
                         "expr":"-electric_sigma_Cu*electric_dnP:electric_sigma_Cu:electric_dnP",
                         "markers":"V1"
                     }
+                },
+                "Points":
+                {
+                    "closeToV0":
+                    {
+                        "coord":"{0.6,22,108}",
+                        "fields":"electric-potential"
+                    },
+                    "closeToV1":
+                    {
+                        "coord":"{0.6,22,-226}",
+                        "fields":"electric-potential"
+                    },
+                    "middle":
+                    {
+                        "coord":"{0.6,22,0}",
+                        "fields":["electric-potential","electric-field" ]
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Statistics_Intensity0_integrate":
+                    {
+                        "value":3.8637391139136838e+04,
+                        "tolerance":1e-1
+                    },
+                    "Statistics_Intensity1_integrate":
+                    {
+                        "value":-3.8648718034652833e+04,
+                        "tolerance":1e-1
+                    },
+                    "Points_closeToV0_electric-potential":
+                    {
+                        "value":0,
+                        "tolerance":1e-3
+                    },
+                    "Points_closeToV1_electric-potential":
+                    {
+                        "value":9,
+                        "tolerance":1e-3
+                    }
                 }
             }
         }
