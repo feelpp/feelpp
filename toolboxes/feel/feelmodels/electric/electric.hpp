@@ -34,7 +34,7 @@
 #include <feel/feelmodels/electric/electricpropertiesdescription.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
-
+#include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
 
 namespace Feel
 {
@@ -93,9 +93,8 @@ public:
     typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
     // context for evaluation
-    typedef typename space_electricpotential_type::Context context_electricpotential_type;
-    typedef std::shared_ptr<context_electricpotential_type> context_electricpotential_ptrtype;
-
+    typedef MeasurePointsEvaluation<space_electricpotential_type,space_electricfield_type> measure_points_evaluation_type;
+    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     //___________________________________________________________________________________//
     // constructor
@@ -264,6 +263,7 @@ private :
     export_ptrtype M_exporter;
     std::set<std::string> M_postProcessFieldExported;
     std::set<std::string> M_postProcessUserFieldExported;
+    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 };
 
 
@@ -302,7 +302,8 @@ Electric<ConvexType,BasisPotentialType>::exportMeasures( double time, SymbolsExp
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    auto fieldTuple = hana::make_tuple( std::make_pair( "electric-potential",this->fieldElectricPotentialPtr() ) );
+    auto fieldTuple = hana::make_tuple( std::make_pair( "electric-potential",this->fieldElectricPotentialPtr() ),
+                                        std::make_pair( "electric-field",this->fieldElectricFieldPtr() ) );
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
     {
         std::map<std::string,double> resPpNorms;
@@ -322,6 +323,14 @@ Electric<ConvexType,BasisPotentialType>::exportMeasures( double time, SymbolsExp
             this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
             hasMeasure = true;
         }
+    }
+
+    std::map<std::string,double> resPpPoints;
+    M_measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, fieldTuple );
+    for ( auto const& resPpPoint : resPpPoints )
+    {
+        this->postProcessMeasuresIO().setMeasure( resPpPoint.first, resPpPoint.second );
+        hasMeasure = true;
     }
 
     if ( hasMeasure )
