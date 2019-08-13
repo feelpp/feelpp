@@ -1,0 +1,2 @@
+ElectroMagnets_HL-31_H1_linear --config-file ${CMAKE_CURRENT_SOURCE_DIR}/ElectroMagnets/HL-31_H1/HL-31_H1.cfg
+ElectroMagnets_HL-31_H1_nonlinear --config-file ${CMAKE_CURRENT_SOURCE_DIR}/ElectroMagnets/HL-31_H1/HL-31_H1_nonlinear.cfg
