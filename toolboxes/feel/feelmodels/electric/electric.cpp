@@ -273,6 +273,16 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
+    // point measures
+    auto fieldNamesWithSpaceElectricPotential = std::make_pair( std::set<std::string>({"electric-potential"}), this->spaceElectricPotential() );
+    auto fieldNamesWithSpaceElectricField = std::make_pair( std::set<std::string>({"electric-field"}), this->spaceElectricField() );
+    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceElectricPotential, fieldNamesWithSpaceElectricField );
+    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
+    {
+       M_measurePointsEvaluation->init( evalPoints );
+    }
+
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )

@@ -141,6 +141,8 @@ public :
     //___________________________________________________________________________________//
     void updateCurrentDensity();
 
+    bool checkResults() const override { return super_type::checkResults() && this->heatModel()->checkResults() && this->electricModel()->checkResults(); }
+
 private :
     heat_model_ptrtype M_heatModel;
     electric_model_ptrtype M_electricModel;
