@@ -256,11 +256,11 @@ class Heat : public ModelNumerical,
                     // generate compilation error because need to fix/improve the return type of expr.evaluate(bool, worldcomm_ptr_t)
                     for ( int i=0;i<nDim;++i )
                         for ( int j=0;j<nDim;++j )
-                            matPropSymbsMatrixComp.push_back( std::make_pair( (boost::format("heat_k%1%%2%_%3%")%i%j%_matName).str(), expr( thermalConductivity.template exprMatrix<nDim,nDim>(), se )(i,j) ) );
+                            matPropSymbsMatrixComp.push_back( std::make_pair( (boost::format("heat_%1%_%2%%3%")%_matName%i%j).str(), expr( thermalConductivity.template exprMatrix<nDim,nDim>(), se )(i,j) ) );
 #endif
                 }
                 else
-                    matPropSymbsScalar.push_back( std::make_pair( std::string("heat_k_"+ _matName), expr( thermalConductivity.exprScalar(), se ) ) );
+                    matPropSymbsScalar.push_back( std::make_pair( (boost::format("heat_%1%_k")% _matName).str(), expr( thermalConductivity.exprScalar(), se ) ) );
             }
             return Feel::vf::symbolsExpr( symbolExpr( matPropSymbsScalar )/*, symbolExpr( matPropSymbsMatrixComp )*/ );
         }

@@ -178,7 +178,7 @@ public :
             std::vector<std::pair<std::string,_expr_type>> matPropSymbs;
             for ( auto const& [_matname, _expr] : this->electricProperties()->electricConductivityByMaterial() )
             {
-                matPropSymbs.push_back( std::make_pair( std::string("electric_sigma_"+ _matname), expr( _expr.expr(), se ) ) );
+                matPropSymbs.push_back( std::make_pair( (boost::format("electric_%1%_sigma")%_matname).str(), expr( _expr.expr(), se ) ) );
             }
             return Feel::vf::symbolsExpr( symbolExpr( matPropSymbs ) );
         }
