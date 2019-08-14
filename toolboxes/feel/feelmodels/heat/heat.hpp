@@ -45,6 +45,10 @@
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
+#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -104,10 +108,9 @@ class Heat : public ModelNumerical,
         typedef ModelAlgebraicFactory model_algebraic_factory_type;
         typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
-        // context for evaluation
-        typedef typename space_temperature_type::Context context_temperature_type;
-        typedef std::shared_ptr<context_temperature_type> context_temperature_ptrtype;
-
+        // measure tools for points evaluation
+        typedef MeasurePointsEvaluation<space_temperature_type> measure_points_evaluation_type;
+        typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
         Heat( std::string const& prefix,
               std::string const& keyword = "heat",
@@ -178,7 +181,8 @@ class Heat : public ModelNumerical,
             {
                 return Feel::vf::symbolsExpr( symbolExpr("heat_T",idv(this->fieldTemperature()) ),
                                               symbolExpr("heat_dxT",dxv(this->fieldTemperature()) ),
-                                              symbolExpr("heat_dyT",dyv(this->fieldTemperature()) )
+                                              symbolExpr("heat_dyT",dyv(this->fieldTemperature()) ),
+                                              symbolExpr("heat_dnT",dnv(this->fieldTemperature()) )
                                               );
             }
         constexpr auto symbolsExprField( hana::int_<3> /**/ ) const
@@ -186,10 +190,14 @@ class Heat : public ModelNumerical,
                 return Feel::vf::symbolsExpr( symbolExpr("heat_T",idv(this->fieldTemperature()) ),
                                               symbolExpr("heat_dxT",dxv(this->fieldTemperature()) ),
                                               symbolExpr("heat_dyT",dyv(this->fieldTemperature()) ),
-                                              symbolExpr("heat_dzT",dzv(this->fieldTemperature()) )
+                                              symbolExpr("heat_dzT",dzv(this->fieldTemperature()) ),
+                                              symbolExpr("heat_dnT",dnv(this->fieldTemperature()) )
                                               );
             }
-        auto symbolsExprFit() const { return super_type::symbolsExprFit( this->symbolsExprField() ); }
+        //auto symbolsExprFit() const { return super_type::symbolsExprFit( this->symbolsExprField() ); }
+
+        template <typename SymbExprType>
+        auto symbolsExprFit( SymbExprType const& se ) const { return super_type::symbolsExprFit( se ); }
 
     public :
         void initAlgebraicFactory();
@@ -206,14 +214,57 @@ class Heat : public ModelNumerical,
 
         void exportResults() { this->exportResults( this->currentTime() ); }
         void exportResults( double time );
+        template <typename SymbolsExpr>
+        void exportResults( double time, SymbolsExpr const& symbolsExpr );
+
         void exportFields( double time );
         bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
         void exportMeasures( double time );
+        template <typename SymbolsExpr>
+        void exportMeasures( double time, SymbolsExpr const& symbolsExpr );
         void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
 
         void updateParameterValues();
-        /*constexpr*/auto symbolsExpr() const { return Feel::vf::symbolsExpr( this->symbolsExprField(), this->symbolsExprFit() ); }
+
+
+        template <typename SymbExprType>
+        /*constexpr*/auto symbolsExpr( SymbExprType const& se ) const
+        {
+            auto seFit = this->symbolsExprFit( se );
+            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( se, seFit ) );
+            return Feel::vf::symbolsExpr( se, seFit, seMat );
+        }
+        auto symbolsExpr() const { return this->symbolsExpr( this->symbolsExprField() ); }
+
+        ///*constexpr*/auto symbolsExpr() const { return Feel::vf::symbolsExpr( this->symbolsExprField(), this->symbolsExprFit() ); }
         constexpr auto symbolsExprField() const { return this->symbolsExprField( hana::int_<nDim>() ); }
+
+        template <typename SymbExprType>
+        auto symbolsExprMaterial( SymbExprType const& se ) const
+        {
+            typedef decltype(expr(scalar_field_expression<2>{},se)) _expr_scalar_type;
+            std::vector<std::pair<std::string,_expr_scalar_type>> matPropSymbsScalar;
+            typedef decltype(expr(matrix_field_expression<nDim,nDim,2>{},se)(0,0)) _expr_matrix_comp_type;
+            std::vector<std::pair<std::string,_expr_matrix_comp_type>> matPropSymbsMatrixComp;
+            for ( auto const& rangeData : this->thermalProperties()->rangeMeshElementsByMaterial() )
+            {
+                std::string const& _matName = rangeData.first;
+                auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( _matName );
+                if ( thermalConductivity.isMatrix() )
+                {
+#if 0
+                    // generate compilation error because need to fix/improve the return type of expr.evaluate(bool, worldcomm_ptr_t)
+                    for ( int i=0;i<nDim;++i )
+                        for ( int j=0;j<nDim;++j )
+                            matPropSymbsMatrixComp.push_back( std::make_pair( (boost::format("heat_%1%_%2%%3%")%_matName%i%j).str(), expr( thermalConductivity.template exprMatrix<nDim,nDim>(), se )(i,j) ) );
+#endif
+                }
+                else
+                    matPropSymbsScalar.push_back( std::make_pair( (boost::format("heat_%1%_k")% _matName).str(), expr( thermalConductivity.exprScalar(), se ) ) );
+            }
+            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbsScalar )/*, symbolExpr( matPropSymbsMatrixComp )*/ );
+        }
+
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
         // apply assembly and solver
@@ -304,7 +355,7 @@ class Heat : public ModelNumerical,
         export_ptrtype M_exporter;
         bool M_doExportAll, M_doExportVelocityConvection;
         std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
-        context_temperature_ptrtype M_postProcessMeasuresContextTemperature;
+        measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 
 
         typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;
@@ -312,9 +363,94 @@ class Heat : public ModelNumerical,
 
     };
 
+
+template< typename ConvexType, typename BasisTemperatureType>
+template <typename SymbolsExpr>
+void
+Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr const& symbolsExpr )
+{
+    this->log("Heat","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    this->exportFields( time );
+
+    this->exportMeasures( time, symbolsExpr );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("Heat","exportResults", "finish");
+}
+
+template< typename ConvexType, typename BasisTemperatureType>
+template <typename SymbolsExpr>
+void
+Heat<ConvexType,BasisTemperatureType>::exportMeasures( double time, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = false;
+
+    // compute measures
+    for ( auto const& ppForces : M_postProcessMeasuresForces )
+    {
+        CHECK( ppForces.meshMarkers().size() == 1 ) << "TODO";
+        auto const& u = this->fieldTemperature();
+        auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
+        double heatFlux = integrate(_range=markedfaces(this->mesh(),ppForces.meshMarkers() ),
+                                    _expr=kappa*gradv(u)*N() ).evaluate()(0,0);
+        std::string name = ppForces.name();
+        this->postProcessMeasuresIO().setMeasure("NormalHeatFlux_"+name,heatFlux);
+        hasMeasure = true;
+    }
+
+    auto fieldTuple = hana::make_tuple( std::make_pair( "temperature",this->fieldTemperaturePtr() ) );
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
+    {
+        std::map<std::string,double> resPpNorms;
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, symbolsExpr, fieldTuple );
+        for ( auto const& resPpNorm : resPpNorms )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
+            hasMeasure = true;
+        }
+    }
+
+    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
+    {
+        std::map<std::string,double> resPpStats;
+        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, symbolsExpr, fieldTuple );
+        for ( auto const& resPpStat : resPpStats )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
+            hasMeasure = true;
+        }
+    }
+
+    std::map<std::string,double> resPpPoints;
+    M_measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, fieldTuple );
+    for ( auto const& resPpPoint : resPpPoints )
+    {
+        this->postProcessMeasuresIO().setMeasure( resPpPoint.first, resPpPoint.second );
+        hasMeasure = true;
+    }
+
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
+    }
+}
+
 } // namespace FeelModels
 } // namespace Feel
 
 #include <feel/feelmodels/heat/heatupdatestabilizationgls.hpp>
+
 
 #endif /* FEELPP_TOOLBOXES_HEAT_HPP */

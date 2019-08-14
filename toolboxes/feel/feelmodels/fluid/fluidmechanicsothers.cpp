@@ -1058,35 +1058,32 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( DataUpdateLinear & data ) const
 {
-    if ( this->algebraicFactory() )
-    {
-        sparse_matrix_ptrtype const& mat = data.matrix();
-        vector_ptrtype const& vecSol = data.currentSolution();
-        if ( M_preconditionerAttachPMM )
-            this->updateInHousePreconditionerPMM( mat, vecSol );
-        if ( M_preconditionerAttachPCD )
-            this->updateInHousePreconditionerPCD( mat,vecSol, data );
-    }
+    sparse_matrix_ptrtype const& mat = data.matrix();
+    vector_ptrtype const& vecSol = data.currentSolution();
+    if ( M_preconditionerAttachPMM )
+        this->updateInHousePreconditionerPMM( mat, vecSol );
+    if ( M_preconditionerAttachPCD )
+        this->updateInHousePreconditionerPCD( mat,vecSol, data );
 }
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( DataUpdateJacobian & data ) const
 {
-    if ( this->algebraicFactory() )
-    {
-        sparse_matrix_ptrtype const& mat = data.jacobian();
-        vector_ptrtype const& vecSol = data.currentSolution();
-        if ( M_preconditionerAttachPMM )
-            this->updateInHousePreconditionerPMM( mat, vecSol );
-        if ( M_preconditionerAttachPCD )
-            this->updateInHousePreconditionerPCD( mat,vecSol,data );
-    }
+    sparse_matrix_ptrtype const& mat = data.jacobian();
+    vector_ptrtype const& vecSol = data.currentSolution();
+    if ( M_preconditionerAttachPMM )
+        this->updateInHousePreconditionerPMM( mat, vecSol );
+    if ( M_preconditionerAttachPCD )
+        this->updateInHousePreconditionerPCD( mat,vecSol,data );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& /*mat*/,vector_ptrtype const& vecSol ) const
 {
+    if ( !this->algebraicFactory() )
+        return; // TODO : should be use with multiphysics toolboxes as heat-fluid
+
     bool hasAlreadyBuiltPMM = this->algebraicFactory()->preconditionerTool()->hasAuxiliarySparseMatrix( "pmm" );
     if ( hasAlreadyBuiltPMM && !M_pmmNeedUpdate )
         return;
@@ -1113,11 +1110,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
 {
     this->log("FluidMechanics","updateInHousePreconditionerPCD", "start" );
 
-    CHECK( this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") ) << "operator PCD does not init";
+    CHECK( this->hasOperatorPCD() ) << "operator PCD does not init";
 
     typedef Feel::Alternatives::OperatorPCD<space_fluid_velocity_type,space_fluid_pressure_type> op_pcd_type;
     std::shared_ptr<op_pcd_type> myOpPCD =
-        std::dynamic_pointer_cast<op_pcd_type>( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
+        std::dynamic_pointer_cast<op_pcd_type>( this->operatorPCD() );
 
     auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
     auto u = U.template element<0>();

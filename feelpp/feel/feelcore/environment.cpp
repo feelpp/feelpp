@@ -1874,12 +1874,15 @@ Environment::updateInformationObject( pt::ptree & p )
         p.put( "run.directories.downloads", Environment::downloadsRepository() );
         p.put( "run.number_processors", Environment::numberOfProcessors() );
 
-        if ( S_vm.count( "case" ) )
+
+        std::string commandLineUsed;
+        for ( int i = 0; i < S_argc; ++i )
         {
-            p.put( "run.case", soption( _name="case" ) );
-            if ( S_vm.count( "case.config-file" ) )
-                p.put( "run.case.config-file", soption( _name="case.config-file" ) );
+            commandLineUsed += S_argv[i];
+            if (i < S_argc-1 )
+                commandLineUsed += " ";
         }
+        p.put( "run.command-line", commandLineUsed );
         pt::ptree ptTmp;
         for ( auto const& cfg : S_configFiles )
             ptTmp.push_back( std::make_pair("", pt::ptree( std::get<0>( cfg ) ) ) );
@@ -1969,7 +1972,12 @@ Environment::startLogging( std::string decorate )
     FLAGS_log_dir=a0.string();
 
     google::AllowCommandLineReparsing();
-    google::ParseCommandLineFlags( &S_argc, &S_argv, false );
+
+    // duplicate argv before passing to gflags because gflags is going to rearrange them
+    char** envargv = dupargv( S_argv );
+    int envargc = S_argc;
+    google::ParseCommandLineFlags( &envargc, &envargv/*S_argv*/, false );
+    freeargv( envargv );
     //std::cout << "FLAGS_vmodule: " << FLAGS_vmodule << "\n";
 #if 0
     std::cout << "argc=" << S_argc << "\n";
