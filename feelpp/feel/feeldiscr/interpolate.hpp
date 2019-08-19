@@ -202,7 +202,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
                                                                  l, ncdof2*comp1+comp2 ).index();
 
 #if 0
-                    size_type globaldof_f =  boost::get<0>( f.functionSpace()->dof()->localToGlobal( curElt.id(),l, 0 ) );
+                    size_type globaldof_f =  f.functionSpace()->dof()->localToGlobal( curElt.id(),l, 0 ).index();
                     std::cout << "elt : " << curElt.id() << "\n"
                               << "  l : " << l << "\n"
                               << " comp: " << comp << "\n"
