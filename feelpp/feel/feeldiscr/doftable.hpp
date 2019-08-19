@@ -1373,9 +1373,11 @@ public:
 
     /**
      * build point id to dof id relationship
+     * if \p dof2pid is true then generate dof to point id relation, 
+     * if \p pid2dof is true then generate point id to dof relation, 
      */
-    std::pair<std::map<size_type,size_type>,std::map<size_type,size_type> >
-    pointIdToDofRelation(std::string fname="") const;
+    std::pair<std::unordered_map<size_type,size_type>,std::unordered_map<size_type,size_type> >
+    pointIdToDofRelation( std::string fname="", bool dof2pid = true, bool pid2dof = true ) const;
 private:
     template<typename, typename > friend class DofFromElement;
     template<typename, typename, typename > friend class DofFromMortar;
@@ -3326,30 +3328,36 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFac
 }
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-std::pair<std::map<size_type,size_type>,std::map<size_type,size_type> >
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::pointIdToDofRelation(std::string fname) const
+std::pair<std::unordered_map<size_type,size_type>,std::unordered_map<size_type,size_type> >
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::pointIdToDofRelation(std::string fname, bool dof2pid, bool pid2dof ) const
 {
-    std::map<size_type,size_type> pidtodof,doftopid;
+    std::unordered_map<size_type,size_type> pidtodof,doftopid;
     auto rangeElements = M_mesh->elementsWithProcessId( M_mesh->worldComm().localRank() );
     auto it_elt = std::get<0>( rangeElements );
     auto en_elt = std::get<1>( rangeElements );
 
     if ( it_elt == en_elt )
         return std::make_pair(doftopid,pidtodof);
+    int ncdof  = is_product?nComponents:1;
 
+    if ( dof2pid )
+        doftopid.reserve( this->nLocalDof() );
+    if ( pid2dof )
+        pidtodof.reserve( ncdof*std::distance( it_elt, en_elt )*M_mesh->numLocalVertices() );
     for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
     {
         auto const& elt = boost::unwrap_ref( *it_elt );
         for ( uint16_type i = 0; i < M_mesh->numLocalVertices(); ++i )
         {
-            int ncdof  = is_product?nComponents:1;
             for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
             {
                 const size_type gDof = ( elt.point( i ).id() );
-                size_type thedof = boost::get<0>( localToGlobal( elt.id(), i, c1 ) );
+                size_type thedof = localToGlobal( elt.id(), i, c1 ).index();
                 //pidtodof[ncdof*it_elt->point(l).id()+c1] = thedof;
-                pidtodof[ncdof*gDof+c1] = thedof;
-                doftopid[thedof] = ncdof*gDof+c1;
+                if ( pid2dof )
+                    pidtodof[ncdof*gDof+c1] = thedof;
+                if ( dof2pid )
+                    doftopid[thedof] = ncdof*gDof+c1;
 
             }
         }
@@ -3359,23 +3367,27 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::pointIdToDofRelation(st
         std::ostringstream os1,os2;
         os1 << fs::path( fname ).stem().string() << "_pidtodof" << fs::path( fname ).extension().string();
         os2 << fs::path( fname ).stem().string() << "_doftopid" << fs::path( fname ).extension().string();
-        std::ofstream ofs( os1.str().c_str() );
-        auto it = pidtodof.begin();
-        auto en = pidtodof.end();
-        std::for_each( it, en,
-                       [&ofs]( std::pair<size_type, size_type> const& p )
-                       {
-                           ofs << p.first << " " << p.second << "\n";
-                       });
-        std::ofstream ofs2( os2.str().c_str() );
-        it = doftopid.begin();
-        en = doftopid.end();
-        std::for_each( it, en,
-                       [&ofs2]( std::pair<size_type, size_type> const& p )
-                       {
-                           ofs2 << p.first << " " << p.second << "\n";
-                       });
-
+        if ( pid2dof )
+        {
+            std::ofstream ofs( os1.str().c_str() );
+            auto it = pidtodof.begin();
+            auto en = pidtodof.end();
+            std::for_each( it, en,
+                           [&ofs]( std::pair<size_type, size_type> const& p )
+                               {
+                                   ofs << p.first << " " << p.second << "\n";
+                               });
+        }
+        if ( dof2pid )
+        {
+            std::ofstream ofs2( os2.str().c_str() );
+            auto it = doftopid.begin();
+            auto en = doftopid.end();
+            std::for_each( it, en,
+                           [&ofs2]( std::pair<size_type, size_type> const& p ) {
+                               ofs2 << p.first << " " << p.second << "\n";
+                           } );
+        }
     }
     return std::make_pair(doftopid,pidtodof);
 }
