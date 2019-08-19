@@ -1670,9 +1670,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::showMe() const
             {
 
                 LOG(INFO)<< "elt id " << i << " : "
-                         << "(local/global/sign dof : " << j << " : "
-                         << boost::get<0>( localToGlobal( i  , j ) ) << " : "
-                         << boost::get<1>( localToGlobal( i  , j ) ) << "\n";
+                         << "(local/global : " << j << " : "
+                         << std::get<0>( localToGlobal( i  , j ) ) << "  ";
             }
 
         }
