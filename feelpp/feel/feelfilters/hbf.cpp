@@ -187,7 +187,9 @@ Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh ):M_rows(n
     for (int tmpProc=0;tmpProc<=procSize;tmpProc++)
         cx[tmpProc]=(tmpProc)*(nx-1)/procSize;
 
-    auto relation = Yh->dof()->pointIdToDofRelation();
+    tic();
+    auto [dof2pid, pid2dof] = Yh->dof()->pointIdToDofRelation("", false, true );
+    toc("pidToDof relation");
     //LOG(INFO) << "relation.size() = " << relation.first.size() << "\t" << relation.second.size()<< std::endl;
 //#pragma omp parallel for
     for( int i = 0; i < ny; ++i )
@@ -199,7 +201,7 @@ Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh ):M_rows(n
             //int grid_vid = (nx+1)*i+j;
             //int dofid = relation.second[grid_vid];
             //int dofid = (nx+1)*i+j;
-            M_relation.insert( dof_relation( std::make_pair(i,j), relation.second[(nx)*i+j] ));
+            M_relation.push_back( dof_relation( std::make_pair(i,j), pid2dof[(nx)*i+j] ));
            //int dofid = (ny/procSize)*(j%((nx)/procSize))+i;
            //int dofid = (nx)*(i%(ny/procSize))+j;
            //std::cout << "r : " << relation.second[(nx)*i+j] <<  std::endl;
