@@ -50,9 +50,9 @@ class MeshStructured : public Mesh<Hypercube<2>>
     using face_type = super::face_type;
     using node_type = super::node_type;
     MeshStructured() = default;
-    MeshStructured( MeshStructured const& ) = default;
-    MeshStructured( MeshStructured&& ) = default;
-    MeshStructured& operator=( MeshStructured const& ) = default;
+    MeshStructured( MeshStructured const& ) = delete;
+    MeshStructured( MeshStructured&& ) = delete;
+    MeshStructured& operator=( MeshStructured const& ) = delete;
     MeshStructured& operator=( MeshStructured&& ) = delete;
 
     //!
@@ -65,8 +65,8 @@ class MeshStructured : public Mesh<Hypercube<2>>
     //MeshStructured( int nx, int ny,holo3_image<float> cx,holo3_image<float> cy, WorldComm const& );
 
     void updateGhostCellInfoByUsingNonBlockingComm(
-        std::map<int, int> const& idStructuredMeshToFeelMesh,
-        std::map<int, boost::tuple<int, rank_type>> const& mapGhostElt,
+        std::unordered_map<int, int> const& idStructuredMeshToFeelMesh,
+        std::unordered_map<int, boost::tuple<int, rank_type>> const& mapGhostElt,
         std::vector<int> const& nbMsgToRecv );
 
     /*
