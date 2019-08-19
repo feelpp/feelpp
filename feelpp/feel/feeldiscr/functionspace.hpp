@@ -2664,7 +2664,7 @@ public:
 
         value_type localToGlobal( index_type e, index_type l, int c ) const
         {
-            index_type index=boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
+            index_type index=M_functionspace->dof()->localToGlobal( e, l, c ).index();
             return super::operator()( index );
         }
 #if 0
@@ -3104,14 +3104,14 @@ public:
                 auto const& meshElt = boost::unwrap_ref( rangeElt );
                 index_type eid = meshElt.id();
 
-                index_type dofp0 = boost::get<0>( P0h->dof()->localToGlobal( eid, 0, 0 ) );
+                index_type dofp0 = P0h->dof()->localToGlobal( eid, 0, 0 ).index();
                 std::vector<value_type> values ( functionspace_type::fe_type::nLocalDof );
 
                 index_type dofpn = 0;
 
                 for ( uint16_type local_id=0; local_id < functionspace_type::fe_type::nLocalDof; ++local_id )
                 {
-                    dofpn = boost::get<0>( this->functionSpace()->dof()->localToGlobal( eid, local_id, 0 ) );
+                    dofpn = this->functionSpace()->dof()->localToGlobal( eid, local_id, 0 ).index();
                     values[local_id] = this->operator()( dofpn );
                 }
 
@@ -5928,24 +5928,26 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     M_periodicity = periodicity;
     VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 
-
-    if ( basis_type::nDofPerEdge || nDim >= 3 )
-        mesh_components |= MESH_UPDATE_EDGES;
-
-    /*
-     * update faces info in mesh only if dofs exists on faces or the
-     * expansion is continuous between elements. This case handles strong
-     * Dirichlet imposition
-     */
-    if ( basis_type::nDofPerFace || is_continuous  || nDim >= 3 )
-        mesh_components |= MESH_UPDATE_FACES;
-
-    if ( !M_mesh->isUpdatedForUse() )
+    if ( M_mesh->components().test( MESH_DO_NOT_UPDATE ) )
     {
-        M_mesh->components().set( mesh_components );
-        M_mesh->updateForUse();
-    }
 
+        if ( basis_type::nDofPerEdge || nDim >= 3 )
+            mesh_components |= MESH_UPDATE_EDGES;
+
+        /*
+         * update faces info in mesh only if dofs exists on faces or the
+         * expansion is continuous between elements. This case handles strong
+         * Dirichlet imposition
+         */
+        if ( basis_type::nDofPerFace || is_continuous || nDim >= 3 )
+            mesh_components |= MESH_UPDATE_FACES;
+
+        if ( !M_mesh->isUpdatedForUse() )
+        {
+            M_mesh->components().set( mesh_components );
+            M_mesh->updateForUse();
+        }
+    }
     if ( is_periodic )
     {
         M_mesh->removeFacesFromBoundary( { periodicity.tag1(), periodicity.tag2() } );
@@ -5953,17 +5955,26 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     M_ref_fe = std::make_shared<basis_type>();
 
+    tic();
+    tic();
     M_dof = std::make_shared<dof_type>( M_ref_fe, fusion::at_c<0>(periodicity), *this->worldsComm()[0] );
-
+    toc("FunctionSpace dof-1", FLAGS_v>0);
+    tic();
     M_dof->setBuildDofTableMPIExtended( this->extendedDofTable() );
-
+    toc("FunctionSpace dof-2", FLAGS_v>0);
     DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
+    tic();
     M_dof->setDofIndices( dofindices );
+    toc("FunctionSpace dof-3", FLAGS_v>0);
     DVLOG(2) << "[functionspace] is_periodic = " << is_periodic << "\n";
+    tic();
     if ( fusion::at_c<0>( meshSupport ) && fusion::at_c<0>( meshSupport )->isPartialSupport() )
         M_dof->setMeshSupport( fusion::at_c<0>( meshSupport ) );
+    toc("FunctionSpace dof-4", FLAGS_v>0);
+    tic();
     M_dof->build( M_mesh );
-
+    toc("FunctionSpace dof-5", FLAGS_v>0);
+    toc("FunctionSpace dof table", FLAGS_v > 0 );
     M_dofOnOff = M_dof;
 
     this->applyUpdateInformationObject();

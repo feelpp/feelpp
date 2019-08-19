@@ -1913,7 +1913,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                             if ( c < __var->second.nComponents )
                             {
                                 size_type thedof =  __var->second.start() +
-                                    boost::get<0>(__var->second.functionSpace()->dof()->faceLocalToGlobal( face.id(), j, c ));
+                                    __var->second.functionSpace()->dof()->faceLocalToGlobal( face.id(), j, c ).index();
 
                                 field[global_node_id] = __var->second.globalValue( thedof );
                             }
@@ -2037,7 +2037,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
 
                         if ( c < nc )
                         {
-                            size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->get().id(), p, c ) );
+                            size_type dof_id = __var->second.functionSpace()->dof()->localToGlobal( elt_it->get().id(), p, c ).index();
 
                             __field[global_node_id] = __var->second.globalValue( dof_id );
                             //__field[npts*c + index] = __var->second.globalValue( dof_id );
@@ -2298,7 +2298,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
 
                     if ( c < nc)
                     {
-                        size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt.id(),0, c ) );
+                        size_type dof_id = __evar->second.functionSpace()->dof()->localToGlobal( elt.id(),0, c ).index();
 
                         DVLOG(2) << "c : " << c
                                  << " gdofid: " << global_node_id
