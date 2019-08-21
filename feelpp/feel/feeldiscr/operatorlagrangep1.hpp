@@ -783,7 +783,7 @@ OperatorLagrangeP1<space_type>::operator()( element_type const& u ) const
             for ( int c = 0; c < nComponents; ++c )
                 for ( int p = 0; p < domain_mesh_type::element_type::numVertices; ++p )
                 {
-                    size_type ptid = boost::get<0>( this->dualImageSpace()->dof()->localToGlobal( elt.id(), p, c ) );
+                    size_type ptid = this->dualImageSpace()->dof()->localToGlobal( elt.id(), p, c ).index();
                     res( ptid ) = ublas::column( u_at_pts, M_el2pt[*ite][p] )( nComponents*c+c );
                 }
         }
