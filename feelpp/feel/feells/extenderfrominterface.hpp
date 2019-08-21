@@ -92,7 +92,7 @@ ExtenderFromInterface<Dim,GeoOrder,Convex>::update( element_type const& phi )
         std::vector<size_type> indices_nodes( convex_type::numPoints );
         for (int j=0; j<convex_type::numPoints; j++)
         {
-            size_type index = M_phi.start() + boost::get<0>(M_Xh->dof()->localToGlobal( elt.id(), j, 0 ));
+            size_type index = M_phi.start() + M_Xh->dof()->localToGlobal( elt.id(), j, 0 ).index();
             //double index = velocX.localToGlobal(it_elt->id(), j, 0);
             indices_nodes[j]=index;
 
