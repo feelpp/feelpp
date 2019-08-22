@@ -1203,7 +1203,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
             for ( uint16_type l = 0; l < nLocalDof; ++l )
             {
                 uint16_type gmsh_l = ordering.fromGmshId( l );
-                globaldof = boost::get<0>( __u.functionSpace()->dof()->localToGlobal( elt.id(), gmsh_l, 0 ) ); //l,c
+                globaldof = __u.functionSpace()->dof()->localToGlobal( elt.id(), gmsh_l, 0 ).index(); //l,c
 
                 // verify that the dof points and mesh points coincide
 #if !defined(NDEBUG)
@@ -1286,9 +1286,9 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
                     if ( c < nComponents )
                     {
-                        globaldof = boost::get<0>( __uVec.functionSpace()->dof()->localToGlobal( elt.id(),
-                                                   gmsh_l,
-                                                   c ) );
+                        globaldof = __uVec.functionSpace()->dof()->localToGlobal( elt.id(),
+                                                                                  gmsh_l,
+                                                                                  c ).index();
                         //out << __uVec( globaldof);
                         out << __uVec.container()( globaldof );
                     }
@@ -1340,7 +1340,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         {
             auto const& elt = boost::unwrap_ref( *elt_it );
 
-            globaldof = boost::get<0>( __u.functionSpace()->dof()->localToGlobal( elt.id(), 0, 0 ) ); //l,c
+            globaldof = __u.functionSpace()->dof()->localToGlobal( elt.id(), 0, 0 ).index(); //l,c
 
             // either use the relinearized version for one file dataset or classic for one file per process
             /*

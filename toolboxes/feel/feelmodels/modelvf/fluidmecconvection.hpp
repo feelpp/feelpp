@@ -337,7 +337,7 @@ public:
                     for ( typename array_vectorial_type::index c1 = 0; c1 < ncdof; ++c1 )
                         {
                             typename array_vectorial_type::index ldof = functionspace_type::basis_type::nDof*c1+l;
-                            const size_type gdof = boost::get<0>( M_expr.velocity().functionSpace()->dof()->localToGlobal( elt_id, l, c1 ) );
+                            const size_type gdof = M_expr.velocity().functionSpace()->dof()->localToGlobal( elt_id, l, c1 ).index();
                             const value_type v_ = M_expr.velocity().globalValue( gdof );
 
                             for ( uint16_type q = 0; q < nQuadPts; ++q )
@@ -384,7 +384,7 @@ public:
                     for ( typename array_vectorial_type::index c1 = 0; c1 < ncdof; ++c1 )
                         {
                             typename array_vectorial_type::index ldof = functionspace_type::basis_type::nDof*c1+l;
-                            const size_type gdof = boost::get<0>( M_expr.velocity().functionSpace()->dof()->localToGlobal( elt_id, l, c1 ) );
+                            const size_type gdof = M_expr.velocity().functionSpace()->dof()->localToGlobal( elt_id, l, c1 ).index();
                             const value_type v_ = M_expr.velocity().globalValue( gdof );
 
                             for ( uint16_type q = 0; q < nQuadPts; ++q )
