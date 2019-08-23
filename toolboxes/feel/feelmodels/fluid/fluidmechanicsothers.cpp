@@ -1318,10 +1318,55 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVorticity()
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateConvectionVelocityExtrapolated()
+{
+    if ( this->isStationary() )
+        return;
+
+    if ( !M_fieldConvectionVelocityExtrapolated )
+        M_fieldConvectionVelocityExtrapolated = this->functionSpace()->elementPtr();
+    else
+        M_fieldConvectionVelocityExtrapolated->zero();
+
+    if ( this->currentTime() == this->timeInitial() )
+    {
+        if ( M_bdf_fluid->iteration() == 1 )
+            M_fieldConvectionVelocityExtrapolated->add( 1, M_bdf_fluid->unknown(1) );
+        else if ( M_bdf_fluid->iteration() > 1 )
+        {
+            M_fieldConvectionVelocityExtrapolated->add( 2, M_bdf_fluid->unknown(1) );
+            M_fieldConvectionVelocityExtrapolated->add( -1, M_bdf_fluid->unknown(2) );
+        }
+    }
+    else
+    {
+        if ( M_timeStepping == "BDF" )
+        {
+            *M_fieldConvectionVelocityExtrapolated = *M_bdf_fluid->polyPtr();
+        }
+        else if ( M_timeStepping == "Theta" )
+        {
+            if ( M_bdf_fluid->iteration() == 1 )
+                M_fieldConvectionVelocityExtrapolated->add( 1, M_bdf_fluid->unknown(0) );
+            else if ( M_bdf_fluid->iteration() > 1 )
+            {
+                M_fieldConvectionVelocityExtrapolated->add( 2 /*3./2.*/, M_bdf_fluid->unknown(0) );
+                M_fieldConvectionVelocityExtrapolated->add( -1 /*-1./2.*/, M_bdf_fluid->unknown(1) );
+            }
+        }
+    }
+}
+
+//---------------------------------------------------------------------------------------------------------//
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
 {
     this->log("FluidMechanics","startTimeStep", "start" );
 
+    if ( this->solverName() == "Oseen" )
+        this->updateConvectionVelocityExtrapolated();
     // some time stepping require to compute residual without time derivative
     this->updateTimeStepCurrentResidual();
 
@@ -1330,6 +1375,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
         M_bdf_fluid->start(*M_Solution);
     // up current time
     this->updateTime( M_bdf_fluid->time() );
+
+    if ( this->solverName() == "Oseen" )
+        this->updateConvectionVelocityExtrapolated();
 
     // update all expressions in bc or in house prec
     this->updateParameterValues();
@@ -1414,6 +1462,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
         this->updateTime( M_bdf_fluid->time() );
     }
 
+    if ( this->solverName() == "Oseen" )
+        this->updateConvectionVelocityExtrapolated();
+
     // update user functions which depend of time only
     this->updateUserFunctions(true);
     // update all expressions in bc or in house prec
@@ -1455,10 +1506,25 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
         M_timeStepThetaSchemePreviousContrib->zero();
         M_blockVectorSolution.updateVectorFromSubVectors();
         //this->updateBlockVectorSolution();
-        std::vector<std::string> infos = { "time-stepping.evaluate-residual-without-time-derivative" };
+        ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
+        dataResidual.addInfo( "time-stepping.evaluate-residual-without-time-derivative" );
+
         M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
-        M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos );
+        M_algebraicFactory->evaluateResidual( dataResidual );
         M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+
+        if ( M_stabilizationGLS )
+        {
+            auto & dataInfos = M_algebraicFactory->dataInfos();
+            *dataInfos.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") ) = *M_blockVectorSolution.vectorMonolithic();
+            if ( this->solverName() == "Oseen" )
+            {
+                std::string convectionOseenEntry = prefixvm( this->prefix(),"time-stepping.previous-convection-field-extrapolated" );
+                if ( !dataInfos.hasVectorInfo( convectionOseenEntry ) )
+                    dataInfos.addVectorInfo( convectionOseenEntry, this->backend()->newVector( M_fieldConvectionVelocityExtrapolated->mapPtr() ) );
+                *dataInfos.vectorInfo( convectionOseenEntry ) = *M_fieldConvectionVelocityExtrapolated;
+            }
+        }
     }
 }
 
