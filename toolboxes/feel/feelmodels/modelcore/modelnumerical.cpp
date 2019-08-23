@@ -177,7 +177,7 @@ ModelNumerical::checkResults() const
                 std::cout << tc::green << "[success]";
             else
                 std::cout << tc::red << "[failure]";
-            std::cout << tc::reset << " check measure " << measureName <<  " : error=" << diffVal << " [tolerance=" << checkerMeasure.tolerance() << "]" << std::endl;
+            std::cout << tc::reset << " check measure " << measureName <<  " : measure=" << valueMeasured << " , reference=" << checkerMeasure.value() << " , error=" << diffVal << " [tolerance=" << checkerMeasure.tolerance() << "]" << std::endl;
         }
         resultsAreOk = resultsAreOk && checkIsOk;
     }
