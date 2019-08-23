@@ -250,8 +250,12 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     int nBlock = nBlockHeat + nBlockElectric;
     M_blockVectorSolutionMonolithic.resize( nBlock );
     int indexBlock=0;
+    int numberOfBlockSpaceHeat = 0;
     for ( int k=0;k<nBlockHeat ;++k )
+    {
         M_blockVectorSolutionMonolithic(indexBlock+k) = blockVectorSolutionHeat(k);
+        numberOfBlockSpaceHeat += blockVectorSolutionHeat(k)->map().numberOfDofIdToContainerId();
+    }
     indexBlock += nBlockHeat;
     for ( int k=0;k<nBlockElectric ;++k )
         M_blockVectorSolutionMonolithic(indexBlock+k) = blockVectorSolutionElectric(k);
@@ -261,7 +265,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     size_type currentStartBlockSpaceIndex = 0;
     this->setStartSubBlockSpaceIndex( "heat", currentStartBlockSpaceIndex );
-    currentStartBlockSpaceIndex += blockVectorSolutionHeat.vectorMonolithic()->map().numberOfDofIdToContainerId();
+    currentStartBlockSpaceIndex += numberOfBlockSpaceHeat;
     this->setStartSubBlockSpaceIndex( "electric", currentStartBlockSpaceIndex );
 
     // algebraic solver
@@ -411,6 +415,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     this->log("ThermoElectric","exportResults", "start");
     this->timerTool("PostProcessing").start();
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
 
     if ( M_exporter && M_exporter->doExport() )
     {

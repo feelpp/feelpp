@@ -379,6 +379,10 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr c
     this->log("Heat","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
     this->exportFields( time );
 
     this->exportMeasures( time, symbolsExpr );

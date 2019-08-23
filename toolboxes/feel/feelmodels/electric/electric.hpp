@@ -276,6 +276,10 @@ Electric<ConvexType,BasisPotentialType>::exportResults( double time, SymbolsExpr
     this->log("Electric","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
     this->exportFields( time );
 
     this->exportMeasures( time, symbolsExpr );

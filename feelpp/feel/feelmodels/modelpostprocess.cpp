@@ -400,6 +400,10 @@ ModelPostprocess::setParameterValues( std::map<std::string,double> const& mp )
     for( auto & p : M_measuresNorm )
         for( auto & p2 : p.second )
             p2.setParameterValues( mp );
+
+    for( auto & p : M_measuresStatistics )
+        for( auto & p2 : p.second )
+            p2.setParameterValues( mp );
 }
 
 bool
