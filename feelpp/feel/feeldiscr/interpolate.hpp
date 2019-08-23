@@ -198,11 +198,11 @@ interpolate( std::shared_ptr<SpaceType> const& space,
                 for ( uint16_type comp1 = 0; comp1 < ncdof1; ++comp1 )
                     for ( uint16_type comp2 = 0; comp2 < ncdof2; ++comp2 )
                 {
-                    size_type globaldof =  boost::get<0>( __dof->localToGlobal( curElt.id(),
-                                                          l, ncdof2*comp1+comp2 ) );
+                    size_type globaldof =  __dof->localToGlobal( curElt.id(),
+                                                                 l, ncdof2*comp1+comp2 ).index();
 
 #if 0
-                    size_type globaldof_f =  boost::get<0>( f.functionSpace()->dof()->localToGlobal( curElt.id(),l, 0 ) );
+                    size_type globaldof_f =  f.functionSpace()->dof()->localToGlobal( curElt.id(),l, 0 ).index();
                     std::cout << "elt : " << curElt.id() << "\n"
                               << "  l : " << l << "\n"
                               << " comp: " << comp << "\n"
