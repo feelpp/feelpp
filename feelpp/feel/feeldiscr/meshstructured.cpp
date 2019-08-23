@@ -81,8 +81,8 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
         std::cout<< "\n";
     }
 #endif
-    std::map<int, boost::tuple<int, rank_type>> mapGhostElt;
-    std::map<int, int> idStructuredMeshToFeelMesh;
+    std::unordered_map<int, boost::tuple<int, rank_type>> mapGhostElt;
+    std::unordered_map<int, int> idStructuredMeshToFeelMesh;
     node_type coords( 2 );
 
     // polygon build
@@ -886,7 +886,7 @@ int eid=0;
         }
     } // is_first
 
-    for (std::map<int,boost::tuple<int,rank_type>>::iterator it=mapGhostElt.begin(); it!=mapGhostElt.end(); ++it)
+    for (auto it=mapGhostElt.begin(); it!=mapGhostElt.end(); ++it)
         std::cout << "test : " << it->first << " ( " << it->second.get<0>()<< "," << it->second.get<1>() << " )" << std::endl;
     this->worldComm().barrier();
     // this->addMarkerName("omega",1,2);
@@ -898,8 +898,8 @@ int eid=0;
 #endif
 
 //template<typename MeshType>
-void MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int, int> const& idStructuredMeshToFeelMesh,
-                                                                std::map<int, boost::tuple<int, rank_type>> const& mapGhostElt,
+void MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::unordered_map<int, int> const& idStructuredMeshToFeelMesh,
+                                                                std::unordered_map<int, boost::tuple<int, rank_type>> const& mapGhostElt,
                                                                 std::vector<int> const& nbMsgToRecv )
 {
     DVLOG( 1 ) << "updateGhostCellInfoNonBlockingComm : start on rank " << this->worldComm().localRank() << "\n";
@@ -910,7 +910,7 @@ void MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int, in
 
     //-----------------------------------------------------------//
     // compute size of container to send
-    std::map<rank_type, int> nDataInVecToSend;
+    std::unordered_map<rank_type, int> nDataInVecToSend;
     auto it_map = mapGhostElt.begin();
     auto const en_map = mapGhostElt.end();
     for ( ; it_map != en_map; ++it_map )
@@ -922,7 +922,7 @@ void MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int, in
     }
     //-----------------------------------------------------------//
     // init and resize the container to send
-    std::map<rank_type, std::vector<int>> dataToSend;
+    std::unordered_map<rank_type, std::vector<int>> dataToSend;
     auto itNDataInVecToSend = nDataInVecToSend.begin();
     auto const enNDataInVecToSend = nDataInVecToSend.end();
     for ( ; itNDataInVecToSend != enNDataInVecToSend; ++itNDataInVecToSend )
@@ -933,8 +933,8 @@ void MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int, in
     }
     //-----------------------------------------------------------//
     // prepare container to send
-    std::map<rank_type, std::map<int, int>> memoryMsgToSend;
-    std::map<rank_type, int> nDataInVecToSendBis;
+    std::unordered_map<rank_type, std::unordered_map<int, int>> memoryMsgToSend;
+    std::unordered_map<rank_type, int> nDataInVecToSendBis;
     it_map = mapGhostElt.begin();
     for ( ; it_map != en_map; ++it_map )
     {
@@ -977,7 +977,7 @@ void MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int, in
     }
     //-----------------------------------------------------------//
     // first recv
-    std::map<rank_type, std::vector<int>> dataToRecv;
+    std::unordered_map<rank_type, std::vector<int>> dataToRecv;
     for ( rank_type proc = 0; proc < nProc; ++proc )
     {
         if ( nbMsgToRecv[proc] > 0 )
@@ -991,7 +991,7 @@ void MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int, in
     mpi::wait_all( reqs, reqs + nbRequest );
     //-----------------------------------------------------------//
     // build the container to ReSend
-    std::map<rank_type, std::vector<int>> dataToReSend;
+    std::unordered_map<rank_type, std::vector<int>> dataToReSend;
     auto itDataRecv = dataToRecv.begin();
     auto const enDataRecv = dataToRecv.end();
     for ( ; itDataRecv != enDataRecv; ++itDataRecv )
@@ -1017,7 +1017,7 @@ void MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int, in
     }
     //-----------------------------------------------------------//
     // recv the initial request
-    std::map<rank_type, std::vector<int>> finalDataToRecv;
+    std::unordered_map<rank_type, std::vector<int>> finalDataToRecv;
     itDataToSend = dataToSend.begin();
     for ( ; itDataToSend != enDataToSend; ++itDataToSend )
     {

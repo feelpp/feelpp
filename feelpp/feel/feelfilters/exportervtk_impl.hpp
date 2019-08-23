@@ -737,7 +737,7 @@ ExporterVTK<MeshType,N>::saveNodeData( typename timeset_type::step_ptrtype step,
                             if ( c < __var->second.nComponents )
                             {
                                 size_type thedof =  __var->second.start() +
-                                    boost::get<0>(__var->second.functionSpace()->dof()->faceLocalToGlobal( fit->id(), j, c ));
+                                    __var->second.functionSpace()->dof()->faceLocalToGlobal( fit->id(), j, c ).index();
 
                                 field[global_node_id] = __var->second.globalValue( thedof );
                             }
@@ -828,7 +828,7 @@ ExporterVTK<MeshType,N>::saveNodeData( typename timeset_type::step_ptrtype step,
 
                     if ( c < __var->second.nComponents )
                     {
-                        size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt.id(), p, c ) );
+                        size_type dof_id = __var->second.functionSpace()->dof()->localToGlobal( elt.id(), p, c ).index();
 
                         __field[global_node_id] = __var->second.globalValue( dof_id );
                         //__field[npts*c + index] = __var->second.globalValue( dof_id );
@@ -936,7 +936,7 @@ ExporterVTK<MeshType,N>::saveElementData( typename timeset_type::step_ptrtype st
 
                 if ( c < __evar->second.nComponents )
                 {
-                    size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt.id(),0, c ) );
+                    size_type dof_id = __evar->second.functionSpace()->dof()->localToGlobal( elt.id(),0, c ).index();
 
                     DVLOG(2) << "c : " << c
                         << " gdofid: " << global_node_id
