@@ -154,6 +154,14 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
     if ( !this->isStationary() && this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
         BuildNonCstPart_Form2TransientTerm = buildCstPart;
 
+    double timeSteppingScaling = 1.;
+    if ( !this->isStationary() )
+    {
+        if ( M_timeStepping == "Theta" )
+            timeSteppingScaling = M_timeStepThetaValue;
+        data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
+    }
+
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
     auto const& u = this->fieldTemperature();
@@ -177,22 +185,10 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
         {
             if ( buildCstPart )
             {
-                auto kappa = thermalConductivity.template exprMatrix<nDim,nDim>();
+                auto const& kappa = thermalConductivity.template exprMatrix<nDim,nDim>();
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
-                               //_expr= inner(trans(kappa*trans(gradt(u))),grad(v)),
-                               _expr= grad(v)*(kappa*trans(gradt(u))),
-                               _geomap=this->geomap() );
-            }
-        }
-        else if ( thermalConductivity.isConstant() )
-        {
-            if ( buildCstPart )
-            {
-                double kappa = thermalConductivity.value();
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= kappa*inner(gradt(u),grad(v)),
+                               _expr= timeSteppingScaling*grad(v)*(kappa*trans(gradt(u))),
                                _geomap=this->geomap() );
             }
         }
@@ -200,56 +196,24 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
         {
             if ( buildCstPart )
             {
-                auto kappa = thermalConductivity.expr();
-                //auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
+                auto const& kappa = thermalConductivity.expr();
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= kappa*inner(gradt(u),grad(v)),
+                               _expr= timeSteppingScaling*kappa*inner(gradt(u),grad(v)),
                                _geomap=this->geomap() );
             }
         }
 
-        auto const& rhoHeatCapacity = this->thermalProperties()->rhoHeatCapacity( matName );
-        if ( rhoHeatCapacity.isConstant() )
-        {
-            double rhoHeatCapacityValue = rhoHeatCapacity.value();
-            if ( buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
-            {
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= rhoHeatCapacityValue*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
-                               _geomap=this->geomap() );
-            }
 
-            if ( !this->isStationary() )
-            {
-                if ( BuildNonCstPart_Form2TransientTerm )
-                {
-                    double thecoeff = rhoHeatCapacityValue*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
-                    bilinearForm_PatternCoupled +=
-                        integrate( _range=range,
-                                   _expr= thecoeff*idt(u)*id(v),
-                                   _geomap=this->geomap() );
-                }
-                if ( BuildNonCstPart_Form1TransientTerm )
-                {
-                    auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
-                    myLinearForm +=
-                        integrate( _range=range,
-                                   _expr= rhoHeatCapacityValue*idv(rhsTimeStep)*id(v),
-                                   _geomap=this->geomap() );
-                }
-            }
-        }
-        else
+        if ( this->fieldVelocityConvectionIsUsedAndOperational() || !this->isStationary() )
         {
-            auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
-            //auto rhoHeatCapacityExpr = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
+            auto const& rhoHeatCapacity = this->thermalProperties()->rhoHeatCapacity( matName );
+            auto const& rhoHeatCapacityExpr = rhoHeatCapacity.expr();
             if ( buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
             {
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= rhoHeatCapacityExpr*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
+                               _expr= timeSteppingScaling*rhoHeatCapacityExpr*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
                                _geomap=this->geomap() );
             }
 
@@ -272,16 +236,15 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
                                    _geomap=this->geomap() );
                 }
             }
+
+            // update stabilization gls
+            if ( M_stabilizationGLS && buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
+            {
+                CHECK( !thermalConductivity.isMatrix() ) << "NotImplemented";
+                auto const& kappa = thermalConductivity.expr();
+                this->updateLinearPDEStabilizationGLS(  rhoHeatCapacityExpr, kappa, idv(this->fieldVelocityConvection()), range, data );
+            }
         }
-
-
-        // update stabilization gls
-        if ( M_stabilizationGLS && buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
-        {
-            CHECK( !thermalConductivity.isMatrix() && thermalConductivity.isConstant() && rhoHeatCapacity.isConstant() ) << "NotImplemented";
-            this->updateLinearPDEStabilizationGLS(  cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(this->fieldVelocityConvection()),range,data );
-        }
-
     }
 
 #if 0
@@ -322,10 +285,10 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
     //--------------------------------------------------------------------------------------------------//
 
     // update source term
-    this->updateLinearPDESourceTerm( F, buildCstPart );
+    this->updateLinearPDESourceTerm( data );
 
     // update bc
-    this->updateLinearPDEWeakBC( A,F,buildCstPart );
+    this->updateLinearPDEWeakBC( data );
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("Heat","updateLinearPDE",
@@ -376,6 +339,13 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
     if ( !this->isStationary() && this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
         BuildNonCstPart_Form2TransientTerm = buildCstPart;
 
+    double timeSteppingScaling = 1.;
+    if ( !this->isStationary() )
+    {
+        if ( M_timeStepping == "Theta" )
+            timeSteppingScaling = M_timeStepThetaValue;
+        data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
+    }
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
@@ -401,7 +371,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                 double kappa = thermalConductivity.value();
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= kappa*inner(gradt(u),grad(v)),
+                               _expr= timeSteppingScaling*kappa*inner(gradt(u),grad(v)),
                                _geomap=this->geomap() );
             }
         }
@@ -416,13 +386,13 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                     auto kappaEval = expr( kappa, symbolExpr(symbolStr, idv(u)) );
                     bilinearForm_PatternCoupled +=
                         integrate( _range=range,
-                                   _expr= kappaEval*inner(gradt(u),grad(v)),
+                                   _expr= timeSteppingScaling*kappaEval*inner(gradt(u),grad(v)),
                                    _geomap=this->geomap() );
                     auto kappaDiff = diff( kappa,symbolStr,1,"",this->worldComm(),this->repository().expr());
                     auto kappaDiffEval = expr( kappaDiff, symbolExpr( symbolStr, idv(u) ) );
                     bilinearForm_PatternCoupled +=
                         integrate( _range=range,
-                                   _expr= kappaDiffEval*idt(u)*inner(gradv(u),grad(v)),
+                                   _expr= timeSteppingScaling*kappaDiffEval*idt(u)*inner(gradv(u),grad(v)),
                                    _geomap=this->geomap() );
                 }
             }
@@ -433,46 +403,23 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                     //auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
                     bilinearForm_PatternCoupled +=
                         integrate( _range=range,
-                                   _expr= kappa*inner(gradt(u),grad(v)),
+                                   _expr= timeSteppingScaling*kappa*inner(gradt(u),grad(v)),
                                    _geomap=this->geomap() );
                 }
             }
         }
 
-        auto const& rhoHeatCapacity = this->thermalProperties()->rhoHeatCapacity( matName );
-        if ( rhoHeatCapacity.isConstant() )
-        {
-            double rhoHeatCapacityValue = rhoHeatCapacity.value();
-            if ( buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
-            {
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= rhoHeatCapacityValue*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
-                               _geomap=this->geomap() );
-            }
 
-            if ( !this->isStationary() )
-            {
-                if ( BuildNonCstPart_Form2TransientTerm )
-                {
-                    double thecoeff = rhoHeatCapacityValue*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
-                    bilinearForm_PatternCoupled +=
-                        integrate( _range=range,
-                                   _expr= thecoeff*idt(u)*id(v),
-                                   _geomap=this->geomap() );
-                }
-            }
-        }
-        else
+        if ( this->fieldVelocityConvectionIsUsedAndOperational() || !this->isStationary() )
         {
+            auto const& rhoHeatCapacity = this->thermalProperties()->rhoHeatCapacity( matName );
             auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
-            //auto rhoHeatCapacityExpr = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
 
             if ( buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
             {
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= rhoHeatCapacityExpr*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
+                               _expr= timeSteppingScaling*rhoHeatCapacityExpr*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
                                _geomap=this->geomap() );
             }
 
@@ -487,18 +434,19 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                                    _geomap=this->geomap() );
                 }
             }
-        }
 
-        // update stabilization gls
-        if ( M_stabilizationGLS && buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
-        {
-            CHECK( !thermalConductivity.isMatrix() && thermalConductivity.isConstant() && rhoHeatCapacity.isConstant() ) << "NotImplemented";
-            this->updateJacobianStabilizationGLS(  cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(this->fieldVelocityConvection()),range,data );
+            // update stabilization gls
+            if ( M_stabilizationGLS && buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
+            {
+                CHECK( !thermalConductivity.isMatrix() ) << "NotImplemented";
+                auto const& kappa = thermalConductivity.expr();
+                this->updateJacobianStabilizationGLS(  rhoHeatCapacityExpr, kappa, idv(this->fieldVelocityConvection()), range, data );
+            }
         }
 
     }
 
-    this->updateJacobianRobinBC( J,buildCstPart );
+    this->updateJacobianRobinBC( data );
 }
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -518,6 +466,22 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     bool Build_TransientTerm = buildNonCstPart;
     if ( !this->isStationary() && this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
         Build_TransientTerm=buildNonCstPart && !UseJacobianLinearTerms;
+
+    double timeSteppingScaling = 1.;
+    bool timeSteppingEvaluateResidualWithoutTimeDerivative = false;
+    if ( !this->isStationary() )
+    {
+        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( "time-stepping.evaluate-residual-without-time-derivative" );
+        if ( M_timeStepping == "Theta" )
+        {
+            if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
+                timeSteppingScaling = 1. - M_timeStepThetaValue;
+            else
+                timeSteppingScaling = M_timeStepThetaValue;
+        }
+        data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
+    }
+
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
@@ -539,7 +503,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                 double kappa = thermalConductivity.value();
                 myLinearForm +=
                     integrate( _range=range,
-                               _expr= kappa*inner(gradv(u),grad(v)),
+                               _expr= timeSteppingScaling*kappa*inner(gradv(u),grad(v)),
                                _geomap=this->geomap() );
             }
         }
@@ -554,7 +518,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                     auto kappaEval = expr( kappa, symbolExpr( symbolStr, idv(u) ) );
                     myLinearForm +=
                         integrate( _range=range,
-                                   _expr= kappaEval*inner(gradv(u),grad(v)),
+                                   _expr= timeSteppingScaling*kappaEval*inner(gradv(u),grad(v)),
                                    _geomap=this->geomap() );
                 }
             }
@@ -565,54 +529,25 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                     //auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
                     myLinearForm +=
                         integrate( _range=range,
-                                   _expr= kappa*inner(gradv(u),grad(v)),
+                                   _expr= timeSteppingScaling*kappa*inner(gradv(u),grad(v)),
                                    _geomap=this->geomap() );
                 }
             }
         }
 
-        auto const& rhoHeatCapacity = this->thermalProperties()->rhoHeatCapacity( matName );
-        if ( rhoHeatCapacity.isConstant() )
+
+        if ( this->fieldVelocityConvectionIsUsedAndOperational() || !this->isStationary() )
         {
-            double rhoHeatCapacityValue = rhoHeatCapacity.value();
-            if ( buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
-            {
-                myLinearForm +=
-                    integrate( _range=range,
-                               _expr= rhoHeatCapacityValue*(gradv(u)*idv(this->fieldVelocityConvection()))*id(v),
-                               _geomap=this->geomap() );
-            }
-            if ( !this->isStationary() )
-            {
-                if ( Build_TransientTerm )
-                {
-                    double thecoeff = rhoHeatCapacityValue*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
-                    myLinearForm +=
-                        integrate( _range=range,
-                                   _expr= thecoeff*idv(u)*id(v),
-                                   _geomap=this->geomap() );
-                }
-                if (buildCstPart)
-                {
-                    auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
-                    myLinearForm +=
-                        integrate( _range=range,
-                                   _expr= -rhoHeatCapacityValue*idv(rhsTimeStep)*id(v),
-                                   _geomap=this->geomap() );
-                }
-            }
-        }
-        else
-        {
+            auto const& rhoHeatCapacity = this->thermalProperties()->rhoHeatCapacity( matName );
             auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
             if ( buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
             {
                 myLinearForm +=
                     integrate( _range=range,
-                               _expr= rhoHeatCapacityExpr*(gradv(u)*idv(this->fieldVelocityConvection()))*id(v),
+                               _expr= timeSteppingScaling*rhoHeatCapacityExpr*(gradv(u)*idv(this->fieldVelocityConvection()))*id(v),
                                _geomap=this->geomap() );
             }
-            if ( !this->isStationary() )
+            if ( !this->isStationary() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
             {
                 if ( Build_TransientTerm )
                 {
@@ -631,21 +566,21 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                                    _geomap=this->geomap() );
                 }
             }
-        }
 
-        // update stabilization gls
-        if ( M_stabilizationGLS && buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
-        {
-            CHECK( !thermalConductivity.isMatrix() && thermalConductivity.isConstant() && rhoHeatCapacity.isConstant() ) << "NotImplemented";
-            this->updateResidualStabilizationGLS(  cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(this->fieldVelocityConvection()),range,data );
+            // update stabilization gls
+            if ( M_stabilizationGLS && buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
+            {
+                CHECK( !thermalConductivity.isMatrix() ) << "NotImplemented";
+                auto const& kappa = thermalConductivity.expr();
+                this->updateResidualStabilizationGLS( rhoHeatCapacityExpr, kappa, idv(this->fieldVelocityConvection()), range, data );
+            }
         }
 
     }
 
 
-    this->updateResidualSourceTerm( R,buildCstPart ) ;
-    this->updateResidualNeumannBC( R,buildCstPart );
-    this->updateResidualRobinBC( u,R,buildCstPart );
+    this->updateResidualSourceTerm( data ) ;
+    this->updateResidualWeakBC( data,u );
 
     this->log("Heat","updateResidual", "finish");
 }
@@ -666,35 +601,17 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & dat
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::updateResidualNeumannBC( vector_ptrtype& R, bool buildCstPart ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & data, element_temperature_external_storage_type const& u ) const
 {
-    if ( this->M_bcNeumann.empty() ) return;
+    if ( this->M_bcRobin.empty() && this->M_bcNeumann.empty() ) return;
 
-    if ( buildCstPart )
-    {
-        auto mesh = this->mesh();
-        auto Xh = this->spaceTemperature();
-        auto const& v = this->fieldTemperature();
+    vector_ptrtype& R = data.residual();
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
 
-        auto myLinearForm = form1( _test=Xh, _vector=R,
-                                   _rowstart=this->rowStartInVector() );
-        for( auto const& d : this->M_bcNeumann )
-        {
-            auto theExpr = expression(d,this->symbolsExpr());
-            myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= -theExpr*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::updateResidualRobinBC( element_temperature_external_storage_type const& u, vector_ptrtype& R, bool buildCstPart ) const
-{
-    if ( this->M_bcRobin.empty() ) return;
+    double timeSteppingScaling = 1.;
+    if ( !this->isStationary() )
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
@@ -702,14 +619,27 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidualRobinBC( element_temperature_external_st
 
     auto myLinearForm = form1( _test=Xh, _vector=R,
                                _rowstart=this->rowStartInVector() );
+
+    for( auto const& d : this->M_bcNeumann )
+    {
+        if ( buildCstPart )
+        {
+            auto theExpr = expression(d,this->symbolsExpr());
+            myLinearForm +=
+                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
+                           _expr= -timeSteppingScaling*theExpr*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
+
     for( auto const& d : this->M_bcRobin )
     {
         auto theExpr1 = expression1( d,this->symbolsExpr() );
-        if ( !buildCstPart )
+        if ( buildNonCstPart )
         {
             myLinearForm +=
                 integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= theExpr1*idv(u)*id(v),
+                           _expr= timeSteppingScaling*theExpr1*idv(u)*id(v),
                            _geomap=this->geomap() );
         }
         if ( buildCstPart )
@@ -717,7 +647,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidualRobinBC( element_temperature_external_st
             auto theExpr2 = expression2( d,this->symbolsExpr() );
             myLinearForm +=
                 integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= -theExpr1*theExpr2*id(v),
+                           _expr= -timeSteppingScaling*theExpr1*theExpr2*id(v),
                            _geomap=this->geomap() );
         }
     }
@@ -725,9 +655,16 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidualRobinBC( element_temperature_external_st
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::updateResidualSourceTerm( vector_ptrtype& R, bool buildCstPart ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateResidualSourceTerm( DataUpdateResidual & data  ) const
 {
     if ( this->M_volumicForcesProperties.empty() ) return;
+
+    vector_ptrtype& R = data.residual();
+    bool buildCstPart = data.buildCstPart();
+
+    double timeSteppingScaling = 1.;
+    if ( !this->isStationary() )
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
 
     if ( buildCstPart )
     {
@@ -741,7 +678,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidualSourceTerm( vector_ptrtype& R, bool buil
             auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
-                           _expr= -theExpr*id(v),
+                           _expr= -timeSteppingScaling*theExpr*id(v),
                            _geomap=this->geomap() );
         }
     }
@@ -763,11 +700,20 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & dat
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool buildCstPart ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateJacobianRobinBC(  DataUpdateJacobian & data ) const
 {
     if ( this->M_bcRobin.empty() ) return;
 
-    if ( !buildCstPart )
+    sparse_matrix_ptrtype& J = data.jacobian();
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
+
+    double timeSteppingScaling = 1.;
+    if ( !this->isStationary() )
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
+
+
+    if ( buildNonCstPart )
     {
         auto mesh = this->mesh();
         auto Xh = this->spaceTemperature();
@@ -782,7 +728,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool 
             auto theExpr1 = expression1( d,this->symbolsExpr() );
             bilinearForm_PatternCoupled +=
                 integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= theExpr1*idt(v)*id(v),
+                           _expr= timeSteppingScaling*theExpr1*idt(v)*id(v),
                            _geomap=this->geomap() );
         }
     }
@@ -820,17 +766,26 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDESourceTerm( vector_ptrtype& F, bool buildCstPart ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDESourceTerm( DataUpdateLinear & data ) const
 {
     if ( this->M_overwritemethod_updateSourceTermLinearPDE != NULL )
     {
-        this->M_overwritemethod_updateSourceTermLinearPDE(F,buildCstPart);
+        this->M_overwritemethod_updateSourceTermLinearPDE(data);
         return;
     }
 
     if ( this->M_volumicForcesProperties.empty() ) return;
 
-    if ( !buildCstPart )
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
+
+    double timeSteppingScaling = 1.;
+    if ( !this->isStationary() )
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
+
+    if ( buildNonCstPart )
     {
         auto myLinearForm = form1( _test=this->spaceTemperature(), _vector=F,
                                    _rowstart=this->rowStartInVector() );
@@ -842,7 +797,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDESourceTerm( vector_ptrtype& F, bool bui
             auto rangeBodyForceUsed = ( markers(d).empty() )? this->rangeMeshElements() : markedelements(this->mesh(),markers(d));
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
-                           _expr= theExpr*id(v),
+                           _expr= timeSteppingScaling*theExpr*id(v),
                            _geomap=this->geomap() );
         }
     }
@@ -850,11 +805,20 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDESourceTerm( vector_ptrtype& F, bool bui
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const
+HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & data ) const
 {
     if ( this->M_bcNeumann.empty() && this->M_bcRobin.empty() ) return;
 
-    if ( !buildCstPart )
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
+
+    double timeSteppingScaling = 1.;
+    if ( !this->isStationary() )
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
+
+    if ( buildNonCstPart )
     {
         auto mesh = this->mesh();
         auto Xh = this->spaceTemperature();
@@ -867,7 +831,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC(sparse_matrix_ptrtype& A, vector
             auto theExpr = expression( d,this->symbolsExpr() );
             myLinearForm +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= theExpr*id(v),
+                           _expr= timeSteppingScaling*theExpr*id(v),
                            _geomap=this->geomap() );
         }
 
@@ -880,12 +844,12 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC(sparse_matrix_ptrtype& A, vector
             auto theExpr1 = expression1( d,this->symbolsExpr() );
             bilinearForm_PatternCoupled +=
                 integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= theExpr1*idt(v)*id(v),
+                           _expr= timeSteppingScaling*theExpr1*idt(v)*id(v),
                            _geomap=this->geomap() );
             auto theExpr2 = expression2( d,this->symbolsExpr() );
             myLinearForm +=
                 integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= theExpr1*theExpr2*id(v),
+                           _expr= timeSteppingScaling*theExpr1*theExpr2*id(v),
                            _geomap=this->geomap() );
         }
 
