@@ -42,8 +42,13 @@ interpolate_copy( std::shared_ptr<SpaceType> const& space,
                   typename SpaceType::element_type& interp )
 {
     if constexpr (
+#if 0
         std::is_same_v<typename SpaceType::mesh_type, typename FunctionType::functionspace_type::mesh_type> && 
-        std::is_same_v<typename SpaceType::basis_type, typename FunctionType::functionspace_type::basis_type> )
+        std::is_same_v<typename SpaceType::basis_type, typename FunctionType::functionspace_type::basis_type>
+#else
+        std::is_same_v<SpaceType, typename FunctionType::functionspace_type> 
+#endif
+                  )
     {
         if ( space == f.functionSpace() )
         {
@@ -51,8 +56,8 @@ interpolate_copy( std::shared_ptr<SpaceType> const& space,
             interp = f;
             return true;
         }
-        return false;
     }
+    return false;
 }
 
 /**

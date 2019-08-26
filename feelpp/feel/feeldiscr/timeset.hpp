@@ -752,8 +752,15 @@ public:
 
                 if ( !M_ts->M_vector_p1 )
                 {
-                    if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->basisOrder()[0] == 1 ) )
-                        M_ts->M_vector_p1 = func.functionSpace();
+                    if constexpr ( std::is_same_v<scalar_p1_space_type,typename FunctionType::functionspace_type> )
+                    {
+                        if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->basisOrder()[0] == 1 ) )
+                            M_ts->M_vector_p1 = func.functionSpace();
+                        else
+                            M_ts->M_vector_p1 = vector_p1_space_type::New(_mesh=M_mesh.get(),
+                                                                          _worldscomm=func.worldsComm(),
+                                                                          _extended_doftable=std::vector<bool>(1,extendeddof) );
+                    }
                     else
                         M_ts->M_vector_p1 = vector_p1_space_type::New(_mesh=M_mesh.get(),
                                                                       _worldscomm=func.worldsComm(),
