@@ -1102,7 +1102,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     {
                         if ( updateCtxAndIntegrate || ( nElt == 0 ) )
                         {
-                            Feel::cout << "update ctx and integrate HO" << std::endl;
+                            //Feel::cout << "update ctx and integrate HO" << std::endl;
                             //ti0.restart();
                             __c->update( eltTest );
                             //t0+=ti0.elapsed();
@@ -1142,7 +1142,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     {
                         if ( updateCtxAndIntegrate || ( nElt == 0 )  )
                         {
-                            Feel::cout << "update ctx and integrate O1" << std::endl;
+                            //Feel::cout << "update ctx and integrate O1" << std::endl;
                             //ti0.restart();
                             __c1->update( eltTest );
                             //t0+=ti0.elapsed();
@@ -1184,7 +1184,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         {
                             if ( updateCtxAndIntegrate || ( nElt == 0 )  )
                             {
-                                Feel::cout << "update ctx and integrate OPTbdy" << std::endl;
+                                //Feel::cout << "update ctx and integrate OPTbdy" << std::endl;
                                 //ti0.restart();
                                 __c->update( eltTest );
                                 //t0+=ti0.elapsed();
@@ -1224,7 +1224,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         {
                             if ( updateCtxAndIntegrate || ( nElt == 0 ) )
                             {
-                                Feel::cout << "update ctx and integrate OPTint" << std::endl;
+                                //Feel::cout << "update ctx and integrate OPTint" << std::endl;
                                 //ti0.restart();
                                 __c1->update( eltTest );
                                 //t0+=ti0.elapsed();
