@@ -56,6 +56,8 @@ const size_type SYMM                     = ( 1<<13 );
 const size_type UNSYMM                   = ( 1<<14 );
 const size_type DIV                      = ( 1<<15 );
 const size_type CURL                     = ( 1<<16 );
+const size_type INTERPOLANT              = ( 1<<17 );
+const size_type BASIS_FUNCTION           = ( 1<<18 );
 const size_type MASS                     = ( 1<<20 );
 const size_type STIFFNESS                = ( 1<<21 );
 const size_type NORMAL_COMPONENT         = ( 1<<22 );
@@ -89,6 +91,8 @@ FEELPP_DEFINE_CONTEXT(SYMM,symm)
 FEELPP_DEFINE_CONTEXT(UNSYMM,unsymm)
 FEELPP_DEFINE_CONTEXT(DIV,div)
 FEELPP_DEFINE_CONTEXT(CURL,curl)
+FEELPP_DEFINE_CONTEXT(INTERPOLANT,interpolant)
+FEELPP_DEFINE_CONTEXT(BASIS_FUNCTION,basis_function)
 FEELPP_DEFINE_CONTEXT(MASS,mass)
 FEELPP_DEFINE_CONTEXT(STIFFNESS,stiffness)
 FEELPP_DEFINE_CONTEXT(NORMAL_COMPONENT,normal_component)

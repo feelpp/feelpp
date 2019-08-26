@@ -48,6 +48,10 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
       M_cy( cy ),
       M_pixelsize( pixelsize )
 {
+    if ( !M_cx && !M_cy )
+        this->setStructureProperty( "00110" );
+    else
+        this->setStructureProperty( "00010" );
     VLOG( 1 ) << "nx x ny = " << nx << " x " << ny << "\t" << nx * ny << std::endl;
 
     rank_type nProc = wc->localSize();
