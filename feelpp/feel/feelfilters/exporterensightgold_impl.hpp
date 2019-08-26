@@ -1232,6 +1232,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     posInFile += sizeOfInt32_t;
 
     /* write points ids */
+    tic();
     // all procs writing :
     // - calculate mp.ids.size()*sizeOfInt32_t
     int ptIdWritingSize = mp.ids.size()*sizeOfInt32_t;
@@ -1244,9 +1245,10 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     sumOffsets = localOffset + ptIdWritingSize;
     MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
     posInFile += sumOffsets;
-
+    toc("ExporterEnsightGold writeVariableFiles write ids",FLAGS_v>0);
 
     /* write points coordinates in the order x1 ... xn y1 ... yn z1 ... zn */
+    tic();
     // All procs write :
     // - calculate every proc size of part to write
     int coordsWritingSize = __nv*sizeOfFloat;
@@ -1263,7 +1265,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
         //MPI_File_write_ordered(fh, mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
     }
     posInFile += 3*sumOffsets;
-
+    toc("ExporterEnsightGold writeVariableFiles write coords",FLAGS_v>0);
 
     // write connectivity
     // fit = pairit.first;
@@ -1373,7 +1375,9 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     //VLOG(1) << "material : " << m << " total nb element: " << std::distance(allelt_it, allelt_en );
     //VLOG(1) << "material : " << m << " ghost nb element: " << std::distance(gelt_it, gelt_en );
     //VLOG(1) << "material : " << m << " local nb element: " << std::distance(lelt_it, lelt_en );
-    Feel::detail::MeshPoints<float> mp( mesh.get(), this->worldComm(), allelt_it, allelt_en, true, true, true );
+    M_cache_mp.try_emplace( markerid, mesh.get(), this->worldComm(), allelt_it, allelt_en, true, true, true );
+    auto& mp = M_cache_mp.at( markerid );
+    
     VLOG(1) << "mesh pts size : " << mp.ids.size();
     // part
 
@@ -1486,8 +1490,10 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     auto lelt_it = r2.template get<1>();
     auto lelt_en = r2.template get<2>();
 
-    Feel::detail::MeshPoints<float> mpl( mesh.get(), this->worldComm(), lelt_it, lelt_en, true, true, true );
-    int32_t gnole = mpl.globalNumberOfElements();
+    M_cache_mp.try_emplace( markerid, mesh.get(), this->worldComm(), lelt_it, lelt_en, true, true, true );
+    mp = M_cache_mp.at( markerid );
+    
+    int32_t gnole = mp.globalNumberOfElements();
     //LOG(INFO) << "Global nb elements: " << gnole << std::endl;
     if( this->worldComm().isMasterRank() )
     {
@@ -1987,8 +1993,12 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
             auto elt_it = r.template get<1>();
             auto elt_en = r.template get<2>();
 
-            Feel::detail::MeshPoints<float> mp( __step->mesh().get(), this->worldComm(), elt_it, elt_en, true, true, true );
-
+            tic();
+            
+            M_cache_mp.try_emplace( *mit, __step->mesh().get(), this->worldComm(), elt_it, elt_en, true, true, true );
+            auto& mp = M_cache_mp.at( *mit );
+            toc( "ExporterEnsightGold::writeVariables MeshPoints", FLAGS_v > 0 );
+            
             /* create an array to store data per node */
             int npts = mp.ids.size();
             size_type __field_size = npts;
