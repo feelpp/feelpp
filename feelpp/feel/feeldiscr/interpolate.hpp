@@ -53,7 +53,9 @@ interpolate_copy( std::shared_ptr<SpaceType> const& space,
         if ( space == f.functionSpace() )
         {
             DVLOG(2) << "[interpolate_copy] Same mesh and same space\n";
+            auto n = interp.name();
             interp = f;
+            interp.setName( n );
             return true;
         }
     }
