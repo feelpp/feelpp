@@ -9,6 +9,9 @@
 //#include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 #include <feel/feelmesh/intersect.hpp>
 
+#include <feel/feelmodels/modelvf/exproperations.hpp>
+
+
 namespace Feel
 {
 namespace FeelModels
@@ -17,26 +20,6 @@ namespace FluidMechanicsDetail
 {
 
 enum FModel { Stokes=0, NavierStokes=1 };
-
-template<typename... Dummy>
-auto
-addExpr( hana::tuple<> const& /**/ )
-{
-    CHECK( false ) << "not allow";
-    return 0*one();
-}
-template<typename T1>
-auto
-addExpr( hana::tuple<T1> const& t )
-{
-    return hana::at_c<0>( t );
-}
-template<typename T1,typename T2,typename... TOther>
-auto
-addExpr( hana::tuple<T1,T2,TOther...> const& t )
-{
-    return hana::at_c<0>( t ) + addExpr( hana::remove_at_c<0>( t ) );
-}
 
 
 
@@ -252,7 +235,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
 
         if ( hana::length( addRhsTuple ).value > 0 )
         {
-            auto stab_residual_linear = addExpr( addRhsTuple );
+            auto stab_residual_linear = Feel::FeelModels::vfdetail::addExpr( addRhsTuple );
             myLinearForm +=
                 integrate( _range=rangeEltConvectionDiffusion,
                            _expr= tau*inner(stab_residual_linear,stab_test ),
@@ -345,7 +328,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
 
         if ( hana::length( addRhsTuple ).value > 0 )
         {
-            auto stab_residual_linear = addExpr( addRhsTuple );
+            auto stab_residual_linear = Feel::FeelModels::vfdetail::addExpr( addRhsTuple );
             myLinearForm +=
                 integrate( _range=rangeEltPressure,
                            _expr= tau*inner(stab_residual_linear,stab_test ),
@@ -555,7 +538,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
     bool timeSteppingEvaluateResidualWithoutTimeDerivative = false;
     if ( !fluidmec.isStationaryModel() )
     {
-        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( "time-stepping.evaluate-residual-without-time-derivative" );
+        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( prefixvm(fluidmec.prefix(),"time-stepping.evaluate-residual-without-time-derivative") );
         timeSteppingScaling = data.doubleInfo( prefixvm(fluidmec.prefix(),"time-stepping.scaling") );
     }
     if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
@@ -595,7 +578,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
             auto const& rhsTimeDerivativeVP = fluidmec.timeStepBDF()->polyDeriv();
             auto rhsTimeDerivative = rhsTimeDerivativeVP.template element<0>();
             auto dudt = idv(u)*fluidmec.timeStepBDF()->polyDerivCoefficient(0) - idv(rhsTimeDerivative);
-            auto stab_residual_u = addExpr( hana::make_tuple( residualTransientResidualExpr_u( rho,mu,idv(u),dudt,u,p,timeSteppingScaling,fluidmec, mpl::int_<StabResidualType>() ), exprs... ) );
+            auto stab_residual_u = Feel::FeelModels::vfdetail::addExpr( hana::make_tuple( residualTransientResidualExpr_u( rho,mu,idv(u),dudt,u,p,timeSteppingScaling,fluidmec, mpl::int_<StabResidualType>() ), exprs... ) );
             myLinearForm +=
                 integrate( _range=rangeEltConvectionDiffusion,
                            _expr=tau*inner(stab_residual_u,stab_test ),
@@ -603,7 +586,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         }
         else
         {
-            auto stab_residual_u = addExpr( hana::make_tuple( residualStationaryResidualExpr_u( rho,mu,idv(u),u,p,fluidmec, mpl::int_<StabResidualType>() ), exprs... ) );
+            auto stab_residual_u = Feel::FeelModels::vfdetail::addExpr( hana::make_tuple( residualStationaryResidualExpr_u( rho,mu,idv(u),u,p,fluidmec, mpl::int_<StabResidualType>() ), exprs... ) );
             myLinearForm +=
                 integrate( _range=rangeEltConvectionDiffusion,
                            _expr=tau*inner(stab_residual_u,stab_test ),
@@ -659,7 +642,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
             auto const& rhsTimeDerivativeVP = fluidmec.timeStepBDF()->polyDeriv();
             auto rhsTimeDerivative = rhsTimeDerivativeVP.template element<0>();
             auto dudt = idv(u)*fluidmec.timeStepBDF()->polyDerivCoefficient(0) - idv(rhsTimeDerivative);
-            auto stab_residual_u = addExpr( hana::make_tuple( residualTransientResidualExpr_u( rho,mu,idv(u),dudt,u,p,timeSteppingScaling,fluidmec, mpl::int_<StabResidualType>() ), exprs... ) );
+            auto stab_residual_u = Feel::FeelModels::vfdetail::addExpr( hana::make_tuple( residualTransientResidualExpr_u( rho,mu,idv(u),dudt,u,p,timeSteppingScaling,fluidmec, mpl::int_<StabResidualType>() ), exprs... ) );
             myLinearForm +=
                 integrate( _range=rangeEltPressure,
                            _expr=tau*inner(stab_residual_u,stab_test ),
@@ -667,7 +650,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         }
         else
         {
-            auto stab_residual_u = addExpr( hana::make_tuple( residualStationaryResidualExpr_u( rho,mu,idv(u),u,p,fluidmec, mpl::int_<StabResidualType>() ), exprs... ) );
+            auto stab_residual_u = Feel::FeelModels::vfdetail::addExpr( hana::make_tuple( residualStationaryResidualExpr_u( rho,mu,idv(u),u,p,fluidmec, mpl::int_<StabResidualType>() ), exprs... ) );
             myLinearForm +=
                 integrate( _range=rangeEltPressure,
                            _expr=tau*inner(stab_residual_u,stab_test ),

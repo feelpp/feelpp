@@ -136,6 +136,9 @@ public :
     void updateLinearFluidSolver( DataUpdateLinear & data ) const;
     void updateResidualFluidSolver( DataUpdateResidual & data ) const;
 private :
+    void updateTimeStepCurrentResidual();
+
+private :
 
     heat_model_ptrtype M_heatModel;
     fluid_model_ptrtype M_fluidModel;
@@ -160,6 +163,7 @@ private :
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
+    vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
     // post-process
     export_ptrtype M_exporter;
