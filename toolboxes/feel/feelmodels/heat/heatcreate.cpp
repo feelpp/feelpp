@@ -788,7 +788,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
         M_timeStepThetaSchemePreviousContrib->zero();
         M_blockVectorSolution.updateVectorFromSubVectors();
         ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
-        dataResidual.addInfo( "time-stepping.evaluate-residual-without-time-derivative" );
+        dataResidual.addInfo( prefixvm( this->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
         M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
         M_algebraicFactory->evaluateResidual( dataResidual );
         M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );

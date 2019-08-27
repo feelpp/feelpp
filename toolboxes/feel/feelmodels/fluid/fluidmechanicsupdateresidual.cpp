@@ -39,7 +39,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     bool timeSteppingEvaluateResidualWithoutTimeDerivative = false;
     if ( !this->isStationaryModel() )
     {
-        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( "time-stepping.evaluate-residual-without-time-derivative" );
+        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( prefixvm(this->prefix(),"time-stepping.evaluate-residual-without-time-derivative") );
         if ( M_timeStepping == "Theta" )
         {
             if ( timeSteppingEvaluateResidualWithoutTimeDerivative )

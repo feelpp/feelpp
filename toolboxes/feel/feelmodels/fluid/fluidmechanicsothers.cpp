@@ -1146,7 +1146,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         }
         else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
         {
-            auto BetaU = this->timeStepBDF()->poly();
+            auto BetaU = *M_fieldConvectionVelocityExtrapolated;//this->timeStepBDF()->poly();
             auto betaU = BetaU.template element<0>();
             if (this->isMoveDomain() )
             {
@@ -1507,7 +1507,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
         M_blockVectorSolution.updateVectorFromSubVectors();
         //this->updateBlockVectorSolution();
         ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
-        dataResidual.addInfo( "time-stepping.evaluate-residual-without-time-derivative" );
+        dataResidual.addInfo( prefixvm( this->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
 
         M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
         M_algebraicFactory->evaluateResidual( dataResidual );

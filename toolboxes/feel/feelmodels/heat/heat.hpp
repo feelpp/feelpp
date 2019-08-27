@@ -292,9 +292,10 @@ class Heat : public ModelNumerical,
         void updateResidualSourceTerm( DataUpdateResidual & data ) const;
         void updateResidualWeakBC( DataUpdateResidual & data, element_temperature_external_storage_type const& u ) const;
         void updateResidualDofElimination( DataUpdateResidual & data ) const override;
-        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
+        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType,typename... ExprT>
         void updateResidualStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
-                                             Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateResidual & data ) const;
+                                             Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateResidual & data,
+                                             const ExprT&... exprs ) const;
 
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
