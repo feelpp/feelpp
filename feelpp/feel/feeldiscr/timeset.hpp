@@ -684,7 +684,7 @@ public:
                     {
                         if constexpr ( std::is_same_v<scalar_p1_space_type,typename FunctionType::functionspace_type> )
                         {
-                            if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->basisOrder()[0] == 1 ) )
+                            if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->basisOrder()[0] == 1 ) &&  func.functionSpace()->extendedDofTable() == extendeddof )
                                 M_ts->M_scalar_p1 = func.functionSpace();
                             else
                                 M_ts->M_scalar_p1 = scalar_p1_space_type::New(_mesh=M_mesh.get(),
@@ -722,7 +722,7 @@ public:
                 if ( func.worldComm().isActive() )
                 {
                     // interpolate field on visualisation space
-                    interpolate( M_scalar_p1, func, M_nodal_scalar[__fname], INTERPOLATE_DIFFERENT_MESH );
+                    interpolate( M_scalar_p1, func, M_nodal_scalar[__fname] );
                     
 #if 0
                     // if exporter use extended dof table but the field to export is not define on this part
@@ -754,7 +754,7 @@ public:
                 {
                     if constexpr ( std::is_same_v<scalar_p1_space_type,typename FunctionType::functionspace_type> )
                     {
-                        if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->basisOrder()[0] == 1 ) )
+                        if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->basisOrder()[0] == 1 )  &&  func.functionSpace()->extendedDofTable() == extendeddof  )
                             M_ts->M_vector_p1 = func.functionSpace();
                         else
                             M_ts->M_vector_p1 = vector_p1_space_type::New(_mesh=M_mesh.get(),
@@ -1214,6 +1214,10 @@ public:
         {
             return M_nodal_scalar.end();
         }
+        std::pair<nodal_scalar_const_iterator,nodal_scalar_const_iterator> nodalScalar() const
+        {
+            return std::pair{M_nodal_scalar.begin(),M_nodal_scalar.end()};
+        }   
         nodal_vector_const_iterator beginNodalVector() const
         {
             return M_nodal_vector.begin();
