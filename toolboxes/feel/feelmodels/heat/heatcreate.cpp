@@ -58,6 +58,10 @@ HEAT_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
     M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
+
+    // time stepping
+    M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
+    M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -233,8 +237,6 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
      // vector solution
     M_blockVectorSolution.resize( 1 );
     M_blockVectorSolution(0) = this->fieldTemperaturePtr();
-    // init petsc vector associated to the block
-    M_blockVectorSolution.buildVector( this->backend() );
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -260,9 +262,14 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
         std::string suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
     fs::path saveTsDir = fs::path(this->rootRepository())/fs::path( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ts")) );
 
+    int bdfOrder = 1;
+    if ( M_timeStepping == "BDF" )
+        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme 
     M_bdfTemperature = bdf( _space=this->spaceTemperature(),
                             _name="temperature"+suffixName,
                             _prefix=this->prefix(),
+                            _order=bdfOrder,
                             // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
                             _initial_time=this->timeInitial(),
                             _final_time=this->timeFinal(),
@@ -270,7 +277,8 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
                             _restart=this->doRestart(),
                             _restart_path=this->restartPath(),
                             _restart_at_last_save=this->restartAtLastSave(),
-                            _save=this->tsSaveInFile(), _format=myFileFormat, _freq=this->tsSaveFreq() );
+                            _save=this->tsSaveInFile(), _format=myFileFormat, _freq=this->tsSaveFreq(),
+                            _n_consecutive_save=nConsecutiveSave );
     M_bdfTemperature->setPathSave( ( saveTsDir/"temperature" ).string() );
 
     if (!this->doRestart())
@@ -402,7 +410,20 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
+    // init petsc vector associated to the block
+    M_blockVectorSolution.buildVector( this->backend() );
+
     M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+
+    if ( M_timeStepping == "Theta" )
+    {
+        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
+        M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+        M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+        if ( M_stabilizationGLS )
+            M_algebraicFactory->dataInfos().addVectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution"), this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() ) );
+    }
+
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -501,6 +522,14 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
     if ( this->fieldVelocityConvectionIsUsedAndOperational() )
         *_ostr << "\n   Space Velocity Convection Discretization"
                << "\n     -- number of dof : " << M_XhVelocityConvection->nDof() << " (" << M_XhVelocityConvection->nLocalDof() << ")";
+    if ( !this->isStationary() )
+    {
+        *_ostr << "\n   Time Discretization"
+               << "\n     -- initial time : " << this->timeStepBase()->timeInitial()
+               << "\n     -- final time   : " << this->timeStepBase()->timeFinal()
+               << "\n     -- time step    : " << this->timeStepBase()->timeStep()
+               << "\n     -- type : " << M_timeStepping;
+    }
     if ( M_stabilizationGLS )
     {
         *_ostr << "\n   Finite element stabilization"
@@ -687,11 +716,17 @@ HEAT_CLASS_TEMPLATE_TYPE::startTimeStep()
 {
     this->log("Heat","startTimeStep", "start");
 
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+
     // start time step
     if (!this->doRestart())
         M_bdfTemperature->start(this->fieldTemperature());
      // up current time
     this->updateTime( M_bdfTemperature->time() );
+
+    // update all expressions in bc or in house prec
+    this->updateParameterValues();
 
     this->log("Heat","startTimeStep", "finish");
 }
@@ -704,26 +739,33 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
-    int previousTimeOrder = this->timeStepBdfTemperature()->timeOrder();
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
 
-    M_bdfTemperature->next( this->fieldTemperature() );
-
-    int currentTimeOrder = this->timeStepBdfTemperature()->timeOrder();
-
-    this->updateTime( this->timeStepBdfTemperature()->time() );
+    bool rebuildCstAssembly = false;
+    if ( M_timeStepping == "BDF" )
+    {
+        int previousTimeOrder = this->timeStepBdfTemperature()->timeOrder();
+        M_bdfTemperature->next( this->fieldTemperature() );
+        int currentTimeOrder = this->timeStepBdfTemperature()->timeOrder();
+        rebuildCstAssembly = previousTimeOrder != currentTimeOrder && this->timeStepBase()->strategy() == TS_STRATEGY_DT_CONSTANT;
+        this->updateTime( this->timeStepBdfTemperature()->time() );
+    }
+    else if ( M_timeStepping == "Theta" )
+    {
+        M_bdfTemperature->next( this->fieldTemperature() );
+        this->updateTime( this->timeStepBdfTemperature()->time() );
+    }
 
     // update velocity convection id symbolic expr exist and  depend only of time
     this->updateFieldVelocityConvection( true );
 
     // maybe rebuild cst jacobian or linear
-    if ( M_algebraicFactory &&
-         previousTimeOrder!=currentTimeOrder &&
-         this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
+    if ( M_algebraicFactory && rebuildCstAssembly )
     {
         if (!this->rebuildCstPartInLinearSystem())
         {
-            if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".Heat","updateBdf", "do rebuildCstLinearPDE",
-                                                       this->worldComm(),this->verboseAllProc());
+            this->log("Heat","updateTimeStep", "do rebuildCstLinearPDE" );
             M_algebraicFactory->rebuildCstLinearPDE(this->blockVectorSolution().vectorMonolithic());
         }
     }
@@ -732,6 +774,40 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStep()
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
     this->log("Heat","updateTimeStep", "finish");
 }
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
+{
+    if ( this->isStationary() )
+        return;
+    if ( !M_algebraicFactory )
+        return;
+    if ( M_timeStepping == "Theta" )
+    {
+        M_timeStepThetaSchemePreviousContrib->zero();
+        M_blockVectorSolution.updateVectorFromSubVectors();
+        ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
+        dataResidual.addInfo( prefixvm( this->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
+        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+        M_algebraicFactory->evaluateResidual( dataResidual );
+        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+
+        if ( M_stabilizationGLS )
+        {
+            auto & dataInfos = M_algebraicFactory->dataInfos();
+            *dataInfos.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") ) = *M_blockVectorSolution.vectorMonolithic();
+            if ( this->fieldVelocityConvectionIsUsedAndOperational() )
+            {
+                std::string convectionOseenEntry = prefixvm( this->prefix(),"time-stepping.previous-convection-velocity-field" );
+                if ( !dataInfos.hasVectorInfo( convectionOseenEntry ) )
+                    dataInfos.addVectorInfo( convectionOseenEntry, this->backend()->newVector( this->fieldVelocityConvection().mapPtr() ) );
+                *dataInfos.vectorInfo( convectionOseenEntry ) = this->fieldVelocityConvection();
+            }
+        }
+    }
+}
+
 
 } // end namespace FeelModels
 } // end namespace Feel

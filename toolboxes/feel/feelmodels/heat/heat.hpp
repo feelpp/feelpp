@@ -159,6 +159,7 @@ class Heat : public ModelNumerical,
         model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
         //___________________________________________________________________________________//
         // time step scheme
+        std::string const& timeStepping() const { return M_timeStepping; }
         bdf_temperature_ptrtype const& timeStepBdfTemperature() const { return M_bdfTemperature; }
         std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfTemperature(); }
         std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBdfTemperature(); }
@@ -272,9 +273,9 @@ class Heat : public ModelNumerical,
 
         void updateLinearPDE( DataUpdateLinear & data ) const override;
         //void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
-        void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
+        void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
         void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
-        void updateLinearPDESourceTerm( vector_ptrtype& F, bool buildCstPart) const;
+        void updateLinearPDESourceTerm( DataUpdateLinear & data ) const;
         template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
         void updateLinearPDEStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
                                               Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateLinear & data ) const;
@@ -282,19 +283,19 @@ class Heat : public ModelNumerical,
         // non linear (newton)
         void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
         void updateJacobian( DataUpdateJacobian & data ) const override;
-        void updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool buildCstPart ) const;
+        void updateJacobianRobinBC(  DataUpdateJacobian & data ) const;
         void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
         template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
         void updateJacobianStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
                                              Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateJacobian & data ) const;
         void updateResidual( DataUpdateResidual & data ) const override;
-        void updateResidualSourceTerm( vector_ptrtype& R, bool buildCstPart ) const;
-        void updateResidualNeumannBC( vector_ptrtype& R, bool buildCstPart ) const;
-        void updateResidualRobinBC( element_temperature_external_storage_type const& u, vector_ptrtype& R, bool buildCstPart ) const;
+        void updateResidualSourceTerm( DataUpdateResidual & data ) const;
+        void updateResidualWeakBC( DataUpdateResidual & data, element_temperature_external_storage_type const& u ) const;
         void updateResidualDofElimination( DataUpdateResidual & data ) const override;
-        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
+        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType,typename... ExprT>
         void updateResidualStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
-                                             Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateResidual & data ) const;
+                                             Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateResidual & data,
+                                             const ExprT&... exprs ) const;
 
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
@@ -314,6 +315,9 @@ class Heat : public ModelNumerical,
             M_fieldVelocityConvection->on(_range=range, _expr=expr );
         }
 
+    private :
+        void updateTimeStepCurrentResidual();
+
     protected :
 
         bool M_hasBuildFromMesh, M_isUpdatedForUse;
@@ -328,7 +332,11 @@ class Heat : public ModelNumerical,
         element_velocityconvection_ptrtype M_fieldVelocityConvection; // only define with convection effect
         boost::optional<vector_field_expression<nDim,1,2> > M_exprVelocityConvection;
 
+        // time discretisation
+        std::string M_timeStepping;
         bdf_temperature_ptrtype M_bdfTemperature;
+        double M_timeStepThetaValue;
+        vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
         // physical parameter
         space_scalar_P0_ptrtype M_XhScalarP0;
@@ -358,7 +366,7 @@ class Heat : public ModelNumerical,
         measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 
 
-        typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;
+        typedef boost::function<void ( DataUpdateLinear & data )> updateSourceTermLinearPDE_function_type;
         updateSourceTermLinearPDE_function_type M_overwritemethod_updateSourceTermLinearPDE;
 
     };
@@ -371,6 +379,10 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr c
 {
     this->log("Heat","exportResults", "start");
     this->timerTool("PostProcessing").start();
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
 
     this->exportFields( time );
 

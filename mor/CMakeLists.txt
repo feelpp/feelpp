@@ -35,7 +35,7 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
     message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
   endif()
   if (NOT FEELPP_TOOLBOXES_FOUND)
-    message(FATAL_ERROR "Feel++ was not installed with toolboxes")
+    message(WARNING "Feel++ was not installed with toolboxes")
   endif()
 else()
   include_directories(${FEELPP_MOR_SOURCE_DIR})
@@ -71,6 +71,11 @@ OPTION(FEELPP_ENABLE_MOR_STOKESDEIM "enable stokes with deim testcase" ${FEELPP_
 OPTION(FEELPP_ENABLE_MOR_THERMOELECTRIC "enable thermoelectric testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_GREPLDEIM "enable grepldeim testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_THERMALBUILDING "enable thermalbuilding testcase" ${FEELPP_ENABLE_MOR_ALL})
+
+
+if ( NOT FEELPP_TOOLBOXES_FOUND )
+  set( FEELPP_ENABLE_MOR_THERMOELECTRIC OFF )
+endif()
 
 set(FEELPP_MOR_LIBRARIES)
 
