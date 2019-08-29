@@ -291,6 +291,7 @@ public :
         {
             std::shared_ptr<std::ostringstream> ostr( new std::ostringstream() );
             *ostr << "\n   Materials parameters";
+            *ostr << "\n     -- defined on whole mesh : " << this->isDefinedOnWholeMesh();
             *ostr << "\n     -- number of materials : " << M_rangeMeshElementsByMaterial.size();
             for ( auto const& matRange : M_rangeMeshElementsByMaterial)
             {

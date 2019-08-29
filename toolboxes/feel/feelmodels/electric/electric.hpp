@@ -32,7 +32,9 @@
 
 #include <feel/feelmodels/heat/heat.hpp>
 #include <feel/feelmodels/electric/electricpropertiesdescription.hpp>
-
+#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
 
 namespace Feel
 {
@@ -90,10 +92,9 @@ public:
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
     typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
-    // context for evaluation
-    typedef typename space_electricpotential_type::Context context_electricpotential_type;
-    typedef std::shared_ptr<context_electricpotential_type> context_electricpotential_ptrtype;
-
+    // measure tools for points evaluation
+    typedef MeasurePointsEvaluation<space_electricpotential_type,space_electricfield_type> measure_points_evaluation_type;
+    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     //___________________________________________________________________________________//
     // constructor
@@ -111,6 +112,30 @@ private :
     void initMesh();
     void initBoundaryConditions();
     void initPostProcess();
+
+    constexpr auto symbolsExprField( hana::int_<2> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("electric_P",idv(this->fieldElectricPotential()) ),
+                                          symbolExpr("electric_dxP",dxv(this->fieldElectricPotential()) ),
+                                          symbolExpr("electric_dyP",dyv(this->fieldElectricPotential()) ),
+                                          symbolExpr("electric_dnP",dnv(this->fieldElectricPotential()) )
+                                          );
+        }
+    constexpr auto symbolsExprField( hana::int_<3> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("electric_P",idv(this->fieldElectricPotential()) ),
+                                          symbolExpr("electric_dxP",dxv(this->fieldElectricPotential()) ),
+                                          symbolExpr("electric_dyP",dyv(this->fieldElectricPotential()) ),
+                                          symbolExpr("electric_dzP",dzv(this->fieldElectricPotential()) ),
+                                          symbolExpr("electric_dnP",dnv(this->fieldElectricPotential()) )
+                                          );
+        }
+    //auto symbolsExprFit() const { return symbolsExprFit( this->symbolsExprField() ); }
+
+    template <typename SymbExprType>
+    auto symbolsExprFit( SymbExprType const& se ) const { return super_type::symbolsExprFit( se ); }
+
+
 public :
     void setMesh(mesh_ptrtype const& mesh) { M_mesh = mesh; }
     // update for use
@@ -121,15 +146,43 @@ public :
 
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
+    template <typename SymbolsExpr>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr );
+
     void exportFields( double time );
     std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
     bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
-    void exportMeasures( double time );
-    //void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
     bool hasPostProcessFieldExported( std::string const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
 
+    void exportMeasures( double time );
+    template <typename SymbolsExpr>
+    void exportMeasures( double time, SymbolsExpr const& symbolsExpr );
+
     void updateParameterValues();
-    constexpr auto symbolsExpr() const { return Feel::vf::symbolsExpr( symbolExpr("electric_P",idv(this->fieldElectricPotential()) ) ); }
+
+    template <typename SymbExprType>
+    /*constexpr*/auto symbolsExpr( SymbExprType const& se ) const
+        {
+            auto seFit = this->symbolsExprFit( se );
+            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( se, seFit ) );
+            return Feel::vf::symbolsExpr( se, seFit, seMat );
+        }
+    auto symbolsExpr() const { return this->symbolsExpr( this->symbolsExprField() ); }
+
+    constexpr auto symbolsExprField() const { return this->symbolsExprField( hana::int_<nDim>() ); }
+
+    template <typename SymbExprType>
+    auto symbolsExprMaterial( SymbExprType const& se ) const
+        {
+            typedef decltype(expr(scalar_field_expression<2>{},se)) _expr_type;
+            std::vector<std::pair<std::string,_expr_type>> matPropSymbs;
+            for ( auto const& [_matname, _expr] : this->electricProperties()->electricConductivityByMaterial() )
+            {
+                matPropSymbs.push_back( std::make_pair( (boost::format("electric_%1%_sigma")%_matname).str(), expr( _expr.expr(), se ) ) );
+            }
+            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbs ) );
+        }
+
     //___________________________________________________________________________________//
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
@@ -210,9 +263,89 @@ private :
     export_ptrtype M_exporter;
     std::set<std::string> M_postProcessFieldExported;
     std::set<std::string> M_postProcessUserFieldExported;
-
-
+    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 };
+
+
+
+template< typename ConvexType, typename BasisPotentialType>
+template <typename SymbolsExpr>
+void
+Electric<ConvexType,BasisPotentialType>::exportResults( double time, SymbolsExpr const& symbolsExpr )
+{
+    this->log("Electric","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    this->exportFields( time );
+
+    this->exportMeasures( time, symbolsExpr );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("Electric","exportResults", "finish");
+}
+
+
+template< typename ConvexType, typename BasisPotentialType>
+template <typename SymbolsExpr>
+void
+Electric<ConvexType,BasisPotentialType>::exportMeasures( double time, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = false;
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    auto fieldTuple = hana::make_tuple( std::make_pair( "electric-potential",this->fieldElectricPotentialPtr() ),
+                                        std::make_pair( "electric-field",this->fieldElectricFieldPtr() ) );
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
+    {
+        std::map<std::string,double> resPpNorms;
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, symbolsExpr, fieldTuple );
+        for ( auto const& resPpNorm : resPpNorms )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
+            hasMeasure = true;
+        }
+    }
+    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
+    {
+        std::map<std::string,double> resPpStats;
+        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, symbolsExpr, fieldTuple );
+        for ( auto const& resPpStat : resPpStats )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
+            hasMeasure = true;
+        }
+    }
+
+    std::map<std::string,double> resPpPoints;
+    M_measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, fieldTuple );
+    for ( auto const& resPpPoint : resPpPoints )
+    {
+        this->postProcessMeasuresIO().setMeasure( resPpPoint.first, resPpPoint.second );
+        hasMeasure = true;
+    }
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
+    }
+
+}
 
 } // namespace FeelModels
 } // namespace Feel
