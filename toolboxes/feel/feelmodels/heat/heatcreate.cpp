@@ -11,9 +11,6 @@
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 //#include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 
-#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
-#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
-
 namespace Feel
 {
 namespace FeelModels
@@ -61,6 +58,10 @@ HEAT_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
     M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
+
+    // time stepping
+    M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
+    M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -236,8 +237,6 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
      // vector solution
     M_blockVectorSolution.resize( 1 );
     M_blockVectorSolution(0) = this->fieldTemperaturePtr();
-    // init petsc vector associated to the block
-    M_blockVectorSolution.buildVector( this->backend() );
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -263,9 +262,14 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
         std::string suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
     fs::path saveTsDir = fs::path(this->rootRepository())/fs::path( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ts")) );
 
+    int bdfOrder = 1;
+    if ( M_timeStepping == "BDF" )
+        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme 
     M_bdfTemperature = bdf( _space=this->spaceTemperature(),
                             _name="temperature"+suffixName,
                             _prefix=this->prefix(),
+                            _order=bdfOrder,
                             // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
                             _initial_time=this->timeInitial(),
                             _final_time=this->timeFinal(),
@@ -273,7 +277,8 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
                             _restart=this->doRestart(),
                             _restart_path=this->restartPath(),
                             _restart_at_last_save=this->restartAtLastSave(),
-                            _save=this->tsSaveInFile(), _format=myFileFormat, _freq=this->tsSaveFreq() );
+                            _save=this->tsSaveInFile(), _format=myFileFormat, _freq=this->tsSaveFreq(),
+                            _n_consecutive_save=nConsecutiveSave );
     M_bdfTemperature->setPathSave( ( saveTsDir/"temperature" ).string() );
 
     if (!this->doRestart())
@@ -382,29 +387,13 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // point measures
+    auto fieldNamesWithSpaceTemperature = std::make_pair( std::set<std::string>({"temperature"}), this->spaceTemperature() );
+    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceTemperature );
+    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
     for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-    {
-        auto const& ptPos = evalPoints.pointPosition();
-        node_type ptCoord(3);
-        for ( int c=0;c<3;++c )
-            ptCoord[c]=ptPos.value()(c);
+        M_measurePointsEvaluation->init( evalPoints );
 
-        auto const& fields = evalPoints.fields();
-        for ( std::string const& field : fields )
-        {
-            if ( field == "temperature" )
-            {
-                if ( !M_postProcessMeasuresContextTemperature )
-                    M_postProcessMeasuresContextTemperature.reset( new context_temperature_type( spaceTemperature()->context() ) );
-                int ctxId = M_postProcessMeasuresContextTemperature->nPoints();
-                M_postProcessMeasuresContextTemperature->add( ptCoord );
-                std::string ptNameExport = (boost::format("temperature_%1%")%ptPos.name()).str();
-                this->postProcessMeasuresEvaluatorContext().add("temperature", ctxId, ptNameExport );
-            }
-        }
-    }
-
-
+    // start or restart the export of measures
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
@@ -421,7 +410,20 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
+    // init petsc vector associated to the block
+    M_blockVectorSolution.buildVector( this->backend() );
+
     M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+
+    if ( M_timeStepping == "Theta" )
+    {
+        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
+        M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+        M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+        if ( M_stabilizationGLS )
+            M_algebraicFactory->dataInfos().addVectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution"), this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() ) );
+    }
+
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -520,6 +522,14 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
     if ( this->fieldVelocityConvectionIsUsedAndOperational() )
         *_ostr << "\n   Space Velocity Convection Discretization"
                << "\n     -- number of dof : " << M_XhVelocityConvection->nDof() << " (" << M_XhVelocityConvection->nLocalDof() << ")";
+    if ( !this->isStationary() )
+    {
+        *_ostr << "\n   Time Discretization"
+               << "\n     -- initial time : " << this->timeStepBase()->timeInitial()
+               << "\n     -- final time   : " << this->timeStepBase()->timeFinal()
+               << "\n     -- time step    : " << this->timeStepBase()->timeStep()
+               << "\n     -- type : " << M_timeStepping;
+    }
     if ( M_stabilizationGLS )
     {
         *_ostr << "\n   Finite element stabilization"
@@ -634,21 +644,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->log("Heat","exportResults", "start");
-    this->timerTool("PostProcessing").start();
-
-    this->exportFields( time );
-
-    this->exportMeasures( time );
-
-    this->timerTool("PostProcessing").stop("exportResults");
-    if ( this->scalabilitySave() )
-    {
-        if ( !this->isStationary() )
-            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
-        this->timerTool("PostProcessing").save();
-    }
-    this->log("Heat","exportResults", "finish");
+    this->exportResults( time, this->symbolsExpr() );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -711,89 +707,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
-    bool hasMeasure = false;
-
-    // compute measures
-    for ( auto const& ppForces : M_postProcessMeasuresForces )
-    {
-        CHECK( ppForces.meshMarkers().size() == 1 ) << "TODO";
-        auto const& u = this->fieldTemperature();
-        auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
-        double heatFlux = integrate(_range=markedfaces(this->mesh(),ppForces.meshMarkers() ),
-                                    _expr=kappa*gradv(u)*N() ).evaluate()(0,0);
-        std::string name = ppForces.name();
-        this->postProcessMeasuresIO().setMeasure("NormalHeatFlux_"+name,heatFlux);
-        hasMeasure = true;
-    }
-
-    // point measures
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-    {
-        auto const& ptPos = evalPoints.pointPosition();
-        if ( !ptPos.hasExpression() )
-            continue;
-        node_type ptCoord(3);
-        for ( int c=0;c<3;++c )
-            ptCoord[c]=ptPos.value()(c);
-
-        auto const& fields = evalPoints.fields();
-        for ( std::string const& field : fields )
-        {
-            if ( field == "temperature" )
-            {
-                std::string ptNameExport = (boost::format("temperature_%1%")%ptPos.name()).str();
-                int ptIdInCtx = this->postProcessMeasuresEvaluatorContext().ctxId("temperature",ptNameExport);
-                if ( ptIdInCtx >= 0 )
-                    M_postProcessMeasuresContextTemperature->replace( ptIdInCtx, ptCoord );
-            }
-        }
-    }
-    if ( M_postProcessMeasuresContextTemperature && this->postProcessMeasuresEvaluatorContext().has("temperature") )
-    {
-        auto evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextTemperature,
-                                                _expr=idv(this->fieldTemperature()) );
-        for ( int ctxId=0;ctxId<M_postProcessMeasuresContextTemperature->nPoints();++ctxId )
-        {
-            if ( !this->postProcessMeasuresEvaluatorContext().has( "temperature", ctxId ) ) continue;
-            std::string ptNameExport = this->postProcessMeasuresEvaluatorContext().name( "temperature",ctxId );
-            this->postProcessMeasuresIO().setMeasure( ptNameExport, evalAtNodes( ctxId ) );
-            hasMeasure = true;
-        }
-    }
-
-    auto fieldTuple = hana::make_tuple( std::make_pair( "temperature",this->fieldTemperaturePtr() ) );
-    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
-    {
-        std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
-        for ( auto const& resPpNorm : resPpNorms )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
-            hasMeasure = true;
-        }
-    }
-
-    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
-    {
-        std::map<std::string,double> resPpStats;
-        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
-        for ( auto const& resPpStat : resPpStats )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
-            hasMeasure = true;
-        }
-    }
-
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
+    this->exportMeasures( time, this->symbolsExpr() );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -802,11 +716,17 @@ HEAT_CLASS_TEMPLATE_TYPE::startTimeStep()
 {
     this->log("Heat","startTimeStep", "start");
 
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+
     // start time step
     if (!this->doRestart())
         M_bdfTemperature->start(this->fieldTemperature());
      // up current time
     this->updateTime( M_bdfTemperature->time() );
+
+    // update all expressions in bc or in house prec
+    this->updateParameterValues();
 
     this->log("Heat","startTimeStep", "finish");
 }
@@ -819,26 +739,33 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
-    int previousTimeOrder = this->timeStepBdfTemperature()->timeOrder();
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
 
-    M_bdfTemperature->next( this->fieldTemperature() );
-
-    int currentTimeOrder = this->timeStepBdfTemperature()->timeOrder();
-
-    this->updateTime( this->timeStepBdfTemperature()->time() );
+    bool rebuildCstAssembly = false;
+    if ( M_timeStepping == "BDF" )
+    {
+        int previousTimeOrder = this->timeStepBdfTemperature()->timeOrder();
+        M_bdfTemperature->next( this->fieldTemperature() );
+        int currentTimeOrder = this->timeStepBdfTemperature()->timeOrder();
+        rebuildCstAssembly = previousTimeOrder != currentTimeOrder && this->timeStepBase()->strategy() == TS_STRATEGY_DT_CONSTANT;
+        this->updateTime( this->timeStepBdfTemperature()->time() );
+    }
+    else if ( M_timeStepping == "Theta" )
+    {
+        M_bdfTemperature->next( this->fieldTemperature() );
+        this->updateTime( this->timeStepBdfTemperature()->time() );
+    }
 
     // update velocity convection id symbolic expr exist and  depend only of time
     this->updateFieldVelocityConvection( true );
 
     // maybe rebuild cst jacobian or linear
-    if ( M_algebraicFactory &&
-         previousTimeOrder!=currentTimeOrder &&
-         this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
+    if ( M_algebraicFactory && rebuildCstAssembly )
     {
         if (!this->rebuildCstPartInLinearSystem())
         {
-            if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".Heat","updateBdf", "do rebuildCstLinearPDE",
-                                                       this->worldComm(),this->verboseAllProc());
+            this->log("Heat","updateTimeStep", "do rebuildCstLinearPDE" );
             M_algebraicFactory->rebuildCstLinearPDE(this->blockVectorSolution().vectorMonolithic());
         }
     }
@@ -847,6 +774,40 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStep()
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
     this->log("Heat","updateTimeStep", "finish");
 }
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
+{
+    if ( this->isStationary() )
+        return;
+    if ( !M_algebraicFactory )
+        return;
+    if ( M_timeStepping == "Theta" )
+    {
+        M_timeStepThetaSchemePreviousContrib->zero();
+        M_blockVectorSolution.updateVectorFromSubVectors();
+        ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
+        dataResidual.addInfo( prefixvm( this->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
+        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+        M_algebraicFactory->evaluateResidual( dataResidual );
+        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+
+        if ( M_stabilizationGLS )
+        {
+            auto & dataInfos = M_algebraicFactory->dataInfos();
+            *dataInfos.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") ) = *M_blockVectorSolution.vectorMonolithic();
+            if ( this->fieldVelocityConvectionIsUsedAndOperational() )
+            {
+                std::string convectionOseenEntry = prefixvm( this->prefix(),"time-stepping.previous-convection-velocity-field" );
+                if ( !dataInfos.hasVectorInfo( convectionOseenEntry ) )
+                    dataInfos.addVectorInfo( convectionOseenEntry, this->backend()->newVector( this->fieldVelocityConvection().mapPtr() ) );
+                *dataInfos.vectorInfo( convectionOseenEntry ) = this->fieldVelocityConvection();
+            }
+        }
+    }
+}
+
 
 } // end namespace FeelModels
 } // end namespace Feel

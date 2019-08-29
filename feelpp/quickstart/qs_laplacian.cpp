@@ -45,8 +45,11 @@ int main( int argc, char** argv )
 
     // tag::mesh_space[]
     tic();
-    using mesh_t = Mesh<Simplex<FEELPP_DIM, 1>>;
-    auto mesh = loadMesh( _mesh = new mesh_t );
+#if FEELPP_HYPERCUBE == 1
+    auto mesh = loadMesh( _mesh = new Mesh<Hypercube<FEELPP_DIM, 1>> );
+#else
+    auto mesh = loadMesh( _mesh = new Mesh<Simplex<FEELPP_DIM, 1>> );
+#endif
     toc( "loadMesh" );
 
     tic();

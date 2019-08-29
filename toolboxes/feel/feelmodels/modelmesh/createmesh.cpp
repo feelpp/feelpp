@@ -90,7 +90,7 @@ createMeshModel( ModelNumerical & model, std::shared_ptr<MeshType> & mesh, std::
         if (model.hasMeshFile())
         {
             std::string rootpath = model.rootRepository();
-            std::string mshfileRebuildPartitions = rootpath + "/" + model.prefix() + ".msh";
+            std::string mshfileRebuildPartitions = (fs::path( rootpath ) / (model.prefix() + ".json")).string();
 
             model.log("createMeshModel","", "load mesh file : " + model.meshFile());
             std::string meshFileExt = fs::path( model.meshFile() ).extension().string();
@@ -110,11 +110,15 @@ createMeshModel( ModelNumerical & model, std::shared_ptr<MeshType> & mesh, std::
 
             if (rebuildPartition) model.setMeshFile(mshfileRebuildPartitions);
         }
-#if defined( FEELPP_HAS_GMSH_H )        
+#if defined( FEELPP_HAS_GMSH_H )
         else if (model.hasGeoFile())
         {
             std::string path = model.rootRepository();
-            std::string mshfile = path + "/" + model.prefix() + ".msh";
+            std::string mshfile = (fs::path( path ) / model.prefix()).string();
+            if ( model.worldComm().localSize() > 1 )
+                mshfile += ".json";
+            else
+                mshfile += ".msh";
             model.setMeshFile(mshfile);
 
             // fs::path curPath=fs::current_path();

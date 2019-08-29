@@ -397,6 +397,8 @@ public :
     element_fluid_pressure_type & fieldPressure() { return M_Solution->template element<1>(); }
     element_fluid_pressure_type const& fieldPressure() const { return M_Solution->template element<1>(); }
 
+    element_fluid_ptrtype const& fieldConvectionVelocityExtrapolatedPtr() const { return M_fieldConvectionVelocityExtrapolated; }
+
     element_normalstress_ptrtype & fieldNormalStressPtr() { return M_fieldNormalStress; }
     element_normalstress_type const& fieldNormalStress() const { return *M_fieldNormalStress; }
     element_normalstress_ptrtype & fieldWallShearStressPtr() { return M_fieldWallShearStress; }
@@ -470,6 +472,7 @@ public :
 
     //___________________________________________________________________________________//
     // time step scheme
+    std::string const& timeStepping() const { return M_timeStepping; }
     bdf_ptrtype timeStepBDF() { return M_bdf_fluid; }
     bdf_ptrtype const& timeStepBDF() const { return M_bdf_fluid; }
     std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
@@ -495,6 +498,7 @@ public :
     void setDoExport(bool b);
     void exportMeasures( double time );
 private :
+    void updateConvectionVelocityExtrapolated();
     void updateTimeStepCurrentResidual();
     //void exportResultsImpl( double time );
     void exportResultsImplHO( double time );
@@ -848,6 +852,9 @@ public :
         {
             M_addUpdateInHousePreconditionerPCD[name] = std::make_pair(init,up);
         }
+
+    std::shared_ptr<operatorpcdbase_type> operatorPCD() const { return M_operatorPCD; }
+    bool hasOperatorPCD() const { return ( M_operatorPCD.use_count() > 0 ); }
 private :
     void updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
     void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol, DataUpdateBase & data ) const;
@@ -954,6 +961,7 @@ protected:
     // fluid space and solution
     space_fluid_ptrtype M_Xh;
     element_fluid_ptrtype M_Solution;
+    element_fluid_ptrtype M_fieldConvectionVelocityExtrapolated; // with Oseen solver
     // lagrange multiplier space for mean pressure
     std::vector<space_meanpressurelm_ptrtype> M_XhMeanPressureLM;
     // trace mesh and space
@@ -1122,7 +1130,8 @@ protected:
     //----------------------------------------------------
     bool M_preconditionerAttachPMM, M_preconditionerAttachPCD;
     mutable bool M_pmmNeedUpdate;
-     std::map<std::string,std::pair<std::function<void(operatorpcdbase_type &)>,std::function<void(operatorpcdbase_type &, DataUpdateBase &)> > > M_addUpdateInHousePreconditionerPCD;
+    std::shared_ptr<operatorpcdbase_type> M_operatorPCD;
+    std::map<std::string,std::pair<std::function<void(operatorpcdbase_type &)>,std::function<void(operatorpcdbase_type &, DataUpdateBase &)> > > M_addUpdateInHousePreconditionerPCD;
 
 }; // FluidMechanics
 

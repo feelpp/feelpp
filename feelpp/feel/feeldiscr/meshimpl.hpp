@@ -1729,7 +1729,8 @@ void Mesh<Shape, T, Tag, IndexT>::updateAdjacencyElements()
     boost::tie( iv, en ) = this->elementsRange();
     size_type nElt = std::distance( iv, en );
 
-    pointstoface_container_type _faces( nElt * _numLocalFaces );
+    pointstoface_container_type _faces;
+    _faces.reserve( nElt * _numLocalFaces );
     typename pointstoface_container_type::iterator _faceit;
 
     for ( ; iv != en; ++iv )
@@ -1746,14 +1747,8 @@ void Mesh<Shape, T, Tag, IndexT>::updateAdjacencyElements()
                 lids[f] = pointIdInElt[myfToP[j * face_type::numVertices + f]];
             std::sort( lids.begin(), lids.end() );
 
-#if 0
-            boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( lids, next_face ) );
-#else
-            boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
-                                                                  std::forward_as_tuple( lids ),
-                                                                  std::forward_as_tuple( &elt, j ) );
-            //std::forward_as_tuple(next_face) );
-#endif
+            auto [_faceit, faceinserted] = _faces.try_emplace( lids, &elt, j );
+
             if ( faceinserted )
             {
                 //DVLOG(2) << "Connection0 face id: " << next_face << " to element id: " << eltId << " local face id: " << j << "\n";
