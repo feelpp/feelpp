@@ -284,6 +284,7 @@ class Mesh2D
     {
         VLOG( 1 ) << "Deleting Mesh2D...\n";
 
+        super::clear();
         super_elements::clear();
         super_points::clear();
         super_faces::clear();

@@ -39,7 +39,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     bool timeSteppingEvaluateResidualWithoutTimeDerivative = false;
     if ( !this->isStationaryModel() )
     {
-        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( "time-stepping.evaluate-residual-without-time-derivative" );
+        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( prefixvm(this->prefix(),"time-stepping.evaluate-residual-without-time-derivative") );
         if ( M_timeStepping == "Theta" )
         {
             if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
@@ -87,36 +87,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     {
         if ( this->solverName() == "Oseen" ) // call when evaluate residual for time-stepping
         {
-            element_fluid_ptrtype fieldVelocityPressureExtrapolated;
-            if ( this->currentTime() == this->timeInitial() )
-            {
-                fieldVelocityPressureExtrapolated = Xh->elementPtr();
-                if ( M_bdf_fluid->iteration() == 1 )
-                    fieldVelocityPressureExtrapolated->add( 1, M_bdf_fluid->unknown(1) );
-                else if ( M_bdf_fluid->iteration() > 1 )
-                {
-                    fieldVelocityPressureExtrapolated->add( 2, M_bdf_fluid->unknown(1) );
-                    fieldVelocityPressureExtrapolated->add( -1, M_bdf_fluid->unknown(2) );
-                }
-            }
-            else
-            {
-                if ( M_timeStepping == "BDF" )
-                    fieldVelocityPressureExtrapolated = M_bdf_fluid->polyPtr();
-                else if ( M_timeStepping == "Theta" )
-                {
-                    fieldVelocityPressureExtrapolated = Xh->elementPtr();
-                    if ( M_bdf_fluid->iteration() == 1 )
-                        fieldVelocityPressureExtrapolated->add( 2, M_bdf_fluid->unknown(0) );
-                    else if ( M_bdf_fluid->iteration() > 1 )
-                    {
-                        fieldVelocityPressureExtrapolated->add( 2, M_bdf_fluid->unknown(0) );
-                        fieldVelocityPressureExtrapolated->add( -1, M_bdf_fluid->unknown(1) );
-                    }
-                }
-            }
-
-            auto const& BetaU = *fieldVelocityPressureExtrapolated;
+            auto const& BetaU = *M_fieldConvectionVelocityExtrapolated;
             auto betaU = BetaU.template element<0>();
             linearForm_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,

@@ -40,7 +40,7 @@
 #include <feel/feelvf/operations.hpp>
 #include <feel/feelvf/projectors.hpp>
 
-
+#include <feel/feelmodels/modelcore/traits.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
@@ -155,16 +155,6 @@ public:
     // mesh velocity (whole domain)
     typedef typename mesh_ale_type::ale_map_element_type element_meshvelocity_type;
     typedef std::shared_ptr<element_meshvelocity_type> element_meshvelocity_ptrtype;
-    // mesh velocity on FSI boundary
-    typedef FunctionSpace<mesh_type, bases<basis_fluid_u_type> > space_meshvelocityonboundary_type;
-    typedef std::shared_ptr<space_meshvelocityonboundary_type> space_meshvelocityonboundary_ptrtype;
-    typedef typename space_meshvelocityonboundary_type::element_type element_meshvelocityonboundary_type;
-    typedef std::shared_ptr<element_meshvelocityonboundary_type> element_meshvelocityonboundary_ptrtype;
-    // save a ALE part of normal stress (usefull semi implicit)
-    typedef typename mesh_ale_type::ale_map_functionspacedisc_type space_alemapdisc_type;
-    typedef typename mesh_ale_type::ale_map_functionspacedisc_ptrtype space_alemapdisc_ptrtype;
-    typedef typename mesh_ale_type::ale_map_elementdisc_type element_alemapdisc_type;
-    typedef typename mesh_ale_type::ale_map_elementdisc_ptrtype element_alemapdisc_ptrtype;
     // case where structure displacement is scalar!
     typedef typename space_mesh_disp_type::component_functionspace_type space_mesh_disp_scalar_type;
     typedef std::shared_ptr<space_mesh_disp_scalar_type> space_mesh_disp_scalar_ptrtype;
@@ -391,6 +381,7 @@ public :
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    std::shared_ptr<RangeDistributionByMaterialName<mesh_type> > rangeDistributionByMaterialName() const { return M_rangeDistributionByMaterialName; }
 
     space_fluid_ptrtype const& functionSpace() const { return M_Xh; }
     space_fluid_ptrtype const& spaceVelocityPressure() const { return M_Xh; }
@@ -406,10 +397,10 @@ public :
     element_fluid_pressure_type & fieldPressure() { return M_Solution->template element<1>(); }
     element_fluid_pressure_type const& fieldPressure() const { return M_Solution->template element<1>(); }
 
+    element_fluid_ptrtype const& fieldConvectionVelocityExtrapolatedPtr() const { return M_fieldConvectionVelocityExtrapolated; }
+
     element_normalstress_ptrtype & fieldNormalStressPtr() { return M_fieldNormalStress; }
     element_normalstress_type const& fieldNormalStress() const { return *M_fieldNormalStress; }
-    element_normalstress_ptrtype & fieldNormalStressRefMeshPtr() { return M_fieldNormalStressRefMesh; }
-    element_normalstress_type const& fieldNormalStressRefMesh() const { return *M_fieldNormalStressRefMesh; }
     element_normalstress_ptrtype & fieldWallShearStressPtr() { return M_fieldWallShearStress; }
     element_normalstress_type const& fieldWallShearStress() const { return *M_fieldWallShearStress; }
 
@@ -420,7 +411,7 @@ public :
 
     bool useExtendedDofTable() const;
 
-    // fields defined in json
+    // fields defined by user (in json or external to this class)
     std::map<std::string,element_velocity_component_noview_ptrtype> const& fieldsUserScalar() const { return M_fieldsUserScalar; }
     std::map<std::string,element_velocity_noview_ptrtype> const& fieldsUserVectorial() const { return M_fieldsUserVectorial; }
     bool hasFieldUserScalar( std::string const& key ) const { return M_fieldsUserScalar.find( key ) != M_fieldsUserScalar.end(); }
@@ -431,6 +422,36 @@ public :
         CHECK( this->hasFieldUserVectorial( key ) ) << "field name " << key << " not registered"; return M_fieldsUserVectorial.find( key )->second; }
     element_velocity_component_noview_type const& fieldUserScalar( std::string const& key ) const { return *this->fieldUserScalarPtr( key ); }
     element_velocity_noview_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
+
+    void registerCustomFieldScalar( std::string const& name )
+        {
+            if ( M_fieldsUserScalar.find( name ) == M_fieldsUserScalar.end() )
+                M_fieldsUserScalar[name];
+        }
+    void registerCustomFieldVectorial( std::string const& name )
+        {
+            if ( M_fieldsUserVectorial.find( name ) == M_fieldsUserVectorial.end() )
+                M_fieldsUserVectorial[name];
+        }
+    template <typename ExprT>
+    void updateCustomField( std::string const& name, vf::Expr<ExprT> const& e )
+        {
+            this->updateCustomField( name, e, M_rangeMeshElements );
+        }
+    template <typename ExprT, typename OnRangeType>
+    void updateCustomField( std::string const& name, vf::Expr<ExprT> const& e, OnRangeType const& range, std::enable_if_t< ExprTraits<OnRangeType, vf::Expr<ExprT>>::shape::is_scalar>* = nullptr )
+        {
+            if ( M_fieldsUserScalar.find( name ) == M_fieldsUserScalar.end() || !M_fieldsUserScalar[name] )
+                M_fieldsUserScalar[name] = this->functionSpaceVelocity()->compSpace()->elementPtr();
+             M_fieldsUserScalar[name]->on(_range=range,_expr=e );
+        }
+    template <typename ExprT, typename OnRangeType>
+    void updateCustomField( std::string const& name, vf::Expr<ExprT> const& e, OnRangeType const& range, std::enable_if_t< ExprTraits<OnRangeType, vf::Expr<ExprT>>::shape::is_vectorial>* = nullptr )
+        {
+            if ( M_fieldsUserVectorial.find( name ) == M_fieldsUserVectorial.end() || !M_fieldsUserVectorial[name] )
+                M_fieldsUserVectorial[name] = this->functionSpaceVelocity()->elementPtr();
+            M_fieldsUserVectorial[name]->on(_range=range,_expr=e );
+        }
 
     //___________________________________________________________________________________//
     // algebraic data
@@ -451,6 +472,7 @@ public :
 
     //___________________________________________________________________________________//
     // time step scheme
+    std::string const& timeStepping() const { return M_timeStepping; }
     bdf_ptrtype timeStepBDF() { return M_bdf_fluid; }
     bdf_ptrtype const& timeStepBDF() const { return M_bdf_fluid; }
     std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
@@ -465,13 +487,18 @@ public :
     // post process
     std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
     bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
+    std::set<std::string> postProcessFieldOnTraceExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+    bool hasPostProcessFieldOnTraceExported( std::string const& fieldName ) const { return M_postProcessFieldOnTraceExported.find( fieldName ) != M_postProcessFieldOnTraceExported.end(); }
+
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
     void exportFields( double time );
     bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
+    bool updateExportedFieldsOnTrace( export_trace_ptrtype exporter, std::set<std::string> const& fields, double time );
     void setDoExport(bool b);
     void exportMeasures( double time );
 private :
+    void updateConvectionVelocityExtrapolated();
     void updateTimeStepCurrentResidual();
     //void exportResultsImpl( double time );
     void exportResultsImplHO( double time );
@@ -481,20 +508,10 @@ public :
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     mesh_ale_ptrtype meshALE() { return M_meshALE; }
     mesh_ale_ptrtype const& meshALE() const { return M_meshALE; }
-
     element_mesh_disp_ptrtype meshDisplacementOnInterface() { return M_meshDisplacementOnInterface; }
     element_meshvelocity_type & meshVelocity() { return *M_meshALE->velocity(); }
-    element_meshvelocityonboundary_type & meshVelocity2() { return *M_meshVelocityInterface; }
-    element_meshvelocityonboundary_ptrtype meshVelocity2Ptr() { return M_meshVelocityInterface; }
-
     element_meshvelocity_type const & meshVelocity() const { return *M_meshALE->velocity(); }
-    element_meshvelocityonboundary_type const & meshVelocity2() const { return *M_meshVelocityInterface; }
-    element_meshvelocityonboundary_ptrtype const & meshVelocity2Ptr() const { return M_meshVelocityInterface; }
-
-    //element_stress_ptrtype normalStressFromStruct() { return M_normalStressFromStruct; }
-    //element_stress_ptrtype const& normalStressFromStruct() const { return M_normalStressFromStruct; }
 #endif
-    //element_fluid_velocity_scalar_type & meshVelocityScalOnInterface() { return *M_meshVelocityScalarOnInterface; }
     //___________________________________________________________________________________//
 
     bool applyMovingMeshBeforeSolve() const { return M_applyMovingMeshBeforeSolve; }
@@ -705,18 +722,13 @@ public :
 
     //___________________________________________________________________________________//
 
-    // update normal stress in reference ALE mesh
-    void updateNormalStressOnCurrentMesh( std::set<std::string> const& listMarkers = std::set<std::string>() );
+    // update normal stress
+    //void updateNormalStressOnCurrentMesh();
+    void updateNormalStressOnCurrentMesh( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate );
     // update normal stress in reference ALE mesh
     void updateNormalStressOnReferenceMesh( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate );
-private :
-    // update normal stress (subfunctions)
-    void updateNormalStressOnReferenceMeshStandard( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces, element_normalstress_ptrtype & fieldToUpdate );
-    void updateNormalStressOnReferenceMeshOptSI( std::string const& matName, faces_reference_wrapper_t<mesh_type> const& rangeFaces, element_normalstress_ptrtype & fieldToUpdate );
-public :
-    void updateNormalStressOnReferenceMeshOptPrecompute( faces_reference_wrapper_t<mesh_type> const& rangeFaces );
 
-    void updateWallShearStress();
+    void updateWallShearStress( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate );
     void updateVorticity();
 
     template < typename ExprT >
@@ -833,6 +845,16 @@ public :
     void initInHousePreconditioner();
     void updateInHousePreconditioner( DataUpdateLinear & data ) const override;
     void updateInHousePreconditioner( DataUpdateJacobian & data ) const override;
+    typedef OperatorPCDBase<typename space_fluid_velocity_type::value_type> operatorpcdbase_type;
+    //typedef std::shared_ptr<operatorpcdbase_type> operatorpcdbase_ptrtype;
+    void addUpdateInHousePreconditionerPCD( std::string const& name, std::function<void(operatorpcdbase_type &)> const& init,
+                                            std::function<void(operatorpcdbase_type &,DataUpdateBase &)> const& up = std::function<void(operatorpcdbase_type &,DataUpdateBase &)>() )
+        {
+            M_addUpdateInHousePreconditionerPCD[name] = std::make_pair(init,up);
+        }
+
+    std::shared_ptr<operatorpcdbase_type> operatorPCD() const { return M_operatorPCD; }
+    bool hasOperatorPCD() const { return ( M_operatorPCD.use_count() > 0 ); }
 private :
     void updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
     void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol, DataUpdateBase & data ) const;
@@ -882,7 +904,8 @@ private :
             return Feel::vf::symbolsExpr( symbolExpr("fluid_Ux",idv(this->fieldVelocity())(0,0) ),
                                           symbolExpr("fluid_Uy",idv(this->fieldVelocity())(1,0) ),
                                           symbolExpr("fluid_P",idv(this->fieldPressure()) ),
-                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity()),mpl::int_<InnerProperties::SQRT>()) )
+                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity()),mpl::int_<InnerProperties::SQRT>()) ),
+                                          this->symbolsExprUserFunctions()
                                           );
         }
     constexpr auto symbolsExprField( hana::int_<3> /**/ ) const
@@ -891,10 +914,39 @@ private :
                                           symbolExpr("fluid_Uy",idv(this->fieldVelocity())(1,0) ),
                                           symbolExpr("fluid_Uz",idv(this->fieldVelocity())(2,0) ),
                                           symbolExpr("fluid_P",idv(this->fieldPressure()) ),
-                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity()),mpl::int_<InnerProperties::SQRT>()) )
+                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity()),mpl::int_<InnerProperties::SQRT>()) ),
+                                          this->symbolsExprUserFunctions()
                                           );
         }
     auto symbolsExprFit() const { return super_type::symbolsExprFit( this->symbolsExprField() ); }
+
+    auto symbolsExprUserFunctions() const
+        {
+            std::vector<std::pair<std::string,decltype(idv(element_velocity_component_noview_ptrtype())) > > seScalar;
+            std::vector<std::pair<std::string,decltype(idv(element_velocity_noview_ptrtype())(0,0)) > > seVectorial;
+
+            for ( auto const& fieldUserScalar : this->fieldsUserScalar() )
+            {
+                 std::string const& userFieldName = fieldUserScalar.first;
+                 auto const& u = fieldUserScalar.second;
+                 seScalar.push_back( std::make_pair(userFieldName, idv(u) ) );
+            }
+            for ( auto const& fieldUserVectorial : this->fieldsUserVectorial() )
+            {
+                 std::string const& userFieldName = fieldUserVectorial.first;
+                 auto const& u = fieldUserVectorial.second;
+                 for ( int c=0;c<nDim;++c )
+                 {
+                     std::string compName = "_X";
+                     if ( c==1 )
+                         compName = "_Y";
+                     else if (c==2)
+                         compName = "_Z";
+                     seVectorial.push_back( std::make_pair(userFieldName+compName, idv(u)(c,0) ) );
+                 }
+            }
+            return Feel::vf::symbolsExpr( symbolExpr( seScalar ), symbolExpr( seVectorial ) );
+        }
 
 protected:
     virtual size_type initStartBlockIndexFieldsInMatrix();
@@ -905,9 +957,11 @@ protected:
     mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
     MeshMover<mesh_type> M_mesh_mover;
+    trace_mesh_ptrtype M_meshTrace;
     // fluid space and solution
     space_fluid_ptrtype M_Xh;
     element_fluid_ptrtype M_Solution;
+    element_fluid_ptrtype M_fieldConvectionVelocityExtrapolated; // with Oseen solver
     // lagrange multiplier space for mean pressure
     std::vector<space_meanpressurelm_ptrtype> M_XhMeanPressureLM;
     // trace mesh and space
@@ -925,7 +979,7 @@ protected:
     //----------------------------------------------------
     // normak boundary stress ans WSS
     space_normalstress_ptrtype M_XhNormalBoundaryStress;
-    element_normalstress_ptrtype M_fieldNormalStress, M_fieldNormalStressRefMesh;
+    element_normalstress_ptrtype M_fieldNormalStress;
     element_normalstress_ptrtype M_fieldWallShearStress;
     // vorticity space
     space_vorticity_ptrtype M_XhVorticity;
@@ -939,12 +993,6 @@ protected:
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     mesh_ale_ptrtype M_meshALE;
     element_mesh_disp_ptrtype M_meshDisplacementOnInterface;
-    space_meshvelocityonboundary_ptrtype M_XhMeshVelocityInterface;
-    element_meshvelocityonboundary_ptrtype M_meshVelocityInterface;
-    //element_stress_ptrtype M_normalStressFromStruct;
-    space_alemapdisc_ptrtype M_XhMeshALEmapDisc;
-    element_alemapdisc_ptrtype M_saveALEPartNormalStress;
-    std::set<size_type> M_dofsVelocityInterfaceOnMovingBoundary;
 #endif
     //----------------------------------------------------
     // physical properties/parameters and space
@@ -1022,24 +1070,20 @@ protected:
     std::map<int,std::vector<double> > M_fluidOutletWindkesselPressureDistal_old;
     trace_mesh_ptrtype M_fluidOutletWindkesselMesh;
     space_fluidoutlet_windkessel_ptrtype M_fluidOutletWindkesselSpace;
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    space_fluidoutlet_windkessel_mesh_disp_ptrtype M_fluidOutletWindkesselSpaceMeshDisp;
-    element_fluidoutlet_windkessel_mesh_disp_ptrtype M_fluidOutletWindkesselMeshDisp;
-    op_interpolation_fluidoutlet_windkessel_meshdisp_ptrtype M_fluidOutletWindkesselOpMeshDisp;
-    MeshMover<trace_mesh_type> M_fluidOutletWindkesselMeshMover;
-#endif
     //----------------------------------------------------
     vector_field_expression<nDim,1,2> M_gravityForce;
     bool M_useGravityForce;
     //----------------------------------------------------
     // post-process field exported
     std::set<std::string> M_postProcessFieldExported;
+    std::set<std::string> M_postProcessFieldOnTraceExported;
     std::set<std::string> M_postProcessUserFieldExported;
 
     // exporter option
     bool M_isHOVisu;
     // exporter fluid
     export_ptrtype M_exporter;
+    export_trace_ptrtype M_exporterTrace;
     export_trace_ptrtype M_exporterFluidOutlet;
     export_trace_ptrtype M_exporterLagrangeMultiplierPressureBC;
     // exporter fluid ho
@@ -1086,6 +1130,8 @@ protected:
     //----------------------------------------------------
     bool M_preconditionerAttachPMM, M_preconditionerAttachPCD;
     mutable bool M_pmmNeedUpdate;
+    std::shared_ptr<operatorpcdbase_type> M_operatorPCD;
+    std::map<std::string,std::pair<std::function<void(operatorpcdbase_type &)>,std::function<void(operatorpcdbase_type &, DataUpdateBase &)> > > M_addUpdateInHousePreconditionerPCD;
 
 }; // FluidMechanics
 

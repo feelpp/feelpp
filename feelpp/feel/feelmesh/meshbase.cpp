@@ -52,7 +52,21 @@ MeshBase<IndexT>::MeshBase( uint16_type topoDim, uint16_type realDim, worldcomm_
 
 template <typename IndexT>
 MeshBase<IndexT>::~MeshBase()
-{}
+{
+    std::vector<std::shared_ptr<MeshBase<IndexT>>> mwns;
+    meshesWithNodesSharedImpl( mwns );
+    for ( auto m : mwns )
+        m->removeMeshWithNodesShared( this );
+}
+
+template <typename IndexT>
+void
+MeshBase<IndexT>::removeMeshWithNodesShared( MeshBase<IndexT> * m )
+{
+    auto newEnd = std::remove_if(M_meshesWithNodesShared.begin(), M_meshesWithNodesShared.end(),
+                                 [&m](auto const& currentPtr) { return currentPtr.lock().get() == m; });
+    M_meshesWithNodesShared.erase( newEnd, M_meshesWithNodesShared.end() );
+}
 
 
 template <typename IndexT>
@@ -67,6 +81,11 @@ MeshBase<IndexT>::clear()
     M_n_parts = 1;
 
     M_components = MESH_ALL_COMPONENTS;
+
+    std::vector<std::shared_ptr<MeshBase<IndexT>>> mwns;
+    meshesWithNodesSharedImpl( mwns );
+    for ( auto m : mwns )
+        m->removeMeshWithNodesShared( this );
 }
 template <typename IndexT>
 void

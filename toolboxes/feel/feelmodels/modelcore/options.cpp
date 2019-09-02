@@ -341,6 +341,9 @@ heat_options(std::string const& prefix)
         (prefixvm(prefix,"stabilization-gls.parameter.method").c_str(), Feel::po::value<std::string>()->default_value( "eigenvalue" ), "method used for compute tau : eigenvalue, doubly-asymptotic-approximation")
         (prefixvm(prefix,"stabilization-gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
         (prefixvm(prefix,"stabilization-gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
+
+        (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
+        (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
         ;
     return heatOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
@@ -641,6 +644,8 @@ toolboxes_options(std::string const& type)
         toolboxesOptions.add(levelset_options("levelset"));
     else if (type == "multifluid")
         toolboxesOptions.add(multifluid_options("multifluid"));
+    else if (type == "electric")
+        toolboxesOptions.add(electricity_options("electric"));
     else if (type == "thermo-electric")
         toolboxesOptions.add(thermoElectric_options("thermo-electric"));
     else if (type == "heat-fluid")

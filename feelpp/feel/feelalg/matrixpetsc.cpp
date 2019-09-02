@@ -1724,6 +1724,10 @@ MatrixPetsc<T>::operator () ( const size_type i,
         return value;
     }
 
+    ierr  = MatRestoreRow( M_mat, i_val,
+                           &ncols, &petsc_cols, &petsc_row );
+    CHKERRABORT( this->comm(),ierr );
+
     // Otherwise the entry is not in the sparse matrix,
     // i.e. it is 0.
     return 0.;

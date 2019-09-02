@@ -112,7 +112,7 @@ public:
             }
             else if constexpr ( Dim ==1 )
                 mesh = unitSegment();
-            smesh = createSubmesh( mesh, boundaryfaces(mesh ), EXTRACTION_KEEP_MESH_RELATION, 0 );            
+            smesh = createSubmesh( _mesh=mesh, _range=boundaryfaces(mesh ), _update=0 );            
         }
     template<typename ExprT>
     double evaluateOnManifold( ExprT const& e )

@@ -144,10 +144,10 @@ int hdg_laplacian()
     auto complement_integral_bdy = complement(faces(mesh),select_faces);
     auto complement_integral_bdy_boundary = complement(boundaryfaces(mesh),select_faces);
 
-    auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
-    // auto face_mesh = createSubmesh( mesh, faces(mesh ), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto face_mesh = createSubmesh( _mesh=mesh, _range=complement_integral_bdy, _update=0 );
+    // auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh ), _update=0 );
     auto Mh = Pdh<OrderP>( face_mesh,true );
-    auto ibc_mesh = createSubmesh( mesh, markedfaces(mesh, {"Ibc","IbcOde"}), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto ibc_mesh = createSubmesh( _mesh=mesh, _range=markedfaces(mesh, {"Ibc","IbcOde"}), _update=0 );
     auto Ch = Pch<0>( ibc_mesh, true );
 
     toc("spaces",true);
@@ -453,6 +453,7 @@ int hdg_laplacian()
     q.on( _range=elements(mesh), _expr=p_exact );
     auto e = exporter( _mesh=mesh );
     e->setMesh( mesh );
+    e->addRegions();
     e->add( "flux", U(0_c) );
     e->add( "potential", U(1_c) );
     e->add( "potentialpp", PP(0_c) );

@@ -250,8 +250,12 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     int nBlock = nBlockHeat + nBlockElectric;
     M_blockVectorSolutionMonolithic.resize( nBlock );
     int indexBlock=0;
+    int numberOfBlockSpaceHeat = 0;
     for ( int k=0;k<nBlockHeat ;++k )
+    {
         M_blockVectorSolutionMonolithic(indexBlock+k) = blockVectorSolutionHeat(k);
+        numberOfBlockSpaceHeat += blockVectorSolutionHeat(k)->map().numberOfDofIdToContainerId();
+    }
     indexBlock += nBlockHeat;
     for ( int k=0;k<nBlockElectric ;++k )
         M_blockVectorSolutionMonolithic(indexBlock+k) = blockVectorSolutionElectric(k);
@@ -261,7 +265,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     size_type currentStartBlockSpaceIndex = 0;
     this->setStartSubBlockSpaceIndex( "heat", currentStartBlockSpaceIndex );
-    currentStartBlockSpaceIndex += blockVectorSolutionHeat.vectorMonolithic()->map().numberOfDofIdToContainerId();
+    currentStartBlockSpaceIndex += numberOfBlockSpaceHeat;
     this->setStartSubBlockSpaceIndex( "electric", currentStartBlockSpaceIndex );
 
     // algebraic solver
@@ -412,6 +416,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("ThermoElectric","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
     if ( M_exporter && M_exporter->doExport() )
     {
         bool hasFieldToExportHeat = M_heatModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeat,time );
@@ -423,8 +431,13 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
         }
     }
 
-    M_heatModel->exportResults( time );
-    M_electricModel->exportResults( time );
+    auto symbolExprField = Feel::vf::symbolsExpr( M_heatModel->symbolsExprField(), M_electricModel->symbolsExprField() );
+    auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
+    auto symbolExprMaterial = Feel::vf::symbolsExpr( M_heatModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ),
+                                                     M_electricModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
+    auto symbolExpr = Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
+    M_heatModel->exportResults( time, symbolExpr );
+    M_electricModel->exportResults( time, symbolExpr );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )

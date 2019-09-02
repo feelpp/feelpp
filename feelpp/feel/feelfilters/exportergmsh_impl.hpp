@@ -43,14 +43,16 @@ template<typename MeshType, int N>
 ExporterGmsh<MeshType,N>::ExporterGmsh( worldcomm_ptr_t const& worldComm )
 :
 super( worldComm ),
-M_element_type()
+M_element_type(),
+M_formatVersion( "2.2" /*FEELPP_GMSH_FORMAT_VERSION*/ )
 {
 }
 template<typename MeshType, int N>
 ExporterGmsh<MeshType,N>::ExporterGmsh( std::string const& __p, int freq,
                                         worldcomm_ptr_t const& worldComm )
     :
-    super( "gmsh", __p, freq, worldComm )
+    super( "gmsh", __p, freq, worldComm ),
+    M_formatVersion( "2.2" /*FEELPP_GMSH_FORMAT_VERSION*/ )
 {
 
 }
@@ -66,13 +68,15 @@ template<typename MeshType, int N>
 ExporterGmsh<MeshType,N>::ExporterGmsh( po::variables_map const& vm, std::string const& exp_prefix,
                                         worldcomm_ptr_t const& worldComm )
     :
-    super( vm, exp_prefix, worldComm )
+    super( vm, exp_prefix, worldComm ),
+    M_formatVersion( "2.2" /*FEELPP_GMSH_FORMAT_VERSION*/ )
 {
 }
 template<typename MeshType, int N>
 ExporterGmsh<MeshType,N>::ExporterGmsh( ExporterGmsh const & __ex )
     :
-    super( __ex )
+    super( __ex ),
+    M_formatVersion( __ex.M_formatVersion )
 {}
 template<typename MeshType, int N>
 ExporterGmsh<MeshType,N>::~ExporterGmsh()
@@ -487,10 +491,10 @@ ExporterGmsh<MeshType,N>::saveMesh( std::string const& filename, mesh_ptrtype me
 
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::gmshSaveFormat( std::ostream& out, std::string const& version ) const
+ExporterGmsh<MeshType,N>::gmshSaveFormat( std::ostream& out ) const
 {
     out << "$MeshFormat\n"
-        << version << " 0 " << sizeof( double ) << "\n"
+        << M_formatVersion << " 0 " << sizeof( double ) << "\n"
         << "$EndMeshFormat\n";
 
 }
@@ -756,13 +760,13 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
         out << ordering_face.type();
         // number-of-tags < tag >
 
-        if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
+        if ( M_formatVersion == "2.1" )
         {
             // out<<" 2 " << face.marker().value() << " " << face.marker2().value();
             out<<" 3 " << flag_type( (face.hasMarker())? face.marker().value() : 0) << " " << flag_type((face.hasMarker2())? face.marker2().value() : 0) << " " << face.processId()+1;
         }
 
-        else if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.2" ) )
+        else if ( M_formatVersion == "2.2" )
         {
             uint16_type nbTag = 3;
             if ( boption(_name="partition.linear" ) )
@@ -820,13 +824,13 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
     */
         out << ordering.type();
 
-        if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
+        if ( M_formatVersion == "2.1" )
         {
             //out<<" 2 " << elt.marker().value() << " " << elt.marker2().value();
             out<<" 3 " << flag_type( (elt.hasMarker())? elt.marker().value() : 0 ) << " " << flag_type( (elt.hasMarker2())? elt.marker2().value() : 0 ) << " " << elt.processId()+1;
         }
 
-        else if ( FEELPP_GMSH_FORMAT_VERSION== std::string( "2.2" ) )
+        else if ( M_formatVersion == "2.2" )
         {
             std::vector<int> f;
             uint16_type nbTag = 3;
@@ -1199,7 +1203,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
             for ( uint16_type l = 0; l < nLocalDof; ++l )
             {
                 uint16_type gmsh_l = ordering.fromGmshId( l );
-                globaldof = boost::get<0>( __u.functionSpace()->dof()->localToGlobal( elt.id(), gmsh_l, 0 ) ); //l,c
+                globaldof = __u.functionSpace()->dof()->localToGlobal( elt.id(), gmsh_l, 0 ).index(); //l,c
 
                 // verify that the dof points and mesh points coincide
 #if !defined(NDEBUG)
@@ -1282,9 +1286,9 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
                     if ( c < nComponents )
                     {
-                        globaldof = boost::get<0>( __uVec.functionSpace()->dof()->localToGlobal( elt.id(),
-                                                   gmsh_l,
-                                                   c ) );
+                        globaldof = __uVec.functionSpace()->dof()->localToGlobal( elt.id(),
+                                                                                  gmsh_l,
+                                                                                  c ).index();
                         //out << __uVec( globaldof);
                         out << __uVec.container()( globaldof );
                     }
@@ -1336,7 +1340,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         {
             auto const& elt = boost::unwrap_ref( *elt_it );
 
-            globaldof = boost::get<0>( __u.functionSpace()->dof()->localToGlobal( elt.id(), 0, 0 ) ); //l,c
+            globaldof = __u.functionSpace()->dof()->localToGlobal( elt.id(), 0, 0 ).index(); //l,c
 
             // either use the relinearized version for one file dataset or classic for one file per process
             /*
@@ -1421,11 +1425,11 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
     out << nPointInPtSet+1 << " "; // id element
     out << ordering.type();
 
-    if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
+    if ( M_formatVersion == "2.1" )
     {
         out<<" 3 " << flag_type( (elt.hasMarker())? elt.marker().value() : 0 ) << " " << flag_type( (elt.hasMarker2())? elt.marker2().value() : 0 ) << " " << elt.processId()+1;
     }
-    else if ( FEELPP_GMSH_FORMAT_VERSION== std::string( "2.2" ) )
+    else if ( M_formatVersion == "2.2" )
     {
         uint16_type nbTag = 3 + elt.numberOfPartitions();
         out << " " << nbTag

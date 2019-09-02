@@ -34,6 +34,7 @@
 #include <feel/feelcrb/crb_trilinear.hpp>
 #include <feel/feelcrb/crbsaddlepoint.hpp>
 #include <feel/feelcrb/crbmodelsaddlepoint.hpp>
+#include <feel/feelcrb/biotsavartrb.hpp>
 
 
 namespace Feel {
@@ -349,6 +350,28 @@ public:                                                                 \
     BOOST_PP_CAT(classname,Plugin)()                                    \
         :                                                               \
         CRBPlugin<classname,CRBModelSaddlePoint,CRBSaddlePoint>( BOOST_PP_STRINGIZE( strname ) ) \
+        {}                                                              \
+                                                                        \
+    /* Factory method */                                                \
+    static std::shared_ptr<this_t> create()                           \
+        {                                                               \
+            return std::shared_ptr<this_t>( new this_t() );           \
+        }                                                               \
+};                                                                      \
+                                                                        \
+                                                                        \
+BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, BOOST_PP_CAT(create_crbplugin_,strname) )
+
+
+#define FEELPP_BIOTSAVART_PLUGIN( model, classname, strname )            \
+    class FEELPP_EXPORT BOOST_PP_CAT( classname, Plugin ) :             \
+        public CRBPlugin<model,classname,BiotSavartRB,CRBPluginBase>                 \
+{                                                                       \
+public:                                                                 \
+    using this_t = BOOST_PP_CAT(classname,Plugin);                      \
+    BOOST_PP_CAT(classname,Plugin)()                                    \
+        :                                                               \
+        CRBPlugin<model,classname,BiotSavartRB,CRBPluginBase>( BOOST_PP_STRINGIZE( strname ) ) \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \

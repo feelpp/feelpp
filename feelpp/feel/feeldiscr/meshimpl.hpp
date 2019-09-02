@@ -399,6 +399,31 @@ void Mesh<Shape, T, Tag, IndexT>::updateForUse()
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT>
+void Mesh<Shape, T, Tag, IndexT>::updateForUseAfterMovingNodes( bool upMeasures )
+{
+    // reset geomap cache
+    if ( this->gm()->isCached() )
+    {
+        this->gm()->initCache( this/*imesh.get()*/ );
+        if ( mesh_type::nOrder > 1 )
+            this->gm1()->initCache( this/*imesh.get()*/ );
+    }
+
+    // update measures
+    if ( upMeasures )
+        this->updateMeasures();
+
+    // reset localisation tool
+    this->tool_localization()->reset();
+
+#if !defined( __INTEL_COMPILER )
+    // notify observers that the mesh has changed
+    LOG(INFO) << "Notify observers that the mesh has changed\n";
+    this->meshChanged( MESH_CHANGES_POINTS_COORDINATES );
+#endif
+}
+
+template <typename Shape, typename T, int Tag, typename IndexT>
 void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
 {
     if ( this->components().test( MESH_NO_UPDATE_MEASURES ) )
@@ -696,9 +721,9 @@ template <typename TheShape>
 void
     Mesh<Shape, T, Tag, IndexT>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 1>* )
 {
-    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
-    for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
-        iv->second.setCommonData( geondEltCommon );
+    //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
+    //for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
+    //iv->second.setCommonData( M_geondEltCommon.get() );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++itf )
         itf->second.setMesh( this );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
@@ -709,12 +734,12 @@ template <typename TheShape>
 void
     Mesh<Shape, T, Tag, IndexT>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 2>* )
 {
-    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
-    auto geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
-    for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
-        iv->second.setCommonData( geondEltCommon );
+    //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
+    M_geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
+    //for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
+    // iv->second.setCommonData( M_geondEltCommon.get() );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++itf )
-        itf->second.setCommonData( geondFaceCommon );
+        itf->second.setCommonData( M_geondFaceCommon.get() );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
         itp->second.setMesh( this );
 }
@@ -723,15 +748,15 @@ template <typename TheShape>
 void
     Mesh<Shape, T, Tag, IndexT>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 3>* )
 {
-    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
-    auto geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
-    auto geondEdgeCommon = std::make_shared<GeoNDCommon<typename edge_type::super>>( this /*,this->gm(), this->gm1()*/ );
-    for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
-        iv->second.setCommonData( geondEltCommon );
+    //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
+    M_geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
+    M_geondEdgeCommon = std::make_shared<GeoNDCommon<typename edge_type::super>>( this /*,this->gm(), this->gm1()*/ );
+    //for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
+    //    iv->second.setCommonData( M_geondEltCommon.get() );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++itf )
-        itf->second.setCommonData( geondFaceCommon );
+        itf->second.setCommonData( M_geondFaceCommon.get() );
     for ( auto ite = this->beginEdge(), ene = this->endEdge(); ite != ene; ++ite )
-        ite->second.setCommonData( geondEdgeCommon );
+        ite->second.setCommonData( M_geondEdgeCommon.get() );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
         itp->second.setMesh( this );
 }
@@ -1311,25 +1336,28 @@ void
     toc( "Mesh.updateEntitiesCoDimensionOne.add_faces_from_elements", FLAGS_v > 1 );
     DVLOG( 2 ) << "[Mesh::updateFaces] finish elements loop";
 
-    tic();
-    // clean faces not connected to an element
-    face_iterator f_it = this->beginFace();
-    face_iterator f_en = this->endFace();
-    for ( ; f_it != f_en; )
+    if ( !(nDim == 1 && nOrder > 1) ) // not remove faces in this case (can be internal point)
     {
-        auto const& face = f_it->second;
-        // cleanup the face data structure :
-        if ( !face.isConnectedTo0() )
+        tic();
+        // clean faces not connected to an element
+        face_iterator f_it = this->beginFace();
+        face_iterator f_en = this->endFace();
+        for ( ; f_it != f_en; )
         {
-            DLOG( INFO ) << "removing face id : " << face.id();
-            // remove all faces that are not connected to any elements
-            f_it = this->eraseFace( f_it );
-            //++f_it;
+            auto const& face = f_it->second;
+            // cleanup the face data structure :
+            if ( !face.isConnectedTo0() )
+            {
+                DLOG( INFO ) << "removing face id : " << face.id();
+                // remove all faces that are not connected to any elements
+                f_it = this->eraseFace( f_it );
+                //++f_it;
+            }
+            else
+                ++f_it;
         }
-        else
-            ++f_it;
+        toc( "Mesh.updateEntitiesCoDimensionOne.clean_faces", FLAGS_v > 1 );
     }
-    toc( "Mesh.updateEntitiesCoDimensionOne.clean_faces", FLAGS_v > 1 );
 
     LOG( INFO ) << "We have now " << std::distance( this->beginFace(), this->endFace() ) << " faces in the mesh";
 }
@@ -1701,7 +1729,8 @@ void Mesh<Shape, T, Tag, IndexT>::updateAdjacencyElements()
     boost::tie( iv, en ) = this->elementsRange();
     size_type nElt = std::distance( iv, en );
 
-    pointstoface_container_type _faces( nElt * _numLocalFaces );
+    pointstoface_container_type _faces;
+    _faces.reserve( nElt * _numLocalFaces );
     typename pointstoface_container_type::iterator _faceit;
 
     for ( ; iv != en; ++iv )
@@ -1718,14 +1747,8 @@ void Mesh<Shape, T, Tag, IndexT>::updateAdjacencyElements()
                 lids[f] = pointIdInElt[myfToP[j * face_type::numVertices + f]];
             std::sort( lids.begin(), lids.end() );
 
-#if 0
-            boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( lids, next_face ) );
-#else
-            boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
-                                                                  std::forward_as_tuple( lids ),
-                                                                  std::forward_as_tuple( &elt, j ) );
-            //std::forward_as_tuple(next_face) );
-#endif
+            auto [_faceit, faceinserted] = _faces.try_emplace( lids, &elt, j );
+
             if ( faceinserted )
             {
                 //DVLOG(2) << "Connection0 face id: " << next_face << " to element id: " << eltId << " local face id: " << j << "\n";
