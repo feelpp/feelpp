@@ -27,6 +27,10 @@
 //#include <fftw3.h>
 #include <Eigen/Core>
 
+#include <boost/bimap/bimap.hpp>
+#include <boost/bimap/list_of.hpp>
+#include <boost/bimap/unordered_set_of.hpp>
+
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeltiming/tic.hpp>
 #include <feel/feeldiscr/meshstructured.hpp>
@@ -142,10 +146,10 @@ public:
     operator()( ElementType const& u )
         {
             holo3_image<float> x( M_rows, M_cols );
-            for( auto dof : M_relation.left )
+            for( auto const& dof : M_relation.left )
             {
-                CHECK( dof.first.first < M_rows ) << "invalid row index " << dof.first.first;
-                CHECK( dof.first.second < M_cols ) << "invalid col index " << dof.first.second;
+                DCHECK( dof.first.first < M_rows ) << "invalid row index " << dof.first.first;
+                DCHECK( dof.first.second < M_cols ) << "invalid col index " << dof.first.second;
                 x( dof.first.first, dof.first.second ) = u(dof.second);
             }
             return x;
@@ -168,13 +172,14 @@ public:
     typedef meta::Pch<MeshStructured,1>::type space_type;
     typedef space_type::element_type q1_element_type;
 
-    typedef boost::bimap<bimaps::set_of<std::pair<int,int>>, bimaps::set_of<int> > dof_table;
+    typedef boost::bimap<bimaps::unordered_set_of<std::pair<int,int>>, bimaps::unordered_set_of<int>, bimaps::list_of_relation > dof_table;
     typedef dof_table::value_type dof_relation;
+#if 0    
     typedef dof_table::left_iterator hbf_dof_iterator;
     typedef dof_table::left_const_iterator hbf_dof_const_iterator;
     typedef dof_table::right_iterator feelpp_dof_iterator;
     typedef dof_table::right_const_iterator feelpp_dof_const_iterator;
-
+#endif
     Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh );
     /**
      * @brief [brief description]
@@ -196,10 +201,10 @@ public:
     operator()( ElementType const& u )
         {
             holo3_image<float> x( M_rows, M_cols );
-            for( auto dof : M_relation.left )
+            for( auto const& dof : M_relation.left )
             {
-                CHECK( dof.first.first < M_rows ) << "invalid row index " << dof.first.first;
-                CHECK( dof.first.second < M_cols ) << "invalid col index " << dof.first.second;
+                DCHECK( dof.first.first < M_rows ) << "invalid row index " << dof.first.first;
+                DCHECK( dof.first.second < M_cols ) << "invalid col index " << dof.first.second;
                 x( dof.first.first, dof.first.second ) = u(dof.second);
             }
             return x;

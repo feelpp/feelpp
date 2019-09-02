@@ -95,21 +95,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     }
     else if ( !this->isStationary() )
     {
-        if ( M_timeStepping == "BDF" )
-        {
-            fieldVelocityPressureExtrapolated = M_bdf_fluid->polyPtr();
-        }
-        else if ( M_timeStepping == "Theta" )
-        {
-            fieldVelocityPressureExtrapolated = Xh->elementPtr();
-            if ( M_bdf_fluid->iteration() == 1 )
-                fieldVelocityPressureExtrapolated->add( 1, M_bdf_fluid->unknown(0) );
-            else if ( M_bdf_fluid->iteration() > 1 )
-            {
-                fieldVelocityPressureExtrapolated->add( 2 /*3./2.*/, M_bdf_fluid->unknown(0) );
-                fieldVelocityPressureExtrapolated->add( -1 /*-1./2.*/, M_bdf_fluid->unknown(1) );
-            }
-        }
+        fieldVelocityPressureExtrapolated = M_fieldConvectionVelocityExtrapolated;
     }
 
     auto const& U = this->fieldVelocityPressure();

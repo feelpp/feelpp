@@ -867,7 +867,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -961,7 +961,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::symmetricGradient( ContextTy
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
 
             value_type v_ = this->globalValue( gdof );
 
@@ -1130,7 +1130,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -1249,7 +1249,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -1312,7 +1312,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -1713,7 +1713,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -1995,7 +1995,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -2129,7 +2129,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacian_( ContextType cons
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -2168,7 +2168,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacian_( ContextType cons
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )

@@ -2664,7 +2664,7 @@ public:
 
         value_type localToGlobal( index_type e, index_type l, int c ) const
         {
-            index_type index=boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
+            index_type index=M_functionspace->dof()->localToGlobal( e, l, c ).index();
             return super::operator()( index );
         }
 #if 0
@@ -3099,19 +3099,19 @@ public:
 
             typename p0_space_type::element_type p0Element( P0h );
 
-            for ( auto const& rangeElt : elements( P0h->mesh() ) )
+            for ( auto const& rangeElt : P0h->template rangeElements<0>() /*elements( P0h->mesh() )*/ )
             {
                 auto const& meshElt = boost::unwrap_ref( rangeElt );
                 index_type eid = meshElt.id();
 
-                index_type dofp0 = boost::get<0>( P0h->dof()->localToGlobal( eid, 0, 0 ) );
+                index_type dofp0 = P0h->dof()->localToGlobal( eid, 0, 0 ).index();
                 std::vector<value_type> values ( functionspace_type::fe_type::nLocalDof );
 
                 index_type dofpn = 0;
 
                 for ( uint16_type local_id=0; local_id < functionspace_type::fe_type::nLocalDof; ++local_id )
                 {
-                    dofpn = boost::get<0>( this->functionSpace()->dof()->localToGlobal( eid, local_id, 0 ) );
+                    dofpn = this->functionSpace()->dof()->localToGlobal( eid, local_id, 0 ).index();
                     values[local_id] = this->operator()( dofpn );
                 }
 
@@ -4322,9 +4322,15 @@ public:
                                            ( prefix,   ( std::string ), "" )
                                            ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
                                            ( accumulate,     *( boost::is_integral<mpl::_> ), false )
+                                           ( close,  (bool), false )
                                            ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
             {
-                return onImpl( range, expr, prefix, Feel::detail::geomapStrategy(range,geomap), accumulate, verbose );
+                onImpl( range, expr, prefix, Feel::detail::geomapStrategy(range,geomap), accumulate, verbose );
+                if ( close )
+                {
+                    std::string opUsed = ( accumulate )? "+" : "=";
+                    sync( *this, opUsed, this->functionSpace()->dofs( range, ComponentType::NO_COMPONENT, true ) );
+                }
             }
 
         BOOST_PARAMETER_MEMBER_FUNCTION( (void),
@@ -4338,9 +4344,10 @@ public:
                                            ( range, *, elements(this->mesh())  )
                                            ( prefix,   ( std::string ), "" )
                                            ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
+                                           ( close,  (bool), false )
                                            ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
             {
-                return onImpl( range, expr, prefix, geomap, true, verbose );
+                this->on(_range=range,_expr=expr,_prefix=prefix,_geomap=geomap,_accumulate=true,_close=close, _verbose=verbose );
             }
 
 
@@ -5596,7 +5603,7 @@ private:
         }
     template <typename RangeType>
     void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               typename std::enable_if< std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+               typename std::enable_if< boost::tuples::template element<0, RangeType>::type::value == MESH_FACES && std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
         {
             if ( c1 == ComponentType::NO_COMPONENT )
             {
@@ -5635,6 +5642,13 @@ private:
 
             }
         }
+    template <typename RangeType>
+    void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
+               typename std::enable_if< boost::tuples::template element<0, RangeType>::type::value == MESH_FACES && !std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+        {
+            CHECK(false) << "TODO";
+        }
+
     template <typename RangeType>
     void dofs( RangeType const& rangeEdge, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
                typename std::enable_if< std::is_same<RangeType,edges_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
@@ -5914,24 +5928,26 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     M_periodicity = periodicity;
     VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 
-
-    if ( basis_type::nDofPerEdge || nDim >= 3 )
-        mesh_components |= MESH_UPDATE_EDGES;
-
-    /*
-     * update faces info in mesh only if dofs exists on faces or the
-     * expansion is continuous between elements. This case handles strong
-     * Dirichlet imposition
-     */
-    if ( basis_type::nDofPerFace || is_continuous  || nDim >= 3 )
-        mesh_components |= MESH_UPDATE_FACES;
-
-    if ( !M_mesh->isUpdatedForUse() )
+    if ( M_mesh->components().test( MESH_DO_NOT_UPDATE ) )
     {
-        M_mesh->components().set( mesh_components );
-        M_mesh->updateForUse();
-    }
 
+        if ( basis_type::nDofPerEdge || nDim >= 3 )
+            mesh_components |= MESH_UPDATE_EDGES;
+
+        /*
+         * update faces info in mesh only if dofs exists on faces or the
+         * expansion is continuous between elements. This case handles strong
+         * Dirichlet imposition
+         */
+        if ( basis_type::nDofPerFace || is_continuous || nDim >= 3 )
+            mesh_components |= MESH_UPDATE_FACES;
+
+        if ( !M_mesh->isUpdatedForUse() )
+        {
+            M_mesh->components().set( mesh_components );
+            M_mesh->updateForUse();
+        }
+    }
     if ( is_periodic )
     {
         M_mesh->removeFacesFromBoundary( { periodicity.tag1(), periodicity.tag2() } );
@@ -5939,17 +5955,26 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     M_ref_fe = std::make_shared<basis_type>();
 
+    tic();
+    tic();
     M_dof = std::make_shared<dof_type>( M_ref_fe, fusion::at_c<0>(periodicity), *this->worldsComm()[0] );
-
+    toc("FunctionSpace dof-1", FLAGS_v>0);
+    tic();
     M_dof->setBuildDofTableMPIExtended( this->extendedDofTable() );
-
+    toc("FunctionSpace dof-2", FLAGS_v>0);
     DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
+    tic();
     M_dof->setDofIndices( dofindices );
+    toc("FunctionSpace dof-3", FLAGS_v>0);
     DVLOG(2) << "[functionspace] is_periodic = " << is_periodic << "\n";
+    tic();
     if ( fusion::at_c<0>( meshSupport ) && fusion::at_c<0>( meshSupport )->isPartialSupport() )
         M_dof->setMeshSupport( fusion::at_c<0>( meshSupport ) );
+    toc("FunctionSpace dof-4", FLAGS_v>0);
+    tic();
     M_dof->build( M_mesh );
-
+    toc("FunctionSpace dof-5", FLAGS_v>0);
+    toc("FunctionSpace dof table", FLAGS_v > 0 );
     M_dofOnOff = M_dof;
 
     this->applyUpdateInformationObject();
@@ -6449,6 +6474,14 @@ operator<<( std::ostream& os, FunctionSpace<A0, A1, A2, A3, A4> const& Xh )
 
 #include <feel/feeldiscr/detail/element_impl.hpp>
 
-
+//!
+//! @return the support of a function space
+//!
+template<typename SpaceT>
+typename SpaceT::template GetMeshSupport<typename SpaceT::mesh_ptrtype,0>::ptrtype
+support( std::shared_ptr<SpaceT> const& X )
+{
+    return X->template meshSupport<0>();
+}
 
 #endif /* __FunctionSpace_H */

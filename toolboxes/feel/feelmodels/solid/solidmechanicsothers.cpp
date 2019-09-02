@@ -891,7 +891,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
         {
             M_timeStepThetaSchemePreviousContrib->zero();
             M_blockVectorSolution.updateVectorFromSubVectors();
-            std::vector<std::string> infos = { "time-stepping.evaluate-residual-without-time-derivative" };
+            std::vector<std::string> infos = { prefixvm(this->prefix(),"time-stepping.evaluate-residual-without-time-derivative") };
             M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
             M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos, false );
             M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );

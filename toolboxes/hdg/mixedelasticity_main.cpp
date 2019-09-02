@@ -61,7 +61,7 @@ runApplicationMixedElasticity()
     else
     {
         Feel::cout << "Using submesh: " << listSubmesh << std::endl;
-        auto cmesh = createSubmesh( mesh, markedelements( mesh, listSubmesh ), Environment::worldComm() );
+        auto cmesh = createSubmesh( _mesh=mesh, _range=markedelements( mesh, listSubmesh ) );
         Idh = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
         Idhv = IPtr( _domainSpace=Pdhms<OrderT>(cmesh), _imageSpace=Pdhms<OrderT>(mesh) );
         ME -> init( cmesh, mesh );
@@ -84,7 +84,7 @@ runApplicationMixedElasticity()
      Feel::cout << "Using submesh 2: " << soption("gmsh.submesh2") << std::endl;
      listSubmeshes.push_back( soption("gmsh.submesh2") );
      }
-     auto cmesh = createSubmesh( mesh, markedelements(mesh,listSubmeshes), Environment::worldComm() );
+     auto cmesh = createSubmesh( _mesh=mesh, _range=markedelements(mesh,listSubmeshes) );
      Idh = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
      Idhv = IPtr( _domainSpace=Pdhms<OrderT>(cmesh), _imageSpace=Pdhms<OrderT>(mesh) );
      ME -> init( cmesh, mesh );

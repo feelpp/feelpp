@@ -461,6 +461,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             M_CstR->zero();
             //this->model()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+            dataLinearCst.copyInfos( this->dataInfos() );
             this->model()->updateLinearPDE( dataLinearCst );
             for ( auto const& func : M_addFunctionLinearAssembly )
                 func.second( dataLinearCst );
@@ -477,6 +478,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             M_CstR->zero();
             //this->model()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+            dataLinearCst.copyInfos( this->dataInfos() );
             this->model()->updateLinearPDE( dataLinearCst );
             for ( auto const& func : M_addFunctionLinearAssembly )
                 func.second( dataLinearCst );
@@ -505,6 +507,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
         // assembling non cst part
         ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
+        dataLinearNonCst.copyInfos( this->dataInfos() );
         this->model()->updateLinearPDE( dataLinearNonCst );
         for ( auto const& func : M_addFunctionLinearAssembly )
             func.second( dataLinearNonCst );
@@ -604,12 +607,14 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         else
         {
             ModelAlgebraic::DataUpdateJacobian dataJacobianCst(X, J, R, true, M_Extended,false);
+            dataJacobianCst.copyInfos( this->dataInfos() );
             model->updateJacobian( dataJacobianCst );
             for ( auto const& func : M_addFunctionJacobianAssembly )
                 func.second( dataJacobianCst );
         }
 
         ModelAlgebraic::DataUpdateJacobian dataJacobianNonCst(X,J,R,false, M_Extended,false);
+        dataJacobianNonCst.copyInfos( this->dataInfos() );
         if ( M_usePseudoTransientContinuation )
         {
             dataJacobianNonCst.addInfo( "use-pseudo-transient-continuation" );
@@ -659,6 +664,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         else
         {
             ModelAlgebraic::DataUpdateResidual dataResidualCst( X, R, true, true );
+            dataResidualCst.copyInfos( this->dataInfos() );
             model->updateResidual( dataResidualCst );
             for ( auto const& func : M_addFunctionResidualAssembly )
                 func.second( dataResidualCst );
@@ -674,6 +680,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             R->addVector(*X, *M_CstJ );
 
         ModelAlgebraic::DataUpdateResidual dataResidualNonCst( X, R, false, doOptimization );
+        dataResidualNonCst.copyInfos( this->dataInfos() );
         model->updateResidual( dataResidualNonCst );
         for ( auto const& func : M_addFunctionResidualAssembly )
             func.second( dataResidualNonCst );
@@ -717,6 +724,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
         if ( M_usePseudoTransientContinuation )
             M_pseudoTransientContinuationDeltaAndResidual.clear();
+
         //---------------------------------------------------------------------//
         //---------------------------------------------------------------------//
         //---------------------------------------------------------------------//
@@ -748,6 +756,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             {
                 M_CstJ->zero();
                 ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
+                dataJacobianCst.copyInfos( this->dataInfos() );
                 model->updateJacobian( dataJacobianCst );
                 for ( auto const& func : M_addFunctionJacobianAssembly )
                     func.second( dataJacobianCst );
@@ -758,6 +767,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             {
                 M_CstJ->zero();
                 ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
+                dataJacobianCst.copyInfos( this->dataInfos() );
                 model->updateJacobian( dataJacobianCst );
                 for ( auto const& func : M_addFunctionJacobianAssembly )
                     func.second( dataJacobianCst );
@@ -776,6 +786,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 M_CstR->zero();
                 // Warning : the second true is very important in order to build M_CstR!!!!!!
                 ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
+                dataResidualCst.copyInfos( this->dataInfos() );
                 model->updateResidual( dataResidualCst );
                 for ( auto const& func : M_addFunctionResidualAssembly )
                     func.second( dataResidualCst );
@@ -790,6 +801,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 M_CstR->zero();
                 // Warning : the second true is very important in order to build M_CstR!!!!!!
                 ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
+                dataResidualCst.copyInfos( this->dataInfos() );
                 model->updateResidual( dataResidualCst );
                 for ( auto const& func : M_addFunctionResidualAssembly )
                     func.second( dataResidualCst );
@@ -849,11 +861,20 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
     void
     ModelAlgebraicFactory::evaluateResidual(const vector_ptrtype& U, vector_ptrtype& R, std::vector<std::string> const& infos, bool applyDofElimination ) const
     {
-        auto model = this->model();
-        R->zero();
         ModelAlgebraic::DataUpdateResidual dataResidual( U, R, true, false );
         for ( std::string const& info : infos )
             dataResidual.addInfo( info );
+        this->evaluateResidual( dataResidual, applyDofElimination );
+    }
+
+    void
+    ModelAlgebraicFactory::evaluateResidual( ModelAlgebraic::DataUpdateResidual & dataResidual, bool applyDofElimination ) const
+    {
+        auto model = this->model();
+        dataResidual.setBuildCstPart( true );
+        dataResidual.setUseJacobianLinearTerms( false );
+        vector_ptrtype& R = dataResidual.residual();
+        R->zero();
         model->updateResidual( dataResidual );
         for ( auto const& func : M_addFunctionResidualAssembly )
             func.second( dataResidual );

@@ -194,8 +194,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh, T, order_types )
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<2,1,2> > );
     auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=doption(_name="gmsh.hsize2") );
 
-    auto testmesh = createSubmesh(mesh, markedfaces(mesh,(boost::any)1),Environment::worldComm() );
-    auto trialmesh = createSubmesh(mesh2, markedfaces(mesh2,(boost::any)1),Environment::worldComm() );
+    auto testmesh = createSubmesh(_mesh=mesh, _range=markedfaces(mesh,(boost::any)1) );
+    auto trialmesh = createSubmesh(_mesh=mesh2, _range=markedfaces(mesh2,(boost::any)1) );
     auto Xh = Pch<T::value>(testmesh);
     auto Vh = Pch<T::value>(trialmesh);
     auto Mh = Moch<T::value>(testmesh);
@@ -280,8 +280,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
 #endif
 
 
-    auto testmesh = createSubmesh(mesh, markedfaces(mesh,"NORTH"),Environment::worldComm() );
-    auto trialmesh = createSubmesh(mesh2, markedfaces(mesh2,"SOUTH"),Environment::worldComm() );
+    auto testmesh = createSubmesh(_mesh=mesh, _range=markedfaces(mesh,"NORTH") );
+    auto trialmesh = createSubmesh(_mesh=mesh2, _range=markedfaces(mesh2,"SOUTH") );
     auto Xh = Pch<T::value,double,PointSetGaussLobatto>(testmesh);
     auto Vh = Pch<T::value,double,PointSetGaussLobatto>(trialmesh);
     auto Mh = Moch<T::value,PointSetGaussLobatto>(testmesh);

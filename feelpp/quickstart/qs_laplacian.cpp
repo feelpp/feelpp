@@ -32,6 +32,8 @@ int main( int argc, char** argv )
 
     po::options_description laplacianoptions( "Laplacian options" );
     laplacianoptions.add_options()( "no-solve", po::value<bool>()->default_value( false ), "No solve" );
+    laplacianoptions.add_options()( "marker.name", po::value<std::string>(), "marker on which to solve problem" );
+    laplacianoptions.add_options()( "marker.levelset", po::value<std::string>(), "marker on which to solve problem" );
 
     Environment env( _argc = argc, _argv = argv,
                      _desc = laplacianoptions,
@@ -43,11 +45,23 @@ int main( int argc, char** argv )
 
     // tag::mesh_space[]
     tic();
-    auto mesh = loadMesh( _mesh = new Mesh<Simplex<FEELPP_DIM, 1>> );
+#if FEELPP_HYPERCUBE == 1
+    using mesh_t = Mesh<Hypercube<FEELPP_DIM, 1>>;
+    auto mesh = loadMesh( _mesh = new mesh_t );
+#else
+    using mesh_t = Mesh<Simplex<FEELPP_DIM, 1>>;
+    auto mesh = loadMesh( _mesh = new mesh_t );
+#endif
     toc( "loadMesh" );
 
     tic();
-    auto Vh = Pch<2>( mesh );
+    Pch_ptrtype<mesh_t,2> Vh;
+    if ( Environment::vm().count("marker.name") )
+        Vh = Pch<2>( mesh, markedelements(mesh, soption("marker.name") ) );
+    else if ( Environment::vm().count("marker.levelset") )
+        Vh = Pch<2>( mesh, elements(mesh, expr(soption("marker.levelset")) ) );
+    else
+        Vh = Pch<2>( mesh );
     auto u = Vh->element( "u" );
     auto mu = expr( soption( _name = "functions.mu" ) ); // diffusion term
     auto f = expr( soption( _name = "functions.f" ), "f" );
@@ -67,27 +81,27 @@ int main( int argc, char** argv )
     // tag::forms[]
     tic();
     auto l = form1( _test = Vh );
-    l = integrate( _range = elements( mesh ),
+    l = integrate( _range = elements( support( Vh ) ),
                    _expr = f * id( v ) );
-    l += integrate( _range = markedfaces( mesh, "Robin" ), _expr = r_2 * id( v ), _quad = 4 );
-    l += integrate( _range = markedfaces( mesh, "Neumann" ), _expr = n * id( v ), _quad = _Q<3>() );
+    l += integrate( _range = markedfaces( support( Vh ), "Robin" ), _expr = r_2 * id( v ), _quad = 4 );
+    l += integrate( _range = markedfaces( support( Vh ), "Neumann" ), _expr = n * id( v ), _quad = _Q<3>() );
     toc( "l" );
 
     tic();
     auto a = form2( _trial = Vh, _test = Vh );
     tic();
-    a = integrate( _range = elements( mesh ),
+    a = integrate( _range = elements( support( Vh ) ),
                    _expr = mu * inner( gradt( u ), grad( v ) ), _quad = _Q<>( 3 ) );
     toc( "a.gradgrad" );
     tic();
-    a += integrate( _range = markedfaces( mesh, "Robin" ), _expr = r_1 * idt( u ) * id( v ), _quad = im( mesh, 4 ) );
+    a += integrate( _range = markedfaces( support( Vh ), "Robin" ), _expr = r_1 * idt( u ) * id( v ), _quad = im( mesh, 4 ) );
     toc( "a.robin" );
     tic();
-    a += on( _range = markedfaces( mesh, "Dirichlet" ), _rhs = l, _element = u, _expr = g );
+    a += on( _range = markedfaces( support( Vh ), "Dirichlet" ), _rhs = l, _element = u, _expr = g );
     //! if no markers Robin Neumann or Dirichlet are present in the mesh then
     //! impose Dirichlet boundary conditions over the entire boundary
-    if ( !mesh->hasAnyMarker( {"Robin", "Neumann", "Dirichlet"} ) )
-        a += on( _range = boundaryfaces( mesh ), _rhs = l, _element = u, _expr = g );
+    if ( !support( Vh )->hasAnyMarker( {"Robin", "Neumann", "Dirichlet"} ) )
+        a += on( _range = boundaryfaces( support( Vh ) ), _rhs = l, _element = u, _expr = g );
     toc( "a.dirichlet" );
     toc( "a" );
     // end::forms[]
@@ -105,11 +119,11 @@ int main( int argc, char** argv )
     auto e = exporter( _mesh = mesh );
     e->addRegions();
     e->add( "uh", u );
-    v.on( _range = elements( mesh ), _expr = mu );
+    v.on( _range = elements(support(Vh)), _expr = mu );
     e->add( "mu", v );
     if ( thechecker.check() )
     {
-        v.on( _range = elements( mesh ), _expr = solution );
+        v.on( _range = elements(support(Vh)), _expr = solution );
         e->add( "solution", v );
     }
     e->save();
@@ -120,10 +134,10 @@ int main( int argc, char** argv )
     // compute l2 and h1 norm of u-u_h where u=solution
     auto norms = [=]( std::string const& solution ) -> std::map<std::string, double> {
         tic();
-        double l2 = normL2( _range = elements( mesh ), _expr = idv( u ) - expr( solution ) );
+        double l2 = normL2( _range = elements( support( Vh ) ), _expr = idv( u ) - expr( solution ) );
         toc( "L2 error norm" );
         tic();
-        double h1 = normH1( _range = elements( mesh ), _expr = idv( u ) - expr( solution ), _grad_expr = gradv( u ) - grad<FEELPP_DIM>( expr( solution ) ) );
+        double h1 = normH1( _range = elements( support( Vh ) ), _expr = idv( u ) - expr( solution ), _grad_expr = gradv( u ) - grad<FEELPP_DIM>( expr( solution ) ) );
         toc( "H1 error norm" );
         return {{"L2", l2}, {"H1", h1}};
     };

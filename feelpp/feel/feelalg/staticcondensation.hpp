@@ -474,7 +474,19 @@ public:
             }
         }
     void setDim4( int dim4 ) { M_dim4 = dim4; }
-    
+
+    //!
+    //! transpose block n1,n2
+    //! the local matrices are transposed and copied
+    //!
+    void transpose( int n1, int n2 )
+        {
+            for( auto const& [key,matrix]: M_local_matrices[std::make_pair(n1,n2)] )
+            {
+                auto const & [id1,id2] = key;
+                this->M_local_matrices[std::pair{n2,n1}][std::pair{id2,id1}].noalias() = matrix.transpose();
+            }
+        }
     using local_vector_t = Eigen::Matrix<value_type,Eigen::Dynamic,1>;
     using local_matrix_t = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
     using local_index_t = Eigen::Matrix<int,Eigen::Dynamic,1>;
@@ -1403,7 +1415,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             int n2 = 0;
             std::for_each( dK.faces2().begin(), dK.faces2().end(), [&]( auto dKi )
                            {
-                               std::cout << "face2 key.first=" << key.first << " dKi=" << dKi << std::endl;
+                               // std::cout << "face2 key.first=" << key.first << " dKi=" << dKi << std::endl;
                                auto key2 = std::make_pair(key.first, dKi );
                                auto key3 = std::make_pair(dKi,key.first);
                                auto key4 = std::make_pair(dKi, dKi);
@@ -1604,7 +1616,7 @@ StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCon
     Feel::cout << "\n";
     std::for_each( dK.faces2().begin(), dK.faces2().end(), [&]( auto dKi )
                    {
-                       Feel::cout << "face2 dKi=" << dKi << std::endl;
+                       // Feel::cout << "face2 dKi=" << dKi << std::endl;
                        auto key = std::make_pair(dKi, dKi);
                        Feel::cout << "A34(" << key.first << "):" << A34K.at(key) << "\n";
                        Feel::cout << "A43(" << key.first << "):" << A43K.at(key) << "\n";

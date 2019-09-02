@@ -922,10 +922,6 @@ public :
                     {
                         if ( !M_meshForRbContext->hasElement( meshEltCtx.id() ) )
                         {
-                            auto geondEltCommon = std::make_shared<GeoNDCommon<typename mesh_type::element_type::super>>( M_meshForRbContext.get(),
-                                                                                                                            M_meshForRbContext->gm(),
-                                                                                                                            M_meshForRbContext->gm1() );
-                            meshEltCtx.setCommonData( geondEltCommon );
                             M_meshForRbContext->addElement( meshEltCtx, false );
                         }
                         auto const& meshEltCtxRegister = M_meshForRbContext->element( meshEltCtx.id() );
@@ -1143,10 +1139,6 @@ public :
                 if ( !M_meshForRbContext->hasElement( modelMeshEltCtx.id(), modelMeshEltCtx.processId() ) )
                 {
                     geoelement_type meshEltCtx = modelMeshEltCtx;;
-                    auto geondEltCommon = std::make_shared<GeoNDCommon<typename mesh_type::element_type::super>>( M_meshForRbContext.get(),
-                                                                                                                    M_meshForRbContext->gm(),
-                                                                                                                    M_meshForRbContext->gm1() );
-                    meshEltCtx.setCommonData( geondEltCommon );
                     M_meshForRbContext->addElement( meshEltCtx, false );
                 }
             }
@@ -2027,7 +2019,7 @@ ReducedBasisSpace<SpaceType>::Element<Y,Cont>::id_( Context_t const & context, i
             for ( typename array_type::index c1 = 0; c1 < ncdof; ++c1 )
             {
                 typename array_type::index ldof = basis_type::nDof*c1+l;
-                size_type gdof = boost::get<0>( M_femfunctionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+                size_type gdof = M_femfunctionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
 
                 //N is the index of the RB basis function (i.e fem element)
                 //FEM coefficient associated to the global dof "gdof" of the N^th RB element in the basis
@@ -2086,7 +2078,7 @@ ReducedBasisSpace<SpaceType>::Element<Y,Cont>::grad_( Context_t const & context,
             for ( int c1 = 0; c1 < ncdof; ++c1 )
             {
                 int ldof = c1*basis_type::nDof+l;
-                size_type gdof = boost::get<0>( M_femfunctionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+                size_type gdof = M_femfunctionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
 
                 //N is the index of the RB basis function (i.e fem element)
                 value_type rb_basisij = this->basisValue( N , gdof );
@@ -2133,7 +2125,7 @@ ReducedBasisSpace<SpaceType>::Element<Y,Cont>::d_( int N, Context_t const & cont
             for ( int c1 = 0; c1 < ncdof; ++c1 )
             {
                 size_type ldof = basis_type::nDof*c1 + i;
-                size_type gdof = boost::get<0>( M_femfunctionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
+                size_type gdof = M_femfunctionspace->dof()->localToGlobal( context.eId(), i, c1 ).index();
 
                 //N is the index of the RB basis function (i.e fem element)
                 value_type rb_basisij = this->basisValue( rbN , gdof );
