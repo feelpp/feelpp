@@ -37,7 +37,9 @@ makeOptions()
     po::options_description hdgoptions( "HDG options" );
     hdgoptions.add_options()
         ( "k", po::value<std::string>()->default_value( "-1" ), "diffusion coefficient" )
-        ( "pyexpr.filename", po::value<std::string>()->default_value( "${top_srcdir}/quickstart/laplacian.py" ), "python filename to execute" )
+        ( "r_1", po::value<std::string>()->default_value( "1" ), "Robin lhs coefficient" )
+        ( "r_2", po::value<std::string>()->default_value( "" ), "Robin rhs coefficient" )
+        ( "pyexpr.filename", po::value<std::string>()->default_value( "${top_srcdir}/feelpp/quickstart/laplacian.py" ), "python filename to execute" )
         ( "solution.p", po::value<std::string>()->default_value( "1" ), "solution p exact" )
         ( "solution.sympy.p", po::value<std::string>()->default_value( "1" ), "solution p exact (if we use sympy)" )        
 #if (FEELPP_DIM==2)
@@ -49,6 +51,8 @@ makeOptions()
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( "solvecg", po::value<bool>()->default_value( false ), "solve corresponding problem with CG"  )
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
+        ( "use-joule-law", po::value<bool>()->default_value( false ), "load electric field for joule law on rhs" )
+        ( "sigma", po::value<double>()->default_value( 1 ), "electric conductivity for joule law" )
         ;
     return hdgoptions;
 }
@@ -100,7 +104,7 @@ int hdg_laplacian()
     
 #if defined(FEELPP_HAS_SYMPY)
 
-    std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}};
+    std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals );
 
     for( auto d: locals )
@@ -112,6 +116,8 @@ int hdg_laplacian()
     auto u_exact = expr<Dim,1>( u_exact_str );
     auto un_exact = expr( locals.at("un") );
     auto f_exact = expr( locals.at("f") );
+    auto r_1 = expr( locals.at("r_1") );
+    auto r_2 = expr( locals.at("r_2") );
     std::map<std::string,double> ibc_exact_map;
     for( auto const& [ibc_type, ibc_data ] : ibcs )
         if ( ibc_data.second == "IbcOde" && ibc_type == "Ibc" )
@@ -171,6 +177,17 @@ int hdg_laplacian()
          << Vh->nDof() << " " << Wh->nDof() << " " << Mh->nDof() << " "
          << cgXh->nDof() << std::endl;
 
+    auto electricPotential = Wh->element();
+    auto currentDensity = Vh->element();
+    if( boption( "use-joule-law") )
+    {
+        currentDensity.load( _path="currentDensity.hdf5", _type="hdf5" );
+        electricPotential.load( _path="electricPotential.hdf5", _type="hdf5" );
+    }
+    double sigma = doption("sigma");
+    auto joule = inner(idv(currentDensity),idv(currentDensity))/sigma;
+    auto jouleElt = Wh->element(joule);
+
     if ( boption( "solvecg" ) == true )
     {
         auto u = cgXh->element();
@@ -178,12 +195,20 @@ int hdg_laplacian()
         tic();
         auto l = form1( _test=cgXh );
         l = integrate( _range=elements(mesh), _expr=-f_exact*id(u) );
+        if( boption("use-joule-law") )
+            l+= integrate(_range=elements(mesh),
+                          _expr=joule*id(u) );
+
         l += integrate(_range=markedfaces(mesh,"Neumann"),
                        _expr=id(u)*un_exact );
+        l += integrate( _range=markedfaces(mesh, "Robin"),
+                        _expr=id(u)*r_2);
         toc("cg.assembly.l",FLAGS_v>0);
         tic();
         auto a = form2(_trial=cgXh, _test=cgXh );
         a = integrate( _range=elements(mesh), _expr=gradt(u)*trans(grad(u)) );
+        a += integrate( _range=markedfaces(mesh, "Robin"),
+                        _expr=id(u)*idt(u)*r_1);
         a += on(_range=markedfaces(mesh,"Dirichlet"),
                 _rhs=l,
                 _element=u,
@@ -196,15 +221,18 @@ int hdg_laplacian()
         auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
             {
                 tic();
+                double l2_p = normL2(_range=elements(mesh), _expr=expr(solution) );
                 double l2 = normL2(_range=elements(mesh), _expr=idv(u)-expr(solution) );
                 toc("L2 error norm");
                 tic();
+                double h1_p = normH1(_range=elements(mesh), _expr=expr(solution), _grad_expr=expr<1,Dim>(u_exact_str)  );
                 double h1 = normH1(_range=elements(mesh), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-grad<2>(expr(solution)) );
                 toc("H1 error norm");
                 tic();
+                double semih1_p = normL2(_range=elements(mesh), _expr=expr<1,Dim>(u_exact_str) );
                 double semih1 = normL2(_range=elements(mesh), _expr=gradv(u)-grad<2>(expr(solution)) );
                 toc("semi H1 error norm");
-                return { { "L2", l2 }, {  "H1", h1 }, {"semih1",semih1} };
+                return { { "L2", l2/l2_p }, {  "H1", h1/h1_p }, {"semih1",semih1/semih1_p} };
             };
 
         int status = checker(p_exact_str).runOnce( norms, rate::hp( mesh->hMax(), cgXh->fe()->order() ) );
@@ -248,11 +276,16 @@ int hdg_laplacian()
     // How to identify Dirichlet/Neumann boundaries?
     rhs(1_c) += integrate(_range=elements(mesh),
                           _expr=-f_exact*id(w));
+    if( boption("use-joule-law") )
+        rhs(1_c) += integrate(_range=elements(mesh),
+                              _expr=-joule*id(w) );
 
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                          _expr=id(l)*un_exact );
+                          _expr=id(l)*cst(0.)/*un_exact*/ );
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                           _expr=id(l)*p_exact);
+    rhs(2_c) += integrate( _range=markedfaces(mesh, "Robin"),
+                           _expr=id(l)*r_2);
     for( auto const& [ ibc_type, ibc_data ]  : ibcs )
     {
         auto const& [ibc_space_index,ibc_marker] = ibc_data;
@@ -364,6 +397,15 @@ int hdg_laplacian()
                             _expr=-tau_constant * idt(phat) * id(l)  );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                             _expr=idt(phat) * id(l) );
+    // Robin
+    a( 2_c, 0_c ) += integrate(_range=markedfaces(mesh,"Robin"),
+                               _expr=id(l)*normalt(u) );
+    a( 2_c, 1_c ) += integrate(_range=markedfaces(mesh,"Robin"),
+                               _expr=tau_constant * id(l) * idt(p)  );
+    a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
+                               _expr=-tau_constant * idt(phat) * id(l) );
+    a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
+                                 _expr=r_1*idt(phat) * id(l) );
     toc("a(2,2)",FLAGS_v>0);
 
     //
@@ -412,6 +454,12 @@ int hdg_laplacian()
     auto up = U(0_c);
     auto pp = U(1_c);
 
+    if( !boption("use-joule-law") )
+    {
+        up.save( _path="currentDensity.hdf5", _type="hdf5" );
+        pp.save( _path="electricPotential.hdf5", _type="hdf5" );
+    }
+
     tic();
     tic();
     auto Whp = Pdh<OrderP+1>( mesh, true );
@@ -446,8 +494,6 @@ int hdg_laplacian()
     toc("postprocessing.solve",FLAGS_v>0);
     toc("postprocessing",true);
 
-    
-
     tic();
     v.on( _range=elements(mesh), _expr=u_exact );
     q.on( _range=elements(mesh), _expr=p_exact );
@@ -459,6 +505,12 @@ int hdg_laplacian()
     e->add( "potentialpp", PP(0_c) );
     e->add( "flux.exact", v );
     e->add( "potential.exact", q );
+    if( boption("use-joule-law") )
+    {
+        e->add( "electric_potential", electricPotential );
+        e->add( "joule_losses", jouleElt );
+        e->add( "current_density", currentDensity );
+    }
     e->save();
     toc("export");
 
@@ -472,17 +524,20 @@ int hdg_laplacian()
     auto norms_u = [=]( std::string const& solution ) ->std::map<std::string,double>
         {
             tic();
+            auto l2_u = normL2( _range=elements(mesh), _expr=u_exact );
             auto l2err_u = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
             toc("L2 error norm u");
-            return { { "L2", l2err_u }};
+            return { { "L2", l2err_u/l2_u }};
         };
 
     auto norms_p = [=]( std::string const& solution ) ->std::map<std::string,double>
         {
             tic();
+            double l2_p = 1;
             double l2err_p = 1e+30;
             if ( has_dirichlet )
             {
+                l2_p = normL2( _range=elements(mesh), _expr=expr(solution) );
                 l2err_p = normL2( _range=elements(mesh), _expr=expr(solution) - idv(pp) );
             }
             else
@@ -491,17 +546,19 @@ int hdg_laplacian()
                 auto mean_p = mean( elements(mesh), idv(pp) )(0,0);
                 l2err_p = normL2( elements(mesh),
                                   (expr(solution) - cst(mean_p_exact)) - (idv(pp) - cst(mean_p)) );
+                l2_p = normL2( _range=elements(mesh), _expr=expr(solution)- cst(mean_p_exact) );
             }
             toc("L2 error norm p");
-            return { { "L2", l2err_p }};
+            return { { "L2", l2err_p/l2_p }};
         };
     auto norms_ppp = [=]( std::string const& solution ) ->std::map<std::string,double>
         {
             tic();
+            double l2_p = normL2( elements(mesh), expr(solution) );
             double l2err_p = 1e+30;
             l2err_p = normL2( elements(mesh), expr(solution) - idv(ppp) );
             toc("L2 error norm ppp");
-            return { { "L2", l2err_p }};
+            return { { "L2", l2err_p/l2_p }};
         };
 #if 0
     int status = checker().runOnce( {norms_p,norms_u},
@@ -535,9 +592,9 @@ int main( int argc, char** argv )
     // end::env[]
     if ( ioption( "order" ) == 1 )
         return !hdg_laplacian<FEELPP_DIM,1>();
+#if 0
     if ( ioption( "order" ) == 2 )
         return !hdg_laplacian<FEELPP_DIM,2>();
-#if 0
 
     if ( ioption( "order" ) == 3 )
         return !hdg_laplacian<FEELPP_DIM,3>();
