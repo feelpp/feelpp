@@ -53,6 +53,7 @@ makeOptions()
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
         ( "use-joule-law", po::value<bool>()->default_value( false ), "load electric field for joule law on rhs" )
         ( "sigma", po::value<double>()->default_value( 1 ), "electric conductivity for joule law" )
+        ( "use-strong-dirichlet", po::value<bool>()->default_value( false ), "use strong ")
         ;
     return hdgoptions;
 }
@@ -167,6 +168,7 @@ int hdg_laplacian()
 
     cout << "#elts: " << mesh->numGlobalElements() << std::endl
          << "#faces: " << mesh->numGlobalFaces() << std::endl
+        
          << "#facesMh: " << face_mesh->numGlobalElements() << std::endl
          << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
          << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
@@ -178,13 +180,15 @@ int hdg_laplacian()
          << cgXh->nDof() << std::endl;
 
     auto electricPotential = Wh->element();
-    auto currentDensity = Vh->element();
+    auto electricField = Vh->element();
     if( boption( "use-joule-law") )
     {
-        currentDensity.load( _path="currentDensity.hdf5", _type="hdf5" );
+        electricField.load( _path="electricField.hdf5", _type="hdf5" );
         electricPotential.load( _path="electricPotential.hdf5", _type="hdf5" );
     }
     double sigma = doption("sigma");
+    auto currentDensityExpr = sigma*idv(electricField);
+    auto currentDensity = Vh->element(currentDensityExpr);
     auto joule = inner(idv(currentDensity),idv(currentDensity))/sigma;
     auto jouleElt = Wh->element(joule);
 
@@ -282,8 +286,11 @@ int hdg_laplacian()
 
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                           _expr=id(l)*cst(0.)/*un_exact*/ );
-    rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                          _expr=id(l)*p_exact);
+    if( !boption("use-strong-dirichlet") || boption("sc.condense"))
+    {
+        rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                              _expr=id(l)*p_exact);
+    }
     rhs(2_c) += integrate( _range=markedfaces(mesh, "Robin"),
                            _expr=id(l)*r_2);
     for( auto const& [ ibc_type, ibc_data ]  : ibcs )
@@ -395,8 +402,11 @@ int hdg_laplacian()
                             _expr=-(1-0.5*boption("sc.condense"))*tau_constant * idt(phat) * id(l) );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                             _expr=-tau_constant * idt(phat) * id(l)  );
-    a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                            _expr=idt(phat) * id(l) );
+    if( !boption("use-strong-dirichlet") || boption("sc.condense"))
+    {
+        a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                                _expr=idt(phat) * id(l) );
+    }
     // Robin
     a( 2_c, 0_c ) += integrate(_range=markedfaces(mesh,"Robin"),
                                _expr=id(l)*normalt(u) );
@@ -407,6 +417,15 @@ int hdg_laplacian()
     a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
                                  _expr=r_1*idt(phat) * id(l) );
     toc("a(2,2)",FLAGS_v>0);
+
+    if( boption("use-strong-dirichlet") && !boption("sc.condense"))
+    {
+        a(2_c,2_c).close();
+        a(2_c,2_c) += on( _range=markedelements(face_mesh, "Dirichlet"),
+                          _expr=p_exact,
+                          _rhs=rhs(2_c),
+                          _element=l );
+    }
 
     //
     // Fourth row a(3_c,:)
@@ -456,7 +475,7 @@ int hdg_laplacian()
 
     if( !boption("use-joule-law") )
     {
-        up.save( _path="currentDensity.hdf5", _type="hdf5" );
+        up.save( _path="electricField.hdf5", _type="hdf5" );
         pp.save( _path="electricPotential.hdf5", _type="hdf5" );
     }
 
@@ -510,6 +529,7 @@ int hdg_laplacian()
         e->add( "electric_potential", electricPotential );
         e->add( "joule_losses", jouleElt );
         e->add( "current_density", currentDensity );
+        e->add( "electric_field", electricField );
     }
     e->save();
     toc("export");
