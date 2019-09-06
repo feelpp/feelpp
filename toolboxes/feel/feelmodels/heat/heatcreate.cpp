@@ -113,7 +113,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
         M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
 
-    M_fieldTemperature.reset( new element_temperature_type(M_Xh,"U"));
+    M_fieldTemperature.reset( new element_temperature_type(M_Xh,"temperature"));
 
     if ( this->fieldVelocityConvectionIsUsed() )
         this->updateForUseFunctionSpacesVelocityConvection();
@@ -198,13 +198,68 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->initBoundaryConditions();
 
     // load an initial solution from a math expr
-    auto initialSolution = this->modelProperties().initialConditions().getScalarFields( "temperature", "" );
-    for( auto const& d : initialSolution )
+    auto icts = this->modelProperties().initialConditions().get("temperature");
+    if ( !icts.empty() )
     {
-        auto theExpr = expression( d,this->symbolsExpr() );
-        auto rangeElt = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
-        this->fieldTemperaturePtr()->on(_range=rangeElt,_expr=theExpr,_geomap=this->geomap());
+        CHECK( icts.size() == 1 ) << "TODO";
+        for( auto const& [time,icByType] : icts )
+        {
+            auto itFindIcFile = icByType.find( "File" );
+            if ( itFindIcFile != icByType.end() )
+            {
+                for ( auto const& ic : itFindIcFile->second )
+                {
+                    CHECK( ic.isFile() ) << "must be an ic file";
+                    CHECK( !ic.fileName().empty() || !ic.fileDirectory().empty() ) << "entry filename or directory is required";
+                    std::string fileName = ic.fileName();
+                    std::string fileType = ic.fileType();
+                    if ( fileType.empty() )
+                        fileType = "hdf5";
+                    std::string fileDirectory = ic.fileDirectory();
+                    if ( fileDirectory.empty() )
+                        this->fieldTemperaturePtr()->load(_path=fileName,_type=fileType);
+                    else
+                    {
+                        if ( fileName.empty() )
+                            fileName = this->fieldTemperaturePtr()->name();
+                        this->fieldTemperaturePtr()->load(_path=fileDirectory,_type=fileType,_name=fileName);
+                    }
+                }
+            }
+
+            auto itFindIcExpr = icByType.find( "Expression" );
+            if ( itFindIcExpr != icByType.end() )
+            {
+                for ( auto const& ic : itFindIcExpr->second )
+                {
+                    CHECK( ic.isExpression() ) << "must be an ic expression";
+                    if ( !ic.expression().template hasExpr<1,1>() )
+                        CHECK( false ) << "must be a scalar expression";
+                    auto theExpr = expr( ic.expression().template expr<1,1>(), this->symbolsExpr() );
+
+                    if ( ic.markers().empty() )
+                        this->fieldTemperaturePtr()->on(_range=M_rangeMeshElements,_expr=theExpr,_geomap=this->geomap());
+                    else
+                    {
+                        auto markersByEntity = detail::distributeMarkerListOnSubEntity(this->mesh(),ic.markers());
+                        auto const& listMarkerFaces = std::get<0>( markersByEntity );
+                        auto const& listMarkerEdges = std::get<1>( markersByEntity );
+                        auto const& listMarkerPoints = std::get<2>( markersByEntity );
+                        auto const& listMarkerElements = std::get<3>( markersByEntity );
+                        if ( !listMarkerElements.empty() )
+                            this->fieldTemperaturePtr()->on(_range=markedelements(this->mesh(),listMarkerElements),_expr=theExpr,_geomap=this->geomap());
+                        if ( !listMarkerFaces.empty() )
+                            this->fieldTemperaturePtr()->on(_range=markedfaces(this->mesh(),listMarkerFaces),_expr=theExpr,_geomap=this->geomap());
+                        if ( !listMarkerEdges.empty() )
+                            this->fieldTemperaturePtr()->on(_range=markededges(this->mesh(),listMarkerEdges),_expr=theExpr,_geomap=this->geomap());
+                        if ( !listMarkerPoints.empty() )
+                            this->fieldTemperaturePtr()->on(_range=markedpoints(this->mesh(),listMarkerPoints),_expr=theExpr,_geomap=this->geomap());
+                    }
+                }
+            }
+        }
     }
+
     if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
     {
         auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
