@@ -40,7 +40,7 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     M_params( world ),
     M_mat( world ),
     M_bc( world, false ),
-    M_ic( world, false ),
+    M_ic( world ),
     M_bc2( world ),
     M_postproc( world ),
     M_outputs( world )
@@ -130,6 +130,7 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
             M_ic.setDirectoryLibExpr( directoryLibExpr );
         M_ic.setPTree( *ic );
     }
+
     auto mat = M_p.get_child_optional("Materials");
     if ( mat )
     {

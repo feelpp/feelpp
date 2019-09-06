@@ -36,6 +36,7 @@
 #include <feel/feelmodels/modeloutputs.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
 #include <feel/feelmodels/modelboundaryconditions.hpp>
+#include <feel/feelmodels/modelinitialconditions.hpp>
 
 
 namespace Feel {
@@ -72,7 +73,7 @@ public:
     ModelParameters const& parameters() const {  return M_params; }
     ModelMaterials const& materials() const {  return M_mat; }
     BoundaryConditions const& boundaryConditions() const { return M_bc; }
-    BoundaryConditions const& initialConditions() const { return M_ic; }
+    ModelInitialConditions const& initialConditions() const { return M_ic; }
 
     ModelParameters & parameters()  {  return M_params; }
     ModelMaterials & materials() {  return M_mat; }
@@ -114,7 +115,7 @@ private:
     ModelParameters M_params;
     ModelMaterials M_mat;
     BoundaryConditions M_bc;
-    BoundaryConditions M_ic; // Initial conditions
+    ModelInitialConditions M_ic;
     ModelBoundaryConditions M_bc2;
     ModelPostprocess M_postproc;
     ModelFunctions M_functions;
