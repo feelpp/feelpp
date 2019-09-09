@@ -4090,7 +4090,7 @@ public:
             //super::init( M_functionspace->nDof(),  M_functionspace->nLocalDof() );
         }
 
-        BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+        BOOST_PARAMETER_CONST_MEMBER_FUNCTION( ( void ),
                                          save,
                                          tag,
                                          ( required
@@ -4119,7 +4119,7 @@ public:
         //! @param suffix filename suffix to use
         //! @param sep separator to use in filenames
         //!
-        void saveImpl( std::string const& path, std::string const& name, std::string const& type = "binary", std::string const& suffix = "", std::string const & sep = "")
+        void saveImpl( std::string const& path, std::string const& name, std::string const& type = "binary", std::string const& suffix = "", std::string const & sep = "") const
         {
             if ( type != "binary" && type != "text" && type != "xml" &&  type != "hdf5" )
             {
