@@ -59,6 +59,24 @@ class FEELPP_EXPORT ModelPostprocessExports
     std::string M_format;
 };
 
+class FEELPP_EXPORT ModelPostprocessSave
+{
+  public :
+    ModelPostprocessSave() = default;
+    ModelPostprocessSave( ModelPostprocessSave const& ) = default;
+    ModelPostprocessSave( ModelPostprocessSave&& ) = default;
+    ModelPostprocessSave& operator=( ModelPostprocessSave const& ) = default;
+    ModelPostprocessSave& operator=( ModelPostprocessSave && ) = default;
+
+    std::set<std::string> const& fieldsNames() const { return M_fieldsNames; }
+    std::string const& fieldsFormat() const { return M_fieldsFormat; }
+
+    void setup( pt::ptree const& p );
+  private :
+    std::set<std::string> M_fieldsNames;
+    std::string M_fieldsFormat;
+};
+
 class FEELPP_EXPORT ModelPointPosition
 {
 public :
@@ -305,16 +323,19 @@ public:
     pt::ptree pTree( std::string const& name ) const;
     bool useModelName() const { return M_useModelName; }
     std::map<std::string,ModelPostprocessExports> allExports() const { return M_exports; }
+    std::map<std::string,ModelPostprocessSave> allSave() const { return M_save; }
     std::map<std::string,std::vector<ModelPostprocessPointPosition> > const& allMeasuresPoint() const { return M_measuresPoint; }
     std::map<std::string,std::vector<ModelPostprocessNorm> > const& allMeasuresNorm() const { return M_measuresNorm; }
     std::map<std::string,std::vector<ModelPostprocessStatistics> > const& allMeasuresStatistics() const { return M_measuresStatistics; }
     std::map<std::string,std::vector<ModelPostprocessCheckerMeasure> > const& allCheckersMeasure() const { return M_checkersMeasure; }
     bool hasExports( std::string const& name = "" ) const;
+    bool hasSave( std::string const& name = "" ) const;
     bool hasMeasuresPoint( std::string const& name = "" ) const;
     bool hasMeasuresNorm( std::string const& name = "" ) const;
     bool hasMeasuresStatistics( std::string const& name = "" ) const;
     bool hasCheckersMeasure( std::string const& name = "" ) const;
     ModelPostprocessExports const& exports( std::string const& name = "" ) const;
+    ModelPostprocessSave const& save( std::string const& name = "" ) const;
     std::vector<ModelPostprocessPointPosition> const& measuresPoint( std::string const& name = "" ) const;
     std::vector<ModelPostprocessNorm> const& measuresNorm( std::string const& name = "" ) const;
     std::vector<ModelPostprocessStatistics> const& measuresStatistics( std::string const& name = "" ) const;
@@ -342,11 +363,13 @@ private:
     pt::ptree M_p;
     bool M_useModelName;
     std::map<std::string,ModelPostprocessExports> M_exports;
+    std::map<std::string,ModelPostprocessSave> M_save;
     std::map<std::string,std::vector< ModelPostprocessPointPosition > > M_measuresPoint;
     std::map<std::string,std::vector< ModelPostprocessNorm > > M_measuresNorm;
     std::map<std::string,std::vector< ModelPostprocessStatistics > > M_measuresStatistics;
     std::map<std::string,std::vector< ModelPostprocessCheckerMeasure > > M_checkersMeasure;
     ModelPostprocessExports M_emptyExports;
+    ModelPostprocessSave M_emptySave;
     std::vector< ModelPostprocessPointPosition > M_emptyMeasuresPoint;
     std::vector< ModelPostprocessNorm > M_emptyMeasuresNorm;
     std::vector< ModelPostprocessStatistics > M_emptyMeasuresStatistics;
