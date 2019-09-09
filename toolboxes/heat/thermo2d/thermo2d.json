@@ -2,13 +2,6 @@
 {
     "Name": "Test heat toolbox",
     "ShortName":"TestHeat",
-    // "Parameters":
-    // {
-    //     "gravity":
-    //     {
-    //         "value":"-1"
-    //     }
-    // },
     "Materials":
     {
         "mymat1":
@@ -87,7 +80,7 @@
             {
                 "myic3":
                 {
-                    "filename":"$home/feel/toolboxes/heat/thermo2d/P1G1/np_1/heat.ts/temperature/temperature-199.h5",
+                    "filename":"$home/feel/toolboxes/heat/thermo2d/P1G1/np_24/heat.ts/temperature/temperature-199.h5",
                     "format":"hdf5"
                     //"directory":"$home/feel/toolboxes/heat/thermo2d/P1G1/np_1/heat.ts/temperature"
                 }
