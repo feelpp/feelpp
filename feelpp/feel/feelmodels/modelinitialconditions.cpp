@@ -101,7 +101,6 @@ ModelInitialConditions::setPTree( pt::ptree const& p )
     for( auto const& subPtree : p )
     {
         std::string name = subPtree.first;
-        std::cout << "p.first " << subPtree.first << std::endl;
         if ( this->find( name ) != this->end() )
         {
             this->operator[]( name ).setup( subPtree.second );
