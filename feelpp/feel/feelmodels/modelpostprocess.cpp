@@ -55,6 +55,24 @@ ModelPostprocessExports::setup( pt::ptree const& p )
 }
 
 void
+ModelPostprocessSave::setup( pt::ptree const& p )
+{
+    if ( auto fieldsPtree = p.get_child_optional("Fields") )
+    {
+        if (fieldsPtree->get_child_optional("names") )
+        {
+            for ( std::string const& fieldName : as_vector<std::string>(*fieldsPtree, "names"))
+            {
+                M_fieldsNames.insert( fieldName );
+            }
+        }
+        if ( auto formatOpt = fieldsPtree->get_optional<std::string>( "format" ) )
+            M_fieldsFormat = *formatOpt;
+    }
+}
+
+
+void
 ModelPostprocessPointPosition::setup( std::string const& name )
 {
 
@@ -314,6 +332,13 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
         if ( !ppexports.fields().empty() )
             M_exports[name] = ppexports;
     }
+    if ( auto save = p.get_child_optional("Save") )
+    {
+        ModelPostprocessSave ppsave;
+        ppsave.setup( *save );
+        if ( !ppsave.fieldsNames().empty() )
+            M_save[name] = ppsave;
+    }
 
     if ( auto measures = p.get_child_optional("Measures") )
     {
@@ -413,6 +438,12 @@ ModelPostprocess::hasExports( std::string const& name ) const
     return M_exports.find( nameUsed ) != M_exports.end();
 }
 bool
+ModelPostprocess::hasSave( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    return M_save.find( nameUsed ) != M_save.end();
+}
+bool
 ModelPostprocess::hasMeasuresPoint( std::string const& name ) const
 {
     std::string nameUsed = (M_useModelName)? name : "";
@@ -446,6 +477,16 @@ ModelPostprocess::exports( std::string const& name ) const
         return M_exports.find( nameUsed )->second;
     else
         return M_emptyExports;
+}
+ModelPostprocessSave const&
+ModelPostprocess::save( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    //CHECK( this->hasSave( nameUsed ) ) << "no save with name:"<<name;
+    if ( this->hasSave( nameUsed ) )
+        return M_save.find( nameUsed )->second;
+    else
+        return M_emptySave;
 }
 std::vector<ModelPostprocessPointPosition> const&
 ModelPostprocess::measuresPoint( std::string const& name ) const
