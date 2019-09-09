@@ -176,6 +176,7 @@ class Heat : public ModelNumerical,
         void initFunctionSpaces();
         void initBoundaryConditions();
         void initTimeStep();
+        void initInitialConditions();
         void initPostProcess();
 
         constexpr auto symbolsExprField( hana::int_<2> /**/ ) const

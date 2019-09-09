@@ -181,6 +181,7 @@ HEAT_CLASS_TEMPLATE_TYPE::nLocalDof() const
     return res;
 }
 
+
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
@@ -197,79 +198,11 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     this->initBoundaryConditions();
 
-    // load an initial solution from a math expr
-    auto icts = this->modelProperties().initialConditions().get("temperature");
-    if ( !icts.empty() )
-    {
-        CHECK( icts.size() == 1 ) << "TODO";
-        for( auto const& [time,icByType] : icts )
-        {
-            auto itFindIcFile = icByType.find( "File" );
-            if ( itFindIcFile != icByType.end() )
-            {
-                for ( auto const& ic : itFindIcFile->second )
-                {
-                    CHECK( ic.isFile() ) << "must be an ic file";
-                    CHECK( !ic.fileName().empty() || !ic.fileDirectory().empty() ) << "entry filename or directory is required";
-                    std::string fileName = ic.fileName();
-                    std::string fileType = ic.fileType();
-                    if ( fileType.empty() )
-                        fileType = "hdf5";
-                    std::string fileDirectory = ic.fileDirectory();
-                    if ( fileDirectory.empty() )
-                        this->fieldTemperaturePtr()->load(_path=fileName,_type=fileType);
-                    else
-                    {
-                        if ( fileName.empty() )
-                            fileName = this->fieldTemperaturePtr()->name();
-                        this->fieldTemperaturePtr()->load(_path=fileDirectory,_type=fileType,_name=fileName);
-                    }
-                }
-            }
-
-            auto itFindIcExpr = icByType.find( "Expression" );
-            if ( itFindIcExpr != icByType.end() )
-            {
-                for ( auto const& ic : itFindIcExpr->second )
-                {
-                    CHECK( ic.isExpression() ) << "must be an ic expression";
-                    if ( !ic.expression().template hasExpr<1,1>() )
-                        CHECK( false ) << "must be a scalar expression";
-                    auto theExpr = expr( ic.expression().template expr<1,1>(), this->symbolsExpr() );
-
-                    if ( ic.markers().empty() )
-                        this->fieldTemperaturePtr()->on(_range=M_rangeMeshElements,_expr=theExpr,_geomap=this->geomap());
-                    else
-                    {
-                        auto markersByEntity = detail::distributeMarkerListOnSubEntity(this->mesh(),ic.markers());
-                        auto const& listMarkerFaces = std::get<0>( markersByEntity );
-                        auto const& listMarkerEdges = std::get<1>( markersByEntity );
-                        auto const& listMarkerPoints = std::get<2>( markersByEntity );
-                        auto const& listMarkerElements = std::get<3>( markersByEntity );
-                        if ( !listMarkerElements.empty() )
-                            this->fieldTemperaturePtr()->on(_range=markedelements(this->mesh(),listMarkerElements),_expr=theExpr,_geomap=this->geomap());
-                        if ( !listMarkerFaces.empty() )
-                            this->fieldTemperaturePtr()->on(_range=markedfaces(this->mesh(),listMarkerFaces),_expr=theExpr,_geomap=this->geomap());
-                        if ( !listMarkerEdges.empty() )
-                            this->fieldTemperaturePtr()->on(_range=markededges(this->mesh(),listMarkerEdges),_expr=theExpr,_geomap=this->geomap());
-                        if ( !listMarkerPoints.empty() )
-                            this->fieldTemperaturePtr()->on(_range=markedpoints(this->mesh(),listMarkerPoints),_expr=theExpr,_geomap=this->geomap());
-                    }
-                }
-            }
-        }
-    }
-
-    if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
-    {
-        auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
-                            "",this->worldComm(),this->repository().expr() );
-        this->fieldTemperaturePtr()->on(_range=M_rangeMeshElements,_expr=myexpr);
-    }
-
     // start or restart time step scheme
     if ( !this->isStationary() )
         this->initTimeStep();
+
+    this->initInitialConditions();
 
     // stabilization gls
     if ( M_stabilizationGLS )
@@ -355,6 +288,31 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
 
     double tElapsed = this->timerTool("Constructor").stop("initTimeStep");
     this->log("Heat","initTimeStep", (boost::format("finish in %1% s") %tElapsed).str() );
+}
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::initInitialConditions()
+{
+    if ( !this->doRestart() )
+    {
+        std::vector<element_temperature_ptrtype> icTemperatureFields;
+        if ( this->isStationary() )
+            icTemperatureFields = { this->fieldTemperaturePtr() };
+        else
+            icTemperatureFields = M_bdfTemperature->unknowns();
+        this->updateInitialConditions( "temperature", M_rangeMeshElements, this->symbolsExpr(), icTemperatureFields );
+
+        if ( !this->isStationary() )
+            *this->fieldTemperaturePtr() = M_bdfTemperature->unknown(0);
+
+        if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
+        {
+            auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
+                                "",this->worldComm(),this->repository().expr() );
+            this->fieldTemperaturePtr()->on(_range=M_rangeMeshElements,_expr=myexpr);
+        }
+    }
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -776,7 +734,7 @@ HEAT_CLASS_TEMPLATE_TYPE::startTimeStep()
 
     // start time step
     if (!this->doRestart())
-        M_bdfTemperature->start(this->fieldTemperature());
+        M_bdfTemperature->start( M_bdfTemperature->unknowns() );
      // up current time
     this->updateTime( M_bdfTemperature->time() );
 

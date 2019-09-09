@@ -42,6 +42,7 @@
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelmodels/modelcore/modelmeasures.hpp>
 #include <feel/feelfit/fit.hpp>
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
 
 
 namespace Feel
@@ -166,6 +167,21 @@ class ModelNumerical : public ModelAlgebraic
                 return Feel::vf::symbolsExpr( symbolExpr( fitSymbs ) );
             }
 
+        template <typename ElementType, typename RangeType, typename SymbolsExpr>
+        void
+        updateInitialConditions( std::string const& fieldName,  RangeType const& defaultRange, SymbolsExpr const& symbolsExpr,
+                                 std::vector< std::shared_ptr<ElementType> > & dataToUpdate )
+            {
+                ModelNumerical::updateInitialConditions( this->modelProperties().initialConditions().get( fieldName ),
+                                                         defaultRange, symbolsExpr, this->geomap(), dataToUpdate );
+            }
+    private :
+        template <typename ElementType, typename RangeType, typename SymbolsExpr>
+        static
+        void
+        updateInitialConditions( ModelInitialConditionTimeSet const& icts, RangeType const& defaultRange, SymbolsExpr const& symbolsExpr,
+                                 GeomapStrategyType geomapStrategy, std::vector< std::shared_ptr<ElementType> > & dataToUpdate );
+
     private :
 
         bool M_isStationary;
@@ -195,6 +211,78 @@ class ModelNumerical : public ModelAlgebraic
         bool M_useChecker;
     };
 
+
+template <typename ElementType, typename RangeType, typename SymbolsExpr>
+void
+ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& icts, RangeType const& defaultRange, SymbolsExpr const& symbolsExpr,
+                                         GeomapStrategyType geomapStrategy, std::vector< std::shared_ptr<ElementType> > & dataToUpdate )
+{
+    if ( icts.empty() )
+        return;
+
+    CHECK( icts.size() == 1 ) << "TODO";
+    CHECK( !dataToUpdate.empty() ) << "require a non empty vector";
+    for( auto const& [time,icByType] : icts )
+    {
+        auto & u = *dataToUpdate[0];
+        auto itFindIcFile = icByType.find( "File" );
+        if ( itFindIcFile != icByType.end() )
+        {
+            for ( auto const& ic : itFindIcFile->second )
+            {
+                CHECK( ic.isFile() ) << "must be an ic file";
+                CHECK( !ic.fileName().empty() || !ic.fileDirectory().empty() ) << "entry filename or directory is required";
+                std::string fileName = ic.fileName();
+                std::string fileType = ic.fileType();
+                if ( fileType.empty() )
+                    fileType = "hdf5";
+                std::string fileDirectory = ic.fileDirectory();
+                if ( fileDirectory.empty() )
+                    u.load(_path=fileName,_type=fileType);
+                else
+                {
+                    if ( fileName.empty() )
+                        fileName = u.name();
+                    u.load(_path=fileDirectory,_type=fileType,_name=fileName);
+                }
+            }
+        }
+
+        auto itFindIcExpr = icByType.find( "Expression" );
+        if ( itFindIcExpr != icByType.end() )
+        {
+            for ( auto const& ic : itFindIcExpr->second )
+            {
+                CHECK( ic.isExpression() ) << "must be an ic expression";
+                if ( !ic.expression().template hasExpr<ElementType::nComponents1,ElementType::nComponents2>() )
+                    CHECK( false ) << "must be a scalar expression";
+                auto theExpr = expr( ic.expression().template expr<ElementType::nComponents1,ElementType::nComponents2>(), symbolsExpr );
+
+                if ( ic.markers().empty() )
+                    u.on(_range=defaultRange,_expr=theExpr,_geomap=geomapStrategy);
+                else
+                {
+                    auto markersByEntity = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(u.mesh(),ic.markers());
+                    auto const& listMarkerFaces = std::get<0>( markersByEntity );
+                    auto const& listMarkerEdges = std::get<1>( markersByEntity );
+                    auto const& listMarkerPoints = std::get<2>( markersByEntity );
+                    auto const& listMarkerElements = std::get<3>( markersByEntity );
+                    if ( !listMarkerElements.empty() )
+                        u.on(_range=markedelements(u.mesh(),listMarkerElements),_expr=theExpr,_geomap=geomapStrategy);
+                    if ( !listMarkerFaces.empty() )
+                        u.on(_range=markedfaces(u.mesh(),listMarkerFaces),_expr=theExpr,_geomap=geomapStrategy);
+                    if ( !listMarkerEdges.empty() )
+                        u.on(_range=markededges(u.mesh(),listMarkerEdges),_expr=theExpr,_geomap=geomapStrategy);
+                    if ( !listMarkerPoints.empty() )
+                        u.on(_range=markedpoints(u.mesh(),listMarkerPoints),_expr=theExpr,_geomap=geomapStrategy);
+                }
+            }
+        }
+    }
+
+    for (int k=1;k<dataToUpdate.size();++k)
+        *dataToUpdate[k] = *dataToUpdate[0];
+}
 
 } // namespace FeelModels
 } // namespace feel
