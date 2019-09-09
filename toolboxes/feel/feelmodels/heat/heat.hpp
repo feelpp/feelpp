@@ -319,6 +319,10 @@ class Heat : public ModelNumerical,
     private :
         void updateTimeStepCurrentResidual();
 
+        std::set<std::string> postProcessFieldSaved( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+        void postprocessSave( uint32_type index );
+        void postprocessSave( std::set<std::string> const& fields, std::string const& format, uint32_type index );
+
     protected :
 
         bool M_hasBuildFromMesh, M_isUpdatedForUse;
@@ -361,6 +365,7 @@ class Heat : public ModelNumerical,
 
         // post-process
         std::set<std::string> M_postProcessFieldExported;
+        std::set<std::string> M_postProcessFieldSaved;
         export_ptrtype M_exporter;
         bool M_doExportAll, M_doExportVelocityConvection;
         std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
@@ -388,6 +393,8 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr c
     this->exportFields( time );
 
     this->exportMeasures( time, symbolsExpr );
+
+    this->postprocessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration() );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
