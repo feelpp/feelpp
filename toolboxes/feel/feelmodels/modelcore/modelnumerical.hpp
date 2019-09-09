@@ -141,6 +141,8 @@ class ModelNumerical : public ModelAlgebraic
         void setExporterPath(std::string const& s)  { M_exporterPath=s; }
         std::string exporterPath() const { return M_exporterPath; }
 
+        fs::path const& postProcessSaveRepository() const { return M_postProcessSaveRepository; }
+
         ModelMeasuresIO const& postProcessMeasuresIO() const { return M_postProcessMeasuresIO; }
         ModelMeasuresIO & postProcessMeasuresIO() { return M_postProcessMeasuresIO; }
         ModelMeasuresEvaluatorContext const& postProcessMeasuresEvaluatorContext() const { return M_postProcessMeasuresEvaluatorContext; }
@@ -201,6 +203,7 @@ class ModelNumerical : public ModelAlgebraic
         std::string M_meshFile, M_geoFile;
 
         std::string M_exporterPath;
+        fs::path M_postProcessSaveRepository;
         ModelMeasuresIO M_postProcessMeasuresIO;
         ModelMeasuresEvaluatorContext M_postProcessMeasuresEvaluatorContext;
 
