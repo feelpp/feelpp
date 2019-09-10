@@ -74,6 +74,7 @@ public:
     ModelMaterials const& materials() const {  return M_mat; }
     BoundaryConditions const& boundaryConditions() const { return M_bc; }
     ModelInitialConditions const& initialConditions() const { return M_ic; }
+    FEELPP_DEPRECATED BoundaryConditions const& initialConditionsDeprecated() const { return M_icDeprecated; }
 
     ModelParameters & parameters()  {  return M_params; }
     ModelMaterials & materials() {  return M_mat; }
@@ -116,6 +117,7 @@ private:
     ModelMaterials M_mat;
     BoundaryConditions M_bc;
     ModelInitialConditions M_ic;
+    BoundaryConditions M_icDeprecated; // DEPRECATED
     ModelBoundaryConditions M_bc2;
     ModelPostprocess M_postproc;
     ModelFunctions M_functions;
