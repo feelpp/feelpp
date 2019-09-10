@@ -73,8 +73,8 @@ class LevelSetRedistanciation
         mesh_ptrtype const& mesh() const { return this->functionSpace()->mesh(); }
 
         // Redistanciation
-        virtual element_type run( element_type const& phi ) =0;
-        element_type operator()( element_type const& phi ) { return this->run( phi ); }
+        virtual element_type run( element_type const& phi ) const =0;
+        element_type operator()( element_type const& phi ) const { return this->run( phi ); }
 
     protected:
         std::string M_prefix;

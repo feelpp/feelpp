@@ -97,8 +97,8 @@ class LevelSetRedistanciationFM :
         fastmarching_ptrtype const& fastMarching() const { return M_fastMarching; }
 
         // Redistanciation
-        element_type run( element_type const& phi, range_elements_type const& rangeInitialElts );
-        element_type run( element_type const& phi );
+        element_type run( element_type const& phi, range_elements_type const& rangeInitialElts ) const;
+        element_type run( element_type const& phi ) const;
 
         // Parameters
         void loadParametersFromOptionsVm();
@@ -188,7 +188,7 @@ LevelSetRedistanciationFM<FunctionSpaceType>::loadParametersFromOptionsVm()
 
 template<typename FunctionSpaceType>
 typename LevelSetRedistanciationFM<FunctionSpaceType>::element_type 
-LevelSetRedistanciationFM<FunctionSpaceType>::run( element_type const& phi, range_elements_type const& rangeInitialElts )
+LevelSetRedistanciationFM<FunctionSpaceType>::run( element_type const& phi, range_elements_type const& rangeInitialElts ) const
 {
     if constexpr( UseRedistP1Space )
     {
@@ -229,7 +229,7 @@ LevelSetRedistanciationFM<FunctionSpaceType>::run( element_type const& phi, rang
 
 template<typename FunctionSpaceType>
 typename LevelSetRedistanciationFM<FunctionSpaceType>::element_type 
-LevelSetRedistanciationFM<FunctionSpaceType>::run( element_type const& phi )
+LevelSetRedistanciationFM<FunctionSpaceType>::run( element_type const& phi ) const
 {
     auto rangeInitialElements = levelsetInterfaceElements( phi );
     return this->run( phi, rangeInitialElements );
