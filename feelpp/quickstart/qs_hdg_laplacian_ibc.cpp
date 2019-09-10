@@ -36,7 +36,7 @@ makeOptions()
 {
     po::options_description hdgoptions( "HDG options" );
     hdgoptions.add_options()
-        ( "k", po::value<std::string>()->default_value( "-1" ), "diffusion coefficient" )
+        ( "k", po::value<std::string>()->default_value( "1" ), "diffusion coefficient" )
         ( "r_1", po::value<std::string>()->default_value( "1" ), "Robin lhs coefficient" )
         ( "r_2", po::value<std::string>()->default_value( "" ), "Robin rhs coefficient" )
         ( "pyexpr.filename", po::value<std::string>()->default_value( "${top_srcdir}/feelpp/quickstart/laplacian.py" ), "python filename to execute" )
@@ -53,6 +53,7 @@ makeOptions()
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
         ( "use-joule-law", po::value<bool>()->default_value( false ), "load electric field for joule law on rhs" )
         ( "sigma", po::value<double>()->default_value( 1 ), "electric conductivity for joule law" )
+        ( "use-joule-cg", po::value<bool>()->default_value(false ), "use cg potential for joule law")
         ( "use-strong-dirichlet", po::value<bool>()->default_value( false ), "use strong ")
         ;
     return hdgoptions;
@@ -63,7 +64,7 @@ AboutData
 makeAbout()
 {
     AboutData about( "qs_hdg_laplacian_ibc" ,
-                     "qs_hdg_laplacian_ibc" ,
+                     "qs_hdg_laplacian_ibc" , 
                      "0.1",
                      "Quickstart HDG Laplacian",
                      AboutData::License_GPL,
@@ -181,16 +182,28 @@ int hdg_laplacian()
 
     auto electricPotential = Wh->element();
     auto electricField = Vh->element();
+    auto currentDensity = Vh->element();
+    auto electricPotentialCG = cgXh->element();
+    auto jouleElt = Wh->element();
     if( boption( "use-joule-law") )
     {
-        electricField.load( _path="electricField.hdf5", _type="hdf5" );
-        electricPotential.load( _path="electricPotential.hdf5", _type="hdf5" );
+        if( boption( "use-joule-cg") )
+        {
+            electricPotentialCG.load( _path="electricPotentialCG.hdf5", _type="hdf5" );
+            electricPotential = Wh->element(idv(electricPotentialCG));
+            electricField = Vh->element(-trans(gradv(electricPotential)));
+        }
+        else
+        {
+            electricPotential.load( _path="electricPotential.hdf5", _type="hdf5" );
+            electricField.load( _path="electricField.hdf5", _type="hdf5" );
+        }
     }
     double sigma = doption("sigma");
     auto currentDensityExpr = sigma*idv(electricField);
-    auto currentDensity = Vh->element(currentDensityExpr);
+    currentDensity = Vh->element(currentDensityExpr);
     auto joule = inner(idv(currentDensity),idv(currentDensity))/sigma;
-    auto jouleElt = Wh->element(joule);
+    jouleElt = Wh->element(joule);
 
     if ( boption( "solvecg" ) == true )
     {
@@ -241,6 +254,7 @@ int hdg_laplacian()
 
         int status = checker(p_exact_str).runOnce( norms, rate::hp( mesh->hMax(), cgXh->fe()->order() ) );
 
+        u.save(_path="electricPotentialCG.hdf5", _type="hdf5");
     }
     auto u = Vh->element( "u" );
     auto v = Vh->element( "v" );
@@ -279,13 +293,13 @@ int hdg_laplacian()
     // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
     // How to identify Dirichlet/Neumann boundaries?
     rhs(1_c) += integrate(_range=elements(mesh),
-                          _expr=-f_exact*id(w));
+                          _expr=f_exact*id(w));
     if( boption("use-joule-law") )
         rhs(1_c) += integrate(_range=elements(mesh),
-                              _expr=-joule*id(w) );
+                              _expr=joule*id(w) );
 
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                          _expr=id(l)*cst(0.)/*un_exact*/ );
+                          _expr=id(l)*un_exact );
     if( !boption("use-strong-dirichlet") || boption("sc.condense"))
     {
         rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
@@ -310,6 +324,7 @@ int hdg_laplacian()
     //
     tic();
     a(0_c,0_c) += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
+
     toc("a(0,0)",FLAGS_v>0);
 
     tic();
@@ -339,26 +354,26 @@ int hdg_laplacian()
     // Second row a(1_c,:)
     //
     tic();
-    a(1_c,0_c) += integrate(_range=elements(mesh),_expr=-(id(w)*divt(u)));
+    a(1_c,0_c) += integrate(_range=elements(mesh),_expr=id(w)*divt(u));
     toc("a(1,0)",FLAGS_v>0);
 
     tic();
     a(1_c,1_c) += integrate(_range=internalfaces(mesh),
-                            _expr=-tau_constant *
+                            _expr=tau_constant *
                             ( leftfacet( idt(p))*leftface(id(w)) +
                               rightfacet( idt(p))*rightface(id(w) )));
     a(1_c,1_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=-(tau_constant * id(w)*idt(p)));
+                            _expr=tau_constant * id(w)*idt(p));
     toc("a(1,1)",FLAGS_v>0);
 
     tic();
     a(1_c,2_c) += integrate(_range=internalfaces(mesh),
-                            _expr=tau_constant * idt(phat) *
+                            _expr=-tau_constant * idt(phat) *
                             ( leftface( id(w) )+
                               rightface( id(w) )));
 
     a(1_c,2_c) += integrate(_range=complement_integral_bdy_boundary,
-                            _expr=tau_constant * idt(phat) * id(w) );
+                            _expr=-tau_constant * idt(phat) * id(w) );
     toc("a(1,2)",FLAGS_v>0);
 
     tic();
@@ -367,7 +382,7 @@ int hdg_laplacian()
         auto const& [ibc_space_index,ibc_marker] = ibc_data;
         if ( ibc_type == "Ibc" )
             a(1_c,3_c,0,ibc_space_index) += integrate( _range=markedfaces(mesh,ibc_marker),
-                                                       _expr=tau_constant*idt(mu)*id(w) );
+                                                       _expr=-tau_constant*idt(mu)*id(w) );
         
     }
     toc("a(1,3)", FLAGS_v>0);
@@ -460,9 +475,9 @@ int hdg_laplacian()
         toc("a(3,3)",FLAGS_v>0);
     }
     toc("matrices",true);
-        
-    
-    
+
+
+
     tic();
     auto U=ps.element();
     a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
@@ -527,6 +542,7 @@ int hdg_laplacian()
     if( boption("use-joule-law") )
     {
         e->add( "electric_potential", electricPotential );
+        e->add( "electric_potentialCG", electricPotentialCG );
         e->add( "joule_losses", jouleElt );
         e->add( "current_density", currentDensity );
         e->add( "electric_field", electricField );
@@ -612,9 +628,9 @@ int main( int argc, char** argv )
     // end::env[]
     if ( ioption( "order" ) == 1 )
         return !hdg_laplacian<FEELPP_DIM,1>();
-#if 0
     if ( ioption( "order" ) == 2 )
         return !hdg_laplacian<FEELPP_DIM,2>();
+#if 0
 
     if ( ioption( "order" ) == 3 )
         return !hdg_laplacian<FEELPP_DIM,3>();
