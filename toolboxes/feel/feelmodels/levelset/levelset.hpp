@@ -38,9 +38,8 @@
 
 #include <feel/feelmodels/levelset/levelsetspacemanager.hpp>
 #include <feel/feelmodels/levelset/levelsettoolmanager.hpp>
-#include <feel/feelmodels/levelset/reinitializer.hpp>
-#include <feel/feelmodels/levelset/reinitializer_fm.hpp>
-#include <feel/feelmodels/levelset/reinitializer_hj.hpp>
+#include <feel/feelmodels/levelset/levelsetredistanciation_fm.hpp>
+#include <feel/feelmodels/levelset/levelsetredistanciation_hj.hpp>
 #include <feel/feelmodels/levelset/levelsetparticleinjector.hpp>
 
 #include <feel/feelfilters/straightenmesh.hpp>
@@ -202,12 +201,12 @@ public:
 
     //--------------------------------------------------------------------//
     // Reinitialization
-    typedef Reinitializer<space_levelset_type> reinitializer_type;
-    typedef std::shared_ptr<reinitializer_type> reinitializer_ptrtype;
-    typedef ReinitializerFM<space_levelset_type> reinitializerFM_type;
-    typedef std::shared_ptr<reinitializerFM_type> reinitializerFM_ptrtype;
-    typedef ReinitializerHJ<space_levelset_type> reinitializerHJ_type;
-    typedef std::shared_ptr<reinitializerHJ_type> reinitializerHJ_ptrtype;
+    typedef LevelSetRedistanciation<space_levelset_type> redistanciation_type;
+    typedef std::shared_ptr<redistanciation_type> redistanciation_ptrtype;
+    typedef LevelSetRedistanciationFM<space_levelset_type> redistanciationFM_type;
+    typedef std::shared_ptr<redistanciationFM_type> redistanciationFM_ptrtype;
+    typedef LevelSetRedistanciationHJ<space_levelset_type> redistanciationHJ_type;
+    typedef std::shared_ptr<redistanciationHJ_type> redistanciationHJ_ptrtype;
 
     enum class FastMarchingInitializationMethod { 
         NONE=0, ILP_NODAL, ILP_L2, ILP_SMOOTH, HJ_EQ, IL_HJ_EQ
@@ -461,16 +460,15 @@ public:
 
     //--------------------------------------------------------------------//
     // Reinitialization
-    void reinitialize();
-    element_levelset_type redistantiate( element_levelset_type const& phi, LevelSetDistanceMethod method ) const;
+    void redistanciate();
+    element_levelset_type redistanciate( element_levelset_type const& phi, LevelSetDistanceMethod method ) const;
 
     void setFastMarchingInitializationMethod( FastMarchingInitializationMethod m );
     FastMarchingInitializationMethod fastMarchingInitializationMethod() { return M_fastMarchingInitializationMethod; }
-    void setUseMarkerDiracAsMarkerDoneFM( bool val = true ) { M_useMarkerDiracAsMarkerDoneFM  = val; }
 
-    reinitializer_ptrtype const& reinitializer() const { return M_reinitializer; }
-    reinitializerFM_ptrtype const& reinitializerFM( bool buildOnTheFly = true );
-    reinitializerHJ_ptrtype const& reinitializerHJ( bool buildOnTheFly = true );
+    redistanciation_ptrtype const& redistanciation() const { return M_redistanciation; }
+    redistanciationFM_ptrtype const& redistanciationFM( bool buildOnTheFly = true );
+    redistanciationHJ_ptrtype const& redistanciationHJ( bool buildOnTheFly = true );
 
     bool hasReinitialized() const { return M_hasReinitialized; }
 
@@ -725,15 +723,14 @@ private:
 
     //--------------------------------------------------------------------//
     // Reinitialization
-    reinitializer_ptrtype M_reinitializer;
-    reinitializerFM_ptrtype M_reinitializerFM;
-    reinitializerHJ_ptrtype M_reinitializerHJ;
-    bool M_reinitializerIsUpdatedForUse;
+    redistanciation_ptrtype M_redistanciation;
+    redistanciationFM_ptrtype M_redistanciationFM;
+    redistanciationHJ_ptrtype M_redistanciationHJ;
+    bool M_redistanciationIsUpdatedForUse;
 
     LevelSetDistanceMethod M_reinitMethod;
     FastMarchingInitializationMethod M_fastMarchingInitializationMethod;
     static const fastmarchinginitializationmethodidmap_type FastMarchingInitializationMethodIdMap;
-    bool M_useMarkerDiracAsMarkerDoneFM;
 
     bool M_reinitInitialValue;
 

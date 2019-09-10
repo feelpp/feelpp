@@ -76,7 +76,7 @@ runLevelsetApplication()
             if( reinit_every > 0 && iter%reinit_every == 0 )
             {
                 Feel::cout << "Reinitializing... ";
-                LS->reinitialize();
+                LS->redistanciate();
                 Feel::cout << "done\n";
             }
 
