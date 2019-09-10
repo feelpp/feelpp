@@ -10,7 +10,7 @@
     {
     },
 
-    "InitialConditions":
+    "InitialConditionsDeprecated":
     {
         "multifluid.levelset1":
         {
