@@ -11,6 +11,11 @@
             "exact": true
         }
     },
+    "{-1,-1}":{
+        "0": {
+            "exact": true
+        }
+    },
     "x:x":{
         "1": {
             "exact": true
