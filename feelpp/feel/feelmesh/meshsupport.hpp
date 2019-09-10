@@ -87,7 +87,7 @@ public :
     //!
     //! return the set of faces of marker type marker_t with marker flag 
     //!
-    range_faces_type const& rangeMarkedFaces( uint16_type marker_t, boost::any flag );
+    range_faces_type rangeMarkedFaces( uint16_type marker_t, boost::any flag );
 
     //!
     //! @return true if some markers in \p l are present in the mesh data structure, false otherwise
@@ -402,7 +402,7 @@ MeshSupport<MeshType>::rangeElements( EntityProcessType entity ) const
 }
 
 template<typename MeshType>
-typename MeshSupport<MeshType>::range_faces_type const&
+typename MeshSupport<MeshType>::range_faces_type 
 MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
 {
     std::set<flag_type> markerFlagSet = Feel::unwrap_ptr( M_mesh ).markersId( flag );
@@ -441,17 +441,26 @@ MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
     M_rangeMarkedFaces[m] = boost::make_tuple( mpl::size_t<MESH_FACES>(),myfaces->begin(),myfaces->end(),myfaces );
 
 #else
-    for ( auto const& eltWrap : this->faces() )
-    {
-        auto const& face = unwrap_ref( eltWrap );
-        if ( !face.hasMarker( marker_t ) )
-            continue;
-        if ( face.marker( marker_t ).isOff() )
-            continue;
-        if ( markerFlagSet.find( face.marker( marker_t ).value() ) == markerFlagSet.end() )
-            continue;
+    auto insertMarkedFace = [&myfaces, &marker_t,&markerFlagSet]( auto const& eltWrap)
+                             {
+                                 auto const& face = unwrap_ref( eltWrap );
+                                 if ( !face.hasMarker( marker_t ) )
+                                     return false;
+                                 if ( face.marker( marker_t ).isOff() )
+                                     return false;
+                                 if ( markerFlagSet.find( face.marker( marker_t ).value() ) == markerFlagSet.end() )
+                                     return false;
         
-        myfaces->push_back( boost::cref( face ) );
+                                 myfaces->push_back( boost::cref( face ) );
+                                 return true;
+                             };
+    for ( auto const& eltWrap : this->rangeBoundaryFaces() )
+    {
+        insertMarkedFace( eltWrap );
+    }
+    for ( auto const& eltWrap : this->rangeInternalFaces() )
+    {
+        insertMarkedFace( eltWrap );
     }
 #endif
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),myfaces->begin(),myfaces->end(),myfaces );
@@ -472,10 +481,16 @@ boundaryfaces( MeshSupportType const& imesh )
 {
     return imesh->rangeBoundaryFaces();
 }
+template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
+faces_reference_wrapper_t<support_mesh_t<MeshSupportType>> const&
+internalfaces( MeshSupportType const& imesh )
+{
+    return imesh->rangeInternalFaces();
+}
 
 
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
-faces_reference_wrapper_t<support_mesh_t<MeshSupportType>> const&
+faces_reference_wrapper_t<support_mesh_t<MeshSupportType>> 
 markedfaces( MeshSupportType const& imesh, boost::any flag )
 {
     return imesh->rangeMarkedFaces( 1, flag );
