@@ -41,6 +41,7 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     M_mat( world ),
     M_bc( world, false ),
     M_ic( world ),
+    M_icDeprecated( world, false ),
     M_bc2( world ),
     M_postproc( world ),
     M_outputs( world )
@@ -129,6 +130,15 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
         if ( !directoryLibExpr.empty() )
             M_ic.setDirectoryLibExpr( directoryLibExpr );
         M_ic.setPTree( *ic );
+    }
+
+    auto icDeprecated = M_p.get_child_optional("InitialConditionsDeprecated");
+    if ( icDeprecated )
+    {
+        LOG(INFO) << "Model with initial conditions\n";
+        if ( !directoryLibExpr.empty() )
+            M_icDeprecated.setDirectoryLibExpr( directoryLibExpr );
+        M_icDeprecated.setPTree( *icDeprecated );
     }
 
     auto mat = M_p.get_child_optional("Materials");
