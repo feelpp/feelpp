@@ -907,12 +907,8 @@ struct Condenser
                     extractBlock( F0K, K, FK, e1 );
                     FK.tail(N1) = F1K.at(K);
 
-#if 1
-                    auto Aldlt = AK.ldlt();
-                    ////LOG(INFO) << "Aldlt=" << Aldlt;
-#else
                     auto Aldlt = AK.lu();
-#endif
+
                     auto _AinvB = Aldlt.solve( BK );
                     auto _AinvF = Aldlt.solve( FK );
 
@@ -1090,12 +1086,8 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             extractBlock( F0K, K, FK, e1 );
             FK.tail(N1) = F1K.at(K);
 
-#if 1
-            auto Aldlt = AK.ldlt();
-            ////LOG(INFO) << "Aldlt=" << Aldlt;
-#else
             auto Aldlt = AK.lu();
-#endif
+
             auto AinvB = Aldlt.solve( BK );
             auto AinvF = Aldlt.solve( FK );
 
@@ -1319,13 +1311,8 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
                 cout<< "F2=" << F2 << std::endl;
             }
 
-
-#if 1
-            auto Aldlt = AK.ldlt();
-            ////LOG(INFO) << "Aldlt=" << Aldlt;
-#else
             auto Aldlt = AK.lu();
-#endif
+
             auto AinvB = Aldlt.solve( BK );
             auto AinvF = Aldlt.solve( FK );
 
@@ -1475,11 +1462,8 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             }
 
 
-#if 0
-            auto Aldlt = AK.ldlt();
-#else
             auto Aldlt = AK.lu();
-#endif
+
 #if 0
             local_vector_t pK(N4);
             pK=local_vector_t::Constant(N4,1);

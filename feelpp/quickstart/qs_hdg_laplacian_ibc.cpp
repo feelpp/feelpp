@@ -36,8 +36,10 @@ makeOptions()
 {
     po::options_description hdgoptions( "HDG options" );
     hdgoptions.add_options()
-        ( "k", po::value<std::string>()->default_value( "-1" ), "diffusion coefficient" )
-        ( "pyexpr.filename", po::value<std::string>()->default_value( "${top_srcdir}/quickstart/laplacian.py" ), "python filename to execute" )
+        ( "k", po::value<std::string>()->default_value( "1" ), "diffusion coefficient" )
+        ( "r_1", po::value<std::string>()->default_value( "1" ), "Robin lhs coefficient" )
+        ( "r_2", po::value<std::string>()->default_value( "" ), "Robin rhs coefficient" )
+        ( "pyexpr.filename", po::value<std::string>()->default_value( "${top_srcdir}/feelpp/quickstart/laplacian.py" ), "python filename to execute" )
         ( "solution.p", po::value<std::string>()->default_value( "1" ), "solution p exact" )
         ( "solution.sympy.p", po::value<std::string>()->default_value( "1" ), "solution p exact (if we use sympy)" )        
 #if (FEELPP_DIM==2)
@@ -49,6 +51,10 @@ makeOptions()
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( "solvecg", po::value<bool>()->default_value( false ), "solve corresponding problem with CG"  )
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
+        ( "use-joule-law", po::value<bool>()->default_value( false ), "load electric field for joule law on rhs" )
+        ( "sigma", po::value<double>()->default_value( 1 ), "electric conductivity for joule law" )
+        ( "use-joule-cg", po::value<bool>()->default_value(false ), "use cg potential for joule law")
+        ( "use-strong-dirichlet", po::value<bool>()->default_value( false ), "use strong ")
         ;
     return hdgoptions;
 }
@@ -58,7 +64,7 @@ AboutData
 makeAbout()
 {
     AboutData about( "qs_hdg_laplacian_ibc" ,
-                     "qs_hdg_laplacian_ibc" ,
+                     "qs_hdg_laplacian_ibc" , 
                      "0.1",
                      "Quickstart HDG Laplacian",
                      AboutData::License_GPL,
@@ -100,7 +106,7 @@ int hdg_laplacian()
     
 #if defined(FEELPP_HAS_SYMPY)
 
-    std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}};
+    std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals );
 
     for( auto d: locals )
@@ -112,6 +118,8 @@ int hdg_laplacian()
     auto u_exact = expr<Dim,1>( u_exact_str );
     auto un_exact = expr( locals.at("un") );
     auto f_exact = expr( locals.at("f") );
+    auto r_1 = expr( locals.at("r_1") );
+    auto r_2 = expr( locals.at("r_2") );
     std::map<std::string,double> ibc_exact_map;
     for( auto const& [ibc_type, ibc_data ] : ibcs )
         if ( ibc_data.second == "IbcOde" && ibc_type == "Ibc" )
@@ -161,6 +169,7 @@ int hdg_laplacian()
 
     cout << "#elts: " << mesh->numGlobalElements() << std::endl
          << "#faces: " << mesh->numGlobalFaces() << std::endl
+        
          << "#facesMh: " << face_mesh->numGlobalElements() << std::endl
          << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
          << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
@@ -171,6 +180,31 @@ int hdg_laplacian()
          << Vh->nDof() << " " << Wh->nDof() << " " << Mh->nDof() << " "
          << cgXh->nDof() << std::endl;
 
+    auto electricPotential = Wh->element();
+    auto electricField = Vh->element();
+    auto currentDensity = Vh->element();
+    auto electricPotentialCG = cgXh->element();
+    auto jouleElt = Wh->element();
+    if( boption( "use-joule-law") )
+    {
+        if( boption( "use-joule-cg") )
+        {
+            electricPotentialCG.load( _path="electricPotentialCG.hdf5", _type="hdf5" );
+            electricPotential = Wh->element(idv(electricPotentialCG));
+            electricField = Vh->element(-trans(gradv(electricPotential)));
+        }
+        else
+        {
+            electricPotential.load( _path="electricPotential.hdf5", _type="hdf5" );
+            electricField.load( _path="electricField.hdf5", _type="hdf5" );
+        }
+    }
+    double sigma = doption("sigma");
+    auto currentDensityExpr = sigma*idv(electricField);
+    currentDensity = Vh->element(currentDensityExpr);
+    auto joule = inner(idv(currentDensity),idv(currentDensity))/sigma;
+    jouleElt = Wh->element(joule);
+
     if ( boption( "solvecg" ) == true )
     {
         auto u = cgXh->element();
@@ -178,12 +212,20 @@ int hdg_laplacian()
         tic();
         auto l = form1( _test=cgXh );
         l = integrate( _range=elements(mesh), _expr=-f_exact*id(u) );
+        if( boption("use-joule-law") )
+            l+= integrate(_range=elements(mesh),
+                          _expr=joule*id(u) );
+
         l += integrate(_range=markedfaces(mesh,"Neumann"),
                        _expr=id(u)*un_exact );
+        l += integrate( _range=markedfaces(mesh, "Robin"),
+                        _expr=id(u)*r_2);
         toc("cg.assembly.l",FLAGS_v>0);
         tic();
         auto a = form2(_trial=cgXh, _test=cgXh );
         a = integrate( _range=elements(mesh), _expr=gradt(u)*trans(grad(u)) );
+        a += integrate( _range=markedfaces(mesh, "Robin"),
+                        _expr=id(u)*idt(u)*r_1);
         a += on(_range=markedfaces(mesh,"Dirichlet"),
                 _rhs=l,
                 _element=u,
@@ -196,19 +238,23 @@ int hdg_laplacian()
         auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
             {
                 tic();
+                double l2_p = normL2(_range=elements(mesh), _expr=expr(solution) );
                 double l2 = normL2(_range=elements(mesh), _expr=idv(u)-expr(solution) );
                 toc("L2 error norm");
                 tic();
+                double h1_p = normH1(_range=elements(mesh), _expr=expr(solution), _grad_expr=expr<1,Dim>(u_exact_str)  );
                 double h1 = normH1(_range=elements(mesh), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-grad<2>(expr(solution)) );
                 toc("H1 error norm");
                 tic();
+                double semih1_p = normL2(_range=elements(mesh), _expr=expr<1,Dim>(u_exact_str) );
                 double semih1 = normL2(_range=elements(mesh), _expr=gradv(u)-grad<2>(expr(solution)) );
                 toc("semi H1 error norm");
-                return { { "L2", l2 }, {  "H1", h1 }, {"semih1",semih1} };
+                return { { "L2", l2/l2_p }, {  "H1", h1/h1_p }, {"semih1",semih1/semih1_p} };
             };
 
         int status = checker(p_exact_str).runOnce( norms, rate::hp( mesh->hMax(), cgXh->fe()->order() ) );
 
+        u.save(_path="electricPotentialCG.hdf5", _type="hdf5");
     }
     auto u = Vh->element( "u" );
     auto v = Vh->element( "v" );
@@ -247,12 +293,20 @@ int hdg_laplacian()
     // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
     // How to identify Dirichlet/Neumann boundaries?
     rhs(1_c) += integrate(_range=elements(mesh),
-                          _expr=-f_exact*id(w));
+                          _expr=f_exact*id(w));
+    if( boption("use-joule-law") )
+        rhs(1_c) += integrate(_range=elements(mesh),
+                              _expr=joule*id(w) );
 
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                           _expr=id(l)*un_exact );
-    rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                          _expr=id(l)*p_exact);
+    if( !boption("use-strong-dirichlet") || boption("sc.condense"))
+    {
+        rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                              _expr=id(l)*p_exact);
+    }
+    rhs(2_c) += integrate( _range=markedfaces(mesh, "Robin"),
+                           _expr=id(l)*r_2);
     for( auto const& [ ibc_type, ibc_data ]  : ibcs )
     {
         auto const& [ibc_space_index,ibc_marker] = ibc_data;
@@ -270,6 +324,7 @@ int hdg_laplacian()
     //
     tic();
     a(0_c,0_c) += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
+
     toc("a(0,0)",FLAGS_v>0);
 
     tic();
@@ -299,26 +354,26 @@ int hdg_laplacian()
     // Second row a(1_c,:)
     //
     tic();
-    a(1_c,0_c) += integrate(_range=elements(mesh),_expr=-(id(w)*divt(u)));
+    a(1_c,0_c) += integrate(_range=elements(mesh),_expr=id(w)*divt(u));
     toc("a(1,0)",FLAGS_v>0);
 
     tic();
     a(1_c,1_c) += integrate(_range=internalfaces(mesh),
-                            _expr=-tau_constant *
+                            _expr=tau_constant *
                             ( leftfacet( idt(p))*leftface(id(w)) +
                               rightfacet( idt(p))*rightface(id(w) )));
     a(1_c,1_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=-(tau_constant * id(w)*idt(p)));
+                            _expr=tau_constant * id(w)*idt(p));
     toc("a(1,1)",FLAGS_v>0);
 
     tic();
     a(1_c,2_c) += integrate(_range=internalfaces(mesh),
-                            _expr=tau_constant * idt(phat) *
+                            _expr=-tau_constant * idt(phat) *
                             ( leftface( id(w) )+
                               rightface( id(w) )));
 
     a(1_c,2_c) += integrate(_range=complement_integral_bdy_boundary,
-                            _expr=tau_constant * idt(phat) * id(w) );
+                            _expr=-tau_constant * idt(phat) * id(w) );
     toc("a(1,2)",FLAGS_v>0);
 
     tic();
@@ -327,7 +382,7 @@ int hdg_laplacian()
         auto const& [ibc_space_index,ibc_marker] = ibc_data;
         if ( ibc_type == "Ibc" )
             a(1_c,3_c,0,ibc_space_index) += integrate( _range=markedfaces(mesh,ibc_marker),
-                                                       _expr=tau_constant*idt(mu)*id(w) );
+                                                       _expr=-tau_constant*idt(mu)*id(w) );
         
     }
     toc("a(1,3)", FLAGS_v>0);
@@ -362,9 +417,30 @@ int hdg_laplacian()
                             _expr=-(1-0.5*boption("sc.condense"))*tau_constant * idt(phat) * id(l) );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                             _expr=-tau_constant * idt(phat) * id(l)  );
-    a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                            _expr=idt(phat) * id(l) );
+    if( !boption("use-strong-dirichlet") || boption("sc.condense"))
+    {
+        a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                                _expr=idt(phat) * id(l) );
+    }
+    // Robin
+    a( 2_c, 0_c ) += integrate(_range=markedfaces(mesh,"Robin"),
+                               _expr=id(l)*normalt(u) );
+    a( 2_c, 1_c ) += integrate(_range=markedfaces(mesh,"Robin"),
+                               _expr=tau_constant * id(l) * idt(p)  );
+    a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
+                               _expr=-tau_constant * idt(phat) * id(l) );
+    a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
+                                 _expr=r_1*idt(phat) * id(l) );
     toc("a(2,2)",FLAGS_v>0);
+
+    if( boption("use-strong-dirichlet") && !boption("sc.condense"))
+    {
+        a(2_c,2_c).close();
+        a(2_c,2_c) += on( _range=markedelements(face_mesh, "Dirichlet"),
+                          _expr=p_exact,
+                          _rhs=rhs(2_c),
+                          _element=l );
+    }
 
     //
     // Fourth row a(3_c,:)
@@ -399,9 +475,9 @@ int hdg_laplacian()
         toc("a(3,3)",FLAGS_v>0);
     }
     toc("matrices",true);
-        
-    
-    
+
+
+
     tic();
     auto U=ps.element();
     a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
@@ -411,6 +487,12 @@ int hdg_laplacian()
     // ****** Compute error ******
     auto up = U(0_c);
     auto pp = U(1_c);
+
+    if( !boption("use-joule-law") )
+    {
+        up.save( _path="electricField.hdf5", _type="hdf5" );
+        pp.save( _path="electricPotential.hdf5", _type="hdf5" );
+    }
 
     tic();
     tic();
@@ -446,8 +528,6 @@ int hdg_laplacian()
     toc("postprocessing.solve",FLAGS_v>0);
     toc("postprocessing",true);
 
-    
-
     tic();
     v.on( _range=elements(mesh), _expr=u_exact );
     q.on( _range=elements(mesh), _expr=p_exact );
@@ -459,6 +539,14 @@ int hdg_laplacian()
     e->add( "potentialpp", PP(0_c) );
     e->add( "flux.exact", v );
     e->add( "potential.exact", q );
+    if( boption("use-joule-law") )
+    {
+        e->add( "electric_potential", electricPotential );
+        e->add( "electric_potentialCG", electricPotentialCG );
+        e->add( "joule_losses", jouleElt );
+        e->add( "current_density", currentDensity );
+        e->add( "electric_field", electricField );
+    }
     e->save();
     toc("export");
 
@@ -472,17 +560,20 @@ int hdg_laplacian()
     auto norms_u = [=]( std::string const& solution ) ->std::map<std::string,double>
         {
             tic();
+            auto l2_u = normL2( _range=elements(mesh), _expr=u_exact );
             auto l2err_u = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
             toc("L2 error norm u");
-            return { { "L2", l2err_u }};
+            return { { "L2", l2err_u/l2_u }};
         };
 
     auto norms_p = [=]( std::string const& solution ) ->std::map<std::string,double>
         {
             tic();
+            double l2_p = 1;
             double l2err_p = 1e+30;
             if ( has_dirichlet )
             {
+                l2_p = normL2( _range=elements(mesh), _expr=expr(solution) );
                 l2err_p = normL2( _range=elements(mesh), _expr=expr(solution) - idv(pp) );
             }
             else
@@ -491,17 +582,19 @@ int hdg_laplacian()
                 auto mean_p = mean( elements(mesh), idv(pp) )(0,0);
                 l2err_p = normL2( elements(mesh),
                                   (expr(solution) - cst(mean_p_exact)) - (idv(pp) - cst(mean_p)) );
+                l2_p = normL2( _range=elements(mesh), _expr=expr(solution)- cst(mean_p_exact) );
             }
             toc("L2 error norm p");
-            return { { "L2", l2err_p }};
+            return { { "L2", l2err_p/l2_p }};
         };
     auto norms_ppp = [=]( std::string const& solution ) ->std::map<std::string,double>
         {
             tic();
+            double l2_p = normL2( elements(mesh), expr(solution) );
             double l2err_p = 1e+30;
             l2err_p = normL2( elements(mesh), expr(solution) - idv(ppp) );
             toc("L2 error norm ppp");
-            return { { "L2", l2err_p }};
+            return { { "L2", l2err_p/l2_p }};
         };
 #if 0
     int status = checker().runOnce( {norms_p,norms_u},

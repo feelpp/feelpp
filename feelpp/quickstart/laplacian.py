@@ -3,7 +3,7 @@ from sympy2ginac import *
 if 'k' in locals():
     k=sympify(locals()['k']);
 else:
-    k=sympify(-1)
+    k=sympify(1)
 print("k=",k);
 if 'r_1' in locals():
     r_1=sympify(locals()['r_1']);
