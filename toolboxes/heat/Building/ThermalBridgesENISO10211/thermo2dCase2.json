@@ -59,6 +59,14 @@
         {
             "fields":["temperature"]
         },
+        "Save":
+        {
+            "Fields":
+            {
+                "names":["temperature"]
+                //"format":"hdf5"
+            }
+        },
         "Measures":
         {
             "Normal-Heat-Flux":"bottom",
