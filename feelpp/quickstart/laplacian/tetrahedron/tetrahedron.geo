@@ -34,8 +34,8 @@ Physical Surface("Dirichlet") = {1,2};
 Physical Surface("Neumann") = {3};
 Physical Surface("Robin") = {4};
 //+                                                                                                                                                           
-Volume(0) = {1};                                                                                                                                              
-Physical Volume("Tetrahedron") = {0};    
+Volume(1) = {1};                                                                                                                                              
+Physical Volume("Tetrahedron") = {1};    
 
 
 
