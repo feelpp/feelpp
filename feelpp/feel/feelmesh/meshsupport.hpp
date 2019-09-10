@@ -350,7 +350,6 @@ private :
     mutable range_faces_type M_rangeInterProcessFaces;
     mutable range_faces_type M_rangeBoundaryFaces;
     mutable range_faces_type M_rangeInternalFaces;
-    std::unordered_map<flag_type,range_faces_type> M_rangeMarkedFaces;
     mutable std::unordered_set<size_type> M_rangeMeshElementsIdsPartialSupport;
     mutable std::unordered_set<size_type> M_rangeMeshElementsGhostIdsPartialSupport;
 
@@ -409,38 +408,10 @@ MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
     flag_type m = *markerFlagSet.begin();
     if ( M_isFullSupport )
     {
-        M_rangeMarkedFaces[m] = markedfacesByType( M_mesh, marker_t, flag );
-        return M_rangeMarkedFaces.at(m);
+        return markedfacesByType( M_mesh, marker_t, flag );
     }
         
-    
-    if ( M_rangeMarkedFaces.count( m ) )
-        return M_rangeMarkedFaces.at( m );
     typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype myfaces( new typename MeshTraits<mesh_type>::faces_reference_wrapper_type );
-#if 0
-    for ( auto const& eltWrap : this->rangeElements() )
-    {
-        auto const& elt = unwrap_ref( eltWrap );
-        for ( uint16_type i = 0; i < mesh_type::element_type::numTopologicalFaces; ++i )
-        {
-            if ( !elt.facePtr(i) )
-                continue;
-            const face_type* facePtr = elt.facePtr(i);
-            size_type faceId = facePtr->id();
-            auto const& face = elt.face(i);
-            if ( !face.hasMarker( marker_t ) )
-                continue;
-            if ( face.marker( marker_t ).isOff() )
-                continue;
-            if ( markerFlagSet.find( face.marker( marker_t ).value() ) == markerFlagSet.end() )
-                continue;
-            
-            myfaces->push_back( boost::cref( face ) );
-        }
-    }
-    M_rangeMarkedFaces[m] = boost::make_tuple( mpl::size_t<MESH_FACES>(),myfaces->begin(),myfaces->end(),myfaces );
-
-#else
     auto insertMarkedFace = [&myfaces, &marker_t,&markerFlagSet]( auto const& eltWrap)
                              {
                                  auto const& face = unwrap_ref( eltWrap );
@@ -462,7 +433,6 @@ MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
     {
         insertMarkedFace( eltWrap );
     }
-#endif
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),myfaces->begin(),myfaces->end(),myfaces );
 }
 
