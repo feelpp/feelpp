@@ -1,7 +1,6 @@
 #include <feel/feelmodels/levelset/levelset.hpp>
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
-#include <feel/feelmodels/levelset/reinitializer_hj.hpp>
 
 #include <feel/feelmodels/levelset/cauchygreentensorexpr.hpp>
 #include <feel/feelmodels/levelset/cauchygreeninvariantsexpr.hpp>
@@ -99,7 +98,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateCauchyGreenInvariant1(true),
     M_doUpdateCauchyGreenInvariant2(true),
     //M_periodicity(periodicityLS),
-    M_reinitializerIsUpdatedForUse(false),
+    M_redistanciationIsUpdatedForUse(false),
     M_hasReinitialized(false),
     M_iterSinceReinit(0)
 {
@@ -282,7 +281,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
                 _expr=idv(phi_init) / idv(modGradPhiInit)
                 );
             // Reinitialize phi_init
-            *phi_init = this->reinitializerFM()->run( *phi_init );
+            *phi_init = this->redistanciationFM()->run( *phi_init );
         }
         // Add shapes
         for( auto const& shape: M_icShapes )
@@ -575,18 +574,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
         break;
         case LevelSetDistanceMethod::FASTMARCHING :
         {
-            if( !M_reinitializer )
-                M_reinitializer = this->reinitializerFM();
-
-            std::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
-                    M_useMarkerDiracAsMarkerDoneFM 
-                    );
+            if( !M_redistanciation )
+                M_redistanciation = this->redistanciationFM();
         }
         break;
         case LevelSetDistanceMethod::HAMILTONJACOBI :
         {
-            if( !M_reinitializer )
-                M_reinitializer = this->reinitializerHJ();
+            if( !M_redistanciation )
+                M_redistanciation = this->redistanciationHJ();
             
             double thickness_heaviside;
             if( Environment::vm( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj")).defaulted() )
@@ -597,7 +592,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
             {
                 thickness_heaviside =  doption( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj") );
             }
-            std::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( thickness_heaviside );
+            std::dynamic_pointer_cast<redistanciationHJ_type>(M_redistanciation)->setThicknessHeaviside( thickness_heaviside );
         }
         break;
         case LevelSetDistanceMethod::RENORMALISATION :
@@ -605,7 +600,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
         break;
     }
 
-    M_reinitializerIsUpdatedForUse = true;
+    M_redistanciationIsUpdatedForUse = true;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -849,7 +844,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::setFastMarchingInitializationMethod( FastMarchingInitializationMethod m )
 {
-    if (M_reinitializerIsUpdatedForUse)
+    if (M_redistanciationIsUpdatedForUse)
         LOG(INFO)<<" !!!  WARNING !!! : fastMarchingInitializationMethod set after the fast marching has been actually initialized ! \n";
     M_fastMarchingInitializationMethod = m;
 }
@@ -862,14 +857,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_useHeavisideDiracNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
 
     std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );
-    CHECK( LevelSetDistanceMethodIdMap.count( reinitmethod ) ) << reinitmethod << " is not in the list of possible redistantiation methods\n";
+    CHECK( LevelSetDistanceMethodIdMap.count( reinitmethod ) ) << reinitmethod << " is not in the list of possible redistanciation methods\n";
     M_reinitMethod = LevelSetDistanceMethodIdMap.at( reinitmethod );
 
     std::string distancemethod = soption( _name="distance-method", _prefix=this->prefix() );
-    CHECK( LevelSetDistanceMethodIdMap.count( distancemethod ) ) << distancemethod << " is not in the list of possible redistantiation methods\n";
+    CHECK( LevelSetDistanceMethodIdMap.count( distancemethod ) ) << distancemethod << " is not in the list of possible redistanciation methods\n";
     M_distanceMethod = LevelSetDistanceMethodIdMap.at( distancemethod );
-
-    M_useMarkerDiracAsMarkerDoneFM = boption( _name="use-marker2-as-done", _prefix=prefixvm(this->prefix(), "reinit-fm") );
 
     const std::string fm_init_method = soption( _name="fm-initialization-method", _prefix=this->prefix() );
     CHECK(FastMarchingInitializationMethodIdMap.left.count(fm_init_method)) << fm_init_method <<" is not in the list of possible fast-marching initialization methods\n";
@@ -1389,7 +1382,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDistance()
     this->log("LevelSet", "updateDistance", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    *M_distance = this->redistantiate( *this->phi(), M_distanceMethod );
+    *M_distance = this->redistanciate( *this->phi(), M_distanceMethod );
 
     M_doUpdateDistance = false;
 
@@ -1946,9 +1939,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToBoundary()
             );
     phi0.on( _range=boundaryfaces(this->mesh()), _expr=cst(0.) );
 
-    // Run FM using marker2 as marker DONE
-    this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
-    *distToBoundary = this->reinitializerFM()->run( phi0, boundaryelts );
+    // Run FM
+    *distToBoundary = this->redistanciationFM()->run( phi0, boundaryelts );
 
     return distToBoundary;
 }
@@ -1987,7 +1979,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
     phi0.on( _range=mfaces, _expr=cst(0.) );
 
     // Run FM using marker2 as marker DONE
-    *distToMarkedFaces = this->reinitializerFM()->run( phi0, myrange );
+    *distToMarkedFaces = this->redistanciationFM()->run( phi0, myrange );
 
     return distToMarkedFaces;
 }
@@ -2027,7 +2019,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
     phi0.on( _range=mfaces, _expr=cst(0.) );
 
     // Run FM using marker2 as marker DONE
-    *distToMarkedFaces = this->reinitializerFM()->run( phi0, myrange );
+    *distToMarkedFaces = this->redistanciationFM()->run( phi0, myrange );
 
     return distToMarkedFaces;
 }
@@ -2484,19 +2476,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::modGrad( element_levelset_type const& phi, Derivat
 // Reinitialization
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
+LEVELSET_CLASS_TEMPLATE_TYPE::redistanciate()
 { 
-    this->log("LevelSet", "reinitialize", "start");
-    this->timerTool("Reinit").start();
+    this->log("LevelSet", "redistanciate", "start");
+    this->timerTool("Redist").start();
 
     auto phi = this->phi();
 
-    if ( M_useMarkerDiracAsMarkerDoneFM )
-    {
-        this->mesh()->updateMarker2( *this->markerDirac() );
-    }
-
-    *phi = this->redistantiate( *phi, M_reinitMethod );
+    *phi = this->redistanciate( *phi, M_reinitMethod );
 
     if( M_useGradientAugmented && M_reinitGradientAugmented )
     {
@@ -2516,13 +2503,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
     M_hasReinitialized = true;
 
-    double timeElapsed = this->timerTool("Reinit").stop();
-    this->log("LevelSet","reinitialize","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    double timeElapsed = this->timerTool("Redist").stop();
+    this->log("LevelSet","redistanciate","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_type
-LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, LevelSetDistanceMethod method ) const
+LEVELSET_CLASS_TEMPLATE_TYPE::redistanciate( element_levelset_type const& phi, LevelSetDistanceMethod method ) const
 { 
     auto phiReinit = this->functionSpace()->elementPtr();
 
@@ -2588,14 +2575,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
             } // switch M_fastMarchingInitializationMethod
 
             LOG(INFO)<< "reinit with FMM done"<<std::endl;
-            *phiReinit = M_reinitializer->run( *phiReinit );
+            *phiReinit = M_redistanciation->run( *phiReinit );
         } // Fast Marching
         break;
 
         case LevelSetDistanceMethod::HAMILTONJACOBI:
         {
             // TODO
-            *phiReinit = M_reinitializer->run( phi );
+            *phiReinit = M_redistanciation->run( phi );
         } // Hamilton-Jacobi
         break;
 
@@ -2616,31 +2603,33 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerFM_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerFM( bool buildOnTheFly )
+typename LEVELSET_CLASS_TEMPLATE_TYPE::redistanciationFM_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::redistanciationFM( bool buildOnTheFly )
 {
-    if( !M_reinitializerFM && buildOnTheFly )
+    if( !M_redistanciationFM && buildOnTheFly )
     {
-        M_reinitializerFM.reset( 
-                new ReinitializerFM<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-fm") ) 
+        M_redistanciationFM.reset( 
+                new LevelSetRedistanciationFM<space_levelset_type>( 
+                    this->functionSpace(), prefixvm(this->prefix(), "reinit-fm") 
+                    ) 
                 );
     }
 
-    return M_reinitializerFM;
+    return M_redistanciationFM;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerHJ_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerHJ( bool buildOnTheFly )
+typename LEVELSET_CLASS_TEMPLATE_TYPE::redistanciationHJ_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::redistanciationHJ( bool buildOnTheFly )
 {
-    if( !M_reinitializerHJ && buildOnTheFly )
+    if( !M_redistanciationHJ && buildOnTheFly )
     {
-        M_reinitializerHJ.reset( 
-                new ReinitializerHJ<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-hj") ) 
+        M_redistanciationHJ.reset( 
+                new LevelSetRedistanciationHJ<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-hj") ) 
                 );
     }
 
-    return M_reinitializerHJ;
+    return M_redistanciationHJ;
 }
 
 //----------------------------------------------------------------------------//
@@ -2654,7 +2643,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_ptrtype const& ph
     if (doReinitialize)
     {
         auto phiRedist = phiv->functionSpace()->elementPtr();
-        *phiRedist = this->redistantiate( *phiv, M_reinitMethod );
+        *phiRedist = this->redistanciate( *phiv, M_reinitMethod );
         this->M_advectionToolbox->setInitialValue( phiRedist );
     }
     else
@@ -2756,7 +2745,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- use stretch augmented               : " << std::boolalpha << this->M_useStretchAugmented
 
            << "\n   Reinitialization Parameters"
-           << "\n     -- reinitialization method         : " << reinitMethod;
+           << "\n     -- redistanciation method          : " << reinitMethod;
     if( this->M_useGradientAugmented )
     *_ostr << "\n     -- reinitialize gradient augmented : " << std::boolalpha << this->M_reinitGradientAugmented;
     if( this->M_useGradientAugmented )
