@@ -417,6 +417,7 @@ MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
     if ( M_rangeMarkedFaces.count( m ) )
         return M_rangeMarkedFaces.at( m );
     typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype myfaces( new typename MeshTraits<mesh_type>::faces_reference_wrapper_type );
+#if 0
     for ( auto const& eltWrap : this->rangeElements() )
     {
         auto const& elt = unwrap_ref( eltWrap );
@@ -438,7 +439,22 @@ MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
         }
     }
     M_rangeMarkedFaces[m] = boost::make_tuple( mpl::size_t<MESH_FACES>(),myfaces->begin(),myfaces->end(),myfaces );
-    return M_rangeMarkedFaces.at( m );
+
+#else
+    for ( auto const& eltWrap : this->faces() )
+    {
+        auto const& face = unwrap_ref( eltWrap );
+        if ( !face.hasMarker( marker_t ) )
+            continue;
+        if ( face.marker( marker_t ).isOff() )
+            continue;
+        if ( markerFlagSet.find( face.marker( marker_t ).value() ) == markerFlagSet.end() )
+            continue;
+        
+        myfaces->push_back( boost::cref( face ) );
+    }
+#endif
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(),myfaces->begin(),myfaces->end(),myfaces );
 }
 
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
