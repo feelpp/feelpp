@@ -97,7 +97,7 @@ class FEELPP_EXPORT ModelInitialConditions : public CommObject, public std::map<
 {
     using super = CommObject;
   public :
-    ModelInitialConditions(  worldcomm_ptr_t const& world = Environment::worldCommPtr() )
+    explicit ModelInitialConditions( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
         super( world )
     {}
