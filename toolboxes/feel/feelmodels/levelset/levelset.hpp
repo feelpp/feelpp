@@ -65,7 +65,7 @@ namespace FeelModels {
 // time discretization of the advection equation
 enum LevelSetTimeDiscretization {BDF2, /*CN,*/ EU, CN_CONSERVATIVE};
 
-/* Levelset reinitialization strategy
+/* Levelset redistanciation strategy
  * FM -> Fast-Marching
  * HJ -> Hamilton-Jacobi
  */
@@ -200,7 +200,7 @@ public:
     typedef std::shared_ptr<projector_tensor2symm_type> projector_tensor2symm_ptrtype;
 
     //--------------------------------------------------------------------//
-    // Reinitialization
+    // Redistanciation
     typedef LevelSetRedistanciation<space_levelset_type> redistanciation_type;
     typedef std::shared_ptr<redistanciation_type> redistanciation_ptrtype;
     typedef LevelSetRedistanciationFM<space_levelset_type> redistanciationFM_type;
@@ -377,7 +377,7 @@ public:
     double thicknessInterface() const { return M_thicknessInterface; }
     void setThicknessInterface( double value ) { M_thicknessInterface = value; }
 
-    int iterSinceReinit() const { return M_iterSinceReinit; }
+    int iterSinceRedistanciation() const { return M_iterSinceRedistanciation; }
 
     //--------------------------------------------------------------------//
     // Interface quantities helpers
@@ -459,18 +459,17 @@ public:
     void updateTimeStep();
 
     //--------------------------------------------------------------------//
-    // Reinitialization
+    // Redistanciation
     void redistanciate();
     element_levelset_type redistanciate( element_levelset_type const& phi, LevelSetDistanceMethod method ) const;
 
     void setFastMarchingInitializationMethod( FastMarchingInitializationMethod m );
     FastMarchingInitializationMethod fastMarchingInitializationMethod() { return M_fastMarchingInitializationMethod; }
 
-    redistanciation_ptrtype const& redistanciation() const { return M_redistanciation; }
-    redistanciationFM_ptrtype const& redistanciationFM( bool buildOnTheFly = true );
-    redistanciationHJ_ptrtype const& redistanciationHJ( bool buildOnTheFly = true );
+    redistanciationFM_ptrtype const& redistanciationFM( bool buildOnTheFly = true ) const;
+    redistanciationHJ_ptrtype const& redistanciationHJ( bool buildOnTheFly = true ) const;
 
-    bool hasReinitialized() const { return M_hasReinitialized; }
+    bool hasRedistanciated() const { return M_hasRedistanciated; }
 
     //--------------------------------------------------------------------//
     // Extension velocity
@@ -479,25 +478,25 @@ public:
 
     //--------------------------------------------------------------------//
     // Initial value
-    void setInitialValue(element_levelset_ptrtype const& phiv, bool doReinitialize);
+    void setInitialValue(element_levelset_ptrtype const& phiv, bool doRedistanciate);
     void setInitialValue(element_levelset_ptrtype const& phiv)
     {
-        this->setInitialValue(phiv, M_reinitInitialValue);
+        this->setInitialValue(phiv, M_redistInitialValue);
     }
     template<typename ExprT>
-    void setInitialValue(vf::Expr<ExprT> const& expr, bool doReinitialize)
+    void setInitialValue(vf::Expr<ExprT> const& expr, bool doRedistanciate)
     {
         auto phi_init = this->functionSpace()->elementPtr();
         phi_init->on( 
                 _range=this->rangeMeshElements(),
                 _expr=expr
                 );
-        this->setInitialValue( phi_init, doReinitialize );
+        this->setInitialValue( phi_init, doRedistanciate );
     }
     template<typename ExprT>
     void setInitialValue(vf::Expr<ExprT> const& expr)
     {
-        this->setInitialValue(expr, M_reinitInitialValue );
+        this->setInitialValue(expr, M_redistInitialValue );
     }
 
     //--------------------------------------------------------------------//
@@ -552,7 +551,9 @@ private:
 
     void createFunctionSpaces();
     void createInterfaceQuantities();
-    void createReinitialization();
+    void createRedistanciation();
+    void createRedistanciationFM();
+    void createRedistanciationHJ();
     void createTools();
     void createExporters();
 
@@ -722,22 +723,21 @@ private:
     LevelSetDistanceMethod M_distanceMethod;
 
     //--------------------------------------------------------------------//
-    // Reinitialization
-    redistanciation_ptrtype M_redistanciation;
+    // Redistanciation
     redistanciationFM_ptrtype M_redistanciationFM;
     redistanciationHJ_ptrtype M_redistanciationHJ;
     bool M_redistanciationIsUpdatedForUse;
 
-    LevelSetDistanceMethod M_reinitMethod;
+    LevelSetDistanceMethod M_redistanciationMethod;
     FastMarchingInitializationMethod M_fastMarchingInitializationMethod;
     static const fastmarchinginitializationmethodidmap_type FastMarchingInitializationMethodIdMap;
 
-    bool M_reinitInitialValue;
+    bool M_redistInitialValue;
 
-    bool M_hasReinitialized;
-    int M_iterSinceReinit;
-    // Vector that stores the iterSinceReinit of each time-step
-    std::vector<int> M_vecIterSinceReinit;
+    bool M_hasRedistanciated;
+    int M_iterSinceRedistanciation;
+    // Vector that stores the iterSinceRedistanciation of each time-step
+    std::vector<int> M_vecIterSinceRedistanciation;
 
     //--------------------------------------------------------------------//
     // Extension velocity
