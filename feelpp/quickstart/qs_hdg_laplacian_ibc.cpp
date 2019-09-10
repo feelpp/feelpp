@@ -51,9 +51,6 @@ makeOptions()
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( "solvecg", po::value<bool>()->default_value( false ), "solve corresponding problem with CG"  )
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
-        ( "use-joule-law", po::value<bool>()->default_value( false ), "load electric field for joule law on rhs" )
-        ( "sigma", po::value<double>()->default_value( 1 ), "electric conductivity for joule law" )
-        ( "use-joule-cg", po::value<bool>()->default_value(false ), "use cg potential for joule law")
         ( "use-strong-dirichlet", po::value<bool>()->default_value( false ), "use strong ")
         ;
     return hdgoptions;
@@ -64,7 +61,7 @@ AboutData
 makeAbout()
 {
     AboutData about( "qs_hdg_laplacian_ibc" ,
-                     "qs_hdg_laplacian_ibc" , 
+                     "qs_hdg_laplacian_ibc" ,
                      "0.1",
                      "Quickstart HDG Laplacian",
                      AboutData::License_GPL,
@@ -180,31 +177,6 @@ int hdg_laplacian()
          << Vh->nDof() << " " << Wh->nDof() << " " << Mh->nDof() << " "
          << cgXh->nDof() << std::endl;
 
-    auto electricPotential = Wh->element();
-    auto electricField = Vh->element();
-    auto currentDensity = Vh->element();
-    auto electricPotentialCG = cgXh->element();
-    auto jouleElt = Wh->element();
-    if( boption( "use-joule-law") )
-    {
-        if( boption( "use-joule-cg") )
-        {
-            electricPotentialCG.load( _path="electricPotentialCG.hdf5", _type="hdf5" );
-            electricPotential = Wh->element(idv(electricPotentialCG));
-            electricField = Vh->element(-trans(gradv(electricPotential)));
-        }
-        else
-        {
-            electricPotential.load( _path="electricPotential.hdf5", _type="hdf5" );
-            electricField.load( _path="electricField.hdf5", _type="hdf5" );
-        }
-    }
-    double sigma = doption("sigma");
-    auto currentDensityExpr = sigma*idv(electricField);
-    currentDensity = Vh->element(currentDensityExpr);
-    auto joule = inner(idv(currentDensity),idv(currentDensity))/sigma;
-    jouleElt = Wh->element(joule);
-
     if ( boption( "solvecg" ) == true )
     {
         auto u = cgXh->element();
@@ -253,9 +225,8 @@ int hdg_laplacian()
             };
 
         int status = checker(p_exact_str).runOnce( norms, rate::hp( mesh->hMax(), cgXh->fe()->order() ) );
-
-        u.save(_path="electricPotentialCG.hdf5", _type="hdf5");
     }
+
     auto u = Vh->element( "u" );
     auto v = Vh->element( "v" );
     auto p = Wh->element( "p" );
@@ -294,9 +265,6 @@ int hdg_laplacian()
     // How to identify Dirichlet/Neumann boundaries?
     rhs(1_c) += integrate(_range=elements(mesh),
                           _expr=f_exact*id(w));
-    if( boption("use-joule-law") )
-        rhs(1_c) += integrate(_range=elements(mesh),
-                              _expr=joule*id(w) );
 
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                           _expr=id(l)*un_exact );
@@ -488,12 +456,6 @@ int hdg_laplacian()
     auto up = U(0_c);
     auto pp = U(1_c);
 
-    if( !boption("use-joule-law") )
-    {
-        up.save( _path="electricField.hdf5", _type="hdf5" );
-        pp.save( _path="electricPotential.hdf5", _type="hdf5" );
-    }
-
     tic();
     tic();
     auto Whp = Pdh<OrderP+1>( mesh, true );
@@ -600,9 +562,9 @@ int hdg_laplacian()
     int status = checker().runOnce( {norms_p,norms_u},
                                     { rate::hp( mesh->hMax(), Vh->fe()->order() ), rate::hp( mesh->hMax(), Vh->fe()->order() ) } );
 #else
-    int status1 = checker("L2 Convergence potential",p_exact_str).runOnce( norms_p, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
+    int status1 = checker("L2 Convergence potential",p_exact_str).runOnce( norms_p, rate::hp( mesh->hMax(), Vh->fe()->order() ), "||p-p_h||_" );
     int status2 = checker("L2 Convergence flux",u_exact_str).runOnce( norms_u, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-    int status3 = checker("L2 Convergence post-processed potential",p_exact_str).runOnce( norms_ppp, rate::hp( mesh->hMax(), Vh->fe()->order()+1 ) );
+    int status3 = checker("L2 Convergence post-processed potential",p_exact_str).runOnce( norms_ppp, rate::hp( mesh->hMax(), Vh->fe()->order()+1 ), "||p-pp_h||_" );
 #endif
 
     
