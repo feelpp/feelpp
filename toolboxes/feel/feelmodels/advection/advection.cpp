@@ -205,7 +205,7 @@ void
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadConfigICFile()
 {
     this->M_icValue = detail::getBCFields<nDim, is_vectorial>(
-            this->modelProperties().initialConditions(), this->prefix(), "InitialValue" );
+            this->modelProperties().initialConditionsDeprecated(), this->prefix(), "InitialValue" );
 }
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
