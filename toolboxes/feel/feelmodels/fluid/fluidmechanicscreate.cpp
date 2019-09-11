@@ -1045,15 +1045,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
     if ( attachMassMatrix )
     {
         auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
+        //auto themassMatrixGraph = stencil( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity() );
         auto const& u = this->fieldVelocity();
-        if ( this->isStationaryModel() )
-            massbf += integrate( _range=M_rangeMeshElements, _expr=inner( idt(u),id(u) ) );
-        else
-        {
-            //double coeff = this->materialProperties()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
-            auto coeff = idv(this->materialProperties()->fieldDensity())*this->timeStepBDF()->polyDerivCoefficient(0);
-            massbf += integrate( _range=M_rangeMeshElements, _expr=coeff*inner( idt(u),id(u) ) );
-        }
+        massbf += integrate( _range=M_rangeMeshElements, _expr=inner( idt(u),id(u) ) );
+
         massbf.matrixPtr()->close();
         if ( this->algebraicFactory() )
             this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
