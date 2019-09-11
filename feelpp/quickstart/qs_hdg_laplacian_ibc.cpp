@@ -184,9 +184,6 @@ int hdg_laplacian()
         tic();
         auto l = form1( _test=cgXh );
         l = integrate( _range=elements(mesh), _expr=-f_exact*id(u) );
-        if( boption("use-joule-law") )
-            l+= integrate(_range=elements(mesh),
-                          _expr=joule*id(u) );
 
         l += integrate(_range=markedfaces(mesh,"Neumann"),
                        _expr=id(u)*un_exact );
@@ -501,14 +498,6 @@ int hdg_laplacian()
     e->add( "potentialpp", PP(0_c) );
     e->add( "flux.exact", v );
     e->add( "potential.exact", q );
-    if( boption("use-joule-law") )
-    {
-        e->add( "electric_potential", electricPotential );
-        e->add( "electric_potentialCG", electricPotentialCG );
-        e->add( "joule_losses", jouleElt );
-        e->add( "current_density", currentDensity );
-        e->add( "electric_field", electricField );
-    }
     e->save();
     toc("export");
 
