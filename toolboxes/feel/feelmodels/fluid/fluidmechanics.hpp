@@ -360,7 +360,7 @@ private :
     void initFluidInlet();
     void initFluidOutlet();
     void initUserFunctions();
-    void initPostProcess();
+    void initPostProcess() override;
     void createPostProcessExporters();
 public :
     void init( bool buildModelAlgebraicFactory=true );
