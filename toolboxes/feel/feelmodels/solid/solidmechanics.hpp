@@ -403,7 +403,7 @@ public :
     void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
 
     // post process
-    void initPostProcess();
+    void initPostProcess() override;
     std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
     bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
     void exportResults() { this->exportResults( this->currentTime() ); }

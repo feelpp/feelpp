@@ -77,7 +77,7 @@ public:
 private :
     void loadParameterFromOptionsVm();
     void initMesh();
-    void initPostProcess();
+    void initPostProcess() override;
 public :
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
