@@ -228,37 +228,17 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-std::set<std::string>
-ELECTRIC_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
-{
-    std::set<std::string> res;
-    for ( auto const& o : ifields )
-    {
-        if ( o == prefixvm(prefix,"electric-potential") || o == prefixvm(prefix,"all") )
-            res.insert( "electric-potential" );
-        if ( o == prefixvm(prefix,"electric-field") || o == prefixvm(prefix,"all") )
-            res.insert( "electric-field" );
-        if ( o == prefixvm(prefix,"conductivity") || o == prefixvm(prefix,"all") )
-            res.insert( "conductivity" );
-        if ( o == prefixvm(prefix,"current-density") || o == prefixvm(prefix,"all") )
-            res.insert( "current-density" );
-        if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
-            res.insert( "pid" );
-    }
-    return res;
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     this->log("Electric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    M_postProcessFieldExported.clear();
-    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
+    this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","conductivity","current-density","pid"} );
+    this->setPostProcessSaveAllFieldsAvailable( {"electric-potential","electric-field","conductivity","current-density"} );
+    super_type::initPostProcess();
 
-    if ( !M_postProcessFieldExported.empty() )
+    if ( !this->postProcessExportsFields().empty() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),
@@ -410,7 +390,7 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::exportFields( double time )
 {
-    bool hasFieldToExport = this->updateExportedFields( M_exporter, M_postProcessFieldExported, time );
+    bool hasFieldToExport = this->updateExportedFields( M_exporter, this->postProcessExportsFields(), time );
     if ( hasFieldToExport )
     {
         M_exporter->save();
@@ -463,9 +443,9 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
+ELECTRIC_CLASS_TEMPLATE_TYPE::postProcessMeasures( double time )
 {
-    this->exportMeasures( time, this->symbolsExpr() );
+    this->postProcessMeasures( time, this->allFields(), this->symbolsExpr() );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS

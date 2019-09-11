@@ -293,8 +293,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->timerTool("Constructor").start();
 
     auto const& exportsFields = this->modelProperties().postProcess().exports( this->keyword() ).fields();
-    M_postProcessFieldExportedHeat = M_heatModel->postProcessFieldExported( exportsFields, M_heatModel->keyword() );
-    M_postProcessFieldExportedElectric = M_electricModel->postProcessFieldExported( exportsFields, M_electricModel->keyword() );
+    M_postProcessFieldExportedHeat = M_heatModel->postProcessExportsFields( exportsFields, M_heatModel->keyword() );
+    M_postProcessFieldExportedElectric = M_electricModel->postProcessExportsFields( exportsFields, M_electricModel->keyword() );
 
     if ( !M_postProcessFieldExportedHeat.empty() || !M_postProcessFieldExportedElectric.empty() )
     {

@@ -111,7 +111,7 @@ private :
     void loadParameterFromOptionsVm();
     void initMesh();
     void initBoundaryConditions();
-    void initPostProcess();
+    void initPostProcess() override;
 
     constexpr auto symbolsExprField( hana::int_<2> /**/ ) const
         {
@@ -150,15 +150,22 @@ public :
     void exportResults( double time, SymbolsExpr const& symbolsExpr );
 
     void exportFields( double time );
-    std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
     bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
-    bool hasPostProcessFieldExported( std::string const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
 
-    void exportMeasures( double time );
-    template <typename SymbolsExpr>
-    void exportMeasures( double time, SymbolsExpr const& symbolsExpr );
+    void postProcessMeasures( double time );
+    template <typename TupleFieldsType, typename SymbolsExpr>
+    void postProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
 
     void updateParameterValues();
+
+    auto allFields() const
+        {
+            return hana::make_tuple( std::make_pair( "electric-potential",this->fieldElectricPotentialPtr() ),
+                                     std::make_pair( "electric-field",this->fieldElectricFieldPtr() ),
+                                     std::make_pair( "conductivity",M_electricProperties->fieldElectricConductivityPtr() ),
+                                     std::make_pair( "current-density",this->fieldCurrentDensityPtr() )
+                                     );
+        }
 
     template <typename SymbExprType>
     /*constexpr*/auto symbolsExpr( SymbExprType const& se ) const
@@ -234,6 +241,9 @@ private :
     void updateJacobianWeakBC( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const;
     void updateResidualWeakBC( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const;
 
+    void postprocessSave( uint32_type index );
+    void postprocessSave( std::set<std::string> const& fields, std::string const& format, uint32_type index );
+
 private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
@@ -261,8 +271,6 @@ private :
 
     // post-process
     export_ptrtype M_exporter;
-    std::set<std::string> M_postProcessFieldExported;
-    std::set<std::string> M_postProcessUserFieldExported;
     measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 };
 
@@ -282,7 +290,10 @@ Electric<ConvexType,BasisPotentialType>::exportResults( double time, SymbolsExpr
 
     this->exportFields( time );
 
-    this->exportMeasures( time, symbolsExpr );
+    auto fields = this->allFields();
+    this->postProcessMeasures( time, fields, symbolsExpr );
+
+    this->postProcessSave( invalid_uint32_type_value, fields );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -296,22 +307,16 @@ Electric<ConvexType,BasisPotentialType>::exportResults( double time, SymbolsExpr
 
 
 template< typename ConvexType, typename BasisPotentialType>
-template <typename SymbolsExpr>
+template <typename TupleFieldsType,typename SymbolsExpr>
 void
-Electric<ConvexType,BasisPotentialType>::exportMeasures( double time, SymbolsExpr const& symbolsExpr )
+Electric<ConvexType,BasisPotentialType>::postProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
 {
     bool hasMeasure = false;
 
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
-
-    auto fieldTuple = hana::make_tuple( std::make_pair( "electric-potential",this->fieldElectricPotentialPtr() ),
-                                        std::make_pair( "electric-field",this->fieldElectricFieldPtr() ) );
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
     {
         std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, symbolsExpr, fieldTuple );
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, symbolsExpr, tupleFields );
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
@@ -321,7 +326,7 @@ Electric<ConvexType,BasisPotentialType>::exportMeasures( double time, SymbolsExp
     for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
     {
         std::map<std::string,double> resPpStats;
-        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, symbolsExpr, fieldTuple );
+        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, symbolsExpr, tupleFields );
         for ( auto const& resPpStat : resPpStats )
         {
             this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
@@ -330,7 +335,7 @@ Electric<ConvexType,BasisPotentialType>::exportMeasures( double time, SymbolsExp
     }
 
     std::map<std::string,double> resPpPoints;
-    M_measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, fieldTuple );
+    M_measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, tupleFields );
     for ( auto const& resPpPoint : resPpPoints )
     {
         this->postProcessMeasuresIO().setMeasure( resPpPoint.first, resPpPoint.second );

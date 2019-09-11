@@ -177,7 +177,7 @@ class Heat : public ModelNumerical,
         void initBoundaryConditions();
         void initTimeStep();
         void initInitialConditions();
-        void initPostProcess();
+        void initPostProcess() override;
 
         constexpr auto symbolsExprField( hana::int_<2> /**/ ) const
             {
@@ -211,9 +211,6 @@ class Heat : public ModelNumerical,
         void init( bool buildModelAlgebraicFactory=true );
         void updateForUseFunctionSpacesVelocityConvection();
 
-        std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
-        bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
-
         void exportResults() { this->exportResults( this->currentTime() ); }
         void exportResults( double time );
         template <typename SymbolsExpr>
@@ -221,13 +218,19 @@ class Heat : public ModelNumerical,
 
         void exportFields( double time );
         bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
-        void exportMeasures( double time );
-        template <typename SymbolsExpr>
-        void exportMeasures( double time, SymbolsExpr const& symbolsExpr );
+        void postProcessMeasures( double time );
+        template <typename TupleFieldsType,typename SymbolsExpr>
+        void postProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
+        FEELPP_DEPRECATED void exportMeasures( double time ) { this->postProcessMeasures( time ); }
         void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
 
         void updateParameterValues();
 
+
+        auto allFields() const
+            {
+                return hana::make_tuple( std::make_pair( "temperature",this->fieldTemperaturePtr() ) );
+            }
 
         template <typename SymbExprType>
         /*constexpr*/auto symbolsExpr( SymbExprType const& se ) const
@@ -319,10 +322,6 @@ class Heat : public ModelNumerical,
     private :
         void updateTimeStepCurrentResidual();
 
-        std::set<std::string> postProcessFieldSaved( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
-        void postprocessSave( uint32_type index );
-        void postprocessSave( std::set<std::string> const& fields, std::string const& format, uint32_type index );
-
     protected :
 
         bool M_hasBuildFromMesh, M_isUpdatedForUse;
@@ -364,8 +363,6 @@ class Heat : public ModelNumerical,
         BlocksBaseVector<double> M_blockVectorSolution;
 
         // post-process
-        std::set<std::string> M_postProcessFieldExported;
-        std::set<std::string> M_postProcessFieldSaved;
         export_ptrtype M_exporter;
         bool M_doExportAll, M_doExportVelocityConvection;
         std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
@@ -392,9 +389,10 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr c
 
     this->exportFields( time );
 
-    this->exportMeasures( time, symbolsExpr );
+    auto fields = this->allFields();
+    this->postProcessMeasures( time, fields, symbolsExpr );
 
-    this->postprocessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration() );
+    this->postProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), fields );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -407,9 +405,9 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr c
 }
 
 template< typename ConvexType, typename BasisTemperatureType>
-template <typename SymbolsExpr>
+template <typename TupleFieldsType, typename SymbolsExpr>
 void
-Heat<ConvexType,BasisTemperatureType>::exportMeasures( double time, SymbolsExpr const& symbolsExpr )
+Heat<ConvexType,BasisTemperatureType>::postProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
 {
     bool hasMeasure = false;
 
@@ -426,11 +424,10 @@ Heat<ConvexType,BasisTemperatureType>::exportMeasures( double time, SymbolsExpr 
         hasMeasure = true;
     }
 
-    auto fieldTuple = hana::make_tuple( std::make_pair( "temperature",this->fieldTemperaturePtr() ) );
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
     {
         std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, symbolsExpr, fieldTuple );
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, symbolsExpr, tupleFields );
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
@@ -441,7 +438,7 @@ Heat<ConvexType,BasisTemperatureType>::exportMeasures( double time, SymbolsExpr 
     for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
     {
         std::map<std::string,double> resPpStats;
-        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, symbolsExpr, fieldTuple );
+        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, symbolsExpr, tupleFields );
         for ( auto const& resPpStat : resPpStats )
         {
             this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
@@ -450,7 +447,7 @@ Heat<ConvexType,BasisTemperatureType>::exportMeasures( double time, SymbolsExpr 
     }
 
     std::map<std::string,double> resPpPoints;
-    M_measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, fieldTuple );
+    M_measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, tupleFields );
     for ( auto const& resPpPoint : resPpPoints )
     {
         this->postProcessMeasuresIO().setMeasure( resPpPoint.first, resPpPoint.second );

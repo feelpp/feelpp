@@ -316,49 +316,17 @@ HEAT_CLASS_TEMPLATE_TYPE::initInitialConditions()
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
-std::set<std::string>
-HEAT_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
-{
-    std::set<std::string> res;
-    for ( auto const& o : ifields )
-    {
-        if ( o == prefixvm(prefix,"temperature") || o == prefixvm(prefix,"all") )
-            res.insert( "temperature" );
-        if ( o == prefixvm(prefix,"velocity-convection") || o == prefixvm(prefix,"all") )
-            res.insert( "velocity-convection" );
-        if ( o == prefixvm(prefix,"thermal-conductivity") || o == prefixvm(prefix,"all") )
-            res.insert( "thermal-conductivity" );
-        if ( o == prefixvm(prefix,"density") || o == prefixvm(prefix,"all") )
-            res.insert( "density" );
-        if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
-            res.insert( "pid" );
-    }
-    return res;
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-std::set<std::string>
-HEAT_CLASS_TEMPLATE_TYPE::postProcessFieldSaved( std::set<std::string> const& ifields, std::string const& prefix ) const
-{
-    std::set<std::string> res;
-    for ( auto const& o : ifields )
-    {
-        if ( o == prefixvm(prefix,"temperature") || o == prefixvm(prefix,"all") )
-            res.insert( "temperature" );
-    }
-    return res;
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     this->log("Heat","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
+    this->setPostProcessExportsAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density","pid"} );
+    this->setPostProcessSaveAllFieldsAvailable( {"temperature"} );
+    super_type::initPostProcess();
 
-    if ( !M_postProcessFieldExported.empty() )
+    if ( !this->postProcessExportsFields().empty() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),
@@ -370,8 +338,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
         if ( M_exporter->doExport() && this->doRestart() && this->restartPath().empty() )
             M_exporter->restart(this->timeInitial());
     }
-
-    M_postProcessFieldSaved = this->postProcessFieldSaved( this->modelProperties().postProcess().save( this->keyword() ).fieldsNames() );
 
     pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
     //  heat flux measures
@@ -679,7 +645,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::exportFields( double time )
 {
-    bool hasFieldToExport = this->updateExportedFields( M_exporter, M_postProcessFieldExported, time );
+    bool hasFieldToExport = this->updateExportedFields( M_exporter, this->postProcessExportsFields(), time );
     if ( hasFieldToExport )
     {
         M_exporter->save();
@@ -733,32 +699,9 @@ HEAT_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::se
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
+HEAT_CLASS_TEMPLATE_TYPE::postProcessMeasures( double time )
 {
-    this->exportMeasures( time, this->symbolsExpr() );
-}
-
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::postprocessSave( uint32_type index )
-{
-    this->postprocessSave( M_postProcessFieldSaved, this->modelProperties().postProcess().save( this->keyword() ).fieldsFormat() ,index );
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::postprocessSave( std::set<std::string> const& fields, std::string const& format, uint32_type index )
-{
-    std::string formatUsed = (format.empty())? "hdf5" : format;
-    for ( std::string const& fieldName : fields )
-    {
-        std::string fieldNameSaved = fieldName;
-        if ( index != invalid_uint32_type_value )
-            fieldNameSaved = (boost::format("%1%_%2%")%fieldNameSaved%index).str();
-        if ( fieldName == "temperature" )
-            this->fieldTemperature().save(_path=this->postProcessSaveRepository().string(),_name=fieldNameSaved,_type=formatUsed );
-    }
+    this->postProcessMeasures( time, this->allFields(), this->symbolsExpr() );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS

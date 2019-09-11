@@ -141,7 +141,20 @@ class ModelNumerical : public ModelAlgebraic
         void setExporterPath(std::string const& s)  { M_exporterPath=s; }
         std::string exporterPath() const { return M_exporterPath; }
 
+        bool hasPostProcessExportsField( std::string const& fieldName ) const { return M_postProcessExportsFields.find( fieldName ) != M_postProcessExportsFields.end(); }
+        std::set<std::string> const& postProcessExportsFields() const { return M_postProcessExportsFields; }
+        std::set<std::string> const& postProcessSaveFields() const { return M_postProcessSaveFields; }
         fs::path const& postProcessSaveRepository() const { return M_postProcessSaveRepository; }
+        std::set<std::string> postProcessExportsFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+        std::set<std::string> postProcessSaveFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+
+        template <typename TupleFieldsType>
+        void postProcessSave( uint32_type index, TupleFieldsType const& fields )
+            {
+                this->postProcessSave( this->postProcessSaveFields(), M_postProcessSaveFieldsFormat, index, fields );
+            }
+        template <typename TupleFieldsType>
+        void postProcessSave( std::set<std::string> const& fieldsNamesToSave, std::string const& format, uint32_type index, TupleFieldsType const& fields );
 
         ModelMeasuresIO const& postProcessMeasuresIO() const { return M_postProcessMeasuresIO; }
         ModelMeasuresIO & postProcessMeasuresIO() { return M_postProcessMeasuresIO; }
@@ -151,6 +164,11 @@ class ModelNumerical : public ModelAlgebraic
         virtual bool checkResults() const;
 
     protected :
+
+        void setPostProcessExportsAllFieldsAvailable( std::set<std::string> const& ifields ) { M_postProcessExportsAllFieldsAvailable = ifields; }
+        void setPostProcessSaveAllFieldsAvailable( std::set<std::string> const& ifields ) { M_postProcessSaveAllFieldsAvailable = ifields; }
+        virtual void initPostProcess();
+
         template<typename SymbExprField>
         auto symbolsExprFit( SymbExprField const& sef ) const
             {
@@ -203,6 +221,9 @@ class ModelNumerical : public ModelAlgebraic
         std::string M_meshFile, M_geoFile;
 
         std::string M_exporterPath;
+        std::set<std::string> M_postProcessExportsFields, M_postProcessSaveFields;
+        std::set<std::string> M_postProcessExportsAllFieldsAvailable, M_postProcessSaveAllFieldsAvailable;
+        std::string M_postProcessSaveFieldsFormat;
         fs::path M_postProcessSaveRepository;
         ModelMeasuresIO M_postProcessMeasuresIO;
         ModelMeasuresEvaluatorContext M_postProcessMeasuresEvaluatorContext;
@@ -286,6 +307,29 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
     for (int k=1;k<dataToUpdate.size();++k)
         *dataToUpdate[k] = *dataToUpdate[0];
 }
+
+
+
+template <typename TupleFieldsType>
+void
+ModelNumerical::postProcessSave( std::set<std::string> const& fieldsNamesToSave, std::string const& format, uint32_type index, TupleFieldsType const& fieldTuple )
+{
+    std::string formatUsed = (format.empty())? "hdf5" : format;
+    hana::for_each( fieldTuple, [&]( auto const& e )
+                    {
+                        std::string const& fieldName = e.first;
+                        auto const& fieldPtr = e.second;
+                        if ( fieldPtr && fieldsNamesToSave.find( fieldName ) != fieldsNamesToSave.end() )
+                        {
+                            std::string fieldNameSaved = fieldName;
+                            if ( index != invalid_uint32_type_value )
+                                fieldNameSaved = (boost::format("%1%_%2%")%fieldNameSaved%index).str();
+                            fieldPtr->save(_path=this->postProcessSaveRepository().string(),_name=fieldNameSaved,_type=formatUsed );
+                        }
+                    });
+}
+
+
 
 } // namespace FeelModels
 } // namespace feel
