@@ -41,13 +41,19 @@ std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
 void
 ModelPostprocessExports::setup( pt::ptree const& p )
 {
-    auto fields = p.get_child_optional("fields");
-    if ( fields )
+    if ( auto fields = p.get_child_optional("fields") )
     {
-        for ( std::string const& fieldName : as_vector<std::string>(p, "fields"))
+        if ( fields->empty() ) // value case
+            M_fields.insert( fields->get_value<std::string>() );
+        else // array case
         {
-            M_fields.insert( fieldName );
-            LOG(INFO) << "add to postprocess field  " << fieldName;
+            for ( auto const& item : *fields )
+            {
+                CHECK( item.first.empty() ) << "should be an array, not a subtree";
+                std::string const& fieldName = item.second.template get_value<std::string>();
+                M_fields.insert( fieldName );
+                LOG(INFO) << "add to postprocess field  " << fieldName;
+            }
         }
     }
     if ( auto formatOpt = p.get_optional<std::string>( "format" ) )
@@ -59,11 +65,18 @@ ModelPostprocessSave::setup( pt::ptree const& p )
 {
     if ( auto fieldsPtree = p.get_child_optional("Fields") )
     {
-        if (fieldsPtree->get_child_optional("names") )
+        if ( auto fieldsNamesPtree = fieldsPtree->get_child_optional("names") )
         {
-            for ( std::string const& fieldName : as_vector<std::string>(*fieldsPtree, "names"))
+            if ( fieldsNamesPtree->empty() ) // value case
+                M_fieldsNames.insert( fieldsNamesPtree->get_value<std::string>() );
+            else // array case
             {
-                M_fieldsNames.insert( fieldName );
+                for ( auto const& item : *fieldsNamesPtree )
+                {
+                    CHECK( item.first.empty() ) << "should be an array, not a subtree";
+                    std::string const& fieldName = item.second.template get_value<std::string>();
+                    M_fieldsNames.insert( fieldName );
+                }
             }
         }
         if ( auto formatOpt = fieldsPtree->get_optional<std::string>( "format" ) )
