@@ -143,25 +143,25 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleCstPart()
                                  _expr=idt(phat)*normal(v));
 
     // (div(j),q)_Omega
-    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=- (id(w)*divt(u)));
+    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=id(w)*divt(u));
 
 
     // <tau p, w>_Gamma
     bbf( 1_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=-tau_constant *
+                                 _expr=tau_constant *
                                  ( leftfacet( idt(p))*leftface(id(w)) +
                                    rightfacet( idt(p))*rightface(id(w) )));
     bbf( 1_c, 1_c ) += integrate(_range=boundaryfaces(M_mesh),
-                                 _expr=-(tau_constant * id(w)*idt(p)));
+                                 _expr=tau_constant * id(w)*idt(p));
 
 
     // <-tau phat, w>_Gamma\Gamma_I
     bbf( 1_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=tau_constant * idt(phat) *
+                                 _expr=-tau_constant * idt(phat) *
                                  ( leftface( id(w) )+
                                    rightface( id(w) )));
     bbf( 1_c, 2_c ) += integrate(_range=gammaMinusIntegral,
-                                 _expr=tau_constant * idt(phat) * id(w) );
+                                 _expr=-tau_constant * idt(phat) * id(w) );
 
 
     // <j.n,mu>_Omega/Gamma
