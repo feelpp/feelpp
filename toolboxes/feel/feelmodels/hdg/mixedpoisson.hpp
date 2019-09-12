@@ -334,12 +334,12 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assemblePotentialRHS( Expr<Expr
     if ( marker.empty() )
     {
         blf(1_c) += integrate( _range=elements(M_mesh),
-                              _expr=-inner(expr,id(w)) );
+                              _expr=inner(expr,id(w)) );
     }
     else
     {
         blf(1_c) += integrate( _range=markedelements(M_mesh,marker),
-                              _expr=-inner(expr,id(w)) );
+                              _expr=inner(expr,id(w)) );
     }
     toc("assemblePotentialRhs");
 }
