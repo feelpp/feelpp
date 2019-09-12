@@ -61,7 +61,6 @@ class FEELPP_EXPORT ModelInitialCondition : public CommObject
     void setParameterValues( std::map<std::string,double> const& mp );
     void setup( pt::ptree const& p, std::string const& typeIC );
   private :
-    pt::ptree M_p;
     std::string M_name;
     bool M_isExpression, M_isFile;
 
@@ -86,9 +85,13 @@ class FEELPP_EXPORT ModelInitialConditionTimeSet : public CommObject, public std
     ModelInitialConditionTimeSet& operator=( ModelInitialConditionTimeSet const& ) = default;
     ModelInitialConditionTimeSet& operator=( ModelInitialConditionTimeSet && ) = default;
 
+    //! return the property tree
+    pt::ptree const& pTree() const { return M_p; }
+
     void setParameterValues( std::map<std::string,double> const& mp );
     void setup( pt::ptree const& p );
   private :
+    pt::ptree M_p;
     std::string M_directoryLibExpr;
 
 };
