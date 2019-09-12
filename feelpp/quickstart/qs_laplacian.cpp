@@ -23,7 +23,8 @@
 //!
 // tag::global[]
 #include <feel/feel.hpp>
-
+#include <feel/feelpython/pyexpr.hpp>
+#include <feel/feelvf/print.hpp>
 int main( int argc, char** argv )
 {
     // tag::env[]
@@ -31,7 +32,12 @@ int main( int argc, char** argv )
     using Feel::cout;
 
     po::options_description laplacianoptions( "Laplacian options" );
-    laplacianoptions.add_options()( "no-solve", po::value<bool>()->default_value( false ), "No solve" );
+    
+    laplacianoptions.add_options()( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
+        ( "k", po::value<std::string>()->default_value( "1" ), "diffusion coefficient" )
+        ( "r_1", po::value<std::string>()->default_value( "1" ), "Robin lhs coefficient" )
+        ( "r_2", po::value<std::string>()->default_value( "" ), "Robin rhs coefficient" )
+        ( "pyexpr.filename", po::value<std::string>()->default_value( "${top_srcdir}/quickstart/laplacian.py" ), "python filename to execute" );
     laplacianoptions.add_options()( "marker.name", po::value<std::string>(), "marker on which to solve problem" );
     laplacianoptions.add_options()( "marker.levelset", po::value<std::string>(), "marker on which to solve problem" );
 
@@ -63,13 +69,33 @@ int main( int argc, char** argv )
     else
         Vh = Pch<2>( mesh );
     auto u = Vh->element( "u" );
+    Feel::cout << "Dirichlet:" << nelements( markedfaces( support( Vh ), "Dirichlet" ) ) << std::endl;
+    Feel::cout << "Neumann:" << nelements( markedfaces( support( Vh ), "Neumann" ) ) << std::endl;
+    Feel::cout << "Robin:" << nelements( markedfaces( support( Vh ), "Robin" ) ) << std::endl;
+    std::map<std::string,std::string> locals{{"dim",std::to_string(FEELPP_DIM)},{"k",soption("k")},{"p",soption("checker.solution")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
+    Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals );
+
+    for( auto d: locals )
+        cout << d.first << ":" << d.second << std::endl;
+
+    std::string p_exact_str = locals.at("p");
+    std::string u_exact_str = locals.at("u");
+    auto p_exact = expr( p_exact_str );
+    auto u_exact = expr<FEELPP_DIM,1>( u_exact_str );
+    auto k = expr( locals.at("k") );
+    auto un = expr( locals.at("un") );
+    auto f = expr( locals.at("f") );
+    auto r_1 = expr( locals.at("r_1") );
+    auto r_2 = expr( locals.at("r_2") );
+#if 0
     auto mu = expr( soption( _name = "functions.mu" ) ); // diffusion term
     auto f = expr( soption( _name = "functions.f" ), "f" );
     auto r_1 = expr( soption( _name = "functions.a" ), "a" ); // Robin left hand side expression
     auto r_2 = expr( soption( _name = "functions.b" ), "b" ); // Robin right hand side expression
     auto n = expr( soption( _name = "functions.c" ), "c" );   // Neumann expression
-    auto thechecker = checker( "qs_laplacian" );
-    auto solution = expr( thechecker.solution(), "solution" );
+#endif
+    auto thechecker = checker( "L1/H1 convergence", p_exact_str );
+    auto solution = expr( p_exact_str, "solution" );
     auto g = thechecker.check() ? solution : expr( soption( _name = "functions.g" ), "g" );
 
     // tag::v[]
@@ -83,15 +109,15 @@ int main( int argc, char** argv )
     auto l = form1( _test = Vh );
     l = integrate( _range = elements( support( Vh ) ),
                    _expr = f * id( v ) );
-    l += integrate( _range = markedfaces( support( Vh ), "Robin" ), _expr = r_2 * id( v ), _quad = 4 );
-    l += integrate( _range = markedfaces( support( Vh ), "Neumann" ), _expr = n * id( v ), _quad = _Q<3>() );
+    l += integrate( _range = markedfaces( support( Vh ), "Robin" ), _expr = -r_2 * id( v ) );
+    l += integrate( _range = markedfaces( support( Vh ), "Neumann" ), _expr = -un * id( v ) );
     toc( "l" );
 
     tic();
     auto a = form2( _trial = Vh, _test = Vh );
     tic();
     a = integrate( _range = elements( support( Vh ) ),
-                   _expr = mu * inner( gradt( u ), grad( v ) ), _quad = _Q<>( 3 ) );
+                   _expr = k * inner( gradt( u ), grad( v ) ) );
     toc( "a.gradgrad" );
     tic();
     a += integrate( _range = markedfaces( support( Vh ), "Robin" ), _expr = r_1 * idt( u ) * id( v ), _quad = im( mesh, 4 ) );
@@ -119,7 +145,7 @@ int main( int argc, char** argv )
     auto e = exporter( _mesh = mesh );
     e->addRegions();
     e->add( "uh", u );
-    v.on( _range = elements(support(Vh)), _expr = mu );
+    v.on( _range = elements(support(Vh)), _expr = k );
     e->add( "mu", v );
     if ( thechecker.check() )
     {
