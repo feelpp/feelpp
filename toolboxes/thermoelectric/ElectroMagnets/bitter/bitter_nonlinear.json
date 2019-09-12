@@ -2,14 +2,19 @@
 {
     "Name":"bitter",
     "ShortName":"bitter",
+    "Parameters":
+    {
+        "sigma0":58e3,
+        "T0":290,
+        "alpha":3.6e-3,
+        "Lorentz":2.47e-8
+    },
     "Materials":
     {
         "omega":
         {
-            "k":"0.380",//[ W/(m*K) ]
-            //"Cp":"1000.005", //[ J/(kg*K) ]
-            // "rho":"1.205", //[ kg/(m^3) ]
-            "sigma":"58e3"
+            "k":"sigma0*Lorentz*heat_T/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:Lorentz:heat_T",
+            "sigma":"sigma0/(1+alpha*(heat_T-T0))+0*heat_T:sigma0:alpha:T0:heat_T"
         }
     },
     "BoundaryConditions":

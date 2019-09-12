@@ -1,16 +1,19 @@
 // -*- mode: javascript -*-
 {
-    "Name":"HL-31_H1",
-    "ShortName":"HL-31_H1",
+    "Name":"quarterturn",
+    "ShortName":"quarterturn",
+    "Parameters":
+    {
+        "sigma0":53e3,
+        "T0":290,
+        "alpha":3.6e-3,
+        "Lorentz":2.47e-8
+    },
     "Materials":
     {
-        "Cu":
+        "omega":
         {
-            "k":"0.370",//[ W/(m*K) ]
-            //"k":"{0.370,0,0, 0,0.370,0, 0,0,0.370}",//[ W/(m*K) ]
-            //"Cp":"1000.005", //[ J/(kg*K) ]
-            // "rho":"1.205", //[ kg/(m^3) ]
-            "sigma":"52e3"
+            "filename":"$cfgdir/omega.json"
         }
     },
     "BoundaryConditions":
@@ -29,17 +32,6 @@
                     "expr1":"0.085", // h
                     "expr2":"293" // T_c
                 }
-            },
-            "Neumann":
-            {
-                "Interface":
-                {
-                    "expr":"0"
-                },
-                "GR_1_Interface":
-                {
-                    "expr":"0"
-                }
             }
         },
         "electric-potential":
@@ -52,7 +44,7 @@
                 },
                 "V1":
                 {
-                    "expr":"9" // V_out
+                    "expr":"0.04" // V_out
                 }
             }
         }
@@ -76,13 +68,13 @@
                     "FluxV0":
                     {
                         "type":"integrate",
-                        "expr":"-heat_Cu_k*heat_dnT:heat_Cu_k:heat_dnT",
+                        "expr":"-heat_omega_k*heat_dnT:heat_omega_k:heat_dnT",
                         "markers":"V0"
                     },
                     "FluxV1":
                     {
                         "type":"integrate",
-                        "expr":"-heat_Cu_k*heat_dnT:heat_Cu_k:heat_dnT",
+                        "expr":"-heat_omega_k*heat_dnT:heat_omega_k:heat_dnT",
                         "markers":"V1"
                     },
                     "temp":
@@ -95,17 +87,17 @@
                 {
                     "closeToV0":
                     {
-                        "coord":"{0.6,22,108}",
+                        "coord":"{0.1,1.5,2.5}",
                         "fields":"temperature"
                     },
                     "closeToV1":
                     {
-                        "coord":"{0.6,22,-226}",
+                        "coord":"{1.5,0.1,2.5}",
                         "fields":"temperature"
                     },
                     "middle":
                     {
-                        "coord":"{0.6,22,0}",
+                        "coord":"{1,1,2.5}",
                         "fields":"temperature"
                     }
                 }
@@ -116,22 +108,22 @@
                 {
                     "Statistics_FluxV0_integrate":
                     {
-                        "value":5.1544746089176439,
+                        "value":3.2424412042251499e-01,
                         "tolerance":1e-1
                     },
                     "Statistics_FluxV1_integrate":
                     {
-                        "value":3.3909146510666401,
+                        "value":2.9981897008036867e-01,
                         "tolerance":1e-1
                     },
                     "Points_closeToV0_temperature":
                     {
-                        "value":2.9394488510371184e+02,
+                        "value":3.9070670041153238e+02,
                         "tolerance":1e-3
                     },
                     "Points_closeToV1_temperature":
                     {
-                        "value":2.9224208112364721e+02,
+                        "value":3.9068771950814232e+02,
                         "tolerance":1e-3
                     }
                 }
@@ -146,37 +138,37 @@
                     "Intensity0":
                     {
                         "type":"integrate",
-                        "expr":"-electric_Cu_sigma*electric_dnP:electric_Cu_sigma:electric_dnP",
+                        "expr":"-electric_omega_sigma*electric_dnP:electric_omega_sigma:electric_dnP",
                         "markers":"V0"
                     },
                     "Intensity1":
                     {
                         "type":"integrate",
-                        "expr":"-electric_Cu_sigma*electric_dnP:electric_Cu_sigma:electric_dnP",
+                        "expr":"-electric_omega_sigma*electric_dnP:electric_omega_sigma:electric_dnP",
                         "markers":"V1"
                     },
                     "Power":
                     {
                         "type":"integrate",
-                        "expr":"electric_Cu_sigma*(electric_dxP^2+electric_dyP^2+electric_dzP^2):electric_Cu_sigma:electric_dxP:electric_dyP:electric_dzP",
-                        "markers":"Cu"
+                        "expr":"electric_omega_sigma*(electric_dxP^2+electric_dyP^2+electric_dzP^2):electric_omega_sigma:electric_dxP:electric_dyP:electric_dzP",
+                        "markers":"omega"
                     }
                 },
                 "Points":
                 {
                     "closeToV0":
                     {
-                        "coord":"{0.6,22,108}",
+                        "coord":"{0.1,1.5,2.5}",
                         "fields":"electric-potential"
                     },
                     "closeToV1":
                     {
-                        "coord":"{0.6,22,-226}",
+                        "coord":"{1.5,0.1,2.5}",
                         "fields":"electric-potential"
                     },
                     "middle":
                     {
-                        "coord":"{0.6,22,0}",
+                        "coord":"{1,1,2.5}",
                         "fields":["electric-potential","electric-field" ]
                     }
                 }
@@ -187,22 +179,22 @@
                 {
                     "Statistics_Intensity0_integrate":
                     {
-                        "value":3.8637391139136838e+04,
+                        "value":4.5856639122569022e+03,
                         "tolerance":1e-1
                     },
                     "Statistics_Intensity1_integrate":
                     {
-                        "value":-3.8648718034652833e+04,
+                        "value":-4.5883146155551685e+03,
                         "tolerance":1e-1
                     },
                     "Points_closeToV0_electric-potential":
                     {
-                        "value":0,
+                        "value":1.6994365505515906e-03,
                         "tolerance":1e-3
                     },
                     "Points_closeToV1_electric-potential":
                     {
-                        "value":9,
+                        "value":3.8304153994278681e-02,
                         "tolerance":1e-3
                     }
                 }
