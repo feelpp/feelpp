@@ -36,7 +36,7 @@ makeOptions()
 {
     po::options_description hdgoptions( "HDG options" );
     hdgoptions.add_options()
-        ( "k", po::value<std::string>()->default_value( "-1" ), "diffusion coefficient" )
+        ( "k", po::value<std::string>()->default_value( "1" ), "diffusion coefficient" )
         ( "r_1", po::value<std::string>()->default_value( "1" ), "Robin lhs coefficient" )
         ( "r_2", po::value<std::string>()->default_value( "" ), "Robin rhs coefficient" )
         ( "pyexpr.filename", po::value<std::string>()->default_value( "${top_srcdir}/quickstart/laplacian.py" ), "python filename to execute" )
@@ -151,7 +151,7 @@ int hdg_laplacian()
         tic(); // assembly
         tic();
         auto l = form1( _test=cgXh );
-        l = integrate( _range=elements(mesh), _expr=-f_exact*id(u), _quad=ioption("rhs_quad") );
+        l = integrate( _range=elements(mesh), _expr=f_exact*id(u), _quad=ioption("rhs_quad") );
         l += integrate(_range=markedfaces(mesh,"Neumann"),
                        _quad=ioption("rhs_quad"),
                        _expr=id(u)*un_exact );
@@ -160,7 +160,7 @@ int hdg_laplacian()
         toc("cg.assembly.l",FLAGS_v>0);
         tic();
         auto a = form2(_trial=cgXh, _test=cgXh );
-        a = integrate( _range=elements(mesh), _expr=-K*gradt(u)*trans(grad(u)) );
+        a = integrate( _range=elements(mesh), _expr=K*gradt(u)*trans(grad(u)) );
         a += integrate( _range=markedfaces(mesh, "Robin"),
                         _expr=id(u)*idt(u)*r_1);
         a += on(_range=markedfaces(mesh,"Dirichlet"),
@@ -220,7 +220,7 @@ int hdg_laplacian()
     // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
     // How to identify Dirichlet/Neumann boundaries?
     rhs(1_c) += integrate(_range=elements(mesh),
-                          _expr=-f_exact*id(w), _quad=ioption("rhs_quad") );
+                          _expr=f_exact*id(w), _quad=ioption("rhs_quad") );
 
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                           _expr=id(l)*un_exact, _quad=ioption("rhs_quad")  );
@@ -238,7 +238,7 @@ int hdg_laplacian()
     if ( boption( "mass.quad" ) )
         a(0_c,0_c) += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
     else
-        a(0_c,0_c) += integrate(_range=elements(mesh),_expr=cst(-1.)*mass(u,v) );
+        a(0_c,0_c) += integrate(_range=elements(mesh),_expr=mass(u,v) );
 
     toc("a(0,0)",FLAGS_v>0);
 
@@ -250,12 +250,6 @@ int hdg_laplacian()
     a(0_c,2_c) += integrate(_range=internalfaces(mesh),
                             _expr=( idt(phat)*(leftface(normal(v))+
                                                rightface(normal(v)))) );
-    if ( sctrans && ( strategy == solve::strategy::static_condensation ) )
-    {
-        tic();
-        a.transpose( 0, 2 );
-        toc("a(2,0)",FLAGS_v>0);
-    }
     a(0_c,2_c) += integrate(_range=boundaryfaces(mesh),
                             _expr=idt(phat)*(normal(v)));
     toc("a(0,2)",FLAGS_v>0);
@@ -264,52 +258,38 @@ int hdg_laplacian()
     // Second row a(1_c,:)
     //
     tic();
-    if (  ( strategy == solve::strategy::monolithic ) || !sctrans )
-        a(1_c,0_c) += integrate(_range=elements(mesh),_expr=-(id(w)*divt(u)));
-    else
-        a.transpose( 0, 1 );
+    a(1_c,0_c) += integrate(_range=elements(mesh),_expr=(id(w)*divt(u)));
     toc("a(1,0)",FLAGS_v>0);
 
     tic();
     a(1_c,1_c) += integrate(_range=internalfaces(mesh),
-                            _expr=-tau_constant *
+                            _expr=tau_constant *
                             ( leftfacet( idt(p))*leftface(id(w)) +
                               rightfacet( idt(p))*rightface(id(w) )));
     a(1_c,1_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=-(tau_constant * id(w)*idt(p)));
+                            _expr=(tau_constant * id(w)*idt(p)));
     toc("a(1,1)",FLAGS_v>0);
 
     tic();
     a(1_c,2_c) += integrate(_range=internalfaces(mesh),
-                            _expr=tau_constant * idt(phat) *
+                            _expr=-tau_constant * idt(phat) *
                             ( leftface( id(w) )+
                               rightface( id(w) )));
-    if ( sctrans && ( strategy == solve::strategy::static_condensation ) )
-    {
-        tic();
-        a.transpose( 1, 2 );
-        toc( "a(2,1)", FLAGS_v > 0 );
-    }
     a(1_c,2_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=tau_constant * idt(phat) * id(w) );
+                            _expr=-tau_constant * idt(phat) * id(w) );
     toc("a(1,2)",FLAGS_v>0);
 
     //
     // Third row a(2_c,:)
     //
     
-    if ( ( strategy == solve::strategy::monolithic ) || !sctrans )
-    {
-        tic();
-        a(2_c,0_c) += integrate(_range=internalfaces(mesh),
-                                _expr=( id(l)*(leftfacet(normalt(u))+rightfacet(normalt(u))))
-                                //_expr=( cst(2.)*(leftfacet(trans(idt(u))*N())+rightfacet(trans(idt(u))*N())) ),
-                                );
-        toc("a(2,0).1",FLAGS_v>0);
-    }
-    
-    
-        
+    tic();
+    a(2_c,0_c) += integrate(_range=internalfaces(mesh),
+                            _expr=( id(l)*(leftfacet(normalt(u))+rightfacet(normalt(u))))
+                            //_expr=( cst(2.)*(leftfacet(trans(idt(u))*N())+rightfacet(trans(idt(u))*N())) ),
+                            );
+    toc("a(2,0).1",FLAGS_v>0);
+
     tic();
     // BC
     a(2_c,0_c) += integrate(_range=markedfaces(mesh,"Neumann"),
@@ -317,23 +297,17 @@ int hdg_laplacian()
     toc("a(2,0).3",FLAGS_v>0);
 
     tic();
-    if ( ( strategy == solve::strategy::monolithic ) || !sctrans )
-    {
-        a(2_c,1_c) += integrate(_range=internalfaces(mesh),
-                                _expr=tau_constant * id(l) * ( leftfacet( idt(p) )+
-                                                               rightfacet( idt(p) )));
-    }
+    a(2_c,1_c) += integrate(_range=internalfaces(mesh),
+                            _expr=tau_constant * id(l) * ( leftfacet( idt(p) )+
+                                                           rightfacet( idt(p) )));
+
     a(2_c,1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                             _expr=tau_constant * id(l) * ( idt(p) ) );
     toc("a(2,1)",FLAGS_v>0);
 
     tic();
-    if ( 1 ) //boption( "mass.quad" ) )
-        a(2_c,2_c) += integrate(_range=internalfaces(mesh),
-                                _expr=-(1.-0.5*boption("sc.condense"))*tau_constant * idt(phat) * id(l) );
-    else
-        a(2_c,2_c) += integrate(_range=internalfaces(mesh),
-                                _expr=-(1.-0.5*boption("sc.condense"))*tau_constant * mass( phat, l ) );
+    a(2_c,2_c) += integrate(_range=internalfaces(mesh),
+                            _expr=-(1.-0.5*boption("sc.condense"))*tau_constant * idt(phat) * id(l) );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                             _expr=-tau_constant * idt(phat) * id(l)  );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
@@ -346,7 +320,7 @@ int hdg_laplacian()
     a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
                                _expr=-tau_constant * idt(phat) * id(l) );
     a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
-                                 _expr=r_1*idt(phat) * id(l) );
+                               _expr=-r_1*idt(phat) * id(l) );
 
     toc("a(2,2)",FLAGS_v>0);
 
