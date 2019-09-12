@@ -65,6 +65,7 @@ ModelInitialCondition::setParameterValues( std::map<std::string,double> const& m
 void
 ModelInitialConditionTimeSet::setup( pt::ptree const& p )
 {
+    M_p = p;
     for ( std::string const& typeIC : std::vector<std::string>({ "Expression","File" }) )
     {
         if ( auto icAllExprPtree = p.get_child_optional( typeIC ) )
