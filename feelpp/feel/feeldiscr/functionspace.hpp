@@ -4097,11 +4097,7 @@ public:
                                            ( path,* ) )
                                          ( optional
                                            ( name,( std::string ), M_name )
-#ifdef FEELPP_HAS_HDF5
-                                           ( type,( std::string ),std::string( "hdf5" ) )
-#else
-                                           ( type,( std::string ),std::string( "binary" ) )
-#endif
+                                           ( type,( std::string ),std::string( "default" ) )
                                            ( suffix,( std::string ),std::string( "" ) )
                                            ( sep,( std::string ),std::string( "" ) )
                                          ) )
@@ -4121,9 +4117,19 @@ public:
         //!
         void saveImpl( std::string const& path, std::string const& name, std::string const& type = "binary", std::string const& suffix = "", std::string const & sep = "") const
         {
-            if ( type != "binary" && type != "text" && type != "xml" &&  type != "hdf5" )
+            std::string typeUsed = type;
+            if ( typeUsed == "default" )
             {
-                LOG(WARNING)  << "[save] : invalid format " << type << " (type available : binary,text,xml,hdf5)";
+#ifdef FEELPP_HAS_HDF5
+                typeUsed = "hdf5";
+#else
+                typeUsed = "binary";
+#endif
+            }
+
+            if ( typeUsed != "binary" && typeUsed != "text" && typeUsed != "xml" &&  typeUsed != "hdf5" )
+            {
+                LOG(WARNING)  << "[save] : invalid format " << typeUsed << " (type available : binary,text,xml,hdf5)";
                 return;
             }
 
@@ -4135,34 +4141,34 @@ public:
             // wait creating directory
             this->worldComm().barrier();
 
-            if ( type == "binary" || type == "text" || type == "xml" )
+            if ( typeUsed == "binary" || typeUsed == "text" || typeUsed == "xml" )
             {
                 std::ostringstream os1;
                 os1 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
                 fs::path p = fs::path( path ) / os1.str();
                 LOG(INFO) << "saving "  << p << "\n";
 
-                if ( type == "binary" )
+                if ( typeUsed == "binary" )
                 {
                     fs::ofstream ofs( p );
                     boost::archive::binary_oarchive oa( ofs );
                     oa << *this;
                 }
 
-                else if ( type == "text" )
+                else if ( typeUsed == "text" )
                 {
                     fs::ofstream ofs( p );
                     boost::archive::text_oarchive oa( ofs );
                     oa << *this;
                 }
 
-                else if ( type == "xml" )
+                else if ( typeUsed == "xml" )
                 {
                     //boost::archive::xml_oarchive oa(ofs);
                     //oa << *this;
                 }
             }
-            else if ( type == "hdf5" )
+            else if ( typeUsed == "hdf5" )
             {
                 std::ostringstream os2;
                 os2 << name << sep << suffix << ".h5";
@@ -4170,7 +4176,7 @@ public:
 #ifdef FEELPP_HAS_HDF5
                 this->saveHDF5( filename.string() );
 #else
-                CHECK( false ) << "hdf5 not detected";
+                CHECK( false ) << "Feel++ is not compiled with hdf5";
 #endif
             }
         }
@@ -4182,11 +4188,7 @@ public:
               ( path,* ) )
             ( optional
               ( name,( std::string ), M_name )
-#ifdef FEELPP_HAS_HDF5
-              ( type,( std::string ),std::string( "hdf5" ) )
-#else
-              ( type,( std::string ),std::string( "binary" ) )
-#endif
+              ( type,( std::string ),std::string( "default" ) )
               ( suffix,( std::string ),std::string( "" ) )
               ( sep,( std::string ),std::string( "" ) )
             )
@@ -4215,9 +4217,19 @@ public:
                 return false;
             }
 
+            std::string typeUsed = type;
+            if ( typeUsed == "default" )
+            {
+#ifdef FEELPP_HAS_HDF5
+                typeUsed = "hdf5";
+#else
+                typeUsed = "binary";
+#endif
+            }
+
             if ( fs::is_directory(path) )
             {
-                if ( type == "hdf5" )
+                if ( typeUsed == "hdf5" )
                     oss << name << sep << suffix << ".h5";
                 else
                     oss << name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
@@ -4245,38 +4257,38 @@ public:
             }
 
 
-            if ( type == "binary" || type == "text" || type == "xml" )
+            if ( typeUsed == "binary" || typeUsed == "text" || typeUsed == "xml" )
             {
                 fs::ifstream ifs( p );
-                if ( type == "binary" )
+                if ( typeUsed == "binary" )
                 {
                     boost::archive::binary_iarchive ia( ifs );
                     ia >> *this;
                 }
 
-                else if ( type == "text" )
+                else if ( typeUsed == "text" )
                 {
                     boost::archive::text_iarchive ia( ifs );
                     ia >> *this;
                 }
-                else if ( type == "xml" )
+                else if ( typeUsed == "xml" )
                 {
                     //boost::archive::xml_iarchive ia(ifs);
                     //ia >> *this;
                     return false;
                 }
             }
-            else if ( type == "hdf5" )
+            else if ( typeUsed == "hdf5" )
             {
 #ifdef FEELPP_HAS_HDF5
                 this->loadHDF5( p.string() );
 #else
-                CHECK( false ) << "hdf5 not detected";
+                CHECK( false ) << "Feel++ is not compiled with hdf5";
 #endif
             }
             else
             {
-                LOG(WARNING)  << "[load] : invalid format " << type << " (type available : binary,text,xml,hdf5)";
+                LOG(WARNING)  << "[load] : invalid format " << typeUsed << " (type available : binary,text,xml,hdf5)";
                 return false;
             }
 
