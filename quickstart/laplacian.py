@@ -3,7 +3,7 @@ from sympy2ginac import *
 if 'k' in locals():
     k=sympify(locals()['k']);
 else:
-    k=sympify(-1)
+    k=sympify(1)
 print("k=",k);
 if 'r_1' in locals():
     r_1=sympify(locals()['r_1']);
@@ -30,11 +30,12 @@ flux=-k*grad(p,s);
 u=flux;
 un=n(flux,1,ns);
 f=div(flux,s);
-if 'r_2' in locals():
-    r_2=un+r_1*p #
-    #r_2=sympify(locals()['r_2']);
+if 'r_2' in locals() and locals()['r_2']:
+    r_2=sympify(locals()['r_2']);
 else:
-    r_2=un+r_1*p
+    # right hand side Robin condition when given r_1
+    # r_1 is positive or zero and the flux un=r_1*p+r_2
+    r_2=un-r_1*p
 print("r_2=",r_2)
 
 

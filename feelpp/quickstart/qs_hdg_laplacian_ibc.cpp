@@ -395,7 +395,7 @@ int hdg_laplacian()
     a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
                                _expr=-tau_constant * idt(phat) * id(l) );
     a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
-                                 _expr=r_1*idt(phat) * id(l) );
+                                 _expr=-r_1*idt(phat) * id(l) );
     toc("a(2,2)",FLAGS_v>0);
 
     if( boption("use-strong-dirichlet") && !boption("sc.condense"))
