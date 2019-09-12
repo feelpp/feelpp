@@ -151,6 +151,11 @@ class ModelNumerical : public ModelAlgebraic
         std::set<std::string> postProcessExportsFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
         std::set<std::string> postProcessSaveFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
 
+        template <typename ExporterType,typename TupleFieldsType>
+        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& tupleFields );
+        template <typename ExporterType,typename TupleFieldsType>
+        bool updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fields, double time, TupleFieldsType const& tupleFields );
+
         template <typename MeshType, typename RangeType, typename TupleFieldsType, typename SymbolsExpr>
         bool executePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
         template <typename MeshType, typename RangeType, typename TupleFieldsType, typename SymbolsExpr>
@@ -269,7 +274,7 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
                 std::string fileName = ic.fileName();
                 std::string fileType = ic.fileType();
                 if ( fileType.empty() )
-                    fileType = "hdf5";
+                    fileType = "default";
                 std::string fileDirectory = ic.fileDirectory();
                 if ( fileDirectory.empty() )
                     u.load(_path=fileName,_type=fileType);
@@ -317,6 +322,47 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
     for (int k=1;k<dataToUpdate.size();++k)
         *dataToUpdate[k] = *dataToUpdate[0];
 }
+
+template <typename ExporterType,typename TupleFieldsType>
+void
+ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& tupleFields )
+{
+    bool hasFieldToExport = this->updatePostProcessExports( exporter, this->postProcessExportsFields(), time, tupleFields );
+    if ( hasFieldToExport )
+    {
+        exporter->save();
+        this->upload( exporter->path() );
+    }
+}
+
+template <typename ExporterType,typename TupleFieldsType>
+bool
+ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fieldsNamesToExport, double time, TupleFieldsType const& tupleFields )
+{
+    if ( !exporter ) return false;
+    if ( !exporter->doExport() ) return false;
+
+    bool hasFieldToExport = false;
+    hana::for_each( tupleFields, [this,&exporter,&fieldsNamesToExport,&time,&hasFieldToExport]( auto const& e )
+                    {
+                        std::string const& fieldName = e.first;
+                        auto const& fieldPtr = e.second;
+                        if ( fieldPtr && fieldsNamesToExport.find( fieldName ) != fieldsNamesToExport.end() )
+                        {
+                            exporter->step( time )->add( prefixvm(this->prefix(),fieldName),
+                                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldName)),
+                                                         *fieldPtr );
+                            hasFieldToExport = true;
+                        }
+                    });
+    if ( fieldsNamesToExport.find( "pid" ) != fieldsNamesToExport.end() )
+    {
+        exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
+        hasFieldToExport = true;
+    }
+    return hasFieldToExport;
+}
+
 
 template <typename MeshType, typename RangeType, typename TupleFieldsType, typename SymbolsExpr>
 bool
@@ -373,8 +419,8 @@ template <typename TupleFieldsType>
 void
 ModelNumerical::executePostProcessSave( std::set<std::string> const& fieldsNamesToSave, std::string const& format, uint32_type index, TupleFieldsType const& fieldTuple )
 {
-    std::string formatUsed = (format.empty())? "hdf5" : format;
-    hana::for_each( fieldTuple, [&]( auto const& e )
+    std::string formatUsed = (format.empty())? "default" : format;
+    hana::for_each( fieldTuple, [this,&fieldsNamesToSave,&formatUsed,&index]( auto const& e )
                     {
                         std::string const& fieldName = e.first;
                         auto const& fieldPtr = e.second;

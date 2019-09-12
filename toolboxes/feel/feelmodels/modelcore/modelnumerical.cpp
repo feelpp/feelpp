@@ -196,7 +196,7 @@ ModelNumerical::initPostProcess()
         M_postProcessSaveFieldsFormat = this->modelProperties().postProcess().save( this->keyword() ).fieldsFormat();
     }
     if ( M_postProcessSaveFieldsFormat.empty() )
-        M_postProcessSaveFieldsFormat = "hdf5";
+        M_postProcessSaveFieldsFormat = "default";
 }
 
 std::set<std::string>
@@ -206,7 +206,7 @@ ModelNumerical::postProcessExportsFields( std::set<std::string> const& ifields, 
     for ( auto const& o : ifields )
     {
         for ( auto const& fieldAvailable : M_postProcessExportsAllFieldsAvailable )
-            if ( o == prefixvm(prefix,fieldAvailable) || o == prefixvm(prefix,"all") )
+            if ( o == prefixvm(prefix,fieldAvailable) || o == prefixvm(prefix,"all") || o == "all" )
                 res.insert( fieldAvailable );
     }
     return res;
@@ -218,7 +218,7 @@ ModelNumerical::postProcessSaveFields( std::set<std::string> const& ifields, std
     for ( auto const& o : ifields )
     {
         for ( auto const& fieldAvailable : M_postProcessSaveAllFieldsAvailable )
-            if ( o == prefixvm(prefix,fieldAvailable) || o == prefixvm(prefix,"all") )
+            if ( o == prefixvm(prefix,fieldAvailable) || o == prefixvm(prefix,"all") || o == "all" )
                 res.insert( fieldAvailable );
     }
     return res;

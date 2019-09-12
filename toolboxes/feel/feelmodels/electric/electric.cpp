@@ -388,68 +388,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::exportFields( double time )
-{
-    bool hasFieldToExport = this->updateExportedFields( M_exporter, this->postProcessExportsFields(), time );
-    if ( hasFieldToExport )
-    {
-        M_exporter->save();
-        this->upload( M_exporter->path() );
-    }
-}
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-bool
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time )
-{
-    if ( !exporter ) return false;
-    if ( !exporter->doExport() ) return false;
-
-    bool hasFieldToExport = false;
-    if ( fields.find( "electric-potential" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"electric-potential"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-potential")),
-                                     this->fieldElectricPotential() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "electric-field" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"electric-fields"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-fields")),
-                                     *M_fieldElectricField );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "conductivity" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"conductivity"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"conductivity")),
-                                     M_electricProperties->fieldElectricConductivity() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "current-density" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"current-density"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"current-density")),
-                                     *M_fieldCurrentDensity );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "pid" ) != fields.end() )
-    {
-        exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
-        hasFieldToExport = true;
-    }
-    return hasFieldToExport;
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
-{
-    this->executePostProcessMeasures( time, this->allFields(), this->symbolsExpr() );
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
 {
     std::string M_computeElectricFieldProjType = "nodal";
