@@ -6,23 +6,32 @@
     {
         "omega":
         {
-            "sigma":"4.8e7",
-            "k":"4.8e7"
+            "filename":"$cfgdir/omega.json"
         }
     },
     "BoundaryConditions":
     {
+        "flux":
+        {
+            "Integral":
+            {
+                "V1":
+                {
+                    "expr":"-4724"
+                }
+            }
+        },
         "potential":
         {
             "Dirichlet":
             {
+                // "V1":
+                // {
+                //     "expr":"0.04"
+                // },
                 "V0":
                 {
                     "expr":"0"
-                },
-                "V1":
-                {
-                    "expr":"0.25"
                 }
             },
             "Neumann":
@@ -51,14 +60,14 @@
 	        {
 		        "omega":
 		        {
-		            "expr":"2*0.25/Pi*atan2(x,y):x:y"
+		            "expr":"2*0.04/Pi*atan2(x,y):x:y"
 		        }
 	        },
             "u_exact":
             {
                 "omega":
                 {
-                    "expr":"{-2*4.8e7*0.25/Pi*y/(x*x+y*y),2*4.8e7*0.25/Pi*x/(x*x+y*y),0}:x:y:z"
+                    "expr":"{-2*4.8e7*0.04/Pi*y/(x*x+y*y),2*4.8e7*0.04/Pi*x/(x*x+y*y),0}:x:y:z"
                 }
             }
 	    }
