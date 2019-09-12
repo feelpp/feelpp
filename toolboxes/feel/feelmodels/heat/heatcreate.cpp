@@ -323,7 +323,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->timerTool("Constructor").start();
 
     this->setPostProcessExportsAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density","pid"} );
-    this->setPostProcessSaveAllFieldsAvailable( {"temperature"} );
+    this->setPostProcessSaveAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density"} );
     super_type::initPostProcess();
 
     if ( !this->postProcessExportsFields().empty() )
@@ -639,62 +639,6 @@ void
 HEAT_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     this->exportResults( time, this->symbolsExpr() );
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::exportFields( double time )
-{
-    bool hasFieldToExport = this->updateExportedFields( M_exporter, this->postProcessExportsFields(), time );
-    if ( hasFieldToExport )
-    {
-        M_exporter->save();
-        this->upload( M_exporter->path() );
-    }
-}
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-bool
-HEAT_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time )
-{
-    if ( !exporter ) return false;
-    if ( !exporter->doExport() ) return false;
-
-    bool hasFieldToExport = false;
-    if ( fields.find( "temperature" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
-                                     this->fieldTemperature() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "pid" ) != fields.end() )
-    {
-        exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
-        hasFieldToExport = true;
-    }
-
-    if ( fields.find( "velocity-convection" ) != fields.end() && this->fieldVelocityConvectionIsOperational() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-convection")),
-                                     this->fieldVelocityConvection() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "thermal-conductivity" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"thermal-conductivity"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"thermal-conductivity")),
-                                     this->thermalProperties()->fieldThermalConductivity() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "density" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"density"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"density")),
-                                     this->thermalProperties()->fieldRho() );
-        hasFieldToExport = true;
-    }
-    return hasFieldToExport;
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS

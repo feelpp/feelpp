@@ -336,18 +336,21 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
     p.put_child( "Numerical Solver", subPt );
 
     // Exporter
-    subPt.clear();
-    subPt.put( "type",M_exporter->type() );
-    subPt.put( "freq save",M_exporter->freq() );
-    pt::ptree subPt2;
-    for ( std::string const& fieldName : M_postProcessFieldExportedHeat )
-        subPt2.push_back( std::make_pair("", pt::ptree( fieldName ) ) );
-    subPt.put_child( "fields [heat]", subPt2 );
-    subPt2.clear();
-    for ( std::string const& fieldName : M_postProcessFieldExportedElectric )
-        subPt2.push_back( std::make_pair("", pt::ptree( fieldName ) ) );
-    subPt.put_child( "fields [electric]", subPt2 );
-    p.put_child( "Exporter", subPt );
+    if ( M_exporter )
+    {
+        subPt.clear();
+        subPt.put( "type",M_exporter->type() );
+        subPt.put( "freq save",M_exporter->freq() );
+        pt::ptree subPt2;
+        for ( std::string const& fieldName : M_postProcessFieldExportedHeat )
+            subPt2.push_back( std::make_pair("", pt::ptree( fieldName ) ) );
+        subPt.put_child( "fields [heat]", subPt2 );
+        subPt2.clear();
+        for ( std::string const& fieldName : M_postProcessFieldExportedElectric )
+            subPt2.push_back( std::make_pair("", pt::ptree( fieldName ) ) );
+        subPt.put_child( "fields [electric]", subPt2 );
+        p.put_child( "Exporter", subPt );
+    }
 
     // Algebraic Solver
     if ( M_algebraicFactoryMonolithic )
@@ -422,8 +425,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
     if ( M_exporter && M_exporter->doExport() )
     {
-        bool hasFieldToExportHeat = M_heatModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeat,time );
-        bool hasFieldToExportElectric = M_electricModel->updateExportedFields( M_exporter,M_postProcessFieldExportedElectric,time );
+        bool hasFieldToExportHeat = M_heatModel->updatePostProcessExports( M_exporter, M_postProcessFieldExportedHeat, time, M_heatModel->allFields() );
+        bool hasFieldToExportElectric = M_electricModel->updatePostProcessExports( M_exporter, M_postProcessFieldExportedElectric, time, M_electricModel->allFields() );
         if ( hasFieldToExportHeat || hasFieldToExportElectric )
         {
             M_exporter->save();

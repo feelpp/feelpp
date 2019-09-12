@@ -148,11 +148,6 @@ public :
     void exportResults( double time );
     template <typename SymbolsExpr>
     void exportResults( double time, SymbolsExpr const& symbolsExpr );
-
-    void exportFields( double time );
-    bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
-
-    void executePostProcessMeasures( double time );
     template <typename TupleFieldsType, typename SymbolsExpr>
     void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
 
@@ -288,11 +283,9 @@ Electric<ConvexType,BasisPotentialType>::exportResults( double time, SymbolsExpr
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    this->exportFields( time );
-
     auto fields = this->allFields();
+    this->executePostProcessExports( M_exporter, time, fields );
     this->executePostProcessMeasures( time, fields, symbolsExpr );
-
     this->executePostProcessSave( invalid_uint32_type_value, fields );
 
     this->timerTool("PostProcessing").stop("exportResults");

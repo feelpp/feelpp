@@ -213,8 +213,6 @@ class Heat : public ModelNumerical,
         template <typename SymbolsExpr>
         void exportResults( double time, SymbolsExpr const& symbolsExpr );
 
-        void exportFields( double time );
-        bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
         void executePostProcessMeasures( double time );
         template <typename TupleFieldsType,typename SymbolsExpr>
         void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
@@ -226,7 +224,11 @@ class Heat : public ModelNumerical,
 
         auto allFields() const
             {
-                return hana::make_tuple( std::make_pair( "temperature",this->fieldTemperaturePtr() ) );
+                return hana::make_tuple( std::make_pair( "temperature",this->fieldTemperaturePtr() ),
+                                         std::make_pair( "velocity-convection", this->fieldVelocityConvectionIsOperational()?this->fieldVelocityConvectionPtr() : element_velocityconvection_ptrtype() ),
+                                         std::make_pair( "thermal-conductivity",this->thermalProperties()->fieldThermalConductivityPtr() ),
+                                         std::make_pair( "density", this->thermalProperties()->fieldRhoPtr() )
+                                         );
             }
 
         template <typename SymbExprType>
@@ -384,11 +386,9 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr c
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    this->exportFields( time );
-
     auto fields = this->allFields();
+    this->executePostProcessExports( M_exporter, time, fields );
     this->executePostProcessMeasures( time, fields, symbolsExpr );
-
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), fields );
 
     this->timerTool("PostProcessing").stop("exportResults");
