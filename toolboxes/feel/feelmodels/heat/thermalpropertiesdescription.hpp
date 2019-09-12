@@ -173,6 +173,11 @@ public :
     bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
 
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElementsByMaterial( std::string const& matName ) const
+        {
+            CHECK( this->hasMaterial(matName) ) << "no material with name " << matName;
+            return M_rangeMeshElementsByMaterial.find( matName )->second;
+        }
 
     bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
 
@@ -408,6 +413,42 @@ public :
                 prop.second.setParameterValues( mp );
         }
 
+    template <typename SymbolsExpr>
+    void updateFields( SymbolsExpr const& symbolsExpr )
+        {
+            this->updateThermalConductivityField( symbolsExpr );
+        }
+
+    template <typename SymbolsExpr>
+    void updateThermalConductivityField( SymbolsExpr const& symbolsExpr )
+        {
+            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+            {
+                std::string const& matName = rangeData.first;
+                this->updateThermalConductivityField( matName, symbolsExpr );
+            }
+        }
+
+    template <typename SymbolsExpr>
+    void updateThermalConductivityField( std::string const& matName, SymbolsExpr const& symbolsExpr )
+        {
+            if  ( !M_fieldThermalConductivity )
+                return;
+            if ( !this->hasMaterial( matName ) )
+                return;
+            auto const& range = this->rangeMeshElementsByMaterial( matName );
+            auto const& thermalConductivity = this->thermalConductivity( matName );
+
+            if ( thermalConductivity.isMatrix() )
+            {
+                // TODO
+            }
+            else
+            {
+                auto kExpr = expr( thermalConductivity.expr(), symbolsExpr );
+                M_fieldThermalConductivity->on(_range=range,_expr=kExpr );
+            }
+        }
 private :
     std::string M_exprRepository;
     std::set<std::string> M_markers;

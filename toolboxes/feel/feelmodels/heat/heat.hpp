@@ -221,6 +221,11 @@ class Heat : public ModelNumerical,
 
         void updateParameterValues();
 
+        template <typename SymbolsExpr>
+        void updateFields( SymbolsExpr const& symbolsExpr )
+            {
+                this->thermalProperties()->updateFields( symbolsExpr );
+            }
 
         auto allFields() const
             {

@@ -215,6 +215,9 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // post-process
     this->initPostProcess();
 
+    // update fields
+    this->updateFields( this->symbolsExpr() );
+
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldCommPtr() );
 
@@ -621,6 +624,8 @@ HEAT_CLASS_TEMPLATE_TYPE::solve()
         M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
 
     M_blockVectorSolution.localize();
+
+    this->updateFields( this->symbolsExpr() );
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )

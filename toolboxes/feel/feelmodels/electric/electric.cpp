@@ -147,11 +147,17 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
     M_fieldElectricField.reset( new element_electricfield_type(M_XhElectricField,"E"));
     M_fieldCurrentDensity.reset( new element_electricfield_type(M_XhElectricField,"j"));
+    M_fieldJoulesLosses.reset( new element_component_electricfield_type(M_XhElectricField->compSpace(),"joules-losses"));
 
     this->initBoundaryConditions();
 
+    this->initInitialConditions();
+
     // post-process
     this->initPostProcess();
+
+    // update fields
+    this->updateFields( this->symbolsExpr() );
 
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
@@ -178,6 +184,19 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
     this->log("Electric","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
+}
+
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+ELECTRIC_CLASS_TEMPLATE_TYPE::initInitialConditions()
+{
+    if ( !this->doRestart() )
+    {
+        std::vector<element_electricpotential_ptrtype> icElectricPotentialFields;
+        CHECK( this->isStationary() ) << "TODO";
+        icElectricPotentialFields = { this->fieldElectricPotentialPtr() };
+        this->updateInitialConditions( "electric-potential", M_rangeMeshElements, this->symbolsExpr(), icElectricPotentialFields );
+    }
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -234,8 +253,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("Electric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","conductivity","current-density","pid"} );
-    this->setPostProcessSaveAllFieldsAvailable( {"electric-potential","electric-field","conductivity","current-density"} );
+    this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses","pid"} );
+    this->setPostProcessSaveAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses"} );
     super_type::initPostProcess();
 
     if ( !this->postProcessExportsFields().empty() )
@@ -402,34 +421,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateCurrentDensity()
-{
-    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
-    {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
-        if ( electricConductivity.isConstant() )
-        {
-            double sigma = electricConductivity.value();
-            auto cd = -sigma*trans(gradv( this->fieldElectricPotential() ));
-            this->updateCurrentDensity( cd, range );
-        }
-        else
-        {
-            auto sigma = electricConductivity.expr();
-            if ( sigma.expression().hasSymbol( "heat_T" ) )
-                continue;
-            auto cd = -sigma*trans(gradv( this->fieldElectricPotential() ));
-            this->updateCurrentDensity( cd, range );
-        }
-    }
-}
-
-
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
     this->modelProperties().parameters().updateParameterValues();
@@ -458,8 +449,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
     M_blockVectorSolution.localize();
 
-    this->updateElectricField();
-    this->updateCurrentDensity();
+    this->updateFields( this->symbolsExpr() );
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
