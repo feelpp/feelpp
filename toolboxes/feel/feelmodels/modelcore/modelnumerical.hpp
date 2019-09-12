@@ -44,6 +44,9 @@
 #include <feel/feelfit/fit.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 
+#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
 
 namespace Feel
 {
@@ -148,13 +151,20 @@ class ModelNumerical : public ModelAlgebraic
         std::set<std::string> postProcessExportsFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
         std::set<std::string> postProcessSaveFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
 
+        template <typename MeshType, typename RangeType, typename TupleFieldsType, typename SymbolsExpr>
+        bool executePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
+        template <typename MeshType, typename RangeType, typename TupleFieldsType, typename SymbolsExpr>
+        bool executePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
+        template <typename MeasurePointEvalType, typename TupleFieldsType>
+        bool executePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, TupleFieldsType const& tupleFields );
+
         template <typename TupleFieldsType>
-        void postProcessSave( uint32_type index, TupleFieldsType const& fields )
+        void executePostProcessSave( uint32_type index, TupleFieldsType const& fields )
             {
-                this->postProcessSave( this->postProcessSaveFields(), M_postProcessSaveFieldsFormat, index, fields );
+                this->executePostProcessSave( this->postProcessSaveFields(), M_postProcessSaveFieldsFormat, index, fields );
             }
         template <typename TupleFieldsType>
-        void postProcessSave( std::set<std::string> const& fieldsNamesToSave, std::string const& format, uint32_type index, TupleFieldsType const& fields );
+        void executePostProcessSave( std::set<std::string> const& fieldsNamesToSave, std::string const& format, uint32_type index, TupleFieldsType const& fields );
 
         ModelMeasuresIO const& postProcessMeasuresIO() const { return M_postProcessMeasuresIO; }
         ModelMeasuresIO & postProcessMeasuresIO() { return M_postProcessMeasuresIO; }
@@ -308,11 +318,60 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
         *dataToUpdate[k] = *dataToUpdate[0];
 }
 
+template <typename MeshType, typename RangeType, typename TupleFieldsType, typename SymbolsExpr>
+bool
+ModelNumerical::executePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = false;
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
+    {
+        std::map<std::string,double> resPpNorms;
+        measureNormEvaluation( mesh, rangeMeshElements, ppNorm, resPpNorms, symbolsExpr, tupleFields );
+        for ( auto const& resPpNorm : resPpNorms )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
+            hasMeasure = true;
+        }
+    }
+    return hasMeasure;
+}
 
+template <typename MeshType, typename RangeType, typename TupleFieldsType, typename SymbolsExpr>
+bool
+ModelNumerical::executePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = false;
+    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
+    {
+        std::map<std::string,double> resPpStats;
+        measureStatisticsEvaluation( mesh, rangeMeshElements, ppStat, resPpStats, symbolsExpr, tupleFields );
+        for ( auto const& resPpStat : resPpStats )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
+            hasMeasure = true;
+        }
+    }
+    return hasMeasure;
+}
+
+template <typename MeasurePointEvalType, typename TupleFieldsType>
+bool
+ModelNumerical::executePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, TupleFieldsType const& tupleFields )
+{
+    bool hasMeasure = false;
+    std::map<std::string,double> resPpPoints;
+    measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, tupleFields );
+    for ( auto const& resPpPoint : resPpPoints )
+    {
+        this->postProcessMeasuresIO().setMeasure( resPpPoint.first, resPpPoint.second );
+        hasMeasure = true;
+    }
+    return hasMeasure;
+}
 
 template <typename TupleFieldsType>
 void
-ModelNumerical::postProcessSave( std::set<std::string> const& fieldsNamesToSave, std::string const& format, uint32_type index, TupleFieldsType const& fieldTuple )
+ModelNumerical::executePostProcessSave( std::set<std::string> const& fieldsNamesToSave, std::string const& format, uint32_type index, TupleFieldsType const& fieldTuple )
 {
     std::string formatUsed = (format.empty())? "hdf5" : format;
     hana::for_each( fieldTuple, [&]( auto const& e )

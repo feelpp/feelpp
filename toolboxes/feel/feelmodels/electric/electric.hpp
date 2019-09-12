@@ -152,9 +152,9 @@ public :
     void exportFields( double time );
     bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
 
-    void postProcessMeasures( double time );
+    void executePostProcessMeasures( double time );
     template <typename TupleFieldsType, typename SymbolsExpr>
-    void postProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
+    void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
 
     void updateParameterValues();
 
@@ -291,9 +291,9 @@ Electric<ConvexType,BasisPotentialType>::exportResults( double time, SymbolsExpr
     this->exportFields( time );
 
     auto fields = this->allFields();
-    this->postProcessMeasures( time, fields, symbolsExpr );
+    this->executePostProcessMeasures( time, fields, symbolsExpr );
 
-    this->postProcessSave( invalid_uint32_type_value, fields );
+    this->executePostProcessSave( invalid_uint32_type_value, fields );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -309,38 +309,14 @@ Electric<ConvexType,BasisPotentialType>::exportResults( double time, SymbolsExpr
 template< typename ConvexType, typename BasisPotentialType>
 template <typename TupleFieldsType,typename SymbolsExpr>
 void
-Electric<ConvexType,BasisPotentialType>::postProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+Electric<ConvexType,BasisPotentialType>::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
 {
     bool hasMeasure = false;
-
-    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
-    {
-        std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, symbolsExpr, tupleFields );
-        for ( auto const& resPpNorm : resPpNorms )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
-            hasMeasure = true;
-        }
-    }
-    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
-    {
-        std::map<std::string,double> resPpStats;
-        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, symbolsExpr, tupleFields );
-        for ( auto const& resPpStat : resPpStats )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
-            hasMeasure = true;
-        }
-    }
-
-    std::map<std::string,double> resPpPoints;
-    M_measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, tupleFields );
-    for ( auto const& resPpPoint : resPpPoints )
-    {
-        this->postProcessMeasuresIO().setMeasure( resPpPoint.first, resPpPoint.second );
+    bool hasMeasureNorm = this->executePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, tupleFields, symbolsExpr );
+    bool hasMeasureStatistics = this->executePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, tupleFields, symbolsExpr );
+    bool hasMeasurePoint = this->executePostProcessMeasuresPoint( M_measurePointsEvaluation, tupleFields );
+    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
         hasMeasure = true;
-    }
 
     if ( hasMeasure )
     {
@@ -349,7 +325,6 @@ Electric<ConvexType,BasisPotentialType>::postProcessMeasures( double time, Tuple
         this->postProcessMeasuresIO().exportMeasures();
         this->upload( this->postProcessMeasuresIO().pathFile() );
     }
-
 }
 
 } // namespace FeelModels

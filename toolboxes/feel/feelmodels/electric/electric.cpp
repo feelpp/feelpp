@@ -443,9 +443,9 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::postProcessMeasures( double time )
+ELECTRIC_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
 {
-    this->postProcessMeasures( time, this->allFields(), this->symbolsExpr() );
+    this->executePostProcessMeasures( time, this->allFields(), this->symbolsExpr() );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
