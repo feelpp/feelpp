@@ -699,9 +699,9 @@ HEAT_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::se
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::postProcessMeasures( double time )
+HEAT_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
 {
-    this->postProcessMeasures( time, this->allFields(), this->symbolsExpr() );
+    this->executePostProcessMeasures( time, this->allFields(), this->symbolsExpr() );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS

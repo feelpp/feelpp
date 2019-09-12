@@ -45,9 +45,6 @@
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
-#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
-#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
-#include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
 
 namespace Feel
 {
@@ -218,10 +215,10 @@ class Heat : public ModelNumerical,
 
         void exportFields( double time );
         bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
-        void postProcessMeasures( double time );
+        void executePostProcessMeasures( double time );
         template <typename TupleFieldsType,typename SymbolsExpr>
-        void postProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
-        FEELPP_DEPRECATED void exportMeasures( double time ) { this->postProcessMeasures( time ); }
+        void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
+        FEELPP_DEPRECATED void exportMeasures( double time ) { this->executePostProcessMeasures( time ); }
         void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
 
         void updateParameterValues();
@@ -390,9 +387,9 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr c
     this->exportFields( time );
 
     auto fields = this->allFields();
-    this->postProcessMeasures( time, fields, symbolsExpr );
+    this->executePostProcessMeasures( time, fields, symbolsExpr );
 
-    this->postProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), fields );
+    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), fields );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -407,7 +404,7 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr c
 template< typename ConvexType, typename BasisTemperatureType>
 template <typename TupleFieldsType, typename SymbolsExpr>
 void
-Heat<ConvexType,BasisTemperatureType>::postProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
 {
     bool hasMeasure = false;
 
@@ -424,36 +421,11 @@ Heat<ConvexType,BasisTemperatureType>::postProcessMeasures( double time, TupleFi
         hasMeasure = true;
     }
 
-    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
-    {
-        std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, symbolsExpr, tupleFields );
-        for ( auto const& resPpNorm : resPpNorms )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
-            hasMeasure = true;
-        }
-    }
-
-    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
-    {
-        std::map<std::string,double> resPpStats;
-        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, symbolsExpr, tupleFields );
-        for ( auto const& resPpStat : resPpStats )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
-            hasMeasure = true;
-        }
-    }
-
-    std::map<std::string,double> resPpPoints;
-    M_measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, tupleFields );
-    for ( auto const& resPpPoint : resPpPoints )
-    {
-        this->postProcessMeasuresIO().setMeasure( resPpPoint.first, resPpPoint.second );
+    bool hasMeasureNorm = this->executePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, tupleFields, symbolsExpr );
+    bool hasMeasureStatistics = this->executePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, tupleFields, symbolsExpr );
+    bool hasMeasurePoint = this->executePostProcessMeasuresPoint( M_measurePointsEvaluation, tupleFields );
+    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
         hasMeasure = true;
-    }
-
 
     if ( hasMeasure )
     {
