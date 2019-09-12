@@ -433,7 +433,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
     if ( M_exporter && M_exporter->doExport() )
     {
-        bool hasFieldToExportHeat = M_heatModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeatt,time );
+        bool hasFieldToExportHeat = M_heatModel->updatePostProcessExports( M_exporter,M_postProcessFieldExportedHeatt,time, M_heatModel->allFields() );
         bool hasFieldToExportFluid = M_fluidModel->updateExportedFields( M_exporter,M_postProcessFieldExportedFluid,time );
         if ( hasFieldToExportHeat || hasFieldToExportFluid )
         {

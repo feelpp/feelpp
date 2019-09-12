@@ -77,6 +77,11 @@ public:
     typedef typename space_electricfield_type::element_type element_electricfield_type;
     typedef std::shared_ptr<element_electricfield_type> element_electricfield_ptrtype;
 
+    typedef typename space_electricfield_type::component_functionspace_type space_component_electricfield_type;
+    typedef std::shared_ptr<space_component_electricfield_type> space_component_electricfield_ptrtype;
+    typedef typename space_component_electricfield_type::element_type element_component_electricfield_type;
+    typedef std::shared_ptr<element_component_electricfield_type> element_component_electricfield_ptrtype;
+
     // mechanical properties desc
     typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_type;
     typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
@@ -110,6 +115,7 @@ public:
 private :
     void loadParameterFromOptionsVm();
     void initMesh();
+    void initInitialConditions();
     void initBoundaryConditions();
     void initPostProcess() override;
 
@@ -157,8 +163,9 @@ public :
         {
             return hana::make_tuple( std::make_pair( "electric-potential",this->fieldElectricPotentialPtr() ),
                                      std::make_pair( "electric-field",this->fieldElectricFieldPtr() ),
-                                     std::make_pair( "conductivity",M_electricProperties->fieldElectricConductivityPtr() ),
-                                     std::make_pair( "current-density",this->fieldCurrentDensityPtr() )
+                                     std::make_pair( "electric-conductivity",M_electricProperties->fieldElectricConductivityPtr() ),
+                                     std::make_pair( "current-density",this->fieldCurrentDensityPtr() ),
+                                     std::make_pair( "joules-losses",this->fieldJoulesLossesPtr() )
                                      );
         }
 
@@ -199,6 +206,8 @@ public :
     element_electricfield_type const& fieldElectricField() const { return *M_fieldElectricField; }
     element_electricfield_ptrtype const& fieldCurrentDensityPtr() const { return M_fieldCurrentDensity; }
     element_electricfield_type const& fieldCurrentDensity() const { return *M_fieldCurrentDensity; }
+    element_component_electricfield_type const& fieldJoulesLosses() const { return *M_fieldJoulesLosses; }
+    element_component_electricfield_ptrtype const& fieldJoulesLossesPtr() const { return M_fieldJoulesLosses; }
 
     electricproperties_ptrtype const& electricProperties() const { return M_electricProperties; }
 
@@ -223,21 +232,48 @@ public :
 
 
     //___________________________________________________________________________________//
-    void updateElectricField();
-    void updateCurrentDensity();
 
-    template<typename ExprT>
-    void updateCurrentDensity( Expr<ExprT> const& expr, elements_reference_wrapper_t<mesh_type> range )
+    template <typename SymbolsExpr>
+    void updateFields( SymbolsExpr const& symbolsExpr )
         {
-            M_fieldCurrentDensity->on(_range=range, _expr=expr );
+            this->electricProperties()->updateFields( symbolsExpr );
+            this->updateElectricField();
+            this->updateCurrentDensity( symbolsExpr );
+            this->updateJoulesLosses( symbolsExpr );
         }
 private :
+    void updateElectricField();
+    void updateCurrentDensity();
+    template<typename SymbolsExpr>
+    void updateCurrentDensity( SymbolsExpr const& symbolsExpr )
+        {
+            auto const& v = this->fieldElectricPotential();
+            for ( auto const& rangeData : this->electricProperties()->rangeMeshElementsByMaterial() )
+            {
+                std::string const& matName = rangeData.first;
+                auto const& range = rangeData.second;
+                auto const& electricConductivity = this->electricProperties()->electricConductivity( matName );
+                auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
+                M_fieldCurrentDensity->on(_range=range, _expr=-sigmaExpr*trans(gradv(v)) );
+            }
+        }
+    template<typename SymbolsExpr>
+    void updateJoulesLosses( SymbolsExpr const& symbolsExpr )
+        {
+            auto const& v = this->fieldElectricPotential();
+            for ( auto const& rangeData : this->electricProperties()->rangeMeshElementsByMaterial() )
+            {
+                std::string const& matName = rangeData.first;
+                auto const& range = rangeData.second;
+                auto const& electricConductivity = this->electricProperties()->electricConductivity( matName );
+                auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
+                M_fieldJoulesLosses->on(_range=range, _expr=sigmaExpr*inner(gradv(v)) );
+            }
+        }
+
     void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart ) const;
     void updateJacobianWeakBC( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const;
     void updateResidualWeakBC( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const;
-
-    void postprocessSave( uint32_type index );
-    void postprocessSave( std::set<std::string> const& fields, std::string const& format, uint32_type index );
 
 private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
@@ -250,6 +286,7 @@ private :
     space_electricfield_ptrtype M_XhElectricField;
     element_electricfield_ptrtype M_fieldElectricField;
     element_electricfield_ptrtype M_fieldCurrentDensity;
+    element_component_electricfield_ptrtype M_fieldJoulesLosses;
 
     // physical parameter
     electricproperties_ptrtype M_electricProperties;
