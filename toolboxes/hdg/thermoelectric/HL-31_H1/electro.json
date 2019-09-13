@@ -6,13 +6,14 @@
     {
         "Cu":
         {
-            "name":"copper",
-            "alpha":"3.5e-3",
-            "T0":"293",
-            "sigma0":"52e3",
-            "k0":"0.400",//"0.37",
+            "alpha":"3.6e-3",
+            "T0":"290",
+            "sigma0":"53e3",
+            "Lorentz":"2.47e-8",
+            // "k0":"0.38",//"0.37",
             "sigma":"sigma0/(1+alpha*(T-T0)):sigma0:alpha:T:T0",
             "k":"k0*T/((1+alpha*(T-T0))*T0):k0:T:alpha:T0"
+            // "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T"
         }
     },
     "BoundaryConditions":

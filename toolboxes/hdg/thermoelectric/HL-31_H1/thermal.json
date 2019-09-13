@@ -6,13 +6,14 @@
     {
         "Cu":
         {
-            "alpha":"3.5e-3",
-            "T0":"293",
-            "sigma0":"52e3",
-            "k0":"0.400"// ,//"0.37",
-            // "sigma":"sigma0/(1+alpha*(T-T0)):sigma0:alpha:T:T0",
+            "alpha":"3.6e-3",
+            "T0":"290",
+            "sigma0":"53e3",
+            "Lorentz":"2.47e-8",
+            "k0":"0.38",//"0.37",
+            "sigma":"sigma0/(1+alpha*(T-T0)):sigma0:alpha:T:T0",
             // "k":"k0*T/((1+alpha*(T-T0))*T0):k0:T:alpha:T0"
-            // "k":"sigma*L*T:sigma:L:T"
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T"
         }
     },
     "BoundaryConditions":
@@ -23,19 +24,17 @@
             {
                 "Rint":
                 {
-                    "expr1":"8.5e-2",
-                    "expr2":"8.5e-2*293"
+                    "expr1":"-8.5e-2",
+                    "expr2":"-8.5e-2*290"
                 },
                 "Rext":
                 {
-                    "expr1":"8.5e-2",
-                    "expr2":"8.5e-2*293"
+                    "expr1":"-8.5e-2",
+                    "expr2":"-8.5e-2*290"
                 }
             },
             "Neumann":
             {
-		// "Rint":{"expr":"0.85*300"},
-		// "Rext":{"expr":"0.85*300"},
                 "V0":
                 {
                     "expr":"0"
