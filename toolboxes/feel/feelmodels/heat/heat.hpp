@@ -176,21 +176,23 @@ class Heat : public ModelNumerical,
         void initInitialConditions();
         void initPostProcess() override;
 
-        constexpr auto symbolsExprField( hana::int_<2> /**/ ) const
+        template <typename FieldTemperatureType>
+        constexpr auto symbolsExprField( FieldTemperatureType const& t, hana::int_<2> /**/ ) const
             {
-                return Feel::vf::symbolsExpr( symbolExpr("heat_T",idv(this->fieldTemperature()) ),
-                                              symbolExpr("heat_dxT",dxv(this->fieldTemperature()) ),
-                                              symbolExpr("heat_dyT",dyv(this->fieldTemperature()) ),
-                                              symbolExpr("heat_dnT",dnv(this->fieldTemperature()) )
+                return Feel::vf::symbolsExpr( symbolExpr("heat_T",idv(t) ),
+                                              symbolExpr("heat_dxT",dxv(t) ),
+                                              symbolExpr("heat_dyT",dyv(t) ),
+                                              symbolExpr("heat_dnT",dnv(t) )
                                               );
             }
-        constexpr auto symbolsExprField( hana::int_<3> /**/ ) const
+        template <typename FieldTemperatureType>
+        constexpr auto symbolsExprField( FieldTemperatureType const& t, hana::int_<3> /**/ ) const
             {
-                return Feel::vf::symbolsExpr( symbolExpr("heat_T",idv(this->fieldTemperature()) ),
-                                              symbolExpr("heat_dxT",dxv(this->fieldTemperature()) ),
-                                              symbolExpr("heat_dyT",dyv(this->fieldTemperature()) ),
-                                              symbolExpr("heat_dzT",dzv(this->fieldTemperature()) ),
-                                              symbolExpr("heat_dnT",dnv(this->fieldTemperature()) )
+                return Feel::vf::symbolsExpr( symbolExpr("heat_T",idv(t) ),
+                                              symbolExpr("heat_dxT",dxv(t) ),
+                                              symbolExpr("heat_dyT",dyv(t) ),
+                                              symbolExpr("heat_dzT",dzv(t) ),
+                                              symbolExpr("heat_dnT",dnv(t) )
                                               );
             }
         //auto symbolsExprFit() const { return super_type::symbolsExprFit( this->symbolsExprField() ); }
@@ -236,17 +238,19 @@ class Heat : public ModelNumerical,
                                          );
             }
 
-        template <typename SymbExprType>
-        /*constexpr*/auto symbolsExpr( SymbExprType const& se ) const
+        template <typename FieldTemperatureType>
+        /*constexpr*/auto symbolsExpr( FieldTemperatureType const& t ) const
         {
-            auto seFit = this->symbolsExprFit( se );
-            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( se, seFit ) );
-            return Feel::vf::symbolsExpr( se, seFit, seMat );
+            auto seField = this->symbolsExprField( t );
+            auto seFit = this->symbolsExprFit( seField );
+            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( seField, seFit ) );
+            return Feel::vf::symbolsExpr( seField, seFit, seMat );
         }
-        auto symbolsExpr() const { return this->symbolsExpr( this->symbolsExprField() ); }
+        auto symbolsExpr() const { return this->symbolsExpr( this->fieldTemperature() ); }
 
-        ///*constexpr*/auto symbolsExpr() const { return Feel::vf::symbolsExpr( this->symbolsExprField(), this->symbolsExprFit() ); }
-        constexpr auto symbolsExprField() const { return this->symbolsExprField( hana::int_<nDim>() ); }
+        constexpr auto symbolsExprField() const { return this->symbolsExprField( this->fieldTemperature() ); }
+        template <typename FieldTemperatureType>
+        constexpr auto symbolsExprField( FieldTemperatureType const& t ) const { return this->symbolsExprField( t, hana::int_<nDim>() ); }
 
         template <typename SymbExprType>
         auto symbolsExprMaterial( SymbExprType const& se ) const
@@ -280,6 +284,9 @@ class Heat : public ModelNumerical,
         /*virtual*/ void solve();
 
         void updateLinearPDE( DataUpdateLinear & data ) const override;
+        template <typename SymbolsExpr>
+        void updateLinearPDE( DataUpdateLinear & data, SymbolsExpr const& symbolsExpr ) const;
+
         //void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
         void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
         void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
@@ -291,12 +298,16 @@ class Heat : public ModelNumerical,
         // non linear (newton)
         void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
         void updateJacobian( DataUpdateJacobian & data ) const override;
+        template <typename SymbolsExpr>
+        void updateJacobian( DataUpdateJacobian & data, SymbolsExpr const& symbolsExpr ) const;
         void updateJacobianRobinBC(  DataUpdateJacobian & data ) const;
         void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
         template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
         void updateJacobianStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
                                              Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateJacobian & data ) const;
         void updateResidual( DataUpdateResidual & data ) const override;
+        template <typename SymbolsExpr>
+        void updateResidual( DataUpdateResidual & data, SymbolsExpr const& symbolsExpr ) const;
         void updateResidualSourceTerm( DataUpdateResidual & data ) const;
         void updateResidualWeakBC( DataUpdateResidual & data, element_temperature_external_storage_type const& u ) const;
         void updateResidualDofElimination( DataUpdateResidual & data ) const override;
@@ -444,6 +455,7 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
 } // namespace FeelModels
 } // namespace Feel
 
+#include <feel/feelmodels/heat/heatassembly.hpp>
 #include <feel/feelmodels/heat/heatupdatestabilizationgls.hpp>
 
 

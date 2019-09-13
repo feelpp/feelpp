@@ -90,6 +90,13 @@ ModelAlgebraicFactory::init( model_ptrtype const& model, backend_ptrtype const& 
                              graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit )
 {
     M_model = model;
+    this->setFunctionLinearAssembly(  boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateLinearPDE,
+                                                   boost::ref( *model ), _1 ) );
+    this->setFunctionJacobianAssembly(  boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateJacobian,
+                                                     boost::ref( *model ), _1 ) );
+    this->setFunctionResidualAssembly(  boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateResidual,
+                                                     boost::ref( *model ), _1 ) );
+
     this->init( backend, graph, indexSplit );
 }
 void
@@ -459,10 +466,9 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         {
             M_CstJ->zero();
             M_CstR->zero();
-            //this->model()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
             dataLinearCst.copyInfos( this->dataInfos() );
-            this->model()->updateLinearPDE( dataLinearCst );
+            M_functionLinearAssembly( dataLinearCst );
             for ( auto const& func : M_addFunctionLinearAssembly )
                 func.second( dataLinearCst );
             M_CstR->close();
@@ -476,10 +482,9 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         {
             M_CstJ->zero();
             M_CstR->zero();
-            //this->model()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
             dataLinearCst.copyInfos( this->dataInfos() );
-            this->model()->updateLinearPDE( dataLinearCst );
+            M_functionLinearAssembly( dataLinearCst );
             for ( auto const& func : M_addFunctionLinearAssembly )
                 func.second( dataLinearCst );
             M_CstR->close();
@@ -508,7 +513,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         // assembling non cst part
         ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
         dataLinearNonCst.copyInfos( this->dataInfos() );
-        this->model()->updateLinearPDE( dataLinearNonCst );
+        M_functionLinearAssembly( dataLinearNonCst );
         for ( auto const& func : M_addFunctionLinearAssembly )
             func.second( dataLinearNonCst );
 
@@ -608,7 +613,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         {
             ModelAlgebraic::DataUpdateJacobian dataJacobianCst(X, J, R, true, M_Extended,false);
             dataJacobianCst.copyInfos( this->dataInfos() );
-            model->updateJacobian( dataJacobianCst );
+            M_functionJacobianAssembly( dataJacobianCst );
             for ( auto const& func : M_addFunctionJacobianAssembly )
                 func.second( dataJacobianCst );
         }
@@ -622,7 +627,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             dataJacobianNonCst.addDoubleInfo( "pseudo-transient-continuation.delta", M_pseudoTransientContinuationDeltaAndResidual.back().first );
         }
 
-        model->updateJacobian( dataJacobianNonCst );
+        M_functionJacobianAssembly( dataJacobianNonCst );
         for ( auto const& func : M_addFunctionJacobianAssembly )
             func.second( dataJacobianNonCst );
 
@@ -665,7 +670,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         {
             ModelAlgebraic::DataUpdateResidual dataResidualCst( X, R, true, true );
             dataResidualCst.copyInfos( this->dataInfos() );
-            model->updateResidual( dataResidualCst );
+            M_functionResidualAssembly( dataResidualCst );
             for ( auto const& func : M_addFunctionResidualAssembly )
                 func.second( dataResidualCst );
             R->close();
@@ -681,7 +686,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
         ModelAlgebraic::DataUpdateResidual dataResidualNonCst( X, R, false, doOptimization );
         dataResidualNonCst.copyInfos( this->dataInfos() );
-        model->updateResidual( dataResidualNonCst );
+        M_functionResidualAssembly( dataResidualNonCst );
         for ( auto const& func : M_addFunctionResidualAssembly )
             func.second( dataResidualNonCst );
 
@@ -757,7 +762,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 M_CstJ->zero();
                 ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
                 dataJacobianCst.copyInfos( this->dataInfos() );
-                model->updateJacobian( dataJacobianCst );
+                M_functionJacobianAssembly( dataJacobianCst );
                 for ( auto const& func : M_addFunctionJacobianAssembly )
                     func.second( dataJacobianCst );
                 M_CstJ->close();
@@ -768,7 +773,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 M_CstJ->zero();
                 ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
                 dataJacobianCst.copyInfos( this->dataInfos() );
-                model->updateJacobian( dataJacobianCst );
+                M_functionJacobianAssembly( dataJacobianCst );
                 for ( auto const& func : M_addFunctionJacobianAssembly )
                     func.second( dataJacobianCst );
                 M_CstJ->close();
@@ -787,7 +792,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 // Warning : the second true is very important in order to build M_CstR!!!!!!
                 ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
                 dataResidualCst.copyInfos( this->dataInfos() );
-                model->updateResidual( dataResidualCst );
+                M_functionResidualAssembly( dataResidualCst );
                 for ( auto const& func : M_addFunctionResidualAssembly )
                     func.second( dataResidualCst );
                 M_CstR->close();
@@ -802,7 +807,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 // Warning : the second true is very important in order to build M_CstR!!!!!!
                 ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
                 dataResidualCst.copyInfos( this->dataInfos() );
-                model->updateResidual( dataResidualCst );
+                M_functionResidualAssembly( dataResidualCst );
                 for ( auto const& func : M_addFunctionResidualAssembly )
                     func.second( dataResidualCst );
                 M_CstR->close();
@@ -875,11 +880,11 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         dataResidual.setUseJacobianLinearTerms( false );
         vector_ptrtype& R = dataResidual.residual();
         R->zero();
-        model->updateResidual( dataResidual );
+        M_functionResidualAssembly( dataResidual );
         for ( auto const& func : M_addFunctionResidualAssembly )
             func.second( dataResidual );
         dataResidual.setBuildCstPart( false );
-        model->updateResidual( dataResidual );
+        M_functionResidualAssembly( dataResidual );
         for ( auto const& func : M_addFunctionResidualAssembly )
             func.second( dataResidual );
         R->close();
@@ -911,7 +916,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
     {
         M_CstJ->zero();
         ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
-        this->model()->updateJacobian( dataJacobianCst );
+        M_functionJacobianAssembly( dataJacobianCst );
         for ( auto const& func : M_addFunctionJacobianAssembly )
             func.second( dataJacobianCst );
         M_CstJ->close();
@@ -924,7 +929,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         M_CstJ->zero();
         M_CstR->zero();
         ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
-        this->model()->updateLinearPDE(dataLinearCst);
+        M_functionLinearAssembly(dataLinearCst);
         for ( auto const& func : M_addFunctionLinearAssembly )
             func.second( dataLinearCst );
         M_CstJ->close();
@@ -963,7 +968,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             M_CstJ->zero();
             M_CstR->zero();
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
-            this->model()->updateLinearPDE( dataLinearCst );
+            M_functionLinearAssembly( dataLinearCst );
             M_hasBuildLinearSystemCst = true;
 
             double tAssemblyElapsed = this->model()->timerTool("Solve").stop();
@@ -971,11 +976,10 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         }
         this->model()->setNeedToRebuildCstPart(false);
 
-        vector_ptrtype Uold;
+        vector_ptrtype Uold = M_backend->newVector( M_R->mapPtr() );
+        *Uold = *U;
         vector_ptrtype residual;
-        if ( !useConvergenceAlgebraic )
-            Uold = M_backend->newVector( M_R->mapPtr() );
-        else
+        if ( useConvergenceAlgebraic )
             residual = M_backend->newVector( M_R->mapPtr() );
 
         bool hasConverged = false;
@@ -983,6 +987,8 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         double convergenceRate=1;
         double rtol = this->backend()->rToleranceSNES();//1e-6;
         double atol = this->backend()->aToleranceSNES();//1e-50;
+        double stol = this->backend()->sToleranceSNES();
+        double initialResiduValue = 0;
         int fixPointMaxIt = this->backend()->maxIterationsSNES();
         int cptIteration=0;
         for ( ; cptIteration < fixPointMaxIt ; ++cptIteration )
@@ -990,7 +996,6 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             if ( !useConvergenceAlgebraic )
             {
                 *Uold = *U;
-                Uold->close();
             }
 
             this->model()->timerTool("Solve").start();
@@ -1008,12 +1013,12 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 M_J->zero();
                 M_R->zero();
                 ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_J,M_R,true,M_Extended,false);
-                this->model()->updateLinearPDE( dataLinearCst );
+                M_functionLinearAssembly( dataLinearCst );
             }
 
             // assembling non cst part
             ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
-            this->model()->updateLinearPDE( dataLinearNonCst );
+            M_functionLinearAssembly( dataLinearNonCst );
 
             // dof elimination
             this->model()->updateLinearPDEDofElimination( dataLinearNonCst );
@@ -1041,17 +1046,23 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 residual->add( -1., M_R );
                 residual->close();
                 double nomResidual = residual->l2Norm();
-                double normRhs = M_R->l2Norm();
+                //double normRhs = M_R->l2Norm();
                 if (this->model()->verboseSolverTimer())
                     Feel::FeelModels::Log( this->model()->prefix()+".ModelAlgebraicFactory","AlgoPicard",
                                            (boost::format("picard iteration[%1%] residual norm : %2%")%cptIteration %nomResidual ).str(),
                                            this->model()->worldComm(),this->model()->verboseSolverTimerAllProc() );
 
-                if ( nomResidual < std::max(rtol*normRhs,atol) )
+                if ( cptIteration == 0 )
+                    initialResiduValue = nomResidual;
+                else
                 {
-                    hasConverged = true;
-                    this->model()->timerTool("Solve").stop();
-                    break;
+                    //if ( nomResidual < std::max(rtol*normRhs,atol) )
+                    if ( nomResidual < std::max(rtol*initialResiduValue,atol) || nomResidual < atol )
+                    {
+                        hasConverged = true;
+                        this->model()->timerTool("Solve").stop();
+                        break;
+                    }
                 }
             }
 
@@ -1086,6 +1097,8 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                                       (boost::format("picard iteration[%1%] finish sub solve in %2% s")%cptIteration %tSolveElapsed ).str(),
                                       this->model()->worldComm(),this->model()->verboseSolverTimerAllProc());
 
+
+#if 0
             if ( !useConvergenceAlgebraic )
             {
                 convergenceRate = this->model()->updatePicardConvergence( U,Uold );
@@ -1099,8 +1112,20 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                     hasConverged = true;
                     break;
                 }
-
             }
+#endif
+            if ( useConvergenceAlgebraic )
+            {
+                Uold->add( -1., U );
+                double normDelta = Uold->l2Norm();
+                double normU = U->l2Norm();
+                if ( normDelta < std::max(stol*normU,atol) )
+                {
+                    hasConverged = true;
+                    break;
+                }
+            }
+            *Uold = *U;
         } // for ( ; cptIteration < fixPointMaxIt ; ++cptIteration )
 
         double tFixPointElapsed = this->model()->timerTool("Solve").stop();

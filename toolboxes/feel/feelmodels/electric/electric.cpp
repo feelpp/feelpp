@@ -467,74 +467,8 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    sparse_matrix_ptrtype& A = data.matrix();
-    vector_ptrtype& F = data.rhs();
-    bool buildCstPart = data.buildCstPart();
-
-    std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("Electric","updateLinearPDE", "start"+sc);
-    boost::mpi::timer thetimer;
-
-    auto mesh = this->mesh();
-    auto XhV = this->spaceElectricPotential();
-    auto const& v = this->fieldElectricPotential();
-
-    auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=A,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix() ,
-                                              _colstart=this->colStartInMatrix() );
-    auto myLinearForm = form1( _test=XhV, _vector=F,
-                               _rowstart=this->rowStartInVector() );
-
-    //--------------------------------------------------------------------------------------------------//
-
-    if ( buildCstPart )
-    {
-        for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
-        {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
-            if ( electricConductivity.isConstant() )
-            {
-                double sigma = electricConductivity.value();
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= sigma*inner(gradt(v),grad(v)),
-                               _geomap=this->geomap() );
-            }
-            else
-            {
-                auto sigma = electricConductivity.expr();
-                if ( sigma.expression().hasSymbol( "heat_T" ) )
-                    continue;
-                //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= sigma*inner(gradt(v),grad(v)),
-                               _geomap=this->geomap() );
-            }
-        }
-    }
-
-    // update source term
-    if ( !buildCstPart )
-    {
-        for( auto const& d : this->M_volumicForcesProperties )
-        {
-            auto rangeEltUsed = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
-            myLinearForm +=
-                integrate( _range=rangeEltUsed,
-                           _expr= expression(d)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-
-
-    // update bc
-    this->updateLinearPDEWeakBC(A,F,buildCstPart);
+    this->updateLinearPDE( data, this->symbolsExpr() );
 }
-
 
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -565,60 +499,8 @@ void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
-    sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
-    bool _BuildCstPart = data.buildCstPart();
-
-    bool buildNonCstPart = !_BuildCstPart;
-    bool buildCstPart = _BuildCstPart;
-
-    std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("Electric","updateJacobian", "start"+sc);
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
-
-    auto mesh = this->mesh();
-    auto XhV = this->spaceElectricPotential();
-    // auto const& v = this->fieldElectricPotential();
-    auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
-
-    auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
-                                              _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
-
-    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
-    {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
-        if ( electricConductivity.isConstant() )
-        {
-            if ( buildCstPart )
-            {
-                double sigma = electricConductivity.value();
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= sigma*inner(gradt(v),grad(v)),
-                               _geomap=this->geomap() );
-            }
-        }
-        else
-        {
-            auto sigma = electricConductivity.expr();
-            if ( sigma.expression().hasSymbol( "heat_T" ) )
-                continue;
-            if ( buildCstPart )
-            {
-                //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= sigma*inner(gradt(v),grad(v)),
-                               _geomap=this->geomap() );
-            }
-        }
-    }
-
-    this->updateJacobianWeakBC( v,J,buildCstPart );
+    auto const v = this->spaceElectricPotential()->element(XVec, this->rowStartInVector());
+    this->updateJacobian( data, this->symbolsExpr(v) );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -665,76 +547,8 @@ void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
-    vector_ptrtype& R = data.residual();
-    bool _BuildCstPart = data.buildCstPart();
-    bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
-
-    bool buildNonCstPart = !_BuildCstPart;
-    bool buildCstPart = _BuildCstPart;
-
-    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
-    this->log("Electric","updateResidual", "start"+sc);
-
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
-
-    auto mesh = this->mesh();
-    auto XhV = this->spaceElectricPotential();
-    // auto const& v = this->fieldElectricPotential();
-    auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
-
-
-    auto myLinearForm = form1( _test=XhV, _vector=R,
-                               _rowstart=this->rowStartInVector() + startBlockIndexElectricPotential );
-
-
-    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
-    {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
-        if ( electricConductivity.isConstant() )
-        {
-            if (!buildCstPart && !UseJacobianLinearTerms )
-            {
-                double sigma = electricConductivity.value();
-                myLinearForm +=
-                    integrate( _range=range,
-                               _expr= sigma*inner(gradv(v),grad(v)),
-                               _geomap=this->geomap() );
-            }
-        }
-        else
-        {
-            auto sigma = electricConductivity.expr();
-            if ( sigma.expression().hasSymbol( "heat_T" ) )
-                continue;
-            if (!buildCstPart && !UseJacobianLinearTerms )
-            {
-                //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
-                myLinearForm +=
-                    integrate( _range=range,
-                               _expr= sigma*inner(gradv(v),grad(v)),
-                               _geomap=this->geomap() );
-            }
-        }
-    }
-    // source term
-    if ( buildCstPart )
-    {
-        for( auto const& d : this->M_volumicForcesProperties )
-        {
-            auto rangeEltUsed = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
-            myLinearForm +=
-                integrate( _range=rangeEltUsed,
-                           _expr= -expression(d)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-
-    // weak bc
-    this->updateResidualWeakBC( v,R,buildCstPart );
-
-    this->log("Electric","updateResidual", "finish"+sc);
+    auto const v = this->spaceElectricPotential()->element(XVec, this->rowStartInVector());
+    this->updateResidual( data, this->symbolsExpr(v) );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS

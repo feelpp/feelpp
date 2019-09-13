@@ -372,6 +372,7 @@ thermoElectric_options(std::string const& prefix)
     Feel::po::options_description thermoElectricOptions("ThermoElectric options");
 
     thermoElectricOptions.add_options()
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "thermoelectric solver : automatic, Newton, Picard")
         (prefixvm(prefix,"solver-newton.initial-guess.use-linear-thermo-electric").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-thermo-electric")
         (prefixvm(prefix,"solver-newton.initial-guess.use-linear-heat").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-heat")
         (prefixvm(prefix,"solver-newton.initial-guess.use-linear-electric").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-electric")

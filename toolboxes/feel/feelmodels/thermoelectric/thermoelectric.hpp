@@ -120,25 +120,27 @@ public :
     void startTimeStep() { this->heatModel()->startTimeStep(); }
     void updateTimeStep() {  this->heatModel()->updateTimeStep(); }
 
-    auto symbolsExpr() const
+    auto symbolsExpr() const { return this->symbolsExpr( M_heatModel->fieldTemperature(), M_electricModel->fieldElectricPotential() ); }
+
+    template <typename FieldTemperatureType,typename FieldElectricPotentialType>
+    auto symbolsExpr( FieldTemperatureType const& t, FieldElectricPotentialType const& v ) const
         {
-            auto symbolExprField = Feel::vf::symbolsExpr( M_heatModel->symbolsExprField(), M_electricModel->symbolsExprField() );
+            auto symbolExprField = Feel::vf::symbolsExpr( M_heatModel->symbolsExprField( t ), M_electricModel->symbolsExprField( v ) );
             auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
             auto symbolExprMaterial = Feel::vf::symbolsExpr( M_heatModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ),
                                                              M_electricModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
             return Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
         }
-    //___________________________________________________________________________________//
+//___________________________________________________________________________________//
     // apply assembly and solver
     void solve();
 
-    void updateLinearPreAssemblyJouleLaw( DataUpdateLinear & data ) const;
-    void updateResidualPreAssemblyJouleLaw( DataUpdateResidual & data ) const;
-    void updateGenericPreAssemblyJouleLaw( vector_ptrtype& F, bool applyOnResidual ) const;
-
-    void updateLinearElectricDependingOnTemperature( DataUpdateLinear & data ) const;
+    void updateLinear_Heat( DataUpdateLinear & data ) const;
+    void updateResidual_Heat( DataUpdateResidual & data ) const;
+    void updateLinear_Electric( DataUpdateLinear & data ) const;
 
     void updateLinearPDE( DataUpdateLinear & data ) const override;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
     void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
     void updateJacobian( DataUpdateJacobian & data ) const override;
