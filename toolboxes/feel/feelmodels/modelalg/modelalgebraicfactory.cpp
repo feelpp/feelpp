@@ -29,6 +29,7 @@
 
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelalg/vectorublas.hpp>
+#include <feel/feelalg/enums.hpp>
 
 namespace Feel
 {
@@ -37,6 +38,8 @@ namespace FeelModels
 
 ModelAlgebraicFactory::ModelAlgebraicFactory( std::string const& prefix )
     :
+    M_dofElimination_strategy( Feel::ContextOnMap[soption(_prefix=prefix,_name="on.type")] ),
+    M_dofElimination_valueOnDiagonal( doption(_prefix=prefix,_name="on.value_on_diagonal") ),
     M_hasBuildLinearJacobian(false),
     M_hasBuildResidualCst(false),
     M_hasBuildLinearSystemCst(false),
@@ -458,6 +461,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             M_CstR->zero();
             //this->model()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+            dataLinearCst.copyInfos( this->dataInfos() );
             this->model()->updateLinearPDE( dataLinearCst );
             for ( auto const& func : M_addFunctionLinearAssembly )
                 func.second( dataLinearCst );
@@ -474,6 +478,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             M_CstR->zero();
             //this->model()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+            dataLinearCst.copyInfos( this->dataInfos() );
             this->model()->updateLinearPDE( dataLinearCst );
             for ( auto const& func : M_addFunctionLinearAssembly )
                 func.second( dataLinearCst );
@@ -502,6 +507,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
         // assembling non cst part
         ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
+        dataLinearNonCst.copyInfos( this->dataInfos() );
         this->model()->updateLinearPDE( dataLinearNonCst );
         for ( auto const& func : M_addFunctionLinearAssembly )
             func.second( dataLinearNonCst );
@@ -541,7 +547,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         // set preconditioner
         //M_PrecondManage->setMatrix(M_Prec);
 
-        this->model()->updateInHousePreconditioner( M_J, U );
+        this->model()->updateInHousePreconditioner( dataLinearNonCst );
 
         pre_solve_type pre_solve = std::bind(&model_type::preSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
         post_solve_type post_solve = std::bind(&model_type::postSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
@@ -601,12 +607,14 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         else
         {
             ModelAlgebraic::DataUpdateJacobian dataJacobianCst(X, J, R, true, M_Extended,false);
+            dataJacobianCst.copyInfos( this->dataInfos() );
             model->updateJacobian( dataJacobianCst );
             for ( auto const& func : M_addFunctionJacobianAssembly )
                 func.second( dataJacobianCst );
         }
 
         ModelAlgebraic::DataUpdateJacobian dataJacobianNonCst(X,J,R,false, M_Extended,false);
+        dataJacobianNonCst.copyInfos( this->dataInfos() );
         if ( M_usePseudoTransientContinuation )
         {
             dataJacobianNonCst.addInfo( "use-pseudo-transient-continuation" );
@@ -623,10 +631,18 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         for ( auto const& func : M_addFunctionJacobianDofElimination )
             func.second( dataJacobianNonCst );
 
+        if ( dataJacobianNonCst.hasDofEliminationIds() )
+        {
+            // we assume that all shared dofs are present, not need to appy a sync
+            std::vector<int> _dofs;_dofs.assign( dataJacobianNonCst.dofEliminationIds().begin(), dataJacobianNonCst.dofEliminationIds().end());
+            auto tmp = dataJacobianNonCst.vectorUsedInStrongDirichlet();
+            J->zeroRows( _dofs, *tmp, *tmp, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
+        }
+
         for ( auto const& func : M_addFunctionJacobianPostAssembly )
             func.second( dataJacobianNonCst );
 
-        model->updateInHousePreconditioner( J, X );
+        model->updateInHousePreconditioner( dataJacobianNonCst );
 
         double tElapsed = model->timerTool("Solve").stop();
         model->timerTool("Solve").addDataValue("algebraic-jacobian",tElapsed);
@@ -648,6 +664,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         else
         {
             ModelAlgebraic::DataUpdateResidual dataResidualCst( X, R, true, true );
+            dataResidualCst.copyInfos( this->dataInfos() );
             model->updateResidual( dataResidualCst );
             for ( auto const& func : M_addFunctionResidualAssembly )
                 func.second( dataResidualCst );
@@ -663,6 +680,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             R->addVector(*X, *M_CstJ );
 
         ModelAlgebraic::DataUpdateResidual dataResidualNonCst( X, R, false, doOptimization );
+        dataResidualNonCst.copyInfos( this->dataInfos() );
         model->updateResidual( dataResidualNonCst );
         for ( auto const& func : M_addFunctionResidualAssembly )
             func.second( dataResidualNonCst );
@@ -677,6 +695,13 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         model->updateResidualDofElimination( dataResidualNonCst );
         for ( auto const& func : M_addFunctionResidualDofElimination )
             func.second( dataResidualNonCst );
+
+        if ( dataResidualNonCst.hasDofEliminationIds() )
+        {
+            for ( size_type k : dataResidualNonCst.dofEliminationIds() )
+                R->set( k, 0. );
+            // we assume that all shared dofs are present, not need to appy a sync
+        }
 
         for ( auto const& func : M_addFunctionResidualPostAssembly )
             func.second( dataResidualNonCst );
@@ -699,6 +724,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
         if ( M_usePseudoTransientContinuation )
             M_pseudoTransientContinuationDeltaAndResidual.clear();
+
         //---------------------------------------------------------------------//
         //---------------------------------------------------------------------//
         //---------------------------------------------------------------------//
@@ -708,7 +734,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         for ( auto const& func : M_addFunctionNewtonInitialGuess )
             func.second( dataInitialGuess );
 
-        if ( dataInitialGuess.hasDofIdsMultiProcessModified() )
+        if ( dataInitialGuess.hasDofEliminationIds() )
         {
             // create view in order to avoid mpi comm inside petsc
             auto UView = VectorUblas<value_type>::createView( *U );
@@ -716,8 +742,8 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             std::vector<ElementsType> fromEntities = { MESH_ELEMENTS, MESH_FACES, MESH_EDGES, MESH_POINTS };
             for ( ElementsType entity : fromEntities )
             {
-                if ( dataInitialGuess.hasDofIdsMultiProcessModified( entity ) )
-                    sync( UView, "=", dataInitialGuess.dofIdsMultiProcessModified( entity ) );
+                if ( dataInitialGuess.hasDofEliminationIds( entity ) )
+                    sync( UView, "=", dataInitialGuess.dofEliminationIds( entity ) );
             }
         }
 
@@ -730,6 +756,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             {
                 M_CstJ->zero();
                 ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
+                dataJacobianCst.copyInfos( this->dataInfos() );
                 model->updateJacobian( dataJacobianCst );
                 for ( auto const& func : M_addFunctionJacobianAssembly )
                     func.second( dataJacobianCst );
@@ -740,6 +767,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             {
                 M_CstJ->zero();
                 ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
+                dataJacobianCst.copyInfos( this->dataInfos() );
                 model->updateJacobian( dataJacobianCst );
                 for ( auto const& func : M_addFunctionJacobianAssembly )
                     func.second( dataJacobianCst );
@@ -758,6 +786,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 M_CstR->zero();
                 // Warning : the second true is very important in order to build M_CstR!!!!!!
                 ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
+                dataResidualCst.copyInfos( this->dataInfos() );
                 model->updateResidual( dataResidualCst );
                 for ( auto const& func : M_addFunctionResidualAssembly )
                     func.second( dataResidualCst );
@@ -772,6 +801,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 M_CstR->zero();
                 // Warning : the second true is very important in order to build M_CstR!!!!!!
                 ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
+                dataResidualCst.copyInfos( this->dataInfos() );
                 model->updateResidual( dataResidualCst );
                 for ( auto const& func : M_addFunctionResidualAssembly )
                     func.second( dataResidualCst );
@@ -831,11 +861,20 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
     void
     ModelAlgebraicFactory::evaluateResidual(const vector_ptrtype& U, vector_ptrtype& R, std::vector<std::string> const& infos, bool applyDofElimination ) const
     {
-        auto model = this->model();
-        R->zero();
         ModelAlgebraic::DataUpdateResidual dataResidual( U, R, true, false );
         for ( std::string const& info : infos )
             dataResidual.addInfo( info );
+        this->evaluateResidual( dataResidual, applyDofElimination );
+    }
+
+    void
+    ModelAlgebraicFactory::evaluateResidual( ModelAlgebraic::DataUpdateResidual & dataResidual, bool applyDofElimination ) const
+    {
+        auto model = this->model();
+        dataResidual.setBuildCstPart( true );
+        dataResidual.setUseJacobianLinearTerms( false );
+        vector_ptrtype& R = dataResidual.residual();
+        R->zero();
         model->updateResidual( dataResidual );
         for ( auto const& func : M_addFunctionResidualAssembly )
             func.second( dataResidual );
@@ -854,6 +893,11 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             model->updateResidualDofElimination( dataResidual );
             for ( auto const& func : M_addFunctionResidualDofElimination )
                 func.second( dataResidual );
+            if ( dataResidual.hasDofEliminationIds() )
+            {
+                for ( size_type k : dataResidual.dofEliminationIds() )
+                    R->set( k, 0. );
+            }
         }
 
         for ( auto const& func : M_addFunctionResidualPostAssembly )
@@ -1015,7 +1059,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             this->model()->updatePreconditioner(U,M_J,M_Extended,M_Prec);
 
             // update in-house preconditioners
-            this->model()->updateInHousePreconditioner( M_J, U );
+            this->model()->updateInHousePreconditioner( dataLinearNonCst );
 
             // set pre/post solve functions
             pre_solve_type pre_solve = std::bind(&model_type::preSolvePicard, this->model(), std::placeholders::_1, std::placeholders::_2);

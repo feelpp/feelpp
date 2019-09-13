@@ -28,6 +28,7 @@
 
 #if defined(FEELPP_HAS_NLOPT)
 #include <nlopt.hpp>
+#include <feel/feelopt/enums.hpp>
 #include <functional>
 #include <iostream>
 #include <feel/feelcore/feel.hpp>

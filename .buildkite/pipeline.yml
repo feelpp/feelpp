@@ -19,7 +19,7 @@ steps:
      ubuntu: "16.04"
  - wait
  - trigger: "feelpp-singularity"
-   label: ":package: create feelpp :singularity: containers"
+   label: ":package: :singularity: Feel++ feelpp ${BUILDKITE_BRANCH} containers"
    async: true
    build:
      env:
@@ -29,7 +29,7 @@ steps:
  - trigger: "feelpp-testsuite"
    label: ":docker: compile and run the Feel++ testsuite :rocket:"
    async: true
-   branches: ["develop","cpp17"]
+   branches: ["develop"]
    build:
     message: "${BUILDKITE_MESSAGE}"
     commit: "${BUILDKITE_COMMIT}"
@@ -47,7 +47,7 @@ steps:
      ubuntu: "16.04"
  - wait
  - trigger: "feelpp-singularity"
-   label: ":package: create feelpp :singularity: containers"
+   label: ":package: :singularity: Feel++ Toolboxes ${BUILDKITE_BRANCH} containers"
    async: true
    build:
      env:
@@ -67,7 +67,7 @@ steps:
      ubuntu: "16.04"
  - wait
  - trigger: "feelpp-singularity"
-   label: ":package: create Feel++ :singularity: containers"
+   label: ":package: :singularity: Feel++ MOR ${BUILDKITE_BRANCH} containers"
    async: true
    build:
      env:

@@ -62,7 +62,7 @@ runApplicationThermoElectric()
     using exporter_type = Exporter<mesh_type>;
     using exporter_ptrtype = std::shared_ptr<exporter_type>;
 
-    std::shared_ptr<model_type> thermoElectric( new model_type("thermo-electric", false) );
+    std::shared_ptr<model_type> thermoElectric( new model_type("thermo-electric") );
 
     int maxiter = ioption("cvg.nb-iter");
     double factor = doption("cvg.factor");

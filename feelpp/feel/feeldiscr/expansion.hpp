@@ -29,6 +29,8 @@
 #if !defined(FEELPP_EXPANSION_HPP)
 #define FEELPP_EXPANSION_HPP 1
 
+#include <feel/feelalg/vector.hpp>
+
 namespace Feel {
 
 /**

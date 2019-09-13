@@ -55,10 +55,17 @@ public :
     typedef std::shared_ptr<solid_type> solid_ptrtype;
 
     typedef typename fluid_type::mesh_type mesh_fluid_type;
+    typedef typename fluid_type::trace_mesh_type trace_mesh_fluid_type;
     typedef typename solid_type::mesh_type mesh_solid_type;
     typedef typename solid_type::trace_mesh_type trace_mesh_solid_type;
     typedef typename solid_type::mesh_1dreduced_type mesh_solid_1dreduced_type;
 
+
+    // mesh velocity on FSI boundary
+    typedef FunctionSpace<trace_mesh_fluid_type, bases<typename fluid_type::basis_fluid_u_type> > space_fluid_meshvelocityonboundary_type;
+    typedef std::shared_ptr<space_fluid_meshvelocityonboundary_type> space_fluid_meshvelocityonboundary_ptrtype;
+    typedef typename space_fluid_meshvelocityonboundary_type::element_type element_fluid_meshvelocityonboundary_type;
+    typedef std::shared_ptr<element_fluid_meshvelocityonboundary_type> element_fluid_meshvelocityonboundary_ptrtype;
     //___________________________________________________________________________________//
     // normal stress from fluid into solid model
     static const uint16_type nOrder_solid_normalStressFromFluid = fluid_type::space_normalstress_type::basis_type::nOrder;
@@ -85,6 +92,7 @@ public :
     //___________________________________________________________________________________//
 
     typedef faces_reference_wrapper_t<mesh_fluid_type> range_fluid_face_type;
+    typedef elements_reference_wrapper_t<trace_mesh_fluid_type> range_fluid_trace_elt_type;
     typedef faces_reference_wrapper_t<mesh_solid_type> range_solid_face_type;
     typedef elements_reference_wrapper_t<trace_mesh_solid_type> range_solid_trace_elt_type;
     typedef elements_reference_wrapper_t<mesh_solid_1dreduced_type> range_solid_elt_1dreduced_type;
@@ -110,18 +118,18 @@ public :
 
     //-----------------------------------------------------------------------------------//
     // space and element velocity with interaction 2d/2d or 3d/3d
-    typedef typename fluid_type::element_meshvelocityonboundary_type::functionspace_type space_fluid_velocity_type;
-    typedef typename fluid_type::element_meshvelocityonboundary_type element_fluid_velocity_type;
+    //typedef typename fluid_type::element_meshvelocityonboundary_type::functionspace_type space_fluid_velocity_type;
+    //typedef typename fluid_type::element_meshvelocityonboundary_type element_fluid_velocity_type;
 
     typedef typename solid_type::space_displacement_type space_struct_velocity_type;
     typedef typename solid_type::element_vectorial_type element_struct_velocity_type;
 
     //operator interpolation for this velocity
-    typedef OperatorInterpolation<space_struct_velocity_type, space_fluid_velocity_type,
-                                  range_fluid_face_type,InterpolationNonConforme> op_interpolation2dTo2dnonconf_velocity_type;
+    typedef OperatorInterpolation<space_struct_velocity_type, space_fluid_meshvelocityonboundary_type/*space_fluid_velocity_type*/,
+                                  range_fluid_trace_elt_type/*range_fluid_face_type*/,InterpolationNonConforme> op_interpolation2dTo2dnonconf_velocity_type;
     typedef std::shared_ptr<op_interpolation2dTo2dnonconf_velocity_type> op_interpolation2dTo2dnonconf_velocity_ptrtype;
-    typedef OperatorInterpolation<space_struct_velocity_type, space_fluid_velocity_type,
-                                  range_fluid_face_type,InterpolationConforme> op_interpolation2dTo2dconf_velocity_type;
+    typedef OperatorInterpolation<space_struct_velocity_type, space_fluid_meshvelocityonboundary_type/*space_fluid_velocity_type*/,
+                                  range_fluid_trace_elt_type/*range_fluid_face_type*/,InterpolationConforme> op_interpolation2dTo2dconf_velocity_type;
     typedef std::shared_ptr<op_interpolation2dTo2dconf_velocity_type> op_interpolation2dTo2dconf_velocity_ptrtype;
     
     typedef OperatorInterpolation<space_struct_velocity_type, typename fluid_type::space_fluid_velocity_type,
@@ -150,11 +158,11 @@ public :
     typedef typename solid_type::element_vect_1dreduced_type element_struct_vect_velocity_1dreduced_type;
 
     //operator interpolation for this velocity
-    typedef OperatorInterpolation<space_struct_vect_velocity_1dreduced_type, space_fluid_velocity_type,
-                                  range_fluid_face_type, InterpolationNonConforme> op_interpolation1dToNdnonconf_velocity_type;
+    typedef OperatorInterpolation<space_struct_vect_velocity_1dreduced_type, space_fluid_meshvelocityonboundary_type/*space_fluid_velocity_type*/,
+                                  range_fluid_trace_elt_type/*range_fluid_face_type*/, InterpolationNonConforme> op_interpolation1dToNdnonconf_velocity_type;
     typedef std::shared_ptr<op_interpolation1dToNdnonconf_velocity_type> op_interpolation1dToNdnonconf_velocity_ptrtype;
-    typedef OperatorInterpolation<space_struct_vect_velocity_1dreduced_type, space_fluid_velocity_type,
-                                  range_fluid_face_type, InterpolationConforme> op_interpolation1dToNdconf_velocity_type;
+    typedef OperatorInterpolation<space_struct_vect_velocity_1dreduced_type, space_fluid_meshvelocityonboundary_type/*space_fluid_velocity_type*/,
+                                  range_fluid_trace_elt_type/*range_fluid_face_type*/, InterpolationConforme> op_interpolation1dToNdconf_velocity_type;
     typedef std::shared_ptr<op_interpolation1dToNdconf_velocity_type> op_interpolation1dToNdconf_velocity_ptrtype;
 
     //-----------------------------------------------------------------------------------//
@@ -258,6 +266,7 @@ private :
     void initStressInterpolationS2F();
 
     void transfertDisplacement();
+    void transfertDisplacementAndApplyMeshMoving();
     void transfertStress();
     void transfertVelocity( bool useExtrap=false);
     void transfertRobinNeumannGeneralizedS2F( int iterationFSI );
@@ -268,8 +277,11 @@ private :
     void transfertStressS2F();
     void transfertVelocityF2S( int iterationFSI, bool _useExtrapolation );
 
+    void transfertGradVelocityF2S();
+
+
     double couplingRNG_coeffForm2() const { return M_couplingRNG_coeffForm2; }
-    typename fluid_type::element_meshvelocityonboundary_ptrtype const& couplingRNG_evalForm1() const { return M_couplingRNG_evalForm1; }
+    typename fluid_type::space_fluid_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ const& couplingRNG_evalForm1() const { return M_couplingRNG_evalForm1; }
 
     auto
     couplingRNG_operatorExpr( mpl::int_<2> /**/ ) const
@@ -310,7 +322,8 @@ public :
     void updateResidual_Solid( DataUpdateResidual & data ) const;
     void updateLinearPDEDofElimination_Fluid( DataUpdateLinear & data ) const;
     void updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess & data ) const;
-    //void updateJacobianStrongDirichletBC_Fluid( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
+    void updateJacobianDofElimination_Fluid( DataUpdateJacobian & data ) const;
+    void updateResidualDofElimination_Fluid( DataUpdateResidual & data ) const;
 
     void updateLinearPDE_Solid1dReduced( DataUpdateLinear & data ) const;
 
@@ -321,7 +334,9 @@ private :
     void solveImpl3();
 
     //---------------------------------------------------------------------------------------------------------//
-
+    typedef typename fluid_type::operatorpcdbase_type operatorpcdbase_fluid_type;
+    void initInHousePreconditionerPCD_fluid( operatorpcdbase_fluid_type & opPCD ) const;
+    void updateInHousePreconditionerPCD_fluid( operatorpcdbase_fluid_type & opPCD, DataUpdateBase & data ) const;
 private :
 
     fluid_ptrtype M_fluidModel;
@@ -332,6 +347,10 @@ private :
     fs::path M_mshfilepathFluidPartN,M_mshfilepathSolidPartN;
     std::set<std::string> M_markersNameFluid,M_markersNameSolid;
     std::string M_tagFileNameMeshGenerated;
+
+    range_fluid_face_type M_rangeFSI_fluid;
+    range_solid_face_type M_rangeFSI_solid;
+    std::map<std::string,range_fluid_face_type> M_rangeMeshFacesByMaterial_fluid;
 
     std::string M_fsiCouplingType; // implicit,semi-implicit
     std::string M_fsiCouplingBoundaryCondition; // dirichlet-neumann, robin-robin, ...
@@ -352,8 +371,8 @@ private :
     double M_couplingNitscheFamily_gamma, M_couplingNitscheFamily_gamma0, M_couplingNitscheFamily_alpha;
 
     double M_couplingRNG_coeffForm2;
-    typename fluid_type::element_meshvelocityonboundary_ptrtype M_couplingRNG_evalForm1;
-    typename fluid_type::element_meshvelocityonboundary_ptrtype M_coulingRNG_operatorDiagonalOnFluid;
+    typename fluid_type::space_fluid_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ M_couplingRNG_evalForm1;
+    typename fluid_type::space_fluid_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ M_coulingRNG_operatorDiagonalOnFluid;
     sparse_matrix_ptrtype M_coulingRNG_matrixTimeDerivative, M_coulingRNG_matrixStress;
     vector_ptrtype M_coulingRNG_vectorTimeDerivative,  M_coulingRNG_vectorStress;
     bool M_coulingRNG_usePrecomputeBC;
@@ -403,6 +422,37 @@ private :
     space_solid1dreduced_normalstressfromfluid_vect_ptrtype M_spaceNormalStressFromFluid_solid1dReduced;
     element_solid1dreduced_normalstressfromfluid_scal_ptrtype M_fieldNormalStressFromFluidScalar_solid1dReduced;
     element_solid1dreduced_normalstressfromfluid_vect_ptrtype  M_fieldNormalStressFromFluidVectorial_solid1dReduced;
+
+    // gradient of velocity from fluid into solid model (use normal spress function space and store the matric field by a vector of vectorial field)
+    std::vector<typename fluid_type::element_normalstress_ptrtype> M_fieldsGradVelocity_fluid;
+    std::vector<typename space_solid_normalstressfromfluid_type::/*component_functionspace_type::*/element_ptrtype> M_fieldsGradVelocity_solid;
+
+    auto
+    gradVelocityExpr_fluid2solid(  hana::int_<2> /**/ ) const
+        {
+            return mat<2,2>( idv(M_fieldsGradVelocity_solid[0])(0),idv(M_fieldsGradVelocity_solid[0])(1),
+                             idv(M_fieldsGradVelocity_solid[1])(0),idv(M_fieldsGradVelocity_solid[1])(1) );
+        }
+    auto
+    gradVelocityExpr_fluid2solid(  hana::int_<3> /**/ ) const
+        {
+            return mat<3,3>( idv(M_fieldsGradVelocity_solid[0])(0),idv(M_fieldsGradVelocity_solid[0])(1),idv(M_fieldsGradVelocity_solid[0])(2),
+                             idv(M_fieldsGradVelocity_solid[1])(0),idv(M_fieldsGradVelocity_solid[1])(1),idv(M_fieldsGradVelocity_solid[1])(2),
+                             idv(M_fieldsGradVelocity_solid[2])(0),idv(M_fieldsGradVelocity_solid[2])(1),idv(M_fieldsGradVelocity_solid[2])(2) );
+        }
+
+
+
+    element_fluid_meshvelocityonboundary_type & meshVelocity2() { return *M_meshVelocityInterface; }
+    element_fluid_meshvelocityonboundary_ptrtype meshVelocity2Ptr() { return M_meshVelocityInterface; }
+    element_fluid_meshvelocityonboundary_type const & meshVelocity2() const { return *M_meshVelocityInterface; }
+    element_fluid_meshvelocityonboundary_ptrtype const & meshVelocity2Ptr() const { return M_meshVelocityInterface; }
+    space_fluid_meshvelocityonboundary_ptrtype M_XhMeshVelocityInterface;
+    element_fluid_meshvelocityonboundary_ptrtype M_meshVelocityInterface;
+    //std::set<size_type> M_dofsVelocityInterfaceOnMovingBoundary;
+
+    std::set<size_type> M_dofsMultiProcessVelocitySpaceOnFSI_fluid;
+
 };
 
 } // namespace FeelModels

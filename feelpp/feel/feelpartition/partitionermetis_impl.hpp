@@ -142,7 +142,7 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
                 {
                     element_type const* neighbor = NULL;
                     size_type neighbor_id = elt.neighbor( ms );
-                    if ( neighbor_id != invalid_size_type_value )
+                    if ( neighbor_id != invalid_v<size_type> )
                     {
                         if ( usePartitionByRange && global_index_map.find( neighbor_id ) == global_index_map.end() )
                             continue;
@@ -175,7 +175,7 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
                 {
                     element_type const* neighbor = NULL;
                     size_type neighbor_id = elt.neighbor( ms );
-                    if ( neighbor_id != invalid_size_type_value )
+                    if ( neighbor_id != invalid_v<size_type> )
                     {
                         if ( usePartitionByRange && global_index_map.find( neighbor_id ) == global_index_map.end() )
                             continue;

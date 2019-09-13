@@ -1090,7 +1090,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
     /* Write faces */
     if ( boption( _name="exporter.ensightgold.save-face" ) )
     {
-        for( std::pair<const std::string, std::vector<size_type> > & m : mesh->markerNames() )
+        for( auto & m : mesh->markerNames() )
         {
             this->writeGeoMarkedFaces(fh, mesh, m);
         }
@@ -1157,7 +1157,7 @@ ExporterEnsightGold<MeshType, N>::writeGeoHeader(MPI_File fh) const
 
 template<typename MeshType, int N>
 void
-ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<size_type> > & m) const
+ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<index_type> > & m) const
 {
     int size;
     char buffer[80];
@@ -1913,7 +1913,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                             if ( c < __var->second.nComponents )
                             {
                                 size_type thedof =  __var->second.start() +
-                                    boost::get<0>(__var->second.functionSpace()->dof()->faceLocalToGlobal( face.id(), j, c ));
+                                    __var->second.functionSpace()->dof()->faceLocalToGlobal( face.id(), j, c ).index();
 
                                 field[global_node_id] = __var->second.globalValue( thedof );
                             }
@@ -2037,7 +2037,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
 
                         if ( c < nc )
                         {
-                            size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->get().id(), p, c ) );
+                            size_type dof_id = __var->second.functionSpace()->dof()->localToGlobal( elt_it->get().id(), p, c ).index();
 
                             __field[global_node_id] = __var->second.globalValue( dof_id );
                             //__field[npts*c + index] = __var->second.globalValue( dof_id );
@@ -2298,7 +2298,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
 
                     if ( c < nc)
                     {
-                        size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt.id(),0, c ) );
+                        size_type dof_id = __evar->second.functionSpace()->dof()->localToGlobal( elt.id(),0, c ).index();
 
                         DVLOG(2) << "c : " << c
                                  << " gdofid: " << global_node_id

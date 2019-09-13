@@ -30,6 +30,9 @@ class FEELPP_EXPORT StokesDeim :
     typedef typename StokesDeimConfig::space_type space_type;
     typedef boost::tuple<beta_vector_type,  std::vector<beta_vector_type> > beta_type;
     typedef typename super_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    typedef typename super_type::displacement_space_type displacement_space_type;
+    typedef typename super_type::displacement_space_ptrtype displacement_space_ptrtype;
+    typedef typename super_type::displacement_field_ptrtype displacement_field_ptrtype;
     using super_type::computeBetaQm;
 
     StokesDeim();
@@ -37,6 +40,11 @@ class FEELPP_EXPORT StokesDeim :
     beta_type computeBetaQm( parameter_type const& mu ) override;
     value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false) override;
     sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag ) override;
+    displacement_field_ptrtype meshDisplacementField( parameter_type const& mu ) override;
+
+  private:
+    displacement_space_ptrtype M_Dh;
+    displacement_field_ptrtype mapping;
 };
 
 

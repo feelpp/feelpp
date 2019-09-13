@@ -22,9 +22,11 @@ Options:
      --root=PATH                     define root path
      --enable-pch                    enable precompiled headers (default)
      --disable-pch                   disable precompiled headers
-     --enable-python                 enable python 
+     --enable-python=<python executable> enable python 
      --enable-cling                  enable cling 
      --disable-cling                 disable cling (default)
+     --disable-asan                  disable asan 
+     --disable=<module>              space separated list of <module>s to disable : --disable="ipopt nlopt"
      --enable-toolboxes              enable Feel++ toolboxes and PyFeel++ toolboxes
      --disable-toolboxes             disable Feel++ toolboxes and PyFeel++ toolboxes (by default)
      --enable-mor                    enable Feel++ mor and PyFeel++ mor 
@@ -60,6 +62,7 @@ fi
 BUILDTYPE=Release
 _WANT_PCH=no
 _WANT_PYTHON=yes
+_WANT_ASAN=no
 _WANT_CLING=yes
 _WANT_VERBOSE=no
 _WANT_DEBUG=no
@@ -71,6 +74,7 @@ _HAS_CONFIG=no
 _WANT_DEV_WARNINGS=
 _WANT_NUMERICS=TRUE
 _WANT_LOCAL_CONFIG=no
+_WANT_DISABLE=""
 _WANT_TOOLBOXES=no
 _WANT_MOR=no
 CXXFLAGS=
@@ -168,6 +172,11 @@ while [ -n "$1" ]; do
    --enable-python)
        _WANT_PYTHON=yes
        ;;
+   --enable-python=*)
+       PYTHON_EXECUTABLE=`echo $1 | sed "s,^--enable-python=\(.*\),\1,"`
+       export PYTHON_EXECUTABLE
+       _WANT_PYTHON=yes
+       ;;
    --disable-python)
        _WANT_PYTHON=no
        ;;            
@@ -214,6 +223,12 @@ while [ -n "$1" ]; do
        echo "using lib$PROJECT_STDLIB_CPP..."
        export PROJECT_STDLIB_CPP
        ;;
+   --enable-opt)
+       CXXFLAGS="-march=native -mavx -mfma -msse4.2 -msse4.1 -mssse3 -msse3 -msse2"
+       ;;
+   --enable-bench)
+       CXXFLAGS="-march=native -mavx -mfma -msse4.2 -msse4.1 -mssse3 -msse3 -msse2 -fno-omit-frame-pointer"
+       ;;      
    --cxxflags=*)
        CXXFLAGS=`echo $1 | sed "s,^--cxxflags=\(.*\),\1,"`
        ;;
@@ -327,6 +342,9 @@ fi
 if [ "X${_WANT_PYTHON}" = "Xyes" ]; then
     echo "set(FEELPP_ENABLE_PYTHON_WRAPPING ON CACHE PATH \"enable python wrapping \" FORCE)" >> cmake.configure
     echo "set(FEELPP_ENABLE_PYTHON ON CACHE PATH \"enable python \" FORCE)" >> cmake.configure
+    if [ "X${PYTHON_EXECUTABLE}" != "X" ]; then
+        CMAKEFLAGS="${CMAKEFLAGS} -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}"
+    fi
 else
     echo "set(FEELPP_ENABLE_PYTHON_WRAPPING OFF CACHE PATH \"disable python wrapping \" FORCE)" >> cmake.configure
     echo "set(FEELPP_ENABLE_PYTHON OFF CACHE PATH \"disable python \" FORCE)" >> cmake.configure
@@ -364,6 +382,15 @@ if [ "X${CXXFLAGS}" != "X" ]; then
     echo "set(CMAKE_CXX_FLAGS_RELEASE \"${CXXFLAGS}\" CACHE STRING \"cxx flags\" FORCE)" >> cmake.configure
     echo "set(CMAKE_CXX_FLAGS_DEBUG \"${CXXFLAGS}\" CACHE STRING \"cxxflags \" FORCE)" >> cmake.configure
 fi
+
+# Disable modules
+if [ "X${_WANT_DISABLE}" != "X" ]; then
+    for _feature in ${_WANT_DISABLE}; do
+        feature=$(echo ${_feature} | tr [a-z] [A-Z])
+        echo "set(FEELPP_ENABLE_${feature} OFF CACHE PATH \"disable ${feature} \" FORCE)" >> cmake.configure
+    done
+fi
+
 #if [ "X${_WANT_OG}" != "X" ]; then
 #echo "set( CMAKE_CXX_FLAGS_RELEASE \"-Og -DNDEBUG\" CACHE PATH \"CXX Release Flags \" FORCE)" >> cmake.configure
 #fi
@@ -372,4 +399,6 @@ if [ -f CMakeCache.txt ]; then
   /bin/rm CMakeCache.txt
 fi
 
+
+echo "cmake -Ccmake.configure -G "${GENERATOR}" -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} ${CMAKEFLAGS} TRUE ${PROJECTSRCROOT}"
 cmake -Ccmake.configure -G "${GENERATOR}" -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} ${CMAKEFLAGS} TRUE ${PROJECTSRCROOT}

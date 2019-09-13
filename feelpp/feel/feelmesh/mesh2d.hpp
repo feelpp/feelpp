@@ -67,10 +67,10 @@ namespace Feel
 //! @author Christophe Prud'homme
 //!  @see
 //!
-template <typename Shape, typename T = double>
+template <typename Shape, typename T = double, typename IndexT = uint32_type>
 class Mesh2D
     : public VisitableBase<>,
-      public MeshBase,
+      public MeshBase<IndexT>,
       public Elements<Shape,T>,
       public Points<Shape::nRealDim,T>,
       public Faces<typename Shape::template shape<1, Shape::nOrder, Shape::nRealDim>::type,
@@ -90,8 +90,11 @@ class Mesh2D
     typedef typename VisitableBase<>::return_type return_type;
 
     typedef VisitableBase<> super_visitable;
-    typedef MeshBase super;
+    typedef MeshBase<IndexT> super;
 
+    using index_type = typename super::index_type;
+    using size_type = typename super::size_type;
+    
     typedef Elements<Shape,T> super_elements;
     typedef typename super_elements::elements_type elements_type;
     typedef typename super_elements::element_type element_type;
@@ -267,7 +270,7 @@ class Mesh2D
 
     void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
     {
-        MeshBase::setWorldComm( _worldComm );
+        MeshBase<IndexT>::setWorldComm( _worldComm );
         this->setWorldCommElements( _worldComm );
         this->setWorldCommFaces( _worldComm );
         this->setWorldCommPoints( _worldComm );
@@ -281,6 +284,7 @@ class Mesh2D
     {
         VLOG( 1 ) << "Deleting Mesh2D...\n";
 
+        super::clear();
         super_elements::clear();
         super_points::clear();
         super_faces::clear();

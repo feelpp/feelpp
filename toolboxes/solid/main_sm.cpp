@@ -7,7 +7,7 @@ namespace Feel
 {
 
 template <int nDim,uint16_type OrderDisp>
-void
+int
 runApplicationSolid()
 {
     typedef FeelModels::SolidMechanics< Simplex<nDim,1>,
@@ -126,6 +126,8 @@ runApplicationSolid()
             SM->exportResults();
         }
     }
+
+     return !SM->checkResults();
 }
 
 } // namespace Feel
@@ -172,15 +174,15 @@ main( int argc, char** argv )
 #else
     auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
 #endif
-
-    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension]( auto const& d )
+    int status = 0;
+    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension,&status]( auto const& d )
                     {
                         constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
                         std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
                         constexpr int _dorder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
                         if ( dimension == _dim && discretization == _discretization )
-                            runApplicationSolid<_dim,_dorder>();
+                            status = runApplicationSolid<_dim,_dorder>();
                     } );
 
-    return 0;
+    return status;
 }

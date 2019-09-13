@@ -37,6 +37,7 @@
 #ifdef FEELPP_HAS_GMSH
 #include <feel/feelfilters/loadgmshmesh.hpp>
 #endif
+//#include <feel/feelfilters/savegmshmesh.hpp>
 
 namespace Feel
 {
@@ -135,7 +136,7 @@ public:
     typedef typename detailOpLagP1::SpaceToLagrangeP1Space<SpaceType>::domain_reference_convex_type domain_reference_convex_type;
     typedef typename detailOpLagP1::SpaceToLagrangeP1Space<SpaceType>::image_convex_type image_convex_type;
     //typedef PointSetWarpBlend<domain_convex_type, domain_space_type::basis_type::nOrder, value_type> pset_type;
-    typedef PointSetFekete<domain_reference_convex_type/*domain_convex_type*/, domain_space_type::basis_type::nOrder, value_type> pset_type;
+    //typedef PointSetFekete<domain_reference_convex_type/*domain_convex_type*/, domain_space_type::basis_type::nOrder, value_type> pset_type;
     typedef PointSetToMesh<domain_reference_convex_type/*domain_convex_type*/, value_type> p2m_type;
     typedef typename p2m_type::mesh_ptrtype domain_reference_mesh_ptrtype;
 
@@ -188,7 +189,6 @@ public:
         {
             M_el2el = lp1.M_el2el;
             M_el2pt = lp1.M_el2pt;
-            M_pset = lp1.M_pset;
             M_gmpc = lp1.M_gmpc;
             M_p2m = lp1.M_p2m;
         }
@@ -204,23 +204,17 @@ public:
     //@{
 
     uint16_type
-    localDof( typename domain_mesh_type::element_type const& elt,//typename domain_mesh_type::element_const_iterator it,
-              uint16_type localptid ) const
+    localDof( uint16_type localptid ) const
     {
-        //return localDof( it, localptid, mpl::bool_<is_modal>() );
-        return localDof( elt, localptid, mpl::bool_<false>() );
+        CHECK( M_relationRefMeshPointIdToRefFePointId.find(localptid) != M_relationRefMeshPointIdToRefFePointId.end() ) << "point id " << localptid << " not found in relation map";
+        return  M_relationRefMeshPointIdToRefFePointId.find(localptid)->second;
     }
 
     uint16_type
-    localDof( typename domain_mesh_type::element_type const& elt,//typename domain_mesh_type::element_const_iterator it,
-              uint16_type localptid,
-              mpl::bool_<false> ) const
+    localDof( typename domain_mesh_type::element_type const& elt,
+              uint16_type localptid ) const
     {
-#if 0
-        return localptid;
-#else
-        CHECK( M_relationRefMeshPointIdToRefFePointId.find(localptid) != M_relationRefMeshPointIdToRefFePointId.end() ) << "point id " << localptid << " not found in relation map";
-        uint16_type localIdPtSet = M_relationRefMeshPointIdToRefFePointId.find(localptid)->second;
+        uint16_type localIdPtSet = this->localDof( localptid );
 
 #if !defined(NDEBUG)
         node_type ptRealMesh( domain_fe_type::nRealDim );
@@ -250,15 +244,7 @@ public:
         //return localptid_dof;
 #endif
         return localIdPtSet;
-
-#endif
     }
-
-    uint16_type
-    localDof( typename domain_mesh_type::element_type const& elt,//typename domain_mesh_type::element_const_iterator it,
-              uint16_type localptid,
-              mpl::bool_<true> ) const;
-
 
     image_mesh_ptrtype
     mesh()
@@ -305,7 +291,6 @@ private:
     el2el_type M_el2el;
     std::vector<std::vector<size_type> > M_el2pt;
 
-    pset_type M_pset;
     gmpc_ptrtype M_gmpc;
     gmc_ptrtype M_gmc;
 
@@ -334,9 +319,8 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
     M_mesh( new image_mesh_type(space->worldCommPtr()) ),
     M_el2el(),
     M_el2pt(),
-    M_pset( 0 ),
     M_gmpc( new typename gm_type::precompute_type( this->domainSpace()->mesh()->gm(),
-             M_pset.points() ) ),
+                                                   space->fe()->points()/*M_pset.points()*/ ) ),
     M_p2m()
 {
 
@@ -357,26 +341,6 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
     this->update();
 #endif // 0
 
-
-#if 0
-
-    for ( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
-    {
-        FEELPP_ASSERT( boost::get<1>( this->domainSpace()->dof()->dofPoint( i ) ) ==
-                       boost::get<1>( this->dualImageSpace()->dof()->dofPoint( i ) ) )
-        ( boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) ) )
-        ( boost::get<0>( this->dualImageSpace()->dof()->dofPoint( i ) ) )
-        ( i ).warn( "check inconsistent point id" );
-        FEELPP_ASSERT( ublas::norm_2( boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) )-
-                                      boost::get<0>( this->dualImageSpace()->dof()->dofPoint( i ) )
-                                    ) < 1e-10 )
-        ( boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) ) )
-        ( boost::get<0>( this->dualImageSpace()->dof()->dofPoint( i ) ) )
-        ( i ).warn( "check inconsistent point coordinates" );
-    }
-
-#endif
-
 }
 
 
@@ -384,11 +348,25 @@ template<typename space_type>
 void
 OperatorLagrangeP1<space_type>::buildReferenceMesh( bool rebuild, std::string pathMeshLagP1, std::string prefix )
 {
-    std::string tagMeshLagP1base = this->domainSpace()->basisName() + (boost::format("-order%1%")%domain_space_type::basis_type::nOrder).str();
+    std::string tagMeshLagP1base = this->domainSpace()->basisName() + (boost::format("-order%1%")%domain_fe_type::nOrder).str();
+    if constexpr ( is_lagrange_polynomialset_v<domain_fe_type> )
+        {
+            if ( domain_convex_type::is_simplex && domain_fe_type::nOrder > 2 )
+            {
+                if ( domain_fe_type::dual_space_type::template is_pointset_v<PointSetEquiSpaced> )
+                    tagMeshLagP1base += "-equispaced";
+                else if ( domain_fe_type::dual_space_type::template is_pointset_v<PointSetWarpBlend> )
+                    tagMeshLagP1base += "-warpblend";
+                else if ( domain_fe_type::dual_space_type::template is_pointset_v<PointSetFeketeSimplex> ) //PointSetFeketeSimplex // PointSetFekete
+                    tagMeshLagP1base += "-fekete";
+            }
+        }
+
     std::string fileNameMeshDataBase = (boost::format("%1%-%2%d-%3%.msh")%domain_reference_convex_type::type() %domain_reference_convex_type::topological_dimension %tagMeshLagP1base).str();
     // WARNING, if we use a feelpp installed lib, datadir is wrong and can be not exist
     std::string pathMeshDataBase = Environment::expand("$datadir/operatorlagrangep1/"+fileNameMeshDataBase);
 
+    VLOG(1) << "search reference mesh in : "<< pathMeshDataBase;
     bool useMeshInDataBase = false;
 
     if ( fs::exists( pathMeshDataBase ) )
@@ -422,7 +400,8 @@ OperatorLagrangeP1<space_type>::buildReferenceMesh( bool rebuild, std::string pa
                 // using equispaced points defined on the reference
                 // element
                 //M_p2m.addBoundaryPoints( M_pset.points() );
-                M_p2m.visit( &M_pset );
+                PointSet<domain_reference_convex_type,double> thepset( this->domainSpace()->fe()->points() );
+                M_p2m.visit( &thepset );
 
                 // #if !defined( NDEBUG )
                 //     ExporterQuick<image_mesh_type> exp( "vtk", "ensight" );
@@ -499,485 +478,245 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
         M_mesh->addMarkerName( itMark.first,itMark.second[0],itMark.second[1] );
     }
 
-    bool doParallelBuild = (M_mesh->worldComm().size()==1)?false:parallelBuild;
+    const rank_type nProc = M_mesh->worldComm().localSize();
+    const rank_type procId =  M_mesh->worldComm().localRank();
+    bool doParallelBuild = ( nProc==1 )? false : parallelBuild;
+
+    auto meshDomain = this->domainSpace()->mesh();
+    auto dofDomain = this->domainSpace()->dof();
 
     // iterate over active element on process
-    // auto it = this->domainSpace()->mesh()->beginElementWithProcessId();
-    // auto en = this->domainSpace()->mesh()->endElementWithProcessId();
-    auto rangeElements = this->domainSpace()->mesh()->elementsWithProcessId();
+    auto rangeElements = meshDomain->elementsWithProcessId();
     auto it = std::get<0>( rangeElements );
     auto en = std::get<1>( rangeElements );
 
     // memory nodes
-    std::vector<size_type> new_node_numbers( this->domainSpace()->nLocalDof(),invalid_size_type_value );
-    // the number of nodes on the new mesh, will be incremented
-    size_type nNewNodes = 0, nNewElem  = 0, nNewFaces = 0;
-    // memory for parallelism
-    const int nProc = M_mesh->worldComm().localSize();
-    std::map<size_type,size_type> mapGhostDofIdClusterToProcess;
-    std::map<size_type,std::vector<size_type> > mapActiveEltWhichAreGhostInOtherPartition;
-    std::vector<int> nbMsgToRecv( nProc , 0 );
+    std::vector<bool> dofDone( this->domainSpace()->nLocalDof(), false );
+    size_type nNewElem  = 0, nNewFaces = 0;
 
-    // use the geometric transformation to transform
-    // the local equispace mesh to a submesh of the
-    // current element
-#if !defined(NDEBUG)
-    if ( it!=en && !M_gmc )
-        M_gmc = gmc_ptrtype( new gmc_type( this->domainSpace()->mesh()->gm(), boost::unwrap_ref( *it ), M_gmpc ) );
-#endif
 
-    for ( size_type elid = 0, pt_image_id = 0; it != en; ++it )
+    // data used for parallelism
+    // procId -> ( eltId, parentEltId, (pointId_1, pointIdInRef_1) ... )
+    std::map<rank_type, std::vector<boost::tuple<size_type,size_type,std::vector<boost::tuple<size_type,uint16_type>>> > > dataToSend;
+    std::map<rank_type, std::vector<boost::tuple<size_type,size_type,std::vector<boost::tuple<size_type,uint16_type>>> > > dataToRecv;
+
+    boost::tuple<size_type,size_type,std::vector<boost::tuple<size_type,uint16_type>>> tmpGhostData;
+    boost::get<2>( tmpGhostData ).resize( image_mesh_type::element_type::numVertices );
+
+    for ( ; it != en ; ++it )
     {
-        auto const& curelt = boost::unwrap_ref( *it );
+        auto const& curelt = unwrap_ref( *it );
         DVLOG(2) << "=========================================\n";
         DVLOG(2) << "global element " << curelt.id() << " oriented ok ? : " << curelt.isAnticlockwiseOriented() << "\n";
         DVLOG(2) << "global element G=" << curelt.G() << "\n";
-#if !defined(NDEBUG)
-        M_gmc->update( curelt );
-#endif
-        // accumulate the local mesh in element *it in the new mesh
-        auto itl = M_p2m.mesh()->beginElement();
-        auto const enl = M_p2m.mesh()->endElement();
 
-        // init parallel data
-        if ( doParallelBuild && curelt.numberOfNeighborPartitions() > 0 )
-        {
-            // memory elt wich is send
-            mapActiveEltWhichAreGhostInOtherPartition[curelt.id()] = std::vector<size_type>(std::distance(itl,enl),invalid_size_type_value);
-            // counter of mpi msg recv
-            auto itneighbor = curelt.neighborPartitionIds().begin();
-            auto const enneighbor = curelt.neighborPartitionIds().end();
-            for ( ; itneighbor!=enneighbor ; ++itneighbor )
-                nbMsgToRecv[*itneighbor]++;
-        }
-
-        // get dofs in each faces of this ref element
-        std::vector< std::set<size_type> > dofsInFace( curelt.numTopologicalFaces );
-        for ( uint16_type f = 0; f < curelt.numTopologicalFaces ; f++ )
-        {
-            auto const& theFaceBase = curelt.face( f );
-            for ( size_type localFaceDof = 0 ; localFaceDof < this->domainSpace()->dof()->nLocalDofOnFace() ; ++localFaceDof )
-            {
-                const size_type globFaceDof = this->domainSpace()->dof()->localToGlobal( theFaceBase,localFaceDof,0 ).template get<0>();
-                if ( globFaceDof != invalid_size_type_value )
-                    dofsInFace[f].insert( globFaceDof );
-            }
-        }
+        // update the gemap context
+        if ( !M_gmc )
+            M_gmc = gmc_ptrtype( new gmc_type( meshDomain->gm(), curelt, M_gmpc ) );
+        else
+            M_gmc->update( curelt );
 
         // iterate on each new element (from ref elt)
-        for ( int cptEltp2m=0 ; itl != enl; ++itl, ++elid,++cptEltp2m )
+        auto itl = M_p2m.mesh()->beginElement();
+        auto const enl = M_p2m.mesh()->endElement();
+        for ( ; itl != enl; ++itl )
         {
             auto const& eltRef = itl->second;
             DVLOG(2) << "************************************\n";
-            DVLOG(2) << "local elt = " << elid << "\n";
             DVLOG(2) << "local element " << eltRef.id() << " oriented ok ? : " << eltRef.isAnticlockwiseOriented() << "\n";
             DVLOG(2) << "local element G=" << eltRef.G() << "\n";
 
             element_type elt;
-            elt.setId( elid );
+            elt.setId ( nNewElem++ );
             elt.setMarkers( curelt.markers() );
             elt.setProcessIdInPartition( curelt.pidInPartition() );
-            elt.setProcessId(curelt.processId());
-
+            elt.setProcessId( curelt.processId() );
             if ( doParallelBuild )
-            {
                 elt.setNeighborPartitionIds( curelt.neighborPartitionIds() );
-            }
+
             // accumulate the points
             for ( int p = 0; p < image_mesh_type::element_type::numVertices; ++p )
             {
                 DVLOG(2) << "local In original element, vertex number " << eltRef.point( p ).id() << "\n";
                 uint16_type localptid = eltRef.point( p ).id();
-                uint16_type localptid_dof = localDof( curelt, localptid );
+                uint16_type localptid_dof = this->localDof( curelt, localptid );
+                size_type gpdof = dofDomain->localToGlobal( curelt.id(),localptid_dof, 0 ).index();
+                size_type newPtId = dofDomain->mapGlobalProcessToGlobalCluster( gpdof );
 
-                size_type ptid = this->domainSpace()->dof()->localToGlobal( curelt.id(),localptid_dof, 0 ).index();
-
-                if (doParallelBuild && !this->domainSpace()->dof()->dofGlobalClusterIsOnProc(this->domainSpace()->dof()->mapGlobalProcessToGlobalCluster(ptid)))
-                    mapGhostDofIdClusterToProcess[this->domainSpace()->dof()->mapGlobalProcessToGlobalCluster(ptid)] = ptid;
+                if ( doParallelBuild )
+                    boost::get<2>( tmpGhostData )[p] = boost::make_tuple( newPtId,localptid );
 
                 // add new node if not inserted before
-                if ( new_node_numbers[ptid] == invalid_size_type_value )
+                if ( !dofDone[gpdof] )
                     {
-                        new_node_numbers[ptid] = nNewNodes;
-
-                        point_type __pt( nNewNodes, boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) )  );
+                        dofDone[gpdof] = true;
+#if 0
+                        point_type __pt( newPtId, boost::get<0>( dofDomain->dofPoint( gpdof ) )  );
+#else
+                        point_type __pt( newPtId, M_gmc->xReal( localptid_dof ) );
+#endif
                         __pt.setProcessId( curelt.processId() );
                         __pt.setProcessIdInPartition( curelt.pidInPartition() );
 
-
                         DVLOG(2) << "[OperatorLagrangeP1] element id "
-                                      << elid << "\n";
+                                 << elt.id() << "\n";
                         DVLOG(2) << "[OperatorLagrangeP1] local point id "
-                                      << localptid << " coord " << eltRef.point( p ).node() << "\n";
+                                 << localptid << " coord " << eltRef.point( p ).node() << "\n";
                         DVLOG(2) << "[OperatorLagrangeP1] point local id "
-                                      << localptid << " global id " << ptid << "\n"
-                                      << " localptid_dof = " << localptid_dof << "\n";
+                                 << localptid << " global id " << newPtId << "\n"
+                                 << " localptid_dof = " << localptid_dof << "\n";
                         DVLOG(2) << "[OperatorLagrangeP1] adding point "
-                                      << __pt.id() << " : " << __pt.node() << "\n";
-                        DVLOG(2) << "[OperatorLagrangeP1] domain point gid "
-                                      << boost::get<1>( this->domainSpace()->dof()->dofPoint( ptid ) )
-                                      << " coords: " << boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) ) << "\n";
-
-                        DLOG_IF( WARNING, ( ublas::norm_2( boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) )-__pt.node() ) > 1e-10 ) )
-                            << "inconsistent point coordinates at pt index " << ptid << " in element " << elid << " with "
-                            << " dot pt: " << boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) )
-                            << " mesh  pt: " << __pt.node()
-                            << " eltRef.id: " << eltRef.id()
-                            << " local pt id : " << localptid
-                            << " local pt id dof : " << localptid_dof << "\n";
+                                 << __pt.id() << " : " << __pt.node() << "\n";
 
                         M_mesh->addPoint( __pt );
-
-                        nNewNodes++;
                     }
-                //--------------------------------------------------------------------//
 
-                elt.setPoint( p, M_mesh->point( new_node_numbers[ptid] ) );
-
-#if 1
-                FEELPP_ASSERT( ublas::norm_2( boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) )-elt.point( p ).node() ) < 1e-10 )
-                ( boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) ) )
-                ( p )
-                ( elt.point( p ).node() )
-                ( elid )
-                ( eltRef.id() )
-                ( localptid )
-                ( localptid_dof )
-                ( ptid ).warn( "[after] inconsistent point coordinates" );
-
-#endif
+                elt.setPoint( p, M_mesh->point( newPtId ) );
             }
 
-#if 0
-            static const int nDim = element_type::nDim;
-            ublas::vector<double> D( nDim + 1, 0 );
-            typename matrix_node<value_type>::type M( nDim+1,nDim+1 );
-            typename matrix_node<value_type>::type P( nDim,nDim+1 );
-            typename matrix_node<value_type>::type P0( nDim,nDim+1 );
-            std::fill( M.data().begin(), M.data().end(), value_type( 1.0 ) );
-
-            for ( int p = 0; p < element_type::numVertices; ++p )
-            {
-                ublas::column( P0, p ) = elt.vertex( p );
-            }
-
-            ublas::subrange( M, 0, nDim, 0, nDim+1 ) = P0;
-            double meas_times = details::det( M, mpl::int_<nDim+1>() );
-            FEELPP_ASSERT( meas_times > 0 )( elt.id() )( elt.G() ).warn( "negative area" );
-#else
-            //FEELPP_ASSERT( elt.isAnticlockwiseOriented() )( elt.id() )( elt.G() ).warn( "negative area" );
-            //FEELPP_ASSERT( ublas::norm_inf( elt.G()- curelt.G() ) < 1e-10 )( curelt.G() )( elt.G() ).warn( "global: not same element" );
-            //FEELPP_ASSERT( ublas::norm_inf( elt.G()- itl->G() ) < 1e-10 )( itl->G() )( elt.G() ).warn( "local: not same element" );
-#endif
-
-            // set id of element and increment the element counter
-            elt.setId ( nNewElem++ );
             // add element in mesh
-            auto const& theNewElt = M_mesh->addElement ( elt );
+            auto [eit,inserted] = M_mesh->addElement ( elt );
+            auto const& [eid,theNewElt] = *eit;
 
-            // save data if elt is connected to another partition
-            if (doParallelBuild && curelt.numberOfNeighborPartitions() > 0)
-                mapActiveEltWhichAreGhostInOtherPartition[curelt.id()][cptEltp2m] = theNewElt.id();
-
-#if 1
-            // Maybe add faces for this element
-            for ( uint16_type s=0; s<eltRef.numTopologicalFaces; s++ )
+            // store // infos
+            if ( doParallelBuild )
             {
-                if ( !eltRef.facePtr( s ) ) continue;
-
-                auto const& theFaceBase = eltRef.face( s );
-
-                face_type newFace;
-                newFace.setOnBoundary( true );
-                newFace.setProcessId( curelt.processId() );
-                newFace.setProcessIdInPartition( curelt.pidInPartition() );
-                newFace.setProcessId(curelt.processId());
-                if ( doParallelBuild )
+                boost::get<0>( tmpGhostData ) = theNewElt.id();
+                for ( auto const& [ gpid, idiop ] : curelt.idInOthersPartitions() )
                 {
-                    newFace.setNeighborPartitionIds( curelt.neighborPartitionIds() );
+                    boost::get<1>( tmpGhostData ) = idiop;
+                    dataToSend[gpid].push_back( tmpGhostData );
                 }
-
-                // set points in face and up counter for connecting with ref faces
-                std::vector<uint16_type> nPtInRefFace(curelt.numTopologicalFaces,0);
-                for ( uint16_type p = 0; p < theFaceBase.nPoints(); ++p )
-                {
-                    uint16_type localptidFace = theFaceBase.point( p ).id();
-                    uint16_type localptidFace_dof = localDof( curelt, localptidFace );
-                    const size_type theglobdof = this->domainSpace()->dof()->localToGlobal( curelt.id(),localptidFace_dof,0 ).template get<0>();
-                    newFace.setPoint( p, M_mesh->point( new_node_numbers[theglobdof] ) );
-                    // update face point connection with reference faces
-                    for ( uint16_type fId = 0; fId <  dofsInFace.size() ; ++fId )
-                    {
-                        if ( dofsInFace[fId].find( theglobdof ) != dofsInFace[fId].end() )
-                            nPtInRefFace[fId]++;
-                    }
-                }
-
-                // update faces from reference faces
-                for ( uint16_type fId = 0; fId < nPtInRefFace.size() ; ++fId )
-                {
-                    // find connection if all points are in reference faces
-                    if ( nPtInRefFace[fId] == theFaceBase.nPoints() )
-                    {
-                        // update marker from ref
-                        newFace.setMarkers( curelt.face( fId ).markers() );
-                    }
-                }
-
-                // set id of element and increment the face counter
-                newFace.setId( nNewFaces++ );
-                // add it to the list of faces
-                auto addFaceRes = M_mesh->addFace( newFace );
             }
-#endif
 
-        } //  for ( int cptEltp2m=0 ; itl != enl; ++itl, ++elid,++cptEltp2m )
-
-
-
-
-
+        } //  for (  ; itl != enl; ++itl )
 
     } // for ( size_type elid = 0, pt_image_id = 0; it != en; ++it )
 
 
+    // add marked faces
+    flag_type markerType = 1;
+    auto rangeMarkedFaces = meshDomain->facesWithMarkerByType( markerType );
+    auto itMarkedFaces = std::get<0>( rangeMarkedFaces );
+    auto enMarkedFaces = std::get<1>( rangeMarkedFaces );
+    for ( ; itMarkedFaces != enMarkedFaces ; ++itMarkedFaces )
+    {
+        auto const& curFace = unwrap_ref( *itMarkedFaces );
+
+        std::vector<std::pair<uint16_type,size_type>> dofIdsInElementFromFace( dofDomain->nLocalDofOnFace( true ) );
+        for ( int lFaceDofId=0 ; lFaceDofId < dofDomain->nLocalDofOnFace( true ); ++lFaceDofId )
+        {
+            auto localFaceDof = this->domainSpace()->dof()->localToGlobal( curFace,lFaceDofId,0 );
+            size_type gpdof = localFaceDof.index();
+            uint16_type ldofInElement = localFaceDof.localDofInElement();
+            dofIdsInElementFromFace[lFaceDofId] = std::make_pair(ldofInElement, gpdof);
+        }
+
+        auto itfRef = M_p2m.mesh()->beginFace();
+        auto const enfRef = M_p2m.mesh()->endFace();
+        for ( ; itfRef != enfRef; ++itfRef )
+        {
+            auto const& faceRef = itfRef->second;
+            bool foundFace = true;
+            std::vector<size_type> gpdofs( faceRef.nPoints() );
+            for ( uint16_type p = 0; p < faceRef.nPoints(); ++p )
+            {
+                size_type ptIdRef = faceRef.point( p ).id();
+                uint16_type ldof = localDof( ptIdRef );
+                //ldofs[p] = ldof;
+                auto findLocalDof = std::find_if( dofIdsInElementFromFace.begin(), dofIdsInElementFromFace.end(),
+                                                  [&ldof]( auto const& i ) { return ldof == i.first; });
+                if ( findLocalDof == dofIdsInElementFromFace.end() )
+                {
+                    foundFace = false;
+                    break;
+                }
+                else
+                    gpdofs[p] = findLocalDof->second;
+            }
+            if ( foundFace )
+            {
+                face_type newFace;
+                newFace.setId( nNewFaces++ );
+                //newFace.setProcessId( curelt.processId() );
+                newFace.setProcessIdInPartition( curFace.pidInPartition() );
+                newFace.setMarker( markerType, curFace.marker( markerType ).value() );
+                for ( uint16_type p = 0; p < faceRef.nPoints(); ++p )
+                {
+                    size_type ptId = dofDomain->mapGlobalProcessToGlobalCluster( gpdofs[ p ] );
+                    newFace.setPoint( p, M_mesh->point( ptId ) );
+                }
+                M_mesh->addFace( newFace );
+            }
+        }
+    }
+
 
     if ( doParallelBuild )
     {
-        VLOG(2) << "[P1 Lagrange] start parallel build \n";
-
-        // create map between point id (not nessecary contigous and start to 0) and container id (c++ vector indice 0,1,...N)
-        std::map<int,int> mapPointIdToContainerId;
-        auto itp = M_p2m.mesh()->beginPoint();
-        auto const enp = M_p2m.mesh()->endPoint();
-        for ( int ptCount=0 ; itp!=enp ; ++itp,++ptCount )
+        VLOG(2) << "[P1 Lagrange] start build of ghost elements \n";
+        int neighborSubdomains = meshDomain->neighborSubdomains().size();
+        int nbRequest = 2 * neighborSubdomains;
+        mpi::request* reqs = new mpi::request[nbRequest];
+        int cptRequest = 0;
+        // first send/recv
+        for ( rank_type neighborRank : meshDomain->neighborSubdomains() )
         {
-            mapPointIdToContainerId[itp->second.id()]=ptCount;
+            reqs[cptRequest++] = meshDomain->worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank] );
+            reqs[cptRequest++] = meshDomain->worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank] );
         }
+        // wait all requests
+        mpi::wait_all( reqs, reqs + nbRequest );
 
-        //auto const theWorldCommSize = M_mesh->worldComm().size();
-        std::vector<int> nbMsgToSend( nProc , 0 );
-        std::vector< std::map<int,size_type> > mapMsg( nProc );
-
-        auto rangeGhostElements = this->domainSpace()->mesh()->ghostElements();
-        auto iv = std::get<0>( rangeGhostElements );
-        auto const en = std::get<1>( rangeGhostElements );
-        for ( ; iv != en; ++iv )
+        // add ghost elements
+        for ( auto const& [pid,data] : dataToRecv )
         {
-            auto const& ghostelt = boost::unwrap_ref( *iv );
-            auto const procGhost = ghostelt.processId();
-            auto const idEltOnGhost = ghostelt.idInOthersPartitions(procGhost);
-            M_mesh->worldComm().localComm().send(procGhost, nbMsgToSend[procGhost], idEltOnGhost);
-            mapMsg[procGhost].insert( std::make_pair( nbMsgToSend[procGhost],ghostelt.id() ) );
-            ++nbMsgToSend[procGhost];
-        }
-
-#if 0
-        // counter of msg received for each process
-        std::vector<int> nbMsgToRecv2;
-        mpi::all_to_all( M_mesh->worldComm().localComm(),
-                         nbMsgToSend,
-                         nbMsgToRecv2 );
-        for ( int proc=0; proc<nProc; ++proc )
-            CHECK( nbMsgToRecv[proc]==nbMsgToRecv2[proc] ) << "paritioning data incorect "
-                                                           << "myrank " << M_mesh->worldComm().localRank() << " proc " << proc
-                                                           << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
-                                                           << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";
-#endif
-
-        VLOG(2) << "[P1 Lagrange] parallel build : finish first send \n";
-
-        // counter of request
-        int nbRequest=0;
-        for ( int proc=0; proc<nProc; ++proc )
-            nbRequest+=nbMsgToRecv[proc]+nbMsgToSend[proc];
-
-        mpi::request * reqs = new mpi::request[nbRequest];
-        int cptRequest=0;
-
-        // recv dof asked and re-send dof in this proc
-        for ( int proc=0; proc<nProc; ++proc )
-        {
-            for ( int cpt=0; cpt<nbMsgToRecv[proc]; ++cpt )
+            for ( auto const& dataByElt : data )
             {
-                //recv
-                size_type idEltRecv;
-                M_mesh->worldComm().localComm().recv( proc, cpt, idEltRecv );
-                auto const& theeltIt = this->domainSpace()->mesh()->elementIterator(idEltRecv)->second;
-#if !defined(NDEBUG)
-                CHECK( M_gmc ) << "gmc does not init";
-                M_gmc->update( theeltIt );
-#endif
-                DCHECK(mapActiveEltWhichAreGhostInOtherPartition.find(idEltRecv) != mapActiveEltWhichAreGhostInOtherPartition.end() ) << "invalid idEltRecv " << idEltRecv << "\n";
-                auto const& idOfNewElt = mapActiveEltWhichAreGhostInOtherPartition[idEltRecv];
+                size_type eltId = boost::get<0>( dataByElt );
+                size_type parentEltId = boost::get<1>( dataByElt );
+                auto const& parentElt = meshDomain->element( parentEltId );
 
-                std::vector<boost::tuple<size_type,ublas::vector<double> > > resultClusterDofsAndNodesToSend(M_p2m.mesh()->numPoints());
+                element_type elt;
+                elt.setId( nNewElem++ );
+                elt.setMarkers( parentElt.markers() );
+                elt.setProcessIdInPartition( procId );
+                elt.setProcessId( pid );
+                elt.setIdInOtherPartitions( pid, eltId );
+                elt.setNeighborPartitionIds( parentElt.neighborPartitionIds() );
 
-                auto itp = M_p2m.mesh()->beginPoint();
-                auto const enp = M_p2m.mesh()->endPoint();
-                for ( int ptCount=0 ; itp!=enp ; ++itp,++ptCount )
+                if ( !M_gmc )
+                    M_gmc = gmc_ptrtype( new gmc_type( meshDomain->gm(), parentElt, M_gmpc ) );
+                else
+                    M_gmc->update( parentElt );
+
+                auto const& pointData = boost::get<2>( dataByElt );
+                bool isConnectedToActiveAnElement = false;
+                for ( uint16_type p = 0; p<pointData.size(); ++p )
                 {
-                    uint16_type localptid = itp->second.id();
-                    uint16_type localptid_dof = localDof( theeltIt, localptid );
-                    size_type ptid = boost::get<0>( this->domainSpace()->dof()->localToGlobal( theeltIt.id(),localptid_dof, 0 ) );
-                    size_type idInProcAsked = this->domainSpace()->dof()->mapGlobalProcessToGlobalCluster(ptid);
-                    ublas::vector<double> thedofnode = boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) );
-                    resultClusterDofsAndNodesToSend[ptCount/*localptid*/] = boost::make_tuple( idInProcAsked, thedofnode);
-                }
-
-                auto itl = M_p2m.mesh()->beginElement();
-                auto const enl = M_p2m.mesh()->endElement();
-                // localIdNewElt -> ( localIdPt, globalIdNewElt )
-                std::vector< boost::tuple< std::vector<uint16_type>, size_type > > resultToSendBis(std::distance(itl,enl));
-                for ( size_type elidp2m = 0 ; itl != enl; ++itl, ++elidp2m )
-                {
-                    auto const& eltRef = itl->second;
-                    std::vector<uint16_type> vecLocalIdPtToSend( image_mesh_type::element_type::numVertices );
-                    // accumulate the points
-                    for ( int p = 0; p < image_mesh_type::element_type::numVertices; ++p )
+                    size_type ptId = boost::get<0>( pointData[p] );
+                    uint16_type ptIdInRef = boost::get<1>( pointData[p] );
+                    auto ptIterator = M_mesh->pointIterator( ptId );
+                    if ( ptIterator == M_mesh->endPoint() )
                     {
-                        DVLOG(2) << "local In original element, vertex number " << eltRef.point( p ).id() << "\n";
-                        const uint16_type localptid = eltRef.point( p ).id();
-                        vecLocalIdPtToSend[p]=localptid;
+                        point_type __pt( ptId, M_gmc->xReal( this->localDof( ptIdInRef ) ) );
+                        __pt.setProcessIdInPartition( procId );
+                        ptIterator = M_mesh->addPoint( __pt ).first;
                     }
-
-                    const size_type idEltInNewMesh = idOfNewElt[elidp2m];
-                    resultToSendBis[elidp2m] = boost::make_tuple( vecLocalIdPtToSend,idEltInNewMesh );
-                    //auto eltToUpdate = M_mesh->elementIterator( idEltInNewMesh );
-                    //M_mesh->elements().modify( eltToUpdate, Feel::detail::UpdateNeighborPartition( proc ) );
+                    else if ( ptIterator->second.processId() != invalid_v<rank_type> )
+                        isConnectedToActiveAnElement = true;
+                    elt.setPoint( p, ptIterator->second );
                 }
-                auto resultToSend = boost::make_tuple(resultToSendBis,resultClusterDofsAndNodesToSend);
-                reqs[cptRequest] = M_mesh->worldComm().localComm().isend( proc, cpt, resultToSend);
-                ++cptRequest;
-            } // for ( int cpt=0; cpt<nbMsgToRecv[proc]; ++cpt )
-        } // for ( int proc=0; proc<nProc; ++proc )
-
-        std::map<int,std::vector< boost::tuple< std::vector< boost::tuple< std::vector<uint16_type>, size_type > >,
-                                                std::vector<boost::tuple<size_type,ublas::vector<double> > > > > > MAPresultRecvData;
-
-
-        for ( int proc=0; proc<nProc; ++proc )
-        {
-            MAPresultRecvData[proc].resize(nbMsgToSend[proc]);
-            for ( int cpt=0; cpt<nbMsgToSend[proc]; ++cpt )
-            {
-                reqs[cptRequest] = M_mesh->worldComm().localComm().irecv( proc, cpt, MAPresultRecvData[proc][cpt] );
-                ++cptRequest;
+                if ( isConnectedToActiveAnElement )
+                    M_mesh->addElement( elt );
             }
         }
-        mpi::wait_all(reqs, reqs + nbRequest);
-
-        VLOG(2) << "[P1 Lagrange] parallel build : finish first recv and resend response \n";
-
-        delete [] reqs;
-
-#if 1
-        std::map<size_type,size_type> new_ghost_node_numbers;
-
-        // get response to initial request
-        for ( int proc=0; proc<nProc; ++proc )
-        {
-            for ( int cpt=0; cpt<nbMsgToSend[proc]; ++cpt )
-            {
-                auto resultRecvData = MAPresultRecvData[proc][cpt];
-
-                auto const& myGhostEltBase = this->domainSpace()->mesh()->element( mapMsg[proc][cpt] );
-
-                auto const& mapLocalToGlobalPointId = resultRecvData.template get<1>();
-                auto resultRecv = resultRecvData.template get<0>();
-
-                auto itelt = resultRecv.begin();
-                auto const enelt = resultRecv.end();
-                for ( ;itelt!=enelt;++itelt )
-                {
-                    element_type elt;
-                    elt.setMarkers( myGhostEltBase.markers() );
-                    elt.setProcessIdInPartition( myGhostEltBase.pidInPartition() );
-#if 0
-                    elt.setNumberOfPartitions(2);
-                    DCHECK( proc==myGhostEltBase.processId() ) << "invalid process id\n";
-                    elt.setProcessId( proc );
-                    elt.setNeighborPartitionIds( std::vector<int>({M_mesh->worldComm().localRank()}) );
-                    /*std::vector<int> newNeighborPartitionIds(1);
-                    newNeighborPartitionIds[0]=M_mesh->worldComm().localRank();
-                    elt.setNeighborPartitionIds( newNeighborPartitionIds );*/
-
-#else
-                    DCHECK( proc==myGhostEltBase.processId() ) << "invalid process id\n";
-                    elt.setProcessId( proc );
-                    elt.setNeighborPartitionIds( myGhostEltBase.neighborPartitionIds() );
-#endif
-
-                    auto itpt = itelt->template get<0>().begin();
-                    auto const enpt = itelt->template get<0>().end();
-                    for ( int p = 0 ; itpt!=enpt ; ++itpt,++p )
-                    {
-                        auto const globclusterdofRecv = mapLocalToGlobalPointId[ mapPointIdToContainerId[(int)*itpt] ].template get<0>();
-                        size_type thenewptid=invalid_size_type_value;
-                        if ( this->domainSpace()->dof()->dofGlobalClusterIsOnProc(globclusterdofRecv))
-                        {
-                            const size_type theoldptid = globclusterdofRecv - this->domainSpace()->dof()->firstDofGlobalCluster();
-                            thenewptid = new_node_numbers[theoldptid];
-                            CHECK( thenewptid!=invalid_size_type_value ) << "--1---invalid point id theoldptid="<<theoldptid << " thenewptid="<<thenewptid<< "\n";
-                        }
-                        else if (mapGhostDofIdClusterToProcess.find(globclusterdofRecv) != mapGhostDofIdClusterToProcess.end() )
-                        {
-                            const size_type theoldptid = mapGhostDofIdClusterToProcess[globclusterdofRecv];
-                            thenewptid = new_node_numbers[theoldptid];
-                            CHECK( thenewptid!=invalid_size_type_value ) << "--2---invalid point id\n";
-                        }
-                        else
-                        {
-                            if (new_ghost_node_numbers.find(globclusterdofRecv) == new_ghost_node_numbers.end() )
-                            {
-                                // add a new ghost point
-                                new_ghost_node_numbers[globclusterdofRecv] = nNewNodes;
-                                thenewptid = nNewNodes;
-                                CHECK( thenewptid!=invalid_size_type_value ) << "--3---invalid point id\n";
-                                point_type __pt( nNewNodes, mapLocalToGlobalPointId[ mapPointIdToContainerId[(int)*itpt] ].template get<1>() );
-                                __pt.setProcessId( invalid_uint16_type_value );
-                                __pt.setProcessIdInPartition( myGhostEltBase.pidInPartition() );
-                                M_mesh->addPoint( __pt );
-                                nNewNodes++;
-                            }
-                            else
-                            {
-                                // use present ghost point
-                                thenewptid = new_ghost_node_numbers[globclusterdofRecv];
-                                CHECK( thenewptid!=invalid_size_type_value ) << "--4---invalid point id\n";
-                            }
-                            //elt.setPoint( p, M_mesh->point( new_ghost_node_numbers[globclusterdofRecv] ) );
-                        }
-                        CHECK( thenewptid!=invalid_size_type_value ) << "invalid point id\n";
-                        // add point to elt
-                        elt.setPoint( p, M_mesh->point( thenewptid ) );
-
-                    } // for ( int p = 0 ; itpt!=enpt ; ++itpt,++p )
-
-                    // set id of element
-                    elt.setId ( nNewElem++ );
-
-                    // increment the new element counter
-                    nNewElem++;
-
-                    elt.setIdInOtherPartitions( proc, itelt->template get<1>() );
-                    auto const& theNewElt = M_mesh->addElement ( elt );
-
-                } // for ( ;itelt!=enelt;++itelt )
-            } // for ( int cpt=0; cpt<nbMsgToSend[proc]; ++cpt )
-        } // for ( int proc=0; proc<nProc; ++proc )
-
-#endif
-    } // if ( parallelBuild )
-
-    // DVLOG(2) << "dist ghost elt base " << std::distance( this->domainSpace()->mesh()->beginGhostElement(),this->domainSpace()->mesh()->endGhostElement() )
-    //          << " dist ghost elt new " << std::distance( M_mesh->beginGhostElement(),M_mesh->endGhostElement() ) << "\n";
+    }
 
     DVLOG(2) << "[P1 Lagrange] Number of points in mesh: " << M_mesh->numPoints() << "\n";
 
     M_mesh->setNumVertices( M_mesh->numPoints() );
     M_mesh->components().reset();
-    //M_mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     M_mesh->components().set ( meshUpdate );
     M_mesh->updateForUse();
 }
@@ -1044,7 +783,7 @@ OperatorLagrangeP1<space_type>::operator()( element_type const& u ) const
             for ( int c = 0; c < nComponents; ++c )
                 for ( int p = 0; p < domain_mesh_type::element_type::numVertices; ++p )
                 {
-                    size_type ptid = boost::get<0>( this->dualImageSpace()->dof()->localToGlobal( elt.id(), p, c ) );
+                    size_type ptid = this->dualImageSpace()->dof()->localToGlobal( elt.id(), p, c ).index();
                     res( ptid ) = ublas::column( u_at_pts, M_el2pt[*ite][p] )( nComponents*c+c );
                 }
         }
@@ -1053,51 +792,6 @@ OperatorLagrangeP1<space_type>::operator()( element_type const& u ) const
     return res;
 }
 #endif
-
-template<typename space_type>
-uint16_type
-OperatorLagrangeP1<space_type>::localDof( typename domain_mesh_type::element_type const& elt,//element_const_iterator it,
-        uint16_type localptid,
-        mpl::bool_<true> ) const
-{
-    typedef typename domain_mesh_type::element_type::edge_permutation_type edge_permutation_type;
-    uint16_type localptid_dof = localptid;
-
-    if ( domain_mesh_type::nDim == 2 &&
-            M_pset.pointToEntity( localptid ).first == 1 &&
-            elt.edgePermutation( M_pset.pointToEntity( localptid ).second ) == edge_permutation_type::REVERSE_PERMUTATION )
-    {
-        //size_type edge_id = it->edge( M_pset.pointToEntity( localptid ).second ).id();
-        uint16_type edge_id = M_pset.pointToEntity( localptid ).second;
-
-        uint16_type l = localptid - ( domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
-                                      edge_id * domain_fe_type::nDofPerEdge );
-
-        FEELPP_ASSERT( l != invalid_uint16_type_value && ( l < domain_fe_type::nDofPerEdge ) )
-        ( l )
-        ( domain_fe_type::nDofPerEdge )
-        ( localptid )
-        ( M_pset.pointToEntity( localptid ).second )
-        ( domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
-          edge_id * domain_fe_type::nDofPerEdge ).error( "invalid value" );
-
-        localptid_dof = ( domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
-                          edge_id * domain_fe_type::nDofPerEdge +
-                          domain_fe_type::nDofPerEdge - 1 - l );
-
-        FEELPP_ASSERT( localptid_dof != invalid_uint16_type_value &&
-                       ( localptid_dof < domain_fe_type::nLocalDof ) )
-        ( l )
-        ( localptid )
-        ( localptid_dof )
-        ( domain_fe_type::nLocalDof )
-        ( M_pset.pointToEntity( localptid ).second )
-        ( domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
-          edge_id * domain_fe_type::nDofPerEdge ).error( "invalid value" );
-    }
-
-    return localptid_dof;
-}
 
 //-----------------------------------------------------------------------------------------------------------------//
 //-----------------------------------------------------------------------------------------------------------------//

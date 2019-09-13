@@ -29,11 +29,14 @@
 #include <boost/none_t.hpp>
 #endif /* BOOST_VERSION >= 103400 */
 
+
 #include <Eigen/src/Core/util/DisableStupidWarnings.h>
 #include <Eigen/Core>
+#include <Eigen/StdVector>
 #include <Eigen/src/Core/util/ReenableStupidWarnings.h>
 
-#include <boost/enable_shared_from_this.hpp>
+#include <boost/functional/hash.hpp>
+#include <memory>
 #include <boost/mpl/vector.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -120,13 +123,13 @@ template <uint16_type Dim,
                     template <class, uint16_type, class> class Pts, uint16_type> class PP = Lagrange>
 class GeoMap
     : public PP<Order, Scalar, Continuous, PointSetEquiSpaced, 0>::template apply<Dim, RealDim /*Dim*/, T, Entity<Dim, Order, /*RealDim*/ Dim>>::result_type //,
-                                                                                                                                                             //public std::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
+                                                                                                                                                             //public boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
 //public PP<Order,Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
 {
     //typedef typename PP<Order, Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
     typedef typename PP<Order, Scalar, Continuous, PointSetEquiSpaced, 0>::template apply<Dim, RealDim /*Dim*/, T, Entity<Dim, Order, /*RealDim*/ Dim>>::result_type super;
 
-    //typedef std::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > > super_enable_this;
+    //typedef boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > > super_enable_this;
 
     static const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<RealDim>>,
                                                         mpl::int_<RealDim>,
@@ -151,9 +154,11 @@ class GeoMap
     static const uint16_type nDim = super::nDim;
     static const uint16_type nRealDim = super::nRealDim;
     static const uint16_type nDof = super::nDof;
+    static const uint16_type nOrder = Order;
     static const uint16_type nNodes = super::nNodes;
     static const fem::transformation_type trans = super::trans;
-
+    static const bool is_linear = ( trans == fem::LINEAR );
+    
     typedef typename super::value_type value_type;
 
     typedef typename super::PreCompute precompute_type;
@@ -169,6 +174,7 @@ class GeoMap
     typedef typename mpl::at<geomap_elements_t, mpl::int_<nDim>>::type element_gm_type;
     typedef std::shared_ptr<element_gm_type> element_gm_ptrtype;
     typedef element_gm_ptrtype gm_ptrtype;
+    using gm_type = element_gm_type;
 
     typedef typename mpl::at<geomap_faces_t, mpl::int_<nDim>>::type face_gm_type;
     typedef std::shared_ptr<face_gm_type> face_gm_ptrtype;
@@ -200,7 +206,18 @@ class GeoMap
 
     typedef typename ublas::vector<value_type> vector_type;
     typedef typename ublas::matrix<value_type, ublas::column_major> matrix_type;
+    
+    using eigen_vector_p_type = eigen_vector_type<Dim,value_type>;
+    using vector_eigen_vector_p_type = vector_eigen_vector_type<Dim,value_type>;
 
+    using eigen_vector_n_type = eigen_vector_type<RealDim,value_type>;
+    using vector_eigen_vector_n_type = vector_eigen_vector_type<RealDim,value_type>;
+
+    using eigen_map_matrix_type = Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>>;
+    using eigen_map_vector_type = Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,1,Eigen::ColMajor>>;
+
+    using hessian_basis_type = Eigen::Tensor<value_type,3>;
+    
     /** default constructor */
     GeoMap()
         : super(),
@@ -284,18 +301,6 @@ class GeoMap
                     M_g_linear( i, n ) = m( n )( i, 0 );
                 }
             }
-
-#if 0
-
-                       for ( uint16_type i = 0; i < nNodes; ++i )
-                       {
-                           for ( uint16_type n = 0; n < nDim; ++n )
-                           {
-                               M_g_linear( i, n ) = this->dPhi( i, n, __dummy_pt );
-                           }
-                       }
-
-#endif // 0
         }
     }
     /**
@@ -308,12 +313,12 @@ class GeoMap
     /**
             \return the dimension of the underlying element
             */
-    uint16_type dim() const
+    constexpr uint16_type dim() const noexcept
     {
         return nDim;
     }
 
-    uint16_type realDim() const
+    constexpr uint16_type realDim() const noexcept
     {
         return nRealDim;
     }
@@ -435,30 +440,30 @@ class GeoMap
  */
     void gradient( const node_t_type& __pt,
                    matrix_type& __g ) const
-    {
-        namespace lambda = boost::lambda;
-
-        if ( trans == fem::LINEAR )
         {
-            __g = M_g_linear;
-        }
+            namespace lambda = boost::lambda;
 
-        else
-        {
-            FEELPP_ASSERT( __pt.size() == dim() )
-            ( __pt.size() )( dim() ).error( "invalid dimension" );
-
-            matrix_node_t_type __pts( nDim, 1 );
-            ublas::column( __pts, 0 ) = __pt;
-
-            ublas::vector<ublas::matrix<value_type>> m = super::derivate( __pts );
-
-            for ( uint16_type n = 0; n < nDim; ++n )
+            if ( trans == fem::LINEAR )
             {
-                ublas::column( __g, n ) = ublas::column( m( n ), 0 );
+                __g = M_g_linear;
+            }
+
+            else
+            {
+                FEELPP_ASSERT( __pt.size() == dim() )
+                    ( __pt.size() )( dim() ).error( "invalid dimension" );
+
+                matrix_node_t_type __pts( nDim, 1 );
+                ublas::column( __pts, 0 ) = __pt;
+
+                ublas::vector<ublas::matrix<value_type>> m = super::derivate( __pts );
+
+                for ( uint16_type n = 0; n < nDim; ++n )
+                {
+                    ublas::column( __g, n ) = ublas::column( m( n ), 0 );
+                }
             }
         }
-    }
 
     /**
    compute the gradient of the transformation in the reference
@@ -494,6 +499,26 @@ class GeoMap
             }
         }
     }
+
+    /**
+     compute the gradient of the transformation in the reference
+     element
+     
+     Compute the gradient at node \c x, pc is resized to
+     [nbNodes() x dim()] if the transformation is linear, \c x is
+     not used at all
+     */
+    void hessianBasisAtPoint( uint16_type __idref,
+                              hessian_basis_type& _hessian,
+                              precompute_type const* __pc ) const
+        {
+            DCHECK( __pc ) << "a PreCompute must be set first before using this function:"  << __idref;
+            
+            for ( size_type i = 0; i < nNodes; ++i )
+            {
+                _hessian.chip( i, 0 ) = __pc->hessian( i, __idref ).chip( 0, 2 );
+            }
+        }
 
     /**
  * get an estimate of the radius of the element defined by G
@@ -532,108 +557,213 @@ class GeoMap
         return M_is_cached;
     }
 
-    std::vector<bool> M_cached;
-    std::vector<double> M_J;
-    //boost::multi_array<double,3> M_K;
-    //boost::multi_array<double,3> M_B;
-    std::vector<matrix_type> M_K;
-    std::vector<matrix_type> M_B;
+    std::unordered_map<uint32_type,value_type> M_J;
+    using element_face_pair_t = std::pair<uint32_type,uint16_type>;
+    std::unordered_map<element_face_pair_t,value_type,boost::hash<element_face_pair_t>> M_JFace, M_n_norm;
+    using allocator_vector_n_t = Eigen::aligned_allocator<std::pair<const element_face_pair_t, eigen_vector_n_type> >;
+    std::unordered_map<element_face_pair_t,eigen_vector_n_type,boost::hash<element_face_pair_t>, std::equal_to<element_face_pair_t>, allocator_vector_n_t> M_un_real;
+    std::unordered_map<element_face_pair_t,int,boost::hash<element_face_pair_t>> M_permutation_element_face_neighbor;
+    unordered_map_eigen_matrix_type<uint32_type,nRealDim,nDim,value_type> M_K;
+    unordered_map_eigen_matrix_type<uint32_type,nRealDim,nDim,value_type> M_B;
+
 
     template <typename MeshType>
     void initCache( MeshType const* mesh )
     {
+#if 0
         size_type nelts = mesh->numElements();
         LOG( INFO ) << "[Geomap] start caching J,K,B for " << nelts << " elements\n";
-        M_cached.resize( nelts );
-        std::fill( M_cached.begin(), M_cached.end(), false );
 
-        M_J.resize( nelts );
-        M_K.resize( nelts );
-        M_B.resize( nelts );
+        M_J.reserve( nelts );
+        M_K.clear();
+        M_K.reserve( nelts );
+        M_B.reserve( nelts );
+        M_JFace.reserve( nelts*mesh->numLocalTopologicalFaces() );
+        M_n_norm.reserve( nelts*mesh->numLocalTopologicalFaces() );
+        M_un_real.reserve( nelts*mesh->numLocalTopologicalFaces() );
+        M_permutation_element_face_neighbor.reserve( nelts*mesh->numLocalTopologicalFaces() );
         M_is_cached = true;
+#endif
     }
     bool isCacheValid() const
     {
-        if ( !( M_cached.size() > 0 &&
-                M_J.size() > 0 &&
+        if ( !( M_J.size() > 0 &&
                 M_K.size() > 0 &&
                 M_B.size() > 0 ) )
         {
-            LOG( INFO ) << "invalid cache\n";
             return false;
         }
 
         return true;
     }
-    bool cached( int e ) const
+    //! @return true if geomap data are cache for element @p e, false otherwise
+    bool cachedK( int e ) const
     {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
-        return M_cached[e];
+        return M_K.count( e ) > 0;
     }
-    void setCached( int e, bool v )
+    bool cachedB( int e ) const
     {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
-        M_cached[e] = v;
+        return M_B.count( e ) > 0;
     }
-    double J( int e ) const
+    bool cachedJ( int e ) const
     {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
-        DCHECK( e >= 0 && e < M_J.size() ) << "invalid element id " << e << "( " << M_J.size() << ") for geomap cache, are you using the proper mesh\n";
-        return M_J[e];
+        return M_J.count( e ) > 0;
     }
-    matrix_type const& B( int e ) const
+    //! return jacobian at element @p e
+    value_type J( int e ) const
     {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
-        DCHECK( e >= 0 && e < M_B.size() ) << "invalid element id " << e << "( " << M_B.size() << ") for geomap cache, are you using the proper mesh\n";
-        return M_B[e];
+        return M_J.at(e);
     }
-    matrix_type const& K( int e ) const
+    void setJacobian( int e, value_type v ) 
+        {
+            M_J[e]=v;
+        }
+    bool hasJacobian( int e ) const
+        {
+            return M_J.count(e);
+        }
+    value_type jacobianAtFace( int e, int f ) const
+        {
+            return M_JFace.at({e,f});
+        }
+    eigen_matrix_type<nDim,nRealDim,value_type> const& B( int e ) const
     {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
-        DCHECK( e >= 0 && e < M_K.size() ) << "invalid element id " << e << "( " << M_K.size() << ") for geomap cache, are you using the proper mesh\n";
-        return M_K[e];
+        return M_B.at(e);
     }
-    void addJ( int e, double v )
+    eigen_matrix_type<nDim,nRealDim,value_type> const& K( int e ) const
     {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
+        return M_K.at(e);
+    }
+    void setK( int e, eigen_matrix_type<nDim,nRealDim,value_type> const& K ) 
+        {
+            M_K[e]=K;
+        }
+    template<typename G = self_type>
+    bool cacheK( int e,
+                 eigen_matrix_type<nRealDim,nDim,value_type>& K )
+        {
+            if constexpr ( G::is_linear && (nDim==nRealDim) )
+            {
+                if ( !cachedK(e) ) return false;
+                K.noalias() = M_K.at(e);
+                return true;
+            }
+            else
+                return false;
+        }
+    template<typename G = self_type>
+    bool cacheB( int e,
+                 eigen_matrix_type<nRealDim,nDim,value_type>& B )
+        {
+            if constexpr ( G::is_linear && (nDim==nRealDim) )
+            {
+                if ( !cachedB(e) ) return false;
+                B.noalias() = M_B.at(e);
+                return true;
+            }
+            else
+                return false;
+        }
+    template<typename G = self_type>
+    bool cacheJ( int e, value_type& J )
+        {
+            if constexpr ( G::is_linear && (nDim==nRealDim) )
+            {
+                if ( !cachedJ(e) ) return false;
+                J = M_J.at(e);
+                return true;
+            }
+            else
+                return false;
+        }
+    template<typename G = self_type>
+    void updateCacheK( int e,
+                       eigen_matrix_type<nRealDim,nDim,value_type> const& K )
+        {
+            if constexpr ( G::is_linear && (nDim==nRealDim) )
+            {
+                M_K[e] = K;
+            }
+        }
+    template<typename G = self_type>
+    void updateCacheB( int e,
+                       eigen_matrix_type<nRealDim,nDim,value_type> const & B)
+        {
+            if constexpr ( G::is_linear && (nDim==nRealDim) )
+            {
+                M_B[e] = B;
+            }
+        }
+    template<typename G = self_type>
+    void updateCacheJ( int e,
+                       value_type const& J )
+        {
+            if constexpr ( G::is_linear && (nDim==nRealDim) )
+            {
+                M_J[e] = J;
+            }
+        }
+    void addJ( int e, value_type v )
+    {
         DCHECK( e >= 0 && e < M_J.size() ) << "invalid element id " << e << "( " << M_J.size() << ") for geomap cache, are you using the proper mesh\n";
         M_J[e] = v;
     }
-    void addK( int e, matrix_type const& K )
+    bool hasJacobianAtFace( int e, int f ) const
+        {
+            return M_JFace.count({e,f});
+        }
+    void setJacobianAtFace( int e, int f, value_type v )
+        {
+            M_JFace[{e,f}] = v;
+        }
+    value_type normalNormAtFace( int e, int f ) const
+        {
+            return M_n_norm.at({e,f});
+        }
+    bool hasNormalNormAtFace( int e, int f ) const
+        {
+            return M_n_norm.count({e,f});
+        }
+    void setNormalNormAtFace( int e, int f, value_type v )
+        {
+            M_n_norm[{e,f}] = v;
+        }
+    eigen_vector_n_type const& unitNormalAtFace( int e, int f ) const
+        {
+            return M_un_real.at({e,f});
+        }
+    bool hasUnitNormalAtFace( int e, int f ) const
+        {
+            return M_un_real.count({e,f});
+        }
+    void setUnitNormalAtFace( int e, int f, eigen_vector_n_type const& v )
+        {
+            M_un_real[{e,f}] = v;
+        }
+    int permutationWithNeighborFace( int e, int f ) const
+        {
+            return M_permutation_element_face_neighbor.at({e,f});
+        }
+    bool hasPermutationWithNeighborFace( int e, int f ) const
+        {
+            return M_permutation_element_face_neighbor.count({e,f});
+        }
+    void setPermutationWithNeighborFace( int e, int f, int v )
+        {
+            M_permutation_element_face_neighbor[{e,f}] = v;
+        }
+    template <typename Derived>
+    void setB( int e, const Eigen::MatrixBase<Derived>& B )
     {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
-        DCHECK( e >= 0 && e < M_K.size() ) << "invalid element id " << e << "( " << M_K.size() << ") for geomap cache, are you using the proper mesh\n";
-        M_K[e].resize( K.size1(), K.size2() );
-
-        for ( size_type i = 0; i < K.size1(); ++i )
-            for ( size_type j = 0; j < K.size2(); ++j )
-                M_K[e]( i, j ) = K( i, j );
-    }
-    void addB( int e, matrix_type const& B )
-    {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
-        DCHECK( e >= 0 && e < M_B.size() ) << "invalid element id " << e << "( " << M_B.size() << ") for geomap cache, are you using the proper mesh\n";
-        M_B[e].resize( B.size1(), B.size2() );
-
-        for ( size_type i = 0; i < B.size1(); ++i )
-            for ( size_type j = 0; j < B.size2(); ++j )
-                M_B[e]( i, j ) = B( i, j );
+        M_B[e].noalias() = B;
     }
 
     /**
- * \class Context
- *
- * Context for the geometric mapping depend on a node in the
- * reference element
- */
+     * \class Context
+     *
+     * Context for the geometric mapping depend on a node in the
+     * reference element
+     */
     template <size_type context_v, typename ElementType, int SubEntityCoDim = 1>
     class Context
     {
@@ -685,9 +815,26 @@ class GeoMap
         //typedef typename element_type::permutation_type permutation_type;
         typedef typename element_type::template PermutationSubEntity<SubEntityCoDim>::type permutation_type;
 
+        using eigen_matrix_nx_type = eigen_matrix_type<NDim,Eigen::Dynamic,value_type>;
+        using eigen_matrix_xn_type = eigen_matrix_type<Eigen::Dynamic,NDim,value_type>;
+        using eigen_matrix_px_type = eigen_matrix_type<PDim,Eigen::Dynamic,value_type>;
+        using eigen_matrix_xp_type = eigen_matrix_type<Eigen::Dynamic,PDim,value_type>;
+        
+        using eigen_matrix_nn_type = eigen_matrix_type<NDim,NDim,value_type>;
+        using vector_eigen_matrix_pp_type = vector_eigen_matrix_type<PDim,PDim,value_type>;
+        using vector_eigen_matrix_nn_type = vector_eigen_matrix_type<NDim,NDim,value_type>;
+        using eigen_matrix_np_type = eigen_matrix_type<NDim,PDim,value_type>;
+        using eigen_matrix_pp_type = eigen_matrix_type<PDim,PDim,value_type>;
+        using vector_eigen_matrix_np_type = vector_eigen_matrix_type<NDim,PDim,value_type>;
+
+        using hessian_type = tensor3_fixed_size_t<NDim,PDim,PDim,value_type>;
+        using vector_hessian_type = vector_tensor3_fixed_size_t<NDim,PDim,PDim,value_type>;
+
         Context( gm_ptrtype __gm,
                  element_type const& __e,
-                 precompute_ptrtype const& __pc = precompute_ptrtype() )
+                 precompute_ptrtype const& __pc = precompute_ptrtype(),
+                 uint16_type __f = invalid_uint16_type_value,
+                 size_type dynctx = 0 )
             : M_gm( __gm ),
               M_element( boost::addressof( __e ) ),
               M_pc( __pc ),
@@ -697,300 +844,147 @@ class GeoMap
               //M_xref( PDim ),
               //M_xreal( NDim ),
               //M_x0( NDim ),
-              M_J( 0 ),
+              M_J( nComputedPoints() ),
               M_G( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ),
-              M_n( M_gm->referenceConvex().normals() ),
-              M_n_real( NDim ),
-              M_un_real( NDim ),
-              M_n_norm( 0 ),
-              M_t_real( NDim ),
-              M_ut_real( NDim ),
-              M_t_norm( 0 ),
+              //M_ref_normals( M_gm->referenceConvex().normals() ),
+              M_normals( nComputedPoints() ),
+              M_unit_normals( nComputedPoints() ),
+              M_normal_norms( nComputedPoints() ),
+              M_tangents( nComputedPoints() ),
+              M_unit_tangents( nComputedPoints() ),
+              M_tangent_norms( nComputedPoints() ),
+              M_local_basis_real( nComputedPoints() ),
+              M_local_basis_ref( nComputedPoints() ),
               M_xrefq( PDim, nPoints() ),
               M_xrealq( NDim, nPoints() ),
-              M_n_realq( NDim, nPoints() ),
-              M_un_realq( NDim, nPoints() ),
-              M_n_normq( nPoints() ),
-
+              M_g_linear( M_G.size2(), PDim ),
               M_g( M_G.size2(), PDim ),
-              M_K( NDim, PDim ),
-              M_CS( PDim, PDim ),
-              M_CSi( PDim, PDim ),
-              M_B( NDim, PDim ),
-              M_Ptangent( NDim, NDim ),
+              M_hessian_basis_at_pt( M_G.size2(), PDim, PDim ),
+              M_K( nComputedPoints() ),
+              M_CS(),
+              M_CSi(),
+              M_B( nComputedPoints() ),
+              M_hessian( nComputedPoints() ),
+              M_Ptangent( nComputedPoints() ),
               M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
               M_id( __e.id() ),
               M_e_markers( __e.markers() ),
-              M_elem_id_1( invalid_size_type_value ),          // __e.ad_first() ),
+              M_elem_id_1( invalid_v<size_type> ),          // __e.ad_first() ),
               M_pos_in_elem_id_1( invalid_uint16_type_value ), //__e.pos_first() ),
-              M_elem_id_2( invalid_size_type_value ),          //__e.ad_second() ),
+              M_elem_id_2( invalid_v<size_type> ),          //__e.ad_second() ),
               M_pos_in_elem_id_2( invalid_uint16_type_value ), //__e.pos_second() ),
-              M_face_id( invalid_uint16_type_value ),
+              M_face_id( __f ),
               M_h( 0 ),
               M_h_min( 0 ),
               M_h_face( 0 ),
               M_meas( 0 ),
               M_measface( 0 ),
-              M_Jt(),
-              M_Bt(),
-              M_perm()
+              M_perm(),
+              M_dynamic_context( dynctx )
         {
 
             if ( is_linear )
             {
                 M_gm->gradient( node_t_type(), M_g_linear );
             }
-
-            else
-            {
-                M_Jt.resize( nPoints() );
-                M_Bt.resize( nPoints() );
-            }
-
-            if ( M_pc )
+            updateGradient<>( 0 );
+            if ( M_pc && !this->isOnSubEntity() )
                 update( __e );
+
         }
 
-    Context( gm_ptrtype __gm,
-             element_type const& __e,
-             std::vector<std::map<permutation_type, precompute_ptrtype> > & __pc,
-             uint16_type __f )
-        :
-        M_gm( __gm ),
-        M_element( boost::addressof( __e ) ),
-        M_pc(),
-        M_pc_faces( __pc ),
-        M_npoints( __pc.size()?__pc[__f][__e.permutation( __f, mpl::int_<subEntityCoDim>() )]->nPoints():0 ),
-
-        //M_xref( PDim ),
-        //M_xreal( NDim ),
-        //M_x0( NDim ),
-        M_J( 0 ),
-        M_G( ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G() ),
-        M_n( M_gm->referenceConvex().normals() ),
-        M_n_real( NDim ),
-        M_un_real( NDim ),
-        M_n_norm( 0 ),
-        M_t_real( NDim ),
-        M_ut_real( NDim ),
-        M_t_norm( 0 ),
-        M_xrefq( PDim, nPoints() ),
-        M_xrealq( NDim, nPoints() ),
-        M_n_realq( NDim, nPoints() ),
-        M_un_realq( NDim, nPoints() ),
-        M_n_normq( nPoints() ),
-
-        M_g( M_G.size2(), PDim ),
-        M_K( NDim, PDim ),
-        M_CS( PDim, PDim ),
-        M_CSi( PDim, PDim ),
-        M_B( NDim, PDim ),
-        M_Ptangent( NDim, NDim ),
-        M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
-        M_id( __e.id() ),
-        M_e_markers( __e.markers() ),
-        M_elem_id_1( invalid_size_type_value ),// __e.ad_first() ),
-        M_pos_in_elem_id_1( invalid_uint16_type_value ),  //__e.pos_first() ),
-        M_elem_id_2( invalid_size_type_value ),  //__e.ad_second() ),
-        M_pos_in_elem_id_2( invalid_uint16_type_value ),  //__e.pos_second() ),
-        M_face_id( __f ),
-        M_h( 0 ),
-        M_h_min( 0 ),
-        M_h_face( 0 ),
-        M_meas( 0 ),
-        M_measface( 0 ),
-        M_Jt(),
-        M_Bt(),
-        M_perm( )
-        {
-
-            if ( is_linear )
+        Context( gm_ptrtype __gm,
+                 element_type const& __e,
+                 std::vector<std::map<permutation_type, precompute_ptrtype> > & __pc,
+                 uint16_type __f,
+                 size_type dynctx = 0 )
+            :
+            Context( __gm, __e, __pc.empty()?precompute_ptrtype{}:__pc[__f][__e.permutation(__f, mpl::int_<subEntityCoDim>() )], __f, dynctx )
             {
-                M_gm->gradient( node_t_type(), M_g_linear );
+                if ( !__pc.empty() )
+                    M_pc_faces =  __pc;
+                if ( M_pc )
+                    update( __e, M_face_id );
             }
+        
+        using using_vectices_t = mpl::int_<0>;
 
-            else
+        // context for geomap at vertices
+        Context( gm_ptrtype __gm,
+                 element_type const& __e,
+                 precompute_ptrtype & __pc,
+                 uint16_type __f,
+                 using_vectices_t )
+            :
+            Context( __gm, __e, __pc )
             {
-                M_Jt.resize( nPoints() );
-                M_Bt.resize( nPoints() );
+                update( __e, __f, using_vectices_t() );
             }
-            if ( __pc.size() )
-                update( __e, __f );
-        }
-
-    // context for geomap at vertices
-    Context( gm_ptrtype __gm,
-             element_type const& __e,
-             precompute_ptrtype & __pc,
-             uint16_type __f,
-             mpl::int_<0>)
-        :
-        Context( __gm, __e, __pc )
-        {
-
-            if ( is_linear )
-            {
-                M_gm->gradient( node_t_type(), M_g_linear );
-            }
-
-            else
-            {
-                M_Jt.resize( nPoints() );
-                M_Bt.resize( nPoints() );
-            }
-
-            update( __e, __f, mpl::int_<0>() );
-        }
-
+        
         Context( gmc_ptrtype& p )
-            : M_gm( p->M_gm ),
-              M_element( p->M_element ),
-              M_pc( p->M_pc ),
-              M_pc_faces( p->M_pc_faces ),
-              M_npoints( M_pc->nPoints() ),
-              //M_xref( PDim ),
-              //M_xreal( NDim ),
-              //M_x0( NDim ),
-              M_J( p->M_J ),
-              M_G( ( gm_type::nNodes == element_type::numVertices ) ? M_element->vertices() : M_element->G() ),
-              M_n( p->M_n ),
-              M_n_real( p->M_n_real ),
-              M_un_real( p->M_un_real ),
-              M_n_norm( p->M_n_norm ),
-              M_t_real( p->M_t_real ),
-              M_ut_real( p->M_ut_real ),
-              M_t_norm( p->M_t_norm ),
-              M_xrefq( p->M_xrefq ),
-              M_xrealq( p->M_xrealq ),
-              M_n_realq( p->M_n_realq ),
-              M_un_realq( p->M_un_realq ),
-              M_n_normq( p->M_n_normq ),
-              M_g( p->M_g ),
-              M_K( p->M_K ),
-              M_CS( p->M_CS ),
-              M_CSi( p->M_CSi ),
-              M_B( p->M_B ),
-              M_Ptangent( p->M_Ptangent ),
-              M_B3( p->M_B3 ),
-              M_id( p->M_id ),
-              M_e_markers( p->M_e_markers ),
-              M_elem_id_1( invalid_size_type_value ),          // M_element.ad_first() ),
-              M_pos_in_elem_id_1( invalid_uint16_type_value ), //M_element.pos_first() ),
-              M_elem_id_2( invalid_size_type_value ),          //M_element.ad_second() ),
-              M_pos_in_elem_id_2( invalid_uint16_type_value ), //M_element.pos_second() ),
-              M_face_id( invalid_uint16_type_value ),
-              M_h( p->M_h ),
-              M_h_min( p->M_h_min ),
-              M_h_face( p->M_h_face ),
-              M_meas( p->M_meas ),
-              M_measface( p->M_measface ),
-              M_Jt(),
-              M_Bt(),
-              M_perm( p->M_perm )
-        {
-            if ( is_linear )
-            {
-                M_gm->gradient( node_t_type(), M_g_linear );
-            }
+            :
+            Context( *p )
+            {}
 
-            else
-            {
-                M_Jt.resize( nPoints() );
-                M_Bt.resize( nPoints() );
-            }
-
-            update( *M_element );
-        }
-
+        Context( Context const& ) = default;
+        Context( Context && ) = default;
+        
         /**
-     * clone this context
-     */
+         * clone the context
+         */
         gmc_ptrtype clone()
         {
-            return gmc_ptrtype( new gmc_type( *this ) );
+            return std::make_shared<gmc_type>( *this );
         }
 
-        /**
-     * update information on this context
-     *
-     *  - update the coordinate of the real points
-     *  - update the pseudo-inverse of the gradient of the transformation
-     *
-     *  compute \f$ K(x_{\mathrm{ref}}) = G \nabla_{\mathrm{ref}} \phi(x_{\mathrm{ref}}) \f$
-     *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
-     *
-     *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^T K )^{-1} \f$
-     *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
-     */
+       /**
+        * update information on this context
+        *
+        *  - update the coordinate of the real points
+        *  - update the pseudo-inverse of the gradient of the transformation
+        *
+        *  compute \f$ K(x_{\mathrm{ref}}) = G \nabla_{\mathrm{ref}} \phi(x_{\mathrm{ref}}) \f$
+        *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
+        *
+        *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^T K )^{-1} \f$
+        *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
+        */
+#if 0
         void update( element_type const& __e, uint16_type __f )
         {
-            //M_element_c = std::shared_ptr<element_type const>(&__e);
-            M_element = boost::addressof( __e );
-            M_face_id = __f;
-
-            M_perm = __e.permutation( M_face_id, mpl::int_<subEntityCoDim>() );
-
-            M_pc = M_pc_faces[__f][M_perm];
-
-            //M_G = __e.G();
-            M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
-            M_id = __e.id();
-            M_e_markers = __e.markers();
-            M_xrefq = M_pc->nodes();
-            if ( vm::has_measure<context>::value )
-            {
-                M_h = __e.h();
-                M_h_min = __e.hMin();
-                M_meas = __e.measure();
-                if ( subEntityCoDim == 1 )
-                {
-                    M_measface = __e.faceMeasure( M_face_id );
-                    M_h_face = __e.hFace( M_face_id );
-                }
-                //M_h_edge = __e.hEdge( M_face_id );
-            }
-            else if ( vm::has_tangent<context>::value && ( NDim == 2 ) )
-            {
-                if ( subEntityCoDim == 1 )
-                    M_h_face = __e.hFace( M_face_id );
-            }
-
-            if ( vm::has_point<context>::value )
-            {
-
-                //ublas::axpy_prod( M_G, pc->phi(), M_xrealq, true );
-                std::fill( M_xrealq.data().begin(), M_xrealq.data().end(), value_type( 0 ) );
-                const uint16_type size1 = M_G.size1();
-                const uint16_type size3 = M_G.size2();
-                const uint16_type size2 = M_pc->nPoints();
-
-                for ( uint16_type i = 0; i < size1; ++i )
-                    for ( uint16_type j = 0; j < size2; ++j )
-                    {
-                        for ( uint16_type k = 0; k < size3; ++k )
-                            M_xrealq( i, j ) += M_G( i, k ) * M_pc->phi()[k][j]( 0, 0 );
-                    }
-            }
-
-            if ( vm::has_jacobian<context>::value )
-            {
-                updateJKBN( mpl::bool_<is_linear>() );
-            }
+            //M_face_id = __f;
+            //M_perm = __e.permutation( M_face_id, mpl::int_<subEntityCoDim>() );
+            //M_pc = M_pc_faces[__f][M_perm];
+            update<context>( __e, __f, true /*updatePc*/);
         }
-
-        void update( element_type const& __e, uint16_type __f, mpl::int_<0> )
+#endif        
+        //!
+        //! update geometric only using vertices information
+        //!
+        template<size_type CTX=context>
+        void update( element_type const& __e, uint16_type __f, using_vectices_t )
         {
-            update( __e );
+            update<CTX>( __e, __f );
         }
 
-        void update( element_type const& __e, uint16_type __f, precompute_ptrtype pc, mpl::int_<0> )
+        template<size_type CTX=context>
+        void update( element_type const& __e, uint16_type __f, precompute_ptrtype pc, using_vectices_t )
         {
             M_pc = pc;
-            update( __e );
+            update<CTX>( __e );
         }
-
+        template<size_type CTX=context>
         void update( element_type const& __e, uint16_type __f, permutation_type __perm, bool __updateJacobianCtx = true )
         {
+            const bool updatePc = false;
+
+#if 1
+            M_perm=__perm;
+            if ( __updateJacobianCtx )
+                update( __e, M_pc_faces[__f][M_perm], __f, updatePc );
+            else
+                this->update<clear_value_v<context,vm::JACOBIAN|vm::MEASURE>>( __e, M_pc_faces[__f][M_perm], __f, updatePc );
+#else
             //M_element_c = std::shared_ptr<element_type const>(&__e);
             M_element = boost::addressof( __e );
             M_face_id = __f;
@@ -1027,7 +1021,7 @@ class GeoMap
                     M_h_face = __e.hFace( M_face_id );
             }
 
-            if ( vm::has_point<context>::value )
+            if ( vm::has_point_v<context> || ( vm::has_dynamic_v<context> && vm::hasPOINT( M_dynamic_context ) ) )
             {
 
                 //ublas::axpy_prod( M_G, pc->phi(), M_xrealq, true );
@@ -1046,12 +1040,16 @@ class GeoMap
 
             if ( vm::has_jacobian<context>::value && __updateJacobianCtx )
             {
-                updateJKBN( mpl::bool_<is_linear>() );
+                update( __e, M_pc_faces[__f][M_perm], __f, updatePc );
             }
+#endif
         }
 
+        template<size_type CTX=context>
         void update( element_type const& __e,
-                     precompute_ptrtype const& __pc )
+                     precompute_ptrtype const& __pc,
+                     uint16_type __f = invalid_uint16_type_value,
+                     bool updatePc = true )
         {
             M_pc = __pc;
 
@@ -1059,156 +1057,215 @@ class GeoMap
             {
                 M_npoints = M_pc.get()->nPoints();
 
+                if ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> )
+                {
+                    M_K.resize( nComputedPoints() );
+                    M_B.resize( nComputedPoints() );
+                    M_J.resize( nComputedPoints() );
+                    if ( vm::has_hessian<CTX>::value || vm::has_laplacian<CTX>::value )
+                    {
+                        M_hessian.resize( nComputedPoints() );
+                    }
+                    if ( vm::has_tangent<CTX>::value )
+                        M_Ptangent.resize( nComputedPoints() );
+                }
                 M_xrefq.resize( PDim, nPoints() );
                 M_xrealq.resize( NDim, nPoints() );
-                M_n_realq.resize( NDim, nPoints() );
-                M_un_realq.resize( NDim, nPoints() );
-                M_n_normq.resize( nPoints() );
+                if ( vm::has_normal_v<CTX> )
+                {
+                    M_normals.resize( nComputedPoints() );
+                    M_unit_normals.resize( nComputedPoints() );
+                    M_normal_norms.resize( nComputedPoints() );
+                }
 
                 if ( is_linear )
                 {
                     M_gm->gradient( node_t_type(), M_g_linear );
                 }
+            }
 
-                else
+            update<CTX>( __e, __f, updatePc );
+        }
+
+        template<size_type CTX=context>
+        bool resizeGradient()
+            {
+                if ( vm::has_jacobian_v<CTX> )
                 {
-                    M_Jt.resize( nPoints() );
-                    M_Bt.resize( nPoints() );
-                }
-            }
-
-            update( __e );
-        }
-
-        /**
-     * update information on this context
-     *
-     *  - update the coordinate of the real points
-     *  - update the pseudo-inverse of the gradient of the transformation
-     *
-     *  compute \f$ K(x_{\mathrm{ref}}) = G \nabla_{\mathrm{ref}} \phi(x_{\mathrm{ref}}) \f$
-     *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
-     *
-     *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^T K )^{-1} \f$
-     *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
-     */
-        void update( element_type const& __e )
-        {
-            M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
-            //M_G = __e.G();
-            M_g.resize( M_G.size2(), PDim );
-            //M_element_c = std::shared_ptr<element_type const>(&__e);
-            M_element = boost::addressof( __e );
-            M_id = __e.id();
-            M_e_markers = __e.markers();
-            M_face_id = invalid_uint16_type_value;
-            M_xrefq = M_pc->nodes();
-
-            FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )
-            ( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
-            FEELPP_ASSERT( M_pc )
-                .error( "invalid precompute data structure" );
-
-            if ( vm::has_measure<context>::value )
-            {
-                M_h = __e.h();
-                M_h_min = __e.hMin();
-                M_meas = __e.measure();
-            }
-
-            if ( vm::has_point<context>::value )
-            {
-                std::fill( M_xrealq.data().begin(), M_xrealq.data().end(), value_type( 0 ) );
-                const uint16_type size1 = M_G.size1();
-                const uint16_type size3 = M_G.size2();
-                const uint16_type size2 = M_pc->nPoints();
-
-                for ( uint16_type i = 0; i < size1; ++i )
-                    for ( uint16_type j = 0; j < size2; ++j )
+                    const bool _resized = M_G.size2() != M_g.size1();
+                    if ( _resized )
                     {
-                        for ( uint16_type k = 0; k < size3; ++k )
-                            M_xrealq( i, j ) += M_G( i, k ) * M_pc->phi()[k][j]( 0, 0 );
+                        M_g.resize( M_G.size2(), PDim );
                     }
+                    return _resized;
+                }
+                return false;
+            }
+        template<size_type CTX=context>
+        void updateGradient( int q )
+            {
+                if ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> ||
+                     ( vm::has_dynamic_v<CTX> && ( hasJACOBIAN( M_dynamic_context ) || hasKB( M_dynamic_context ) ) ) )
+                {
+                    //if ( !is_linear )
+                    M_gm->gradient( q, M_g, M_pc.get() );
+                        //else 
+                        //M_gm->gradient( 0, M_g, M_pc.get() );
+                } 
+            }
+        /**
+         * update information on this context
+         *
+         *  - update the coordinate of the real points
+         *  - update the pseudo-inverse of the gradient of the transformation
+         *
+         *  compute \f$ K(x_{\mathrm{ref}}) = G \nabla_{\mathrm{ref}} \phi(x_{\mathrm{ref}}) \f$
+         *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
+         *
+         *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^T K )^{-1} \f$
+         *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
+         */
+        template<size_type CTX=context>
+        void update( element_type const& __e, uint16_type __f = invalid_uint16_type_value, bool updatePC = true )
+            {
+
+                M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
+                M_element = boost::addressof( __e );
+                M_id = __e.id();
+                M_e_markers = __e.markers();
+                M_face_id = __f;
+                if ( this->isOnSubEntity() && updatePC )
+                {
+                    M_perm = __e.permutation( M_face_id, mpl::int_<subEntityCoDim>() );
+                    //M_perm = __e.permutation( M_face_id );
+                    M_pc = M_pc_faces[__f][M_perm];
+                }
+                M_xrefq = M_pc->nodes();
+
+                DCHECK( M_G.size2() == M_gm->nbPoints()  ) << "Invalid number of points got " << M_G.size2() << " expected: " << M_gm->nbPoints();
+                DCHECK( M_pc ) << "invalid precompute data structure";
+
+                updateMeasures<CTX>();
+                updatePoints<CTX>();
+                updateJKBN<CTX>();
             }
 
-            if ( vm::has_jacobian<context>::value )
+        //!
+        //! update geomap data only on face, element has not been changed
+        //!
+        template<size_type CTX=context>
+        void updateOnFace( uint16_type __f, bool updatePC = true )
             {
-                updateJKBN( mpl::bool_<is_linear>() );
+                M_face_id = __f;
+                if ( this->isOnSubEntity() && updatePC )
+                {
+                    M_perm = M_element->permutation( M_face_id, mpl::int_<subEntityCoDim>() );
+                    //M_perm = __e.permutation( M_face_id );
+                    M_pc = M_pc_faces[__f][M_perm];
+                }
+                updatePoints<CTX>();
+                updateJKBN<CTX>();
+                
             }
-        }
 
         ~Context()
         {
         }
 
         /** @name Accessors
-     */
+         */
         //@{
-
+        
         /**
-     \return the geometric mapping associated with the context
-     */
+         \return the geometric mapping associated with the context
+         */
         gm_ptrtype const& geometricMapping() const
-        {
-            return M_gm;
-        }
-
+            {
+                return M_gm;
+            }
+        
         /**
-     \return the dimension of the space of the real element
-     */
+         \return the dimension of the space of the real element
+         */
         uint16_type N() const
-        {
-            return NDim;
-        }
-
+            {
+                return NDim;
+            }
+        
         /**
-     \return the dimension of the space of the reference element
-     */
+         \return the dimension of the space of the reference element
+         */
         uint16_type P() const
-        {
-            return PDim;
+            {
+                return PDim;
         }
 
         /**
-     * \return the real element to which this context is associated
-     */
+         * \return the real element to which this context is associated
+         */
         element_type const& element() const
-        {
+            {
             return *M_element;
-        }
-
+            }
+        
         element_type const& element_c() const
-        {
-            return *M_element;
-        }
+            {
+                return *M_element;
+            }
 
-        /**
-     *
-     */
+        //!
+        //! @return true if geomap assocated to a face, false otherwise
+        //!
+        bool isOnFace() const
+            {
+                return (subEntityCoDim == 1) && (M_face_id != invalid_uint16_type_value);
+            }
+        //!
+        //! @return true if geomap assocated to a face, edge or point, false otherwise
+        //!
+        bool isOnSubEntity() const
+            {
+                return subEntityCoDim > 1 || ( (subEntityCoDim == 1) && (M_face_id != invalid_uint16_type_value) );
+            }
+        
+        //!
+        //! @return the number of points to transfer from reference to real element
+        //!
         uint16_type nPoints() const
+            {
+                return M_npoints;
+            }
+        
+        //!
+        //! in the case of linear transformation, the jacobian is constant and
+        //! we don't have to compute the information at all points, only at one
+        //!
+        //! @return the number of points at which the geometric mapping is really computed. 
+        //!
+        uint16_type nComputedPoints() const
         {
-            return M_npoints;
+            return is_linear_polynomial_v<gm_type>?1:M_npoints;
         }
-
+        
         /**
-     * \return the set of points in the reference convex
-     */
+         * \return the set of points in the reference convex
+         */
         matrix_node_t_type const& xRefs() const
         {
             return M_xrefq;
         }
 
         /**
-     * \return the q-th point in the reference convex
-     */
+         * \return the q-th point in the reference convex
+         */
         ublas::matrix_column<matrix_node_t_type const> xRef( int q ) const
         {
             return ublas::column( M_xrefq, q );
         }
 
         /**
-     * \return the node in the real element
-     */
+         * \return the node in the real element
+         */
         //matrix_node_t_type const& xReal() const
         matrix_type const& xReal() const
         {
@@ -1217,62 +1274,33 @@ class GeoMap
         }
 
         /**
-     * \return the node in the real element
-     */
+         * \return the node in the real element
+         */
         ublas::matrix_column<matrix_type const> xReal( int q ) const
         {
             // BOOST_STATIC_ASSERT( vm::has_point<context>::value );
             return ublas::column( M_xrealq, q );
         }
 
-/**
-     * Get the jacobian of the transformation at the \p q -th point
-     *
-     * \param q index of the point where the jacobian is requested
-     * \return the jacobian of the transformation
-     */
-#if 0
-    value_type J( int q ) const
-        {
-            //BOOST_STATIC_ASSERT( vm::has_jacobian<context>::value );
-            //return J( q, mpl::bool_<is_linear>() );
-            if ( is_linear )
-                return M_J;
-
-            else
-                return M_Jt[q];
-        }
-#else
-        value_type J( int q ) const
-        {
-            if ( is_linear )
-                return M_J;
-
-            else
-                return M_Jt[q];
-        }
-#endif
-#if 0
-    /**
-     * \internal
-     */
-    value_type J( int /*q*/, mpl::bool_<true> ) const
-        {
-            return M_J;
-        }
-
-    /**
-     * \internal
-     */
-    value_type J( int q, mpl::bool_<false> ) const
-        {
-            return M_Jt[q];
-        }
-#endif
-
         /**
-     * \return the matrix associated with the geometric nodes
-     */
+         * Get the jacobian of the transformation at the \p q -th point
+         *
+         * \param q index of the point where the jacobian is requested
+         * \return the jacobian of the transformation
+         */
+        template<typename GeoMapT=gm_type>
+        value_type J( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        {
+                return M_J[0];
+        }
+        template<typename GeoMapT=gm_type>
+        value_type J( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        {
+            return M_J[q];
+        }
+        /**
+         * \return the matrix associated with the geometric nodes
+         */
         //matrix_node_t_type const& G() const { return M_G; }
         matrix_type const& G() const
         {
@@ -1280,69 +1308,148 @@ class GeoMap
         }
 
         /**
-     * Get the inverse of the transformation at the \p i -th point
-     *
-     * \param i the index of point where the pseudo-inverse is requested
-     * \return the pseudo inverse of the transformation
-     */
-        matrix_type const& B( int i ) const
+         * Get the inverse of the transformation at the \p i -th point
+         *
+         * \param i the index of point where the pseudo-inverse is requested
+         * \return the pseudo inverse of the transformation
+         */
+        template<typename GeoMapT=gm_type>
+        eigen_matrix_np_type const& B( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
         {
-            //BOOST_STATIC_ASSERT( vm::has_kb<context>::value );
-            return B( i, mpl::bool_<is_linear>() );
+            return M_B[0];
         }
-        value_type B( int c1, int c2, int q ) const
+        template<typename GeoMapT=gm_type>
+        eigen_matrix_np_type const& B( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
         {
-            //BOOST_STATIC_ASSERT( vm::has_kb<context>::value );
-            return B( q, mpl::bool_<is_linear>() )( c1, c2 );
+            return M_B[q];
         }
-
-        matrix_type const& projectorTangent( int i ) const
+        template<typename GeoMapT=gm_type>
+        eigen_matrix_np_type const& B( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
         {
-            return M_Ptangent;
+            return M_B[0](c1,c2);
         }
-        value_type projectorTangent( int c1, int c2, int q ) const
+        template<typename GeoMapT=gm_type>
+        eigen_matrix_np_type const& B( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
         {
-            return M_Ptangent( c1, c2 );
-        }
-
-        matrix_type const& K( int i ) const
-        {
-            return M_K;
-        }
-        value_type K( int c1, int c2, int q ) const
-        {
-            return M_K( c1, c2 );
-        }
-        /**
-     * \internal
-     */
-        matrix_type const& B( int /*i*/, mpl::bool_<true> ) const
-        {
-            return M_B;
-        }
-        /**
-     * \internal
-     */
-        matrix_type const& B( int i, mpl::bool_<false> ) const
-        {
-            return M_Bt[i];
+            return M_B[q](c1,c2);
         }
 
+        template<typename GeoMapT=gm_type>
+        eigen_matrix_np_type const& localBasis( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[0];
+            }
+        template<typename GeoMapT=gm_type>
+        eigen_matrix_np_type const& localBasis( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[q];
+            }
+        template<typename GeoMapT=gm_type>
+        typename eigen_matrix_np_type::ColXpr const& basisN( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[0].col(0);
+            }
+        template<typename GeoMapT=gm_type>
+        typename eigen_matrix_np_type::ColXpr const& basisN( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[q].col(0);
+            }
+        
+        template<typename GeoMapT=gm_type>
+        value_type const& localBasis( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[0](c1,c2);
+            }
+        template<typename GeoMapT=gm_type>
+        value_type const& localBasis( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[q](c1,c2);
+            }
+        template<typename GeoMapT=gm_type>
+        value_type const& basisN( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[0](c1,0);
+            }
+        template<typename GeoMapT=gm_type>
+        value_type const& basisN( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[q](c1,0);
+            }
+        template<typename GeoMapT=gm_type>
+        eigen_matrix_nn_type const& projectorTangent( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
+        {
+            return M_Ptangent[0];
+        }
+        template<typename GeoMapT=gm_type>
+        eigen_matrix_nn_type const& projectorTangent( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
+        {
+            return M_Ptangent[q];
+        }
+        template<typename GeoMapT=gm_type>
+        value_type const& projectorTangent( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
+            {
+                return M_Ptangent[0](c1,c2);
+            }
+        template<typename GeoMapT=gm_type>
+        value_type const& projectorTangent( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
+            {
+                return M_Ptangent[q](c1,c2);
+            }
+
+        template<typename GeoMapT=gm_type>
+        eigen_matrix_np_type const& K( int q,  std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        {
+            return M_K[0];
+        }
+        template<typename GeoMapT=gm_type>
+        eigen_matrix_np_type const& K( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+            {
+                return M_K[q];
+            }
+        template<typename GeoMapT=gm_type>
+        value_type const& K( int c1, int c2, int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        {
+            return M_K[q]( c1, c2 );
+        }
+        template<typename GeoMapT=gm_type>
+        vector_eigen_matrix_np_type const& K( std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+            {
+                return M_K;
+            }
+        template<typename GeoMapT=gm_type>
+        value_type const& K( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+            {
+                return M_K[q]( c1, c2 );
+            }
+
+
+        template<typename GeoMapT=gm_type>
+        hessian_type const& hessian( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        {
+            return M_hessian[0];
+        }
+
+        template<typename GeoMapT=gm_type>
+        hessian_type const& hessian( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+            {
+                return M_hessian[q];
+            }
+
         /**
-     * the tensor of rank 4 for the transformation of 2nd
-     * order derivatives from the reference element to the real
-     * element. The tensor has the shape \f$[N,N,P,P]\f$.
-     *
-     * \return the tensor of rank 4
-     */
+         * the tensor of rank 4 for the transformation of 2nd
+         * order derivatives from the reference element to the real
+         * element. The tensor has the shape \f$[N,N,P,P]\f$.
+         *
+         * \return the tensor of rank 4
+         */
         boost::multi_array<value_type, 4> const& B3() const
         {
             return M_B3;
         }
 
         /**
-     * \return the barycenter of the reference nodes
-     */
+         * \return the barycenter of the reference nodes
+         */
         node_t_type barycenterRef() const
         {
             node_t_type __barycenter( M_gm->dim() );
@@ -1358,8 +1465,8 @@ class GeoMap
         }
 
         /**
-     \return the barycenter of the geometric nodes
-     */
+         \return the barycenter of the geometric nodes
+         */
         node_t_type barycenterReal() const
         {
             node_t_type __barycenter( M_G.size1() );
@@ -1375,9 +1482,9 @@ class GeoMap
         }
 
         /**
-     * tell whether the point is on the surface of the convex
-     * @return true if the point is on the surface, false otherwise
-     */
+         * tell whether the point is on the surface of the convex
+         * @return true if the point is on the surface, false otherwise
+         */
         bool isOnConvexSurface() const
         {
             if ( trans == fem::LINEAR )
@@ -1396,166 +1503,152 @@ class GeoMap
         }
 
         /**
-     * get the norm_2 of normal of the real element
-     *
-     * @return the norm_2 of the normal of the real element
-     */
-        value_type normalNorm( int q ) const
-        {
-            if ( is_linear )
-                return M_n_norm;
-
-            else
-                return M_n_normq[q];
-        }
-
-        /**
-     * get the normal of the real element
-     *
-     * @return the normal of the real element
-     */
-        node_t_type const& normal() const
-        {
-            //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
-            return M_n_real;
-        }
-
-        /**
-     * normal getter
-     * @param q the index of the normal to be returned
-     * @return the \p q -th normal
-     */
-        ublas::matrix_column<matrix_node_t_type const> normal( int q ) const
-        {
-            //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
-            if ( is_linear )
-                return M_n_real;
-
-            else
+         * get the norm_2 of normal of the real element
+         *
+         * @return the norm_2 of the normal of the real element
+         */
+        template<typename GeoMapT=gm_type>
+        value_type normalNorm( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
             {
-                return ublas::column( M_n_realq, q );
+                return M_normal_norms[0];
             }
-        }
+        template<typename GeoMapT=gm_type>
+        value_type normalNorm( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
+            {
+                return M_normal_norms[q];
+            }
 
         /**
-     * get the unit normal of the real element
-     *
-     * @return the unit normal of the real element
-     */
-        node_t_type const& unitNormal() const
+         * get the normal of the real element
+         *
+         * @return the normal of the real element
+         */
+        template<typename GeoMapT=gm_type>
+        eigen_vector_n_type const& normal( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
+            {
+                return M_normals[0];
+            }
+        template<typename GeoMapT=gm_type>
+        eigen_vector_n_type const& normal( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
+            {
+                return M_normals[q];
+            }
+
+        //!
+        //! @return the unit normal of the real element
+        //!
+        template<typename GeoMapT=gm_type>
+        vector_eigen_vector_n_type const& unitNormal( std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
         {
-            //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
-            return M_un_real;
+            return M_unit_normals;
         }
 
-        //ublas::matrix_column<matrix_node_t_type const> unitNormal( int q ) const
-        // node_t_type const& unitNormal( int q ) const
-        node_t_type unitNormal( int q ) const
+        //!
+        //! @return the unit_normal at point @c q
+        //!
+        template<typename GeoMapT=gm_type>
+        eigen_vector_n_type const& unitNormal( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
         {
-            //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
-            if ( is_linear )
-                return M_un_real;
-
-            else
-                return ublas::column( M_un_realq, q );
+            return M_unit_normals[0];
         }
 
-        value_type const& unitNormal( int n, int q ) const
+        //!
+        //! @return the unit_normal at point @c q
+        //!
+        template<typename GeoMapT=gm_type>
+        eigen_vector_n_type const& unitNormal( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
         {
-            //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
-
-            if ( is_linear )
-                return M_un_real( n );
-
-            else
-                return M_un_realq( n, q );
+            return M_unit_normals[q];
         }
-        /**
-     * @brief the scaled tangent to the current face
-     * @return the scaled tangent
-     */
-        node_t_type const& tangent() const
+
+        template<typename GeoMapT=gm_type>
+        value_type const& unitNormal( int n, int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+        {
+            return M_unit_normals[0]( n );
+        }
+
+        template<typename GeoMapT=gm_type>
+        value_type const& unitNormal( int n, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+        {
+            return M_unit_normals[q]( n );
+        }
+
+        //!
+        //! @return the scaled tangent to the current face
+        //!
+        template<typename GeoMapT=gm_type>
+        eigen_vector_n_type const& tangent(std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr) const
         {
             DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
             DCHECK( is_linear ) << "Invalid call to unitTangent, the geometric mapping is not linear";
-            return M_t_real;
+            return M_tangents[0];
         }
 
         /**
-     * @brief scaled tangent at point
-
-     * @param q index of the point at which the tangent is evaluated
-     * @return the scaled tamgent at the point
-     */
-        node_t_type const& tangent( int q ) const
+         * @brief scaled tangent at point
+         
+         * @param q index of the point at which the tangent is evaluated
+         * @return the scaled tamgent at the point
+         */
+        template<typename GeoMapT=gm_type>
+        eigen_vector_n_type const& tangent( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
         {
             DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
-            if ( is_linear )
-                return M_t_real;
-            return M_t_realq( q );
+            return M_tangents[0];
         }
-        /**
-     * @brief the unit Tangent (linear case)
-     *
-     * @return the unit tangent in the linear case
-     */
-        node_t_type const& unitTangent() const
-        {
-            DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
-            DCHECK( is_linear ) << "Invalid call to unitTangent, the geometric mapping is not linear";
-            return M_ut_real;
-        }
+        template<typename GeoMapT=gm_type>
+        eigen_vector_n_type const& tangent( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+            {
+                DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
+                return M_tangents[q];
+            }
+        template<typename GeoMapT=gm_type>
+        eigen_vector_n_type const& unitTangent( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+            {
+                DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
+                return M_unit_tangents[0];
+            }
+        template<typename GeoMapT=gm_type>
+        eigen_vector_n_type const& unitTangent( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+            {
+                DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
+                return M_unit_tangents[q];
+            }
+        template<typename GeoMapT=gm_type>
+        eigen_vector_n_type const& unitTangent( int c1, int c2, int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+            {
+                DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
+                return M_unit_tangents[0](c1, c2);
+            }
+        template<typename GeoMapT=gm_type>
+        value_type const& unitTangent( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+            {
+                DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
+                return M_unit_tangents[q]( c1, c2 );
+            }
+
 
         /**
-     * @brief the unit tangent a point \p q
-     *
-     * @param q point index
-     * @return unit tangent
-     */
-        node_t_type const& unitTangent( int q ) const
-        {
-            DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
-            DCHECK( is_linear ) << "Invalid call to unitTangent, the geometric mapping is not linear";
-            return M_ut_real;
-        }
-
-        /**
-     * @brief unit tangent coordinate \p n at point \p q
-     *
-     * @param n coordinate
-     * @param q point index
-     *
-     * @return [description]
-     */
-        value_type const& unitTangent( int n, int q ) const
-        {
-            DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
-            if ( is_linear )
-                return M_ut_real( n );
-            return M_ut_realq( n, q );
-        }
-
-        /**
-     * get the id of the element
-     *
-     * @return the id of the element
-     */
+         * get the id of the element
+         *
+         * @return the id of the element
+         */
         size_type id() const
         {
-            return M_id;
+                return M_id;
         }
 
         /*
-     * \return the face id
-     */
+         * \return the face id
+         */
         uint16_type faceId() const
         {
             return M_face_id;
         }
 
         /**
-     * \return true if the element is a face, false otherwise
-     */
+         * \return true if the element is a face, false otherwise
+         */
         bool elementIsAFace() const
         {
             return M_face_id != invalid_uint16_type_value;
@@ -1574,11 +1667,11 @@ class GeoMap
                 else
                     return Marker1();
             }
-    /**
-     * get the marker of the element
-     *
-     * @return the marker of the element
-     */
+        /**
+         * get the marker of the element
+         *
+         * @return the marker of the element
+         */
         Marker1 marker() const
         {
             auto itFindMarker = M_e_markers.find( 1 );
@@ -1589,10 +1682,10 @@ class GeoMap
         }
 
         /**
-     * get the marker2 of the element
-     *
-     * @return the marker2 of the element
-     */
+         * get the marker2 of the element
+         *
+         * @return the marker2 of the element
+         */
         Marker1 marker2() const
         {
             auto itFindMarker = M_e_markers.find( 2 );
@@ -1603,10 +1696,10 @@ class GeoMap
         }
 
         /**
-     * get the marker3 of the element
-     *
-     * @return the marker3 of the element
-     */
+         * get the marker3 of the element
+         *
+         * @return the marker3 of the element
+         */
         Marker1 marker3() const
         {
             auto itFindMarker = M_e_markers.find( 3 );
@@ -1617,58 +1710,58 @@ class GeoMap
         }
 
         /**
-     * get the id of the first element containing the element
-     *
-     * @return the id of the first element containing the element
-     */
+         * get the id of the first element containing the element
+         *
+         * @return the id of the first element containing the element
+         */
         size_type id1() const
         {
             return M_elem_id_1;
         }
 
         /**
-     * get the local id of the element in the first element containing the element
-     *
-     * @return the local id of element in the first element containing the element
-     */
+         * get the local id of the element in the first element containing the element
+         *
+         * @return the local id of element in the first element containing the element
+         */
         uint16_type idIn1() const
         {
             return M_pos_in_elem_id_1;
         }
 
         /**
-     * get the id of the second element containing the element
-     *
-     * @return the id of the second element containing the element
-     */
+         * get the id of the second element containing the element
+         *
+         * @return the id of the second element containing the element
+         */
         size_type id2() const
         {
             return M_elem_id_2;
         }
 
         /**
-     * get the local id of the element in the second element containing the element
-     *
-     * @return the local id of element in the second element containing the element
-     */
+         * get the local id of the element in the second element containing the element
+         *
+         * @return the local id of element in the second element containing the element
+         */
         uint16_type idIn2() const
         {
             return M_pos_in_elem_id_2;
         }
 
         /**
-     * get an estimate of the radius of the current element
-     *
-     * @return the radius estimate of the current element
-     */
+         * get an estimate of the radius of the current element
+         *
+         * @return the radius estimate of the current element
+         */
         value_type radiusEstimate() const
-        {
+            {
             return M_gm->radiusEstimate( M_G );
         }
 
         /**
-     * @return the max length of the edges of the element
-     */
+         * @return the max length of the edges of the element
+         */
         value_type h() const
         {
             return M_h;
@@ -1737,6 +1830,10 @@ class GeoMap
         {
             return M_pc_faces;
         }
+
+        //! @return the dynamic context associated to the geomap
+        size_type dynamicContext() const { return M_dynamic_context; }
+        
         //@}
 
         /** @name  Mutators
@@ -1759,6 +1856,7 @@ class GeoMap
         void
         edgeTangent( int edgeId, ublas::vector<value_type>& t, bool scaled = false ) const
         {
+#if 0
             auto const& K = this->K( 0 );
 
             ublas::axpy_prod( K,
@@ -1769,11 +1867,19 @@ class GeoMap
                 t *= this->element().hEdge( edgeId ) / ublas::norm_2( t );
             else
                 t /= ublas::norm_2( t );
+#else
+            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,1>> e_t( t.data().begin(), t.size() );
+            e_t=M_K[0] * M_gm->referenceConvex().tangent( edgeId );
+            e_t.normalize();
+            if (scaled)
+                e_t*=this->element().hEdge( edgeId );
+#endif
         }
 
         void
         faceNormal( int faceId, ublas::vector<value_type>& n, bool scaled = false ) const
         {
+#if 0
             auto const& K = this->K( 0 );
             auto const& B = this->B( 0 );
 
@@ -1785,58 +1891,77 @@ class GeoMap
                 n *= this->element().faceMeasure( faceId ) / ublas::norm_2( n );
             else
                 n /= ublas::norm_2( n );
+#else
+            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,1>> e_n( n.data().begin(), n.size() );
+            e_n=M_B[0] * M_gm->referenceConvex().normal( faceId );
+            e_n.normalize();
+            if (scaled)
+                e_n*=this->element().faceMeasure( faceId );
+
+#endif
         }
 
         /**
-     * update the geomap through a neighbor matching face.
-     *
-     * Matching means that the points coordinates from both geomap are the same
-     * up to a permutation. We compute here the permutation that ensures this
-     * and update the geomap accordingly
-     *
-     * @return true if the permutation has been found and the geomap updated,
-     * false otherwise.
-     */
+         * update the geomap through a neighbor matching face.
+         *
+         * Matching means that the points coordinates from both geomap are the same
+         * up to a permutation. We compute here the permutation that ensures this
+         * and update the geomap accordingly
+         *
+         * @return true if the permutation has been found and the geomap updated,
+         * false otherwise.
+         */
         template <typename EltType, typename NeighborGeoType>
         bool updateFromNeighborMatchingFace( EltType const& elt, uint16_type face_in_elt, std::shared_ptr<NeighborGeoType> const& gmc )
-        {
-            auto gmcptr = gmc.get();
-            bool found_permutation = false;
-            for ( permutation_type __p( permutation_type::IDENTITY );
-                  __p < permutation_type( permutation_type::N_PERMUTATIONS ) && !found_permutation; ++__p )
             {
-                // update only xReal in current geomap
-                this->update( elt, face_in_elt, __p, false );
-
-                bool check = true;
-                for ( uint16_type i = 0; i < gmc->nPoints() && check; ++i )
+                if ( M_gm->hasPermutationWithNeighborFace( elt.id(), face_in_elt ) == false )
                 {
-                    for ( uint16_type d = 0; d < NDim; ++d )
-                        check = check && ( std::abs( gmcptr->xReal( i )[d] - this->xReal( i )[d] ) < 1e-8 );
+                    auto gmcptr = gmc.get();
+                    bool found_permutation = false;
+                    for ( permutation_type __p( permutation_type::IDENTITY );
+                          __p < permutation_type( permutation_type::N_PERMUTATIONS ) && !found_permutation; ++__p )
+                    {
+                        // update only xReal in current geomap
+                        this->update( elt, face_in_elt, __p, false );
+                        
+                        bool check = true;
+                        for ( uint16_type i = 0; i < gmc->nPoints() && check; ++i )
+                        {
+                            
+                            for ( uint16_type d = 0; (d < NDim); ++d )
+                            {
+                                
+                                check = check && ( std::abs( gmcptr->xReal( i )[d] - this->xReal( i )[d] ) < 1e-8 );
+                            }
+                        }
+                        // if check update full gmc context with the good permutation
+                        if ( check )
+                        {
+                            this->update( elt, face_in_elt, __p );
+                            M_gm->setPermutationWithNeighborFace( elt.id(), face_in_elt, __p.value() );
+                            found_permutation = true;
+                            return found_permutation;
+                        }
+                    }
+                    return found_permutation;
                 }
-                // if check update full gmc context with the good permutation
-                if ( check )
-                {
-                    this->update( elt, face_in_elt, __p );
-                    found_permutation = true;
-                }
+                this->update( elt, face_in_elt, permutation_type(M_gm->permutationWithNeighborFace(elt.id(), face_in_elt)) );
+                return true;
             }
-            return found_permutation;
-        }
 
         //@}
       private:
         /**
-     * \return the permutation associated with the face
-     */
+         * \return the permutation associated with the face
+         */
         permutation_type permutation( mpl::bool_<false> ) const
         {
             return M_perm;
         }
 
         /**
-     * \return the permutation associated with the face
-     */
+         * \return the permutation associated with the face
+         */
         permutation_type permutation( mpl::bool_<true> ) const
         {
             FEELPP_ASSERT( M_face_id == invalid_uint16_type_value ||
@@ -1846,52 +1971,88 @@ class GeoMap
             return M_perm;
         }
 
-        void updateJKBN( mpl::bool_<true>, mpl::true_ )
-        {
-            Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>> P( M_G.data().begin(), M_G.size1(), M_G.size2() );
-            Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>> GradPhi( M_g_linear.data().begin(), M_g_linear.size1(), M_g_linear.size2() );
-            Eigen::Map<Eigen::Matrix<value_type, NDim, PDim, ( ( PDim == 1 ) ? Eigen::ColMajor : Eigen::ColMajor )>> MK( M_K.data().begin(), M_K.size1(), M_K.size2() );
-            Eigen::Map<Eigen::Matrix<value_type, PDim, PDim, ( ( NDim == 1 ) ? Eigen::ColMajor : Eigen::ColMajor )>> MCS( M_CS.data().begin(), M_CS.size1(), M_CS.size2() );
-            Eigen::Map<Eigen::Matrix<value_type, PDim, PDim, ( ( PDim == 1 ) ? Eigen::ColMajor : Eigen::ColMajor )>> MCSi( M_CSi.data().begin(), M_CSi.size1(), M_CSi.size2() );
-            Eigen::Map<Eigen::Matrix<value_type, NDim, PDim, ( ( PDim == 1 ) ? Eigen::ColMajor : Eigen::ColMajor )>> MB( M_B.data().begin(), M_B.size1(), M_B.size2() );
-            MK.noalias() = P * GradPhi;
-            M_J = math::abs( MK.determinant() );
-            MCS = MK.inverse();
-            MB.noalias() = MCS.transpose();
-        }
-        void updateJKBN( mpl::bool_<true>, mpl::false_ )
-        {
-#if 0
-            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> P( M_G.data().begin(), M_G.size1(), M_G.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> GradPhi( M_g_linear.data().begin(), M_g_linear.size1(), M_g_linear.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::ColMajor)>> MK( M_K.data().begin(), M_K.size1(), M_K.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((NDim==1)?Eigen::ColMajor:Eigen::ColMajor)>> MCS( M_CS.data().begin(), M_CS.size1(), M_CS.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::ColMajor)>> MCSi( M_CSi.data().begin(), M_CSi.size1(), M_CSi.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::ColMajor)>> MB( M_B.data().begin(), M_B.size1(), M_B.size2() );
-            MK.noalias() =  P*GradPhi;
-            //ublas::axpy_prod( M_G, M_g_linear, M_K, true );
-
-            // CS = K^T K
-            MCSi.noalias() = MK.transpose()*MK;
-            M_J = math::sqrt( math::abs( MCSi.determinant() ) );
-            //if ( vm::has_kb<context>::value )
+        template<int CTX = context>
+        void updateMeasures()
             {
-                MCS=MCSi.inverse();
-                // B = K CS
-                MB.noalias() = MK*MCS;
-            }
-#else
-            ublas::axpy_prod( M_G, M_g_linear, M_K, true );
-            ublas::noalias( M_CS ) = ublas::prod( ublas::trans( M_K ), M_K );
-            M_J = math::sqrt( math::abs( det<PDim>( M_CS ) ) );
-            inverse<PDim>( M_CS, M_CSi );
-            ublas::axpy_prod( M_K, M_CSi, M_B, true );
+                if ( vm::has_measure<CTX>::value )
+                {
+                    M_h = M_element->h();
+                    M_h_min = M_element->hMin();
+                    M_meas = M_element->measure();
+                    if ( this->isOnFace() )
+                    {
+                        M_measface = M_element->faceMeasure( M_face_id );
+                        M_h_face = M_element->hFace( M_face_id );
+                        //M_h_edge = M_element->hEdge( M_face_id );
+                    }
+                }
+                if ( vm::has_tangent<CTX>::value && ( NDim == 2 ) )
+                {
+                    if ( this->isOnFace() )
+                    {
+                        M_h_face = M_element->hFace( M_face_id );
+                    }
+                }
 
-#endif
+            }
+        template<int CTX=context>
+        void updatePoints()
+            {
+                if ( vm::has_point_v<CTX> || ( vm::has_dynamic_v<CTX> &&  hasPOINT( M_dynamic_context ) ) )
+                {
+                    //ublas::axpy_prod( M_G, pc->phi(), M_xrealq, true );
+                    std::fill( M_xrealq.data().begin(), M_xrealq.data().end(), value_type( 0 ) );
+                    const uint16_type size1 = M_G.size1();
+                    const uint16_type size3 = M_G.size2();
+                    const uint16_type size2 = M_pc->nPoints();
+
+                    for ( uint16_type i = 0; i < size1; ++i )
+                        for ( uint16_type j = 0; j < size2; ++j )
+                        {
+                            for ( uint16_type k = 0; k < size3; ++k )
+                                M_xrealq( i, j ) += M_G( i, k ) * M_pc->phi()[k][j]( 0, 0 );
+                        }
+                }
+            }
+
+        template<size_type CTX=context,typename ConvexType = ElementType>
+        void updateJacobian( eigen_matrix_np_type const & K, eigen_matrix_np_type& B, value_type& J,
+                             std::enable_if_t<dimension_v<ConvexType> == real_dimension_v<ConvexType>>* = nullptr )
+        {
+            if ( vm::has_jacobian_v<CTX> || ( vm::has_dynamic_v<CTX> &&  hasJACOBIAN( M_dynamic_context ) ) )
+            {
+                J = math::abs( K.determinant() );
+            }
+            if ( vm::has_kb_v<CTX> || ( vm::has_dynamic_v<CTX> &&  hasKB( M_dynamic_context ) ) )
+            {
+                M_CS.noalias() = K.inverse();
+                B.noalias() = M_CS.transpose();
+                //std::cout << "1.B=" << B << std::endl;
+            }
         }
+        template<size_type CTX=context,typename ConvexType = ElementType>
+        void updateJacobian( eigen_matrix_np_type const& K, eigen_matrix_np_type& B, value_type& J,
+                             std::enable_if_t<dimension_v<ConvexType> != real_dimension_v<ConvexType>>* = nullptr )
+        {
+            // CS = K^T K
+            M_CSi.noalias() = K.transpose()*K;
+            if ( vm::has_jacobian_v<CTX> || ( vm::has_dynamic_v<CTX> &&  hasJACOBIAN( M_dynamic_context ) ) )
+            {
+                J = math::sqrt( math::abs( M_CSi.determinant() ) );
+            }
+
+            if ( vm::has_kb_v<CTX> || ( vm::has_dynamic_v<CTX> &&  hasKB( M_dynamic_context ) ) )
+            {
+                M_CS=M_CSi.inverse();
+                // B = K CS
+                B.noalias() = K*M_CS;
+                //std::cout << "2.B=" << B << std::endl;
+            }
+        }
+
         /**
-     * update Jacobian data : linear case
-     */
+         * update Jacobian data : linear case
+         */
         void updateJKBN( mpl::bool_<true> )
         {
             if ( !M_gm->isCached() ||
@@ -1925,191 +2086,179 @@ class GeoMap
                     //LOG(INFO) << "(use cache) B[" << M_id << "]=" <<  M_B << "\n";
                 }
             }
-
-            if ( vm::has_hessian<context>::value || vm::has_laplacian<context>::value )
+        }
+        //!
+        //! update hessian information
+        //!
+        template<int CTX=context>
+        void updateHessian( eigen_matrix_np_type const& B )
+        {
+            if constexpr ( vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
             {
-
+#if 0
                 for ( uint16_type k = 0; k < NDim; ++k )
                     for ( uint16_type l = 0; l < NDim; ++l )
                         for ( uint16_type i = 0; i < PDim; ++i )
                             for ( uint16_type j = 0; j < PDim; ++j )
-                                M_B3[k][l][i][j] = M_B( k, i ) * M_B( l, j );
-
-#if 0
-                //B3(k + N_*l, i + P*j) = BB(k, i) * BB(l, j);
-                std::cout << "element " << this->id() << " B3 = " << "\n";
-
-                for ( int i = 0; i < nDim; ++i )
-                    for ( int j = 0; j < nDim; ++j )
-                        for ( typename boost::multi_array<value_type,4>::index k = 0; k < nDim; ++k )
-                            for ( typename boost::multi_array<value_type,4>::index l = 0; l < nDim; ++l )
-                                std::cout << "B3[" << i << "][" << j << "][" << k << "][" << l << "]="
-                                          << this->B3()[i][j][k][l] << "\n";
-
+                                M_B3[k][l][i][j] = B( k, i ) * B( l, j );
 #endif
             }
-
-            if ( ( ( NDim != PDim ) || ( vm::has_normal<context>::value ) ) && ( M_face_id != invalid_uint16_type_value ) )
+        }
+        //!
+        //! update normal in the real element
+        //!
+        template<int CTX=context,typename ConvexType = ElementType>
+        void updateNormals( eigen_matrix_np_type const& B,
+                            eigen_vector_n_type& N, eigen_vector_n_type& unitN, value_type& Nnorm )
+        {
+            //if constexpr ( ( NDim != PDim ) || ( vm::has_normal_v<CTX> ) )
+            if constexpr ( vm::has_normal_v<CTX> || vm::has_dynamic_v<CTX> )
             {
-                ublas::axpy_prod( M_B,
-                                  M_gm->referenceConvex().normal( M_face_id ),
-                                  M_n_real,
-                                  true );
-                M_n_norm = ublas::norm_2( M_n_real );
-                M_un_real = M_n_real / M_n_norm;
+                
+                if ( !this->isOnFace() )
+                    return; //throw std::logic_error( "normal computation defined only on faces" );
+                //if ( M_gm->hasUnitNormalAtFace( M_id, M_face_id ) == false )
+                if ( vm::has_normal_v<CTX> || ( vm::has_dynamic_v<CTX> && hasNORMAL( M_dynamic_context ) ) )
+                {
+                    N.noalias() = B * M_gm->referenceConvex().normal( M_face_id );
+                    Nnorm = N.norm();
+                    unitN = N/Nnorm;
+
+                    //M_gm->setNormalNormAtFace( M_id, M_face_id, M_n_norm );
+                    //M_gm->setUnitNormalAtFace( M_id, M_face_id, M_un_real );
+                }
+#if 0
+                else
+                {
+                    Nnorm = M_gm->normalNormAtFace( M_id, M_face_id );
+                    unitN = M_gm->unitNormalAtFace( M_id, M_face_id );
+                    
+                }
+#endif
             }
+        }
 
-            if ( vm::has_tangent<context>::value && ( M_face_id != invalid_uint16_type_value ) )
+        template<int CTX=context>
+        void updateTangents( eigen_matrix_np_type const& K, eigen_vector_n_type const& unitN,
+                             eigen_vector_n_type& Ta, eigen_vector_n_type& unitT, value_type& Tnorm,
+                             eigen_matrix_nn_type& P )
+        {
+            if constexpr ( vm::has_tangent<CTX>::value )
             {
+                if ( M_face_id == invalid_uint16_type_value )
+                    return;//throw std::logic_error( "tangent computation defined only on faces" );
                 if ( NDim == 2 )
                 {
                     // t = |\hat{e}|*o_K*(K*t_ref)/|e| where o_K is the sign(e*x_K(\hat{e}))
-                    ublas::axpy_prod( M_K,
-                                      M_gm->referenceConvex().tangent( M_face_id ),
-                                      M_t_real,
-                                      true );
-                    double ratio = M_gm->referenceConvex().h( M_face_id ) / M_h_face;
-
-                    M_t_norm = ublas::norm_2( M_t_real );
-                    M_ut_real = M_t_real / M_t_norm;
+                    Ta.noalias() = K * M_gm->referenceConvex().tangent( M_face_id );
+                    Tnorm = Ta.norm();
+                    unitT = Ta/Tnorm;
                 }
 
                 // compute projector on tangent plane
-                Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>> P( M_Ptangent.data().begin(), NDim, NDim );
-                P.setIdentity( NDim, NDim );
-                Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>> N( M_un_real.data().begin(), NDim, 1 );
-                P.noalias() -= N * N.transpose();
+                P.setIdentity();
+                P.noalias() -= unitN * unitN.transpose();
             }
         }
-
-        /**
-     * update Jacobian data : nonlinear case
-     */
-        void updateJKBN( mpl::bool_<false> )
+        //!
+        //! update normal in the real element
+        //!
+        template<int CTX=context,typename ConvexType = ElementType>
+        void updateLocalBasis( eigen_matrix_np_type const& B,
+                               eigen_matrix_pp_type& local_basis_ref, eigen_matrix_np_type& local_basis_real )
         {
-
-            const bool doComputeNormal = ( ( NDim != PDim ) || ( vm::has_normal<context>::value ) ) && ( M_face_id != invalid_uint16_type_value );
-
-            //std::cout << "nPoints() =" << nPoints() << "\n";
-            //VLOG(1) << "[geomap] G = "<< M_G << "\n";
-            //double res = 0;
-            for ( int q = 0; q < nPoints(); ++q )
+            if constexpr ( vm::has_local_basis_v<CTX> )
             {
-                //std::cout << "q =" << q << "\n";
-                M_gm->gradient( q, M_g, M_pc.get() );
-//VLOG(1) << "[geomap] g[" << q << "] = "<< M_g << "\n";
-
-#if 0
-                blas::gemm( M_G, M_g, M_K );
-#else
-                ublas::axpy_prod( M_G, M_g, M_K, true );
-#endif
-
-                if ( NDim == PDim )
+                if  ( !this->isOnFace() )
+                    return;//throw std::logic_error("Local basis defined only on faces ");
+                local_basis_ref = eigen_matrix_pp_type::Identity();
+                eigen_vector_p_type Np = M_gm->referenceConvex().normal( M_face_id );
+                int max_col;
+                Np.array().abs().maxCoeff( &max_col );
+                if ( max_col != 0 )
+                    local_basis_ref.col( max_col ) = local_basis_ref.col( 0 );
+                local_basis_ref.col(0)=Np;
+                local_basis_real = B*local_basis_ref;
+                // orthogonalize columns using the Gram-Schmidt algorithm
+                
+                for (int col = 0; col < PDim; ++col)
                 {
-                    M_J = math::abs( det<NDim>( M_K ) );
-
-                    if ( vm::has_kb<context>::value )
+                    typename eigen_matrix_np_type::ColXpr colVec = local_basis_real.col(col);
+                    for (int prevCol = 0; prevCol < col; ++prevCol)
                     {
-                        inverse<NDim>( M_K, M_CS );
-                        //ublas::noalias(M_B) = ublas::trans( M_CS );
-                        M_B = ublas::trans( M_CS );
-                        //std::cout << "========== B[" << q << "]=" << M_B << "\n";
+                        typename eigen_matrix_np_type::ColXpr prevColVec = local_basis_real.col(prevCol);
+                        colVec -= colVec.dot(prevColVec)*prevColVec;
                     }
+                    local_basis_real.col(col) = colVec.normalized();
                 }
-
-                else // N != P
+                
+                // Ensure basis_real is direct
+                if ( (NDim == PDim) && (NDim>1) && ( local_basis_real.determinant() < 0 ) )
                 {
-// CS = K^T K
-#if 1
-                    ublas::prod( ublas::trans( M_K ), M_K, M_CS );
-#else
-                    blas::gemm( traits::TRANSPOSE, traits::NO_TRANSPOSE,
-                                1.0, M_K, M_K,
-                                0.0, M_CS );
-#endif
-                    M_J = math::sqrt( math::abs( det<PDim>( M_CS ) ) );
-
-                    if ( vm::has_kb<context>::value )
-                    {
-                        inverse<PDim>( M_CS, M_CSi );
-// B = K CS
-#if 1
-                        ublas::axpy_prod( M_K, M_CSi, M_B );
-#else
-                        blas::gemm( traits::NO_TRANSPOSE, traits::NO_TRANSPOSE,
-                                    1.0, M_K, M_CSi,
-                                    0.0, M_B );
-#endif
-                    }
+                    local_basis_real.col(1) *= -1;
                 }
-
-                //VLOG(1) << "[geomap] J[" << q << "]= "<< M_J << "\n";
-                //res += M_J;
-                // store q-th jacobian entry
-
-                M_Jt[q] = M_J;
-
-                if ( vm::has_kb<context>::value || doComputeNormal )
-                {
-                    //VLOG(1) << "[geomap] B[" << q << "]= "<< M_B << "\n";
-                    M_Bt[q].resize( M_B.size1(), M_B.size2() );
-                    M_Bt[q] = M_B;
-                }
-            }
-
-            //VLOG(1) << "[geomap] res(sum J) = " << res << "\n";
-            if ( doComputeNormal )
-            {
-                //std::cout << "has normal\n";
-                for ( int q = 0; q < nPoints(); ++q )
-                {
-#if 0
-                    blas::gemv( traits::NO_TRANSPOSE,
-                                1.0, M_Bt[ q ], M_n[M_face_id],
-                                0.0, M_n_real );
-#else
-
-                    if ( 0 ) //trans == fem::LINEAR )
-                    {
-                        ublas::axpy_prod( M_B,
-                                          M_gm->referenceConvex().normal( M_face_id ),
-                                          M_n_real,
-                                          true );
-                    }
-
-                    else
-                        ublas::axpy_prod( M_Bt[q],
-                                          M_gm->referenceConvex().normal( M_face_id ),
-                                          M_n_real,
-                                          true );
-
-#endif
-                    //std::cout << "[geomap] point " << q << " n_real = " << M_n_real << "\n";
-                    M_n_norm = ublas::norm_2( M_n_real );
-                    M_un_real = M_n_real / M_n_norm;
-                    ublas::column( M_n_realq, q ) = M_n_real;
-                    ublas::column( M_un_realq, q ) = M_un_real;
-                    M_n_normq[q] = M_n_norm;
-
-                    if ( NDim != PDim )
-                        M_Jt[q] *= M_n_norm;
-
-                    if ( vm::has_tangent<context>::value )
-                    {
-                    }
-                }
-
-#if 0
-                std::cout << "[geomap] face id = " << M_face_id << "\n"
-                          << "[geomap] ref normal = " << M_gm->referenceConvex().normal( M_face_id ) << "\n"
-                          << "[geomap] M_n_real = " << M_n_realq
-                          << "\n"
-                          << "[geomap] M_un_realq = " << M_un_realq << "\n"
-                          << "[geomap] M_n_normq = " << M_n_normq << "\n";
-#endif
             }
         }
+        //!
+        //! update various terms associated to the geometric transformation such
+        //! as jacobian, jacobian matrix its inverse or the normals
+        //!
+        template<int CTX=context>
+        void updateJKBN() noexcept
+            {
+                if constexpr ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_dynamic_v<CTX> )
+                {
+                    Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
+                    em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
+                    tensor_map_t<2,value_type> TPts( M_G.data().begin(), M_G.size1(), M_G.size2() );
+                    bool _gradient_needs_update = resizeGradient<CTX>();
+                    em_matrix_col_type<value_type> GradPhi( M_g.data().begin(),
+                                                            M_G.size2(), PDim );
+
+                    for ( int q = 0; q < nComputedPoints(); ++q )
+                    {
+                        if ( 0 ) //is_linear && M_gm->cache( M_id, M_K[q], M_B[q], M_J[q] ) )
+                        {
+                        }
+                        else
+                        {
+                            if constexpr(!gmc_type::is_linear)
+                            {
+                                updateGradient<CTX>( q );
+                                new (&GradPhi) em_matrix_col_type<value_type>(M_g.data().begin(),
+                                                                              M_G.size2(), PDim );
+                            }
+                            M_K[q].noalias() = Pts * GradPhi;
+
+                            updateJacobian( M_K[q], M_B[q], M_J[q] );
+#if 0                                                                                                                     
+                            //std::cout << "CTX=" << CTX << std::endl;
+                            //std::cout << "K[" << q << "]=" << M_K[q] << std::endl;
+                            //std::cout << "B[" << q << "]=" << M_B[q] << std::endl;
+                            //std::cout << "J[" << q << "]=" << M_J[q] << std::endl;
+                            //if ( 0 && is_linear )
+                                //M_gm->updateCache( M_id, M_K[q], M_B[q], M_J[q] );
+#endif                                                    
+                        }
+                        if constexpr ( vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
+                        {
+                            //M_h.resize( { NDim, NDim } );
+                            M_gm->hessianBasisAtPoint( q, M_hessian_basis_at_pt, M_pc.get() );
+                            M_hessian[q] = TPts.contract(M_hessian_basis_at_pt,dims);
+                            //std::cout << "M_hessian[" << q << "]=" << M_hessian[q] << std::endl;
+                        }
+
+                        updateHessian<CTX>( M_B[q] );
+                        updateNormals<CTX>( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
+                        updateTangents<CTX>( M_K[q], M_unit_normals[q], M_tangents[q], M_unit_tangents[q], M_tangent_norms[q], M_Ptangent[q] );
+                        updateLocalBasis<CTX>(  M_B[q], M_local_basis_ref[q], M_local_basis_real[q] );
+                    }
+
+                }
+                else if constexpr ( vm::has_normal_v<CTX> )
+                    for ( int q = 0; q < nComputedPoints(); ++q )
+                        updateNormals<CTX>( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
+            }
 
         Context();
 
@@ -2121,21 +2270,15 @@ class GeoMap
             ar& BOOST_SERIALIZATION_NVP( M_npoints );
             ar& BOOST_SERIALIZATION_NVP( M_J );
             ar& BOOST_SERIALIZATION_NVP( M_G );
-            ar& BOOST_SERIALIZATION_NVP( M_n );
-            ar& BOOST_SERIALIZATION_NVP( M_n_real );
-            ar& BOOST_SERIALIZATION_NVP( M_un_real );
-            ar& BOOST_SERIALIZATION_NVP( M_n_norm );
-            ar& BOOST_SERIALIZATION_NVP( M_t_real );
-            ar& BOOST_SERIALIZATION_NVP( M_ut_real );
-            ar& BOOST_SERIALIZATION_NVP( M_t_norm );
+            //ar& BOOST_SERIALIZATION_NVP( M_ref_normals );
+            ar& BOOST_SERIALIZATION_NVP( M_normals );
+            ar& BOOST_SERIALIZATION_NVP( M_unit_normals );
+            ar& BOOST_SERIALIZATION_NVP( M_normal_norms );
+            ar& BOOST_SERIALIZATION_NVP( M_tangents );
+            ar& BOOST_SERIALIZATION_NVP( M_unit_tangents );
+            ar& BOOST_SERIALIZATION_NVP( M_tangent_norms );
             ar& BOOST_SERIALIZATION_NVP( M_xrefq );
             ar& BOOST_SERIALIZATION_NVP( M_xrealq );
-            ar& BOOST_SERIALIZATION_NVP( M_n_realq );
-            ar& BOOST_SERIALIZATION_NVP( M_un_realq );
-            ar& BOOST_SERIALIZATION_NVP( M_n_normq );
-            ar& BOOST_SERIALIZATION_NVP( M_t_realq );
-            ar& BOOST_SERIALIZATION_NVP( M_ut_realq );
-            ar& BOOST_SERIALIZATION_NVP( M_t_normq );
             ar& BOOST_SERIALIZATION_NVP( M_g_linear );
             ar& BOOST_SERIALIZATION_NVP( M_g );
             ar& BOOST_SERIALIZATION_NVP( M_K );
@@ -2156,8 +2299,6 @@ class GeoMap
             ar& BOOST_SERIALIZATION_NVP( M_h_face );
             ar& BOOST_SERIALIZATION_NVP( M_meas );
             ar& BOOST_SERIALIZATION_NVP( M_measface );
-            ar& BOOST_SERIALIZATION_NVP( M_Jt );
-            ar& BOOST_SERIALIZATION_NVP( M_Bt );
             ar& BOOST_SERIALIZATION_NVP( M_perm );
         }
 
@@ -2172,37 +2313,31 @@ class GeoMap
         std::vector<std::map<permutation_type, precompute_ptrtype>> M_pc_faces;
         uint16_type M_npoints;
 
-        value_type M_J;
+        std::vector<value_type> M_J;
 
         matrix_type M_G;
-        ublas::vector<node_t_type> M_n;
-        node_t_type M_n_real;
-        node_t_type M_un_real;
-        value_type M_n_norm;
-        node_t_type M_t_real;
-        node_t_type M_ut_real;
-        value_type M_t_norm;
+        //vector_eigen_vector_p_type M_ref_normals;
+        vector_eigen_vector_n_type M_normals, M_unit_normals;
+        std::vector<value_type> M_normal_norms;
+        vector_eigen_vector_n_type M_tangents, M_unit_tangents;
+        std::vector<value_type> M_tangent_norms;
+        vector_eigen_matrix_np_type M_local_basis_real;
+        vector_eigen_matrix_pp_type M_local_basis_ref;
 
         matrix_node_t_type M_xrefq;
         matrix_type M_xrealq;
 
-        // normals
-        matrix_node_t_type M_n_realq;
-        matrix_node_t_type M_un_realq;
-        ublas::vector<value_type> M_n_normq;
-        // tangents
-        matrix_node_t_type M_t_realq;
-        matrix_node_t_type M_ut_realq;
-        ublas::vector<value_type> M_t_normq;
-
         matrix_type M_g_linear;
         matrix_type M_g;
-        matrix_type M_K;
-        matrix_type M_CS;
-        matrix_type M_CSi;
-        matrix_type M_B;
-        matrix_type M_Ptangent;
-
+        hessian_basis_type M_hessian_basis_at_pt;
+        
+        vector_eigen_matrix_np_type M_K;
+        eigen_matrix_pp_type M_CS;
+        eigen_matrix_pp_type M_CSi;
+        vector_eigen_matrix_np_type M_B;
+        vector_hessian_type M_hessian;
+        vector_eigen_matrix_nn_type M_Ptangent;
+        
         boost::multi_array<value_type, 4> M_B3;
 
         size_type M_id;
@@ -2220,59 +2355,60 @@ class GeoMap
         value_type M_meas;
         value_type M_measface;
 
-        vector_type M_Jt;
-        std::vector<matrix_type> M_Bt;
-
         permutation_type M_perm;
+
+        size_type M_dynamic_context;
+
     }; // Context
 
-    template <size_type context_v, int SubEntityCoDim = 1, typename ElementType>
-        std::shared_ptr<Context<context_v, ElementType, SubEntityCoDim>>
-    context( geometric_mapping_ptrtype gm, ElementType const& e, precompute_ptrtype const& pc )
+    template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
+    std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>
+    context( geometric_mapping_ptrtype gm, ElementType_t const& e, precompute_ptrtype const& pc, size_type dynctx = 0 )
     {
-        return std::shared_ptr<Context<context_v, ElementType, SubEntityCoDim>>(
-            new Context<context_v, ElementType, SubEntityCoDim>( gm,
-                                                 e,
-                                                 pc ) );
+        return std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>(
+            new Context<Context_v, ElementType_t, SubEntityCoDim_v>( gm,
+                                                                     e,
+                                                                     pc, invalid_uint16_type_value, dynctx ) );
     }
 
-    template <size_type context_v, int SubEntityCoDim = 1, typename ElementType>
-    std::shared_ptr<Context<context_v, ElementType,SubEntityCoDim>>
-    context( ElementType const& e, precompute_ptrtype const& pc )
+    template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
+    std::shared_ptr<Context<Context_v, ElementType_t,SubEntityCoDim_v>>
+    context( ElementType_t const& e, precompute_ptrtype const& pc, size_type dynctx = 0 )
     {
-        return std::make_shared<Context<context_v, ElementType,SubEntityCoDim>>(
+        return std::make_shared<Context<Context_v, ElementType_t,SubEntityCoDim_v>>(
             //super_enable_this::shared_from_this(),
             std::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP>>( this->shared_from_this() ),
             e,
-            pc );
+            pc, invalid_uint16_type_value, dynctx );
     }
 
-    template <size_type context_v, int SubEntityCoDim = 1, typename ElementType>
-    std::shared_ptr<Context<context_v, ElementType, SubEntityCoDim>>
+    template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
+    std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>
     context( geometric_mapping_ptrtype gm,
-             ElementType const& e,
-             std::vector<std::map<typename ElementType::permutation_type, precompute_ptrtype>>& pc,
-             uint16_type f )
+             ElementType_t const& e,
+             std::vector<std::map<typename ElementType_t::permutation_type, precompute_ptrtype>>& pc,
+             uint16_type f,
+             size_type dynctx = 0 )
     {
-        return std::shared_ptr<Context<context_v, ElementType, SubEntityCoDim>>(
-            new Context<context_v, ElementType, SubEntityCoDim>( gm,
-                                                 e,
-                                                 pc,
-                                                 f ) );
+        return std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>(
+            new Context<Context_v, ElementType_t, SubEntityCoDim_v>( gm,
+                                                                     e,
+                                                                     pc,
+                                                                     f, dynctx ) );
     }
-    template <size_type context_v, int SubEntityCoDim = 1, typename ElementType>
-    std::shared_ptr<Context<context_v, ElementType, SubEntityCoDim>>
-    context( ElementType const& e,
-             std::vector<std::map<typename ElementType::template PermutationSubEntity<SubEntityCoDim>::type, precompute_ptrtype>>& pc,
-             uint16_type f )
+    template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
+    std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>
+    context( ElementType_t const& e,
+             std::vector<std::map<typename ElementType_t::template PermutationSubEntity<SubEntityCoDim_v>::type, precompute_ptrtype>>& pc,
+             uint16_type f, size_type dynctx = 0 )
     {
-        return std::shared_ptr<Context<context_v, ElementType, SubEntityCoDim>>(
-            new Context<context_v, ElementType, SubEntityCoDim>(
+        return std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>(
+            new Context<Context_v, ElementType_t, SubEntityCoDim_v>(
                 //super_enable_this::shared_from_this(),
                 std::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP>>( this->shared_from_this() ),
                 e,
                 pc,
-                f ) );
+                f, dynctx ) );
     }
 
     /**
@@ -2736,203 +2872,203 @@ class GeoMap
  *  (Newton on Grad(pgt)(y - pgt(x)) = 0 )
  */
         bool nonLinearInversePetsc()
-        {
-            //LOG(INFO) << "starting new nonlinear inverse\n";
-            //const double EPS = 1e-10;
-            const double IN_EPS = 1e-10;
-            size_type N = M_xreal.size();
-            size_type P = M_xref.size();
+            {
+                //LOG(INFO) << "starting new nonlinear inverse\n";
+                //const double EPS = 1e-10;
+                const double IN_EPS = 1e-10;
+                size_type N = M_xreal.size();
+                size_type P = M_xref.size();
 
 #if 0
-    /*
-      find an initial guess: closest geometric node to M_xreal
-    */
-    node_type x0 = M_gm->refNode( 0 );
-    node_type y = ublas::column( M_G, 0 );
-    scalar_type d = ublas::inner_prod( y, M_xreal );
+                /*
+                 find an initial guess: closest geometric node to M_xreal
+                 */
+                node_type x0 = M_gm->refNode( 0 );
+                node_type y = ublas::column( M_G, 0 );
+                scalar_type d = ublas::inner_prod( y, M_xreal );
 
-    for ( size_type j = 1; j < M_gm->nbPoints(); ++j )
-    {
-        scalar_type d2 = ublas::inner_prod( ublas::column( M_G, j ), M_xreal );
+                for ( size_type j = 1; j < M_gm->nbPoints(); ++j )
+                {
+                    scalar_type d2 = ublas::inner_prod( ublas::column( M_G, j ), M_xreal );
 
-        if ( d2 < d )
-        {
-            d = d2;
-            x0 = M_gm->refNode( j );
-            y = ublas::column( M_G, j );
-        }
-    }
+                    if ( d2 < d )
+                    {
+                        d = d2;
+                        x0 = M_gm->refNode( j );
+                        y = ublas::column( M_G, j );
+                    }
+                }
 
-    M_xref = x0;
-    node_type x0 = barycenterRef();
+                M_xref = x0;
+                node_type x0 = barycenterRef();
 
 #else
-            M_xref = barycenterRef();
+                M_xref = barycenterRef();
 #endif
 
 #if 0
-    dense_matrix_type J( P, P );
-    dense_vector_type R( P );
-    updateResidual( M_xref, R );
-    updateJacobian( M_xref, J );
+                dense_matrix_type J( P, P );
+                dense_vector_type R( P );
+                updateResidual( M_xref, R );
+                updateJacobian( M_xref, J );
 
-    // find xref by solving the non linear equation
-    //M_nlsolver->setType( TRUST_REGION );
-    M_nlsolver->setKspSolverType( SolverType::PREONLY );
-    M_nlsolver->setPreconditionerType( PreconditionerType::LU_PRECOND );
-    M_nlsolver->setRelativeResidualTol( 1e-16 );
+                // find xref by solving the non linear equation
+                //M_nlsolver->setType( TRUST_REGION );
+                M_nlsolver->setKspSolverType( SolverType::PREONLY );
+                M_nlsolver->setPreconditionerType( PreconditionerType::LU_PRECOND );
+                M_nlsolver->setRelativeResidualTol( 1e-16 );
 #endif
-            M_nlsolver->solve( *M_J, M_xref, *M_R, 1e-10, 10 );
+                M_nlsolver->solve( *M_J, M_xref, *M_R, 1e-10, 10 );
 
-            // compute the location of xref: inside or outside the element
-            bool __isin;
-            double vmin;
-            this->updateResidual( M_xref, *M_R );
-            boost::tie( __isin, vmin ) = M_gm->isIn( M_xref );
+                // compute the location of xref: inside or outside the element
+                bool __isin;
+                double vmin;
+                this->updateResidual( M_xref, *M_R );
+                boost::tie( __isin, vmin ) = M_gm->isIn( M_xref );
 
-            if ( __isin &&
-                 ( P == N || ublas::norm_2( *M_R ) < IN_EPS ) )
-            {
-                //LOG(INFO) << "point " << M_xref << "in IN (" << vmin << ") residual = " << ublas::norm_2(R) << "\n";
-                return true;
+                if ( __isin &&
+                     ( P == N || ublas::norm_2( *M_R ) < IN_EPS ) )
+                {
+                    //LOG(INFO) << "point " << M_xref << "in IN (" << vmin << ") residual = " << ublas::norm_2(R) << "\n";
+                    return true;
+                }
+
+                else
+                {
+                    //LOG(INFO) << "point " << M_xref << "in OUT (" << vmin << ") residual = " << ublas::norm_2(R) << "\n";
+                }
+
+                //LOG(INFO) << "done in new nonlinear inverse\n";
+                return false;
             }
-
-            else
-            {
-                //LOG(INFO) << "point " << M_xref << "in OUT (" << vmin << ") residual = " << ublas::norm_2(R) << "\n";
-            }
-
-            //LOG(INFO) << "done in new nonlinear inverse\n";
-            return false;
-        }
         /*
  *inversion for non-linear geometric transformations
  *  (Newton on Grad(pgt)(y - pgt(x)) = 0 )
  */
         bool nonLinearInverse()
-        {
-            const double EPS = 1e-10;
-            const double IN_EPS = 1e-10;
-            size_type N = M_xreal.size();
-            size_type P = M_xref.size();
-
-            /*
-      find an initial guess: closest geometric node to M_xreal
-    */
-            node_type x0 = M_gm->refNode( 0 );
-            node_type y = ublas::column( M_G, 0 );
-            scalar_type d = ublas::inner_prod( y, M_xreal );
-
-            for ( size_type j = 1; j < M_gm->nbPoints(); ++j )
             {
-                scalar_type d2 = ublas::inner_prod( ublas::column( M_G, j ), M_xreal );
+                const double EPS = 1e-10;
+                const double IN_EPS = 1e-10;
+                size_type N = M_xreal.size();
+                size_type P = M_xref.size();
 
-                if ( d2 < d )
+                /*
+                 find an initial guess: closest geometric node to M_xreal
+                 */
+                node_type x0 = M_gm->refNode( 0 );
+                node_type y = ublas::column( M_G, 0 );
+                scalar_type d = ublas::inner_prod( y, M_xreal );
+
+                for ( size_type j = 1; j < M_gm->nbPoints(); ++j )
                 {
-                    d = d2;
-                    x0 = M_gm->refNode( j );
-                    y = ublas::column( M_G, j );
-                }
-            }
+                    scalar_type d2 = ublas::inner_prod( ublas::column( M_G, j ), M_xreal );
 
-            M_xref = x0;
-
-            node_type vres( N );
-            node_type rn( M_xreal );
-            rn.minus_assign( y );
-
-            this->update();
-
-            // vres = K^T rn
-            ublas::axpy_prod( rn, M_K, vres );
-            scalar_type res = ublas::norm_2( vres );
-
-            //     std::cerr << "DEBUT: res0=" << res << ", X=" << M_xreal << "\nB=" << M_B << ", K=" << M_K << "\n";
-            unsigned cnt = 50;
-
-            while ( res > EPS / 10 && cnt > 0 )
-            {
-                node_type xn( P );
-
-                // xn = B^T rn
-                ublas::axpy_prod( rn, M_B, xn );
-
-                scalar_type newres;
-
-                for ( int16_type i = 1; i <= 256; i *= 2 )
-                {
-                    M_xref.plus_assign( xn / scalar_type( i ) );
-                    y = M_gm->transform( M_xref, G() );
-
-                    rn = M_xreal - y;
-
-                    this->update();
-
-                    if ( P != N )
+                    if ( d2 < d )
                     {
-                        // vres = K^T rn
-                        ublas::axpy_prod( rn, M_K, vres );
-                        newres = ublas::norm_2( vres );
+                        d = d2;
+                        x0 = M_gm->refNode( j );
+                        y = ublas::column( M_G, j );
                     }
-
-                    else
-                    {
-                        newres = ublas::norm_2( rn );
-                    }
-
-                    if ( newres < 1.5 * res )
-                        break;
                 }
 
-                res = newres;
-                //         std::cout << "cnt=" << cnt << ", x=" << M_xref << ", res=" << res << "\n";
-                --cnt;
-            }
+                M_xref = x0;
 
-            //     std::cerr << " invert_nonlin done\n";
-            //     std::cerr << "cnt=" << cnt << ", P=" << P << ", N=" << N
-            //               << "\nX=" << M_xreal << " Xref=" << M_xref << "\nresidu=" << res << "\n";
-            //<< ", G=" << G << "\nX=" << M_xreal << " Xref=" << x << "\nresidu=" << res << "\nB=" << B << ", K=" << K << "\n"  << "\n-------------------^^^^^^^^\n";
-            if ( cnt == 0 )
-            {
+                node_type vres( N );
+                node_type rn( M_xreal );
+                rn.minus_assign( y );
+
+                this->update();
+
+                // vres = K^T rn
+                ublas::axpy_prod( rn, M_K, vres );
+                scalar_type res = ublas::norm_2( vres );
+
+                //     std::cerr << "DEBUT: res0=" << res << ", X=" << M_xreal << "\nB=" << M_B << ", K=" << M_K << "\n";
+                unsigned cnt = 50;
+
+                while ( res > EPS / 10 && cnt > 0 )
+                {
+                    node_type xn( P );
+
+                    // xn = B^T rn
+                    ublas::axpy_prod( rn, M_B, xn );
+
+                    scalar_type newres;
+
+                    for ( int16_type i = 1; i <= 256; i *= 2 )
+                    {
+                        M_xref.plus_assign( xn / scalar_type( i ) );
+                        y = M_gm->transform( M_xref, G() );
+
+                        rn = M_xreal - y;
+
+                        this->update();
+
+                        if ( P != N )
+                        {
+                            // vres = K^T rn
+                            ublas::axpy_prod( rn, M_K, vres );
+                            newres = ublas::norm_2( vres );
+                        }
+
+                        else
+                        {
+                            newres = ublas::norm_2( rn );
+                        }
+
+                        if ( newres < 1.5 * res )
+                            break;
+                    }
+
+                    res = newres;
+                    //         std::cout << "cnt=" << cnt << ", x=" << M_xref << ", res=" << res << "\n";
+                    --cnt;
+                }
+
+                //     std::cerr << " invert_nonlin done\n";
+                //     std::cerr << "cnt=" << cnt << ", P=" << P << ", N=" << N
+                //               << "\nX=" << M_xreal << " Xref=" << M_xref << "\nresidu=" << res << "\n";
+                //<< ", G=" << G << "\nX=" << M_xreal << " Xref=" << x << "\nresidu=" << res << "\nB=" << B << ", K=" << K << "\n"  << "\n-------------------^^^^^^^^\n";
+                if ( cnt == 0 )
+                {
 #if 0
-        std::cerr << "BFGS in geotrans_inv_convex!\n";
-        GeomapInverseConvex b( *this, M_xreal );
+                    std::cerr << "BFGS in geotrans_inv_convex!\n";
+                    GeomapInverseConvex b( *this, M_xreal );
 
-        iteration_ptrtype iter( Iteration<double>::New() );
-        iter->setMaximumNumberOfIterations( 50 );
-        iter->setRelativePrecision( 1e-8 );
+                    iteration_ptrtype iter( Iteration<double>::New() );
+                    iter->setMaximumNumberOfIterations( 50 );
+                    iter->setRelativePrecision( 1e-8 );
 
-        node_type x( x0 );
-        bfgs( b,b,x,10,*iter );
-        rn = M_gm->transform( x,G() ) - M_xreal;
+                    node_type x( x0 );
+                    bfgs( b,b,x,10,*iter );
+                    rn = M_gm->transform( x,G() ) - M_xreal;
 
-        if ( M_gm->isIn( x ) < IN_EPS &&
-                N==P && ublas::norm_2( rn ) > IN_EPS )
-            throw "inversion of non-linear geometric transformation "
-            "failed ! (too much iterations)";
+                    if ( M_gm->isIn( x ) < IN_EPS &&
+                         N==P && ublas::norm_2( rn ) > IN_EPS )
+                        throw "inversion of non-linear geometric transformation "
+                            "failed ! (too much iterations)";
 
 #endif
+                }
+
+                bool __isin;
+                double vmin;
+                boost::tie( __isin, vmin ) = M_gm->isIn( M_xref );
+
+                if ( __isin &&
+                     ( P == N || ublas::norm_2( rn ) < IN_EPS ) )
+                {
+
+                    return true;
+                }
+
+                else
+                {
+                    //LOG(INFO) << "point " << M_xref << "in OUT (" << vmin << ")\n";
+                }
+
+                return false;
             }
-
-            bool __isin;
-            double vmin;
-            boost::tie( __isin, vmin ) = M_gm->isIn( M_xref );
-
-            if ( __isin &&
-                 ( P == N || ublas::norm_2( rn ) < IN_EPS ) )
-            {
-
-                return true;
-            }
-
-            else
-            {
-                //LOG(INFO) << "point " << M_xref << "in OUT (" << vmin << ")\n";
-            }
-
-            return false;
-        }
 
       private:
         geometric_mapping_ptrtype M_gm;

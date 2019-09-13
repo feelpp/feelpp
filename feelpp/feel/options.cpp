@@ -87,6 +87,9 @@ generic_options()
         ( "rmlogs", "remove logs after execution" )
         ( "rm", "remove application repository after execution" )
         ( "directory", po::value<std::string>(), "change directory to specified one" )
+        ( "repository.prefix", po::value<std::string>(), "change directory to specified one" )
+        ( "repository.case", po::value<std::string>(), "change directory to specified one relative to repository.prefix" )
+        ( "repository.npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
         ( "npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
         ( "fail-on-unknown-option", po::value<bool>()->default_value(false), "exit feel++ application if unknown option found" )
         ( "show-preconditioner-options", "show on the fly the preconditioner options used" )
@@ -174,6 +177,24 @@ nlopt_options( std::string const& prefix )
 }
 
 po::options_description
+glpk_options( std::string const& prefix )
+{
+    po::options_description _options( "Glpk " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"glpk.verbosity").c_str(), po::value<int>()->default_value(2), "level of verbosity (between 1 and 4)" )
+        ( prefixvm( prefix,"glpk.method").c_str(), po::value<int>()->default_value(1), "method (1=primal,2=dualprimal,3=dual)" )
+        ( prefixvm( prefix,"glpk.tolerance-bounds").c_str(), po::value<double>()->default_value(1e-7), "Tolerance used to check if the basic solution is primal feasible" )
+        ( prefixvm( prefix,"glpk.tolerance-dual").c_str(), po::value<double>()->default_value(1e-7), "Tolerance used to check if the basic solution is dual feasible" )
+        ( prefixvm( prefix,"glpk.tolerance-pivot").c_str(), po::value<double>()->default_value(1e-10), "Tolerance used to choose eligble pivotal elements of the simplex table" )
+        ( prefixvm( prefix,"glpk.iteration-limit").c_str(), po::value<int>()->default_value(INT_MAX), "Simplex iteration limit" )
+        ( prefixvm( prefix,"glpk.time-limit").c_str(), po::value<int>()->default_value(INT_MAX), "Searching time limit, in milliseconds" )
+        ( prefixvm( prefix,"glpk.presolve").c_str(), po::value<int>()->default_value(0), "enable presolver (0 or 1)" )
+        ( prefixvm( prefix,"glpk.scaling").c_str(), po::value<int>()->default_value(128), "scaling options (1=geometric scaling, 16=equilibration scaling, 32=round scale factors to power of two, 64=skip scaling, 0x80=choose automatically)")
+        ;
+    return _options;
+}
+
+po::options_description
 mesh_options( std::string const& prefix )
 {
     po::options_description _options( "Mesh " + prefix + " options" );
@@ -209,7 +230,7 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.rebuild" ).c_str(), Feel::po::value<bool>()->default_value( true ), "force rebuild msh file from geo file" )
         ( prefixvm( prefix,"gmsh.refine" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "refinement by splitting level" )
         ( prefixvm( prefix,"gmsh.physical_are_elementary_regions" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Physical regions are defined by elementary regions, useful for medit format" )
-        ( prefixvm( prefix,"gmsh.savehdf5" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save msh file to disk once generated in HDF5 format" )
+        ( prefixvm( prefix,"gmsh.savehdf5" ).c_str(), Feel::po::value<bool>()->default_value( false ), "save msh file to disk once generated in HDF5 format" )
         ( prefixvm( prefix,"gmsh.use-json" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use json/hdf5 file if it exists, instead of the Gmsh files (geo or msh)" )
         ( prefixvm( prefix,"gmsh.partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Partition Gmsh mesh once generated or loaded" )
         ( prefixvm( prefix,"gmsh.respect_partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "true to respect paritioning when mesh is loaded, false to ensure that partition is within the number of processors" )
@@ -429,9 +450,16 @@ po::options_description sc_options( std::string const& prefix )
     po::options_description _options("Options for static condensation");
     _options.add_options()
         ( prefixvm( prefix, "sc.condense" ).c_str(), po::value<bool>()->default_value( false ), "enable/disable static condensation" )
+        //( prefixvm( prefix, "sc.backend" ).c_str(), po::value<std::string>()->default_value( "petsc" ), "enable/disable static condensation" )
+        ( prefixvm( prefix, "sc.condense.parallel" ).c_str(), po::value<bool>()->default_value( true ), "enable/disable parallel condense in static condensation" )
+        ( prefixvm( prefix, "sc.condense.grain" ).c_str(), po::value<int>()->default_value( 100 ), "grain size for parallel local solve in static condensation" )
+        ( prefixvm( prefix, "sc.condense.parallel.n" ).c_str(), po::value<int>()->default_value( 2 ), "number of tasks for parallel local solve in static condensation" )
+        ( prefixvm( prefix, "sc.localsolve.parallel" ).c_str(), po::value<bool>()->default_value( true ), "enable/disable parallel local solve in static condensation" )
+        ( prefixvm( prefix, "sc.localsolve.grain" ).c_str(), po::value<int>()->default_value( 100 ), "grain size for parallel local solve in static condensation" )
+        ( prefixvm( prefix, "sc.localsolve.parallel.n" ).c_str(), po::value<int>()->default_value( 2 ), "number of tasks for parallel local solve in static condensation" )
         ;
 
-    return _options;
+    return _options.add( backend_options( prefixvm(prefix,"sc") ) ).add( backend_options( prefixvm(prefix,"sc.post") ) );
 }
 
 
@@ -440,30 +468,30 @@ eimOptions( std::string const& prefix )
 {
     Feel::po::options_description eimoptions( "EIM Options" );
     eimoptions.add_options()
-        ( "eim.sampling-size"   , Feel::po::value<int>()->default_value( 30 ), "Offline  sampling size " )
-        ( "eim.sampling-mode"   , Feel::po::value<std::string>()->default_value( "random" ), "EIM Offline : random, log-random, log-equidistribute, equidistribute " )
-        ( "eim.error-max"   , Feel::po::value<double>()->default_value( 1e-6 ),       "Offline  tolerance" )
-        ( "eim.online-tolerance"   , Feel::po::value<double>()->default_value( 1e-2 ),       "Online  tolerance" )
-        ( "eim.dimension-max"   , Feel::po::value<int>()->default_value( 50 ),       "Offline  max WN size" )
-        //( "eim.error-type"   , Feel::po::value<int>()->default_value( ( int )EIM_RESIDUAL ),       "EIM error type to be computed" )
-        ( "eim.check.rb"   , Feel::po::value<int>()->default_value( 0 ),       "check reduced basis" )
-        ( "eim.norm-used-for-residual" , Feel::po::value<std::string>()->default_value( "Linfty" ), "name of the norm used : Linfty - L2 - LinftyVec" )
-        ( "eim.check.residual"   , Feel::po::value<int>()->default_value( 0 ),  "check residual" )
-        ( "eim.reuse-prec"   , Feel::po::value<bool>()->default_value( 0 ),       "reuse or not the preconditioner" )
-        ( "eim.rebuild-database" , Feel::po::value<bool>()->default_value( false ), "rebuild database (if it already exists)" )
-        ( "eim.enrich-database" , Feel::po::value<bool>()->default_value( true ), "enrich the database (if it already exists)" )
-        ( "eim.cvg-study" , Feel::po::value<bool>()->default_value( 0 ), "for convergence study" )
-        ( "eim.compute-error-with-truth-expression" , Feel::po::value<bool>()->default_value( false ), "compute the error with the truth expression ( not its projection ) if true" )
-        ( "eim.use-dimension-max-functions" , Feel::po::value<bool>()->default_value( 0 ), "force to use dimension-max basis functions" )
-        ( "eim.computational-time-neval",Feel::po::value<int>()->default_value( 0 )," number of evaluation to perform to have the computational time of eim online step" )
-        ( "eim.compute-expansion-of-expression",Feel::po::value<bool>()->default_value( false )," use true expression if true, else use the projection of the expression" )
-        ( "eim.show-mu-selection",Feel::po::value<bool>()->default_value( false )," print list of parameters selected during offline step" )
-        ( "eim.show-t-selection",Feel::po::value<bool>()->default_value( false )," print list of interpolation points selected during offline step" )
-        ( "eim.show-offline-error",Feel::po::value<bool>()->default_value( false )," print list of error associated to mu selected during offline step" )
+        ( prefixvm( prefix, "eim.sampling-size").c_str()   , Feel::po::value<int>()->default_value( 30 ), "Offline  sampling size " )
+        ( prefixvm( prefix, "eim.sampling-mode").c_str()   , Feel::po::value<std::string>()->default_value( "random" ), "EIM Offline : random, log-random, log-equidistribute, equidistribute " )
+        ( prefixvm( prefix, "eim.error-max").c_str()   , Feel::po::value<double>()->default_value( 1e-6 ),       "Offline  tolerance" )
+        ( prefixvm( prefix, "eim.online-tolerance").c_str()   , Feel::po::value<double>()->default_value( 1e-2 ),       "Online  tolerance" )
+        ( prefixvm( prefix, "eim.dimension-max").c_str()   , Feel::po::value<int>()->default_value( 50 ),       "Offline  max WN size" )
+        //( prefixvm( prefix, "eim.error-type").c_str()   , Feel::po::value<int>()->default_value( ( int )EIM_RESIDUAL ),       "EIM error type to be computed" )
+        ( prefixvm( prefix, "eim.check.rb").c_str()   , Feel::po::value<int>()->default_value( 0 ),       "check reduced basis" )
+        ( prefixvm( prefix, "eim.norm-used-for-residual").c_str() , Feel::po::value<std::string>()->default_value( "Linfty" ), "name of the norm used : Linfty - L2 - LinftyVec" )
+        ( prefixvm( prefix, "eim.check.residual").c_str()   , Feel::po::value<int>()->default_value( 0 ),  "check residual" )
+        ( prefixvm( prefix, "eim.reuse-prec").c_str()   , Feel::po::value<bool>()->default_value( 0 ),       "reuse or not the preconditioner" )
+        ( prefixvm( prefix, "eim.rebuild-database").c_str() , Feel::po::value<bool>()->default_value( false ), "rebuild database (if it already exists)" )
+        ( prefixvm( prefix, "eim.enrich-database").c_str() , Feel::po::value<bool>()->default_value( true ), "enrich the database (if it already exists)" )
+        ( prefixvm( prefix, "eim.cvg-study").c_str() , Feel::po::value<bool>()->default_value( 0 ), "for convergence study" )
+        ( prefixvm( prefix, "eim.compute-error-with-truth-expression").c_str() , Feel::po::value<bool>()->default_value( false ), "compute the error with the truth expression ( not its projection ) if true" )
+        ( prefixvm( prefix, "eim.use-dimension-max-functions").c_str() , Feel::po::value<bool>()->default_value( 0 ), "force to use dimension-max basis functions" )
+        ( prefixvm( prefix, "eim.computational-time-neval").c_str(),Feel::po::value<int>()->default_value( 0 )," number of evaluation to perform to have the computational time of eim online step" )
+        ( prefixvm( prefix, "eim.compute-expansion-of-expression").c_str(),Feel::po::value<bool>()->default_value( false )," use true expression if true, else use the projection of the expression" )
+        ( prefixvm( prefix, "eim.show-mu-selection").c_str(),Feel::po::value<bool>()->default_value( false )," print list of parameters selected during offline step" )
+        ( prefixvm( prefix, "eim.show-t-selection").c_str(),Feel::po::value<bool>()->default_value( false )," print list of interpolation points selected during offline step" )
+        ( prefixvm( prefix, "eim.show-offline-error").c_str(),Feel::po::value<bool>()->default_value( false )," print list of error associated to mu selected during offline step" )
 
-        ( "eim.elements.write", Feel::po::value<bool>()->default_value( true ), "Write evaluated nl solutions on disk"  )
-        ( "eim.elements.directory", Feel::po::value<std::string>()->default_value( "nlsolutions" ), "directory were nl solutions are stored"  )
-        ( "eim.elements.clean-directory", Feel::po::value<bool>()->default_value( false ), ""  )
+        ( prefixvm( prefix, "eim.elements.write").c_str(), Feel::po::value<bool>()->default_value( true ), "Write evaluated nl solutions on disk"  )
+        ( prefixvm( prefix, "eim.elements.directory").c_str(), Feel::po::value<std::string>()->default_value( "nlsolutions" ), "directory were nl solutions are stored"  )
+        ( prefixvm( prefix, "eim.elements.clean-directory").c_str(), Feel::po::value<bool>()->default_value( false ), ""  )
         ;
 
     return eimoptions;
@@ -486,8 +514,6 @@ deimOptions( std::string const& prefix )
         ( prefixvm( prefix, "deim.elements.write" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Write evaluated nl solutions on disk"  )
         ( prefixvm( prefix, "deim.elements.clean-directory" ).c_str(), Feel::po::value<bool>()->default_value( false ), ""  )
         ( prefixvm( prefix, "deim.elements.directory" ).c_str(), Feel::po::value<std::string>()->default_value( "nlsolutions" ), "directory were nl solutions are stored"  )
-
-        ( prefixvm( prefix, "deim.optimized-online" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Use optimized version for online assembly. DEBUG, this option has to be removed !"  )
         ;
 
     return deimoptions.add(backend_options(prefixvm(prefix,"deim-online")));
@@ -498,20 +524,20 @@ crbSEROptions( std::string const& prefix )
 {
     Feel::po::options_description seroptions( "SER Options" );
     seroptions.add_options()
-        ( "ser.rb-frequency", Feel::po::value<int>()->default_value( 0 ), "Number of RB basis built per step of SER process, 0 : no SER" )
-        ( "ser.eim-frequency", Feel::po::value<int>()->default_value( 0 ), "Number of EIM basis built per step of SER process, 0 : no SER")
-        ( "ser.use-rb-in-eim-mu-selection", Feel::po::value<bool>()->default_value( false ), "Use RB approx. to select parameters during EIM offline step")
-        ( "ser.use-rb-in-eim-basis-build", Feel::po::value<bool>()->default_value( false ), "Use RB approx. to build EIM basis")
-        ( "ser.rb-rebuild-freq", Feel::po::value<int>()->default_value( -1 ), "rebuild database with a given frequency" )
-        ( "ser.error-estimation", Feel::po::value<bool>()->default_value( false ), "Use SER error estimation = Norm of residual (Riesz) as error indicator")
-        ( "ser.use-greedy-in-rb", Feel::po::value<bool>()->default_value( false ), "Use SER error indicator to build RB basis (Greedy)")
-        ( "ser.eim-subtrainset-method", Feel::po::value<int>()->default_value( 0 ), "Build subtrainset from error estimation : full trainset (=0), select mu for which residual < tol (=1), select mu for which residual > tol (=2)")
-        ( "ser.print-rb-iterations_info", Feel::po::value<bool>()->default_value( false ), "Write online rb iterations (Picard) needed for Greedy")
-        ( "ser.radapt-eim-rtol", Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for EIM r-adaptation - default(0.0) = no adaptation")
-        ( "ser.radapt-rb-rtol", Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for RB r-adaptation - default(0.0) = no adaptation")
-        ( "ser.eim-greedy-rtol", Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for the error indicator constraint in eim Greedy algorithm : choose mu from those which satisfies this criterion - default(0.0) = no error indicator constraint")
-        ( "ser.corrected-rb-rtol", Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for RB correction (from error estimation) to be used - default(0.0) = no correction")
-        ( "ser.nb-levels", Feel::po::value<int>()->default_value( 1 ), "number of SER levels = number of passages into SER algorithm (default 1)")
+        ( prefixvm( prefix, "ser.rb-frequency").c_str(), Feel::po::value<int>()->default_value( 0 ), "Number of RB basis built per step of SER process, 0 : no SER" )
+        ( prefixvm( prefix, "ser.eim-frequency").c_str(), Feel::po::value<int>()->default_value( 0 ), "Number of EIM basis built per step of SER process, 0 : no SER")
+        ( prefixvm( prefix, "ser.use-rb-in-eim-mu-selection").c_str(), Feel::po::value<bool>()->default_value( false ), "Use RB approx. to select parameters during EIM offline step")
+        ( prefixvm( prefix, "ser.use-rb-in-eim-basis-build").c_str(), Feel::po::value<bool>()->default_value( false ), "Use RB approx. to build EIM basis")
+        ( prefixvm( prefix, "ser.rb-rebuild-freq").c_str(), Feel::po::value<int>()->default_value( -1 ), "rebuild database with a given frequency" )
+        ( prefixvm( prefix, "ser.error-estimation").c_str(), Feel::po::value<bool>()->default_value( false ), "Use SER error estimation = Norm of residual (Riesz) as error indicator")
+        ( prefixvm( prefix, "ser.use-greedy-in-rb").c_str(), Feel::po::value<bool>()->default_value( false ), "Use SER error indicator to build RB basis (Greedy)")
+        ( prefixvm( prefix, "ser.eim-subtrainset-method").c_str(), Feel::po::value<int>()->default_value( 0 ), "Build subtrainset from error estimation : full trainset (=0), select mu for which residual < tol (=1), select mu for which residual > tol (=2)")
+        ( prefixvm( prefix, "ser.print-rb-iterations_info").c_str(), Feel::po::value<bool>()->default_value( false ), "Write online rb iterations (Picard) needed for Greedy")
+        ( prefixvm( prefix, "ser.radapt-eim-rtol").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for EIM r-adaptation - default(0.0) = no adaptation")
+        ( prefixvm( prefix, "ser.radapt-rb-rtol").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for RB r-adaptation - default(0.0) = no adaptation")
+        ( prefixvm( prefix, "ser.eim-greedy-rtol").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for the error indicator constraint in eim Greedy algorithm : choose mu from those which satisfies this criterion - default(0.0) = no error indicator constraint")
+        ( prefixvm( prefix, "ser.corrected-rb-rtol").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for RB correction (from error estimation) to be used - default(0.0) = no correction")
+        ( prefixvm( prefix, "ser.nb-levels").c_str(), Feel::po::value<int>()->default_value( 1 ), "number of SER levels = number of passages into SER algorithm (default 1)")
         ;
     return seroptions;
 }
@@ -598,103 +624,108 @@ crbOptions( std::string const& prefix )
 {
     Feel::po::options_description crboptions( "CRB Options" );
     crboptions.add_options()
-        ( "crb.db.load"   , Feel::po::value<int>()->default_value( 2 ), "=0 use db.filename, =1 use last DB created =2 use last DB modified =3 use db.id" )
-        ( "crb.db.update"   , Feel::po::value<int>()->default_value( 2 ), "=0 use db.filename, =1 use last DB created =2 use last DB modified =3 use db.id" )
-        ( "crb.db.id"   , Feel::po::value<std::string>(), "DB unique id" )
-        ( "crb.db.filename"   , Feel::po::value<std::string>(), "DB filename" )
-        ( "crb.output-index"   , Feel::po::value<int>()->default_value( 0 ), "output index (default is right hand side = 0)" )
-        ( "crb.sampling-size"   , Feel::po::value<int>()->default_value( 1000 ), "Offline  sampling size " )
-        ( "crb.sampling-mode"   , Feel::po::value<std::string>()->default_value( "log-random" ), "Offline  sampling mode, equidistribute, log-equidistribute or log-random " )
-        ( "crb.all-procs-have-same-sampling" , Feel::po::value<bool>()->default_value( false ), "all procs have the same sampling if true" )
-        ( "crb.error-max"   , Feel::po::value<double>()->default_value( 1e-6 ),       "Offline  tolerance" )
-        ( "crb.online-tolerance"   , Feel::po::value<double>()->default_value( 1e-2 ),       "Online  tolerance" )
-        ( "crb.absolute-error" , Feel::po::value<bool>()->default_value( false ), "Impose to compute absolute error PFEM/CRB instead of relative" )
-        ( "crb.dimension-max"   , Feel::po::value<int>()->default_value( 1 ),       "Offline max WN size, set to 1 by default to avoid to enrich the existing database if this option doesn't appear in onefeel interface or in the config file." )
-        ( "crb.dimension"   , Feel::po::value<int>()->default_value( -1 ),       "Online  WN size" )
-        ( "crb.error-type"   , Feel::po::value<int>()->default_value( ( int )CRB_RESIDUAL_SCM ),       "CRB error type to be computed" )
-        ( "crb.compute-apee-for-each-time-step",Feel::po::value<bool>()->default_value( true ),"Compute error estimation for each time step (parabolic problems) is true, else compute only for the last one")
-        ( "crb.factor"   , Feel::po::value<int>()->default_value( -1 ),  "factor useful to estimate error by empirical method" )
-        ( "crb.Nm"   , Feel::po::value<int>()->default_value( 1 ),       "Offline  number of modes per mu (for the POD) " )
-        ( "crb.apply-POD-to-WN"   , Feel::po::value<bool>()->default_value( false ), "apply a POD on approximation functions spaces (primal and dual) if true and if deal with a transient problem " )
-        ( "crb.check.rb"   , Feel::po::value<int>()->default_value( 0 ),       "check reduced basis" )
-        ( "crb.orthonormality-tol" , Feel::po::value<double>()->default_value( 1e-13 ),"tolerance of orthonormalisation : i.e. norm of matrix A(i,j)=scalarProduct( Wn[j], Wn[i] )" )
-        ( "crb.orthonormality-max-iter" , Feel::po::value<int>()->default_value( 10 ),"while the tolerance is not reached, the orthonormalization step is done or until max-iter is reached" )
+        ( prefixvm( prefix, "crb.db.load").c_str()   , Feel::po::value<int>()->default_value( 2 ), "=0 use db.filename, =1 use last DB created =2 use last DB modified =3 use db.id" )
+        ( prefixvm( prefix, "crb.db.update").c_str()   , Feel::po::value<int>()->default_value( 2 ), "=0 use db.filename, =1 use last DB created =2 use last DB modified =3 use db.id" )
+        ( prefixvm( prefix, "crb.db.id").c_str()   , Feel::po::value<std::string>()->default_value(""), "DB unique id" )
+        ( prefixvm( prefix, "crb.db.filename").c_str()   , Feel::po::value<std::string>()->default_value(""), "DB filename" )
+        ( prefixvm( prefix, "crb.output-index").c_str()   , Feel::po::value<int>()->default_value( 0 ), "output index (default is right hand side = 0)" )
+        ( prefixvm( prefix, "crb.sampling-size").c_str()   , Feel::po::value<int>()->default_value( 1000 ), "Offline  sampling size " )
+        ( prefixvm( prefix, "crb.randomize.use-log").c_str()   , Feel::po::value<bool>()->default_value(true ), "" )
+        ( prefixvm( prefix, "crb.sampling-mode").c_str()   , Feel::po::value<std::string>()->default_value( "log-random" ), "Offline  sampling mode, equidistribute, log-equidistribute or log-random " )
+        ( prefixvm( prefix, "crb.all-procs-have-same-sampling").c_str() , Feel::po::value<bool>()->default_value( false ), "all procs have the same sampling if true" )
+        ( prefixvm( prefix, "crb.error-max").c_str()   , Feel::po::value<double>()->default_value( 1e-6 ),       "Offline  tolerance" )
+        ( prefixvm( prefix, "crb.online-tolerance").c_str()   , Feel::po::value<double>()->default_value( 1e-2 ),       "Online  tolerance" )
+        ( prefixvm( prefix, "crb.absolute-error").c_str() , Feel::po::value<bool>()->default_value( false ), "Impose to compute absolute error PFEM/CRB instead of relative" )
+        ( prefixvm( prefix, "crb.dimension-max").c_str()   , Feel::po::value<int>()->default_value( 1 ),       "Offline max WN size, set to 1 by default to avoid to enrich the existing database if this option doesn't appear in onefeel interface or in the config file." )
+        ( prefixvm( prefix, "crb.dimension").c_str()   , Feel::po::value<int>()->default_value( -1 ),       "Online  WN size" )
+        ( prefixvm( prefix, "crb.error-type").c_str()   , Feel::po::value<int>()->default_value( ( int )CRB_RESIDUAL_SCM ),       "CRB error type to be computed" )
+        ( prefixvm( prefix, "crb.compute-apee-for-each-time-step").c_str(),Feel::po::value<bool>()->default_value( true ),"Compute error estimation for each time step (parabolic problems) is true, else compute only for the last one")
+        ( prefixvm( prefix, "crb.factor").c_str()   , Feel::po::value<int>()->default_value( -1 ),  "factor useful to estimate error by empirical method" )
+        ( prefixvm( prefix, "crb.Nm").c_str()   , Feel::po::value<int>()->default_value( 1 ),       "Offline  number of modes per mu (for the POD) " )
+        ( prefixvm( prefix, "crb.apply-POD-to-WN").c_str()   , Feel::po::value<bool>()->default_value( false ), "apply a POD on approximation functions spaces (primal and dual) if true and if deal with a transient problem " )
+        ( prefixvm( prefix, "crb.check.rb").c_str()   , Feel::po::value<int>()->default_value( 0 ),       "check reduced basis" )
+        ( prefixvm( prefix, "crb.orthonormality-tol").c_str() , Feel::po::value<double>()->default_value( 1e-13 ),"tolerance of orthonormalisation : i.e. norm of matrix A(i,j)=scalarProduct( Wn[j], Wn[i] )" )
+        ( prefixvm( prefix, "crb.orthonormality-max-iter").c_str() , Feel::po::value<int>()->default_value( 10 ),"while the tolerance is not reached, the orthonormalization step is done or until max-iter is reached" )
+        ( prefixvm( prefix, "crb.gram-schmidt.selection").c_str() , Feel::po::value<bool>()->default_value( false ),"Use selection in Gram-Schmidt orthonormalizatin to erase useless basis vectors" )
+        ( prefixvm( prefix, "crb.gram-schmidt.selection.tol").c_str() , Feel::po::value<double>()->default_value( 1e-8 ),"Selective Gram-Schmidt alogrithm tolerance" )
 
-        ( "crb.check.residual"   , Feel::po::value<bool>()->default_value( false ),  "check residual" )
-        ( "crb.reuse-prec"   , Feel::po::value<bool>()->default_value( 0 ),       "reuse or not the preconditioner" )
-        ( "crb.use-primal-pc",Feel::po::value<bool>()->default_value( true ), "use specific preconditioner for the primal problem")
-        ( "crb.orthonormalize-primal" , Feel::po::value<bool>()->default_value( 1 ), "orthonormalize or not " )
-        ( "crb.orthonormalize-dual" , Feel::po::value<bool>()->default_value( 1 ), "orthonormalize or not " )
-        ( "crb.solve-dual-problem" , Feel::po::value<bool>()->default_value( 1 ), "solve or not the dual problem (this bool will be ignored if error-type=CRB_RESIDUAL) " )
-        ( "crb.visualize-basis" , Feel::po::value<bool>()->default_value( 0 ), "visualize elements of the reduced basis " )
-        ( "crb.save-output-behavior" , Feel::po::value<bool>()->default_value( 0 ), "save output behavior in time" )
-        ( "crb.seek-mu-in-complement" , Feel::po::value<bool>()->default_value( 1 ), "during the offline basis construction, see mu in M the complement of Wn" )
-        ( "crb.rebuild-database" , Feel::po::value<bool>()->default_value( 0 ), "rebuild database (if it already exists)" )
-        ( "crb.restart-from-N" , Feel::po::value<int>()->default_value( -1 ), "restart the database from specified N (note that when N=0 the complete approximation space is rebuilt and so it is equivalent to option crb.rebuild-database=true). In the case where N > Nmax we do nothing. By default it is set to a negative number in order to not interfer with option rebuild-database" )
-        ( "crb.show-mu-selection" , Feel::po::value<bool>()->default_value( 0 ), " show mu selection during offline step to build RB space" )
-        ( "crb.show-residual" , Feel::po::value<bool>()->default_value( 0 ), " show mu residuals values (used for the error estimation)" )
-        ( "crb.print-error-during-rb-construction" , Feel::po::value<bool>()->default_value( 0 ), " print the max error (absolute) obtained during the offline step" )
-        ( "crb.print-iterations-info", Feel::po::value<bool>()->default_value( 0 ), "Write offline Picard iterations summary" )
-        ( "crb.compute-variance" , Feel::po::value<bool>()->default_value( 0 ), " if true the output is the variance and not l(v)" )
-        ( "crb.save-information-for-variance",Feel::po::value<bool>()->default_value( 0 ), "if true will build variance matrix but it takes some times" )
+        ( prefixvm( prefix, "crb.check.residual").c_str()   , Feel::po::value<bool>()->default_value( false ),  "check residual" )
+        ( prefixvm( prefix, "crb.reuse-prec").c_str()   , Feel::po::value<bool>()->default_value( 0 ),       "reuse or not the preconditioner" )
+        ( prefixvm( prefix, "crb.use-primal-pc").c_str(),Feel::po::value<bool>()->default_value( true ), "use specific preconditioner for the primal problem")
+        ( prefixvm( prefix, "crb.orthonormalize-primal").c_str() , Feel::po::value<bool>()->default_value( 1 ), "orthonormalize or not " )
+        ( prefixvm( prefix, "crb.orthonormalize-dual").c_str() , Feel::po::value<bool>()->default_value( 1 ), "orthonormalize or not " )
+        ( prefixvm( prefix, "crb.solve-dual-problem").c_str() , Feel::po::value<bool>()->default_value( 1 ), "solve or not the dual problem (this bool will be ignored if error-type=CRB_RESIDUAL) " )
+        ( prefixvm( prefix, "crb.visualize-basis").c_str() , Feel::po::value<bool>()->default_value( 0 ), "visualize elements of the reduced basis " )
+        ( prefixvm( prefix, "crb.save-output-behavior").c_str() , Feel::po::value<bool>()->default_value( 0 ), "save output behavior in time" )
+        ( prefixvm( prefix, "crb.seek-mu-in-complement").c_str() , Feel::po::value<bool>()->default_value( 1 ), "during the offline basis construction, see mu in M the complement of Wn" )
+        ( prefixvm( prefix, "crb.rebuild-database").c_str() , Feel::po::value<bool>()->default_value( 0 ), "rebuild database (if it already exists)" )
+        ( prefixvm( prefix, "crb.restart-from-N").c_str() , Feel::po::value<int>()->default_value( -1 ), "restart the database from specified N (note that when N=0 the complete approximation space is rebuilt and so it is equivalent to option crb.rebuild-database=true). In the case where N > Nmax we do nothing. By default it is set to a negative number in order to not interfer with option rebuild-database" )
+        ( prefixvm( prefix, "crb.show-mu-selection").c_str() , Feel::po::value<bool>()->default_value( 0 ), " show mu selection during offline step to build RB space" )
+        ( prefixvm( prefix, "crb.show-residual").c_str() , Feel::po::value<bool>()->default_value( 0 ), " show mu residuals values (used for the error estimation)" )
+        ( prefixvm( prefix, "crb.print-error-during-rb-construction").c_str() , Feel::po::value<bool>()->default_value( 0 ), " print the max error (absolute) obtained during the offline step" )
+        ( prefixvm( prefix, "crb.print-iterations-info").c_str(), Feel::po::value<bool>()->default_value( 0 ), "Write offline Picard iterations summary" )
+        ( prefixvm( prefix, "crb.compute-variance").c_str() , Feel::po::value<bool>()->default_value( 0 ), " if true the output is the variance and not l(v)" )
+        ( prefixvm( prefix, "crb.save-information-for-variance").c_str(),Feel::po::value<bool>()->default_value( 0 ), "if true will build variance matrix but it takes some times" )
 
-        ( "crb.use-newton",Feel::po::value<bool>()->default_value( false ), "use newton algorithm (need to provide a jacobian and a residual)" )
-        ( "crb.fixedpoint.aitken",Feel::po::value<bool>()->default_value( true ), "use Aitken relaxtion algorithm in nonlinear fixpoint solver" )
+        ( prefixvm( prefix, "crb.use-newton").c_str(),Feel::po::value<bool>()->default_value( false ), "use newton algorithm (need to provide a jacobian and a residual)" )
+        ( prefixvm( prefix, "crb.fixedpoint.aitken").c_str(),Feel::po::value<bool>()->default_value( true ), "use Aitken relaxtion algorithm in nonlinear fixpoint solver" )
 
-        ( "crb.fixedpoint.maxit",Feel::po::value<int>()->default_value( 20 ), "nb iteration max for the fixed point (online part)" )
-        ( "crb.fixedpoint.increment-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on solution for fixed point (online part)" )
-        ( "crb.fixedpoint.output-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on output for fixed point (online part)" )
-        ( "crb.fixedpoint.verbose",Feel::po::value<bool>()->default_value( false ), "fixed point verbose if true" )
-        ( "crb.fixedpoint.critical-value",Feel::po::value<double>()->default_value(1000 ), "will crash if increment error at the end of fixed point is greater than this critical value" )
+        ( prefixvm( prefix, "crb.fixedpoint.maxit").c_str(),Feel::po::value<int>()->default_value( 20 ), "nb iteration max for the fixed point (online part)" )
+        ( prefixvm( prefix, "crb.fixedpoint.increment-tol").c_str(),Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on solution for fixed point (online part)" )
+        ( prefixvm( prefix, "crb.fixedpoint.output-tol").c_str(),Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on output for fixed point (online part)" )
+        ( prefixvm( prefix, "crb.fixedpoint.verbose").c_str(),Feel::po::value<bool>()->default_value( false ), "fixed point verbose if true" )
+        ( prefixvm( prefix, "crb.fixedpoint.critical-value").c_str(),Feel::po::value<double>()->default_value(1000 ), "will crash if increment error at the end of fixed point is greater than this critical value" )
 
-        ( "crb.use-continuity",Feel::po::value<bool>()->default_value(true), "when apply Newton method, will use continuity method (like for natural convection problem for example)" )
-        ( "crb.compute-error-on-reduced-residual-jacobian",Feel::po::value<bool>()->default_value( false ), "only for crb_trilinear")
-        ( "crb.enable-convection-terms",Feel::po::value<bool>()->default_value( true ), "only for crb_trilinear")
+        ( prefixvm( prefix, "crb.use-continuity").c_str(),Feel::po::value<bool>()->default_value(true), "when apply Newton method, will use continuity method (like for natural convection problem for example)" )
+        ( prefixvm( prefix, "crb.compute-error-on-reduced-residual-jacobian").c_str(),Feel::po::value<bool>()->default_value( false ), "only for crb_trilinear")
+        ( prefixvm( prefix, "crb.enable-convection-terms").c_str(),Feel::po::value<bool>()->default_value( true ), "only for crb_trilinear")
 
-        ( "crb.is-model-executed-in-steady-mode",Feel::po::value<bool>()->default_value( false ), "true if model is executed in steady mode, else turn it to false")
-        ( "crb.use-ginac-for-beta-expressions",Feel::po::value<bool>()->default_value( false ), "use ginac to compute expression of beta coefficients if true")
-        ( "crb.use-linear-model",Feel::po::value<bool>()->default_value( false ), "do not iterate in fixed point if true")
+        ( prefixvm( prefix, "crb.is-model-executed-in-steady-mode").c_str(),Feel::po::value<bool>()->default_value( false ), "true if model is executed in steady mode, else turn it to false")
+        ( prefixvm( prefix, "crb.use-ginac-for-beta-expressions").c_str(),Feel::po::value<bool>()->default_value( false ), "use ginac to compute expression of beta coefficients if true")
+        ( prefixvm( prefix, "crb.use-linear-model").c_str(),Feel::po::value<bool>()->default_value( false ), "do not iterate in fixed point if true")
 
-        ( "crb.use-predefined-WNmu",Feel::po::value<bool>()->default_value( false ), "read parameters to take for the offline step from a file named SamplingWNmu if true")
-        ( "crb.use-predefined-test-sampling",Feel::po::value<bool>()->default_value( false ), "read parameters from file named SamplingForTest if true to run the test")
-        ( "crb.use-logEquidistributed-WNmu",Feel::po::value<int>()->default_value( 0 ), "parameters are log-equidistributed for the offline step (the value indicates the number of parameters)")
-        ( "crb.use-random-WNmu",Feel::po::value<int>()->default_value( 0 ), "parameters are log-equidistributed for the offline step (the value indicates the number of parameters)")
-        ( "crb.use-equidistributed-WNmu",Feel::po::value<int>()->default_value( 0 ), "parameters are equidistributed for the offline step (the value indicates the number of parameters)")
+        ( prefixvm( prefix, "crb.use-predefined-WNmu").c_str(),Feel::po::value<bool>()->default_value( false ), "read parameters to take for the offline step from a file named SamplingWNmu if true")
+        ( prefixvm( prefix, "crb.use-predefined-test-sampling").c_str(),Feel::po::value<bool>()->default_value( false ), "read parameters from file named SamplingForTest if true to run the test")
+        ( prefixvm( prefix, "crb.use-logEquidistributed-WNmu").c_str(),Feel::po::value<int>()->default_value( 0 ), "parameters are log-equidistributed for the offline step (the value indicates the number of parameters)")
+        ( prefixvm( prefix, "crb.use-random-WNmu").c_str(),Feel::po::value<int>()->default_value( 0 ), "parameters are log-equidistributed for the offline step (the value indicates the number of parameters)")
+        ( prefixvm( prefix, "crb.use-equidistributed-WNmu").c_str(),Feel::po::value<int>()->default_value( 0 ), "parameters are equidistributed for the offline step (the value indicates the number of parameters)")
 
-        ( "crb.compute-stat",Feel::po::value<bool>()->default_value( true ), "compute statistics on the run if true")
-        ( "crb.cvg-study",Feel::po::value<bool>()->default_value( false ), "convergence study if true")
-        ( "crb.computational-time-neval",Feel::po::value<int>()->default_value( 0 )," number of evaluation to perform to have the computational time of crb online step" )
-
-        ( "crb.run-on-WNmu",Feel::po::value<bool>()->default_value( false ), "use mu taken for build the reduced basis, so for steady problems we are very accurate")
-        ( "crb.run-on-scm-parameters",Feel::po::value<bool>()->default_value( false ), "use mu taken during the SCM offline step ( for a(.,.;mu) ), so the coercivity constant is exact")
-        ( "crb.script-mode",Feel::po::value<bool>()->default_value( false ), "disable error computation (need FEM computation) if true")
+        ( prefixvm( prefix, "crb.compute-stat").c_str(),Feel::po::value<bool>()->default_value( true ), "compute statistics on the run if true")
+        ( prefixvm( prefix, "crb.cvg-study").c_str(),Feel::po::value<bool>()->default_value( false ), "convergence study if true")
+        ( prefixvm( prefix, "crb.computational-time-neval").c_str(),Feel::po::value<int>()->default_value( 0 )," number of evaluation to perform to have the computational time of crb online step" )
+        ( prefixvm( prefix, "crb.reload-last-sampling").c_str(),Feel::po::value<bool>()->default_value( false ), "")
+        ( prefixvm( prefix, "crb.run-on-WNmu").c_str(),Feel::po::value<bool>()->default_value( false ), "use mu taken for build the reduced basis, so for steady problems we are very accurate")
+        ( prefixvm( prefix, "crb.run-on-scm-parameters").c_str(),Feel::po::value<bool>()->default_value( false ), "use mu taken during the SCM offline step ( for a(.,.;mu) ), so the coercivity constant is exact")
+        ( prefixvm( prefix, "crb.script-mode").c_str(),Feel::po::value<bool>()->default_value( false ), "disable error computation (need FEM computation) if true")
         ( "crb.db.format", Feel::po::value<std::string>()->default_value("boost"), "format in which the crb database is saved, either boost of hdf5")
-        ( "crb.results-repo-name", Feel::po::value<std::string>()->default_value("default_repo"), "name for results repository, and also use for database storage")
-        ( "crb.compute-fem-during-online",Feel::po::value<bool>()->default_value( true ), "compute fem during online step, necessary to compute the error between fem and crb")
+        ( prefixvm( prefix, "crb.results-repo-name").c_str(), Feel::po::value<std::string>()->default_value("default_repo"), "name for results repository, and also use for database storage")
+        ( prefixvm( prefix, "crb.compute-fem-during-online").c_str(),Feel::po::value<bool>()->default_value( true ), "compute fem during online step, necessary to compute the error between fem and crb")
 
-        ( "crb.compute-matrix-information",Feel::po::value<bool>()->default_value( false ), "compute matrix information (i.e. conditioning, determinant) of reduced matrix if true")
-        ( "crb.print-rb-matrix",Feel::po::value<bool>()->default_value( false ), "write rb matrix (octave format) in a file if true")
+        ( prefixvm( prefix, "crb.compute-matrix-information").c_str(),Feel::po::value<bool>()->default_value( false ), "compute matrix information (i.e. conditioning, determinant) of reduced matrix if true")
+        ( prefixvm( prefix, "crb.print-rb-matrix").c_str(),Feel::po::value<bool>()->default_value( false ), "write rb matrix (octave format) in a file if true")
 
-        ( "crb.use-symmetric-matrix",Feel::po::value<bool>()->default_value( true ), "don't transpose to have the matrix associated to the dual problem if true")
-        ( "crb.stock-matrices",Feel::po::value<bool>()->default_value( true ), "assemble and stock all matrices/vectors if true, but it can takes a lot of memory")
-        ( "crb.system-memory-evolution",Feel::po::value<bool>()->default_value( false ), "generate a file to plot memory evolution during offline step only on the master processor (file written : MemoryEvolution)")
-        ( "crb.system-memory-evolution-on-all-procs",Feel::po::value<bool>()->default_value( false ), "same than system-memory-evolution but on all processors")
+        ( prefixvm( prefix, "crb.use-symmetric-matrix").c_str(),Feel::po::value<bool>()->default_value( true ), "don't transpose to have the matrix associated to the dual problem if true")
+        ( prefixvm( prefix, "crb.stock-matrices").c_str(),Feel::po::value<bool>()->default_value( true ), "assemble and stock all matrices/vectors if true, but it can takes a lot of memory")
+        ( prefixvm( prefix, "crb.system-memory-evolution").c_str(),Feel::po::value<bool>()->default_value( false ), "generate a file to plot memory evolution during offline step only on the master processor (file written : MemoryEvolution)")
+        ( prefixvm( prefix, "crb.system-memory-evolution-on-all-procs").c_str(),Feel::po::value<bool>()->default_value( false ), "same than system-memory-evolution but on all processors")
 
-        ( "crb.use-accurate-apee",Feel::po::value<bool>()->default_value( false ), "use a posteriori error estimators from F.Casenave's paper if true, classic one else")
-        ( "crb.optimize-offline-residual",Feel::po::value<bool>()->default_value( false ), "use optimize way for offline residual computation if true (temporary option)")
-        ( "crb.offline-residual-version",Feel::po::value<int>()->default_value( 0 ), "offline residual version 0 : old no storage, 1 : new faster with storage")
+        ( prefixvm( prefix, "crb.use-accurate-apee").c_str(),Feel::po::value<bool>()->default_value( false ), "use a posteriori error estimators from F.Casenave's paper if true, classic one else")
+        ( prefixvm( prefix, "crb.optimize-offline-residual").c_str(),Feel::po::value<bool>()->default_value( false ), "use optimize way for offline residual computation if true (temporary option)")
+        ( prefixvm( prefix, "crb.offline-residual-version").c_str(),Feel::po::value<int>()->default_value( 0 ), "offline residual version 0 : old no storage, 1 : new faster with storage")
 
-        ( "crb.user-parameters",Feel::po::value<std::string>()->default_value( "" ), "values of parameters (used for one feel)")
-        ( "crb.vary-only-parameter-components",Feel::po::value<std::string>()->default_value( "" ), "specify which parameter component vary (max : 2 components + time 't') and how many values we take in each direction. For example 0 10 1 20 means that component 0 will take 10 values and component 1 will take 20 values. We can write also t 1 10 and in this case the time will vary and also component 1")
-        ( "crb.load-elements-database",Feel::po::value<bool>()->default_value( false ), "load database of elements if true, need to be true for visualization, need to be false to run CRB approximation on a different number of processors than this was used to build the reduced basis ")
+        ( prefixvm( prefix, "crb.user-parameters").c_str(),Feel::po::value<std::string>()->default_value( "" ), "values of parameters (used for one feel)")
+        ( prefixvm( prefix, "crb.vary-only-parameter-components").c_str(),Feel::po::value<std::string>()->default_value( "" ), "specify which parameter component vary (max : 2 components + time 't') and how many values we take in each direction. For example 0 10 1 20 means that component 0 will take 10 values and component 1 will take 20 values. We can write also t 1 10 and in this case the time will vary and also component 1")
+        ( prefixvm( prefix, "crb.load-elements-database").c_str(),Feel::po::value<bool>()->default_value( false ), "load database of elements if true, need to be true for visualization, need to be false to run CRB approximation on a different number of processors than this was used to build the reduced basis ")
 
-        ( "crb.solve-fem-monolithic",Feel::po::value<bool>()->default_value( false ), "solve FEM problem without using EIM and without affine decomposition ")
-        ( "crb.export-name-max-size",Feel::po::value<int>()->default_value( 30 ), "maximum size for variable names in export (truncature)")
+        ( prefixvm( prefix, "crb.solve-fem-monolithic").c_str(),Feel::po::value<bool>()->default_value( false ), "solve FEM problem without using EIM and without affine decomposition ")
+        ( prefixvm( prefix, "crb.export-name-max-size").c_str(),Feel::po::value<int>()->default_value( 30 ), "maximum size for variable names in export (truncature)")
 
-        ("crb.minimization-func", Feel::po::value<std::string>(), "giving a functional f(output) - give the output which minimizes f(output)" )
+        ("crb.minimization-func", Feel::po::value<std::string>()->default_value(""), "giving a functional f(output) - give the output which minimizes f(output)" )
         ("crb.minimization-param-name", Feel::po::value<std::string>()->default_value( "output" ), "name of the parameter to be replaced by the output in expression given by crb.minimization-func")
 
-        ( "crb.use-fast-eim",Feel::po::value<bool>()->default_value( true ), "use fast eim algo (with rbspace context)")
+        ( prefixvm( prefix, "crb.use-fast-eim").c_str(),Feel::po::value<bool>()->default_value( true ), "use fast eim algo (with rbspace context)")
+
+
 
         ;
 
@@ -704,19 +735,55 @@ crbOptions( std::string const& prefix )
     return crboptions;
 }
 
-    Feel::po::options_description
-    crbSaddlePointOptions( std::string const& prefix )
+Feel::po::options_description
+crbBlockOptions( int const& n_block )
+{
+    Feel::po::options_description crboptions( "CRB Block Options" );
+    for ( int i=0; i<n_block; i++ )
+    {
+        crboptions.add_options()
+            ( (boost::format("crb.block.orthonormalize%1%") %i ).str().c_str(), Feel::po::value<bool>()->default_value( true ), (boost::format("orthonormalize reduce basis for rbspace #%1%") %i ).str().c_str() )
+            ;
+        crboptions.add( backend_options("backend-Xh"+std::to_string(i)) );
+    }
+
+    return crboptions;
+}
+
+
+Feel::po::options_description
+crbSaddlePointOptions( std::string const& prefix, int const& n_block )
 {
     Feel::po::options_description crboptions( "CRB Options" );
     crboptions.add_options()
-        ( "crb.saddlepoint.add-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis")
-        ( "crb.saddlepoint.orthonormalize0",Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #0")
-        ( "crb.saddlepoint.orthonormalize1",Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #1")
-        ( "crb.saddlepoint.version",Feel::po::value<int>()->default_value( 1 ), "test residual evaluation")
+        ( prefixvm( prefix, "crb.saddlepoint.add-supremizer").c_str(),Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis")
+        ( prefixvm( prefix, "crb.saddlepoint.orthonormalize0").c_str(),Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #0")
+        ( prefixvm( prefix, "crb.saddlepoint.orthonormalize1").c_str(),Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #1")
+        ( prefixvm( prefix, "crb.saddlepoint.version").c_str(),Feel::po::value<int>()->default_value( 1 ), "test residual evaluation")
         ;
 
-    crboptions.add( backend_options("backend-Xh0") );
-    crboptions.add( backend_options("backend-Xh1") );
+    return crboptions.add( crbBlockOptions(n_block) );
+}
+
+Feel::po::options_description
+crbAeroOptions( std::string const& prefix )
+{
+    Feel::po::options_description crboptions( "CRB Aero Options" );
+    crboptions.add_options()
+        ( prefixvm( prefix, "crb.aero.add-supremizer").c_str(),Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis")
+        ( prefixvm( prefix, "crb.aero.fix-mean-pressure").c_str(),Feel::po::value<bool>()->default_value( false ), "")
+        ( prefixvm( prefix, "crb.aero.use-psit").c_str(),Feel::po::value<bool>()->default_value( false ), "")
+        ( prefixvm( prefix, "crb.aero.psit.delta0").c_str(),Feel::po::value<double>()->default_value( 1. ), "")
+        ( prefixvm( prefix, "crb.aero.linear-solve").c_str(),Feel::po::value<bool>()->default_value(false ), "")
+        ( prefixvm( prefix, "crb.aero.use-newton").c_str(),Feel::po::value<bool>()->default_value(true ), "")
+        ( prefixvm( prefix, "crb.aero.init-online").c_str(),Feel::po::value<bool>()->default_value(true ), "")
+        ( prefixvm( prefix, "crb.aero.snes.rtol").c_str(),Feel::po::value<double>()->default_value( 1e-8 ), "")
+        ( prefixvm( prefix, "crb.aero.online-continuation").c_str(),Feel::po::value<int>()->default_value( 10 ), "")
+        ( prefixvm( prefix, "crb.aero.log-continuation").c_str(),Feel::po::value<bool>()->default_value( true ), "")
+        ( prefixvm( prefix, "crb.aero.store-rb-sol").c_str(),Feel::po::value<bool>()->default_value( false ), "")
+        ( prefixvm( prefix, "crb.aero.assemble-version").c_str(),Feel::po::value<int>()->default_value( 1 ), "")
+        ;
+    crboptions.add( crbSaddlePointOptions(prefix,3) );
 
     return crboptions;
 }
@@ -762,6 +829,21 @@ error_options( std::string const& prefix )
         ( prefixvm( prefix, "error.convergence" ).c_str(), Feel::po::value<bool>()->default_value( false ), "convergence" )
         ( prefixvm( prefix, "error.convergence.steps" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "number of convergence steps" )
     ;
+    return _options;
+}
+
+po::options_description
+pcd_options( std::string const& prefix )
+{
+    po::options_description _options( "PCD options (" + prefix + ")" );
+    _options.add_options()
+        ( prefixvm( prefix, "pcd.bc-type-with-Dirichlet" ).c_str(), Feel::po::value<std::string>()->default_value("Robin"), "Type of boundary conditions with Dirichlet in NS : Robin or Dirichlet" )
+        ( prefixvm( prefix, "pcd.bc-type-with-Neumann" ).c_str(), Feel::po::value<std::string>()->default_value("Dirichlet"), "Type of boundary conditions with Neumann in NS : Neumann or Dirichlet" )
+        ( prefixvm( prefix, "pcd.order" ).c_str(), Feel::po::value<int>()->default_value(1), "order for pcd operator 1:Ap^-1 Fp Mp^-1 other: Mp^-1 Fp Ap^-1" )
+        ( prefixvm( prefix, "pcd.diffusion" ).c_str(), Feel::po::value<std::string>()->default_value("Laplacian"), "Laplacian or BTBt" )
+        ( prefixvm( prefix, "pcd.diffusion.weakdir" ).c_str(), Feel::po::value<bool>()->default_value(0), "set to true for Weak dirichlet conditions for Fp and Ap, false otherwise" )
+        ( prefixvm( prefix, "pcd.diffusion.weakdir.penaldir" ).c_str(), Feel::po::value<double>()->default_value(10.), "Penalisation parameter for weak bc" )
+        ;
     return _options;
 }
 
@@ -993,6 +1075,24 @@ ptree_options( std::string const& prefix )
         ;
     return _options;
 }
+
+po::options_description
+eq_options( std::string const& prefix )
+{
+    po::options_description _options( "EQ " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"eq.verbosity" ).c_str(), po::value<int>()->default_value(0), "level of verbosity" )
+        ( prefixvm( prefix,"eq.db.load").c_str(), po::value<bool>()->default_value(true), "load the database" )
+        ( prefixvm( prefix,"eq.db.filename").c_str(), po::value<std::string>()->default_value("eq"), "directory in which save/load the database" )
+        ( prefixvm( prefix,"eq.tolerance" ).c_str(), po::value<double>()->default_value(1e-10), "tolerance to reach for offline empirical quadrature" )
+        ( prefixvm( prefix, "eq.sampling-size").c_str(), po::value<int>()->default_value(100), "sampling size for offline empirical quadrature" )
+        ( prefixvm( prefix, "eq.max-order").c_str(), po::value<int>()->default_value(30), "maximum order of quadrature" )
+        ( prefixvm( prefix, "eq.order").c_str(), po::value<int>()->default_value(-1), "force order of quadrature" )
+        ( prefixvm( prefix, "eq.tolerance-zero").c_str(), po::value<double>()->default_value(1e-12), "tolerance to decide if weight is zero or not")
+        ;
+    return _options;
+}
+
 po::options_description
 feel_options( std::string const& prefix  )
 {
@@ -1032,6 +1132,10 @@ feel_options( std::string const& prefix  )
         /* nlopt options */
 #if defined(FEELPP_HAS_NLOPT)
         .add( nlopt_options( prefix ) )
+#endif
+        /* glpk options */
+#if defined(FEELPP_HAS_GLPK_H)
+        .add( glpk_options( prefix ) )
 #endif
 
         .add( mesh_options( prefix ) )

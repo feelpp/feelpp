@@ -69,17 +69,17 @@ namespace Feel
 //!  @author Christophe Prud'homme
 //!  @see
 //!
-template <typename Shape, typename T = double>
+template <typename Shape, typename T = double, typename IndexT = uint32_type>
 class Mesh3D
     : public VisitableBase<>,
-      public MeshBase,
-      public Elements<Shape,T>,
-      public Points<3,T>,
+      public MeshBase<IndexT>,
+      public Elements<Shape, T>,
+      public Points<3, T>,
       public Faces<typename Shape::template shape<2>::type,
-                   typename Elements<Shape,T>::element_type>,
+                   typename Elements<Shape, T>::element_type>,
       public Edges<typename Shape::template shape<1>::type,
                    typename Faces<typename Shape::template shape<2>::type,
-                                  typename Elements<Shape,T>::element_type>::face_type>
+                                  typename Elements<Shape, T>::element_type>::face_type>
 {
     // check at compilation time that the shape has indeed dimension 2
     BOOST_STATIC_ASSERT( Shape::nDim == 3 );
@@ -94,9 +94,12 @@ class Mesh3D
     typedef typename VisitableBase<>::return_type return_type;
 
     typedef VisitableBase<> super_visitable;
-    typedef MeshBase super;
+    typedef MeshBase<IndexT> super;
 
-    typedef Elements<Shape,T> super_elements;
+    using index_type = typename super::index_type;
+    using size_type = typename super::size_type;
+    
+    typedef Elements<Shape, T> super_elements;
     typedef typename super_elements::elements_type elements_type;
     typedef typename super_elements::element_type element_type;
     typedef typename super_elements::element_iterator element_iterator;
@@ -107,7 +110,7 @@ class Mesh3D
     typedef typename element_type::edge_permutation_type edge_permutation_type;
     typedef typename element_type::face_permutation_type face_permutation_type;
 
-    typedef Points<3,T> super_points;
+    typedef Points<3, T> super_points;
     typedef typename super_points::points_type points_type;
     typedef typename super_points::point_type point_type;
 
@@ -132,7 +135,7 @@ class Mesh3D
 
     typedef typename std::pair<size_type, size_type> edge_pair_type;
 
-    typedef Mesh3D<Shape,T> self_type;
+    typedef Mesh3D<Shape, T> self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
 
     static const size_type SHAPE = Shape::Shape;
@@ -210,14 +213,14 @@ class Mesh3D
         return super_elements::element_type::numLocalFaces;
     }
 
-    //! 
+    //!
     //! the number of topological faces per element
     //! @return the number of topological faces per element
     //!
     uint16_type numLocalTopologicalFaces() const
-        {
-            return super_elements::element_type::numTopologicalFaces;
-        }
+    {
+        return super_elements::element_type::numTopologicalFaces;
+    }
 
     /**
  * \return the number of edges in an element
@@ -292,7 +295,7 @@ class Mesh3D
     //@{
     virtual void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
     {
-        MeshBase::setWorldComm( _worldComm );
+        MeshBase<IndexT>::setWorldComm( _worldComm );
         this->setWorldCommElements( _worldComm );
         this->setWorldCommFaces( _worldComm );
         this->setWorldCommEdges( _worldComm );
@@ -367,8 +370,8 @@ class Mesh3D
     boost::multi_array<element_edge_type, 2> M_e2e;
 };
 
-template <typename GEOSHAPE, typename T>
-Mesh3D<GEOSHAPE,T>::Mesh3D( worldcomm_ptr_t const& worldComm )
+template <typename GEOSHAPE, typename T, typename IndexT>
+Mesh3D<GEOSHAPE, T, IndexT>::Mesh3D( worldcomm_ptr_t const& worldComm )
     : super_visitable(),
       super( 3, nRealDim, worldComm ),
       super_elements( worldComm ),
@@ -378,27 +381,27 @@ Mesh3D<GEOSHAPE,T>::Mesh3D( worldcomm_ptr_t const& worldComm )
       M_e2e()
 {
 }
-template <typename GEOSHAPE, typename T>
-Mesh3D<GEOSHAPE,T>::~Mesh3D()
+template <typename GEOSHAPE, typename T, typename IndexT>
+Mesh3D<GEOSHAPE, T, IndexT>::~Mesh3D()
 {
 }
-template <typename GEOSHAPE, typename T>
-void Mesh3D<GEOSHAPE,T>::clear()
+template <typename GEOSHAPE, typename T, typename IndexT>
+void Mesh3D<GEOSHAPE, T, IndexT>::clear()
 {
+    super::clear();
     super_elements::clear();
     super_points::clear();
     super_faces::clear();
     super_edges::clear();
 
     M_e2e.resize( boost::extents[0][0] );
-    FEELPP_ASSERT( isEmpty() )
-        .error( "all mesh containers should be empty after a clear." );
+    CHECK( isEmpty() ) << "all mesh containers should be empty after a clear.";
 }
 
-template <typename GEOSHAPE, typename T>
-void Mesh3D<GEOSHAPE,T>::determineFacePermutation( uint16_type numZeros, std::vector<size_type> const& def,
-                                                 std::vector<size_type> const& cur, std::vector<uint32_type>& diff,
-                                                 face_permutation_type& permutation, mpl::bool_<true> )
+template <typename GEOSHAPE, typename T, typename IndexT>
+void Mesh3D<GEOSHAPE, T, IndexT>::determineFacePermutation( uint16_type numZeros, std::vector<size_type> const& def,
+                                                    std::vector<size_type> const& cur, std::vector<uint32_type>& diff,
+                                                    face_permutation_type& permutation, mpl::bool_<true> )
 {
     if ( numZeros == 0 )
     {
@@ -434,10 +437,10 @@ void Mesh3D<GEOSHAPE,T>::determineFacePermutation( uint16_type numZeros, std::ve
     }
 }
 
-template <typename GEOSHAPE, typename T>
-void Mesh3D<GEOSHAPE,T>::determineFacePermutation( uint16_type numZeros, std::vector<size_type> const& def,
-                                                 std::vector<size_type> const& cur, std::vector<uint32_type>& diff,
-                                                 face_permutation_type& permutation, mpl::bool_<false> )
+template <typename GEOSHAPE, typename T, typename IndexT>
+void Mesh3D<GEOSHAPE, T, IndexT>::determineFacePermutation( uint16_type numZeros, std::vector<size_type> const& def,
+                                                    std::vector<size_type> const& cur, std::vector<uint32_type>& diff,
+                                                    face_permutation_type& permutation, mpl::bool_<false> )
 {
     std::vector<uint32_type>::iterator _id_it = find( diff.begin(),
                                                       diff.end(),
@@ -475,8 +478,8 @@ void Mesh3D<GEOSHAPE,T>::determineFacePermutation( uint16_type numZeros, std::ve
     }
 }
 
-template <typename GEOSHAPE, typename T>
-void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionOnePermutation()
+template <typename GEOSHAPE, typename T, typename IndexT>
+void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionOnePermutation()
 {
     boost::timer ti;
     std::vector<size_type> _left( face_type::numVertices );
@@ -500,7 +503,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionOnePermutation()
 
             uint16_type right_p = face.element1().fToP( face.pos_second(), i );
             FEELPP_ASSERT( right_p >= 0 && right_p < face.element1().numLocalPoints )
-                ( right_p )( face.element1().numLocalPoints )( face.pos_second() )( i ).error( "invalid point index" );
+            ( right_p )( face.element1().numLocalPoints )( face.pos_second() )( i ).error( "invalid point index" );
             _right[i] = face.element1().point( right_p ).id();
 
             _diff[i] = _left[i] - _right[i];
@@ -534,20 +537,19 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionOnePermutation()
     DVLOG( 2 ) << "[Mesh3D::updateFaces] element/face permutation : " << ti.elapsed() << "\n";
 }
 
-
-template <typename GEOSHAPE, typename T>
-void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
+template <typename GEOSHAPE, typename T, typename IndexT>
+void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionTwo()
 {
     rank_type currentPid = this->worldComm().localRank();
 
     //typedef std::unordered_map<std::set<size_type>, edge_type*, Feel::HashTables::HasherContainers<size_type> > pointstoedge_container_type;
-    typedef std::unordered_map<std::vector<size_type>, std::tuple<edge_type*,size_type>, Feel::HashTables::HasherContainers<size_type> > pointstoedge_container_type;
+    typedef std::unordered_map<std::vector<size_type>, std::tuple<edge_type*, size_type>, Feel::HashTables::HasherContainers<size_type>> pointstoedge_container_type;
     pointstoedge_container_type _edges;
     typename pointstoedge_container_type::iterator _edgeit;
 
     size_type next_edge = 0;
     bool edgeinserted = false;
-    std::vector<size_type> lids(edge_type::numVertices);
+    std::vector<size_type> lids( edge_type::numVertices );
 
     size_type vid, i1, i2;
     const bool updateComponentAddElements = this->components().test( MESH_ADD_ELEMENTS_INFO );
@@ -562,28 +564,28 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
         edge_iterator een = this->endEdge();
         for ( ; eit != een; )
         {
-            auto & edge = eit->second;
+            auto& edge = eit->second;
             i1 = edge.point( 0 ).id();
             i2 = edge.point( 1 ).id();
             //std::set<size_type> s( {i1, i2} );
             if ( i1 < i2 )
             {
-                lids[0]=i1;
-                lids[1]=i2;
+                lids[0] = i1;
+                lids[1] = i2;
             }
             else
             {
-                lids[1]=i1;
-                lids[0]=i2;
+                lids[1] = i1;
+                lids[0] = i2;
             }
 
             boost::tie( _edgeit, edgeinserted ) = _edges.emplace( std::piecewise_construct,
-                                                                  std::forward_as_tuple(lids),
-                                                                  std::forward_as_tuple(&edge,invalid_size_type_value) );
+                                                                  std::forward_as_tuple( lids ),
+                                                                  std::forward_as_tuple( &edge, invalid_v<size_type> ) );
 
             if ( edgeinserted )
             {
-                next_edge = std::max( next_edge, edge.id()+1 );
+                next_edge = std::max( next_edge, edge.id() + 1 );
                 ++eit;
             }
             else
@@ -598,7 +600,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
 #endif
         }
     }
-    toc("[Mesh3D::updateEdges] adding edges already registered",FLAGS_v>1);
+    toc( "[Mesh3D::updateEdges] adding edges already registered", FLAGS_v > 1 );
     tic();
     edge_type edg; //(this->worldComm());
 
@@ -609,9 +611,9 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
         auto rangeBoundaryFaces = this->facesOnBoundary();
         auto ifa = std::get<0>( rangeBoundaryFaces );
         auto efa = std::get<1>( rangeBoundaryFaces );
-        for ( ; ifa!=efa; ++ifa )
+        for ( ; ifa != efa; ++ifa )
         {
-            auto & bface = boost::unwrap_ref( *ifa );
+            auto& bface = boost::unwrap_ref( *ifa );
             for ( uint16_type j = 0; j < face_type::numEdges; j++ )
             {
                 i1 = bface.point( face_type::eToP( j, 0 ) ).id();
@@ -619,18 +621,18 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                 //std::set<size_type> s( { i1,i2 } );
                 if ( i1 < i2 )
                 {
-                    lids[0]=i1;
-                    lids[1]=i2;
+                    lids[0] = i1;
+                    lids[1] = i2;
                 }
                 else
                 {
-                    lids[1]=i1;
-                    lids[0]=i2;
+                    lids[1] = i1;
+                    lids[0] = i2;
                 }
 
                 boost::tie( _edgeit, edgeinserted ) = _edges.emplace( std::piecewise_construct,
-                                                                      std::forward_as_tuple(lids),
-                                                                      std::forward_as_tuple(nullptr,invalid_size_type_value) );
+                                                                      std::forward_as_tuple( lids ),
+                                                                      std::forward_as_tuple( nullptr, invalid_v<size_type> ) );
 
                 if ( edgeinserted )
                 {
@@ -639,10 +641,10 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                     edg.setOnBoundary( true, 0 );
                     edg.setProcessId( invalid_rank_type_value );
                     for ( uint16_type k = 0; k < 2 + face_type::nbPtsPerEdge; k++ )
-                        edg.setPoint( k, const_cast< point_type &>(bface.point( face_type::eToP( j, k ) ) ) );
+                        edg.setPoint( k, const_cast<point_type&>( bface.point( face_type::eToP( j, k ) ) ) );
 
                     auto res = this->addEdge( edg );
-                    auto & edgeInserted = res.first->second;
+                    auto& edgeInserted = res.first->second;
                     std::get<0>( _edgeit->second ) = &edgeInserted;
                 }
                 else
@@ -654,26 +656,23 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
             }
         }
     }
-    toc("[Mesh3D::updateEdges] adding boundaryfaces/edges",FLAGS_v>1);
+    toc( "[Mesh3D::updateEdges] adding boundaryfaces/edges", FLAGS_v > 1 );
     tic();
     edge_permutation_type reversePermutation( edge_permutation_type::REVERSE_PERMUTATION );
 
-    std::vector<uint16_type> myeToP( edge_type::numVertices*element_type::numEdges );
+    std::vector<uint16_type> myeToP( edge_type::numVertices * element_type::numEdges );
     for ( uint16_type j = 0; j < element_type::numEdges; j++ )
     {
         for ( uint16_type f = 0; f < edge_type::numVertices; ++f )
-            myeToP[j*edge_type::numVertices+f] = element_type::eToP( j, f );
+            myeToP[j * edge_type::numVertices + f] = element_type::eToP( j, f );
     }
-    Eigen::Matrix<size_type,element_type::numVertices,1> pointIdInElt;
-
-
-
+    Eigen::Matrix<size_type, element_type::numVertices, 1> pointIdInElt;
 
     auto elt_it = this->beginOrderedElement();
     auto elt_en = this->endOrderedElement();
-    for ( ; elt_it != elt_en ; ++elt_it )
+    for ( ; elt_it != elt_en; ++elt_it )
     {
-        auto & elt = unwrap_ref( *elt_it );
+        auto& elt = unwrap_ref( *elt_it );
         rank_type eltPid = elt.processId();
         vid = elt.id();
 
@@ -686,8 +685,8 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
             //auto const& pt1 = elt.point( element_type::eToP( j, 1 ) );
             //i1 = pt0.id();
             //i2 = pt1.id();
-            i1 = pointIdInElt[ myeToP[j*edge_type::numVertices+0] ];
-            i2 = pointIdInElt[ myeToP[j*edge_type::numVertices+1] ];
+            i1 = pointIdInElt[myeToP[j * edge_type::numVertices + 0]];
+            i2 = pointIdInElt[myeToP[j * edge_type::numVertices + 1]];
             //std::set<size_type> s( {i1, i2} );
             if ( i1 < i2 )
             {
@@ -701,14 +700,14 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
             }
 
             boost::tie( _edgeit, edgeinserted ) = _edges.emplace( std::piecewise_construct,
-                                                                  std::forward_as_tuple(lids),
-                                                                  std::forward_as_tuple(nullptr,i1) );
+                                                                  std::forward_as_tuple( lids ),
+                                                                  std::forward_as_tuple( nullptr, i1 ) );
 
             if ( edgeinserted )
             {
 
                 edg.setProcessIdInPartition( currentPid );
-                edg.setProcessId( (elt.isGhostCell())? invalid_rank_type_value : eltPid );
+                edg.setProcessId( ( elt.isGhostCell() ) ? invalid_rank_type_value : eltPid );
                 edg.setId( next_edge++ );
                 edg.setOnBoundary( false );
                 // update connected element in edge
@@ -721,17 +720,16 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                 // number of points on the edge is 2 (number of
                 // vertices) plus the number of points in the
                 // interior of the edge
-                auto & pt0 = elt.point( element_type::eToP( j, 0 ) );
-                auto & pt1 = elt.point( element_type::eToP( j, 1 ) );
+                auto& pt0 = elt.point( element_type::eToP( j, 0 ) );
+                auto& pt1 = elt.point( element_type::eToP( j, 1 ) );
                 edg.setPoint( 0, pt0 );
                 edg.setPoint( 1, pt1 );
                 for ( uint16_type k = 2; k < 2 + element_type::nbPtsPerEdge; k++ )
                     edg.setPoint( k, elt.point( element_type::eToP( j, k ) ) );
 
-
                 // add edge in mesh container
                 auto res = this->addEdge( edg );
-                auto & edgeInserted = res.first->second;
+                auto& edgeInserted = res.first->second;
                 // update edge pointer in element
                 elt.setEdge( j, boost::cref( edgeInserted ) );
                 std::get<0>( _edgeit->second ) = &edgeInserted;
@@ -750,8 +748,8 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                     edgePtr->addElement( vid, j );
                 }
                 // update edge orientation in element
-                size_type & ptForPermutation = std::get<1>( _edgeit->second );
-                if ( ptForPermutation == invalid_size_type_value )
+                size_type& ptForPermutation = std::get<1>( _edgeit->second );
+                if ( ptForPermutation == invalid_v<size_type> )
                     ptForPermutation = i1;
                 else if ( ptForPermutation != i1 )
                     elt.setEdgePermutation( j, reversePermutation );
@@ -761,14 +759,14 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
 
         } // for ( uint16_type j = 0; j < element_type::numEdges; ++j )
     }
-    toc("[Mesh3D::updateEdges] adding element/edges",FLAGS_v>1);
+    toc( "[Mesh3D::updateEdges] adding element/edges", FLAGS_v > 1 );
     tic();
     // update edge pointers in faces
     face_iterator face_it = this->beginFace();
     face_iterator face_en = this->endFace();
     for ( ; face_it != face_en; ++face_it )
     {
-        auto & faceModified = face_it->second;
+        auto& faceModified = face_it->second;
         if ( !faceModified.isConnectedTo0() )
             continue;
         auto const& elt0 = faceModified.element0();
@@ -779,7 +777,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
             faceModified.setEdge( e, elt_edge );
         }
     }
-    toc("[Mesh3D::updateEdges] updating faces/edges",FLAGS_v>1);
+    toc( "[Mesh3D::updateEdges] updating faces/edges", FLAGS_v > 1 );
 #if 0
     edge_iterator e_it = this->beginEdge();
     edge_iterator e_en = this->endEdge();
@@ -800,6 +798,6 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
 #endif
 }
 
-} // Feel
+} // namespace Feel
 
 #endif /* __Mesh3D_H */

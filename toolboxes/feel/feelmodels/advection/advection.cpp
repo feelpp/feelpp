@@ -72,7 +72,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->timerTool("Constructor").start();
 
     if ( !this->modelPropertiesPtr() )
-        this->setModelProperties( std::make_shared<ModelProperties>( "", this->repository().expr(), this->worldComm() ) );
+        this->setModelProperties( std::make_shared<ModelProperties>( "", this->repository().expr(), this->worldCommPtr() ) );
 
     if( this->modelName().empty() )
     {
@@ -205,7 +205,7 @@ void
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadConfigICFile()
 {
     this->M_icValue = detail::getBCFields<nDim, is_vectorial>(
-            this->modelProperties().initialConditions(), this->prefix(), "InitialValue" );
+            this->modelProperties().initialConditionsDeprecated(), this->prefix(), "InitialValue" );
 }
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS

@@ -32,7 +32,9 @@
 
 #include <feel/feelmodels/heat/heat.hpp>
 #include <feel/feelmodels/electric/electricpropertiesdescription.hpp>
-
+#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
 
 namespace Feel
 {
@@ -75,6 +77,11 @@ public:
     typedef typename space_electricfield_type::element_type element_electricfield_type;
     typedef std::shared_ptr<element_electricfield_type> element_electricfield_ptrtype;
 
+    typedef typename space_electricfield_type::component_functionspace_type space_component_electricfield_type;
+    typedef std::shared_ptr<space_component_electricfield_type> space_component_electricfield_ptrtype;
+    typedef typename space_component_electricfield_type::element_type element_component_electricfield_type;
+    typedef std::shared_ptr<element_component_electricfield_type> element_component_electricfield_ptrtype;
+
     // mechanical properties desc
     typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_type;
     typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
@@ -90,15 +97,14 @@ public:
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
     typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
-    // context for evaluation
-    typedef typename space_electricpotential_type::Context context_electricpotential_type;
-    typedef std::shared_ptr<context_electricpotential_type> context_electricpotential_ptrtype;
-
+    // measure tools for points evaluation
+    typedef MeasurePointsEvaluation<space_electricpotential_type,space_electricfield_type> measure_points_evaluation_type;
+    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     //___________________________________________________________________________________//
     // constructor
     Electric( std::string const& prefix,
-              bool buildMesh = true,
+              std::string const& keyword = "electric",
               worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
               std::string const& subPrefix = "",
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
@@ -108,9 +114,34 @@ public:
 
 private :
     void loadParameterFromOptionsVm();
-    void createMesh();
+    void initMesh();
+    void initInitialConditions();
     void initBoundaryConditions();
-    void initPostProcess();
+    void initPostProcess() override;
+
+    constexpr auto symbolsExprField( hana::int_<2> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("electric_P",idv(this->fieldElectricPotential()) ),
+                                          symbolExpr("electric_dxP",dxv(this->fieldElectricPotential()) ),
+                                          symbolExpr("electric_dyP",dyv(this->fieldElectricPotential()) ),
+                                          symbolExpr("electric_dnP",dnv(this->fieldElectricPotential()) )
+                                          );
+        }
+    constexpr auto symbolsExprField( hana::int_<3> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("electric_P",idv(this->fieldElectricPotential()) ),
+                                          symbolExpr("electric_dxP",dxv(this->fieldElectricPotential()) ),
+                                          symbolExpr("electric_dyP",dyv(this->fieldElectricPotential()) ),
+                                          symbolExpr("electric_dzP",dzv(this->fieldElectricPotential()) ),
+                                          symbolExpr("electric_dnP",dnv(this->fieldElectricPotential()) )
+                                          );
+        }
+    //auto symbolsExprFit() const { return symbolsExprFit( this->symbolsExprField() ); }
+
+    template <typename SymbExprType>
+    auto symbolsExprFit( SymbExprType const& se ) const { return super_type::symbolsExprFit( se ); }
+
+
 public :
     void setMesh(mesh_ptrtype const& mesh) { M_mesh = mesh; }
     // update for use
@@ -121,15 +152,46 @@ public :
 
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
-    void exportFields( double time );
-    std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
-    bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
-    void exportMeasures( double time );
-    //void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
-    bool hasPostProcessFieldExported( std::string const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
+    template <typename SymbolsExpr>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr );
+    template <typename TupleFieldsType, typename SymbolsExpr>
+    void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
 
     void updateParameterValues();
-    constexpr auto symbolsExpr() const { return Feel::vf::symbolsExpr( symbolExpr("electric_P",idv(this->fieldElectricPotential()) ) ); }
+
+    auto allFields() const
+        {
+            return hana::make_tuple( std::make_pair( "electric-potential",this->fieldElectricPotentialPtr() ),
+                                     std::make_pair( "electric-field",this->fieldElectricFieldPtr() ),
+                                     std::make_pair( "electric-conductivity",M_electricProperties->fieldElectricConductivityPtr() ),
+                                     std::make_pair( "current-density",this->fieldCurrentDensityPtr() ),
+                                     std::make_pair( "joules-losses",this->fieldJoulesLossesPtr() )
+                                     );
+        }
+
+    template <typename SymbExprType>
+    /*constexpr*/auto symbolsExpr( SymbExprType const& se ) const
+        {
+            auto seFit = this->symbolsExprFit( se );
+            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( se, seFit ) );
+            return Feel::vf::symbolsExpr( se, seFit, seMat );
+        }
+    auto symbolsExpr() const { return this->symbolsExpr( this->symbolsExprField() ); }
+
+    constexpr auto symbolsExprField() const { return this->symbolsExprField( hana::int_<nDim>() ); }
+
+    template <typename SymbExprType>
+    auto symbolsExprMaterial( SymbExprType const& se ) const
+        {
+            typedef decltype(expr(scalar_field_expression<2>{},se)) _expr_type;
+            std::vector<std::pair<std::string,_expr_type>> matPropSymbs;
+            for ( auto const& [_matname, _expr] : this->electricProperties()->electricConductivityByMaterial() )
+            {
+                matPropSymbs.push_back( std::make_pair( (boost::format("electric_%1%_sigma")%_matname).str(), expr( _expr.expr(), se ) ) );
+            }
+            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbs ) );
+        }
+
     //___________________________________________________________________________________//
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
@@ -144,6 +206,8 @@ public :
     element_electricfield_type const& fieldElectricField() const { return *M_fieldElectricField; }
     element_electricfield_ptrtype const& fieldCurrentDensityPtr() const { return M_fieldCurrentDensity; }
     element_electricfield_type const& fieldCurrentDensity() const { return *M_fieldCurrentDensity; }
+    element_component_electricfield_type const& fieldJoulesLosses() const { return *M_fieldJoulesLosses; }
+    element_component_electricfield_ptrtype const& fieldJoulesLossesPtr() const { return M_fieldJoulesLosses; }
 
     electricproperties_ptrtype const& electricProperties() const { return M_electricProperties; }
 
@@ -168,15 +232,45 @@ public :
 
 
     //___________________________________________________________________________________//
-    void updateElectricField();
-    void updateCurrentDensity();
 
-    template<typename ExprT>
-    void updateCurrentDensity( Expr<ExprT> const& expr, elements_reference_wrapper_t<mesh_type> range )
+    template <typename SymbolsExpr>
+    void updateFields( SymbolsExpr const& symbolsExpr )
         {
-            M_fieldCurrentDensity->on(_range=range, _expr=expr );
+            this->electricProperties()->updateFields( symbolsExpr );
+            this->updateElectricField();
+            this->updateCurrentDensity( symbolsExpr );
+            this->updateJoulesLosses( symbolsExpr );
         }
 private :
+    void updateElectricField();
+    void updateCurrentDensity();
+    template<typename SymbolsExpr>
+    void updateCurrentDensity( SymbolsExpr const& symbolsExpr )
+        {
+            auto const& v = this->fieldElectricPotential();
+            for ( auto const& rangeData : this->electricProperties()->rangeMeshElementsByMaterial() )
+            {
+                std::string const& matName = rangeData.first;
+                auto const& range = rangeData.second;
+                auto const& electricConductivity = this->electricProperties()->electricConductivity( matName );
+                auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
+                M_fieldCurrentDensity->on(_range=range, _expr=-sigmaExpr*trans(gradv(v)) );
+            }
+        }
+    template<typename SymbolsExpr>
+    void updateJoulesLosses( SymbolsExpr const& symbolsExpr )
+        {
+            auto const& v = this->fieldElectricPotential();
+            for ( auto const& rangeData : this->electricProperties()->rangeMeshElementsByMaterial() )
+            {
+                std::string const& matName = rangeData.first;
+                auto const& range = rangeData.second;
+                auto const& electricConductivity = this->electricProperties()->electricConductivity( matName );
+                auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
+                M_fieldJoulesLosses->on(_range=range, _expr=sigmaExpr*inner(gradv(v)) );
+            }
+        }
+
     void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart ) const;
     void updateJacobianWeakBC( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const;
     void updateResidualWeakBC( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const;
@@ -192,6 +286,7 @@ private :
     space_electricfield_ptrtype M_XhElectricField;
     element_electricfield_ptrtype M_fieldElectricField;
     element_electricfield_ptrtype M_fieldCurrentDensity;
+    element_component_electricfield_ptrtype M_fieldJoulesLosses;
 
     // physical parameter
     electricproperties_ptrtype M_electricProperties;
@@ -205,15 +300,62 @@ private :
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
-    std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
 
     // post-process
     export_ptrtype M_exporter;
-    std::set<std::string> M_postProcessFieldExported;
-    std::set<std::string> M_postProcessUserFieldExported;
-
-
+    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 };
+
+
+
+template< typename ConvexType, typename BasisPotentialType>
+template <typename SymbolsExpr>
+void
+Electric<ConvexType,BasisPotentialType>::exportResults( double time, SymbolsExpr const& symbolsExpr )
+{
+    this->log("Electric","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    auto fields = this->allFields();
+    this->executePostProcessExports( M_exporter, time, fields );
+    this->executePostProcessMeasures( time, fields, symbolsExpr );
+    this->executePostProcessSave( invalid_uint32_type_value, fields );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("Electric","exportResults", "finish");
+}
+
+
+template< typename ConvexType, typename BasisPotentialType>
+template <typename TupleFieldsType,typename SymbolsExpr>
+void
+Electric<ConvexType,BasisPotentialType>::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = false;
+    bool hasMeasureNorm = this->executePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, tupleFields, symbolsExpr );
+    bool hasMeasureStatistics = this->executePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, tupleFields, symbolsExpr );
+    bool hasMeasurePoint = this->executePostProcessMeasuresPoint( M_measurePointsEvaluation, tupleFields );
+    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
+        hasMeasure = true;
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
+    }
+}
 
 } // namespace FeelModels
 } // namespace Feel

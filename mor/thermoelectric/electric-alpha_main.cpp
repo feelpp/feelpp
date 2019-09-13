@@ -27,19 +27,35 @@
 
 using namespace Feel;
 
+void writeErrors(fs::ofstream& out, std::vector<std::vector<double> > const& err)
+{
+    if( out && Environment::isMasterRank() )
+    {
+        int N = err.size();
+        int size = err[0].size();
+        out << std::setw(5) << "N";
+        for(int i = 0; i < size; ++i)
+            out << std::setw(24) << "mu_" << i;
+        out << std::endl;
+        for(int n = 0; n < N; ++n)
+        {
+            out << std::setw(5) << n+1;
+            for(int i = 0; i < size; ++i)
+                out << std::setw(25) << err[n][i];
+            out << std::endl;
+        }
+        out.close();
+    }
+}
+
 int main( int argc, char** argv)
 {
     po::options_description opt("options");
+    opt.add_options()
+        ( "alphaelectric.size", po::value<int>()->default_value(1), "size of convergence sampling" )
+        ;
     Environment env( _argc=argc, _argv=argv,
-                     _desc=opt.add(makeOptions())
-                     .add(crbOptions())
-                     .add(crbSEROptions())
-                     .add(eimOptions())
-                     .add(podOptions())
-                     .add(backend_options("backend-primal"))
-                     .add(backend_options("backend-dual"))
-                     .add(backend_options("backend-l2"))
-                     .add(bdf_options("ThermoElectricCRB")) );
+                     _desc=opt.add(Feel::AlphaElectric::makeOptions("electric")));
 
     using rb_model_type = AlphaElectric;
     using rb_model_ptrtype = std::shared_ptr<rb_model_type>;
@@ -52,51 +68,94 @@ int main( int argc, char** argv)
     using export_vector_wn_type = typename crb_type::export_vector_wn_type;
     using mesh_type = rb_model_type::mesh_type;
     using mesh_ptrtype = rb_model_type::mesh_ptrtype;
+    using sampling_type = typename crb_type::sampling_type;
+    using sampling_ptrtype = std::shared_ptr<sampling_type>;
 
     auto mesh = loadMesh( _mesh=new mesh_type,
                           _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
 
     // init
-    rb_model_ptrtype model = std::make_shared<rb_model_type>(mesh);
+    rb_model_ptrtype model = std::make_shared<rb_model_type>(mesh, "electric");
     crb_model_ptrtype crbModel = std::make_shared<crb_model_type>(model);
-    crb_ptrtype crb = crb_type::New("alphaelectric", crbModel, crb::stage::offline);
+    crb_ptrtype crb = crb_type::New(model->dbBasename(), crbModel, crb::stage::offline);
 
     // offline
     crb->offline();
 
     // online
+    sampling_ptrtype sampling( new sampling_type( crbModel->parameterSpace() ) );
+    int size = ioption("alphaelectric.size");
+    sampling->clear();
+    sampling->randomize( size, true );
+
     auto mu = model->paramFromProperties();
     int N = crb->dimension();
     int timeSteps = 1;
     std::vector<vectorN_type> uNs(timeSteps, vectorN_type(N)), uNolds(timeSteps, vectorN_type(N));
     std::vector<double> outputs(timeSteps, 0);
 
-    auto e = exporter(mesh);
+    auto Xh = model->functionSpace();
+    auto rangeV = Xh->dof()->meshSupport()->rangeElements();
+    auto VFE = Xh->element();
+    auto VRB = Xh->element();
 
-    auto VFE = model->solve(mu);
-    auto normV = normL2( elements(model->mesh()), idv(VFE) );
-    boost::format fmter("%1% %|14t|%2% %|28t|%3%\n");
-    fs::ofstream file( "cvg.dat" );
-    if( file && Environment::isMasterRank() )
+    std::vector<std::vector<double> > errs(N, std::vector<double>(size));
+    std::vector<std::vector<double> > errsRel(N, std::vector<double>(size));
+    Feel::cout << "start convergence study with " << size << " parameters" << std::endl;
+    int i = 0;
+    for( auto const& mu : *sampling )
     {
-        file << fmter % "N" % "errV" % "relErrV";
-        Feel::cout << fmter % "N" % "errV" % "relErrV";
+        VFE = model->solve(mu);
+        auto normV = normL2( rangeV, idv(VFE) );
+        for(int n = 0; n < N; ++n)
+        {
+            crb->fixedPointPrimal(n+1, mu, uNs, uNolds, outputs);
+            vectorN_type uN = uNs[0];
+            VRB = crb->expansion( uN, n+1 );
+            errs[n][i] = normL2( rangeV, idv(VRB)-idv(VFE) );
+            errsRel[n][i] = errs[n][i]/normV;
+        }
+        ++i;
     }
-    for(int n = 1; n <= N; ++n)
+
+    std::vector<double> min(N), max(N), mean(N), stdev(N);
+    for(int n = 0; n < N; ++n)
     {
-        crb->fixedPointPrimal(n, mu, uNs, uNolds, outputs);
-        vectorN_type uN = uNs[0];
-        auto VRB = crb->expansion( uN, n );
-        auto errVRB = normL2( elements(model->mesh()), idv(VRB)-idv(VFE) );
-        auto errRel = errVRB/normV;
-        if( Environment::isMasterRank() )
-            file << fmter % n % errVRB % errRel;
-        Feel::cout << fmter % n % errVRB % errRel;
-        e->step(n)->add("VFE", VFE);
-        e->step(n)->add("VRB", VRB);
-        e->save();
+        min[n] = *std::min_element(errsRel[n].begin(), errsRel[n].end());
+        max[n] = *std::max_element(errsRel[n].begin(), errsRel[n].end());
+        double s = std::accumulate(errsRel[n].begin(), errsRel[n].end(), 0.0);
+        mean[n] = s/size;
+        double accum = std::accumulate(errsRel[n].begin(), errsRel[n].end(), 0.0,
+                                       [s,size](double a, double b) {
+                                           return a + (b-s/size)*(b-s/size);
+                                       });
+        stdev[n] = accum/size;
     }
-    file.close();
+
+    fs::ofstream cvgErr( "err.dat" );
+    fs::ofstream cvgErrR( "errR.dat" );
+    fs::ofstream cvgStat( "stat.dat" );
+    writeErrors(cvgErr, errs);
+    writeErrors(cvgErrR, errsRel);
+    if( cvgStat && Environment::isMasterRank() )
+    {
+        cvgStat << std::setw(5) << "N" << std::setw(25) << "min" << std::setw(25) << "max"
+                << std::setw(25) << "mean" << std::setw(25) << "stdev" << std::endl;
+        for(int n = 0; n < N; ++n)
+            cvgStat << std::setw(5) << n+1 << std::setw(25) << min[n] << std::setw(25) << max[n]
+                    << std::setw(25) << mean[n] << std::setw(25) << stdev[n] << std::endl;
+        cvgStat.close();
+    }
+    Feel::cout << std::setw(5) << "N" << std::setw(25) << "min" << std::setw(25) << "max"
+               << std::setw(25) << "mean" << std::setw(25) << "stdev" << std::endl;
+    for(int n = 0; n < N; ++n)
+        Feel::cout << std::setw(5) << n+1 << std::setw(25) << min[n] << std::setw(25) << max[n]
+                   << std::setw(25) << mean[n] << std::setw(25) << stdev[n] << std::endl;
+
+    auto e = exporter(mesh);
+    e->add("VFE", VFE);
+    e->add("VRB", VRB);
+    e->save();
 
     return 0;
 }

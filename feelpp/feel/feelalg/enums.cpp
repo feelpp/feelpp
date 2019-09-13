@@ -179,6 +179,21 @@ snesTypeConvertEnumToStr( SolverNonLinearType type )
     else                                                  return std::string("newtonls");
 }
 
+SolverNonLinearLineSearchType
+snesLineSearchTypeConvertStrToEnum( std::string const& type )
+{
+    /**/ if ( type == "bt" ) return SolverNonLinearLineSearchType::BT;
+    else if ( type == "nleqerr" ) return SolverNonLinearLineSearchType::NLEQERR;
+    else if ( type == "basic" ) return SolverNonLinearLineSearchType::BASIC;
+    else if ( type == "l2" ) return SolverNonLinearLineSearchType::L2;
+    else if ( type == "cp" ) return SolverNonLinearLineSearchType::CP;
+    else
+    {
+        LOG(WARNING) << "line search type " << type << " is unknown, switch to bt";
+        return SolverNonLinearLineSearchType::BT;
+    }
+}
+
 MatSolverPackageType
 matSolverPackageConvertStrToEnum( std::string const& type )
 {

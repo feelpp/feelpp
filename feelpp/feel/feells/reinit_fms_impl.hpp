@@ -122,7 +122,7 @@ createPeriodicCorrespondanceTable()
     for ( auto it = rg1.template get<1>(), en = rg1.template get<2>(); it!=en; ++it)
         for (size_type k=0; k<M_functionspace->dof()->nLocalDofOnFace() ; ++k)
             {
-                const size_type index = boost::get<0>( M_functionspace->dof()->localToGlobal( boost::unwrap_ref( *it ), k, 0 ) );
+                const size_type index = M_functionspace->dof()->localToGlobal( boost::unwrap_ref( *it ), k, 0 ).index();
                 const size_type idOnCluster = processorToCluster(index);
                 const node_type coordPointPlusTrans = get<0>( M_functionspace->dof()->dofPoint( index ) ) + M_translation;
 
@@ -165,7 +165,7 @@ createPeriodicCorrespondanceTable()
     for (auto it = rg2.template get<1>(), en=rg2.template get<2>(); it!=en; ++it)
         for (size_type k=0; k<M_functionspace->dof()->nLocalDofOnFace() ; ++k)
             {
-                const size_type indexTag2 = boost::get<0>( M_functionspace->dof()->localToGlobal( boost::unwrap_ref( *it ), k, 0 ) );
+                const size_type indexTag2 = M_functionspace->dof()->localToGlobal( boost::unwrap_ref( *it ), k, 0 ).index();
                 if ( ! dofTag2Done.count( indexTag2 ) )
                     {
                         const size_type globalIndexTag2 = processorToCluster( indexTag2 );
@@ -477,14 +477,14 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 
         if (M_periodicity.isPeriodic())
             {
-                size_type idOnClusterPeriodicPoint = invalid_size_type_value;
+                size_type idOnClusterPeriodicPoint = invalid_v<size_type>;
                 // look from tag1 to tag 2
                 if (M_idTag1_idTag2.left.count( newIdOnCluster ) )
                     idOnClusterPeriodicPoint = M_idTag1_idTag2.left.at( newIdOnCluster );
                 else if (M_idTag1_idTag2.right.count( newIdOnCluster ) )
                     idOnClusterPeriodicPoint = M_idTag1_idTag2.right.at( newIdOnCluster );
 
-                if ( idOnClusterPeriodicPoint != invalid_size_type_value )
+                if ( idOnClusterPeriodicPoint != invalid_v<size_type> )
                     {
                         if ( M_functionspace->dof()->dofGlobalClusterIsOnProc( idOnClusterPeriodicPoint ) )
                             newIdsOnProc.push_back( clusterToProcessor(idOnClusterPeriodicPoint) );

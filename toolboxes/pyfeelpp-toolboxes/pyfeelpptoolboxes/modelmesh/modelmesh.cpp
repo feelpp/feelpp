@@ -47,18 +47,17 @@ void defToolbox(py::module &m)
 
     std::string pyclass_name = std::string("MeshALE_") + std::to_string(convex_t::nDim) + std::string("DP") + std::to_string(convex_t::nOrder);
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelBase>(m,pyclass_name.c_str())
-        .def(py::init<mesh_ptr_t,std::string const&,worldcomm_ptr_t const&, bool, ModelBaseRepository const&>(),
+        .def(py::init<mesh_ptr_t,std::string const&,worldcomm_ptr_t const&, ModelBaseRepository const&>(),
              py::arg("mesh"),
              py::arg("prefix") = "",
              py::arg("worldComm")=Environment::worldCommPtr(),
-             py::arg("moveGhostEltFromExtendedStencil")=false,
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize the meshALE mechanics toolbox"
              )
         .def("init",&toolbox_t::init, "initialize the meshALE  toolbox")
 
         // mesh
-        .def( "addBoundaryFlags", &toolbox_t::addBoundaryFlags, py::arg("boundary"), py::arg("marker"), "add the boundary flags" )
+        .def( "addBoundaryFlags", (void (toolbox_t::*)(std::string const&,std::string const&)) &toolbox_t::addBoundaryFlags, py::arg("boundary"), py::arg("marker"), "add the boundary flags" )
         .def( "referenceMesh", &toolbox_t::referenceMesh, "get the reference mesh" )
         .def( "movingMesh", &toolbox_t::movingMesh, "get the moving mesh" )
         .def( "isOnReferenceMesh", &toolbox_t::isOnReferenceMesh, "return true if on reference mesh, false otherwise" )
@@ -75,11 +74,11 @@ void defToolbox(py::module &m)
         .def( "displacementOnMovingBoundaryInRef", &toolbox_t::displacementOnMovingBoundaryInRef, "returns the displacement on moving boundary in reference domain" )
         .def( "displacementInRef", &toolbox_t::displacementInRef, "returns the displacement in reference domain" )
         .def( "displacement", &toolbox_t::displacement, "returns the displacement field" )
-        .def( "velocity", static_cast<ale_map_element_ptr_t  (toolbox_t::*)()>(&toolbox_t::velocity), "returns the velocity field" )
+        .def( "velocity", &toolbox_t::velocity, "returns the velocity field" )
 
         .def( "revertReferenceMesh", &toolbox_t::revertReferenceMesh, py::arg("updateMeshMeasures") = true, "revert mesh in reference state" )
         .def( "revertMovingMesh", &toolbox_t::revertMovingMesh, py::arg("updateMeshMeasures") = true, "revert mesh in reference state" )
-        .def( "updateBdf", &toolbox_t::updateBdf, "update BDF" )
+        .def( "updateTimeStep", &toolbox_t::updateTimeStep, "update time step" )
         .def( "exportResults", &toolbox_t::exportResults, py::arg("time")=0., "export results" );
 }
 

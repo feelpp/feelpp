@@ -34,10 +34,10 @@ namespace Feel
 namespace vf
 {
 template<typename PrintExprT>
-class PrintExpr
+class PrintExpr: public ExprDynamicBase
 {
 public:
-
+    using super = ExprDynamicBase;
     static const size_type context = PrintExprT::context;
     static const bool is_terminal = false;
 
@@ -77,6 +77,7 @@ public:
     explicit PrintExpr( expression_type const & __expr,
                         std::string const & __tag )
         :
+        super( Feel::vf::dynamicContext( __expr ) ),
         M_expr( __expr ),
         M_tag( __tag )
     {}

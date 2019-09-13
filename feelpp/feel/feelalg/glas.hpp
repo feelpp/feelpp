@@ -215,16 +215,39 @@ using allocator_matrix_t = Eigen::aligned_allocator<std::pair<const Key, eigen_m
 template<typename Key, int N, int P, typename T = double>
 using unordered_map_eigen_matrix_type = std::unordered_map<Key,eigen_matrix_type<N,P,T>,boost::hash<Key>, std::equal_to<Key>, allocator_matrix_t<Key,N,P,T>>;
 
+template<int M,int N,typename value_type=double>
+using tensor2_fixed_size_t = Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,N>>;
+
+template<int M,int N, int P,typename value_type=double>
+using tensor3_fixed_size_t = Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,N,P>>;
+
+template<int M,int N,typename value_type=double>
+using vector_tensor2_fixed_size_t = std::vector<tensor2_fixed_size_t<M,N,value_type>>;
+
+template<int M,int N, int P,typename value_type=double>
+using vector_tensor3_fixed_size_t = std::vector<tensor3_fixed_size_t<M,N,P,value_type>>;
 //!
 //! Tensor Maps
 //!
 template<int M,int N,typename value_type=double>
 using tensor_map_fixed_size_matrix_t = Eigen::TensorMap<Eigen::TensorFixedSize<const value_type,Eigen::Sizes<M,N>>>;
 
+template<int N, typename value_type=double>
+using tensor_map_t = Eigen::TensorMap<Eigen::Tensor<const value_type,N>>;
+
+template<typename value_type=double>
+using tensor2_map_t = Eigen::TensorMap<Eigen::Tensor<const value_type,2>>;
+
+template<typename value_type=double>
+using tensor1_map_t = Eigen::TensorMap<Eigen::Tensor<const value_type,1>>;
+
+
+
 template<int M,int N,typename value_type=double>
 using em_fixed_size_matrix_t = Eigen::Map<Eigen::Matrix<value_type,M,N>>;
 template<int M,int N,typename value_type=double>
 using em_fixed_size_cmatrix_t = Eigen::Map<const Eigen::Matrix<value_type,M,N>>;
+
 
 //!
 //! dimension array for Eigen::Tensor

@@ -30,7 +30,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
     bool BuildNonCstPart = !BuildCstPart;
 
     double timeSteppingScaling = 1.;
-    if ( !this->isStationary() )
+    if ( !this->isStationaryModel() )
         timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
     //--------------------------------------------------------------------------------------------------//
 
@@ -263,27 +263,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                     integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "nitsche",name(d) ) ),
                                _expr= -timeSteppingScaling*this->dirichletBCnitscheGamma()*inner( expression(d,this->symbolsExpr()),id(v) )/hFace(),
                                _geomap=this->geomap() );
-
-
-#if 0// defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" )
-            {
-                // compute integrate range (intersection with nitsche and moving marker)
-                std::list<std::string> movingBCmarkers;
-                for ( std::string const& marker : this->markersNameMovingBoundary() )
-                {
-                    auto it = std::find_if( this->markerDirichletBCnitsche().begin(), this->markerDirichletBCnitsche().end(),
-                                            [&marker]( std::string const& m ) { return m == marker; } );
-                    if ( it != this->markerDirichletBCnitsche().end() )
-                        movingBCmarkers.push_back( marker );
-                }
-                if ( !movingBCmarkers.empty() )
-                    linearForm_PatternCoupled +=
-                        integrate( _range=markedfaces(mesh,movingBCmarkers),
-                                   _expr= - this->dirichletBCnitscheGamma()*inner( idv(this->meshVelocity2()),id(v) )/hFace(),
-                                   _geomap=this->geomap() );
-            }
-#endif
         }
     }
 
@@ -321,17 +300,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                                //_range=markedelements(this->meshDirichletLM(),PhysicalName),
                                _expr= -inner( expression(d,this->symbolsExpr()),id(lambdaBC) ),
                                _geomap=this->geomap() );
-
-
-#if 0// defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" )
-            {
-                form1( _test=this->XhDirichletLM(),_vector=R,
-                       _rowstart=rowStartInVector+startBlockIndexDirichletLM ) +=
-                    integrate( _range=markedfaces(mesh,this->markersNameMovingBoundary() ),
-                               _expr= -inner( idv(this->meshVelocity2()),id(lambdaBC) ) );
-            }
-#endif
         }
 
     }
