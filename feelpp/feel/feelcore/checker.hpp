@@ -172,13 +172,13 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
     cout << "================================================================================\n"
          << "[Checker] " << this->journalWatcherInstanceName() << "\n";
     auto err = fn( M_solution );
-    std::vector<bool> checkSucces;
+    std::vector<bool> checkSuccess;
     pt::ptree pt;
     for( auto const& e : err )
     {
         pt.put( e.first, e.second );
         //cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;
-        checkSucces.push_back( false );
+        
         //cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;
         try
         {
@@ -196,7 +196,7 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
                 cout << tc::green << "[convergence order verification success]" << metric << e.first <<  "=" << e.second << tc::reset << std::endl;
                 break;
             }
-            return 1;
+            checkSuccess.push_back( true );
         }
         catch( CheckerConvergenceFailed const& ex )
         {
@@ -206,6 +206,7 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
                  << " Computed order " << ex.computedOrder() << std::endl
                  << " Expected order " << ex.expectedOrder() << std::endl
                  << " Tolerance " << ex.tolerance()  << tc::reset << std::endl;
+            checkSuccess.push_back( false );
         }
         catch( CheckerExactFailed const& ex )
         {
@@ -214,15 +215,17 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
                  << " Solution " << M_solution << std::endl	
                  << " Computed error " << ex.computedError() << std::endl
                  << " Tolerance " << ex.tolerance()  << tc::reset << std::endl;
+            checkSuccess.push_back( false );
         }
         catch( std::exception const& ex )
         {
             cout << tc::red << "Checker Caught exception " << ex.what() << tc::reset << std::endl
                  << " Solution " << M_solution << std::endl;
+            checkSuccess.push_back( false );
         }
     }
     this->putInformationObject( pt );
-    return ( std::find(checkSucces.begin(),checkSucces.end(), false ) == checkSucces.end() );
+    return ( std::find(checkSuccess.begin(),checkSuccess.end(), false ) == checkSuccess.end() );
 }
 
 //!

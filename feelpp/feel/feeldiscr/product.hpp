@@ -63,7 +63,8 @@ public:
     ProductSpace( int n, mesh_ptrtype m  )
         :
         super( 1, underlying_functionspace_type::New( m ) ),
-        M_nspaces(n)
+        M_nspaces(n),
+        M_props( M_nspaces, "Ibc" )        
         {
 
         }
@@ -74,7 +75,8 @@ public:
     ProductSpace( std::vector<mesh_ptrtype> const& m )
         :
         super( m.size() ),
-        M_nspaces(m.size())
+        M_nspaces(m.size()),
+        M_props( M_nspaces, "Ibc" )
         {
             std::transform( this->begin(), this->end(), m.begin(),
                             [] ( auto const& e ) { return underlying_functionspace_type::New(e); } );
@@ -87,7 +89,8 @@ public:
     ProductSpace( std::vector<underlying_functionspace_ptrtype> const& m )
         :
         super( m.begin(), m.end() ),
-        M_nspaces(m.size())
+        M_nspaces(m.size()),
+        M_props( M_nspaces, "Ibc" )
     {
     }
 
@@ -97,7 +100,8 @@ public:
     ProductSpace( int n, underlying_functionspace_ptrtype X )
         :
         super( 1, X ),
-        M_nspaces(n)
+        M_nspaces(n),
+        M_props( M_nspaces, "Ibc" )
         {
 
         }
@@ -134,6 +138,17 @@ public:
     underlying_functionspace_ptrtype& operator[]( int i ) { return same_mesh?this->front():this->at(i); }
     underlying_functionspace_ptrtype const& operator[]( int i ) const { return same_mesh?this->front():this->at(i); }
 
+    void setProperties( std::initializer_list<std::string> s )
+        {
+            M_props = s;
+        }
+    void setProperties( std::vector<std::string> const& s )
+        {
+            M_props = s;
+        }
+    bool isIbcSpace( int i ) const { return M_props[i] == "Ibc"; }
+    bool hasIbcSpace() const { auto f = std::find( M_props.begin(), M_props.end(), "Ibc"); return f != std::end(M_props); } 
+    bool hasOtherThanIbcSpace() const { auto f = std::find_if( M_props.begin(), M_props.end(), []( std::string const& s ) { return s!="Ibc"; } ); return f != std::end( M_props ); }
     class Element : public BlocksBaseVector<double>, FunctionSpaceBase::ElementBase
     {
     public:
@@ -173,6 +188,7 @@ public:
     Element element() { Element u( *this ); return u; }
     std::shared_ptr<Element> elementPtr() { return std::make_shared<Element>( *this ); }
     size_type M_nspaces;
+    std::vector<std::string> M_props;
 };
 
 template<typename SpaceT, bool same_mesh = true>

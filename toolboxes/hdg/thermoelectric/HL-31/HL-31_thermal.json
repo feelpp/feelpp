@@ -1,0 +1,394 @@
+{
+    "Name": "HL-31 ",
+    "ShortName":"HL-31",
+    "Model":"hdg",
+    "Materials":
+    {
+        "H1_Cu":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":52.4e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "H2_Cu":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53.3e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "H3_Cu":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":52.6e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "H4_Cu":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":52.8e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "H5_Cu":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53.1e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "H6_Cu":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "H7_Cu":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":55.6e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "H8_Cu":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":55.6e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "H9_Cu":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":56.1e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "H10_Cu":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":55e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "H11_Cu":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":55e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "H12_Cu":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":50.1e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "H13_Cu":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":46.5e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "H14_Cu":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":55.4e6
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "R1":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "R2":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "R3":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "R4":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "R5":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "R6":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "R7":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "R8":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "R9":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "R10":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "R11":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "R12":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "R13":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "iL1":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        },
+        "oL2":
+        {
+            "T0":293,
+            "alpha":3.4e-3,
+            "Lorentz":2.47e-8,
+            "sigma0":53e6,
+            "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T",
+            "sigma":"sigma0/(1+alpha*(T-T0))+0*T:sigma0:alpha:T0:T"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "Robin":
+            {
+                "Channel0": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Channel1": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Channel2": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Channel3": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Channel4": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Channel5": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Channel6": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Channel7": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Channel8": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Channel9": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Channel10": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Channel11": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Channel12": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Channel13": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Channel14": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Inner1_R0n": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "Inner1_R1n": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "OuterL2_R0n": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "OuterL2_R1n": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                },
+                "OuterL2_CooledSurfaces": {
+                    "expr1":"80000",
+                    "expr2":"295"
+                }
+            },
+            "Neumann":
+            {
+                "H10_Interface": { "expr":"0" },
+                "H11_Interface": { "expr":"0" },
+                "H12_Interface": { "expr":"0" },
+                "H13_Interface": { "expr":"0" },
+                "H14_Interface": { "expr":"0" },
+                "H1_Interface": { "expr":"0" },
+                "H2_Interface": { "expr":"0" },
+                "H3_Interface": { "expr":"0" },
+                "H4_Interface": { "expr":"0" },
+                "H5_Interface": { "expr":"0" },
+                "H6_Interface": { "expr":"0" },
+                "H7_Interface": { "expr":"0" },
+                "H8_Interface": { "expr":"0" },
+                "H9_Interface": { "expr":"0" },
+                "Inner1_FixingHoles": { "expr":"0" },
+                "Inner1_LV0": { "expr":"0" },
+                "OuterL2_LV0": { "expr":"0" },
+                "OuterL2_Others": { "expr":"0" },
+                "R10_HP": { "expr":"0" },
+                "R11_BP": { "expr":"0" },
+                "R12_HP": { "expr":"0" },
+                "R13_BP": { "expr":"0" },
+                "R1_BP": { "expr":"0" },
+                "R2_HP": { "expr":"0" },
+                "R2_R0n": { "expr":"0" },
+                "R3_BP": { "expr":"0" },
+                "R4_HP": { "expr":"0" },
+                "R5_BP": { "expr":"0" },
+                "R6_HP": { "expr":"0" },
+                "R7_BP": { "expr":"0" },
+                "R8_HP": { "expr":"0" },
+                "R9_BP": { "expr":"0" }
+            }
+        }
+    }
+}
+

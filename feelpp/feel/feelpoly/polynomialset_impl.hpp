@@ -287,14 +287,14 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
             {
                 //M_hessian[i][q] = B.contract( __pc->hessian(i,q).contract(B,dims1), dims2);
 
-                if ( Geo_t::nOrder > 1 || !convex_type::is_simplex )
+                if constexpr ( Geo_t::nOrder > 1 || !convex_type::is_simplex )
                 {
                     // gmc hessian NxPxP
                     // pc hessian PxP
                     // grad N
                     // B NxP
                     // hessian: N x N
-                    std::cout << "Grad=" << M_grad[i][q].chip(0,0).chip(0,1) << "\n";
+                    //std::cout << "Grad=" << M_grad[i][q].chip(0,0).chip(0,1) << "\n";
                     tensor2_fixed_size_t<PDim,PDim,value_type> H0 = thegmc->hessian(q).contract( M_grad[i][q].chip(0,0).chip(0,1), dimsh );
                     //std::cout << "H0=" << H0 << std::endl;
                     tensor2_fixed_size_t<PDim,PDim,value_type> H00 = __pc->hessian(i,q).chip(0,2);
@@ -572,19 +572,17 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
         for ( uint16_type i = 0; i < I; ++i )
             for ( uint16_type q = 0; q < Q; ++q )
             {
+                M_normal_component[i][q].setZero();
                 tensor_map_fixed_size_matrix_t<gmc_type::NDim,1,value_type> N ( thegmc->unitNormal( q ).data(), gmc_type::NDim,1 );
-                auto &r = M_normal_component[i][q](0,0);
-                r= 0;
-                auto* p = M_phi[i][q].data();
-                auto* n = N.data();
-                for( int c = 0; c < ndim; ++c )
-                    r += *(p+c)*(*(n+c));
+                for( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
+                    for( int c = 0; c < gmc_type::NDim; ++c )
+                        M_normal_component[i][q]( c1,0 ) +=  M_phi[i][q]( c1, c ) * N( c );
             }
     }
     if ( vm::has_trace_v<context>)
     {
         const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
-        const uint16_type I = M_normal_component.shape()[0];
+        const uint16_type I = M_trace.shape()[0];
         Eigen::array<dimpair_t, 1> dims = {{dimpair_t(0, 1)}};
         Eigen::Tensor<value_type, 0> res;
         for ( uint16_type i = 0; i < I; ++i )
