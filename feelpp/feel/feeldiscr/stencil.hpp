@@ -1810,7 +1810,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
 
     graph_ptrtype sparsity_graph( new graph_type( _M_X1->dof(),_M_X2->dof() ) );
 
-
+    tic();
     Feel::Context graph( hints );
     CHECK( graph.test( Pattern::HDG ) ) << "Invalid graph pattern, must be set to HDG";
 
@@ -1914,7 +1914,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
             DVLOG(2) << "[Stencil::computeGraphHDG] work with row " << ig1 << " " << row << std::endl;
         } // test dof loop
     } // element iterator loop
-
+    toc("sc.condense.graph",FLAGS_v>0);
     return sparsity_graph;
 }
 
