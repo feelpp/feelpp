@@ -34,7 +34,7 @@ namespace Feel
 
 /**
  * \brief Description of a mesh support.
- * A function space can use this object for built a space in a part of the mesh
+ * allows to build a function space on a range of elements
  */
 template<typename MeshType>
 class MeshSupport : public MeshSupportBase
@@ -56,7 +56,8 @@ public :
         M_isFullSupport( true ),
         M_hasUpdatedParallelData( false ),
         M_hasUpdatedBoundaryInternalFaces( false )
-        {}
+        {
+        }
 
     MeshSupport( mesh_ptrtype const& mesh, range_elements_type const& rangeElements )
         :
@@ -68,6 +69,8 @@ public :
         {
             for (auto const& eltWrap : M_rangeElements )
                 M_rangeMeshElementsIdsPartialSupport.insert( unwrap_ref(eltWrap).id() );
+
+            
         }
 
     ~MeshSupport() = default;
@@ -76,49 +79,30 @@ public :
     bool isPartialSupport() const override { return !M_isFullSupport; }
 
     range_elements_type const& rangeElements() const { return M_rangeElements; }
-    range_faces_type const& rangeInterProcessFaces() const { return M_rangeInterProcessFaces; }
-    range_faces_type const& rangeBoundaryFaces() const { return M_rangeBoundaryFaces; }
-    range_faces_type const& rangeInternalFaces() const { return M_rangeInternalFaces; }
+    range_faces_type const& rangeInterProcessFaces() const { this->updateParallelData(); return M_rangeInterProcessFaces; }
+    range_faces_type const& rangeBoundaryFaces() const { this->updateBoundaryInternalFaces();return M_rangeBoundaryFaces; }
+    range_faces_type const& rangeInternalFaces() const { this->updateBoundaryInternalFaces();return M_rangeInternalFaces; }
 
-    range_elements_type rangeElements( EntityProcessType entity ) const
+    range_elements_type rangeElements( EntityProcessType entity ) const;
+    //!
+    //! return the set of faces of marker type marker_t with marker flag 
+    //!
+    range_faces_type rangeMarkedFaces( uint16_type marker_t, boost::any flag );
+
+    //!
+    //! @return true if some markers in \p l are present in the mesh data structure, false otherwise
+    //!
+    bool hasAnyMarker( std::initializer_list<std::string> l )
         {
             if ( M_isFullSupport )
-                return elements(M_mesh,entity );
-
-            if ( entity == EntityProcessType::LOCAL_ONLY )
-                return M_rangeElements;
-
-            typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myExtendedElements( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
-
-            if ( entity == EntityProcessType::ALL )
+                return M_mesh->hasAnyMarker( l );
+            for (auto n : l )
             {
-                for ( auto const& eltWrap : M_rangeElements )
-                    myExtendedElements->push_back( eltWrap );
+                if ( nelements(rangeMarkedFaces(1,n), true ) )
+                    return true;
             }
-
-            if ( ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) ) && ( M_mesh->worldComm().localSize() > 1 ) )
-            {
-                CHECK( M_hasUpdatedParallelData ) << "parallel data must be updated";
-
-                std::unordered_set<size_type> eltGhostDone;
-                for ( auto const& faceWrap : M_rangeInterProcessFaces )
-                {
-                    auto const& faceip = boost::unwrap_ref( faceWrap );//*face_it );
-                    auto const& elt0 = faceip.element0();
-                    auto const& elt1 = faceip.element1();
-                    const bool elt0isGhost = elt0.isGhostCell();
-                    auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
-                    auto const& eltOnProc = (elt0isGhost)?elt1:elt0;
-                    if ( eltGhostDone.find( eltOffProc.id() ) != eltGhostDone.end() )
-                        continue;
-                    myExtendedElements->push_back( boost::cref( eltOffProc ) );
-                    eltGhostDone.insert( eltOffProc.id() );
-                }
-            }
-            range_elements_type rangeExtendedElements = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), myExtendedElements->begin(),myExtendedElements->end(),myExtendedElements );
-            return rangeExtendedElements;
+            return false;
         }
-
     size_type numElements() const override
         {
             if ( M_isFullSupport )
@@ -172,7 +156,7 @@ public :
     std::unordered_set<size_type> const& rangeMeshElementsIdsPartialSupport() const override { return M_rangeMeshElementsIdsPartialSupport; }
     std::unordered_set<size_type> const& rangeMeshElementsGhostIdsPartialSupport() const override { return M_rangeMeshElementsGhostIdsPartialSupport; }
 
-    void updateParallelData()
+    void updateParallelData() const
         {
             if ( M_hasUpdatedParallelData )
                 return;
@@ -184,7 +168,7 @@ public :
 
             M_hasUpdatedParallelData = true;
         }
-    void updateBoundaryInternalFaces()
+    void updateBoundaryInternalFaces() const
         {
             if ( M_hasUpdatedBoundaryInternalFaces )
                 return;
@@ -197,11 +181,11 @@ public :
             M_hasUpdatedBoundaryInternalFaces = true;
         }
 private :
-    void updateParallelDataFullSupport()
+    void updateParallelDataFullSupport() const
         {
             M_rangeInterProcessFaces = interprocessfaces(M_mesh);
         }
-    void updateParallelDataPartialSupport()
+    void updateParallelDataPartialSupport() const
         {
             typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype myipfaces( new typename MeshTraits<mesh_type>::faces_reference_wrapper_type );
             if ( M_mesh->worldComm().localSize() == 1 )
@@ -278,12 +262,12 @@ private :
             M_rangeInterProcessFaces = boost::make_tuple( mpl::size_t<MESH_FACES>(), myipfaces->begin(),myipfaces->end(),myipfaces );
         }
 
-    void updateBoundaryInternalFacesFullSupport()
+    void updateBoundaryInternalFacesFullSupport() const
         {
             M_rangeBoundaryFaces = boundaryfaces(M_mesh);
             M_rangeInternalFaces = internalfaces(M_mesh);
         }
-    void updateBoundaryInternalFacesPartialSupport()
+    void updateBoundaryInternalFacesPartialSupport() const
         {
             this->updateParallelData();
 
@@ -363,17 +347,124 @@ private :
 private :
     mesh_ptrtype M_mesh;
     range_elements_type M_rangeElements;
-    range_faces_type M_rangeInterProcessFaces;
-    range_faces_type M_rangeBoundaryFaces;
-    range_faces_type M_rangeInternalFaces;
-    std::unordered_set<size_type> M_rangeMeshElementsIdsPartialSupport;
-    std::unordered_set<size_type> M_rangeMeshElementsGhostIdsPartialSupport;
+    mutable range_faces_type M_rangeInterProcessFaces;
+    mutable range_faces_type M_rangeBoundaryFaces;
+    mutable range_faces_type M_rangeInternalFaces;
+    mutable std::unordered_set<size_type> M_rangeMeshElementsIdsPartialSupport;
+    mutable std::unordered_set<size_type> M_rangeMeshElementsGhostIdsPartialSupport;
 
     bool M_isFullSupport;
-    bool M_hasUpdatedParallelData;
-    bool M_hasUpdatedBoundaryInternalFaces;
+    mutable bool M_hasUpdatedParallelData;
+    mutable bool M_hasUpdatedBoundaryInternalFaces;
 
 };
+
+template <typename MeshType>
+typename MeshSupport<MeshType>::range_elements_type
+MeshSupport<MeshType>::rangeElements( EntityProcessType entity ) const
+{
+    if ( M_isFullSupport )
+        return elements( M_mesh, entity );
+
+    if ( entity == EntityProcessType::LOCAL_ONLY )
+        return M_rangeElements;
+
+    typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myExtendedElements( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
+
+    if ( entity == EntityProcessType::ALL )
+    {
+        for ( auto const& eltWrap : M_rangeElements )
+            myExtendedElements->push_back( eltWrap );
+    }
+
+    if ( ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) ) && ( M_mesh->worldComm().localSize() > 1 ) )
+    {
+        CHECK( M_hasUpdatedParallelData ) << "parallel data must be updated";
+
+        std::unordered_set<size_type> eltGhostDone;
+        for ( auto const& faceWrap : M_rangeInterProcessFaces )
+        {
+            auto const& faceip = boost::unwrap_ref( faceWrap ); //*face_it );
+            auto const& elt0 = faceip.element0();
+            auto const& elt1 = faceip.element1();
+            const bool elt0isGhost = elt0.isGhostCell();
+            auto const& eltOffProc = ( elt0isGhost ) ? elt0 : elt1;
+            auto const& eltOnProc = ( elt0isGhost ) ? elt1 : elt0;
+            if ( eltGhostDone.find( eltOffProc.id() ) != eltGhostDone.end() )
+                continue;
+            myExtendedElements->push_back( boost::cref( eltOffProc ) );
+            eltGhostDone.insert( eltOffProc.id() );
+        }
+    }
+    range_elements_type rangeExtendedElements = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), myExtendedElements->begin(), myExtendedElements->end(), myExtendedElements );
+    return rangeExtendedElements;
+}
+
+template<typename MeshType>
+typename MeshSupport<MeshType>::range_faces_type 
+MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
+{
+    std::set<flag_type> markerFlagSet = Feel::unwrap_ptr( M_mesh ).markersId( flag );
+    flag_type m = *markerFlagSet.begin();
+    if ( M_isFullSupport )
+    {
+        return markedfacesByType( M_mesh, marker_t, flag );
+    }
+        
+    typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype myfaces( new typename MeshTraits<mesh_type>::faces_reference_wrapper_type );
+    auto insertMarkedFace = [&myfaces, &marker_t,&markerFlagSet]( auto const& eltWrap)
+                             {
+                                 auto const& face = unwrap_ref( eltWrap );
+                                 if ( !face.hasMarker( marker_t ) )
+                                     return false;
+                                 if ( face.marker( marker_t ).isOff() )
+                                     return false;
+                                 if ( markerFlagSet.find( face.marker( marker_t ).value() ) == markerFlagSet.end() )
+                                     return false;
+        
+                                 myfaces->push_back( boost::cref( face ) );
+                                 return true;
+                             };
+    for ( auto const& eltWrap : this->rangeBoundaryFaces() )
+    {
+        insertMarkedFace( eltWrap );
+    }
+    for ( auto const& eltWrap : this->rangeInternalFaces() )
+    {
+        insertMarkedFace( eltWrap );
+    }
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(),myfaces->begin(),myfaces->end(),myfaces );
+}
+
+template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
+using support_mesh_t = typename unwrap_ptr_t<MeshSupportType>::mesh_type;
+
+template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
+elements_reference_wrapper_t<support_mesh_t<MeshSupportType>> 
+elements( MeshSupportType const& imesh )
+{
+    return imesh->rangeElements();
+}
+template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
+faces_reference_wrapper_t<support_mesh_t<MeshSupportType>> const&
+boundaryfaces( MeshSupportType const& imesh )
+{
+    return imesh->rangeBoundaryFaces();
+}
+template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
+faces_reference_wrapper_t<support_mesh_t<MeshSupportType>> const&
+internalfaces( MeshSupportType const& imesh )
+{
+    return imesh->rangeInternalFaces();
+}
+
+
+template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
+faces_reference_wrapper_t<support_mesh_t<MeshSupportType>> 
+markedfaces( MeshSupportType const& imesh, boost::any flag )
+{
+    return imesh->rangeMarkedFaces( 1, flag );
+}
 
 } // namespace Feel
 

@@ -16,9 +16,30 @@
 
 * use C++17 language features, {uri-issue}/1282[#1282]
 
+=== Features
+
+* Static condensation for HDG with IBC and ODE {uri-issue}/1297[#1297]
+* Add helper function for mesh support and associated mesh filters {uri-issue}/1344[#1344]
+* Support transpose for bilinear forms {uri-issue}/1343[#1343]
+* Support mass matrix with exact integration {uri-issue}/1342[#1342]
+* Implement min max function in parser {uri-issue}/1341[#1341]
+* Balancing load for IBC {uri-issue}/1340[#1340]
+* Support View in CreateSubmesh {uri-issue}/1328[#1328]
+* use submesh view in the fluid and fsi toolboxes: simplify the management when the mesh moving is applied
+* `createSubmesh` use now boost parameters arguments
+* `on(..)` keyword for nodal projection take another arg close which allows to sync the values at interprocess
+* Provide neighbor dofs of a dof {uri-issue}/1326[#1326]
+
+
+
+
 === Fixes
 
 * [**feelpp**] refactoring of OperatorLagrangeP1 see {uri-pull}/1331[#1331]
+* [**feelpp**] fixes {uri-pull}/1335[#1335]
+* [**feelpp**] fixes {uri-pull}/1071[#1071]
+* [**feelpp**] reduce memory footprint in mesh {uri-issue}/1317[#1317] : measures are only stored for elements entity, other sub-entities compute measure on the fly.
+
 
 [[v0.106.0-2019-02-05]]
 == v0.106.0

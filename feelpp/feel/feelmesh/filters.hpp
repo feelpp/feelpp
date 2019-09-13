@@ -40,6 +40,7 @@
 #endif
 
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelmesh/meshbase.hpp>
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/iterator.hpp>
 #include <feel/feelmesh/detail/filters.hpp>
@@ -240,9 +241,9 @@ struct marked3elements
  * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements with pid \p flag
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 allelements_t<MeshType>
-allelements( MeshType const& mesh )
+allelements( MeshType const& mesh   )
 {
     return Feel::detail::allelements( mesh );
 }
@@ -252,7 +253,7 @@ allelements( MeshType const& mesh )
  * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements with pid \p flag
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,decay_type<std::remove_pointer_t<MeshType>>>,int> = 0>
 elements_pid_t<MeshType>
 elements( MeshType const& mesh )
 {
@@ -265,7 +266,7 @@ elements( MeshType const& mesh )
  * \return a pair of iterators to iterate over elements with pid \p flag and
  *  verified expr > 0 for all nodes of the element
  */
-template<typename MeshType,typename ExprType>
+template<typename MeshType,typename ExprType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0  >
 elements_pid_t<MeshType>
 elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
 {
@@ -539,7 +540,7 @@ markedfacesByType( MeshType const& mesh, uint16_type markerType,
  *
  * @return a pair of iterators (begin,end) for the set of marked faces
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 markedfaces_t<MeshType>
 markedfaces( MeshType const& mesh )
 {
@@ -557,26 +558,26 @@ markedfaces( MeshType const& mesh )
  *
  * @return a pair of iterators (begin,end) for the set of marked faces
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 markedfaces_t<MeshType>
 markedfaces( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedfacesByType( mesh, 1, markersFlag );
 }
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 markedfaces_t<MeshType>
 markedfaces( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
     return markedfacesByType( mesh, 1, markersFlag );
 }
 
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked2faces_t<MeshType>
 marked2faces( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedfacesByType( mesh, 2, markersFlag );
 }
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked2faces_t<MeshType>
 marked2faces( MeshType const& mesh,
               std::initializer_list<boost::any> const& markersFlag )
@@ -584,13 +585,13 @@ marked2faces( MeshType const& mesh,
     return markedfacesByType( mesh, 2, markersFlag );
 }
 
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked3faces_t<MeshType>
 marked3faces( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedfacesByType( mesh, 3, markersFlag );
 }
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked3faces_t<MeshType>
 marked3faces( MeshType const& mesh,
               std::initializer_list<boost::any> markersFlag )
@@ -604,7 +605,7 @@ marked3faces( MeshType const& mesh,
  * \return a pair of iterators to iterate over all boundary faces of the
  * mesh
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 boundaryfaces_t<MeshType>
 boundaryfaces( MeshType const& mesh  )
 {
@@ -618,7 +619,7 @@ boundaryfaces( MeshType const& mesh  )
  * \return a pair of iterators to iterate over all internal faces of the
  * mesh belong to process domain \p __pid
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 internalfaces_t<MeshType>
 internalfaces( MeshType const& mesh )
 {
@@ -631,7 +632,7 @@ internalfaces( MeshType const& mesh )
  * \return a pair of iterators to iterate over all interprocess faces of the
  * mesh belonging to process \p __pid
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 interprocessfaces_t<MeshType>
 interprocessfaces( MeshType const& mesh )
 {
@@ -645,7 +646,7 @@ interprocessfaces( MeshType const& mesh )
  * \return a pair of iterators to iterate over all interprocess faces of the
  * mesh belonging to process \p __pid
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 interprocessfaces_t<MeshType>
 interprocessfaces( MeshType const& mesh, rank_type neighbor_pid )
 {
@@ -664,7 +665,7 @@ interprocessfaces( MeshType const& mesh, rank_type neighbor_pid )
  *
  * @return a pair of edge iterators (begin,end)
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 pid_edges_t<MeshType>
 edges( MeshType const& mesh )
 {
@@ -684,7 +685,7 @@ edges( MeshType const& mesh )
  *
  * @return a pair of iterators (begin,end) for the set of marked edges
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 markededges_t<MeshType>
 markededgesByType( MeshType const& mesh, uint16_type markerType,
                    typename std::enable_if<is_3d<MeshType>::value>::type* = nullptr )
@@ -739,20 +740,20 @@ markededgesByType( MeshType const& mesh, uint16_type markerType,
     return markedfacesByType( mesh,markerType,markersFlag );
 }
 
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 decltype(auto) //markededges_t<MeshType>
 markededges( MeshType const& mesh )
 {
     return markededgesByType( mesh, 1 );
 }
 
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 decltype(auto) //markededges_t<MeshType>
 markededges( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markededgesByType( mesh, 1, markersFlag );
 }
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 decltype(auto) //markededges_t<MeshType>
 markededges( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
@@ -1081,7 +1082,6 @@ elements( MeshType const& imesh, EntityProcessType entity )
                               myelts );
 }
 
-
 template<typename MeshType>
 ext_elements_t<MeshType>
 boundaryelements( MeshType const& imesh, EntityProcessType entity )
@@ -1321,6 +1321,7 @@ faces( MeshType const& imesh, EntityProcessType entity )
 }
 
 template<typename MeshType>
+//std::enable_if_t<std::is_base_of_v<MeshBase,unwrap_ptr_t<MeshType>>,ext_faces_t<MeshType>>
 ext_faces_t<MeshType>
 boundaryfaces( MeshType const& imesh, EntityProcessType entity )
 {
@@ -1362,6 +1363,7 @@ boundaryfaces( MeshType const& imesh, EntityProcessType entity )
                               myelts );
 
 }
+
 
 template<typename MeshType>
 ext_faces_t<MeshType>
