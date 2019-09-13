@@ -299,7 +299,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->timerTool("Constructor").start();
 
     auto const& exportsFields = this->modelProperties().postProcess().exports( this->keyword() ).fields();
-    M_postProcessFieldExportedHeatt = M_heatModel->postProcessFieldExported( exportsFields, M_heatModel->keyword() );
+    M_postProcessFieldExportedHeatt = M_heatModel->postProcessExportsFields( exportsFields, M_heatModel->keyword() );
     M_postProcessFieldExportedFluid = M_fluidModel->postProcessFieldExported( exportsFields, M_fluidModel->keyword() );
 
     if ( !M_postProcessFieldExportedHeatt.empty() || !M_postProcessFieldExportedFluid.empty() )
@@ -433,7 +433,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
     if ( M_exporter && M_exporter->doExport() )
     {
-        bool hasFieldToExportHeat = M_heatModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeatt,time );
+        bool hasFieldToExportHeat = M_heatModel->updatePostProcessExports( M_exporter,M_postProcessFieldExportedHeatt,time, M_heatModel->allFields() );
         bool hasFieldToExportFluid = M_fluidModel->updateExportedFields( M_exporter,M_postProcessFieldExportedFluid,time );
         if ( hasFieldToExportHeat || hasFieldToExportFluid )
         {

@@ -113,7 +113,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
         M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
 
-    M_fieldTemperature.reset( new element_temperature_type(M_Xh,"U"));
+    M_fieldTemperature.reset( new element_temperature_type(M_Xh,"temperature"));
 
     if ( this->fieldVelocityConvectionIsUsed() )
         this->updateForUseFunctionSpacesVelocityConvection();
@@ -181,6 +181,7 @@ HEAT_CLASS_TEMPLATE_TYPE::nLocalDof() const
     return res;
 }
 
+
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
@@ -197,24 +198,11 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     this->initBoundaryConditions();
 
-    // load an initial solution from a math expr
-    auto initialSolution = this->modelProperties().initialConditions().getScalarFields( "temperature", "" );
-    for( auto const& d : initialSolution )
-    {
-        auto theExpr = expression( d,this->symbolsExpr() );
-        auto rangeElt = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
-        this->fieldTemperaturePtr()->on(_range=rangeElt,_expr=theExpr,_geomap=this->geomap());
-    }
-    if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
-    {
-        auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
-                            "",this->worldComm(),this->repository().expr() );
-        this->fieldTemperaturePtr()->on(_range=M_rangeMeshElements,_expr=myexpr);
-    }
-
     // start or restart time step scheme
     if ( !this->isStationary() )
         this->initTimeStep();
+
+    this->initInitialConditions();
 
     // stabilization gls
     if ( M_stabilizationGLS )
@@ -226,6 +214,9 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // post-process
     this->initPostProcess();
+
+    // update fields
+    this->updateFields( this->symbolsExpr() );
 
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldCommPtr() );
@@ -303,24 +294,28 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
-std::set<std::string>
-HEAT_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
+void
+HEAT_CLASS_TEMPLATE_TYPE::initInitialConditions()
 {
-    std::set<std::string> res;
-    for ( auto const& o : ifields )
+    if ( !this->doRestart() )
     {
-        if ( o == prefixvm(prefix,"temperature") || o == prefixvm(prefix,"all") )
-            res.insert( "temperature" );
-        if ( o == prefixvm(prefix,"velocity-convection") || o == prefixvm(prefix,"all") )
-            res.insert( "velocity-convection" );
-        if ( o == prefixvm(prefix,"thermal-conductivity") || o == prefixvm(prefix,"all") )
-            res.insert( "thermal-conductivity" );
-        if ( o == prefixvm(prefix,"density") || o == prefixvm(prefix,"all") )
-            res.insert( "density" );
-        if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
-            res.insert( "pid" );
+        std::vector<element_temperature_ptrtype> icTemperatureFields;
+        if ( this->isStationary() )
+            icTemperatureFields = { this->fieldTemperaturePtr() };
+        else
+            icTemperatureFields = M_bdfTemperature->unknowns();
+        this->updateInitialConditions( "temperature", M_rangeMeshElements, this->symbolsExpr(), icTemperatureFields );
+
+        if ( !this->isStationary() )
+            *this->fieldTemperaturePtr() = M_bdfTemperature->unknown(0);
+
+        if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
+        {
+            auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
+                                "",this->worldComm(),this->repository().expr() );
+            this->fieldTemperaturePtr()->on(_range=M_rangeMeshElements,_expr=myexpr);
+        }
     }
-    return res;
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -330,9 +325,11 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("Heat","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
+    this->setPostProcessExportsAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density","pid"} );
+    this->setPostProcessSaveAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density"} );
+    super_type::initPostProcess();
 
-    if ( !M_postProcessFieldExported.empty() )
+    if ( !this->postProcessExportsFields().empty() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),
@@ -628,6 +625,8 @@ HEAT_CLASS_TEMPLATE_TYPE::solve()
 
     M_blockVectorSolution.localize();
 
+    this->updateFields( this->symbolsExpr() );
+
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
     {
@@ -649,65 +648,9 @@ HEAT_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::exportFields( double time )
+HEAT_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
 {
-    bool hasFieldToExport = this->updateExportedFields( M_exporter, M_postProcessFieldExported, time );
-    if ( hasFieldToExport )
-    {
-        M_exporter->save();
-        this->upload( M_exporter->path() );
-    }
-}
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-bool
-HEAT_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time )
-{
-    if ( !exporter ) return false;
-    if ( !exporter->doExport() ) return false;
-
-    bool hasFieldToExport = false;
-    if ( fields.find( "temperature" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
-                                     this->fieldTemperature() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "pid" ) != fields.end() )
-    {
-        exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
-        hasFieldToExport = true;
-    }
-
-    if ( fields.find( "velocity-convection" ) != fields.end() && this->fieldVelocityConvectionIsOperational() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-convection")),
-                                     this->fieldVelocityConvection() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "thermal-conductivity" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"thermal-conductivity"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"thermal-conductivity")),
-                                     this->thermalProperties()->fieldThermalConductivity() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "density" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"density"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"density")),
-                                     this->thermalProperties()->fieldRho() );
-        hasFieldToExport = true;
-    }
-    return hasFieldToExport;
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
-{
-    this->exportMeasures( time, this->symbolsExpr() );
+    this->executePostProcessMeasures( time, this->allFields(), this->symbolsExpr() );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -721,7 +664,7 @@ HEAT_CLASS_TEMPLATE_TYPE::startTimeStep()
 
     // start time step
     if (!this->doRestart())
-        M_bdfTemperature->start(this->fieldTemperature());
+        M_bdfTemperature->start( M_bdfTemperature->unknowns() );
      // up current time
     this->updateTime( M_bdfTemperature->time() );
 

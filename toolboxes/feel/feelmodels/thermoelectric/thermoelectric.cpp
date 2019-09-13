@@ -239,6 +239,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // post-process
     this->initPostProcess();
 
+    // update fields
+    M_heatModel->updateFields( this->symbolsExpr() );
+    M_electricModel->updateFields( this->symbolsExpr() );
+
     // backend
     M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
 
@@ -293,8 +297,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->timerTool("Constructor").start();
 
     auto const& exportsFields = this->modelProperties().postProcess().exports( this->keyword() ).fields();
-    M_postProcessFieldExportedHeat = M_heatModel->postProcessFieldExported( exportsFields, M_heatModel->keyword() );
-    M_postProcessFieldExportedElectric = M_electricModel->postProcessFieldExported( exportsFields, M_electricModel->keyword() );
+    M_postProcessFieldExportedHeat = M_heatModel->postProcessExportsFields( exportsFields, M_heatModel->keyword() );
+    M_postProcessFieldExportedElectric = M_electricModel->postProcessExportsFields( exportsFields, M_electricModel->keyword() );
 
     if ( !M_postProcessFieldExportedHeat.empty() || !M_postProcessFieldExportedElectric.empty() )
     {
@@ -336,18 +340,21 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
     p.put_child( "Numerical Solver", subPt );
 
     // Exporter
-    subPt.clear();
-    subPt.put( "type",M_exporter->type() );
-    subPt.put( "freq save",M_exporter->freq() );
-    pt::ptree subPt2;
-    for ( std::string const& fieldName : M_postProcessFieldExportedHeat )
-        subPt2.push_back( std::make_pair("", pt::ptree( fieldName ) ) );
-    subPt.put_child( "fields [heat]", subPt2 );
-    subPt2.clear();
-    for ( std::string const& fieldName : M_postProcessFieldExportedElectric )
-        subPt2.push_back( std::make_pair("", pt::ptree( fieldName ) ) );
-    subPt.put_child( "fields [electric]", subPt2 );
-    p.put_child( "Exporter", subPt );
+    if ( M_exporter )
+    {
+        subPt.clear();
+        subPt.put( "type",M_exporter->type() );
+        subPt.put( "freq save",M_exporter->freq() );
+        pt::ptree subPt2;
+        for ( std::string const& fieldName : M_postProcessFieldExportedHeat )
+            subPt2.push_back( std::make_pair("", pt::ptree( fieldName ) ) );
+        subPt.put_child( "fields [heat]", subPt2 );
+        subPt2.clear();
+        for ( std::string const& fieldName : M_postProcessFieldExportedElectric )
+            subPt2.push_back( std::make_pair("", pt::ptree( fieldName ) ) );
+        subPt.put_child( "fields [electric]", subPt2 );
+        p.put_child( "Exporter", subPt );
+    }
 
     // Algebraic Solver
     if ( M_algebraicFactoryMonolithic )
@@ -422,8 +429,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
     if ( M_exporter && M_exporter->doExport() )
     {
-        bool hasFieldToExportHeat = M_heatModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeat,time );
-        bool hasFieldToExportElectric = M_electricModel->updateExportedFields( M_exporter,M_postProcessFieldExportedElectric,time );
+        bool hasFieldToExportHeat = M_heatModel->updatePostProcessExports( M_exporter, M_postProcessFieldExportedHeat, time, M_heatModel->allFields() );
+        bool hasFieldToExportElectric = M_electricModel->updatePostProcessExports( M_exporter, M_postProcessFieldExportedElectric, time, M_electricModel->allFields() );
         if ( hasFieldToExportHeat || hasFieldToExportElectric )
         {
             M_exporter->save();
@@ -431,11 +438,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
         }
     }
 
-    auto symbolExprField = Feel::vf::symbolsExpr( M_heatModel->symbolsExprField(), M_electricModel->symbolsExprField() );
-    auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
-    auto symbolExprMaterial = Feel::vf::symbolsExpr( M_heatModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ),
-                                                     M_electricModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
-    auto symbolExpr = Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
+    auto symbolExpr = this->symbolsExpr();
     M_heatModel->exportResults( time, symbolExpr );
     M_electricModel->exportResults( time, symbolExpr );
 
@@ -488,10 +491,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
         M_blockVectorSolutionMonolithic.updateVectorFromSubVectors();
         M_algebraicFactoryMonolithic->solve( "Newton", M_blockVectorSolutionMonolithic.vectorMonolithic() );
         M_blockVectorSolutionMonolithic.localize();
-
-        M_electricModel->updateElectricField();
-        this->updateCurrentDensity();
     }
+
+    M_heatModel->updateFields( this->symbolsExpr() );
+    M_electricModel->updateFields( this->symbolsExpr() );
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
@@ -826,43 +829,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResi
 {
     M_heatModel->updateResidualDofElimination( data );
     M_electricModel->updateResidualDofElimination( data );
-}
-
-THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void  
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateCurrentDensity()
-{
-    auto const& v = M_electricModel->fieldElectricPotential();
-    auto const& t = M_heatModel->fieldTemperature();
-
-    for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
-    {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
-        if ( electricConductivity.isConstant() )
-        {
-            double sigma = electricConductivity.value();
-            auto cd = -sigma*trans(gradv(v));
-            M_electricModel->updateCurrentDensity( cd, range );
-        }
-        else
-        {
-            auto sigma = electricConductivity.expr();
-            std::string symbolStr = "heat_T";
-            if ( sigma.expression().hasSymbol( symbolStr ) )
-            {
-                auto sigma = electricConductivity.expr( symbolStr, idv(t) );
-                auto cd = -sigma*trans(gradv(v));
-                M_electricModel->updateCurrentDensity( cd, range );
-            }
-            else
-            {
-                auto cd = -sigma*trans(gradv(v));
-                M_electricModel->updateCurrentDensity( cd, range );
-            }
-        }
-    }
 }
 
 } // end namespace FeelModels
