@@ -919,7 +919,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
 {
-    auto const& initialConditions = this->modelProperties().initialConditions();
+    auto const& initialConditions = this->modelProperties().initialConditionsDeprecated();
 
     this->M_icDirichlet = initialConditions.getScalarFields( std::string(this->prefix()), "Dirichlet" );
     

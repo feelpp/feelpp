@@ -4090,13 +4090,14 @@ public:
             //super::init( M_functionspace->nDof(),  M_functionspace->nLocalDof() );
         }
 
-        BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+        BOOST_PARAMETER_CONST_MEMBER_FUNCTION( ( void ),
                                          save,
                                          tag,
                                          ( required
                                            ( path,* ) )
                                          ( optional
-                                           ( type,( std::string ),std::string( "binary" ) )
+                                           ( name,( std::string ), M_name )
+                                           ( type,( std::string ),std::string( "default" ) )
                                            ( suffix,( std::string ),std::string( "" ) )
                                            ( sep,( std::string ),std::string( "" ) )
                                          ) )
@@ -4104,7 +4105,7 @@ public:
 #if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
 #endif
-            saveImpl( path, type, suffix, sep );
+            saveImpl( Environment::expand( path ), name, type, suffix, sep );
         }
 
         //!
@@ -4114,8 +4115,24 @@ public:
         //! @param suffix filename suffix to use
         //! @param sep separator to use in filenames
         //!
-        void saveImpl( std::string const& path, std::string const& type = "binary", std::string const& suffix = "", std::string const & sep = "")
+        void saveImpl( std::string const& path, std::string const& name, std::string const& type = "binary", std::string const& suffix = "", std::string const & sep = "") const
         {
+            std::string typeUsed = type;
+            if ( typeUsed == "default" )
+            {
+#ifdef FEELPP_HAS_HDF5
+                typeUsed = "hdf5";
+#else
+                typeUsed = "binary";
+#endif
+            }
+
+            if ( typeUsed != "binary" && typeUsed != "text" && typeUsed != "xml" &&  typeUsed != "hdf5" )
+            {
+                LOG(WARNING)  << "[save] : invalid format " << typeUsed << " (type available : binary,text,xml,hdf5)";
+                return;
+            }
+
             // if directory does not exist, create it only by one process
             if ( this->worldComm().isMasterRank() && !fs::exists( fs::path( path ) ) )
             {
@@ -4124,39 +4141,42 @@ public:
             // wait creating directory
             this->worldComm().barrier();
 
-            std::ostringstream os1;
-            os1 << M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
-            fs::path p = fs::path( path ) / os1.str();
-            LOG(INFO) << "saving "  << p << "\n";
-
-            if ( type == "binary" )
+            if ( typeUsed == "binary" || typeUsed == "text" || typeUsed == "xml" )
             {
-                fs::ofstream ofs( p );
-                boost::archive::binary_oarchive oa( ofs );
-                oa << *this;
-            }
+                std::ostringstream os1;
+                os1 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+                fs::path p = fs::path( path ) / os1.str();
+                LOG(INFO) << "saving "  << p << "\n";
 
-            else if ( type == "text" )
-            {
-                fs::ofstream ofs( p );
-                boost::archive::text_oarchive oa( ofs );
-                oa << *this;
-            }
+                if ( typeUsed == "binary" )
+                {
+                    fs::ofstream ofs( p );
+                    boost::archive::binary_oarchive oa( ofs );
+                    oa << *this;
+                }
 
-            else if ( type == "xml" )
-            {
-                //boost::archive::xml_oarchive oa(ofs);
-                //oa << *this;
+                else if ( typeUsed == "text" )
+                {
+                    fs::ofstream ofs( p );
+                    boost::archive::text_oarchive oa( ofs );
+                    oa << *this;
+                }
+
+                else if ( typeUsed == "xml" )
+                {
+                    //boost::archive::xml_oarchive oa(ofs);
+                    //oa << *this;
+                }
             }
-            else if ( type == "hdf5" )
+            else if ( typeUsed == "hdf5" )
             {
                 std::ostringstream os2;
-                os2 << M_name << sep << suffix << ".h5";
+                os2 << name << sep << suffix << ".h5";
                 fs::path filename = fs::path( path ) / os2.str();
 #ifdef FEELPP_HAS_HDF5
                 this->saveHDF5( filename.string() );
 #else
-                CHECK( false ) << "hdf5 not detected";
+                CHECK( false ) << "Feel++ is not compiled with hdf5";
 #endif
             }
         }
@@ -4167,7 +4187,8 @@ public:
             ( required
               ( path,* ) )
             ( optional
-              ( type,( std::string ),std::string( "binary" ) )
+              ( name,( std::string ), M_name )
+              ( type,( std::string ),std::string( "default" ) )
               ( suffix,( std::string ),std::string( "" ) )
               ( sep,( std::string ),std::string( "" ) )
             )
@@ -4176,7 +4197,7 @@ public:
 #if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
 #endif
-            return loadImpl( path, type, suffix, sep );
+            return loadImpl( Environment::expand( path ), name, type, suffix, sep );
         }
         //!
         //! load function space element from file
@@ -4185,82 +4206,94 @@ public:
         //! @param suffix filename suffix to use
         //! @param sep separator to use in filename
         //!
-        bool loadImpl( std::string const& path, std::string const& type = "binary", std::string const& suffix = "", std::string const& sep = "" )
+        bool loadImpl( std::string const& path, std::string const& name, std::string const& type = "binary", std::string const& suffix = "", std::string const& sep = "" )
         {
-            fs::path partial_path = fs::path(path);
-            fs::path full_path_dir_sol(fs::current_path());
-            full_path_dir_sol = full_path_dir_sol/partial_path;
-
-            std::ostringstream os1;
-            std::ostringstream os2;
-            std::ostringstream os3;
+            std::ostringstream oss;
             fs::path p;
 
-            if ( type == "hdf5" )
+            if ( !fs::exists( path ) )
             {
-                os3 << M_name << sep << suffix << ".h5";
-                p = fs::path( path ) / os3.str();
+                LOG(WARNING) << "[load] : directory or file " << p << " not exists";
+                return false;
+            }
+
+            std::string typeUsed = type;
+            if ( typeUsed == "default" )
+            {
+#ifdef FEELPP_HAS_HDF5
+                typeUsed = "hdf5";
+#else
+                typeUsed = "binary";
+#endif
+            }
+
+            if ( fs::is_directory(path) )
+            {
+                if ( typeUsed == "hdf5" )
+                    oss << name << sep << suffix << ".h5";
+                else
+                    oss << name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+                p = fs::path(path)/oss.str();
+
                 if ( !fs::exists( p ) )
                 {
-                    LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os3.str() << " DO NOT EXIST" << std::endl ;
-                    //std::cerr << "ATTENTION :  p does not exist
+                    LOG(WARNING) << "[load] : file " << p << " not exists";
+                    return 0;
+                }
+                if ( !fs::is_regular_file( p ) )
+                {
+                    LOG(WARNING) << "[load] : file " << p << " is not a  regular_file";
                     return 0;
                 }
             }
+            else if ( fs::is_regular_file( path ) )
+            {
+                p = path;
+            }
             else
             {
-                os1 << M_name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
-                p = fs::path( path ) / os1.str();
-                //std::cout << " In load the first full path is " << p << std::endl;
-                if ( !fs::exists( p ) )
-                {
-                    os2 << M_name << sep << suffix<< "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank();
-                    p = fs::path( path ) / os2.str();
-
-                    if ( !fs::exists( p ) )
-                    {
-                        LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os1.str() << " OR " << os2.str() << " DO NOT EXIST" << std::endl ;
-                        //std::cerr << "ATTENTION :  p does not exist
-                        return 0;
-                    }
-                }
-            }
-            LOG(INFO) << p << " exists, is is a regular file : " << fs::is_regular_file( p ) << "\n";
-            if ( !fs::is_regular_file( p ) )
-            {
-                LOG(WARNING) << "[load] : " << full_path_dir_sol << p << " is not a  regular_file !" << std::endl;
+                LOG(WARNING) << "[load] : file " << path << " is not a directory or a regular_file";
                 return 0;
             }
 
-            fs::ifstream ifs( p );
 
-            if ( type == "binary" )
+            if ( typeUsed == "binary" || typeUsed == "text" || typeUsed == "xml" )
             {
-                boost::archive::binary_iarchive ia( ifs );
-                ia >> *this;
-            }
+                fs::ifstream ifs( p );
+                if ( typeUsed == "binary" )
+                {
+                    boost::archive::binary_iarchive ia( ifs );
+                    ia >> *this;
+                }
 
-            else if ( type == "text" )
-            {
-                boost::archive::text_iarchive ia( ifs );
-                ia >> *this;
+                else if ( typeUsed == "text" )
+                {
+                    boost::archive::text_iarchive ia( ifs );
+                    ia >> *this;
+                }
+                else if ( typeUsed == "xml" )
+                {
+                    //boost::archive::xml_iarchive ia(ifs);
+                    //ia >> *this;
+                    return false;
+                }
             }
-
-            else if ( type == "xml" )
-            {
-                //boost::archive::xml_iarchive ia(ifs);
-                //ia >> *this;
-                return false;
-            }
-            else if ( type == "hdf5" )
+            else if ( typeUsed == "hdf5" )
             {
 #ifdef FEELPP_HAS_HDF5
                 this->loadHDF5( p.string() );
 #else
-                CHECK( false ) << "hdf5 not detected";
+                CHECK( false ) << "Feel++ is not compiled with hdf5";
 #endif
             }
+            else
+            {
+                LOG(WARNING)  << "[load] : invalid format " << typeUsed << " (type available : binary,text,xml,hdf5)";
+                return false;
+            }
+
             return true;
+
         }
 
         void printMatlab( std::string fname, bool gmsh = false ) const

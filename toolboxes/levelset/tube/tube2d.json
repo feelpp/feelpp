@@ -6,7 +6,7 @@
         "equations":"Levelset"
     },
 
-    "InitialConditions":
+    "InitialConditionsDeprecated":
     {
         "levelset":
         {

@@ -147,11 +147,17 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
     M_fieldElectricField.reset( new element_electricfield_type(M_XhElectricField,"E"));
     M_fieldCurrentDensity.reset( new element_electricfield_type(M_XhElectricField,"j"));
+    M_fieldJoulesLosses.reset( new element_component_electricfield_type(M_XhElectricField->compSpace(),"joules-losses"));
 
     this->initBoundaryConditions();
 
+    this->initInitialConditions();
+
     // post-process
     this->initPostProcess();
+
+    // update fields
+    this->updateFields( this->symbolsExpr() );
 
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
@@ -178,6 +184,19 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
     this->log("Electric","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
+}
+
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+ELECTRIC_CLASS_TEMPLATE_TYPE::initInitialConditions()
+{
+    if ( !this->doRestart() )
+    {
+        std::vector<element_electricpotential_ptrtype> icElectricPotentialFields;
+        CHECK( this->isStationary() ) << "TODO";
+        icElectricPotentialFields = { this->fieldElectricPotentialPtr() };
+        this->updateInitialConditions( "electric-potential", M_rangeMeshElements, this->symbolsExpr(), icElectricPotentialFields );
+    }
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -228,37 +247,17 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-std::set<std::string>
-ELECTRIC_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
-{
-    std::set<std::string> res;
-    for ( auto const& o : ifields )
-    {
-        if ( o == prefixvm(prefix,"electric-potential") || o == prefixvm(prefix,"all") )
-            res.insert( "electric-potential" );
-        if ( o == prefixvm(prefix,"electric-field") || o == prefixvm(prefix,"all") )
-            res.insert( "electric-field" );
-        if ( o == prefixvm(prefix,"conductivity") || o == prefixvm(prefix,"all") )
-            res.insert( "conductivity" );
-        if ( o == prefixvm(prefix,"current-density") || o == prefixvm(prefix,"all") )
-            res.insert( "current-density" );
-        if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
-            res.insert( "pid" );
-    }
-    return res;
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     this->log("Electric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    M_postProcessFieldExported.clear();
-    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
+    this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses","pid"} );
+    this->setPostProcessSaveAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses"} );
+    super_type::initPostProcess();
 
-    if ( !M_postProcessFieldExported.empty() )
+    if ( !this->postProcessExportsFields().empty() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),
@@ -408,68 +407,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::exportFields( double time )
-{
-    bool hasFieldToExport = this->updateExportedFields( M_exporter, M_postProcessFieldExported, time );
-    if ( hasFieldToExport )
-    {
-        M_exporter->save();
-        this->upload( M_exporter->path() );
-    }
-}
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-bool
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time )
-{
-    if ( !exporter ) return false;
-    if ( !exporter->doExport() ) return false;
-
-    bool hasFieldToExport = false;
-    if ( fields.find( "electric-potential" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"electric-potential"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-potential")),
-                                     this->fieldElectricPotential() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "electric-field" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"electric-fields"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-fields")),
-                                     *M_fieldElectricField );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "conductivity" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"conductivity"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"conductivity")),
-                                     M_electricProperties->fieldElectricConductivity() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "current-density" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"current-density"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"current-density")),
-                                     *M_fieldCurrentDensity );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "pid" ) != fields.end() )
-    {
-        exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
-        hasFieldToExport = true;
-    }
-    return hasFieldToExport;
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
-{
-    this->exportMeasures( time, this->symbolsExpr() );
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
 {
     std::string M_computeElectricFieldProjType = "nodal";
@@ -481,34 +418,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
     else
         CHECK( false ) << "invalid M_computeElectricFieldProjType " << M_computeElectricFieldProjType << "\n";
 }
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateCurrentDensity()
-{
-    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
-    {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
-        if ( electricConductivity.isConstant() )
-        {
-            double sigma = electricConductivity.value();
-            auto cd = -sigma*trans(gradv( this->fieldElectricPotential() ));
-            this->updateCurrentDensity( cd, range );
-        }
-        else
-        {
-            auto sigma = electricConductivity.expr();
-            if ( sigma.expression().hasSymbol( "heat_T" ) )
-                continue;
-            auto cd = -sigma*trans(gradv( this->fieldElectricPotential() ));
-            this->updateCurrentDensity( cd, range );
-        }
-    }
-}
-
-
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -540,8 +449,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
     M_blockVectorSolution.localize();
 
-    this->updateElectricField();
-    this->updateCurrentDensity();
+    this->updateFields( this->symbolsExpr() );
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )

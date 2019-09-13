@@ -83,7 +83,7 @@ public:
 private :
     void loadParameterFromOptionsVm();
     void initMesh();
-    void initPostProcess();
+    void initPostProcess() override;
 public :
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
@@ -120,6 +120,14 @@ public :
     void startTimeStep() { this->heatModel()->startTimeStep(); }
     void updateTimeStep() {  this->heatModel()->updateTimeStep(); }
 
+    auto symbolsExpr() const
+        {
+            auto symbolExprField = Feel::vf::symbolsExpr( M_heatModel->symbolsExprField(), M_electricModel->symbolsExprField() );
+            auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
+            auto symbolExprMaterial = Feel::vf::symbolsExpr( M_heatModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ),
+                                                             M_electricModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
+            return Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
+        }
     //___________________________________________________________________________________//
     // apply assembly and solver
     void solve();
@@ -139,7 +147,6 @@ public :
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
     //___________________________________________________________________________________//
-    void updateCurrentDensity();
 
     bool checkResults() const override
         {

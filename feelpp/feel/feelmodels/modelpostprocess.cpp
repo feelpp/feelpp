@@ -41,18 +41,49 @@ std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
 void
 ModelPostprocessExports::setup( pt::ptree const& p )
 {
-    auto fields = p.get_child_optional("fields");
-    if ( fields )
+    if ( auto fields = p.get_child_optional("fields") )
     {
-        for ( std::string const& fieldName : as_vector<std::string>(p, "fields"))
+        if ( fields->empty() ) // value case
+            M_fields.insert( fields->get_value<std::string>() );
+        else // array case
         {
-            M_fields.insert( fieldName );
-            LOG(INFO) << "add to postprocess field  " << fieldName;
+            for ( auto const& item : *fields )
+            {
+                CHECK( item.first.empty() ) << "should be an array, not a subtree";
+                std::string const& fieldName = item.second.template get_value<std::string>();
+                M_fields.insert( fieldName );
+                LOG(INFO) << "add to postprocess field  " << fieldName;
+            }
         }
     }
     if ( auto formatOpt = p.get_optional<std::string>( "format" ) )
         M_format = *formatOpt;
 }
+
+void
+ModelPostprocessSave::setup( pt::ptree const& p )
+{
+    if ( auto fieldsPtree = p.get_child_optional("Fields") )
+    {
+        if ( auto fieldsNamesPtree = fieldsPtree->get_child_optional("names") )
+        {
+            if ( fieldsNamesPtree->empty() ) // value case
+                M_fieldsNames.insert( fieldsNamesPtree->get_value<std::string>() );
+            else // array case
+            {
+                for ( auto const& item : *fieldsNamesPtree )
+                {
+                    CHECK( item.first.empty() ) << "should be an array, not a subtree";
+                    std::string const& fieldName = item.second.template get_value<std::string>();
+                    M_fieldsNames.insert( fieldName );
+                }
+            }
+        }
+        if ( auto formatOpt = fieldsPtree->get_optional<std::string>( "format" ) )
+            M_fieldsFormat = *formatOpt;
+    }
+}
+
 
 void
 ModelPostprocessPointPosition::setup( std::string const& name )
@@ -314,6 +345,13 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
         if ( !ppexports.fields().empty() )
             M_exports[name] = ppexports;
     }
+    if ( auto save = p.get_child_optional("Save") )
+    {
+        ModelPostprocessSave ppsave;
+        ppsave.setup( *save );
+        if ( !ppsave.fieldsNames().empty() )
+            M_save[name] = ppsave;
+    }
 
     if ( auto measures = p.get_child_optional("Measures") )
     {
@@ -413,6 +451,12 @@ ModelPostprocess::hasExports( std::string const& name ) const
     return M_exports.find( nameUsed ) != M_exports.end();
 }
 bool
+ModelPostprocess::hasSave( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    return M_save.find( nameUsed ) != M_save.end();
+}
+bool
 ModelPostprocess::hasMeasuresPoint( std::string const& name ) const
 {
     std::string nameUsed = (M_useModelName)? name : "";
@@ -446,6 +490,16 @@ ModelPostprocess::exports( std::string const& name ) const
         return M_exports.find( nameUsed )->second;
     else
         return M_emptyExports;
+}
+ModelPostprocessSave const&
+ModelPostprocess::save( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    //CHECK( this->hasSave( nameUsed ) ) << "no save with name:"<<name;
+    if ( this->hasSave( nameUsed ) )
+        return M_save.find( nameUsed )->second;
+    else
+        return M_emptySave;
 }
 std::vector<ModelPostprocessPointPosition> const&
 ModelPostprocess::measuresPoint( std::string const& name ) const

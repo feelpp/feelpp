@@ -26,7 +26,7 @@
 
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/integrator.hpp>
-
+#include <feel/feelvf/form.hpp>
 
 namespace Feel {
 
