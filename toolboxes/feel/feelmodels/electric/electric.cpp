@@ -518,32 +518,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian &
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const
-{
-    if ( this->M_bcRobin.empty() ) return;
-
-    if ( !buildCstPart )
-    {
-        auto XhV = this->spaceElectricPotential();
-        auto mesh = XhV->mesh();
-        size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
-
-        auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
-                                                  _pattern=size_type(Pattern::COUPLED),
-                                                  _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
-                                                  _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
-        for( auto const& d : this->M_bcRobin )
-        {
-            bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= expression1(d)*idt(v)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
@@ -563,48 +537,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual &
 
     this->log("Electric","updateResidualDofElimination","finish" );
 }
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const
-{
-    if ( this->M_bcNeumann.empty() && this->M_bcRobin.empty() ) return;
-
-    auto XhV = this->spaceElectricPotential();
-    auto mesh = XhV->mesh();
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
-
-    auto myLinearForm = form1( _test=XhV, _vector=R,
-                               _rowstart=this->rowStartInVector()+startBlockIndexElectricPotential );
-    if ( buildCstPart )
-    {
-        for( auto const& d : this->M_bcNeumann )
-        {
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= -expression(d)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-    for( auto const& d : this->M_bcRobin )
-    {
-        if ( !buildCstPart )
-        {
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= expression1(d)*idv(v)*id(v),
-                           _geomap=this->geomap() );
-        }
-        if ( buildCstPart )
-        {
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= -expression1(d)*expression2(d)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-}
-
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -633,49 +565,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & 
 
     this->log("Electric","updateLinearPDEDofElimination","finish" );
 }
-
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart ) const
-{
-    if ( this->M_bcNeumann.empty() && this->M_bcRobin.empty() ) return;
-
-    if ( !buildCstPart )
-    {
-        auto XhV = this->spaceElectricPotential();
-        auto const& v = this->fieldElectricPotential();
-        auto mesh = XhV->mesh();
-
-        auto myLinearForm = form1( _test=XhV, _vector=F,
-                                   _rowstart=this->rowStartInVector() );
-        for( auto const& d : this->M_bcNeumann )
-        {
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= expression(d)*id(v),
-                           _geomap=this->geomap() );
-        }
-
-        auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=A,
-                                                  _pattern=size_type(Pattern::COUPLED),
-                                                  _rowstart=this->rowStartInMatrix(),
-                                                  _colstart=this->colStartInMatrix() );
-        for( auto const& d : this->M_bcRobin )
-        {
-            bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= expression1(d)*idt(v)*id(v),
-                           _geomap=this->geomap() );
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= expression1(d)*expression2(d)*id(v),
-                           _geomap=this->geomap() );
-        }
-
-    }
-}
-
 
 } // end namespace FeelModels
 } // end namespace Feel

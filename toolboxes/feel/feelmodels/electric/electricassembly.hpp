@@ -54,20 +54,44 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
     }
 
     // update source term
-    if ( !buildCstPart )
+    if ( buildNonCstPart )
     {
         for( auto const& d : this->M_volumicForcesProperties )
         {
             auto rangeEltUsed = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
             myLinearForm +=
                 integrate( _range=rangeEltUsed,
-                           _expr= expression(d)*id(v),
+                           _expr= expression(d,symbolsExpr)*id(v),
                            _geomap=this->geomap() );
         }
     }
 
-    // update bc
-    this->updateLinearPDEWeakBC(A,F,buildCstPart);
+    // update weak bc
+    if ( buildNonCstPart )
+    {
+        for( auto const& d : this->M_bcNeumann )
+        {
+            myLinearForm +=
+                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
+                           _expr= expression(d,symbolsExpr)*id(v),
+                           _geomap=this->geomap() );
+        }
+
+        for( auto const& d : this->M_bcRobin )
+        {
+            auto theExpr1 = expression1( d,symbolsExpr );
+            bilinearForm_PatternCoupled +=
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                           _expr= theExpr1*idt(v)*id(v),
+                           _geomap=this->geomap() );
+            auto theExpr2 = expression2( d,symbolsExpr );
+            myLinearForm +=
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                           _expr= theExpr1*theExpr2*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
+
 }
 
 
@@ -112,7 +136,19 @@ Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & da
         }
     }
 
-    this->updateJacobianWeakBC( v,J,buildCstPart );
+    //--------------------------------------------------------------------------------------------------//
+    // weak bc
+    if ( buildNonCstPart )
+    {
+        for( auto const& d : this->M_bcRobin )
+        {
+            bilinearForm_PatternCoupled +=
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                           _expr= expression1(d,symbolsExpr)*idt(v)*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
+    //--------------------------------------------------------------------------------------------------//
 
 }
 
@@ -123,11 +159,9 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
 {
     const vector_ptrtype& XVec = data.currentSolution();
     vector_ptrtype& R = data.residual();
-    bool _BuildCstPart = data.buildCstPart();
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
     bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
-
-    bool buildNonCstPart = !_BuildCstPart;
-    bool buildCstPart = _BuildCstPart;
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("Electric","updateResidual", "start"+sc);
@@ -139,10 +173,8 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
     // auto const& v = this->fieldElectricPotential();
     auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
 
-
     auto myLinearForm = form1( _test=XhV, _vector=R,
                                _rowstart=this->rowStartInVector() + startBlockIndexElectricPotential );
-
 
     for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
     {
@@ -160,6 +192,8 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
                            _geomap=this->geomap() );
         }
     }
+
+    //--------------------------------------------------------------------------------------------------//
     // source term
     if ( buildCstPart )
     {
@@ -173,9 +207,37 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
         }
     }
 
+    //--------------------------------------------------------------------------------------------------//
     // weak bc
-    this->updateResidualWeakBC( v,R,buildCstPart );
+    if ( buildCstPart )
+    {
+        for( auto const& d : this->M_bcNeumann )
+        {
+            myLinearForm +=
+                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
+                           _expr= -expression(d,symbolsExpr)*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
+    for( auto const& d : this->M_bcRobin )
+    {
+        if ( buildNonCstPart )
+        {
+            myLinearForm +=
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                           _expr= expression1(d,symbolsExpr)*idv(v)*id(v),
+                           _geomap=this->geomap() );
+        }
+        if ( buildCstPart )
+        {
+            myLinearForm +=
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                           _expr= -expression1(d,symbolsExpr)*expression2(d,symbolsExpr)*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
 
+    //--------------------------------------------------------------------------------------------------//
     this->log("Electric","updateResidual", "finish"+sc);
 }
 

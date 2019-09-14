@@ -286,35 +286,30 @@ class Heat : public ModelNumerical,
         void updateLinearPDE( DataUpdateLinear & data ) const override;
         template <typename SymbolsExpr>
         void updateLinearPDE( DataUpdateLinear & data, SymbolsExpr const& symbolsExpr ) const;
-
-        //void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
-        void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
-        void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
-        void updateLinearPDESourceTerm( DataUpdateLinear & data ) const;
         template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
         void updateLinearPDEStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
                                               Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateLinear & data ) const;
+        void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
         // non linear (newton)
         void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
+
         void updateJacobian( DataUpdateJacobian & data ) const override;
         template <typename SymbolsExpr>
         void updateJacobian( DataUpdateJacobian & data, SymbolsExpr const& symbolsExpr ) const;
-        void updateJacobianRobinBC(  DataUpdateJacobian & data ) const;
-        void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
         template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
         void updateJacobianStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
                                              Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateJacobian & data ) const;
+        void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
+
         void updateResidual( DataUpdateResidual & data ) const override;
         template <typename SymbolsExpr>
         void updateResidual( DataUpdateResidual & data, SymbolsExpr const& symbolsExpr ) const;
-        void updateResidualSourceTerm( DataUpdateResidual & data ) const;
-        void updateResidualWeakBC( DataUpdateResidual & data, element_temperature_external_storage_type const& u ) const;
-        void updateResidualDofElimination( DataUpdateResidual & data ) const override;
         template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType,typename... ExprT>
         void updateResidualStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
                                              Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateResidual & data,
                                              const ExprT&... exprs ) const;
+        void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
@@ -382,11 +377,6 @@ class Heat : public ModelNumerical,
         bool M_doExportAll, M_doExportVelocityConvection;
         std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
         measure_points_evaluation_ptrtype M_measurePointsEvaluation;
-
-
-        typedef boost::function<void ( DataUpdateLinear & data )> updateSourceTermLinearPDE_function_type;
-        updateSourceTermLinearPDE_function_type M_overwritemethod_updateSourceTermLinearPDE;
-
     };
 
 
