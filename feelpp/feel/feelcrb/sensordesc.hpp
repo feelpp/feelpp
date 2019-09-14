@@ -50,6 +50,7 @@ public:
             if constexpr ( Dim == 3 )
                 return {0,0,0};
         }
+    SensorDescription() = default;
     SensorDescription(std::string const& name,
                       std::string const& type="gaussian",
                       double raduis=1.0,
@@ -109,6 +110,7 @@ class SensorDescriptionMap: public std::map<std::string,SensorDescription<Dim>>
 {
 
 public:
+    SensorDescriptionMap() = default;
    //!
     //! \p file provides the name of the csv file describing the sensor network
     //! if \p N is set to -1 then we read and store all the sensor data dsc

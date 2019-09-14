@@ -269,6 +269,7 @@ public:
     using node_t = typename sensor_type::node_t;
     using sensor_ptrtype = std::shared_ptr<sensor_type>;
 
+    SensorMap() = default;
     SensorMap( space_ptrtype const& space, SensorDescriptionMap<nDim>  const& sensor_desc):
         M_sensor_desc(sensor_desc),
         M_space(space),
