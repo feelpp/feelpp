@@ -157,12 +157,50 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
 #endif
 
     //--------------------------------------------------------------------------------------------------//
-
     // update source term
-    this->updateLinearPDESourceTerm( data );
+    for( auto const& d : this->M_volumicForcesProperties )
+    {
+        auto theExpr = expression( d,symbolsExpr );
+        bool buildSourceTerm = theExpr.expression().isConstant()? buildCstPart : buildNonCstPart;
+        if ( buildSourceTerm )
+        {
+            auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
+            myLinearForm +=
+                integrate( _range=rangeBodyForceUsed,
+                           _expr= timeSteppingScaling*theExpr*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
 
-    // update bc
-    this->updateLinearPDEWeakBC( data );
+    //--------------------------------------------------------------------------------------------------//
+    // update weak bc
+    if ( buildNonCstPart )
+    {
+        for( auto const& d : this->M_bcNeumann )
+        {
+            auto theExpr = expression( d,symbolsExpr );
+            myLinearForm +=
+                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
+                           _expr= timeSteppingScaling*theExpr*id(v),
+                           _geomap=this->geomap() );
+        }
+
+        for( auto const& d : this->M_bcRobin )
+        {
+            auto theExpr1 = expression1( d,symbolsExpr );
+            bilinearForm_PatternCoupled +=
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                           _expr= timeSteppingScaling*theExpr1*idt(v)*id(v),
+                           _geomap=this->geomap() );
+            auto theExpr2 = expression2( d,symbolsExpr );
+            myLinearForm +=
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                           _expr= timeSteppingScaling*theExpr1*theExpr2*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------------//
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("Heat","updateLinearPDE",
@@ -298,7 +336,20 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
 
     }
 
-    this->updateJacobianRobinBC( data );
+    //--------------------------------------------------------------------------------------------------//
+    // update weak bc
+    if ( buildNonCstPart )
+    {
+        for( auto const& d : this->M_bcRobin )
+        {
+            auto theExpr1 = expression1( d,symbolsExpr );
+            bilinearForm_PatternCoupled +=
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                           _expr= timeSteppingScaling*theExpr1*idt(v)*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
+
 }
 
 template< typename ConvexType, typename BasisTemperatureType >
@@ -431,9 +482,56 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
 
     }
 
+    //--------------------------------------------------------------------------------------------------//
+    // update source term
+    if ( buildCstPart )
+    {
+        for( auto const& d : this->M_volumicForcesProperties )
+        {
+            auto theExpr = expression(d,symbolsExpr);
+            auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
+            myLinearForm +=
+                integrate( _range=rangeBodyForceUsed,
+                           _expr= -timeSteppingScaling*theExpr*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
 
-    this->updateResidualSourceTerm( data ) ;
-    this->updateResidualWeakBC( data,u );
+    //--------------------------------------------------------------------------------------------------//
+    // update weak bc
+    for( auto const& d : this->M_bcNeumann )
+    {
+        if ( buildCstPart )
+        {
+            auto theExpr = expression(d,symbolsExpr);
+            myLinearForm +=
+                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
+                           _expr= -timeSteppingScaling*theExpr*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
+
+    for( auto const& d : this->M_bcRobin )
+    {
+        auto theExpr1 = expression1( d,symbolsExpr );
+        if ( buildNonCstPart )
+        {
+            myLinearForm +=
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                           _expr= timeSteppingScaling*theExpr1*idv(u)*id(v),
+                           _geomap=this->geomap() );
+        }
+        if ( buildCstPart )
+        {
+            auto theExpr2 = expression2( d,symbolsExpr );
+            myLinearForm +=
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                           _expr= -timeSteppingScaling*theExpr1*theExpr2*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------------//
 
     this->log("Heat","updateResidual", "finish");
 
