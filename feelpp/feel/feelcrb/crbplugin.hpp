@@ -129,6 +129,7 @@ public:
     using method_t = AlgoT<crbmodel_type>;
     using mesh_t = typename model_t::mesh_type;
     using exporter_ptr_t = std::shared_ptr<Exporter<mesh_t> >;
+    using reduced_matrix_t = Eigen::MatrixXd;
     
     CRBPlugin( std::string const& name )
         :
@@ -228,6 +229,12 @@ public:
             }
             return res;
         }
+    reduced_matrix_t reducedMatrixPrimal(  ParameterSpaceX::Element const& mu, int N ) const override
+        {
+            DCHECK( M_crb ) << "DB not loaded";
+            reduced_matrix_t AN = reduced_matrix_t::Identity( N, N );
+            return AN;
+        }
     std::vector<std::shared_ptr<Vector<double>>> reducedBasisFunctionsDual() const override
         {
             DCHECK( M_crb ) << "DB not loaded";
@@ -263,8 +270,16 @@ public:
             M_crb->model()->rBFunctionSpace()->expansion( uRBforExpansion, uFE, N );
         }
 
+    bool pbdwEnabled() const override { return M_crb->model()->pbdwEnabled(); }
 
-
+    std::tuple<double,vectorN_type,vectorN_type> onlinePBDW( vectorN_type const& Yobs ) const override
+        {
+            return M_crb->onlinePBDW( Yobs );
+        }
+    virtual std::vector<vector_ptrtype> pbdwUpdateBasis() const override
+        {
+            return M_crb->pbdwUpdateBasis();
+        }
     void initExporter() override
         {
             fieldExporter = exporter( _mesh=M_crb->model()->rBFunctionSpace()->mesh() );

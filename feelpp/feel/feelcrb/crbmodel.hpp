@@ -49,6 +49,7 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 
+#include <feel/feelcrb/sensors.hpp>
 #include <feel/feelcrb/crbmodelbase.hpp>
 
 namespace Feel
@@ -704,6 +705,9 @@ public:
         return muref;
     }
 
+    bool pbdwEnabled() const { return M_model->pbdwEnabled(); }
+    SensorMap<functionspace_type> const& sensorMap() { return M_model->sensorMap(); }
+    
     //@}
 
     /** @name  Mutators

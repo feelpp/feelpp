@@ -46,6 +46,7 @@ class CRBPluginAPI
 {
 public:
 
+    using reduced_matrix_t = matrixN_type;
     //!
     //! @return name of the plugin
     //!
@@ -128,6 +129,11 @@ public:
     virtual std::vector<std::shared_ptr<Vector<double>>> reducedBasisFunctionsPrimal() const = 0;
 
     //!
+    //! @return the reduced matrix
+    //!
+    virtual reduced_matrix_t reducedMatrixPrimal( ParameterSpaceX::Element const& mu, int N ) const = 0;
+        
+    //!
     //! @return reduced basis functions dual
     //!
     virtual std::vector<std::shared_ptr<Vector<double>>> reducedBasisFunctionsDual() const = 0;
@@ -161,6 +167,20 @@ public:
     //!
     virtual void expansion( vectorN_type const& uRB, Vector<double> & uFE, int N=-1 ) const = 0;
 
+    //!
+    //! pbdw @return true if enabled, false otherwise
+    //!
+    virtual bool pbdwEnabled() const = 0;
+    //!
+    //! @param Yobs a vector of observations
+    //! @return the output value, correction and reduced approximation vectors 
+    //!
+    virtual std::tuple<double,vectorN_type,vectorN_type> onlinePBDW( vectorN_type const& Yobs ) const = 0;
+    //!
+    //! @return the update space basis functions
+    //!
+    virtual std::vector<vector_ptrtype> pbdwUpdateBasis() const = 0;
+    
     //!
     //! initialize the exporter
     //!
