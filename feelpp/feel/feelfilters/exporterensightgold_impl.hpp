@@ -1368,7 +1368,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     std::vector<int32_t> idnode, idelem;
 
     //auto r = markedelements(mesh, part->first, EntityProcessType::ALL );
-    auto r = markedelements(mesh, markerid, EntityProcessType::ALL );
+    auto r = markedelements(mesh, markerid, EntityProcessType::LOCAL_ONLY );
     auto allelt_it = r.template get<1>();
     auto allelt_en = r.template get<2>();
 
@@ -1564,7 +1564,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
 
 
     /* Write ghost elements */
-    if ( this->worldComm().globalSize() > 1 )
+    if ( 0  ) //this->worldComm().globalSize() > 1 )
     {
         // get ghost elements
         //auto r1 = markedelements(mesh, part->first, EntityProcessType::GHOST_ONLY );
@@ -1989,7 +1989,8 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
             /* we get that from the local processor */
             /* We do not need the renumbered global index */
             //auto r = markedelements(__mesh,(boost::any)p_it->first,EntityProcessType::ALL);
-            auto r = markedelements(__mesh, *mit, EntityProcessType::ALL);
+            // auto r = markedelements(__mesh, *mit, EntityProcessType::ALL);
+            auto r = markedelements(__mesh, *mit );
             auto elt_it = r.template get<1>();
             auto elt_en = r.template get<2>();
 

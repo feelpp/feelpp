@@ -670,7 +670,7 @@ public:
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
                                    typename std::enable_if<FunctionType::is_scalar>::type* = nullptr)
         {
-            bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+            bool extendeddof = false;//(soption(_name="exporter.format") == "ensightgold");
             boost::timer t;
 
                 if ( !M_ts->M_scalar_p1 )
@@ -747,7 +747,7 @@ public:
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
                                    typename std::enable_if<FunctionType::is_vectorial>::type* = nullptr)
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 boost::timer t;
 
                 if ( !M_ts->M_vector_p1 )
@@ -842,7 +842,7 @@ public:
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
                                    typename std::enable_if<FunctionType::is_tensor2>::type* = nullptr)
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 boost::timer t;
 
                 if ( !M_ts->M_tensor2_p1 )
@@ -927,7 +927,7 @@ public:
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
                                    typename std::enable_if<FunctionType::is_tensor2symm>::type* = nullptr)
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 boost::timer t;
 
                 if ( !M_ts->M_tensor2symm_p1 )
@@ -1031,7 +1031,7 @@ public:
                 {
                     if ( !M_ts->M_scalar_p1 )
                     {
-                        bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                        bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                         M_ts->M_scalar_p1 = scalar_p1_space_type::New(_mesh=M_mesh.get(),
                                                                       _worldscomm=func.worldsComm(),
                                                                       _extended_doftable=std::vector<bool>(1,extendeddof) );
@@ -1058,7 +1058,7 @@ public:
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
                                    typename std::enable_if<FunctionType::is_vectorial>::type* = nullptr )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
 
                 if ( !M_ts->M_vector_p0 )
@@ -1122,7 +1122,7 @@ public:
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
                                    typename std::enable_if<FunctionType::is_tensor2>::type* = nullptr )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
                 if ( !M_ts->M_tensor2_p0 )
                 {
@@ -1163,7 +1163,7 @@ public:
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
                   typename std::enable_if<FunctionType::is_tensor2symm>::type* = nullptr )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
 
                 if ( !M_ts->M_tensor2symm_p0 )
@@ -1348,7 +1348,7 @@ public:
             auto worldsComm = func.worldsComm();
             if ( !M_ts->M_scalar_p0 )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 if constexpr ( std::is_same_v<scalar_p0_space_type,typename FunctionType::functionspace_type> )
                 {
                     if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->basisOrder()[0] == 0 ) )
@@ -1372,7 +1372,7 @@ public:
 
             if ( M_mesh.get() != M_ts->M_scalar_p0->mesh() && !M_scalar_p0 )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 M_scalar_p0 = scalar_p0_space_type::New(_mesh=M_mesh.get(),
                                                         _worldscomm=worldsComm,
                                                         _extended_doftable=std::vector<bool>(1,extendeddof) );
@@ -1385,7 +1385,7 @@ public:
         {
             if ( !M_ts->M_scalar_p0 )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 M_ts->M_scalar_p0 = scalar_p0_space_type::New(_mesh=M_mesh.get(),
                                                               _worldscomm=worldsComm,
                                                               _extended_doftable=std::vector<bool>(1,extendeddof) );
@@ -1399,7 +1399,7 @@ public:
 
             if ( M_mesh.get() != M_ts->M_scalar_p0->mesh() && !M_scalar_p0 )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 M_scalar_p0 = scalar_p0_space_type::New(_mesh=M_mesh.get(),
                                                         _worldscomm=worldsComm,
                                                         _extended_doftable=std::vector<bool>(1,extendeddof) );

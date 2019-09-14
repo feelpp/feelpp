@@ -79,7 +79,7 @@ template<typename SpaceType, typename FunctionType>
 void
 interpolate( std::shared_ptr<SpaceType> const& space,
              FunctionType const& f,
-             typename SpaceType::element_type& interp, int same_mesh = INTERPOLATE_DIFFERENT_MESH )
+             typename SpaceType::element_type& interp )
 {
     typedef typename SpaceType::value_type value_type;
     typedef boost::multi_array<value_type,3> array_type;
@@ -143,8 +143,6 @@ interpolate( std::shared_ptr<SpaceType> const& space,
     //f.id( *fectx, fvalues );
 
     // if same mesh but not same function space (different order)
-    //if ( f.functionSpace()->mesh() == space->mesh() )
-    //if ( same_mesh == INTERPOLATE_SAME_MESH )
     if ( ( MeshBase<>* )f.functionSpace()->mesh().get() == ( MeshBase<>* )space->mesh().get() )
     {
         elements_reference_wrapper_t<typename FunctionType::functionspace_type::mesh_type> rangeElt;
