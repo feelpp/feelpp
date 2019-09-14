@@ -22,4 +22,4 @@
 #
 #
 
-feelpp_add_application( onlinerun SRCS crbonlinerun.cpp  INSTALL  MAN onlinerun EXEC ONLINERUN )
+feelpp_add_application( onlinerun SRCS crbonlinerun_main.cpp  INSTALL  MAN onlinerun EXEC ONLINERUN )

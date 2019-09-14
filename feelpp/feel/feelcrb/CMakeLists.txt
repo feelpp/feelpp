@@ -23,7 +23,7 @@
 #
 # set(CMAKE_CXX_FLAGS "-g -O0" )
 
-set(SRC crbdb.cpp crbmodeldb.cpp pfemapp.cpp opusapp.cpp crbplugin_interface.cpp )
+set(SRC crbdb.cpp crbmodeldb.cpp pfemapp.cpp opusapp.cpp crbplugin_interface.cpp crbonlinerun.cpp )
 
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
