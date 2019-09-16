@@ -52,19 +52,19 @@ readHBF( std::string const& s )
         header += ch;
         ++count;
     }
-    Feel::cout << "header: " << header << "\n";
-    Feel::cout << count << std::endl;
+    LOG(INFO) << "header: " << header << "\n";
+    LOG(INFO) << count << std::endl;
 
     int32_t version = 0;
     in.read( (char*)&version, sizeof( int32_t ) );
     int32_t rows=0, cols=0;
     in.read( (char*)&rows, sizeof( int32_t ) );
     in.read( (char*)&cols, sizeof( int32_t ) );
-    Feel::cout << "rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
+    LOG(INFO) << "rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
     Eigen::MatrixXf x( cols, rows  );
     in.read( (char*)x.data(), x.size()*sizeof(float) );
     if(x.rows() <= 6 && x.cols() <= 6)
-        Feel::cout << x << std::endl;
+        LOG(INFO) << x << std::endl;
    // if ( Environment::isMasterRank() )
        // std::cout << "x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
     return x.transpose();
@@ -156,7 +156,7 @@ Hbf2Feelpp::Hbf2Feelpp( int nx, int ny, q1_space_ptrtype Yh ):M_rows(ny), M_cols
             }
         }
     }
-    toc("structured 2 feelpp relation");
+    toc("structured 2 feelpp relation",FLAGS_v>0);
 }
 
 Hbf2Feelpp::q1_element_type
