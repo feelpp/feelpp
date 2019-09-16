@@ -196,19 +196,7 @@ public:
      * @param x [description]
      * @return [description]
      */
-    template<typename ElementType>
-    holo3_image<float>
-    operator()( ElementType const& u )
-        {
-            holo3_image<float> x( M_rows, M_cols );
-            for( auto const& dof : M_relation.left )
-            {
-                DCHECK( dof.first.first < M_rows ) << "invalid row index " << dof.first.first;
-                DCHECK( dof.first.second < M_cols ) << "invalid col index " << dof.first.second;
-                x( dof.first.first, dof.first.second ) = u(dof.second);
-            }
-            return x;
-        }
+    holo3_image<float>  operator()( q1_element_type const& u );
 private:
     int M_rows;
     int M_cols;
