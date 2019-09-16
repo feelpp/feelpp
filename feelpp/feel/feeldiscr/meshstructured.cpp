@@ -58,8 +58,8 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
     rank_type partId = wc->localRank();
 
     // compute parallel distribution with column scheme partitioning
-    size_type nTotalPointsByCol = M_ny + ( nProc - 1 );
-    size_type nPtByColByProc = ( M_ny + ( nProc - 1 ) ) / nProc;
+    size_type nTotalPointsByCol = M_nx + ( nProc - 1 );
+    size_type nPtByColByProc = ( M_nx + ( nProc - 1 ) ) / nProc;
     if ( nTotalPointsByCol <= nPtByColByProc * ( nProc - 1 ) )
         --nPtByColByProc;
     std::vector<size_type> nPtByCol( nProc, nPtByColByProc );
@@ -123,9 +123,9 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
     //std::cout<< "poly build end"<< std::endl;
 
     // active points
-    for ( int j = startColPtId[partId]; j < startColPtId[partId] + nPtByCol[partId]; ++j )
+    for ( int j = 0; j < M_ny; ++j )
     {
-        for ( int i = 0; i < M_nx; ++i )
+        for ( int i = startColPtId[partId]; i < startColPtId[partId] + nPtByCol[partId]; ++i )
         {
             int ptid = (M_ny)*i + j;
             if ( withCoord && M_cx && M_cy )
@@ -165,9 +165,9 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
         ghostPointColDesc.push_back( startColPtId[partId] - 1 );
     if ( partId < ( nProc - 1 ) )
         ghostPointColDesc.push_back( startColPtId[partId] + nPtByCol[partId] );
-    for ( int j : ghostPointColDesc )
+    for ( int i : ghostPointColDesc )
     {
-        for ( int i = 0; i < M_nx; ++i )
+        for ( int j = 0; j < M_ny; ++j )
         {
             int ptid = (M_ny)*i + j;
             if ( withCoord && M_cx && M_cy )
@@ -190,7 +190,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
     // active elements
     size_type startColPtIdForElt = startColPtId[partId];
     size_type stopColPtIdForElt = startColPtId[partId] + ( nPtByCol[partId] - 1 );
-    for ( int j = startColPtIdForElt; j < stopColPtIdForElt; ++j )
+    for ( int j = 0; j < M_ny - 1; ++j )
     {
         rank_type neighborProcessId = invalid_rank_type_value;
         if ( partId > 0 )
@@ -199,8 +199,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
         if ( partId < ( nProc - 1 ) )
             if ( j == ( stopColPtIdForElt - 1 ) )
                 neighborProcessId = partId + 1;
-
-        for ( int i = 0; i < M_nx - 1; ++i )
+        for ( int i = startColPtIdForElt; i < stopColPtIdForElt; ++i )
         {
             if ( withPoly )
             {
@@ -265,9 +264,9 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
         ghostEltColDesc.push_back( std::make_pair( startColPtId[partId] + nPtByCol[partId] - 1, partId + 1 ) );
     for ( auto const& ghostEltCol : ghostEltColDesc )
     {
-        int j = ghostEltCol.first;
+        int i = ghostEltCol.first;
         rank_type partIdGhost = ghostEltCol.second;
-        for ( int i = 0; i < M_nx - 1; ++i )
+        for ( int j = 0; j < M_ny - 1; ++j )
         {
             if ( withPoly )
             {
