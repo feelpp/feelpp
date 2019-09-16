@@ -137,7 +137,7 @@ void print( MeshT* m )
 
 // Constructor.
 template <typename Shape, typename T, int Tag, typename IndexT>
-Mesh<Shape, T, Tag, IndexT>::Mesh( std::string const& name, worldcomm_ptr_t const& worldComm )
+Mesh<Shape, T, Tag, IndexT>::Mesh( std::string const& name, worldcomm_ptr_t const& worldComm, std::string const& props )
     : super( worldComm ),
       super2( "Mesh", name ),
       M_numGlobalElements( 0 ),
@@ -146,6 +146,7 @@ Mesh<Shape, T, Tag, IndexT>::Mesh( std::string const& name, worldcomm_ptr_t cons
       M_meas( 0 ),
       M_measbdy( 0 ),
       M_substructuring( false ),
+      M_structure_property( props ),
       //M_part(),
       M_tool_localization( std::make_shared<Localization<self_type>>() )
 {
