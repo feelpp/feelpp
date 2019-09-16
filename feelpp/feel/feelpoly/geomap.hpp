@@ -1149,7 +1149,11 @@ class GeoMap
                 updatePoints<CTX>();
                 updateJKBN<CTX>();
             }
-
+        void setElement( element_type const& __e )
+            {
+                M_element = boost::addressof( __e );
+                M_id = __e.id();
+            }
         //!
         //! update geomap data only on face, element has not been changed
         //!
