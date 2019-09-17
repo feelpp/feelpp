@@ -1718,6 +1718,7 @@ template<typename Iterator>
 void
 ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const
 {
+    tic();
     int size = 0;
     char buffer[ 80 ];
 
@@ -1732,6 +1733,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
     int localOffset, sumOffsets;
     while ( __var != en )
     {
+        tic();
         if ( !__var->second.worldComm().isActive() ) return;
 
         std::ostringstream __varfname;
@@ -1950,10 +1952,11 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                 posInFile += __var->second.nComponents * sumOffsets;
             } // boundaries loop
         }
-
+        toc("saveNodal intro",FLAGS_v>0);
         /* handle elements */
         for( std::set<int>::iterator mit = M_markersToWrite.begin(); mit != M_markersToWrite.end(); mit++)
         {
+            tic();
             if( this->worldComm().isMasterRank() )
             {
                 memset(buffer, '\0', sizeof(buffer));
@@ -1993,7 +1996,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
             auto r = markedelements(__mesh, *mit );
             auto elt_it = r.template get<1>();
             auto elt_en = r.template get<2>();
-
+            toc("saveNodal part",FLAGS_v>0);
             tic();
             
             M_cache_mp.try_emplace( *mit, __step->mesh().get(), this->worldComm(), elt_it, elt_en, true, true, true );
@@ -2009,7 +2012,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                 __field_size *= 9;
             if ( __var->second.is_tensor2symm )
                 __field_size *= 6;
-            ublas::vector<float> __field( __field_size, 0.0 );
+            Eigen::VectorXf __field = Eigen::VectorXf::Zero( __field_size );
             size_type e = 0;
             VLOG(1) << "field size=" << __field_size;
             if ( !__var->second.areGlobalValuesUpdated() )
@@ -2025,48 +2028,56 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
             int reorder_tensor2symm[6] = { 0, 3, 1, 4, 5, 2 };
 
             /* loop on the elements */
+            tic();
+            auto const& d = __var->second.functionSpace()->dof().get();
+
             int index = 0;
             for ( ; elt_it != elt_en; ++elt_it )
             {
-                VLOG(3) << "is ghost cell " << elt_it->get().isGhostCell();
+                auto const& elt = elt_it->get();
+                const int np = __step->mesh()->numLocalVertices();
+                auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
+                
                 /* looop on the ccomponents is outside of the loop on the vertices */
                 /* because we need to pack the data in the x1 x2 ... xn y1 y2 ... yn z1 z2 ... zn order */
-                for ( uint16_type c = 0; c < nComponents; ++c )
+                for ( uint16_type p = 0; p < np; ++p, ++e )
                 {
-                    uint16_type c1= c;
-                    if ( __var->second.is_tensor2symm )
-                        c1 = reorder_tensor2symm[c];
-                    for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
+                    size_type ptid = mp.old2new[elt.point( p ).id()]-1;
+                    for ( uint16_type c = 0; c < nComponents; ++c )
                     {
-                        size_type ptid = mp.old2new[elt_it->get().point( p ).id()]-1;
+                        uint16_type c1= c;
+                        if ( __var->second.is_tensor2symm )
+                            c1 = reorder_tensor2symm[c];
+
                         size_type global_node_id = mp.ids.size()*c1 + ptid ;
                         //LOG(INFO) << elt_it->get().point( p ).id() << " " << ptid << " " << global_node_id << std::endl;
-                        DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt_it->get().id()
+                        DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt.id()
                                                                      << " local pt:" << p
                                                                      << " mesh numPoints: " << __step->mesh()->numPoints();
                         DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
 
                         if ( c < nc )
                         {
-                            size_type dof_id = __var->second.functionSpace()->dof()->localToGlobal( elt_it->get().id(), p, c ).index();
+                            size_type dof_id = locglob_ind(d->localDofId(p,c));//__var->second.functionSpace()->dof()->localToGlobal( elt.id(), p, c ).index();
 
-                            __field[global_node_id] = __var->second.globalValue( dof_id );
-                            //__field[npts*c + index] = __var->second.globalValue( dof_id );
-                            //DVLOG(3) << "v[" << global_node_id << "]=" << __var->second.globalValue( dof_id ) << "  dof_id:" << dof_id;
+                            __field(global_node_id) = __var->second.globalValue( dof_id );
                             DVLOG(3) << "v[" << (npts*c + index) << "]=" << __var->second.globalValue( dof_id ) << "  dof_id:" << dof_id;
                         }
+#if  0                        
                         else
                         {
                             __field[global_node_id] = 0.0;
-                            //__field[npts*c + index] = 0.0;
                         }
+#endif                        
                     }
                 }
 
                 /* increment index of vertex */
                 index++;
             }
-
+            
+            toc("saveNodal element loop",FLAGS_v>0);
+            tic();
             /* Write each component separately */
             // All procs write :
             // - calculate every proc size of part to write
@@ -2080,11 +2091,11 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
             for ( uint16_type c = 0; c < nComponents; ++c )
             {
                 MPI_File_write_at(fh, posInFile + localOffset + c*sumOffsets, \
-                                  ((float *)(__field.data().begin())) + npts * c, npts, MPI_FLOAT, &status);
+                                  ((float *)(__field.data())) + npts * c, npts, MPI_FLOAT, &status);
                 // MPI_File_write_ordered(fh, ((float *)(__field.data().begin())) + npts * c, npts, MPI_FLOAT, &status);
             }
             posInFile += nComponents*sumOffsets;
-
+            toc("saveNodal write part",FLAGS_v>0);
         } // parts loop
 
         if( boption(_name="exporter.ensightgold.merge.timesteps") )
@@ -2107,6 +2118,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
 
         ++__var;
     }
+    toc("saveNodal", FLAGS_v>0);
 }
 
 template<typename MeshType, int N>
