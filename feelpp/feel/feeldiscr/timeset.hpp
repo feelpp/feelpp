@@ -684,7 +684,7 @@ public:
                     {
                         if constexpr ( std::is_same_v<scalar_p1_space_type,typename FunctionType::functionspace_type> )
                         {
-                            if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->basisOrder()[0] == 1 ) &&  func.functionSpace()->extendedDofTable() == extendeddof )
+                            if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->extendedDofTable() == false ) )
                                 M_ts->M_scalar_p1 = func.functionSpace();
                             else
                                 M_ts->M_scalar_p1 = scalar_p1_space_type::New(_mesh=M_mesh.get(),
@@ -754,7 +754,7 @@ public:
                 {
                     if constexpr ( std::is_same_v<scalar_p1_space_type,typename FunctionType::functionspace_type> )
                     {
-                        if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->basisOrder()[0] == 1 )  &&  func.functionSpace()->extendedDofTable() == extendeddof  )
+                        if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->extendedDofTable() == false  ) )
                             M_ts->M_vector_p1 = func.functionSpace();
                         else
                             M_ts->M_vector_p1 = vector_p1_space_type::New(_mesh=M_mesh.get(),
@@ -847,19 +847,30 @@ public:
 
                 if ( !M_ts->M_tensor2_p1 )
                 {
-                    M_ts->M_tensor2_p1 = tensor2_p1_space_type::New(_mesh=M_mesh.get(),
-                                                                    _worldscomm=func.worldsComm(),
-                                                                    _extended_doftable=std::vector<bool>(1,extendeddof) );
-                    M_tensor2_p1 = M_ts->M_tensor2_p1;
-                    DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
+                    if constexpr ( std::is_same_v<tensor2_p1_space_type,typename FunctionType::functionspace_type> )
+                    {
+                        if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->extendedDofTable() == false  ) )
+                            M_ts->M_tensor2_p1 = func.functionSpace();
+                        else
+                            M_ts->M_tensor2_p1 = tensor2_p1_space_type::New(_mesh=M_mesh.get(),
+                                                                            _worldscomm=func.worldsComm(),
+                                                                            _extended_doftable=std::vector<bool>(1,extendeddof) );
+                    }
+                    else
+                    {
+                        M_ts->M_tensor2_p1 = tensor2_p1_space_type::New(_mesh=M_mesh.get(),
+                                                                        _worldscomm=func.worldsComm(),
+                                                                        _extended_doftable=std::vector<bool>(1,extendeddof) );
+                        M_tensor2_p1 = M_ts->M_tensor2_p1;
+                        DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
+                    }
                 }
-
                 else if ( M_mesh.get() == M_ts->M_tensor2_p1->mesh() )
                 {
                     M_tensor2_p1 = M_ts->M_tensor2_p1;
                 }
 
-            if ( M_mesh.get() != M_ts->M_tensor2_p1->mesh() && !M_tensor2_p1 )
+                if ( M_mesh.get() != M_ts->M_tensor2_p1->mesh() && !M_tensor2_p1 )
                 {
                     M_tensor2_p1 = tensor2_p1_space_type::New(_mesh=M_mesh.get(),
                                                               _worldscomm=func.worldsComm(),
@@ -932,10 +943,22 @@ public:
 
                 if ( !M_ts->M_tensor2symm_p1 )
                 {
-                    M_ts->M_tensor2symm_p1 = tensor2symm_p1_space_type::New(_mesh=M_mesh.get(),
-                                                                            _worldscomm=func.worldsComm(),
-                                                                            _extended_doftable=std::vector<bool>(1,extendeddof) );
-                    M_tensor2symm_p1 = M_ts->M_tensor2symm_p1;
+                    if constexpr ( std::is_same_v<tensor2symm_p1_space_type,typename FunctionType::functionspace_type> )
+                    {
+                        if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->extendedDofTable() == false  ) )
+                            M_ts->M_tensor2symm_p1 = func.functionSpace();
+                        else
+                            M_ts->M_tensor2symm_p1 = tensor2symm_p1_space_type::New(_mesh=M_mesh.get(),
+                                                                                    _worldscomm=func.worldsComm(),
+                                                                                    _extended_doftable=std::vector<bool>(1,extendeddof) );
+                    }
+                    else
+                    {
+                        M_ts->M_tensor2symm_p1 = tensor2symm_p1_space_type::New(_mesh=M_mesh.get(),
+                                                                                _worldscomm=func.worldsComm(),
+                                                                                _extended_doftable=std::vector<bool>(1,extendeddof) );
+                        M_tensor2symm_p1 = M_ts->M_tensor2symm_p1;
+                    }
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
 
@@ -944,7 +967,7 @@ public:
                     M_tensor2symm_p1 = M_ts->M_tensor2symm_p1;
                 }
 
-            if ( M_mesh.get() != M_ts->M_tensor2symm_p1->mesh() && !M_tensor2symm_p1 )
+                if ( M_mesh.get() != M_ts->M_tensor2symm_p1->mesh() && !M_tensor2symm_p1 )
                 {
                     M_tensor2symm_p1 = tensor2symm_p1_space_type::New(_mesh=M_mesh.get(),
                                                                       _worldscomm=func.worldsComm(),
