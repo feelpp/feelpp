@@ -2151,7 +2151,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
         /* if we want to pack data in several files instead of one */
         /* we compute an index to add to the filename */
         if( boption( _name = "exporter.ensightgold.merge.timesteps")
-        && ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
+            && ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
         {
             // timestep indices start at 1
             __evarfname << "." << ((__step->index() - TS_INITIAL_INDEX) / ioption( _name="exporter.ensightgold.pack.timesteps" ) + 1);
@@ -2278,8 +2278,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
 
             size_type __field_size = nComponents * __evar->second.size()/nc;
 
-            ublas::vector<float> __field( __field_size );
-            __field.clear();
+            Eigen::VectorXf __field = Eigen::VectorXf::Zero( __field_size );
 
             auto r = markedelements(__step->mesh(), *mit, EntityProcessType::LOCAL_ONLY );
             auto elt_st = r.template get<1>();
@@ -2296,33 +2295,37 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
             size_type ncells = std::distance( elt_st, elt_en );
 
             /*
-            std::cout << this->worldComm().rank() << " marker=" << *mit << " nbElts:" << ncells << " nComp:" << nComponents
-                      << " __evar->second.nComponents:" << __evar->second.nComponents << std::endl;
-            */
+             std::cout << this->worldComm().rank() << " marker=" << *mit << " nbElts:" << ncells << " nComp:" << nComponents
+             << " __evar->second.nComponents:" << __evar->second.nComponents << std::endl;
+             */
             int reorder_tensor2symm[6] = { 0, 3, 1, 4, 5, 2 };
-
-            for ( int c = 0; c < nComponents; ++c )
+            auto const& d = __evar->second.functionSpace()->dof().get();
+            tic();
+            size_type e = 0;
+            for ( auto elt_it = elt_st ; elt_it != elt_en; ++elt_it, ++e )
             {
-                uint16_type c1= c;
-                if ( __evar->second.is_tensor2symm )
-                    c1=reorder_tensor2symm[c];
-                int nc = __evar->second.nComponents;
-                if ( __evar->second.is_tensor2symm )
-                    nc = __evar->second.nComponents1*(__evar->second.nComponents1+1)/2;
-                size_type e = 0;
-                for ( auto elt_it = elt_st ; elt_it != elt_en; ++elt_it, ++e )
-                {
-                    auto const& elt = boost::unwrap_ref( *elt_it );
-                    DVLOG(2) << "pid : " << this->worldComm().globalRank()
-                             << " elt_it :  " << elt.id()
-                             << " e : " << e << "\n";
+                auto const& elt = boost::unwrap_ref( *elt_it );
+                DVLOG(2) << "pid : " << this->worldComm().globalRank()
+                         << " elt_it :  " << elt.id()
+                         << " e : " << e << "\n";
 
+                auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
+                
+                for ( int c = 0; c < nComponents; ++c )
+                {
+                    uint16_type c1= c;
+                    if ( __evar->second.is_tensor2symm )
+                        c1=reorder_tensor2symm[c];
+                    int nc = __evar->second.nComponents;
+                    if ( __evar->second.is_tensor2symm )
+                        nc = __evar->second.nComponents1*(__evar->second.nComponents1+1)/2;
+                        
                     size_type global_node_id = c1*ncells+e ;
 
                     if ( c < nc)
                     {
-                        size_type dof_id = __evar->second.functionSpace()->dof()->localToGlobal( elt.id(),0, c ).index();
-
+                        size_type dof_id = locglob_ind( d->localDofId( 0, c ) );
+                        
                         DVLOG(2) << "c : " << c
                                  << " gdofid: " << global_node_id
                                  << " dofid : " << dof_id
@@ -2330,7 +2333,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
                                  << " e.size : " <<  __evar->second.size()
                                  << "\n";
 
-                        __field[global_node_id] = __evar->second.globalValue( dof_id );
+                        __field(global_node_id) = __evar->second.globalValue( dof_id );
 
 #if 1
                         //__field[global_node_id] = __evar->second.globalValue(dof_id);
@@ -2341,14 +2344,11 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
                                  << " evar: " << __evar->second.globalValue( dof_id ) << "\n";
 #endif
                     }
-
-                    else
-                        __field[global_node_id] = 0;
                 }
             }
-
+            toc("saveElement element loop",FLAGS_v>0);
             /* Write each component separately */
-
+            tic();
             // All procs write :
             // - calculate every proc size of part to write
             int fieldWritingSize = ncells*sizeOfFloat;
@@ -2362,9 +2362,10 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
             for ( uint16_type c = 0; c < nComponents; ++c )
             {
                 MPI_File_write_at(fh, posInFile + c*sumOffsets + localOffset, \
-                                  __field.data().begin() + ncells * c, ncells, MPI_FLOAT, &status);
+                                  __field.data() + ncells * c, ncells, MPI_FLOAT, &status);
                 // MPI_File_write_ordered(fh, __field.data().begin() + ncells * c, ncells, MPI_FLOAT, &status);
             }
+            toc("saveElement write",FLAGS_v>0);
             posInFile += nComponents*sumOffsets;
         }
 
