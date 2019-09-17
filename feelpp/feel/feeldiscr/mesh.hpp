@@ -1225,12 +1225,18 @@ public:
     //!
     //!  load mesh in hdf5
     //!
-    void loadHDF5( std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES ) { ioHDF5( IOStatus::isLoading, filename, ctxMeshUpdate ); }
+    void loadHDF5( std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES, double scale = 1 )
+    {
+        ioHDF5( IOStatus::isLoading, filename, ctxMeshUpdate, scale );
+    }
 
     //!
     //!  save mesh in hdf5
     //!
-    void saveHDF5( std::string const& filename ) { ioHDF5( IOStatus::isSaving, filename ); }
+    void saveHDF5( std::string const& filename, double scale = 1 )
+    {
+        ioHDF5( IOStatus::isSaving, filename, 0, scale );
+    }
 #endif
 
   private:
@@ -1244,7 +1250,7 @@ public:
     //!
     //!  save mesh in hdf5
     //!
-    void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
+    void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES, double scale = 1 );
 #endif
 
     //! @}

@@ -69,7 +69,7 @@ BOOST_PARAMETER_FUNCTION(
       ( desc, *,std::shared_ptr<gmsh_type>() )  // geo() can't be used here as default !!
 
       ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
-      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.scale") )
+      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="mesh.scale") )
       ( straighten,          (bool), boption(_prefix=prefix,_name="gmsh.straighten") )
       ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
@@ -135,7 +135,9 @@ BOOST_PARAMETER_FUNCTION(
                 CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
                 _mesh_ptrtype m( mesh );
                 m->setWorldComm( worldcomm );
-                m->loadHDF5( json_fname );
+                m->loadHDF5( json_fname, update, scale );
+                if ( straighten && _mesh_type::nOrder > 1 )
+                    return straightenMesh( m, worldcomm->subWorldCommPtr() );
                 return m;
             }
         }
@@ -172,7 +174,7 @@ BOOST_PARAMETER_FUNCTION(
 
 #if defined(FEELPP_HAS_HDF5)
         if ( savehdf5 && partitions == 1 )
-            m->saveHDF5( mesh_name.stem().string()+".json" );
+            m->saveHDF5( mesh_name.stem().string()+".json", 1./scale );
 #endif
         return m;
     }
@@ -217,7 +219,7 @@ BOOST_PARAMETER_FUNCTION(
         if ( savehdf5 )
         {
             tic();
-            m->saveHDF5( mesh_name.stem().string()+".json" );
+            m->saveHDF5( mesh_name.stem().string()+".json", 1./scale );
             toc("loadMesh.saveHDF5", FLAGS_v>0);
             if ( verbose )
                 cout << "[loadMesh] Saving HDF5 mesh: " << fs::system_complete(mesh_name.stem().string()+".json") << std::endl;
@@ -235,7 +237,7 @@ BOOST_PARAMETER_FUNCTION(
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         _mesh_ptrtype m( mesh );
         m->setWorldComm( worldcomm );
-        m->loadHDF5( mesh_name.string(), update );
+        m->loadHDF5( mesh_name.string(), update, scale );
         if ( straighten && _mesh_type::nOrder > 1 )
             return straightenMesh( m, worldcomm->subWorldCommPtr() );
         return m;
@@ -273,6 +275,7 @@ BOOST_PARAMETER_FUNCTION(
     auto m = createGMSHMesh(_mesh=mesh,
                             _desc=domain( _name=mesh_name.string(), _h=h, _worldcomm=worldcomm ),
                             _h=h,
+                            _scale=scale,
                             _refine=refine,
                             _update=update,
                             _physical_are_elementary_regions=physical_are_elementary_regions,
@@ -288,7 +291,7 @@ BOOST_PARAMETER_FUNCTION(
 
 #if defined(FEELPP_HAS_HDF5)
     if ( savehdf5 && partitions == 1 )
-        m->saveHDF5( fs::path(filenameExpand).stem().string()+".json" );
+        m->saveHDF5( fs::path(filenameExpand).stem().string()+".json", 1./scale );
 #endif
     return m;
 #else
