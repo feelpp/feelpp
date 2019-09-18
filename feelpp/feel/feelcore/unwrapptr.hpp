@@ -61,6 +61,9 @@ unwrap_ptr( C & c, mpl::bool_<false> )
 
 } // detail
 
+template<typename T>
+using unwrap_ptr_t = remove_shared_ptr_type<T>;
+
 /**
  * @return the c++ objet pointed by c++ pointer or shared_ptr or same object otherwise
  */

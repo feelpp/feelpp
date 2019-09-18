@@ -34,23 +34,6 @@
 namespace Feel
 {
 
-FEELPP_EXPORT po::options_description
-makeOptions()
-{
-    po::options_description options( "Electric" );
-    options.add_options()
-        ( "thermoelectric.filename", Feel::po::value<std::string>()->default_value("electric.json"),
-          "json file containing application parameters and boundary conditions")
-        ( "thermoelectric.penal-dir", po::value<double>()->default_value( 1e5 ), "penalisation term" )
-        ( "thermoelectric.trainset-deim-size", po::value<int>()->default_value(40), "size of the deim trainset" )
-        ( "thermoelectric.trainset-mdeim-size", po::value<int>()->default_value(40), "size of the mdeim trainset" )
-        ;
-    options.add(backend_options("feV") );
-    options.add(deimOptions("vec")).add(deimOptions("mat"));
-
-    return options;
-}
-
 FEELPP_EXPORT AboutData
 makeAbout( std::string const& str = "electriccrbmodel" )
 {
@@ -169,17 +152,20 @@ private:
     parameter_type M_mu;
 
     double M_sigma;
-    double M_potDif;
 
     int M_trainsetDeimSize;
     int M_trainsetMdeimSize;
     double M_penalDir;
     std::string M_propertyPath;
+    bool M_testDeim;
+    std::string M_dbBasename;
+    int M_verbose;
 
 public:
+    static po::options_description makeOptions( std::string const& prefix="" );
     // Constructors
-    AlphaElectric();
-    AlphaElectric( mesh_ptrtype mesh );
+    explicit AlphaElectric(std::string const& prefix = "");
+    AlphaElectric( mesh_ptrtype mesh, std::string const& prefix = "" );
 
     // Helpers
     int Qa();
@@ -196,6 +182,8 @@ public:
 
     std::string alpha( parameter_type const& mu, ModelMaterial const& mat );
     std::string alphaPrime( parameter_type const& mu, ModelMaterial const& mat );
+    std::string alphaRef( ModelMaterial const& mat );
+    std::string alphaPrimeRef( ModelMaterial const& mat );
     sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag ) override;
     vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag ) override;
     void initModel() override;
@@ -216,13 +204,15 @@ public:
 
     element_type solve( parameter_type const& mu ) override;
     value_type
-    output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
+    output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false) override;
 
     double sigma(std::string mat);
     void computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu );
     map_mat_type const& materials() const { return M_materials; }
     map_mat_type const& materialsWithGeo() const { return M_materialsWithGeo; }
     map_mat_type const& materialsWithoutGeo() const { return M_materialsWithoutGeo; }
+    bool isInMaterials(ExpressionStringAtMarker const& ex) const;
+    std::string const& dbBasename() const { return M_dbBasename; }
 }; // AlphaElectric class
 
 } // namespace Feel

@@ -36,8 +36,6 @@
  #include <feel/feelvf/operations.hpp>*/
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
-#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
-#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
 
 namespace Feel
 {
@@ -149,11 +147,17 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
     M_fieldElectricField.reset( new element_electricfield_type(M_XhElectricField,"E"));
     M_fieldCurrentDensity.reset( new element_electricfield_type(M_XhElectricField,"j"));
+    M_fieldJoulesLosses.reset( new element_component_electricfield_type(M_XhElectricField->compSpace(),"joules-losses"));
 
     this->initBoundaryConditions();
 
+    this->initInitialConditions();
+
     // post-process
     this->initPostProcess();
+
+    // update fields
+    this->updateFields( this->symbolsExpr() );
 
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
@@ -180,6 +184,19 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
     this->log("Electric","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
+}
+
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+ELECTRIC_CLASS_TEMPLATE_TYPE::initInitialConditions()
+{
+    if ( !this->doRestart() )
+    {
+        std::vector<element_electricpotential_ptrtype> icElectricPotentialFields;
+        CHECK( this->isStationary() ) << "TODO";
+        icElectricPotentialFields = { this->fieldElectricPotentialPtr() };
+        this->updateInitialConditions( "electric-potential", M_rangeMeshElements, this->symbolsExpr(), icElectricPotentialFields );
+    }
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -230,37 +247,17 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-std::set<std::string>
-ELECTRIC_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
-{
-    std::set<std::string> res;
-    for ( auto const& o : ifields )
-    {
-        if ( o == prefixvm(prefix,"electric-potential") || o == prefixvm(prefix,"all") )
-            res.insert( "electric-potential" );
-        if ( o == prefixvm(prefix,"electric-field") || o == prefixvm(prefix,"all") )
-            res.insert( "electric-field" );
-        if ( o == prefixvm(prefix,"conductivity") || o == prefixvm(prefix,"all") )
-            res.insert( "conductivity" );
-        if ( o == prefixvm(prefix,"current-density") || o == prefixvm(prefix,"all") )
-            res.insert( "current-density" );
-        if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
-            res.insert( "pid" );
-    }
-    return res;
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     this->log("Electric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    M_postProcessFieldExported.clear();
-    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
+    this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses","pid"} );
+    this->setPostProcessSaveAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses"} );
+    super_type::initPostProcess();
 
-    if ( !M_postProcessFieldExported.empty() )
+    if ( !this->postProcessExportsFields().empty() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),
@@ -273,6 +270,16 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
             if ( M_exporter->doExport() )
                 M_exporter->restart(this->timeInitial());
         }
+    }
+
+    // point measures
+    auto fieldNamesWithSpaceElectricPotential = std::make_pair( std::set<std::string>({"electric-potential"}), this->spaceElectricPotential() );
+    auto fieldNamesWithSpaceElectricField = std::make_pair( std::set<std::string>({"electric-field"}), this->spaceElectricField() );
+    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceElectricPotential, fieldNamesWithSpaceElectricField );
+    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
+    {
+       M_measurePointsEvaluation->init( evalPoints );
     }
 
     if ( !this->isStationary() )
@@ -395,119 +402,7 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->log("Electric","exportResults", "start");
-    this->timerTool("PostProcessing").start();
-
-    this->exportFields( time );
-
-    this->exportMeasures( time );
-
-    this->timerTool("PostProcessing").stop("exportResults");
-    if ( this->scalabilitySave() )
-    {
-        if ( !this->isStationary() )
-            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
-        this->timerTool("PostProcessing").save();
-    }
-    this->log("Electric","exportResults", "finish");
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::exportFields( double time )
-{
-    bool hasFieldToExport = this->updateExportedFields( M_exporter, M_postProcessFieldExported, time );
-    if ( hasFieldToExport )
-    {
-        M_exporter->save();
-        this->upload( M_exporter->path() );
-    }
-}
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-bool
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time )
-{
-    if ( !exporter ) return false;
-    if ( !exporter->doExport() ) return false;
-
-    bool hasFieldToExport = false;
-    if ( fields.find( "electric-potential" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"electric-potential"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-potential")),
-                                     this->fieldElectricPotential() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "electric-field" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"electric-fields"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-fields")),
-                                     *M_fieldElectricField );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "conductivity" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"conductivity"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"conductivity")),
-                                     M_electricProperties->fieldElectricConductivity() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "current-density" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"current-density"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"current-density")),
-                                     *M_fieldCurrentDensity );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "pid" ) != fields.end() )
-    {
-        exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
-        hasFieldToExport = true;
-    }
-    return hasFieldToExport;
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
-{
-    bool hasMeasure = false;
-
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
-
-    auto fieldTuple = hana::make_tuple( std::make_pair( "electric-potential",this->fieldElectricPotentialPtr() ) );
-    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
-    {
-        std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
-        for ( auto const& resPpNorm : resPpNorms )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
-            hasMeasure = true;
-        }
-    }
-    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
-    {
-        std::map<std::string,double> resPpStats;
-        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
-        for ( auto const& resPpStat : resPpStats )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
-            hasMeasure = true;
-        }
-    }
-
-
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
-
+    this->exportResults( time, this->symbolsExpr() );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -523,34 +418,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
     else
         CHECK( false ) << "invalid M_computeElectricFieldProjType " << M_computeElectricFieldProjType << "\n";
 }
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateCurrentDensity()
-{
-    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
-    {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
-        if ( electricConductivity.isConstant() )
-        {
-            double sigma = electricConductivity.value();
-            auto cd = -sigma*trans(gradv( this->fieldElectricPotential() ));
-            this->updateCurrentDensity( cd, range );
-        }
-        else
-        {
-            auto sigma = electricConductivity.expr();
-            if ( sigma.expression().hasSymbol( "heat_T" ) )
-                continue;
-            auto cd = -sigma*trans(gradv( this->fieldElectricPotential() ));
-            this->updateCurrentDensity( cd, range );
-        }
-    }
-}
-
-
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -582,8 +449,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
     M_blockVectorSolution.localize();
 
-    this->updateElectricField();
-    this->updateCurrentDensity();
+    this->updateFields( this->symbolsExpr() );
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
@@ -601,74 +467,8 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    sparse_matrix_ptrtype& A = data.matrix();
-    vector_ptrtype& F = data.rhs();
-    bool buildCstPart = data.buildCstPart();
-
-    std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("Electric","updateLinearPDE", "start"+sc);
-    boost::mpi::timer thetimer;
-
-    auto mesh = this->mesh();
-    auto XhV = this->spaceElectricPotential();
-    auto const& v = this->fieldElectricPotential();
-
-    auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=A,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix() ,
-                                              _colstart=this->colStartInMatrix() );
-    auto myLinearForm = form1( _test=XhV, _vector=F,
-                               _rowstart=this->rowStartInVector() );
-
-    //--------------------------------------------------------------------------------------------------//
-
-    if ( buildCstPart )
-    {
-        for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
-        {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
-            if ( electricConductivity.isConstant() )
-            {
-                double sigma = electricConductivity.value();
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= sigma*inner(gradt(v),grad(v)),
-                               _geomap=this->geomap() );
-            }
-            else
-            {
-                auto sigma = electricConductivity.expr();
-                if ( sigma.expression().hasSymbol( "heat_T" ) )
-                    continue;
-                //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= sigma*inner(gradt(v),grad(v)),
-                               _geomap=this->geomap() );
-            }
-        }
-    }
-
-    // update source term
-    if ( !buildCstPart )
-    {
-        for( auto const& d : this->M_volumicForcesProperties )
-        {
-            auto rangeEltUsed = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
-            myLinearForm +=
-                integrate( _range=rangeEltUsed,
-                           _expr= expression(d)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-
-
-    // update bc
-    this->updateLinearPDEWeakBC(A,F,buildCstPart);
+    this->updateLinearPDE( data, this->symbolsExpr() );
 }
-
 
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -699,60 +499,8 @@ void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
-    sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
-    bool _BuildCstPart = data.buildCstPart();
-
-    bool buildNonCstPart = !_BuildCstPart;
-    bool buildCstPart = _BuildCstPart;
-
-    std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("Electric","updateJacobian", "start"+sc);
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
-
-    auto mesh = this->mesh();
-    auto XhV = this->spaceElectricPotential();
-    // auto const& v = this->fieldElectricPotential();
-    auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
-
-    auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
-                                              _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
-
-    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
-    {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
-        if ( electricConductivity.isConstant() )
-        {
-            if ( buildCstPart )
-            {
-                double sigma = electricConductivity.value();
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= sigma*inner(gradt(v),grad(v)),
-                               _geomap=this->geomap() );
-            }
-        }
-        else
-        {
-            auto sigma = electricConductivity.expr();
-            if ( sigma.expression().hasSymbol( "heat_T" ) )
-                continue;
-            if ( buildCstPart )
-            {
-                //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= sigma*inner(gradt(v),grad(v)),
-                               _geomap=this->geomap() );
-            }
-        }
-    }
-
-    this->updateJacobianWeakBC( v,J,buildCstPart );
+    auto const v = this->spaceElectricPotential()->element(XVec, this->rowStartInVector());
+    this->updateJacobian( data, this->symbolsExpr(v) );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -770,105 +518,11 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian &
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const
-{
-    if ( this->M_bcRobin.empty() ) return;
-
-    if ( !buildCstPart )
-    {
-        auto XhV = this->spaceElectricPotential();
-        auto mesh = XhV->mesh();
-        size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
-
-        auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
-                                                  _pattern=size_type(Pattern::COUPLED),
-                                                  _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
-                                                  _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
-        for( auto const& d : this->M_bcRobin )
-        {
-            bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= expression1(d)*idt(v)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
-    vector_ptrtype& R = data.residual();
-    bool _BuildCstPart = data.buildCstPart();
-    bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
-
-    bool buildNonCstPart = !_BuildCstPart;
-    bool buildCstPart = _BuildCstPart;
-
-    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
-    this->log("Electric","updateResidual", "start"+sc);
-
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
-
-    auto mesh = this->mesh();
-    auto XhV = this->spaceElectricPotential();
-    // auto const& v = this->fieldElectricPotential();
-    auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
-
-
-    auto myLinearForm = form1( _test=XhV, _vector=R,
-                               _rowstart=this->rowStartInVector() + startBlockIndexElectricPotential );
-
-
-    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
-    {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
-        if ( electricConductivity.isConstant() )
-        {
-            if (!buildCstPart && !UseJacobianLinearTerms )
-            {
-                double sigma = electricConductivity.value();
-                myLinearForm +=
-                    integrate( _range=range,
-                               _expr= sigma*inner(gradv(v),grad(v)),
-                               _geomap=this->geomap() );
-            }
-        }
-        else
-        {
-            auto sigma = electricConductivity.expr();
-            if ( sigma.expression().hasSymbol( "heat_T" ) )
-                continue;
-            if (!buildCstPart && !UseJacobianLinearTerms )
-            {
-                //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
-                myLinearForm +=
-                    integrate( _range=range,
-                               _expr= sigma*inner(gradv(v),grad(v)),
-                               _geomap=this->geomap() );
-            }
-        }
-    }
-    // source term
-    if ( buildCstPart )
-    {
-        for( auto const& d : this->M_volumicForcesProperties )
-        {
-            auto rangeEltUsed = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
-            myLinearForm +=
-                integrate( _range=rangeEltUsed,
-                           _expr= -expression(d)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-
-    // weak bc
-    this->updateResidualWeakBC( v,R,buildCstPart );
-
-    this->log("Electric","updateResidual", "finish"+sc);
+    auto const v = this->spaceElectricPotential()->element(XVec, this->rowStartInVector());
+    this->updateResidual( data, this->symbolsExpr(v) );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -883,48 +537,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual &
 
     this->log("Electric","updateResidualDofElimination","finish" );
 }
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const
-{
-    if ( this->M_bcNeumann.empty() && this->M_bcRobin.empty() ) return;
-
-    auto XhV = this->spaceElectricPotential();
-    auto mesh = XhV->mesh();
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
-
-    auto myLinearForm = form1( _test=XhV, _vector=R,
-                               _rowstart=this->rowStartInVector()+startBlockIndexElectricPotential );
-    if ( buildCstPart )
-    {
-        for( auto const& d : this->M_bcNeumann )
-        {
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= -expression(d)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-    for( auto const& d : this->M_bcRobin )
-    {
-        if ( !buildCstPart )
-        {
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= expression1(d)*idv(v)*id(v),
-                           _geomap=this->geomap() );
-        }
-        if ( buildCstPart )
-        {
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= -expression1(d)*expression2(d)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-}
-
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -953,49 +565,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & 
 
     this->log("Electric","updateLinearPDEDofElimination","finish" );
 }
-
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart ) const
-{
-    if ( this->M_bcNeumann.empty() && this->M_bcRobin.empty() ) return;
-
-    if ( !buildCstPart )
-    {
-        auto XhV = this->spaceElectricPotential();
-        auto const& v = this->fieldElectricPotential();
-        auto mesh = XhV->mesh();
-
-        auto myLinearForm = form1( _test=XhV, _vector=F,
-                                   _rowstart=this->rowStartInVector() );
-        for( auto const& d : this->M_bcNeumann )
-        {
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= expression(d)*id(v),
-                           _geomap=this->geomap() );
-        }
-
-        auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=A,
-                                                  _pattern=size_type(Pattern::COUPLED),
-                                                  _rowstart=this->rowStartInMatrix(),
-                                                  _colstart=this->colStartInMatrix() );
-        for( auto const& d : this->M_bcRobin )
-        {
-            bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= expression1(d)*idt(v)*id(v),
-                           _geomap=this->geomap() );
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= expression1(d)*expression2(d)*id(v),
-                           _geomap=this->geomap() );
-        }
-
-    }
-}
-
 
 } // end namespace FeelModels
 } // end namespace Feel

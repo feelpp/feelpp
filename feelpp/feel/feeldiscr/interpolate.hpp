@@ -35,6 +35,33 @@ namespace Feel
 {
 enum { INTERPOLATE_DIFFERENT_MESH=0, INTERPOLATE_SAME_MESH = 1 };
 
+template<typename SpaceType, typename FunctionType>
+bool
+interpolate_copy( std::shared_ptr<SpaceType> const& space,
+                  FunctionType const& f,
+                  typename SpaceType::element_type& interp )
+{
+    if constexpr (
+#if 0
+        std::is_same_v<typename SpaceType::mesh_type, typename FunctionType::functionspace_type::mesh_type> && 
+        std::is_same_v<typename SpaceType::basis_type, typename FunctionType::functionspace_type::basis_type>
+#else
+        std::is_same_v<SpaceType, typename FunctionType::functionspace_type> 
+#endif
+                  )
+    {
+        if ( space == f.functionSpace() )
+        {
+            DVLOG(2) << "[interpolate_copy] Same mesh and same space\n";
+            auto n = interp.name();
+            interp = f;
+            interp.setName( n );
+            return true;
+        }
+    }
+    return false;
+}
+
 /**
  * Given a space \p space using a lagrange basis, compute the
  * interpolation \p interp of \p f belonging to another function
@@ -52,7 +79,7 @@ template<typename SpaceType, typename FunctionType>
 void
 interpolate( std::shared_ptr<SpaceType> const& space,
              FunctionType const& f,
-             typename SpaceType::element_type& interp, int same_mesh = INTERPOLATE_DIFFERENT_MESH )
+             typename SpaceType::element_type& interp )
 {
     typedef typename SpaceType::value_type value_type;
     typedef boost::multi_array<value_type,3> array_type;
@@ -86,19 +113,10 @@ interpolate( std::shared_ptr<SpaceType> const& space,
     // basis
     typedef typename SpaceType::basis_type basis_type;
 
-
-    const bool same_basis = boost::is_same<basis_type, typename FunctionType::functionspace_type::basis_type>::value;
-    DVLOG(2) << "[interpolate] are the basis the same " << same_basis << "\n";
-    DVLOG(2) << "[interpolate] are the meshes the same " << same_mesh << "\n";
-
     // if same space type and mesh  then return the function itself
-    if ( same_basis && same_mesh == INTERPOLATE_SAME_MESH )
-    {
-        DVLOG(2) << "[interpolate] Same mesh and same space\n";
-        interp = f;
-        return;
-    }
-
+    if ( interpolate_copy( space, f, interp ) )
+        return; 
+    
     dof_type const* __dof = space->dof().get();
     basis_type const* __basis = space->basis().get();
     gm_ptrtype __gm = space->gm();
@@ -125,8 +143,6 @@ interpolate( std::shared_ptr<SpaceType> const& space,
     //f.id( *fectx, fvalues );
 
     // if same mesh but not same function space (different order)
-    //if ( f.functionSpace()->mesh() == space->mesh() )
-    //if ( same_mesh == INTERPOLATE_SAME_MESH )
     if ( ( MeshBase<>* )f.functionSpace()->mesh().get() == ( MeshBase<>* )space->mesh().get() )
     {
         elements_reference_wrapper_t<typename FunctionType::functionspace_type::mesh_type> rangeElt;
@@ -198,11 +214,11 @@ interpolate( std::shared_ptr<SpaceType> const& space,
                 for ( uint16_type comp1 = 0; comp1 < ncdof1; ++comp1 )
                     for ( uint16_type comp2 = 0; comp2 < ncdof2; ++comp2 )
                 {
-                    size_type globaldof =  boost::get<0>( __dof->localToGlobal( curElt.id(),
-                                                          l, ncdof2*comp1+comp2 ) );
+                    size_type globaldof =  __dof->localToGlobal( curElt.id(),
+                                                                 l, ncdof2*comp1+comp2 ).index();
 
 #if 0
-                    size_type globaldof_f =  boost::get<0>( f.functionSpace()->dof()->localToGlobal( curElt.id(),l, 0 ) );
+                    size_type globaldof_f =  f.functionSpace()->dof()->localToGlobal( curElt.id(),l, 0 ).index();
                     std::cout << "elt : " << curElt.id() << "\n"
                               << "  l : " << l << "\n"
                               << " comp: " << comp << "\n"

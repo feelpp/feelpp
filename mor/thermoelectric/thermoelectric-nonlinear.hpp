@@ -186,9 +186,10 @@ private:
     bool M_exportFE;
 
 public:
+    static po::options_description makeOptions( std::string const& prefix="thermoelectric" );
     // Constructors
-    ThermoElectric();
-    ThermoElectric( mesh_ptrtype mesh );
+    explicit ThermoElectric( std::string const& prefix = "thermoelectric" );
+    ThermoElectric( mesh_ptrtype mesh, std::string const& prefix = "thermoelectric" );
 
     int indexOfMatV(std::string mat ) const { return std::distance(M_elecMaterials.begin(),M_elecMaterials.find(mat)); }
     int indexOfMatT(std::string mat ) const { return std::distance(M_therMaterials.begin(),M_therMaterials.find(mat)); }
@@ -247,9 +248,11 @@ public:
 
     // BiotSavart API
     int mMaxJoule();
-    int mMaxSigma();
-    q_sigma_element_type eimSigmaQ(int m);
-    vectorN_type eimSigmaBeta( parameter_type const& mu );
+    int mMaxSigma( std::string const& mat );
+    q_sigma_element_type eimSigmaQ( std::string const& mat, int m );
+    vectorN_type eimSigmaBeta( std::string const& mat, parameter_type const& mu );
+    vectorN_type eimSigmaBeta( std::string const& mat, parameter_type const& mu, element_type const& U );
+    vectorN_type eimSigmaBeta( std::string const& mat, parameter_type const& mu, vectorN_type const& Urb );
     void computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu );
     void computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu, element_type& VT );
 }; // Thermoelectric class

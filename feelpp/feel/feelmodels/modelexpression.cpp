@@ -27,7 +27,7 @@
 namespace Feel {
 
 void
-ModelExpression::setExpr( std::string const& key, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr )
+ModelExpression::setExpr( std::string const& key, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr, ModelIndexes const& indexes )
 {
     if( boost::optional<double> itvald = p.get_optional<double>( key ) )
     {
@@ -36,7 +36,7 @@ ModelExpression::setExpr( std::string const& key, pt::ptree const& p, WorldComm 
         this->setExprScalar( Feel::vf::expr<expr_order>( (boost::format("%1%")%val).str(),"",worldComm,directoryLibExpr ) );
     }
     else if( boost::optional<std::string> itvals = p.get_optional<std::string>( key ) )
-        this->setExpr(*itvals, worldComm, directoryLibExpr );
+        this->setExpr( indexes.replace( *itvals ), worldComm, directoryLibExpr );
 }
 
 void

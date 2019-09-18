@@ -419,14 +419,14 @@ run_test_interp()
 #else
 
     size_type ctx = userelation? EXTRACTION_KEEP_MESH_RELATION:0;
-    auto mesh4 = createSubmesh(mesh3,elements(mesh3), (size_type)ctx);
+    auto mesh4 = createSubmesh(_mesh=mesh3,_range=elements(mesh3), _context=ctx);
 #endif
 #else
     auto meshBase = ((R-C)+C).createMesh(_mesh=new mesh_type,
                                          _name="meshBase_interp" + mesh_type::shape_type::name() );
     size_type ctx = userelation? EXTRACTION_KEEP_MESH_RELATION:0;
-    auto mesh3 = createSubmesh(meshBase,markedelements(meshBase,"Omega3"), (size_type)ctx);
-    auto mesh4 = createSubmesh(meshBase,markedelements(meshBase,"Omega4"), (size_type)ctx);
+    auto mesh3 = createSubmesh(_mesh=meshBase,_range=markedelements(meshBase,"Omega3"), _context=ctx);
+    auto mesh4 = createSubmesh(_mesh=meshBase,_range=markedelements(meshBase,"Omega4"), _context=ctx);
 #endif
     std::list<boost::tuple<mesh_ptrtype,mesh_ptrtype,bool> > __listMesh;
     __listMesh.push_back( boost::make_tuple( mesh1,mesh2, meshSize1==meshSize2 ) );

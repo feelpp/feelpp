@@ -133,10 +133,6 @@ public :
                     // std::cout << "geospace ContextGeo with minimal mesh\n";
                     if ( !M_meshGeoContext->hasElement( meshEltCtx.id() ) )
                     {
-                        auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( M_meshGeoContext.get(),
-                                                                                                             M_meshGeoContext->gm(),
-                                                                                                             M_meshGeoContext->gm1() );
-                        meshEltCtx.setCommonData( geondEltCommon );
                         M_meshGeoContext->addElement( meshEltCtx, false );
                     }
                     auto const& meshEltCtxRegister = M_meshGeoContext->element( meshEltCtx.id() );
@@ -313,10 +309,6 @@ public :
                 if ( !M_meshGeoContext->hasElement( modelMeshEltCtx.id(), modelMeshEltCtx.processId() ) )
                 {
                     element_type meshEltCtx = modelMeshEltCtx;
-                    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( M_meshGeoContext.get(),
-                                                                                                         M_meshGeoContext->gm(),
-                                                                                                         M_meshGeoContext->gm1() );
-                    meshEltCtx.setCommonData( geondEltCommon );
                     M_meshGeoContext->addElement( meshEltCtx, false );
                 }
             }

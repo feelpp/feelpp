@@ -26,24 +26,19 @@
  * @author wahl
  * @date   Tue Nov 25 16:24:55 2014
  */
-
-
 #ifndef __CRBModelSaddlePoint_H
 #define __CRBModelSaddlePoint_H 1
 
-#include <feel/feelalg/solvereigen.hpp>
-#include <feel/feelvf/vf.hpp>
-
-#include <feel/feelcrb/parameterspace.hpp>
-#include <feel/feelcrb/crbmodel.hpp>
+#include <feel/feelcrb/crbmodelblock.hpp>
 
 namespace Feel
 {
+
 template<typename ModelType>
 class CRBModelSaddlePoint :
-        public CRBModel<ModelType>
+        public CRBModelBlock<ModelType>
 {
-    typedef CRBModel<ModelType> super;
+    typedef CRBModelBlock<ModelType> super;
 public :
     typedef ModelType model_type;
     typedef std::shared_ptr<ModelType> model_ptrtype;
@@ -66,91 +61,56 @@ public :
 
     CRBModelSaddlePoint( crb::stage stage, int level = 0 ) :
         super ( stage, level ),
-        M_block_initialized( false )
-    {
-        this->initModelSaddlePoint();
-    }
+        M_addSupremizer(boption(_prefix=this->M_prefix,_name="crb.saddlepoint.add-supremizer"))
+    {}
 
     CRBModelSaddlePoint( model_ptrtype const& model , crb::stage stage, int level = 0 ) :
         super ( model, stage, level ),
-        M_block_initialized( false )
+        M_addSupremizer(boption(_prefix=this->M_prefix,_name="crb.saddlepoint.add-supremizer"))
+    {}
+
+    bool addSupremizerInSpace( int const& n_space ) const override
     {
-        this->initModelSaddlePoint();
+        if ( n_space==0 )
+            return M_addSupremizer;
+        return false;
     }
 
-    void initModelSaddlePoint()
+    int QTri() { return 0; }
+
+    element_type supremizer( parameter_type const& mu, element_type const& U, int n_space ) override
     {
+        auto Us = this->functionSpace()->element();
 
-        this->M_backend_l2_vec.resize(2);
-        this->M_backend_l2_vec[0]=backend( _name="backend-Xh0" );
-        this->M_backend_l2_vec[1]=backend( _name="backend-Xh1" );
-
-        auto Xh0 = this->functionSpace()->template functionSpace<0>();
-        auto Xh1 = this->functionSpace()->template functionSpace<1>();
-
-        if ( this->M_inner_product_matrix_vec.size()==0 )
-            this->M_inner_product_matrix_vec.resize(2);
-
-        auto M = this->energyMatrix();
-        if ( M )
+        if ( n_space==0 )
         {
-            Feel::cout << "Using energy matrix as inner product matrix ! (SP)\n";
-            M_inner_product_matrix_vec[0] = M->createSubMatrix( M->mapRow().dofIdToContainerId(0),
-                                                                M->mapCol().dofIdToContainerId(0) );
-            M_inner_product_matrix_vec[1] = M->createSubMatrix( M->mapRow().dofIdToContainerId(1),
-                                                                M->mapCol().dofIdToContainerId(1) );
+            auto vec = U.template elementPtr<1>();
+            auto Xh0 = this->functionSpace()->template functionSpace<0>();
+            auto Xh1 = this->functionSpace()->template functionSpace<1>();
+            auto us = Us.template element<0>();
+            //auto us = Xh0->element();
+
+            vector_ptrtype rhs = this->M_backend_l2_vec[0]->newVector( Xh0 );
+            rhs->zero();
+
+            sparse_matrix_ptrtype A01 = this->M_backend_l2_vec[0]->newMatrix( _test=Xh0, _trial=Xh1 );
+            A01 = offlineMergeForSupremizer(mu,U);
+
+            rhs->addVector( vec, A01 );
+            this->M_backend_l2_vec[0]->solve( _matrix=this->M_inner_product_matrix_vec[0],
+                                              _rhs=rhs, _solution=us );
+            //u = us.container();
         }
-        else
-        {
-            auto u = Xh0->element();
-            this->M_inner_product_matrix_vec[0] = backend()->newMatrix( _test=Xh0, _trial=Xh0 );
-            auto m2 = form2( _trial=Xh0, _test=Xh0, _matrix=this->M_inner_product_matrix_vec[0] );
-            m2 = integrate( elements(Xh0->mesh()), inner( gradt(u), grad(u) ) );
 
-            this->M_inner_product_matrix_vec[0]->close();
-
-            auto p = Xh1->element();
-            this->M_inner_product_matrix_vec[1] = backend()->newMatrix( _test=Xh1, _trial=Xh1 );
-            form2( _test=Xh1, _trial=Xh1, _matrix=this->M_inner_product_matrix_vec[1] )
-                =integrate( elements(Xh1->mesh()),
-                            inner( idt(p), id(p) ) );
-            this->M_inner_product_matrix_vec[1]->close();
-        }
-    }
-
-    virtual bool useMonolithicRbSpace() { return false; }
-
-    void l2solveSP( vector_ptrtype& u, vector_ptrtype const& f, int n_space )
-    {
-        M_backend_l2_vec[n_space]->solve( _matrix=M_inner_product_matrix_vec[n_space],
-                                          _solution=u, _rhs=f );
-    }
-
-    subelement_type<0> supremizer( parameter_type const& mu, element_type const& U )
-    {
-        auto vec = U.template elementPtr<1>();
-        auto Xh0 = this->functionSpace()->template functionSpace<0>();
-        auto Xh1 = this->functionSpace()->template functionSpace<1>();
-        auto us = Xh0->element();
-
-        vector_ptrtype rhs = this->M_backend_l2_vec[0]->newVector( Xh0 );
-        rhs->zero();
-
-        sparse_matrix_ptrtype A01 = this->M_backend_l2_vec[0]->newMatrix( _test=Xh0, _trial=Xh1 );
-        A01 = offlineMergeForSupremizer(mu,U);
-
-        rhs->addVector( vec, A01 );
-        this->M_backend_l2_vec[0]->solve( _matrix=this->M_inner_product_matrix_vec[0],
-                                          _rhs=rhs, _solution=us );
-        return us;
+        return Us;
     }
 
     sparse_matrix_ptrtype offlineMergeForSupremizer( parameter_type const& mu,
                                                      element_type const& U )
     {
         sparse_matrix_ptrtype A;
-        if ( this->isLinear() )
-            boost::tie( boost::tuples::ignore, A, boost::tuples::ignore ) = this->update(mu);
+        if ( this->isLinear() && !this->isTrilinear() )
+             boost::tie( boost::tuples::ignore, A, boost::tuples::ignore ) = this->update(mu);
         else
             boost::tie( boost::tuples::ignore, A, boost::tuples::ignore ) = this->update(mu,U);
 
@@ -160,128 +120,9 @@ public :
         A01->close();
         return A01;
     }
+protected:
+    bool M_addSupremizer;
 
-    template<typename EType1, typename EType2>
-    value_type AqmBlock( uint16_type q, uint16_type m,
-                         EType1 const& xi_i, EType2 const& xi_j,
-                         uint16_type nSpace1, uint16_type nSpace2,
-                         bool transpose = false ) const
-    {
-        auto A = this->M_Aqm_block[nSpace1][nSpace2][q][m];
-        if ( A->linftyNorm()<1e-12 )
-            return 0;
-        else
-            return A->energy( xi_i, xi_j, transpose );
-    }
-
-    std::vector< std::vector< sparse_matrix_ptrtype >>
-    AqmBlock( uint16_type n_space1, uint16_type n_space2 )
-    {
-        return this->M_Aqm_block[n_space1][n_space2];
-    }
-    std::vector< std::vector< vector_ptrtype >>
-    FqmBlock( uint16_type l, uint16_type n_space )
-    {
-        return this->M_Fqm_block[l][n_space];
-    }
-
-    template <typename EType>
-    value_type FqmBlock( uint16_type l, uint16_type q, uint16_type m,
-                         EType const& xi, uint16_type nSpace )
-    {
-        auto F = this->M_Fqm_block[l][nSpace][q][m];
-        if ( F->linftyNorm()<1e-12 )
-            return 0;
-        else
-            return inner_product( *F, xi );
-    }
-
-    void initBlockMatrix()
-    {
-        if ( !M_block_initialized )
-        {
-            M_block_initialized=true;
-            M_Aqm_block.resize( 2 );
-
-            for ( size_type r=0; r<2; r++ )
-            {
-                M_Aqm_block[r].resize( 2 );
-                for ( size_type c=0; c<2; c++ )
-                {
-                    M_Aqm_block[r][c].resize( this->Qa() );
-                    for ( size_type q=0; q<this->Qa(); q++ )
-                    {
-                        int mMax = this->mMaxA(q);
-                        M_Aqm_block[r][c][q].resize( mMax );
-                        for ( size_type m=0; m<mMax; m++ )
-                        {
-                            auto A = this->M_Aqm[q][m];
-                            auto const& i_row = A->mapRow().dofIdToContainerId( r );
-                            auto const& i_col = A->mapCol().dofIdToContainerId( c );
-                            M_Aqm_block[r][c][q][m] = A->createSubMatrix( i_row, i_col );
-                        }
-                    }
-                }
-            }
-
-            int n_output = this->M_Fqm.size();
-            M_Fqm_block.resize( n_output );
-
-            for ( size_type l=0; l<n_output; l++ )
-            {
-                M_Fqm_block[l].resize( 2 );
-                for ( size_type r=0; r<2; r++ )
-                {
-                    int qMax = this->Ql(l);
-                    M_Fqm_block[l][r].resize( qMax );
-                    for ( size_type q=0; q<qMax; q++ )
-                    {
-                        int mMax = this->mMaxF( l, q );
-                        M_Fqm_block[l][r][q].resize( mMax );
-                        for ( size_type m=0; m<mMax; m++ )
-                        {
-                            auto V = this->M_Fqm[l][q][m];
-                            auto const& i_row = V->map().dofIdToContainerId(r);
-                            M_Fqm_block[l][r][q][m] = V->createSubVector( i_row );
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    void clearBlockMatix()
-    {
-        M_Aqm_block.clear();
-        M_Fqm_block.clear();
-        M_block_initialized = false;
-    }
-
-    using super::scalarProduct;
-    /**
-     * returns the scalar product of the vector x and vector y
-     */
-    double scalarProduct( vector_type const& X, vector_type const& Y, int n_space )
-    {
-        return M_inner_product_matrix_vec[n_space]->energy( X, Y );
-    }
-    /**
-     * returns the scalar product of the vector x and vector y
-     */
-    double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y, int n_space )
-    {
-        return M_inner_product_matrix_vec[n_space]->energy( X, Y );
-    }
-
-
-
-protected :
-    std::vector<sparse_matrix_ptrtype> M_inner_product_matrix_vec;
-    std::vector< backend_ptrtype > M_backend_l2_vec;
-
-    std::vector< std::vector< std::vector< std::vector<sparse_matrix_ptrtype>>>> M_Aqm_block;
-    std::vector< std::vector< std::vector< std::vector<vector_ptrtype>>>> M_Fqm_block, M_Lqm_block;
-    bool M_block_initialized;
 
 }; // class CRBModelSaddlepoint
 

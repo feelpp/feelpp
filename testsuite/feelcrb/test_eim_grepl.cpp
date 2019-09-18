@@ -152,6 +152,7 @@ public:
             return Dmu;
         }
     std::string modelName() const { return std::string("test_eim_grepl" );}
+    std::string prefix() const { return ""; }
     uuids::uuid uuid() const
         {
             return Environment::nameUUID( boost::uuids::nil_uuid(), (boost::format("%1%_%2%")%this->modelName() %Environment::worldComm().localSize()).str() );

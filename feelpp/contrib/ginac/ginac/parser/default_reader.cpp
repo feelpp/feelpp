@@ -41,6 +41,14 @@ static ex pow_reader(const exvector& ev)
 {
 	return GiNaC::pow(ev[0], ev[1]);
 }
+static ex min_reader(const exvector& ev)
+{
+	return (ev[0]+ev[1])/2-GiNaC::abs(ev[0]-ev[1])/2;//GiNaC::min(ev[0], ev[1]);
+}
+static ex max_reader(const exvector& ev)
+{
+	return (ev[0]+ev[1])/2+GiNaC::abs(ev[0]-ev[1])/2; //GiNaC::max(ev[0], ev[1]);
+}
 
 static ex power_reader(const exvector& ev)
 {
@@ -90,6 +98,8 @@ const prototype_table& get_default_reader()
 		reader[make_pair("sqrt", 1)] = sqrt_reader;
 		reader[make_pair("pow", 2)] = pow_reader;
 		reader[make_pair("power", 2)] = power_reader;
+        reader[make_pair("min", 2)] = min_reader;
+        reader[make_pair("max", 2)] = max_reader;
 		reader[make_pair("lst", 0)] = lst_reader;
 		unsigned serial = 0;
 		for (auto & it : registered_functions_hack::get_registered_functions()) {
@@ -112,6 +122,8 @@ const prototype_table& get_builtin_reader()
 		reader[make_pair("sqrt", 1)] = sqrt_reader;
 		reader[make_pair("pow", 2)] = pow_reader;
 		reader[make_pair("power", 2)] = power_reader;
+        reader[make_pair("min", 2)] = min_reader;
+        reader[make_pair("max", 2)] = max_reader;
 		reader[make_pair("lst", 0)] = lst_reader;
 		enum {
 			log,

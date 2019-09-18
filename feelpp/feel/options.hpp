@@ -61,6 +61,8 @@ po::options_description backendpetsc_options( std::string const& prefix = "" );
 
 po::options_description mesh_options( int Dim, std::string const& prefix = "" );
 
+po::options_description mesh_options( std::string const& prefix = "" );
+
 po::options_description gmsh_options( std::string const& prefix = "" );
 
 po::options_description gmsh_domain_options( std::string const& prefix = "" );
@@ -151,5 +153,8 @@ po::options_description journal_options( std::string const& prefix="" );
 
 //! ptree options
 po::options_description ptree_options( std::string const& prefix="" );
+
+//! empirical quadrature options
+po::options_description eq_options( std::string const& prefix="" );
 }
 #endif // FEELPP_OPTIONS_HPP

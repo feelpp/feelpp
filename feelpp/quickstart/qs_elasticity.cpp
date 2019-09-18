@@ -1,32 +1,8 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4*/
 
 #include <feel/feel.hpp>
+#include "nullspace-rigidbody.hpp"
 
-namespace Feel
-{
-template <typename SpaceType>
-NullSpace<double> qsNullSpace( SpaceType const& space, mpl::int_<2> /**/ )
-{
-    auto mode1 = space->element( oneX() );
-    auto mode2 = space->element( oneY() );
-    auto mode3 = space->element( vec(Py(),-Px()) );
-    NullSpace<double> userNullSpace( { mode1,mode2,mode3 } );
-    return userNullSpace;
-}
-template <typename SpaceType>
-NullSpace<double> qsNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
-{
-    auto mode1 = space->element( oneX() );
-    auto mode2 = space->element( oneY() );
-    auto mode3 = space->element( oneZ() );
-    auto mode4 = space->element( vec(Py(),-Px(),cst(0.)) );
-    auto mode5 = space->element( vec(-Pz(),cst(0.),Px()) );
-    auto mode6 = space->element( vec(cst(0.),Pz(),-Py()) );
-    NullSpace<double> userNullSpace( { mode1,mode2,mode3,mode4,mode5,mode6 } );
-    return userNullSpace;
-}
-
-}
 
 int main(int argc, char**argv )
 {

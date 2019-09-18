@@ -51,6 +51,7 @@
 #include <feel/feeldiscr/stencil.hpp>
 
 #include <feel/feelvf/bilinearformbase.hpp>
+#include <feel/feelvf/linearform.hpp>
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/block.hpp>
 #include <feel/feelvf/fec.hpp>
@@ -1163,6 +1164,13 @@ public:
     {
         return this->M_matrix->energy( __v, __u );
     }
+
+    form1_t<test_space_type> operator()( element_2_type const& __u ) const
+        {
+            auto l = form1_t<test_space_type>( "linearform.l", M_X1, backend()->newVector( M_X1 ) );
+            this->M_matrix->multVector( __u, l.vector() );
+            return l;
+        }
 
     /**
      * \return the entry \f$M_{i,j}\f$

@@ -98,3 +98,5 @@ feelpp_add_test( twospacesmap )
 feelpp_add_test( on_dofs SRCS test_on_dofs GEO square_mmarked.geo CFG test_on_dofs.cfg )
 #! not functional yet
 # feelpp_add_test( element0D )
+
+feelpp_add_test( operatorlagrangep1 CLI "--pc-type=gamg --gmsh.hsize=0.25" )

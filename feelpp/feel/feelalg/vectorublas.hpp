@@ -996,9 +996,8 @@ public:
     //@}
 
 #ifdef FEELPP_HAS_HDF5
-    void saveHDF5( std::string const& filename, std::string tableName = "element", bool appendMode = false );
+    void saveHDF5( std::string const& filename, std::string tableName = "element", bool appendMode = false ) const;
     void loadHDF5( std::string const& filename, std::string tableName = "element" );
-    void ioHDF5( bool isLoad, std::string const& filename, std::string tableName = "element", bool appendMode = false );
 #endif
 
     //! create a VectorUblas as a view of another Vector type (as VectorPetsc)

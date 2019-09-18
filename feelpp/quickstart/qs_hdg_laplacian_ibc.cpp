@@ -36,8 +36,10 @@ makeOptions()
 {
     po::options_description hdgoptions( "HDG options" );
     hdgoptions.add_options()
-        ( "k", po::value<std::string>()->default_value( "-1" ), "diffusion coefficient" )
-        ( "pyexpr.filename", po::value<std::string>()->default_value( "${top_srcdir}/quickstart/laplacian.py" ), "python filename to execute" )
+        ( "k", po::value<std::string>()->default_value( "1" ), "diffusion coefficient" )
+        ( "r_1", po::value<std::string>()->default_value( "1" ), "Robin lhs coefficient" )
+        ( "r_2", po::value<std::string>()->default_value( "" ), "Robin rhs coefficient" )
+        ( "pyexpr.filename", po::value<std::string>()->default_value( "${top_srcdir}/feelpp/quickstart/laplacian.py" ), "python filename to execute" )
         ( "solution.p", po::value<std::string>()->default_value( "1" ), "solution p exact" )
         ( "solution.sympy.p", po::value<std::string>()->default_value( "1" ), "solution p exact (if we use sympy)" )        
 #if (FEELPP_DIM==2)
@@ -49,6 +51,7 @@ makeOptions()
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( "solvecg", po::value<bool>()->default_value( false ), "solve corresponding problem with CG"  )
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
+        ( "use-strong-dirichlet", po::value<bool>()->default_value( false ), "use strong ")
         ;
     return hdgoptions;
 }
@@ -79,6 +82,17 @@ int hdg_laplacian()
     tic();
     auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
     int nbIbc = nelements(markedfaces(mesh,"Ibc"),true) >= 1 ? 1 : 0;
+    int nbIbcOde = nelements(markedfaces(mesh,"IbcOde"),true) >= 1 ? 2 : 0;
+    std::map<std::string,std::pair<int,std::string>> ibcs;
+    if ( nbIbc )
+    {
+        ibcs["Ibc"]= std::pair{0,"Ibc"};
+    }
+    if ( nbIbcOde )
+    {
+        ibcs["Ibc"]= std::pair{0,"IbcOde"};
+        ibcs["Ode"]= std::pair{1,"IbcOde"};
+    }
     toc("mesh",true);
 
     int proc_rank = Environment::worldComm().globalRank();
@@ -89,7 +103,7 @@ int hdg_laplacian()
     
 #if defined(FEELPP_HAS_SYMPY)
 
-    std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}};
+    std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals );
 
     for( auto d: locals )
@@ -101,8 +115,15 @@ int hdg_laplacian()
     auto u_exact = expr<Dim,1>( u_exact_str );
     auto un_exact = expr( locals.at("un") );
     auto f_exact = expr( locals.at("f") );
-    auto ibc_exact_d = integrate(markedfaces(mesh,"Ibc"), un_exact).evaluate()(0,0);
-    auto ibc_exact = cst(ibc_exact_d);
+    auto r_1 = expr( locals.at("r_1") );
+    auto r_2 = expr( locals.at("r_2") );
+    std::map<std::string,double> ibc_exact_map;
+    for( auto const& [ibc_type, ibc_data ] : ibcs )
+        if ( ibc_data.second == "IbcOde" && ibc_type == "Ibc" )
+            ibc_exact_map[ibc_type] = 0;
+        else
+            ibc_exact_map[ibc_type] = integrate(markedfaces(mesh,ibc_data.second), un_exact).evaluate()(0,0);
+
 #else
     std::string p_exact_str = soption("solution.p");
     std::string u_exact_str = soption("solution.u");
@@ -121,16 +142,17 @@ int hdg_laplacian()
     auto Wh = Pdh<OrderP>( mesh, true );
     auto select_faces = [mesh]( auto const& ewrap ) {
         auto const& e = unwrap_ref( ewrap );
-        if ( e.hasMarker() && e.marker().value() == mesh->markerName( "Ibc" ) )
+        if ( e.hasMarker() && ( e.marker().value() == mesh->markerName( "Ibc" )  ||
+                                e.marker().value() == mesh->markerName( "IbcOde" ) ) )
             return true;
         return false; };
     auto complement_integral_bdy = complement(faces(mesh),select_faces);
     auto complement_integral_bdy_boundary = complement(boundaryfaces(mesh),select_faces);
 
-    auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
-    // auto face_mesh = createSubmesh( mesh, faces(mesh ), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto face_mesh = createSubmesh( _mesh=mesh, _range=complement_integral_bdy, _update=0 );
+    // auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh ), _update=0 );
     auto Mh = Pdh<OrderP>( face_mesh,true );
-    auto ibc_mesh = createSubmesh( mesh, markedfaces(mesh, "Ibc"), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto ibc_mesh = createSubmesh( _mesh=mesh, _range=markedfaces(mesh, {"Ibc","IbcOde"}), _update=0 );
     auto Ch = Pch<0>( ibc_mesh, true );
 
     toc("spaces",true);
@@ -144,11 +166,12 @@ int hdg_laplacian()
 
     cout << "#elts: " << mesh->numGlobalElements() << std::endl
          << "#faces: " << mesh->numGlobalFaces() << std::endl
+        
          << "#facesMh: " << face_mesh->numGlobalElements() << std::endl
          << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
          << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
          << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
-    if( nbIbc > 0 )
+    if( nbIbc > 0 || nbIbcOde)
         cout << "Ch<0> : " << Ch->nDof() << std::endl;
     cout << mesh->numGlobalElements()  << " " << mesh->numGlobalFaces() << " "
          << Vh->nDof() << " " << Wh->nDof() << " " << Mh->nDof() << " "
@@ -161,12 +184,17 @@ int hdg_laplacian()
         tic();
         auto l = form1( _test=cgXh );
         l = integrate( _range=elements(mesh), _expr=-f_exact*id(u) );
+
         l += integrate(_range=markedfaces(mesh,"Neumann"),
                        _expr=id(u)*un_exact );
+        l += integrate( _range=markedfaces(mesh, "Robin"),
+                        _expr=id(u)*r_2);
         toc("cg.assembly.l",FLAGS_v>0);
         tic();
         auto a = form2(_trial=cgXh, _test=cgXh );
         a = integrate( _range=elements(mesh), _expr=gradt(u)*trans(grad(u)) );
+        a += integrate( _range=markedfaces(mesh, "Robin"),
+                        _expr=id(u)*idt(u)*r_1);
         a += on(_range=markedfaces(mesh,"Dirichlet"),
                 _rhs=l,
                 _element=u,
@@ -179,20 +207,23 @@ int hdg_laplacian()
         auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
             {
                 tic();
+                double l2_p = normL2(_range=elements(mesh), _expr=expr(solution) );
                 double l2 = normL2(_range=elements(mesh), _expr=idv(u)-expr(solution) );
                 toc("L2 error norm");
                 tic();
+                double h1_p = normH1(_range=elements(mesh), _expr=expr(solution), _grad_expr=expr<1,Dim>(u_exact_str)  );
                 double h1 = normH1(_range=elements(mesh), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-grad<2>(expr(solution)) );
                 toc("H1 error norm");
                 tic();
+                double semih1_p = normL2(_range=elements(mesh), _expr=expr<1,Dim>(u_exact_str) );
                 double semih1 = normL2(_range=elements(mesh), _expr=gradv(u)-grad<2>(expr(solution)) );
                 toc("semi H1 error norm");
-                return { { "L2", l2 }, {  "H1", h1 }, {"semih1",semih1} };
+                return { { "L2", l2/l2_p }, {  "H1", h1/h1_p }, {"semih1",semih1/semih1_p} };
             };
 
         int status = checker(p_exact_str).runOnce( norms, rate::hp( mesh->hMax(), cgXh->fe()->order() ) );
-
     }
+
     auto u = Vh->element( "u" );
     auto v = Vh->element( "v" );
     auto p = Wh->element( "p" );
@@ -204,7 +235,17 @@ int hdg_laplacian()
     auto nu = Ch->element( "nu" );
 
     tic();
-    auto ibcSpaces = std::make_shared<ProductSpace<decltype(Ch),true> >( nbIbc, Ch);
+    auto ibcSpaces = dynProductPtr( nbIbc+nbIbcOde, Ch);
+    //ibcSpaces->setProperties( {"Ibc","Ode" } );
+    std::vector<std::string> props;
+    if ( nbIbc )
+        props.push_back( "Ibc" );
+    if ( nbIbcOde )
+    {
+        props.push_back( "Ibc" );
+        props.push_back( "Ode" );
+    }
+    ibcSpaces->setProperties( props );
     auto ps = product2( ibcSpaces, Vh, Wh, Mh );
     toc("space",true);
     tic();
@@ -220,16 +261,26 @@ int hdg_laplacian()
     // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
     // How to identify Dirichlet/Neumann boundaries?
     rhs(1_c) += integrate(_range=elements(mesh),
-                          _expr=-f_exact*id(w));
+                          _expr=f_exact*id(w));
 
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                           _expr=id(l)*un_exact );
-    rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                          _expr=id(l)*p_exact);
-    double meas = integrate( _range=markedfaces(mesh, "Ibc"),
-                             _expr=cst(1.)).evaluate()(0,0);
-    rhs(3_c,0) += integrate( _range=markedfaces(mesh,"Ibc"),
-                            _expr=ibc_exact*id(nu)/meas);
+    if( !boption("use-strong-dirichlet") || boption("sc.condense"))
+    {
+        rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                              _expr=id(l)*p_exact);
+    }
+    rhs(2_c) += integrate( _range=markedfaces(mesh, "Robin"),
+                           _expr=id(l)*r_2);
+    for( auto const& [ ibc_type, ibc_data ]  : ibcs )
+    {
+        auto const& [ibc_space_index,ibc_marker] = ibc_data;
+        Feel::cout << "rhs assembly " << ibc_type << " -- block:" << ibc_space_index << " -- marker: " << ibc_marker << " -- value:" << ibc_exact_map[ibc_type] << std::endl;
+        double meas = integrate( _range=markedfaces(mesh, ibc_marker ),
+                                 _expr=cst(1.)).evaluate()(0,0);
+        rhs(3_c,ibc_space_index) += integrate( _range=markedfaces(mesh, ibc_marker ),
+                                               _expr=ibc_exact_map[ibc_type]*id(nu)/meas);
+    }
 
     toc("rhs",true);
     tic();
@@ -238,6 +289,7 @@ int hdg_laplacian()
     //
     tic();
     a(0_c,0_c) += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
+
     toc("a(0,0)",FLAGS_v>0);
 
     tic();
@@ -254,39 +306,50 @@ int hdg_laplacian()
     toc("a(0,2)",FLAGS_v>0);
 
     tic();
-    a(0_c,3_c,0,0) += integrate(_range=markedfaces(mesh,"Ibc"),
-                                _expr=idt(mu)*(trans(id(u))*N()) );
+    for( auto const& [ibc_type,ibc_data]  : ibcs )
+    {
+        auto const& [ibc_space_index,ibc_marker] = ibc_data;
+        if ( ibc_type == "Ibc" )
+            a(0_c,3_c,0,ibc_space_index) += integrate(_range=markedfaces(mesh,ibc_marker),
+                                                      _expr=idt(mu)*(trans(id(u))*N()) );
+    }
     toc("a(0,3)",FLAGS_v>0);
 
     //
     // Second row a(1_c,:)
     //
     tic();
-    a(1_c,0_c) += integrate(_range=elements(mesh),_expr=-(id(w)*divt(u)));
+    a(1_c,0_c) += integrate(_range=elements(mesh),_expr=id(w)*divt(u));
     toc("a(1,0)",FLAGS_v>0);
 
     tic();
     a(1_c,1_c) += integrate(_range=internalfaces(mesh),
-                            _expr=-tau_constant *
+                            _expr=tau_constant *
                             ( leftfacet( idt(p))*leftface(id(w)) +
                               rightfacet( idt(p))*rightface(id(w) )));
     a(1_c,1_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=-(tau_constant * id(w)*idt(p)));
+                            _expr=tau_constant * id(w)*idt(p));
     toc("a(1,1)",FLAGS_v>0);
 
     tic();
     a(1_c,2_c) += integrate(_range=internalfaces(mesh),
-                            _expr=tau_constant * idt(phat) *
+                            _expr=-tau_constant * idt(phat) *
                             ( leftface( id(w) )+
                               rightface( id(w) )));
 
     a(1_c,2_c) += integrate(_range=complement_integral_bdy_boundary,
-                            _expr=tau_constant * idt(phat) * id(w) );
+                            _expr=-tau_constant * idt(phat) * id(w) );
     toc("a(1,2)",FLAGS_v>0);
 
     tic();
-    a(1_c,3_c,1,0) += integrate( _range=markedfaces(mesh,"Ibc"),
-                                 _expr=tau_constant*idt(mu)*id(w) );
+    for( auto const& [ibc_type,ibc_data]  : ibcs )
+    {
+        auto const& [ibc_space_index,ibc_marker] = ibc_data;
+        if ( ibc_type == "Ibc" )
+            a(1_c,3_c,0,ibc_space_index) += integrate( _range=markedfaces(mesh,ibc_marker),
+                                                       _expr=-tau_constant*idt(mu)*id(w) );
+        
+    }
     toc("a(1,3)", FLAGS_v>0);
 
     //
@@ -319,31 +382,67 @@ int hdg_laplacian()
                             _expr=-(1-0.5*boption("sc.condense"))*tau_constant * idt(phat) * id(l) );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                             _expr=-tau_constant * idt(phat) * id(l)  );
-    a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                            _expr=idt(phat) * id(l) );
+    if( !boption("use-strong-dirichlet") || boption("sc.condense"))
+    {
+        a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                                _expr=idt(phat) * id(l) );
+    }
+    // Robin
+    a( 2_c, 0_c ) += integrate(_range=markedfaces(mesh,"Robin"),
+                               _expr=id(l)*normalt(u) );
+    a( 2_c, 1_c ) += integrate(_range=markedfaces(mesh,"Robin"),
+                               _expr=tau_constant * id(l) * idt(p)  );
+    a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
+                               _expr=-tau_constant * idt(phat) * id(l) );
+    a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
+                                 _expr=-r_1*idt(phat) * id(l) );
     toc("a(2,2)",FLAGS_v>0);
+
+    if( boption("use-strong-dirichlet") && !boption("sc.condense"))
+    {
+        a(2_c,2_c).close();
+        a(2_c,2_c) += on( _range=markedelements(face_mesh, "Dirichlet"),
+                          _expr=p_exact,
+                          _rhs=rhs(2_c),
+                          _element=l );
+    }
 
     //
     // Fourth row a(3_c,:)
     //
-    tic();
-    a(3_c,0_c,0,0) += integrate( _range=markedfaces(mesh,"Ibc"),
-                                 _expr=(trans(idt(u))*N())*id(nu) );
-    toc("a(3,0)",FLAGS_v>0);
+    
+    for( auto const& [ibc_type,ibc_data]  : ibcs )
+    {
+        auto const& [ibc_space_index,ibc_marker] = ibc_data;
+        Feel::cout << "row 3_c assembly " << ibc_type << " -- block:" << ibc_space_index << " -- marker: " << ibc_marker << std::endl;
+        tic();
+        if ( ibc_type == "Ibc" )
+            a(3_c,0_c,ibc_space_index,0) += integrate( _range=markedfaces(mesh,ibc_marker),
+                                                       _expr=(trans(idt(u))*N())*id(nu) );
+        toc("a(3,0)",FLAGS_v>0);
 
-    tic();
-    a(3_c,1_c,0,1) += integrate( _range=markedfaces(mesh,"Ibc"),
-                                 _expr=tau_constant*idt(p)*id(nu) );
-    toc("a(3,1)",FLAGS_v>0);
+        tic();
+        if ( ibc_type == "Ibc" )
+            a(3_c,1_c,ibc_space_index,0) += integrate( _range=markedfaces(mesh,ibc_marker),
+                                                       _expr=tau_constant*idt(p)*id(nu) );
+        toc("a(3,1)",FLAGS_v>0);
 
-    tic();
-    a(3_c,3_c,0,0) += integrate( _range=markedfaces(mesh,"Ibc"),
-                                 _expr=-tau_constant*id(nu)*idt(mu) );
-    toc("a(3,3)",FLAGS_v>0);
+        if ( ibc_type == "Ode" )
+            a(3_c,3_c,ibc_space_index-1,ibc_space_index) += integrate( _range=markedfaces(mesh,ibc_marker),
+                                                                       _expr=-id(nu)*idt(mu) );
+        
+        tic();
+        double c = 1.;
+        if ( ibc_type == "Ibc" )
+            c = -tau_constant.expression().value();
+        a(3_c,3_c,ibc_space_index,ibc_space_index) += integrate( _range=markedfaces(mesh,ibc_marker),
+                                                                 _expr=c*id(nu)*idt(mu) );
+        toc("a(3,3)",FLAGS_v>0);
+    }
     toc("matrices",true);
 
-    
-    
+
+
     tic();
     auto U=ps.element();
     a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
@@ -388,13 +487,12 @@ int hdg_laplacian()
     toc("postprocessing.solve",FLAGS_v>0);
     toc("postprocessing",true);
 
-    
-
     tic();
     v.on( _range=elements(mesh), _expr=u_exact );
     q.on( _range=elements(mesh), _expr=p_exact );
     auto e = exporter( _mesh=mesh );
     e->setMesh( mesh );
+    e->addRegions();
     e->add( "flux", U(0_c) );
     e->add( "potential", U(1_c) );
     e->add( "potentialpp", PP(0_c) );
@@ -413,17 +511,20 @@ int hdg_laplacian()
     auto norms_u = [=]( std::string const& solution ) ->std::map<std::string,double>
         {
             tic();
+            auto l2_u = normL2( _range=elements(mesh), _expr=u_exact );
             auto l2err_u = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
             toc("L2 error norm u");
-            return { { "L2", l2err_u }};
+            return { { "L2", l2err_u/l2_u }};
         };
 
     auto norms_p = [=]( std::string const& solution ) ->std::map<std::string,double>
         {
             tic();
+            double l2_p = 1;
             double l2err_p = 1e+30;
             if ( has_dirichlet )
             {
+                l2_p = normL2( _range=elements(mesh), _expr=expr(solution) );
                 l2err_p = normL2( _range=elements(mesh), _expr=expr(solution) - idv(pp) );
             }
             else
@@ -432,25 +533,27 @@ int hdg_laplacian()
                 auto mean_p = mean( elements(mesh), idv(pp) )(0,0);
                 l2err_p = normL2( elements(mesh),
                                   (expr(solution) - cst(mean_p_exact)) - (idv(pp) - cst(mean_p)) );
+                l2_p = normL2( _range=elements(mesh), _expr=expr(solution)- cst(mean_p_exact) );
             }
             toc("L2 error norm p");
-            return { { "L2", l2err_p }};
+            return { { "L2", l2err_p/l2_p }};
         };
     auto norms_ppp = [=]( std::string const& solution ) ->std::map<std::string,double>
         {
             tic();
+            double l2_p = normL2( elements(mesh), expr(solution) );
             double l2err_p = 1e+30;
             l2err_p = normL2( elements(mesh), expr(solution) - idv(ppp) );
             toc("L2 error norm ppp");
-            return { { "L2", l2err_p }};
+            return { { "L2", l2err_p/l2_p }};
         };
 #if 0
     int status = checker().runOnce( {norms_p,norms_u},
                                     { rate::hp( mesh->hMax(), Vh->fe()->order() ), rate::hp( mesh->hMax(), Vh->fe()->order() ) } );
 #else
-    int status1 = checker("L2 Convergence potential",p_exact_str).runOnce( norms_p, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
+    int status1 = checker("L2 Convergence potential",p_exact_str).runOnce( norms_p, rate::hp( mesh->hMax(), Vh->fe()->order() ), "||p-p_h||_" );
     int status2 = checker("L2 Convergence flux",u_exact_str).runOnce( norms_u, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-    int status3 = checker("L2 Convergence post-processed potential",p_exact_str).runOnce( norms_ppp, rate::hp( mesh->hMax(), Vh->fe()->order()+1 ) );
+    int status3 = checker("L2 Convergence post-processed potential",p_exact_str).runOnce( norms_ppp, rate::hp( mesh->hMax(), Vh->fe()->order()+1 ), "||p-pp_h||_" );
 #endif
 
     

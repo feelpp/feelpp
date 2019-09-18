@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE( test_composite_meshes_list_2d )
     auto mesh = loadMesh(_mesh=new mesh_type );
 
     typedef Mesh<Simplex<nDim-1,1,nDim>> submesh_type;
-    auto submesh = createSubmesh(mesh,boundaryfaces(mesh) );
+    auto submesh = createSubmesh(_mesh=mesh,_range=boundaryfaces(mesh) );
 
     typedef FunctionSpace< meshes<mesh_type,submesh_type>,bases<Lagrange<2,Scalar>,Lagrange<2,Scalar> > > space_type;
 
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE( test_integrate_boundaryfaces )
     double int2PS = a.matrixPtr()->energy(uPS,uPS);
     BOOST_CHECK_SMALL( std::abs(int2PS-int1),1e-12 );
 
-    auto submesh = createSubmesh(mesh,myboundaryfaces);
+    auto submesh = createSubmesh(_mesh=mesh,_range=myboundaryfaces);
     double int1b = integrate(_range=elements(submesh),_expr=cst(1.)).evaluate()(0,0);
     BOOST_CHECK_SMALL( std::abs(int1PS-int1b),1e-12 );
     BOOST_CHECK_SMALL( std::abs(int2PS-int1b),1e-12 );

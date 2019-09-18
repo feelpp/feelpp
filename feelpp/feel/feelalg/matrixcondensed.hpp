@@ -168,6 +168,17 @@ public:
             if ( staticCondensation() )
                 M_sc->zero( n1, n2 );
         }
+    /**
+     * transpose block \p n1,n2  and store it in \p n2,n1
+     *
+     * \param n1 row of the block to be transposed
+     * \param n2 column of the block to be transposed
+     */
+    void transposeBlock( int n1, int n2 )
+        {
+            if ( staticCondensation() )
+                M_sc->transpose( n1, n2 );
+        }
 private:
     sc_ptrtype M_sc;
     solve::strategy M_strategy;
