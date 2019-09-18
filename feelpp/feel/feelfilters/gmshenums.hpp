@@ -123,6 +123,27 @@ enum GMSH_ENTITY
     GMSH_TETRAHEDRON_5=31  //!< tetra of order 5
 };
 
+enum class GMSH_ALGORITHM_2D
+{
+    MESHADAPT=1,
+    AUTO=2,
+    DELAUNAY=5,
+    FRONTAL=6,
+    BAMG=7,
+    FRONTAL_QUAD=8,
+    PACK_PRLGRMS=9,
+    PACK_PRLGRMS_CSTR=10
+};
+
+enum class GMSH_ALGORITHM_3D
+{
+    DELAUNAY=1,
+    FRONTAL=4,
+    MMG3D=7,
+    RTREE=9,
+    HXT=10
+};
+
 template<typename ConvexType>
 class GmshOrdering
 {

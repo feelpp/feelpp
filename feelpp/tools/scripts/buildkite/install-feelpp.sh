@@ -38,6 +38,17 @@ elif [ "${component}" = "mor" ] ; then
 else
     dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
 fi
+
+if [ "${component}" = "feelpp" ] ; then
+    CTEST_FLAGS="-R feelpp_qs_ -T test --no-compress-output"
+elif [ "${component}" = "toolboxes" ] ; then
+    CTEST_FLAGS="-R feelpp_toolbox_ -T test --no-compress-output"
+elif [ "${component}" = "testsuite" ] ; then
+    CTEST_FLAGS="-R feelpp_test_ -T test --no-compress-output"
+else
+    CTEST_FLAGS="-T test --no-compress-output"
+fi
+
 cat << EOF | buildkite-agent annotate --style "info"
 Building Feel++ ${component} with the following configuration
  * CXX=${CXX}

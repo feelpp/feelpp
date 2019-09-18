@@ -334,12 +334,12 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assemblePotentialRHS( Expr<Expr
     if ( marker.empty() )
     {
         blf(1_c) += integrate( _range=elements(M_mesh),
-                              _expr=-inner(expr,id(w)) );
+                              _expr=inner(expr,id(w)) );
     }
     else
     {
         blf(1_c) += integrate( _range=markedelements(M_mesh,marker),
-                              _expr=-inner(expr,id(w)) );
+                              _expr=inner(expr,id(w)) );
     }
     toc("assemblePotentialRhs", this->verbose() || FLAGS_v > 0);
 }
@@ -447,27 +447,27 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> const& e
     auto p = M_Wh->element( "p" );
     auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
-    auto H = M_M0h->element( "H" );
-    if ( ioption(prefixvm(prefix(), "hface") ) == 0 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
-    else if ( ioption(prefixvm(prefix(), "hface") ) == 1 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
-    else if ( ioption(prefixvm(prefix(), "hface") ) == 2 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
-    else
-        H.on( _range=elements(M_M0h->mesh()), _expr=h() );
+    // auto H = M_M0h->element( "H" );
+    // if ( ioption(prefixvm(prefix(), "hface") ) == 0 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
+    // else if ( ioption(prefixvm(prefix(), "hface") ) == 1 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
+    // else if ( ioption(prefixvm(prefix(), "hface") ) == 2 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
+    // else
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=h() );
     // stabilisation parameter
-    auto tau_constant = cst(doption(prefixvm(prefix(), "tau_constant")));
+    auto tau_constant = cst(M_tauCst);
 
     // <j.n,mu>_Gamma_R
     bbf( 2_c, 0_c ) += integrate(_range=markedfaces(M_mesh,marker),
-                                 _expr=( id(l)*(trans(idt(u))*N()) ));
+                                 _expr=id(l)*normalt(u) );
     // <tau p, mu>_Gamma_R
     bbf( 2_c, 1_c ) += integrate(_range=markedfaces(M_mesh,marker),
-                                 _expr=tau_constant * id(l) * ( pow(idv(H),M_tauOrder)*idt(p) ) );
+                                 _expr=tau_constant * id(l) * idt(p)  );
     // <-tau phat, mu>_Gamma_R
     bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
-                                 _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tauOrder) ) );
+                                 _expr=-tau_constant * idt(phat) * id(l) );
     // <g_R^1 phat, mu>_Gamma_R
     bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
                                  _expr=expr1*idt(phat) * id(l) );

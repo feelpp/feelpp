@@ -6,35 +6,36 @@
     {
         "Cu":
         {
-            "name":"copper",
-            "alpha":"3.5e-3",
-            "T0":"293",
-            "sigma0":"53e+3",
-            "k0":"0.37",
+            "alpha":"3.6e-3",
+            "T0":"290",
+            "sigma0":"53e3",
+            "Lorentz":"2.47e-8",
+            // "k0":"0.38",//"0.37",
             "sigma":"sigma0/(1+alpha*(T-T0)):sigma0:alpha:T:T0",
             "k":"k0*T/((1+alpha*(T-T0))*T0):k0:T:alpha:T0"
+            // "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T"
         }
     },
     "BoundaryConditions":
     {
-        "flux":
-        {
-            "Integral":
-            {
-                "V1":
-                {
-                    "expr":"3333"
-                }
-            }
-        },
+        // "flux":
+        // {
+        //     "Integral":
+        //     {
+        //         "V1":
+        //         {
+        //             "expr":"3333"
+        //         }
+        //     }
+        // },
         "potential":
         {
             "Dirichlet":
             {
-                // "V1":
-                // {
-                //     "expr":"-9"
-                // },
+                "V1":
+                {
+                    "expr":"9"//"9"
+                },
                 "V0":
                 {
                     "expr":"0"

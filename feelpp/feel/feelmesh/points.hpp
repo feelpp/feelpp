@@ -44,7 +44,7 @@ namespace Feel
   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   @see
 */
-template <uint16_type nDim, typename T = double, typename IndexT = uint32_type>
+template <uint16_type nDim, typename T = double, typename IndexT = uint32_type, typename SubFace = SubFaceOfNone<0> >
 class Points
 {
   public:
@@ -53,7 +53,7 @@ class Points
     //@{
     using index_type = IndexT;
     using size_type = index_type;
-    typedef GeoElement0D<nDim, SubFaceOfNone<0>, T> point_type;
+    typedef GeoElement0D<nDim, SubFace, T, IndexT> point_type;
 
     typedef std::unordered_map<size_type, point_type> points_type;
 
@@ -387,6 +387,31 @@ class Points
         return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
     }
 
+    template <typename SF = SubFace>
+    std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
+    interProcessPoints( rank_type neighbor_pid = invalid_rank_type_value,
+                        std::enable_if_t< std::is_base_of<SubFaceOfBase, SF>::value >* = nullptr ) const
+        {
+            bool allNeighbor = ( neighbor_pid == invalid_rank_type_value );
+            const rank_type part = this->worldCommPoints().localRank();
+            points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
+            auto it = this->beginOrderedPoint();
+            auto en = this->endOrderedPoint();
+            for ( ; it!=en;++it )
+            {
+                auto const& point = unwrap_ref( *it );
+                if ( !point.isInterProcessDomain() )
+                    continue;
+                if ( point.partition1() != part )
+                    continue;
+                if ( !allNeighbor && point.partition2() != neighbor_pid )
+                    continue;
+                mypoints->push_back( boost::cref( point ) );
+            }
+            return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
+        }
+
+
     //@}
 
     /** @name  Mutators
@@ -414,7 +439,7 @@ class Points
      * @param f a new point
      * @return the new point from the list
      */
-    point_type const& addPoint( point_type const& f )
+    std::pair<point_iterator,bool> addPoint( point_type const& f )
     {
         //return M_points.insert( std::make_pair( f.id(), f ) ).first->second;
         auto ret = M_points.emplace( std::make_pair( f.id(), f ) );
@@ -426,7 +451,7 @@ class Points
                 M_needToOrderPoints = true;
             M_orderedPoints.push_back( boost::ref( newPoint ) );
         }
-        return newPoint;
+        return ret;
     }
 
     /**
@@ -434,7 +459,7 @@ class Points
      * @param f a new point
      * @return the new point from the list
      */
-    point_type const& addPoint( point_type&& f )
+    std::pair<point_iterator,bool> addPoint( point_type&& f )
     {
         //return M_points.insert( std::make_pair( f.id(), f ) ).first->second;
         auto ret = M_points.emplace( std::make_pair( f.id(), f ) );
@@ -446,7 +471,7 @@ class Points
                 M_needToOrderPoints = true;
             M_orderedPoints.push_back( boost::ref( newPoint ) );
         }
-        return newPoint;
+        return ret;
     }
 
     /**

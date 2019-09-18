@@ -128,7 +128,7 @@ ExporterGnuplot<MeshType>::save() const
         {
             for ( size_type i = 0; i < U.nLocalDof(); ++i )
             {
-                size_type dof0 = boost::get<0>( U.functionSpace()->dof()->localToGlobal( it->id(), i ) );
+                size_type dof0 = U.functionSpace()->dof()->localToGlobal( it->id(), i ).index();
                 ofs3 << std::setw( 5 ) << it->id() << " "
                      << std::setw( 5 ) << i << " "
                      << std::setw( 5 ) << dof0 << " "

@@ -919,7 +919,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
 {
-    auto const& initialConditions = this->modelProperties().initialConditions();
+    auto const& initialConditions = this->modelProperties().initialConditionsDeprecated();
 
     this->M_icDirichlet = initialConditions.getScalarFields( std::string(this->prefix()), "Dirichlet" );
     
@@ -1924,7 +1924,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
             myelts->push_back(boost::cref(face.element1()));
     }
 
-    auto myrange = boost::make_tuple(
+    elements_reference_wrapper_t<mymesh_type> myrange = boost::make_tuple(
             mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
             );
 
@@ -1972,7 +1972,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
             myelts->push_back(boost::cref(face.element1()));
     }
 
-    auto myrange = boost::make_tuple(
+    elements_reference_wrapper_t<mymesh_type> myrange = boost::make_tuple(
             mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
             );
 

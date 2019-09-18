@@ -149,7 +149,7 @@ public:
 
     void gmshSaveAscii() const;
 
-    void gmshSaveFormat( std::ostream& out, std::string const& version = FEELPP_GMSH_FORMAT_VERSION ) const;
+    void gmshSaveFormat( std::ostream& out ) const;
 
     void gmshSavePhysicalNames( std::ostream& out, mesh_ptrtype mesh ) const;
 
@@ -187,6 +187,7 @@ private:
     boost::tuple<size_type,size_type> numberOfGlobalEltAndIndex( mesh_ptrtype mesh ) const;
 
     std::string M_element_type;
+    std::string M_formatVersion;
 
 };
 

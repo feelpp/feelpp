@@ -88,11 +88,11 @@ public:
      * dimension of the geometric space.
      */
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<3> >,
-                              mpl::identity<GeoElement3D<ElementType::nRealDim, ElementType, T, IndexT> >,
+                              mpl::identity<GeoElement3D<ElementType::nRealDim, ElementType, T, IndexT, true> >,
             typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<2> >,
-                              mpl::identity<GeoElement2D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim,IndexT>, T, IndexT> >,
+                              mpl::identity<GeoElement2D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim,IndexT>, T, IndexT, true> >,
             typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<1> >,
-                              mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim, IndexT>, T, IndexT> >,
+                              mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim, IndexT>, T, IndexT, true, true> >,
                               mpl::identity<GeoElement0D<ElementType::nRealDim, SubFaceOfNone<ElementType::nDim, IndexT>/*ElementType*/, T, IndexT> > >::type>::type>::type::type element_type;
 
 
@@ -694,7 +694,7 @@ public:
     //! @param f a new point
     //! @return the new point from the list
     //!
-    element_type const& addElement( element_type& f, bool setid = true )
+    std::pair<element_iterator,bool> addElement( element_type& f, bool setid = true )
     {
         if ( f.hasMarker() )
             M_parts[f.marker().value()]++;
@@ -709,14 +709,14 @@ public:
                 M_needToOrderElements = true;
             M_orderedElements.push_back( boost::ref( newElement ) );
         }
-        return newElement;
+        return ret;
     }
     //!
     //! move an element into the mesh
     //! @param f a new point
     //! @return the new point from the list
     //!
-    element_type const& addElement( element_type&& f )
+    std::pair<element_iterator,bool> addElement( element_type&& f )
         {
             if ( f.hasMarker() )
                 M_parts[f.marker().value()]++;
@@ -730,7 +730,7 @@ public:
                     M_needToOrderElements = true;
                 M_orderedElements.push_back( boost::ref( newElement ) );
             }
-            return newElement;
+            return ret;
         }
 
 

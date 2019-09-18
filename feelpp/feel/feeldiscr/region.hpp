@@ -64,7 +64,7 @@ region( std::shared_ptr<SpaceType> const& space,
     for ( ; it != en; ++it )
     {
         auto const& elt = boost::unwrap_ref( *it );
-        size_type dof_id = boost::get<0>( space->dof()->localToGlobal( elt.id(),0, 0 ) );
+        size_type dof_id = space->dof()->localToGlobal( elt.id(),0, 0 ).index();
 
         if ( dof_id >= v.firstLocalIndex() &&
                 dof_id < v.lastLocalIndex() )
@@ -97,7 +97,7 @@ regionv( std::shared_ptr<SpaceType> const& space,
 
     for ( ; it != en; ++it )
     {
-        size_type dof_id = boost::get<0>( space->dof()->localToGlobal( it->id(),0, 0 ) );
+        size_type dof_id = space->dof()->localToGlobal( it->id(),0, 0 ).index();
 
         if ( dof_id >= v.firstLocalIndex() &&
                 dof_id < v.lastLocalIndex() )

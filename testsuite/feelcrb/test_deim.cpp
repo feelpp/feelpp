@@ -79,10 +79,11 @@ public :
     typedef std::shared_ptr<deim_type> deim_ptrtype;
 
 
-    DeimTest() :
+    DeimTest( std::string const& prefix = "") :
         M_backend( backend() ),
         Dmu( parameterspace_type::New(2) ),
-        M_uuid( Environment::randomUUID( true ) )
+        M_uuid( Environment::randomUUID( true ) ),
+        M_prefix(prefix)
     {
         auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
         Xh = space_type::New( mesh );
@@ -104,7 +105,9 @@ public :
     }
 
     uuids::uuid uuid() const { return M_uuid; }
+    std::string prefix() const { return M_prefix; }
     parameterspace_ptrtype parameterSpace() { return Dmu;}
+    void setOnlineModel() {}
 
     void run()
     {
@@ -260,9 +263,10 @@ public :
     {
         return Xh;
     }
-    element_type solve( parameter_type const& mu )
+    virtual std::pair<element_type,bool> safeSolve( parameter_type const& mu )
     {
-        return Xh->element();
+        auto u = Xh->element();
+        return std::make_pair( u, true );
     }
     std::string modelName()
     {
@@ -270,7 +274,11 @@ public :
     }
     void initOnlineModel()
     {}
-
+    typename space_type::mesh_support_vector_type
+        functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
+    {
+        return typename space_type::mesh_support_vector_type();
+    }
  private :
     void initDeim( sampling_ptrtype Pset )
     {
@@ -314,6 +322,7 @@ private :
     deim_ptrtype M_deim;
     std::vector<vectorN_type> betas;
 
+    std::string M_prefix;
 };
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )

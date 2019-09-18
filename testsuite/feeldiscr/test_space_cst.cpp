@@ -77,7 +77,7 @@ makeAbout()
      auto Xh=Pch<1>(mesh);
      auto u = Xh->element(cst(1.),"u");
 
-     auto face_mesh = createSubmesh( mesh, boundaryfaces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
+     auto face_mesh = createSubmesh( _mesh=mesh, _range=boundaryfaces(mesh) );
      auto Cbh= Pch<0>(face_mesh);
      //std::cout << "nelts faces_mesh: " << nelements(elements(face_mesh),true) << std::endl;
      //std::cout << "nelts faces_mesh/proc: " << nelements(elements(face_mesh)) << std::endl;

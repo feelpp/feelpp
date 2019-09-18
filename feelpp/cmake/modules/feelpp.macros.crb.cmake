@@ -75,7 +75,7 @@ macro(crb_add_executable)
   add_executable(${execname}    ${CRB_EXEC_SOURCES} )
   target_link_libraries( ${execname} ${CRB_EXEC_LINK_LIBRARIES} Feelpp::feelpp   )
   set_property(TARGET ${execname} PROPERTY LABELS crb)
-  INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
+  install(TARGETS ${execname} RUNTIME DESTINATION bin COMPONENT Bin)
 
   # add manual page
   if ( CRB_EXEC_MAN )

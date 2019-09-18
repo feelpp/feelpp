@@ -91,8 +91,9 @@ private:
         }
 };
 
+struct SubFaceOfBase {};
 template<typename ElementType>
-class SubFaceOf
+class SubFaceOf : public SubFaceOfBase
 {
 public:
     static const uint16_type nDim = ElementType::nDim;
@@ -136,13 +137,19 @@ public:
         M_element1( std::move( sf.M_element1 ) )
     {
      }
-    SubFaceOf( SubFaceOfNone<nDim> const& /*sf*/ )
+
+        template <typename TheEltType >
+        /*explicit*/ SubFaceOf( SubFaceOf<TheEltType> const& /*sf*/,
+                                std::enable_if_t< !std::is_same<TheEltType, entity_type>::value >* = nullptr )
         :
         M_element0( 0, invalid_uint16_type_value ),
         M_element1( 0, invalid_uint16_type_value )
     {
     }
-    explicit SubFaceOf( SubFaceOfNone<0> const& /*sf*/ )
+
+    template <int SFoD >
+    explicit SubFaceOf( SubFaceOfNone<SFoD> const& /*sf*/,
+                        std::enable_if_t<SFoD == nDim || SFoD == 0>* = nullptr )
         :
         M_element0( 0, invalid_uint16_type_value ),
         M_element1( 0, invalid_uint16_type_value )
@@ -543,15 +550,19 @@ public:
     GeoElement0D( size_type id, bool boundary = false )
         :
         super( id, boundary ),
-        super2(),
-        M_facept( nullptr )
+        super2()
     {}
 
-    GeoElement0D( size_type id, node_type const& n,  bool boundary = false )
+    template <typename GeoNodeType>
+    GeoElement0D( size_type id, GeoNodeType const& n,  bool boundary = false )
         :
         super( id, n, boundary ),
-        super2(),
-        M_facept( nullptr )
+        super2()
+        {}
+    GeoElement0D( size_type id, geo0d_type const& n, bool boundary, bool isView )
+        :
+        super( id, n, boundary, false, isView ),
+        super2()
     {}
 
     //! Declares item id and if it is on boundary, and provides coordinate
@@ -559,15 +570,13 @@ public:
     GeoElement0D( size_type id, Real x, Real y, Real z, bool boundary = false )
         :
         super( id, x, y, z, boundary ),
-        super2(),
-        M_facept( nullptr )
+        super2()
     {}
 
     explicit GeoElement0D( geo0d_type const& p )
         :
         super( p ),
-        super2(),
-        M_facept( nullptr )
+        super2()
         {}
     GeoElement0D( GeoElement0D const & g ) = default;
     GeoElement0D( GeoElement0D && g ) = default;
@@ -576,8 +585,7 @@ public:
     GeoElement0D( GeoElement0D<Dim,SF,T> const & g )
         :
         super( g ),
-        super2( g ),
-        M_facept( g.M_facept )
+        super2( g )
     {
     }
 
@@ -592,7 +600,6 @@ public:
     {
         super::operator=( g );
         super2::operator=( g );
-        M_facept = g.M_facept;
         return *this;
     }
 
@@ -676,8 +683,7 @@ public:
      */
     geo0d_type const& point( uint16_type /*i*/ ) const
     {
-        return *M_facept;
-        //return *( static_cast<geo0d_type *>( M_facept ) );
+        return *this;
     }
 
     /**
@@ -685,7 +691,7 @@ public:
      */
     geo0d_type & point( uint16_type /*i*/ )
     {
-        return *M_facept;
+        return *this;
     }
 
     /**
@@ -695,41 +701,18 @@ public:
     {
         //M_facept = e;
         //M_facept= const_cast<geo0d_type *>( &e );
-        M_facept= std::addressof( e );
+        //M_facept= std::addressof( e );
     }
 
     matrix_node_type /*const&*/ G() const
     {
-        return this->G( mpl::bool_<boost::is_same<SubFace,SubFaceOfNone<Dim>>::value>() );
-    }
-
-    matrix_node_type /*const&*/ G( mpl::bool_<true> /**/ ) const
-    {
         return super::G();
-    }
-
-    matrix_node_type /*const&*/ G( mpl::bool_<false> /**/ ) const
-    {
-        return M_facept->G();
     }
 
     matrix_node_type /*const&*/ vertices() const
     {
-        return this->vertices( mpl::bool_<boost::is_same<SubFace,SubFaceOfNone<Dim>>::value>() );
-    }
-
-    matrix_node_type /*const&*/ vertices( mpl::bool_<true> /**/ ) const
-    {
         return super::vertices();
     }
-
-    matrix_node_type /*const&*/ vertices( mpl::bool_<false> /**/ ) const
-    {
-        return M_facept->vertices();
-    }
-
-//private:
-    geo0d_type* M_facept;
 
 private:
 
@@ -756,15 +739,28 @@ template<uint16_type Dim,
          typename GEOSHAPE,
          typename SubFace = SubFaceOfNone<0>,
          typename T = double,
-         typename IndexT = uint32_type>
+         typename IndexT = uint32_type,
+         bool PointTypeIsSubFaceOf = false,
+         bool UseMeasuresStorage = false >
 class GeoElement1D
     :
-    public GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> >,
-public SubFace
+    public GeoND<Dim, GEOSHAPE, T, IndexT,
+                 typename mpl::if_<mpl::bool_<PointTypeIsSubFaceOf>,
+                                   mpl::identity< GeoElement0D<Dim, SubFaceOf<GeoElement1D<Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf, UseMeasuresStorage> >, T, IndexT> >,
+                                   mpl::identity< GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> > >::type::type,
+                 UseMeasuresStorage
+                 >,
+    public SubFace
 {
 public:
 
-    typedef GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> > super;
+    typedef GeoND<Dim, GEOSHAPE, T, IndexT,
+                  typename mpl::if_<mpl::bool_<PointTypeIsSubFaceOf>,
+                                    mpl::identity< GeoElement0D<Dim, SubFaceOf<GeoElement1D<Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf, UseMeasuresStorage> >, T, IndexT> >,
+                                    mpl::identity< GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> > >::type::type,
+                  UseMeasuresStorage
+                  > super;
+
     typedef SubFace super2;
 
     static inline const uint16_type nDim = super::nDim;
@@ -777,14 +773,17 @@ public:
     using index_type = typename super::index_type;
     using size_type = typename super::size_type;
     typedef GEOSHAPE GeoShape;
-    typedef GeoElement1D<Dim, GEOSHAPE, SubFace, T, IndexT> self_type;
+    typedef GeoElement1D<Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf, UseMeasuresStorage> self_type;
     //typedef typename SubFace::template Element<self_type>::type element_type;
     typedef self_type element_type;
+#if 0
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nRealDim>,mpl::int_<1> >,
                               mpl::identity<GeoElement0D<Dim, SubFaceOf<self_type>, T, IndexT> >,
                               mpl::identity<GeoElement0D<Dim, SubFaceOfMany<self_type>, T, IndexT> > >::type::type point_type;
     typedef point_type GeoBElement;
-    
+#endif
+    typedef typename super::point_type point_type;
+
     static inline const uint16_type numLocalVertices = super::numLocalVertices;
     static inline const uint16_type numLocalEdges = super::numEdges;
     static inline const uint16_type numLocalFaces = super::numLocalVertices;
@@ -1052,16 +1051,17 @@ template<uint16_type Dim,
          typename GEOSHAPE,
          typename SubFace = SubFaceOfNone<0>,
          typename T = double,
-         typename IndexT = uint32_type>
+         typename IndexT = uint32_type,
+         bool UseMeasuresStorage = false >
 class GeoElement2D
     :
-    public GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> >,
+        public GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage >,
 public SubFace
 {
 public:
 
 
-    typedef GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> > super;
+    typedef GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage > super;
     typedef SubFace super2;
 
     static inline const uint16_type nDim = super::nDim;
@@ -1079,7 +1079,7 @@ public:
     using size_type = typename super::size_type;
     typedef GEOSHAPE GeoShape;
     typedef typename super::face_type entity_face_type;
-    typedef GeoElement2D<Dim, GEOSHAPE,SubFace, T, IndexT> self_type;
+    typedef GeoElement2D<Dim, GEOSHAPE,SubFace, T, IndexT, UseMeasuresStorage> self_type;
     //typedef typename SubFace::template Element<self_type>::type element_type;
     typedef self_type element_type;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nRealDim>,mpl::int_<2> >,
@@ -1407,17 +1407,18 @@ private:
 template<uint16_type Dim,
          typename GEOSHAPE,
          typename T = double,
-         typename IndexT = uint32_type>
+         typename IndexT = uint32_type,
+         bool UseMeasuresStorage = false >
 class GeoElement3D
     :
-    public GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> >,
+        public GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>,UseMeasuresStorage >,
 public SubFaceOfNone<0>
 {
 public:
 
     static inline const uint16_type nDim = Dim;
 
-    typedef GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> > super;
+    typedef GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage > super;
     typedef SubFaceOfNone<0> super2;
 
     using index_type = typename super::index_type;
@@ -1426,7 +1427,7 @@ public:
 
     typedef typename super::face_type entity_face_type;
 
-    typedef GeoElement3D<Dim, GEOSHAPE,T,IndexT> self_type;
+    typedef GeoElement3D<Dim, GEOSHAPE,T,IndexT,UseMeasuresStorage> self_type;
     typedef self_type element_type;
     typedef GeoElement2D<Dim, entity_face_type, SubFaceOf<self_type>, T, IndexT > face_type;
     typedef GeoElement1D<Dim, typename entity_face_type::topological_face_type, SubFaceOfMany<face_type>, T, IndexT> edge_type;
@@ -1767,10 +1768,15 @@ bool
 hasFaceWithMarker( EltType const& e, boost::any const& flag )
 {
     flag_type theflag = e.mesh()->markerId( flag );
-    for( auto const& f : e.faces() )
+    // for( auto const& f : e.faces() )
+    auto [ fbegin, fend ] = e.faces();
+    for( auto f = fbegin; f != fend; ++f )
     {
-        if ( f.marker().value() == theflag )
-            return true;
+        if ( *f && (*f)->hasMarker() )
+        {
+            if ( (*f)->marker().value() == theflag )
+                return true;
+        }
     }
     return false;
 }

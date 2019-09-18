@@ -64,6 +64,9 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/interpolate.hpp>
 #include <feel/feeldiscr/subelements.hpp>
 
@@ -110,12 +113,12 @@ public:
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
 
-    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
+    typedef Pdh_type<MeshType,0> scalar_p0_space_type;
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2Symm,Discontinuous> >, Discontinuous > tensor2symm_p0_space_type;
-    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Scalar> > > scalar_p1_space_type;
-    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
+    typedef Pch_type<MeshType,1> scalar_p1_space_type;
+    typedef Pchv_type<MeshType,1> vector_p1_space_type;
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2Symm> > > tensor2symm_p1_space_type;
     typedef std::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
@@ -156,12 +159,12 @@ public:
         typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
 
-        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
+        typedef Pdh_type<MeshType,0> scalar_p0_space_type;
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2Symm,Discontinuous> >, Discontinuous > tensor2symm_p0_space_type;
-        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Scalar> > > scalar_p1_space_type;
-        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
+        typedef Pch_type<MeshType,1> scalar_p1_space_type;
+        typedef Pchv_type<MeshType,1> vector_p1_space_type;
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2Symm> > > tensor2symm_p1_space_type;
         typedef std::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
@@ -667,7 +670,8 @@ public:
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
                                    typename std::enable_if<FunctionType::is_scalar>::type* = nullptr)
         {
-            bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+            tic();
+            bool extendeddof = false;//(soption(_name="exporter.format") == "ensightgold");
             boost::timer t;
 
                 if ( !M_ts->M_scalar_p1 )
@@ -679,9 +683,21 @@ public:
                     }
                     else
                     {
-                        M_ts->M_scalar_p1 = scalar_p1_space_type::New(_mesh=M_mesh.get(),
-                                                                      _worldscomm=func.worldsComm(),
-                                                                      _extended_doftable=std::vector<bool>(1,extendeddof) );
+                        if constexpr ( std::is_same_v<scalar_p1_space_type,typename FunctionType::functionspace_type> )
+                        {
+                            if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->extendedDofTable() == false ) )
+                                M_ts->M_scalar_p1 = func.functionSpace();
+                            else
+                                M_ts->M_scalar_p1 = scalar_p1_space_type::New(_mesh=M_mesh.get(),
+                                                                              _worldscomm=func.worldsComm(),
+                                                                              _extended_doftable=std::vector<bool>(1,extendeddof) );
+                        }
+                        else {
+                            M_ts->M_scalar_p1 = scalar_p1_space_type::New(_mesh=M_mesh.get(),
+                                                                          _worldscomm=func.worldsComm(),
+                                                                          _extended_doftable=std::vector<bool>(1,extendeddof) );
+                        }
+                        
                     }
                     M_scalar_p1 = M_ts->M_scalar_p1;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
@@ -708,6 +724,7 @@ public:
                 {
                     // interpolate field on visualisation space
                     interpolate( M_scalar_p1, func, M_nodal_scalar[__fname] );
+                    
 #if 0
                     // if exporter use extended dof table but the field to export is not define on this part
                     // we put to local min value for these ghosts dofs (else can disturbe visualisation range)
@@ -726,19 +743,31 @@ public:
 
                 showMe( "Step::add" );
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
+                toc((boost::format("Timeset::add p1 scalar %1%")%__n).str(),FLAGS_v>0);
         }
         template<typename FunctionType>
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
                                    typename std::enable_if<FunctionType::is_vectorial>::type* = nullptr)
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                tic();
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 boost::timer t;
 
                 if ( !M_ts->M_vector_p1 )
                 {
-                    M_ts->M_vector_p1 = vector_p1_space_type::New(_mesh=M_mesh.get(),
-                                                                  _worldscomm=func.worldsComm(),
-                                                                  _extended_doftable=std::vector<bool>(1,extendeddof) );
+                    if constexpr ( std::is_same_v<scalar_p1_space_type,typename FunctionType::functionspace_type> )
+                    {
+                        if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->extendedDofTable() == false  ) )
+                            M_ts->M_vector_p1 = func.functionSpace();
+                        else
+                            M_ts->M_vector_p1 = vector_p1_space_type::New(_mesh=M_mesh.get(),
+                                                                          _worldscomm=func.worldsComm(),
+                                                                          _extended_doftable=std::vector<bool>(1,extendeddof) );
+                    }
+                    else
+                        M_ts->M_vector_p1 = vector_p1_space_type::New(_mesh=M_mesh.get(),
+                                                                      _worldscomm=func.worldsComm(),
+                                                                      _extended_doftable=std::vector<bool>(1,extendeddof) );
                     M_vector_p1 = M_ts->M_vector_p1;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
@@ -766,6 +795,7 @@ public:
 
                 if ( func.worldComm().isActive() )
                 {
+                    
                     // interpolate field on visualisation space
                     interpolate( M_vector_p1, func, M_nodal_vector[__fname] );
 #if 0
@@ -810,29 +840,42 @@ public:
 
                 showMe( "Step::add" );
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
+                toc((boost::format("Timeset::add p1 vectorial %1%")%__n).str(),FLAGS_v>0);
             }
         template<typename FunctionType>
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
                                    typename std::enable_if<FunctionType::is_tensor2>::type* = nullptr)
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                tic();
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 boost::timer t;
 
                 if ( !M_ts->M_tensor2_p1 )
                 {
-                    M_ts->M_tensor2_p1 = tensor2_p1_space_type::New(_mesh=M_mesh.get(),
-                                                                    _worldscomm=func.worldsComm(),
-                                                                    _extended_doftable=std::vector<bool>(1,extendeddof) );
-                    M_tensor2_p1 = M_ts->M_tensor2_p1;
-                    DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
+                    if constexpr ( std::is_same_v<tensor2_p1_space_type,typename FunctionType::functionspace_type> )
+                    {
+                        if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->extendedDofTable() == false  ) )
+                            M_ts->M_tensor2_p1 = func.functionSpace();
+                        else
+                            M_ts->M_tensor2_p1 = tensor2_p1_space_type::New(_mesh=M_mesh.get(),
+                                                                            _worldscomm=func.worldsComm(),
+                                                                            _extended_doftable=std::vector<bool>(1,extendeddof) );
+                    }
+                    else
+                    {
+                        M_ts->M_tensor2_p1 = tensor2_p1_space_type::New(_mesh=M_mesh.get(),
+                                                                        _worldscomm=func.worldsComm(),
+                                                                        _extended_doftable=std::vector<bool>(1,extendeddof) );
+                        M_tensor2_p1 = M_ts->M_tensor2_p1;
+                        DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
+                    }
                 }
-
                 else if ( M_mesh.get() == M_ts->M_tensor2_p1->mesh() )
                 {
                     M_tensor2_p1 = M_ts->M_tensor2_p1;
                 }
 
-            if ( M_mesh.get() != M_ts->M_tensor2_p1->mesh() && !M_tensor2_p1 )
+                if ( M_mesh.get() != M_ts->M_tensor2_p1->mesh() && !M_tensor2_p1 )
                 {
                     M_tensor2_p1 = tensor2_p1_space_type::New(_mesh=M_mesh.get(),
                                                               _worldscomm=func.worldsComm(),
@@ -894,21 +937,35 @@ public:
 
                 showMe( "Step::add" );
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
+                toc((boost::format("Timeset::add p1 tensor2 %1%")%__n).str(),FLAGS_v>0);
             }
 
         template<typename FunctionType>
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
                                    typename std::enable_if<FunctionType::is_tensor2symm>::type* = nullptr)
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                tic();
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 boost::timer t;
 
                 if ( !M_ts->M_tensor2symm_p1 )
                 {
-                    M_ts->M_tensor2symm_p1 = tensor2symm_p1_space_type::New(_mesh=M_mesh.get(),
-                                                                            _worldscomm=func.worldsComm(),
-                                                                            _extended_doftable=std::vector<bool>(1,extendeddof) );
-                    M_tensor2symm_p1 = M_ts->M_tensor2symm_p1;
+                    if constexpr ( std::is_same_v<tensor2symm_p1_space_type,typename FunctionType::functionspace_type> )
+                    {
+                        if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->extendedDofTable() == false  ) )
+                            M_ts->M_tensor2symm_p1 = func.functionSpace();
+                        else
+                            M_ts->M_tensor2symm_p1 = tensor2symm_p1_space_type::New(_mesh=M_mesh.get(),
+                                                                                    _worldscomm=func.worldsComm(),
+                                                                                    _extended_doftable=std::vector<bool>(1,extendeddof) );
+                    }
+                    else
+                    {
+                        M_ts->M_tensor2symm_p1 = tensor2symm_p1_space_type::New(_mesh=M_mesh.get(),
+                                                                                _worldscomm=func.worldsComm(),
+                                                                                _extended_doftable=std::vector<bool>(1,extendeddof) );
+                        M_tensor2symm_p1 = M_ts->M_tensor2symm_p1;
+                    }
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
 
@@ -917,7 +974,7 @@ public:
                     M_tensor2symm_p1 = M_ts->M_tensor2symm_p1;
                 }
 
-            if ( M_mesh.get() != M_ts->M_tensor2symm_p1->mesh() && !M_tensor2symm_p1 )
+                if ( M_mesh.get() != M_ts->M_tensor2symm_p1->mesh() && !M_tensor2symm_p1 )
                 {
                     M_tensor2symm_p1 = tensor2symm_p1_space_type::New(_mesh=M_mesh.get(),
                                                                       _worldscomm=func.worldsComm(),
@@ -979,15 +1036,19 @@ public:
 
                 showMe( "Step::add" );
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
+                toc((boost::format("Timeset::add p1 tensor2symm %1%")%__n).str(),FLAGS_v>0);
+                
+                
             }
 
         template<typename FunctionType>
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
                                    typename std::enable_if<FunctionType::is_scalar>::type* = nullptr )
             {
+                tic();
                 if ( !func.worldComm().isActive() ) return;
 
-                this->updateScalarP0( func.worldsComm() );
+                this->updateScalarP0Field( func );
 
                 // interpolate field on visualisation space
                 // If user asks for P0 visu [exporter.element-spaces options contains P0]
@@ -995,6 +1056,7 @@ public:
                 {
                     M_element_scalar.insert( std::make_pair( __fname,M_scalar_p0->element( __n, func.description() ) ) );
                     interpolate( M_scalar_p0, func, M_element_scalar[__fname] );
+
                     DVLOG(2) << "[TimeSet::add] scalar p0 function " << __n << " added to exporter with filename " << __fname <<  "\n";
                 }
 
@@ -1003,7 +1065,7 @@ public:
                 {
                     if ( !M_ts->M_scalar_p1 )
                     {
-                        bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                        bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                         M_ts->M_scalar_p1 = scalar_p1_space_type::New(_mesh=M_mesh.get(),
                                                                       _worldscomm=func.worldsComm(),
                                                                       _extended_doftable=std::vector<bool>(1,extendeddof) );
@@ -1024,13 +1086,15 @@ public:
                 M_state.clear( STEP_ON_DISK );
                 showMe( "Step::addElement" );
                 DVLOG(2) << "[TimeSet::add] p0 function done\n";
+                toc((boost::format("Timeset::add p0 scalar %1%")%__n).str(),FLAGS_v>0);
             }
 
         template<typename FunctionType>
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
                                    typename std::enable_if<FunctionType::is_vectorial>::type* = nullptr )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                tic();
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
 
                 if ( !M_ts->M_vector_p0 )
@@ -1088,13 +1152,15 @@ public:
                 M_state.clear( STEP_ON_DISK );
                 showMe( "Step::addElement" );
                 DVLOG(2) << "[TimeSet::add] p0 function done\n";
+                toc((boost::format("Timeset::add p0 vectorial %1%")%__n).str(),FLAGS_v>0);
             }
 
         template<typename FunctionType>
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
                                    typename std::enable_if<FunctionType::is_tensor2>::type* = nullptr )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                tic();
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
                 if ( !M_ts->M_tensor2_p0 )
                 {
@@ -1135,7 +1201,7 @@ public:
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
                   typename std::enable_if<FunctionType::is_tensor2symm>::type* = nullptr )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
 
                 if ( !M_ts->M_tensor2symm_p0 )
@@ -1170,6 +1236,7 @@ public:
                 M_state.clear( STEP_ON_DISK );
                 showMe( "Step::addElement" );
                 DVLOG(2) << "[TimeSet::add] p0 function done\n";
+                toc((boost::format("Timeset::add p0 tensor2symm %1%")%__n).str(),FLAGS_v>0);
             }
 
         //@}
@@ -1186,6 +1253,10 @@ public:
         {
             return M_nodal_scalar.end();
         }
+        std::pair<nodal_scalar_const_iterator,nodal_scalar_const_iterator> nodalScalar() const
+        {
+            return std::pair{M_nodal_scalar.begin(),M_nodal_scalar.end()};
+        }   
         nodal_vector_const_iterator beginNodalVector() const
         {
             return M_nodal_vector.begin();
@@ -1310,11 +1381,50 @@ public:
 
         //@}
 
-        FEELPP_NO_EXPORT void updateScalarP0( worldscomm_ptr_t const& worldsComm )
+        template<typename FunctionType>
+        FEELPP_NO_EXPORT void updateScalarP0Field( FunctionType const& func )
+        {
+            auto worldsComm = func.worldsComm();
+            if ( !M_ts->M_scalar_p0 )
+            {
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
+                if constexpr ( std::is_same_v<scalar_p0_space_type,typename FunctionType::functionspace_type> )
+                {
+                    if ( ( func.mesh() == M_mesh ) && ( func.functionSpace()->basisOrder()[0] == 0 ) )
+                        M_ts->M_scalar_p0 = func.functionSpace();
+                    else
+                        M_ts->M_scalar_p0 = scalar_p0_space_type::New(_mesh=M_mesh.get(),
+                                                                      _worldscomm=worldsComm,
+                                                                      _extended_doftable=std::vector<bool>(1,extendeddof) );
+                }
+                else
+                    M_ts->M_scalar_p0 = scalar_p0_space_type::New(_mesh=M_mesh.get(),
+                                                                  _worldscomm=worldsComm,
+                                                                  _extended_doftable=std::vector<bool>(1,extendeddof) );
+                M_scalar_p0 = M_ts->M_scalar_p0;
+                DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
+            }
+            else if ( M_mesh.get() == M_ts->M_scalar_p0->mesh() )
+            {
+                M_scalar_p0 = M_ts->M_scalar_p0;
+            }
+
+            if ( M_mesh.get() != M_ts->M_scalar_p0->mesh() && !M_scalar_p0 )
+            {
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
+                M_scalar_p0 = scalar_p0_space_type::New(_mesh=M_mesh.get(),
+                                                        _worldscomm=worldsComm,
+                                                        _extended_doftable=std::vector<bool>(1,extendeddof) );
+                DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
+            }
+
+        }
+
+        FEELPP_NO_EXPORT void updateScalarP0( worldscomm_ptr_t  const& worldsComm )
         {
             if ( !M_ts->M_scalar_p0 )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 M_ts->M_scalar_p0 = scalar_p0_space_type::New(_mesh=M_mesh.get(),
                                                               _worldscomm=worldsComm,
                                                               _extended_doftable=std::vector<bool>(1,extendeddof) );
@@ -1328,7 +1438,7 @@ public:
 
             if ( M_mesh.get() != M_ts->M_scalar_p0->mesh() && !M_scalar_p0 )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 M_scalar_p0 = scalar_p0_space_type::New(_mesh=M_mesh.get(),
                                                         _worldscomm=worldsComm,
                                                         _extended_doftable=std::vector<bool>(1,extendeddof) );

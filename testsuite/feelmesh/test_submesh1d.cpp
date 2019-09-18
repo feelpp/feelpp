@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE( test_submesh1d1 )
     auto u3 = U3.element<0>();
     auto p3 = U3.element<1>();
 
-    auto mesh1d = createSubmesh(mesh3d, markededges(mesh3d,"centerline"));
+    auto mesh1d = createSubmesh(_mesh=mesh3d, _range=markededges(mesh3d,"centerline"));
 
     size_type nbElements = nelements( elements(mesh1d), true );
     BOOST_CHECK( nbElements > 0 );

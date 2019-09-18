@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE( globaldof_recovery )
     }
 
     // create a submesh and subspace on these elements
-    auto newmesh = createSubmesh( mesh, idelements(mesh,element_ids.begin(), element_ids.end()) );
+    auto newmesh = createSubmesh( _mesh=mesh, _range=idelements(mesh,element_ids.begin(), element_ids.end()) );
     auto Rh = Pch<1>(newmesh);
     auto v = Rh->element();
 
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE( parallel_to_seq )
     boost::mpi::broadcast( Environment::worldComm(), l_dof, proc_n );
 
     // build submesh and reload it in sequential mode
-    auto newmesh = createSubmesh( mesh, idelements(mesh,element_ids.begin(), element_ids.end()) );
+    auto newmesh = createSubmesh( _mesh=mesh, _range=idelements(mesh,element_ids.begin(), element_ids.end()) );
     saveGMSHMesh(_mesh=newmesh, _filename="submesh.msh" );
     Environment::worldComm().barrier();
     auto seqmesh = loadMesh( _mesh=new mesh_type,

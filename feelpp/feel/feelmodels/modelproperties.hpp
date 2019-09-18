@@ -36,6 +36,7 @@
 #include <feel/feelmodels/modeloutputs.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
 #include <feel/feelmodels/modelboundaryconditions.hpp>
+#include <feel/feelmodels/modelinitialconditions.hpp>
 
 
 namespace Feel {
@@ -66,10 +67,14 @@ public:
     ModelModels & models() { return M_models; }
     ModelModels const& models() const { return M_models; }
 
+    std::string const& unit() const {  return M_unit; }
+    void setUnit( std::string const& t) { M_unit = t; }
+
     ModelParameters const& parameters() const {  return M_params; }
     ModelMaterials const& materials() const {  return M_mat; }
     BoundaryConditions const& boundaryConditions() const { return M_bc; }
-    BoundaryConditions const& initialConditions() const { return M_ic; }
+    ModelInitialConditions const& initialConditions() const { return M_ic; }
+    FEELPP_DEPRECATED BoundaryConditions const& initialConditionsDeprecated() const { return M_icDeprecated; }
 
     ModelParameters & parameters()  {  return M_params; }
     ModelMaterials & materials() {  return M_mat; }
@@ -106,12 +111,13 @@ public:
 private:
     pt::ptree M_p;
 
-    std::string M_name, M_shortname, M_description, M_prefix;
+    std::string M_name, M_shortname, M_description, M_prefix, M_unit;
     ModelModels M_models;
     ModelParameters M_params;
     ModelMaterials M_mat;
     BoundaryConditions M_bc;
-    BoundaryConditions M_ic; // Initial conditions
+    ModelInitialConditions M_ic;
+    BoundaryConditions M_icDeprecated; // DEPRECATED
     ModelBoundaryConditions M_bc2;
     ModelPostprocess M_postproc;
     ModelFunctions M_functions;

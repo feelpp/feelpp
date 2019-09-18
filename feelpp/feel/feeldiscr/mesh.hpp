@@ -24,6 +24,8 @@
 #ifndef FEELPP_MESH_HPP
 #define FEELPP_MESH_HPP 1
 
+#include <bitset>
+
 #include <boost/unordered_map.hpp>
 #include <boost/version.hpp>
 
@@ -305,10 +307,11 @@ class Mesh
     //!  Default mesh constructor
     //!
     explicit Mesh( std::string const& name,
-                   worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+                   worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+                   std::string const& props = "00001" );
 
-    explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
-        : Mesh( "", worldComm ) {}
+    explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& props = "00001"  )
+        : Mesh( "", worldComm, props ) {}
 
     ~Mesh() {}
 
@@ -320,6 +323,13 @@ class Mesh
         M_tool_localization.reset();
         super::clear();
     }
+
+    //! return current shared_ptr of type MeshBase
+    std::shared_ptr<MeshBase<IndexT>> shared_from_this_meshbase() override { return std::dynamic_pointer_cast<MeshBase<IndexT>>( this->shared_from_this() );  }
+
+    //! return current shared_ptr of type MeshBase
+    std::shared_ptr<const MeshBase<IndexT>> shared_from_this_meshbase() const override { return std::dynamic_pointer_cast<const MeshBase<IndexT>>( this->shared_from_this() );  }
+
     //!
     //! @brief allocate a new Mesh
     //! @param worldcomm communicator defaulting to Environment::worldComm()
@@ -825,6 +835,28 @@ class Mesh
     {
         return M_substructuring;
     }
+
+    //!
+    //! return true if mesh is unstructured, false otherwise
+    //!
+    bool isUnstructured() const
+    {
+        return M_structure_property.test( 0 );
+    }
+    //!
+    //! return true if mesh is structured, false otherwise
+    //!
+    bool isStructured() const
+        {
+            return M_structure_property.test( 1 ) || isCartesian();
+        }
+    //!
+    //! return true if mesh is cartesian, false otherwise
+    //!
+    bool isCartesian() const
+        {
+            return M_structure_property.test( 2 );
+        }
     //! @}
 
     //!  @name  Mutators
@@ -835,7 +867,12 @@ class Mesh
     {
         M_substructuring = s;
     }
-
+protected:
+    void setStructureProperty( std::string const& prop )
+        {
+            M_structure_property = std::bitset<5>( prop );
+        }
+public:
     //!
     //!  set the partitioner to \p partitioner
     //!
@@ -935,6 +972,42 @@ class Mesh
     //!  exists.
     //!
     element_iterator eraseElement( element_iterator position, bool modify = true );
+
+    //!
+    //! add a new element in the mesh
+    //! @param f a new point
+    //! @return the new point from the list
+    //!
+    std::pair<element_iterator,bool> addElement( element_type& f, bool setid = true )
+    {
+        auto ret = super::addElement( f, setid );
+        if ( ret.second )
+        {
+            if ( !M_geondEltCommon )
+                M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
+            auto & eltInserted = ret.first->second;
+            eltInserted.setCommonData( M_geondEltCommon.get() );
+        }
+        return ret;
+    }
+
+    //!
+    //! move an element into the mesh
+    //! @param f a new point
+    //! @return the new point from the list
+    //!
+    std::pair<element_iterator,bool> addElement( element_type&& f )
+    {
+        auto ret = super::addElement( f );
+        if ( ret.second )
+        {
+            if ( !M_geondEltCommon )
+                M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
+            auto & eltInserted = ret.first->second;
+            eltInserted.setCommonData( M_geondEltCommon.get() );
+        }
+        return ret;
+    }
 
     //!
     //!  @brief compute the trace mesh
@@ -1152,12 +1225,18 @@ class Mesh
     //!
     //!  load mesh in hdf5
     //!
-    void loadHDF5( std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES ) { ioHDF5( IOStatus::isLoading, filename, ctxMeshUpdate ); }
+    void loadHDF5( std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES, double scale = 1 )
+    {
+        ioHDF5( IOStatus::isLoading, filename, ctxMeshUpdate, scale );
+    }
 
     //!
     //!  save mesh in hdf5
     //!
-    void saveHDF5( std::string const& filename ) { ioHDF5( IOStatus::isSaving, filename ); }
+    void saveHDF5( std::string const& filename, double scale = 1 )
+    {
+        ioHDF5( IOStatus::isSaving, filename, 0, scale );
+    }
 #endif
 
   private:
@@ -1171,7 +1250,7 @@ class Mesh
     //!
     //!  save mesh in hdf5
     //!
-    void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
+    void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES, double scale = 1 );
 #endif
 
     //! @}
@@ -1327,6 +1406,9 @@ class Mesh
     //!  properly \p setComponents(), \p components()
     //!
     void updateForUse() override;
+
+    //! update the mesh when nodes have moved
+    void updateForUseAfterMovingNodes( bool upMeasures = true ) override;
 
     //!
     //!  update hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh
@@ -1615,6 +1697,15 @@ class Mesh
     bool M_substructuring;
 
     //!
+    //! 0: unstructured
+    //! 1: structured
+    //! 2: cartesian
+    //! 3: semistructured
+    //! 4: boundary layer
+    //!
+    std::bitset<5> M_structure_property;
+    
+    //!
     //!  The processors who neighbor the current
     //!  processor
     //!
@@ -1658,6 +1749,13 @@ class Mesh
     //!  tool for localize point in the mesh
     //!
     std::shared_ptr<Localization<self_type>> M_tool_localization;
+
+    //! data accessibles in each elements
+    std::shared_ptr<GeoNDCommon<typename element_type::super>> M_geondEltCommon;
+    //! data accessibles in each faces
+    std::shared_ptr<GeoNDCommon<typename face_type::super>> M_geondFaceCommon;
+    //! data accessibles in each edges
+    std::shared_ptr<GeoNDCommon<typename edge_type::super>> M_geondEdgeCommon;
 };
 
 template <typename Shape, typename T, int Tag, typename IndexT>
@@ -1667,7 +1765,7 @@ Mesh<Shape, T, Tag, IndexT>::trace( RangeT const& range ) const
 {
     DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh<const mesh_type, RangeT, Tag>( this->shared_from_this(), range );
+    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT>
@@ -1677,7 +1775,7 @@ Mesh<Shape, T, Tag, IndexT>::wireBasket( RangeT const& range ) const
 {
     DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh<const mesh_type, RangeT, Tag>( this->shared_from_this(), range );
+    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
 }
 
 template <int TheTag>
@@ -1692,7 +1790,7 @@ Mesh<Shape, T, Tag, IndexT>::trace( RangeT const& range, mpl::int_<TheTag> ) con
 {
     DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh<const mesh_type, RangeT, TheTag>( this->shared_from_this(), range );
+    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT>
@@ -1702,7 +1800,7 @@ Mesh<Shape, T, Tag, IndexT>::wireBasket( RangeT const& range, mpl::int_<TheTag> 
 {
     DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh<const mesh_type, RangeT, TheTag>( this->shared_from_this(), range );
+    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT>
@@ -1943,7 +2041,8 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( size_type ctxExtraction, size_type ct
         } //for ( uint16_type n=0; n < element_type::numVertices; n++ )
 
         //!  Add an equivalent element type to the new_mesh
-        auto const& e = new_mesh->addElement( new_elem );
+        auto eit = new_mesh->addElement( new_elem );
+        auto const& e = eit.first->second;
         if ( keepMeshRelation )
             smd->bm.insert( typename SubMeshData<>::bm_type::value_type( e.id(), old_elem.id() ) );
 
@@ -2356,9 +2455,9 @@ struct MeshPoints
     std::vector<int> numberOfPoints, numberOfElements;
     int global_nelts{0}, global_npts{0};
     std::vector<int32_t> ids;
-    std::map<int32_t, int32_t> new2old;
-    std::map<int32_t, int32_t> old2new;
-    std::map<int32_t, int32_t> nodemap;
+    std::unordered_map<int32_t, int32_t> new2old;
+    std::unordered_map<int32_t, int32_t> old2new;
+    std::unordered_map<int32_t, int32_t> nodemap;
     std::vector<T> coords;
     std::vector<int32_t> elemids;
     std::vector<int32_t> elem;
@@ -2370,7 +2469,7 @@ struct MeshPoints
 //!  Builds information around faces/elements for exporting data
 //!  @param mesh The mesh from which data is extracted
 //!  @param it Starting iterator over the faces/elements
-//!  @param en Ending iterator over the faces/elements
+//!  @param en Endoing iterator over the faces/elements
 //!  @param outer If false, the vertices are place in an x1 y1 z1 ... xn yn zn order, otherwise in the x1 ... xn y1 ... yn z1 ... zn
 //!  @param renumber If true, the vertices will be renumbered with maps to keep the correspondance between the twoi, otherwise the original ids are kept
 //!  @param fill It true, the method will generate points coordinates that are 3D, even if the point is specified with 1D or 2D coordinates (filled with 0)
