@@ -24,12 +24,10 @@
 #ifndef FEELPP_MODELMARKERS_HPP
 #define FEELPP_MODELMARKERS_HPP 1
 
-#include <boost/property_tree/ptree.hpp>
-#include <feel/feelcore/environment.hpp>
+
+#include <feel/feelmodels/modelindexes.hpp>
 
 namespace Feel {
-
-namespace pt = boost::property_tree;
 
 class FEELPP_EXPORT ModelMarkers : public std::set<std::string>
 {
@@ -43,15 +41,7 @@ class FEELPP_EXPORT ModelMarkers : public std::set<std::string>
     explicit ModelMarkers( std::string const& marker );
     ModelMarkers& operator=( ModelMarkers const& ) = default;
     ModelMarkers& operator=( ModelMarkers&& ) = default;
-    void setPTree( pt::ptree const& p );
-
-  private:
-    void generateMarkersList();
-    std::vector<std::string> getArguments( int k );
-    void generateMarkersListForIndex( int k, std::vector<std::string> argK );
-
-    pt::ptree M_p;
-
+    void setPTree( pt::ptree const& p, ModelIndexes const& indexes = ModelIndexes() );
 };
 
 }
