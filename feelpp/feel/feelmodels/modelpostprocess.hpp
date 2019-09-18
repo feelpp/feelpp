@@ -24,18 +24,11 @@
 #ifndef FEELPP_MODELPOSTPROCESS_HPP
 #define FEELPP_MODELPOSTPROCESS_HPP 1
 
-
-#include <map>
-
-#include <boost/property_tree/ptree.hpp>
-
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
 #include <feel/feelmodels/modelmarkers.hpp>
 
 namespace Feel {
-
-namespace pt =  boost::property_tree;
 
 class FEELPP_EXPORT ModelPostprocessExports
 {
@@ -156,13 +149,13 @@ public :
     std::set<std::string> const& fields() const { return this->second; }
     std::set<std::string> & fields() { return this->second; }
 
-    void setPTree( pt::ptree const& _p, std::string const& name ) { M_p = _p; this->setup( name ); }
+    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setFields( std::set<std::string> const& fields ) { this->second = fields; }
     void addFields( std::string const& field ) { this->second.insert( field ); }
     void setParameterValues( std::map<std::string,double> const& mp ) { this->pointPosition().setParameterValues( mp ); }
 private:
-    void setup( std::string const& name );
+    void setup( std::string const& name, ModelIndexes const& indexes );
 private:
     pt::ptree M_p;
     std::string M_directoryLibExpr;
@@ -210,12 +203,12 @@ public :
     //! return true if a field has been given
     bool hasField() const { return !M_field.empty(); }
 
-    void setPTree( pt::ptree const& _p, std::string const& name ) { M_p = _p; this->setup( name ); }
+    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
 
 private:
-    void setup( std::string const& name );
+    void setup( std::string const& name, ModelIndexes const& indexes );
 private:
     pt::ptree M_p;
     std::string M_directoryLibExpr;
@@ -262,12 +255,12 @@ public :
     //! return true if a field has been given
     bool hasField() const { return !M_field.empty(); }
 
-    void setPTree( pt::ptree const& _p, std::string const& name ) { M_p = _p; this->setup( name ); }
+    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
 
 private:
-    void setup( std::string const& name );
+    void setup( std::string const& name, ModelIndexes const& indexes );
 private:
     pt::ptree M_p;
     std::string M_directoryLibExpr;
@@ -278,11 +271,13 @@ private:
     uint16_type M_quadOrder, M_quad1Order;
 };
 
-class FEELPP_EXPORT ModelPostprocessCheckerMeasure
+class FEELPP_EXPORT ModelPostprocessCheckerMeasure : public CommObject
 {
+    using super = CommObject;
   public :
-    ModelPostprocessCheckerMeasure( double value=0., double tol=0.01 )
+    ModelPostprocessCheckerMeasure( worldcomm_ptr_t const& world = Environment::worldCommPtr(), double value=0., double tol=0.01 )
         :
+        super( world ),
         M_value( value ),
         M_tolerance( tol )
         {}
@@ -301,12 +296,16 @@ class FEELPP_EXPORT ModelPostprocessCheckerMeasure
     //! \return tuple ( check is true, diff value )
     std::tuple<bool,double> run( double val ) const;
 
-    void setPTree( pt::ptree const& _p, std::string const& name ) { M_p = _p; this->setup( name ); }
+    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
+    void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+    void setParameterValues( std::map<std::string,double> const& mp );
   private:
-    void setup( std::string const& name );
+    void setup( std::string const& name, ModelIndexes const& indexes );
   private :
     pt::ptree M_p;
     std::string M_name;
+    std::string M_directoryLibExpr;
+    ModelExpression M_valueExpr;
     double M_value;
     double M_tolerance;
 };
